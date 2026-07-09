@@ -8,10 +8,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@angular/core": "^21.2.18",
     "@soldy/core": "*",
     "@soldy/foundation": "*",
     "@soldy/icons": "*",
-    "@soldy/plugins": "*",
-    "@angular/core": "^19.0.0"
+    "@soldy/plugins": "*"
   }
 }
