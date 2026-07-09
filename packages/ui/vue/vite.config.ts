@@ -19,7 +19,16 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "${path.resolve(__dirname, '../../foundation/src/tailwind/index.css')}";\n`,
+        additionalData: (content: string) => {
+          const importLine = `@import "${path.resolve(__dirname, '../../foundation/src/tailwind/index.css')}";\n`
+          const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
+          if (matches.length > 0) {
+            const last = matches[matches.length - 1]
+            const end = (last.index ?? 0) + last[0].length
+            return content.slice(0, end) + importLine + content.slice(end)
+          }
+          return importLine + content
+        },
       },
     },
   },
