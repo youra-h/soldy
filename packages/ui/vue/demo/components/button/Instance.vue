@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, emitsButton } from '@ui/button'
+import { Button, emitsButton } from '@soldy/ui-vue'
 import { TButton } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
