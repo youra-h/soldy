@@ -1,0 +1,33 @@
+@mixin checkbox-variant(
+	$this,
+	$color: 'neutral',
+	$border: 400,
+	$bg-disabled: 50,
+) {
+	#{$this}__container {
+		@apply #{'border-s-' + $color + '-' + $border};
+
+		$svg-fill: $border + 100;
+
+		svg {
+			@apply #{'fill-s-' + $color + '-' + $svg-fill};
+		}
+	}
+
+	input {
+		$border-hover: $border + 100;
+		// TODO: dark mode
+		// $border-hover-dark: $border - 100;
+		// [data-theme="dark"] &:hover:not(:disabled) + #{$this}__container {
+		//     @apply #{'border-s-' + $color + '-' + $border-hover-dark};
+		// }
+
+		&:hover:not(:disabled) + #{$this}__container {
+			@apply #{'border-s-' + $color + '-' + $border-hover};
+		}
+
+		&:disabled + #{$this}__container {
+			@apply #{'bg-s-' + $color + '-' + $bg-disabled};
+		}
+	}
+}

@@ -1,0 +1,86 @@
+// Миксин для view="line"
+// $color       — название цвета (sky, emerald, rose, amber, neutral)
+// $text    — индекс цвета текста при hover/active (берётся из Button--outlined text)
+// $border  — индекс цвета линии под списком (берётся из Button--outlined border)
+//                indicator = border + 400 (берётся из Button--outlined hover border)
+@mixin tabs-line-variant($color, $text: 800, $border: 200) {
+	$indicator: $border + 400;
+
+	// Цвет разделительной линии и индикатора
+	.s-tabs__list {
+		@apply #{'border-s-' + $color + '-' + $border};
+
+		&::after {
+			@apply #{'bg-s-' + $color + '-' + $indicator};
+		}
+
+		// Цвет текста при hover и у активного таба
+		.s-tab-item {
+			> * {
+				&:hover:not([disabled]) {
+					@apply #{'text-s-' + $color + '-' + $text};
+				}
+			}
+
+			&--active {
+				> * {
+					@apply #{'text-s-' + $color + '-' + $text};
+				}
+			}
+		}
+	}
+}
+
+// Миксин для view="contained"
+// Список обёрнут в контейнер. Активный таб — белая карточка с тенью внутри контейнера.
+@mixin tabs-contained-variant($color, $text: 800, $container-bg: 100) {
+	.s-tabs__list {
+		@apply #{'bg-s-' + $color + '-' + $container-bg};
+	}
+
+	.s-tab-item {
+		> * {
+			&:hover:not([disabled]) {
+				@apply #{'text-s-' + $color + '-' + $text};
+			}
+		}
+
+		&--active {
+			> * {
+				@apply bg-white shadow-sm;
+				@apply #{'text-s-' + $color + '-' + $text};
+			}
+		}
+	}
+}
+
+// Миксин для view="outline"
+// Классический вид «папочных вкладок» с внешним бордером.
+// Неактивные: серый фон, бордер со всех сторон.
+// Активная: белый фон, бордер только сверху/слева/справа (нет снизу).
+// Только цвет бордера и текста зависят от варианта.
+@mixin tabs-outline-variant($color, $text: 800, $border: 200) {
+	.s-tabs__list {
+		&::before,
+		&::after {
+			@apply #{'bg-s-' + $color + '-' + $border};
+		}
+	}
+
+	.s-tab-item {
+		@apply #{'border-s-' + $color + '-' + $border};
+
+		// @apply border-b-transparent;
+		> * {
+			&:hover:not([disabled]) {
+				@apply #{'text-s-' + $color + '-' + $text};
+			}
+		}
+
+		&--active {
+			> * {
+				@apply #{'text-s-' + $color + '-' + $text};
+			}
+		}
+	}
+}
