@@ -18,7 +18,9 @@ export default defineConfig({
   },
   css: {
     preprocessorOptions: {
-      scss: {},
+      scss: {
+        additionalData: `@import "${path.resolve(__dirname, '../../foundation/src/tailwind/index.css')}";\n`,
+      },
     },
   },
   build: {
