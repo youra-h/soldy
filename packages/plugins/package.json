@@ -8,6 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@soldy/core": "workspace:*"
+    "@soldy/core": "*"
   }
 }

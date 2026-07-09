@@ -1,0 +1,49 @@
+import { TCollectionItem } from '../item/collection-item.class'
+import type {
+	IActivatableCollectionItem,
+	IActivatableCollectionItemProps,
+	TActivatableItemEvents,
+} from './types'
+import { TEvented } from '../../../../common'
+
+/**
+ * Элемент коллекции с поддержкой активности.
+ */
+export class TActivatableCollectionItem<
+		TProps extends IActivatableCollectionItemProps = IActivatableCollectionItemProps,
+		TEvents extends
+			TActivatableItemEvents<IActivatableCollectionItem> = TActivatableItemEvents<IActivatableCollectionItem>,
+	>
+	extends TCollectionItem<TProps, TEvents>
+	implements IActivatableCollectionItem
+{
+	static defaultValues: Partial<IActivatableCollectionItemProps> = {
+		active: undefined,
+	}
+
+	protected _active = TActivatableCollectionItem.defaultValues.active!
+
+	getProps(): TProps {
+		return {
+			...super.getProps(),
+		} as TProps
+	}
+
+	get active(): boolean {
+		return this._active
+	}
+
+	set active(value: boolean) {
+		if (this._active !== value) {
+			this._active = value
+			;(this.events as TEvented<TActivatableItemEvents<IActivatableCollectionItem>>).emit(
+				'change:activation',
+				this,
+			)
+		}
+	}
+
+	toggleActive(): void {
+		this.active = !this.active
+	}
+}

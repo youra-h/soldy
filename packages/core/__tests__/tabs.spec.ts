@@ -1,0 +1,345 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { TTabs } from '../components/tabs'
+import TTabItem from '../components/tabs/tab-item/tab-item.class'
+
+describe('TTabs', () => {
+	let tabs: TTabs
+
+	beforeEach(() => {
+		tabs = new TTabs()
+	})
+
+	describe('initialization', () => {
+		it('creates tabs with default values', () => {
+			expect(tabs.orientation).toBe('horizontal')
+			expect(tabs.alignment).toBe('start')
+			expect(tabs.position).toBe('start')
+			expect(tabs.view).toBe('line')
+			expect(tabs.closable).toBe(false)
+			expect(tabs.count).toBe(0)
+			expect(tabs.activeItem).toBeUndefined()
+		})
+
+		it('creates tabs with custom props', () => {
+			const customTabs = new TTabs({
+				props: {
+					orientation: 'vertical',
+					alignment: 'center',
+					position: 'end',
+					view: 'outline',
+					closable: true,
+				},
+			})
+
+			expect(customTabs.orientation).toBe('vertical')
+			expect(customTabs.alignment).toBe('center')
+			expect(customTabs.position).toBe('end')
+			expect(customTabs.view).toBe('outline')
+			expect(customTabs.closable).toBe(true)
+		})
+	})
+
+	describe('collection access', () => {
+		it('provides access to collection', () => {
+			expect(tabs.collection).toBeDefined()
+			expect(tabs.count).toBe(0)
+		})
+
+		it('can add items through collection', () => {
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			expect(tabs.count).toBe(1)
+			expect(item).toBeInstanceOf(TTabItem)
+			expect(item.text).toBe('Tab 1')
+		})
+
+		it('emits item:added event when item is added', () => {
+			const spy = vi.fn()
+			tabs.events.on('item:added', spy)
+
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			expect(spy).toHaveBeenCalledWith(
+				expect.objectContaining({ collection: tabs.collection, item }),
+			)
+		})
+
+		it('emits item:deleted event when item is deleted', () => {
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			const spy = vi.fn()
+			tabs.events.on('item:deleted', spy)
+
+			tabs.collection.deleteItem(item)
+
+			expect(spy).toHaveBeenCalledWith(
+				expect.objectContaining({ collection: tabs.collection, item }),
+			)
+			expect(tabs.count).toBe(0)
+		})
+
+		it('emits item:activated event when item is activated', () => {
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+
+			const spy = vi.fn()
+			tabs.events.on('item:activated', spy)
+
+			tabs.collection.setActive(item1)
+
+			expect(spy).toHaveBeenCalledWith(
+				expect.objectContaining({ collection: tabs.collection, item: item1 }),
+			)
+			expect(tabs.activeItem).toBe(item1)
+		})
+	})
+
+	describe('closeTab', () => {
+		it('returns false when tab is not closable', () => {
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			const result = tabs.closeTab(item)
+
+			expect(result).toBe(false)
+			expect(tabs.count).toBe(1)
+		})
+
+		it('emits item:close event before removing', () => {
+			tabs.closable = true
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			const spy = vi.fn()
+			tabs.events.on('item:close', spy)
+
+			tabs.closeTab(item)
+
+			expect(spy).toHaveBeenCalledWith(item)
+		})
+
+		it('removes tab when closable and returns true', () => {
+			tabs.closable = true
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			const result = tabs.closeTab(item)
+
+			expect(result).toBe(true)
+			expect(tabs.count).toBe(0)
+		})
+
+		it('activates next tab when closing active tab', () => {
+			tabs.closable = true
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+			const item3 = tabs.collection.add({ text: 'Tab 3' })
+
+			tabs.collection.setActive(item1)
+
+			tabs.closeTab(item1)
+
+			expect(tabs.activeItem).toBe(item2)
+			expect(tabs.count).toBe(2)
+		})
+
+		it('activates previous tab when closing last active tab', () => {
+			tabs.closable = true
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+			const item3 = tabs.collection.add({ text: 'Tab 3' })
+
+			tabs.collection.setActive(item3)
+
+			tabs.closeTab(item3)
+
+			expect(tabs.activeItem).toBe(item2)
+			expect(tabs.count).toBe(2)
+		})
+
+		it('clears active when closing the only tab', () => {
+			tabs.closable = true
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			tabs.collection.setActive(item)
+
+			tabs.closeTab(item)
+
+			expect(tabs.activeItem).toBeUndefined()
+			expect(tabs.count).toBe(0)
+		})
+
+		it('does not change active when closing non-active tab', () => {
+			tabs.closable = true
+
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+
+			tabs.collection.setActive(item1)
+
+			const result = tabs.closeTab(item2)
+
+			expect(result).toBe(true)
+			expect(tabs.activeItem).toBe(item1)
+			expect(tabs.count).toBe(1)
+		})
+	})
+
+	describe('property setters', () => {
+		it('emits change:orientation when orientation changes', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:orientation', spy)
+
+			tabs.orientation = 'vertical'
+
+			expect(spy).toHaveBeenCalledWith('vertical')
+			expect(tabs.orientation).toBe('vertical')
+		})
+
+		it('does not emit when orientation is set to same value', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:orientation', spy)
+
+			tabs.orientation = 'horizontal'
+
+			expect(spy).not.toHaveBeenCalled()
+		})
+
+		it('emits change:alignment when alignment changes', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:alignment', spy)
+
+			tabs.alignment = 'center'
+
+			expect(spy).toHaveBeenCalledWith('center')
+		})
+
+		it('emits change:position when position changes', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:position', spy)
+
+			tabs.position = 'end'
+
+			expect(spy).toHaveBeenCalledWith('end')
+		})
+
+		it('emits change:view when view changes', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:view', spy)
+
+			tabs.view = 'outline'
+
+			expect(spy).toHaveBeenCalledWith('outline')
+		})
+
+		it('emits change:closable when closable changes', () => {
+			const spy = vi.fn()
+			tabs.events.on('change:closable', spy)
+
+			tabs.closable = true
+
+			expect(spy).toHaveBeenCalledWith(true)
+		})
+	})
+
+	describe('classes generation', () => {
+		it('generates base class with modifiers', () => {
+			tabs.orientation = 'vertical'
+			tabs.alignment = 'center'
+			tabs.view = 'outline'
+
+			const classes = tabs.classes.toArray()
+
+			expect(classes).toContain('s-tabs')
+			expect(classes).toContain('s-tabs--vertical')
+			expect(classes).toContain('s-tabs--center')
+			expect(classes).toContain('s-tabs--outline')
+		})
+
+		it('does not include position class for horizontal orientation', () => {
+			tabs.orientation = 'horizontal'
+			tabs.position = 'end'
+
+			const classes = tabs.classes.toArray()
+
+			expect(classes).not.toContain('s-tabs--position-end')
+		})
+
+		it('includes position class for vertical orientation', () => {
+			tabs.orientation = 'vertical'
+			tabs.position = 'end'
+
+			const classes = tabs.classes.toArray()
+
+			expect(classes).toContain('s-tabs--position-end')
+		})
+	})
+
+	describe('getProps', () => {
+		it('returns all props', () => {
+			tabs.orientation = 'vertical'
+			tabs.alignment = 'center'
+			tabs.closable = true
+
+			const props = tabs.getProps()
+
+			expect(props.orientation).toBe('vertical')
+			expect(props.alignment).toBe('center')
+			expect(props.closable).toBe(true)
+		})
+	})
+
+	describe('size/variant propagation', () => {
+		it('propagates current size to newly added item', () => {
+			tabs.size = 'sm'
+
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			expect(item.size).toBe('sm')
+		})
+
+		it('propagates current variant to newly added item', () => {
+			tabs.variant = 'accent'
+
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			expect(item.variant).toBe('accent')
+		})
+
+		it('propagates size to all existing items when tabs.size changes', () => {
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+
+			tabs.size = 'lg'
+
+			expect(item1.size).toBe('lg')
+			expect(item2.size).toBe('lg')
+		})
+
+		it('propagates variant to all existing items when tabs.variant changes', () => {
+			const item1 = tabs.collection.add({ text: 'Tab 1' })
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+
+			tabs.variant = 'accent'
+
+			expect(item1.variant).toBe('accent')
+			expect(item2.variant).toBe('accent')
+		})
+
+		it('propagates size and variant together when both changed', () => {
+			const item = tabs.collection.add({ text: 'Tab 1' })
+
+			tabs.size = 'sm'
+			tabs.variant = 'accent'
+
+			expect(item.size).toBe('sm')
+			expect(item.variant).toBe('accent')
+		})
+
+		it('new item inherits size after collection already has items', () => {
+			tabs.size = 'lg'
+			tabs.collection.add({ text: 'Tab 1' })
+
+			const item2 = tabs.collection.add({ text: 'Tab 2' })
+
+			expect(item2.size).toBe('lg')
+		})
+	})
+})

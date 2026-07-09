@@ -8,10 +8,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@soldy/core": "workspace:*",
-    "@soldy/foundation": "workspace:*",
-    "@soldy/icons": "workspace:*",
-    "@soldy/plugins": "workspace:*",
+    "@soldy/core": "*",
+    "@soldy/foundation": "*",
+    "@soldy/icons": "*",
+    "@soldy/plugins": "*",
     "solid-js": "^1.9.0"
   }
 }

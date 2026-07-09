@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@soldy/foundation": "workspace:*",
-    "@soldy/icons": "workspace:*"
+    "@soldy/foundation": "*",
+    "@soldy/icons": "*"
   }
 }

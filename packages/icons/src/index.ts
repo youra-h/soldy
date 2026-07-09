@@ -1,2 +1,0 @@
-// @soldy/icons
-export {}
