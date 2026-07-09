@@ -1,2 +1,2 @@
-// @soldy/ui-vue
-export {}
+export * from './composables'
+export * from './components'
