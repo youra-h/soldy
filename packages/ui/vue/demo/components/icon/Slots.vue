@@ -32,7 +32,7 @@ const props = defineProps<Props>()
 					{{ size }}
 				</div>
 				<Icon
-					:tag="useIconImport(tag || '../../../../icons/src/home.svg')"
+					:tag="useIconImport(tag || 'home')"
 					:visible="visible"
 					:rendered="rendered"
 					:size="size"

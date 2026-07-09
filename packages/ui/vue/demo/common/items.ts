@@ -15,10 +15,10 @@ export const HTML_TAGS = ['div', 'span', 'section', 'article', 'header', 'footer
 /** Внешний вид кнопок */
 export const BUTTON_APPEARANCES: TButtonView[] = ['filled', 'plain', 'outlined', 'none']
 
-/** Пути к иконкам (можно расширить) */
+/** Иконки из @soldy/icons (можно расширить) */
 export const ICON_PATHS = [
-	'../../../../icons/src/home.svg',
-	'../../../../icons/src/check_indeterminate.svg',
-	'../../../../icons/src/check.svg',
-	'../../../../icons/src/close.svg',
+	'home',
+	'checkIndeterminate',
+	'check',
+	'close',
 ]

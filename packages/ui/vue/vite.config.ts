@@ -14,6 +14,7 @@ export default defineConfig({
       '@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
       '@soldy/icons': path.resolve(__dirname, '../../icons/src'),
       '@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
+      vue: 'vue/dist/vue.esm-bundler.js',
     },
   },
   css: {

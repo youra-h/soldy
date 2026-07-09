@@ -1,15 +1,15 @@
-import { markRaw, defineAsyncComponent, type Component } from 'vue'
+import { defineComponent, h, markRaw, type Component } from 'vue'
+import * as icons from '@soldy/icons'
 
-const icons = import.meta.glob('../../../../../icons/src/*.svg')
+const iconMap = icons as Record<string, string>
 
-export function useIconImport(path: string): Component {
-    const name = path.split('/').pop() ?? path
-    const loader = icons[`../../../../../icons/src/${name}`]
+export function useIconImport(name: string): Component {
+    const svg = iconMap[name]
 
-    if (!loader) {
-        console.error(`Icon not found: ${path}`)
-        return markRaw({ template: '<svg></svg>' })
+    if (!svg) {
+        console.error(`Icon not found: ${name}`)
+        return markRaw({ render: () => h('svg') })
     }
 
-    return markRaw(defineAsyncComponent(loader as () => Promise<Component>))
+    return markRaw(defineComponent({ template: svg }))
 }

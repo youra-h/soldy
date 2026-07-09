@@ -28,8 +28,8 @@ const emit = defineEmits<{
 
 const { handlers } = useEventLogger(emit, emitsInput)
 
-const searchIcon = useIconImport('../../../../icons/src/check.svg')
-const closeIcon = useIconImport('../../../../icons/src/close.svg')
+const searchIcon = useIconImport('check')
+const closeIcon = useIconImport('close')
 </script>
 
 <template>

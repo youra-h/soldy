@@ -38,7 +38,7 @@ export default {
 			order,
 		} = syncCollapseItem({ props, instance, plugins, emit })
 
-		const arrowIconTag = useIconImport('../../../../icons/src/arrow_right.svg')
+		const arrowIconTag = useIconImport('arrowRight')
 
 		const { containerAttrs, controlAttrs } = useSplitAttrs()
 

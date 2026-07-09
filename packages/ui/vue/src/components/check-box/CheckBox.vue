@@ -43,8 +43,8 @@ export default {
 		})
 
 		// Иконки по умолчанию
-		const defaultIconTag = useIconImport('../../../../icons/src/check.svg')
-		const defaultIndeterminateIconTag = useIconImport('../../../../icons/src/check_indeterminate.svg')
+		const defaultIconTag = useIconImport('check')
+		const defaultIndeterminateIconTag = useIconImport('checkIndeterminate')
 
 		const { containerAttrs, controlAttrs } = useSplitAttrs()
 

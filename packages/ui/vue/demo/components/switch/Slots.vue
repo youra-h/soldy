@@ -97,7 +97,7 @@ const variants: TComponentVariant[] = VARIANTS
 						:value="false"
 					>
 						<template #off>
-							<Icon :tag="useIconImport('../../../../icons/src/close.svg')" size="lg" />
+							<Icon :tag="useIconImport('close')" size="lg" />
 						</template>
 					</Switch>
 				</div>
@@ -111,7 +111,7 @@ const variants: TComponentVariant[] = VARIANTS
 						:value="true"
 					>
 						<template #on>
-							<Icon :tag="useIconImport('../../../../icons/src/check.svg')" size="lg" />
+							<Icon :tag="useIconImport('check')" size="lg" />
 						</template>
 					</Switch>
 				</div>
@@ -125,10 +125,10 @@ const variants: TComponentVariant[] = VARIANTS
 						:value="true"
 					>
 						<template #off>
-							<Icon :tag="useIconImport('../../../../icons/src/close.svg')" size="lg" />
+							<Icon :tag="useIconImport('close')" size="lg" />
 						</template>
 						<template #on>
-							<Icon :tag="useIconImport('../../../../icons/src/home.svg')" size="lg" />
+							<Icon :tag="useIconImport('home')" size="lg" />
 						</template>
 					</Switch>
 				</div>

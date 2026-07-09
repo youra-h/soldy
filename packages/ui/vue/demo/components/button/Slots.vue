@@ -11,9 +11,9 @@ type Props = {
 
 const props = defineProps<Props>()
 
-const icon1 = useIconImport('../../../../icons/src/home.svg')
-const icon2 = useIconImport('../../../../icons/src/check.svg')
-const icon3 = useIconImport('../../../../icons/src/close.svg')
+const icon1 = useIconImport('home')
+const icon2 = useIconImport('check')
+const icon3 = useIconImport('close')
 </script>
 
 <template>
