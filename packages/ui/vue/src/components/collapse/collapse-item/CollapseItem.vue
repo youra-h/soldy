@@ -1,11 +1,14 @@
 <script lang="ts">
 import { TCollapseItem, type ICollapseItemProps, type ICollapseItem } from '@soldy/core'
 import BaseCollapseItem, { syncCollapseItem } from './collapse-item.component'
-import { useInstance } from '../../../composables/useInstance'
-import { useBundle } from '../../../composables/useBundle'
-import { useInstanceBinding } from '../../../composables/useInstanceBinding'
-import { useElementBinding } from '../../../composables/useElementBinding'
-import { useSplitAttrs } from '../../../composables/useSplitAttrs'
+import {
+    useInstance,
+    useIconImport,
+    useBundle,
+    useElementBinding,
+    useInstanceBinding,
+    useSplitAttrs,
+} from '../../../composables';
 import { createComponentViewBundle } from '@soldy/plugins'
 import { Icon } from '../../icon'
 import { Button } from '../../button'
