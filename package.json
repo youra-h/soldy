@@ -4,18 +4,27 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/ui/*"
   ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "npm run dev --workspace=@soldy/ui-vue",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
+    "dev:vue": "npm run dev --workspace=@soldy/ui-vue",
+    "dev:react": "npm run dev --workspace=@soldy/ui-react",
+    "dev:angular": "npm run dev --workspace=@soldy/ui-angular",
+    "dev:svelte": "npm run dev --workspace=@soldy/ui-svelte",
+    "dev:solid": "npm run dev --workspace=@soldy/ui-solid",
+    "test:core": "npm run test --workspace=@soldy/core",
+    "test:plugins": "npm run test --workspace=@soldy/plugins",
+    "test:vue": "npm run test --workspace=@soldy/ui-vue",
+    "test:react": "npm run test --workspace=@soldy/ui-react",
+    "test:angular": "npm run test --workspace=@soldy/ui-angular",
+    "test:svelte": "npm run test --workspace=@soldy/ui-svelte",
+    "test:solid": "npm run test --workspace=@soldy/ui-solid",
     "lint": "eslint . --fix",
-    "format": "prettier --write .",
-    "type-check": "vue-tsc --build"
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "eslint": "^10.2.0",
