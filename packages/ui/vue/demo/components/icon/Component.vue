@@ -27,7 +27,7 @@ const { handlers } = useEventLogger(emit, emitsIcon)
 <template>
 	<PanelDemo info="Controlled by props from Properties panel">
 		<Icon
-			:tag="useIconImport(tag || '@soldy/icons/home.svg')"
+			:tag="useIconImport(tag || '../../../../icons/src/home.svg')"
 			:visible="visible"
 			:rendered="rendered"
 			:size="size"

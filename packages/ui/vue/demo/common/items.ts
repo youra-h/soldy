@@ -17,8 +17,8 @@ export const BUTTON_APPEARANCES: TButtonView[] = ['filled', 'plain', 'outlined',
 
 /** Пути к иконкам (можно расширить) */
 export const ICON_PATHS = [
-	'@soldy/icons/home.svg',
-	'@soldy/icons/check_indeterminate.svg',
-	'@soldy/icons/check.svg',
-	'@soldy/icons/close.svg',
+	'../../../../icons/src/home.svg',
+	'../../../../icons/src/check_indeterminate.svg',
+	'../../../../icons/src/check.svg',
+	'../../../../icons/src/close.svg',
 ]

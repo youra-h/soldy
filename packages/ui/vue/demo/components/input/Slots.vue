@@ -15,8 +15,8 @@ const props = defineProps<Props>()
 const sizes: TComponentSize[] = SIZES
 const variants: TComponentVariant[] = VARIANTS
 
-const searchIcon = useIconImport('@soldy/icons/check.svg')
-const closeIcon = useIconImport('@soldy/icons/close.svg')
+const searchIcon = useIconImport('../../../../icons/src/check.svg')
+const closeIcon = useIconImport('../../../../icons/src/close.svg')
 </script>
 
 <template>
