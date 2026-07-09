@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { Tabs, emitsTabs } from '@ui/tabs'
+import { Tabs, emitsTabs } from '@soldy/ui-vue'
 import { TTabs } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

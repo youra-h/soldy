@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { Spinner, emitsSpinner } from '@ui/spinner'
+import { Spinner, emitsSpinner } from '@soldy/ui-vue'
 import { TSpinner } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

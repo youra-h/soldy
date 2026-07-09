@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Input, emitsInput } from '@ui/input'
+import { Input, emitsInput } from '@soldy/ui-vue'
 import { TInput } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

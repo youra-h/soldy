@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { CheckBox, emitsCheckBox } from '@ui/check-box'
-import { Icon } from '@ui/icon'
+import { CheckBox, emitsCheckBox, Icon, useIconImport } from '@soldy/ui-vue'
 import { TCheckBox } from '@soldy/core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ListBox, ListBoxItem, emitsListBox } from '@ui/list-box'
+import { ListBox, ListBoxItem, emitsListBox } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'

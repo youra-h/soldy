@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TCollapse } from '@soldy/core'
-import { Collapse, CollapseItem } from '@ui/collapse'
+import { Collapse, CollapseItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {

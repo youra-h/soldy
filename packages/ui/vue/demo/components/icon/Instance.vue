@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { Icon, emitsIcon } from '@ui/icon'
+import { Icon, emitsIcon, useIconImport } from '@soldy/ui-vue'
 import { TIcon } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

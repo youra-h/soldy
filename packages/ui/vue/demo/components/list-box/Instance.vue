@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { ListBox, emitsListBox } from '@ui/list-box'
+import { ListBox, emitsListBox } from '@soldy/ui-vue'
 import { TListBox } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

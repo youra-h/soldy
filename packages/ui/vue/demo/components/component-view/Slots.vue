@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ComponentView } from '@ui/component-view'
+import { ComponentView } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 
 type Props = {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { ComponentView, emitsComponentView } from '@ui/component-view'
+import { ComponentView, emitsComponentView } from '@soldy/ui-vue'
 import { TComponentView } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

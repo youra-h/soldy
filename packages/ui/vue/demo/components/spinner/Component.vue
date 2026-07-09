@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Spinner, emitsSpinner } from '@ui/spinner'
+import { Spinner, emitsSpinner } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'

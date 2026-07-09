@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TTabs } from '@soldy/core'
-import { Tabs, TabItem } from '@ui/tabs'
+import { Tabs, TabItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {

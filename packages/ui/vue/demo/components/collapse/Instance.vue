@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { Collapse, emitsCollapse } from '@ui/collapse'
+import { Collapse, emitsCollapse } from '@soldy/ui-vue'
 import { TCollapse } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

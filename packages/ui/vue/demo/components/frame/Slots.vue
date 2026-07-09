@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { Frame } from '@ui/frame'
-import { Button } from '@ui/button'
+import { Frame, Button } from '@soldy/ui-vue'
 import { TFrame } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 

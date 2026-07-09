@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Collapse, CollapseItem, emitsCollapse } from '@ui/collapse'
+import { Collapse, CollapseItem, emitsCollapse } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
