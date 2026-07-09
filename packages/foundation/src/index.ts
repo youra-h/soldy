@@ -1,0 +1,2 @@
+// @soldy/foundation
+export {}

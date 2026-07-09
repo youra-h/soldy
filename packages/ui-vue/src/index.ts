@@ -1,0 +1,2 @@
+// @soldy/ui-vue
+export {}

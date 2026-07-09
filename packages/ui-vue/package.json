@@ -1,0 +1,21 @@
+{
+  "name": "@soldy/ui-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@soldy/core": "workspace:*",
+    "@soldy/foundation": "workspace:*",
+    "@soldy/icons": "workspace:*",
+    "@soldy/plugins": "workspace:*",
+    "vue": "^3.5.32"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite-svg-loader": "^5.1.1"
+  }
+}

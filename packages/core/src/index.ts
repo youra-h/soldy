@@ -1,0 +1,2 @@
+// @soldy/core
+export {}

@@ -1,0 +1,17 @@
+{
+  "name": "@soldy/ui-solid",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@soldy/core": "workspace:*",
+    "@soldy/foundation": "workspace:*",
+    "@soldy/icons": "workspace:*",
+    "@soldy/plugins": "workspace:*",
+    "solid-js": "^1.9.0"
+  }
+}

@@ -1,0 +1,2 @@
+// @soldy/plugins
+export {}

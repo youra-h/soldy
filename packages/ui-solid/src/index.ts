@@ -1,0 +1,2 @@
+// @soldy/ui-solid
+export {}
