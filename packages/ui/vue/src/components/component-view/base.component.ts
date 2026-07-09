@@ -9,14 +9,11 @@ import {
 	emitsComponent,
 	propsComponent,
 	syncComponent,
-	type IComponentState
+	type IComponentState,
 } from '../component'
 import { useInheritProps } from '../../composables/useInheritProps'
 
-export const emitsComponentView: TEmits = [
-	...emitsComponent,	
-	'ready',
-] as const
+export const emitsComponentView: TEmits = [...emitsComponent, 'ready'] as const
 
 export const propsComponentView: TProps = {
 	...useInheritProps(propsComponent, TComponentView),
@@ -78,6 +75,6 @@ export function syncComponentView(
 			present: () => instance.present,
 			tag: () => instance.tag,
 			classes: () => instance.classes.list,
-		})
+		}),
 	}
 }

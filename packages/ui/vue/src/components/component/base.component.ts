@@ -4,7 +4,9 @@ import { useSyncProps } from '../../composables/useSyncProps'
 import { type IComponent, type IComponentProps, TComponent } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 
-export const emitsComponent: TEmits = ['created', 'rendered',
+export const emitsComponent: TEmits = [
+	'created',
+	'rendered',
 	'update:rendered',
 	'change:rendered',
 	'visible',
@@ -15,7 +17,8 @@ export const emitsComponent: TEmits = ['created', 'rendered',
 	'beforeShow',
 	'afterShow',
 	'beforeHide',
-	'afterHide',] as const
+	'afterHide',
+] as const
 
 export const propsComponent: TProps = {
 	ctrl: {
@@ -33,7 +36,7 @@ export default {
 	props: propsComponent,
 	created() {
 		// @ts-ignore
-		; (this.instance! as IComponent).id = this.$.uid
+		;(this.instance! as IComponent).id = this.$.uid
 		// @ts-ignore
 		this.$emit('created', { instance: this.instance, plugins: this.plugins })
 	},
@@ -45,9 +48,7 @@ export interface IComponentState {
 	present: Ref<boolean>
 }
 
-export function syncComponent(
-	options: ISyncComponentOptions<IComponentProps>,
-): IComponentState {
+export function syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
 	const { props, instance, plugins, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
@@ -108,4 +109,3 @@ export function syncComponent(
 		present: () => instance.present,
 	})
 }
-
