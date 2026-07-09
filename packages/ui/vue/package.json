@@ -20,9 +20,6 @@
     "vue": "^3.5.32"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@vitejs/plugin-vue": "^6.0.5",
-    "vite": "^6.0.0",
-    "vite-svg-loader": "^5.1.1"
+    "@types/node": "^26.1.1"
   }
 }
