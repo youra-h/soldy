@@ -1,7 +1,7 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { watch } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponent, type IComponentProps, TComponent } from '@core'
+import { type IComponent, type IComponentProps, TComponent } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 
 export const emitsComponent: TEmits = ['created'] as const

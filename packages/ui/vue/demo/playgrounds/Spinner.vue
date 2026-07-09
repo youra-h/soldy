@@ -8,7 +8,7 @@ import PropsDemo from './../components/spinner/Component.vue'
 import InstanceDemo from './../components/spinner/Instance.vue'
 import SlotsDemo from './../components/spinner/Slots.vue'
 import { SIZES, VARIANTS } from '../common/items'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]

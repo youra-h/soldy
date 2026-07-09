@@ -4,7 +4,7 @@ import {
 	type ICollapseItem,
 	type ICollapseItemProps,
 	type TCollapseView,
-} from '@core'
+} from '@soldy/core'
 import {
 	default as BaseCollapseItemCustom,
 	emitsCollapseItemCustom,

@@ -1,4 +1,4 @@
-import { type ICollectionItem, type ICollectionItemProps } from '@core'
+import { type ICollectionItem, type ICollectionItemProps } from '@soldy/core'
 import { useInjectCollectionItem } from '../../../composables/useInjectCollectionItem'
 import { useInjectCollectionItemPlugins } from '../../../composables/useInjectCollectionItemPlugins'
 import { useSyncProps } from '../../../composables/useSyncProps'

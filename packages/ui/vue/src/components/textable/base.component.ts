@@ -1,6 +1,6 @@
 import type { PropType, Ref } from 'vue'
 import { watch } from 'vue'
-import { type ITextable, type ITextableProps, TTextable } from '@core'
+import { type ITextable, type ITextableProps, TTextable } from '@soldy/core'
 import { BaseControl, emitsControl, propsControl, syncControl, type IControlState } from '../control'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { useSyncProps } from '../../composables/useSyncProps'

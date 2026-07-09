@@ -3,7 +3,7 @@ import { Spinner, emitsSpinner } from '@ui/spinner'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

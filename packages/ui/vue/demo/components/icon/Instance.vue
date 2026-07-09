@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import { Icon, useIconImport, emitsIcon } from '@ui/icon'
-import { TIcon } from '@core'
+import { TIcon } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize } from '@core'
+import type { TComponentSize } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TInput, type IInputProps, type IInput } from '@core'
+import { TInput, type IInputProps, type IInput } from '@soldy/core'
 import BaseInput, { syncInput } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
-import { createInputBundle } from '@plugins'
+import { createInputBundle } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -77,8 +77,6 @@ export default {
 <style lang="scss">
 @use './mixines' as mixines;
 @use './../../styles/required' as required;
-@reference "./../../../foundation/tailwind";
-
 .s-input {
 	$this: &;
 	@apply inline-flex items-center;

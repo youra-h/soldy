@@ -8,7 +8,7 @@ import PropsDemo from './../components/button/Component.vue'
 import InstanceDemo from './../components/button/Instance.vue'
 import SlotsDemo from './../components/button/Slots.vue'
 import { SIZES, VARIANTS, BUTTON_APPEARANCES } from '../common/items'
-import type { TComponentSize, TComponentVariant, TButtonView } from '@core'
+import type { TComponentSize, TComponentVariant, TButtonView } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]
@@ -88,8 +88,6 @@ const handleHide = () => {
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .button-properties {
 	@apply flex flex-col;
 	@apply gap-4;

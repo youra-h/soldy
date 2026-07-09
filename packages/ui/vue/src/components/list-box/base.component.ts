@@ -6,7 +6,7 @@ import {
 	type IListBoxProps,
 	TListBox,
 	type TListBoxView,
-} from '@core'
+} from '@soldy/core'
 import { BaseList, emitsList, propsList, syncList, type IListState } from '../list'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { useInheritProps } from '../../composables/useInheritProps'

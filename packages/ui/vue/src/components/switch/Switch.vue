@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TSwitch, type ISwitchProps, type ISwitch } from '@core'
+import { TSwitch, type ISwitchProps, type ISwitch } from '@soldy/core'
 import BaseSwitch, { syncSwitch } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
-import { createInputBoolBundle } from '@plugins'
+import { createInputBoolBundle } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -79,8 +79,6 @@ export default {
 @use './mixines' as mixines;
 @use './../../styles/fade';
 @use './../../styles/required' as required;
-@reference "./../../../foundation/tailwind";
-
 .s-switch {
 	$this: &;
 

@@ -1,6 +1,6 @@
 import type { PropType, Ref } from 'vue'
 import { watch } from 'vue'
-import { type IInputControl, type IInputControlProps, TInputControl } from '@core'
+import { type IInputControl, type IInputControlProps, TInputControl } from '@soldy/core'
 import {
 	BaseValueControl,
 	emitsValueControl,

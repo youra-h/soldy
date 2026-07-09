@@ -4,7 +4,7 @@ import PanelDemo from '../../common/PanelDemo.vue'
 import { Button } from '@ui/button'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@core'
+import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

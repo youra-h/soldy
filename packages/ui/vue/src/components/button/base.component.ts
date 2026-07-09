@@ -1,5 +1,5 @@
 import { type PropType, watch, type Ref } from 'vue'
-import { type IButtonProps, type TButtonView, TButton, type IButton } from '@core'
+import { type IButtonProps, type TButtonView, TButton, type IButton } from '@soldy/core'
 import {
 	BaseTextable,
 	emitsTextable,

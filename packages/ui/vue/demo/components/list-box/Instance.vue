@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { ListBox, emitsListBox } from '@ui/list-box'
-import { TListBox } from '@core'
+import { TListBox } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -11,7 +11,7 @@ import type {
 	TComponentVariant,
 	TListBoxView,
 	TSelectionMode,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

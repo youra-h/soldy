@@ -150,8 +150,6 @@ const playgroundList = computed(() => {
 </template>
 
 <style lang="scss">
-@reference "./../../foundation/tailwind/index.css";
-
 .pg-app {
 	$this: &;
 

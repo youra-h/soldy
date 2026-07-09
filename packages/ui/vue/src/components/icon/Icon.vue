@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TIcon, type IIconProps, type IIcon } from '@core'
+import { TIcon, type IIconProps, type IIcon } from '@soldy/core'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseIcon, { syncIcon } from './base.component'
 import { useEventState } from '../../composables/useEventState'
-import { createComponentViewBundle, TIconStylePlugin } from '@plugins'
+import { createComponentViewBundle, TIconStylePlugin } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -56,8 +56,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind";
-
 .s-icon {
 	&--size-normal {
 		@apply w-[1em] h-[1em];

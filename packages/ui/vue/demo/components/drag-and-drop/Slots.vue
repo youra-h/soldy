@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { TTabs, TCollapse } from '@core'
+import { TTabs, TCollapse } from '@soldy/core'
 import { DragAndDrop } from '@ui/drag-and-drop'
 import { Tabs, TabItem } from '@ui/tabs'
 import { Collapse, CollapseItem } from '@ui/collapse'
-import type { TComponentSize, TComponentVariant, TTabsOrientation } from '@core'
+import type { TComponentSize, TComponentVariant, TTabsOrientation } from '@soldy/core'
 
 type Props = {
 	orientation: TTabsOrientation
@@ -183,8 +183,6 @@ const collapseItems = ref([
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
-
 .drag-slots-demo {
 	@apply w-full;
 	@apply flex flex-col gap-6;

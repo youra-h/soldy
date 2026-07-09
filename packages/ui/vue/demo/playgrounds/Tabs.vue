@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue'
 import PlaygroundLayout from './../layouts/PlaygroundLayout.vue'
 import type { EventLogEntry } from '../common/EventLog.vue'
@@ -15,7 +15,7 @@ import type {
 	TTabsAlignment,
 	TTabsPosition,
 	TTabsView,
-} from '@core'
+} from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]
@@ -130,8 +130,6 @@ const handleHide = () => instanceDemoRef.value?.hide()
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .tabs-properties {
 	@apply flex flex-col gap-4;
 

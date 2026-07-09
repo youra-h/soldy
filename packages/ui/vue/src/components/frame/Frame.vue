@@ -1,11 +1,11 @@
 <script lang="ts">
-import { type IFrameProps, type IFrame, TFrame } from '@core'
+import { type IFrameProps, type IFrame, TFrame } from '@soldy/core'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseFrame, { syncFrame } from './base.component'
-import { createFrameBundle } from '@plugins'
+import { createFrameBundle } from '@soldy/plugins'
 import type { TBaseComponentProps } from '../component'
 
 export default {

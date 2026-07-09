@@ -1,5 +1,5 @@
-import { type IPluginBundle } from '@plugins'
-import type { IComponent } from '@core'
+import { type IPluginBundle } from '@soldy/plugins'
+import type { IComponent } from '@soldy/core'
 
 export type TEmits = readonly string[]
 export type TProps = Readonly<Record<string, any>>

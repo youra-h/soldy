@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TCollapse, type ICollapseProps, type ICollapse } from '@core'
+import { TCollapse, type ICollapseProps, type ICollapse } from '@soldy/core'
 import BaseCollapse, { syncCollapse } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { createCollapseBundle } from '@plugins'
+import { createCollapseBundle } from '@soldy/plugins'
 import { CollapseItem } from './collapse-item'
 import type { TBaseComponentViewProps } from '../component-view'
 
@@ -67,8 +67,6 @@ export default {
 
 <style lang="scss">
 @use './_mixines' as mixines;
-@reference "./../../../foundation/tailwind";
-
 .s-collapse {
 	$this: &;
 

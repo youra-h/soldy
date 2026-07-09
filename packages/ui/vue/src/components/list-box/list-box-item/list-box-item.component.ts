@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { type IListBoxItem, type IListItemProps, type TListBoxView } from '@core'
+import { type IListBoxItem, type IListItemProps, type TListBoxView } from '@soldy/core'
 import {
 	BaseListItem,
 	emitsListItem,
@@ -9,7 +9,7 @@ import {
 } from '../../list/list-item'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
 import { useSyncProps } from '../../../composables/useSyncProps'
-import { TListItemPlugin } from '@plugins'
+import { TListItemPlugin } from '@soldy/plugins'
 
 export const emitsListBoxItem: TEmits = [...emitsListItem] as const
 

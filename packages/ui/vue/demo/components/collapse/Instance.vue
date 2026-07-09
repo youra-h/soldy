@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { Collapse, emitsCollapse } from '@ui/collapse'
-import { TCollapse } from '@core'
+import { TCollapse } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -12,7 +12,7 @@ import type {
 	TCollapseView,
 	TSelectionMode,
 	TCollapseArrowPlacement,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

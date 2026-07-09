@@ -8,7 +8,7 @@ import {
 	type TSelectionMode,
 	type TScrollBehavior,
 	type ICollectionSource,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseControl,
 	emitsControl,

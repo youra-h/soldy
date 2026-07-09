@@ -18,8 +18,6 @@ defineProps<Props>()
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .panel-demo {
 	$this: &;
 

@@ -5,7 +5,7 @@ import {
 	type ITabItemCustomProps,
 	TTabItemCustom,
 	type TValuePayload,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseValueControl,
 	emitsValueControl,

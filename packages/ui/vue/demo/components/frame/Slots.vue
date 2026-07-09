@@ -2,7 +2,7 @@
 import { watch } from 'vue'
 import { Frame } from '@ui/frame'
 import { Button } from '@ui/button'
-import { TFrame } from '@core'
+import { TFrame } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 
 type Props = {
@@ -192,7 +192,6 @@ const closeFrame = (frame: (typeof frames)[0]) => {
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
 .frame-demo {
 	&__toolbar {
 		@apply flex flex-wrap justify-center gap-3;

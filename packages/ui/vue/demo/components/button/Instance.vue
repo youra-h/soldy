@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Button, emitsButton } from '@ui/button'
-import { TButton } from '@core'
+import { TButton } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant, TButtonView } from '@core'
+import type { TComponentSize, TComponentVariant, TButtonView } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

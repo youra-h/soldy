@@ -1,5 +1,5 @@
 import { inject } from 'vue'
-import type { IPluginBundle } from '@plugins'
+import type { IPluginBundle } from '@soldy/plugins'
 import { COLLECTION_PLUGINS_KEY } from './useProvideCollectionPlugins'
 import { type TCollectionPluginsRegistrar } from './useProvideCollectionPlugins'
 

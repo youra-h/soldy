@@ -9,7 +9,7 @@ import type {
 	TComponentVariant,
 	TListBoxView,
 	TSelectionMode,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

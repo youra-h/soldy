@@ -1,5 +1,5 @@
 import { customRef, onUnmounted, type Ref } from 'vue'
-import type { IEventSource } from '@core'
+import type { IEventSource } from '@soldy/core'
 
 /**
  * Возвращает реактивный `Ref`, который обновляется при срабатывании указанных событий.

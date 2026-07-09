@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TListBox, type IListBoxProps, type IListBox } from '@core'
+import { TListBox, type IListBoxProps, type IListBox } from '@soldy/core'
 import BaseListBox, { syncListBox } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import { useElementBinding } from '../../composables/useElementBinding'
-import { createListBundle } from '@plugins'
+import { createListBundle } from '@soldy/plugins'
 import { ListBoxItem } from './list-box-item'
 import type { TBaseComponentViewProps } from '../component-view'
 
@@ -72,8 +72,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind";
-
 .s-list-box {
 	@apply flex flex-col gap-1;
 	@apply rounded-md;

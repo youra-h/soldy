@@ -8,7 +8,7 @@ import PropsDemo from './../components/skeleton/Component.vue'
 import InstanceDemo from './../components/skeleton/Instance.vue'
 import SlotsDemo from './../components/skeleton/Slots.vue'
 import { SIZES, VARIANTS } from '../common/items'
-import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@core'
+import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]

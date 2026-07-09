@@ -1,5 +1,5 @@
 import { type PropType, watch, type Ref } from 'vue'
-import { type ICheckBoxProps, type ICheckBox, TCheckBox } from '@core'
+import { type ICheckBoxProps, type ICheckBox, TCheckBox } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,

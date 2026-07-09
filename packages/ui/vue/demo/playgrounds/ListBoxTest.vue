@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { TListBox } from '@core'
+import { TListBox } from '@soldy/core'
 import { ListBox, ListBoxItem } from '@ui/list-box'
 import { Button } from '@ui/button'
 
@@ -325,8 +325,6 @@ function loadData() {
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .list-box-test {
 	@apply p-6;
 	@apply flex flex-col gap-6;

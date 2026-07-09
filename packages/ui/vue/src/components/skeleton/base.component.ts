@@ -5,7 +5,7 @@ import {
 	type ISkeleton,
 	type TSkeletonShape,
 	type TSkeletonAnimation,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseStylable,
 	emitsStylable,

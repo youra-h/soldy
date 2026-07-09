@@ -5,7 +5,7 @@ import Properties from './../common/Properties.vue'
 import type { TPropertiesSchema } from './../common/Properties.vue'
 import SlotsDemo from './../components/drag-and-drop/Slots.vue'
 import { SIZES, VARIANTS } from '../common/items'
-import type { TComponentSize, TComponentVariant, TTabsOrientation } from '@core'
+import type { TComponentSize, TComponentVariant, TTabsOrientation } from '@soldy/core'
 
 const ORIENTATIONS: TTabsOrientation[] = ['horizontal', 'vertical']
 
@@ -43,8 +43,6 @@ const componentProps = ref<{
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .drag-playground {
 	&__stub {
 		@apply text-sm text-gray-400;

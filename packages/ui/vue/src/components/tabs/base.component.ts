@@ -10,7 +10,7 @@ import {
 	type TTabsPosition,
 	type TTabsView,
 	type ITabItem,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseControl,
 	emitsControl,

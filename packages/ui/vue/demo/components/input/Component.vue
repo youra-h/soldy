@@ -4,8 +4,8 @@ import { Button } from '@ui/button'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant } from '@core'
-import { shiftSize } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
+import { shiftSize } from '@soldy/core'
 import { Icon, useIconImport } from '@ui/icon'
 
 type Props = {

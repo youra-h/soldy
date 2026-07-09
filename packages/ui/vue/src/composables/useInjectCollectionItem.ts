@@ -1,5 +1,5 @@
 import { inject, onBeforeUnmount, type UnwrapNestedRefs } from 'vue'
-import { type ICollectionItem } from '@core'
+import { type ICollectionItem } from '@soldy/core'
 import { COLLECTION_KEY } from './useProvideCollection'
 
 export function useInjectCollectionItem<T extends ICollectionItem>(item: T | UnwrapNestedRefs<T>) {

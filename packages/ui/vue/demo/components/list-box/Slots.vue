@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { TListBox } from '@core'
+import { TListBox } from '@soldy/core'
 import { ListBox, ListBoxItem } from '@ui/list-box'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	size?: TComponentSize
@@ -117,8 +117,6 @@ const fruitInstance = new TListBox({
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
-
 .list-box-slots-demo {
 	@apply flex flex-col gap-8;
 

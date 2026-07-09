@@ -8,7 +8,7 @@ import PropsDemo from './../components/list-box/Component.vue'
 import InstanceDemo from './../components/list-box/Instance.vue'
 import SlotsDemo from './../components/list-box/Slots.vue'
 import { SIZES, VARIANTS } from '../common/items.ts'
-import type { TComponentSize, TComponentVariant, TListBoxView, TSelectionMode } from '@core'
+import type { TComponentSize, TComponentVariant, TListBoxView, TSelectionMode } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]
@@ -118,8 +118,6 @@ const handleHide = () => instanceDemoRef.value?.hide()
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .list-box-properties {
 	@apply flex flex-col gap-4;
 

@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TTabItem, type ITabItemProps, type ITabItem } from '@core'
+import { TTabItem, type ITabItemProps, type ITabItem } from '@soldy/core'
 import BaseTabItem, { syncTabItem } from './tab-item.component'
 import { useInstance } from '../../../composables/useInstance'
 import { useBundle } from '../../../composables/useBundle'
 import { useInstanceBinding } from '../../../composables/useInstanceBinding'
 import { useElementBinding } from '../../../composables/useElementBinding'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
-import { createComponentViewBundle } from '@plugins'
+import { createComponentViewBundle } from '@soldy/plugins'
 import { Icon, useIconImport } from '../../icon'
 import { Button } from '../../button'
 import type { TBaseComponentViewProps } from '../../component-view'
@@ -106,8 +106,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../../foundation/tailwind";
-
 .s-tab-item {
 	$this: &;
 

@@ -7,7 +7,7 @@ import {
 	type TCollapseArrowPlacement,
 	type TCollapseView,
 	type TValuePayload,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseValueControl,
 	emitsValueControl,

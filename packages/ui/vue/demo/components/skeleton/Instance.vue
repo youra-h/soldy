@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Skeleton, emitsSkeleton } from '@ui/skeleton'
-import { TSkeleton } from '@core'
+import { TSkeleton } from '@soldy/core'
 import { Button } from '@ui/button'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@core'
+import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

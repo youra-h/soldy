@@ -11,7 +11,7 @@ import type {
 	TTabsAlignment,
 	TTabsPosition,
 	TTabsView,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { TTabs } from '@core'
+import { TTabs } from '@soldy/core'
 import { Tabs, TabItem } from '@ui/tabs'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	size?: TComponentSize
@@ -191,8 +191,6 @@ const tabsInstance = new TTabs({
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
-
 .tabs-slots-demo {
 	@apply flex flex-col gap-8;
 

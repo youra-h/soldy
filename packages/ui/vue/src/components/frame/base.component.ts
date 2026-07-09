@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { type IFrameProps, TFrame, type IFrame, type TFramePosition } from '@core'
+import { type IFrameProps, TFrame, type IFrame, type TFramePosition } from '@soldy/core'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
 import {
@@ -10,7 +10,7 @@ import {
 	type IComponentState,
 } from '../component'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { TFrameStylePlugin } from '@plugins'
+import { TFrameStylePlugin } from '@soldy/plugins'
 
 export const emitsFrame: TEmits = [
 	...emitsComponent,

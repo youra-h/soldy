@@ -5,7 +5,7 @@ import {
 	type IListItemCustomProps,
 	TListItemCustom,
 	type TValuePayload,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseValueControl,
 	emitsValueControl,

@@ -1,5 +1,5 @@
 import { provide, type InjectionKey } from 'vue'
-import type { IPluginBundle } from '@plugins'
+import type { IPluginBundle } from '@soldy/plugins'
 
 export type TCollectionPluginsRegistrar = (uid: string | number, bundle: IPluginBundle) => void
 

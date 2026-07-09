@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TCollapseItem, type ICollapseItemProps, type ICollapseItem } from '@core'
+import { TCollapseItem, type ICollapseItemProps, type ICollapseItem } from '@soldy/core'
 import BaseCollapseItem, { syncCollapseItem } from './collapse-item.component'
 import { useInstance } from '../../../composables/useInstance'
 import { useBundle } from '../../../composables/useBundle'
 import { useInstanceBinding } from '../../../composables/useInstanceBinding'
 import { useElementBinding } from '../../../composables/useElementBinding'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
-import { createComponentViewBundle } from '@plugins'
+import { createComponentViewBundle } from '@soldy/plugins'
 import { Icon, useIconImport } from '../../icon'
 import { Button } from '../../button'
 import type { TBaseComponentViewProps } from '../../component-view'
@@ -131,8 +131,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../../foundation/tailwind";
-
 .s-collapse-item {
 	$this: &;
 

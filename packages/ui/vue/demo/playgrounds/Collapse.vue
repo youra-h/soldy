@@ -14,7 +14,7 @@ import type {
 	TCollapseView,
 	TSelectionMode,
 	TCollapseArrowPlacement,
-} from '@core'
+} from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]
@@ -119,8 +119,6 @@ const handleHide = () => instanceDemoRef.value?.hide()
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../foundation/tailwind/index.css";
-
 .collapse-properties {
 	@apply flex flex-col gap-4;
 

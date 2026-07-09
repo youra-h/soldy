@@ -1,12 +1,12 @@
 <script lang="ts">
-import { TListBoxItem, type IListItemProps, type IListBoxItem } from '@core'
+import { TListBoxItem, type IListItemProps, type IListBoxItem } from '@soldy/core'
 import BaseListBoxItem, { syncListBoxItem } from './list-box-item.component'
 import { useInstance } from '../../../composables/useInstance'
 import { useBundle } from '../../../composables/useBundle'
 import { useInstanceBinding } from '../../../composables/useInstanceBinding'
 import { useElementBinding } from '../../../composables/useElementBinding'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
-import { createListItemBundle } from '@plugins'
+import { createListItemBundle } from '@soldy/plugins'
 import { Button } from '../../button'
 import type { TBaseComponentViewProps } from '../../component-view'
 
@@ -92,8 +92,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../../foundation/tailwind";
-
 .s-list-box-item {
 	@apply min-h-fit;
 

@@ -8,7 +8,7 @@ import {
 	type TSelectionMode,
 	type TSelectableCollectionEvents,
 	TSelectableCollection,
-} from '@core'
+} from '@soldy/core'
 import {
 	default as BaseCollection,
 	emitsCollection,

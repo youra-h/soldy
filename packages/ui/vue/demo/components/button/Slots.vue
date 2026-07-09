@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@ui/button'
 import { Icon, useIconImport } from '@ui/icon'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	size?: TComponentSize
@@ -139,7 +139,6 @@ const icon3 = useIconImport('/src/icons/close.svg')
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
 .demo-container {
 	@apply p-6 bg-white rounded-lg shadow-sm;
 }

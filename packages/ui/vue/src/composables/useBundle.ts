@@ -1,4 +1,4 @@
-import type { IPluginBundle, TBundleFactory } from '@plugins'
+import type { IPluginBundle, TBundleFactory } from '@soldy/plugins'
 
 /**
  * Утилита для создания и использования плагин-бандлов в компонентах Vue.

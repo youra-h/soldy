@@ -5,7 +5,7 @@ import {
 	type IActivatableCollectionProps,
 	type IActivatableCollectionItem,
 	type TActivatableCollectionEvents,
-} from '@core'
+} from '@soldy/core'
 import {
 	default as BaseCollection,
 	emitsCollection,

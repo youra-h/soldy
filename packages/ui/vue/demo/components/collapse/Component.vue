@@ -10,7 +10,7 @@ import type {
 	TCollapseView,
 	TSelectionMode,
 	TCollapseArrowPlacement,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

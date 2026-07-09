@@ -131,8 +131,6 @@ const hasVisibilityActions = computed(() => {
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind/index.css";
-
 .properties-panel {
 	@apply flex flex-col;
 	@apply gap-1.5;

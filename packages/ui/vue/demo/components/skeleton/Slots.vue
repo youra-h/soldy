@@ -4,7 +4,7 @@ import { Button } from '@ui/button'
 import { CheckBox } from '@ui/check-box'
 import { Switch } from '@ui/switch'
 import { SIZES, VARIANTS } from '../../common/items'
-import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@core'
+import type { TComponentSize, TComponentVariant, TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 type Props = {
 	visible?: boolean
@@ -143,8 +143,6 @@ const animations: TSkeletonAnimation[] = ['pulse', 'wave', 'none']
 </template>
 
 <style lang="scss">
-@reference "./../../../../foundation/tailwind/index.css";
-
 .sizes-demo {
 	$this: &;
 

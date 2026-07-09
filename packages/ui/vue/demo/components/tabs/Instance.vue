@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { Tabs, emitsTabs } from '@ui/tabs'
-import { TTabs } from '@core'
+import { TTabs } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -13,7 +13,7 @@ import type {
 	TTabsAlignment,
 	TTabsPosition,
 	TTabsView,
-} from '@core'
+} from '@soldy/core'
 
 type Props = {
 	visible?: boolean

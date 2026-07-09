@@ -7,8 +7,8 @@ import {
 	type ICollectionItem,
 	type TCollectionItemSource,
 	type TCollectionEvents,
-} from '@core'
-import { TCollectionItemPlugins, TDragPlugin } from '@plugins'
+} from '@soldy/core'
+import { TCollectionItemPlugins, TDragPlugin } from '@soldy/plugins'
 import { useProvideCollection } from '../../composables/useProvideCollection'
 import { useProvideCollectionPlugins } from '../../composables/useProvideCollectionPlugins'
 import { useInjectDragContext } from '../../composables/useDragContext'

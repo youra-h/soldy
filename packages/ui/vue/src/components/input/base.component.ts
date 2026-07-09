@@ -1,5 +1,5 @@
 import { type PropType, watch, type Ref } from 'vue'
-import { type IInputProps, type IInput, TInput } from '@core'
+import { type IInputProps, type IInput, TInput } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,

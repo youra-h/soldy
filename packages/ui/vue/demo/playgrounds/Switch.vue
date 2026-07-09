@@ -8,7 +8,7 @@ import PropsDemo from './../components/switch/Component.vue'
 import InstanceDemo from './../components/switch/Instance.vue'
 import SlotsDemo from './../components/switch/Slots.vue'
 import { SIZES, VARIANTS, ICON_PATHS } from '../common/items'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]

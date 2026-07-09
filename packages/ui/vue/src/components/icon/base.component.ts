@@ -1,5 +1,5 @@
 import { type PropType, watch, type Ref } from 'vue'
-import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload } from '@core'
+import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload } from '@soldy/core'
 import {
 	ComponentView,
 	emitsComponentView,
@@ -11,7 +11,7 @@ import type { TEmits, TProps, ISyncComponentOptions } from '../../types/common'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useEventState } from '../../composables/useEventState'
 import { useInheritProps } from '../../composables/useInheritProps'
-import { TIconStylePlugin } from '@plugins'
+import { TIconStylePlugin } from '@soldy/plugins'
 
 export const emitsIcon: TEmits = [
 	...emitsComponentView,

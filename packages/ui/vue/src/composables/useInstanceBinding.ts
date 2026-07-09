@@ -1,8 +1,8 @@
 // composables/useInstanceBinding.ts (если хотим отдельно)
 import { type Reactive, toRaw } from 'vue'
-import type { IComponent } from '@core'
-import type { IPluginBundle } from '@plugins/base'
-import { TInstancePlugin } from '@plugins/common/instance'
+import type { IComponent } from '@soldy/core'
+import type { IPluginBundle } from '@soldy/plugins/base'
+import { TInstancePlugin } from '@soldy/plugins/common/instance'
 
 /**
  * Утилита для привязки реактивного инстанса к `TInstancePlugin` внутри бандла.

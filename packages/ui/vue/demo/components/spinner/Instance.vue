@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import { Spinner, emitsSpinner } from '@ui/spinner'
-import { TSpinner } from '@core'
+import { TSpinner } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

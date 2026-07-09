@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { TCollapse } from '@core'
+import { TCollapse } from '@soldy/core'
 import { Collapse, CollapseItem } from '@ui/collapse'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	size?: TComponentSize
@@ -166,8 +166,6 @@ const collapseInstance = new TCollapse({
 </template>
 
 <style lang="scss" scoped>
-@reference "./../../../../foundation/tailwind/index.css";
-
 .collapse-slots-demo {
 	@apply flex flex-col gap-8;
 

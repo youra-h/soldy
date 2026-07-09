@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TTabs, type ITabsProps, type ITabs } from '@core'
+import { TTabs, type ITabsProps, type ITabs } from '@soldy/core'
 import BaseTabs, { syncTabs } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { createTabsBundle } from '@plugins'
+import { createTabsBundle } from '@soldy/plugins'
 import { TabItem } from './tab-item'
 import type { TBaseComponentViewProps } from '../component-view'
 
@@ -67,8 +67,6 @@ export default {
 
 <style lang="scss">
 @use './mixines' as mixines;
-@reference "./../../../foundation/tailwind";
-
 .s-tabs {
 	$this: &;
 

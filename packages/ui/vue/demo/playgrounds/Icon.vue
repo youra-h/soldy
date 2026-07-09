@@ -8,7 +8,7 @@ import PropsDemo from './../components/icon/Component.vue'
 import InstanceDemo from './../components/icon/Instance.vue'
 import SlotsDemo from './../components/icon/Slots.vue'
 import { SIZES, ICON_PATHS } from '../common/items'
-import type { TComponentSize } from '@core'
+import type { TComponentSize } from '@soldy/core'
 
 const emit = defineEmits<{
 	log: [entry: EventLogEntry]

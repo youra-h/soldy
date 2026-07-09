@@ -14,8 +14,6 @@ defineProps<{
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind/index.css";
-
 .property-field {
 	@apply flex items-center;
 	@apply gap-2;

@@ -4,7 +4,7 @@ import {
 	type IActivatableCollectionItem,
 	type IActivatableCollectionItemProps,
 	TActivatableCollectionItem,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseCollectionItem,
 	emitsCollectionItem,

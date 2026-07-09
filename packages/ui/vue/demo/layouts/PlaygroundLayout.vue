@@ -49,8 +49,6 @@ defineProps<Props>()
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind/index.css";
-
 .pg-layout {
 	$this: &;
 	@apply flex flex-col;

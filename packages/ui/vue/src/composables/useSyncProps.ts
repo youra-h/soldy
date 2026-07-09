@@ -1,5 +1,5 @@
 import { type Ref } from 'vue'
-import type { IEventSource } from '@core'
+import type { IEventSource } from '@soldy/core'
 import { useEventState } from './useEventState'
 
 /** Явная спецификация: кастомный геттер и список событий-триггеров. */

@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TSkeleton, type ISkeletonProps, type ISkeleton } from '@core'
+import { TSkeleton, type ISkeletonProps, type ISkeleton } from '@soldy/core'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseSkeleton, { syncSkeleton } from './base.component'
-import { createComponentViewBundle, TSkeletonStylePlugin } from '@plugins'
+import { createComponentViewBundle, TSkeletonStylePlugin } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -58,8 +58,6 @@ export default {
 
 <style lang="scss">
 @use './mixins' as mixins;
-@reference './../../../foundation/tailwind';
-
 .s-skeleton {
 	$this: &;
 

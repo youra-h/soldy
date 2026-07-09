@@ -1,6 +1,6 @@
 import type { PropType, Ref } from 'vue'
 import { watch } from 'vue'
-import { type IControl, type IControlProps, TControl } from '@core'
+import { type IControl, type IControlProps, TControl } from '@soldy/core'
 import {
 	BaseStylable,
 	emitsStylable,

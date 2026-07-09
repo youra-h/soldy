@@ -1,4 +1,4 @@
-import { type ISwitchProps, type ISwitch, TSwitch } from '@core'
+import { type ISwitchProps, type ISwitch, TSwitch } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,

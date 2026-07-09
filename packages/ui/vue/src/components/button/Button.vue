@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TButton, type IButton, type IButtonProps } from '@core'
+import { TButton, type IButton, type IButtonProps } from '@soldy/core'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseButton, { syncButton } from './base.component'
-import { createComponentViewBundle } from '@plugins'
+import { createComponentViewBundle } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -62,8 +62,6 @@ export default {
 
 <style lang="scss">
 @use './mixines' as mixines;
-@reference "./../../../foundation/tailwind";
-
 .s-button {
 	$this: &;
 

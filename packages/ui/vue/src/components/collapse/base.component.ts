@@ -7,7 +7,7 @@ import {
 	TCollapse,
 	type TCollapseView,
 	type TSelectionMode,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseControl,
 	emitsControl,

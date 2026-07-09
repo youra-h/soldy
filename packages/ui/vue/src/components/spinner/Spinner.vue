@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TSpinner, type ISpinnerProps, type ISpinner } from '@core'
+import { TSpinner, type ISpinnerProps, type ISpinner } from '@soldy/core'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseSpinner, { syncSpinner } from './base.component'
-import { createComponentViewBundle, TSpinnerStylePlugin } from '@plugins'
+import { createComponentViewBundle, TSpinnerStylePlugin } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -63,8 +63,6 @@ export default {
 
 <style lang="scss">
 @use './mixines' as mixines;
-@reference "./../../../foundation/tailwind";
-
 .s-spinner {
 	@apply w-4 h-4;
 	@apply inline-flex rounded-full animate-spin;

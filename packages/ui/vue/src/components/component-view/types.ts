@@ -1,4 +1,4 @@
-import type { IComponentView } from '@core'
+import type { IComponentView } from '@soldy/core'
 import type { TBaseComponentProps } from '../component'
 
 export type TBaseComponentViewProps<

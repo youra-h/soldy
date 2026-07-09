@@ -1,4 +1,4 @@
-import { type IListItem, type IListItemProps } from '@core'
+import { type IListItem, type IListItemProps } from '@soldy/core'
 import {
 	default as BaseListItemCustom,
 	emitsListItemCustom,

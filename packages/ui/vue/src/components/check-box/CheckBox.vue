@@ -1,5 +1,5 @@
 <script lang="ts">
-import { TCheckBox, type ICheckBox, type ICheckBoxProps } from '@core'
+import { TCheckBox, type ICheckBox, type ICheckBoxProps } from '@soldy/core'
 import BaseCheckBox, { syncCheckBox } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
@@ -7,7 +7,7 @@ import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import { Icon, useIconImport } from '../icon'
-import { createInputBoolBundle } from '@plugins'
+import { createInputBoolBundle } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
@@ -110,8 +110,6 @@ export default {
 <style lang="scss">
 @use './mixines' as mixines;
 @use './../../styles/required' as required;
-@reference "./../../../foundation/tailwind";
-
 .s-check-box {
 	$this: &;
 

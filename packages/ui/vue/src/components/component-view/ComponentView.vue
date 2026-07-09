@@ -1,11 +1,11 @@
 <script lang="ts">
-import { TComponentView, type IComponentViewProps } from '@core'
+import { TComponentView, type IComponentViewProps } from '@soldy/core'
 import BaseComponentView, { syncComponentView } from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useBundle } from '../../composables/useBundle'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { createComponentViewBundle } from '@plugins'
+import { createComponentViewBundle } from '@soldy/plugins'
 import type { TBaseComponentViewProps } from './types'
 
 export default {

@@ -4,7 +4,7 @@ import {
 	type ISelectableCollectionItem,
 	type ISelectableCollectionItemProps,
 	TSelectableCollectionItem,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseCollectionItem,
 	emitsCollectionItem,

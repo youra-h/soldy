@@ -1,5 +1,5 @@
 <script lang="ts">
-import { TDragAndDrop, type IDragAndDropProps } from '@core'
+import { TDragAndDrop, type IDragAndDropProps } from '@soldy/core'
 import BaseDragAndDrop from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { useProvideDragContext } from '../../composables/useDragContext'
@@ -23,8 +23,6 @@ export default {
 </template>
 
 <style lang="scss">
-@reference "./../../../foundation/tailwind";
-
 .s-drag-and-drop {
 	&__item {
 		@apply select-none;

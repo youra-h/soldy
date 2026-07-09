@@ -1,9 +1,9 @@
 import type { PropType, Ref } from 'vue'
 import { watch } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponentView, type IComponentViewProps, TComponentView } from '@core'
+import { type IComponentView, type IComponentViewProps, TComponentView } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { type IPluginBundle, TElementPlugin } from '@plugins'
+import { type IPluginBundle, TElementPlugin } from '@soldy/plugins'
 import {
 	BaseComponent,
 	emitsComponent,

@@ -1,13 +1,13 @@
 import type { PropType, Ref } from 'vue'
 import { watch } from 'vue'
-import { TStylable } from '@core'
+import { TStylable } from '@soldy/core'
 import type {
 	IStylable,
 	IStylableProps,
 	TComponentSize,
 	TComponentVariant,
 	TValuePayload,
-} from '@core'
+} from '@soldy/core'
 import {
 	BaseComponentView,
 	emitsComponentView,

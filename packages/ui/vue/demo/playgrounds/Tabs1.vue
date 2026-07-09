@@ -1,6 +1,6 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue'
-import { TTabs } from '@core'
+import { TTabs } from '@soldy/core'
 import { Tabs, TabItem } from '@ui/tabs'
 import { DragAndDrop } from '@ui/drag-and-drop'
 

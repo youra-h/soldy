@@ -3,7 +3,7 @@ import { Button, emitsButton } from '@ui/button'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
-import type { TComponentSize, TComponentVariant, TButtonView } from '@core'
+import type { TComponentSize, TComponentVariant, TButtonView } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

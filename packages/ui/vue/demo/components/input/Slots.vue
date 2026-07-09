@@ -3,7 +3,7 @@ import { Input } from '@ui/input'
 import { Button } from '@ui/button'
 import { Icon, useIconImport } from '@ui/icon'
 import { SIZES, VARIANTS } from '../../common/items'
-import type { TComponentSize, TComponentVariant } from '@core'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
 	visible?: boolean

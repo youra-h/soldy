@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import type { IComponentOptions } from '@core'
+import type { IComponentOptions } from '@soldy/core'
 
 /**
  * Returns a raw (non-reactive) instance of a component.
