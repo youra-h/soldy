@@ -1,7 +1,7 @@
 /**
  * Общие списки для селекторов в демо-компонентах
  */
-import type { TComponentSize, TComponentVariant, TButtonView } from '@/core'
+import type { TComponentSize, TComponentVariant, TButtonView } from '@soldy/core'
 
 /** Размеры компонентов */
 export const SIZES: TComponentSize[] = ['sm', 'normal', 'lg', 'xl', '2xl']
@@ -17,8 +17,8 @@ export const BUTTON_APPEARANCES: TButtonView[] = ['filled', 'plain', 'outlined',
 
 /** Пути к иконкам (можно расширить) */
 export const ICON_PATHS = [
-	'/src/icons/home.svg',
-	'/src/icons/check_indeterminate.svg',
-	'/src/icons/check.svg',
-	'/src/icons/close.svg',
+	'@soldy/icons/home.svg',
+	'@soldy/icons/check_indeterminate.svg',
+	'@soldy/icons/check.svg',
+	'@soldy/icons/close.svg',
 ]

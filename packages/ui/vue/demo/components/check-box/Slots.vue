@@ -100,7 +100,7 @@ const variants: TComponentVariant[] = VARIANTS
 						:value="true"
 					>
 						<template #icon>
-							<Icon :tag="useIconImport('/src/icons/home.svg')" size="lg" />
+							<Icon :tag="useIconImport('@soldy/icons/home.svg')" size="lg" />
 						</template>
 					</CheckBox>
 				</div>
@@ -115,7 +115,7 @@ const variants: TComponentVariant[] = VARIANTS
 						:indeterminate="true"
 					>
 						<template #indeterminate-icon>
-							<Icon :tag="useIconImport('/src/icons/close.svg')" size="lg" />
+							<Icon :tag="useIconImport('@soldy/icons/close.svg')" size="lg" />
 						</template>
 					</CheckBox>
 				</div>

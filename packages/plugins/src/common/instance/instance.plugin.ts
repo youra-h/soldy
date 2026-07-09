@@ -1,6 +1,6 @@
 import { TBasePlugin } from '../../base'
 import type { TInstancePluginEvents } from './types'
-import { TEvented, type IComponent } from '@core'
+import { TEvented, type IComponent } from '@soldy/core'
 
 export class TInstancePlugin<T extends IComponent = IComponent> extends TBasePlugin<
 	TInstancePluginEvents<T>

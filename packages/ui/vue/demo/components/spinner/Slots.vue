@@ -63,7 +63,7 @@ const variants: TComponentVariant[] = VARIANTS
 						class="sizes-demo__spinner-with-slot"
 					>
 						<Icon
-							:tag="useIconImport('/src/icons/home.svg')"
+							:tag="useIconImport('@soldy/icons/home.svg')"
 							:size="size"
 							class="sizes-demo__slot-icon"
 						/>

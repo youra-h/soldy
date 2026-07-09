@@ -1,5 +1,5 @@
-import type { IList, IListItem, TScrollBehavior } from '@core'
-import { frameDebounce } from '@core'
+import type { IList, IListItem, TScrollBehavior } from '@soldy/core'
+import { frameDebounce } from '@soldy/core'
 import type { IPluginBundle } from '../../../base/types'
 import { TBasePlugin } from '../../../base/plugin'
 import { TElementPlugin } from '../../element'

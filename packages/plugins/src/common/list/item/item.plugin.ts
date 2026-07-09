@@ -1,4 +1,4 @@
-import type { IListItem } from '@core'
+import type { IListItem } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import { TInstancePlugin } from '../../instance'
 import type { IPluginBundle } from '../../../base/types'

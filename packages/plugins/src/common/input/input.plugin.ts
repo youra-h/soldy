@@ -1,4 +1,4 @@
-import type { ITextInputControl } from '@core'
+import type { ITextInputControl } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import { TElementPlugin } from '../element'
 import { TInstancePlugin } from '../instance'

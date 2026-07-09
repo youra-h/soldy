@@ -1,10 +1,10 @@
-import type { IFrame, TFramePosition } from '@core'
+import type { IFrame, TFramePosition } from '@soldy/core'
 import type { IPluginBundle } from '../../base/types'
 import { TBasePlugin } from '../../base/plugin'
 import { TInstancePlugin } from '../instance'
 import { toCssValue } from '../../base/css-value'
 import type { TFrameStylePluginEvents } from './types'
-import { TEvented } from '@core'
+import { TEvented } from '@soldy/core'
 
 /**
  * Плагин для управления CSS-стилями Frame (позиционирование + z-index + anchor).

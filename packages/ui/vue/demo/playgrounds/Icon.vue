@@ -18,7 +18,7 @@ const emit = defineEmits<{
 const propertiesSchema: TPropertiesSchema = {
 	visible: { type: 'boolean', default: true },
 	rendered: { type: 'boolean', default: true },
-	tag: { type: 'select', default: '/src/icons/home.svg', options: ICON_PATHS },
+	tag: { type: 'select', default: '@soldy/icons/home.svg', options: ICON_PATHS },
 	size: { type: 'select', default: 'normal', options: SIZES },
 	width: { type: 'string', placeholder: 'auto' },
 	height: { type: 'string', placeholder: 'auto' },
@@ -35,7 +35,7 @@ const componentProps = ref<{
 }>({
 	visible: true,
 	rendered: true,
-	tag: '/src/icons/home.svg',
+	tag: '@soldy/icons/home.svg',
 	size: 'normal',
 	width: undefined,
 	height: undefined,

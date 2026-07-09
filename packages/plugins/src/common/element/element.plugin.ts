@@ -1,6 +1,6 @@
 import { TBasePlugin } from '../../base'
 import type { TElementPluginEvents } from './types'
-import { TEvented } from '@core'
+import { TEvented } from '@soldy/core'
 
 export class TElementPlugin extends TBasePlugin<TElementPluginEvents> {
 	static readonly key = 'element'

@@ -43,7 +43,7 @@ export default {
 			emit,
 		})
 
-		const closeIconTag = useIconImport('../../icons/close.svg')
+		const closeIconTag = useIconImport('@soldy/icons/close.svg')
 
 		const { containerAttrs, controlAttrs } = useSplitAttrs()
 

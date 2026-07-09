@@ -1,4 +1,4 @@
-import type { IComponentView } from '@core'
+import type { IComponentView } from '@soldy/core'
 
 /** События плагина накопления DOM-элементов */
 export type TElementAccumulationEvents = {

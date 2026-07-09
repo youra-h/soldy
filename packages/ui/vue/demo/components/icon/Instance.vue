@@ -25,7 +25,7 @@ const emit = defineEmits<{
 
 // Используем new TIcon вместо TIcon.create, так как передаем Partial<IIconProps>
 const instance = new TIcon({
-	tag: useIconImport(props.tag || '/src/icons/home.svg'),
+	tag: useIconImport(props.tag || '@soldy/icons/home.svg'),
 	rendered: props.rendered ?? true,
 	visible: props.visible ?? true,
 	size: props.size || 'normal',

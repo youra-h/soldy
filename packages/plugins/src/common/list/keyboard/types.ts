@@ -1,4 +1,4 @@
-import type { IListItem } from '@core'
+import type { IListItem } from '@soldy/core'
 
 export type THighlightPayload = {
 	item: IListItem | null

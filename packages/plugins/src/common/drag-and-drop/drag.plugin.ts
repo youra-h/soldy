@@ -1,10 +1,10 @@
-import type { ICollection } from '@core'
+import type { ICollection } from '@soldy/core'
 import { TBasePlugin } from '../../base/plugin'
 import { TElementPlugin } from '../element'
 import { TElementAccumulationPlugin, TInstanceAccumulationPlugin } from '../collection'
 import type { IPluginBundle } from '../../base/types'
 import type { TDragPluginEvents } from './types'
-import { TEvented } from '@core'
+import { TEvented } from '@soldy/core'
 
 /**
  * Плагин drag-and-drop для перетаскивания элементов коллекции.

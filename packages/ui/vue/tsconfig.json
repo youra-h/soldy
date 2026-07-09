@@ -1,12 +1,15 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "types": ["node"],
     "paths": {
+      "@ui": ["./src/components"],
+      "@ui/*": ["./src/components/*"],
       "@soldy/core": ["../../core/src"],
       "@soldy/foundation": ["../../foundation/src"],
       "@soldy/icons": ["../../icons/src"],
       "@soldy/plugins": ["../../plugins/src"]
     }
   },
-  "include": ["src/**/*", "demo/**/*"]
+  "include": ["src/**/*", "demo/**/*", "env.d.ts"]
 }

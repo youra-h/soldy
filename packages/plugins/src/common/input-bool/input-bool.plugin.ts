@@ -1,4 +1,4 @@
-import type { ICheckBox } from '@core'
+import type { ICheckBox } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import { TElementPlugin } from '../element'
 import { TInstancePlugin } from '../instance'

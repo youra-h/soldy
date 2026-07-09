@@ -8,9 +8,10 @@ export default defineConfig({
   root: 'demo',
   resolve: {
     alias: {
+      '@ui': path.resolve(__dirname, 'src/components'),
       '@soldy/core': path.resolve(__dirname, '../../core/src'),
       '@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
-      '@soldy/icons': path.resolve(__dirname, '../../icons/src'),
+      '@soldy/icons': path.resolve(__dirname, '@soldy/icons/src'),
       '@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
     },
   },

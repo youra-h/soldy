@@ -1,4 +1,4 @@
-import type { TEvented } from '@core'
+import type { TEvented } from '@soldy/core'
 
 export type TBasePluginEvents = {
 	destroyed: () => void
