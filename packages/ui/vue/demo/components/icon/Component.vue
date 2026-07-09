@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, useIconImport, emitsIcon } from '@ui/icon'
+import { Icon, emitsIcon } from '@ui/icon'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'

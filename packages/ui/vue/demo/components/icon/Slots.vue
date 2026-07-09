@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { SIZES } from '../../common/items'
 

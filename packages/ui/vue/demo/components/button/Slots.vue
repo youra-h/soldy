@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@ui/button'
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {

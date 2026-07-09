@@ -7,7 +7,7 @@ import { useInstanceBinding } from '../../../composables/useInstanceBinding'
 import { useElementBinding } from '../../../composables/useElementBinding'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
 import { createComponentViewBundle } from '@soldy/plugins'
-import { Icon, useIconImport } from '../../icon'
+import { Icon } from '../../icon'
 import { Button } from '../../button'
 import type { TBaseComponentViewProps } from '../../component-view'
 

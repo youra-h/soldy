@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { Switch, emitsSwitch } from '@ui/switch'
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 import { TSwitch } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'

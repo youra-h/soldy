@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CheckBox, emitsCheckBox } from '@ui/check-box'
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Spinner } from '@ui/spinner'
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 import { SIZES, VARIANTS } from '../../common/items'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 

@@ -6,7 +6,7 @@ import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 import { shiftSize } from '@soldy/core'
-import { Icon, useIconImport } from '@ui/icon'
+import { Icon } from '@ui/icon'
 
 type Props = {
 	visible?: boolean
