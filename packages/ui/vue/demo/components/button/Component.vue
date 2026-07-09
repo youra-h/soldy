@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, emitsButton } from '@ui/button'
+import { Button, emitsButton } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'

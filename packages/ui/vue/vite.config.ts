@@ -8,7 +8,6 @@ export default defineConfig({
   root: 'demo',
   resolve: {
     alias: {
-      '@ui': path.resolve(__dirname, 'src/components'),
       '@ui-vue': path.resolve(__dirname, 'src/index.ts'),
       '@soldy/foundation/tailwind': path.resolve(__dirname, '../../foundation/src/tailwind/index.css'),
       '@soldy/core': path.resolve(__dirname, '../../core/src'),
