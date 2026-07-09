@@ -9,9 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@ui': path.resolve(__dirname, 'src/components'),
+      '@soldy/foundation/tailwind': path.resolve(__dirname, '../../foundation/src/tailwind/index.css'),
       '@soldy/core': path.resolve(__dirname, '../../core/src'),
       '@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
-      '@soldy/foundation/tailwind': path.resolve(__dirname, '../../foundation/src/tailwind/index.css'),
       '@soldy/icons': path.resolve(__dirname, '../../icons/src'),
       '@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
     },
