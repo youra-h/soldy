@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { TListBox } from '@soldy/core'
-import { ListBox, ListBoxItem } from '@ui/list-box'
-import { Button } from '@ui/button'
+import { ListBox, ListBoxItem, Button } from '@soldy/ui-vue'
 
 // --- Данные ---
 

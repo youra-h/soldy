@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TTabs } from '@soldy/core'
-import { Tabs, TabItem } from '@ui/tabs'
-import { DragAndDrop } from '@ui/drag-and-drop'
+import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
