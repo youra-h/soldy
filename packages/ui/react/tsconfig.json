@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "paths": {
+      "@soldy/core": ["../../core/src"],
+      "@soldy/core/*": ["../../core/src/*"],
+      "@soldy/foundation": ["../../foundation/src"],
+      "@soldy/foundation/*": ["../../foundation/src/*"],
+      "@soldy/icons": ["../../icons/src"],
+      "@soldy/icons/*": ["../../icons/src/*"],
+      "@soldy/plugins": ["../../plugins/src"],
+      "@soldy/plugins/*": ["../../plugins/src/*"]
+    }
+  },
+  "include": ["src/**/*", "demo/**/*"]
+}
