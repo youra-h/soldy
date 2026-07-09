@@ -4,7 +4,18 @@ import { useSyncProps } from '../../composables/useSyncProps'
 import { type IComponent, type IComponentProps, TComponent } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 
-export const emitsComponent: TEmits = ['created'] as const
+export const emitsComponent: TEmits = ['created', 'rendered',
+	'update:rendered',
+	'change:rendered',
+	'visible',
+	'update:visible',
+	'change:visible',
+	'hide',
+	'show',
+	'beforeShow',
+	'afterShow',
+	'beforeHide',
+	'afterHide',] as const
 
 export const propsComponent: TProps = {
 	ctrl: {

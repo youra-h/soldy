@@ -14,19 +14,7 @@ import {
 import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsComponentView: TEmits = [
-	...emitsComponent,
-	'rendered',
-	'update:rendered',
-	'change:rendered',
-	'visible',
-	'update:visible',
-	'change:visible',
-	'hide',
-	'show',
-	'beforeShow',
-	'afterShow',
-	'beforeHide',
-	'afterHide',
+	...emitsComponent,	
 	'ready',
 ] as const
 
