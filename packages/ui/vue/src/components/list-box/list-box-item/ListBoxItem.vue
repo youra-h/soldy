@@ -22,7 +22,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 			:variant="variant"
 			:aria-selected="selected"
 			:data-highlighted="highlighted"
-			@click="instance.toggleSelected()"
+			@click="ctrl.toggleSelected()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>

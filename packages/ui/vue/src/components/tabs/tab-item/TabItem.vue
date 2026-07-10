@@ -20,7 +20,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 			view="none"
 			:size="size"
 			:variant="variant"
-			@click="instance.active = true"
+			@click="ctrl.active = true"
 			role="tab"
 			v-bind="controlAttrs"
 		>
@@ -37,7 +37,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 				<Button
 					:rendered="!!closable"
 					class="s-tab-item__close"
-					@click.stop="instance.close()"
+					@click.stop="ctrl.close()"
 					view="plain"
 				>
 					<slot name="close-icon">

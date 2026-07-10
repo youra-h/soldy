@@ -15,12 +15,12 @@ export default { ...SetupCheckBox }
     >
         <input
             type="checkbox"
-            :id="instance.uid.toString()"
+            :id="ctrl.uid.toString()"
             :checked="value"
             :name="name"
             :disabled="disabled"
             :required="required"
-            :aria-checked="instance.getAriaChecked()"
+            :aria-checked="ctrl.getAriaChecked()"
             v-bind="controlAttrs"
         />
         <div class="s-check-box__container">

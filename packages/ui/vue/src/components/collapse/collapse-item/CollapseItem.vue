@@ -21,7 +21,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			@click="instance.toggleSelected()"
+			@click="ctrl.toggleSelected()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>

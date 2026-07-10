@@ -8,7 +8,7 @@ export default { ...SetupSwitch }
 	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<input
 			type="checkbox"
-			:id="instance.uid.toString()"
+			:id="ctrl.uid.toString()"
 			:checked="value"
 			:name="name"
 			:disabled="disabled"
@@ -19,8 +19,8 @@ export default { ...SetupSwitch }
 		<div class="s-switch__track">
 			<div class="s-switch__track--thumb">
 				<transition name="fade" mode="out-in">
-					<slot v-if="!value" name="off" :value="value" :instance="instance"> </slot>
-					<slot v-else name="on" :value="value" :instance="instance"> </slot>
+					<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
+					<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>
 				</transition>
 			</div>
 		</div>
