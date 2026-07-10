@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import TTabItem from '../components/tabs/tab-item/tab-item.class'
-import TTabItemCustom from '../components/tabs/tab-item/tab-item-custom.class'
-import { TActivatableCollection } from '../base/collection'
+import { TActivatableCollection, TTabItem, TTabItemCustom } from '@soldy/core'
 
 describe('TTabItemCustom', () => {
 	let item: TTabItemCustom

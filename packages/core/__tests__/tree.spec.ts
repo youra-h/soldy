@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TTree, TTreeItem, TTreeCollection } from '../components/tree'
+import { TTree, TTreeItem, TTreeCollection } from '@soldy/core'
 
 // 1. Создаем тестовый класс элемента с полем name для удобства
 class TestItem extends TTreeItem {

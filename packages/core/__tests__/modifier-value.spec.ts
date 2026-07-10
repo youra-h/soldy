@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TClasses } from '../common/classes'
+import { TClasses } from '@soldy/core'
 
 describe('TClasses', () => {
 	it('toArray возвращает base + statics + dynamics', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TSpinner } from '../components/spinner'
+import { TSpinner } from '@soldy/core'
 
 describe('TSpinner', () => {
 	it('создаётся через { props } и через plain props', () => {

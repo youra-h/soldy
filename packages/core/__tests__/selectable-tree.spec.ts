@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TSelectableTree, TSelectableTreeItem } from '../components/tree'
+import { TSelectableTree, TSelectableTreeItem } from '@soldy/core'
 
 describe('TSelectableTree', () => {
 	it('should create instance', () => {

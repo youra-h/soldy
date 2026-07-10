@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { TComponentView } from '../base/component-view'
-import type { IComponentViewProps } from '../base/component-view'
-import { TVisibilityState } from '../common/states'
-import type { IVisibilityState } from '../common/states'
-import { TStateUnit } from '../common/state-unit'
+import { TComponentView, TVisibilityState, TStateUnit } from '@soldy/core'
+import type { IComponentViewProps, IVisibilityState } from '@soldy/core'
 
 describe('TComponentView', () => {
 	beforeEach(() => {
@@ -15,39 +12,29 @@ describe('TComponentView', () => {
 	})
 
 	it('принимает { props } корректно', () => {
-		const p = new TComponentView({ props: { id: 'x', tag: 'span', visible: false } })
-		expect(p.id).toBe('x')
+		const p = new TComponentView({ props: { tag: 'span', visible: false } })
 		expect(p.tag).toBe('span')
 		expect(p.visible).toBe(false)
 		expect(p.classes.toArray()).toContain(TComponentView.baseClass)
 	})
 
 	it('принимает "голые" props без ключа props', () => {
-		const p = new TComponentView({ id: 'x', tag: 'section' })
-		expect(p.id).toBe('x')
+		const p = new TComponentView({ tag: 'section' })
 		expect(p.tag).toBe('section')
 		expect(p.classes.toArray()).toContain(TComponentView.baseClass)
 	})
 
 	it('getProps возвращает бизнес-свойства (без baseClass/classes)', () => {
 		const p = new TComponentView<IComponentViewProps>({
-			id: 123,
 			tag: 'div',
 			visible: true,
 		})
 		const props = p.getProps() as IComponentViewProps
-		expect(props.id).toBe(123)
 		expect(props.tag).toBe('div')
 		expect(props.visible).toBe(true)
 		// baseClass, classes больше не сериализуются
 		expect(props).not.toHaveProperty('baseClass')
 		expect(props).not.toHaveProperty('classes')
-	})
-
-	it('create создаёт инстанс и прокидывает id', () => {
-		const p = TComponentView.create({ id: 'c' })
-		expect(p).toBeInstanceOf(TComponentView)
-		expect(p.id).toBe('c')
 	})
 
 	it('show/hide эмитят события и меняют visible', () => {
@@ -103,7 +90,7 @@ describe('TComponentView', () => {
 	})
 
 	it('toJSON сериализует getProps()', () => {
-		const p = new TComponentView({ id: 'x', tag: 'span' })
+		const p = new TComponentView({ tag: 'span' })
 		expect(p.toJSON()).toEqual(p.getProps())
 	})
 

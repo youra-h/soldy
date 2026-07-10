@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { TFrame } from '../components/frame'
+import { TFrame } from '@soldy/core'
 
 describe('TFrame', () => {
 	beforeEach(() => {

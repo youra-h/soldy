@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { TActivatableCollection, TActivatableCollectionItem } from '../base/collection'
+import { TActivatableCollection, TActivatableCollectionItem } from '@soldy/core'
 
 describe('TActivatableCollectionItem', () => {
 	it('setter and toggleActive emit "change:activation" with itself', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TControl } from '../base/control'
-import type { IControlProps } from '../base/control'
+import { TControl } from '@soldy/core'
+import type { IControlProps } from '@soldy/core'
 
 describe('TControl', () => {
 	it('дисейбл/фокус трекают state и эмитят события', () => {

@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { TCollapse } from '../components/collapse/collapse.class'
-import TCollapseItemCustom from '../components/collapse/collapse-item/collapse-item-custom.class'
-import TCollapseItem from '../components/collapse/collapse-item/collapse-item.class'
-import { TSelectableCollection } from '../base/collection'
+import { TCollapse, TCollapseItemCustom, TCollapseItem, TSelectableCollection} from '@soldy/core'
 
 describe('TCollapseItemCustom', () => {
 	let item: TCollapseItemCustom

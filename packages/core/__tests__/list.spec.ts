@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TList } from '../components/list'
+import { TList } from '@soldy/core'
 
 describe('TList — patchItems', () => {
 	const trackBy = (item: any) => item.value

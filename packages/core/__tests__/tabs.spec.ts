@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { TTabs } from '../components/tabs'
-import TTabItem from '../components/tabs/tab-item/tab-item.class'
+import { TTabs, TTabItem } from '@soldy/core'
 
 describe('TTabs', () => {
 	let tabs: TTabs

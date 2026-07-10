@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TListBox } from '../components/list-box'
+import { TListBox } from '@soldy/core'
 
 describe('TListBox — patchItems', () => {
 	const trackBy = (item: any) => item.value

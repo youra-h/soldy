@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TActivatableTree, TActivatableTreeItem } from '../components/tree'
+import { TActivatableTree, TActivatableTreeItem } from '@soldy/core'
 
 describe('TActivatableTree', () => {
 	it('should create instance', () => {

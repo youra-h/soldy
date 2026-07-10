@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TTextable } from '../base/textable'
-import type { ITextableProps } from '../base/textable'
+import { TTextable } from '@soldy/core'
+import type { ITextableProps } from '@soldy/core'
 
 describe('TTextable', () => {
 	it('принимает text через { props } и через plain props', () => {

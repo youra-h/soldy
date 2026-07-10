@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { TActivatableTree, TActivatableTreeItem } from '../components/tree'
-import type { TConstructor } from '../common/types'
+import { TActivatableTree, TActivatableTreeItem } from '@soldy/core'
+import type { TConstructor } from '@soldy/core'
 
 export class TMenuItem extends TActivatableTreeItem {
 	public label: string = ''

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TIcon } from '../components/icon'
+import { TIcon } from '@soldy/core'
 
 describe('TIcon', () => {
 	it('создаётся через { props } и через plain props', () => {

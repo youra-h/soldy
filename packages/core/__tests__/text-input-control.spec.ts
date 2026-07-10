@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TInputControl } from '../base/input-control'
-import type { ITextInputControlProps } from '../base/input-control'
+import { TInputControl } from '@soldy/core'
+import type { ITextInputControlProps } from '@soldy/core'
 
 describe('TInputControl', () => {
 	it('принимает form-flags через { props } и через plain props', () => {

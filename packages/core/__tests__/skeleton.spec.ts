@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import TSkeleton from '../components/skeleton/skeleton.class'
-import type { TSkeletonShape, TSkeletonAnimation } from '../components/skeleton/types'
+import { TSkeleton } from '@soldy/core'
+import type { TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 describe('TSkeleton', () => {
 	it('should create with default values', () => {

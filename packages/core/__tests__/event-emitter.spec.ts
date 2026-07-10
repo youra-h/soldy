@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TEventEmitter } from '../common/event-emitter'
+import { TEventEmitter } from '@soldy/core'
 
 describe('TEventEmitter', () => {
 	it('on/emit: подписка и вызов события', () => {

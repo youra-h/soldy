@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { TSelectableCollection, TSelectableCollectionItem } from '../base/collection'
-import type { ISelectableCollectionItemProps } from '../base/collection/selectable'
+import { TSelectableCollection, TSelectableCollectionItem } from '@soldy/core'
+import type { ISelectableCollectionItemProps } from '@soldy/core'
 
 class TestSelectableItem extends TSelectableCollectionItem {
 	private _id: number = 0
