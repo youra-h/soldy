@@ -1,47 +1,8 @@
 <script lang="ts">
-import { TCollapse, type ICollapseProps, type ICollapse } from '@soldy/core'
-import BaseCollapse, { syncCollapse } from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { createCollapseBundle } from '@soldy/plugins'
 import { CollapseItem } from './collapse-item'
-import type { TBaseComponentViewProps } from '../component-view'
+import SetupCollapse from './setup.component'
 
-export default {
-	name: '_Collapse',
-	extends: BaseCollapse,
-	components: { CollapseItem },
-	setup(props: TBaseComponentViewProps<ICollapseProps, ICollapse>, { emit }) {
-		const instance = useInstance(TCollapse, props)
-
-		const plugins = useBundle(createCollapseBundle, props?.plugins)
-		useInstanceBinding(plugins, instance)
-
-		const rootRef = useElementBinding(plugins)
-
-		const { rendered, visible, classes, items, view, mode, selected } = syncCollapse({
-			props,
-			instance,
-			plugins,
-			emit,
-		})
-
-		return {
-			instance,
-			plugins,
-			rootRef,
-			rendered,
-			visible,
-			classes,
-			items,
-			view,
-			mode,
-			selected,
-		}
-	},
-}
+export default { ...SetupCollapse, components: { CollapseItem } }
 </script>
 
 <template>
