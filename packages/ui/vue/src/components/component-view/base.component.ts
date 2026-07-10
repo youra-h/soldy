@@ -51,30 +51,30 @@ export function syncComponentView(
 ): IComponentViewState {
 	const syncProps = syncComponent(options)
 
-	const { props, instance, plugins, emit } = options
+	const { props, ctrl, plugins, emit } = options
 
 	plugins.get(TElementPlugin)!.events.on('ready', ({ element }: { element: HTMLElement }) => {
-		const payload = { element, instance, plugins }
+		const payload = { element, ctrl, plugins }
 		emit?.('ready', payload)
 	})
 
 	watch<Object | string | undefined>(
 		() => props.tag,
 		(value) => {
-			if (value !== undefined && value !== instance.tag) {
-				instance.tag = value
+			if (value !== undefined && value !== ctrl.tag) {
+				ctrl.tag = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events, {
-			rendered: () => instance.rendered,
-			visible: () => instance.visible,
-			present: () => instance.present,
-			tag: () => instance.tag,
-			classes: () => instance.classes.list,
+		...useSyncProps(ctrl.events, {
+			rendered: () => ctrl.rendered,
+			visible: () => ctrl.visible,
+			present: () => ctrl.present,
+			tag: () => ctrl.tag,
+			classes: () => ctrl.classes.list,
 		}),
 	}
 }

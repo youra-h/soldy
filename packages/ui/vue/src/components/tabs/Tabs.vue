@@ -14,22 +14,22 @@ export default {
 	extends: BaseTabs,
 	components: { TabItem },
 	setup(props: TBaseComponentViewProps<ITabsProps, ITabs>, { emit }) {
-		const instance = useInstance(TTabs, props)
+		const ctrl = useInstance(TTabs, props)
 		// Инициализация плагинов
 		const plugins = useBundle(createTabsBundle, props?.plugins)
 		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		// Привязка элемента и инстанса к плагинам
 		const rootRef = useElementBinding(plugins)
 
 		const { rendered, visible, classes, items, activeItem } = syncTabs({
 			props,
-			instance,
+			ctrl,
 			plugins,
 			emit,
 		})
 
-		return { instance, plugins, rootRef, rendered, visible, classes, activeItem, items }
+		return { ctrl, plugins, rootRef, rendered, visible, classes, activeItem, items }
 	},
 }
 </script>

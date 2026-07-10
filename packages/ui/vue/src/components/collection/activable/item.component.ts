@@ -53,23 +53,23 @@ export function syncActivatableCollectionItem(
 ): IActivatableCollectionItemState {
 	const syncProps = syncCollectionItem(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:activation', (item: IActivatableCollectionItem) => {
+	ctrl.events.on('change:activation', (item: IActivatableCollectionItem) => {
 		// Переприменяем active через proxy — иначе _classes.toggle('--active', ...) вызывается
 		// на raw-объекте и мутация Set не видна Vue (нет реактивного триггера)
-		instance.active = (item as unknown as { active: boolean }).active
+		ctrl.active = (item as unknown as { active: boolean }).active
 
 		emit?.('change:activation', item)
-		emit?.('update:active', instance.active)
+		emit?.('update:active', ctrl.active)
 	})
 
 	watch(
 		() => props.active,
 		(value) => {
-			if (value !== undefined && value !== instance.active) {
-				instance.active = value
+			if (value !== undefined && value !== ctrl.active) {
+				ctrl.active = value
 			}
 		},
 		{ immediate: true },
@@ -77,9 +77,9 @@ export function syncActivatableCollectionItem(
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
+		...useSyncProps(ctrl.events as any, {
 			active: {
-				value: () => instance.active,
+				value: () => ctrl.active,
 				triggers: ['change:activation'],
 			},
 		}),

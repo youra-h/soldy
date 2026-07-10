@@ -64,32 +64,32 @@ export function syncSelectableCollection<
 ): ISelectableCollectionState<TItem> {
 	const syncProps = syncCollection(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on(
+	ctrl.events.on(
 		'item:selected',
 		(payload: { collection: ISelectableCollection; item: ISelectableCollectionItem }) => {
 			emit?.('item:selected', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:unselected',
 		(payload: { collection: ISelectableCollection; item: ISelectableCollectionItem }) => {
 			emit?.('item:unselected', payload)
 		},
 	)
 
-	instance.events.on('change:selected' as any, (items: ISelectableCollectionItem[]) => {
+	ctrl.events.on('change:selected' as any, (items: ISelectableCollectionItem[]) => {
 		emit?.('change:selected', items)
 	})
 
-	instance.events.on('change:selectedCount' as any, (count: number) => {
+	ctrl.events.on('change:selectedCount' as any, (count: number) => {
 		emit?.('change:selectedCount', count)
 	})
 
-	instance.events.on('change:mode' as any, (mode: TSelectionMode) => {
+	ctrl.events.on('change:mode' as any, (mode: TSelectionMode) => {
 		emit?.('change:mode', mode)
 		emit?.('update:mode', mode)
 	})
@@ -97,18 +97,18 @@ export function syncSelectableCollection<
 	watch<TSelectionMode | undefined>(
 		() => props.mode,
 		(value) => {
-			if (value !== undefined && value !== instance.mode) {
-				instance.mode = value
+			if (value !== undefined && value !== ctrl.mode) {
+				ctrl.mode = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events, {
-			selected: () => instance.selected,
-			selectedCount: () => instance.selectedCount,
-			mode: () => instance.mode,
+		...useSyncProps(ctrl.events, {
+			selected: () => ctrl.selected,
+			selectedCount: () => ctrl.selectedCount,
+			mode: () => ctrl.mode,
 		}),
 	}
 }

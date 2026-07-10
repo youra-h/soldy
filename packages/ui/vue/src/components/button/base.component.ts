@@ -41,9 +41,9 @@ export function syncButton(
 ): IButtonState {
 	const syncProps = syncTextable(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
-	instance.events.on('change:view' as any, (value: TButtonView) => {
+	ctrl.events.on('change:view' as any, (value: TButtonView) => {
 		emit?.('change:view', value)
 		emit?.('update:view', value)
 	})
@@ -51,16 +51,16 @@ export function syncButton(
 	watch<TButtonView | undefined>(
 		() => props.view,
 		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
+			if (value !== undefined && value !== ctrl.view) {
+				ctrl.view = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			view: () => instance.view,
+		...useSyncProps(ctrl.events as any, {
+			view: () => ctrl.view,
 		}),
 	}
 }

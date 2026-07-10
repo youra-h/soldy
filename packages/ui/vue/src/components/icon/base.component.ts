@@ -54,26 +54,26 @@ export interface IIconState extends IComponentViewState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIconState {
 	const syncProps = syncComponentView(options)
 
-	const { instance, props, emit, plugins } = options
+	const { ctrl, props, emit, plugins } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+	ctrl.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 		emit?.('change:size', payload)
 		emit?.('update:size', payload)
 	})
-	instance.events.on('change:width' as any, (value: string | number | undefined) => {
+	ctrl.events.on('change:width' as any, (value: string | number | undefined) => {
 		emit?.('change:width', value)
 		emit?.('update:width', value)
 	})
 
-	instance.events.on('change:height' as any, (value: string | number | undefined) => {
+	ctrl.events.on('change:height' as any, (value: string | number | undefined) => {
 		emit?.('change:height', value)
 		emit?.('update:height', value)
 	})
@@ -81,8 +81,8 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 	watch<TComponentSize | undefined>(
 		() => props.size,
 		(value) => {
-			if (value !== undefined && value !== instance.size) {
-				instance.size = value
+			if (value !== undefined && value !== ctrl.size) {
+				ctrl.size = value
 			}
 		},
 	)
@@ -90,8 +90,8 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 	watch<number | string | undefined>(
 		() => props.width,
 		(value) => {
-			if (value !== undefined && value !== instance.width) {
-				instance.width = value
+			if (value !== undefined && value !== ctrl.width) {
+				ctrl.width = value
 			}
 		},
 	)
@@ -99,8 +99,8 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 	watch<number | string | undefined>(
 		() => props.height,
 		(value) => {
-			if (value !== undefined && value !== instance.height) {
-				instance.height = value
+			if (value !== undefined && value !== ctrl.height) {
+				ctrl.height = value
 			}
 		},
 	)
@@ -109,10 +109,10 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			size: () => instance.size,
-			width: () => instance.width,
-			height: () => instance.height,
+		...useSyncProps(ctrl.events as any, {
+			size: () => ctrl.size,
+			width: () => ctrl.width,
+			height: () => ctrl.height,
 		}),
 		...useSyncProps(iconPlugin.events as any, {
 			styles: () => iconPlugin.styles,

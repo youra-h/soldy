@@ -51,25 +51,25 @@ export function syncActivatableCollection<
 ): IActivatableCollectionState<TItem> {
 	const syncProps = syncCollection(options)
 
-	const { instance, emit } = options
+	const { ctrl, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on(
+	ctrl.events.on(
 		'item:activated',
 		(payload: { collection: IActivatableCollection; item: IActivatableCollectionItem }) => {
 			emit?.('item:activated', payload)
 		},
 	)
 
-	instance.events.on('item:deactivated', (payload: { collection: IActivatableCollection }) => {
+	ctrl.events.on('item:deactivated', (payload: { collection: IActivatableCollection }) => {
 		emit?.('item:deactivated', payload)
 	})
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events, {
+		...useSyncProps(ctrl.events, {
 			activeItem: {
-				value: () => instance.activeItem,
+				value: () => ctrl.activeItem,
 				triggers: ['item:activated', 'item:deactivated'],
 			},
 		}),

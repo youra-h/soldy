@@ -45,24 +45,24 @@ export interface IInputControlState<TValue = any> extends IValueControlState<TVa
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncInputControl<TValue = string>(
 	options: ISyncComponentOptions<IInputControlProps<TValue>, IInputControl<TValue>>,
 ): IInputControlState<TValue> {
 	const syncProps = syncValueControl(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:readonly' as any, (value: boolean) => {
+	ctrl.events.on('change:readonly' as any, (value: boolean) => {
 		emit?.('change:readonly', value)
 		emit?.('update:readonly', value)
 	})
 
-	instance.events.on('change:required' as any, (value: boolean) => {
+	ctrl.events.on('change:required' as any, (value: boolean) => {
 		emit?.('change:required', value)
 		emit?.('update:required', value)
 	})
@@ -70,8 +70,8 @@ export function syncInputControl<TValue = string>(
 	watch<boolean | undefined>(
 		() => props.readonly,
 		(value) => {
-			if (value !== undefined && value !== instance.readonly) {
-				instance.readonly = value
+			if (value !== undefined && value !== ctrl.readonly) {
+				ctrl.readonly = value
 			}
 		},
 	)
@@ -79,17 +79,17 @@ export function syncInputControl<TValue = string>(
 	watch<boolean | undefined>(
 		() => props.required,
 		(value) => {
-			if (value !== undefined && value !== instance.required) {
-				instance.required = value
+			if (value !== undefined && value !== ctrl.required) {
+				ctrl.required = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			readonly: () => instance.readonly,
-			required: () => instance.required,
+		...useSyncProps(ctrl.events as any, {
+			readonly: () => ctrl.readonly,
+			required: () => ctrl.required,
 		}),
 	}
 }

@@ -61,28 +61,28 @@ export function syncTabItemCustom(
 ) {
 	const syncProps = syncValueControl(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
+	ctrl.events.on('change:text', (payload: TValuePayload<string>) => {
 		emit?.('change:text', payload)
 		emit?.('update:text', payload)
 	})
 
-	instance.events.on('change:closable', (value: boolean | undefined) => {
+	ctrl.events.on('change:closable', (value: boolean | undefined) => {
 		emit?.('change:closable', value)
 		emit?.('update:closable', value)
 	})
 
-	instance.events.on('close', () => {
+	ctrl.events.on('close', () => {
 		emit?.('close')
 	})
 
 	watch<string | undefined>(
 		() => props.text,
 		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
+			if (value !== undefined && value !== ctrl.text) {
+				ctrl.text = value
 			}
 		},
 	)
@@ -90,17 +90,17 @@ export function syncTabItemCustom(
 	watch<boolean | undefined>(
 		() => props.closable,
 		(value) => {
-			if (value !== undefined && value !== instance.closable) {
-				instance.closable = value
+			if (value !== undefined && value !== ctrl.closable) {
+				ctrl.closable = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			text: () => instance.text,
-			closable: () => instance.closable,
+		...useSyncProps(ctrl.events as any, {
+			text: () => ctrl.text,
+			closable: () => ctrl.closable,
 		}),
 	}
 }

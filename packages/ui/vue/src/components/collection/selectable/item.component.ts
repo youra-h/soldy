@@ -50,28 +50,28 @@ export function syncSelectableCollectionItem(
 ): ISelectableCollectionItemState {
 	const syncProps = syncCollectionItem(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:selection', (item: ISelectableCollectionItem) => {
+	ctrl.events.on('change:selection', (item: ISelectableCollectionItem) => {
 		emit?.('change:selection', item)
-		emit?.('update:selected', instance.selected)
+		emit?.('update:selected', ctrl.selected)
 	})
 
 	watch<boolean | undefined>(
 		() => props.selected,
 		(value) => {
-			if (value !== undefined && value !== instance.selected) {
-				instance.selected = value
+			if (value !== undefined && value !== ctrl.selected) {
+				ctrl.selected = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
+		...useSyncProps(ctrl.events as any, {
 			selected: {
-				value: () => instance.selected,
+				value: () => ctrl.selected,
 				triggers: ['change:selection'],
 			},
 		}),

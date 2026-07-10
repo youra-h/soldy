@@ -60,14 +60,14 @@ export function syncCollapseItemCustom(
 ): ICollapseItemCustomState {
 	const syncProps = syncValueControl(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
+	ctrl.events.on('change:text', (payload: TValuePayload<string>) => {
 		emit?.('change:text', payload)
 		emit?.('update:text', payload.newValue)
 	})
 
-	instance.events.on('change:arrowPlacement', (value: TCollapseArrowPlacement) => {
+	ctrl.events.on('change:arrowPlacement', (value: TCollapseArrowPlacement) => {
 		emit?.('change:arrowPlacement', value)
 		emit?.('update:arrowPlacement', value)
 	})
@@ -75,8 +75,8 @@ export function syncCollapseItemCustom(
 	watch<string | undefined>(
 		() => props.text,
 		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
+			if (value !== undefined && value !== ctrl.text) {
+				ctrl.text = value
 			}
 		},
 	)
@@ -84,18 +84,18 @@ export function syncCollapseItemCustom(
 	watch<TCollapseArrowPlacement | undefined>(
 		() => props.arrowPlacement,
 		(value) => {
-			if (value !== undefined && value !== instance.arrowPlacement) {
-				instance.arrowPlacement = value
+			if (value !== undefined && value !== ctrl.arrowPlacement) {
+				ctrl.arrowPlacement = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			text: () => instance.text,
-			arrowPlacement: () => instance.arrowPlacement,
-			view: () => instance.view,
+		...useSyncProps(ctrl.events as any, {
+			text: () => ctrl.text,
+			arrowPlacement: () => ctrl.arrowPlacement,
+			view: () => ctrl.view,
 		}),
 	}
 }

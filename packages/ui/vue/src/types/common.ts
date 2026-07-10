@@ -6,7 +6,7 @@ export type TProps = Readonly<Record<string, any>>
 
 export interface ISyncComponentOptions<TProps, TInstance = IComponent, TPlugins = IPluginBundle> {
 	props: TProps
-	instance: TInstance
+	ctrl: TInstance
 	emit?: (...args: any[]) => void
 	plugins: TPlugins
 }

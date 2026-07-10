@@ -66,45 +66,45 @@ export function syncCollapse(
 ): ICollapseState {
 	const syncPropsControl = syncControl(options)
 
-	const { props, instance, emit, plugins } = options
+	const { props, ctrl, emit, plugins } = options
 
 	const syncPropsSelectableCollection = syncSelectableCollection<ICollapseItem>({
 		props,
-		instance: instance.collection,
+		ctrl: ctrl.collection,
 		emit,
 		plugins,
 	})
 
-	instance.events.on('change:view', (value: TCollapseView) => {
+	ctrl.events.on('change:view', (value: TCollapseView) => {
 		emit?.('change:view', value)
 		emit?.('update:view', value)
 	})
 
-	instance.events.on('item:disabled', (item: ICollapseItem, value: boolean) => {
+	ctrl.events.on('item:disabled', (item: ICollapseItem, value: boolean) => {
 		emit?.('item:disabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: ICollapseItem, value: string) => {
+	ctrl.events.on('item:text', (item: ICollapseItem, value: string) => {
 		emit?.('item:text', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: ICollapseItem, value: boolean) => {
+	ctrl.events.on('item:rendered', (item: ICollapseItem, value: boolean) => {
 		emit?.('item:rendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: ICollapseItem, value: boolean) => {
+	ctrl.events.on('item:visible', (item: ICollapseItem, value: boolean) => {
 		emit?.('item:visible', item, value)
 	})
 
-	instance.events.on('item:present', (item: ICollapseItem, value: boolean) => {
+	ctrl.events.on('item:present', (item: ICollapseItem, value: boolean) => {
 		emit?.('item:present', item, value)
 	})
 
 	watch<TCollapseView | undefined>(
 		() => props.view,
 		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
+			if (value !== undefined && value !== ctrl.view) {
+				ctrl.view = value
 			}
 		},
 	)
@@ -112,8 +112,8 @@ export function syncCollapse(
 	watch<TSelectionMode | undefined>(
 		() => props.mode,
 		(value) => {
-			if (value !== undefined && value !== instance.mode) {
-				instance.mode = value
+			if (value !== undefined && value !== ctrl.mode) {
+				ctrl.mode = value
 			}
 		},
 	)
@@ -121,8 +121,8 @@ export function syncCollapse(
 	return {
 		...syncPropsControl,
 		...syncPropsSelectableCollection,
-		...useSyncProps(instance.events as any, {
-			view: () => instance.view,
+		...useSyncProps(ctrl.events as any, {
+			view: () => ctrl.view,
 		}),
 	}
 }

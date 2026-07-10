@@ -12,25 +12,25 @@ export default {
 	name: '_Frame',
 	extends: BaseFrame,
 	setup(props: TBaseComponentProps<IFrameProps, IFrame>, { emit }) {
-		const instance = useInstance(TFrame, props)
+		const ctrl = useInstance(TFrame, props)
 
 		// Инициализация плагинов
 		const plugins = useBundle(createFrameBundle, props?.plugins)
 
 		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		// Привязка элемента к плагинам
 		const rootRef = useElementBinding(plugins)
 
 		const { visible, rendered, x, y, width, height, styles, target } = syncFrame({
 			props,
-			instance,
+			ctrl,
 			plugins,
 			emit,
 		})
 
 		return {
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			styles,

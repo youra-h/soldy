@@ -84,51 +84,51 @@ export function syncList<TItem extends IListItem = IListItem>(
 ): IListState<TItem> {
 	const syncPropsControl = syncControl(options)
 
-	const { props, instance, emit, plugins } = options
+	const { props, ctrl, emit, plugins } = options
 
 	const syncPropsSelectableCollection = syncSelectableCollection<TItem>({
 		props,
-		instance: instance.collection,
+		ctrl: ctrl.collection,
 		emit,
 		plugins,
 	})
 
-	instance.events.on('item:disabled', (item: IListItem, value: boolean) => {
+	ctrl.events.on('item:disabled', (item: IListItem, value: boolean) => {
 		emit?.('item:disabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: IListItem, value: string) => {
+	ctrl.events.on('item:text', (item: IListItem, value: string) => {
 		emit?.('item:text', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: IListItem, value: boolean) => {
+	ctrl.events.on('item:rendered', (item: IListItem, value: boolean) => {
 		emit?.('item:rendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: IListItem, value: boolean) => {
+	ctrl.events.on('item:visible', (item: IListItem, value: boolean) => {
 		emit?.('item:visible', item, value)
 	})
 
-	instance.events.on('item:present', (item: IListItem, value: boolean) => {
+	ctrl.events.on('item:present', (item: IListItem, value: boolean) => {
 		emit?.('item:present', item, value)
 	})
 
-	instance.events.on('change:maxRows', (value: number) => {
+	ctrl.events.on('change:maxRows', (value: number) => {
 		emit?.('change:maxRows', value)
 		emit?.('update:maxRows', value)
 	})
 
-	instance.events.on('change:autoWidth', (value: boolean) => {
+	ctrl.events.on('change:autoWidth', (value: boolean) => {
 		emit?.('change:autoWidth', value)
 		emit?.('update:autoWidth', value)
 	})
 
-	instance.events.on('change:wordWrap', (value: boolean) => {
+	ctrl.events.on('change:wordWrap', (value: boolean) => {
 		emit?.('change:wordWrap', value)
 		emit?.('update:wordWrap', value)
 	})
 
-	instance.events.on('change:scrollBehavior', (value: TScrollBehavior) => {
+	ctrl.events.on('change:scrollBehavior', (value: TScrollBehavior) => {
 		emit?.('change:scrollBehavior', value)
 		emit?.('update:scrollBehavior', value)
 	})
@@ -136,8 +136,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 	watch(
 		() => props.mode,
 		(value) => {
-			if (value !== undefined && value !== instance.mode) {
-				instance.mode = value
+			if (value !== undefined && value !== ctrl.mode) {
+				ctrl.mode = value
 			}
 		},
 		{ immediate: true },
@@ -146,8 +146,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 	watch(
 		() => props.maxRows,
 		(value) => {
-			if (value !== undefined && value !== instance.maxRows) {
-				instance.maxRows = value
+			if (value !== undefined && value !== ctrl.maxRows) {
+				ctrl.maxRows = value
 			}
 		},
 		{ immediate: true },
@@ -156,8 +156,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 	watch(
 		() => props.autoWidth,
 		(value) => {
-			if (value !== undefined && value !== instance.autoWidth) {
-				instance.autoWidth = value
+			if (value !== undefined && value !== ctrl.autoWidth) {
+				ctrl.autoWidth = value
 			}
 		},
 		{ immediate: true },
@@ -166,8 +166,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 	watch(
 		() => props.wordWrap,
 		(value) => {
-			if (value !== undefined && value !== instance.wordWrap) {
-				instance.wordWrap = value
+			if (value !== undefined && value !== ctrl.wordWrap) {
+				ctrl.wordWrap = value
 			}
 		},
 		{ immediate: true },
@@ -176,8 +176,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 	watch(
 		() => props.scrollBehavior,
 		(value) => {
-			if (value !== undefined && value !== instance.scrollBehavior) {
-				instance.scrollBehavior = value
+			if (value !== undefined && value !== ctrl.scrollBehavior) {
+				ctrl.scrollBehavior = value
 			}
 		},
 		{ immediate: true },
@@ -186,6 +186,6 @@ export function syncList<TItem extends IListItem = IListItem>(
 	return {
 		...syncPropsControl,
 		...syncPropsSelectableCollection,
-		...useSyncProps(instance.events as any, {}),
+		...useSyncProps(ctrl.events as any, {}),
 	}
 }

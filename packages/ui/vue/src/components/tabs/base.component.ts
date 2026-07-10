@@ -97,67 +97,67 @@ export function syncTabs(
 ): ITabsState {
 	const synPropsControl = syncControl(options)
 
-	const { props, instance, emit, plugins } = options
+	const { props, ctrl, emit, plugins } = options
 
 	// Синхронизируем коллекцию (items, count, activeItem)
 	const synPropsActivatableCollection = syncActivatableCollection<ITabItem>({
 		props,
-		instance: instance.collection,
+		ctrl: ctrl.collection,
 		emit,
 		plugins,
 	})
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:orientation', (value: TTabsOrientation) => {
+	ctrl.events.on('change:orientation', (value: TTabsOrientation) => {
 		emit?.('change:orientation', value)
 		emit?.('update:orientation', value)
 	})
 
-	instance.events.on('change:alignment', (value: TTabsAlignment) => {
+	ctrl.events.on('change:alignment', (value: TTabsAlignment) => {
 		emit?.('change:alignment', value)
 		emit?.('update:alignment', value)
 	})
 
-	instance.events.on('change:position', (value: TTabsPosition) => {
+	ctrl.events.on('change:position', (value: TTabsPosition) => {
 		emit?.('change:position', value)
 		emit?.('update:position', value)
 	})
 
-	instance.events.on('change:view', (value: TTabsView) => {
+	ctrl.events.on('change:view', (value: TTabsView) => {
 		emit?.('change:view', value)
 		emit?.('update:view', value)
 	})
 
-	instance.events.on('change:closable', (value: boolean) => {
+	ctrl.events.on('change:closable', (value: boolean) => {
 		emit?.('change:closable', value)
 		emit?.('update:closable', value)
 	})
 
-	instance.events.on('item:close', (item: ITabItem) => {
+	ctrl.events.on('item:close', (item: ITabItem) => {
 		emit?.('item:close', item)
 	})
 
-	instance.events.on('item:closable', (item: ITabItem, value: boolean) => {
+	ctrl.events.on('item:closable', (item: ITabItem, value: boolean) => {
 		emit?.('item:closable', item, value)
 	})
 
-	instance.events.on('item:disabled', (item: ITabItem, value: boolean) => {
+	ctrl.events.on('item:disabled', (item: ITabItem, value: boolean) => {
 		emit?.('item:disabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: ITabItem, value: string) => {
+	ctrl.events.on('item:text', (item: ITabItem, value: string) => {
 		emit?.('item:text', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: ITabItem, value: boolean) => {
+	ctrl.events.on('item:rendered', (item: ITabItem, value: boolean) => {
 		emit?.('item:rendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: ITabItem, value: boolean) => {
+	ctrl.events.on('item:visible', (item: ITabItem, value: boolean) => {
 		emit?.('item:visible', item, value)
 	})
 
-	instance.events.on('item:present', (item: ITabItem, value: boolean) => {
+	ctrl.events.on('item:present', (item: ITabItem, value: boolean) => {
 		emit?.('item:present', item, value)
 	})
 
@@ -165,8 +165,8 @@ export function syncTabs(
 	watch<TTabsOrientation | undefined>(
 		() => props.orientation,
 		(value) => {
-			if (value !== undefined && value !== instance.orientation) {
-				instance.orientation = value
+			if (value !== undefined && value !== ctrl.orientation) {
+				ctrl.orientation = value
 			}
 		},
 	)
@@ -174,8 +174,8 @@ export function syncTabs(
 	watch<TTabsAlignment | undefined>(
 		() => props.alignment,
 		(value) => {
-			if (value !== undefined && value !== instance.alignment) {
-				instance.alignment = value
+			if (value !== undefined && value !== ctrl.alignment) {
+				ctrl.alignment = value
 			}
 		},
 	)
@@ -183,8 +183,8 @@ export function syncTabs(
 	watch<TTabsPosition | undefined>(
 		() => props.position,
 		(value) => {
-			if (value !== undefined && value !== instance.position) {
-				instance.position = value
+			if (value !== undefined && value !== ctrl.position) {
+				ctrl.position = value
 			}
 		},
 	)
@@ -192,8 +192,8 @@ export function syncTabs(
 	watch<TTabsView | undefined>(
 		() => props.view,
 		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
+			if (value !== undefined && value !== ctrl.view) {
+				ctrl.view = value
 			}
 		},
 	)
@@ -201,8 +201,8 @@ export function syncTabs(
 	watch(
 		() => props.closable,
 		(value) => {
-			if (value !== instance.closable) {
-				instance.closable = !!value
+			if (value !== ctrl.closable) {
+				ctrl.closable = !!value
 			}
 		},
 	)
@@ -211,12 +211,12 @@ export function syncTabs(
 	return {
 		...synPropsControl,
 		...synPropsActivatableCollection,
-		...useSyncProps(instance.events as any, {
-			orientation: () => instance.orientation,
-			alignment: () => instance.alignment,
-			position: () => instance.position,
-			view: () => instance.view,
-			closable: () => instance.closable,
+		...useSyncProps(ctrl.events as any, {
+			orientation: () => ctrl.orientation,
+			alignment: () => ctrl.alignment,
+			position: () => ctrl.position,
+			view: () => ctrl.view,
+			closable: () => ctrl.closable,
 		}),
 	}
 }

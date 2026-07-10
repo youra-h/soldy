@@ -25,9 +25,9 @@ export default {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncSwitch(
 	options: ISyncComponentOptions<ISwitchProps, ISwitch>,

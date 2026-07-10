@@ -61,9 +61,9 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 		ICollection<ICollectionProps, TCollectionEvents, TItem>
 	>,
 ): ICollectionState<TItem> {
-	const { instance, emit, props, plugins } = options
+	const { ctrl, emit, props, plugins } = options
 
-	useProvideCollection(instance)
+	useProvideCollection(ctrl)
 
 	const collectionItemPlugins = plugins.get(TCollectionItemPlugins)
 
@@ -75,7 +75,7 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 
 	// Если компонент находится внутри контекста DragAndDrop, активируем плагин для этой коллекции
 	if (useInjectDragContext()) {
-		plugins.get(TDragPlugin)?.activate(instance)
+		plugins.get(TDragPlugin)?.activate(ctrl)
 	}
 
 	watch(
@@ -83,72 +83,72 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 		(items, oldItems) => {
 			if (items !== undefined && items !== oldItems) {
 				if (props.trackBy) {
-					instance.patchItems(items, props.trackBy)
+					ctrl.patchItems(items, props.trackBy)
 				} else {
-					instance.setItems(items)
+					ctrl.setItems(items)
 				}
 			}
 		},
 		{ immediate: true, deep: true },
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'changed',
 		(payload: { collection: ICollection; item?: ICollectionItem }) => {
 			emit?.('changed', payload)
 		},
 	)
 
-	instance.events.on('change:items', (items: ICollectionItem[]) => {
+	ctrl.events.on('change:items', (items: ICollectionItem[]) => {
 		emit?.('change:items', items)
 		emit?.('update:items', items)
 	})
 
-	instance.events.on('change:count', (count: number) => {
+	ctrl.events.on('change:count', (count: number) => {
 		emit?.('change:count', count)
 	})
 
-	instance.events.on('reset', () => {
+	ctrl.events.on('reset', () => {
 		emit?.('reset')
 	})
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on(
+	ctrl.events.on(
 		'item:added',
 		(payload: { collection: ICollection; item: ICollectionItem }) => {
 			emit?.('item:added', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:deleted',
 		(payload: { collection: ICollection; item: ICollectionItem }) => {
 			emit?.('item:deleted', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:beforeDelete',
 		(payload: { collection: ICollection; index: number; item: ICollectionItem }) => {
 			emit?.('item:beforeDelete', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:afterDelete',
 		(payload: { collection: ICollection; index: number; item: ICollectionItem }) => {
 			emit?.('item:afterDelete', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:beforeMove',
 		(payload: { collection: ICollection; oldIndex: number; newIndex: number }) => {
 			emit?.('item:beforeMove', payload)
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:moved',
 		(payload: {
 			collection: ICollection
@@ -160,7 +160,7 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 		},
 	)
 
-	instance.events.on(
+	ctrl.events.on(
 		'item:afterMove',
 		(payload: {
 			collection: ICollection
@@ -173,13 +173,13 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 	)
 
 	// Возвращаем реактивные Ref-ы для items и count
-	return useSyncProps(instance.events, {
+	return useSyncProps(ctrl.events, {
 		items: {
-			value: () => instance.items,
+			value: () => ctrl.items,
 			triggers: ['item:added', 'item:afterMove', 'item:afterDelete', 'item:moved', 'changed'],
 		},
 		count: {
-			value: () => instance.count,
+			value: () => ctrl.count,
 			triggers: ['item:added', 'item:afterMove', 'item:afterDelete', 'item:moved', 'changed'],
 		},
 	})

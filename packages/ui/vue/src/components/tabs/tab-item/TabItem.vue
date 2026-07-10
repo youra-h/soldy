@@ -20,11 +20,11 @@ export default {
     extends: BaseTabItem,
     components: { Icon, Button },
     setup(props: TBaseComponentViewProps<ITabItemProps, ITabItem>, { emit }) {
-        const instance = useInstance(TTabItem, props);
+        const ctrl = useInstance(TTabItem, props);
         // Инициализация плагинов
         const plugins = useBundle(createComponentViewBundle, props?.plugins);
         // Привязка инстанса к плагинам
-        useInstanceBinding(plugins, instance);
+        useInstanceBinding(plugins, ctrl);
         // Привязка элемента и инстанса к плагинам
         const rootRef = useElementBinding(plugins);
 
@@ -41,7 +41,7 @@ export default {
             order,
         } = syncTabItem({
             props,
-            instance,
+            ctrl,
             plugins,
             emit,
         });
@@ -53,7 +53,7 @@ export default {
         return {
             containerAttrs,
             controlAttrs,
-            instance,
+            ctrl,
             closeIconTag,
             plugins,
             rootRef,
@@ -86,7 +86,7 @@ export default {
             view="none"
             :size="size"
             :variant="variant"
-            @click="instance.active = true"
+            @click="ctrl.active = true"
             role="tab"
             v-bind="controlAttrs"
         >
@@ -103,7 +103,7 @@ export default {
                 <Button
                     :rendered="!!closable"
                     class="s-tab-item__close"
-                    @click.stop="instance.close()"
+                    @click.stop="ctrl.close()"
                     view="plain"
                 >
                     <slot name="close-icon">

@@ -39,9 +39,9 @@ export interface IInputState extends IInputControlState<string> {
 export function syncInput(options: ISyncComponentOptions<IInputProps, IInput>): IInputState {
 	const syncProps = syncInputControl(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
-	instance.events.on('change:placeholder' as any, (value: string) => {
+	ctrl.events.on('change:placeholder' as any, (value: string) => {
 		emit?.('change:placeholder', value)
 		emit?.('update:placeholder', value)
 	})
@@ -49,16 +49,16 @@ export function syncInput(options: ISyncComponentOptions<IInputProps, IInput>): 
 	watch<string | undefined>(
 		() => props.placeholder,
 		(value) => {
-			if (value !== undefined && value !== instance.placeholder) {
-				instance.placeholder = value
+			if (value !== undefined && value !== ctrl.placeholder) {
+				ctrl.placeholder = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			placeholder: () => instance.placeholder,
+		...useSyncProps(ctrl.events as any, {
+			placeholder: () => ctrl.placeholder,
 		}),
 	}
 }

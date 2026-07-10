@@ -43,18 +43,18 @@ export interface ISpinnerState extends IStylableState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  */
 export function syncSpinner(
 	options: ISyncComponentOptions<ISpinnerProps, ISpinner>,
 ): ISpinnerState {
 	const syncProps = syncStylable(options)
 
-	const { instance, props, emit, plugins } = options
+	const { ctrl, props, emit, plugins } = options
 
 	const stylePlugin = plugins.get(TSpinnerStylePlugin)!
 
-	instance.events.on('change:borderWidth', (value: number | 'auto') => {
+	ctrl.events.on('change:borderWidth', (value: number | 'auto') => {
 		emit?.('change:borderWidth', value)
 		emit?.('update:borderWidth', value)
 	})
@@ -62,16 +62,16 @@ export function syncSpinner(
 	watch<'auto' | number | undefined>(
 		() => props.borderWidth,
 		(value) => {
-			if (value !== undefined && value !== instance.borderWidth) {
-				instance.borderWidth = value
+			if (value !== undefined && value !== ctrl.borderWidth) {
+				ctrl.borderWidth = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			borderWidth: () => instance.borderWidth,
+		...useSyncProps(ctrl.events as any, {
+			borderWidth: () => ctrl.borderWidth,
 		}),
 		...useSyncProps(stylePlugin.events, {
 			styles: () => stylePlugin.styles,

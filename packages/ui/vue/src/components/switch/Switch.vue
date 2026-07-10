@@ -14,18 +14,18 @@ export default {
 	inheritAttrs: false,
 	extends: BaseSwitch,
 	setup(props: TBaseComponentViewProps<ISwitchProps, ISwitch>, { emit }) {
-		const instance = useInstance(TSwitch, props)
+		const ctrl = useInstance(TSwitch, props)
 		// Инициализация плагинов
 		const plugins = useBundle(createInputBoolBundle, props?.plugins)
 		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		// Привязка элемента и инстанса к плагинам
 		const rootRef = useElementBinding(plugins)
 
 		const { rendered, visible, classes, disabled, name, size, value, readonly, required } =
 			syncSwitch({
 				props,
-				instance,
+				ctrl,
 				plugins,
 				emit,
 			})
@@ -35,7 +35,7 @@ export default {
 		return {
 			containerAttrs,
 			controlAttrs,
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			rendered,
@@ -56,7 +56,7 @@ export default {
 	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<input
 			type="checkbox"
-			:id="instance.uid.toString()"
+			:id="ctrl.uid.toString()"
 			:checked="value"
 			:name="name"
 			:disabled="disabled"
@@ -67,8 +67,8 @@ export default {
 		<div class="s-switch__track">
 			<div class="s-switch__track--thumb">
 				<transition name="fade" mode="out-in">
-					<slot v-if="!value" name="off" :value="value" :instance="instance"> </slot>
-					<slot v-else name="on" :value="value" :instance="instance"> </slot>
+					<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
+					<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>
 				</transition>
 			</div>
 		</div>

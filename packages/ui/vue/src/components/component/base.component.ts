@@ -32,7 +32,7 @@ export default {
 	props: propsComponent,
 	created() {
 		// @ts-ignore
-		this.$emit('created', { instance: this.instance, plugins: this.plugins })
+		this.$emit('created', { ctrl: this.ctrl, plugins: this.plugins })
 	},
 }
 
@@ -43,37 +43,37 @@ export interface IComponentState {
 }
 
 export function syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
-	const { props, instance, plugins, emit } = options
+	const { props, ctrl, plugins, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	// instance.events.on('created' as any, (instance: IComponentView) => {
-	// 	emit?.('created', instance)
+	// ctrl.events.on('created' as any, (ctrl: IComponentView) => {
+	// 	emit?.('created', ctrl)
 	// })
 
-	instance.events.on('beforeShow' as any, () => {
+	ctrl.events.on('beforeShow' as any, () => {
 		emit?.('beforeShow')
 	})
-	instance.events.on('afterShow' as any, () => {
+	ctrl.events.on('afterShow' as any, () => {
 		emit?.('afterShow')
 	})
-	instance.events.on('beforeHide' as any, () => {
+	ctrl.events.on('beforeHide' as any, () => {
 		emit?.('beforeHide')
 	})
-	instance.events.on('afterHide' as any, () => {
+	ctrl.events.on('afterHide' as any, () => {
 		emit?.('afterHide')
 	})
-	instance.events.on('show' as any, () => {
-		emit?.('show', instance)
+	ctrl.events.on('show' as any, () => {
+		emit?.('show', ctrl)
 	})
-	instance.events.on('hide' as any, () => {
-		emit?.('hide', instance)
+	ctrl.events.on('hide' as any, () => {
+		emit?.('hide', ctrl)
 	})
-	instance.events.on('change:visible' as any, (value: boolean) => {
+	ctrl.events.on('change:visible' as any, (value: boolean) => {
 		emit?.('change:visible', value)
 		emit?.('visible', value)
 		emit?.('update:visible', value)
 	})
-	instance.events.on('change:rendered' as any, (value: boolean) => {
+	ctrl.events.on('change:rendered' as any, (value: boolean) => {
 		emit?.('change:rendered', value)
 		emit?.('rendered', value)
 		emit?.('update:rendered', value)
@@ -82,8 +82,8 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 	watch<boolean | undefined>(
 		() => props.rendered,
 		(value) => {
-			if (value !== undefined && value !== instance.rendered) {
-				instance.rendered = value
+			if (value !== undefined && value !== ctrl.rendered) {
+				ctrl.rendered = value
 			}
 		},
 	)
@@ -91,15 +91,15 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 	watch<boolean | undefined>(
 		() => props.visible,
 		(value) => {
-			if (value !== undefined && value !== instance.visible) {
-				instance.visible = value
+			if (value !== undefined && value !== ctrl.visible) {
+				ctrl.visible = value
 			}
 		},
 	)
 
-	return useSyncProps(instance.events, {
-		rendered: () => instance.rendered,
-		visible: () => instance.visible,
-		present: () => instance.present,
+	return useSyncProps(ctrl.events, {
+		rendered: () => ctrl.rendered,
+		visible: () => ctrl.visible,
+		present: () => ctrl.present,
 	})
 }

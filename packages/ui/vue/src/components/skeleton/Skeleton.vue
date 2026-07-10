@@ -12,26 +12,26 @@ export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
 	setup(props: TBaseComponentViewProps<ISkeletonProps, ISkeleton>, { emit }) {
-		const instance = useInstance(TSkeleton, props)
+		const ctrl = useInstance(TSkeleton, props)
 		const plugins = useBundle(createComponentViewBundle, props?.plugins).use(
 			TSkeletonStylePlugin,
 		)
 
 		const skeletonPlugin = plugins.get(TSkeletonStylePlugin)!
 
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		const rootRef = useElementBinding(plugins)
 
 		const { tag, rendered, visible, present, classes, variant, size, shape, animation } =
 			syncSkeleton({
 				props,
-				instance,
+				ctrl,
 				plugins,
 				emit,
 			})
 
 		return {
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			tag,

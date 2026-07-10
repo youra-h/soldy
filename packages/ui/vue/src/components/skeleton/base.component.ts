@@ -68,21 +68,21 @@ export function syncSkeleton(
 ): ISkeletonState {
 	const syncProps = syncStylable(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
-	instance.events.on('change:shape', (value: TSkeletonShape) => {
+	ctrl.events.on('change:shape', (value: TSkeletonShape) => {
 		emit?.('change:shape', value)
 		emit?.('update:shape', value)
 	})
-	instance.events.on('change:animation', (value: TSkeletonAnimation) => {
+	ctrl.events.on('change:animation', (value: TSkeletonAnimation) => {
 		emit?.('change:animation', value)
 		emit?.('update:animation', value)
 	})
-	instance.events.on('change:width', (value: number | string) => {
+	ctrl.events.on('change:width', (value: number | string) => {
 		emit?.('change:width', value)
 		emit?.('update:width', value)
 	})
-	instance.events.on('change:height', (value: number | string) => {
+	ctrl.events.on('change:height', (value: number | string) => {
 		emit?.('change:height', value)
 		emit?.('update:height', value)
 	})
@@ -90,8 +90,8 @@ export function syncSkeleton(
 	watch<TSkeletonShape | undefined>(
 		() => props.shape,
 		(value) => {
-			if (value !== undefined && value !== instance.shape) {
-				instance.shape = value
+			if (value !== undefined && value !== ctrl.shape) {
+				ctrl.shape = value
 			}
 		},
 	)
@@ -99,8 +99,8 @@ export function syncSkeleton(
 	watch<TSkeletonAnimation | undefined>(
 		() => props.animation,
 		(value) => {
-			if (value !== undefined && value !== instance.animation) {
-				instance.animation = value
+			if (value !== undefined && value !== ctrl.animation) {
+				ctrl.animation = value
 			}
 		},
 	)
@@ -108,8 +108,8 @@ export function syncSkeleton(
 	watch<number | string | undefined>(
 		() => props.width,
 		(value) => {
-			if (value !== undefined && value !== instance.width) {
-				instance.width = value
+			if (value !== undefined && value !== ctrl.width) {
+				ctrl.width = value
 			}
 		},
 	)
@@ -117,19 +117,19 @@ export function syncSkeleton(
 	watch<number | string | undefined>(
 		() => props.height,
 		(value) => {
-			if (value !== undefined && value !== instance.height) {
-				instance.height = value
+			if (value !== undefined && value !== ctrl.height) {
+				ctrl.height = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			shape: () => instance.shape,
-			animation: () => instance.animation,
-			width: () => instance.width,
-			height: () => instance.height,
+		...useSyncProps(ctrl.events as any, {
+			shape: () => ctrl.shape,
+			animation: () => ctrl.animation,
+			width: () => ctrl.width,
+			height: () => ctrl.height,
 		}),
 	}
 }

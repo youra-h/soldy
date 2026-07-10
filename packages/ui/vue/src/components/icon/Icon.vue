@@ -12,24 +12,24 @@ export default {
 	name: '_Icon',
 	extends: BaseIcon,
 	setup(props: TBaseComponentViewProps<IIconProps, IIcon>, { emit }) {
-		const instance = useInstance(TIcon, props)
+		const ctrl = useInstance(TIcon, props)
 		// Инициализация плагинов
 		const plugins = useBundle(createComponentViewBundle, props?.plugins).use(TIconStylePlugin)
 
 		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		// Привязка элемента и инстанса к плагинам
 		const rootRef = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes, styles } = syncIcon({
 			props,
-			instance,
+			ctrl,
 			plugins,
 			emit,
 		})
 
 		return {
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			styles,

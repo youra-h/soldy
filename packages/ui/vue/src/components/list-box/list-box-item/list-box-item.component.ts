@@ -38,14 +38,14 @@ export function syncListBoxItem(
 ): IListBoxItemState {
 	const syncProps = syncListItem(options)
 
-	const { instance, plugins } = options
+	const { ctrl, plugins } = options
 
 	const itemPlugin = plugins.get(TListItemPlugin)!
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			view: () => instance.view,
+		...useSyncProps(ctrl.events as any, {
+			view: () => ctrl.view,
 		}),
 		...useSyncProps(itemPlugin.events, {
 			highlighted: () => itemPlugin.highlighted,

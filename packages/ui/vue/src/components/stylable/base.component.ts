@@ -52,24 +52,24 @@ export interface IStylableState extends IComponentViewState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncStylable(
 	options: ISyncComponentOptions<IStylableProps, IStylable>,
 ): IStylableState {
 	const syncProps = syncComponentView(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+	ctrl.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 		emit?.('change:size', payload)
 		emit?.('update:size', payload)
 	})
 
-	instance.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+	ctrl.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
 		emit?.('change:variant', payload)
 		emit?.('update:variant', payload)
 	})
@@ -77,8 +77,8 @@ export function syncStylable(
 	watch<TComponentSize | undefined>(
 		() => props.size,
 		(value) => {
-			if (value !== undefined && value !== instance.size) {
-				instance.size = value
+			if (value !== undefined && value !== ctrl.size) {
+				ctrl.size = value
 			}
 		}
 	)
@@ -86,17 +86,17 @@ export function syncStylable(
 	watch<TComponentVariant | undefined>(
 		() => props.variant,
 		(value) => {
-			if (value !== undefined && value !== instance.variant) {
-				instance.variant = value
+			if (value !== undefined && value !== ctrl.variant) {
+				ctrl.variant = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events, {
-			size: () => instance.size,
-			variant: () => instance.variant,
+		...useSyncProps(ctrl.events, {
+			size: () => ctrl.size,
+			variant: () => ctrl.variant,
 		}),
 	}
 }

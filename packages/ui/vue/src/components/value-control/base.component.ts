@@ -41,29 +41,29 @@ export interface IValueControlState<TValue = any> extends IControlState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncValueControl<TValue>(
 	options: ISyncComponentOptions<IValueControlProps<TValue>, IValueControl<TValue>>,
 ): IValueControlState<TValue> {
 	const syncProps = syncControl(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:value' as any, (value: TValue) => {
+	ctrl.events.on('change:value' as any, (value: TValue) => {
 		emit?.('change:value', value)
 		emit?.('update:value', value)
 	})
 
-	instance.events.on('input:value' as any, (value: TValue) => {
+	ctrl.events.on('input:value' as any, (value: TValue) => {
 		emit?.('input:value', value)
 		emit?.('input', value)
 	})
 
-	instance.events.on('change:name' as any, (value: string) => {
+	ctrl.events.on('change:name' as any, (value: string) => {
 		emit?.('change:name', value)
 		emit?.('update:name', value)
 	})
@@ -71,8 +71,8 @@ export function syncValueControl<TValue>(
 	watch(
 		() => props.value,
 		(value) => {
-			if (value !== undefined && value !== instance.value) {
-				instance.value = value as TValue
+			if (value !== undefined && value !== ctrl.value) {
+				ctrl.value = value as TValue
 			}
 		},
 	)
@@ -80,17 +80,17 @@ export function syncValueControl<TValue>(
 	watch<string | undefined>(
 		() => props.name,
 		(value) => {
-			if (value !== undefined && value !== instance.name) {
-				instance.name = value
+			if (value !== undefined && value !== ctrl.name) {
+				ctrl.name = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events, {
-			value: () => instance.value,
-			name: () => instance.name,
+		...useSyncProps(ctrl.events, {
+			value: () => ctrl.value,
+			name: () => ctrl.name,
 		}),
 	}
 }

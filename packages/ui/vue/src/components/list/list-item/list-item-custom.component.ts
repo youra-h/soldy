@@ -57,14 +57,14 @@ export function syncListItemCustom(
 ): IListItemCustomState {
 	const syncProps = syncValueControl(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
+	ctrl.events.on('change:text', (payload: TValuePayload<string>) => {
 		emit?.('change:text', payload)
 		emit?.('update:text', payload.newValue)
 	})
 
-	instance.events.on('change:wordWrap', (value: boolean) => {
+	ctrl.events.on('change:wordWrap', (value: boolean) => {
 		emit?.('change:wordWrap', value)
 		emit?.('update:wordWrap', value)
 	})
@@ -72,8 +72,8 @@ export function syncListItemCustom(
 	watch<string | undefined>(
 		() => props.text,
 		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
+			if (value !== undefined && value !== ctrl.text) {
+				ctrl.text = value
 			}
 		},
 	)
@@ -81,17 +81,17 @@ export function syncListItemCustom(
 	watch<boolean | undefined>(
 		() => props.wordWrap,
 		(value) => {
-			if (value !== undefined && value !== instance.wordWrap) {
-				instance.wordWrap = value
+			if (value !== undefined && value !== ctrl.wordWrap) {
+				ctrl.wordWrap = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			text: () => instance.text,
-			wordWrap: () => instance.wordWrap,
+		...useSyncProps(ctrl.events as any, {
+			text: () => ctrl.text,
+			wordWrap: () => ctrl.wordWrap,
 		}),
 	}
 }

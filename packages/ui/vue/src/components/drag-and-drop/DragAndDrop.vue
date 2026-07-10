@@ -9,11 +9,11 @@ export default {
 	name: '_DragAndDrop',
 	extends: BaseDragAndDrop,
 	setup(props: TBaseComponentProps<IDragAndDropProps>) {
-		const instance = useInstance(TDragAndDrop, props)
+		const ctrl = useInstance(TDragAndDrop, props)
 
 		useProvideDragContext()
 
-		return { instance }
+		return { ctrl }
 	},
 }
 </script>

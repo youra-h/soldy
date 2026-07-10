@@ -14,22 +14,22 @@ export default {
 	extends: BaseListBox,
 	components: { ListBoxItem },
 	setup(props: TBaseComponentViewProps<IListBoxProps, IListBox>, { emit }) {
-		const instance = useInstance(TListBox, props)
+		const ctrl = useInstance(TListBox, props)
 
 		const plugins = useBundle(createListBundle, props?.plugins)
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 
 		const rootRef = useElementBinding(plugins)
 
 		const { rendered, visible, disabled, classes, items } = syncListBox({
 			props,
-			instance,
+			ctrl,
 			plugins,
 			emit,
 		})
 
 		return {
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			rendered,

@@ -12,21 +12,21 @@ export default {
 	name: '_ComponentView',
 	extends: BaseComponentView,
 	setup(props: TBaseComponentViewProps<IComponentViewProps>, { emit }: SetupContext) {
-		const instance = useInstance(TComponentView, props)
+		const ctrl = useInstance(TComponentView, props)
 
 		const plugins = useBundle(createComponentViewBundle, props?.plugins)
 
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 
 		const rootRef = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes } = syncComponentView({
 			props,
-			instance,
+			ctrl,
 			plugins,
 			emit,
 		})
 
-		return { instance, plugins, rootRef, tag, rendered, visible, classes }
+		return { ctrl, plugins, rootRef, tag, rendered, visible, classes }
 	},
 }

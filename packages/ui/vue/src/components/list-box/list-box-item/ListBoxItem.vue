@@ -16,10 +16,10 @@ export default {
 	extends: BaseListBoxItem,
 	components: { Button },
 	setup(props: TBaseComponentViewProps<IListItemProps, IListBoxItem>, { emit }) {
-		const instance = useInstance(TListBoxItem, props)
+		const ctrl = useInstance(TListBoxItem, props)
 
 		const plugins = useBundle(createListItemBundle, props?.plugins)
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 
 		const rootRef = useElementBinding(plugins)
 
@@ -36,14 +36,14 @@ export default {
 			view,
 			order,
 			highlighted,
-		} = syncListBoxItem({ props, instance, plugins, emit })
+		} = syncListBoxItem({ props, ctrl, plugins, emit })
 
 		const { containerAttrs, controlAttrs } = useSplitAttrs()
 
 		return {
 			containerAttrs,
 			controlAttrs,
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			tag,
@@ -73,7 +73,7 @@ export default {
 			:variant="variant"
 			:aria-selected="selected"
 			:data-highlighted="highlighted"
-			@click="instance.toggleSelected()"
+			@click="ctrl.toggleSelected()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>

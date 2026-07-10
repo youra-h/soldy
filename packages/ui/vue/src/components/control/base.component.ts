@@ -46,24 +46,24 @@ export interface IControlState extends IStylableState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncControl(
 	options: ISyncComponentOptions<IControlProps, IControl>,
 ): IControlState {
 	const syncProps = syncStylable(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:disabled' as any, (value: boolean) => {
+	ctrl.events.on('change:disabled' as any, (value: boolean) => {
 		emit?.('change:disabled', value)
 		emit?.('update:disabled', value)
 	})
 
-	instance.events.on('change:focused' as any, (value: boolean) => {
+	ctrl.events.on('change:focused' as any, (value: boolean) => {
 		emit?.('change:focused', value)
 		emit?.('focused', value)
 		emit?.('update:focused', value)
@@ -72,8 +72,8 @@ export function syncControl(
 	watch<boolean | undefined>(
 		() => props.disabled,
 		(value) => {
-			if (value !== undefined && value !== instance.disabled) {
-				instance.disabled = value
+			if (value !== undefined && value !== ctrl.disabled) {
+				ctrl.disabled = value
 			}
 		},
 	)
@@ -81,17 +81,17 @@ export function syncControl(
 	watch<boolean | undefined>(
 		() => props.focused,
 		(value) => {
-			if (value !== undefined && value !== instance.focused) {
-				instance.focused = value
+			if (value !== undefined && value !== ctrl.focused) {
+				ctrl.focused = value
 			}
 		},
 	)
 
 	const sync: Record<string, any> = {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			disabled: () => instance.disabled,
-			focused: () => instance.focused,
+		...useSyncProps(ctrl.events as any, {
+			disabled: () => ctrl.disabled,
+			focused: () => ctrl.focused,
 		}),
 	}
 

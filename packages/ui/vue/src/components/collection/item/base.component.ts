@@ -25,30 +25,30 @@ export interface ICollectionItemState<T extends ICollectionItem = ICollectionIte
 export function syncCollectionItem(
 	options: ISyncComponentOptions<ICollectionItemProps, ICollectionItem>,
 ): ICollectionItemState {
-	const { instance, emit, plugins } = options
+	const { ctrl, emit, plugins } = options
 
 	// Использовать inject для получения коллекции родителя и автоматической регистрации в ней (если декларативный режим)
-	useInjectCollectionItem(instance)
+	useInjectCollectionItem(ctrl)
 	// Использовать inject для получения плагинов коллекции родителя и автоматической регистрации в них (если декларативный режим)
-	useInjectCollectionItemPlugins(instance.uid, plugins)
+	useInjectCollectionItemPlugins(ctrl.uid, plugins)
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('free', (item: ICollectionItem) => {
+	ctrl.events.on('free', (item: ICollectionItem) => {
 		// Скрываем компонент через Vue proxy — иначе реактивность не сработает,
 		// т.к. free() вызывается на raw-объекте, а не через proxy
-		if ('rendered' in instance) {
-			;(instance as ICollectionItem & { rendered: boolean }).rendered = false
+		if ('rendered' in ctrl) {
+			;(ctrl as ICollectionItem & { rendered: boolean }).rendered = false
 		}
 		emit?.('free', item)
 	})
 
-	instance.events.on('change:order', (value: number) => {
+	ctrl.events.on('change:order', (value: number) => {
 		emit?.('change:order', value)
 	})
 
 	return {
-		...useSyncProps(instance.events, {
-			order: () => instance.order,
+		...useSyncProps(ctrl.events, {
+			order: () => ctrl.order,
 		}),
 	}
 }

@@ -37,9 +37,9 @@ export function syncListBox(
 ): IListState<IListBoxItem> {
 	const syncProps = syncList<IListBoxItem>(options)
 
-	const { props, instance, emit } = options
+	const { props, ctrl, emit } = options
 
-	instance.events.on('change:view', (value: TListBoxView) => {
+	ctrl.events.on('change:view', (value: TListBoxView) => {
 		emit?.('change:view', value)
 		emit?.('update:view', value)
 	})
@@ -47,8 +47,8 @@ export function syncListBox(
 	watch<TListBoxView | undefined>(
 		() => props.view,
 		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
+			if (value !== undefined && value !== ctrl.view) {
+				ctrl.view = value
 			}
 		},
 	)

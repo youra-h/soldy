@@ -20,10 +20,10 @@ export default {
 	extends: BaseCollapseItem,
 	components: { Icon, Button },
 	setup(props: TBaseComponentViewProps<ICollapseItemProps, ICollapseItem>, { emit }) {
-		const instance = useInstance(TCollapseItem, props)
+		const ctrl = useInstance(TCollapseItem, props)
 
 		const plugins = useBundle(createComponentViewBundle, props?.plugins)
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 
 		const rootRef = useElementBinding(plugins)
 
@@ -39,7 +39,7 @@ export default {
 			arrowPlacement,
 			view,
 			order,
-		} = syncCollapseItem({ props, instance, plugins, emit })
+		} = syncCollapseItem({ props, ctrl, plugins, emit })
 
 		const arrowIconTag = useIconImport('arrowRight')
 
@@ -48,7 +48,7 @@ export default {
 		return {
 			containerAttrs,
 			controlAttrs,
-			instance,
+			ctrl,
 			arrowIconTag,
 			plugins,
 			rootRef,
@@ -83,7 +83,7 @@ export default {
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			@click="instance.toggleSelected()"
+			@click="ctrl.toggleSelected()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>

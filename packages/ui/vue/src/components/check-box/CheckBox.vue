@@ -18,11 +18,11 @@ export default {
     inheritAttrs: false,
     extends: BaseCheckBox,
     setup(props: TBaseComponentViewProps<ICheckBoxProps, ICheckBox>, { emit }) {
-        const instance = useInstance(TCheckBox, props);
+        const ctrl = useInstance(TCheckBox, props);
         // Инициализация плагинов
         const plugins = useBundle(createInputBoolBundle, props?.plugins);
         // Привязка инстанса к плагинам
-        useInstanceBinding(plugins, instance);
+        useInstanceBinding(plugins, ctrl);
         // Привязка элемента и инстанса к плагинам
         const rootRef = useElementBinding(plugins);
 
@@ -40,7 +40,7 @@ export default {
             required,
         } = syncCheckBox({
             props,
-            instance,
+            ctrl,
             plugins,
             emit,
         });
@@ -54,7 +54,7 @@ export default {
         return {
             containerAttrs,
             controlAttrs,
-            instance,
+            ctrl,
             defaultIconTag,
             defaultIndeterminateIconTag,
             plugins,
@@ -85,12 +85,12 @@ export default {
     >
         <input
             type="checkbox"
-            :id="instance.uid.toString()"
+            :id="ctrl.uid.toString()"
             :checked="value"
             :name="name"
             :disabled="disabled"
             :required="required"
-            :aria-checked="instance.getAriaChecked()"
+            :aria-checked="ctrl.getAriaChecked()"
             v-bind="controlAttrs"
         />
         <div class="s-check-box__container">

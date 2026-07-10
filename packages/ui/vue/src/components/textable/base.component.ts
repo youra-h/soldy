@@ -32,17 +32,17 @@ export interface ITextableState extends IControlState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export function syncTextable(options: ISyncComponentOptions<ITextableProps, ITextable>): ITextableState {
 	const syncProps = syncControl(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:text' as any, (value: string) => {
+	ctrl.events.on('change:text' as any, (value: string) => {
 		emit?.('change:text', value)
 		emit?.('update:text', value)
 	})
@@ -50,16 +50,16 @@ export function syncTextable(options: ISyncComponentOptions<ITextableProps, ITex
 	watch<string | undefined>(
 		() => props.text,
 		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
+			if (value !== undefined && value !== ctrl.text) {
+				ctrl.text = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			text: () => instance.text,
+		...useSyncProps(ctrl.events as any, {
+			text: () => ctrl.text,
 		}),
 	}
 }

@@ -41,9 +41,9 @@ export default {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param props
- * @param instance
+ * @param ctrl
  */
 export interface ICheckBoxState extends IInputControlState<boolean | undefined> {
 	indeterminate: Ref<boolean>
@@ -55,15 +55,15 @@ export function syncCheckBox(
 ): ICheckBoxState {
 	const syncProps = syncInputControl(options)
 
-	const { instance, props, emit } = options
+	const { ctrl, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:indeterminate' as any, (value: boolean) => {
+	ctrl.events.on('change:indeterminate' as any, (value: boolean) => {
 		emit?.('change:indeterminate', value)
 		emit?.('update:indeterminate', value)
 	})
 
-	instance.events.on('change:plain' as any, (value: boolean) => {
+	ctrl.events.on('change:plain' as any, (value: boolean) => {
 		emit?.('change:plain', value)
 		emit?.('update:plain', value)
 	})
@@ -71,8 +71,8 @@ export function syncCheckBox(
 	watch<boolean | undefined>(
 		() => props.indeterminate,
 		(value) => {
-			if (value !== undefined && value !== instance.indeterminate) {
-				instance.indeterminate = value
+			if (value !== undefined && value !== ctrl.indeterminate) {
+				ctrl.indeterminate = value
 			}
 		},
 	)
@@ -80,17 +80,17 @@ export function syncCheckBox(
 	watch<boolean | undefined>(
 		() => props.plain,
 		(value) => {
-			if (value !== undefined && value !== instance.plain) {
-				instance.plain = value
+			if (value !== undefined && value !== ctrl.plain) {
+				ctrl.plain = value
 			}
 		},
 	)
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			indeterminate: () => instance.indeterminate,
-			plain: () => instance.plain,
+		...useSyncProps(ctrl.events as any, {
+			indeterminate: () => ctrl.indeterminate,
+			plain: () => ctrl.plain,
 		}),
 	}
 }

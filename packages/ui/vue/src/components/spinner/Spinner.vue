@@ -12,27 +12,27 @@ export default {
 	name: '_Spinner',
 	extends: BaseSpinner,
 	setup(props: TBaseComponentViewProps<ISpinnerProps, ISpinner>, { emit }) {
-		const instance = useInstance(TSpinner, props)
+		const ctrl = useInstance(TSpinner, props)
 		// Инициализация плагинов
 		const plugins = useBundle(createComponentViewBundle, props?.plugins).use(
 			TSpinnerStylePlugin,
 		)
 
 		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
+		useInstanceBinding(plugins, ctrl)
 		// Привязка элемента и инстанса к плагинам
 		const rootRef = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes, size, variant, borderWidth, styles } =
 			syncSpinner({
 				props,
-				instance,
+				ctrl,
 				plugins,
 				emit,
 			})
 
 		return {
-			instance,
+			ctrl,
 			plugins,
 			rootRef,
 			styles,

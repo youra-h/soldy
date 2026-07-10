@@ -30,16 +30,16 @@ type SyncPropsResult<TMap extends PropSpecMap> = {
  *
  * @example
  * // Краткая форма — событие выводится как `change:<key>`
- * return useSyncProps(instance.events, {
- *   rendered: () => instance.rendered,
- *   visible:  () => instance.visible,
- *   classes:  () => instance.classes.list,
+ * return useSyncProps(ctrl.events, {
+ *   rendered: () => ctrl.rendered,
+ *   visible:  () => ctrl.visible,
+ *   classes:  () => ctrl.classes.list,
  * })
  *
  * @example
  * // Явная форма — кастомные события или нестандартные имена
- * return useSyncProps(instance.events, {
- *   active: { value: () => instance.active, triggers: ['change:activation'] },
+ * return useSyncProps(ctrl.events, {
+ *   active: { value: () => ctrl.active, triggers: ['change:activation'] },
  * })
  */
 export function useSyncProps<TMap extends PropSpecMap>(

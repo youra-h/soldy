@@ -79,7 +79,7 @@ export interface IFrameState extends IComponentState {
 }
 
 /**
- * Bind props to instance properties.
+ * Bind props to ctrl properties.
  * @param options - sync options
  */
 export function syncFrame(
@@ -87,32 +87,32 @@ export function syncFrame(
 ): IFrameState {
 	const syncProps = syncComponent(options)
 
-	const { instance, emit, plugins } = options
+	const { ctrl, emit, plugins } = options
 
-	instance.events.on('change:x' as any, (value: number) => {
+	ctrl.events.on('change:x' as any, (value: number) => {
 		emit?.('change:x', value)
 		emit?.('update:x', value)
 	})
-	instance.events.on('change:y' as any, (value: number) => {
+	ctrl.events.on('change:y' as any, (value: number) => {
 		emit?.('change:y', value)
 		emit?.('update:y', value)
 	})
-	instance.events.on('change:width' as any, (value: number | string) => {
+	ctrl.events.on('change:width' as any, (value: number | string) => {
 		emit?.('change:width', value)
 		emit?.('update:width', value)
 	})
-	instance.events.on('change:height' as any, (value: number | string) => {
+	ctrl.events.on('change:height' as any, (value: number | string) => {
 		emit?.('change:height', value)
 		emit?.('update:height', value)
 	})
-	instance.events.on('change:zIndex' as any, (value: number) => {
+	ctrl.events.on('change:zIndex' as any, (value: number) => {
 		emit?.('change:zIndex', value)
 	})
-	instance.events.on('change:position' as any, (value: TFramePosition) => {
+	ctrl.events.on('change:position' as any, (value: TFramePosition) => {
 		emit?.('change:position', value)
 		emit?.('update:position', value)
 	})
-	instance.events.on('change:target' as any, (value: string) => {
+	ctrl.events.on('change:target' as any, (value: string) => {
 		emit?.('change:target', value)
 		emit?.('update:target', value)
 	})
@@ -121,13 +121,13 @@ export function syncFrame(
 
 	return {
 		...syncProps,
-		...useSyncProps(instance.events as any, {
-			x: () => instance.x,
-			y: () => instance.y,
-			width: () => instance.width,
-			height: () => instance.height,
-			position: () => instance.position,
-			target: () => instance.target,
+		...useSyncProps(ctrl.events as any, {
+			x: () => ctrl.x,
+			y: () => ctrl.y,
+			width: () => ctrl.width,
+			height: () => ctrl.height,
+			position: () => ctrl.position,
+			target: () => ctrl.target,
 		}),
 		...useSyncProps(stylePlugin.events as any, {
 			styles: () => stylePlugin.styles,
