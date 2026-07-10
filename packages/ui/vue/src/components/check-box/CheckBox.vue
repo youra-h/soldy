@@ -1,78 +1,8 @@
 <script lang="ts">
-import { TCheckBox, type ICheckBox, type ICheckBoxProps } from '@soldy/core';
-import BaseCheckBox, { syncCheckBox } from './base.component';
-import {
-    useInstance,
-    useIconImport,
-    useBundle,
-    useElementBinding,
-    useInstanceBinding,
-    useSplitAttrs,
-} from '../../composables';
-import { Icon } from '../icon';
-import { createInputBoolBundle } from '@soldy/plugins';
-import type { TBaseComponentViewProps } from '../component-view';
+import { Icon } from '../icon'
+import SetupCheckBox from './setup.component'
 
-export default {
-    name: '_CheckBox',
-    inheritAttrs: false,
-    extends: BaseCheckBox,
-    setup(props: TBaseComponentViewProps<ICheckBoxProps, ICheckBox>, { emit }) {
-        const instance = useInstance(TCheckBox, props);
-        // Инициализация плагинов
-        const plugins = useBundle(createInputBoolBundle, props?.plugins);
-        // Привязка инстанса к плагинам
-        useInstanceBinding(plugins, instance);
-        // Привязка элемента и инстанса к плагинам
-        const rootRef = useElementBinding(plugins);
-
-        const {
-            rendered,
-            visible,
-            classes,
-            disabled,
-            name,
-            size,
-            indeterminate,
-            plain,
-            value,
-            readonly,
-            required,
-        } = syncCheckBox({
-            props,
-            instance,
-            plugins,
-            emit,
-        });
-
-        // Иконки по умолчанию
-        const defaultIconTag = useIconImport('check');
-        const defaultIndeterminateIconTag = useIconImport('checkIndeterminate');
-
-        const { containerAttrs, controlAttrs } = useSplitAttrs();
-
-        return {
-            containerAttrs,
-            controlAttrs,
-            instance,
-            defaultIconTag,
-            defaultIndeterminateIconTag,
-            plugins,
-            rootRef,
-            rendered,
-            visible,
-            classes,
-            disabled,
-            name,
-            size,
-            indeterminate,
-            plain,
-            value,
-            readonly,
-            required,
-        };
-    },
-};
+export default { ...SetupCheckBox }
 </script>
 
 <template>
