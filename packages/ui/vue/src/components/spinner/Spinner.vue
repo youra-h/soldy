@@ -1,51 +1,7 @@
 <script lang="ts">
-import { TSpinner, type ISpinnerProps, type ISpinner } from '@soldy/core'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import BaseSpinner, { syncSpinner } from './base.component'
-import { createComponentViewBundle, TSpinnerStylePlugin } from '@soldy/plugins'
-import type { TBaseComponentViewProps } from '../component-view'
+import SetupSpinner from './setup.component'
 
-export default {
-	name: '_Spinner',
-	extends: BaseSpinner,
-	setup(props: TBaseComponentViewProps<ISpinnerProps, ISpinner>, { emit }) {
-		const instance = useInstance(TSpinner, props)
-		// Инициализация плагинов
-		const plugins = useBundle(createComponentViewBundle, props?.plugins).use(
-			TSpinnerStylePlugin,
-		)
-
-		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
-		// Привязка элемента и инстанса к плагинам
-		const rootRef = useElementBinding(plugins)
-
-		const { tag, rendered, visible, classes, size, variant, borderWidth, styles } =
-			syncSpinner({
-				props,
-				instance,
-				plugins,
-				emit,
-			})
-
-		return {
-			instance,
-			plugins,
-			rootRef,
-			styles,
-			tag,
-			rendered,
-			visible,
-			classes,
-			size,
-			variant,
-			borderWidth,
-		}
-	},
-}
+export default { ...SetupSpinner }
 </script>
 
 <template>

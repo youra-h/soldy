@@ -1,55 +1,7 @@
 <script lang="ts">
-import { TSwitch, type ISwitchProps, type ISwitch } from '@soldy/core'
-import BaseSwitch, { syncSwitch } from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { useSplitAttrs } from '../../composables/useSplitAttrs'
-import { createInputBoolBundle } from '@soldy/plugins'
-import type { TBaseComponentViewProps } from '../component-view'
+import SetupSwitch from './setup.component'
 
-export default {
-	name: '_Switch',
-	inheritAttrs: false,
-	extends: BaseSwitch,
-	setup(props: TBaseComponentViewProps<ISwitchProps, ISwitch>, { emit }) {
-		const instance = useInstance(TSwitch, props)
-		// Инициализация плагинов
-		const plugins = useBundle(createInputBoolBundle, props?.plugins)
-		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
-		// Привязка элемента и инстанса к плагинам
-		const rootRef = useElementBinding(plugins)
-
-		const { rendered, visible, classes, disabled, name, size, value, readonly, required } =
-			syncSwitch({
-				props,
-				instance,
-				plugins,
-				emit,
-			})
-
-		const { containerAttrs, controlAttrs } = useSplitAttrs()
-
-		return {
-			containerAttrs,
-			controlAttrs,
-			instance,
-			plugins,
-			rootRef,
-			rendered,
-			visible,
-			classes,
-			disabled,
-			name,
-			size,
-			value,
-			readonly,
-			required,
-		}
-	},
-}
+export default { ...SetupSwitch }
 </script>
 
 <template>
