@@ -1,7 +1,7 @@
 <script lang="ts">
-import SetupComponent from './setup.component'
+import SetupComponentView from './setup.component'
 
-export default { ...SetupComponent }
+export default { ...SetupComponentView }
 </script>
 
 <template>
