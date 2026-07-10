@@ -1,37 +1,8 @@
 <script lang="ts">
-import { TTabs, type ITabsProps, type ITabs } from '@soldy/core'
-import BaseTabs, { syncTabs } from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { createTabsBundle } from '@soldy/plugins'
 import { TabItem } from './tab-item'
-import type { TBaseComponentViewProps } from '../component-view'
+import SetupTabs from './setup.component'
 
-export default {
-	name: '_Tabs',
-	extends: BaseTabs,
-	components: { TabItem },
-	setup(props: TBaseComponentViewProps<ITabsProps, ITabs>, { emit }) {
-		const instance = useInstance(TTabs, props)
-		// Инициализация плагинов
-		const plugins = useBundle(createTabsBundle, props?.plugins)
-		// Привязка инстанса к плагинам
-		useInstanceBinding(plugins, instance)
-		// Привязка элемента и инстанса к плагинам
-		const rootRef = useElementBinding(plugins)
-
-		const { rendered, visible, classes, items, activeItem } = syncTabs({
-			props,
-			instance,
-			plugins,
-			emit,
-		})
-
-		return { instance, plugins, rootRef, rendered, visible, classes, activeItem, items }
-	},
-}
+export default { ...SetupTabs, components: { TabItem } }
 </script>
 
 <template>
