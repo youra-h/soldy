@@ -6,7 +6,7 @@ describe('TSkeleton', () => {
 	it('should create with default values', () => {
 		const skeleton = new TSkeleton()
 
-		expect(skeleton.size).toBe('auto')
+		expect(skeleton.size).toBe('normal')
 		expect(skeleton.variant).toBe('normal')
 		expect(skeleton.shape).toBe('rounded')
 		expect(skeleton.animation).toBe('pulse')
@@ -35,7 +35,7 @@ describe('TSkeleton', () => {
 	it('should change size', () => {
 		const skeleton = new TSkeleton()
 
-		expect(skeleton.size).toBe('auto')
+		expect(skeleton.size).toBe('normal')
 
 		skeleton.size = 'xl'
 		expect(skeleton.size).toBe('xl')
@@ -103,11 +103,11 @@ describe('TSkeleton', () => {
 
 	it('should have size class', () => {
 		const skeleton = new TSkeleton()
-		expect(skeleton.classes.has('--size-auto')).toBe(true)
+		expect(skeleton.classes.has('--size-normal')).toBe(true)
 
 		skeleton.size = 'lg'
 		expect(skeleton.classes.has('--size-lg')).toBe(true)
-		expect(skeleton.classes.has('--size-auto')).toBe(false)
+		expect(skeleton.classes.has('--size-normal')).toBe(false)
 	})
 
 	it('should have shape class', () => {
