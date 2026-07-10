@@ -32,9 +32,7 @@ export default {
 	props: propsComponent,
 	created() {
 		// @ts-ignore
-		this.$emit('created', { instance: this.instance, plugins: this.plugins })
-
-		console.log('BaseComponent created', this)
+		this.$emit('created', { ctrl: this.instance, plugins: this.plugins })
 	},
 }
 

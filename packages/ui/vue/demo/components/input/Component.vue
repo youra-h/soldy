@@ -46,19 +46,19 @@ const closeIcon = useIconImport('close');
             :placeholder="placeholder"
             v-bind="handlers"
         >
-            <template #leading="{ instance }">
-                <Button :size="shiftSize(instance.size, -1)" view="plain"
+            <template #leading="{ ctrl }">
+                <Button :size="shiftSize(ctrl.size, -1)" view="plain"
                     ><Icon :tag="searchIcon"
                 /></Button>
-                <Button :size="shiftSize(instance.size, -1)" view="plain"
+                <Button :size="shiftSize(ctrl.size, -1)" view="plain"
                     >Text</Button
                 >
             </template>
-            <template #trailing="{ instance }">
-                <Button :size="shiftSize(instance.size, -1)" view="plain"
+            <template #trailing="{ ctrl }">
+                <Button :size="shiftSize(ctrl.size, -1)" view="plain"
                     >Text</Button
                 >
-                <Button :size="shiftSize(instance.size, -1)" view="plain"
+                <Button :size="shiftSize(ctrl.size, -1)" view="plain"
                     ><Icon :tag="closeIcon"
                 /></Button>
             </template>
