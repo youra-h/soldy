@@ -4,29 +4,6 @@ import SetupInput from './setup.component'
 export default { ...SetupInput }
 </script>
 
-		const { containerAttrs, controlAttrs } = useSplitAttrs()
-
-		return {
-			containerAttrs,
-			controlAttrs,
-			instance,
-			plugins,
-			rootRef,
-			rendered,
-			visible,
-			classes,
-			disabled,
-			name,
-			size,
-			value,
-			readonly,
-			required,
-			placeholder,
-		}
-	},
-}
-</script>
-
 <template>
 	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<div v-if="$slots.leading" class="s-input__leading">
