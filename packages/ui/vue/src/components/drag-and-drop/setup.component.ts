@@ -13,6 +13,6 @@ export default {
 
 		useProvideDragContext()
 
-		return { instance }
+		return { ctrl: instance }
 	},
 }

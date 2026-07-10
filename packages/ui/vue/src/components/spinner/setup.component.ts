@@ -31,7 +31,7 @@ export default {
 			})
 
 		return {
-			instance,
+			ctrl: instance,
 			plugins,
 			rootRef,
 			styles,

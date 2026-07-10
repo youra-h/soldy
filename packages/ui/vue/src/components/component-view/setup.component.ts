@@ -27,6 +27,6 @@ export default {
 			emit,
 		})
 
-		return { instance, plugins, rootRef, tag, rendered, visible, classes }
+		return { ctrl: instance, plugins, rootRef, tag, rendered, visible, classes }
 	},
 }

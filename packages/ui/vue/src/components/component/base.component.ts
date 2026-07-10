@@ -33,6 +33,8 @@ export default {
 	created() {
 		// @ts-ignore
 		this.$emit('created', { instance: this.instance, plugins: this.plugins })
+
+		console.log('BaseComponent created', this)
 	},
 }
 

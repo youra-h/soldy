@@ -45,7 +45,7 @@ export default {
 		return {
 			containerAttrs,
 			controlAttrs,
-			instance,
+			ctrl: instance,
 			arrowIconTag,
 			plugins,
 			rootRef,

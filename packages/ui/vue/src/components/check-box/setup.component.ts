@@ -52,7 +52,7 @@ export default {
 		return {
 			containerAttrs,
 			controlAttrs,
-			instance,
+			ctrl: instance,
 			defaultIconTag,
 			defaultIndeterminateIconTag,
 			plugins,
