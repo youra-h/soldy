@@ -36,9 +36,10 @@ export default {
 	props: propsComponent,
 	created() {
 		// @ts-ignore
-		;(this.instance! as IComponent).id = this.$.uid
+		// ;(this.instance! as IComponent).id = this.$.uid
 		// @ts-ignore
 		this.$emit('created', { instance: this.instance, plugins: this.plugins })
+		console.log('BaseComponent created', this.$.uid, this.instance, this)
 	},
 }
 
