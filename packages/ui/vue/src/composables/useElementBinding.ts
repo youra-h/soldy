@@ -1,7 +1,7 @@
 import { ref, onUnmounted, type Ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
-import type { IPluginBundle } from '@soldy/plugins/base'
-import { TElementPlugin } from '@soldy/plugins/common/element'
+import type { IPluginBundle } from '@soldy/plugins'
+import { TElementPlugin } from '@soldy/plugins'
 
 /**
  * Утилита для привязки DOM-элемента к `TElementPlugin` внутри бандла.
