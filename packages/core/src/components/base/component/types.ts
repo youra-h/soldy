@@ -27,7 +27,6 @@ export type TComponentEvents = {
 }
 
 export interface IComponentProps {
-	id?: string | number
 	/** Отрисован ли компонент (аналог v-if) */
 	rendered?: boolean
 	/** Виден ли компонент (логическая видимость) */

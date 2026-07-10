@@ -1,7 +1,7 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { watch } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponent, type IComponentProps, TComponent } from '@soldy/core'
+import { type IComponent, type IComponentProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 
 export const emitsComponent: TEmits = [
@@ -24,10 +24,6 @@ export const propsComponent: TProps = {
 	ctrl: {
 		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
 	},
-	id: {
-		type: [String, Number] as PropType<IComponentProps['id']>,
-		default: TComponent.defaultValues.id,
-	},
 }
 
 export default {
@@ -35,8 +31,6 @@ export default {
 	emits: emitsComponent,
 	props: propsComponent,
 	created() {
-		// @ts-ignore
-		;(this.instance! as IComponent).id = this.$.uid
 		// @ts-ignore
 		this.$emit('created', { instance: this.instance, plugins: this.plugins })
 	},

@@ -27,7 +27,6 @@ export default class TComponentView<
 
 	static defaultValues: Partial<IComponentViewProps> = {
 		...TComponent.defaultValues,
-		id: '',
 		tag: 'div',
 	}
 

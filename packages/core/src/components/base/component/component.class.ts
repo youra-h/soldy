@@ -14,7 +14,7 @@ import type {
 /**
  * Headless-модель компонента.
  *
- * База для всех компонентов. Хранит `id`, `events`, `visible`, `rendered`.
+ * База для всех компонентов. Хранит `events`, `visible`, `rendered`.
  */
 export default class TComponent<
 	TProps extends IComponentProps = IComponentProps,
@@ -25,12 +25,10 @@ export default class TComponent<
 	implements IComponent<TProps, TEvents, TStates>
 {
 	static defaultValues: Partial<IComponentProps> = {
-		id: '',
 		rendered: true,
 		visible: true,
 	}
 
-	protected _id: string | number
 	protected _states = {} as TStates
 	public readonly events: TEvented<TEvents>
 
@@ -41,7 +39,6 @@ export default class TComponent<
 		super()
 
 		this.events = new TEvented<TEvents>()
-		this._id = props.id ?? ctor.defaultValues.id!
 
 		// Инициализируем состояния видимости
 		const rendered = props.rendered ?? (ctor.defaultValues.rendered as boolean)
@@ -103,15 +100,6 @@ export default class TComponent<
 
 	get states(): TStates {
 		return this._states
-	}
-
-	get id(): string | number {
-		return this._id
-	}
-
-	set id(value: string | number) {
-		if (this._id === value) return
-		this._id = value
 	}
 
 	get present(): boolean {
@@ -185,7 +173,6 @@ export default class TComponent<
 	getProps(): TProps {
 		return {
 			...super.getProps(),
-			id: this._id,
 			rendered: this.rendered,
 			visible: this.visible,
 		} as TProps
