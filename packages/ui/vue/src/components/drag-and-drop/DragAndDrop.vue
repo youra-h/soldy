@@ -1,21 +1,7 @@
 <script lang="ts">
-import { TDragAndDrop, type IDragAndDropProps } from '@soldy/core'
-import BaseDragAndDrop from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useProvideDragContext } from '../../composables/useDragContext'
-import type { TBaseComponentProps } from '../component'
+import SetupDragAndDrop from './setup.component'
 
-export default {
-	name: '_DragAndDrop',
-	extends: BaseDragAndDrop,
-	setup(props: TBaseComponentProps<IDragAndDropProps>) {
-		const instance = useInstance(TDragAndDrop, props)
-
-		useProvideDragContext()
-
-		return { instance }
-	},
-}
+export default { ...SetupDragAndDrop }
 </script>
 
 <template>
