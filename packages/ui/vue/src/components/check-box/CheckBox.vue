@@ -85,7 +85,7 @@ export default {
     >
         <input
             type="checkbox"
-            :id="instance.id.toString()"
+            :id="instance.uid.toString()"
             :checked="value"
             :name="name"
             :disabled="disabled"

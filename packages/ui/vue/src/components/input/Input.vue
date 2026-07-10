@@ -59,7 +59,7 @@ export default {
 		</div>
 		<input
 			type="text"
-			:id="instance.id.toString()"
+			:id="instance.uid.toString()"
 			:value="value"
 			:name="name"
 			:disabled="disabled"

@@ -56,7 +56,7 @@ export default {
 	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<input
 			type="checkbox"
-			:id="instance.id.toString()"
+			:id="instance.uid.toString()"
 			:checked="value"
 			:name="name"
 			:disabled="disabled"
