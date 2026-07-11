@@ -1,32 +1,37 @@
 /**
- * Отслеживает изменение значения по геттеру и вызывает коллбэк при изменении.
- * Возвращает функцию для ручного вызова проверки — каждый фреймворк вызывает её
- * по-своему (Vue через watch, React на каждом рендере).
+ * Оборачивает объект в Proxy и вызывает коллбэк при изменении указанного ключа.
+ * Позволяет синхронизировать значения из props → instance без фреймворк-специфичных watch/useEffect.
  *
- * @param getter - функция, возвращающая текущее значение
+ * @param source - исходный объект (например, props из компонента)
+ * @param key - ключ для отслеживания
  * @param callback - коллбэк, вызываемый при изменении значения
- * @returns функция для ручного запуска проверки
+ * @returns исходный объект (перезаписывать результат не нужно, Proxy уже активен)
  *
  * @example
  * ```ts
- * const check = track(() => props.rendered, (value) => {
- *   instance.rendered = value
+ * track(props, 'rendered', (value) => {
+ *   if (value !== undefined) instance.rendered = value
  * })
- * // Vue: watch(() => props.rendered, check)
- * // React: useEffect(() => { check() }, [props.rendered])
  * ```
  */
-export function track<T>(
-	getter: () => T,
-	callback: (value: T) => void,
-): () => void {
-	let prev: T = getter()
+export function track<T extends object, K extends keyof T>(
+	source: T,
+	key: K,
+	callback: (value: T[K]) => void,
+): void {
+	let prev = source[key]
 
-	return () => {
-		const current = getter()
-		if (current !== prev) {
-			prev = current
-			callback(current)
-		}
-	}
+	Object.defineProperty(source, key, {
+		get() {
+			return prev
+		},
+		set(value: T[K]) {
+			if (value !== prev) {
+				prev = value
+				callback(value)
+			}
+		},
+		configurable: true,
+		enumerable: true,
+	})
 }

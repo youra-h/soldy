@@ -78,10 +78,10 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 		emit?.('update:rendered', value)
 	})
 
-	track(() => props.rendered, (value) => {
+	track(props, 'rendered', (value) => {
 		if (value !== undefined) instance.rendered = value
 	})
-	track(() => props.visible, (value) => {
+	track(props, 'visible', (value) => {
 		if (value !== undefined) instance.visible = value
 	})
 
