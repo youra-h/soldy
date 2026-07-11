@@ -86,12 +86,12 @@ export interface IComponentSetupConfig<TCtor extends new (...args: any[]) => any
  * export default {
  *     name: '_MyButton',
  *     extends: BaseButton,
- *     setup(props, { emit }) {
+ *     setup(props, ctx) {
  *         const base = useComponentSetup({
  *             Ctor: TButton,
  *             plugins: createComponentViewBundle,
  *             sync: (ctx) => syncButton(ctx),
- *         })(props, { emit })
+ *         })(props, ctx)
  *
  *         return {
  *             ...base,
