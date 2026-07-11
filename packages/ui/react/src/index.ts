@@ -1,2 +1,3 @@
 // @soldy/ui-react
-export {}
+export * from './components/component'
+export * from './components/component-view'
