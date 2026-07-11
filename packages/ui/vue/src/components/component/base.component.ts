@@ -1,7 +1,6 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
-import { watch } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponent, type IComponentProps } from '@soldy/core'
+import { type IComponent, type IComponentProps, track } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 
 export const emitsComponent: TEmits = [
@@ -79,23 +78,12 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 		emit?.('update:rendered', value)
 	})
 
-	watch<boolean | undefined>(
-		() => props.rendered,
-		(value) => {
-			if (value !== undefined && value !== instance.rendered) {
-				instance.rendered = value
-			}
-		},
-	)
-
-	watch<boolean | undefined>(
-		() => props.visible,
-		(value) => {
-			if (value !== undefined && value !== instance.visible) {
-				instance.visible = value
-			}
-		},
-	)
+	track(() => props.rendered, (value) => {
+		if (value !== undefined) instance.rendered = value
+	})
+	track(() => props.visible, (value) => {
+		if (value !== undefined) instance.visible = value
+	})
 
 	return useSyncProps(instance.events, {
 		rendered: () => instance.rendered,

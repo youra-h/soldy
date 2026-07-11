@@ -3,3 +3,4 @@
 export * from './components'
 // вспомогательные функции
 export * from './bridge'
+export * from './adapter'
