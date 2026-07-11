@@ -1,14 +1,42 @@
-import { TButton } from '@soldy/core'
+import type { SetupContext } from 'vue'
+import { TButton, type IButton, type IButtonProps } from '@soldy/core'
+import { useInstance } from '../../composables/useInstance'
+import { useBundle } from '../../composables/useBundle'
+import { useElementBinding } from '../../composables/useElementBinding'
+import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseButton, { syncButton } from './base.component'
 import { createComponentViewBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../composables/useComponentSetup'
+import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
 	name: '_Button',
 	extends: BaseButton,
-	setup: useComponentSetup({
-		Ctor: TButton,
-		createBundle: createComponentViewBundle,
-		syncFn: (ctx) => syncButton(ctx),
-	}),
+	setup(props: TBaseComponentViewProps<IButtonProps, IButton>, { emit }: SetupContext) {
+		const instance = useInstance(TButton, props)
+
+		const plugins = useBundle(createComponentViewBundle, props?.plugins)
+
+		useInstanceBinding(plugins, instance)
+
+		const rootElement = useElementBinding(plugins)
+
+		const { tag, rendered, visible, classes, disabled, text } = syncButton({
+			props,
+			instance,
+			plugins,
+			emit,
+		})
+
+		return {
+			ctrl: instance,
+			plugins,
+			rootElement,
+			tag,
+			rendered,
+			visible,
+			disabled,
+			classes,
+			text,
+		}
+	},
 }
