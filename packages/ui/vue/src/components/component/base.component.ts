@@ -42,7 +42,7 @@ export interface IComponentState {
 }
 
 export function syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
-	const { props, instance, plugins, emit } = options
+	const { props, instance, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
 	// instance.events.on('created' as any, (instance: IComponentView) => {
