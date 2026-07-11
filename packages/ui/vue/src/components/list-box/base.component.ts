@@ -1,5 +1,5 @@
 import type { PropType } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type IListBox,
 	type IListBoxItem,
@@ -44,14 +44,11 @@ export function syncListBox(
 		emit?.('update:view', value)
 	})
 
-	watch<TListBoxView | undefined>(
-		() => props.view,
-		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
-			}
-		},
-	)
+	track(props, 'view', (value) => {
+		if (value !== undefined && value !== instance.view) {
+			instance.view = value
+		}
+	})
 
 	return syncProps
 }

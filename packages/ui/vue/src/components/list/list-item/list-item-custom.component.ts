@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type IListItemCustom,
 	type IListItemCustomProps,
@@ -69,23 +69,17 @@ export function syncListItemCustom(
 		emit?.('update:wordWrap', value)
 	})
 
-	watch<string | undefined>(
-		() => props.text,
-		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
-			}
-		},
-	)
+	track(props, 'text', (value) => {
+		if (value !== undefined && value !== instance.text) {
+			instance.text = value
+		}
+	})
 
-	watch<boolean | undefined>(
-		() => props.wordWrap,
-		(value) => {
-			if (value !== undefined && value !== instance.wordWrap) {
-				instance.wordWrap = value
-			}
-		},
-	)
+	track(props, 'wordWrap', (value) => {
+		if (value !== undefined && value !== instance.wordWrap) {
+			instance.wordWrap = value
+		}
+	})
 
 	return {
 		...syncProps,

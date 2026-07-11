@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { type IInputControl, type IInputControlProps, TInputControl } from '@soldy/core'
 import {
 	BaseValueControl,
@@ -67,23 +67,17 @@ export function syncInputControl<TValue = string>(
 		emit?.('update:required', value)
 	})
 
-	watch<boolean | undefined>(
-		() => props.readonly,
-		(value) => {
-			if (value !== undefined && value !== instance.readonly) {
-				instance.readonly = value
-			}
-		},
-	)
+	track(props, 'readonly', (value) => {
+		if (value !== undefined && value !== instance.readonly) {
+			instance.readonly = value
+		}
+	})
 
-	watch<boolean | undefined>(
-		() => props.required,
-		(value) => {
-			if (value !== undefined && value !== instance.required) {
-				instance.required = value
-			}
-		},
-	)
+	track(props, 'required', (value) => {
+		if (value !== undefined && value !== instance.required) {
+			instance.required = value
+		}
+	})
 
 	return {
 		...syncProps,

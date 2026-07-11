@@ -1,5 +1,5 @@
-import { type PropType, watch, type Ref } from 'vue'
-import { type IInputProps, type IInput, TInput } from '@soldy/core'
+import { type PropType, type Ref } from 'vue'
+import { type IInputProps, type IInput, TInput, track } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,
@@ -46,14 +46,11 @@ export function syncInput(options: ISyncComponentOptions<IInputProps, IInput>): 
 		emit?.('update:placeholder', value)
 	})
 
-	watch<string | undefined>(
-		() => props.placeholder,
-		(value) => {
-			if (value !== undefined && value !== instance.placeholder) {
-				instance.placeholder = value
-			}
-		},
-	)
+	track(props, 'placeholder', (value) => {
+		if (value !== undefined && value !== instance.placeholder) {
+			instance.placeholder = value
+		}
+	})
 
 	return {
 		...syncProps,
