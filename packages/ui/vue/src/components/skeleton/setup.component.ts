@@ -9,14 +9,10 @@ export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
 	setup(props: TBaseComponentViewProps<ISkeletonProps, ISkeleton>, ctx: SetupContext) {
-		const base = useComponentSetup({
+		return useComponentSetup({
 			Ctor: TSkeleton,
-			plugins: createComponentViewBundle,
+			plugins: () => createComponentViewBundle().use(TSkeletonStylePlugin),
 			sync: (ctx) => syncSkeleton(ctx),
 		})(props, ctx)
-
-		base.plugins.use(TSkeletonStylePlugin)
-
-		return base
 	},
 }

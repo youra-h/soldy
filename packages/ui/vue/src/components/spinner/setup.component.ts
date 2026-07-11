@@ -9,14 +9,10 @@ export default {
 	name: '_Spinner',
 	extends: BaseSpinner,
 	setup(props: TBaseComponentViewProps<ISpinnerProps, ISpinner>, ctx: SetupContext) {
-		const base = useComponentSetup({
+		return useComponentSetup({
 			Ctor: TSpinner,
-			plugins: createComponentViewBundle,
+			plugins: () => createComponentViewBundle().use(TSpinnerStylePlugin),
 			sync: (ctx) => syncSpinner(ctx),
 		})(props, ctx)
-
-		base.plugins.use(TSpinnerStylePlugin)
-
-		return base
 	},
 }

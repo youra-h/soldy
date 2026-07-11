@@ -9,14 +9,10 @@ export default {
 	name: '_Icon',
 	extends: BaseIcon,
 	setup(props: TBaseComponentViewProps<IIconProps, IIcon>, ctx: SetupContext) {
-		const base = useComponentSetup({
+		return useComponentSetup({
 			Ctor: TIcon,
-			plugins: createComponentViewBundle,
+			plugins: () => createComponentViewBundle().use(TIconStylePlugin),
 			sync: (ctx) => syncIcon(ctx),
 		})(props, ctx)
-
-		base.plugins.use(TIconStylePlugin)
-
-		return base
 	},
 }
