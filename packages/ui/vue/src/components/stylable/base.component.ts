@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { TStylable } from '@soldy/core'
 import type {
 	IStylable,
@@ -74,23 +74,17 @@ export function syncStylable(
 		emit?.('update:variant', payload)
 	})
 
-	watch<TComponentSize | undefined>(
-		() => props.size,
-		(value) => {
-			if (value !== undefined && value !== instance.size) {
-				instance.size = value
-			}
+	track(props, 'size', (value) => {
+		if (value !== undefined && value !== instance.size) {
+			instance.size = value
 		}
-	)
+	})
 
-	watch<TComponentVariant | undefined>(
-		() => props.variant,
-		(value) => {
-			if (value !== undefined && value !== instance.variant) {
-				instance.variant = value
-			}
-		},
-	)
+	track(props, 'variant', (value) => {
+		if (value !== undefined && value !== instance.variant) {
+			instance.variant = value
+		}
+	})
 
 	return {
 		...syncProps,

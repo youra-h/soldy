@@ -1,8 +1,9 @@
-import { type PropType, watch, type Ref } from 'vue'
+import { type PropType, type Ref } from 'vue'
 import {
 	type ISpinnerProps,
 	TSpinner,
 	type ISpinner,
+	track,
 } from '@soldy/core'
 import {
 	BaseStylable,
@@ -59,14 +60,11 @@ export function syncSpinner(
 		emit?.('update:borderWidth', value)
 	})
 
-	watch<'auto' | number | undefined>(
-		() => props.borderWidth,
-		(value) => {
-			if (value !== undefined && value !== instance.borderWidth) {
-				instance.borderWidth = value
-			}
-		},
-	)
+	track(props, 'borderWidth', (value) => {
+		if (value !== undefined && value !== instance.borderWidth) {
+			instance.borderWidth = value
+		}
+	})
 
 	return {
 		...syncProps,

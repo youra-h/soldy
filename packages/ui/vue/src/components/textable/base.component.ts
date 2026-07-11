@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { type ITextable, type ITextableProps, TTextable } from '@soldy/core'
 import { BaseControl, emitsControl, propsControl, syncControl, type IControlState } from '../control'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
@@ -47,14 +47,11 @@ export function syncTextable(options: ISyncComponentOptions<ITextableProps, ITex
 		emit?.('update:text', value)
 	})
 
-	watch<string | undefined>(
-		() => props.text,
-		(value) => {
-			if (value !== undefined && value !== instance.text) {
-				instance.text = value
-			}
-		},
-	)
+	track(props, 'text', (value) => {
+		if (value !== undefined && value !== instance.text) {
+			instance.text = value
+		}
+	})
 
 	return {
 		...syncProps,

@@ -1,4 +1,5 @@
-import { type PropType, watch, type Ref } from 'vue'
+import { type PropType, type Ref } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type ISkeletonProps,
 	TSkeleton,
@@ -87,41 +88,29 @@ export function syncSkeleton(
 		emit?.('update:height', value)
 	})
 
-	watch<TSkeletonShape | undefined>(
-		() => props.shape,
-		(value) => {
-			if (value !== undefined && value !== instance.shape) {
-				instance.shape = value
-			}
-		},
-	)
+	track(props, 'shape', (value) => {
+		if (value !== undefined && value !== instance.shape) {
+			instance.shape = value
+		}
+	})
 
-	watch<TSkeletonAnimation | undefined>(
-		() => props.animation,
-		(value) => {
-			if (value !== undefined && value !== instance.animation) {
-				instance.animation = value
-			}
-		},
-	)
+	track(props, 'animation', (value) => {
+		if (value !== undefined && value !== instance.animation) {
+			instance.animation = value
+		}
+	})
 
-	watch<number | string | undefined>(
-		() => props.width,
-		(value) => {
-			if (value !== undefined && value !== instance.width) {
-				instance.width = value
-			}
-		},
-	)
+	track(props, 'width', (value) => {
+		if (value !== undefined && value !== instance.width) {
+			instance.width = value
+		}
+	})
 
-	watch<number | string | undefined>(
-		() => props.height,
-		(value) => {
-			if (value !== undefined && value !== instance.height) {
-				instance.height = value
-			}
-		},
-	)
+	track(props, 'height', (value) => {
+		if (value !== undefined && value !== instance.height) {
+			instance.height = value
+		}
+	})
 
 	return {
 		...syncProps,

@@ -162,32 +162,23 @@ export function syncTabs(
 	})
 
 	// Watch props
-	watch<TTabsOrientation | undefined>(
-		() => props.orientation,
-		(value) => {
-			if (value !== undefined && value !== instance.orientation) {
-				instance.orientation = value
-			}
-		},
-	)
+	track(props, 'orientation', (value) => {
+		if (value !== undefined && value !== instance.orientation) {
+			instance.orientation = value
+		}
+	})
 
-	watch<TTabsAlignment | undefined>(
-		() => props.alignment,
-		(value) => {
-			if (value !== undefined && value !== instance.alignment) {
-				instance.alignment = value
-			}
-		},
-	)
+	track(props, 'alignment', (value) => {
+		if (value !== undefined && value !== instance.alignment) {
+			instance.alignment = value
+		}
+	})
 
-	watch<TTabsPosition | undefined>(
-		() => props.position,
-		(value) => {
-			if (value !== undefined && value !== instance.position) {
-				instance.position = value
-			}
-		},
-	)
+	track(props, 'position', (value) => {
+		if (value !== undefined && value !== instance.position) {
+			instance.position = value
+		}
+	})
 
 	track(props, 'view', (value) => {
 		if (value !== undefined && value !== instance.view) {
