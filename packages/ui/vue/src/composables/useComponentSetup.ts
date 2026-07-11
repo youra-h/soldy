@@ -101,14 +101,19 @@ export interface IComponentSetupConfig<TCtor extends new (...args: any[]) => any
  * }
  * ```
  */
+export type TComponentSetupResult<TInstance> = {
+	ctrl: TInstance
+	plugins: IPluginBundle
+	rootElement: Record<string, any>
+} & Record<string, any>
+
 export function useComponentSetup<TCtor extends new (...args: any[]) => any>(
 	config: IComponentSetupConfig<TCtor>,
-): (props: Record<string, any>, ctx: SetupContext) => Record<string, any> {
+): (props: Record<string, any>, ctx: SetupContext) => TComponentSetupResult<InstanceType<TCtor>> {
 	return function setup(props: Record<string, any>, { emit }: SetupContext) {
-		const instance = useInstance(config.Ctor, props)
+		const instance: InstanceType<TCtor> = useInstance(config.Ctor, props)
 
 		const plugins = useBundle(config.plugins, props?.plugins)
-		// Устанавливаем core-инстанс в плагин TInstancePlugin, чтобы плагины могли его использовать
 		plugins.get(TInstancePlugin)!.instance = instance
 
 		const rootElement = useElementBinding(plugins)
