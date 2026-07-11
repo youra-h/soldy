@@ -1,5 +1,5 @@
-import { type PropType, watch, type Ref } from 'vue'
-import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload } from '@soldy/core'
+import { type PropType, type Ref } from 'vue'
+import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload, track } from '@soldy/core'
 import {
 	ComponentView,
 	emitsComponentView,
@@ -78,32 +78,23 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 		emit?.('update:height', value)
 	})
 
-	watch<TComponentSize | undefined>(
-		() => props.size,
-		(value) => {
-			if (value !== undefined && value !== instance.size) {
-				instance.size = value
-			}
-		},
-	)
+	track(props, 'size', (value) => {
+		if (value !== undefined && value !== instance.size) {
+			instance.size = value
+		}
+	})
 
-	watch<number | string | undefined>(
-		() => props.width,
-		(value) => {
-			if (value !== undefined && value !== instance.width) {
-				instance.width = value
-			}
-		},
-	)
+	track(props, 'width', (value) => {
+		if (value !== undefined && value !== instance.width) {
+			instance.width = value
+		}
+	})
 
-	watch<number | string | undefined>(
-		() => props.height,
-		(value) => {
-			if (value !== undefined && value !== instance.height) {
-				instance.height = value
-			}
-		},
-	)
+	track(props, 'height', (value) => {
+		if (value !== undefined && value !== instance.height) {
+			instance.height = value
+		}
+	})
 
 	const iconPlugin = plugins.get(TIconStylePlugin)!
 

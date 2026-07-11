@@ -1,5 +1,5 @@
-import { type PropType, watch, type Ref } from 'vue'
-import { type ICheckBoxProps, type ICheckBox, TCheckBox } from '@soldy/core'
+import { type PropType, type Ref } from 'vue'
+import { type ICheckBoxProps, type ICheckBox, TCheckBox, track } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,
@@ -68,23 +68,17 @@ export function syncCheckBox(
 		emit?.('update:plain', value)
 	})
 
-	watch<boolean | undefined>(
-		() => props.indeterminate,
-		(value) => {
-			if (value !== undefined && value !== instance.indeterminate) {
-				instance.indeterminate = value
-			}
-		},
-	)
+	track(props, 'indeterminate', (value) => {
+		if (value !== undefined && value !== instance.indeterminate) {
+			instance.indeterminate = value
+		}
+	})
 
-	watch<boolean | undefined>(
-		() => props.plain,
-		(value) => {
-			if (value !== undefined && value !== instance.plain) {
-				instance.plain = value
-			}
-		},
-	)
+	track(props, 'plain', (value) => {
+		if (value !== undefined && value !== instance.plain) {
+			instance.plain = value
+		}
+	})
 
 	return {
 		...syncProps,

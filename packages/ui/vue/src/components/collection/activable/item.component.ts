@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type IActivatableCollectionItem,
 	type IActivatableCollectionItemProps,
@@ -65,15 +65,11 @@ export function syncActivatableCollectionItem(
 		emit?.('update:active', instance.active)
 	})
 
-	watch(
-		() => props.active,
-		(value) => {
-			if (value !== undefined && value !== instance.active) {
-				instance.active = value
-			}
-		},
-		{ immediate: true },
-	)
+	track(props, 'active', (value) => {
+		if (value !== undefined && value !== instance.active) {
+			instance.active = value
+		}
+	})
 
 	return {
 		...syncProps,

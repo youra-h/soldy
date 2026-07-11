@@ -1,5 +1,5 @@
 import type { PropType, Ref, UnwrapRef } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { type IValueControl, type IValueControlProps, TValueControl } from '@soldy/core'
 import { BaseControl, emitsControl, propsControl, syncControl, type IControlState } from '../control'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
@@ -68,23 +68,17 @@ export function syncValueControl<TValue>(
 		emit?.('update:name', value)
 	})
 
-	watch(
-		() => props.value,
-		(value) => {
-			if (value !== undefined && value !== instance.value) {
-				instance.value = value as TValue
-			}
-		},
-	)
+	track(props, 'value', (value) => {
+		if (value !== undefined && value !== instance.value) {
+			instance.value = value as TValue
+		}
+	})
 
-	watch<string | undefined>(
-		() => props.name,
-		(value) => {
-			if (value !== undefined && value !== instance.name) {
-				instance.name = value
-			}
-		},
-	)
+	track(props, 'name', (value) => {
+		if (value !== undefined && value !== instance.name) {
+			instance.name = value
+		}
+	})
 
 	return {
 		...syncProps,

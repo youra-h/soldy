@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type ICollectionSource,
 	type ISelectableCollection,
@@ -94,14 +94,11 @@ export function syncSelectableCollection<
 		emit?.('update:mode', mode)
 	})
 
-	watch<TSelectionMode | undefined>(
-		() => props.mode,
-		(value) => {
-			if (value !== undefined && value !== instance.mode) {
-				instance.mode = value
-			}
-		},
-	)
+	track(props, 'mode', (value) => {
+		if (value !== undefined && value !== instance.mode) {
+			instance.mode = value
+		}
+	})
 
 	return {
 		...syncProps,

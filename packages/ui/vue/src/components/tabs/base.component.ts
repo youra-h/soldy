@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { useSyncProps } from '../../composables/useSyncProps'
 import {
 	type ITabs,
@@ -189,23 +189,17 @@ export function syncTabs(
 		},
 	)
 
-	watch<TTabsView | undefined>(
-		() => props.view,
-		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
-			}
-		},
-	)
+	track(props, 'view', (value) => {
+		if (value !== undefined && value !== instance.view) {
+			instance.view = value
+		}
+	})
 
-	watch(
-		() => props.closable,
-		(value) => {
-			if (value !== instance.closable) {
-				instance.closable = !!value
-			}
-		},
-	)
+	track(props, 'closable', (value) => {
+		if (value !== instance.closable) {
+			instance.closable = !!value
+		}
+	})
 
 	// Возвращаем объединённое состояние (control + collection + локальные props)
 	return {

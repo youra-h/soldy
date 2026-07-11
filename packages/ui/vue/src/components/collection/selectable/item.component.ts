@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type ISelectableCollectionItem,
 	type ISelectableCollectionItemProps,
@@ -58,14 +58,11 @@ export function syncSelectableCollectionItem(
 		emit?.('update:selected', instance.selected)
 	})
 
-	watch<boolean | undefined>(
-		() => props.selected,
-		(value) => {
-			if (value !== undefined && value !== instance.selected) {
-				instance.selected = value
-			}
-		},
-	)
+	track(props, 'selected', (value) => {
+		if (value !== undefined && value !== instance.selected) {
+			instance.selected = value
+		}
+	})
 
 	return {
 		...syncProps,

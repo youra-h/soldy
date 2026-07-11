@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type ICollapse,
 	type ICollapseProps,
@@ -100,23 +100,17 @@ export function syncCollapse(
 		emit?.('item:present', item, value)
 	})
 
-	watch<TCollapseView | undefined>(
-		() => props.view,
-		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
-			}
-		},
-	)
+	track(props, 'view', (value) => {
+		if (value !== undefined && value !== instance.view) {
+			instance.view = value
+		}
+	})
 
-	watch<TSelectionMode | undefined>(
-		() => props.mode,
-		(value) => {
-			if (value !== undefined && value !== instance.mode) {
-				instance.mode = value
-			}
-		},
-	)
+	track(props, 'mode', (value) => {
+		if (value !== undefined && value !== instance.mode) {
+			instance.mode = value
+		}
+	})
 
 	return {
 		...syncPropsControl,

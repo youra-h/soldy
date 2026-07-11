@@ -1,5 +1,5 @@
-import { type PropType, watch, type Ref } from 'vue'
-import { type IButtonProps, type TButtonView, TButton, type IButton } from '@soldy/core'
+import { type PropType, type Ref } from 'vue'
+import { type IButtonProps, type TButtonView, TButton, type IButton, track } from '@soldy/core'
 import {
 	BaseTextable,
 	emitsTextable,
@@ -48,14 +48,11 @@ export function syncButton(
 		emit?.('update:view', value)
 	})
 
-	watch<TButtonView | undefined>(
-		() => props.view,
-		(value) => {
-			if (value !== undefined && value !== instance.view) {
-				instance.view = value
-			}
-		},
-	)
+	track(props, 'view', (value) => {
+		if (value !== undefined && value !== instance.view) {
+			instance.view = value
+		}
+	})
 
 	return {
 		...syncProps,

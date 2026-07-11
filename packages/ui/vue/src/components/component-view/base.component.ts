@@ -1,7 +1,6 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponentView, type IComponentViewProps, TComponentView } from '@soldy/core'
+import { type IComponentView, type IComponentViewProps, TComponentView, track } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { type IPluginBundle, TElementPlugin } from '@soldy/plugins'
 import {
@@ -58,14 +57,11 @@ export function syncComponentView(
 		emit?.('ready', payload)
 	})
 
-	watch<Object | string | undefined>(
-		() => props.tag,
-		(value) => {
-			if (value !== undefined && value !== instance.tag) {
-				instance.tag = value
-			}
-		},
-	)
+	track(props, 'tag', (value) => {
+		if (value !== undefined && value !== instance.tag) {
+			instance.tag = value
+		}
+	})
 
 	return {
 		...syncProps,

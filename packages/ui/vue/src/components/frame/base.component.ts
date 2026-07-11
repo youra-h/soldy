@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { type IFrameProps, TFrame, type IFrame, type TFramePosition } from '@soldy/core'
+import { type IFrameProps, TFrame, type IFrame, type TFramePosition, track } from '@soldy/core'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
 import {
@@ -82,12 +82,10 @@ export interface IFrameState extends IComponentState {
  * Bind props to instance properties.
  * @param options - sync options
  */
-export function syncFrame(
-	options: ISyncComponentOptions<IFrameProps, IFrame>,
-): IFrameState {
+export function syncFrame(options: ISyncComponentOptions<IFrameProps, IFrame>): IFrameState {
 	const syncProps = syncComponent(options)
 
-	const { instance, emit, plugins } = options
+	const { props, instance, emit, plugins } = options
 
 	instance.events.on('change:x' as any, (value: number) => {
 		emit?.('change:x', value)
@@ -115,6 +113,32 @@ export function syncFrame(
 	instance.events.on('change:target' as any, (value: string) => {
 		emit?.('change:target', value)
 		emit?.('update:target', value)
+	})
+
+	track(props, 'x', (value) => {
+		if (value !== undefined && value !== instance.x) {
+			instance.x = value
+		}
+	})
+	track(props, 'y', (value) => {
+		if (value !== undefined && value !== instance.y) {
+			instance.y = value
+		}
+	})
+	track(props, 'width', (value) => {
+		if (value !== undefined && value !== instance.width) {
+			instance.width = value
+		}
+	})
+	track(props, 'height', (value) => {
+		if (value !== undefined && value !== instance.height) {
+			instance.height = value
+		}
+	})
+	track(props, 'position', (value) => {
+		if (value !== undefined && value !== instance.position) {
+			instance.position = value
+		}
 	})
 
 	const stylePlugin = plugins.get(TFrameStylePlugin)!

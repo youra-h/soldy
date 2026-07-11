@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import { type IControl, type IControlProps, TControl } from '@soldy/core'
 import {
 	BaseStylable,
@@ -69,23 +69,17 @@ export function syncControl(
 		emit?.('update:focused', value)
 	})
 
-	watch<boolean | undefined>(
-		() => props.disabled,
-		(value) => {
-			if (value !== undefined && value !== instance.disabled) {
-				instance.disabled = value
-			}
-		},
-	)
+	track(props, 'disabled', (value) => {
+		if (value !== undefined && value !== instance.disabled) {
+			instance.disabled = value
+		}
+	})
 
-	watch<boolean | undefined>(
-		() => props.focused,
-		(value) => {
-			if (value !== undefined && value !== instance.focused) {
-				instance.focused = value
-			}
-		},
-	)
+	track(props, 'focused', (value) => {
+		if (value !== undefined && value !== instance.focused) {
+			instance.focused = value
+		}
+	})
 
 	const sync: Record<string, any> = {
 		...syncProps,

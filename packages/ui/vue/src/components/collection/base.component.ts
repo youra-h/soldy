@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { watch } from 'vue'
+import { track } from '@soldy/core'
 import {
 	type ICollection,
 	type ICollectionSource,
@@ -78,19 +78,15 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 		plugins.get(TDragPlugin)?.activate(instance)
 	}
 
-	watch(
-		() => props.items,
-		(items, oldItems) => {
-			if (items !== undefined && items !== oldItems) {
-				if (props.trackBy) {
-					instance.patchItems(items, props.trackBy)
-				} else {
-					instance.setItems(items)
-				}
+	track(props, 'items', (items) => {
+		if (items !== undefined) {
+			if (props.trackBy) {
+				instance.patchItems(items, props.trackBy)
+			} else {
+				instance.setItems(items)
 			}
-		},
-		{ immediate: true, deep: true },
-	)
+		}
+	})
 
 	instance.events.on(
 		'changed',
