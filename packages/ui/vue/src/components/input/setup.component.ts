@@ -1,52 +1,22 @@
 import type { SetupContext } from 'vue'
 import { TInput, type IInputProps, type IInput } from '@soldy/core'
 import BaseInput, { syncInput } from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
-import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import { createInputBundle } from '@soldy/plugins'
+import { useComponentSetup } from '../../composables/useComponentSetup'
+import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
 	name: '_Input',
 	inheritAttrs: false,
 	extends: BaseInput,
-	setup(props: TBaseComponentViewProps<IInputProps, IInput>, { emit }: SetupContext) {
-		const instance = useInstance(TInput, props)
+	setup(props: TBaseComponentViewProps<IInputProps, IInput>, ctx: SetupContext) {
+		const base = useComponentSetup({
+			Ctor: TInput,
+			plugins: createInputBundle,
+			sync: (ctx) => syncInput(ctx),
+		})(props, ctx)
 
-		const plugins = useBundle(createInputBundle, props?.plugins)
-		useInstanceBinding(plugins, instance)
-
-		const rootElement = useElementBinding(plugins)
-
-		const { rendered, visible, classes, disabled, name, size, value, readonly, required, placeholder } =
-			syncInput({
-				props,
-				instance,
-				plugins,
-				emit,
-			})
-
-		const { containerAttrs, controlAttrs } = useSplitAttrs()
-
-		return {
-			containerAttrs,
-			controlAttrs,
-			ctrl: instance,
-			plugins,
-			rootElement,
-			rendered,
-			visible,
-			classes,
-			disabled,
-			name,
-			size,
-			value,
-			readonly,
-			required,
-			placeholder,
-		}
+		return { ...base, ...useSplitAttrs() }
 	},
 }

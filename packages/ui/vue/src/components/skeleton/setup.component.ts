@@ -1,46 +1,22 @@
 import type { SetupContext } from 'vue'
 import { TSkeleton, type ISkeletonProps, type ISkeleton } from '@soldy/core'
-import { useInstance } from '../../composables/useInstance'
-import { useBundle } from '../../composables/useBundle'
-import { useElementBinding } from '../../composables/useElementBinding'
-import { useInstanceBinding } from '../../composables/useInstanceBinding'
 import BaseSkeleton, { syncSkeleton } from './base.component'
 import { createComponentViewBundle, TSkeletonStylePlugin } from '@soldy/plugins'
+import { useComponentSetup } from '../../composables/useComponentSetup'
 import type { TBaseComponentViewProps } from '../component-view'
 
 export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
-	setup(props: TBaseComponentViewProps<ISkeletonProps, ISkeleton>, { emit }: SetupContext) {
-		const instance = useInstance(TSkeleton, props)
-		const plugins = useBundle(createComponentViewBundle, props?.plugins).use(
-			TSkeletonStylePlugin,
-		)
+	setup(props: TBaseComponentViewProps<ISkeletonProps, ISkeleton>, ctx: SetupContext) {
+		const base = useComponentSetup({
+			Ctor: TSkeleton,
+			plugins: createComponentViewBundle,
+			sync: (ctx) => syncSkeleton(ctx),
+		})(props, ctx)
 
-		useInstanceBinding(plugins, instance)
-		const rootElement = useElementBinding(plugins)
+		base.plugins.use(TSkeletonStylePlugin)
 
-		const { tag, rendered, visible, present, classes, variant, size, shape, animation } =
-			syncSkeleton({
-				props,
-				instance,
-				plugins,
-				emit,
-			})
-
-		return {
-			ctrl: instance,
-			plugins,
-			rootElement,
-			tag,
-			rendered,
-			visible,
-			present,
-			classes,
-			variant,
-			size,
-			shape,
-			animation,
-		}
+		return base
 	},
 }
