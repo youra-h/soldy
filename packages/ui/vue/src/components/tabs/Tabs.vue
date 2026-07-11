@@ -6,7 +6,7 @@ export default { ...SetupTabs, components: { TabItem } }
 </script>
 
 <template>
-	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes">
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes">
 		<div class="s-tabs__list" role="tablist">
 			<div class="s-tabs__list--leading" v-if="$slots.leading">
 				<slot name="leading"></slot>

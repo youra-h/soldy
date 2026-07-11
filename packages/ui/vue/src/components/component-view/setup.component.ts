@@ -18,7 +18,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes } = syncComponentView({
 			props,
@@ -27,6 +27,6 @@ export default {
 			emit,
 		})
 
-		return { ctrl: instance, plugins, rootRef, tag, rendered, visible, classes }
+		return { ctrl: instance, plugins, rootElement, tag, rendered, visible, classes }
 	},
 }

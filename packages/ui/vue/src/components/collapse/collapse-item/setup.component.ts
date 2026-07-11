@@ -22,7 +22,7 @@ export default {
 		const plugins = useBundle(createComponentViewBundle, props?.plugins)
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const {
 			rendered,
@@ -48,7 +48,7 @@ export default {
 			ctrl: instance,
 			arrowIconTag,
 			plugins,
-			rootRef,
+			rootElement,
 			rendered,
 			visible,
 			classes,

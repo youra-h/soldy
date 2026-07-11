@@ -23,7 +23,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const {
 			rendered,
@@ -56,7 +56,7 @@ export default {
 			defaultIconTag,
 			defaultIndeterminateIconTag,
 			plugins,
-			rootRef,
+			rootElement,
 			rendered,
 			visible,
 			classes,

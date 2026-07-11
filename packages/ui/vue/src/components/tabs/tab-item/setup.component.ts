@@ -23,7 +23,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const {
 			rendered,
@@ -53,7 +53,7 @@ export default {
 			ctrl: instance,
 			closeIconTag,
 			plugins,
-			rootRef,
+			rootElement,
 			rendered,
 			disabled,
 			visible,

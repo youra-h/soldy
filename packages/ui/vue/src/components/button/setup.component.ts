@@ -18,7 +18,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes, disabled, text } = syncButton({
 			props,
@@ -30,7 +30,7 @@ export default {
 		return {
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			tag,
 			rendered,
 			visible,

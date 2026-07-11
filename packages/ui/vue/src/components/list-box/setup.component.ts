@@ -17,7 +17,7 @@ export default {
 		const plugins = useBundle(createListBundle, props?.plugins)
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { rendered, visible, disabled, classes, items } = syncListBox({
 			props,
@@ -29,7 +29,7 @@ export default {
 		return {
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			rendered,
 			visible,
 			disabled,

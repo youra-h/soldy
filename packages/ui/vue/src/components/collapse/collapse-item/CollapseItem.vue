@@ -8,7 +8,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 
 <template>
 	<div
-		ref="rootRef"
+		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"

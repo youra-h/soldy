@@ -18,7 +18,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { rendered, visible, classes, items, activeItem } = syncTabs({
 			props,
@@ -27,6 +27,6 @@ export default {
 			emit,
 		})
 
-		return { ctrl: instance, plugins, rootRef, rendered, visible, classes, activeItem, items }
+		return { ctrl: instance, plugins, rootElement, rendered, visible, classes, activeItem, items }
 	},
 }

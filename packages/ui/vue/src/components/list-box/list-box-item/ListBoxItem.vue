@@ -7,7 +7,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 
 <template>
 	<div
-		ref="rootRef"
+		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"

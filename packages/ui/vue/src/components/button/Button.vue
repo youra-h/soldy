@@ -6,7 +6,7 @@ export default { ...SetupButton }
 
 <template>
 	<component
-		ref="rootRef"
+		ref="rootElement"
 		:is="tag"
 		v-if="rendered"
 		v-show="visible"

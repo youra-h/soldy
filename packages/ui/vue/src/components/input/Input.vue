@@ -5,7 +5,7 @@ export default { ...SetupInput }
 </script>
 
 <template>
-	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<div v-if="$slots.leading" class="s-input__leading">
 			<slot name="leading" :ctrl="ctrl"> </slot>
 		</div>

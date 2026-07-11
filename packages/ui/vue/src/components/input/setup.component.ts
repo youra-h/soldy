@@ -19,7 +19,7 @@ export default {
 		const plugins = useBundle(createInputBundle, props?.plugins)
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { rendered, visible, classes, disabled, name, size, value, readonly, required, placeholder } =
 			syncInput({
@@ -36,7 +36,7 @@ export default {
 			controlAttrs,
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			rendered,
 			visible,
 			classes,

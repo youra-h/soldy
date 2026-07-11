@@ -18,7 +18,7 @@ export default {
 		)
 
 		useInstanceBinding(plugins, instance)
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { tag, rendered, visible, present, classes, variant, size, shape, animation } =
 			syncSkeleton({
@@ -31,7 +31,7 @@ export default {
 		return {
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			tag,
 			rendered,
 			visible,

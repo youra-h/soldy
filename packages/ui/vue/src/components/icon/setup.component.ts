@@ -18,7 +18,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes, styles } = syncIcon({
 			props,
@@ -30,7 +30,7 @@ export default {
 		return {
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			styles,
 			tag,
 			rendered,

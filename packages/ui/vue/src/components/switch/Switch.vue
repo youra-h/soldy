@@ -5,7 +5,7 @@ export default { ...SetupSwitch }
 </script>
 
 <template>
-	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
 		<input
 			type="checkbox"
 			:id="ctrl.uid.toString()"

@@ -20,7 +20,7 @@ export default {
 
 		useInstanceBinding(plugins, instance)
 
-		const rootRef = useElementBinding(plugins)
+		const rootElement = useElementBinding(plugins)
 
 		const { tag, rendered, visible, classes, size, variant, borderWidth, styles } =
 			syncSpinner({
@@ -33,7 +33,7 @@ export default {
 		return {
 			ctrl: instance,
 			plugins,
-			rootRef,
+			rootElement,
 			styles,
 			tag,
 			rendered,

@@ -6,7 +6,7 @@ export default { ...SetupCollapse, components: { CollapseItem } }
 </script>
 
 <template>
-	<div ref="rootRef" v-if="rendered" v-show="visible" :class="classes">
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes">
 		<slot>
 			<CollapseItem v-for="item in items" :key="item.uid" :ctrl="item" :view="view">
 				<template #leading>
