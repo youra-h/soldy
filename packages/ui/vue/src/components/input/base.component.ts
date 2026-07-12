@@ -14,7 +14,7 @@ import { useInheritProps } from '../../composables/useInheritProps'
 export const emitsInput: TEmits = [
 	...emitsInputControl,
 	'update:placeholder',
-	'change:placeholder',
+	'changePlaceholder',
 ] as const
 
 export const propsInput: TProps = {
@@ -41,8 +41,8 @@ export function syncInput(options: ISyncComponentOptions<IInputProps, IInput>): 
 
 	const { instance, props, emit } = options
 
-	instance.events.on('change:placeholder' as any, (value: string) => {
-		emit?.('change:placeholder', value)
+	instance.events.on('changePlaceholder' as any, (value: string) => {
+		emit?.('changePlaceholder', value)
 		emit?.('update:placeholder', value)
 	})
 

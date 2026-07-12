@@ -153,7 +153,7 @@ export class TList<
 	set maxRows(value: number) {
 		if (this._maxRows !== value) {
 			this._maxRows = value
-				; (this.events as TEvented<TListEvents>).emit('change:maxRows', value)
+				; (this.events as TEvented<TListEvents>).emit('changeMaxRows', value)
 		}
 	}
 
@@ -170,7 +170,7 @@ export class TList<
 	set autoWidth(value: boolean) {
 		if (this._autoWidth !== value) {
 			this._applyAutoWidth(value)
-				; (this.events as TEvented<TListEvents>).emit('change:autoWidth', value)
+				; (this.events as TEvented<TListEvents>).emit('changeAutoWidth', value)
 		}
 	}
 
@@ -191,7 +191,7 @@ export class TList<
 			this._collection.forEach((item) => {
 				item.notifyWordWrapChange()
 			})
-				; (this.events as TEvented<TListEvents>).emit('change:wordWrap', value)
+				; (this.events as TEvented<TListEvents>).emit('changeWordWrap', value)
 		}
 	}
 
@@ -202,7 +202,7 @@ export class TList<
 	set scrollBehavior(value: TScrollBehavior) {
 		if (this._scrollBehavior !== value) {
 			this._scrollBehavior = value
-				; (this.events as TEvented<TListEvents>).emit('change:scrollBehavior', value)
+				; (this.events as TEvented<TListEvents>).emit('changeScrollBehavior', value)
 		}
 	}
 

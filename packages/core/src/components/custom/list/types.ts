@@ -12,18 +12,22 @@ import type { TScrollBehavior } from '../../../bridge'
 export type TListEvents = TControlEvents &
 	TSelectableCollectionEvents<IListItem> &
 	TItemProxyEvents<IListItem> & {
-		/** change:maxRows */
-		'change:maxRows': (value: number) => void
-		/** change:autoWidth */
-		'change:autoWidth': (value: boolean) => void
-		/** change:wordWrap */
-		'change:wordWrap': (value: boolean) => void
-		/** change:scrollBehavior */
-		'change:scrollBehavior': (value: TScrollBehavior) => void
-		'itemText': (item: IListItem, value: string) => void
-		'itemRendered': (item: IListItem, value: boolean) => void
-		'itemVisible': (item: IListItem, value: boolean) => void
-		'itemPresent': (item: IListItem, value: boolean) => void
+		/** changeMaxRows */
+		changeMaxRows: (value: number) => void
+		/** changeAutoWidth */
+		changeAutoWidth: (value: boolean) => void
+		/** changeWordWrap */
+		changeWordWrap: (value: boolean) => void
+		/** changeScrollBehavior */
+		changeScrollBehavior: (value: TScrollBehavior) => void
+		/** itemText */
+		itemText: (item: IListItem, value: string) => void
+		/** itemRendered */
+		itemRendered: (item: IListItem, value: boolean) => void
+		/** itemVisible */
+		itemVisible: (item: IListItem, value: boolean) => void
+		/** itemPresent */
+		itemPresent: (item: IListItem, value: boolean) => void
 	}
 
 export interface IListProps<

@@ -100,7 +100,7 @@ export default class TListItemCustom<
 	 */
 	notifyWordWrapChange(): void {
 		;(this.events as TEvented<TListItemCustomEvents>).emit(
-			'change:wordWrap',
+			'changeWordWrap',
 			!!this.wordWrap,
 		)
 	}

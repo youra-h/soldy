@@ -20,7 +20,7 @@ export const emitsListItemCustom: TEmits = [
 	...emitsValueControl,
 	'changeText',
 	'update:text',
-	'change:wordWrap',
+	'changeWordWrap',
 	'update:wordWrap',
 ] as const
 
@@ -64,8 +64,8 @@ export function syncListItemCustom(
 		emit?.('update:text', payload.newValue)
 	})
 
-	instance.events.on('change:wordWrap', (value: boolean) => {
-		emit?.('change:wordWrap', value)
+	instance.events.on('changeWordWrap', (value: boolean) => {
+		emit?.('changeWordWrap', value)
 		emit?.('update:wordWrap', value)
 	})
 

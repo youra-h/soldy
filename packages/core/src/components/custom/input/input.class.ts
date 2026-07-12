@@ -36,6 +36,6 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 		if (this._placeholder === value) return
 
 		this._applyPlaceholder(value)
-		;(this.events as TEvented<TInputEvents>).emit('change:placeholder', value)
+		;(this.events as TEvented<TInputEvents>).emit('changePlaceholder', value)
 	}
 }

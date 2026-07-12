@@ -9,7 +9,7 @@ export interface IInputProps extends IInputControlProps<string> {
 }
 
 export type TInputEvents = TInputControlEvents<string> & {
-	'change:placeholder': (value: string) => void
+	changePlaceholder: (value: string) => void
 }
 
 export interface IInput extends IInputControl<string, IInputProps, TInputEvents> {

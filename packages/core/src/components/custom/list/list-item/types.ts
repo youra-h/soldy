@@ -18,9 +18,9 @@ import type { IStateUnit } from '../../../../common'
 
 export type TListItemCustomEvents<TItem = any> = TValueControlEvents<string | number> & {
 	/** changeText */
-	'changeText': (payload: TValuePayload<string>) => void
-	/** change:wordWrap */
-	'change:wordWrap': (value: boolean) => void
+	changeText: (payload: TValuePayload<string>) => void
+	/** changeWordWrap */
+	changeWordWrap: (value: boolean) => void
 }
 
 export interface IListItemCustomProps extends IValueControlProps<string | number> {

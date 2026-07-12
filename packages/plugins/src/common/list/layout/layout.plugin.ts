@@ -52,7 +52,7 @@ export class TListLayoutPlugin extends TBasePlugin<TListLayoutPluginEvents> {
 		instancePlugin?.events.on('ready', ({ instance }) => {
 			this._list = instance
 
-			instance.events.on('change:maxRows', () => this._scheduleUpdate())
+			instance.events.on('changeMaxRows', () => this._scheduleUpdate())
 			instance.events.on('itemAdded', () => this._scheduleUpdate())
 			instance.events.on('itemAfterDelete', () => this._scheduleUpdate())
 			instance.events.on('itemMoved', () => this._scheduleUpdate())

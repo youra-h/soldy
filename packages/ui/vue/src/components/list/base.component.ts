@@ -29,13 +29,13 @@ import { useInheritProps } from '../../composables/useInheritProps'
 export const emitsList: TEmits = [
 	...emitsControl,
 	...emitsSelectableCollection,
-	'change:maxRows',
+	'changeMaxRows',
 	'update:maxRows',
-	'change:autoWidth',
+	'changeAutoWidth',
 	'update:autoWidth',
-	'change:wordWrap',
+	'changeWordWrap',
 	'update:wordWrap',
-	'change:scrollBehavior',
+	'changeScrollBehavior',
 	'update:scrollBehavior',
 	'itemDisabled',
 	'itemText',
@@ -113,23 +113,23 @@ export function syncList<TItem extends IListItem = IListItem>(
 		emit?.('itemPresent', item, value)
 	})
 
-	instance.events.on('change:maxRows', (value: number) => {
-		emit?.('change:maxRows', value)
+	instance.events.on('changeMaxRows', (value: number) => {
+		emit?.('changeMaxRows', value)
 		emit?.('update:maxRows', value)
 	})
 
-	instance.events.on('change:autoWidth', (value: boolean) => {
-		emit?.('change:autoWidth', value)
+	instance.events.on('changeAutoWidth', (value: boolean) => {
+		emit?.('changeAutoWidth', value)
 		emit?.('update:autoWidth', value)
 	})
 
-	instance.events.on('change:wordWrap', (value: boolean) => {
-		emit?.('change:wordWrap', value)
+	instance.events.on('changeWordWrap', (value: boolean) => {
+		emit?.('changeWordWrap', value)
 		emit?.('update:wordWrap', value)
 	})
 
-	instance.events.on('change:scrollBehavior', (value: TScrollBehavior) => {
-		emit?.('change:scrollBehavior', value)
+	instance.events.on('changeScrollBehavior', (value: TScrollBehavior) => {
+		emit?.('changeScrollBehavior', value)
 		emit?.('update:scrollBehavior', value)
 	})
 
