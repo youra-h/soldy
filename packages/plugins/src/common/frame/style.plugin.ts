@@ -9,7 +9,7 @@ import { TEvented } from '@soldy/core'
 /**
  * Плагин для управления CSS-стилями Frame (позиционирование + z-index + anchor).
  *
- * Подписывается на события TFrame (change:x, change:y, change:width, change:height, change:zIndex, change:position)
+ * Подписывается на события TFrame (changeX, changeY, changeWidth, changeHeight, changeZIndex, changePosition)
  * и вычисляет объект стилей для применения к DOM-элементу.
  *
  * При установке anchor-элемента через {@link setAnchor} координаты x/y
@@ -80,12 +80,12 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 	private _bindFrame(frame: IFrame): void {
 		const update = () => this._update()
 
-			; (frame as any).events.on('change:x', update)
-			; (frame as any).events.on('change:y', update)
-			; (frame as any).events.on('change:width', update)
-			; (frame as any).events.on('change:height', update)
-			; (frame as any).events.on('change:zIndex', update)
-			; (frame as any).events.on('change:position', update)
+			; (frame as any).events.on('changeX', update)
+			; (frame as any).events.on('changeY', update)
+			; (frame as any).events.on('changeWidth', update)
+			; (frame as any).events.on('changeHeight', update)
+			; (frame as any).events.on('changeZIndex', update)
+			; (frame as any).events.on('changePosition', update)
 
 		this._update()
 	}

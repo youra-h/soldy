@@ -21,8 +21,8 @@ export type TSkeletonStates = TStylableStates
 export type TSkeletonEvents = TStylableEvents & {
 	'change:shape': (value: TSkeletonShape) => void
 	'change:animation': (value: TSkeletonAnimation) => void
-	'change:width': (value: number | string) => void
-	'change:height': (value: number | string) => void
+	'changeWidth': (value: number | string) => void
+	'changeHeight': (value: number | string) => void
 }
 
 export interface ISkeleton

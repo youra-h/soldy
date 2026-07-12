@@ -33,20 +33,20 @@ export type TFrameStates = TComponentStates & {
 }
 
 export type TFrameEvents = TComponentEvents & {
-	/** change:x */
-	'change:x': (value: number) => void
-	/** change:y */
-	'change:y': (value: number) => void
-	/** change:width */
-	'change:width': (value: number | string) => void
-	/** change:height */
-	'change:height': (value: number | string) => void
-	/** change:zIndex — срабатывает при изменении z-index */
-	'change:zIndex': (value: number) => void
-	/** change:position */
-	'change:position': (value: TFramePosition) => void
-	/** change:target */
-	'change:target': (value: string) => void
+	/** changeX */
+	changeX: (value: number) => void
+	/** changeY */
+	changeY: (value: number) => void
+	/** changeWidth */
+	changeWidth: (value: number | string) => void
+	/** changeHeight */
+	changeHeight: (value: number | string) => void
+	/** changeZIndex — срабатывает при изменении z-index */
+	changeZIndex: (value: number) => void
+	/** changePosition */
+	changePosition: (value: TFramePosition) => void
+	/** changeTarget */
+	changeTarget: (value: string) => void
 }
 
 export interface IFrame extends IComponent<IFrameProps, TFrameEvents> {

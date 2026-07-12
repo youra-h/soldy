@@ -22,9 +22,9 @@ export type TIconStates = TComponentViewStates & {
 
 export type TIconEvents = TComponentViewEvents & {
 	/** changeSize */
-	'changeSize': (payload: TValuePayload<TComponentSize>) => void
-	'change:width': (value: number | string | undefined) => void
-	'change:height': (value: number | string | undefined) => void
+	changeSize: (payload: TValuePayload<TComponentSize>) => void
+	changeWidth: (value: number | string | undefined) => void
+	changeHeight: (value: number | string | undefined) => void
 }
 
 export interface IIcon extends IComponentView<IIconProps, TIconEvents, TIconStates> {

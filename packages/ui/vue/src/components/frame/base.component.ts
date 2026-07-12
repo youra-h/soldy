@@ -16,16 +16,16 @@ export const emitsFrame: TEmits = [
 	...emitsComponent,
 	'changeVisible',
 	'update:visible',
-	'change:x',
+	'changeX',
 	'update:x',
-	'change:y',
+	'changeY',
 	'update:y',
-	'change:width',
+	'changeWidth',
 	'update:width',
-	'change:height',
+	'changeHeight',
 	'update:height',
-	'change:zIndex',
-	'change:position',
+	'changeZIndex',
+	'changePosition',
 	'update:position',
 	'beforeShow',
 	'beforeHide',
@@ -87,31 +87,31 @@ export function syncFrame(options: ISyncComponentOptions<IFrameProps, IFrame>): 
 
 	const { props, instance, emit, plugins } = options
 
-	instance.events.on('change:x' as any, (value: number) => {
-		emit?.('change:x', value)
+	instance.events.on('changeX' as any, (value: number) => {
+		emit?.('changeX', value)
 		emit?.('update:x', value)
 	})
-	instance.events.on('change:y' as any, (value: number) => {
-		emit?.('change:y', value)
+	instance.events.on('changeY' as any, (value: number) => {
+		emit?.('changeY', value)
 		emit?.('update:y', value)
 	})
-	instance.events.on('change:width' as any, (value: number | string) => {
-		emit?.('change:width', value)
+	instance.events.on('changeWidth' as any, (value: number | string) => {
+		emit?.('changeWidth', value)
 		emit?.('update:width', value)
 	})
-	instance.events.on('change:height' as any, (value: number | string) => {
-		emit?.('change:height', value)
+	instance.events.on('changeHeight' as any, (value: number | string) => {
+		emit?.('changeHeight', value)
 		emit?.('update:height', value)
 	})
-	instance.events.on('change:zIndex' as any, (value: number) => {
-		emit?.('change:zIndex', value)
+	instance.events.on('changeZIndex' as any, (value: number) => {
+		emit?.('changeZIndex', value)
 	})
-	instance.events.on('change:position' as any, (value: TFramePosition) => {
-		emit?.('change:position', value)
+	instance.events.on('changePosition' as any, (value: TFramePosition) => {
+		emit?.('changePosition', value)
 		emit?.('update:position', value)
 	})
-	instance.events.on('change:target' as any, (value: string) => {
-		emit?.('change:target', value)
+	instance.events.on('changeTarget' as any, (value: string) => {
+		emit?.('changeTarget', value)
 		emit?.('update:target', value)
 	})
 

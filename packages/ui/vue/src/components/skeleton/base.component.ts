@@ -24,9 +24,9 @@ export const emitsSkeleton: TEmits = [
 	'update:shape',
 	'change:animation',
 	'update:animation',
-	'change:width',
+	'changeWidth',
 	'update:width',
-	'change:height',
+	'changeHeight',
 	'update:height',
 ] as const
 
@@ -79,12 +79,12 @@ export function syncSkeleton(
 		emit?.('change:animation', value)
 		emit?.('update:animation', value)
 	})
-	instance.events.on('change:width', (value: number | string) => {
-		emit?.('change:width', value)
+	instance.events.on('changeWidth', (value: number | string) => {
+		emit?.('changeWidth', value)
 		emit?.('update:width', value)
 	})
-	instance.events.on('change:height', (value: number | string) => {
-		emit?.('change:height', value)
+	instance.events.on('changeHeight', (value: number | string) => {
+		emit?.('changeHeight', value)
 		emit?.('update:height', value)
 	})
 

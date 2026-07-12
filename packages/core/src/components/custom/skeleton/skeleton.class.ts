@@ -91,7 +91,7 @@ export default class TSkeleton
 		if (value === this._width) return
 
 		this._width = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:width', value)
+		;(this.events as TEvented<TSkeletonEvents>).emit('changeWidth', value)
 	}
 
 	get height(): number | string {
@@ -102,7 +102,7 @@ export default class TSkeleton
 		if (value === this._height) return
 
 		this._height = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:height', value)
+		;(this.events as TEvented<TSkeletonEvents>).emit('changeHeight', value)
 	}
 
 	getProps(): ISkeletonProps {

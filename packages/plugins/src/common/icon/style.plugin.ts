@@ -16,12 +16,12 @@ export class TIconStylePlugin extends TBasePlugin<TIconStylePluginEvents> {
 		const instancePlugin = bundle.get(TInstancePlugin) as TInstancePlugin<IIcon> | undefined
 
 		instancePlugin?.events.on('ready', ({ instance }) => {
-			;(instance as unknown as IIcon).events.on('change:width', (value) => {
+			;(instance as unknown as IIcon).events.on('changeWidth', (value) => {
 				this._styles['width'] =
 					value! && (typeof value === 'number' || parseInt(value)) ? `${value}px` : ''
 				;(this.events as any).emit('change:styles', this._styles)
 			})
-			;(instance as unknown as IIcon).events.on('change:height', (value) => {
+			;(instance as unknown as IIcon).events.on('changeHeight', (value) => {
 				this._styles['height'] =
 					value! && (typeof value === 'number' || parseInt(value)) ? `${value}px` : ''
 				;(this.events as any).emit('change:styles', this._styles)

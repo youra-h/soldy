@@ -24,8 +24,8 @@ export type TTabsEvents = TControlEvents &
 		'change:orientation': (value: TTabsOrientation) => void
 		/** change:alignment */
 		'change:alignment': (value: TTabsAlignment) => void
-		/** change:position */
-		'change:position': (value: TTabsPosition) => void
+		/** changePosition */
+		'changePosition': (value: TTabsPosition) => void
 		/** changeView */
 		'changeView': (value: TTabsView) => void
 		/** change:closable */

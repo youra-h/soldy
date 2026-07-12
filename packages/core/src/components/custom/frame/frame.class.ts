@@ -76,23 +76,23 @@ export default class TFrame
 		this._states.height = new TStateUnit<number | string>({ initial: height }) as TFrameStates['height']
 
 		this._states.x.events.on('change', (payload: TValuePayload<number>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:x', payload.newValue)
+			; (this.events as TEvented<TFrameEvents>).emit('changeX', payload.newValue)
 		})
 		this._states.y.events.on('change', (payload: TValuePayload<number>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:y', payload.newValue)
+			; (this.events as TEvented<TFrameEvents>).emit('changeY', payload.newValue)
 		})
 		this._states.width.events.on('change', (payload: TValuePayload<number | string>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:width', payload.newValue)
+			; (this.events as TEvented<TFrameEvents>).emit('changeWidth', payload.newValue)
 		})
 		this._states.height.events.on('change', (payload: TValuePayload<number | string>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:height', payload.newValue)
+			; (this.events as TEvented<TFrameEvents>).emit('changeHeight', payload.newValue)
 		})
 
 			// При show() — присваиваем z-index
 			; (this.events as TEvented<TFrameEvents>).on('show' as any, () => {
 				this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
 
-					; (this.events as TEvented<TFrameEvents>).emit('change:zIndex', this._zIndex)
+					; (this.events as TEvented<TFrameEvents>).emit('changeZIndex', this._zIndex)
 			})
 	}
 
@@ -130,7 +130,7 @@ export default class TFrame
 	set position(value: TFramePosition) {
 		if (this._position === value) return
 		this._position = value
-			; (this.events as TEvented<TFrameEvents>).emit('change:position', value)
+			; (this.events as TEvented<TFrameEvents>).emit('changePosition', value)
 	}
 
 	get target(): string {
@@ -139,7 +139,7 @@ export default class TFrame
 	set target(value: string) {
 		if (this._target === value) return
 		this._target = value
-			; (this.events as TEvented<TFrameEvents>).emit('change:target', value)
+			; (this.events as TEvented<TFrameEvents>).emit('changeTarget', value)
 	}
 
 	get zIndex(): number {

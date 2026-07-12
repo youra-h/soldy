@@ -150,12 +150,12 @@ describe('TFrame', () => {
 		expect(values).toEqual([true, false])
 	})
 
-	it('change:x / change:y эмитятся при изменении координат', () => {
+	it('changeX / changeY эмитятся при изменении координат', () => {
 		const frame = new TFrame()
 		const xValues: number[] = []
 		const yValues: number[] = []
-		frame.events.on('change:x' as any, (v: number) => xValues.push(v))
-		frame.events.on('change:y' as any, (v: number) => yValues.push(v))
+		frame.events.on('changeX' as any, (v: number) => xValues.push(v))
+		frame.events.on('changeY' as any, (v: number) => yValues.push(v))
 
 		frame.x = 100
 		frame.y = 200
@@ -164,12 +164,12 @@ describe('TFrame', () => {
 		expect(yValues).toEqual([200])
 	})
 
-	it('change:width / change:height эмитятся при изменении размеров', () => {
+	it('changeWidth / changeHeight эмитятся при изменении размеров', () => {
 		const frame = new TFrame()
 		const widthValues: (number | string)[] = []
 		const heightValues: (number | string)[] = []
-		frame.events.on('change:width' as any, (v: number | string) => widthValues.push(v))
-		frame.events.on('change:height' as any, (v: number | string) => heightValues.push(v))
+		frame.events.on('changeWidth' as any, (v: number | string) => widthValues.push(v))
+		frame.events.on('changeHeight' as any, (v: number | string) => heightValues.push(v))
 
 		frame.width = 500
 		frame.height = 'auto'
@@ -178,10 +178,10 @@ describe('TFrame', () => {
 		expect(heightValues).toEqual(['auto'])
 	})
 
-	it('change:zIndex эмитится при show()', () => {
+	it('changeZIndex эмитится при show()', () => {
 		const frame = new TFrame()
 		const zValues: number[] = []
-		frame.events.on('change:zIndex' as any, (v: number) => zValues.push(v))
+		frame.events.on('changeZIndex' as any, (v: number) => zValues.push(v))
 
 		frame.show()
 		expect(zValues.length).toBe(1)
@@ -282,10 +282,10 @@ describe('TFrame', () => {
         expect(frame.position).toBe('absolute')
     })
 
-    it('change:position эмитится при изменении', () => {
+    it('changePosition эмитится при изменении', () => {
         const frame = new TFrame()
         const values: string[] = []
-        frame.events.on('change:position' as any, (v: string) => values.push(v))
+        frame.events.on('changePosition' as any, (v: string) => values.push(v))
 
         frame.position = 'absolute'
         expect(values).toEqual(['absolute'])
@@ -307,10 +307,10 @@ describe('TFrame', () => {
         expect(frame.target).toBe('#my-modal')
     })
 
-    it('change:target эмитится при изменении', () => {
+    it('changeTarget эмитится при изменении', () => {
         const frame = new TFrame()
         const values: string[] = []
-        frame.events.on('change:target' as any, (v: string) => values.push(v))
+        frame.events.on('changeTarget' as any, (v: string) => values.push(v))
 
         frame.target = '#portal'
         expect(values).toEqual(['#portal'])

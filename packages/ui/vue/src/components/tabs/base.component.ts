@@ -34,7 +34,7 @@ export const emitsTabs: TEmits = [
 	'update:orientation',
 	'change:alignment',
 	'update:alignment',
-	'change:position',
+	'changePosition',
 	'update:position',
 	'changeView',
 	'update:view',
@@ -118,8 +118,8 @@ export function syncTabs(
 		emit?.('update:alignment', value)
 	})
 
-	instance.events.on('change:position', (value: TTabsPosition) => {
-		emit?.('change:position', value)
+	instance.events.on('changePosition', (value: TTabsPosition) => {
+		emit?.('changePosition', value)
 		emit?.('update:position', value)
 	})
 

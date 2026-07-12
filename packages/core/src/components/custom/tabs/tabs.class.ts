@@ -206,7 +206,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set position(value: TTabsPosition) {
 		if (this._position !== value) {
 			this._applyPosition(value, this._position)
-				; (this.events as TEvented<TTabsEvents>).emit('change:position', value)
+				; (this.events as TEvented<TTabsEvents>).emit('changePosition', value)
 		}
 	}
 

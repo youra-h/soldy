@@ -84,8 +84,8 @@ describe('TSkeleton', () => {
 		skeleton.events.on('changeSize', () => events.push('size'))
 		skeleton.events.on('change:shape', () => events.push('shape'))
 		skeleton.events.on('change:animation', () => events.push('animation'))
-		skeleton.events.on('change:width', () => events.push('width'))
-		skeleton.events.on('change:height', () => events.push('height'))
+		skeleton.events.on('changeWidth', () => events.push('width'))
+		skeleton.events.on('changeHeight', () => events.push('height'))
 
 		skeleton.size = 'sm'
 		skeleton.shape = 'circle'

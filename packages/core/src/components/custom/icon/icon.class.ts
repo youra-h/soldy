@@ -58,7 +58,7 @@ export default class TIcon
 	set width(value: string | number | undefined) {
 		if (this._width !== value) {
 			this._width = value
-			;(this.events as TEvented<TIconEvents>).emit('change:width', value)
+			;(this.events as TEvented<TIconEvents>).emit('changeWidth', value)
 		}
 	}
 
@@ -69,7 +69,7 @@ export default class TIcon
 	set height(value: string | number | undefined) {
 		if (this._height !== value) {
 			this._height = value
-			;(this.events as TEvented<TIconEvents>).emit('change:height', value)
+			;(this.events as TEvented<TIconEvents>).emit('changeHeight', value)
 		}
 	}
 

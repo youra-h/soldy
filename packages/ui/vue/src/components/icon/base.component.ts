@@ -17,9 +17,9 @@ export const emitsIcon: TEmits = [
 	...emitsComponentView,
 	'changeSize',
 	'update:size',
-	'change:width',
+	'changeWidth',
 	'update:width',
-	'change:height',
+	'changeHeight',
 	'update:height',
 ] as const
 
@@ -68,13 +68,13 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 		emit?.('changeSize', payload)
 		emit?.('update:size', payload)
 	})
-	instance.events.on('change:width' as any, (value: string | number | undefined) => {
-		emit?.('change:width', value)
+	instance.events.on('changeWidth' as any, (value: string | number | undefined) => {
+		emit?.('changeWidth', value)
 		emit?.('update:width', value)
 	})
 
-	instance.events.on('change:height' as any, (value: string | number | undefined) => {
-		emit?.('change:height', value)
+	instance.events.on('changeHeight' as any, (value: string | number | undefined) => {
+		emit?.('changeHeight', value)
 		emit?.('update:height', value)
 	})
 

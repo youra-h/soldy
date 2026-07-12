@@ -210,9 +210,9 @@ describe('TTabs', () => {
 			expect(spy).toHaveBeenCalledWith('center')
 		})
 
-		it('emits change:position when position changes', () => {
+		it('emits changePosition when position changes', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:position', spy)
+			tabs.events.on('changePosition', spy)
 
 			tabs.position = 'end'
 
