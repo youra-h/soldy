@@ -165,7 +165,7 @@ export class TActivatableCollection<
 		if (wasActive && this.count > 1) {
 			// Запрашиваем предикат для поиска следующего активного элемента
 			const predicate = (this.events as TEvented<TActivatableCollectionEvents>).emitResolve(
-				'resolve_activatablePredicate',
+				'_resolveActivatablePredicate',
 			) as ((item: TItem) => boolean) | undefined
 
 			newActiveItem = this.findActivatable(predicate, item)

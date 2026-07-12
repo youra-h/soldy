@@ -20,7 +20,7 @@ export const emitsActivatableCollection: TEmits = [
 	...emitsCollection,
 	'itemActivated',
 	'itemDeactivated',
-	'change:activeItem',
+	'changeActiveItem',
 ] as const
 
 export const propsActivatableCollection: TProps = {

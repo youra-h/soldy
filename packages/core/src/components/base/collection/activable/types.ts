@@ -70,7 +70,7 @@ export type TActivatableCollectionEvents = TCollectionEvents<IActivatableCollect
 	 * Внутренний запрос предиката для поиска следующего активируемого элемента.
 	 * Обработчик возвращает функцию-предикат или undefined.
 	 */
-	resolve_activatablePredicate: () =>
+	_resolveActivatablePredicate: () =>
 		| ((item: IActivatableCollectionItem) => boolean)
 		| undefined
 }
