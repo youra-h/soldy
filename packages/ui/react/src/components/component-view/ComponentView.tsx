@@ -87,12 +87,12 @@ export function ComponentView({
 		sync('afterHide', () => onEvent('afterHide'))
 		sync('show', () => onEvent('show', instance))
 		sync('hide', () => onEvent('hide', instance))
-		sync('change:visible', (value: boolean) => {
-			onEvent('change:visible', value)
+		sync('changeVisible', (value: boolean) => {
+			onEvent('changeVisible', value)
 			setState(prev => ({ ...prev, visible: value }))
 		})
-		sync('change:rendered', (value: boolean) => {
-			onEvent('change:rendered', value)
+		sync('changeRendered', (value: boolean) => {
+			onEvent('changeRendered', value)
 			setState(prev => ({ ...prev, rendered: value }))
 		})
 

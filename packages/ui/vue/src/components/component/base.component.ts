@@ -7,10 +7,10 @@ export const emitsComponent: TEmits = [
 	'created',
 	'rendered',
 	'update:rendered',
-	'change:rendered',
+	'changeRendered',
 	'visible',
 	'update:visible',
-	'change:visible',
+	'changeVisible',
 	'hide',
 	'show',
 	'beforeShow',
@@ -67,13 +67,13 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 	instance.events.on('hide' as any, () => {
 		emit?.('hide', instance)
 	})
-	instance.events.on('change:visible' as any, (value: boolean) => {
-		emit?.('change:visible', value)
+	instance.events.on('changeVisible' as any, (value: boolean) => {
+		emit?.('changeVisible', value)
 		emit?.('visible', value)
 		emit?.('update:visible', value)
 	})
-	instance.events.on('change:rendered' as any, (value: boolean) => {
-		emit?.('change:rendered', value)
+	instance.events.on('changeRendered' as any, (value: boolean) => {
+		emit?.('changeRendered', value)
 		emit?.('rendered', value)
 		emit?.('update:rendered', value)
 	})

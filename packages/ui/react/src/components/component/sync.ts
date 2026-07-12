@@ -34,12 +34,12 @@ export function syncComponent(
 	instance.events.on('hide' as any, () => {
 		onEvent('hide', instance)
 	})
-	instance.events.on('change:visible' as any, (value: boolean) => {
-		onEvent('change:visible', value)
+	instance.events.on('changeVisible' as any, (value: boolean) => {
+		onEvent('changeVisible', value)
 		onEvent('visible', value)
 	})
-	instance.events.on('change:rendered' as any, (value: boolean) => {
-		onEvent('change:rendered', value)
+	instance.events.on('changeRendered' as any, (value: boolean) => {
+		onEvent('changeRendered', value)
 		onEvent('rendered', value)
 	})
 

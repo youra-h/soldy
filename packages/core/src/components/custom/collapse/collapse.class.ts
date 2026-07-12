@@ -78,7 +78,7 @@ export class TCollapse
 
 					item.setViewResolver(() => this._view)
 
-					item.events.on('change:rendered', (value: boolean) => {
+					item.events.on('changeRendered', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
 							'item:rendered',
 							item,
@@ -86,7 +86,7 @@ export class TCollapse
 						)
 					})
 
-					item.events.on('change:visible', (value: boolean) => {
+					item.events.on('changeVisible', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
 							'item:visible',
 							item,
@@ -94,7 +94,7 @@ export class TCollapse
 						)
 					})
 
-					item.events.on('change:present', (value: boolean) => {
+					item.events.on('changePresent', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
 							'item:present',
 							item,

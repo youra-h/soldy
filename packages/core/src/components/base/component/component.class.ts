@@ -48,11 +48,11 @@ export default class TComponent<
 		this._states.visible = states?.visible ?? new TVisibilityState({ initial: visible }) as TStates['visible']
 
 		this._states.rendered.events.on('change', (payload: TValuePayload<boolean>) => {
-			; (this.events as TEvented<TComponentEvents>).emit('change:rendered', payload.newValue)
+			; (this.events as TEvented<TComponentEvents>).emit('changeRendered', payload.newValue)
 			this._emitPresent()
 		})
 		this._states.visible.events.on('change', (payload: TValuePayload<boolean>) => {
-			; (this.events as TEvented<TComponentEvents>).emit('change:visible', payload.newValue)
+			; (this.events as TEvented<TComponentEvents>).emit('changeVisible', payload.newValue)
 			this._emitPresent()
 		})
 
@@ -107,7 +107,7 @@ export default class TComponent<
 	}
 
 	private _emitPresent(): void {
-		; (this.events as TEvented<TComponentEvents>).emit('change:present', this.present)
+		; (this.events as TEvented<TComponentEvents>).emit('changePresent', this.present)
 	}
 
 	get rendered(): boolean {

@@ -104,15 +104,15 @@ export class TList<
 						)
 					})
 
-					item.events.on('change:rendered', (value: boolean) => {
+					item.events.on('changeRendered', (value: boolean) => {
 						; (this.events as TEvented<TListEvents>).emit('item:rendered', item, value)
 					})
 
-					item.events.on('change:visible', (value: boolean) => {
+					item.events.on('changeVisible', (value: boolean) => {
 						; (this.events as TEvented<TListEvents>).emit('item:visible', item, value)
 					})
 
-					item.events.on('change:present', (value: boolean) => {
+					item.events.on('changePresent', (value: boolean) => {
 						; (this.events as TEvented<TListEvents>).emit('item:present', item, value)
 					})
 

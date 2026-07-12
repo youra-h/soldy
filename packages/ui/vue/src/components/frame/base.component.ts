@@ -14,7 +14,7 @@ import { TFrameStylePlugin } from '@soldy/plugins'
 
 export const emitsFrame: TEmits = [
 	...emitsComponent,
-	'change:visible',
+	'changeVisible',
 	'update:visible',
 	'change:x',
 	'update:x',

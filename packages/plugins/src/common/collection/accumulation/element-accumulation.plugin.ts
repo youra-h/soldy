@@ -50,7 +50,7 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 			instancePlugin.ready().then((instance) => {
 				this._present.set(uid, instance.present)
 
-				instance.events.on('change:present', (value: boolean) => {
+				instance.events.on('changePresent', (value: boolean) => {
 					this._present.set(uid, value)
 						; (this.events as TEvented<TElementAccumulationEvents>).emit('element:present', {
 							uid,

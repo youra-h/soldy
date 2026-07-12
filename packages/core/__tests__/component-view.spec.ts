@@ -48,7 +48,7 @@ describe('TComponentView', () => {
 		const visibleHandler = vi.fn()
 		p.events.on('show' as any, showHandler)
 		p.events.on('hide' as any, hideHandler)
-		p.events.on('change:visible', visibleHandler)
+		p.events.on('changeVisible', visibleHandler)
 
 		p.show()
 		expect(beforeShow).toHaveBeenCalled()
@@ -127,13 +127,13 @@ describe('TComponentView', () => {
 			props: { visible: false },
 			states: { rendered: instanceRendered, visible: instanceVisible },
 		})
-		p1.events.on('change:visible', (value) => {
-			log.push(`component-view:change:visible=${value}`)
+		p1.events.on('changeVisible', (value) => {
+			log.push(`component-view:changeVisible=${value}`)
 		})
 		p1.visible = true
 
 		expect(log).toContain('state:value=true')
-		expect(log).toContain('component-view:change:visible=true')
+		expect(log).toContain('component-view:changeVisible=true')
 
 	})
 

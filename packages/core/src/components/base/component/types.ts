@@ -18,12 +18,12 @@ export type TComponentEvents = {
 	show: () => void
 	/** hide */
 	hide: () => void
-	/** change:visible */
-	'change:visible': (value: boolean) => void
-	/** change:rendered */
-	'change:rendered': (value: boolean) => void
-	/** change:present — rendered && visible */
-	'change:present': (value: boolean) => void
+	/** changeVisible */
+	changeVisible: (value: boolean) => void
+	/** changeRendered */
+	changeRendered: (value: boolean) => void
+	/** changePresent — rendered && visible */
+	changePresent: (value: boolean) => void
 }
 
 export interface IComponentProps {

@@ -16,7 +16,7 @@ export type TVisibilityStateCtor = TStateCtor<IVisibilityState>
  * Единица состояния "visible".
  *
  * Хранит флаг видимости и эмитит локальное событие `change`.
- * Компонент-агрегат обычно пробрасывает его наружу как `change:visible`.
+ * Компонент-агрегат обычно пробрасывает его наружу как `changeVisible`.
  */
 export class TVisibilityState
 	extends TStateUnit<boolean, TStateUnitValueEvents<boolean>>

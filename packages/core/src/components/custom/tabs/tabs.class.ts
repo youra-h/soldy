@@ -113,15 +113,15 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 						)
 					})
 
-					item.events.on('change:rendered', (value: boolean) => {
+					item.events.on('changeRendered', (value: boolean) => {
 						; (this.events as TEvented<TTabsEvents>).emit('item:rendered', item, value)
 					})
 
-					item.events.on('change:visible', (value: boolean) => {
+					item.events.on('changeVisible', (value: boolean) => {
 						; (this.events as TEvented<TTabsEvents>).emit('item:visible', item, value)
 					})
 
-					item.events.on('change:present', (value: boolean) => {
+					item.events.on('changePresent', (value: boolean) => {
 						; (this.events as TEvented<TTabsEvents>).emit('item:present', item, value)
 					})
 

@@ -139,10 +139,10 @@ describe('TFrame', () => {
 		expect(log).toEqual(['beforeShow', 'show', 'beforeHide', 'hide'])
 	})
 
-	it('change:visible эмитится при show/hide', () => {
+	it('changeVisible эмитится при show/hide', () => {
 		const frame = new TFrame()
 		const values: boolean[] = []
-		frame.events.on('change:visible' as any, (v: boolean) => values.push(v))
+		frame.events.on('changeVisible' as any, (v: boolean) => values.push(v))
 
 		frame.show()
 		frame.hide()
