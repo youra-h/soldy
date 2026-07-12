@@ -54,12 +54,12 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	/**
 	 * После изменения списка элементов (items). Передаётся актуальный массив элементов.
 	 */
-	'change:items': (items: TItem[]) => void
+	changeItems: (items: TItem[]) => void
 
 	/**
 	 * После изменения количества элементов в коллекции.
 	 */
-	'change:count': (count: number) => void
+	changeCount: (count: number) => void
 
 	/** Сброс состояния коллекции (очистка, удаление всех элементов) */
 	reset: () => void
@@ -70,7 +70,7 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.collection  Коллекция, в которую добавлен элемент.
 	 * @param payload.item        Добавленный элемент.
 	 */
-	'item:added': (payload: { collection: ICollection; item: TItem }) => void
+	itemAdded: (payload: { collection: ICollection; item: TItem }) => void
 
 	/**
 	 * Перед удалением элемента.
@@ -81,7 +81,7 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.item        Элемент, который будут удалять.
 	 * @returns                   false для отмены операции, иначе продолжить.
 	 */
-	'item:beforeDelete': (payload: {
+	itemBeforeDelete: (payload: {
 		collection: ICollection
 		index: number
 		item: TItem
@@ -93,7 +93,7 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.collection  Коллекция, из которой удалён элемент.
 	 * @param payload.item        Удалённый элемент.
 	 */
-	'item:deleted': (payload: { collection: ICollection; item: TItem }) => void
+	itemDeleted: (payload: { collection: ICollection; item: TItem }) => void
 
 	/**
 	 * После удаления элемента.
@@ -102,7 +102,7 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.index       Индекс, с которого удалили элемент.
 	 * @param payload.item        Удалённый элемент.
 	 */
-	'item:afterDelete': (payload: { collection: ICollection; index: number; item: TItem }) => void
+	itemAfterDelete: (payload: { collection: ICollection; index: number; item: TItem }) => void
 
 	/**
 	 * Перед перемещением элемента.
@@ -113,13 +113,13 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.newIndex    Новый индекс для элемента.
 	 * @returns                   false для отмены операции, иначе продолжить.
 	 */
-	'item:beforeMove': (payload: {
+	itemBeforeMove: (payload: {
 		collection: ICollection
 		oldIndex: number
 		newIndex: number
 	}) => boolean | void
 
-	'item:moved': (payload: {
+	itemMoved: (payload: {
 		collection: ICollection
 		item: TItem
 		oldIndex: number
@@ -134,7 +134,7 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 * @param payload.oldIndex    Исходный исходный индекс.
 	 * @param payload.newIndex    Индекс, на который элемент переместился.
 	 */
-	'item:afterMove': (payload: {
+	itemAfterMove: (payload: {
 		collection: ICollection
 		item: TItem
 		oldIndex: number
@@ -147,8 +147,8 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
  * Описывают проброс изменений свойств элементов наружу (к родительскому компоненту).
  */
 export type TItemProxyEvents<TItem> = {
-	/** item:disabled — эмитится при изменении свойства disabled у элемента */
-	'item:disabled': (item: TItem, value: boolean) => void
+	/** itemDisabled — эмитится при изменении свойства disabled у элемента */
+	itemDisabled: (item: TItem, value: boolean) => void
 }
 
 export interface ICollectionMethods<TItem extends ICollectionItem = ICollectionItem> {

@@ -17,8 +17,8 @@ export type TRelayRule<
 	 * Используется для переименования событий при проброске.
 	 *
 	 * @example
-	 * // Пробросить item:added как tab:added
-	 * { from: 'item:added', as: 'tab:added' }
+	 * // Пробросить itemAdded как tab:added
+	 * { from: 'itemAdded', as: 'tab:added' }
 	 */
 	as?: keyof TTarget
 	/**
@@ -28,10 +28,10 @@ export type TRelayRule<
 	 *
 	 * @example
 	 * {
-	 *   from: 'item:added',
+	 *   from: 'itemAdded',
 	 *   then: ({ item }) => {
 	 *     item.events.on('changeDisabled', (value) => {
-	 *       this.events.emit('item:disabled', item, value)
+	 *       this.events.emit('itemDisabled', item, value)
 	 *     })
 	 *   }
 	 * }
@@ -110,25 +110,25 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * @example
 	 * // Простой проброс нескольких событий без изменений:
 	 * this.events.relay(this._collection.events, [
-	 *   'item:beforeDelete',
-	 *   'item:deleted',
+	 *   'itemBeforeDelete',
+	 *   'itemDeleted',
 	 *   'cleared',
 	 * ])
 	 *
 	 * @example
 	 * // Переименование события:
 	 * this.events.relay(this._collection.events, [
-	 *   { from: 'item:added', as: 'tab:added' },
+	 *   { from: 'itemAdded', as: 'tab:added' },
 	 * ])
 	 *
 	 * @example
 	 * // Хук then — подписаться на события нового элемента до его появления снаружи:
 	 * this.events.relay(this._collection.events, [
 	 *   {
-	 *     from: 'item:added',
+	 *     from: 'itemAdded',
 	 *     then: ({ item }) => {
 	 *       item.events.on('changeDisabled', (value) => {
-	 *         this.events.emit('item:disabled', item, value)
+	 *         this.events.emit('itemDisabled', item, value)
 	 *       })
 	 *     },
 	 *   },
@@ -138,13 +138,13 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * // Комбинация: переименование + хук:
 	 * this.events.relay(this._collection.events, [
 	 *   {
-	 *     from: 'item:added',
+	 *     from: 'itemAdded',
 	 *     as: 'tab:added',
 	 *     then: ({ item }) => {
 	 *       item.size = this.size
 	 *     },
 	 *   },
-	 *   'item:deleted',
+	 *   'itemDeleted',
 	 * ])
 	 */
 	relay<TSource extends Record<string, (...args: any) => any>>(

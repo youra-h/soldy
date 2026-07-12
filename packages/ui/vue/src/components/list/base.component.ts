@@ -37,7 +37,7 @@ export const emitsList: TEmits = [
 	'update:wordWrap',
 	'change:scrollBehavior',
 	'update:scrollBehavior',
-	'item:disabled',
+	'itemDisabled',
 	'item:text',
 	'item:rendered',
 	'item:visible',
@@ -93,8 +93,8 @@ export function syncList<TItem extends IListItem = IListItem>(
 		plugins,
 	})
 
-	instance.events.on('item:disabled', (item: IListItem, value: boolean) => {
-		emit?.('item:disabled', item, value)
+	instance.events.on('itemDisabled', (item: IListItem, value: boolean) => {
+		emit?.('itemDisabled', item, value)
 	})
 
 	instance.events.on('item:text', (item: IListItem, value: string) => {

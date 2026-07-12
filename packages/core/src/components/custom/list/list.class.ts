@@ -88,12 +88,12 @@ export class TList<
 			'change:selectedCount',
 			'change:mode',
 			{
-				from: 'item:added',
+				from: 'itemAdded',
 				then: (payload: any) => {
 					const { item } = payload as { collection: any; item: IListItem }
 
 					item.events.on('changeDisabled', (value: boolean) => {
-						; (this.events as TEvented<TListEvents>).emit('item:disabled', item, value)
+						; (this.events as TEvented<TListEvents>).emit('itemDisabled', item, value)
 					})
 
 					item.events.on('changeText', (payload: TValuePayload<string>) => {
@@ -123,12 +123,12 @@ export class TList<
 					item.variant = this.variant
 				},
 			},
-			'item:beforeDelete',
-			'item:deleted',
-			'item:afterDelete',
-			'item:beforeMove',
-			'item:moved',
-			'item:afterMove',
+			'itemBeforeDelete',
+			'itemDeleted',
+			'itemAfterDelete',
+			'itemBeforeMove',
+			'itemMoved',
+			'itemAfterMove',
 		])
 
 		this.events.on('changeDisabled', (value) => {

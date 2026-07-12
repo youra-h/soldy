@@ -48,7 +48,7 @@ export class TListBox
 
 		this.events.relay(this._collection.events, [
 			{
-				from: 'item:added',
+				from: 'itemAdded',
 				then: (payload: any) => {
 					const { item } = payload as { collection: any; item: IListBoxItem }
 

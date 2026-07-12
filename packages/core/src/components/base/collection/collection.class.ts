@@ -161,9 +161,9 @@ export class TCollection<
 
 	/**
 	 * Вспомогательный метод, собирает и эмитит общие события коллекции:
-	 * 'changed', 'change:items' и опционально 'change:count'.
+	 * 'changed', 'changeItems' и опционально 'changeCount'.
 	 * @param item Опционально — элемент, связанный с изменением.
-	 * @param emitCount По умолчанию true — эмитить 'change:count'.
+	 * @param emitCount По умолчанию true — эмитить 'changeCount'.
 	 * @protected
 	 */
 	protected _notifyItems(item?: TItem, emitCount = true): void {
@@ -173,10 +173,10 @@ export class TCollection<
 			ev.emit('changed', { collection: this, item })
 		}
 
-		ev.emit('change:items', this._items)
+		ev.emit('changeItems', this._items)
 
 		if (emitCount) {
-			ev.emit('change:count', this.count)
+			ev.emit('changeCount', this.count)
 		}
 	}
 
@@ -313,7 +313,7 @@ export class TCollection<
 
 		// После вставки элемента пересчитываем order для всех элементов, начиная с позиции вставки
 		this._recalculateOrder(index)
-		;(this.events as TEvented<TCollectionEvents>).emit('item:added', { collection: this, item })
+		;(this.events as TEvented<TCollectionEvents>).emit('itemAdded', { collection: this, item })
 
 		this._onAfterItemAdd(item)
 
@@ -337,7 +337,7 @@ export class TCollection<
 		const item = this._items[index]
 
 		if (
-			(this.events as TEvented<TCollectionEvents>).emitWithResult('item:beforeDelete', {
+			(this.events as TEvented<TCollectionEvents>).emitWithResult('itemBeforeDelete', {
 				collection: this,
 				index,
 				item,
@@ -351,11 +351,11 @@ export class TCollection<
 
 		// После удаления элемента пересчитываем order для всех элементов, начиная с позиции удалённого элемента
 		this._recalculateOrder(index)
-		;(this.events as TEvented<TCollectionEvents>).emit('item:deleted', {
+		;(this.events as TEvented<TCollectionEvents>).emit('itemDeleted', {
 			collection: this,
 			item,
 		})
-		;(this.events as TEvented<TCollectionEvents>).emit('item:afterDelete', {
+		;(this.events as TEvented<TCollectionEvents>).emit('itemAfterDelete', {
 			collection: this,
 			index,
 			item,
@@ -408,7 +408,7 @@ export class TCollection<
 		if (oldIndex === -1 || oldIndex === newIndex) return
 
 		if (
-			(this.events as TEvented<TCollectionEvents>).emitWithResult('item:beforeMove', {
+			(this.events as TEvented<TCollectionEvents>).emitWithResult('itemBeforeMove', {
 				collection: this,
 				oldIndex,
 				newIndex,
@@ -426,13 +426,13 @@ export class TCollection<
 
 		// После перемещения элемента пересчитываем order для всех элементов, начиная с позиции min(oldIndex, newIndex)
 		this._recalculateOrder(Math.min(oldIndex, ni))
-		;(this.events as TEvented<TCollectionEvents>).emit('item:moved', {
+		;(this.events as TEvented<TCollectionEvents>).emit('itemMoved', {
 			collection: this,
 			item,
 			oldIndex,
 			newIndex: ni,
 		})
-		;(this.events as TEvented<TCollectionEvents>).emit('item:afterMove', {
+		;(this.events as TEvented<TCollectionEvents>).emit('itemAfterMove', {
 			collection: this,
 			item,
 			oldIndex,

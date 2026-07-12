@@ -48,7 +48,7 @@ export abstract class TAccumulationPlugin<
 
 		instancePlugin?.events.on('ready', ({ instance }: { instance: any }) => {
 			this._collection = instance.collection ?? instance
-			this._collection.events.on('item:moved', () => this._reorder())
+			this._collection.events.on('itemMoved', () => this._reorder())
 		})
 
 		const itemPlugins = bundle.get(TCollectionItemPlugins)

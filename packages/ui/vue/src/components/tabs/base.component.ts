@@ -42,7 +42,7 @@ export const emitsTabs: TEmits = [
 	'update:closable',
 	'item:close',
 	'item:closable',
-	'item:disabled',
+	'itemDisabled',
 	'item:text',
 	'item:rendered',
 	'item:visible',
@@ -141,8 +141,8 @@ export function syncTabs(
 		emit?.('item:closable', item, value)
 	})
 
-	instance.events.on('item:disabled', (item: ITabItem, value: boolean) => {
-		emit?.('item:disabled', item, value)
+	instance.events.on('itemDisabled', (item: ITabItem, value: boolean) => {
+		emit?.('itemDisabled', item, value)
 	})
 
 	instance.events.on('item:text', (item: ITabItem, value: string) => {

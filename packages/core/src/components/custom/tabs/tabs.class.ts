@@ -90,7 +90,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
 		this.events.relay(this._collection.events, [
 			{
-				from: 'item:added',
+				from: 'itemAdded',
 				then: (payload: any) => {
 					const { item } = payload as { collection: any; item: ITabItem }
 
@@ -102,7 +102,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 					})
 
 					item.events.on('changeDisabled', (value: boolean) => {
-						; (this.events as TEvented<TTabsEvents>).emit('item:disabled', item, value)
+						; (this.events as TEvented<TTabsEvents>).emit('itemDisabled', item, value)
 					})
 
 					item.events.on('changeText', (payload: TValuePayload<string>) => {
@@ -132,12 +132,12 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 			},
 			'item:activated',
 			'item:deactivated',
-			'item:beforeDelete',
-			'item:deleted',
-			'item:afterDelete',
-			'item:beforeMove',
-			'item:moved',
-			'item:afterMove',
+			'itemBeforeDelete',
+			'itemDeleted',
+			'itemAfterDelete',
+			'itemBeforeMove',
+			'itemMoved',
+			'itemAfterMove',
 		])
 
 		this.events.on('changeDisabled', (value) => {

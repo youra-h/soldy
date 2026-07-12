@@ -72,7 +72,7 @@ export class TCollapse
 			'change:selectedCount',
 			'change:mode',
 			{
-				from: 'item:added',
+				from: 'itemAdded',
 				then: (payload: any) => {
 					const { item } = payload as { collection: any; item: ICollapseItem }
 
@@ -104,7 +104,7 @@ export class TCollapse
 
 					item.events.on('changeDisabled', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
-							'item:disabled',
+							'itemDisabled',
 							item,
 							value,
 						)
@@ -123,12 +123,12 @@ export class TCollapse
 					item.variant = this.variant
 				},
 			},
-			'item:beforeDelete',
-			'item:deleted',
-			'item:afterDelete',
-			'item:beforeMove',
-			'item:moved',
-			'item:afterMove',
+			'itemBeforeDelete',
+			'itemDeleted',
+			'itemAfterDelete',
+			'itemBeforeMove',
+			'itemMoved',
+			'itemAfterMove',
 		])
 
 		this.events.on('changeDisabled', (value) => {

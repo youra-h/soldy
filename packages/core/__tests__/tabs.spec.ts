@@ -52,9 +52,9 @@ describe('TTabs', () => {
 			expect(item.text).toBe('Tab 1')
 		})
 
-		it('emits item:added event when item is added', () => {
+		it('emits itemAdded event when item is added', () => {
 			const spy = vi.fn()
-			tabs.events.on('item:added', spy)
+			tabs.events.on('itemAdded', spy)
 
 			const item = tabs.collection.add({ text: 'Tab 1' })
 
@@ -63,11 +63,11 @@ describe('TTabs', () => {
 			)
 		})
 
-		it('emits item:deleted event when item is deleted', () => {
+		it('emits itemDeleted event when item is deleted', () => {
 			const item = tabs.collection.add({ text: 'Tab 1' })
 
 			const spy = vi.fn()
-			tabs.events.on('item:deleted', spy)
+			tabs.events.on('itemDeleted', spy)
 
 			tabs.collection.deleteItem(item)
 

@@ -439,9 +439,9 @@ describe('TCollapse', () => {
 			expect(item.text).toBe('Section 1')
 		})
 
-		it('emits item:added when item is added', () => {
+		it('emits itemAdded when item is added', () => {
 			const spy = vi.fn()
-			collapse.events.on('item:added', spy)
+			collapse.events.on('itemAdded', spy)
 
 			const item = collapse.collection.add({ text: 'Section 1' })
 
@@ -450,10 +450,10 @@ describe('TCollapse', () => {
 			)
 		})
 
-		it('emits item:deleted when item is deleted', () => {
+		it('emits itemDeleted when item is deleted', () => {
 			const item = collapse.collection.add({ text: 'Section 1' })
 			const spy = vi.fn()
-			collapse.events.on('item:deleted', spy)
+			collapse.events.on('itemDeleted', spy)
 
 			collapse.collection.deleteItem(item)
 

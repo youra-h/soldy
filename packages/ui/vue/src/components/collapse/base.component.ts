@@ -30,7 +30,7 @@ export const emitsCollapse: TEmits = [
 	...emitsSelectableCollection,
 	'change:view',
 	'update:view',
-	'item:disabled',
+	'itemDisabled',
 	'item:text',
 	'item:rendered',
 	'item:visible',
@@ -80,8 +80,8 @@ export function syncCollapse(
 		emit?.('update:view', value)
 	})
 
-	instance.events.on('item:disabled', (item: ICollapseItem, value: boolean) => {
-		emit?.('item:disabled', item, value)
+	instance.events.on('itemDisabled', (item: ICollapseItem, value: boolean) => {
+		emit?.('itemDisabled', item, value)
 	})
 
 	instance.events.on('item:text', (item: ICollapseItem, value: string) => {

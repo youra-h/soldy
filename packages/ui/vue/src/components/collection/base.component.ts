@@ -17,17 +17,17 @@ import { useSyncProps } from '../../composables/useSyncProps'
 
 export const emitsCollection: TEmits = [
 	'changed',
-	'change:items',
+	'changeItems',
 	'update:items',
-	'change:count',
+	'changeCount',
 	'reset',
-	'item:added',
-	'item:beforeDelete',
-	'item:deleted',
-	'item:afterDelete',
-	'item:beforeMove',
-	'item:moved',
-	'item:afterMove',
+	'itemAdded',
+	'itemBeforeDelete',
+	'itemDeleted',
+	'itemAfterDelete',
+	'itemBeforeMove',
+	'itemMoved',
+	'itemAfterMove',
 ] as const
 
 export const propsCollection: TProps = {
@@ -95,13 +95,13 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 		},
 	)
 
-	instance.events.on('change:items', (items: ICollectionItem[]) => {
-		emit?.('change:items', items)
+	instance.events.on('changeItems', (items: ICollectionItem[]) => {
+		emit?.('changeItems', items)
 		emit?.('update:items', items)
 	})
 
-	instance.events.on('change:count', (count: number) => {
-		emit?.('change:count', count)
+	instance.events.on('changeCount', (count: number) => {
+		emit?.('changeCount', count)
 	})
 
 	instance.events.on('reset', () => {
@@ -110,61 +110,61 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
 	instance.events.on(
-		'item:added',
+		'itemAdded',
 		(payload: { collection: ICollection; item: ICollectionItem }) => {
-			emit?.('item:added', payload)
+			emit?.('itemAdded', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:deleted',
+		'itemDeleted',
 		(payload: { collection: ICollection; item: ICollectionItem }) => {
-			emit?.('item:deleted', payload)
+			emit?.('itemDeleted', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:beforeDelete',
+		'itemBeforeDelete',
 		(payload: { collection: ICollection; index: number; item: ICollectionItem }) => {
-			emit?.('item:beforeDelete', payload)
+			emit?.('itemBeforeDelete', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:afterDelete',
+		'itemAfterDelete',
 		(payload: { collection: ICollection; index: number; item: ICollectionItem }) => {
-			emit?.('item:afterDelete', payload)
+			emit?.('itemAfterDelete', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:beforeMove',
+		'itemBeforeMove',
 		(payload: { collection: ICollection; oldIndex: number; newIndex: number }) => {
-			emit?.('item:beforeMove', payload)
+			emit?.('itemBeforeMove', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:moved',
+		'itemMoved',
 		(payload: {
 			collection: ICollection
 			item: ICollectionItem
 			oldIndex: number
 			newIndex: number
 		}) => {
-			emit?.('item:moved', payload)
+			emit?.('itemMoved', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:afterMove',
+		'itemAfterMove',
 		(payload: {
 			collection: ICollection
 			item: ICollectionItem
 			oldIndex: number
 			newIndex: number
 		}) => {
-			emit?.('item:afterMove', payload)
+			emit?.('itemAfterMove', payload)
 		},
 	)
 
@@ -172,11 +172,11 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 	return useSyncProps(instance.events, {
 		items: {
 			value: () => instance.items,
-			triggers: ['item:added', 'item:afterMove', 'item:afterDelete', 'item:moved', 'changed'],
+			triggers: ['itemAdded', 'itemAfterMove', 'itemAfterDelete', 'itemMoved', 'changed'],
 		},
 		count: {
 			value: () => instance.count,
-			triggers: ['item:added', 'item:afterMove', 'item:afterDelete', 'item:moved', 'changed'],
+			triggers: ['itemAdded', 'itemAfterMove', 'itemAfterDelete', 'itemMoved', 'changed'],
 		},
 	})
 }
