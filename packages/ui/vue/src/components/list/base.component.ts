@@ -38,10 +38,10 @@ export const emitsList: TEmits = [
 	'change:scrollBehavior',
 	'update:scrollBehavior',
 	'itemDisabled',
-	'item:text',
-	'item:rendered',
-	'item:visible',
-	'item:present',
+	'itemText',
+	'itemRendered',
+	'itemVisible',
+	'itemPresent',
 ] as const
 
 export const propsList: TProps = {
@@ -97,20 +97,20 @@ export function syncList<TItem extends IListItem = IListItem>(
 		emit?.('itemDisabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: IListItem, value: string) => {
-		emit?.('item:text', item, value)
+	instance.events.on('itemText', (item: IListItem, value: string) => {
+		emit?.('itemText', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: IListItem, value: boolean) => {
-		emit?.('item:rendered', item, value)
+	instance.events.on('itemRendered', (item: IListItem, value: boolean) => {
+		emit?.('itemRendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: IListItem, value: boolean) => {
-		emit?.('item:visible', item, value)
+	instance.events.on('itemVisible', (item: IListItem, value: boolean) => {
+		emit?.('itemVisible', item, value)
 	})
 
-	instance.events.on('item:present', (item: IListItem, value: boolean) => {
-		emit?.('item:present', item, value)
+	instance.events.on('itemPresent', (item: IListItem, value: boolean) => {
+		emit?.('itemPresent', item, value)
 	})
 
 	instance.events.on('change:maxRows', (value: number) => {

@@ -26,21 +26,21 @@ export type TTabsEvents = TControlEvents &
 		'change:alignment': (value: TTabsAlignment) => void
 		/** change:position */
 		'change:position': (value: TTabsPosition) => void
-		/** change:view */
-		'change:view': (value: TTabsView) => void
+		/** changeView */
+		'changeView': (value: TTabsView) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
 		/** item:close — эмитится перед удалением таба при закрытии */
 		'item:close': (item: ITabItem) => void
 		/** item:closable — эмитится при изменении свойства closable у таба */
 		'item:closable': (item: ITabItem, value: boolean) => void
-		/** item:text — эмитится при изменении текста таба */
-		'item:text': (item: ITabItem, value: string) => void
-		/** item:rendered — эмитится при изменении rendered у таба */
-		'item:rendered': (item: ITabItem, value: boolean) => void
-		/** item:visible — эмитится при изменении visible у таба */
-		'item:visible': (item: ITabItem, value: boolean) => void
-		'item:present': (item: ITabItem, value: boolean) => void
+		/** itemText — эмитится при изменении текста таба */
+		'itemText': (item: ITabItem, value: string) => void
+		/** itemRendered — эмитится при изменении rendered у таба */
+		'itemRendered': (item: ITabItem, value: boolean) => void
+		/** itemVisible — эмитится при изменении visible у таба */
+		'itemVisible': (item: ITabItem, value: boolean) => void
+		'itemPresent': (item: ITabItem, value: boolean) => void
 	}
 
 export interface ITabsProps<

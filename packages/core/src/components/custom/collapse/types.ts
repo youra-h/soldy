@@ -13,12 +13,12 @@ export type TCollapseView = 'plain' | 'outlined' | 'filled'
 export type TCollapseEvents = TControlEvents &
 	TSelectableCollectionEvents &
 	TItemProxyEvents<ICollapseItem> & {
-		/** change:view */
-		'change:view': (value: TCollapseView) => void
-		'item:text': (item: ICollapseItem, value: string) => void
-		'item:rendered': (item: ICollapseItem, value: boolean) => void
-		'item:visible': (item: ICollapseItem, value: boolean) => void
-		'item:present': (item: ICollapseItem, value: boolean) => void
+		/** changeView */
+		changeView: (value: TCollapseView) => void
+		itemText: (item: ICollapseItem, value: string) => void
+		itemRendered: (item: ICollapseItem, value: boolean) => void
+		itemVisible: (item: ICollapseItem, value: boolean) => void
+		itemPresent: (item: ICollapseItem, value: boolean) => void
 	}
 
 export interface ICollapseProps<

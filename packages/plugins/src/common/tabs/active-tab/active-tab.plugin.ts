@@ -37,7 +37,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 			instance.events.on('itemAfterDelete', () => requestAnimationFrame(() => this._emitOffset()))
 			instance.events.on('itemAfterMove', () => requestAnimationFrame(() => this._emitOffset()))
 			instance.events.on('itemDeactivated', () => this._emitOffset())
-			instance.events.on('change:view', () => this._emitOffset())
+			instance.events.on('changeView', () => this._emitOffset())
 		})
 	}
 

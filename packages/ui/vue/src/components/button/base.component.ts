@@ -13,7 +13,7 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsButton: TEmits = [
 	...emitsTextable,
-	'change:view',
+	'changeView',
 	'update:view',
 ] as const
 
@@ -43,8 +43,8 @@ export function syncButton(
 
 	const { instance, props, emit } = options
 
-	instance.events.on('change:view' as any, (value: TButtonView) => {
-		emit?.('change:view', value)
+	instance.events.on('changeView' as any, (value: TButtonView) => {
+		emit?.('changeView', value)
 		emit?.('update:view', value)
 	})
 

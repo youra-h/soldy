@@ -36,17 +36,17 @@ export const emitsTabs: TEmits = [
 	'update:alignment',
 	'change:position',
 	'update:position',
-	'change:view',
+	'changeView',
 	'update:view',
 	'change:closable',
 	'update:closable',
 	'item:close',
 	'item:closable',
 	'itemDisabled',
-	'item:text',
-	'item:rendered',
-	'item:visible',
-	'item:present',
+	'itemText',
+	'itemRendered',
+	'itemVisible',
+	'itemPresent',
 ] as const
 
 export const propsTabs: TProps = {
@@ -123,8 +123,8 @@ export function syncTabs(
 		emit?.('update:position', value)
 	})
 
-	instance.events.on('change:view', (value: TTabsView) => {
-		emit?.('change:view', value)
+	instance.events.on('changeView', (value: TTabsView) => {
+		emit?.('changeView', value)
 		emit?.('update:view', value)
 	})
 
@@ -145,20 +145,20 @@ export function syncTabs(
 		emit?.('itemDisabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: ITabItem, value: string) => {
-		emit?.('item:text', item, value)
+	instance.events.on('itemText', (item: ITabItem, value: string) => {
+		emit?.('itemText', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: ITabItem, value: boolean) => {
-		emit?.('item:rendered', item, value)
+	instance.events.on('itemRendered', (item: ITabItem, value: boolean) => {
+		emit?.('itemRendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: ITabItem, value: boolean) => {
-		emit?.('item:visible', item, value)
+	instance.events.on('itemVisible', (item: ITabItem, value: boolean) => {
+		emit?.('itemVisible', item, value)
 	})
 
-	instance.events.on('item:present', (item: ITabItem, value: boolean) => {
-		emit?.('item:present', item, value)
+	instance.events.on('itemPresent', (item: ITabItem, value: boolean) => {
+		emit?.('itemPresent', item, value)
 	})
 
 	// Watch props

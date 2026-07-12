@@ -80,7 +80,7 @@ export class TCollapse
 
 					item.events.on('changeRendered', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
-							'item:rendered',
+							'itemRendered',
 							item,
 							value,
 						)
@@ -88,7 +88,7 @@ export class TCollapse
 
 					item.events.on('changeVisible', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
-							'item:visible',
+							'itemVisible',
 							item,
 							value,
 						)
@@ -96,7 +96,7 @@ export class TCollapse
 
 					item.events.on('changePresent', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
-							'item:present',
+							'itemPresent',
 							item,
 							value,
 						)
@@ -112,7 +112,7 @@ export class TCollapse
 
 					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
-							'item:text',
+							'itemText',
 							item,
 							payload.newValue,
 						)
@@ -156,9 +156,9 @@ export class TCollapse
 			this._applyView(value, this._view)
 
 			this._collection.forEach((item) => {
-				item.events.emit('change:view', value)
+				item.events.emit('changeView', value)
 			})
-				; (this.events as TEvented<TCollapseEvents>).emit('change:view', value)
+				; (this.events as TEvented<TCollapseEvents>).emit('changeView', value)
 		}
 	}
 

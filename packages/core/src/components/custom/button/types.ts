@@ -14,7 +14,8 @@ export interface IButtonProps extends ITextableProps {
 }
 
 export type TButtonEvents = TTextableEvents & {
-	'change:view': (value: TButtonView) => void
+	/** changeView */
+	changeView: (value: TButtonView) => void
 }
 
 export type TButtonStates = TTextableStates

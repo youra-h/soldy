@@ -219,9 +219,9 @@ describe('TTabs', () => {
 			expect(spy).toHaveBeenCalledWith('end')
 		})
 
-		it('emits change:view when view changes', () => {
+		it('emits changeView when view changes', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:view', spy)
+			tabs.events.on('changeView', spy)
 
 			tabs.view = 'outline'
 

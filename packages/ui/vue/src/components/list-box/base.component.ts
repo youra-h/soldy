@@ -13,7 +13,7 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsListBox: TEmits = [
 	...emitsList,
-	'change:view',
+	'changeView',
 	'update:view',
 ] as const
 
@@ -39,8 +39,8 @@ export function syncListBox(
 
 	const { props, instance, emit } = options
 
-	instance.events.on('change:view', (value: TListBoxView) => {
-		emit?.('change:view', value)
+	instance.events.on('changeView', (value: TListBoxView) => {
+		emit?.('changeView', value)
 		emit?.('update:view', value)
 	})
 

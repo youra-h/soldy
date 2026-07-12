@@ -28,13 +28,13 @@ import { useInheritProps } from '../../composables/useInheritProps'
 export const emitsCollapse: TEmits = [
 	...emitsControl,
 	...emitsSelectableCollection,
-	'change:view',
+	'changeView',
 	'update:view',
 	'itemDisabled',
-	'item:text',
-	'item:rendered',
-	'item:visible',
-	'item:present',
+	'itemText',
+	'itemRendered',
+	'itemVisible',
+	'itemPresent',
 ] as const
 
 export const propsCollapse: TProps = {
@@ -75,8 +75,8 @@ export function syncCollapse(
 		plugins,
 	})
 
-	instance.events.on('change:view', (value: TCollapseView) => {
-		emit?.('change:view', value)
+	instance.events.on('changeView', (value: TCollapseView) => {
+		emit?.('changeView', value)
 		emit?.('update:view', value)
 	})
 
@@ -84,20 +84,20 @@ export function syncCollapse(
 		emit?.('itemDisabled', item, value)
 	})
 
-	instance.events.on('item:text', (item: ICollapseItem, value: string) => {
-		emit?.('item:text', item, value)
+	instance.events.on('itemText', (item: ICollapseItem, value: string) => {
+		emit?.('itemText', item, value)
 	})
 
-	instance.events.on('item:rendered', (item: ICollapseItem, value: boolean) => {
-		emit?.('item:rendered', item, value)
+	instance.events.on('itemRendered', (item: ICollapseItem, value: boolean) => {
+		emit?.('itemRendered', item, value)
 	})
 
-	instance.events.on('item:visible', (item: ICollapseItem, value: boolean) => {
-		emit?.('item:visible', item, value)
+	instance.events.on('itemVisible', (item: ICollapseItem, value: boolean) => {
+		emit?.('itemVisible', item, value)
 	})
 
-	instance.events.on('item:present', (item: ICollapseItem, value: boolean) => {
-		emit?.('item:present', item, value)
+	instance.events.on('itemPresent', (item: ICollapseItem, value: boolean) => {
+		emit?.('itemPresent', item, value)
 	})
 
 	track(props, 'view', (value) => {

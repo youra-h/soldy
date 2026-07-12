@@ -22,7 +22,7 @@ export const emitsCollapseItemCustom: TEmits = [
 	...emitsValueControl,
 	'changeText',
 	'update:text',
-	'change:arrowPlacement',
+	'changeArrowPlacement',
 	'update:arrowPlacement',
 ] as const
 
@@ -67,8 +67,8 @@ export function syncCollapseItemCustom(
 		emit?.('update:text', payload.newValue)
 	})
 
-	instance.events.on('change:arrowPlacement', (value: TCollapseArrowPlacement) => {
-		emit?.('change:arrowPlacement', value)
+	instance.events.on('changeArrowPlacement', (value: TCollapseArrowPlacement) => {
+		emit?.('changeArrowPlacement', value)
 		emit?.('update:arrowPlacement', value)
 	})
 

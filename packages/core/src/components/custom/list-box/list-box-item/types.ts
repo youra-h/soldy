@@ -8,8 +8,8 @@ import type {
 import type { TListBoxView } from '../types'
 
 export type TListBoxItemEvents = TListItemEvents & {
-	/** change:view */
-	'change:view': (value: TListBoxView) => void
+	/** changeView */
+	'changeView': (value: TListBoxView) => void
 }
 
 export type TListBoxItemStates = TListItemCustomStates

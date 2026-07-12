@@ -54,7 +54,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 	set view(value: TButtonView) {
 		if (value && this._view !== value) {
 			this._applyView(value, this._view)
-			;(this.events as TEvented<TButtonEvents>).emit('change:view', value)
+			;(this.events as TEvented<TButtonEvents>).emit('changeView', value)
 		}
 	}
 

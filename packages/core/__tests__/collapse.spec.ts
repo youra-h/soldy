@@ -53,9 +53,9 @@ describe('TCollapseItemCustom', () => {
 			expect(item.arrowPlacement).toBe('end')
 		})
 
-		it('emits change:arrowPlacement when changed', () => {
+		it('emits changeArrowPlacement when changed', () => {
 			const spy = vi.fn()
-			item.events.on('change:arrowPlacement', spy)
+			item.events.on('changeArrowPlacement', spy)
 
 			item.arrowPlacement = 'end'
 
@@ -350,7 +350,7 @@ describe('TCollapse', () => {
 	describe('view', () => {
 		it('sets view and emits event', () => {
 			const spy = vi.fn()
-			collapse.events.on('change:view', spy)
+			collapse.events.on('changeView', spy)
 
 			collapse.view = 'filled'
 
@@ -367,7 +367,7 @@ describe('TCollapse', () => {
 
 		it('does not emit event when view does not change', () => {
 			const spy = vi.fn()
-			collapse.events.on('change:view', spy)
+			collapse.events.on('changeView', spy)
 
 			collapse.view = 'plain'
 
@@ -390,14 +390,14 @@ describe('TCollapse', () => {
 			expect(item.view).toBe('filled')
 		})
 
-		it('emits change:view on each item when collapse view changes', () => {
+		it('emits changeView on each item when collapse view changes', () => {
 			const item1 = collapse.collection.add({})
 			const item2 = collapse.collection.add({})
 			const spy1 = vi.fn()
 			const spy2 = vi.fn()
 
-			item1.events.on('change:view', spy1)
-			item2.events.on('change:view', spy2)
+			item1.events.on('changeView', spy1)
+			item2.events.on('changeView', spy2)
 
 			collapse.view = 'filled'
 

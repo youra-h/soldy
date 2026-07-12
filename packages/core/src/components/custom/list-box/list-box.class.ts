@@ -76,9 +76,9 @@ export class TListBox
 			this._applyView(value, this._view)
 
 			this._collection.forEach((item) => {
-				item.events.emit('change:view', value)
+				item.events.emit('changeView', value)
 			})
-			;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
+			;(this.events as TEvented<TListBoxEvents>).emit('changeView', value)
 		}
 	}
 

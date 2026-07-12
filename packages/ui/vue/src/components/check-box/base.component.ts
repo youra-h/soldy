@@ -15,9 +15,9 @@ import { useInheritProps } from '../../composables/useInheritProps'
 export const emitsCheckBox: TEmits = [
 	...emitsInputControl,
 	'update:indeterminate',
-	'change:indeterminate',
+	'changeIndeterminate',
 	'update:plain',
-	'change:plain',
+	'changePlain',
 ] as const
 
 export const propsCheckBox: TProps = {
@@ -58,13 +58,13 @@ export function syncCheckBox(
 	const { instance, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:indeterminate' as any, (value: boolean) => {
-		emit?.('change:indeterminate', value)
+	instance.events.on('changeIndeterminate' as any, (value: boolean) => {
+		emit?.('changeIndeterminate', value)
 		emit?.('update:indeterminate', value)
 	})
 
-	instance.events.on('change:plain' as any, (value: boolean) => {
-		emit?.('change:plain', value)
+	instance.events.on('changePlain' as any, (value: boolean) => {
+		emit?.('changePlain', value)
 		emit?.('update:plain', value)
 	})
 

@@ -98,22 +98,22 @@ export class TList<
 
 					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TListEvents>).emit(
-							'item:text',
+							'itemText',
 							item,
 							payload.newValue,
 						)
 					})
 
 					item.events.on('changeRendered', (value: boolean) => {
-						; (this.events as TEvented<TListEvents>).emit('item:rendered', item, value)
+						; (this.events as TEvented<TListEvents>).emit('itemRendered', item, value)
 					})
 
 					item.events.on('changeVisible', (value: boolean) => {
-						; (this.events as TEvented<TListEvents>).emit('item:visible', item, value)
+						; (this.events as TEvented<TListEvents>).emit('itemVisible', item, value)
 					})
 
 					item.events.on('changePresent', (value: boolean) => {
-						; (this.events as TEvented<TListEvents>).emit('item:present', item, value)
+						; (this.events as TEvented<TListEvents>).emit('itemPresent', item, value)
 					})
 
 					item.setWordWrapResolver(() => this._wordWrap)

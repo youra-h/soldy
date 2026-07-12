@@ -107,22 +107,22 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
 					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TTabsEvents>).emit(
-							'item:text',
+							'itemText',
 							item,
 							payload.newValue,
 						)
 					})
 
 					item.events.on('changeRendered', (value: boolean) => {
-						; (this.events as TEvented<TTabsEvents>).emit('item:rendered', item, value)
+						; (this.events as TEvented<TTabsEvents>).emit('itemRendered', item, value)
 					})
 
 					item.events.on('changeVisible', (value: boolean) => {
-						; (this.events as TEvented<TTabsEvents>).emit('item:visible', item, value)
+						; (this.events as TEvented<TTabsEvents>).emit('itemVisible', item, value)
 					})
 
 					item.events.on('changePresent', (value: boolean) => {
-						; (this.events as TEvented<TTabsEvents>).emit('item:present', item, value)
+						; (this.events as TEvented<TTabsEvents>).emit('itemPresent', item, value)
 					})
 
 					item.disabled = this.disabled
@@ -226,7 +226,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set view(value: TTabsView) {
 		if (this._view !== value) {
 			this._applyView(value, this._view)
-				; (this.events as TEvented<TTabsEvents>).emit('change:view', value)
+				; (this.events as TEvented<TTabsEvents>).emit('changeView', value)
 		}
 	}
 

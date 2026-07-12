@@ -75,7 +75,7 @@ export default class TCollapseItemCustom<
 		if (this._arrowPlacement !== value) {
 			this._arrowPlacement = value
 				; (this.events as TEvented<TCollapseItemCustomEvents>).emit(
-					'change:arrowPlacement',
+					'changeArrowPlacement',
 					value,
 				)
 		}

@@ -20,10 +20,10 @@ export type TListEvents = TControlEvents &
 		'change:wordWrap': (value: boolean) => void
 		/** change:scrollBehavior */
 		'change:scrollBehavior': (value: TScrollBehavior) => void
-		'item:text': (item: IListItem, value: string) => void
-		'item:rendered': (item: IListItem, value: boolean) => void
-		'item:visible': (item: IListItem, value: boolean) => void
-		'item:present': (item: IListItem, value: boolean) => void
+		'itemText': (item: IListItem, value: string) => void
+		'itemRendered': (item: IListItem, value: boolean) => void
+		'itemVisible': (item: IListItem, value: boolean) => void
+		'itemPresent': (item: IListItem, value: boolean) => void
 	}
 
 export interface IListProps<
