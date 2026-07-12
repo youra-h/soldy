@@ -10,7 +10,7 @@ export type PropSpec<T> = {
 
 /**
  * Ввод для одного свойства:
- * - функция `() => T` → событие выводится автоматически как `change:<key>`
+ * - функция `() => T` → событие выводится автоматически как `change<Key>`
  * - объект `{ value, triggers }` → используются явные события
  */
 type PropSpecInput<T> = (() => T) | PropSpec<T>
@@ -37,7 +37,7 @@ type SyncPropsResult<TMap extends PropSpecMap> = {
  * })
  *
  * @example
- * // Явная форма — кастомные события или нестандартные имена
+ * // Явная форма — кастомные события
  * return useSyncProps(instance.events, {
  *   active: { value: () => instance.active, triggers: ['changeActivation'] },
  * })
@@ -51,7 +51,8 @@ export function useSyncProps<TMap extends PropSpecMap>(
 	for (const key in map) {
 		const spec = map[key]
 		if (typeof spec === 'function') {
-			result[key] = useEventState(events, spec, [`change:${key}`])
+			const eventKey = `change${key.charAt(0).toUpperCase() + key.slice(1)}`
+			result[key] = useEventState(events, spec, [eventKey])
 		} else {
 			result[key] = useEventState(events, spec.value, spec.triggers)
 		}
