@@ -1,0 +1,78 @@
+# Вопрос по именованию событий в framework-agnostic библиотеке
+
+## Контекст
+
+У меня есть проект **Soldy** — библиотека UI-компонентов. Архитектура:
+
+- **`@soldy/core`** — бизнес-логика (чистый TS, framework-agnostic). Компоненты — классы с системой событий через `TEvented<TEvents>`.
+- **`@soldy/plugins`** — плагины для расширения поведения.
+- **`@soldy/icons`** — иконки.
+- **`@soldy/ui-vue`** — Vue 3 адаптер.
+- **`@soldy/ui-react`** — React адаптер (в разработке).
+- Планируются Angular, Svelte, Solid.
+
+## Проблема
+
+В core события названы в формате `'change:visible'`, `'item:added'`, `'change:highlighted'` и т.д. (colon-notation). Это удобно и читаемо — видно группу и имя события:
+
+```
+change:visible
+change:rendered
+item:added
+item:registered
+change:highlighted
+```
+
+Но разные фреймворки по-разному работают с событиями:
+- **Vue** — `emit?.('change:visible', value)` — colon работает напрямую
+- **React** — в JSX `change:visible` нужно писать через `{...{'change:visible': fn}}`, обычно используется `onChangeVisible`
+- **Angular** — `(changeVisible)` — colon не поддерживается
+- **Svelte** — `on:change:visible` — двойной colon смотрится странно
+
+## Варианты решений
+
+1. **Переименовать в core на camelCase** — `changeVisible`, `itemAdded`. Тогда единый формат для всех, но теряется групповая читаемость.
+
+2. **Оставить colon в core, маппить в адаптерах**. В core и плагинах колон, а адаптер фреймворка преобразует в нужный формат.
+
+3. **Сделать enum констант**:
+```ts
+export const Events = {
+  changeVisible: 'change:visible',
+  changeRendered: 'change:rendered',
+  itemAdded: 'item:added',
+} as const
+```
+Использовать `Events.changeVisible` в core, а в адаптерах маппить ключи в нужный формат.
+
+## Вопрос
+
+Какой подход правильный для framework-agnostic библиотеки?
+Как поступают в подобных проектах (Zag, Ark UI, TanStack)?
+Стоит ли ориентироваться на единый camelCase для всех или оставить семантические colon в core?
+
+## Пример событий в core
+
+```ts
+export type TComponentEvents = {
+  beforeShow: () => boolean
+  afterShow: () => void
+  show: () => void
+  hide: () => void
+  'change:visible': (value: boolean) => void
+  'change:rendered': (value: boolean) => void
+  'change:present': (value: boolean) => void
+}
+
+export type TCheckBoxEvents = TInputControlEvents<boolean | undefined> & {
+  'change:indeterminate': (value: boolean) => void
+  'change:plain': (value: boolean) => void
+}
+
+export type TCollectionEvents = {
+  changed: (payload: { collection: ICollection; item?: ICollectionItem }) => void
+  'item:added': (payload: { collection: ICollection; item: ICollectionItem }) => void
+  'item:deleted': (payload: { collection: ICollection; item: ICollectionItem }) => void
+  'item:moved': (payload: { collection: ICollection; item: ICollectionItem; oldIndex: number; newIndex: number }) => void
+}
+```
