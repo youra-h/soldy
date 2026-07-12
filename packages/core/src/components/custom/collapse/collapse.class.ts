@@ -102,7 +102,7 @@ export class TCollapse
 						)
 					})
 
-					item.events.on('change:disabled', (value: boolean) => {
+					item.events.on('changeDisabled', (value: boolean) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
 							'item:disabled',
 							item,
@@ -131,7 +131,7 @@ export class TCollapse
 			'item:afterMove',
 		])
 
-		this.events.on('change:disabled', (value) => {
+		this.events.on('changeDisabled', (value) => {
 			this._collection.items.forEach((item) => {
 				item.disabled = value
 			})

@@ -92,7 +92,7 @@ export class TList<
 				then: (payload: any) => {
 					const { item } = payload as { collection: any; item: IListItem }
 
-					item.events.on('change:disabled', (value: boolean) => {
+					item.events.on('changeDisabled', (value: boolean) => {
 						; (this.events as TEvented<TListEvents>).emit('item:disabled', item, value)
 					})
 
@@ -131,7 +131,7 @@ export class TList<
 			'item:afterMove',
 		])
 
-		this.events.on('change:disabled', (value) => {
+		this.events.on('changeDisabled', (value) => {
 			this._collection.items.forEach((item) => {
 				item.disabled = value
 			})

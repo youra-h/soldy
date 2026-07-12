@@ -2,8 +2,8 @@ import type { IStylable, IStylableProps, TStylableEvents, TStylableStates } from
 import type { IStateUnit } from '../../../common'
 
 export type TControlEvents = TStylableEvents & {
-	'change:disabled': (value: boolean) => void
-	'change:focused': (value: boolean) => void
+	changeDisabled: (value: boolean) => void
+	changeFocused: (value: boolean) => void
 }
 
 export interface IControlProps extends IStylableProps {

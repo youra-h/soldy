@@ -13,9 +13,9 @@ import { useSyncProps } from '../../composables/useSyncProps'
 
 export const emitsInteractive: TEmits = [
 	...emitsComponentView,
-	'change:disabled',
+	'changeDisabled',
 	'update:disabled',
-	'change:focused',
+	'changeFocused',
 	'update:focused',
 	'focused',
 ] as const
@@ -57,13 +57,13 @@ export function syncInteractive(
 	const { instance, props, emit, plugins } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:disabled' as any, (value: boolean) => {
-		emit?.('change:disabled', value)
+	instance.events.on('changeDisabled' as any, (value: boolean) => {
+		emit?.('changeDisabled', value)
 		emit?.('update:disabled', value)
 	})
 
-	instance.events.on('change:focused' as any, (value: boolean) => {
-		emit?.('change:focused', value)
+	instance.events.on('changeFocused' as any, (value: boolean) => {
+		emit?.('changeFocused', value)
 		emit?.('focused', value)
 		emit?.('update:focused', value)
 	})

@@ -101,7 +101,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 						; (this.events as TEvented<TTabsEvents>).emit('item:closable', item, !!value)
 					})
 
-					item.events.on('change:disabled', (value: boolean) => {
+					item.events.on('changeDisabled', (value: boolean) => {
 						; (this.events as TEvented<TTabsEvents>).emit('item:disabled', item, value)
 					})
 
@@ -140,7 +140,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 			'item:afterMove',
 		])
 
-		this.events.on('change:disabled', (value) => {
+		this.events.on('changeDisabled', (value) => {
 			// При изменении disabled у контейнера — обновляем доступность всех табов
 			this._collection.items.forEach((item) => {
 				item.disabled = value

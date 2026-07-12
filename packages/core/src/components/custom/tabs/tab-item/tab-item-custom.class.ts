@@ -75,7 +75,7 @@ export default class TTabItemCustom<
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
 
-		this.events.on('change:disabled', () => {
+		this.events.on('changeDisabled', () => {
 			// Если таб стал disabled, убираем возможность закрывать его
 			if (this.disabled) {
 				this._states.closable.value = false

@@ -30,7 +30,7 @@ export type TRelayRule<
 	 * {
 	 *   from: 'item:added',
 	 *   then: ({ item }) => {
-	 *     item.events.on('change:disabled', (value) => {
+	 *     item.events.on('changeDisabled', (value) => {
 	 *       this.events.emit('item:disabled', item, value)
 	 *     })
 	 *   }
@@ -127,7 +127,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *   {
 	 *     from: 'item:added',
 	 *     then: ({ item }) => {
-	 *       item.events.on('change:disabled', (value) => {
+	 *       item.events.on('changeDisabled', (value) => {
 	 *         this.events.emit('item:disabled', item, value)
 	 *       })
 	 *     },

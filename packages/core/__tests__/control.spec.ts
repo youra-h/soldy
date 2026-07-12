@@ -9,8 +9,8 @@ describe('TControl', () => {
 		})
 		const disabledHandler = vi.fn()
 		const focusedHandler = vi.fn()
-		ctrl.events.on('change:disabled', disabledHandler)
-		ctrl.events.on('change:focused', focusedHandler)
+		ctrl.events.on('changeDisabled', disabledHandler)
+		ctrl.events.on('changeFocused', focusedHandler)
 
 		ctrl.disabled = true
 		expect(ctrl.disabled).toBe(true)

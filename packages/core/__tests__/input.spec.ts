@@ -60,8 +60,8 @@ describe('TInput', () => {
 
 		input.events.on('change:readonly', readonly)
 		input.events.on('change:required', required)
-		input.events.on('change:disabled', disabled)
-		input.events.on('change:focused', focused)
+		input.events.on('changeDisabled', disabled)
+		input.events.on('changeFocused', focused)
 		input.events.on('change:name', name)
 
 		input.readonly = true

@@ -41,14 +41,14 @@ export default class TControl<
 			states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			;(this.events as TEvented<TControlEvents>).emit('change:disabled', payload.newValue)
+			;(this.events as TEvented<TControlEvents>).emit('changeDisabled', payload.newValue)
 		})
 
 		this._states.focused =
 			states?.focused ?? new TStateUnit<boolean>({ initial: focused })
 
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
-			;(this.events as TEvented<TControlEvents>).emit('change:focused', payload.newValue)
+			;(this.events as TEvented<TControlEvents>).emit('changeFocused', payload.newValue)
 		})
 	}
 
