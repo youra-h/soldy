@@ -7,5 +7,5 @@ export type THighlightPayload = {
 }
 
 export type TListKeyboardPluginEvents = {
-	'change:highlight': (payload: THighlightPayload) => void
+	changeHighlighted: (payload: THighlightPayload) => void
 }

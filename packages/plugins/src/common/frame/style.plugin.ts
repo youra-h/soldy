@@ -49,7 +49,7 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 		this._anchorOffsets = { x: this._frame?.x ?? 0, y: this._frame?.y ?? 0 }
 		this._subscribeScroll()
 		this._update()
-			; (this.events as TEvented<TFrameStylePluginEvents>).emit('change:anchor', element)
+			; (this.events as TEvented<TFrameStylePluginEvents>).emit('changeAnchor', element)
 	}
 
 	/**
@@ -59,7 +59,7 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 		this._anchor = null
 		this._unsubscribeScroll()
 		this._update()
-			; (this.events as TEvented<TFrameStylePluginEvents>).emit('change:anchor', null)
+			; (this.events as TEvented<TFrameStylePluginEvents>).emit('changeAnchor', null)
 	}
 
 	/**
@@ -121,7 +121,7 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 		styles['z-index'] = this._frame.zIndex
 
 		this._styles = styles
-			; (this.events as any).emit('change:styles', this._styles)
+			; (this.events as any).emit('changeStyles', this._styles)
 	}
 
 	private _subscribeScroll(): void {

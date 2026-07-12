@@ -20,7 +20,7 @@ export class TSpinnerStylePlugin extends TBasePlugin<TSpinnerStylePluginEvents> 
 			;(instance as unknown as ISpinner).events.on('changeBorderWidth', (value) => {
 				this._styles['--spinner-border-width'] = toCssValue(value)
 
-				this.events.emit('change:styles', { ...this._styles })
+				this.events.emit('changeStyles', { ...this._styles })
 			})
 		})
 	}

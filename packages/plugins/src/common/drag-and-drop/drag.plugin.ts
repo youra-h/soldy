@@ -32,8 +32,8 @@ import { TEvented } from '@soldy/core'
  * drag.deactivate()
  * ```
  *
- * @fires drag:start — при начале перетаскивания, передаёт `{ index, uid }` перетаскиваемого элемента.
- * @fires drag:end   — при завершении перетаскивания (отпускании кнопки мыши).
+ * @fires dragStart — при начале перетаскивания, передаёт `{ index, uid }` перетаскиваемого элемента.
+ * @fires dragEnd   — при завершении перетаскивания (отпускании кнопки мыши).
  */
 export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 	/** Уникальный ключ плагина в бандле. */
@@ -154,7 +154,7 @@ export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 		 * Обработчик начала перетаскивания.
 		 * Определяет перетаскиваемый узел, запоминает его индекс в коллекции,
 		 * включает визуальное состояние перетаскивания через CSS-класс
-		 * и генерирует событие `drag:start`.
+		 * и генерирует событие `dragStart`.
 		 */
 		const onDragStart = (e: DragEvent) => {
 			const target = (e.target as HTMLElement).closest(
@@ -186,7 +186,7 @@ export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 			} else {
 				target.classList.add(TDragPlugin.DRAGGING_CLASS)
 			}
-			;(this.events as TEvented<TDragPluginEvents>).emit('drag:start', {
+			;(this.events as TEvented<TDragPluginEvents>).emit('dragStart', {
 				index: draggingIndex,
 				uid: uid as number,
 			})
@@ -214,7 +214,7 @@ export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 			draggingIndex = null
 			draggingUid = null
 			lastDragOverTarget = null
-			;(this.events as TEvented<TDragPluginEvents>).emit('drag:end')
+			;(this.events as TEvented<TDragPluginEvents>).emit('dragEnd')
 		}
 
 		/**

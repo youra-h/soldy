@@ -23,7 +23,7 @@ export class TListItemPlugin extends TBasePlugin<TListItemPluginEvents> {
 
 		this._highlighted = value
 
-		this.events.emit('change:highlighted', value)
+		this.events.emit('changeHighlighted', value)
 	}
 
 	select(): void {

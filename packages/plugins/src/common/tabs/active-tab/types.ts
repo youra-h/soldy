@@ -7,5 +7,5 @@ export type TActiveTabOffset = {
 }
 
 export type TTabsActiveTabPluginEvents = {
-	'active-tab:change': (offset: TActiveTabOffset | null) => void
+	changeActiveTab: (offset: TActiveTabOffset | null) => void
 }

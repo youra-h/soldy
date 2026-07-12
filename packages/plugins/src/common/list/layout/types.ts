@@ -1,3 +1,3 @@
 export type TListLayoutPluginEvents = {
-	'layout:change': () => void
+	changeLayout: () => void
 }

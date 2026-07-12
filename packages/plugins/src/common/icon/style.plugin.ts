@@ -19,12 +19,12 @@ export class TIconStylePlugin extends TBasePlugin<TIconStylePluginEvents> {
 			;(instance as unknown as IIcon).events.on('changeWidth', (value) => {
 				this._styles['width'] =
 					value! && (typeof value === 'number' || parseInt(value)) ? `${value}px` : ''
-				;(this.events as any).emit('change:styles', this._styles)
+				;(this.events as any).emit('changeStyles', this._styles)
 			})
 			;(instance as unknown as IIcon).events.on('changeHeight', (value) => {
 				this._styles['height'] =
 					value! && (typeof value === 'number' || parseInt(value)) ? `${value}px` : ''
-				;(this.events as any).emit('change:styles', this._styles)
+				;(this.events as any).emit('changeStyles', this._styles)
 			})
 		})
 	}

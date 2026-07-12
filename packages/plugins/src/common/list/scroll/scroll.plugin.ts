@@ -70,7 +70,7 @@ export class TListScrollPlugin extends TBasePlugin<TListScrollPluginEvents> {
 
 		const keyboardPlugin = bundle.get(TListKeyboardPlugin) ?? null
 
-		keyboardPlugin?.events.on('change:highlight', ({ item }) => {
+		keyboardPlugin?.events.on('changeHighlighted', ({ item }) => {
 			if (item) {
 				this._scheduleScroll({ uid: item.uid, mode: 'nearest' })
 			}
@@ -88,7 +88,7 @@ export class TListScrollPlugin extends TBasePlugin<TListScrollPluginEvents> {
 	/**
 	 * Скроллит контейнер к элементу с указанным uid.
 	 * - `center` — центрирует элемент (для `itemSelected`)
-	 * - `nearest` — минимальный скролл до видимости (для `change:highlight`)
+	 * - `nearest` — минимальный скролл до видимости (для `changeHighlighted`)
 	 * Если scrollBehavior === 'none' — ничего не делает.
 	 */
 	private _scrollToItem(uid: string | number, mode: 'center' | 'nearest'): void {

@@ -24,7 +24,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 			this._element = null
 		})
 
-		bundle.get(TTabsLayoutPlugin)?.events.on('layout:change', () => this._emitOffset())
+		bundle.get(TTabsLayoutPlugin)?.events.on('changeLayout', () => this._emitOffset())
 
 		this._collectionElements = bundle.get(TElementAccumulationPlugin) ?? null
 
@@ -54,7 +54,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 	}
 
 	private _emitOffset(): void {
-		this.events.emit('active-tab:change', this._computeOffset())
+		this.events.emit('changeActiveTab', this._computeOffset())
 	}
 
 	private _computeOffset(): TActiveTabOffset | null {

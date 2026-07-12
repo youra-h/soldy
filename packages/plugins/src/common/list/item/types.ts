@@ -1,3 +1,3 @@
 export type TListItemPluginEvents = {
-	'change:highlighted': (value: boolean) => void
+	changeHighlighted: (value: boolean) => void
 }

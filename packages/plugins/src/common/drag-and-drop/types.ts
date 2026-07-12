@@ -1,4 +1,4 @@
 export type TDragPluginEvents = {
-	'drag:start': (payload: { index: number; uid: number }) => void
-	'drag:end': () => void
+	dragStart: (payload: { index: number; uid: number }) => void
+	dragEnd: () => void
 }

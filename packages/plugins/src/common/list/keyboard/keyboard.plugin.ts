@@ -122,7 +122,7 @@ export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> 
 	}
 
 	/**
-	 * Запоминает позицию подсветки и эмитит `change:highlight`.
+	 * Запоминает позицию подсветки и эмитит `changeHighlighted`.
 	 * Снимает визуальный класс с предыдущего элемента.
 	 * Не вызывает повторный emit если uid не изменился.
 	 */
@@ -137,7 +137,7 @@ export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> 
 
 		const idx = this._getIndex(uid)
 
-		this.events.emit('change:highlight', {
+		this.events.emit('changeHighlighted', {
 			item: this._getItemAt(idx),
 			prevItem: this._getItemAt(idx - 1),
 			nextItem: this._getItemAt(idx + 1),
@@ -150,7 +150,7 @@ export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> 
 		plugin && (plugin.highlighted = true)
 	}
 
-	/** Сбрасывает подсветку: снимает визуальный класс и эмитит `change:highlight` с null. */
+	/** Сбрасывает подсветку: снимает визуальный класс и эмитит `changeHighlighted` с null. */
 	private _clearHighlight(): void {
 		if (this._highlightedUid == null) return
 
@@ -158,7 +158,7 @@ export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> 
 		prev && (prev.highlighted = false)
 
 		this._highlightedUid = null
-		this.events.emit('change:highlight', { item: null, prevItem: null, nextItem: null })
+		this.events.emit('changeHighlighted', { item: null, prevItem: null, nextItem: null })
 	}
 
 	get highlightedUid(): string | number | null {
