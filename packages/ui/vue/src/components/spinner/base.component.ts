@@ -19,7 +19,7 @@ import { TSpinnerStylePlugin } from '@soldy/plugins'
 
 export const emitsSpinner: TEmits = [
 	...emitsStylable,
-	'change:borderWidth',
+	'changeBorderWidth',
 	'update:borderWidth',
 ] as const
 
@@ -55,8 +55,8 @@ export function syncSpinner(
 
 	const stylePlugin = plugins.get(TSpinnerStylePlugin)!
 
-	instance.events.on('change:borderWidth', (value: number | 'auto') => {
-		emit?.('change:borderWidth', value)
+	instance.events.on('changeBorderWidth', (value: number | 'auto') => {
+		emit?.('changeBorderWidth', value)
 		emit?.('update:borderWidth', value)
 	})
 

@@ -18,9 +18,9 @@ import type { TCollectableOptions } from '../../../base/collection'
 
 export type TTabItemCustomEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** changeText */
-	'changeText': (payload: TValuePayload<string>) => void
-	/** change:closable */
-	'change:closable': (value: boolean | undefined) => void
+	changeText: (payload: TValuePayload<string>) => void
+	/** changeClosable */
+	changeClosable: (value: boolean | undefined) => void
 	/** close */
 	close: (tab: TTab) => void
 }

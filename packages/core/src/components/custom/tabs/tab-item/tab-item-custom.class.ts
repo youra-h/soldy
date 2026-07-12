@@ -117,7 +117,7 @@ export default class TTabItemCustom<
 	 * @param value Новое значение closable, которое нужно отразить в UI (например, показать или скрыть крестик).
 	 */
 	notifyClosableChange(value: boolean | undefined) {
-		;(this.events as TEvented<TTabItemCustomEvents>).emit('change:closable', value)
+		;(this.events as TEvented<TTabItemCustomEvents>).emit('changeClosable', value)
 	}
 
 	close(): void {

@@ -41,9 +41,9 @@ describe('TTabItemCustom', () => {
 			expect(item.text).toBe('New Text')
 		})
 
-		it('emits change:closable when closable changes', () => {
+		it('emits changeClosable when closable changes', () => {
 			const spy = vi.fn()
-			item.events.on('change:closable', spy)
+			item.events.on('changeClosable', spy)
 
 			item.closable = true
 
@@ -212,7 +212,7 @@ describe('TTabItem', () => {
 			const closableSpy = vi.fn()
 
 			item.events.on('changeText', textSpy)
-			item.events.on('change:closable', closableSpy)
+			item.events.on('changeClosable', closableSpy)
 
 			item.text = 'New Text'
 			item.closable = false

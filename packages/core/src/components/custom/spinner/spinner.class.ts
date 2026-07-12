@@ -41,7 +41,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	set borderWidth(value: number | 'auto') {
 		if (this._borderWidth !== value) {
 			this._borderWidth = value
-			;(this.events as TEvented<TSpinnerEvents>).emit('change:borderWidth', value)
+			;(this.events as TEvented<TSpinnerEvents>).emit('changeBorderWidth', value)
 		}
 	}
 

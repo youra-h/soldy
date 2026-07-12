@@ -17,7 +17,7 @@ export class TSpinnerStylePlugin extends TBasePlugin<TSpinnerStylePluginEvents> 
 		const instancePlugin = bundle.get(TInstancePlugin) as TInstancePlugin<ISpinner> | undefined
 
 		instancePlugin?.events.on('ready', ({ instance }) => {
-			;(instance as unknown as ISpinner).events.on('change:borderWidth', (value) => {
+			;(instance as unknown as ISpinner).events.on('changeBorderWidth', (value) => {
 				this._styles['--spinner-border-width'] = toCssValue(value)
 
 				this.events.emit('change:styles', { ...this._styles })

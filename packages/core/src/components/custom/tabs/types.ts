@@ -20,27 +20,27 @@ export type TTabsView = 'line' | 'contained' | 'outline'
 export type TTabsEvents = TControlEvents &
 	TActivatableCollectionEvents &
 	TItemProxyEvents<ITabItem> & {
-		/** change:orientation */
-		'change:orientation': (value: TTabsOrientation) => void
-		/** change:alignment */
-		'change:alignment': (value: TTabsAlignment) => void
+		/** changeOrientation */
+		changeOrientation: (value: TTabsOrientation) => void
+		/** changeAlignment */
+		changeAlignment: (value: TTabsAlignment) => void
 		/** changePosition */
-		'changePosition': (value: TTabsPosition) => void
+		changePosition: (value: TTabsPosition) => void
 		/** changeView */
-		'changeView': (value: TTabsView) => void
-		/** change:closable */
-		'change:closable': (value: boolean) => void
-		/** item:close — эмитится перед удалением таба при закрытии */
-		'item:close': (item: ITabItem) => void
-		/** item:closable — эмитится при изменении свойства closable у таба */
-		'item:closable': (item: ITabItem, value: boolean) => void
+		changeView: (value: TTabsView) => void
+		/** changeClosable */
+		changeClosable: (value: boolean) => void
+		/** itemClose — эмитится перед удалением таба при закрытии */
+		itemClose: (item: ITabItem) => void
+		/** itemClosable — эмитится при изменении свойства closable у таба */
+		itemClosable: (item: ITabItem, value: boolean) => void
 		/** itemText — эмитится при изменении текста таба */
-		'itemText': (item: ITabItem, value: string) => void
+		itemText: (item: ITabItem, value: string) => void
 		/** itemRendered — эмитится при изменении rendered у таба */
-		'itemRendered': (item: ITabItem, value: boolean) => void
+		itemRendered: (item: ITabItem, value: boolean) => void
 		/** itemVisible — эмитится при изменении visible у таба */
-		'itemVisible': (item: ITabItem, value: boolean) => void
-		'itemPresent': (item: ITabItem, value: boolean) => void
+		itemVisible: (item: ITabItem, value: boolean) => void
+		itemPresent: (item: ITabItem, value: boolean) => void
 	}
 
 export interface ITabsProps<

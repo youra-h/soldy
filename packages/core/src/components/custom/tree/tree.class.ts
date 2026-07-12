@@ -21,7 +21,7 @@ export class TTree<TItem extends ITreeItem = ITreeItem, TEvents extends TTreeEve
 	 * Сюда приходят события от всех элементов дерева.
 	 */
 	public notifyItemChange(item: ITreeItem, event: string): void {
-		;(this.events as TEvented<TTreeEvents>).emit('item:change', { item, event })
+		;(this.events as TEvented<TTreeEvents>).emit('itemChange', { item, event })
 	}
 
 	/**

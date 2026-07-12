@@ -7,7 +7,7 @@ export type TListBoxView = 'plain' | 'outlined' | 'filled'
 export type TListBoxEvents = TListEvents &
 	TItemProxyEvents<IListBoxItem> & {
 		/** changeView */
-		'changeView': (value: TListBoxView) => void
+		changeView: (value: TListBoxView) => void
 	}
 
 export interface IListBoxProps<

@@ -20,7 +20,7 @@ export const emitsTabItemCustom: TEmits = [
 	...emitsValueControl,
 	'changeText',
 	'update:text',
-	'change:closable',
+	'changeClosable',
 	'update:closable',
 	'close',
 ] as const
@@ -69,8 +69,8 @@ export function syncTabItemCustom(
 		emit?.('update:text', payload)
 	})
 
-	instance.events.on('change:closable', (value: boolean | undefined) => {
-		emit?.('change:closable', value)
+	instance.events.on('changeClosable', (value: boolean | undefined) => {
+		emit?.('changeClosable', value)
 		emit?.('update:closable', value)
 	})
 

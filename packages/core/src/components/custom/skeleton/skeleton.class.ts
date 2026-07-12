@@ -65,7 +65,7 @@ export default class TSkeleton
 			newClass: `--${value}`,
 		})
 		this._shape = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:shape', value)
+		;(this.events as TEvented<TSkeletonEvents>).emit('changeShape', value)
 	}
 
 	get animation(): TSkeletonAnimation {
@@ -80,7 +80,7 @@ export default class TSkeleton
 			newClass: `--${value}`,
 		})
 		this._animation = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:animation', value)
+		;(this.events as TEvented<TSkeletonEvents>).emit('changeAnimation', value)
 	}
 
 	get width(): number | string {

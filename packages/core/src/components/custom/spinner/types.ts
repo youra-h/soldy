@@ -13,7 +13,7 @@ export interface ISpinnerProps extends IStylableProps {
 export type TSpinnerStates = TStylableStates
 
 export type TSpinnerEvents = TStylableEvents & {
-	'change:borderWidth': (value: number | 'auto') => void
+	changeBorderWidth: (value: number | 'auto') => void
 }
 
 export interface ISpinner extends IStylable<ISpinnerProps, TSpinnerEvents, TSpinnerStates> {

@@ -19,10 +19,10 @@ export interface ISkeletonProps extends IStylableProps {
 export type TSkeletonStates = TStylableStates
 
 export type TSkeletonEvents = TStylableEvents & {
-	'change:shape': (value: TSkeletonShape) => void
-	'change:animation': (value: TSkeletonAnimation) => void
-	'changeWidth': (value: number | string) => void
-	'changeHeight': (value: number | string) => void
+	changeShape: (value: TSkeletonShape) => void
+	changeAnimation: (value: TSkeletonAnimation) => void
+	changeWidth: (value: number | string) => void
+	changeHeight: (value: number | string) => void
 }
 
 export interface ISkeleton

@@ -103,12 +103,12 @@ describe('TTabs', () => {
 			expect(tabs.count).toBe(1)
 		})
 
-		it('emits item:close event before removing', () => {
+		it('emits itemClose event before removing', () => {
 			tabs.closable = true
 			const item = tabs.collection.add({ text: 'Tab 1' })
 
 			const spy = vi.fn()
-			tabs.events.on('item:close', spy)
+			tabs.events.on('itemClose', spy)
 
 			tabs.closeTab(item)
 
@@ -182,9 +182,9 @@ describe('TTabs', () => {
 	})
 
 	describe('property setters', () => {
-		it('emits change:orientation when orientation changes', () => {
+		it('emits changeOrientation when orientation changes', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:orientation', spy)
+			tabs.events.on('changeOrientation', spy)
 
 			tabs.orientation = 'vertical'
 
@@ -194,16 +194,16 @@ describe('TTabs', () => {
 
 		it('does not emit when orientation is set to same value', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:orientation', spy)
+			tabs.events.on('changeOrientation', spy)
 
 			tabs.orientation = 'horizontal'
 
 			expect(spy).not.toHaveBeenCalled()
 		})
 
-		it('emits change:alignment when alignment changes', () => {
+		it('emits changeAlignment when alignment changes', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:alignment', spy)
+			tabs.events.on('changeAlignment', spy)
 
 			tabs.alignment = 'center'
 
@@ -228,9 +228,9 @@ describe('TTabs', () => {
 			expect(spy).toHaveBeenCalledWith('outline')
 		})
 
-		it('emits change:closable when closable changes', () => {
+		it('emits changeClosable when closable changes', () => {
 			const spy = vi.fn()
-			tabs.events.on('change:closable', spy)
+			tabs.events.on('changeClosable', spy)
 
 			tabs.closable = true
 

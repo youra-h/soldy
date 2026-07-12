@@ -20,9 +20,9 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsSkeleton: TEmits = [
 	...emitsStylable,
-	'change:shape',
+	'changeShape',
 	'update:shape',
-	'change:animation',
+	'changeAnimation',
 	'update:animation',
 	'changeWidth',
 	'update:width',
@@ -71,12 +71,12 @@ export function syncSkeleton(
 
 	const { instance, props, emit } = options
 
-	instance.events.on('change:shape', (value: TSkeletonShape) => {
-		emit?.('change:shape', value)
+	instance.events.on('changeShape', (value: TSkeletonShape) => {
+		emit?.('changeShape', value)
 		emit?.('update:shape', value)
 	})
-	instance.events.on('change:animation', (value: TSkeletonAnimation) => {
-		emit?.('change:animation', value)
+	instance.events.on('changeAnimation', (value: TSkeletonAnimation) => {
+		emit?.('changeAnimation', value)
 		emit?.('update:animation', value)
 	})
 	instance.events.on('changeWidth', (value: number | string) => {

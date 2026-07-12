@@ -97,8 +97,8 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 					item.events.on('close', () => this.closeTab(item))
 					item.setClosableResolver(() => this._closable)
 
-					item.events.on('change:closable', (value: boolean | undefined) => {
-						; (this.events as TEvented<TTabsEvents>).emit('item:closable', item, !!value)
+					item.events.on('changeClosable', (value: boolean | undefined) => {
+						; (this.events as TEvented<TTabsEvents>).emit('itemClosable', item, !!value)
 					})
 
 					item.events.on('changeDisabled', (value: boolean) => {
@@ -165,7 +165,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set orientation(value: TTabsOrientation) {
 		if (this._orientation !== value) {
 			this._applyOrientation(value, this._orientation)
-				; (this.events as TEvented<TTabsEvents>).emit('change:orientation', value)
+				; (this.events as TEvented<TTabsEvents>).emit('changeOrientation', value)
 		}
 	}
 
@@ -185,7 +185,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set alignment(value: TTabsAlignment) {
 		if (this._alignment !== value) {
 			this._applyAlignment(value, this._alignment)
-				; (this.events as TEvented<TTabsEvents>).emit('change:alignment', value)
+				; (this.events as TEvented<TTabsEvents>).emit('changeAlignment', value)
 		}
 	}
 
@@ -247,7 +247,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set closable(value: boolean) {
 		if (this._closable !== value) {
 			this._applyClosable(value)
-				; (this.events as TEvented<TTabsEvents>).emit('change:closable', value)
+				; (this.events as TEvented<TTabsEvents>).emit('changeClosable', value)
 		}
 	}
 
@@ -272,7 +272,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	 */
 	closeTab(item: ITabItem): boolean {
 		if (!item.closable) return false
-			; (this.events as TEvented<TTabsEvents>).emit('item:close', item)
+			; (this.events as TEvented<TTabsEvents>).emit('itemClose', item)
 
 		return this._collection.deleteItem(item)
 	}

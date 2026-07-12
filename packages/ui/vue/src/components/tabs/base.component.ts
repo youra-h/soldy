@@ -30,18 +30,18 @@ import { useInheritProps } from '../../composables/useInheritProps'
 export const emitsTabs: TEmits = [
 	...emitsControl,
 	...emitsActivatableCollection,
-	'change:orientation',
+	'changeOrientation',
 	'update:orientation',
-	'change:alignment',
+	'changeAlignment',
 	'update:alignment',
 	'changePosition',
 	'update:position',
 	'changeView',
 	'update:view',
-	'change:closable',
+	'changeClosable',
 	'update:closable',
-	'item:close',
-	'item:closable',
+	'itemClose',
+	'itemClosable',
 	'itemDisabled',
 	'itemText',
 	'itemRendered',
@@ -108,13 +108,13 @@ export function syncTabs(
 	})
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:orientation', (value: TTabsOrientation) => {
-		emit?.('change:orientation', value)
+	instance.events.on('changeOrientation', (value: TTabsOrientation) => {
+		emit?.('changeOrientation', value)
 		emit?.('update:orientation', value)
 	})
 
-	instance.events.on('change:alignment', (value: TTabsAlignment) => {
-		emit?.('change:alignment', value)
+	instance.events.on('changeAlignment', (value: TTabsAlignment) => {
+		emit?.('changeAlignment', value)
 		emit?.('update:alignment', value)
 	})
 
@@ -128,17 +128,17 @@ export function syncTabs(
 		emit?.('update:view', value)
 	})
 
-	instance.events.on('change:closable', (value: boolean) => {
-		emit?.('change:closable', value)
+	instance.events.on('changeClosable', (value: boolean) => {
+		emit?.('changeClosable', value)
 		emit?.('update:closable', value)
 	})
 
-	instance.events.on('item:close', (item: ITabItem) => {
-		emit?.('item:close', item)
+	instance.events.on('itemClose', (item: ITabItem) => {
+		emit?.('itemClose', item)
 	})
 
-	instance.events.on('item:closable', (item: ITabItem, value: boolean) => {
-		emit?.('item:closable', item, value)
+	instance.events.on('itemClosable', (item: ITabItem, value: boolean) => {
+		emit?.('itemClosable', item, value)
 	})
 
 	instance.events.on('itemDisabled', (item: ITabItem, value: boolean) => {
