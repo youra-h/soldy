@@ -8,6 +8,6 @@ export type {
 } from './accumulation/types'
 
 export type TCollectionItemPluginsEvents = {
-	'item:registered': (payload: { uid: string | number; bundle: IPluginBundle }) => void
-	'item:unregistered': (payload: { uid: string | number }) => void
+	itemRegistered: (payload: { uid: string | number; bundle: IPluginBundle }) => void
+	itemUnregistered: (payload: { uid: string | number }) => void
 }

@@ -11,8 +11,8 @@ import { TEvented } from '@soldy/core'
  * Извлекает {@link IComponentView} из {@link TInstancePlugin} каждого item'а.
  *
  * @events
- * - `instance:added` — при появлении нового instance
- * - `instance:removed` — при удалении instance
+ * - `instanceAdded` — при появлении нового instance
+ * - `instanceRemoved` — при удалении instance
  */
 export class TInstanceAccumulationPlugin extends TAccumulationPlugin<
 	IComponentView,
@@ -41,7 +41,7 @@ export class TInstanceAccumulationPlugin extends TAccumulationPlugin<
 
 	protected override _add(uid: string | number, instance: IComponentView): void {
 		super._add(uid, instance)
-		;(this.events as TEvented<TInstanceAccumulationEvents>).emit('instance:added', {
+		;(this.events as TEvented<TInstanceAccumulationEvents>).emit('instanceAdded', {
 			uid,
 			instance,
 		})
@@ -49,6 +49,6 @@ export class TInstanceAccumulationPlugin extends TAccumulationPlugin<
 
 	protected override _remove(uid: string | number): void {
 		super._remove(uid)
-		;(this.events as TEvented<TInstanceAccumulationEvents>).emit('instance:removed', { uid })
+		;(this.events as TEvented<TInstanceAccumulationEvents>).emit('instanceRemoved', { uid })
 	}
 }

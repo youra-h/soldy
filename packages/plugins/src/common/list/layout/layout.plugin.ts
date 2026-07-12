@@ -60,7 +60,7 @@ export class TListLayoutPlugin extends TBasePlugin<TListLayoutPluginEvents> {
 
 		this._collectionElements = bundle.get(TElementAccumulationPlugin) ?? null
 
-		this._collectionElements?.events.on('element:added', ({ uid, element }) => {
+		this._collectionElements?.events.on('elementAdded', ({ uid, element }) => {
 			this._itemObservers.get(uid)?.disconnect()
 
 			const observer = new ResizeObserver(() => this._scheduleUpdate())
@@ -69,7 +69,7 @@ export class TListLayoutPlugin extends TBasePlugin<TListLayoutPluginEvents> {
 			this._itemObservers.set(uid, observer)
 		})
 
-		this._collectionElements?.events.on('element:removed', ({ uid }) => {
+		this._collectionElements?.events.on('elementRemoved', ({ uid }) => {
 			this._itemObservers.get(uid)?.disconnect()
 			this._itemObservers.delete(uid)
 			this._scheduleUpdate()

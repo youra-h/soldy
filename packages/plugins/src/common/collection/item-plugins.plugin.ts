@@ -17,12 +17,12 @@ export class TCollectionItemPlugins extends TBasePlugin<TCollectionItemPluginsEv
 
 	register(uid: string | number, bundle: IPluginBundle): void {
 		this._bundles.set(uid, bundle)
-		this.events.emit('item:registered', { uid, bundle })
+		this.events.emit('itemRegistered', { uid, bundle })
 	}
 
 	unregister(uid: string | number): void {
 		this._bundles.delete(uid)
-		this.events.emit('item:unregistered', { uid })
+		this.events.emit('itemUnregistered', { uid })
 	}
 
 	getBundle(uid: string | number): IPluginBundle | undefined {

@@ -148,7 +148,7 @@ export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 			itemEl.setAttribute('draggable', 'true')
 		}
 
-		collectionElementsPlugin.events.on('element:added', onElementAdded)
+		collectionElementsPlugin.events.on('elementAdded', onElementAdded)
 
 		/**
 		 * Обработчик начала перетаскивания.
@@ -263,7 +263,7 @@ export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 			element.removeEventListener('dragstart', onDragStart)
 			element.removeEventListener('dragend', onDragEnd)
 			element.removeEventListener('dragover', onDragOver)
-			collectionElementsPlugin.events.off('element:added', onElementAdded)
+			collectionElementsPlugin.events.off('elementAdded', onElementAdded)
 			collectionInstancesPlugin?.getAll().forEach((instance) => {
 				instance.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
 			})

@@ -27,7 +27,7 @@ export abstract class TAccumulationPlugin<
 
 	/**
 	 * Подписывается на события готовности/удаления источника.
-	 * Вызывается при `item:registered`. Должна вызывать
+	 * Вызывается при `itemRegistered`. Должна вызывать
 	 * `this._add(uid, value)` (если значение уже готово) и
 	 * подписываться на будущие `ready`/`removed`.
 	 */
@@ -53,11 +53,11 @@ export abstract class TAccumulationPlugin<
 
 		const itemPlugins = bundle.get(TCollectionItemPlugins)
 
-		itemPlugins?.events.on('item:registered', ({ uid, bundle: itemBundle }) => {
+		itemPlugins?.events.on('itemRegistered', ({ uid, bundle: itemBundle }) => {
 			this._track(uid, itemBundle)
 		})
 
-		itemPlugins?.events.on('item:unregistered', ({ uid }) => {
+		itemPlugins?.events.on('itemUnregistered', ({ uid }) => {
 			this._remove(uid)
 		})
 	}

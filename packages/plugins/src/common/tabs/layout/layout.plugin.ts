@@ -24,7 +24,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<TTabsLayoutPluginEvents> {
 		// Подписываемся на изменения элементов табов через TElementAccumulationPlugin, чтобы отслеживать изменения их размеров и эмитить событие layout:change для обновления внешнего вида при изменении размера табов (актуально для view: line, чтобы обновлять позицию и размер underline) и при изменении количества табов (для всех видов отображения, т.к. может влиять на перенос табов на другую строку)
 		const collectionPlugin = bundle.get(TElementAccumulationPlugin)
 
-		collectionPlugin?.events.on('element:added', ({ uid, element }) => {
+		collectionPlugin?.events.on('elementAdded', ({ uid, element }) => {
 			this._itemObservers.get(uid)?.disconnect()
 
 			const observer = new ResizeObserver(() => this.events.emit('layout:change'))
@@ -33,7 +33,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<TTabsLayoutPluginEvents> {
 			this._itemObservers.set(uid, observer)
 		})
 
-		collectionPlugin?.events.on('element:removed', ({ uid }) => {
+		collectionPlugin?.events.on('elementRemoved', ({ uid }) => {
 			this._itemObservers.get(uid)?.disconnect()
 			this._itemObservers.delete(uid)
 		})

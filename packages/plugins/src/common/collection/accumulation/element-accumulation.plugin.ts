@@ -12,9 +12,9 @@ import { TEvented } from '@soldy/core'
  * Следит за `present` каждого элемента через {@link TInstancePlugin}.
  *
  * @events
- * - `element:added` — при появлении нового DOM-элемента
- * - `element:removed` — при удалении DOM-элемента
- * - `element:present` — при изменении видимости элемента
+ * - `elementAdded` — при появлении нового DOM-элемента
+ * - `elementRemoved` — при удалении DOM-элемента
+ * - `elementPresent` — при изменении видимости элемента
  */
 export class TElementAccumulationPlugin extends TAccumulationPlugin<
 	HTMLElement,
@@ -52,7 +52,7 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 
 				instance.events.on('changePresent', (value: boolean) => {
 					this._present.set(uid, value)
-						; (this.events as TEvented<TElementAccumulationEvents>).emit('element:present', {
+						; (this.events as TEvented<TElementAccumulationEvents>).emit('elementPresent', {
 							uid,
 							present: value,
 						})
@@ -63,7 +63,7 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 
 	protected override _add(uid: string | number, element: HTMLElement): void {
 		super._add(uid, element)
-			; (this.events as TEvented<TElementAccumulationEvents>).emit('element:added', {
+			; (this.events as TEvented<TElementAccumulationEvents>).emit('elementAdded', {
 				uid,
 				element,
 			})
@@ -71,7 +71,7 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 
 	protected override _remove(uid: string | number): void {
 		super._remove(uid)
-			; (this.events as TEvented<TElementAccumulationEvents>).emit('element:removed', { uid })
+			; (this.events as TEvented<TElementAccumulationEvents>).emit('elementRemoved', { uid })
 	}
 
 	/** Найти uid по DOM-элементу. */

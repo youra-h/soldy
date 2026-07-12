@@ -18,7 +18,7 @@ export class TCollapseHeightPlugin extends TBasePlugin<TCollapseHeightPluginEven
 
 	override install(bundle: IPluginBundle): void {
 		// bundle.get(TElementPlugin)?.events.on('ready', ({ element }) => {
-		// 	this._rootObserver = new ResizeObserver(() => this.events.emit('height:change'))
+		// 	this._rootObserver = new ResizeObserver(() => this.events.emit('changeHeight'))
 		// 	this._rootObserver.observe(element)
 		// })
 
@@ -30,7 +30,7 @@ export class TCollapseHeightPlugin extends TBasePlugin<TCollapseHeightPluginEven
 		// const collectionPlugin = bundle.get(TElementAccumulationPlugin)
 
 
-		// collectionPlugin?.events.on('element:removed', ({ uid }) => {
+		// collectionPlugin?.events.on('elementRemoved', ({ uid }) => {
 		// 	this._itemObservers.get(uid)?.disconnect()
 		// 	this._itemObservers.delete(uid)
 		// 	this._itemHeights.delete(uid)
