@@ -4,9 +4,9 @@ import type { IStateUnit } from '../../../common'
 
 export type TInteractiveEvents = TComponentViewEvents & {
 	/** changeDisabled */
-	'changeDisabled': (value: boolean) => void
+	changeDisabled: (value: boolean) => void
 	/** changeFocused */
-	'changeFocused': (value: boolean) => void
+	changeFocused: (value: boolean) => void
 }
 
 export interface IInteractiveProps extends IComponentViewProps {

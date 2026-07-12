@@ -14,9 +14,9 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsInputControl: TEmits = [
 	...emitsValueControl,
-	'change:readonly',
+	'changeReadonly',
 	'update:readonly',
-	'change:required',
+	'changeRequired',
 	'update:required',
 ] as const
 
@@ -57,13 +57,13 @@ export function syncInputControl<TValue = string>(
 	const { instance, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:readonly' as any, (value: boolean) => {
-		emit?.('change:readonly', value)
+	instance.events.on('changeReadonly' as any, (value: boolean) => {
+		emit?.('changeReadonly', value)
 		emit?.('update:readonly', value)
 	})
 
-	instance.events.on('change:required' as any, (value: boolean) => {
-		emit?.('change:required', value)
+	instance.events.on('changeRequired' as any, (value: boolean) => {
+		emit?.('changeRequired', value)
 		emit?.('update:required', value)
 	})
 

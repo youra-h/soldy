@@ -42,7 +42,7 @@ export default class TIcon
 				oldClass: `--size-${payload.oldValue}`,
 				newClass: `--size-${payload.newValue}`,
 			})
-			;(this.events as TEvented<TIconEvents>).emit('change:size' as any, payload)
+			;(this.events as TEvented<TIconEvents>).emit('changeSize' as any, payload)
 		})
 
 		this._classes.add(`--size-${this._states.size.value}`, true)

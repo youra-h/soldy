@@ -33,11 +33,11 @@ describe('TCheckBox', () => {
 		expect(cb.classes.toArray()).toContain('s-check-box--plain')
 	})
 
-	it('value: value setter эмитит change:value', () => {
+	it('value: value setter эмитит changeValue', () => {
 		const cb = new TCheckBox({ value: false })
 		const changeValue = vi.fn()
 
-		cb.events.on('change:value' as any, changeValue)
+		cb.events.on('changeValue' as any, changeValue)
 
 		cb.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })

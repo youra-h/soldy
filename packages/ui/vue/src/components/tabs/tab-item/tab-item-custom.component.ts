@@ -18,7 +18,7 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsTabItemCustom: TEmits = [
 	...emitsValueControl,
-	'change:text',
+	'changeText',
 	'update:text',
 	'change:closable',
 	'update:closable',
@@ -64,8 +64,8 @@ export function syncTabItemCustom(
 	const { props, instance, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
-		emit?.('change:text', payload)
+	instance.events.on('changeText', (payload: TValuePayload<string>) => {
+		emit?.('changeText', payload)
 		emit?.('update:text', payload)
 	})
 

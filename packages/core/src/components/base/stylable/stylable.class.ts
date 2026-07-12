@@ -43,7 +43,7 @@ export default class TStylable<
 				oldClass: `--size-${payload.oldValue}`,
 				newClass: `--size-${payload.newValue}`,
 			})
-			;(this.events as TEvented<TStylableEvents>).emit('change:size', payload)
+			;(this.events as TEvented<TStylableEvents>).emit('changeSize', payload)
 		})
 
 		this._classes.add(`--size-${this._states.size.value}`)
@@ -59,7 +59,7 @@ export default class TStylable<
 				oldClass: `--${payload.oldValue}`,
 				newClass: `--${payload.newValue}`,
 			})
-			;(this.events as TEvented<TStylableEvents>).emit('change:variant', payload)
+			;(this.events as TEvented<TStylableEvents>).emit('changeVariant', payload)
 		})
 
 		this._classes.add(`--${this._states.variant.value}`)

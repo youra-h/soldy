@@ -31,9 +31,9 @@ describe('TTabItemCustom', () => {
 	})
 
 	describe('property setters', () => {
-		it('emits change:text when text changes', () => {
+		it('emits changeText when text changes', () => {
 			const spy = vi.fn()
-			item.events.on('change:text', spy)
+			item.events.on('changeText', spy)
 
 			item.text = 'New Text'
 
@@ -211,7 +211,7 @@ describe('TTabItem', () => {
 			const textSpy = vi.fn()
 			const closableSpy = vi.fn()
 
-			item.events.on('change:text', textSpy)
+			item.events.on('changeText', textSpy)
 			item.events.on('change:closable', closableSpy)
 
 			item.text = 'New Text'

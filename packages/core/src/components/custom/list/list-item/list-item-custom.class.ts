@@ -49,7 +49,7 @@ export default class TListItemCustom<
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TListItemCustomEvents>).emit('change:text', payload)
+			;(this.events as TEvented<TListItemCustomEvents>).emit('changeText', payload)
 		})
 
 		this._states.wordWrap =

@@ -17,8 +17,8 @@ import type { TCollectableOptions } from '../../../base/collection'
 // ============ TTabItemCustom (логика таба без коллекции) ============
 
 export type TTabItemCustomEvents<TTab = any> = TValueControlEvents<string | number> & {
-	/** change:text */
-	'change:text': (payload: TValuePayload<string>) => void
+	/** changeText */
+	'changeText': (payload: TValuePayload<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
 	/** close */

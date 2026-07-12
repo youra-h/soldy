@@ -6,8 +6,8 @@ import type {
 } from '../value-control'
 
 export type TInputControlEvents<T = string> = TValueControlEvents<T> & {
-	'change:readonly': (value: boolean) => void
-	'change:required': (value: boolean) => void
+	changeReadonly: (value: boolean) => void
+	changeRequired: (value: boolean) => void
 }
 
 export interface IInputControlProps<T = string> extends IValueControlProps<T> {

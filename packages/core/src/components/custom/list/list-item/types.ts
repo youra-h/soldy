@@ -17,8 +17,8 @@ import type { IStateUnit } from '../../../../common'
 // ============ TListItemCustom (UI-логика без коллекции) ============
 
 export type TListItemCustomEvents<TItem = any> = TValueControlEvents<string | number> & {
-	/** change:text */
-	'change:text': (payload: TValuePayload<string>) => void
+	/** changeText */
+	'changeText': (payload: TValuePayload<string>) => void
 	/** change:wordWrap */
 	'change:wordWrap': (value: boolean) => void
 }

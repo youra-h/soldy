@@ -70,13 +70,13 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 		this._applyClosable(props.closable ?? ctor.defaultValues.closable!)
 
 		// Propagation: при изменении size/variant у контейнера — обновляем все существующие итемы
-		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+		this.events.on('changeSize', (payload: TValuePayload<TComponentSize>) => {
 			this._collection.forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
-		this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+		this.events.on('changeVariant', (payload: TValuePayload<TComponentVariant>) => {
 			this._collection.forEach((item) => {
 				item.variant = payload.newValue
 			})
@@ -105,7 +105,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 						; (this.events as TEvented<TTabsEvents>).emit('item:disabled', item, value)
 					})
 
-					item.events.on('change:text', (payload: TValuePayload<string>) => {
+					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TTabsEvents>).emit(
 							'item:text',
 							item,

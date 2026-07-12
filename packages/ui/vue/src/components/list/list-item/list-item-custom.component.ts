@@ -18,7 +18,7 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsListItemCustom: TEmits = [
 	...emitsValueControl,
-	'change:text',
+	'changeText',
 	'update:text',
 	'change:wordWrap',
 	'update:wordWrap',
@@ -59,8 +59,8 @@ export function syncListItemCustom(
 
 	const { props, instance, emit } = options
 
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
-		emit?.('change:text', payload)
+	instance.events.on('changeText', (payload: TValuePayload<string>) => {
+		emit?.('changeText', payload)
 		emit?.('update:text', payload.newValue)
 	})
 

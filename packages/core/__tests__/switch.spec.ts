@@ -16,11 +16,11 @@ describe('TSwitch', () => {
 		expect(c.classes.toArray()).toContain('s-switch')
 	})
 
-	it('value: value setter эмитит change:value', () => {
+	it('value: value setter эмитит changeValue', () => {
 		const sw = new TSwitch({ value: false })
 		const changeValue = vi.fn()
 
-		sw.events.on('change:value' as any, changeValue)
+		sw.events.on('changeValue' as any, changeValue)
 
 		sw.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })

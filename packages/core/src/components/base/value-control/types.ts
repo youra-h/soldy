@@ -3,12 +3,12 @@ import type { IStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../bridge'
 
 export type TValueControlEvents<T> = TControlEvents & {
-	/** change:value */
-	'change:value': (payload: TValuePayload<T>) => void
-	/** input:value (опционально) */
-	'input:value': (payload: TValuePayload<T>) => void
-	/** change:name */
-	'change:name': (value: string) => void
+	/** changeValue */
+	changeValue: (payload: TValuePayload<T>) => void
+	/** inputValue (опционально) */
+	inputValue: (payload: TValuePayload<T>) => void
+	/** changeName */
+	changeName: (value: string) => void
 }
 
 export interface IValueControlProps<TValue> extends IControlProps {

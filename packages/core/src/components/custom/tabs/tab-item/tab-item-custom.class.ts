@@ -61,7 +61,7 @@ export default class TTabItemCustom<
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TTabItemCustomEvents>).emit('change:text', payload)
+			;(this.events as TEvented<TTabItemCustomEvents>).emit('changeText', payload)
 		})
 
 		this._states.closable.events.on(

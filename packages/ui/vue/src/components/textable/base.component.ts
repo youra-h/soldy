@@ -8,7 +8,7 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsTextable: TEmits = [
 	...emitsControl,
-	'change:text',
+	'changeText',
 	'update:text',
 ] as const
 
@@ -42,8 +42,8 @@ export function syncTextable(options: ISyncComponentOptions<ITextableProps, ITex
 	const { instance, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:text' as any, (value: string) => {
-		emit?.('change:text', value)
+	instance.events.on('changeText' as any, (value: string) => {
+		emit?.('changeText', value)
 		emit?.('update:text', value)
 	})
 

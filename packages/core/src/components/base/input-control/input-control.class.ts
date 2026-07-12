@@ -56,7 +56,7 @@ export default class TInputControl<
 		if (this._readonly === value) return
 
 		this._applyReadonly(value)
-		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:readonly', value)
+		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('changeReadonly', value)
 	}
 
 	get required(): boolean {
@@ -73,7 +73,7 @@ export default class TInputControl<
 		if (this._required === value) return
 
 		this._applyRequired(value)
-		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:required', value)
+		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('changeRequired', value)
 	}
 
 	getProps(): TProps {

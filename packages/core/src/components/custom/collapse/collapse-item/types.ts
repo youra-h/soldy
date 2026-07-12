@@ -20,8 +20,8 @@ import type { TCollapseView } from '../types'
 export type TCollapseArrowPlacement = 'start' | 'end'
 
 export type TCollapseItemCustomEvents<TItem = any> = TValueControlEvents<string | number> & {
-	/** change:text */
-	'change:text': (payload: TValuePayload<string>) => void
+	/** changeText */
+	'changeText': (payload: TValuePayload<string>) => void
 	/** change:arrowPlacement */
 	'change:arrowPlacement': (value: TCollapseArrowPlacement) => void
 	/** change:view */

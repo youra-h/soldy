@@ -3,8 +3,8 @@ import type { IStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../bridge'
 
 export type TTextableEvents = TControlEvents & {
-	/** change:text */
-	'change:text': (payload: TValuePayload<string>) => void
+	/** changeText */
+	changeText: (payload: TValuePayload<string>) => void
 }
 
 export interface ITextableProps extends IControlProps {

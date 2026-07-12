@@ -46,8 +46,8 @@ export default class TValueControl<
 		this._states.value = states?.value ?? new TStateUnit<TValue>({ initial: value })
 
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
-			; (this.events as TEvented<TValueControlEvents<TValue>>).emit('change:value', payload)
-				; (this.events as TEvented<TValueControlEvents<TValue>>).emit('input:value', payload)
+			; (this.events as TEvented<TValueControlEvents<TValue>>).emit('changeValue', payload)
+				; (this.events as TEvented<TValueControlEvents<TValue>>).emit('inputValue', payload)
 		})
 	}
 
@@ -58,7 +58,7 @@ export default class TValueControl<
 		if (this._name === value) return
 
 		this._name = value
-			; (this.events as TEvented<TValueControlEvents<TValue>>).emit('change:name' as any, value)
+			; (this.events as TEvented<TValueControlEvents<TValue>>).emit('changeName' as any, value)
 	}
 
 	get value(): TValue {

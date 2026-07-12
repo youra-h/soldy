@@ -69,13 +69,13 @@ export class TList<
 		this._applyWordWrap(props.wordWrap ?? ctor.defaultValues.wordWrap!)
 		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
 
-		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+		this.events.on('changeSize', (payload: TValuePayload<TComponentSize>) => {
 			this._collection.forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
-		this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+		this.events.on('changeVariant', (payload: TValuePayload<TComponentVariant>) => {
 			this._collection.forEach((item) => {
 				item.variant = payload.newValue
 			})
@@ -96,7 +96,7 @@ export class TList<
 						; (this.events as TEvented<TListEvents>).emit('item:disabled', item, value)
 					})
 
-					item.events.on('change:text', (payload: TValuePayload<string>) => {
+					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TListEvents>).emit(
 							'item:text',
 							item,

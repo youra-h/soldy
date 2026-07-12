@@ -15,8 +15,8 @@ describe('TInputControl', () => {
 		const c = new TInputControl<ITextInputControlProps>({ value: '' } as any)
 		const ro = vi.fn()
 		const req = vi.fn()
-		c.events.on('change:readonly', ro)
-		c.events.on('change:required', req)
+		c.events.on('changeReadonly', ro)
+		c.events.on('changeRequired', req)
 
 		c.readonly = true
 		expect(ro).toHaveBeenCalledWith(true)
@@ -35,12 +35,12 @@ describe('TInputControl', () => {
 		expect(c.toJSON()).toEqual(props)
 	})
 
-	it('value setter эмитит change:value и input:value', () => {
+	it('value setter эмитит changeValue и inputValue', () => {
 		const c = new TInputControl<ITextInputControlProps>({ value: 'a' } as any)
 		const change = vi.fn()
 		const input = vi.fn()
-		c.events.on('change:value', change)
-		c.events.on('input:value', input)
+		c.events.on('changeValue', change)
+		c.events.on('inputValue', input)
 
 		c.value = 'b'
 		expect(change).toHaveBeenCalledWith({ newValue: 'b', oldValue: 'a' })

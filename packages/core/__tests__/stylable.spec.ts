@@ -7,8 +7,8 @@ describe('TStylable', () => {
 		const stylable = new TStylable<IStylableProps>({ size: 'normal', variant: 'normal' })
 		const sizeHandler = vi.fn()
 		const variantHandler = vi.fn()
-		stylable.events.on('change:size', sizeHandler)
-		stylable.events.on('change:variant', variantHandler)
+		stylable.events.on('changeSize', sizeHandler)
+		stylable.events.on('changeVariant', variantHandler)
 
 		stylable.size = 'xl'
 		expect(sizeHandler).toHaveBeenCalledWith({ newValue: 'xl', oldValue: 'normal' })

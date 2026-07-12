@@ -53,7 +53,7 @@ export default class TCollapseItemCustom<
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			; (this.events as TEvented<TCollapseItemCustomEvents>).emit('change:text', payload)
+			; (this.events as TEvented<TCollapseItemCustomEvents>).emit('changeText', payload)
 		})
 
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement!

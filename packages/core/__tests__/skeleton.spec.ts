@@ -81,7 +81,7 @@ describe('TSkeleton', () => {
 		const skeleton = new TSkeleton()
 		const events: string[] = []
 
-		skeleton.events.on('change:size', () => events.push('size'))
+		skeleton.events.on('changeSize', () => events.push('size'))
 		skeleton.events.on('change:shape', () => events.push('shape'))
 		skeleton.events.on('change:animation', () => events.push('animation'))
 		skeleton.events.on('change:width', () => events.push('width'))

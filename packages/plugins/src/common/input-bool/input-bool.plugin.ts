@@ -55,7 +55,7 @@ export class TInputBoolPlugin extends TBasePlugin<TInputBoolPluginEvents> {
 
 		this._instance?.toggle()
 
-		this.events.emit('change:value', { value: this._instance?.value })
+		this.events.emit('changeValue', { value: this._instance?.value })
 	}
 
 	private _removeInputListener(): void {

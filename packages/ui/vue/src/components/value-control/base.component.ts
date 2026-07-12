@@ -8,11 +8,11 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsValueControl: TEmits = [
 	...emitsControl,
-	'change:value',
+	'changeValue',
 	'update:value',
-	'input:value',
+	'inputValue',
 	'input',
-	'change:name',
+	'changeName',
 	'update:name',
 ] as const
 
@@ -53,18 +53,18 @@ export function syncValueControl<TValue>(
 	const { instance, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:value' as any, (value: TValue) => {
-		emit?.('change:value', value)
+	instance.events.on('changeValue' as any, (value: TValue) => {
+		emit?.('changeValue', value)
 		emit?.('update:value', value)
 	})
 
-	instance.events.on('input:value' as any, (value: TValue) => {
-		emit?.('input:value', value)
+	instance.events.on('inputValue' as any, (value: TValue) => {
+		emit?.('inputValue', value)
 		emit?.('input', value)
 	})
 
-	instance.events.on('change:name' as any, (value: string) => {
-		emit?.('change:name', value)
+	instance.events.on('changeName' as any, (value: string) => {
+		emit?.('changeName', value)
 		emit?.('update:name', value)
 	})
 

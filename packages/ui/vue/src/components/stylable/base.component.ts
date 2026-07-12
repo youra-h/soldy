@@ -21,9 +21,9 @@ import { useInheritProps } from '../../composables/useInheritProps'
 
 export const emitsStylable: TEmits = [
 	...emitsComponentView,
-	'change:size',
+	'changeSize',
 	'update:size',
-	'change:variant',
+	'changeVariant',
 	'update:variant',
 ] as const
 
@@ -64,13 +64,13 @@ export function syncStylable(
 	const { instance, props, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-		emit?.('change:size', payload)
+	instance.events.on('changeSize', (payload: TValuePayload<TComponentSize>) => {
+		emit?.('changeSize', payload)
 		emit?.('update:size', payload)
 	})
 
-	instance.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-		emit?.('change:variant', payload)
+	instance.events.on('changeVariant', (payload: TValuePayload<TComponentVariant>) => {
+		emit?.('changeVariant', payload)
 		emit?.('update:variant', payload)
 	})
 

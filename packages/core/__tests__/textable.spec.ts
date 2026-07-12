@@ -11,10 +11,10 @@ describe('TTextable', () => {
 		expect(b.text).toBe('B')
 	})
 
-	it('text setter эмитит change:text', () => {
+	it('text setter эмитит changeText', () => {
 		const t = new TTextable<ITextableProps>({ text: 'x' })
 		const handler = vi.fn()
-		t.events.on('change:text', handler)
+		t.events.on('changeText', handler)
 
 		t.text = 'y'
 		expect(handler).toHaveBeenCalledWith({ newValue: 'y', oldValue: 'x' })

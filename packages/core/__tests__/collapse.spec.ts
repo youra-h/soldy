@@ -31,9 +31,9 @@ describe('TCollapseItemCustom', () => {
 	})
 
 	describe('property setters', () => {
-		it('emits change:text when text changes', () => {
+		it('emits changeText when text changes', () => {
 			const spy = vi.fn()
-			item.events.on('change:text', spy)
+			item.events.on('changeText', spy)
 
 			item.text = 'New Text'
 
@@ -271,7 +271,7 @@ describe('TCollapseItem', () => {
 
 		it('emits UI events from TCollapseItemCustom', () => {
 			const textSpy = vi.fn()
-			item.events.on('change:text', textSpy)
+			item.events.on('changeText', textSpy)
 
 			item.text = 'Updated'
 

@@ -33,12 +33,12 @@ describe('TInput', () => {
 
 	})
 
-	it('value setter эмитит change:value и input:value', () => {
+	it('value setter эмитит changeValue и inputValue', () => {
 		const input = new TInput({ value: 'a' })
 		const changeHandler = vi.fn()
 		const inputHandler = vi.fn()
-		input.events.on('change:value', changeHandler)
-		input.events.on('input:value', inputHandler)
+		input.events.on('changeValue', changeHandler)
+		input.events.on('inputValue', inputHandler)
 
 		input.value = 'b'
 		expect(changeHandler).toHaveBeenCalledWith({ newValue: 'b', oldValue: 'a' })
@@ -58,11 +58,11 @@ describe('TInput', () => {
 		const focused = vi.fn()
 		const name = vi.fn()
 
-		input.events.on('change:readonly', readonly)
-		input.events.on('change:required', required)
+		input.events.on('changeReadonly', readonly)
+		input.events.on('changeRequired', required)
 		input.events.on('changeDisabled', disabled)
 		input.events.on('changeFocused', focused)
-		input.events.on('change:name', name)
+		input.events.on('changeName', name)
 
 		input.readonly = true
 		expect(readonly).toHaveBeenCalledWith(true)

@@ -15,7 +15,7 @@ import { TIconStylePlugin } from '@soldy/plugins'
 
 export const emitsIcon: TEmits = [
 	...emitsComponentView,
-	'change:size',
+	'changeSize',
 	'update:size',
 	'change:width',
 	'update:width',
@@ -64,8 +64,8 @@ export function syncIcon(options: ISyncComponentOptions<IIconProps, IIcon>): IIc
 	const { instance, props, emit, plugins } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).
-	instance.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-		emit?.('change:size', payload)
+	instance.events.on('changeSize', (payload: TValuePayload<TComponentSize>) => {
+		emit?.('changeSize', payload)
 		emit?.('update:size', payload)
 	})
 	instance.events.on('change:width' as any, (value: string | number | undefined) => {

@@ -53,13 +53,13 @@ export class TCollapse
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
 
-		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+		this.events.on('changeSize', (payload: TValuePayload<TComponentSize>) => {
 			this._collection.forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
-		this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+		this.events.on('changeVariant', (payload: TValuePayload<TComponentVariant>) => {
 			this._collection.forEach((item) => {
 				item.variant = payload.newValue
 			})
@@ -110,7 +110,7 @@ export class TCollapse
 						)
 					})
 
-					item.events.on('change:text', (payload: TValuePayload<string>) => {
+					item.events.on('changeText', (payload: TValuePayload<string>) => {
 						; (this.events as TEvented<TCollapseEvents>).emit(
 							'item:text',
 							item,

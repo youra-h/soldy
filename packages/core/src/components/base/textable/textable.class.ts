@@ -38,7 +38,7 @@ export default class TTextable<
 		this._states.text = states?.text ?? new TStateUnit<string>({ initial: text })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TTextableEvents>).emit('change:text', payload)
+			;(this.events as TEvented<TTextableEvents>).emit('changeText', payload)
 		})
 	}
 

@@ -5,10 +5,10 @@ import type { IStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../bridge'
 
 export type TStylableEvents = TComponentViewEvents & {
-	/** change:size */
-	'change:size': (payload: TValuePayload<TComponentSize>) => void
-	/** change:variant */
-	'change:variant': (payload: TValuePayload<TComponentVariant>) => void
+	/** changeSize */
+	changeSize: (payload: TValuePayload<TComponentSize>) => void
+	/** changeVariant */
+	changeVariant: (payload: TValuePayload<TComponentVariant>) => void
 }
 
 export interface IStylableProps extends IComponentViewProps {
