@@ -20,8 +20,8 @@ export function syncComponentView(
 		onEvent('ready', { element, instance, plugins })
 	})
 
-	instance.events.on('change:tag' as any, (value: string | object) => {
-		onEvent('change:tag', value)
+	instance.events.on('changeTag' as any, (value: string | object) => {
+		onEvent('changeTag', value)
 	})
 
 	track(props, 'rendered', (value) => {

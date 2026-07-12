@@ -49,7 +49,7 @@ export default class TComponentView<
 
 		this._classes.events.on('change', () =>
 			(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:classes',
+				'changeClasses',
 				this._classes.toArray(),
 			),
 		)
@@ -66,7 +66,7 @@ export default class TComponentView<
 		if (this._tag === value) return
 
 		this._tag = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:tag', value)
+		;(this.events as TEvented<TComponentViewEvents>).emit('changeTag', value)
 	}
 
 	get ready(): boolean {
@@ -76,7 +76,7 @@ export default class TComponentView<
 		if (this._ready === value) return
 
 		this._ready = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:ready', value)
+		;(this.events as TEvented<TComponentViewEvents>).emit('changeReady', value)
 	}
 
 	getProps(): TProps {

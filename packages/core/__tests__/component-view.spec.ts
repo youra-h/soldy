@@ -80,8 +80,8 @@ describe('TComponentView', () => {
 		const p = new TComponentView()
 		const tagHandler = vi.fn()
 		const classesHandler = vi.fn()
-		p.events.on('change:tag', tagHandler)
-		p.events.on('change:classes', classesHandler)
+		p.events.on('changeTag', tagHandler)
+		p.events.on('changeClasses', classesHandler)
 
 		p.tag = 'section'
 		expect(tagHandler).toHaveBeenCalledWith('section')

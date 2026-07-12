@@ -1,4 +1,4 @@
-import type { TClasses } from '@/core/common/classes'
+import type { TClasses } from '../../../common'
 import type {
 	IComponent,
 	IComponentOptions,
@@ -10,12 +10,12 @@ import type {
 export type TComponentViewStates = TComponentStates
 
 export type TComponentViewEvents = TComponentEvents & {
-	/** change:tag */
-	'change:tag': (value: string | object) => void
-	/** change:classes (без baseClass) */
-	'change:classes': (value: string[]) => void
-	/** change:ready — срабатывает когда компонент монтируется/демонтируется из DOM */
-	'change:ready': (value: boolean) => void
+	/** changeTag */
+	changeTag: (value: string | object) => void
+	/** changeClasses (без baseClass) */
+	changeClasses: (value: string[]) => void
+	/** changeReady — срабатывает когда компонент монтируется/демонтируется из DOM */
+	changeReady: (value: boolean) => void
 }
 
 export interface IComponentViewProps extends IComponentProps {
