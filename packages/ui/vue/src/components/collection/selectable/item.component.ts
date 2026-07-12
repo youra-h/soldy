@@ -17,7 +17,7 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsSelectableCollectionItem: TEmits = [
 	...emitsCollectionItem,
-	'change:selection',
+	'changeSelection',
 	'update:selected',
 ] as const
 
@@ -53,8 +53,8 @@ export function syncSelectableCollectionItem(
 	const { props, instance, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:selection', (item: ISelectableCollectionItem) => {
-		emit?.('change:selection', item)
+	instance.events.on('changeSelection', (item: ISelectableCollectionItem) => {
+		emit?.('changeSelection', item)
 		emit?.('update:selected', instance.selected)
 	})
 
@@ -69,7 +69,7 @@ export function syncSelectableCollectionItem(
 		...useSyncProps(instance.events as any, {
 			selected: {
 				value: () => instance.selected,
-				triggers: ['change:selection'],
+				triggers: ['changeSelection'],
 			},
 		}),
 	}

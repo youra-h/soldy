@@ -162,9 +162,9 @@ describe('TCollapseItem', () => {
 			expect(item.selected).toBe(false)
 		})
 
-		it('emits change:selection event when selected changes', () => {
+		it('emits changeSelection event when selected changes', () => {
 			const spy = vi.fn()
-			item.events.on('change:selection', spy)
+			item.events.on('changeSelection', spy)
 
 			item.selected = true
 
@@ -465,10 +465,10 @@ describe('TCollapse', () => {
 	})
 
 	describe('selection events proxy', () => {
-		it('emits item:selected when item is selected', () => {
+		it('emits itemSelected when item is selected', () => {
 			const item = collapse.collection.add({ text: 'Section 1' })
 			const spy = vi.fn()
-			collapse.events.on('item:selected', spy)
+			collapse.events.on('itemSelected', spy)
 
 			item.selected = true
 
@@ -477,12 +477,12 @@ describe('TCollapse', () => {
 			)
 		})
 
-		it('emits item:unselected when item is deselected', () => {
+		it('emits itemUnselected when item is deselected', () => {
 			const item = collapse.collection.add({ text: 'Section 1' })
 			item.selected = true
 
 			const spy = vi.fn()
-			collapse.events.on('item:unselected', spy)
+			collapse.events.on('itemUnselected', spy)
 
 			item.selected = false
 
@@ -491,10 +491,10 @@ describe('TCollapse', () => {
 			)
 		})
 
-		it('emits change:selected when selection changes', () => {
+		it('emits changeSelected when selection changes', () => {
 			const item = collapse.collection.add({ text: 'Section 1' })
 			const spy = vi.fn()
-			collapse.events.on('change:selected', spy)
+			collapse.events.on('changeSelected', spy)
 
 			item.selected = true
 

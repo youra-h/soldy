@@ -77,12 +77,12 @@ describe('TTabs', () => {
 			expect(tabs.count).toBe(0)
 		})
 
-		it('emits item:activated event when item is activated', () => {
+		it('emits itemActivated event when item is activated', () => {
 			const item1 = tabs.collection.add({ text: 'Tab 1' })
 			const item2 = tabs.collection.add({ text: 'Tab 2' })
 
 			const spy = vi.fn()
-			tabs.events.on('item:activated', spy)
+			tabs.events.on('itemActivated', spy)
 
 			tabs.collection.setActive(item1)
 

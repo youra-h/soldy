@@ -58,7 +58,7 @@ export abstract class TCollectionItem<
 		if (this._order === value) return
 
 		this._order = value
-		;(this.events as TEvented<TCollectionItemEvents>).emit('change:order', value)
+		;(this.events as TEvented<TCollectionItemEvents>).emit('changeOrder', value)
 	}
 
 	/**

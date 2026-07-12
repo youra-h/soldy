@@ -42,7 +42,7 @@ export class TSelectableCollectionItem<
 		if (this._selected !== value) {
 			this._selected = value
 			;(this.events as TEvented<TSelectableItemEvents<ISelectableCollectionItem>>).emit(
-				'change:selection',
+				'changeSelection',
 				this,
 			)
 		}

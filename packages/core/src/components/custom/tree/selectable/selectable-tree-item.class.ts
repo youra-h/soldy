@@ -17,7 +17,7 @@ export class TSelectableTreeItem extends TBehaviorTreeItem<TSelectableBehavior> 
 
 		this._behavior = new TSelectableBehavior()
 
-		this._behavior.events.on('change:selection', () => this.notifyChange('behaviorChange'))
+		this._behavior.events.on('changeSelection', () => this.notifyChange('behaviorChange'))
 	}
 
 	/** Выбран ли элемент. */

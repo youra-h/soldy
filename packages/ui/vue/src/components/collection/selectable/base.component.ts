@@ -21,12 +21,12 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsSelectableCollection: TEmits = [
 	...emitsCollection,
-	'item:selected',
-	'item:unselected',
-	'change:selected',
-	'change:mode',
+	'itemSelected',
+	'itemUnselected',
+	'changeSelected',
+	'changeMode',
 	'update:mode',
-	'change:selectedCount',
+	'changeSelectedCount',
 ] as const
 
 export const propsSelectableCollection: TProps = {
@@ -68,29 +68,29 @@ export function syncSelectableCollection<
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
 	instance.events.on(
-		'item:selected',
+		'itemSelected',
 		(payload: { collection: ISelectableCollection; item: ISelectableCollectionItem }) => {
-			emit?.('item:selected', payload)
+			emit?.('itemSelected', payload)
 		},
 	)
 
 	instance.events.on(
-		'item:unselected',
+		'itemUnselected',
 		(payload: { collection: ISelectableCollection; item: ISelectableCollectionItem }) => {
-			emit?.('item:unselected', payload)
+			emit?.('itemUnselected', payload)
 		},
 	)
 
-	instance.events.on('change:selected' as any, (items: ISelectableCollectionItem[]) => {
-		emit?.('change:selected', items)
+	instance.events.on('changeSelected' as any, (items: ISelectableCollectionItem[]) => {
+		emit?.('changeSelected', items)
 	})
 
-	instance.events.on('change:selectedCount' as any, (count: number) => {
-		emit?.('change:selectedCount', count)
+	instance.events.on('changeSelectedCount' as any, (count: number) => {
+		emit?.('changeSelectedCount', count)
 	})
 
-	instance.events.on('change:mode' as any, (mode: TSelectionMode) => {
-		emit?.('change:mode', mode)
+	instance.events.on('changeMode' as any, (mode: TSelectionMode) => {
+		emit?.('changeMode', mode)
 		emit?.('update:mode', mode)
 	})
 

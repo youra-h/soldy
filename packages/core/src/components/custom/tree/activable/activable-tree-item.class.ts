@@ -8,7 +8,7 @@ export class TActivatableTreeItem extends TBehaviorTreeItem<TActivatableBehavior
 
 		this._behavior = new TActivatableBehavior()
 
-		this._behavior.events.on('change:activation', () => this.notifyChange('behaviorChange'))
+		this._behavior.events.on('changeActivation', () => this.notifyChange('behaviorChange'))
 	}
 
 	// Фасад для удобства (item.active вместо item.behavior.active)

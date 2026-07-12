@@ -66,11 +66,11 @@ export class TCollapse
 		})
 
 		this.events.relay(this._collection.events, [
-			'item:selected',
-			'item:unselected',
-			'change:selected',
-			'change:selectedCount',
-			'change:mode',
+			'itemSelected',
+			'itemUnselected',
+			'changeSelected',
+			'changeSelectedCount',
+			'changeMode',
 			{
 				from: 'itemAdded',
 				then: (payload: any) => {

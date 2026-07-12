@@ -26,7 +26,7 @@ export type TSelectableItemEvents<TItem> = TCollectionItemEvents<TItem> & {
 	 * После изменения состояния выбранности.
 	 * @param item Элемент, у которого изменился selected
 	 */
-	'change:selection': (item: TItem) => void
+	changeSelection: (item: TItem) => void
 }
 
 export interface ISelectableCollectionItem<
@@ -59,29 +59,29 @@ export type TSelectableCollectionEvents<
 	 * @param payload.collection Коллекция, в которой выбран элемент
 	 * @param payload.item       Выбранный элемент
 	 */
-	'item:selected': (payload: { collection: ISelectableCollection; item: TItem }) => void
+	itemSelected: (payload: { collection: ISelectableCollection; item: TItem }) => void
 
 	/**
 	 * После отмены выбора элемента.
 	 * @param payload.collection Коллекция, в которой отменен выбор
 	 * @param payload.item       Элемент, с которого снят выбор
 	 */
-	'item:unselected': (payload: { collection: ISelectableCollection; item: TItem }) => void
+	itemUnselected: (payload: { collection: ISelectableCollection; item: TItem }) => void
 
 	/**
 	 * После изменения набора выделенных элементов.
 	 */
-	'change:selected': (items: TItem[]) => void
+	changeSelected: (items: TItem[]) => void
 
 	/**
 	 * После изменения счётчика выделенных элементов.
 	 */
-	'change:selectedCount': (count: number) => void
+	changeSelectedCount: (count: number) => void
 
 	/**
 	 * После изменения режима выбора.
 	 */
-	'change:mode': (mode: TSelectionMode) => void
+	changeMode: (mode: TSelectionMode) => void
 }
 
 export interface ISelectableCollection<

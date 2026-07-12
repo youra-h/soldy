@@ -11,7 +11,7 @@ import type { TListScrollPluginEvents } from './types'
 /**
  * Плагин для автоматической прокрутки контейнера списка к выделенному элементу.
  *
- * Реагирует на событие `item:selected` и скроллит контейнер так,
+ * Реагирует на событие `itemSelected` и скроллит контейнер так,
  * чтобы выбранный элемент оказался в видимой области.
  * При массовом выделении (например, 50 из 100 элементов)
  * используется `frameDebounce` — за один кадр выполняется только
@@ -61,7 +61,7 @@ export class TListScrollPlugin extends TBasePlugin<TListScrollPluginEvents> {
 				this._scrollToItem(selected[0].uid, 'center')
 			}
 
-			instance.events.on('item:selected', ({ item }: { item: IListItem }) => {
+			instance.events.on('itemSelected', ({ item }: { item: IListItem }) => {
 				this._scheduleScroll({ uid: item.uid, mode: 'center' })
 			})
 		})
@@ -87,7 +87,7 @@ export class TListScrollPlugin extends TBasePlugin<TListScrollPluginEvents> {
 
 	/**
 	 * Скроллит контейнер к элементу с указанным uid.
-	 * - `center` — центрирует элемент (для `item:selected`)
+	 * - `center` — центрирует элемент (для `itemSelected`)
 	 * - `nearest` — минимальный скролл до видимости (для `change:highlight`)
 	 * Если scrollBehavior === 'none' — ничего не делает.
 	 */

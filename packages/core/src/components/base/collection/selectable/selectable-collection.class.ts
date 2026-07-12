@@ -63,7 +63,7 @@ export class TSelectableCollection<
 		}
 
 		this._mode = value
-		;(this.events as TEvented<TSelectableCollectionEvents>).emit('change:mode', value)
+		;(this.events as TEvented<TSelectableCollectionEvents>).emit('changeMode', value)
 	}
 	get selected(): TItem[] {
 		return Array.from(this._selected)
@@ -116,16 +116,16 @@ export class TSelectableCollection<
 	protected _subscribeItem(item: TItem): void {
 		const _notifySelected = () => {
 			;(this.events as TEvented<TSelectableCollectionEvents>).emit(
-				'change:selected',
+				'changeSelected',
 				this.selected,
 			)
 			;(this.events as TEvented<TSelectableCollectionEvents>).emit(
-				'change:selectedCount',
+				'changeSelectedCount',
 				this.selectedCount,
 			)
 		}
 
-		item.events.on('change:selection', (changedItem: TItem) => {
+		item.events.on('changeSelection', (changedItem: TItem) => {
 			if (this._mode === 'none') {
 				// в режиме none игнорируем выбор
 				changedItem.selected = false
@@ -144,14 +144,14 @@ export class TSelectableCollection<
 				}
 
 				this._selected.add(changedItem)
-				;(this.events as TEvented<TSelectableCollectionEvents>).emit('item:selected', {
+				;(this.events as TEvented<TSelectableCollectionEvents>).emit('itemSelected', {
 					collection: this,
 					item: changedItem,
 				})
 				_notifySelected()
 			} else {
 				this._selected.delete(changedItem)
-				;(this.events as TEvented<TSelectableCollectionEvents>).emit('item:unselected', {
+				;(this.events as TEvented<TSelectableCollectionEvents>).emit('itemUnselected', {
 					collection: this,
 					item: changedItem,
 				})
@@ -179,11 +179,11 @@ export class TSelectableCollection<
 
 			this._selected.clear()
 			;(this.events as TEvented<TSelectableCollectionEvents>).emit(
-				'change:selected',
+				'changeSelected',
 				this.selected,
 			)
 			;(this.events as TEvented<TSelectableCollectionEvents>).emit(
-				'change:selectedCount',
+				'changeSelectedCount',
 				this.selectedCount,
 			)
 		}

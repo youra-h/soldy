@@ -18,8 +18,8 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsActivatableCollection: TEmits = [
 	...emitsCollection,
-	'item:activated',
-	'item:deactivated',
+	'itemActivated',
+	'itemDeactivated',
 	'change:activeItem',
 ] as const
 
@@ -55,14 +55,14 @@ export function syncActivatableCollection<
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
 	instance.events.on(
-		'item:activated',
+		'itemActivated',
 		(payload: { collection: IActivatableCollection; item: IActivatableCollectionItem }) => {
-			emit?.('item:activated', payload)
+			emit?.('itemActivated', payload)
 		},
 	)
 
-	instance.events.on('item:deactivated', (payload: { collection: IActivatableCollection }) => {
-		emit?.('item:deactivated', payload)
+	instance.events.on('itemDeactivated', (payload: { collection: IActivatableCollection }) => {
+		emit?.('itemDeactivated', payload)
 	})
 
 	return {
@@ -70,7 +70,7 @@ export function syncActivatableCollection<
 		...useSyncProps(instance.events, {
 			activeItem: {
 				value: () => instance.activeItem,
-				triggers: ['item:activated', 'item:deactivated'],
+				triggers: ['itemActivated', 'itemDeactivated'],
 			},
 		}),
 	}

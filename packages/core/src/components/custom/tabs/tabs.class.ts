@@ -84,7 +84,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
 		// Условие для поиска следующего активного таба при удалении
 		this._collection.events.on(
-			'resolve:_activatablePredicate',
+			'resolve_activatablePredicate',
 			() => (tab: ITabItem) => !tab.disabled && tab.present,
 		)
 
@@ -130,8 +130,8 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 					item.variant = this.variant
 				},
 			},
-			'item:activated',
-			'item:deactivated',
+			'itemActivated',
+			'itemDeactivated',
 			'itemBeforeDelete',
 			'itemDeleted',
 			'itemAfterDelete',

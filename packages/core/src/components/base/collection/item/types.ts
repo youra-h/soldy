@@ -26,7 +26,7 @@ export interface ICollectionItemMethods {
 
 export type TCollectionItemEvents<TItem = any> = {
 	free: (item: TItem) => void
-	'change:order': (value: number) => void
+	changeOrder: (value: number) => void
 }
 
 export interface ICollectionItem<

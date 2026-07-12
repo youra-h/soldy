@@ -37,7 +37,7 @@ export class TActivatableCollectionItem<
 		if (this._active !== value) {
 			this._active = value
 			;(this.events as TEvented<TActivatableItemEvents<IActivatableCollectionItem>>).emit(
-				'change:activation',
+				'changeActivation',
 				this,
 			)
 		}

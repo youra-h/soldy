@@ -38,13 +38,13 @@ export function SelectableComponentMixin<
 				collection: collection ?? undefined,
 			})
 
-			this._collectionItem.events.on('change:selection', (item) => {
+			this._collectionItem.events.on('changeSelection', (item) => {
 				this.classes.toggle('--selected', !!item.selected)
-				;(this.events as TEvented<any>).emit('change:selection', this)
+				;(this.events as TEvented<any>).emit('changeSelection', this)
 			})
 
-			this._collectionItem.events.on('change:order', (value: number) => {
-				;(this.events as TEvented<any>).emit('change:order', value)
+			this._collectionItem.events.on('changeOrder', (value: number) => {
+				;(this.events as TEvented<any>).emit('changeOrder', value)
 			})
 
 			this._collectionItem.events.on('free', () => {

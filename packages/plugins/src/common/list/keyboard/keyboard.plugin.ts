@@ -37,7 +37,7 @@ export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> 
 				this._trackPosition(selected[0].uid)
 			}
 
-			instance.events.on('item:selected', ({ item }: { item: IListItem }) => {
+			instance.events.on('itemSelected', ({ item }: { item: IListItem }) => {
 				this._trackPosition(item.uid)
 			})
 		})

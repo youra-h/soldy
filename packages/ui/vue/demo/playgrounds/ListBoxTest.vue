@@ -88,7 +88,7 @@ function updateInstance2() {
 	}
 }
 
-instance2.events.on('change:selected', (items: any[]) => {
+instance2.events.on('changeSelected', (items: any[]) => {
 	selected2.value = items.map((item: any) => ({
 		id: item.uid,
 		text: item.text,
@@ -108,7 +108,7 @@ const selected3 = ref<ICity[]>([])
 // Вариант 1: подмена массива через filter (новая ссылка → patchItems/setItems)
 // Сохраняет выделение через _: { selected } в мета-данных
 // Реагирует только на изменения данных (items3, filter3), не на selected3,
-// чтобы не создавать цикл: selected → patchItems → change:selected → ...
+// чтобы не создавать цикл: selected → patchItems → changeSelected → ...
 const filteredItems3 = ref<Partial<any>[]>([])
 
 watch(
@@ -252,7 +252,7 @@ function loadData() {
 					placeholder="Фильтр..."
 				/>
 
-				<ListBox mode="multiple" :max-rows="6" @change:selected="handleSelected1">
+				<ListBox mode="multiple" :max-rows="6" @changeSelected="handleSelected1">
 					<ListBoxItem
 						v-for="city in filteredCities1"
 						:key="city.id"
@@ -310,7 +310,7 @@ function loadData() {
 					:items="filteredItems3"
 					:track-by="(item) => item.value"
 					:max-rows="6"
-					@change:selected="handleSelected3"
+					@changeSelected="handleSelected3"
 				/> -->
 
 				<div class="list-box-test__selected">

@@ -25,13 +25,13 @@ export function ActivatableComponentMixin<
 				collection: collection ?? undefined,
 			})
 
-			this._collectionItem.events.on('change:activation', (item) => {
+			this._collectionItem.events.on('changeActivation', (item) => {
 				this.classes.toggle('--active', !!item.active)
-				;(this.events as TEvented<any>).emit('change:activation', this)
+				;(this.events as TEvented<any>).emit('changeActivation', this)
 			})
 
-			this._collectionItem.events.on('change:order', (value: number) => {
-				;(this.events as TEvented<any>).emit('change:order', value)
+			this._collectionItem.events.on('changeOrder', (value: number) => {
+				;(this.events as TEvented<any>).emit('changeOrder', value)
 			})
 
 			this._collectionItem.events.on('free', () => {

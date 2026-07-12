@@ -17,7 +17,7 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 
 export const emitsActivatableCollectionItem: TEmits = [
 	...emitsCollectionItem,
-	'change:activation',
+	'changeActivation',
 	'update:active',
 ] as const
 
@@ -56,12 +56,12 @@ export function syncActivatableCollectionItem(
 	const { props, instance, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
-	instance.events.on('change:activation', (item: IActivatableCollectionItem) => {
+	instance.events.on('changeActivation', (item: IActivatableCollectionItem) => {
 		// Переприменяем active через proxy — иначе _classes.toggle('--active', ...) вызывается
 		// на raw-объекте и мутация Set не видна Vue (нет реактивного триггера)
 		instance.active = (item as unknown as { active: boolean }).active
 
-		emit?.('change:activation', item)
+		emit?.('changeActivation', item)
 		emit?.('update:active', instance.active)
 	})
 
@@ -76,7 +76,7 @@ export function syncActivatableCollectionItem(
 		...useSyncProps(instance.events as any, {
 			active: {
 				value: () => instance.active,
-				triggers: ['change:activation'],
+				triggers: ['changeActivation'],
 			},
 		}),
 	}

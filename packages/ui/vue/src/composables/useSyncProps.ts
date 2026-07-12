@@ -39,7 +39,7 @@ type SyncPropsResult<TMap extends PropSpecMap> = {
  * @example
  * // Явная форма — кастомные события или нестандартные имена
  * return useSyncProps(instance.events, {
- *   active: { value: () => instance.active, triggers: ['change:activation'] },
+ *   active: { value: () => instance.active, triggers: ['changeActivation'] },
  * })
  */
 export function useSyncProps<TMap extends PropSpecMap>(

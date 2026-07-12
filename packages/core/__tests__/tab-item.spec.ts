@@ -148,9 +148,9 @@ describe('TTabItem', () => {
 			expect(collection.activeItem).toBeUndefined()
 		})
 
-		it('emits change:activation event when active changes', () => {
+		it('emits changeActivation event when active changes', () => {
 			const spy = vi.fn()
-			item.events.on('change:activation', spy)
+			item.events.on('changeActivation', spy)
 
 			item.active = true
 
@@ -299,10 +299,10 @@ describe('TTabItem', () => {
 			expect(item.active).toBe(undefined)
 		})
 
-		it('does not emit change:activation when disabled item is activated', () => {
+		it('does not emit changeActivation when disabled item is activated', () => {
 			item.disabled = true
 			const spy = vi.fn()
-			item.events.on('change:activation', spy)
+			item.events.on('changeActivation', spy)
 
 			item.active = true
 

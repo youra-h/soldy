@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { TActivatableCollection, TActivatableCollectionItem } from '@soldy/core'
 
 describe('TActivatableCollectionItem', () => {
-	it('setter and toggleActive emit "change:activation" with itself', () => {
+	it('setter and toggleActive emit "changeActivation" with itself', () => {
 		const item = new TActivatableCollectionItem()
 		const spy = vi.fn()
 
-		item.events.on('change:activation', spy)
+		item.events.on('changeActivation', spy)
 
 		item.active = true
 		expect(spy).toHaveBeenCalled()
@@ -23,14 +23,14 @@ describe('TActivatableCollectionItem', () => {
 })
 
 describe('TActivatableCollection', () => {
-	it('setActive sets active item and emits item:activated; previous item is deactivated', () => {
+	it('setActive sets active item and emits itemActivated; previous item is deactivated', () => {
 		const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 		const a = col.add({})
 		const b = col.add({})
 
 		const spy = vi.fn()
-		col.events.on('item:activated', spy)
+		col.events.on('itemActivated', spy)
 
 		col.setActive(a)
 		expect(col.activeItem).toBe(a)
@@ -44,14 +44,14 @@ describe('TActivatableCollection', () => {
 		expect(col.activeItem).toBe(b)
 	})
 
-	it('reset clears active and emits item:deactivated', () => {
+	it('reset clears active and emits itemDeactivated', () => {
 		const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 		const a = col.add({})
 		col.setActive(a)
 
 		const spy = vi.fn()
-		col.events.on('item:deactivated', spy)
+		col.events.on('itemDeactivated', spy)
 
 		col.reset()
 
@@ -81,7 +81,7 @@ describe('TActivatableCollection', () => {
 		const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 		const activeSpy = vi.fn()
-		col.events.on('item:activated', activeSpy)
+		col.events.on('itemActivated', activeSpy)
 
 		// добавляем элементы, один с active: true
 		const items = col.addItems([
@@ -269,13 +269,13 @@ describe('TActivatableCollection', () => {
 			expect(col.activeItem).toBe(col.getItem(2))
 		})
 
-		it('setItems does not emit item:activated or item:deactivated during init', () => {
+		it('setItems does not emit itemActivated or itemDeactivated during init', () => {
 			const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 			const activatedSpy = vi.fn()
 			const deactivatedSpy = vi.fn()
-			col.events.on('item:activated', activatedSpy)
-			col.events.on('item:deactivated', deactivatedSpy)
+			col.events.on('itemActivated', activatedSpy)
+			col.events.on('itemDeactivated', deactivatedSpy)
 
 			col.setItems([{ _: { active: true } } as any, { _: { active: true } } as any])
 
@@ -307,11 +307,11 @@ describe('TActivatableCollection', () => {
 			expect(b.active).toBe(true)
 		})
 
-		it('patchItems emits item:activated when activating existing item', () => {
+		it('patchItems emits itemActivated when activating existing item', () => {
 			const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 			const activatedSpy = vi.fn()
-			col.events.on('item:activated', activatedSpy)
+			col.events.on('itemActivated', activatedSpy)
 
 			const a = col.add({} as any)
 

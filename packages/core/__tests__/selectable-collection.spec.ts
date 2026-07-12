@@ -19,11 +19,11 @@ class TestSelectableItem extends TSelectableCollectionItem {
 }
 
 describe('TSelectableCollectionItem', () => {
-	it('toggleSelected and setter emit "change:selection" with itself', () => {
+	it('toggleSelected and setter emit "changeSelection" with itself', () => {
 		const item = new TSelectableCollectionItem()
 		const spy = vi.fn()
 
-		item.events.on('change:selection', spy)
+		item.events.on('changeSelection', spy)
 
 		item.selected = true
 		expect(spy).toHaveBeenCalled()
@@ -40,7 +40,7 @@ describe('TSelectableCollectionItem', () => {
 })
 
 describe('TSelectableCollection', () => {
-	it('single mode: selecting an item unselects previous one and emits item:selected/item:unselected', () => {
+	it('single mode: selecting an item unselects previous one and emits itemSelected/itemUnselected', () => {
 		const col = new TSelectableCollection({ itemClass: TSelectableCollectionItem })
 
 		const a = col.add({})
@@ -48,8 +48,8 @@ describe('TSelectableCollection', () => {
 
 		const selectedSpy = vi.fn()
 		const unselectedSpy = vi.fn()
-		col.events.on('item:selected', selectedSpy)
-		col.events.on('item:unselected', unselectedSpy)
+		col.events.on('itemSelected', selectedSpy)
+		col.events.on('itemUnselected', unselectedSpy)
 
 		a.selected = true
 		expect(a.selected).toBe(true)
@@ -128,7 +128,7 @@ describe('TSelectableCollection', () => {
 		})
 
 		const selectedSpy = vi.fn()
-		col.events.on('item:selected', selectedSpy)
+		col.events.on('itemSelected', selectedSpy)
 
 		// добавляем элементы с разным состоянием selected
 		const items = col.addItems([
@@ -189,7 +189,7 @@ describe('TSelectableCollection', () => {
 			expect(col.getItem(2)!.selected).toBe(true)
 		})
 
-		it('setItems does not emit item:selected or change:selected during init', () => {
+		it('setItems does not emit itemSelected or changeSelected during init', () => {
 			const col = new TSelectableCollection({
 				itemClass: TSelectableCollectionItem,
 				mode: 'multiple',
@@ -197,8 +197,8 @@ describe('TSelectableCollection', () => {
 
 			const selectedSpy = vi.fn()
 			const changeSpy = vi.fn()
-			col.events.on('item:selected', selectedSpy)
-			col.events.on('change:selected', changeSpy)
+			col.events.on('itemSelected', selectedSpy)
+			col.events.on('changeSelected', changeSpy)
 
 			col.setItems([{ _: { selected: true } } as any, { _: { selected: true } } as any])
 
@@ -233,7 +233,7 @@ describe('TSelectableCollection', () => {
 			expect(b.selected).toBe(false)
 		})
 
-		it('patchItems emits item:selected and change:selected when selecting existing item', () => {
+		it('patchItems emits itemSelected and changeSelected when selecting existing item', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
 				mode: 'multiple',
@@ -241,8 +241,8 @@ describe('TSelectableCollection', () => {
 
 			const selectedSpy = vi.fn()
 			const changeSpy = vi.fn()
-			col.events.on('item:selected', selectedSpy)
-			col.events.on('change:selected', changeSpy)
+			col.events.on('itemSelected', selectedSpy)
+			col.events.on('changeSelected', changeSpy)
 
 			const a = col.add({ id: 1 } as any)
 
@@ -289,7 +289,7 @@ describe('TSelectableCollection', () => {
 			expect(col.selectedCount).toBe(1)
 		})
 
-		it('patchItems from change:selected handler does not cause infinite recursion', () => {
+		it('patchItems from changeSelected handler does not cause infinite recursion', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
 				mode: 'multiple',
@@ -304,10 +304,10 @@ describe('TSelectableCollection', () => {
 
 			expect(col.count).toBe(3)
 
-			// Счётчик вызовов change:selected
+			// Счётчик вызовов changeSelected
 			let selectedCalls = 0
 
-			col.events.on('change:selected', () => {
+			col.events.on('changeSelected', () => {
 				selectedCalls++
 
 				// Имитация UI: получаем items и через patchItems выделяем первый
@@ -321,18 +321,18 @@ describe('TSelectableCollection', () => {
 				)
 			})
 
-			// Выделяем первый элемент — триггерит change:selected
+			// Выделяем первый элемент — триггерит changeSelected
 			col.getItem(0)!.selected = true
 
 			// После первой итерации элемент уже selected,
 			// повторный patchItems с _: { selected: true } — noop,
-			// поэтому change:selected не должен вызываться рекурсивно
+			// поэтому changeSelected не должен вызываться рекурсивно
 			expect(col.selectedCount).toBe(1)
 			expect(col.getItem(0)!.selected).toBe(true)
 			expect(selectedCalls).toBe(1)
 		})
 
-		it('setItems from change:selected handler causes infinite recursion', () => {
+		it('setItems from changeSelected handler causes infinite recursion', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
 				mode: 'multiple',
@@ -349,7 +349,7 @@ describe('TSelectableCollection', () => {
 			let selectedCalls = 0
 			let guard = false
 
-			col.events.on('change:selected', () => {
+			col.events.on('changeSelected', () => {
 				selectedCalls++
 
 				// setItems полностью пересоздаёт коллекцию с выделенным первым элементом
@@ -364,11 +364,11 @@ describe('TSelectableCollection', () => {
 				}
 			})
 
-			// Выделяем первый элемент — триггерит change:selected
+			// Выделяем первый элемент — триггерит changeSelected
 			col.getItem(0)!.selected = true
 
 			// В отличие от patchItems, setItems каждый раз создаёт новые элементы,
-			// поэтому change:selected вызывается рекурсивно (selectedCalls > 1)
+			// поэтому changeSelected вызывается рекурсивно (selectedCalls > 1)
 			expect(col.selectedCount).toBe(1)
 			expect(col.getItem(0)!.selected).toBe(true)
 			expect(selectedCalls).toBeGreaterThan(1)

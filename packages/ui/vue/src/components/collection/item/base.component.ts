@@ -5,7 +5,7 @@ import { useSyncProps } from '../../../composables/useSyncProps'
 import type { Ref } from 'vue'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
 
-export const emitsCollectionItem: TEmits = ['free', 'change:order'] as const
+export const emitsCollectionItem: TEmits = ['free', 'changeOrder'] as const
 
 export const propsCollectionItem: TProps = {}
 
@@ -42,8 +42,8 @@ export function syncCollectionItem(
 		emit?.('free', item)
 	})
 
-	instance.events.on('change:order', (value: number) => {
-		emit?.('change:order', value)
+	instance.events.on('changeOrder', (value: number) => {
+		emit?.('changeOrder', value)
 	})
 
 	return {

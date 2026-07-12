@@ -25,7 +25,7 @@ export type TActivatableItemEvents<TItem> = TCollectionItemEvents<TItem> & {
 	 * После изменения состояния активности.
 	 * @param item Элемент, у которого изменился active
 	 */
-	'change:activation': (item: TItem) => void
+	changeActivation: (item: TItem) => void
 }
 
 /**
@@ -55,7 +55,7 @@ export type TActivatableCollectionEvents = TCollectionEvents<IActivatableCollect
 	 * @param payload.collection Коллекция, в которой активирован элемент
 	 * @param payload.item       Активированный элемент
 	 */
-	'item:activated': (payload: {
+	itemActivated: (payload: {
 		collection: IActivatableCollection
 		item: IActivatableCollectionItem
 	}) => void
@@ -64,13 +64,13 @@ export type TActivatableCollectionEvents = TCollectionEvents<IActivatableCollect
 	 * После деактивации элемента (активный элемент сброшен).
 	 * @param payload.collection Коллекция, в которой деактивирован элемент
 	 */
-	'item:deactivated': (payload: { collection: IActivatableCollection }) => void
+	itemDeactivated: (payload: { collection: IActivatableCollection }) => void
 
 	/**
 	 * Внутренний запрос предиката для поиска следующего активируемого элемента.
 	 * Обработчик возвращает функцию-предикат или undefined.
 	 */
-	'resolve:_activatablePredicate': () =>
+	resolve_activatablePredicate: () =>
 		| ((item: IActivatableCollectionItem) => boolean)
 		| undefined
 }

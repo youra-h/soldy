@@ -53,12 +53,12 @@ export class TActivatableCollection<
 		}
 
 		// Деактивируем предыдущий ПОСЛЕ установки нового _activeItem,
-		// чтобы change:activation от prev.active = false не вызвал reset()
+		// чтобы changeActivation от prev.active = false не вызвал reset()
 		if (prev) {
 			prev.active = false
 		}
 
-		;(this.events as TEvented<TActivatableCollectionEvents>).emit('item:activated', {
+		;(this.events as TEvented<TActivatableCollectionEvents>).emit('itemActivated', {
 			collection: this,
 			item,
 		})
@@ -70,7 +70,7 @@ export class TActivatableCollection<
 			this._activeItem.active = false
 
 			this._activeItem = undefined
-			;(this.events as TEvented<TActivatableCollectionEvents>).emit('item:deactivated', {
+			;(this.events as TEvented<TActivatableCollectionEvents>).emit('itemDeactivated', {
 				collection: this,
 			})
 		}
@@ -136,7 +136,7 @@ export class TActivatableCollection<
 	 * @param item Элемент коллекции
 	 */
 	protected _subscribeItem(item: TItem): void {
-		item.events.on('change:activation', (changedItem: TItem) => {
+		item.events.on('changeActivation', (changedItem: TItem) => {
 			if (changedItem.active && !isSame(this._activeItem, changedItem)) {
 				this.setActive(changedItem)
 			} else if (!changedItem.active && isSame(this._activeItem, changedItem)) {
@@ -165,7 +165,7 @@ export class TActivatableCollection<
 		if (wasActive && this.count > 1) {
 			// Запрашиваем предикат для поиска следующего активного элемента
 			const predicate = (this.events as TEvented<TActivatableCollectionEvents>).emitResolve(
-				'resolve:_activatablePredicate',
+				'resolve_activatablePredicate',
 			) as ((item: TItem) => boolean) | undefined
 
 			newActiveItem = this.findActivatable(predicate, item)
