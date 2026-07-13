@@ -6,7 +6,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./adapter": "./src/adapter/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "test": "vitest run"
