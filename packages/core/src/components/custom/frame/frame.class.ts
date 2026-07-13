@@ -1,7 +1,7 @@
 import { TComponent } from '../../base/component'
 import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload } from '../../../bridge'
+import type { TValuePayload } from '../../../common'
 import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
 
 /**
@@ -20,7 +20,8 @@ import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } 
  */
 export default class TFrame
 	extends TComponent<IFrameProps, TFrameEvents, TFrameStates>
-	implements IFrame {
+	implements IFrame
+{
 	static defaultValues: Partial<IFrameProps> = {
 		...TComponent.defaultValues,
 		x: 0,
@@ -43,7 +44,7 @@ export default class TFrame
 	 * Вызывается автоматически при show(), но доступен и снаружи.
 	 */
 	static nextZIndex(): number {
-		return TFrame.baseZIndex + (++TFrame._zIndexCounter)
+		return TFrame.baseZIndex + ++TFrame._zIndexCounter
 	}
 
 	/** Сбросить счётчик (для тестов). */
@@ -57,8 +58,10 @@ export default class TFrame
 
 	constructor(options: IComponentOptions<IFrameProps, TFrameStates> | Partial<IFrameProps> = {}) {
 		const ctor = new.target as typeof TFrame
-		const { props = {} as Partial<IFrameProps> } =
-			ctor.prepareOptions<IFrameProps, TFrameStates>(options)
+		const { props = {} as Partial<IFrameProps> } = ctor.prepareOptions<
+			IFrameProps,
+			TFrameStates
+		>(options)
 
 		super(options)
 
@@ -72,28 +75,31 @@ export default class TFrame
 
 		this._states.x = new TStateUnit<number>({ initial: x }) as TFrameStates['x']
 		this._states.y = new TStateUnit<number>({ initial: y }) as TFrameStates['y']
-		this._states.width = new TStateUnit<number | string>({ initial: width }) as TFrameStates['width']
-		this._states.height = new TStateUnit<number | string>({ initial: height }) as TFrameStates['height']
+		this._states.width = new TStateUnit<number | string>({
+			initial: width,
+		}) as TFrameStates['width']
+		this._states.height = new TStateUnit<number | string>({
+			initial: height,
+		}) as TFrameStates['height']
 
 		this._states.x.events.on('change', (payload: TValuePayload<number>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:x', payload.newValue)
+			;(this.events as TEvented<TFrameEvents>).emit('change:x', payload.newValue)
 		})
 		this._states.y.events.on('change', (payload: TValuePayload<number>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:y', payload.newValue)
+			;(this.events as TEvented<TFrameEvents>).emit('change:y', payload.newValue)
 		})
 		this._states.width.events.on('change', (payload: TValuePayload<number | string>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:width', payload.newValue)
+			;(this.events as TEvented<TFrameEvents>).emit('change:width', payload.newValue)
 		})
 		this._states.height.events.on('change', (payload: TValuePayload<number | string>) => {
-			; (this.events as TEvented<TFrameEvents>).emit('change:height', payload.newValue)
+			;(this.events as TEvented<TFrameEvents>).emit('change:height', payload.newValue)
 		})
 
-			// При show() — присваиваем z-index
-			; (this.events as TEvented<TFrameEvents>).on('show' as any, () => {
-				this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
-
-					; (this.events as TEvented<TFrameEvents>).emit('change:zIndex', this._zIndex)
-			})
+		// При show() — присваиваем z-index
+		;(this.events as TEvented<TFrameEvents>).on('show' as any, () => {
+			this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
+			;(this.events as TEvented<TFrameEvents>).emit('change:zIndex', this._zIndex)
+		})
 	}
 
 	get x(): number {
@@ -130,7 +136,7 @@ export default class TFrame
 	set position(value: TFramePosition) {
 		if (this._position === value) return
 		this._position = value
-			; (this.events as TEvented<TFrameEvents>).emit('change:position', value)
+		;(this.events as TEvented<TFrameEvents>).emit('change:position', value)
 	}
 
 	get target(): string {
@@ -139,7 +145,7 @@ export default class TFrame
 	set target(value: string) {
 		if (this._target === value) return
 		this._target = value
-			; (this.events as TEvented<TFrameEvents>).emit('change:target', value)
+		;(this.events as TEvented<TFrameEvents>).emit('change:target', value)
 	}
 
 	get zIndex(): number {

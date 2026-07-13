@@ -2,7 +2,7 @@ import { TValueControl } from '../../../base/value-control'
 import type { IComponentViewOptions } from '../../../base/component-view'
 import { TComponentView } from '../../../base/component-view'
 import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../bridge'
+import type { TValuePayload } from '../../../../common'
 import type {
 	ICollapseItemCustom,
 	ICollapseItemCustomProps,
@@ -17,7 +17,8 @@ export default class TCollapseItemCustom<
 	TEvents extends TCollapseItemCustomEvents<any> = TCollapseItemCustomEvents,
 >
 	extends TValueControl<string | number, TProps, TEvents, TCollapseItemCustomStates>
-	implements ICollapseItemCustom<TProps> {
+	implements ICollapseItemCustom<TProps>
+{
 	static override baseClass = 's-collapse-item'
 
 	static defaultValues: Partial<ICollapseItemCustomProps> = {
@@ -33,9 +34,7 @@ export default class TCollapseItemCustom<
 	private _viewResolver: (() => TCollapseView) | undefined
 
 	constructor(
-		options:
-			| IComponentViewOptions<TProps, TCollapseItemCustomStates>
-			| Partial<TProps> = {},
+		options: IComponentViewOptions<TProps, TCollapseItemCustomStates> | Partial<TProps> = {},
 	) {
 		super(options)
 
@@ -53,7 +52,7 @@ export default class TCollapseItemCustom<
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			; (this.events as TEvented<TCollapseItemCustomEvents>).emit('change:text', payload)
+			;(this.events as TEvented<TCollapseItemCustomEvents>).emit('change:text', payload)
 		})
 
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement!
@@ -74,10 +73,10 @@ export default class TCollapseItemCustom<
 	set arrowPlacement(value: TCollapseArrowPlacement) {
 		if (this._arrowPlacement !== value) {
 			this._arrowPlacement = value
-				; (this.events as TEvented<TCollapseItemCustomEvents>).emit(
-					'change:arrowPlacement',
-					value,
-				)
+			;(this.events as TEvented<TCollapseItemCustomEvents>).emit(
+				'change:arrowPlacement',
+				value,
+			)
 		}
 	}
 

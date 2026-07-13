@@ -7,7 +7,7 @@ import type {
 	ISelectableCollectionProps,
 } from '../../base/collection'
 import type { IListItem } from './list-item/types'
-import type { TScrollBehavior } from '../../../bridge'
+import type { TScrollBehavior } from '../../../common'
 
 export type TListEvents = TControlEvents &
 	TSelectableCollectionEvents<IListItem> &
@@ -26,9 +26,8 @@ export type TListEvents = TControlEvents &
 		'item:present': (item: IListItem, value: boolean) => void
 	}
 
-export interface IListProps<
-	TItem extends IListItem = IListItem,
-> extends IControlProps, ISelectableCollectionProps<TItem> {
+export interface IListProps<TItem extends IListItem = IListItem>
+	extends IControlProps, ISelectableCollectionProps<TItem> {
 	/** Максимальное количество видимых строк (0 = без ограничений) */
 	maxRows?: number
 	/** Ширина бокса определяется по самому длинному тексту */

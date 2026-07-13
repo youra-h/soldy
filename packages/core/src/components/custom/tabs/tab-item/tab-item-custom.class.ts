@@ -2,7 +2,7 @@ import { TValueControl } from '../../../base/value-control'
 import type { IComponentViewOptions } from '../../../base/component-view'
 import { TComponentView } from '../../../base/component-view'
 import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../bridge'
+import type { TValuePayload } from '../../../../common'
 import type {
 	ITabItemCustom,
 	ITabItemCustomProps,
@@ -40,10 +40,9 @@ export default class TTabItemCustom<
 
 		const ctor = new.target as typeof TTabItemCustom
 
-		const { props = {}, states } = TComponentView.prepareOptions<
-			TProps,
-			TTabItemCustomStates
-		>(options)
+		const { props = {}, states } = TComponentView.prepareOptions<TProps, TTabItemCustomStates>(
+			options,
+		)
 
 		// Type assertion: TProps extends ITabItemCustomProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabItemCustomProps>
@@ -64,14 +63,11 @@ export default class TTabItemCustom<
 			;(this.events as TEvented<TTabItemCustomEvents>).emit('change:text', payload)
 		})
 
-		this._states.closable.events.on(
-			'change',
-			(payload: TValuePayload<boolean | undefined>) => {
-				this._classes.toggle(`--closable`, !!payload.newValue)
+		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
+			this._classes.toggle(`--closable`, !!payload.newValue)
 
-				this.notifyClosableChange(payload.newValue)
-			},
-		)
+			this.notifyClosableChange(payload.newValue)
+		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
 
@@ -81,8 +77,7 @@ export default class TTabItemCustom<
 				this._states.closable.value = false
 			} else {
 				// Если таб стал enabled, восстанавливаем closable в исходное значение (или дефолтное)
-				this._states.closable.value =
-					customProps.closable ?? ctor.defaultValues.closable
+				this._states.closable.value = customProps.closable ?? ctor.defaultValues.closable
 			}
 		})
 	}

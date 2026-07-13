@@ -4,8 +4,7 @@ import type {
 	TValueControlEvents,
 	TValueControlStates,
 } from '../../../base/value-control'
-import type { IStateUnit } from '../../../../common'
-import { type TValuePayload } from '../../../../bridge'
+import type { IStateUnit, TValuePayload } from '../../../../common'
 import type {
 	IActivatableCollectionItemProps,
 	TActivatableItemEvents,

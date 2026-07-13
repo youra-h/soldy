@@ -2,7 +2,7 @@ import { TValueControl } from '../../../base'
 import type { IComponentViewOptions } from '../../../base/component-view'
 import { TComponentView } from '../../../base/component-view'
 import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../bridge'
+import type { TValuePayload } from '../../../../common'
 import type {
 	IListItemCustom,
 	IListItemCustomProps,
@@ -29,18 +29,15 @@ export default class TListItemCustom<
 	}
 
 	constructor(
-		options:
-			| IComponentViewOptions<TProps, TListItemCustomStates>
-			| Partial<TProps> = {},
+		options: IComponentViewOptions<TProps, TListItemCustomStates> | Partial<TProps> = {},
 	) {
 		super(options)
 
 		const ctor = new.target as typeof TListItemCustom
 
-		const { props = {}, states } = TComponentView.prepareOptions<
-			TProps,
-			TListItemCustomStates
-		>(options)
+		const { props = {}, states } = TComponentView.prepareOptions<TProps, TListItemCustomStates>(
+			options,
+		)
 
 		const customProps = props as Partial<IListItemCustomProps>
 
@@ -58,14 +55,11 @@ export default class TListItemCustom<
 				initial: customProps.wordWrap ?? ctor.defaultValues.wordWrap,
 			})
 
-		this._states.wordWrap.events.on(
-			'change',
-			(payload: TValuePayload<boolean | undefined>) => {
-				this._classes.toggle('--word-wrap', !!payload.newValue)
+		this._states.wordWrap.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
+			this._classes.toggle('--word-wrap', !!payload.newValue)
 
-				this.notifyWordWrapChange()
-			},
-		)
+			this.notifyWordWrapChange()
+		})
 
 		this._classes.toggle('--word-wrap', !!this._states.wordWrap.value)
 	}
@@ -99,10 +93,7 @@ export default class TListItemCustom<
 	 * Уведомляет UI об изменении wordWrap.
 	 */
 	notifyWordWrapChange(): void {
-		;(this.events as TEvented<TListItemCustomEvents>).emit(
-			'change:wordWrap',
-			!!this.wordWrap,
-		)
+		;(this.events as TEvented<TListItemCustomEvents>).emit('change:wordWrap', !!this.wordWrap)
 	}
 
 	override getProps(): TProps {

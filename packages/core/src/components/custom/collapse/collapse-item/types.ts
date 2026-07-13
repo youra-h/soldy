@@ -11,8 +11,7 @@ import type {
 } from '../../../base/collection'
 import type { TCollectableOptions } from '../../../base/collection'
 import type { IComponentViewOptions } from '../../../base/component-view'
-import type { IStateUnit } from '../../../../common'
-import type { TValuePayload } from '../../../../bridge'
+import type { IStateUnit, TValuePayload } from '../../../../common'
 import type { TCollapseView } from '../types'
 
 // ============ TCollapseItemCustom (UI-логика без коллекции) ============

@@ -1,8 +1,7 @@
-import { TStateUnit } from '../../../common'
+import { TStateUnit, TEvented } from '../../../common'
 import { TComponentView, type IComponentViewOptions } from '../component-view'
 import type { IInteractiveProps, TInteractiveEvents, TInteractiveStates } from './types'
-import type { TValuePayload } from '../../../bridge'
-import { TEvented } from '../../../common'
+import type { TValuePayload } from '../../../common'
 
 /**
  * База для интерактивных компонентов: disabled + focused.
@@ -34,15 +33,13 @@ export default class TInteractive<
 		const disabled = props.disabled ?? (ctor.defaultValues.disabled as boolean)
 		const focused = props.focused ?? (ctor.defaultValues.focused as boolean)
 
-		this._states.disabled =
-			states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
+		this._states.disabled = states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TInteractiveEvents>).emit('change:disabled', payload.newValue)
 		})
 
-		this._states.focused =
-			states?.focused ?? new TStateUnit<boolean>({ initial: focused })
+		this._states.focused = states?.focused ?? new TStateUnit<boolean>({ initial: focused })
 
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TInteractiveEvents>).emit('change:focused', payload.newValue)

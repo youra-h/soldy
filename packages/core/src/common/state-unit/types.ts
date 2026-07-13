@@ -1,5 +1,5 @@
 import { TEvented } from '../event/evented'
-import type { TValuePayload } from '../../bridge'
+import type { TValuePayload } from '../../common'
 
 export type TStateUnitValueEvents<TValue> = {
 	change: (payload: TValuePayload<TValue>) => void
