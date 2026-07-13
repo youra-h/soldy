@@ -1,11 +1,11 @@
-import type { TComponentEvents } from '@soldy/core'
+import type { TComponentEvents, IComponentProps } from '@soldy/core'
 import { createContract } from '../contract'
 
 /**
  * Базовый контракт Component.
  * Описывает общие для всех компонентов свойства и события.
  */
-export const componentContract = createContract<TComponentEvents>({
+export const componentContract = createContract<IComponentProps, TComponentEvents>({
 	props: {
 		rendered: {
 			get: (i) => i.rendered,
@@ -17,6 +17,9 @@ export const componentContract = createContract<TComponentEvents>({
 			set: (i, v) => { i.visible = v },
 			triggers: ['change:visible'],
 		},
+	},
+
+	derived: {
 		present: {
 			get: (i) => i.present,
 			triggers: ['change:rendered', 'change:visible'],

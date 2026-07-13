@@ -1,47 +1,44 @@
-import type { TComponentEvents } from '@soldy/core'
+import type { TComponentEvents, IComponentProps } from '@soldy/core'
 
-/**
- * Контракт компонента — фреймворк-независимое описание.
- * Единственный источник истины для всех адаптеров (Vue/React/Angular/Svelte/Solid).
- */
-
-/** Описание одного свойства */
 export interface PropertyContract<TEvents extends Record<string, any> = TComponentEvents> {
-	/** Чтение значения из core-инстанса */
 	get: (instance: any) => any
-	/** Запись значения в core-инстанс (опционально — если readonly) */
 	set?: (instance: any, value: any) => void
-	/**
-	 * Имена core-событий, при которых нужно перечитать get.
-	 * Типизировано — только ключи из TEvents.
-	 */
 	triggers: (keyof TEvents)[]
 }
 
-export interface ComponentContract<TEvents extends Record<string, any> = TComponentEvents> {
-	props: Record<string, PropertyContract<TEvents>>
+export interface ComponentContract<
+	TProps extends Record<string, any> = IComponentProps,
+	TEvents extends Record<string, any> = TComponentEvents,
+> {
+	/** Свойства, которые можно передать извне (есть set) */
+	props: { [K in keyof TProps]?: PropertyContract<TEvents> }
+	/** Вычисляемые read-only свойства (нет set — только get + triggers) */
+	derived?: Record<string, PropertyContract<TEvents>>
+	/** Core-события */
 	events: (keyof TEvents)[]
+	/** Плагины */
 	plugins: (new (...args: any[]) => any)[]
 }
 
-export function createContract<TEvents extends Record<string, any>>(
-	contract: ComponentContract<TEvents>,
-): ComponentContract<TEvents> & {
-	extend: <TExtEvents extends Record<string, any>>(
-		extension: Partial<ComponentContract<TExtEvents>>,
-	) => ComponentContract<TEvents & TExtEvents> & {
+export function createContract<TProps extends Record<string, any>, TEvents extends Record<string, any>>(
+	contract: ComponentContract<TProps, TEvents>,
+): ComponentContract<TProps, TEvents> & {
+	extend: <TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
+		extension: Partial<ComponentContract<TExtProps, TExtEvents>>,
+	) => ComponentContract<TProps & TExtProps, TEvents & TExtEvents> & {
 		extend: (...args: any[]) => any
 	}
 } {
 	return {
 		...contract,
 
-		extend<TExtEvents extends Record<string, any>>(
-			extension: Partial<ComponentContract<TExtEvents>>,
+		extend<TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
+			extension: Partial<ComponentContract<TExtProps, TExtEvents>>,
 		) {
-			return createContract<TEvents & TExtEvents>({
-				props: { ...contract.props, ...extension.props },
-				events: [...contract.events, ...(extension.events ?? [])] as (keyof (TEvents & TExtEvents))[],
+			return createContract<TProps & TExtProps, TEvents & TExtEvents>({
+				props: { ...contract.props, ...extension.props } as any,
+				derived: { ...contract.derived, ...extension.derived } as any,
+				events: [...contract.events, ...(extension.events ?? [])] as any,
 				plugins: [...contract.plugins, ...(extension.plugins ?? [])],
 			})
 		},

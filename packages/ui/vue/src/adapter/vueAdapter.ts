@@ -42,21 +42,22 @@ export function vueAdapter(
 
 	const rootElement = useElementBinding(plugins)
 
-	// 2. Реактивные refs
-	for (const name of Object.keys(contract.props)) {
-		const propDef = contract.props[name]
+	// 2. Реактивные refs — props + derived
+	const allProps = { ...contract.props, ...contract.derived }
+	for (const name of Object.keys(allProps)) {
+		const propDef = allProps[name]
 		let trigger: () => void
 		refs[name] = customRef((track, t) => {
 			trigger = t
-			return { get() { track(); return propDef.get(instance) }, set() {} }
+			return { get() { track(); return propDef!.get(instance) }, set() {} }
 		})
 		triggers[name] = trigger!
 	}
 
-	// 3. Props → Core
+	// 3. Props → Core (только для props, не derived)
 	for (const name of Object.keys(contract.props)) {
 		const propDef = contract.props[name]
-		if (!propDef.set) continue
+		if (!propDef?.set) continue
 		watch(() => (props as any)[name], (value: any) => {
 			if (value !== undefined) propDef.set!(instance, value)
 		})

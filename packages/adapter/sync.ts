@@ -38,8 +38,9 @@ export function sync(
 
 	// Собираем имена событий, которые являются триггерами свойств
 	const triggerEvents = new Set<string>()
-	for (const prop of Object.values(contract.props)) {
-		for (const event of prop.triggers) {
+	const allProps = { ...contract.props, ...contract.derived }
+	for (const prop of Object.values(allProps)) {
+		for (const event of (prop as any).triggers ?? []) {
 			triggerEvents.add(event)
 		}
 	}
@@ -48,14 +49,12 @@ export function sync(
 	for (const event of contract.events) {
 		const handler = (...args: any[]) => {
 			if (triggerEvents.has(event)) {
-				// Событие-триггер: перечитываем свойства, для которых оно указано
-				for (const [name, prop] of Object.entries(contract.props)) {
-					if (prop.triggers.includes(event)) {
-						emit({ type: 'property', name, value: prop.get(instance) })
+				for (const [name, prop] of Object.entries(allProps)) {
+					if ((prop as any).triggers?.includes(event)) {
+						emit({ type: 'property', name, value: (prop as any).get(instance) })
 					}
 				}
 			} else {
-				// Обычное событие (show, hide, created, ...)
 				emit({ type: 'event', name: event, args })
 			}
 		}
