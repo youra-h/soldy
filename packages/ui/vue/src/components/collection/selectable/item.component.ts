@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/core'
+import { track } from '@soldy/adapter'
 import {
 	type ISelectableCollectionItem,
 	type ISelectableCollectionItemProps,

@@ -1,4 +1,4 @@
-import { type IComponent, type IComponentProps, track } from '@soldy/core'
+import { type IComponent, type IComponentProps } from '@soldy/core'
 
 export interface IComponentState {
 	rendered: boolean

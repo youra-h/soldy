@@ -1,6 +1,6 @@
 import type { PropType, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponentView, type IComponentViewProps, TComponentView, track } from '@soldy/core'
+import { type IComponentView, type IComponentViewProps, TComponentView } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { type IPluginBundle, TElementPlugin } from '@soldy/plugins'
 import {
@@ -11,6 +11,7 @@ import {
 	type IComponentState,
 } from '../component'
 import { useInheritProps } from '../../composables/useInheritProps'
+import { track } from '@soldy/adapter'
 
 export const emitsComponentView: TEmits = [...emitsComponent, 'ready'] as const
 

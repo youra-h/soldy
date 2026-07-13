@@ -1,5 +1,5 @@
 import type { PropType, Ref, UnwrapRef } from 'vue'
-import { track } from '@soldy/core'
+import { track } from '@soldy/adapter'
 import { type IValueControl, type IValueControlProps, TValueControl } from '@soldy/core'
 import { BaseControl, emitsControl, propsControl, syncControl, type IControlState } from '../control'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'

@@ -1,5 +1,5 @@
 import { type PropType, type Ref } from 'vue'
-import { track } from '@soldy/core'
+import { track } from '@soldy/adapter'
 import {
 	type ISkeletonProps,
 	TSkeleton,

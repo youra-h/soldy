@@ -1,7 +1,8 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponent, type IComponentProps, track } from '@soldy/core'
+import { type IComponent, type IComponentProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
+import { track } from '@soldy/adapter'
 
 export const emitsComponent: TEmits = [
 	'created',

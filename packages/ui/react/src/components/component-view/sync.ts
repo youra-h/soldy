@@ -1,4 +1,4 @@
-import { type IComponentView, type IComponentViewProps, track } from '@soldy/core'
+import { type IComponentView, type IComponentViewProps } from '@soldy/core'
 import type { IComponentState } from '../component'
 
 export interface IComponentViewState extends IComponentState {

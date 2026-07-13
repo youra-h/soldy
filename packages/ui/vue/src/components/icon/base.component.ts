@@ -1,5 +1,5 @@
 import { type PropType, type Ref } from 'vue'
-import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload, track } from '@soldy/core'
+import { type IIconProps, TIcon, type TComponentSize, type IIcon, type TValuePayload } from '@soldy/core'
 import {
 	ComponentView,
 	emitsComponentView,

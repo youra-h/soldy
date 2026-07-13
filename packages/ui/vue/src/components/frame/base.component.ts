@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { type IFrameProps, TFrame, type IFrame, type TFramePosition, track } from '@soldy/core'
+import { type IFrameProps, TFrame, type IFrame, type TFramePosition } from '@soldy/core'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
 import {

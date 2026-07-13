@@ -1,5 +1,5 @@
 import { type PropType, type Ref } from 'vue'
-import { type IButtonProps, type TButtonView, TButton, type IButton, track } from '@soldy/core'
+import { type IButtonProps, type TButtonView, TButton, type IButton } from '@soldy/core'
 import {
 	BaseTextable,
 	emitsTextable,
@@ -10,6 +10,7 @@ import {
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
+import { track } from '@soldy/adapter'
 
 export const emitsButton: TEmits = [
 	...emitsTextable,

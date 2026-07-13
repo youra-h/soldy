@@ -1,5 +1,5 @@
 import { type PropType, type Ref } from 'vue'
-import { type ICheckBoxProps, type ICheckBox, TCheckBox, track } from '@soldy/core'
+import { type ICheckBoxProps, type ICheckBox, TCheckBox } from '@soldy/core'
 import {
 	BaseInputControl,
 	emitsInputControl,
@@ -11,6 +11,7 @@ import type { TEmits, TProps, ISyncComponentOptions } from '../../types/common'
 import { Icon } from '../icon'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
+import { track } from '@soldy/adapter'
 
 export const emitsCheckBox: TEmits = [
 	...emitsInputControl,
