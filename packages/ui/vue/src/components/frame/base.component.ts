@@ -27,8 +27,8 @@ export const emitsFrame: TEmits = [
 	'change:zIndex',
 	'change:position',
 	'update:position',
-	'beforeShow',
-	'beforeHide',
+	'show:before',
+	'hide:before',
 	'show',
 	'hide',
 ] as const

@@ -81,10 +81,10 @@ export function ComponentView({
 			unsubs.push(() => instance.events.off(name as any, cb))
 		}
 
-		sync('beforeShow', () => onEvent('beforeShow'))
-		sync('afterShow', () => onEvent('afterShow'))
-		sync('beforeHide', () => onEvent('beforeHide'))
-		sync('afterHide', () => onEvent('afterHide'))
+		sync('show:before', () => onEvent('show:before'))
+		sync('show:after', () => onEvent('show:after'))
+		sync('hide:before', () => onEvent('hide:before'))
+		sync('hide:after', () => onEvent('hide:after'))
 		sync('show', () => onEvent('show', instance))
 		sync('hide', () => onEvent('hide', instance))
 		sync('change:visible', (value: boolean) => {

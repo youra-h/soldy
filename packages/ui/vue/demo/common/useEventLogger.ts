@@ -84,7 +84,7 @@ export function useCoreEventLogger(
 				logEvent('core', eventName, payload)
 
 				// Для beforeShow/beforeHide нужно вернуть true (можно отменить событие)
-				if (eventName === 'beforeShow' || eventName === 'beforeHide') {
+				if (eventName === 'show:before' || eventName === 'hide:before') {
 					return true
 				}
 			})

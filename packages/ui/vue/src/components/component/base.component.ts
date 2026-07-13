@@ -13,10 +13,10 @@ export const emitsComponent: TEmits = [
 	'change:visible',
 	'hide',
 	'show',
-	'beforeShow',
-	'afterShow',
-	'beforeHide',
-	'afterHide',
+	'show:before',
+	'show:after',
+	'hide:before',
+	'hide:after',
 ] as const
 
 export const propsComponent: TProps = {
@@ -49,17 +49,17 @@ export function syncComponent(options: ISyncComponentOptions<IComponentProps>): 
 	// 	emit?.('created', instance)
 	// })
 
-	instance.events.on('beforeShow' as any, () => {
-		emit?.('beforeShow')
+	instance.events.on('show:before' as any, () => {
+		emit?.('show:before')
 	})
-	instance.events.on('afterShow' as any, () => {
-		emit?.('afterShow')
+	instance.events.on('show:after' as any, () => {
+		emit?.('show:after')
 	})
-	instance.events.on('beforeHide' as any, () => {
-		emit?.('beforeHide')
+	instance.events.on('hide:before' as any, () => {
+		emit?.('hide:before')
 	})
-	instance.events.on('afterHide' as any, () => {
-		emit?.('afterHide')
+	instance.events.on('hide:after' as any, () => {
+		emit?.('hide:after')
 	})
 	instance.events.on('show' as any, () => {
 		emit?.('show', instance)

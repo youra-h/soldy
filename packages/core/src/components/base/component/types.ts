@@ -6,18 +6,19 @@ import type { IVisibilityState } from '../../../common'
 export type TComponentEvents = {
 	/** Создан (после конструктора, async). */
 	created: (component: IComponent) => void
-	/** beforeShow (можно отменить, вернув false) */
-	beforeShow: () => boolean
-	/** afterShow */
-	afterShow: () => void
-	/** beforeHide (можно отменить, вернув false) */
-	beforeHide: () => boolean
-	/** afterHide */
-	afterHide: () => void
 	/** show */
 	show: () => void
 	/** hide */
 	hide: () => void
+	/** show:before (можно отменить, вернув false) */
+	'show:before': () => boolean
+	/** show:after */
+	'show:after': () => void
+	/** hide:before (можно отменить, вернув false) */
+	'hide:before': () => boolean
+	/** hide:after */
+	'hide:after': () => void
+
 	/** change:visible */
 	'change:visible': (value: boolean) => void
 	/** change:rendered */

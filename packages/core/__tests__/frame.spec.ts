@@ -66,8 +66,8 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		const events: string[] = []
 		frame.events.on('hide' as any, () => events.push('hide'))
-		frame.events.on('beforeHide' as any, () => {
-			events.push('beforeHide')
+		frame.events.on('hide:before' as any, () => {
+			events.push('hide:before')
 			return true
 		})
 
@@ -102,7 +102,7 @@ describe('TFrame', () => {
 
 	it('beforeShow может отменить показ', () => {
 		const frame = new TFrame()
-		frame.events.on('beforeShow' as any, () => false)
+		frame.events.on('show:before' as any, () => false)
 
 		frame.show()
 		expect(frame.visible).toBe(false)
@@ -111,7 +111,7 @@ describe('TFrame', () => {
 
 	it('beforeHide может отменить скрытие', () => {
 		const frame = new TFrame({ visible: true })
-		frame.events.on('beforeHide' as any, () => false)
+		frame.events.on('hide:before' as any, () => false)
 
 		frame.hide()
 		expect(frame.visible).toBe(true)
@@ -121,22 +121,22 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		const log: string[] = []
 
-		frame.events.on('beforeShow' as any, () => {
-			log.push('beforeShow')
+		frame.events.on('show:before' as any, () => {
+			log.push('show:before')
 			return true
 		})
 		frame.events.on('show' as any, () => log.push('show'))
-		frame.events.on('beforeHide' as any, () => {
-			log.push('beforeHide')
+		frame.events.on('hide:before' as any, () => {
+			log.push('hide:before')
 			return true
 		})
 		frame.events.on('hide' as any, () => log.push('hide'))
 
 		frame.show()
-		expect(log).toEqual(['beforeShow', 'show'])
+		expect(log).toEqual(['show:before', 'show'])
 
 		frame.hide()
-		expect(log).toEqual(['beforeShow', 'show', 'beforeHide', 'hide'])
+		expect(log).toEqual(['show:before', 'show', 'hide:before', 'hide'])
 	})
 
 	it('change:visible эмитится при show/hide', () => {

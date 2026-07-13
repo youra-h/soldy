@@ -16,17 +16,17 @@ export function syncComponent(
 	instance: IComponent,
 	onEvent: (name: string, ...args: any[]) => void,
 ): IComponentState {
-	instance.events.on('beforeShow' as any, () => {
-		onEvent('beforeShow')
+	instance.events.on('show:before' as any, () => {
+		onEvent('show:before')
 	})
-	instance.events.on('afterShow' as any, () => {
-		onEvent('afterShow')
+	instance.events.on('show:after' as any, () => {
+		onEvent('show:after')
 	})
-	instance.events.on('beforeHide' as any, () => {
-		onEvent('beforeHide')
+	instance.events.on('hide:before' as any, () => {
+		onEvent('hide:before')
 	})
-	instance.events.on('afterHide' as any, () => {
-		onEvent('afterHide')
+	instance.events.on('hide:after' as any, () => {
+		onEvent('hide:after')
 	})
 	instance.events.on('show' as any, () => {
 		onEvent('show', instance)

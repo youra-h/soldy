@@ -1,8 +1,6 @@
 import { TEntity } from '../entity'
-import { TEvented } from '../../../common'
-import { type IStateUnit, TStateUnit } from '../../../common'
-import { TVisibilityState, type IVisibilityState } from '../../../common'
-import type { TValuePayload } from '../../../bridge'
+import { TEvented, TStateUnit, TVisibilityState } from '../../../common'
+import type { IVisibilityState, TValuePayload } from '../../../common'
 import type {
 	IComponent,
 	IComponentOptions,
@@ -35,7 +33,9 @@ export default class TComponent<
 	constructor(options: IComponentOptions<TProps, TStates> | Partial<TProps> = {}) {
 		const ctor = new.target as typeof TComponent
 
-		const { props = {} as Partial<TProps>, states } = ctor.prepareOptions<TProps, TStates>(options)
+		const { props = {} as Partial<TProps>, states } = ctor.prepareOptions<TProps, TStates>(
+			options,
+		)
 		super()
 
 		this.events = new TEvented<TEvents>()
@@ -44,25 +44,25 @@ export default class TComponent<
 		const rendered = props.rendered ?? (ctor.defaultValues.rendered as boolean)
 		const visible = props.visible ?? (ctor.defaultValues.visible as boolean)
 
-		this._states.rendered = states?.rendered ?? new TStateUnit<boolean>({ initial: rendered }) as TStates['rendered']
-		this._states.visible = states?.visible ?? new TVisibilityState({ initial: visible }) as TStates['visible']
+		this._states.rendered =
+			states?.rendered ??
+			(new TStateUnit<boolean>({ initial: rendered }) as TStates['rendered'])
+		this._states.visible =
+			states?.visible ?? (new TVisibilityState({ initial: visible }) as TStates['visible'])
 
 		this._states.rendered.events.on('change', (payload: TValuePayload<boolean>) => {
-			; (this.events as TEvented<TComponentEvents>).emit('change:rendered', payload.newValue)
+			;(this.events as TEvented<TComponentEvents>).emit('change:rendered', payload.newValue)
 			this._emitPresent()
 		})
 		this._states.visible.events.on('change', (payload: TValuePayload<boolean>) => {
-			; (this.events as TEvented<TComponentEvents>).emit('change:visible', payload.newValue)
+			;(this.events as TEvented<TComponentEvents>).emit('change:visible', payload.newValue)
 			this._emitPresent()
 		})
 
 		setTimeout(() => (this.events as TEvented<TComponentEvents>).emit('created', this), 0)
 	}
 
-	static prepareOptions<
-		TProps extends IComponentProps = IComponentProps,
-		TStates = any,
-	>(
+	static prepareOptions<TProps extends IComponentProps = IComponentProps, TStates = any>(
 		options: IComponentOptions<TProps, TStates> | Partial<TProps>,
 	): { props: Partial<TProps>; states?: Partial<TStates> } {
 		const raw = options as Record<string, unknown>
@@ -107,7 +107,7 @@ export default class TComponent<
 	}
 
 	private _emitPresent(): void {
-		; (this.events as TEvented<TComponentEvents>).emit('change:present', this.present)
+		;(this.events as TEvented<TComponentEvents>).emit('change:present', this.present)
 	}
 
 	get rendered(): boolean {
@@ -132,15 +132,15 @@ export default class TComponent<
 	show(): void {
 		if (!this.beforeShow()) return
 
-		const canShow = (this.events as TEvented<TComponentEvents>).emitWithResult('beforeShow')
+		const canShow = (this.events as TEvented<TComponentEvents>).emitWithResult('show:before')
 		if (!canShow) return
 
 		if (this.visible) return
-			; (this._states.visible as IVisibilityState).show()
-			; (this.events as TEvented<TComponentEvents>).emit('show')
+		;(this._states.visible as IVisibilityState).show()
+		;(this.events as TEvented<TComponentEvents>).emit('show')
 
 		this.afterShow()
-			; (this.events as TEvented<TComponentEvents>).emit('afterShow')
+		;(this.events as TEvented<TComponentEvents>).emit('show:after')
 	}
 
 	hide(): void {
@@ -148,27 +148,26 @@ export default class TComponent<
 
 		if (!this.beforeHide()) return
 
-		const canHide = (this.events as TEvented<TComponentEvents>).emitWithResult('beforeHide')
+		const canHide = (this.events as TEvented<TComponentEvents>).emitWithResult('hide:before')
 		if (!canHide) return
-
-			; (this._states.visible as IVisibilityState).hide()
-			; (this.events as TEvented<TComponentEvents>).emit('hide')
+		;(this._states.visible as IVisibilityState).hide()
+		;(this.events as TEvented<TComponentEvents>).emit('hide')
 
 		this.afterHide()
-			; (this.events as TEvented<TComponentEvents>).emit('afterHide')
+		;(this.events as TEvented<TComponentEvents>).emit('hide:after')
 	}
 
 	protected beforeShow(): boolean {
 		return true
 	}
 
-	protected afterShow(): void { }
+	protected afterShow(): void {}
 
 	protected beforeHide(): boolean {
 		return true
 	}
 
-	protected afterHide(): void { }
+	protected afterHide(): void {}
 
 	getProps(): TProps {
 		return {
