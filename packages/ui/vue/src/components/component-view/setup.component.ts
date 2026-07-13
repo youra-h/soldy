@@ -1,6 +1,6 @@
 import type { SetupContext } from 'vue'
 import { TComponentView, type IComponentViewProps, type IComponentView } from '@soldy/core'
-import { componentViewContract } from '@soldy/core'
+import { componentViewContract } from '@soldy/core/adapter'
 import BaseComponentView from './base.component'
 import { useInstance } from '../../composables/useInstance'
 import { vueAdapter } from '../../adapter/vueAdapter'

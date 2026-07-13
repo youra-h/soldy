@@ -1,8 +1,8 @@
-import { type Ref, customRef, watch } from 'vue'
+import { type Ref, customRef, watch, onUnmounted } from 'vue'
 import type { SetupContext } from 'vue'
 import type { IPluginBundle } from '@soldy/plugins'
 import { TPluginBundle } from '@soldy/plugins'
-import { sync } from '@soldy/core'
+import { sync } from '@soldy/core/adapter'
 import { useBundle } from '../composables/useBundle'
 import { useElementBinding } from '../composables/useElementBinding'
 
@@ -13,7 +13,7 @@ export interface VueAdapterResult {
 }
 
 export function vueAdapter(
-	contract: ReturnType<typeof import('@soldy/core').createContract>,
+	contract: ReturnType<typeof import('@soldy/core/adapter').createContract>,
 	instance: any,
 	props: Record<string, any>,
 	emit: SetupContext['emit'],
@@ -21,7 +21,7 @@ export function vueAdapter(
 	const refs: Record<string, Ref<any>> = {}
 	const triggers: Record<string, () => void> = {}
 
-	// 1. Плагины из контракта + переопределение через props.plugins
+	// 1. Плагины (отдельно от sync — это ответственность адаптера)
 	const plugins = useBundle(
 		() => {
 			const bundle = new TPluginBundle()
@@ -33,7 +33,6 @@ export function vueAdapter(
 		props?.plugins,
 	)
 
-	// Привязка instance
 	for (const Plugin of contract.plugins) {
 		const plugin = plugins.get(Plugin)
 		if (plugin && 'instance' in plugin) {
@@ -63,17 +62,20 @@ export function vueAdapter(
 		})
 	}
 
-	// 4. Синхронизация
-	sync(contract, { instance, props, plugins }, {
-		onPropertyChange(name, value) {
-			emit(`change:${name}` as any, value)
-			emit(`update:${name}` as any, value)
-			triggers[name]?.()
-		},
-		onEvent(name, ...args) {
-			emit(name as any, ...args)
-		},
+	// 4. Синхронизация через subscribe
+	const binding = sync(contract, instance)
+
+	binding.subscribe((change) => {
+		if (change.type === 'property') {
+			emit(`change:${change.name}` as any, change.value)
+			emit(`update:${change.name}` as any, change.value)
+			triggers[change.name]?.()
+		} else {
+			emit(change.name as any, ...change.args)
+		}
 	})
+
+	onUnmounted(() => binding.dispose())
 
 	return { refs, plugins, rootElement }
 }

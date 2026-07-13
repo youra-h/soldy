@@ -1,71 +1,69 @@
-import type { ComponentContract } from './contract'
+/**
+ * Единица изменения — свойство или событие.
+ * Универсальный интерфейс для Vue emit, React setState, DevTools, логгера.
+ */
+export type Change =
+	| { type: 'property'; name: string; value: any }
+	| { type: 'event'; name: string; args: any[] }
+
+type Subscriber = (change: Change) => void
 
 /**
- * Колбэки, которые адаптер предоставляет для обработки изменений.
- * Это контракт между sync() и фреймворк-адаптером.
+ * Результат синхронизации.
  */
-export interface SyncCallbacks {
-	/** Вызывается при изменении свойства core-инстанса */
-	onPropertyChange: (name: string, value: any) => void
-	/** Вызывается при core-событии (show, hide, created, ...) */
-	onEvent: (name: string, ...args: any[]) => void
-}
-
-export interface SyncOptions {
-	instance: any
-	props: Record<string, any>
-	plugins?: any
+export interface SyncBinding {
+	/** Подписаться на изменения. Можно вызывать многократно — все подписчики получат уведомление. */
+	subscribe: (fn: Subscriber) => void
+	/** Отписаться от всех core-событий и очистить подписчиков. */
+	dispose: () => void
 }
 
 /**
  * Универсальная функция синхронизации.
- * Не знает ничего о Vue/React/Angular — только вызывает колбэки.
+ * Подписывается на core-события из контракта и уведомляет всех подписчиков.
+ * Ничего не знает о Vue/React/Angular — только поток изменений.
  *
- * @returns Функция dispose() для отписки от всех событий.
+ * @returns {@link SyncBinding}
  */
 export function sync(
 	contract: ReturnType<typeof import('./contract').createContract>,
-	options: SyncOptions,
-	callbacks: SyncCallbacks,
-): () => void {
-	const { instance, props } = options
+	instance: any,
+): SyncBinding {
+	const subscribers: Subscriber[] = []
 	const disposers: (() => void)[] = []
 
-	// 1. Подписка на core-события
+	const emit = (change: Change) => {
+		for (const fn of subscribers) fn(change)
+	}
+
+	// 1. Core-события (show, hide, created, ...)
 	for (const event of contract.events) {
-		const handler = (...args: any[]) => callbacks.onEvent(event, ...args)
+		const handler = (...args: any[]) => {
+			emit({ type: 'event', name: event, args })
+		}
 		instance.events.on(event, handler)
 		disposers.push(() => instance.events.off(event, handler))
 	}
 
-	// 2. Подписка на trigger-события свойств
+	// 2. Trigger-события свойств (change:visible → перечитать get)
 	for (const [name, prop] of Object.entries(contract.props)) {
 		for (const event of prop.triggers) {
 			const handler = (...args: any[]) => {
-				const value = args.length === 1 ? args[0] : args
-				callbacks.onPropertyChange(name, value)
+				const value = prop.get(instance)
+				emit({ type: 'property', name, value })
 			}
 			instance.events.on(event, handler)
 			disposers.push(() => instance.events.off(event, handler))
 		}
 	}
 
-	// 3. Синхронизация props → core (сеттеры)
-	for (const [name, prop] of Object.entries(contract.props)) {
-		if (!prop.set) continue
-		const handler = (value: any) => {
-			if (value !== undefined) prop.set!(instance, value)
-		}
-		// props[name] — реактивное, обёртка зависит от фреймворка.
-		// Для Vue: watch(() => props[name], handler)
-		// Для React: useEffect(() => handler(props[name]), [props[name]])
-		// Здесь оставляем ручное управление — адаптер сам вызовет set при изменении props.
+	return {
+		subscribe(fn: Subscriber) {
+			subscribers.push(fn)
+		},
+		dispose() {
+			subscribers.length = 0
+			disposers.forEach((d) => d())
+		},
 	}
-
-	// 4. Подписка на события плагинов
-	for (const Plugin of contract.plugins) {
-		// Адаптер сам подпишется на нужные события плагинов
-	}
-
-	return () => disposers.forEach((d) => d())
 }
