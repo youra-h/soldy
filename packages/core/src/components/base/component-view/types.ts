@@ -1,4 +1,4 @@
-import type { TClasses } from '@/core/common/classes'
+import type { TClasses } from './../../../common'
 import type {
 	IComponent,
 	IComponentOptions,

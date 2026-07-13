@@ -1,11 +1,8 @@
 import { componentContract } from './component.contract'
+import type { TComponentViewEvents } from '@soldy/core'
 import { TElementPlugin, TInstancePlugin, TReadyBridgePlugin } from '@soldy/plugins'
 
-/**
- * Контракт ComponentView.
- * Расширяет базовый Component свойствами tag, classes и событием ready.
- */
-export const componentViewContract = componentContract.extend({
+export const componentViewContract = componentContract.extend<TComponentViewEvents>({
 	props: {
 		tag: {
 			get: (i: any) => i.tag,
@@ -21,7 +18,7 @@ export const componentViewContract = componentContract.extend({
 	events: [
 		'change:tag',
 		'change:classes',
-		'ready',
+		'change:ready',
 	],
 
 	plugins: [TElementPlugin, TInstancePlugin, TReadyBridgePlugin],

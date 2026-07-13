@@ -1,46 +1,47 @@
+import type { TComponentEvents } from '@soldy/core'
+
 /**
  * Контракт компонента — фреймворк-независимое описание.
  * Единственный источник истины для всех адаптеров (Vue/React/Angular/Svelte/Solid).
  */
 
 /** Описание одного свойства */
-export interface PropertyContract<TInstance = any> {
+export interface PropertyContract<TEvents extends Record<string, any> = TComponentEvents> {
 	/** Чтение значения из core-инстанса */
-	get: (instance: TInstance) => any
+	get: (instance: any) => any
 	/** Запись значения в core-инстанс (опционально — если readonly) */
-	set?: (instance: TInstance, value: any) => void
+	set?: (instance: any, value: any) => void
 	/**
 	 * Имена core-событий, при которых нужно перечитать get.
-	 * Обычно одно: ['change:visible']. Для вычисляемых — несколько: ['change:rendered', 'change:visible'].
+	 * Типизировано — только ключи из TEvents.
 	 */
-	triggers: string[]
+	triggers: (keyof TEvents)[]
 }
 
-/** Контракт компонента */
-export interface ComponentContract<TInstance = any> {
-	/** Свойства, пробрасываемые в шаблон */
-	props: Record<string, PropertyContract<TInstance>>
-	/** Core-события (show, hide, created, ...) */
-	events: string[]
-	/** Плагины, необходимые компоненту */
+export interface ComponentContract<TEvents extends Record<string, any> = TComponentEvents> {
+	props: Record<string, PropertyContract<TEvents>>
+	events: (keyof TEvents)[]
 	plugins: (new (...args: any[]) => any)[]
 }
 
-/** @internal — внутренний тип с конструктором */
-type Ctor = new (...args: any[]) => any
-
-/**
- * Создаёт контракт компонента с поддержкой наследования через .extend().
- */
-export function createContract<TInstance = any>(contract: ComponentContract<TInstance>) {
+export function createContract<TEvents extends Record<string, any>>(
+	contract: ComponentContract<TEvents>,
+): ComponentContract<TEvents> & {
+	extend: <TExtEvents extends Record<string, any>>(
+		extension: Partial<ComponentContract<TExtEvents>>,
+	) => ComponentContract<TEvents & TExtEvents> & {
+		extend: (...args: any[]) => any
+	}
+} {
 	return {
 		...contract,
 
-		/** Расширяет контракт новыми props, events, plugins */
-		extend(extension: Partial<ComponentContract<TInstance>>): ReturnType<typeof createContract<TInstance>> {
-			return createContract({
+		extend<TExtEvents extends Record<string, any>>(
+			extension: Partial<ComponentContract<TExtEvents>>,
+		) {
+			return createContract<TEvents & TExtEvents>({
 				props: { ...contract.props, ...extension.props },
-				events: [...contract.events, ...(extension.events ?? [])],
+				events: [...contract.events, ...(extension.events ?? [])] as (keyof (TEvents & TExtEvents))[],
 				plugins: [...contract.plugins, ...(extension.plugins ?? [])],
 			})
 		},
