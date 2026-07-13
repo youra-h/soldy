@@ -16,7 +16,7 @@ export const componentViewSchema = componentSchema.extend<
 		},
 	},
 
-	derived: {
+	computed: {
 		classes: {
 			get: (i: any) => i.classes.list,
 			triggers: ['change:classes'],

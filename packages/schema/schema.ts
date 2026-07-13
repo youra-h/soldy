@@ -20,7 +20,7 @@ export function createSchema<
 		) {
 			return createSchema<TProps & TExtProps, TEvents & TExtEvents>({
 				props: { ...contract.props, ...extension.props } as any,
-				derived: { ...contract.derived, ...extension.derived } as any,
+				computed: { ...contract.computed, ...extension.computed } as any,
 				events: [...contract.events, ...(extension.events ?? [])] as any,
 				plugins: [...contract.plugins, ...(extension.plugins ?? [])],
 			})

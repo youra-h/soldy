@@ -38,7 +38,7 @@ export function sync(
 
 	// Собираем имена событий, которые являются триггерами свойств
 	const triggerEvents = new Set<string>()
-	const allProps = { ...contract.props, ...contract.derived }
+	const allProps = { ...contract.props, ...contract.computed }
 	for (const prop of Object.values(allProps)) {
 		for (const event of (prop as any).triggers ?? []) {
 			triggerEvents.add(event)

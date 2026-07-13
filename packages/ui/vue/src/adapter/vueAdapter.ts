@@ -42,8 +42,8 @@ export function vueAdapter(
 
 	const rootElement = useElementBinding(plugins)
 
-	// 2. Реактивные refs — props + derived
-	const allProps = { ...contract.props, ...contract.derived }
+	// 2. Реактивные refs — props + computed
+	const allProps = { ...contract.props, ...contract.computed }
 	for (const name of Object.keys(allProps)) {
 		const propDef = allProps[name]
 		let trigger: () => void
@@ -54,7 +54,7 @@ export function vueAdapter(
 		triggers[name] = trigger!
 	}
 
-	// 3. Props → Core (только для props, не derived)
+	// 3. Props → Core (только для props, не computed)
 	for (const name of Object.keys(contract.props)) {
 		const propDef = contract.props[name]
 		if (!propDef?.set) continue

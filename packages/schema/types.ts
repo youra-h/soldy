@@ -13,7 +13,7 @@ export interface IComponentSchema<
 	/** Свойства, которые можно передать извне (есть set) */
 	props: { [K in keyof TProps]?: IPropertySchema<TEvents> }
 	/** Вычисляемые read-only свойства (нет set — только get + triggers) */
-	derived?: Record<string, IPropertySchema<TEvents>>
+	computed?: Record<string, IPropertySchema<TEvents>>
 	/** Core-события */
 	events: (keyof TEvents)[]
 	/** Плагины */

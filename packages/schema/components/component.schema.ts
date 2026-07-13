@@ -23,7 +23,7 @@ export const componentSchema = createSchema<IComponentProps, TComponentEvents>({
 		},
 	},
 
-	derived: {
+	computed: {
 		present: {
 			get: (i) => i.present,
 			triggers: ['change:rendered', 'change:visible'],
