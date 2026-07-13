@@ -26,7 +26,7 @@ export interface SyncBinding {
  * @returns {@link SyncBinding}
  */
 export function sync(
-	contract: ReturnType<typeof import('./schema').createContract>,
+	contract: ReturnType<typeof import('./schema').createSchema>,
 	instance: any,
 ): SyncBinding {
 	const subscribers: Subscriber[] = []
