@@ -9,16 +9,16 @@ export const componentContract = createContract({
 		rendered: {
 			get: (i) => i.rendered,
 			set: (i, v) => { i.rendered = v },
-			changed: 'change:rendered',
+			triggers: ['change:rendered'],
 		},
 		visible: {
 			get: (i) => i.visible,
 			set: (i, v) => { i.visible = v },
-			changed: 'change:visible',
+			triggers: ['change:visible'],
 		},
 		present: {
 			get: (i) => i.present,
-			changed: 'change:present',
+			triggers: ['change:rendered', 'change:visible'],
 		},
 	},
 

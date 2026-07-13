@@ -10,11 +10,11 @@ export const componentViewContract = componentContract.extend({
 		tag: {
 			get: (i: any) => i.tag,
 			set: (i: any, v: any) => { i.tag = v },
-			changed: 'change:tag',
+			triggers: ['change:tag'],
 		},
 		classes: {
 			get: (i: any) => i.classes.list,
-			changed: 'change:classes',
+			triggers: ['change:classes'],
 		},
 	},
 

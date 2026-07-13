@@ -9,8 +9,11 @@ export interface PropertyContract<TInstance = any> {
 	get: (instance: TInstance) => any
 	/** Запись значения в core-инстанс (опционально — если readonly) */
 	set?: (instance: TInstance, value: any) => void
-	/** Имя core-события, сигнализирующего об изменении свойства */
-	changed?: string
+	/**
+	 * Имена core-событий, при которых нужно перечитать get.
+	 * Обычно одно: ['change:visible']. Для вычисляемых — несколько: ['change:rendered', 'change:visible'].
+	 */
+	triggers: string[]
 }
 
 /** Контракт компонента */
