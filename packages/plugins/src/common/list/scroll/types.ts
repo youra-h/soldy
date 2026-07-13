@@ -1,3 +1,3 @@
 export type TListScrollPluginEvents = {
-	'scroll:change': () => void
+	'change:scroll': () => void
 }

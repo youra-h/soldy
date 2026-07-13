@@ -32,7 +32,7 @@ export class TTabsViewPlugin extends TBasePlugin<TTabsViewPluginEvents> {
 			this._tabs = instance
 		})
 
-		bundle.get(TTabsActiveTabPlugin)?.events.on('active-tab:change', (offset) => {
+		bundle.get(TTabsActiveTabPlugin)?.events.on('change:active-tab', (offset) => {
 			if (!this._tabs) return
 			this._handlers[this._tabs.view]?.(offset)
 		})

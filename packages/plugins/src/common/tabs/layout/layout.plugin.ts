@@ -12,7 +12,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<TTabsLayoutPluginEvents> {
 
 	override install(bundle: IPluginBundle): void {
 		bundle.get(TElementPlugin)?.events.on('ready', ({ element }) => {
-			this._rootObserver = new ResizeObserver(() => this.events.emit('layout:change'))
+			this._rootObserver = new ResizeObserver(() => this.events.emit('change:layout'))
 			this._rootObserver.observe(element)
 		})
 
@@ -21,13 +21,13 @@ export class TTabsLayoutPlugin extends TBasePlugin<TTabsLayoutPluginEvents> {
 			this._rootObserver = null
 		})
 
-		// Подписываемся на изменения элементов табов через TElementAccumulationPlugin, чтобы отслеживать изменения их размеров и эмитить событие layout:change для обновления внешнего вида при изменении размера табов (актуально для view: line, чтобы обновлять позицию и размер underline) и при изменении количества табов (для всех видов отображения, т.к. может влиять на перенос табов на другую строку)
+		// Подписываемся на изменения элементов табов через TElementAccumulationPlugin, чтобы отслеживать изменения их размеров и эмитить событие change:layout для обновления внешнего вида при изменении размера табов (актуально для view: line, чтобы обновлять позицию и размер underline) и при изменении количества табов (для всех видов отображения, т.к. может влиять на перенос табов на другую строку)
 		const collectionPlugin = bundle.get(TElementAccumulationPlugin)
 
 		collectionPlugin?.events.on('element:added', ({ uid, element }) => {
 			this._itemObservers.get(uid)?.disconnect()
 
-			const observer = new ResizeObserver(() => this.events.emit('layout:change'))
+			const observer = new ResizeObserver(() => this.events.emit('change:layout'))
 			observer.observe(element)
 
 			this._itemObservers.set(uid, observer)
