@@ -1,4 +1,4 @@
-import { createContract } from './contract'
+import { createContract } from '../contract'
 
 /**
  * Базовый контракт Component.
