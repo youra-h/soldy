@@ -36,25 +36,31 @@ export function sync(
 		for (const fn of subscribers) fn(change)
 	}
 
-	// 1. Core-события (show, hide, created, ...)
+	// Собираем имена событий, которые являются триггерами свойств
+	const triggerEvents = new Set<string>()
+	for (const prop of Object.values(contract.props)) {
+		for (const event of prop.triggers) {
+			triggerEvents.add(event)
+		}
+	}
+
+	// Подписка на все core-события из контракта
 	for (const event of contract.events) {
 		const handler = (...args: any[]) => {
-			emit({ type: 'event', name: event, args })
+			if (triggerEvents.has(event)) {
+				// Событие-триггер: перечитываем свойства, для которых оно указано
+				for (const [name, prop] of Object.entries(contract.props)) {
+					if (prop.triggers.includes(event)) {
+						emit({ type: 'property', name, value: prop.get(instance) })
+					}
+				}
+			} else {
+				// Обычное событие (show, hide, created, ...)
+				emit({ type: 'event', name: event, args })
+			}
 		}
 		instance.events.on(event, handler)
 		disposers.push(() => instance.events.off(event, handler))
-	}
-
-	// 2. Trigger-события свойств (change:visible → перечитать get)
-	for (const [name, prop] of Object.entries(contract.props)) {
-		for (const event of prop.triggers) {
-			const handler = (...args: any[]) => {
-				const value = prop.get(instance)
-				emit({ type: 'property', name, value })
-			}
-			instance.events.on(event, handler)
-			disposers.push(() => instance.events.off(event, handler))
-		}
 	}
 
 	return {

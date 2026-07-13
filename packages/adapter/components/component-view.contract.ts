@@ -18,7 +18,11 @@ export const componentViewContract = componentContract.extend({
 		},
 	},
 
-	events: ['ready'],
+	events: [
+		'change:tag',
+		'change:classes',
+		'ready',
+	],
 
 	plugins: [TElementPlugin, TInstancePlugin, TReadyBridgePlugin],
 })
