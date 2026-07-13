@@ -10,7 +10,7 @@ import {
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
-import { track } from '@soldy/adapter'
+import { track } from '@soldy/schema'
 
 export const emitsButton: TEmits = [
 	...emitsTextable,

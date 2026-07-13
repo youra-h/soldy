@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/adapter'
+import { track } from '@soldy/schema'
 import { useSyncProps } from '../../composables/useSyncProps'
 import {
 	type ITabs,

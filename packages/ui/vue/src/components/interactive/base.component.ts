@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/adapter'
+import { track } from '@soldy/schema'
 import { type IInteractive, type IInteractiveProps, TInteractive } from '@soldy/core'
 import {
 	BaseComponentView,

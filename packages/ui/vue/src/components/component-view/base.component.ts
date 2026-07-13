@@ -11,7 +11,7 @@ import {
 	type IComponentState,
 } from '../component'
 import { useInheritProps } from '../../composables/useInheritProps'
-import { track } from '@soldy/adapter'
+import { track } from '@soldy/schema'
 
 export const emitsComponentView: TEmits = [...emitsComponent, 'ready'] as const
 
