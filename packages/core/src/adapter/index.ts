@@ -1,1 +1,7 @@
+export { createContract } from './contract'
+export type { ComponentContract, PropertyContract } from './contract'
+export { componentContract } from './component.contract'
+export { componentViewContract } from './component-view.contract'
+export { sync } from './sync'
+export type { SyncCallbacks, SyncOptions } from './sync'
 export { track } from './track'
