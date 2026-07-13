@@ -2,7 +2,7 @@ import { type Ref, customRef, watch, onUnmounted } from 'vue'
 import type { SetupContext } from 'vue'
 import type { IPluginBundle } from '@soldy/plugins'
 import { TPluginBundle } from '@soldy/plugins'
-import { sync } from '@soldy/core/adapter'
+import { sync } from '@soldy/adapter'
 import { useBundle } from '../composables/useBundle'
 import { useElementBinding } from '../composables/useElementBinding'
 
@@ -13,7 +13,7 @@ export interface VueAdapterResult {
 }
 
 export function vueAdapter(
-	contract: ReturnType<typeof import('@soldy/core/adapter').createContract>,
+	contract: ReturnType<typeof import('@soldy/adapter').createContract>,
 	instance: any,
 	props: Record<string, any>,
 	emit: SetupContext['emit'],
