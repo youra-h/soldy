@@ -19,3 +19,16 @@ export interface IComponentSchema<
 	/** Плагины */
 	plugins: (new (...args: any[]) => any)[]
 }
+
+/**
+ * Полная схема компонента — IComponentSchema + цепной extend.
+ * Это тип, который возвращает {@link createSchema}.
+ */
+export interface ISchema<
+	TProps extends Record<string, any> = IComponentProps,
+	TEvents extends Record<string, any> = TComponentEvents,
+> extends IComponentSchema<TProps, TEvents> {
+	extend: <TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
+		extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,
+	) => ISchema<TProps & TExtProps, TEvents & TExtEvents>
+}

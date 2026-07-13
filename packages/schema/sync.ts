@@ -1,3 +1,6 @@
+import type { ISchema } from './types'
+import type { IComponent } from '@soldy/core'
+
 /**
  * Единица изменения — свойство или событие.
  * Универсальный интерфейс для Vue emit, React setState, DevTools, логгера.
@@ -25,9 +28,9 @@ export interface SyncBinding {
  *
  * @returns {@link SyncBinding}
  */
-export function sync(
-	contract: ReturnType<typeof import('./schema').createSchema>,
-	instance: any,
+export function sync<TProps extends Record<string, any>, TEvents extends Record<string, any>>(
+	contract: ISchema<TProps, TEvents>,
+	instance: IComponent<any, TEvents>,
 ): SyncBinding {
 	const subscribers: Subscriber[] = []
 	const disposers: (() => void)[] = []

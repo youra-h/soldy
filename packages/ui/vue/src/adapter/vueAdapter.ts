@@ -1,6 +1,8 @@
 import { type Ref, customRef, watch, onUnmounted } from 'vue'
 import type { SetupContext } from 'vue'
+import type { IComponent } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
+import type { ISchema } from '@soldy/schema'
 import { TPluginBundle } from '@soldy/plugins'
 import { sync } from '@soldy/schema'
 import { useBundle } from '../composables/useBundle'
@@ -13,8 +15,8 @@ export interface VueAdapterResult {
 }
 
 export function vueAdapter(
-	contract: ReturnType<typeof import('@soldy/schema').createContract>,
-	instance: any,
+	contract: ISchema<any, any>,
+	instance: IComponent<any, any>,
 	props: Record<string, any>,
 	emit: SetupContext['emit'],
 ): VueAdapterResult {
