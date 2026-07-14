@@ -153,6 +153,7 @@ class SyncBindingImpl<
 
 			for (const event of prop.triggers) {
 				if (!map.has(event)) map.set(event, [])
+
 				map.get(event)!.push(propName)
 			}
 		}
