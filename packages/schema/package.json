@@ -7,8 +7,14 @@
   "exports": {
     ".": "./index.ts"
   },
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "@soldy/core": "*",
     "@soldy/plugins": "*"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
   }
 }

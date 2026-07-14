@@ -17,6 +17,7 @@
     "dev:svelte": "npm run dev --workspace=@soldy/ui-svelte",
     "dev:solid": "npm run dev --workspace=@soldy/ui-solid",
     "test:core": "npm run test --workspace=@soldy/core",
+    "test:schema": "npm run test --workspace=@soldy/schema",
     "test:plugins": "npm run test --workspace=@soldy/plugins",
     "test:vue": "npm run test --workspace=@soldy/ui-vue",
     "test:react": "npm run test --workspace=@soldy/ui-react",

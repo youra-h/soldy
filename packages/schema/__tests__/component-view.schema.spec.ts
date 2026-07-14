@@ -1,0 +1,107 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { TComponentView } from '@soldy/core'
+import { sync, componentViewSchema } from '@soldy/schema'
+import type { ISyncBinding, TEmit } from '@soldy/schema'
+
+describe('sync + componentViewSchema', () => {
+	let binding: ISyncBinding<any, any>
+
+	afterEach(() => {
+		binding?.dispose()
+	})
+
+	// ── Наследованные свойства ────────────────────────────
+
+	it('эмитит inherited property rendered', () => {
+		const component = new TComponentView({ rendered: true })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.rendered = false
+
+		const emits = fn.mock.calls.map((c: any) => c[0])
+		const renderedEmit = emits.find((e: TEmit) => e.name === 'rendered')
+		expect(renderedEmit).toBeDefined()
+		expect(renderedEmit!.value).toBe(false)
+	})
+
+	it('эмитит inherited computed present', () => {
+		const component = new TComponentView({ rendered: true, visible: true })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.visible = false
+
+		const emits = fn.mock.calls.map((c: any) => c[0])
+		const presentEmit = emits.find((e: TEmit) => e.name === 'present')
+		expect(presentEmit).toBeDefined()
+		expect(presentEmit!.value).toBe(false)
+	})
+
+	// ── Собственные свойства ──────────────────────────────
+
+	it('эмитит tag при изменении', () => {
+		const component = new TComponentView({ tag: 'div' })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.tag = 'span'
+
+		const emit = fn.mock.calls[0]![0] as TEmit
+		expect(emit.type).toBe('property')
+		expect(emit.name).toBe('tag')
+		expect(emit.value).toBe('span')
+	})
+
+	it('эмитит computed classes при изменении', () => {
+		const component = new TComponentView({ tag: 'div' })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.classes.add('foo')
+
+		const emits = fn.mock.calls.map((c: any) => c[0])
+		const classesEmit = emits.find((e: TEmit) => e.name === 'classes')
+		expect(classesEmit).toBeDefined()
+	})
+
+	// ── Собственные события ───────────────────────────────
+
+	it('эмитит change:ready как событие', () => {
+		const component = new TComponentView({ tag: 'div' })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.ready = true
+
+		const emits = fn.mock.calls.map((c: any) => c[0])
+		const readyEmit = emits.find((e: TEmit) => e.name === 'change:ready')
+		expect(readyEmit).toBeDefined()
+		expect(readyEmit!.type).toBe('event')
+	})
+
+	// ── Наследованные события ─────────────────────────────
+
+	it('эмитит inherited show как событие', () => {
+		const component = new TComponentView({ tag: 'div' })
+		binding = sync(componentViewSchema, component)
+
+		const fn = vi.fn()
+		binding.subscribe(fn)
+
+		component.show()
+
+		const emitNames = fn.mock.calls.map((c: any) => c[0].name)
+		expect(emitNames).toContain('show')
+	})
+})
