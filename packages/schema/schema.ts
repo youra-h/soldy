@@ -4,19 +4,19 @@ export function createSchema<
 	TProps extends Record<string, any>,
 	TEvents extends Record<string, any>,
 >(
-	contract: IComponentSchema<TProps, TEvents>,
+	schema: IComponentSchema<TProps, TEvents>,
 ): ISchema<TProps, TEvents> {
 	return {
-		...contract,
+		...schema,
 
 		extend<TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
 			extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,
 		) {
 			return createSchema<TProps & TExtProps, TEvents & TExtEvents>({
-				props: { ...contract.props, ...extension.props } as any,
-				computed: { ...contract.computed, ...extension.computed } as any,
-				events: [...contract.events, ...(extension.events ?? [])] as any,
-				plugins: [...contract.plugins, ...(extension.plugins ?? [])],
+				props: { ...schema.props, ...extension.props } as any,
+				computed: { ...schema.computed, ...extension.computed } as any,
+				events: [...schema.events, ...(extension.events ?? [])] as any,
+				plugins: [...schema.plugins, ...(extension.plugins ?? [])],
 			})
 		},
 	}

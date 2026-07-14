@@ -3,7 +3,7 @@ import type { TComponentEvents, IComponentProps } from '@soldy/core'
 export interface IPropertySchema<TEvents extends Record<string, any> = TComponentEvents> {
 	get: (instance: any) => any
 	set?: (instance: any, value: any) => void
-	triggers: (keyof TEvents)[]
+	triggers: (keyof TEvents & string)[]
 }
 
 export interface IComponentSchema<
@@ -15,7 +15,7 @@ export interface IComponentSchema<
 	/** Вычисляемые read-only свойства (нет set — только get + triggers) */
 	computed?: Record<string, IPropertySchema<TEvents>>
 	/** Core-события */
-	events: (keyof TEvents)[]
+	events: (keyof TEvents & string)[]
 	/** Плагины */
 	plugins: (new (...args: any[]) => any)[]
 }
@@ -31,4 +31,42 @@ export interface ISchema<
 	extend: <TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
 		extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,
 	) => ISchema<TProps & TExtProps, TEvents & TExtEvents>
+}
+
+// ── Типы эмитов (sync) ───────────────────────────────────────
+
+export type TEmitProperty<TProps extends Record<string, any>> = {
+	[K in keyof TProps]: { type: 'property'; name: K; value: TProps[K] }
+}[keyof TProps]
+
+export type TEmitEvent<TEvents extends Record<string, any>> = {
+	[K in keyof TEvents]: {
+		type: 'event'
+		name: K
+		args: TEvents[K] extends (...args: infer A) => any ? A : never
+	}
+}[keyof TEvents]
+
+/**
+ * Уведомление о свойстве или событии.
+ * Discriminated union — адаптер различает по `type`.
+ */
+export type TEmit<
+	TProps extends Record<string, any> = Record<string, any>,
+	TEvents extends Record<string, any> = Record<string, any>,
+> = TEmitProperty<TProps> | TEmitEvent<TEvents>
+
+export type TSubscriber<
+	TProps extends Record<string, any> = Record<string, any>,
+	TEvents extends Record<string, any> = Record<string, any>,
+> = (emit: TEmit<TProps, TEvents>) => void
+
+export interface ISyncBinding<
+	TProps extends Record<string, any> = Record<string, any>,
+	TEvents extends Record<string, any> = Record<string, any>,
+> {
+	/** Подписаться на изменения. Возвращает функцию отписки. */
+	subscribe: (fn: TSubscriber<TProps, TEvents>) => () => void
+	/** Отписаться от всех core-событий и очистить подписчиков. */
+	dispose: () => void
 }

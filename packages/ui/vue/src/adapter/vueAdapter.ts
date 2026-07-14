@@ -15,7 +15,7 @@ export interface VueAdapterResult {
 }
 
 export function vueAdapter(
-	contract: ISchema<any, any>,
+	schema: ISchema<any, any>,
 	instance: IComponent<any, any>,
 	props: Record<string, any>,
 	emit: SetupContext['emit'],
@@ -27,7 +27,7 @@ export function vueAdapter(
 	const plugins = useBundle(
 		() => {
 			const bundle = new TPluginBundle()
-			for (const Plugin of contract.plugins) {
+			for (const Plugin of schema.plugins) {
 				bundle.use(Plugin)
 			}
 			return bundle
@@ -35,7 +35,7 @@ export function vueAdapter(
 		props?.plugins,
 	)
 
-	for (const Plugin of contract.plugins) {
+	for (const Plugin of schema.plugins) {
 		const plugin = plugins.get(Plugin)
 		if (plugin && 'instance' in plugin) {
 			plugin.instance = instance
@@ -45,7 +45,7 @@ export function vueAdapter(
 	const rootElement = useElementBinding(plugins)
 
 	// 2. Реактивные refs — props + computed
-	const allProps = { ...contract.props, ...contract.computed }
+	const allProps = { ...schema.props, ...schema.computed }
 	for (const name of Object.keys(allProps)) {
 		const propDef = allProps[name]
 		let trigger: () => void
@@ -57,8 +57,8 @@ export function vueAdapter(
 	}
 
 	// 3. Props → Core (только для props, не computed)
-	for (const name of Object.keys(contract.props)) {
-		const propDef = contract.props[name]
+	for (const name of Object.keys(schema.props)) {
+		const propDef = schema.props[name]
 		if (!propDef?.set) continue
 		watch(() => (props as any)[name], (value: any) => {
 			if (value !== undefined) propDef.set!(instance, value)
@@ -66,7 +66,7 @@ export function vueAdapter(
 	}
 
 	// 4. Синхронизация через subscribe
-	const binding = sync(contract, instance)
+	const binding = sync(schema, instance)
 
 	binding.subscribe((change) => {
 		if (change.type === 'property') {

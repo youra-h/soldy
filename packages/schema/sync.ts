@@ -1,77 +1,178 @@
-import type { ISchema } from './types'
+import type {
+	ISchema,
+	IPropertySchema,
+	TEmit,
+	TEmitProperty,
+	TEmitEvent,
+	TSubscriber,
+	ISyncBinding,
+} from './types'
 import type { IComponent } from '@soldy/core'
 
-/**
- * Единица изменения — свойство или событие.
- * Универсальный интерфейс для Vue emit, React setState, DevTools, логгера.
- */
-export type Change =
-	| { type: 'property'; name: string; value: any }
-	| { type: 'event'; name: string; args: any[] }
-
-type Subscriber = (change: Change) => void
+// ── Реализация ───────────────────────────────────────────────
 
 /**
- * Результат синхронизации.
- */
-export interface SyncBinding {
-	/** Подписаться на изменения. Можно вызывать многократно — все подписчики получат уведомление. */
-	subscribe: (fn: Subscriber) => void
-	/** Отписаться от всех core-событий и очистить подписчиков. */
-	dispose: () => void
-}
-
-/**
- * Универсальная функция синхронизации.
- * Подписывается на core-события из контракта и уведомляет всех подписчиков.
- * Ничего не знает о Vue/React/Angular — только поток изменений.
+ * Внутренняя реализация {@link ISyncBinding}.
  *
- * @returns {@link SyncBinding}
+ * Подписывается на core-события из схемы и нотифицирует
+ * подписчиков через {@link TEmit}.
+ *
+ * @typeParam TProps — тип входных свойств компонента
+ * @typeParam TEvents — тип событий компонента
  */
-export function sync<TProps extends Record<string, any>, TEvents extends Record<string, any>>(
-	contract: ISchema<TProps, TEvents>,
-	instance: IComponent<any, TEvents>,
-): SyncBinding {
-	const subscribers: Subscriber[] = []
-	const disposers: (() => void)[] = []
+class SyncBindingImpl<
+	TProps extends Record<string, any>,
+	TEvents extends Record<string, any>,
+> implements ISyncBinding<TProps, TEvents> {
+	/** Подписчики на изменения свойств и событий. */
+	private subscribers = new Set<TSubscriber<TProps, TEvents>>()
 
-	const emit = (change: Change) => {
-		for (const fn of subscribers) fn(change)
-	}
+	/** Функции отписки от core-событий. */
+	private disposers: (() => void)[] = []
 
-	// Собираем имена событий, которые являются триггерами свойств
-	const triggerEvents = new Set<string>()
-	const allProps = { ...contract.props, ...contract.computed }
-	for (const prop of Object.values(allProps)) {
-		for (const event of (prop as any).triggers ?? []) {
-			triggerEvents.add(event)
+	/** Объединённый словарь props + computed из схемы. */
+	private props: Record<string, IPropertySchema<TEvents> | undefined>
+
+	/** Core-компонент, с которым синхронизируемся. */
+	private instance!: IComponent<any, TEvents>
+
+	/**
+	 * @param schema — схема компонента
+	 * @param instance — core-экземпляр компонента
+	 */
+	constructor(schema: ISchema<TProps, TEvents>, instance: IComponent<any, TEvents>) {
+		this.instance = instance
+		this.props = {
+			...schema.props,
+			...schema.computed,
+		}
+
+		const eventToProps = this.#buildEventToProps()
+
+		for (const event of schema.events) {
+			const affectedProps = eventToProps.get(event)
+
+			const handler = affectedProps?.length
+				? this.#propertyHandler(affectedProps)
+				: this.#eventHandler(event)
+
+			this.#listen(event, handler)
+			this.disposers.push(() => this.#unlisten(event, handler))
 		}
 	}
 
-	// Подписка на все core-события из контракта
-	for (const event of contract.events) {
-		const handler = (...args: any[]) => {
-			if (triggerEvents.has(event)) {
-				for (const [name, prop] of Object.entries(allProps)) {
-					if ((prop as any).triggers?.includes(event)) {
-						emit({ type: 'property', name, value: (prop as any).get(instance) })
-					}
-				}
-			} else {
-				emit({ type: 'event', name: event, args })
+	/** @inheritdoc */
+	subscribe(fn: TSubscriber<TProps, TEvents>): () => void {
+		this.subscribers.add(fn)
+		return () => this.subscribers.delete(fn)
+	}
+
+	/** @inheritdoc */
+	dispose(): void {
+		this.subscribers.clear()
+		this.disposers.forEach((d) => d())
+		this.disposers = []
+	}
+
+	/**
+	 * Подписаться на core-событие.
+	 *
+	 * @param event  — имя события
+	 * @param handler — обработчик
+	 */
+	#listen(event: string, handler: (...args: any[]) => void): void {
+		this.instance.events.on(
+			event as keyof TEvents & string,
+			handler as TEvents[keyof TEvents],
+		)
+	}
+
+	/**
+	 * Отписаться от core-события.
+	 *
+	 * @param event  — имя события
+	 * @param handler — обработчик
+	 */
+	#unlisten(event: string, handler: (...args: any[]) => void): void {
+		this.instance.events.off(
+			event as keyof TEvents & string,
+			handler as TEvents[keyof TEvents],
+		)
+	}
+
+	/**
+	 * Создаёт обработчик trigger-события:
+	 * при срабатывании эмитит изменения всех затронутых свойств.
+	 *
+	 * @param affectedProps — имена свойств, которые нужно перечитать
+	 */
+	#propertyHandler(affectedProps: string[]): () => void {
+		return () => {
+			for (const name of affectedProps) {
+				const prop = this.props[name]
+				if (!prop) continue
+
+				const emit: TEmit<TProps, TEvents> = {
+					type: 'property',
+					name,
+					value: prop.get(this.instance),
+				} as TEmitProperty<TProps>
+
+				for (const fn of this.subscribers) fn(emit)
 			}
 		}
-		instance.events.on(event, handler)
-		disposers.push(() => instance.events.off(event, handler))
 	}
 
-	return {
-		subscribe(fn: Subscriber) {
-			subscribers.push(fn)
-		},
-		dispose() {
-			subscribers.length = 0
-			disposers.forEach((d) => d())
-		},
+	/**
+	 * Создаёт обработчик обычного (не trigger) события:
+	 * пробрасывает событие как есть подписчикам.
+	 *
+	 * @param event — имя события
+	 */
+	#eventHandler(event: string): (...args: any[]) => void {
+		return (...args: any[]) => {
+			const emit: TEmit<TProps, TEvents> = {
+				type: 'event',
+				name: event,
+				args,
+			} as TEmitEvent<TEvents>
+
+			for (const fn of this.subscribers) fn(emit)
+		}
 	}
+
+	/**
+	 * Строит карту `event → [propName, ...]` —
+	 * какие свойства нужно перечитать при срабатывании каждого события.
+	 */
+	#buildEventToProps(): Map<string, string[]> {
+		const map = new Map<string, string[]>()
+
+		for (const [propName, prop] of Object.entries(this.props)) {
+			if (!prop?.triggers) continue
+
+			for (const event of prop.triggers) {
+				if (!map.has(event)) map.set(event, [])
+				map.get(event)!.push(propName)
+			}
+		}
+
+		return map
+	}
+}
+
+// ── Фабрика ──────────────────────────────────────────────────
+
+/**
+ * Создаёт {@link ISyncBinding} для синхронизации core-компонента с адаптером фреймворка.
+ *
+ * @param schema   — схема компонента
+ * @param instance — core-экземпляр компонента
+ * @returns привязку, через которую адаптер получает изменения
+ */
+export function sync<TProps extends Record<string, any>, TEvents extends Record<string, any>>(
+	schema: ISchema<TProps, TEvents>,
+	instance: IComponent<any, TEvents>,
+): ISyncBinding<TProps, TEvents> {
+	return new SyncBindingImpl(schema, instance)
 }
