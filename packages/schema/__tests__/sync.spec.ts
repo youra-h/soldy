@@ -62,12 +62,12 @@ describe('sync + componentSchema', () => {
 
 		component.rendered = false
 
-		expect(fn).toHaveBeenCalledTimes(1)
-
-		const emit = fn.mock.calls[0]![0] as TEmit
-		expect(emit.type).toBe('property')
-		expect(emit.name).toBe('rendered')
-		expect(emit.value).toBe(false)
+		// change:rendered → rendered + present (property)
+		// change:present → event
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const renderedEmit = emits.find((e) => e.type === 'property' && e.name === 'rendered')
+		expect(renderedEmit).toBeDefined()
+		expect(renderedEmit!.value).toBe(false)
 	})
 
 	it('эмитит property при изменении visible', () => {
@@ -79,12 +79,11 @@ describe('sync + componentSchema', () => {
 
 		component.visible = false
 
-		expect(fn).toHaveBeenCalledTimes(1)
-
-		const emit = fn.mock.calls[0]![0] as TEmit
-		expect(emit.type).toBe('property')
-		expect(emit.name).toBe('visible')
-		expect(emit.value).toBe(false)
+		// hide:before → change:visible → visible+present → change:present → hide:after
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const visibleEmit = emits.find((e) => e.type === 'property' && e.name === 'visible')
+		expect(visibleEmit).toBeDefined()
+		expect(visibleEmit!.value).toBe(false)
 	})
 
 	it('эмитит computed present при изменении rendered', () => {
@@ -119,8 +118,8 @@ describe('sync + componentSchema', () => {
 
 	// ── Event emits ────────────────────────────────────────
 
-	it('эмитит show как событие', () => {
-		const component = new TComponent({ rendered: true })
+	it('show:before и show:after эмитятся при show()', () => {
+		const component = new TComponent({ rendered: true, visible: false })
 		binding = sync(componentSchema, component)
 
 		const fn = vi.fn()
@@ -128,9 +127,10 @@ describe('sync + componentSchema', () => {
 
 		component.show()
 
-		const emit = fn.mock.calls[0]![0] as TEmit
-		expect(emit.type).toBe('event')
-		expect(emit.name).toBe('show')
+		const emitNames = fn.mock.calls.map((c: any) => c[0].name)
+		expect(emitNames).toContain('show:before')
+		expect(emitNames).toContain('show')
+		expect(emitNames).toContain('show:after')
 	})
 
 	it('эмитит hide:after как событие', () => {
@@ -148,7 +148,7 @@ describe('sync + componentSchema', () => {
 
 	// ── Множественные подписчики ──────────────────────────
 
-	it('уведомляет всех подписчиков', () => {
+	it('уведомляет всех подписчиков одинаковое количество раз', () => {
 		const component = new TComponent({ rendered: true })
 		binding = sync(componentSchema, component)
 
@@ -162,8 +162,9 @@ describe('sync + componentSchema', () => {
 
 		component.rendered = false
 
-		expect(fn1).toHaveBeenCalledTimes(1)
-		expect(fn2).toHaveBeenCalledTimes(1)
-		expect(fn3).toHaveBeenCalledTimes(1)
+		// Все получают одинаковое количество вызовов
+		expect(fn1.mock.calls.length).toBeGreaterThan(0)
+		expect(fn1.mock.calls.length).toBe(fn2.mock.calls.length)
+		expect(fn2.mock.calls.length).toBe(fn3.mock.calls.length)
 	})
 })

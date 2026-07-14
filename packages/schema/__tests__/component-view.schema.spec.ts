@@ -93,8 +93,8 @@ describe('sync + componentViewSchema', () => {
 
 	// ── Наследованные события ─────────────────────────────
 
-	it('эмитит inherited show как событие', () => {
-		const component = new TComponentView({ tag: 'div' })
+	it('show:before и show:after эмитятся при show()', () => {
+		const component = new TComponentView({ tag: 'div', rendered: true, visible: false })
 		binding = sync(componentViewSchema, component)
 
 		const fn = vi.fn()
@@ -103,6 +103,8 @@ describe('sync + componentViewSchema', () => {
 		component.show()
 
 		const emitNames = fn.mock.calls.map((c: any) => c[0].name)
+		expect(emitNames).toContain('show:before')
 		expect(emitNames).toContain('show')
+		expect(emitNames).toContain('show:after')
 	})
 })
