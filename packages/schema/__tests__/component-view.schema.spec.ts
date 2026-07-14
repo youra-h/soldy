@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { TComponentView } from '@soldy/core'
 import { sync } from './../sync'
 import { componentViewSchema } from './../components'
-import type { ISyncBinding, TEmit } from './../types'
+import type { ISyncBinding, TEmit, TEmitProperty } from './../types'
 
 describe('sync + componentViewSchema', () => {
 	let binding: ISyncBinding<any, any>
@@ -22,8 +22,10 @@ describe('sync + componentViewSchema', () => {
 
 		component.rendered = false
 
-		const emits = fn.mock.calls.map((c: any) => c[0])
-		const renderedEmit = emits.find((e: TEmit) => e.name === 'rendered')
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const renderedEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'rendered',
+		)
 		expect(renderedEmit).toBeDefined()
 		expect(renderedEmit!.value).toBe(false)
 	})
@@ -37,8 +39,10 @@ describe('sync + componentViewSchema', () => {
 
 		component.visible = false
 
-		const emits = fn.mock.calls.map((c: any) => c[0])
-		const presentEmit = emits.find((e: TEmit) => e.name === 'present')
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const presentEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'present',
+		)
 		expect(presentEmit).toBeDefined()
 		expect(presentEmit!.value).toBe(false)
 	})
@@ -54,10 +58,11 @@ describe('sync + componentViewSchema', () => {
 
 		component.tag = 'span'
 
-		const emit = fn.mock.calls[0]![0] as TEmit
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const emit = emits[0]!
 		expect(emit.type).toBe('property')
 		expect(emit.name).toBe('tag')
-		expect(emit.value).toBe('span')
+		expect((emit as TEmitProperty<any>).value).toBe('span')
 	})
 
 	it('эмитит computed classes при изменении', () => {

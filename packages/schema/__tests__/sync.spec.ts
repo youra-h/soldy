@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { TComponent } from '@soldy/core'
 import { sync } from './../sync'
 import { componentSchema } from './../components'
-import type { ISyncBinding, TEmit } from './../types'
+import type { ISyncBinding, TEmit, TEmitProperty } from './../types'
 
 describe('sync + componentSchema', () => {
 	let binding: ISyncBinding<any, any>
@@ -65,7 +65,9 @@ describe('sync + componentSchema', () => {
 		// change:rendered → rendered + present (property)
 		// change:present → event
 		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
-		const renderedEmit = emits.find((e) => e.type === 'property' && e.name === 'rendered')
+		const renderedEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'rendered',
+		)
 		expect(renderedEmit).toBeDefined()
 		expect(renderedEmit!.value).toBe(false)
 	})
@@ -81,7 +83,9 @@ describe('sync + componentSchema', () => {
 
 		// hide:before → change:visible → visible+present → change:present → hide:after
 		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
-		const visibleEmit = emits.find((e) => e.type === 'property' && e.name === 'visible')
+		const visibleEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'visible',
+		)
 		expect(visibleEmit).toBeDefined()
 		expect(visibleEmit!.value).toBe(false)
 	})
@@ -95,8 +99,10 @@ describe('sync + componentSchema', () => {
 
 		component.rendered = false
 
-		const emits = fn.mock.calls.map((c: any) => c[0])
-		const presentEmit = emits.find((e: TEmit) => e.name === 'present')
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const presentEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'present',
+		)
 		expect(presentEmit).toBeDefined()
 		expect(presentEmit!.value).toBe(false)
 	})
@@ -110,8 +116,10 @@ describe('sync + componentSchema', () => {
 
 		component.visible = false
 
-		const emits = fn.mock.calls.map((c: any) => c[0])
-		const presentEmit = emits.find((e: TEmit) => e.name === 'present')
+		const emits = fn.mock.calls.map((c: any) => c[0]) as TEmit[]
+		const presentEmit = emits.find(
+			(e): e is TEmitProperty<any> => e.type === 'property' && e.name === 'present',
+		)
 		expect(presentEmit).toBeDefined()
 		expect(presentEmit!.value).toBe(false)
 	})
