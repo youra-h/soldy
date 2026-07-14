@@ -81,7 +81,7 @@ describe('sync + componentViewSchema', () => {
 
 	// ── Собственные события ───────────────────────────────
 
-	it('эмитит change:ready как событие', () => {
+	it('эмитит ready как событие', () => {
 		const component = new TComponentView({ tag: 'div' })
 		binding = sync(componentViewSchema, component)
 
@@ -91,7 +91,7 @@ describe('sync + componentViewSchema', () => {
 		component.ready = true
 
 		const emits = fn.mock.calls.map((c: any) => c[0])
-		const readyEmit = emits.find((e: TEmit) => e.name === 'change:ready')
+		const readyEmit = emits.find((e: TEmit) => e.name === 'ready')
 		expect(readyEmit).toBeDefined()
 		expect(readyEmit!.type).toBe('event')
 	})

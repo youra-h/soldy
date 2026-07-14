@@ -23,7 +23,7 @@ export const componentViewSchema = componentSchema.extend<
 		},
 	},
 
-	events: ['change:tag', 'change:classes', 'change:ready'],
+	events: ['change:tag', 'change:classes', 'ready'],
 
 	plugins: [TElementPlugin, TInstancePlugin, TReadyBridgePlugin],
 })

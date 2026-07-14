@@ -76,7 +76,7 @@ export default class TComponentView<
 		if (this._ready === value) return
 
 		this._ready = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:ready', value)
+		;(this.events as TEvented<TComponentViewEvents>).emit('ready', value)
 	}
 
 	getProps(): TProps {

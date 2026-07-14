@@ -14,8 +14,8 @@ export type TComponentViewEvents = TComponentEvents & {
 	'change:tag': (value: string | object) => void
 	/** change:classes (без baseClass) */
 	'change:classes': (value: string[]) => void
-	/** change:ready — срабатывает когда компонент монтируется/демонтируется из DOM */
-	'change:ready': (value: boolean) => void
+	/** ready — срабатывает когда компонент монтируется/демонтируется из DOM */
+	'ready': (value: boolean) => void
 }
 
 export interface IComponentViewProps extends IComponentProps {
