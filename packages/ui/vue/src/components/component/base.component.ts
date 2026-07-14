@@ -12,6 +12,7 @@ export const emitsComponent: TEmits = [
 	'visible',
 	'update:visible',
 	'change:visible',
+	'change:present',
 	'hide',
 	'show',
 	'show:before',
