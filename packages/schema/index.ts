@@ -1,6 +1,5 @@
 export { createSchema } from './schema'
-export { componentSchema } from './components/component.schema'
-export { componentViewSchema } from './components/component-view.schema'
 export { sync } from './sync'
 export { track } from './track'
 export * from './types'
+export * from './components'

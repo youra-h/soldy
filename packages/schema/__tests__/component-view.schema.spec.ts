@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { TComponentView } from '@soldy/core'
-import { sync, componentViewSchema } from '@soldy/schema'
-import type { ISyncBinding, TEmit } from '@soldy/schema'
+import { sync } from './../sync'
+import { componentViewSchema } from './../components'
+import type { ISyncBinding, TEmit } from './../types'
 
 describe('sync + componentViewSchema', () => {
 	let binding: ISyncBinding<any, any>
