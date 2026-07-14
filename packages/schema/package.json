@@ -13,8 +13,5 @@
   "dependencies": {
     "@soldy/core": "*",
     "@soldy/plugins": "*"
-  },
-  "devDependencies": {
-    "vitest": "^3.0.0"
   }
 }
