@@ -48,6 +48,7 @@ export function createAdapter(
 	// 2. Props → Core
 	for (const [name, propDef] of Object.entries(schema.props)) {
 		if (!propDef?.set) continue
+		
 		platform.watchProp(name, (value: any) => {
 			if (value !== undefined) propDef.set!(instance, value)
 		})
@@ -58,8 +59,7 @@ export function createAdapter(
 
 	binding.subscribe((emit) => {
 		if (emit.type === 'property') {
-			platform.emit(`change:${emit.name}`, emit.value)
-			platform.emit(`update:${emit.name}`, emit.value)
+			platform.emit(emit.name, emit.value)
 		} else {
 			platform.emit(emit.name as string, ...emit.args)
 		}

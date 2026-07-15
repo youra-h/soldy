@@ -43,7 +43,8 @@ export interface IComponentState {
 	present: Ref<boolean>
 }
 
-export function syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
+/** @deprecated Использовать setup.component.ts с vueAdapter */
+export function _syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
 	const { props, instance, emit } = options
 
 	// Пробрасываем события core-инстанса наружу (Vue events).

@@ -46,7 +46,8 @@ export interface IComponentViewState extends IComponentState {
 	classes: Ref<string[]>
 }
 
-export function syncComponentView(
+/** @deprecated Использовать setup.component.ts с vueAdapter */
+export function _syncComponentView(
 	options: ISyncComponentOptions<IComponentViewProps, IComponentView>,
 ): IComponentViewState {
 	const syncProps = syncComponent(options)

@@ -72,10 +72,14 @@ export function vueAdapter(
 		triggers[name] = trigger!
 	}
 
-	// 4. Обновление refs при изменениях из core
+	// 4. Обновление refs + Vue-события при изменениях из core
 	adapter.binding.subscribe((change) => {
 		if (change.type === 'property') {
 			triggers[change.name]?.()
+			emit(`change:${change.name}`, change.value)
+			emit(`update:${change.name}`, change.value)
+		} else {
+			emit(change.name as string, ...change.args)
 		}
 	})
 
