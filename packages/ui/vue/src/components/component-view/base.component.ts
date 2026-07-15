@@ -23,15 +23,7 @@ export const propsComponentView: TProps = {
 	tag: {
 		type: [Object, String] as PropType<IComponentViewProps['tag']>,
 		default: TComponentView.defaultValues.tag,
-	},
-	rendered: {
-		type: Boolean as PropType<IComponentViewProps['rendered']>,
-		default: TComponentView.defaultValues.rendered,
-	},
-	visible: {
-		type: Boolean as PropType<IComponentViewProps['visible']>,
-		default: TComponentView.defaultValues.visible,
-	},
+	}
 }
 
 export default {

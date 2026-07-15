@@ -1,6 +1,6 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponent, type IComponentProps } from '@soldy/core'
+import { TComponent, type IComponent, type IComponentProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { track } from '@soldy/schema'
 
@@ -24,6 +24,14 @@ export const emitsComponent: TEmits = [
 export const propsComponent: TProps = {
 	ctrl: {
 		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
+	},
+	rendered: {
+		type: Boolean as PropType<IComponentProps['rendered']>,
+		default: TComponent.defaultValues.rendered,
+	},
+	visible: {
+		type: Boolean as PropType<IComponentProps['visible']>,
+		default: TComponent.defaultValues.visible,
 	},
 }
 
