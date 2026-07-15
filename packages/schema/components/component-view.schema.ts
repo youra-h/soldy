@@ -26,7 +26,7 @@ export const componentViewSchema = componentSchema.extend<
 		},
 	},
 
-	events: ['change:tag', 'change:classes', 'ready'],
+	events: ['ready'],
 
 	plugins: [TElementPlugin, TInstancePlugin, TReadyBridgePlugin],
 })

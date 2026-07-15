@@ -34,11 +34,6 @@ export const componentSchema = createSchema<IComponentProps, TComponentEvents>({
 	},
 
 	events: [
-		// Property changes (публичный API, адаптер сам назовёт под фреймворк)
-		'change:rendered',
-		'change:visible',
-		'change:present',
-		// Actions
 		'created',
 		'show',
 		'hide',
