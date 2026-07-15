@@ -16,9 +16,6 @@ import { track } from '@soldy/schema'
 export const emitsComponentView: TEmits = schemaToVueEmits(componentViewSchema)
 
 export const propsComponentView: TProps = schemaToVueProps(componentViewSchema, {
-	ctrl: {
-		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
-	},
 	plugins: {
 		type: Object as PropType<IPluginBundle>,
 	},
