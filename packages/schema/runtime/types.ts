@@ -6,12 +6,6 @@
  * от конкретного фреймворка.
  */
 export interface IAdapterPlatform {
-	/** Создать реактивную ячейку: getter + setter (Vue: customRef, React: useSyncExternalStore, Solid: createSignal). */
-	createSignal<T>(get: () => T, set: (v: T) => void): void
-
-	/** Подписаться на изменение внешнего props (Vue: watch, React: useEffect). */
-	watchProp(name: string, onChange: (value: any) => void): void
-
 	/** Эмитнуть событие наружу (Vue: emit, React: вызов коллбэка из props). */
 	emit(name: string, ...args: any[]): void
 

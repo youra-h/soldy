@@ -17,6 +17,9 @@ export interface IAdapterResult {
 
 	/** Привязка синхронизации — фреймворк может подписаться для своих нужд. */
 	binding: ISyncBinding
+
+	/** Синхронизировать одно свойство из props в instance. */
+	syncProp(name: string): void
 }
 
 /**
@@ -45,13 +48,12 @@ export function createAdapter(
 		}
 	}
 
-	// 2. Props → Core
-	for (const [name, propDef] of Object.entries(schema.props)) {
-		if (!propDef?.set) continue
-		
-		platform.watchProp(name, (value: any) => {
-			if (value !== undefined) propDef.set!(instance, value)
-		})
+	// 2. Props → Core (синхронизация одного свойства по имени)
+	const syncProp = (name: string): void => {
+		const propDef = schema.props[name]
+		if (!propDef?.set) return
+		const value = props[name]
+		if (value !== undefined) propDef.set!(instance, value)
 	}
 
 	// 3. Core → Platform
@@ -68,5 +70,5 @@ export function createAdapter(
 	// 4. Очистка
 	platform.onDispose(() => binding.dispose())
 
-	return { instance, bundle, binding }
+	return { instance, bundle, binding, syncProp }
 }

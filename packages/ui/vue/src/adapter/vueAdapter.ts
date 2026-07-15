@@ -28,13 +28,6 @@ export function vueAdapter(
 ): VueAdapterResult {
 	// 1. Платформа Vue (создаётся до адаптера — нужна для createAdapter)
 	const platform: IAdapterPlatform = {
-		watchProp(name, onChange) {
-			watch(
-				() => (props as any)[name],
-				(value: any) => onChange(value),
-			)
-		},
-
 		emit(eventName, ...args) {
 			emit(eventName as any, ...args)
 		},
@@ -42,14 +35,15 @@ export function vueAdapter(
 		onDispose(fn) {
 			onUnmounted(fn)
 		},
-
-		createSignal(_get, _set) {
-			// refs создаются в шаге 3, здесь не нужен
-		},
 	}
 
 	// 2. Универсальный адаптер — создаёт instance через schema.Ctor
 	const adapter = createAdapter(schema, props, platform, props?.plugins)
+
+	// 2b. Явная синхронизация props → instance через Vue watch
+	for (const name of Object.keys(schema.props)) {
+		watch(() => (props as any)[name], () => adapter.syncProp(name))
+	}
 
 	// 3. Реактивные Vue-refs (после создания instance)
 	const refs: Record<string, Ref<any>> = {}
