@@ -1,4 +1,5 @@
 import type { TComponentEvents, IComponentProps } from '@soldy/core'
+import { TComponent } from '@soldy/core'
 import { createSchema } from '../schema'
 
 /**
@@ -6,6 +7,8 @@ import { createSchema } from '../schema'
  * Описывает общие для всех компонентов свойства и события.
  */
 export const componentSchema = createSchema<IComponentProps, TComponentEvents>({
+	Ctor: TComponent,
+
 	props: {
 		rendered: {
 			get: (i) => i.rendered,

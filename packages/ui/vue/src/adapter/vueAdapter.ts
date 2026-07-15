@@ -2,84 +2,86 @@ import { type Ref, customRef, watch, onUnmounted } from 'vue'
 import type { SetupContext } from 'vue'
 import type { IComponent } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { ISchema } from '@soldy/schema'
-import { TPluginBundle } from '@soldy/plugins'
-import { sync } from '@soldy/schema'
-import { useBundle } from '../composables/useBundle'
+import type { ISchema, IAdapterPlatform } from '@soldy/schema'
+import { createAdapter } from '@soldy/schema'
 import { useElementBinding } from '../composables/useElementBinding'
 
 export interface VueAdapterResult {
+	/** Core-экземпляр компонента. */
+	instance: IComponent<any, any>
+	/** Реактивные refs для шаблона. */
 	refs: Record<string, Ref<any>>
+	/** Бандл плагинов. */
 	plugins: IPluginBundle
+	/** Привязка к корневому DOM-элементу. */
 	rootElement: Ref<Element | null>
 }
 
+/**
+ * Vue-адаптер: реализует {@link IAdapterPlatform} и делегирует
+ * общую логику в {@link createAdapter}.
+ */
 export function vueAdapter(
 	schema: ISchema<any, any>,
-	instance: IComponent<any, any>,
 	props: Record<string, any>,
 	emit: SetupContext['emit'],
 ): VueAdapterResult {
+	// 1. Платформа Vue (создаётся до адаптера — нужна для createAdapter)
+	const platform: IAdapterPlatform = {
+		watchProp(name, onChange) {
+			watch(
+				() => (props as any)[name],
+				(value: any) => onChange(value),
+			)
+		},
+
+		emit(eventName, ...args) {
+			emit(eventName as any, ...args)
+		},
+
+		onDispose(fn) {
+			onUnmounted(fn)
+		},
+
+		createSignal(_get, _set) {
+			// refs создаются в шаге 3, здесь не нужен
+		},
+	}
+
+	// 2. Универсальный адаптер — создаёт instance через schema.Ctor
+	const adapter = createAdapter(schema, props, platform, props?.plugins)
+
+	// 3. Реактивные Vue-refs (после создания instance)
 	const refs: Record<string, Ref<any>> = {}
 	const triggers: Record<string, () => void> = {}
 
-	// 1. Плагины (отдельно от sync — это ответственность адаптера)
-	const plugins = useBundle(
-		() => {
-			const bundle = new TPluginBundle()
-			for (const Plugin of schema.plugins) {
-				bundle.use(Plugin)
-			}
-			return bundle
-		},
-		props?.plugins,
-	)
-
-	for (const Plugin of schema.plugins) {
-		const plugin = plugins.get(Plugin)
-		if (plugin && 'instance' in plugin) {
-			plugin.instance = instance
-		}
-	}
-
-	const rootElement = useElementBinding(plugins)
-
-	// 2. Реактивные refs — props + computed
 	const allProps = { ...schema.props, ...schema.computed }
 	for (const name of Object.keys(allProps)) {
 		const propDef = allProps[name]
 		let trigger: () => void
 		refs[name] = customRef((track, t) => {
 			trigger = t
-			return { get() { track(); return propDef!.get(instance) }, set() {} }
+			return {
+				get() {
+					track()
+					return propDef!.get(adapter.instance)
+				},
+				set() {},
+			}
 		})
 		triggers[name] = trigger!
 	}
 
-	// 3. Props → Core (только для props, не computed)
-	for (const name of Object.keys(schema.props)) {
-		const propDef = schema.props[name]
-		if (!propDef?.set) continue
-		watch(() => (props as any)[name], (value: any) => {
-			if (value !== undefined) propDef.set!(instance, value)
-		})
-	}
-
-	// 4. Синхронизация через subscribe
-	const binding = sync(schema, instance)
-
-	binding.subscribe((change) => {
+	// 4. Обновление refs при изменениях из core
+	adapter.binding.subscribe((change) => {
 		if (change.type === 'property') {
-			emit(`change:${change.name}` as any, change.value)
-			emit(`update:${change.name}` as any, change.value)
 			triggers[change.name]?.()
-		} else {
-			emit(change.name as any, ...change.args)
 		}
 	})
 
-	onUnmounted(() => binding.dispose())
+	// 5. Привязка DOM-элемента
+	const rootElement = useElementBinding(adapter.bundle)
 
-	return { refs, plugins, rootElement }
+	return { instance: adapter.instance, refs, plugins: adapter.bundle, rootElement }
 }
 

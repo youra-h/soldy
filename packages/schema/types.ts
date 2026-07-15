@@ -1,4 +1,5 @@
-import type { TComponentEvents, IComponentProps } from '@soldy/core'
+import type { TComponentEvents, IComponentProps, IComponentOptions } from '@soldy/core'
+import type { TPluginConstructor } from '@soldy/plugins'
 
 export interface IPropertySchema<TEvents extends Record<string, any> = TComponentEvents> {
 	get: (instance: any) => any
@@ -17,7 +18,9 @@ export interface IComponentSchema<
 	/** Core-события */
 	events: (keyof TEvents & string)[]
 	/** Плагины */
-	plugins: (new (...args: any[]) => any)[]
+	plugins: TPluginConstructor<any>[]
+	/** Конструктор core-компонента */
+	Ctor: new (options: IComponentOptions<any>) => any
 }
 
 /**

@@ -17,6 +17,7 @@ export function createSchema<
 				computed: { ...schema.computed, ...extension.computed } as any,
 				events: [...schema.events, ...(extension.events ?? [])] as any,
 				plugins: [...schema.plugins, ...(extension.plugins ?? [])],
+				Ctor: (extension.Ctor ?? schema.Ctor) as any,
 			})
 		},
 	}
