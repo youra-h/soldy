@@ -1,30 +1,28 @@
-import type { PropType, Ref } from 'vue'
+import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { type IComponentView, type IComponentViewProps, TComponentView } from '@soldy/core'
+import { type IComponentView, type IComponentViewProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { type IPluginBundle, TElementPlugin } from '@soldy/plugins'
+import { componentViewSchema } from '@soldy/schema'
+import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
+import type { IComponent } from '@soldy/core'
 import {
 	BaseComponent,
-	emitsComponent,
-	propsComponent,
 	syncComponent,
 	type IComponentState,
 } from '../component'
-import { useInheritProps } from '../../composables/useInheritProps'
 import { track } from '@soldy/schema'
 
-export const emitsComponentView: TEmits = [...emitsComponent, 'ready'] as const
+export const emitsComponentView: TEmits = schemaToVueEmits(componentViewSchema)
 
-export const propsComponentView: TProps = {
-	...useInheritProps(propsComponent, TComponentView),
+export const propsComponentView: TProps = schemaToVueProps(componentViewSchema, {
+	ctrl: {
+		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
+	},
 	plugins: {
 		type: Object as PropType<IPluginBundle>,
 	},
-	tag: {
-		type: [Object, String] as PropType<IComponentViewProps['tag']>,
-		default: TComponentView.defaultValues.tag,
-	}
-}
+})
 
 export default {
 	name: 'BaseComponentView',

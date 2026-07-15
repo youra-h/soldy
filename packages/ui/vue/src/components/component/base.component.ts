@@ -1,39 +1,18 @@
 import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
-import { TComponent, type IComponent, type IComponentProps } from '@soldy/core'
+import { type IComponent, type IComponentProps } from '@soldy/core'
+import { componentSchema } from '@soldy/schema'
+import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { track } from '@soldy/schema'
 
-export const emitsComponent: TEmits = [
-	'created',
-	'rendered',
-	'update:rendered',
-	'change:rendered',
-	'visible',
-	'update:visible',
-	'change:visible',
-	'change:present',
-	'hide',
-	'show',
-	'show:before',
-	'show:after',
-	'hide:before',
-	'hide:after',
-] as const
+export const emitsComponent: TEmits = schemaToVueEmits(componentSchema)
 
-export const propsComponent: TProps = {
+export const propsComponent: TProps = schemaToVueProps(componentSchema, {
 	ctrl: {
 		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
 	},
-	rendered: {
-		type: Boolean as PropType<IComponentProps['rendered']>,
-		default: TComponent.defaultValues.rendered,
-	},
-	visible: {
-		type: Boolean as PropType<IComponentProps['visible']>,
-		default: TComponent.defaultValues.visible,
-	},
-}
+})
 
 export default {
 	name: 'BaseComponent',
