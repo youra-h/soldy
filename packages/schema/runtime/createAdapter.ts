@@ -3,6 +3,7 @@ import type { ISchema, ISyncBinding } from '../types'
 import { sync } from '../sync'
 import { createBundle } from './createBundle'
 import type { IAdapterPlatform } from './types'
+import type { IPluginBundle } from '@soldy/plugins'
 
 /**
  * Результат работы универсального адаптера.
