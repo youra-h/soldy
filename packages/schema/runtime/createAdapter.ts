@@ -51,8 +51,11 @@ export function createAdapter(
 	// 2. Props → Core (синхронизация одного свойства по имени)
 	const syncProp = (name: string): void => {
 		const propDef = schema.props[name]
+
 		if (!propDef?.set) return
+
 		const value = props[name]
+
 		if (value !== undefined) propDef.set!(instance, value)
 	}
 
