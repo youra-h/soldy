@@ -27,9 +27,9 @@ export function createRefs(
 		triggers[name] = trigger
 	}
 
-	adapter.binding.subscribe((change) => {
-		if (change.type === 'property') {
-			triggers[change.name]?.()
+	adapter.binding.subscribe((notification) => {
+		if (notification.type === 'property') {
+			triggers[notification.name]?.()
 		}
 	})
 

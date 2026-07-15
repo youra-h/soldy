@@ -61,11 +61,11 @@ export function createAdapter(
 	// 3. Core → Platform
 	const binding = sync(schema, instance)
 
-	binding.subscribe((emit) => {
-		if (emit.type === 'property') {
-			platform.emit(emit.name, emit.value)
+	binding.subscribe((notification) => {
+		if (notification.type === 'property') {
+			platform.emit(notification.name, notification.value)
 		} else {
-			platform.emit(emit.name as string, ...emit.args)
+			platform.emit(notification.name as string, ...notification.args)
 		}
 	})
 

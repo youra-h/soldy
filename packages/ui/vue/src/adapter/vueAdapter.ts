@@ -61,12 +61,12 @@ export function vueAdapter(
 	})
 
 	// 4. Vue-события при изменениях из core
-	adapter.binding.subscribe((change) => {
-		if (change.type === 'property') {
-			emit(`change:${change.name}`, change.value)
-			emit(`update:${change.name}`, change.value)
+	adapter.binding.subscribe((notification) => {
+		if (notification.type === 'property') {
+			emit(`change:${notification.name}`, notification.value)
+			emit(`update:${notification.name}`, notification.value)
 		} else {
-			emit(change.name as string, ...change.args)
+			emit(notification.name as string, ...notification.args)
 		}
 	})
 
