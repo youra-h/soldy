@@ -24,12 +24,12 @@ export interface VueAdapterResult {
 export function vueAdapter(
 	schema: ISchema<any, any>,
 	props: Record<string, any>,
-	emit: SetupContext['emit'],
+	emitComponent: SetupContext['emit'],
 ): VueAdapterResult {
 	// 1. Платформа Vue (создаётся до адаптера — нужна для createAdapter)
 	const platform: IAdapterPlatform = {
-		emit(eventName, ...args) {
-			emit(eventName as any, ...args)
+		emit(name, ...args) {
+			emitComponent(name as any, ...args)
 		},
 
 		onDispose(fn) {
@@ -63,10 +63,10 @@ export function vueAdapter(
 	// 4. Vue-события при изменениях из core
 	adapter.binding.subscribe((notification) => {
 		if (notification.type === 'property') {
-			emit(`change:${notification.name}`, notification.value)
-			emit(`update:${notification.name}`, notification.value)
+			emitComponent(`change:${notification.name}`, notification.value)
+			emitComponent(`update:${notification.name}`, notification.value)
 		} else {
-			emit(notification.name as string, ...notification.args)
+			emitComponent(notification.name as string, ...notification.args)
 		}
 	})
 
