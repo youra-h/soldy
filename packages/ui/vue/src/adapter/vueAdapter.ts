@@ -3,7 +3,7 @@ import type { SetupContext } from 'vue'
 import type { IComponent } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { ISchema, IAdapterPlatform } from '@soldy/schema'
-import { createAdapter, createRefs } from '@soldy/schema'
+import { createAdapter, createRefs, bindProps } from '@soldy/schema'
 import { useElementBinding } from '../composables/useElementBinding'
 
 export interface VueAdapterResult {
@@ -40,10 +40,10 @@ export function vueAdapter(
 	// 2. Универсальный адаптер — создаёт instance через schema.Ctor
 	const adapter = createAdapter(schema, props, platform, props?.plugins)
 
-	// 2b. Явная синхронизация props → instance через Vue watch
-	for (const name of Object.keys(schema.props)) {
+	// 2b. Явная синхронизация props → instance
+	bindProps(schema, (name: string) => {
 		watch(() => (props as any)[name], () => adapter.syncProp(name))
-	}
+	})
 
 	// 3. Реактивные Vue-refs
 	const refs = createRefs(schema, adapter, (getter: () => any) => {
