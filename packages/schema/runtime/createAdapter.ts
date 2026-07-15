@@ -1,5 +1,4 @@
 import type { IComponent } from '@soldy/core'
-import type { IPluginBundle } from '@soldy/plugins'
 import type { ISchema, ISyncBinding } from '../types'
 import { sync } from '../sync'
 import { createBundle } from './createBundle'
@@ -33,13 +32,12 @@ export function createAdapter(
 	schema: ISchema<any, any>,
 	props: Record<string, any>,
 	platform: IAdapterPlatform,
-	existingBundle?: IPluginBundle,
 ): IAdapterResult {
 	// 0. Instance
 	const instance: IComponent<any, any> = props?.ctrl ?? new schema.Ctor({ props })
 
 	// 1. Bundle
-	const bundle = createBundle(schema, existingBundle)
+	const bundle = createBundle(schema, props?.plugins)
 
 	for (const Plugin of schema.plugins) {
 		const plugin = bundle.get(Plugin)

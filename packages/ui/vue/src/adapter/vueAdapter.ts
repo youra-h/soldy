@@ -38,7 +38,7 @@ export function vueAdapter(
 	}
 
 	// 2. Универсальный адаптер — создаёт instance через schema.Ctor
-	const adapter = createAdapter(schema, props, platform, props?.plugins)
+	const adapter = createAdapter(schema, props, platform)
 
 	// 2b. Явная синхронизация props → instance
 	bindProps(schema, (name: string) => {
