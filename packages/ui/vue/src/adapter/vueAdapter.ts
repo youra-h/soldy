@@ -3,7 +3,7 @@ import type { SetupContext } from 'vue'
 import type { IComponent } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { ISchema, IAdapterPlatform } from '@soldy/schema'
-import { createAdapter } from '@soldy/schema'
+import { createAdapter, createRefs } from '@soldy/schema'
 import { useElementBinding } from '../composables/useElementBinding'
 
 export interface VueAdapterResult {
@@ -45,31 +45,24 @@ export function vueAdapter(
 		watch(() => (props as any)[name], () => adapter.syncProp(name))
 	}
 
-	// 3. Реактивные Vue-refs (после создания instance)
-	const refs: Record<string, Ref<any>> = {}
-	const triggers: Record<string, () => void> = {}
-
-	const allProps = { ...schema.props, ...schema.computed }
-	for (const name of Object.keys(allProps)) {
-		const propDef = allProps[name]
+	// 3. Реактивные Vue-refs
+	const refs = createRefs(schema, adapter, (getter: () => any) => {
 		let trigger: () => void
-		refs[name] = customRef((track, t) => {
+
+		const ref = customRef((track, t) => {
 			trigger = t
 			return {
-				get() {
-					track()
-					return propDef!.get(adapter.instance)
-				},
+				get() { track(); return getter() },
 				set() {},
 			}
 		})
-		triggers[name] = trigger!
-	}
 
-	// 4. Обновление refs + Vue-события при изменениях из core
+		return { ref, trigger: () => trigger() }
+	})
+
+	// 4. Vue-события при изменениях из core
 	adapter.binding.subscribe((change) => {
 		if (change.type === 'property') {
-			triggers[change.name]?.()
 			emit(`change:${change.name}`, change.value)
 			emit(`update:${change.name}`, change.value)
 		} else {

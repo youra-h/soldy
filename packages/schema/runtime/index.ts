@@ -1,4 +1,5 @@
 export { createAdapter } from './createAdapter'
 export type { IAdapterResult } from './createAdapter'
 export { createBundle } from './createBundle'
+export { createRefs } from './createRefs'
 export type { IAdapterPlatform } from './types'
