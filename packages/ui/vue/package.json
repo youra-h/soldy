@@ -17,6 +17,7 @@
     "@soldy/foundation": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
+    "@soldy/schema": "*",
     "vue": "^3.5.32"
   },
   "devDependencies": {
