@@ -1,6 +1,4 @@
-import type { PropType, UnwrapNestedRefs } from 'vue'
 import type { ISchema } from '@soldy/schema'
-import type { IComponent } from '@soldy/core'
 import type { TEmits, TProps } from '../types/common'
 
 /**
@@ -47,10 +45,7 @@ export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
  * )
  * ```
  */
-export function schemaToVueProps(
-	schema: ISchema<any, any>,
-	extra?: Record<string, any>,
-): TProps {
+export function schemaToVueProps(schema: ISchema<any, any>, extra?: Record<string, any>): TProps {
 	const defaults = (schema.Ctor as any).defaultValues ?? {}
 	const result: Record<string, any> = {}
 
