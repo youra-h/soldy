@@ -26,10 +26,20 @@ export function vueAdapter(
 	props: Record<string, any>,
 	emitComponent: SetupContext['emit'],
 ): VueAdapterResult {
-	// 1. Платформа Vue (создаётся до адаптера — нужна для createAdapter)
+	// 1. Платформа Vue
+	const { mutable } = schema.getEmits()
+
 	const platform: IAdapterPlatform = {
-		emit(name, ...args) {
-			emitComponent(name as any, ...args)
+		emit(notification) {
+			if (notification.type === 'property') {
+				emitComponent(`change:${notification.name}`, notification.value)
+
+				if (mutable.includes(notification.name)) {
+					emitComponent(`update:${notification.name}`, notification.value)
+				}
+			} else {
+				emitComponent(notification.name as any, ...notification.args)
+			}
 		},
 
 		onDispose(fn) {
@@ -60,17 +70,7 @@ export function vueAdapter(
 		return { ref, trigger: () => trigger() }
 	})
 
-	// 4. Vue-события при изменениях из core
-	adapter.binding.subscribe((notification) => {
-		if (notification.type === 'property') {
-			emitComponent(`change:${notification.name}`, notification.value)
-			emitComponent(`update:${notification.name}`, notification.value)
-		} else {
-			emitComponent(notification.name as string, ...notification.args)
-		}
-	})
-
-	// 5. Привязка DOM-элемента
+	// 4. Привязка DOM-элемента
 	const rootElement = useElementBinding(adapter.bundle)
 
 	return { instance: adapter.instance, refs, plugins: adapter.bundle, rootElement }

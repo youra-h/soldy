@@ -36,6 +36,21 @@ export function createSchema<
 			return map
 		},
 
+		getEmits(): { events: string[]; mutable: string[]; readonly: string[] } {
+			const events = [...this.events]
+			const mutable: string[] = []
+			const readonly: string[] = []
+
+			for (const [name, prop] of Object.entries(this.props)) {
+				if (prop?.set) mutable.push(name)
+			}
+			for (const name of Object.keys(this.readonly ?? {})) {
+				readonly.push(name)
+			}
+
+			return { events, mutable, readonly }
+		},
+
 		extend<TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
 			extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,
 		) {

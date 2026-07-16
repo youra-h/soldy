@@ -16,25 +16,18 @@ function inferVueType(value: unknown): any {
 /**
  * Сгенерировать Vue-emits из схемы.
  *
- * Включает все события схемы + `update:<prop>` и `update:<readonly>`
- * для совместимости с v-model.
+ * - events   → как есть
+ * - mutable  → change:<name> + update:<name> (v-model)
+ * - readonly → change:<name>
  */
 export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
-	const events = [...schema.getAllEvents()]
+	const { events, mutable, readonly } = schema.getEmits()
+	const emits: string[] = [...events]
 
+	for (const name of mutable)  emits.push(`change:${name}`, `update:${name}`)
+	for (const name of readonly) emits.push(`change:${name}`)
 
-
-	// for (const name of Object.keys(schema.props)) {
-	// 	events.push(`update:${name}`)
-	// }
-
-	// for (const name of Object.keys(schema.readonly ?? {})) {
-	// 	events.push(`update:${name}`)
-	// }
-
-	console.log('schemaToVueEmits', events)
-
-	return events as unknown as TEmits
+	return emits as unknown as TEmits
 }
 
 /**

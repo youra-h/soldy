@@ -49,6 +49,14 @@ export interface ISchema<
 	 * какие свойства нужно перечитать при срабатывании каждого события.
 	 */
 	getTriggers(): Map<string, string[]>
+
+	/**
+	 * Категории эмитов для адаптеров фреймворков:
+	 * - `events`   — чистые события (show, hide, created…)
+	 * - `mutable`  — props с setter (можно change + update / onChange)
+	 * - `readonly` — computed без setter (только change / onChange)
+	 */
+	getEmits(): { events: string[]; mutable: string[]; readonly: string[] }
 }
 
 // ── Типы эмитов (sync) ───────────────────────────────────────

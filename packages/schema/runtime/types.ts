@@ -6,8 +6,8 @@
  * от конкретного фреймворка.
  */
 export interface IAdapterPlatform {
-	/** Эмитнуть событие наружу (Vue: emit, React: вызов коллбэка из props). */
-	emit(name: string, ...args: any[]): void
+	/** Эмитнуть изменение наружу (свойство или событие). */
+	emit(notification: { type: 'property'; name: string; value: any } | { type: 'event'; name: string; args: any[] }): void
 
 	/** Зарегистрировать очистку при уничтожении компонента. */
 	onDispose(fn: () => void): void

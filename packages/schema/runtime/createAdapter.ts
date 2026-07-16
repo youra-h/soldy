@@ -58,15 +58,11 @@ export function createAdapter(
 		if (value !== undefined) propDef.set!(instance, value)
 	}
 
-	// 3. Core → Platform
+	// 3. Core → Platform (только события, свойства — через createRefs/адаптер)
 	const binding = sync(schema, instance)
 
 	binding.subscribe((notification) => {
-		if (notification.type === 'property') {
-			platform.emit(notification.name, notification.value)
-		} else {
-			platform.emit(notification.name as string, ...notification.args)
-		}
+		platform.emit(notification as any)
 	})
 
 	// 4. Очистка
