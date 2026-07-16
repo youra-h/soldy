@@ -4,6 +4,7 @@ import { type IComponent, type IComponentProps } from '@soldy/core'
 import { componentSchema } from '@soldy/schema'
 import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
+import { type IPluginBundle } from '@soldy/plugins'
 import { track } from '@soldy/schema'
 
 export const emitsComponent: TEmits = schemaToVueEmits(componentSchema)
@@ -11,6 +12,9 @@ export const emitsComponent: TEmits = schemaToVueEmits(componentSchema)
 export const propsComponent: TProps = schemaToVueProps(componentSchema, {
 	ctrl: {
 		type: Object as PropType<IComponent | UnwrapNestedRefs<IComponent>>,
+	},
+	plugins: {
+		type: Object as PropType<IPluginBundle>,
 	},
 })
 

@@ -1,25 +1,15 @@
-import type { PropType, UnwrapNestedRefs, Ref } from 'vue'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { type IComponentView, type IComponentViewProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { type IPluginBundle, TElementPlugin } from '@soldy/plugins'
+import { TElementPlugin } from '@soldy/plugins'
 import { componentViewSchema } from '@soldy/schema'
 import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
-import type { IComponent } from '@soldy/core'
-import {
-	BaseComponent,
-	syncComponent,
-	type IComponentState,
-} from '../component'
+import { BaseComponent, syncComponent, type IComponentState } from '../component'
 import { track } from '@soldy/schema'
 
 export const emitsComponentView: TEmits = schemaToVueEmits(componentViewSchema)
 
-export const propsComponentView: TProps = schemaToVueProps(componentViewSchema, {
-	plugins: {
-		type: Object as PropType<IPluginBundle>,
-	},
-})
+export const propsComponentView: TProps = schemaToVueProps(componentViewSchema, {})
 
 export default {
 	name: 'BaseComponentView',

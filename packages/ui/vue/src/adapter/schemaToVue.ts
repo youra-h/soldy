@@ -76,5 +76,7 @@ export function schemaToVueProps(schema: ISchema<any, any>, extra?: Record<strin
 		Object.assign(result, extra)
 	}
 
+	console.log('schemaToVueProps', result)
+
 	return Object.freeze(result) as unknown as TProps
 }
