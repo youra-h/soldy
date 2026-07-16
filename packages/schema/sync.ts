@@ -58,15 +58,17 @@ class SyncBindingImpl<
 			}
 		}
 
-		// 2. Обычные события (не триггеры) → event handler
-		const triggerEvents = new Set(schema.getTriggers().keys())
+		if (schema.events && schema.events.length > 0) {
+			// 2. Обычные события (не триггеры) → event handler
+			const triggerEvents = new Set(schema.getTriggers().keys())
 
-		for (const event of schema.events) {
-			if (triggerEvents.has(event)) continue
+			for (const event of schema.events) {
+				if (triggerEvents.has(event)) continue
 
-			const handler = this.#eventHandler(event)
-			this.#listen(event, handler)
-			this.disposers.push(() => this.#unlisten(event, handler))
+				const handler = this.#eventHandler(event)
+				this.#listen(event, handler)
+				this.disposers.push(() => this.#unlisten(event, handler))
+			}
 		}
 	}
 
@@ -106,12 +108,16 @@ class SyncBindingImpl<
 	#propHandler(prop: [string, IPropertySchema<TEvents> | undefined]): () => void {
 		const [name, values] = prop
 
+		if (!values?.get) return () => {}
+
+		const { get, set } = values
+
 		return () => {
 			const emit: TEmit<TProps, TEvents> = {
 				type: 'property',
 				name,
-				value: values!.get(this.instance),
-				mutable: !!values!.set,
+				value: get(this.instance),
+				mutable: !!set,
 			} as TEmitProperty<TProps>
 
 			for (const fn of this.subscribers) fn(emit)

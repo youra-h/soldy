@@ -12,7 +12,7 @@ export function createSchema<
 		},
 
 		getAllEvents(): (keyof TEvents & string)[] {
-			const set = new Set<keyof TEvents & string>(this.events)
+			const set = new Set<keyof TEvents & string>(this.events ?? [])
 
 			for (const event of this.getTriggers().keys()) {
 				set.add(event)
@@ -37,7 +37,7 @@ export function createSchema<
 		},
 
 		getEmits(): { events: string[]; mutable: string[]; readonly: string[] } {
-			const events = [...this.events]
+			const events = [...(this.events ?? [])]
 			const mutable: string[] = []
 			const readonly: string[] = []
 
@@ -58,7 +58,7 @@ export function createSchema<
 				props: { ...schema.props, ...extension.props } as any,
 				readonly: { ...schema.readonly, ...extension.readonly } as any,
 				events: [...(schema.events ?? []), ...(extension.events ?? [])] as any,
-				plugins: [...schema.plugins, ...(extension.plugins ?? [])],
+				plugins: [...(schema.plugins ?? []), ...(extension.plugins ?? [])],
 				Ctor: (extension.Ctor ?? schema.Ctor) as any,
 			})
 		},

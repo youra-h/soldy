@@ -16,11 +16,11 @@ export interface IComponentSchema<
 	/** Вычисляемые read-only свойства (нет set — только get + triggers) */
 	readonly?: Record<string, IPropertySchema<TEvents>>
 	/** Core-события */
-	events: (keyof TEvents & string)[]
+	events?: (keyof TEvents & string)[]
 	/** Плагины */
-	plugins: TPluginConstructor<any>[]
+	plugins?: TPluginConstructor<any>[]
 	/** Конструктор core-компонента */
-	Ctor: new (options: IComponentOptions<any>) => any
+	Ctor?: new (options: IComponentOptions<any>) => any
 }
 
 /**
