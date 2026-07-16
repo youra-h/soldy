@@ -14,13 +14,26 @@ export function createSchema<
 		getAllEvents(): (keyof TEvents & string)[] {
 			const set = new Set<keyof TEvents & string>(this.events)
 
-			for (const prop of Object.values(this.getAllProps())) {
-				for (const event of prop?.triggers ?? []) {
-					set.add(event)
-				}
+			for (const event of this.getTriggers().keys()) {
+				set.add(event)
 			}
 
 			return [...set]
+		},
+
+		getTriggers(): Map<string, string[]> {
+			const map = new Map<string, string[]>()
+
+			for (const [propName, prop] of Object.entries(this.getAllProps())) {
+				if (!prop?.triggers) continue
+
+				for (const event of prop.triggers) {
+					if (!map.has(event)) map.set(event, [])
+					map.get(event)!.push(propName)
+				}
+			}
+
+			return map
 		},
 
 		extend<TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(

@@ -20,13 +20,13 @@ function inferVueType(value: unknown): any {
  * для совместимости с v-model.
  */
 export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
-	const events = [...schema.events]
+	const events = [...schema.getAllEvents()]
 
 
 
-	for (const name of Object.keys(schema.props)) {
-		events.push(`update:${name}`)
-	}
+	// for (const name of Object.keys(schema.props)) {
+	// 	events.push(`update:${name}`)
+	// }
 
 	// for (const name of Object.keys(schema.readonly ?? {})) {
 	// 	events.push(`update:${name}`)

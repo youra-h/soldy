@@ -43,6 +43,12 @@ export interface ISchema<
 	 * всех props и readonly-свойств.
 	 */
 	getAllEvents(): (keyof TEvents & string)[]
+
+	/**
+	 * Карта `event → [propName, ...]` —
+	 * какие свойства нужно перечитать при срабатывании каждого события.
+	 */
+	getTriggers(): Map<string, string[]>
 }
 
 // ── Типы эмитов (sync) ───────────────────────────────────────

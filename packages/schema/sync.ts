@@ -44,15 +44,20 @@ class SyncBindingImpl<
 		this.instance = instance
 		this.props = schema.getAllProps()
 
-		const eventToProps = this.#buildEventToProps()
+		const triggers = schema.getTriggers()
 
+		// 1. Trigger-события → property handler
+		for (const [event, affectedProps] of triggers) {
+			const handler = this.#propertyHandler(affectedProps)
+			this.#listen(event, handler)
+			this.disposers.push(() => this.#unlisten(event, handler))
+		}
+
+		// 2. Обычные события (не триггеры) → event handler
 		for (const event of schema.events) {
-			const affectedProps = eventToProps.get(event)
+			if (triggers.has(event)) continue
 
-			const handler = affectedProps?.length
-				? this.#propertyHandler(affectedProps)
-				: this.#eventHandler(event)
-
+			const handler = this.#eventHandler(event)
 			this.#listen(event, handler)
 			this.disposers.push(() => this.#unlisten(event, handler))
 		}
@@ -78,10 +83,7 @@ class SyncBindingImpl<
 	 * @param handler — обработчик
 	 */
 	#listen(event: string, handler: (...args: any[]) => void): void {
-		this.instance.events.on(
-			event as keyof TEvents & string,
-			handler as TEvents[keyof TEvents],
-		)
+		this.instance.events.on(event as keyof TEvents & string, handler as TEvents[keyof TEvents])
 	}
 
 	/**
@@ -91,10 +93,7 @@ class SyncBindingImpl<
 	 * @param handler — обработчик
 	 */
 	#unlisten(event: string, handler: (...args: any[]) => void): void {
-		this.instance.events.off(
-			event as keyof TEvents & string,
-			handler as TEvents[keyof TEvents],
-		)
+		this.instance.events.off(event as keyof TEvents & string, handler as TEvents[keyof TEvents])
 	}
 
 	/**
@@ -136,26 +135,6 @@ class SyncBindingImpl<
 
 			for (const fn of this.subscribers) fn(emit)
 		}
-	}
-
-	/**
-	 * Строит карту `event → [propName, ...]` —
-	 * какие свойства нужно перечитать при срабатывании каждого события.
-	 */
-	#buildEventToProps(): Map<string, string[]> {
-		const map = new Map<string, string[]>()
-
-		for (const [propName, prop] of Object.entries(this.props)) {
-			if (!prop?.triggers) continue
-
-			for (const event of prop.triggers) {
-				if (!map.has(event)) map.set(event, [])
-
-				map.get(event)!.push(propName)
-			}
-		}
-
-		return map
 	}
 }
 
