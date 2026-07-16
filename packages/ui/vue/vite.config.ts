@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import vueDevTools from 'vite-plugin-vue-devtools'
 import svgLoader from 'vite-svg-loader'
 import path from 'node:path'
 
 export default defineConfig({
-  plugins: [vue(), svgLoader()],
+  plugins: [vue(), vueDevTools(), svgLoader()],
   root: 'demo',
   resolve: {
     alias: {
