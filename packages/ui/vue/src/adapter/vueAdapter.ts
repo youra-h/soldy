@@ -8,7 +8,7 @@ import { useElementBinding } from '../composables/useElementBinding'
 
 export interface VueAdapterResult {
 	/** Core-экземпляр компонента. */
-	instance: IComponent<any, any>
+	ctrl: IComponent<any, any>
 	/** Реактивные refs для шаблона. */
 	refs: Record<string, Ref<any>>
 	/** Бандл плагинов. */
@@ -71,6 +71,6 @@ export function vueAdapter(
 	// 4. Привязка DOM-элемента
 	const rootElement = useElementBinding(adapter.bundle)
 
-	return { instance: adapter.instance, refs, plugins: adapter.bundle, rootElement }
+	return { ctrl: adapter.instance, plugins: adapter.bundle, refs, rootElement }
 }
 
