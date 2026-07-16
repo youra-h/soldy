@@ -34,6 +34,9 @@ export interface ISchema<
 	extend: <TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
 		extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,
 	) => ISchema<TProps & TExtProps, TEvents & TExtEvents>
+
+	/** Объединить props + readonly в один словарь. */
+	getAllProps(): Record<string, IPropertySchema<TEvents> | undefined>
 }
 
 // ── Типы эмитов (sync) ───────────────────────────────────────

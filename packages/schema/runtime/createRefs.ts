@@ -18,7 +18,8 @@ export function createRefs(
 	const refs: Record<string, any> = {}
 	const triggers: Record<string, () => void> = {}
 
-	const allProps = { ...schema.props, ...schema.readonly }
+	const allProps = schema.getAllProps()
+
 	for (const [name, propDef] of Object.entries(allProps)) {
 		if (!propDef) continue
 

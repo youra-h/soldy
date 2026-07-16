@@ -1,4 +1,4 @@
-import type { IComponentSchema, ISchema } from './types'
+import type { IComponentSchema, ISchema, IPropertySchema } from './types'
 
 function collectEvents<TProps extends Record<string, any>, TEvents extends Record<string, any>>(
 	schema: IComponentSchema<TProps, TEvents>,
@@ -28,6 +28,10 @@ export function createSchema<
 	return {
 		...schema,
 		events: collectEvents(schema),
+
+		getAllProps(): Record<string, IPropertySchema<TEvents> | undefined> {
+			return { ...this.props, ...this.readonly }
+		},
 
 		extend<TExtProps extends Record<string, any>, TExtEvents extends Record<string, any>>(
 			extension: Partial<IComponentSchema<TExtProps, TExtEvents>>,

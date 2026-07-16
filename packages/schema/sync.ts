@@ -42,10 +42,7 @@ class SyncBindingImpl<
 	 */
 	constructor(schema: ISchema<TProps, TEvents>, instance: IComponent<any, TEvents>) {
 		this.instance = instance
-		this.props = {
-			...schema.props,
-			...schema.readonly,
-		}
+		this.props = schema.getAllProps()
 
 		const eventToProps = this.#buildEventToProps()
 
