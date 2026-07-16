@@ -9,7 +9,7 @@ import { track } from '@soldy/schema'
 
 export const emitsComponentView: TEmits = schemaToVueEmits(componentViewSchema)
 
-export const propsComponentView: TProps = schemaToVueProps(componentViewSchema, {})
+export const propsComponentView: TProps = schemaToVueProps(componentViewSchema)
 
 export default {
 	name: 'BaseComponentView',

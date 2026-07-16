@@ -2,9 +2,9 @@ import type { TComponentEvents, IComponentProps, IComponentOptions } from '@sold
 import type { TPluginConstructor } from '@soldy/plugins'
 
 export interface IPropertySchema<TEvents extends Record<string, any> = TComponentEvents> {
-	get: (instance: any) => any
+	get?: (instance: any) => any
 	set?: (instance: any, value: any) => void
-	triggers: (keyof TEvents & string)[]
+	triggers?: (keyof TEvents & string)[]
 }
 
 export interface IComponentSchema<

@@ -1,12 +1,12 @@
 import type { TComponentEvents, IComponentProps } from '@soldy/core'
 import { TComponent } from '@soldy/core'
-import { createSchema } from '../schema'
+import { entitySchema } from './entity.schema'
 
 /**
- * Базовый контракт Component.
- * Описывает общие для всех компонентов свойства и события.
+ * Контракт Component — расширяет entitySchema.
+ * Добавляет rendered, visible, present и события жизненного цикла.
  */
-export const componentSchema = createSchema<IComponentProps, TComponentEvents>({
+export const componentSchema = entitySchema.extend<IComponentProps, TComponentEvents>({
 	Ctor: TComponent,
 
 	props: {
