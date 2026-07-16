@@ -30,7 +30,7 @@ describe('sync + componentViewSchema', () => {
 		expect(renderedEmit!.value).toBe(false)
 	})
 
-	it('эмитит inherited computed present', () => {
+	it('эмитит inherited readonly present', () => {
 		const component = new TComponentView({ rendered: true, visible: true })
 		binding = sync(componentViewSchema, component)
 
@@ -65,7 +65,7 @@ describe('sync + componentViewSchema', () => {
 		expect((emit as TEmitProperty<any>).value).toBe('span')
 	})
 
-	it('эмитит computed classes при изменении', () => {
+	it('эмитит readonly classes при изменении', () => {
 		const component = new TComponentView({ tag: 'div' })
 		binding = sync(componentViewSchema, component)
 

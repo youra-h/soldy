@@ -90,7 +90,7 @@ describe('sync + componentSchema', () => {
 		expect(visibleEmit!.value).toBe(false)
 	})
 
-	it('эмитит computed present при изменении rendered', () => {
+	it('эмитит readonly present при изменении rendered', () => {
 		const component = new TComponent({ rendered: true, visible: true })
 		binding = sync(componentSchema, component)
 
@@ -107,7 +107,7 @@ describe('sync + componentSchema', () => {
 		expect(presentEmit!.value).toBe(false)
 	})
 
-	it('эмитит computed present при изменении visible', () => {
+	it('эмитит readonly present при изменении visible', () => {
 		const component = new TComponent({ rendered: true, visible: true })
 		binding = sync(componentSchema, component)
 

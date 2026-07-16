@@ -16,11 +16,23 @@ function inferVueType(value: unknown): any {
 /**
  * Сгенерировать Vue-emits из схемы.
  *
- * Возвращает массив всех событий, включая автоматически собранные
- * из triggers пропсов и computed-свойств.
+ * Включает все события схемы + `update:<prop>` и `update:<readonly>`
+ * для совместимости с v-model.
  */
 export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
-	return schema.events as unknown as TEmits
+	const events = [...schema.events]
+
+	console.log('schemaToVueEmits', schema.events)
+
+	for (const name of Object.keys(schema.props)) {
+		events.push(`update:${name}`)
+	}
+
+	for (const name of Object.keys(schema.readonly ?? {})) {
+		events.push(`update:${name}`)
+	}
+
+	return events as unknown as TEmits
 }
 
 /**

@@ -30,7 +30,7 @@ class SyncBindingImpl<
 	/** Функции отписки от core-событий. */
 	private disposers: (() => void)[] = []
 
-	/** Объединённый словарь props + computed из схемы. */
+	/** Объединённый словарь props + readonly из схемы. */
 	private props: Record<string, IPropertySchema<TEvents> | undefined>
 
 	/** Core-компонент, с которым синхронизируемся. */
@@ -44,7 +44,7 @@ class SyncBindingImpl<
 		this.instance = instance
 		this.props = {
 			...schema.props,
-			...schema.computed,
+			...schema.readonly,
 		}
 
 		const eventToProps = this.#buildEventToProps()

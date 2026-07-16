@@ -19,7 +19,7 @@ export const componentViewSchema = componentSchema.extend<
 		},
 	},
 
-	computed: {
+	readonly: {
 		classes: {
 			get: (i: any) => i.classes.list,
 			triggers: ['change:classes'],

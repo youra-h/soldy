@@ -26,7 +26,7 @@ export const componentSchema = createSchema<IComponentProps, TComponentEvents>({
 		},
 	},
 
-	computed: {
+	readonly: {
 		present: {
 			get: (i) => i.present,
 			triggers: ['change:rendered', 'change:visible'],

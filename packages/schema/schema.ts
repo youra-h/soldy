@@ -10,7 +10,7 @@ function collectEvents<TProps extends Record<string, any>, TEvents extends Recor
 			set.add(event)
 		}
 	}
-	for (const prop of Object.values(schema.computed ?? {})) {
+	for (const prop of Object.values(schema.readonly ?? {})) {
 		for (const event of prop?.triggers ?? []) {
 			set.add(event)
 		}
@@ -34,7 +34,7 @@ export function createSchema<
 		) {
 			return createSchema<TProps & TExtProps, TEvents & TExtEvents>({
 				props: { ...schema.props, ...extension.props } as any,
-				computed: { ...schema.computed, ...extension.computed } as any,
+				readonly: { ...schema.readonly, ...extension.readonly } as any,
 				events: [...(schema.events ?? []), ...(extension.events ?? [])] as any,
 				plugins: [...schema.plugins, ...(extension.plugins ?? [])],
 				Ctor: (extension.Ctor ?? schema.Ctor) as any,
