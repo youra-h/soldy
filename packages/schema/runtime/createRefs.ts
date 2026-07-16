@@ -21,9 +21,11 @@ export function createRefs(
 	const allProps = schema.getAllProps()
 
 	for (const [name, propDef] of Object.entries(allProps)) {
-		if (!propDef) continue
+		if (!propDef?.get) continue
 
-		const { ref, trigger } = createCell(() => propDef.get(adapter.instance))
+		const { get } = propDef
+
+		const { ref, trigger } = createCell(() => get(adapter.instance))
 		refs[name] = ref
 		triggers[name] = trigger
 	}

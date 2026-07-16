@@ -13,7 +13,7 @@ export function createBundle(schema: ISchema<any, any>, existing?: IPluginBundle
 
 	const bundle = new TPluginBundle()
 
-	for (const Plugin of schema.plugins) {
+	for (const Plugin of schema.plugins ?? []) {
 		bundle.use(Plugin)
 	}
 

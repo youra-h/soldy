@@ -35,13 +35,14 @@ export function createAdapter(
 	platform: IAdapterPlatform,
 ): IAdapterResult {
 	// 0. Instance
-	const instance: IComponent<any, any> = props?.ctrl ?? new schema.Ctor({ props })
+	const instance: IComponent<any, any> = props?.ctrl ?? new schema.Ctor!({ props })
 
 	// 1. Bundle
 	const bundle = createBundle(schema, props?.plugins)
 
-	for (const Plugin of schema.plugins) {
+	for (const Plugin of schema.plugins ?? []) {
 		const plugin = bundle.get(Plugin)
+
 		if (plugin && 'instance' in plugin) {
 			;(plugin as any).instance = instance
 		}
