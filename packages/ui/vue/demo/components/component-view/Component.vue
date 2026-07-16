@@ -21,7 +21,6 @@ const { handlers } = useEventLogger(emit, emitsComponentView)
 </script>
 
 <template>
-	{{ emitsComponentView }}
 	<PanelDemo info="Controlled by props from Properties panel">
 		<ComponentView :tag="tag" :visible="visible" :rendered="rendered" v-bind="handlers">
 			<div style="text-align: center">

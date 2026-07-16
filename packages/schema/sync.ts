@@ -45,12 +45,14 @@ class SyncBindingImpl<
 		this.props = schema.getAllProps()
 
 		// 1. Props → подписка на trigger-события
-		for (const [name, prop] of Object.entries(this.props)) {
-			if (!prop?.get) continue
+		for (const prop of Object.entries(this.props)) {
+			const [_, propValues] = prop
 
-			const handler = this.#propertyHandler([name])
+			if (!propValues?.get) continue
 
-			for (const event of prop.triggers ?? []) {
+			const handler = this.#propHandler(prop)
+
+			for (const event of propValues.triggers ?? []) {
 				this.#listen(event, handler)
 				this.disposers.push(() => this.#unlisten(event, handler))
 			}
@@ -101,27 +103,18 @@ class SyncBindingImpl<
 		this.instance.events.off(event as keyof TEvents & string, handler as TEvents[keyof TEvents])
 	}
 
-	/**
-	 * Создаёт обработчик trigger-события:
-	 * при срабатывании эмитит изменения всех затронутых свойств.
-	 *
-	 * @param affectedProps — имена свойств, которые нужно перечитать
-	 */
-	#propertyHandler(affectedProps: string[]): () => void {
+	#propHandler(prop: [string, IPropertySchema<TEvents> | undefined]): () => void {
+		const [name, values] = prop
+
 		return () => {
-			for (const name of affectedProps) {
-				const prop = this.props[name]
-				if (!prop) continue
+			const emit: TEmit<TProps, TEvents> = {
+				type: 'property',
+				name,
+				value: values!.get(this.instance),
+				mutable: !!values!.set,
+			} as TEmitProperty<TProps>
 
-				const emit: TEmit<TProps, TEvents> = {
-					type: 'property',
-					name,
-					value: prop.get(this.instance),
-					mutable: !!prop.set,
-				} as TEmitProperty<TProps>
-
-				for (const fn of this.subscribers) fn(emit)
-			}
+			for (const fn of this.subscribers) fn(emit)
 		}
 	}
 
