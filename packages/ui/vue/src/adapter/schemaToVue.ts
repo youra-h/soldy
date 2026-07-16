@@ -22,15 +22,17 @@ function inferVueType(value: unknown): any {
 export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
 	const events = [...schema.events]
 
-	console.log('schemaToVueEmits', schema.events)
+
 
 	for (const name of Object.keys(schema.props)) {
 		events.push(`update:${name}`)
 	}
 
-	for (const name of Object.keys(schema.readonly ?? {})) {
-		events.push(`update:${name}`)
-	}
+	// for (const name of Object.keys(schema.readonly ?? {})) {
+	// 	events.push(`update:${name}`)
+	// }
+
+	console.log('schemaToVueEmits', events)
 
 	return events as unknown as TEmits
 }

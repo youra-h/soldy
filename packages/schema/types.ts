@@ -37,6 +37,12 @@ export interface ISchema<
 
 	/** Объединить props + readonly в один словарь. */
 	getAllProps(): Record<string, IPropertySchema<TEvents> | undefined>
+
+	/**
+	 * Все события схемы: явно указанные + собранные из triggers
+	 * всех props и readonly-свойств.
+	 */
+	getAllEvents(): (keyof TEvents & string)[]
 }
 
 // ── Типы эмитов (sync) ───────────────────────────────────────
