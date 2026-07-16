@@ -62,7 +62,7 @@ export interface ISchema<
 // ── Типы эмитов (sync) ───────────────────────────────────────
 
 export type TEmitProperty<TProps extends Record<string, any>> = {
-	[K in keyof TProps]: { type: 'property'; name: K; value: TProps[K] }
+	[K in keyof TProps]: { type: 'property'; name: K; value: TProps[K]; mutable: boolean }
 }[keyof TProps]
 
 export type TEmitEvent<TEvents extends Record<string, any>> = {

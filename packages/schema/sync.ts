@@ -44,18 +44,23 @@ class SyncBindingImpl<
 		this.instance = instance
 		this.props = schema.getAllProps()
 
-		const triggers = schema.getTriggers()
+		// 1. Props → подписка на trigger-события
+		for (const [name, prop] of Object.entries(this.props)) {
+			if (!prop?.get) continue
 
-		// 1. Trigger-события → property handler
-		for (const [event, affectedProps] of triggers) {
-			const handler = this.#propertyHandler(affectedProps)
-			this.#listen(event, handler)
-			this.disposers.push(() => this.#unlisten(event, handler))
+			const handler = this.#propertyHandler([name])
+
+			for (const event of prop.triggers ?? []) {
+				this.#listen(event, handler)
+				this.disposers.push(() => this.#unlisten(event, handler))
+			}
 		}
 
 		// 2. Обычные события (не триггеры) → event handler
+		const triggerEvents = new Set(schema.getTriggers().keys())
+
 		for (const event of schema.events) {
-			if (triggers.has(event)) continue
+			if (triggerEvents.has(event)) continue
 
 			const handler = this.#eventHandler(event)
 			this.#listen(event, handler)
@@ -112,6 +117,7 @@ class SyncBindingImpl<
 					type: 'property',
 					name,
 					value: prop.get(this.instance),
+					mutable: !!prop.set,
 				} as TEmitProperty<TProps>
 
 				for (const fn of this.subscribers) fn(emit)

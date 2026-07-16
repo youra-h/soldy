@@ -27,14 +27,12 @@ export function vueAdapter(
 	emitComponent: SetupContext['emit'],
 ): VueAdapterResult {
 	// 1. Платформа Vue
-	const { mutable } = schema.getEmits()
-
 	const platform: IAdapterPlatform = {
 		emit(notification) {
 			if (notification.type === 'property') {
 				emitComponent(`change:${notification.name}`, notification.value)
 
-				if (mutable.includes(notification.name)) {
+				if (notification.mutable) {
 					emitComponent(`update:${notification.name}`, notification.value)
 				}
 			} else {

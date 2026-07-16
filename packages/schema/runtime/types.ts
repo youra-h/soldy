@@ -1,3 +1,5 @@
+import type { TEmit } from '../types'
+
 /**
  * Интерфейс платформы адаптера.
  *
@@ -7,7 +9,7 @@
  */
 export interface IAdapterPlatform {
 	/** Эмитнуть изменение наружу (свойство или событие). */
-	emit(notification: { type: 'property'; name: string; value: any } | { type: 'event'; name: string; args: any[] }): void
+	emit(notification: TEmit): void
 
 	/** Зарегистрировать очистку при уничтожении компонента. */
 	onDispose(fn: () => void): void
