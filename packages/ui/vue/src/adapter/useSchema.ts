@@ -42,7 +42,7 @@ export function useSchemaEmits(schema: ISchema<any, any>): TEmits {
  *
  * @example
  * ```ts
- * export const props = schemaToVueProps(
+ * export const props = useSchemaProps(
  *   componentSchema,
  *   {
  *     ctrl: {

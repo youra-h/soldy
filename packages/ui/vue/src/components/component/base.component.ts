@@ -1,6 +1,6 @@
 import { type IComponent, type IComponentProps } from '@soldy/core'
 import { componentSchema } from '@soldy/schema'
-import { useSchemaEmits, useSchemaProps } from '../../adapter/schemaToVue'
+import { useSchemaEmits, useSchemaProps } from '../../adapter'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { track } from '@soldy/schema'
 

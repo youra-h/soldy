@@ -2,7 +2,7 @@ import type { SetupContext } from 'vue'
 import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import { componentViewSchema } from '@soldy/schema'
 import BaseComponentView from './base.component'
-import { useAdapter } from '../../adapter/vueAdapter'
+import { useAdapter } from '../../adapter'
 import type { TBaseComponentViewProps } from './types'
 
 export default {

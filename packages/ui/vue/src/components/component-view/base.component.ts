@@ -3,7 +3,7 @@ import { type IComponentView, type IComponentViewProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { TElementPlugin } from '@soldy/plugins'
 import { componentViewSchema } from '@soldy/schema'
-import { useSchemaEmits, useSchemaProps } from '../../adapter/schemaToVue'
+import { useSchemaEmits, useSchemaProps } from '../../adapter'
 import { BaseComponent, syncComponent, type IComponentState } from '../component'
 import { track } from '@soldy/schema'
 
