@@ -15,6 +15,7 @@ export const ElementContribution: Contribution = {
 		{
 			name: 'element',
 			kind: 'state',
+			mutable: false,
 			ownerId: elementContributionId,
 		},
 	],

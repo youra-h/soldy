@@ -9,18 +9,15 @@ import {
 	createComponentViewBundle,
 } from '@soldy/plugins'
 import {
-	compileComponent,
 	Runtime,
 	AggregateAccessorProvider,
 	ComponentAccessorProvider,
 	ElementPluginAccessorProvider,
 	InstancePluginAccessorProvider,
-	ComponentContribution,
-	ElementContribution,
-	InstanceContribution,
 } from '@soldy/host'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
+import { componentViewModel } from './component-view.model'
 import BaseComponentView from './base.component'
 import type { TBaseComponentViewProps } from './types'
 
@@ -46,21 +43,7 @@ export default {
 		// 3. Настраиваем связи (ready-bridge)
 		instancePlugin.instance = instance
 
-		// 4. Компилируем модель TComponentView
-		const componentViewModel = compileComponent(
-			[ComponentContribution, ElementContribution, InstanceContribution],
-			[
-				{ name: 'tag', kind: 'state', ownerId: ComponentContribution.id },
-				{
-					name: 'classes',
-					kind: 'computed',
-					ownerId: ComponentContribution.id,
-				},
-			],
-			['ready'],
-		)
-
-		// 5. Строим провайдер доступа к свойствам
+		// 4. Строим провайдер доступа к свойствам
 		const provider = new AggregateAccessorProvider()
 		provider.addProvider(new ComponentAccessorProvider(instance as any))
 		provider.addProvider(new ElementPluginAccessorProvider(elementPlugin))

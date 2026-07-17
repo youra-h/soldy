@@ -1,52 +1,14 @@
-import { type PropType, type Ref } from 'vue'
-import { type IComponentView, type IComponentViewProps } from '@soldy/core'
+import { type Ref } from 'vue'
+import { type IComponentView, TComponentView } from '@soldy/core'
 import type { TEmits, TProps } from '../../types'
 import { BaseComponent, type IComponentState } from '../component'
 import { useSyncProps } from '../../composables/useSyncProps'
+import { useEmits, useProps } from '../../adapter'
+import { componentViewModel } from './component-view.model'
 
-// ComponentView emits
-export const emitsComponentView: TEmits = [
-	'created',
-	'show',
-	'hide',
-	'show:before',
-	'show:after',
-	'hide:before',
-	'hide:after',
-	'change:rendered',
-	'change:visible',
-	'change:present',
-	'ready',
-	'update:rendered',
-	'update:visible',
-	'update:tag',
-	'change:tag',
-	'change:classes',
-] as const
+export const emitsComponentView: TEmits = useEmits(componentViewModel) as unknown as TEmits
 
-// ComponentView props
-export const propsComponentView: TProps = {
-	rendered: {
-		type: Boolean as PropType<boolean>,
-		default: true,
-	},
-	visible: {
-		type: Boolean as PropType<boolean>,
-		default: true,
-	},
-	tag: {
-		type: [String, Object] as PropType<string | object>,
-		default: 'div',
-	},
-	ctrl: {
-		type: Object as PropType<IComponentView | undefined>,
-		default: undefined,
-	},
-	plugins: {
-		type: Object as PropType<any>,
-		default: undefined,
-	},
-}
+export const propsComponentView: TProps = useProps(componentViewModel, TComponentView) as TProps
 
 export default {
 	name: 'BaseComponentView',

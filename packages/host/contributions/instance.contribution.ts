@@ -15,6 +15,7 @@ export const InstanceContribution: Contribution = {
 		{
 			name: 'instance',
 			kind: 'state',
+			mutable: false,
 			ownerId: instanceContributionId,
 		},
 	],

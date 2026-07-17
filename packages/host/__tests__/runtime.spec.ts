@@ -19,6 +19,11 @@ describe('Runtime', () => {
 			'visible',
 			'present',
 		])
+		expect(model.members.map(m => m.mutable)).toEqual([
+			true,
+			true,
+			false,
+		])
 		expect(model.events).toContain('show')
 		expect(model.events).toContain('hide')
 		expect(model.events).toContain('change:rendered')

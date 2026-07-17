@@ -11,6 +11,8 @@ export type MemberKind = 'state' | 'computed' | 'event'
 export interface ContractMember {
 	name: string
 	kind: MemberKind
+	/** Может ли свойство быть изменено извне (есть ли setter) */
+	mutable: boolean
 	/** Идентификатор источника (Contribution.id), которому принадлежит член */
 	ownerId: symbol
 }

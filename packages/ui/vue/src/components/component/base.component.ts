@@ -1,41 +1,15 @@
-import { type PropType, type Ref } from 'vue'
-import { type IComponentProps } from '@soldy/core'
+import { type Ref } from 'vue'
+import { type IComponentProps, TComponent } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { track } from '@soldy/host'
+import { track, ComponentContribution } from '@soldy/host'
+import { compileComponent } from '@soldy/host'
+import { useEmits, useProps } from '../../adapter'
 
-export const emitsComponent: TEmits = [
-	'created',
-	'show',
-	'hide',
-	'show:before',
-	'show:after',
-	'hide:before',
-	'hide:after',
-	'change:rendered',
-	'change:visible',
-	'change:present',
-	'update:rendered',
-	'update:visible',
-] as const
+const componentModel = compileComponent([ComponentContribution])
 
-export const propsComponent: TProps = {
-	rendered: {
-		type: Boolean as PropType<boolean>,
-		default: true,
-	},
-	visible: {
-		type: Boolean as PropType<boolean>,
-		default: true,
-	},
-	ctrl: {
-		type: Object as PropType<any>,
-		default: undefined,
-	},
-	plugins: {
-		type: Object as PropType<any>,
-		default: undefined,
-	},
-}
+export const emitsComponent: TEmits = useEmits(componentModel) as unknown as TEmits
+
+export const propsComponent: TProps = useProps(componentModel, TComponent) as TProps
 
 export default {
 	name: 'BaseComponent',
