@@ -1,15 +1,14 @@
 /**
  * @soldy/host — runtime/Runtime.ts
  *
- * Живая система, связывающая ComponentModel и AccessorProvider.
- * Строит подписки на изменения свойств И событий, предоставляет единый subscribe.
- * Не знает кто такой плагин, компонент или emitter — только Accessor и IEventSource.
+ * Живая система, связывающая ComponentModel и RuntimeProvider.
+ * Строит подписки на изменения свойств И событий через единый провайдер.
+ * Не знает кто такой плагин, компонент или emitter.
  */
 
 import type { ComponentModel } from '../contract/types'
 import type { Accessor } from './Accessor'
-import type { AccessorProvider } from './AccessorProvider'
-import type { IEventSource } from '@soldy/core'
+import type { RuntimeProvider } from './AccessorProvider'
 
 export type EmitPayload =
 	| { type: 'property'; name: string; value: any; mutable: boolean }
@@ -23,8 +22,7 @@ export class Runtime {
 
 	constructor(
 		model: ComponentModel,
-		provider: AccessorProvider,
-		eventSources: IEventSource[] = [],
+		provider: RuntimeProvider,
 	) {
 		this.model = model
 
@@ -48,21 +46,16 @@ export class Runtime {
 			this.disposers.push(unsub)
 		}
 
-		// 2. Подписка на жизненные события от всех источников (единая шина)
+		// 2. Подписка на события через провайдер
 		for (const eventName of model.events) {
-			for (const source of eventSources) {
-				const handler = (...args: any[]) => {
-					this.notify({
-						type: 'event',
-						name: eventName,
-						args,
-					})
-				}
-				source.on(eventName as any, handler)
-				this.disposers.push(() =>
-					source.off(eventName as any, handler),
-				)
-			}
+			const unsub = provider.subscribe(eventName, (...args: any[]) => {
+				this.notify({
+					type: 'event',
+					name: eventName,
+					args,
+				})
+			})
+			if (unsub) this.disposers.push(unsub)
 		}
 	}
 

@@ -10,7 +10,7 @@ import {
 } from '@soldy/plugins'
 import {
 	Runtime,
-	AggregateAccessorProvider,
+	AggregateRuntimeProvider,
 	ComponentAccessorProvider,
 	ElementPluginAccessorProvider,
 	InstancePluginAccessorProvider,
@@ -43,20 +43,16 @@ export default {
 		// 3. Настраиваем связи (ready-bridge)
 		instancePlugin.instance = instance
 
-		// 4. Строим провайдер доступа к свойствам
-		const provider = new AggregateAccessorProvider()
+		// 4. Строим провайдер
+		const provider = new AggregateRuntimeProvider()
 		provider.addProvider(new ComponentAccessorProvider(instance as any))
 		provider.addProvider(new ElementPluginAccessorProvider(elementPlugin))
 		provider.addProvider(
 			new InstancePluginAccessorProvider(instancePlugin),
 		)
 
-		// 6. Создаём Runtime с единой шиной событий
-		const runtime = new Runtime(componentViewModel, provider, [
-			instance.events,
-			elementPlugin.events,
-			instancePlugin.events,
-		])
+		// 5. Создаём Runtime
+		const runtime = new Runtime(componentViewModel, provider)
 
 		// 7. Реактивные refs из Runtime (с автоподпиской)
 		const { refs } = useComponentRuntime(runtime, props, emit)

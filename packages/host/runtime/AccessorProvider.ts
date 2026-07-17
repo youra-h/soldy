@@ -1,15 +1,22 @@
 /**
- * @soldy/host — runtime/AccessorProvider.ts
+ * @soldy/host — runtime/RuntimeProvider.ts
  *
- * Провайдер создаёт Accessor для ContractMember'а.
- * Каждый провайдер отвечает за свои ownerId и возвращает undefined для чужих.
- * Runtime перебирает провайдеров через AggregateAccessorProvider.
+ * Единый провайдер runtime-возможностей.
+ * Каждый провайдер отвечает за свой Contribution:
+ * - предоставляет Accessor для свойств (state/computed)
+ * - подписывает на события
  */
 
 import type { Accessor } from './Accessor'
 import type { ContractMember } from '../contract/types'
 
-export interface AccessorProvider {
-	/** Для данного члена контракта создать Accessor */
+export interface RuntimeProvider {
+	/** Для данного члена контракта создать Accessor (state/computed). */
 	getAccessor(member: ContractMember): Accessor | undefined
+
+	/**
+	 * Подписаться на событие.
+	 * Возвращает функцию отписки. Если событие не обрабатывается — undefined.
+	 */
+	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined
 }

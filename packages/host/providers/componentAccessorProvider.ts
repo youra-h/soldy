@@ -6,14 +6,11 @@
  */
 
 import type { Accessor } from '../runtime/Accessor'
-import type { AccessorProvider } from '../runtime/AccessorProvider'
+import type { RuntimeProvider } from '../runtime/AccessorProvider'
 import type { ContractMember } from '../contract/types'
 import { componentContributionId } from '../contributions/component.contribution'
 import type { IComponent } from '@soldy/core'
 
-/**
- * Карта: имя свойства → список событий, которые сигнализируют об изменении
- */
 const triggerMap: Record<string, string[]> = {
 	rendered: ['change:rendered'],
 	visible: ['change:visible'],
@@ -22,8 +19,14 @@ const triggerMap: Record<string, string[]> = {
 	classes: ['change:classes'],
 }
 
-export class ComponentAccessorProvider implements AccessorProvider {
+export class ComponentAccessorProvider implements RuntimeProvider {
 	constructor(private instance: IComponent) {}
+
+	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+		const events = this.instance.events as any
+		events.on(event, handler)
+		return () => events.off(event, handler)
+	}
 
 	getAccessor(member: ContractMember): Accessor | undefined {
 		if (member.ownerId !== componentContributionId) return undefined

@@ -6,13 +6,24 @@
  */
 
 import type { Accessor } from '../runtime/Accessor'
-import type { AccessorProvider } from '../runtime/AccessorProvider'
+import type { RuntimeProvider } from '../runtime/AccessorProvider'
 import type { ContractMember } from '../contract/types'
 import { elementContributionId } from '../contributions/element.contribution'
 import type { TElementPlugin } from '@soldy/plugins'
 
-export class ElementPluginAccessorProvider implements AccessorProvider {
+export class ElementPluginAccessorProvider implements RuntimeProvider {
 	constructor(private plugin: TElementPlugin) {}
+
+	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+		// element:ready → plugin.events.on('ready', ...)
+		// element:removed → plugin.events.on('removed', ...)
+		const internalEvent = event.replace(/^element:/, '')
+		if (internalEvent === event) return undefined
+
+		const events = this.plugin.events as any
+		events.on(internalEvent, handler)
+		return () => events.off(internalEvent, handler)
+	}
 
 	getAccessor(member: ContractMember): Accessor | undefined {
 		if (member.ownerId !== elementContributionId) return undefined

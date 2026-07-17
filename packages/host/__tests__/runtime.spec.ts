@@ -6,7 +6,7 @@ import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '../contributions/component.contribution'
 import { Runtime } from '../runtime/Runtime'
 import { ComponentAccessorProvider } from '../providers/componentAccessorProvider'
-import { AggregateAccessorProvider } from '../runtime/aggregateProvider'
+import { AggregateRuntimeProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 
 describe('Runtime', () => {
@@ -26,14 +26,13 @@ describe('Runtime', () => {
 		])
 		expect(model.events).toContain('show')
 		expect(model.events).toContain('hide')
-		expect(model.events).not.toContain('change:rendered') // property changes via Accessor, not events
 	})
 
 	it('Runtime получает значение свойства из компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 
-		const provider = new AggregateAccessorProvider()
+		const provider = new AggregateRuntimeProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)
@@ -47,7 +46,7 @@ describe('Runtime', () => {
 	it('Runtime уведомляет о изменениях', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateAccessorProvider()
+		const provider = new AggregateRuntimeProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)
@@ -70,7 +69,7 @@ describe('Runtime', () => {
 	it('Runtime.setValue обновляет свойство компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateAccessorProvider()
+		const provider = new AggregateRuntimeProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)

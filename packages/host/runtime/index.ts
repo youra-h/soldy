@@ -1,6 +1,6 @@
 export type { Accessor } from './Accessor'
-export type { AccessorProvider } from './AccessorProvider'
-export { AggregateAccessorProvider } from './aggregateProvider'
+export type { RuntimeProvider } from './AccessorProvider'
+export { AggregateRuntimeProvider } from './aggregateProvider'
 export { Runtime } from './Runtime'
 export type { EmitPayload } from './Runtime'
 export { track } from './track'
