@@ -1,12 +1,41 @@
+import { type PropType, type Ref } from 'vue'
 import { type IComponentProps } from '@soldy/core'
-import { componentSchema } from '@soldy/schema'
-import { useSchemaEmits, useSchemaProps } from '../../adapter'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { track } from '@soldy/schema'
+import { track } from '@soldy/host'
 
-export const emitsComponent: TEmits = useSchemaEmits(componentSchema)
+export const emitsComponent: TEmits = [
+	'created',
+	'show',
+	'hide',
+	'show:before',
+	'show:after',
+	'hide:before',
+	'hide:after',
+	'change:rendered',
+	'change:visible',
+	'change:present',
+	'update:rendered',
+	'update:visible',
+] as const
 
-export const propsComponent: TProps = useSchemaProps(componentSchema)
+export const propsComponent: TProps = {
+	rendered: {
+		type: Boolean as PropType<boolean>,
+		default: true,
+	},
+	visible: {
+		type: Boolean as PropType<boolean>,
+		default: true,
+	},
+	ctrl: {
+		type: Object as PropType<any>,
+		default: undefined,
+	},
+	plugins: {
+		type: Object as PropType<any>,
+		default: undefined,
+	},
+}
 
 export default {
 	name: 'BaseComponent',

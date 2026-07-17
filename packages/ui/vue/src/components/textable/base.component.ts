@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/schema'
+import { track } from '@soldy/host'
 import { type ITextable, type ITextableProps, TTextable } from '@soldy/core'
 import { BaseControl, emitsControl, propsControl, syncControl, type IControlState } from '../control'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'

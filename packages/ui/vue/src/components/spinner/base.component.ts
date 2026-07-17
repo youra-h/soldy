@@ -15,7 +15,7 @@ import type { TEmits, TProps, ISyncComponentOptions } from '../../types/common'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
 import { TSpinnerStylePlugin } from '@soldy/plugins'
-import { track } from '@soldy/schema'
+import { track } from '@soldy/host'
 
 export const emitsSpinner: TEmits = [
 	...emitsStylable,

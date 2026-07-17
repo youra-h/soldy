@@ -1,5 +1,5 @@
 import type { PropType } from 'vue'
-import { track } from '@soldy/schema'
+import { track } from '@soldy/host'
 import {
 	type IListBox,
 	type IListBoxItem,

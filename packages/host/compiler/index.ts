@@ -1,0 +1,1 @@
+export { compileComponent } from './compileComponent'

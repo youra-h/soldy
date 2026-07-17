@@ -1,15 +1,52 @@
-import { useSyncProps } from '../../composables/useSyncProps'
+import { type PropType, type Ref } from 'vue'
 import { type IComponentView, type IComponentViewProps } from '@soldy/core'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { TElementPlugin } from '@soldy/plugins'
-import { componentViewSchema } from '@soldy/schema'
-import { useSchemaEmits, useSchemaProps } from '../../adapter'
-import { BaseComponent, syncComponent, type IComponentState } from '../component'
-import { track } from '@soldy/schema'
+import type { TEmits, TProps } from '../../types'
+import { BaseComponent, type IComponentState } from '../component'
+import { useSyncProps } from '../../composables/useSyncProps'
 
-export const emitsComponentView: TEmits = useSchemaEmits(componentViewSchema)
+// ComponentView emits
+export const emitsComponentView: TEmits = [
+	'created',
+	'show',
+	'hide',
+	'show:before',
+	'show:after',
+	'hide:before',
+	'hide:after',
+	'change:rendered',
+	'change:visible',
+	'change:present',
+	'ready',
+	'update:rendered',
+	'update:visible',
+	'update:tag',
+	'change:tag',
+	'change:classes',
+] as const
 
-export const propsComponentView: TProps = useSchemaProps(componentViewSchema)
+// ComponentView props
+export const propsComponentView: TProps = {
+	rendered: {
+		type: Boolean as PropType<boolean>,
+		default: true,
+	},
+	visible: {
+		type: Boolean as PropType<boolean>,
+		default: true,
+	},
+	tag: {
+		type: [String, Object] as PropType<string | object>,
+		default: 'div',
+	},
+	ctrl: {
+		type: Object as PropType<IComponentView | undefined>,
+		default: undefined,
+	},
+	plugins: {
+		type: Object as PropType<any>,
+		default: undefined,
+	},
+}
 
 export default {
 	name: 'BaseComponentView',
@@ -23,33 +60,27 @@ export interface IComponentViewState extends IComponentState {
 	classes: Ref<string[]>
 }
 
-/** @deprecated Использовать setup.component.ts с useAdapter */
+/** @deprecated Использовать setup.component.ts с Runtime */
 export function syncComponentView(
-	options: ISyncComponentOptions<IComponentViewProps, IComponentView>,
+	options: any,
 ): IComponentViewState {
-	const syncProps = syncComponent(options)
-
-	const { props, instance, plugins, emit } = options
-
-	plugins.get(TElementPlugin)!.events.on('ready', ({ element }: { element: HTMLElement }) => {
-		const payload = { element, instance, plugins }
-		emit?.('ready', payload)
-	})
-
-	track(props, 'tag', (value) => {
-		if (value !== undefined && value !== instance.tag) {
-			instance.tag = value
-		}
-	})
+	const { instance } = options
 
 	return {
-		...syncProps,
-		...useSyncProps(instance.events, {
+		rendered: useSyncProps(instance.events, {
 			rendered: () => instance.rendered,
+		}).rendered,
+		visible: useSyncProps(instance.events, {
 			visible: () => instance.visible,
+		}).visible,
+		present: useSyncProps(instance.events, {
 			present: () => instance.present,
+		}).present,
+		tag: useSyncProps(instance.events, {
 			tag: () => instance.tag,
+		}).tag,
+		classes: useSyncProps(instance.events, {
 			classes: () => instance.classes.list,
-		}),
+		}).classes,
 	}
 }
