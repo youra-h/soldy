@@ -36,7 +36,7 @@ export class Runtime {
 					type: 'property',
 					name: member.name,
 					value: accessor.get(),
-					mutable: !!accessor.set,
+					mutable: member.mutable,
 				})
 			})
 			this.disposers.push(unsub)
