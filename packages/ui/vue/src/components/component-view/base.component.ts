@@ -3,13 +3,13 @@ import { type IComponentView, type IComponentViewProps } from '@soldy/core'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { TElementPlugin } from '@soldy/plugins'
 import { componentViewSchema } from '@soldy/schema'
-import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
+import { useSchemaEmits, useSchemaProps } from '../../adapter/schemaToVue'
 import { BaseComponent, syncComponent, type IComponentState } from '../component'
 import { track } from '@soldy/schema'
 
-export const emitsComponentView: TEmits = schemaToVueEmits(componentViewSchema)
+export const emitsComponentView: TEmits = useSchemaEmits(componentViewSchema)
 
-export const propsComponentView: TProps = schemaToVueProps(componentViewSchema)
+export const propsComponentView: TProps = useSchemaProps(componentViewSchema)
 
 export default {
 	name: 'BaseComponentView',
@@ -23,7 +23,7 @@ export interface IComponentViewState extends IComponentState {
 	classes: Ref<string[]>
 }
 
-/** @deprecated Использовать setup.component.ts с vueAdapter */
+/** @deprecated Использовать setup.component.ts с useAdapter */
 export function syncComponentView(
 	options: ISyncComponentOptions<IComponentViewProps, IComponentView>,
 ): IComponentViewState {

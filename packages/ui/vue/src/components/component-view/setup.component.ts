@@ -2,7 +2,7 @@ import type { SetupContext } from 'vue'
 import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import { componentViewSchema } from '@soldy/schema'
 import BaseComponentView from './base.component'
-import { vueAdapter } from '../../adapter/vueAdapter'
+import { useAdapter } from '../../adapter/vueAdapter'
 import type { TBaseComponentViewProps } from './types'
 
 export default {
@@ -12,7 +12,7 @@ export default {
 		props: TBaseComponentViewProps<IComponentViewProps, IComponentView>,
 		{ emit }: SetupContext,
 	) {
-		const { instance, refs, plugins, rootElement } = vueAdapter(
+		const { instance, refs, plugins, rootElement } = useAdapter(
 			componentViewSchema,
 			props,
 			emit,

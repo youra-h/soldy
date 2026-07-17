@@ -1,12 +1,12 @@
 import { type IComponent, type IComponentProps } from '@soldy/core'
 import { componentSchema } from '@soldy/schema'
-import { schemaToVueEmits, schemaToVueProps } from '../../adapter/schemaToVue'
+import { useSchemaEmits, useSchemaProps } from '../../adapter/schemaToVue'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { track } from '@soldy/schema'
 
-export const emitsComponent: TEmits = schemaToVueEmits(componentSchema)
+export const emitsComponent: TEmits = useSchemaEmits(entitySchema)
 
-export const propsComponent: TProps = schemaToVueProps(componentSchema)
+export const propsComponent: TProps = useSchemaProps(entitySchema)
 
 export default {
 	name: 'BaseComponent',
@@ -24,7 +24,7 @@ export interface IComponentState {
 	present: Ref<boolean>
 }
 
-/** @deprecated Использовать setup.component.ts с vueAdapter */
+/** @deprecated Использовать setup.component.ts с useAdapter */
 export function syncComponent(options: ISyncComponentOptions<IComponentProps>): IComponentState {
 	const { props, instance, emit } = options
 

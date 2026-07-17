@@ -20,7 +20,7 @@ function inferVueType(value: unknown): any {
  * - mutable  → change:<name> + update:<name> (v-model)
  * - readonly → change:<name>
  */
-export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
+export function useSchemaEmits(schema: ISchema<any, any>): TEmits {
 	const { events, mutable, readonly } = schema.getEmits()
 	const emits: string[] = [...events]
 
@@ -52,7 +52,7 @@ export function schemaToVueEmits(schema: ISchema<any, any>): TEmits {
  * )
  * ```
  */
-export function schemaToVueProps(schema: ISchema<any, any>, extra?: Record<string, any>): TProps {
+export function useSchemaProps(schema: ISchema<any, any>, extra?: Record<string, any>): TProps {
 	const defaults = (schema.Ctor as any).defaultValues ?? {}
 	const result: Record<string, any> = {}
 

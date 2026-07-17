@@ -6,7 +6,7 @@ import type { ISchema, IAdapterPlatform } from '@soldy/schema'
 import { createAdapter, createRefs, bindProps } from '@soldy/schema'
 import { useElementBinding } from '../composables/useElementBinding'
 
-export interface VueAdapterResult {
+export interface AdapterResult {
 	/** Core-экземпляр компонента. */
 	ctrl: IComponent<any, any>
 	/** Реактивные refs для шаблона. */
@@ -21,11 +21,11 @@ export interface VueAdapterResult {
  * Vue-адаптер: реализует {@link IAdapterPlatform} и делегирует
  * общую логику в {@link createAdapter}.
  */
-export function vueAdapter(
+export function useAdapter(
 	schema: ISchema<any, any>,
 	props: Record<string, any>,
 	emitComponent: SetupContext['emit'],
-): VueAdapterResult {
+): AdapterResult {
 	// 1. Платформа Vue
 	const platform: IAdapterPlatform = {
 		emit(notification) {
