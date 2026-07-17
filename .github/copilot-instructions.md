@@ -131,20 +131,21 @@ compileComponent() → ComponentModel (immutable DTO)
   ↓
 Runtime (живая система: Accessor + подписки)
   ↓
-useRuntimeComponent() → reactive refs для шаблона
+useComponentRuntime() → reactive refs для шаблона
 ```
 
 Ключевые концепции:
-- **Contribution** — вклад от источника (компонент/плагин) с `ownerId` (symbol)
-- **ComponentModel** — immutable DTO: `members: ContractMember[]`, `events: string[]`
-- **Accessor** — интерфейс `{ get, set?, subscribe }` для доступа к свойству
-- **AccessorProvider** — создаёт Accessor по ContractMember, фильтруя по `ownerId`
+- **Contribution** — вклад от источника (компонент/плагин) с `ownerId` (symbol) и списком `events`
+- **ComponentModel** — immutable DTO: `members: ContractMember[]`. События — такие же члены с `kind: 'event'`
+- **ContractMember** — `{ name, kind ('state'|'computed'|'event'), mutable, ownerId }`
+- **Accessor** — интерфейс `{ get?, set?, subscribe }` — единый доступ к свойствам и событиям
+- **AccessorProvider** — создаёт Accessor по ContractMember, фильтруя по `ownerId`. Для событий (`kind: 'event'`) Accessor имеет только `subscribe`, для свойств — ещё `get` (+ `set` если `mutable`)
 - **AggregateAccessorProvider** — композит из нескольких провайдеров
-- **Runtime** — связывает ComponentModel + AggregateAccessorProvider, строит подписки
+- **Runtime** — единый механизм: для каждого члена получает Accessor у провайдера, подписывается и нотифицирует подписчиков. Не различает свойства и события — всё через Accessor
 
 Структура:
 - `contract/` — `Contribution`, `ComponentModel`, `ContractMember`, `MemberKind`
-- `compiler/` — `compileComponent()` — чистая функция
+- `compiler/` — `compileComponent()` — чистая функция, собирает модель из Contribution. События contribution превращает в члены с `kind: 'event'`
 - `runtime/` — `Runtime`, `Accessor`, `AccessorProvider`, `AggregateProvider`, `track()`
 - `contributions/` — `ComponentContribution`, `ElementContribution`, `InstanceContribution`
 - `providers/` — `ComponentAccessorProvider`, `ElementPluginAccessorProvider`, `InstancePluginAccessorProvider`
@@ -173,14 +174,21 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 ### Vue (`packages/ui/vue/`) — полноценно реализован
 
 Два подхода:
-1. **`useRuntimeComponent(runtime, props, emit)`** — новый Runtime-based адаптер. Работает с `@soldy/host`. Создаёт реактивные refs из ComponentModel + Runtime, подписывается на изменения.
+1. **`useRuntimeComponent(runtime, props, emit)`** — новый Runtime-based адаптер. Работает с `@soldy/host`. Создаёт реактивные refs из ComponentModel + Runtime, подписывается на изменения свойств и событий.
 2. **`useComponentSetup({ Ctor, plugins, sync })`** — упрощённый вариант (без Runtime, прямая работа с core-классами).
+
+Адаптеры (`ui/vue/src/adapter/`):
+- **`useEmits(model)`** — генерирует Vue emits из ComponentModel: события как есть, свойства как `change:{name}` (+ `update:{name}` для mutable)
+- **`useProps(model, ctor)`** — генерирует Vue props из ComponentModel + defaultValues конструктора
+
+Модель компонента выносится в отдельный файл (`component-view.model.ts`), используется и для emits/props, и для Runtime.
 
 Ключевые composables: `useEventState()`, `useSyncProps()`, `useElementBinding()`, `useComponentRuntime()`.
 
 Структура Vue-компонента:
 ```
 {name}.vue          — шаблон + импорт setup
+{name}.model.ts     — compileComponent(...) — один источник модели
 {name}.component.ts — опции (name, extends, emits, props) + sync-функция
 ```
 
