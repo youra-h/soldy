@@ -18,6 +18,8 @@ const triggerMap: Record<string, string[]> = {
 	rendered: ['change:rendered'],
 	visible: ['change:visible'],
 	present: ['change:rendered', 'change:visible'],
+	tag: ['change:tag'],
+	classes: ['change:classes'],
 }
 
 export class ComponentAccessorProvider implements AccessorProvider {
