@@ -1,10 +1,11 @@
-import { type Ref, customRef, watch, onUnmounted } from 'vue'
+import { type Ref, watch, onUnmounted } from 'vue'
 import type { SetupContext } from 'vue'
 import type { IComponent } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { ISchema, IAdapterPlatform } from '@soldy/schema'
 import { createAdapter, createRefs, bindProps } from '@soldy/schema'
 import { useElementBinding } from '../composables/useElementBinding'
+import { useRef } from './useRef'
 
 export interface IAdapterResult {
 	/** Core-экземпляр компонента. */
@@ -57,22 +58,7 @@ export function useAdapter(
 	})
 
 	// 3. Реактивные Vue-refs
-	const refs = createRefs(schema, adapter, (getter: () => any) => {
-		let trigger: () => void
-
-		const ref = customRef((track, t) => {
-			trigger = t
-			return {
-				get() {
-					track()
-					return getter()
-				},
-				set() {},
-			}
-		})
-
-		return { ref, trigger: () => trigger() }
-	})
+	const refs = createRefs(schema, adapter, useRef)
 
 	// 4. Привязка DOM-элемента
 	const rootElement = useElementBinding(adapter.bundle)
