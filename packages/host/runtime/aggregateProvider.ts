@@ -5,7 +5,8 @@
  * и возвращает первый подходящий Accessor.
  */
 
-import type { AccessorProvider, Accessor } from './Accessor'
+import type { Accessor } from './Accessor'
+import type { AccessorProvider } from './AccessorProvider'
 import type { ContractMember } from '../contract/types'
 
 export class AggregateAccessorProvider implements AccessorProvider {

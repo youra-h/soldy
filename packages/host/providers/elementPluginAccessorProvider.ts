@@ -5,7 +5,8 @@
  * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = elementContributionId.
  */
 
-import type { AccessorProvider, Accessor } from '../runtime/Accessor'
+import type { Accessor } from '../runtime/Accessor'
+import type { AccessorProvider } from '../runtime/AccessorProvider'
 import type { ContractMember } from '../contract/types'
 import { elementContributionId } from '../contributions/element.contribution'
 import type { TElementPlugin } from '@soldy/plugins'
