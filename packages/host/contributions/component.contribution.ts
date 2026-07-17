@@ -39,8 +39,5 @@ export const ComponentContribution: Contribution = {
 		'show:after',
 		'hide:before',
 		'hide:after',
-		'change:rendered',
-		'change:visible',
-		'change:present',
 	],
 }

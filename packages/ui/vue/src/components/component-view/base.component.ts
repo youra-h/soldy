@@ -10,6 +10,8 @@ export const emitsComponentView: TEmits = useEmits(componentViewModel) as unknow
 
 export const propsComponentView: TProps = useProps(componentViewModel, TComponentView) as TProps
 
+console.log('componentViewModel', emitsComponentView, propsComponentView)
+
 export default {
 	name: 'BaseComponentView',
 	extends: BaseComponent,

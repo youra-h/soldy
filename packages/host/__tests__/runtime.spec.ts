@@ -26,7 +26,7 @@ describe('Runtime', () => {
 		])
 		expect(model.events).toContain('show')
 		expect(model.events).toContain('hide')
-		expect(model.events).toContain('change:rendered')
+		expect(model.events).not.toContain('change:rendered') // property changes via Accessor, not events
 	})
 
 	it('Runtime получает значение свойства из компонента', () => {

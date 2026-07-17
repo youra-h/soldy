@@ -51,8 +51,12 @@ export default {
 			new InstancePluginAccessorProvider(instancePlugin),
 		)
 
-		// 6. Создаём Runtime
-		const runtime = new Runtime(componentViewModel, provider)
+		// 6. Создаём Runtime с единой шиной событий
+		const runtime = new Runtime(componentViewModel, provider, [
+			instance.events,
+			elementPlugin.events,
+			instancePlugin.events,
+		])
 
 		// 7. Реактивные refs из Runtime (с автоподпиской)
 		const { refs } = useComponentRuntime(runtime, props, emit)

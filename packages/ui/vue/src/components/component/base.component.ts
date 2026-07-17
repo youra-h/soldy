@@ -15,10 +15,6 @@ export default {
 	name: 'BaseComponent',
 	emits: emitsComponent,
 	props: propsComponent,
-	created() {
-		// @ts-ignore
-		this.$emit('created', { ctrl: this.instance, plugins: this.plugins })
-	},
 }
 
 export interface IComponentState {
