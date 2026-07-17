@@ -1,12 +1,12 @@
-import { type IComponent, type IComponentProps } from '@soldy/core'
+import { type IComponentProps } from '@soldy/core'
 import { componentSchema } from '@soldy/schema'
 import { useSchemaEmits, useSchemaProps } from '../../adapter'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { track } from '@soldy/schema'
 
-export const emitsComponent: TEmits = useSchemaEmits(entitySchema)
+export const emitsComponent: TEmits = useSchemaEmits(componentSchema)
 
-export const propsComponent: TProps = useSchemaProps(entitySchema)
+export const propsComponent: TProps = useSchemaProps(componentSchema)
 
 export default {
 	name: 'BaseComponent',

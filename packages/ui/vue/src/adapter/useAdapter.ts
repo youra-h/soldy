@@ -8,7 +8,7 @@ import { useElementBinding } from '../composables/useElementBinding'
 
 export interface IAdapterResult {
 	/** Core-экземпляр компонента. */
-	ctrl: IComponent<any, any>
+	instance: IComponent<any, any>
 	/** Реактивные refs для шаблона. */
 	refs: Record<string, Ref<any>>
 	/** Бандл плагинов. */
@@ -50,7 +50,10 @@ export function useAdapter(
 
 	// 2b. Явная синхронизация props → instance
 	bindProps(schema, (name: string) => {
-		watch(() => (props as any)[name], () => adapter.syncProp(name))
+		watch(
+			() => (props as any)[name],
+			() => adapter.syncProp(name),
+		)
 	})
 
 	// 3. Реактивные Vue-refs
@@ -60,7 +63,10 @@ export function useAdapter(
 		const ref = customRef((track, t) => {
 			trigger = t
 			return {
-				get() { track(); return getter() },
+				get() {
+					track()
+					return getter()
+				},
 				set() {},
 			}
 		})
@@ -71,6 +77,5 @@ export function useAdapter(
 	// 4. Привязка DOM-элемента
 	const rootElement = useElementBinding(adapter.bundle)
 
-	return { ctrl: adapter.instance, plugins: adapter.bundle, refs, rootElement }
+	return { instance: adapter.instance, plugins: adapter.bundle, refs, rootElement }
 }
-
