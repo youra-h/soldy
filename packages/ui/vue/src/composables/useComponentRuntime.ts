@@ -41,7 +41,7 @@ export function useComponentRuntime(
 		}
 	})
 
-	// 3. Синхронизация внешних props → Runtime
+	// 3. Синхронизация внешних props → Runtime (только при изменениях)
 	const stopWatch = watch(
 		() => ({ ...externalProps }),
 		(newProps) => {
@@ -55,7 +55,7 @@ export function useComponentRuntime(
 				}
 			}
 		},
-		{ deep: true, immediate: true },
+		{ deep: true },
 	)
 
 	// 4. Генерация emits для Vue (статическое описание)
