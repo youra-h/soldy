@@ -59,7 +59,7 @@ export default class TComponent<
 			this._emitPresent()
 		})
 
-		setTimeout(() => (this.events as TEvented<TComponentEvents>).emit('created', this), 0)
+		queueMicrotask(() => (this.events as TEvented<TComponentEvents>).emit('created', this))
 	}
 
 	static prepareOptions<TProps extends IComponentProps = IComponentProps, TStates = any>(
