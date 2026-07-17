@@ -36,9 +36,13 @@ export class ComponentAccessorProvider implements AccessorProvider {
 
 		const accessor: Accessor = {
 			get: () => (instance as any)[member.name],
-			set: (value: any) => {
-				;(instance as any)[member.name] = value
-			},
+			...(member.mutable
+				? {
+						set: (value: any) => {
+							;(instance as any)[member.name] = value
+						},
+					}
+				: {}),
 			subscribe: (handler) => {
 				const unsubs = triggers.map((event: string) => {
 					events.on(event, handler)
