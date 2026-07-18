@@ -8,9 +8,8 @@ import {
 	TReadyBridgePlugin,
 	createComponentViewBundle,
 } from '@soldy/plugins'
-import { TRuntime, TAggregateProvider } from '@soldy/provider'
+import { TRuntime, TAggregateProvider, TObservingAccessorProvider } from '@soldy/provider'
 import {
-	TInstanceAccessorProvider,
 	TElementPluginAccessorProvider,
 	TInstancePluginAccessorProvider,
 } from '@soldy/setup'
@@ -44,7 +43,7 @@ export default {
 
 		// 4. Строим провайдер
 		const provider = new TAggregateProvider()
-		provider.add(new TInstanceAccessorProvider(instance as any))
+		provider.add(new TObservingAccessorProvider(instance as any))
 		provider.add(new TElementPluginAccessorProvider(elementPlugin))
 		provider.add(new TInstancePluginAccessorProvider(instancePlugin))
 

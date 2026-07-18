@@ -3,7 +3,8 @@
  */
 import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'
-import { ComponentContribution, TInstanceAccessorProvider } from '@soldy/setup'
+import { ComponentContribution } from '@soldy/setup'
+import { TObservingAccessorProvider } from '../runtime/accessor-provider.class'
 import { TRuntime } from '../runtime/Runtime'
 import { TAggregateProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
@@ -32,7 +33,7 @@ describe('TRuntime', () => {
 		const component = new TComponent()
 
 		const provider = new TAggregateProvider()
-		provider.add(new TInstanceAccessorProvider(component))
+		provider.add(new TObservingAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -46,7 +47,7 @@ describe('TRuntime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 		const provider = new TAggregateProvider()
-		provider.add(new TInstanceAccessorProvider(component))
+		provider.add(new TObservingAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -69,7 +70,7 @@ describe('TRuntime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 		const provider = new TAggregateProvider()
-		provider.add(new TInstanceAccessorProvider(component))
+		provider.add(new TObservingAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 

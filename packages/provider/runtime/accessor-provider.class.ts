@@ -1,16 +1,16 @@
 /**
- * @soldy/setup — providers/core/instance.ts
+ * @soldy/provider — runtime/accessor-provider.class.ts
  *
- * Универсальный IAccessorProvider для любого core-компонента.
- * Работает с любым набором контрибуций одного инстанса.
- * Использует triggers из IContractProp — не знает о конкретных компонентах.
+ * Универсальный IAccessorProvider для любого IComponent.
+ * Использует triggers из IContractProp для подписки на изменения.
+ * Не знает о конкретных компонентах или контрибуциях.
  */
 
-import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
-import type { IContractProp } from '@soldy/provider'
+import type { IAccessor, IAccessorProvider, IEventProvider } from './types'
+import type { IContractProp } from '../contract/types'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
-export class TInstanceAccessorProvider implements IAccessorProvider, IEventProvider {
+export class TObservingAccessorProvider implements IAccessorProvider, IEventProvider {
 	constructor(private instance: IComponent) {}
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
