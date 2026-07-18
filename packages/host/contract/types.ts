@@ -22,3 +22,15 @@ export interface IComponentModel {
 	/** Имена всех событий (для генерации emits) */
 	events: string[]
 }
+
+/**
+ * Вклад (IContribution) — декларация членов и событий от одного источника.
+ * Источником может быть core-компонент, плагин, пользовательский код.
+ * Содержит только статическое описание, без instance.
+ */
+export interface IContribution {
+	id: symbol
+	members: IContractMember[]
+	/** Локальные имена событий. Если задан eventPrefix — компилятор добавит префикс */
+	events: string[]
+}

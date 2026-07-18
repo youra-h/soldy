@@ -5,7 +5,7 @@
  * Описывает свойства rendered, visible, present и события жизненного цикла.
  */
 
-import type { IContribution } from '../contract/Contribution'
+import type { IContribution } from '../contract'
 
 export const componentContributionId = Symbol('component')
 

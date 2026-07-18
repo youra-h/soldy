@@ -5,7 +5,7 @@
  * Описывает свойство instance и события ready/removed.
  */
 
-import type { IContribution } from '../contract/Contribution'
+import type { IContribution } from '../contract'
 import { TInstancePlugin } from '@soldy/plugins'
 
 export const InstanceContribution: IContribution = {
