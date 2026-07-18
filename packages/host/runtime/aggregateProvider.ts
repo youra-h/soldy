@@ -20,6 +20,7 @@ export class TAggregateEventProvider implements IEventProvider {
 	getAccessor(member: IContractMember): IAccessor | undefined {
 		for (const p of this.providers) {
 			const accessor = p.getAccessor(member)
+
 			if (accessor) return accessor
 		}
 		return undefined
@@ -28,6 +29,7 @@ export class TAggregateEventProvider implements IEventProvider {
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		for (const p of this.providers) {
 			const unsub = p.subscribe(event, handler)
+
 			if (unsub) return unsub
 		}
 		return undefined

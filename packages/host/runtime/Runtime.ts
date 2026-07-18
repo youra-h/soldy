@@ -48,6 +48,7 @@ export class TRuntime {
 					args,
 				})
 			})
+
 			if (unsub) this.disposers.push(unsub)
 		}
 	}
@@ -58,8 +59,11 @@ export class TRuntime {
 
 	setValue(name: string, value: any): boolean {
 		const accessor = this.accessors.get(name)
+
 		if (!accessor?.set) return false
+
 		accessor.set(value)
+
 		return true
 	}
 
