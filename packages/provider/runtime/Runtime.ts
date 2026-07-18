@@ -7,8 +7,7 @@
  */
 
 import type { IComponentModel } from '../contract/types'
-import type { IAccessor } from './types'
-import type { IEventProvider, TEmitPayload } from './types'
+import type { IAccessor, IProvider, TEmitPayload } from './types'
 
 export class TRuntime {
 	readonly model: IComponentModel
@@ -16,7 +15,7 @@ export class TRuntime {
 	private subscribers = new Set<(payload: TEmitPayload) => void>()
 	private disposers: (() => void)[] = []
 
-	constructor(model: IComponentModel, provider: IEventProvider) {
+	constructor(model: IComponentModel, provider: IProvider) {
 		this.model = model
 
 		// 1. Подписка на изменения свойств через IAccessor
@@ -33,7 +32,7 @@ export class TRuntime {
 					type: 'property',
 					name: prop.name,
 					value: accessor.get(),
-					mutable: prop.mutable,
+					mutable: prop.mutable ?? true, // по умолчанию state → true, computed → false
 				})
 			})
 			this.disposers.push(unsub)

@@ -8,7 +8,7 @@ import {
 	TReadyBridgePlugin,
 	createComponentViewBundle,
 } from '@soldy/plugins'
-import { TRuntime, TAggregateEventProvider } from '@soldy/provider'
+import { TRuntime, TAggregateProvider } from '@soldy/provider'
 import {
 	TComponentAccessorProvider,
 	TElementPluginAccessorProvider,
@@ -43,10 +43,10 @@ export default {
 		instancePlugin.instance = instance
 
 		// 4. Строим провайдер
-		const provider = new TAggregateEventProvider()
-		provider.addProvider(new TComponentAccessorProvider(instance as any))
-		provider.addProvider(new TElementPluginAccessorProvider(elementPlugin))
-		provider.addProvider(new TInstancePluginAccessorProvider(instancePlugin))
+		const provider = new TAggregateProvider()
+		provider.add(new TComponentAccessorProvider(instance as any))
+		provider.add(new TElementPluginAccessorProvider(elementPlugin))
+		provider.add(new TInstancePluginAccessorProvider(instancePlugin))
 
 		// 5. Создаём Runtime
 		const runtime = new TRuntime(componentViewModel, provider)

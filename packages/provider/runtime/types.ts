@@ -19,19 +19,23 @@ export interface IAccessor<T = any> {
 // --- IAccessorProvider: создаёт IAccessor для IContractProp ---
 
 export interface IAccessorProvider {
-	/** Для данного свойстваа контракта создать IAccessor (state/computed). */
+	/** Для данного свойства контракта создать IAccessor (state/computed). */
 	getAccessor(prop: IContractProp): IAccessor | undefined
 }
 
-// --- IEventProvider: IAccessorProvider + подписка на события ---
+// --- IEventProvider: подписка на события (не зависит от IAccessorProvider) ---
 
-export interface IEventProvider extends IAccessorProvider {
+export interface IEventProvider {
 	/**
 	 * Подписаться на событие.
 	 * Возвращает функцию отписки или undefined если событие не обрабатывается.
 	 */
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined
 }
+
+// --- IProvider: полная комбинация (то, что принимает TRuntime) ---
+
+export interface IProvider extends IAccessorProvider, IEventProvider {}
 
 export type TEmitPayload =
 	| { type: 'property'; name: string; value: any; mutable: boolean }

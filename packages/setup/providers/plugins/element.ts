@@ -6,11 +6,11 @@
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { IAccessor, IEventProvider } from '@soldy/provider'
+import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
 import type { TElementPlugin } from '@soldy/plugins'
 
-export class TElementPluginAccessorProvider implements IEventProvider {
+export class TElementPluginAccessorProvider implements IAccessorProvider, IEventProvider {
 	constructor(private plugin: TElementPlugin) {}
 
 	private get _eventPrefix(): string {

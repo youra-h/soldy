@@ -1,26 +1,27 @@
 /**
  * @soldy/provider — runtime/aggregateProvider.ts
  *
- * Композитный провайдер: перебирает зарегистрированные провайдеры
- * и возвращает первый подходящий IAccessor или подписку.
+ * Композитный провайдер: перебирает зарегистрированные провайдеры.
+ * Каждый провайдер может реализовывать IAccessorProvider, IEventProvider или оба.
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { IAccessor } from './types'
-import type { IEventProvider } from './types'
+import type { IAccessor, IAccessorProvider, IEventProvider, IProvider } from './types'
 import type { IContractProp } from '../contract/types'
 
-export class TAggregateEventProvider implements IEventProvider {
-	private providers: IEventProvider[] = []
+export class TAggregateProvider implements IProvider {
+	private providers: (IAccessorProvider | IEventProvider)[] = []
 
-	addProvider(provider: IEventProvider): void {
+	add(provider: IAccessorProvider | IEventProvider): this {
 		this.providers.push(provider)
+		return this
 	}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
 		for (const p of this.providers) {
-			const accessor = p.getAccessor(prop)
+			if (!('getAccessor' in p)) continue
 
+			const accessor = (p as IAccessorProvider).getAccessor(prop)
 			if (accessor) return accessor
 		}
 		return undefined
@@ -28,8 +29,9 @@ export class TAggregateEventProvider implements IEventProvider {
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		for (const p of this.providers) {
-			const unsub = p.subscribe(event, handler)
+			if (!('subscribe' in p)) continue
 
+			const unsub = (p as IEventProvider).subscribe(event, handler)
 			if (unsub) return unsub
 		}
 		return undefined

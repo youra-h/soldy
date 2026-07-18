@@ -6,7 +6,7 @@ import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '@soldy/setup'
 import { TComponentAccessorProvider } from '@soldy/setup'
 import { TRuntime } from '../runtime/Runtime'
-import { TAggregateEventProvider } from '../runtime/aggregateProvider'
+import { TAggregateProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 
 describe('TRuntime', () => {
@@ -32,8 +32,8 @@ describe('TRuntime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 
-		const provider = new TAggregateEventProvider()
-		provider.addProvider(new TComponentAccessorProvider(component))
+		const provider = new TAggregateProvider()
+		provider.add(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -46,8 +46,8 @@ describe('TRuntime', () => {
 	it('TRuntime уведомляет о изменениях', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new TAggregateEventProvider()
-		provider.addProvider(new TComponentAccessorProvider(component))
+		const provider = new TAggregateProvider()
+		provider.add(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -69,8 +69,8 @@ describe('TRuntime', () => {
 	it('TRuntime.setValue обновляет свойство компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new TAggregateEventProvider()
-		provider.addProvider(new TComponentAccessorProvider(component))
+		const provider = new TAggregateProvider()
+		provider.add(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 

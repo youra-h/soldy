@@ -5,7 +5,7 @@
  * Принимает готовый экземпляр, реализует getAccessor() для свойств с ownerId = componentContributionId.
  */
 
-import type { IAccessor, IEventProvider } from '@soldy/provider'
+import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
 import { componentContributionId } from '../../contributions/core/component'
 import type { IComponent, TEventHandler } from '@soldy/core'
@@ -18,7 +18,7 @@ const triggerMap: Record<string, string[]> = {
 	classes: ['change:classes'],
 }
 
-export class TComponentAccessorProvider implements IEventProvider {
+export class TComponentAccessorProvider implements IAccessorProvider, IEventProvider {
 	constructor(private instance: IComponent) {}
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
