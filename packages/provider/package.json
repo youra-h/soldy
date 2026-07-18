@@ -15,5 +15,8 @@
 	},
 	"devDependencies": {
 		"@soldy/setup": "*"
+	},
+	"scripts": {
+		"test": "vitest run"
 	}
 }
