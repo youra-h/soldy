@@ -7,11 +7,11 @@
 
 import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/RuntimeProvider'
+import type { EventProvider } from '../runtime/EventProvider'
 import type { ContractMember } from '../contract/types'
 import type { TElementPlugin } from '@soldy/plugins'
 
-export class ElementPluginAccessorProvider implements RuntimeProvider {
+export class ElementPluginAccessorProvider implements EventProvider {
 	constructor(private plugin: TElementPlugin) {}
 
 	private get _eventPrefix(): string {

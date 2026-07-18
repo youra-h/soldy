@@ -6,7 +6,7 @@
  */
 
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/RuntimeProvider'
+import type { EventProvider } from '../runtime/EventProvider'
 import type { ContractMember } from '../contract/types'
 import { componentContributionId } from '../contributions/component.contribution'
 import type { IComponent, TEventHandler } from '@soldy/core'
@@ -19,7 +19,7 @@ const triggerMap: Record<string, string[]> = {
 	classes: ['change:classes'],
 }
 
-export class ComponentAccessorProvider implements RuntimeProvider {
+export class ComponentAccessorProvider implements EventProvider {
 	constructor(private instance: IComponent) {}
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {

@@ -7,13 +7,13 @@
 
 import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from './Accessor'
-import type { RuntimeProvider } from './RuntimeProvider'
+import type { EventProvider } from './EventProvider'
 import type { ContractMember } from '../contract/types'
 
-export class AggregateRuntimeProvider implements RuntimeProvider {
-	private providers: RuntimeProvider[] = []
+export class AggregateEventProvider implements EventProvider {
+	private providers: EventProvider[] = []
 
-	addProvider(provider: RuntimeProvider): void {
+	addProvider(provider: EventProvider): void {
 		this.providers.push(provider)
 	}
 

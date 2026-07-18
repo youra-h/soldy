@@ -1,14 +1,14 @@
 /**
  * @soldy/host — runtime/Runtime.ts
  *
- * Живая система, связывающая ComponentModel и RuntimeProvider.
+ * Живая система, связывающая ComponentModel и EventProvider.
  * Строит подписки на изменения свойств И событий через единый провайдер.
  * Не знает кто такой плагин, компонент или emitter.
  */
 
 import type { ComponentModel } from '../contract/types'
 import type { Accessor } from './Accessor'
-import type { RuntimeProvider } from './RuntimeProvider'
+import type { EventProvider } from './EventProvider'
 
 export type EmitPayload =
 	| { type: 'property'; name: string; value: any; mutable: boolean }
@@ -22,7 +22,7 @@ export class Runtime {
 
 	constructor(
 		model: ComponentModel,
-		provider: RuntimeProvider,
+		provider: EventProvider,
 	) {
 		this.model = model
 

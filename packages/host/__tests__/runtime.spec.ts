@@ -6,7 +6,7 @@ import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '../contributions/component.contribution'
 import { Runtime } from '../runtime/Runtime'
 import { ComponentAccessorProvider } from '../providers/componentAccessorProvider'
-import { AggregateRuntimeProvider } from '../runtime/aggregateProvider'
+import { AggregateEventProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 
 describe('Runtime', () => {
@@ -32,7 +32,7 @@ describe('Runtime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 
-		const provider = new AggregateRuntimeProvider()
+		const provider = new AggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)
@@ -46,7 +46,7 @@ describe('Runtime', () => {
 	it('Runtime уведомляет о изменениях', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateRuntimeProvider()
+		const provider = new AggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)
@@ -69,7 +69,7 @@ describe('Runtime', () => {
 	it('Runtime.setValue обновляет свойство компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateRuntimeProvider()
+		const provider = new AggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
 		const runtime = new Runtime(model, provider)
