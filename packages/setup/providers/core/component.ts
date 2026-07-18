@@ -8,6 +8,7 @@
 import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
 import { componentContributionId } from '../../contributions/core/component'
+import { componentViewContributionId } from '../../contributions/core/component-view'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
 const triggerMap: Record<string, string[]> = {
@@ -30,7 +31,7 @@ export class TComponentAccessorProvider implements IAccessorProvider, IEventProv
 	}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (prop.ownerId !== componentContributionId) return undefined
+		if (prop.ownerId !== componentContributionId && prop.ownerId !== componentViewContributionId) return undefined
 
 		const { instance } = this
 		const events = instance.events as any

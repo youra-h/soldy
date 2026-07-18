@@ -16,7 +16,7 @@ import {
 } from '@soldy/setup'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
-import { componentViewModel } from './component-view.model'
+import { componentViewModel } from '@soldy/setup'
 import BaseComponentView from './base.component'
 import type { TBaseComponentViewProps } from './types'
 
