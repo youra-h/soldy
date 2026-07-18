@@ -13,5 +13,8 @@
 		"@soldy/core": "*",
 		"@soldy/plugins": "*",
 		"@soldy/provider": "*"
+	},
+	"scripts": {
+		"test": "vitest run"
 	}
 }
