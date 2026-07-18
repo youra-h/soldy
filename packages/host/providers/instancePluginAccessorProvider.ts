@@ -6,11 +6,11 @@
  */
 
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/RuntimeProvider'
+import type { AccessorProvider } from '../runtime/AccessorProvider'
 import type { ContractMember } from '../contract/types'
 import type { TInstancePlugin } from '@soldy/plugins'
 
-export class InstancePluginAccessorProvider implements RuntimeProvider {
+export class InstancePluginAccessorProvider implements AccessorProvider {
 	constructor(private plugin: TInstancePlugin) {}
 
 	getAccessor(member: ContractMember): Accessor | undefined {
