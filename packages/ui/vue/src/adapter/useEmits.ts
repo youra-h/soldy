@@ -5,9 +5,9 @@
  * - свойства модели → change:{name} для всех, update:{name} для mutable
  */
 
-import type { ComponentModel } from '@soldy/host'
+import type { IComponentModel } from '@soldy/host'
 
-export function useEmits(model: ComponentModel): string[] {
+export function useEmits(model: IComponentModel): string[] {
 	const emits: string[] = [...model.events]
 
 	for (const m of model.members) {
