@@ -24,7 +24,9 @@ export class ElementPluginAccessorProvider implements EventProvider {
 
 		const internalEvent = event.slice(this._eventPrefix.length)
 		const events = this.plugin.events as any
+
 		events.on(internalEvent, handler)
+
 		return () => events.off(internalEvent, handler)
 	}
 

@@ -24,7 +24,9 @@ export class ComponentAccessorProvider implements EventProvider {
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		const events = this.instance.events as any
+
 		events.on(event, handler)
+
 		return () => events.off(event, handler)
 	}
 
