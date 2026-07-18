@@ -7,10 +7,10 @@
 
 import type { TEventHandler } from '@soldy/core'
 import type { IAccessor, IEventProvider } from '../runtime/types'
-import type { ContractMember } from '../contract/types'
+import type { IContractMember } from '../contract/types'
 import type { TElementPlugin } from '@soldy/plugins'
 
-export class ElementPluginAccessorProvider implements IEventProvider {
+export class TElementPluginAccessorProvider implements IEventProvider {
 	constructor(private plugin: TElementPlugin) {}
 
 	private get _eventPrefix(): string {
@@ -29,7 +29,7 @@ export class ElementPluginAccessorProvider implements IEventProvider {
 		return () => events.off(internalEvent, handler)
 	}
 
-	getAccessor(member: ContractMember): IAccessor | undefined {
+	getAccessor(member: IContractMember): IAccessor | undefined {
 		if (member.ownerId !== this.plugin.key) return undefined
 
 		if (member.name === 'element') {

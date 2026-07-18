@@ -1,3 +1,3 @@
-export { ComponentAccessorProvider } from './componentAccessorProvider'
-export { ElementPluginAccessorProvider } from './elementPluginAccessorProvider'
-export { InstancePluginAccessorProvider } from './instancePluginAccessorProvider'
+export { TComponentAccessorProvider } from './componentAccessorProvider'
+export { TElementPluginAccessorProvider } from './elementPluginAccessorProvider'
+export { TInstancePluginAccessorProvider } from './instancePluginAccessorProvider'

@@ -5,12 +5,12 @@ import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '../contributions/component.contribution'
 import { TRuntime } from '../runtime/Runtime'
-import { ComponentAccessorProvider } from '../providers/componentAccessorProvider'
+import { TComponentAccessorProvider } from '../providers/componentAccessorProvider'
 import { TAggregateEventProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 
 describe('TRuntime', () => {
-	it('собирает модель из Contribution', () => {
+	it('собирает модель из IContribution', () => {
 		const model = compileComponent([ComponentContribution])
 
 		expect(model.members).toHaveLength(3)
@@ -33,7 +33,7 @@ describe('TRuntime', () => {
 		const component = new TComponent()
 
 		const provider = new TAggregateEventProvider()
-		provider.addProvider(new ComponentAccessorProvider(component))
+		provider.addProvider(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -47,7 +47,7 @@ describe('TRuntime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 		const provider = new TAggregateEventProvider()
-		provider.addProvider(new ComponentAccessorProvider(component))
+		provider.addProvider(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 
@@ -70,7 +70,7 @@ describe('TRuntime', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 		const provider = new TAggregateEventProvider()
-		provider.addProvider(new ComponentAccessorProvider(component))
+		provider.addProvider(new TComponentAccessorProvider(component))
 
 		const runtime = new TRuntime(model, provider)
 

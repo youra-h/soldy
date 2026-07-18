@@ -2,23 +2,23 @@
  * @soldy/host — contract/types.ts
  *
  * Базовые типы контракта компонента.
- * Модель (ComponentModel) — immutable DTO, результат компиляции.
+ * Модель (IComponentModel) — immutable DTO, результат компиляции.
  * Не содержит instance, не знает о плагинах.
  */
 
-export type MemberKind = 'state' | 'computed' | 'event'
+export type TMemberKind = 'state' | 'computed' | 'event'
 
-export interface ContractMember {
+export interface IContractMember {
 	name: string
-	kind: MemberKind
+	kind: TMemberKind
 	/** Может ли свойство быть изменено извне (есть ли setter) */
 	mutable: boolean
-	/** Идентификатор источника (Contribution.id), которому принадлежит член */
+	/** Идентификатор источника (IContribution.id), которому принадлежит член */
 	ownerId: symbol
 }
 
-export interface ComponentModel {
-	members: ContractMember[]
+export interface IComponentModel {
+	members: IContractMember[]
 	/** Имена всех событий (для генерации emits) */
 	events: string[]
 }

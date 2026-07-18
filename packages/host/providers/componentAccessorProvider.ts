@@ -6,7 +6,7 @@
  */
 
 import type { IAccessor, IEventProvider } from '../runtime/types'
-import type { ContractMember } from '../contract/types'
+import type { IContractMember } from '../contract/types'
 import { componentContributionId } from '../contributions/component.contribution'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
@@ -18,7 +18,7 @@ const triggerMap: Record<string, string[]> = {
 	classes: ['change:classes'],
 }
 
-export class ComponentAccessorProvider implements IEventProvider {
+export class TComponentAccessorProvider implements IEventProvider {
 	constructor(private instance: IComponent) {}
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
@@ -29,7 +29,7 @@ export class ComponentAccessorProvider implements IEventProvider {
 		return () => events.off(event, handler)
 	}
 
-	getAccessor(member: ContractMember): IAccessor | undefined {
+	getAccessor(member: IContractMember): IAccessor | undefined {
 		if (member.ownerId !== componentContributionId) return undefined
 
 		const { instance } = this

@@ -5,10 +5,10 @@
  * Описывает свойство element и события ready/removed.
  */
 
-import type { Contribution } from '../contract/Contribution'
+import type { IContribution } from '../contract/Contribution'
 import { TElementPlugin } from '@soldy/plugins'
 
-export const ElementContribution: Contribution = {
+export const ElementContribution: IContribution = {
 	id: TElementPlugin.key,
 	members: [
 		{

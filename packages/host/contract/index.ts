@@ -1,2 +1,2 @@
-export type { MemberKind, ContractMember, ComponentModel } from './types'
-export type { Contribution } from './Contribution'
+export type { TMemberKind, IContractMember, IComponentModel } from './types'
+export type { IContribution } from './IContribution'

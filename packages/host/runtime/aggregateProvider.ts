@@ -8,7 +8,7 @@
 import type { TEventHandler } from '@soldy/core'
 import type { IAccessor } from './types'
 import type { IEventProvider } from './types'
-import type { ContractMember } from '../contract/types'
+import type { IContractMember } from '../contract/types'
 
 export class TAggregateEventProvider implements IEventProvider {
 	private providers: IEventProvider[] = []
@@ -17,7 +17,7 @@ export class TAggregateEventProvider implements IEventProvider {
 		this.providers.push(provider)
 	}
 
-	getAccessor(member: ContractMember): IAccessor | undefined {
+	getAccessor(member: IContractMember): IAccessor | undefined {
 		for (const p of this.providers) {
 			const accessor = p.getAccessor(member)
 			if (accessor) return accessor

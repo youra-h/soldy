@@ -1,16 +1,16 @@
 /**
- * @soldy/host — contract/Contribution.ts
+ * @soldy/host — contract/IContribution.ts
  *
- * Вклад (Contribution) — декларация членов и событий от одного источника.
+ * Вклад (IContribution) — декларация членов и событий от одного источника.
  * Источником может быть core-компонент, плагин, пользовательский код.
  * Содержит только статическое описание, без instance.
  */
 
-import type { ContractMember } from './types'
+import type { IContractMember } from './types'
 
-export interface Contribution {
+export interface IContribution {
 	id: symbol
-	members: ContractMember[]
+	members: IContractMember[]
 	/** Локальные имена событий. Если задан eventPrefix — компилятор добавит префикс */
 	events: string[]
 }

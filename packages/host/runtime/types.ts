@@ -6,7 +6,7 @@
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { ContractMember } from '../contract/types'
+import type { IContractMember } from '../contract/types'
 
 // --- IAccessor: чтение/запись/подписка на одно свойство ---
 
@@ -16,11 +16,11 @@ export interface IAccessor<T = any> {
 	subscribe(handler: () => void): () => void
 }
 
-// --- IAccessorProvider: создаёт IAccessor для ContractMember ---
+// --- IAccessorProvider: создаёт IAccessor для IContractMember ---
 
 export interface IAccessorProvider {
 	/** Для данного члена контракта создать IAccessor (state/computed). */
-	getAccessor(member: ContractMember): IAccessor | undefined
+	getAccessor(member: IContractMember): IAccessor | undefined
 }
 
 // --- IEventProvider: IAccessorProvider + подписка на события ---

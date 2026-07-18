@@ -1,22 +1,22 @@
 /**
  * @soldy/host — runtime/TRuntime.ts
  *
- * Живая система, связывающая ComponentModel и IEventProvider.
+ * Живая система, связывающая IComponentModel и IEventProvider.
  * Строит подписки на изменения свойств И событий через единый провайдер.
  * Не знает кто такой плагин, компонент или emitter.
  */
 
-import type { ComponentModel } from '../contract/types'
+import type { IComponentModel } from '../contract/types'
 import type { IAccessor } from './types'
 import type { IEventProvider, TEmitPayload } from './types'
 
 export class TRuntime {
-	readonly model: ComponentModel
+	readonly model: IComponentModel
 	private accessors = new Map<string, IAccessor>()
 	private subscribers = new Set<(payload: TEmitPayload) => void>()
 	private disposers: (() => void)[] = []
 
-	constructor(model: ComponentModel, provider: IEventProvider) {
+	constructor(model: IComponentModel, provider: IEventProvider) {
 		this.model = model
 
 		// 1. Подписка на изменения свойств через IAccessor

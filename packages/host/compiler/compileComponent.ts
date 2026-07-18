@@ -1,20 +1,20 @@
 /**
  * @soldy/host — compiler/compileComponent.ts
  *
- * Чистая функция: собирает ComponentModel из массива Contribution.
+ * Чистая функция: собирает IComponentModel из массива IContribution.
  * Не имеет доступа к instance, плагинам, эмиттерам.
  * Только статическая компиляция описаний.
  */
 
-import type { ComponentModel, ContractMember } from '../contract/types'
-import type { Contribution } from '../contract/Contribution'
+import type { IComponentModel, IContractMember } from '../contract/types'
+import type { IContribution } from '../contract/Contribution'
 
 export function compileComponent(
-	contributions: Contribution[],
-	userMembers?: ContractMember[],
+	contributions: IContribution[],
+	userMembers?: IContractMember[],
 	userEvents?: string[],
-): ComponentModel {
-	const members: ContractMember[] = []
+): IComponentModel {
+	const members: IContractMember[] = []
 	const events: string[] = []
 
 	// Собираем члены от всех вкладов

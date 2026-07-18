@@ -6,13 +6,13 @@
  */
 
 import type { IAccessor, IAccessorProvider } from '../runtime/types'
-import type { ContractMember } from '../contract/types'
+import type { IContractMember } from '../contract/types'
 import type { TInstancePlugin } from '@soldy/plugins'
 
-export class InstancePluginAccessorProvider implements IAccessorProvider {
+export class TInstancePluginAccessorProvider implements IAccessorProvider {
 	constructor(private plugin: TInstancePlugin) {}
 
-	getAccessor(member: ContractMember): IAccessor | undefined {
+	getAccessor(member: IContractMember): IAccessor | undefined {
 		if (member.ownerId !== this.plugin.key) return undefined
 
 		if (member.name === 'instance') {
