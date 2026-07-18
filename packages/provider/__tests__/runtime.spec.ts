@@ -6,7 +6,7 @@ import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '@soldy/setup'
 import { TObservingAccessorProvider } from '../runtime/accessor-provider.class'
 import { TRuntime } from '../runtime/Runtime'
-import { TAggregateProvider } from '../runtime/aggregateProvider'
+import { TAggregateProvider } from '../runtime/aggregate-provider.class'
 import { TComponent } from '@soldy/core'
 
 describe('TRuntime', () => {

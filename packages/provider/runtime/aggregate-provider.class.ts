@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — runtime/aggregateProvider.ts
+ * @soldy/provider — runtime/aggregate-provider.class.ts
  *
  * Композитный провайдер: перебирает зарегистрированные провайдеры.
  * Каждый провайдер может реализовывать IAccessorProvider, IEventProvider или оба.
