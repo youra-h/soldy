@@ -20,20 +20,20 @@ export class TRuntime {
 		this.model = model
 
 		// 1. Подписка на изменения свойств через IAccessor
-		for (const member of model.members) {
-			if (member.kind === 'event') continue
+		for (const prop of model.props) {
+			if (prop.kind === 'event') continue
 
-			const accessor = provider.getAccessor(member)
+			const accessor = provider.getAccessor(prop)
 			if (!accessor) continue
 
-			this.accessors.set(member.name, accessor)
+			this.accessors.set(prop.name, accessor)
 
 			const unsub = accessor.subscribe(() => {
 				this.notify({
 					type: 'property',
-					name: member.name,
+					name: prop.name,
 					value: accessor.get(),
-					mutable: member.mutable,
+					mutable: prop.mutable,
 				})
 			})
 			this.disposers.push(unsub)

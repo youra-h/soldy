@@ -13,13 +13,13 @@ describe('TRuntime', () => {
 	it('собирает модель из IContribution', () => {
 		const model = compileComponent([ComponentContribution])
 
-		expect(model.members).toHaveLength(3)
-		expect(model.members.map(m => m.name)).toEqual([
+		expect(model.props).toHaveLength(3)
+		expect(model.props.map(m => m.name)).toEqual([
 			'rendered',
 			'visible',
 			'present',
 		])
-		expect(model.members.map(m => m.mutable)).toEqual([
+		expect(model.props.map(m => m.mutable)).toEqual([
 			true,
 			true,
 			false,

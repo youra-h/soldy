@@ -6,7 +6,7 @@
  */
 
 import type { IAccessor, IEventProvider } from '../runtime'
-import type { IContractMember } from '../contract'
+import type { IContractProp } from '../contract'
 import { componentContributionId } from '../contributions/component.contribution'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
@@ -29,21 +29,21 @@ export class TComponentAccessorProvider implements IEventProvider {
 		return () => events.off(event, handler)
 	}
 
-	getAccessor(member: IContractMember): IAccessor | undefined {
-		if (member.ownerId !== componentContributionId) return undefined
+	getAccessor(prop: IContractProp): IAccessor | undefined {
+		if (prop.ownerId !== componentContributionId) return undefined
 
 		const { instance } = this
 		const events = instance.events as any
 
-		const triggers = triggerMap[member.name]
+		const triggers = triggerMap[prop.name]
 		if (!triggers) return undefined
 
 		const accessor: IAccessor = {
-			get: () => (instance as any)[member.name],
-			...(member.mutable
+			get: () => (instance as any)[prop.name],
+			...(prop.mutable
 				? {
 						set: (value: any) => {
-							;(instance as any)[member.name] = value
+							;(instance as any)[prop.name] = value
 						},
 					}
 				: {}),

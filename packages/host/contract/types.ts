@@ -6,11 +6,11 @@
  * Не содержит instance, не знает о плагинах.
  */
 
-export type TMemberKind = 'state' | 'computed' | 'event'
+export type TPropKind = 'state' | 'computed' | 'event'
 
-export interface IContractMember {
+export interface IContractProp {
 	name: string
-	kind: TMemberKind
+	kind: TPropKind
 	/** Может ли свойство быть изменено извне (есть ли setter) */
 	mutable: boolean
 	/** Идентификатор источника (IContribution.id), которому принадлежит член */
@@ -18,7 +18,7 @@ export interface IContractMember {
 }
 
 export interface IComponentModel {
-	members: IContractMember[]
+	props: IContractProp[]
 	/** Имена всех событий (для генерации emits) */
 	events: string[]
 }
@@ -30,7 +30,7 @@ export interface IComponentModel {
  */
 export interface IContribution {
 	id: symbol
-	members: IContractMember[]
+	props: IContractProp[]
 	/** Локальные имена событий. Если задан eventPrefix — компилятор добавит префикс */
 	events: string[]
 }

@@ -10,7 +10,7 @@ import { TInstancePlugin } from '@soldy/plugins'
 
 export const InstanceContribution: IContribution = {
 	id: TInstancePlugin.key,
-	members: [
+	props: [
 		{
 			name: 'instance',
 			kind: 'state',

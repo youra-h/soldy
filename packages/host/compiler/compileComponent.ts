@@ -6,29 +6,29 @@
  * Только статическая компиляция описаний.
  */
 
-import type { IComponentModel, IContractMember, IContribution } from '../contract'
+import type { IComponentModel, IContractProp, IContribution } from '../contract'
 
 export function compileComponent(
 	contributions: IContribution[],
-	userMembers?: IContractMember[],
+	userProps?: IContractProp[],
 	userEvents?: string[],
 ): IComponentModel {
-	const members: IContractMember[] = []
+	const props: IContractProp[] = []
 	const events: string[] = []
 
 	// Собираем члены от всех вкладов
 	for (const c of contributions) {
-		const ownedMembers = c.members.map((m) => ({
+		const ownedProps = c.props.map((m) => ({
 			...m,
 			ownerId: c.id,
 		}))
-		members.push(...ownedMembers)
+		props.push(...ownedProps)
 		events.push(...c.events)
 	}
 
 	// Пользовательские члены
-	if (userMembers) {
-		members.push(...userMembers)
+	if (userProps) {
+		props.push(...userProps)
 	}
 	if (userEvents) {
 		events.push(...userEvents)
@@ -37,5 +37,5 @@ export function compileComponent(
 	// Убираем дубликаты событий
 	const uniqueEvents = [...new Set(events)]
 
-	return { members, events: uniqueEvents }
+	return { props, events: uniqueEvents }
 }

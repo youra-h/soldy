@@ -11,7 +11,7 @@ export const componentContributionId = Symbol('component')
 
 export const ComponentContribution: IContribution = {
 	id: componentContributionId,
-	members: [
+	props: [
 		{
 			name: 'rendered',
 			kind: 'state',
