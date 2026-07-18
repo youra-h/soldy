@@ -1,1 +1,1 @@
-export type { TPropKind, IContractProp, IComponentModel, IContribution } from './types'
+export type { TPropKind, IContributionProp, IContractProp, IComponentModel, IContribution } from './types'

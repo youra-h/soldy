@@ -12,21 +12,9 @@ export const componentContributionId = Symbol('component')
 export const ComponentContribution: IContribution = {
 	id: componentContributionId,
 	props: [
-		{
-			name: 'rendered',
-			kind: 'state',
-			ownerId: componentContributionId,
-		},
-		{
-			name: 'visible',
-			kind: 'state',
-			ownerId: componentContributionId,
-		},
-		{
-			name: 'present',
-			kind: 'computed',
-			ownerId: componentContributionId,
-		},
+		{ name: 'rendered', kind: 'state' },
+		{ name: 'visible', kind: 'state' },
+		{ name: 'present', kind: 'computed' },
 	],
 	events: [
 		'created',

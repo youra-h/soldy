@@ -8,7 +8,8 @@
 
 export type TPropKind = 'state' | 'computed' | 'event'
 
-export interface IContractProp {
+/** Входное описание свойства в контрибуции. Без ownerId — компилятор всегда добавляет его из Contribution.id. */
+export interface IContributionProp {
 	name: string
 	kind: TPropKind
 	/**
@@ -16,6 +17,11 @@ export interface IContractProp {
 	 * По умолчанию: state → true, computed → false.
 	 */
 	mutable?: boolean
+}
+
+/** Скомпилированное свойство: всегда содержит ownerId и нормализованный mutable. */
+export interface IContractProp extends IContributionProp {
+	mutable: boolean
 	/** Идентификатор источника (IContribution.id), которому принадлежит свойство */
 	ownerId: symbol
 }
@@ -33,7 +39,7 @@ export interface IComponentModel {
  */
 export interface IContribution {
 	id: symbol
-	props: IContractProp[]
-	/** Локальные имена событий. Если задан eventPrefix — компилятор добавит префикс */
+	props: IContributionProp[]
+	/** Локальные имена событий */
 	events: string[]
 }

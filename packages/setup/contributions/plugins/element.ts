@@ -10,13 +10,6 @@ import { TElementPlugin } from '@soldy/plugins'
 
 export const ElementContribution: IContribution = {
 	id: TElementPlugin.key,
-	props: [
-		{
-			name: 'element',
-			kind: 'state',
-			mutable: false,
-			ownerId: TElementPlugin.key,
-		},
-	],
+	props: [{ name: 'element', kind: 'state', mutable: false }],
 	events: ['ready', 'removed'],
 }

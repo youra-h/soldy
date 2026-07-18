@@ -13,6 +13,5 @@ import { InstanceContribution } from '../contributions/plugins/instance'
 
 export const componentViewModel = compileComponent(
 	[ComponentContribution, ComponentViewContribution, ElementContribution, InstanceContribution],
-	[],
 	['ready'],
 )

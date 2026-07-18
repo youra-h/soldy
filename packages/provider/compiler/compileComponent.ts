@@ -10,7 +10,6 @@ import type { IComponentModel, IContractProp, IContribution } from '../contract'
 
 export function compileComponent(
 	contributions: IContribution[],
-	userProps?: IContractProp[],
 	userEvents?: string[],
 ): IComponentModel {
 	const props: IContractProp[] = []
@@ -18,31 +17,18 @@ export function compileComponent(
 
 	// Собираем свойства от всех вкладов
 	for (const c of contributions) {
-		const ownedProps = c.props.map((p) => {
-			const mutable = p.kind === 'computed'
-				? false
-				: p.mutable ?? true
-
-			return {
-				...p,
-				mutable,
-				ownerId: c.id,
-			}
-		})
+		const ownedProps: IContractProp[] = c.props.map((p) => ({
+			...p,
+			mutable: p.kind === 'computed' ? false : p.mutable ?? true,
+			ownerId: c.id,
+		}))
 		props.push(...ownedProps)
 		events.push(...c.events)
 	}
 
-	// Пользовательские свойства
-	if (userProps) {
-		props.push(...userProps)
-	}
 	if (userEvents) {
 		events.push(...userEvents)
 	}
 
-	// Убираем дубликаты событий
-	const uniqueEvents = [...new Set(events)]
-
-	return { props, events: uniqueEvents }
+	return { props, events: [...new Set(events)] }
 }
