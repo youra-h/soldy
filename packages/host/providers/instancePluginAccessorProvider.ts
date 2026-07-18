@@ -5,8 +5,9 @@
  * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = instanceContributionId.
  */
 
+import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/AccessorProvider'
+import type { RuntimeProvider } from '../runtime/RuntimeProvider'
 import type { ContractMember } from '../contract/types'
 import { instanceContributionId } from '../contributions/instance.contribution'
 import type { TInstancePlugin } from '@soldy/plugins'
@@ -14,7 +15,7 @@ import type { TInstancePlugin } from '@soldy/plugins'
 export class InstancePluginAccessorProvider implements RuntimeProvider {
 	constructor(private plugin: TInstancePlugin) {}
 
-	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		const internalEvent = event.replace(/^instance:/, '')
 		if (internalEvent === event) return undefined
 

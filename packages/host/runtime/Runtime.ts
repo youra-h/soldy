@@ -8,7 +8,7 @@
 
 import type { ComponentModel } from '../contract/types'
 import type { Accessor } from './Accessor'
-import type { RuntimeProvider } from './AccessorProvider'
+import type { RuntimeProvider } from './RuntimeProvider'
 
 export type EmitPayload =
 	| { type: 'property'; name: string; value: any; mutable: boolean }

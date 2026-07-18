@@ -5,8 +5,9 @@
  * и возвращает первый подходящий Accessor или подписку.
  */
 
+import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from './Accessor'
-import type { RuntimeProvider } from './AccessorProvider'
+import type { RuntimeProvider } from './RuntimeProvider'
 import type { ContractMember } from '../contract/types'
 
 export class AggregateRuntimeProvider implements RuntimeProvider {
@@ -24,7 +25,7 @@ export class AggregateRuntimeProvider implements RuntimeProvider {
 		return undefined
 	}
 
-	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		for (const p of this.providers) {
 			const unsub = p.subscribe(event, handler)
 			if (unsub) return unsub

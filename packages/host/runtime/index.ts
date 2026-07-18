@@ -1,5 +1,6 @@
 export type { Accessor } from './Accessor'
-export type { RuntimeProvider } from './AccessorProvider'
+export type { AccessorProvider } from './AccessorProvider'
+export type { RuntimeProvider } from './RuntimeProvider'
 export { AggregateRuntimeProvider } from './aggregateProvider'
 export { Runtime } from './Runtime'
 export type { EmitPayload } from './Runtime'

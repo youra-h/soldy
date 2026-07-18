@@ -5,8 +5,9 @@
  * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = elementContributionId.
  */
 
+import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/AccessorProvider'
+import type { RuntimeProvider } from '../runtime/RuntimeProvider'
 import type { ContractMember } from '../contract/types'
 import { elementContributionId } from '../contributions/element.contribution'
 import type { TElementPlugin } from '@soldy/plugins'
@@ -14,7 +15,7 @@ import type { TElementPlugin } from '@soldy/plugins'
 export class ElementPluginAccessorProvider implements RuntimeProvider {
 	constructor(private plugin: TElementPlugin) {}
 
-	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		// element:ready → plugin.events.on('ready', ...)
 		// element:removed → plugin.events.on('removed', ...)
 		const internalEvent = event.replace(/^element:/, '')

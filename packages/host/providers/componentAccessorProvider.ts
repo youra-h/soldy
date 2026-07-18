@@ -6,10 +6,10 @@
  */
 
 import type { Accessor } from '../runtime/Accessor'
-import type { RuntimeProvider } from '../runtime/AccessorProvider'
+import type { RuntimeProvider } from '../runtime/RuntimeProvider'
 import type { ContractMember } from '../contract/types'
 import { componentContributionId } from '../contributions/component.contribution'
-import type { IComponent } from '@soldy/core'
+import type { IComponent, TEventHandler } from '@soldy/core'
 
 const triggerMap: Record<string, string[]> = {
 	rendered: ['change:rendered'],
@@ -22,7 +22,7 @@ const triggerMap: Record<string, string[]> = {
 export class ComponentAccessorProvider implements RuntimeProvider {
 	constructor(private instance: IComponent) {}
 
-	subscribe(event: string, handler: (...args: any[]) => void): (() => void) | undefined {
+	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		const events = this.instance.events as any
 		events.on(event, handler)
 		return () => events.off(event, handler)
