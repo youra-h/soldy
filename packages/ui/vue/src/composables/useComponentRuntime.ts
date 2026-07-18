@@ -6,24 +6,24 @@
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import type { Runtime, EmitPayload } from '@soldy/provider'
+import type { TRuntime, TEmitPayload } from '@soldy/provider'
 
 export function useComponentRuntime(
-	runtime: Runtime,
+	runtime: TRuntime,
 	externalProps: Record<string, any>,
 	emit?: (event: string, ...args: any[]) => void,
 ) {
 	const refs: Record<string, Ref<any>> = {}
 
 	// 1. Создаём реактивные переменные для всех свойств модели (кроме event)
-	for (const member of runtime.model.members) {
-		if (member.kind !== 'event') {
-			refs[member.name] = ref(runtime.getValue(member.name))
+	for (const prop of runtime.model.props) {
+		if (prop.kind !== 'event') {
+			refs[prop.name] = ref(runtime.getValue(prop.name))
 		}
 	}
 
 	// 2. Подписываемся на изменения из Runtime
-	const unsub = runtime.subscribe((payload: EmitPayload) => {
+	const unsub = runtime.subscribe((payload: TEmitPayload) => {
 		if (payload.type === 'property' && refs[payload.name] !== undefined) {
 			refs[payload.name]!.value = payload.value
 		}
@@ -47,7 +47,7 @@ export function useComponentRuntime(
 		(newProps) => {
 			for (const key of Object.keys(newProps)) {
 				if (
-					runtime.model.members.some(
+					runtime.model.props.some(
 						m => m.name === key && m.kind !== 'event',
 					)
 				) {
@@ -60,9 +60,9 @@ export function useComponentRuntime(
 
 	// 4. Генерация emits для Vue (статическое описание)
 	const emits: string[] = [...runtime.model.events]
-	for (const member of runtime.model.members) {
-		if (member.kind !== 'event') {
-			emits.push(`change:${member.name}`)
+	for (const prop of runtime.model.props) {
+		if (prop.kind !== 'event') {
+			emits.push(`change:${prop.name}`)
 		}
 	}
 
