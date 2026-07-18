@@ -3,9 +3,9 @@
  */
 import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'
-import { ComponentContribution } from '../contributions/component.contribution'
+import { ComponentContribution } from '@soldy/setup'
+import { TComponentAccessorProvider } from '@soldy/setup'
 import { TRuntime } from '../runtime/Runtime'
-import { TComponentAccessorProvider } from '../providers/componentAccessorProvider'
 import { TAggregateEventProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 

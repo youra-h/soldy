@@ -8,12 +8,12 @@
 		".": "./index.ts",
 		"./contract": "./contract/index.ts",
 		"./compiler": "./compiler/index.ts",
-		"./runtime": "./runtime/index.ts",
-		"./contributions": "./contributions/index.ts",
-		"./providers": "./providers/index.ts"
+		"./runtime": "./runtime/index.ts"
 	},
 	"dependencies": {
-		"@soldy/core": "*",
-		"@soldy/plugins": "*"
+		"@soldy/core": "*"
+	},
+	"devDependencies": {
+		"@soldy/setup": "*"
 	}
 }

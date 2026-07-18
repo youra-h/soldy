@@ -1,13 +1,13 @@
 /**
- * @soldy/provider — providers/componentAccessorProvider.ts
+ * @soldy/setup — providers/core/component.ts
  *
  * IAccessorProvider для core-компонента TComponent / TComponentView.
  * Принимает готовый экземпляр, реализует getAccessor() для свойств с ownerId = componentContributionId.
  */
 
-import type { IAccessor, IEventProvider } from '../runtime'
-import type { IContractProp } from '../contract'
-import { componentContributionId } from '../contributions/component.contribution'
+import type { IAccessor, IEventProvider } from '@soldy/provider'
+import type { IContractProp } from '@soldy/provider'
+import { componentContributionId } from '../../contributions/core/component'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
 const triggerMap: Record<string, string[]> = {

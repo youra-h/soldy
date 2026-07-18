@@ -1,11 +1,11 @@
 /**
- * @soldy/provider — contributions/element.contribution.ts
+ * @soldy/setup — contributions/plugins/element.ts
  *
  * Вклад от плагина TElementPlugin.
  * Описывает свойство element и события ready/removed.
  */
 
-import type { IContribution } from '../contract'
+import type { IContribution } from '@soldy/provider'
 import { TElementPlugin } from '@soldy/plugins'
 
 export const ElementContribution: IContribution = {

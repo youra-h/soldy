@@ -1,11 +1,11 @@
 /**
- * @soldy/provider — contributions/component.contribution.ts
+ * @soldy/setup — contributions/core/component.ts
  *
  * Вклад от core-компонента (TComponent).
  * Описывает свойства rendered, visible, present и события жизненного цикла.
  */
 
-import type { IContribution } from '../contract'
+import type { IContribution } from '@soldy/provider'
 
 export const componentContributionId = Symbol('component')
 
