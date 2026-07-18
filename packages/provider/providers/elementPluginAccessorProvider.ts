@@ -1,5 +1,5 @@
 /**
- * @soldy/host — providers/elementPluginAccessorProvider.ts
+ * @soldy/provider — providers/elementPluginAccessorProvider.ts
  *
  * IAccessorProvider для плагина TElementPlugin.
  * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerId = elementContributionId.

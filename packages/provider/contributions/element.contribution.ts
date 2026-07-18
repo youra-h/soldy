@@ -1,5 +1,5 @@
 /**
- * @soldy/host — contributions/element.contribution.ts
+ * @soldy/provider — contributions/element.contribution.ts
  *
  * Вклад от плагина TElementPlugin.
  * Описывает свойство element и события ready/removed.

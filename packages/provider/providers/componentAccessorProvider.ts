@@ -1,5 +1,5 @@
 /**
- * @soldy/host — providers/componentAccessorProvider.ts
+ * @soldy/provider — providers/componentAccessorProvider.ts
  *
  * IAccessorProvider для core-компонента TComponent / TComponentView.
  * Принимает готовый экземпляр, реализует getAccessor() для свойств с ownerId = componentContributionId.

@@ -1,5 +1,5 @@
 /**
- * @soldy/host — runtime/track.ts
+ * @soldy/provider — runtime/track.ts
  *
  * Односторонняя синхронизация: оборачивает свойство объекта в Object.defineProperty
  * и вызывает callback при каждом изменении значения.

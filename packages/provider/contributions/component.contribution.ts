@@ -1,5 +1,5 @@
 /**
- * @soldy/host — contributions/component.contribution.ts
+ * @soldy/provider — contributions/component.contribution.ts
  *
  * Вклад от core-компонента (TComponent).
  * Описывает свойства rendered, visible, present и события жизненного цикла.

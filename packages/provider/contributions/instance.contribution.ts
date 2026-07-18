@@ -1,5 +1,5 @@
 /**
- * @soldy/host — contributions/instance.contribution.ts
+ * @soldy/provider — contributions/instance.contribution.ts
  *
  * Вклад от плагина TInstancePlugin.
  * Описывает свойство instance и события ready/removed.

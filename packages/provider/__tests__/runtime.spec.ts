@@ -1,5 +1,5 @@
 /**
- * @soldy/host — тесты TRuntime
+ * @soldy/provider — тесты TRuntime
  */
 import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'

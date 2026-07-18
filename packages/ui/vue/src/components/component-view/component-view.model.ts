@@ -8,7 +8,7 @@ import {
 	ComponentContribution,
 	ElementContribution,
 	InstanceContribution,
-} from '@soldy/host'
+} from '@soldy/provider'
 
 export const componentViewModel = compileComponent(
 	[ComponentContribution, ElementContribution, InstanceContribution],

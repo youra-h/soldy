@@ -1,5 +1,5 @@
 import { type PropType, type Ref } from 'vue'
-import { track } from '@soldy/host'
+import { track } from '@soldy/provider'
 import {
 	type ISkeletonProps,
 	TSkeleton,

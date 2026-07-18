@@ -1,7 +1,7 @@
 import { type Ref } from 'vue'
 import { type IComponentProps } from '@soldy/core'
 import type { ISyncComponentOptions } from '../../types'
-import { track } from '@soldy/host'
+import { track } from '@soldy/provider'
 import { useSyncProps } from '../../composables/useSyncProps'
 
 export interface IComponentState {

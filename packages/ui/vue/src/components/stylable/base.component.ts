@@ -1,5 +1,5 @@
 import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/host'
+import { track } from '@soldy/provider'
 import { TStylable } from '@soldy/core'
 import type {
 	IStylable,

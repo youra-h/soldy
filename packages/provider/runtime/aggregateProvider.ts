@@ -1,5 +1,5 @@
 /**
- * @soldy/host — runtime/aggregateProvider.ts
+ * @soldy/provider — runtime/aggregateProvider.ts
  *
  * Композитный провайдер: перебирает зарегистрированные провайдеры
  * и возвращает первый подходящий IAccessor или подписку.

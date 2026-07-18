@@ -1,5 +1,5 @@
 /**
- * @soldy/host — providers/instancePluginAccessorProvider.ts
+ * @soldy/provider — providers/instancePluginAccessorProvider.ts
  *
  * IAccessorProvider для плагина TInstancePlugin.
  * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerId = instanceContributionId.

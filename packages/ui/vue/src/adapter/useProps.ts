@@ -5,7 +5,7 @@
  * с типом, выведенным из defaultValues конструктора.
  */
 
-import type { IComponentModel } from '@soldy/host'
+import type { IComponentModel } from '@soldy/provider'
 import type { TConstructor } from '@soldy/core'
 
 function inferVueType(value: unknown): any {

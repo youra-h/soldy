@@ -1,12 +1,12 @@
 /**
- * Vue-адаптер для @soldy/host Runtime.
+ * Vue-адаптер для @soldy/provider Runtime.
  *
  * Создаёт реактивные Vue-refs из Runtime и подписывается на изменения.
  * Синхронизирует внешние props в Runtime.
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import type { Runtime, EmitPayload } from '@soldy/host'
+import type { Runtime, EmitPayload } from '@soldy/provider'
 
 export function useComponentRuntime(
 	runtime: Runtime,

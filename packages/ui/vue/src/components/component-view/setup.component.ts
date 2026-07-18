@@ -14,7 +14,7 @@ import {
 	TComponentAccessorProvider,
 	TElementPluginAccessorProvider,
 	TInstancePluginAccessorProvider,
-} from '@soldy/host'
+} from '@soldy/provider'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
 import { componentViewModel } from './component-view.model'

@@ -1,5 +1,5 @@
 /**
- * @soldy/host — contract/types.ts
+ * @soldy/provider — contract/types.ts
  *
  * Базовые типы контракта компонента.
  * Модель (IComponentModel) — immutable DTO, результат компиляции.
