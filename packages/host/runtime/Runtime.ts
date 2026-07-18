@@ -48,7 +48,7 @@ export class Runtime {
 
 		// 2. Подписка на события через провайдер
 		for (const eventName of model.events) {
-			const unsub = provider.subscribe(eventName, (...args: any[]) => {
+			const unsub = provider.subscribe?.(eventName, (...args: any[]) => {
 				this.notify({
 					type: 'event',
 					name: eventName,

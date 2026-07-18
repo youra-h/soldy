@@ -9,24 +9,27 @@ import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from '../runtime/Accessor'
 import type { RuntimeProvider } from '../runtime/RuntimeProvider'
 import type { ContractMember } from '../contract/types'
-import { TElementPlugin } from '@soldy/plugins'
+import type { TElementPlugin } from '@soldy/plugins'
 
 export class ElementPluginAccessorProvider implements RuntimeProvider {
 	constructor(private plugin: TElementPlugin) {}
 
-	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
-		// element:ready → plugin.events.on('ready', ...)
-		// element:removed → plugin.events.on('removed', ...)
-		const internalEvent = event.replace(/^element:/, '')
-		if (internalEvent === event) return undefined
+	private get _eventPrefix(): string {
+		return `${this.plugin.key.description}:`
+	}
 
+	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
+		// 'element:ready' → plugin.events.on('ready', ...)
+		if (!event.startsWith(this._eventPrefix)) return undefined
+
+		const internalEvent = event.slice(this._eventPrefix.length)
 		const events = this.plugin.events as any
 		events.on(internalEvent, handler)
 		return () => events.off(internalEvent, handler)
 	}
 
 	getAccessor(member: ContractMember): Accessor | undefined {
-		if (member.ownerId !== TElementPlugin.key) return undefined
+		if (member.ownerId !== this.plugin.key) return undefined
 
 		if (member.name === 'element') {
 			const { plugin } = this

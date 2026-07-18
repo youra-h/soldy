@@ -13,6 +13,4 @@ export interface Contribution {
 	members: ContractMember[]
 	/** Локальные имена событий. Если задан eventPrefix — компилятор добавит префикс */
 	events: string[]
-	/** Префикс для событий (например 'plugin:element' → 'plugin:element:ready') */
-	eventPrefix?: string
 }

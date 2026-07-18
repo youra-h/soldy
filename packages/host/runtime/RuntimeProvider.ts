@@ -13,5 +13,5 @@ export interface RuntimeProvider extends AccessorProvider {
 	 * Подписаться на событие.
 	 * Возвращает функцию отписки или undefined если событие не обрабатывается.
 	 */
-	subscribe(event: string, handler: TEventHandler): (() => void) | undefined
+	subscribe?(event: string, handler: TEventHandler): (() => void) | undefined
 }

@@ -18,5 +18,5 @@ export const InstanceContribution: Contribution = {
 			ownerId: TInstancePlugin.key,
 		},
 	],
-	events: ['ready', 'removed'],
+	events: [],
 }
