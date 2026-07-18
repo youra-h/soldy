@@ -23,8 +23,10 @@ export class InstancePluginAccessorProvider implements AccessorProvider {
 				get: () => plugin.instance,
 				subscribe: (handler) => {
 					const events = plugin.events as any
+
 					events.on('ready', handler)
 					events.on('removed', handler)
+
 					return () => {
 						events.off('ready', handler)
 						events.off('removed', handler)

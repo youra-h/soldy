@@ -41,8 +41,10 @@ export class ElementPluginAccessorProvider implements RuntimeProvider {
 				},
 				subscribe: (handler) => {
 					const events = plugin.events as any
+
 					events.on('ready', handler)
 					events.on('removed', handler)
+
 					return () => {
 						events.off('ready', handler)
 						events.off('removed', handler)
