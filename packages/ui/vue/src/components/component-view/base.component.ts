@@ -1,7 +1,7 @@
-import { TComponentView } from '@soldy/core'
 import type { TEmits, TProps } from '../../types'
 import { BaseComponent } from '../component'
 import { useEmits, useProps } from '../../adapter'
+import { TComponentView } from '@soldy/core'
 import { componentViewModel } from '@soldy/setup'
 
 export const emitsComponentView: TEmits = useEmits(componentViewModel) as unknown as TEmits
