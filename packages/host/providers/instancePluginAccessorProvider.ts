@@ -5,8 +5,7 @@
  * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = instanceContributionId.
  */
 
-import type { Accessor } from '../runtime/Accessor'
-import type { AccessorProvider } from '../runtime/AccessorProvider'
+import type { Accessor, AccessorProvider } from '../runtime/types'
 import type { ContractMember } from '../contract/types'
 import type { TInstancePlugin } from '@soldy/plugins'
 

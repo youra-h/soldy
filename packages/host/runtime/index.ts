@@ -1,6 +1,4 @@
-export type { Accessor } from './Accessor'
-export type { AccessorProvider } from './AccessorProvider'
-export type { EventProvider } from './EventProvider'
+export type { Accessor, AccessorProvider, EventProvider } from './types'
 export { AggregateEventProvider } from './aggregateProvider'
 export { Runtime } from './Runtime'
 export type { EmitPayload } from './Runtime'

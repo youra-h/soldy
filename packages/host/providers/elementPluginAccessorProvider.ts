@@ -6,8 +6,7 @@
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { Accessor } from '../runtime/Accessor'
-import type { EventProvider } from '../runtime/EventProvider'
+import type { Accessor, EventProvider } from '../runtime/types'
 import type { ContractMember } from '../contract/types'
 import type { TElementPlugin } from '@soldy/plugins'
 

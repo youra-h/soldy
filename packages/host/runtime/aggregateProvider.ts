@@ -6,8 +6,8 @@
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { Accessor } from './Accessor'
-import type { EventProvider } from './EventProvider'
+import type { Accessor } from './types'
+import type { EventProvider } from './types'
 import type { ContractMember } from '../contract/types'
 
 export class AggregateEventProvider implements EventProvider {

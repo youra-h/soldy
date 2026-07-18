@@ -7,8 +7,8 @@
  */
 
 import type { ComponentModel } from '../contract/types'
-import type { Accessor } from './Accessor'
-import type { EventProvider } from './EventProvider'
+import type { Accessor } from './types'
+import type { EventProvider } from './types'
 
 export type EmitPayload =
 	| { type: 'property'; name: string; value: any; mutable: boolean }
