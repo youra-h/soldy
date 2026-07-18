@@ -5,7 +5,7 @@
  * и вызывает callback при каждом изменении значения.
  *
  * Используется для синхронизации props → instance в UI-компонентах.
- * В новой архитектуре будет заменён на Runtime.setValue().
+ * В новой архитектуре будет заменён на TRuntime.setValue().
  */
 
 export function track<T extends object, K extends keyof T>(

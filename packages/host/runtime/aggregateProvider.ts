@@ -2,22 +2,22 @@
  * @soldy/host — runtime/aggregateProvider.ts
  *
  * Композитный провайдер: перебирает зарегистрированные провайдеры
- * и возвращает первый подходящий Accessor или подписку.
+ * и возвращает первый подходящий IAccessor или подписку.
  */
 
 import type { TEventHandler } from '@soldy/core'
-import type { Accessor } from './types'
-import type { EventProvider } from './types'
+import type { IAccessor } from './types'
+import type { IEventProvider } from './types'
 import type { ContractMember } from '../contract/types'
 
-export class AggregateEventProvider implements EventProvider {
-	private providers: EventProvider[] = []
+export class TAggregateEventProvider implements IEventProvider {
+	private providers: IEventProvider[] = []
 
-	addProvider(provider: EventProvider): void {
+	addProvider(provider: IEventProvider): void {
 		this.providers.push(provider)
 	}
 
-	getAccessor(member: ContractMember): Accessor | undefined {
+	getAccessor(member: ContractMember): IAccessor | undefined {
 		for (const p of this.providers) {
 			const accessor = p.getAccessor(member)
 			if (accessor) return accessor

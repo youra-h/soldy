@@ -1,18 +1,18 @@
 /**
  * @soldy/host — providers/instancePluginAccessorProvider.ts
  *
- * AccessorProvider для плагина TInstancePlugin.
+ * IAccessorProvider для плагина TInstancePlugin.
  * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = instanceContributionId.
  */
 
-import type { Accessor, AccessorProvider } from '../runtime/types'
+import type { IAccessor, IAccessorProvider } from '../runtime/types'
 import type { ContractMember } from '../contract/types'
 import type { TInstancePlugin } from '@soldy/plugins'
 
-export class InstancePluginAccessorProvider implements AccessorProvider {
+export class InstancePluginAccessorProvider implements IAccessorProvider {
 	constructor(private plugin: TInstancePlugin) {}
 
-	getAccessor(member: ContractMember): Accessor | undefined {
+	getAccessor(member: ContractMember): IAccessor | undefined {
 		if (member.ownerId !== this.plugin.key) return undefined
 
 		if (member.name === 'instance') {

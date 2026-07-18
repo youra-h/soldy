@@ -1,15 +1,15 @@
 /**
- * @soldy/host — тесты Runtime
+ * @soldy/host — тесты TRuntime
  */
 import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'
 import { ComponentContribution } from '../contributions/component.contribution'
-import { Runtime } from '../runtime/Runtime'
+import { TRuntime } from '../runtime/Runtime'
 import { ComponentAccessorProvider } from '../providers/componentAccessorProvider'
-import { AggregateEventProvider } from '../runtime/aggregateProvider'
+import { TAggregateEventProvider } from '../runtime/aggregateProvider'
 import { TComponent } from '@soldy/core'
 
-describe('Runtime', () => {
+describe('TRuntime', () => {
 	it('собирает модель из Contribution', () => {
 		const model = compileComponent([ComponentContribution])
 
@@ -28,14 +28,14 @@ describe('Runtime', () => {
 		expect(model.events).toContain('hide')
 	})
 
-	it('Runtime получает значение свойства из компонента', () => {
+	it('TRuntime получает значение свойства из компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
 
-		const provider = new AggregateEventProvider()
+		const provider = new TAggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
-		const runtime = new Runtime(model, provider)
+		const runtime = new TRuntime(model, provider)
 
 		expect(runtime.getValue('rendered')).toBe(true)
 		expect(runtime.getValue('visible')).toBe(true)
@@ -43,13 +43,13 @@ describe('Runtime', () => {
 		runtime.dispose()
 	})
 
-	it('Runtime уведомляет о изменениях', () => {
+	it('TRuntime уведомляет о изменениях', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateEventProvider()
+		const provider = new TAggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
-		const runtime = new Runtime(model, provider)
+		const runtime = new TRuntime(model, provider)
 
 		const changes: any[] = []
 		runtime.subscribe((payload) => {
@@ -66,13 +66,13 @@ describe('Runtime', () => {
 		runtime.dispose()
 	})
 
-	it('Runtime.setValue обновляет свойство компонента', () => {
+	it('TRuntime.setValue обновляет свойство компонента', () => {
 		const model = compileComponent([ComponentContribution])
 		const component = new TComponent()
-		const provider = new AggregateEventProvider()
+		const provider = new TAggregateEventProvider()
 		provider.addProvider(new ComponentAccessorProvider(component))
 
-		const runtime = new Runtime(model, provider)
+		const runtime = new TRuntime(model, provider)
 
 		const result = runtime.setValue('rendered', false)
 		expect(result).toBe(true)

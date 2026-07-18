@@ -1,32 +1,25 @@
 /**
- * @soldy/host — runtime/Runtime.ts
+ * @soldy/host — runtime/TRuntime.ts
  *
- * Живая система, связывающая ComponentModel и EventProvider.
+ * Живая система, связывающая ComponentModel и IEventProvider.
  * Строит подписки на изменения свойств И событий через единый провайдер.
  * Не знает кто такой плагин, компонент или emitter.
  */
 
 import type { ComponentModel } from '../contract/types'
-import type { Accessor } from './types'
-import type { EventProvider } from './types'
+import type { IAccessor } from './types'
+import type { IEventProvider, TEmitPayload } from './types'
 
-export type EmitPayload =
-	| { type: 'property'; name: string; value: any; mutable: boolean }
-	| { type: 'event'; name: string; args: any[] }
-
-export class Runtime {
+export class TRuntime {
 	readonly model: ComponentModel
-	private accessors = new Map<string, Accessor>()
-	private subscribers = new Set<(payload: EmitPayload) => void>()
+	private accessors = new Map<string, IAccessor>()
+	private subscribers = new Set<(payload: TEmitPayload) => void>()
 	private disposers: (() => void)[] = []
 
-	constructor(
-		model: ComponentModel,
-		provider: EventProvider,
-	) {
+	constructor(model: ComponentModel, provider: IEventProvider) {
 		this.model = model
 
-		// 1. Подписка на изменения свойств через Accessor
+		// 1. Подписка на изменения свойств через IAccessor
 		for (const member of model.members) {
 			if (member.kind === 'event') continue
 
@@ -70,18 +63,18 @@ export class Runtime {
 		return true
 	}
 
-	subscribe(fn: (payload: EmitPayload) => void): () => void {
+	subscribe(fn: (payload: TEmitPayload) => void): () => void {
 		this.subscribers.add(fn)
 		return () => this.subscribers.delete(fn)
 	}
 
-	private notify(payload: EmitPayload): void {
-		this.subscribers.forEach(fn => fn(payload))
+	private notify(payload: TEmitPayload): void {
+		this.subscribers.forEach((fn) => fn(payload))
 	}
 
 	dispose(): void {
 		this.subscribers.clear()
-		this.disposers.forEach(fn => fn())
+		this.disposers.forEach((fn) => fn())
 		this.disposers = []
 	}
 }
