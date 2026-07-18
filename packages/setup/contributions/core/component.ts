@@ -12,17 +12,9 @@ export const componentContributionId = Symbol('component')
 export const ComponentContribution: IContribution = {
 	id: componentContributionId,
 	props: [
-		{ name: 'rendered', kind: 'state' },
-		{ name: 'visible', kind: 'state' },
-		{ name: 'present', kind: 'computed' },
+		{ name: 'rendered', kind: 'state', triggers: ['change:rendered'] },
+		{ name: 'visible', kind: 'state', triggers: ['change:visible'] },
+		{ name: 'present', kind: 'computed', triggers: ['change:rendered', 'change:visible'] },
 	],
-	events: [
-		'created',
-		'show',
-		'hide',
-		'show:before',
-		'show:after',
-		'hide:before',
-		'hide:after',
-	],
+	events: ['created', 'show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after'],
 }

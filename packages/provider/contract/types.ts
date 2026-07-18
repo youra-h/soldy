@@ -17,6 +17,8 @@ export interface IContributionProp {
 	 * По умолчанию: state → true, computed → false.
 	 */
 	mutable?: boolean
+	/** События instance, при которых свойство считается изменённым */
+	triggers?: string[]
 }
 
 /** Скомпилированное свойство: всегда содержит ownerId и нормализованный mutable. */

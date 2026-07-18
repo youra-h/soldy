@@ -12,8 +12,8 @@ export const componentViewContributionId = Symbol('component-view')
 export const ComponentViewContribution: IContribution = {
 	id: componentViewContributionId,
 	props: [
-		{ name: 'tag', kind: 'state' },
-		{ name: 'classes', kind: 'computed' },
+		{ name: 'tag', kind: 'state', triggers: ['change:tag'] },
+		{ name: 'classes', kind: 'computed', triggers: ['change:classes'] },
 	],
 	events: [],
 }
