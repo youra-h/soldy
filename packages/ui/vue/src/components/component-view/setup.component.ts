@@ -8,13 +8,12 @@ import {
 	TReadyBridgePlugin,
 	createComponentViewBundle,
 } from '@soldy/plugins'
+import { TRuntime, TAggregateEventProvider } from '@soldy/provider'
 import {
-	TRuntime,
-	TAggregateEventProvider,
 	TComponentAccessorProvider,
 	TElementPluginAccessorProvider,
 	TInstancePluginAccessorProvider,
-} from '@soldy/provider'
+} from '@soldy/setup'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
 import { componentViewModel } from './component-view.model'
