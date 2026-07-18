@@ -12,13 +12,11 @@ export const componentViewModel = compileComponent(
 		{
 			name: 'tag',
 			kind: 'state',
-			mutable: true,
 			ownerId: ComponentContribution.id,
 		},
 		{
 			name: 'classes',
 			kind: 'computed',
-			mutable: false,
 			ownerId: ComponentContribution.id,
 		},
 	],
