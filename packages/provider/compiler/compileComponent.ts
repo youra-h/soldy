@@ -1,6 +1,4 @@
 /**
- * @soldy/provider — compiler/compileComponent.ts
- *
  * Чистая функция: собирает IComponentModel из массива IContribution.
  * Не имеет доступа к instance, плагинам, эмиттерам.
  * Только статическая компиляция описаний.

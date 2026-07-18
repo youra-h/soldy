@@ -1,6 +1,4 @@
 /**
- * @soldy/provider — runtime/TRuntime.ts
- *
  * Живая система, связывающая IComponentModel и IEventProvider.
  * Строит подписки на изменения свойств И событий через единый провайдер.
  * Не знает кто такой плагин, компонент или emitter.

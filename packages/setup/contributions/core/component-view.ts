@@ -1,6 +1,4 @@
 /**
- * @soldy/setup — contributions/core/component-view.ts
- *
  * Вклад от core-компонента TComponentView.
  * Описывает свойства tag и classes.
  */

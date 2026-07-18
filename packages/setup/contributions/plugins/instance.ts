@@ -1,6 +1,4 @@
 /**
- * @soldy/setup — contributions/plugins/instance.ts
- *
  * Вклад от плагина TInstancePlugin.
  * Описывает свойство instance.
  */

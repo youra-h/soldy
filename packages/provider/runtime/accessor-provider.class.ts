@@ -1,6 +1,4 @@
 /**
- * @soldy/provider — runtime/accessor-provider.class.ts
- *
  * Универсальный IAccessorProvider для любого IComponent.
  * Использует triggers из IContractProp для подписки на изменения.
  * Не знает о конкретных компонентах или контрибуциях.

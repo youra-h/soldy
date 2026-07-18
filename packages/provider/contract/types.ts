@@ -1,6 +1,4 @@
 /**
- * @soldy/provider — contract/types.ts
- *
  * Базовые типы контракта компонента.
  * Модель (IComponentModel) — immutable DTO, результат компиляции.
  * Не содержит instance, не знает о плагинах.

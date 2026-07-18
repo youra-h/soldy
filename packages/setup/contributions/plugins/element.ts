@@ -1,6 +1,4 @@
 /**
- * @soldy/setup — contributions/plugins/element.ts
- *
  * Вклад от плагина TElementPlugin.
  * Описывает свойство element и события ready/removed.
  */

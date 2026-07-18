@@ -1,6 +1,4 @@
 /**
- * @soldy/setup — contributions/core/component.ts
- *
  * Вклад от core-компонента (TComponent).
  * Описывает свойства rendered, visible, present и события жизненного цикла.
  */
