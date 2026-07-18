@@ -14,7 +14,6 @@ import {
 	TElementPluginAccessorProvider,
 	TInstancePluginAccessorProvider,
 } from '@soldy/setup'
-import { componentContributionId, componentViewContributionId } from '@soldy/setup'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
 import { componentViewModel } from '@soldy/setup'
@@ -45,7 +44,7 @@ export default {
 
 		// 4. Строим провайдер
 		const provider = new TAggregateProvider()
-		provider.add(new TInstanceAccessorProvider(instance as any, [componentContributionId, componentViewContributionId]))
+		provider.add(new TInstanceAccessorProvider(instance as any))
 		provider.add(new TElementPluginAccessorProvider(elementPlugin))
 		provider.add(new TInstancePluginAccessorProvider(instancePlugin))
 

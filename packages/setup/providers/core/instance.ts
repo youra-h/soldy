@@ -11,10 +11,7 @@ import type { IContractProp } from '@soldy/provider'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
 export class TInstanceAccessorProvider implements IAccessorProvider, IEventProvider {
-	constructor(
-		private instance: IComponent,
-		private ownerIds: symbol[],
-	) {}
+	constructor(private instance: IComponent) {}
 
 	subscribe(event: string, handler: TEventHandler): (() => void) | undefined {
 		const events = this.instance.events as any
@@ -25,8 +22,6 @@ export class TInstanceAccessorProvider implements IAccessorProvider, IEventProvi
 	}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (!this.ownerIds.includes(prop.ownerId)) return undefined
-
 		const triggers = prop.triggers
 		if (!triggers?.length) return undefined
 
