@@ -5,8 +5,8 @@
  * Принимает готовый экземпляр, реализует getAccessor() для членов с ownerId = componentContributionId.
  */
 
-import type { IAccessor, IEventProvider } from '../runtime/types'
-import type { IContractMember } from '../contract/types'
+import type { IAccessor, IEventProvider } from '../runtime'
+import type { IContractMember } from '../contract'
 import { componentContributionId } from '../contributions/component.contribution'
 import type { IComponent, TEventHandler } from '@soldy/core'
 

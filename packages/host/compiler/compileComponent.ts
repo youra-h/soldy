@@ -6,8 +6,7 @@
  * Только статическая компиляция описаний.
  */
 
-import type { IComponentModel, IContractMember } from '../contract/types'
-import type { IContribution } from '../contract/Contribution'
+import type { IComponentModel, IContractMember, IContribution } from '../contract'
 
 export function compileComponent(
 	contributions: IContribution[],
@@ -19,7 +18,7 @@ export function compileComponent(
 
 	// Собираем члены от всех вкладов
 	for (const c of contributions) {
-		const ownedMembers = c.members.map(m => ({
+		const ownedMembers = c.members.map((m) => ({
 			...m,
 			ownerId: c.id,
 		}))
