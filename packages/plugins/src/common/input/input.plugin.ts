@@ -6,7 +6,7 @@ import type { TInputPluginEvents } from './types'
 import type { IPluginBundle } from '../../base/types'
 
 export class TInputPlugin extends TBasePlugin<TInputPluginEvents> {
-	static readonly key = 'input'
+	static readonly key = Symbol('input')
 
 	private _input: HTMLInputElement | null = null
 	private _instance: ITextInputControl | null = null

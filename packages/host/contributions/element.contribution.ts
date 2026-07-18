@@ -6,17 +6,16 @@
  */
 
 import type { Contribution } from '../contract/Contribution'
-
-export const elementContributionId = Symbol('element')
+import { TElementPlugin } from '@soldy/plugins'
 
 export const ElementContribution: Contribution = {
-	id: elementContributionId,
+	id: TElementPlugin.key,
 	members: [
 		{
 			name: 'element',
 			kind: 'state',
 			mutable: false,
-			ownerId: elementContributionId,
+			ownerId: TElementPlugin.key,
 		},
 	],
 	events: ['ready', 'removed'],

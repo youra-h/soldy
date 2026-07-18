@@ -11,7 +11,7 @@ import type { TCollectionItemPluginsEvents } from './types'
  * Заменяет TElementAccumulationPlugin + TInstanceAccumulationPlugin.
  */
 export class TCollectionItemPlugins extends TBasePlugin<TCollectionItemPluginsEvents> {
-	static readonly key = 'collection-item-plugins'
+	static readonly key = Symbol('collection-item-plugins')
 
 	private readonly _bundles = new Map<string | number, IPluginBundle>()
 

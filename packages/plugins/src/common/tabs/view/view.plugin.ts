@@ -10,7 +10,7 @@ import type { TTabsViewPluginEvents } from './types'
 type TViewHandler = (offset: TActiveTabOffset | null) => void
 
 export class TTabsViewPlugin extends TBasePlugin<TTabsViewPluginEvents> {
-	static readonly key = 'tabs-view'
+	static readonly key = Symbol('tabs-view')
 
 	private _tabs: ITabs | null = null
 

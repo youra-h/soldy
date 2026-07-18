@@ -8,7 +8,7 @@ import { TElementAccumulationPlugin } from '../../collection'
 import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
 
 export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents> {
-	static readonly key = 'tabs-active-tab'
+	static readonly key = Symbol('tabs-active-tab')
 
 	private _element: HTMLElement | null = null
 	private _tabs: ITabs | null = null

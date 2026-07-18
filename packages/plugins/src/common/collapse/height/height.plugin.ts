@@ -10,7 +10,7 @@ import type { TCollapseHeightPluginEvents } from './types'
  * чтобы анимация раскрытия (height: 0 → var(--s-collapse-item-height)) работала корректно.
  */
 export class TCollapseHeightPlugin extends TBasePlugin<TCollapseHeightPluginEvents> {
-	static readonly key = 'collapse-height'
+	static readonly key = Symbol('collapse-height')
 
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()

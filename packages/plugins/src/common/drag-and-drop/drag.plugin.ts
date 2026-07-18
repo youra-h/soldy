@@ -37,7 +37,7 @@ import { TEvented } from '@soldy/core'
  */
 export class TDragPlugin extends TBasePlugin<TDragPluginEvents> {
 	/** Уникальный ключ плагина в бандле. */
-	static readonly key = 'drag'
+	static readonly key = Symbol('drag')
 
 	/** CSS-класс для визуального состояния перетаскиваемого элемента. */
 	private static readonly DRAGGING_CLASS = 's-drag-and-drop__item'

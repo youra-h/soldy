@@ -5,7 +5,7 @@ import type { IPluginBundle } from '../../../base/types'
 import type { TListItemPluginEvents } from './types'
 
 export class TListItemPlugin extends TBasePlugin<TListItemPluginEvents> {
-	static readonly key = 'list-item'
+	static readonly key = Symbol('list-item')
 
 	private _highlighted = false
 	private _instancePlugin: TInstancePlugin | null = null

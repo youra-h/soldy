@@ -8,7 +8,7 @@ export type TPluginEvents<T extends Record<string, (...args: any) => any> = {}> 
 	TBasePluginEvents
 
 export interface IPlugin<TEvents extends TBasePluginEvents = TBasePluginEvents> {
-	readonly key: string
+	readonly key: symbol
 	readonly events: TEvented<TEvents>
 	/** Вызывается контейнером при добавлении плагина через use(). Используй для подписки на другие плагины. */
 	install(bundle: IPluginBundle): void
@@ -19,13 +19,13 @@ export interface IPlugin<TEvents extends TBasePluginEvents = TBasePluginEvents> 
 export interface IPluginBundle {
 	use<P extends IPlugin>(PluginCtor: TPluginConstructor<P>): IPluginBundle
 	get<P extends IPlugin>(ctor: TPluginConstructor<P>): P | undefined
-	get(key: string): IPlugin | undefined
+	get(key: symbol): IPlugin | undefined
 	remove<P extends IPlugin>(PluginCtor: TPluginConstructor<P>): void
 }
 
 export type TPluginConstructor<P extends IPlugin = IPlugin> = {
 	new (): P
-	readonly key: string
+	readonly key: symbol
 }
 
 export type TBundleFactory = () => IPluginBundle

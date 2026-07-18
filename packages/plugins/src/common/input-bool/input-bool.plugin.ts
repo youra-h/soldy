@@ -6,7 +6,7 @@ import type { TInputBoolPluginEvents } from './types'
 import type { IPluginBundle } from '../../base/types'
 
 export class TInputBoolPlugin extends TBasePlugin<TInputBoolPluginEvents> {
-	static readonly key = 'input-bool'
+	static readonly key = Symbol('input-bool')
 
 	private _input: HTMLInputElement | null = null
 	private _instance: ICheckBox | null = null

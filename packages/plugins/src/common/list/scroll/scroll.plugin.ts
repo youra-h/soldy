@@ -23,7 +23,7 @@ import type { TListScrollPluginEvents } from './types'
  * - `'smooth'` — плавная анимация скролла
  */
 export class TListScrollPlugin extends TBasePlugin<TListScrollPluginEvents> {
-	static readonly key = 'list-scroll'
+	static readonly key = Symbol('list-scroll')
 
 	private _element: HTMLElement | null = null
 	private _list: IList | null = null

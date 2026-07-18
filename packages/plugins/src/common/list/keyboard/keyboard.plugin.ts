@@ -7,7 +7,7 @@ import { TListItemAccumulationPlugin } from '../accumulation'
 import type { TListKeyboardPluginEvents } from './types'
 
 export class TListKeyboardPlugin extends TBasePlugin<TListKeyboardPluginEvents> {
-	static readonly key = 'list-keyboard'
+	static readonly key = Symbol('list-keyboard')
 
 	private _element: HTMLElement | null = null
 	private _instance: IList | null = null

@@ -20,7 +20,7 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 	HTMLElement,
 	TElementAccumulationEvents
 > {
-	static readonly key = 'collection-elements'
+	static readonly key = Symbol('collection-elements')
 
 	private readonly _present = new Map<string | number, boolean>()
 

@@ -18,7 +18,7 @@ export class TInstanceAccumulationPlugin extends TAccumulationPlugin<
 	IComponentView,
 	TInstanceAccumulationEvents
 > {
-	static readonly key = 'collection-instances'
+	static readonly key = Symbol('collection-instances')
 
 	protected _track(uid: string | number, bundle: IPluginBundle): void {
 		const instancePlugin = bundle.get(TInstancePlugin)

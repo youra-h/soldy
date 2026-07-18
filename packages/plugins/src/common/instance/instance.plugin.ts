@@ -5,7 +5,7 @@ import { TEvented, type IComponent } from '@soldy/core'
 export class TInstancePlugin<T extends IComponent = IComponent> extends TBasePlugin<
 	TInstancePluginEvents<T>
 > {
-	static readonly key = 'instance'
+	static readonly key = Symbol('instance')
 
 	private _instance: T | null = null
 	private _readyResolve: ((instance: T) => void) | null = null

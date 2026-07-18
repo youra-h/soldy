@@ -8,7 +8,7 @@ import type { IPluginBundle } from '../base/types'
 type TTestEvents = { ping: () => void }
 
 class TTestPlugin extends TBasePlugin<TTestEvents> {
-	static readonly key = 'test'
+	static readonly key = Symbol('test')
 	installed = false
 	destroyed = false
 
@@ -23,7 +23,7 @@ class TTestPlugin extends TBasePlugin<TTestEvents> {
 }
 
 class TAnotherPlugin extends TBasePlugin {
-	static readonly key = 'another'
+	static readonly key = Symbol('another')
 }
 
 // --- tests ---
@@ -31,7 +31,7 @@ class TAnotherPlugin extends TBasePlugin {
 describe('TBasePlugin', () => {
 	it('key getter returns static key', () => {
 		const plugin = new TTestPlugin()
-		expect(plugin.key).toBe('test')
+		expect(plugin.key).toBe(TTestPlugin.key)
 	})
 
 	it('has events instance', () => {
@@ -67,9 +67,9 @@ describe('TPluginBundle', () => {
 		expect(bundle.get(TTestPlugin)).toBeInstanceOf(TTestPlugin)
 	})
 
-	it('get() by string key returns plugin', () => {
+	it('get() by symbol key returns plugin', () => {
 		bundle.use(TTestPlugin)
-		expect(bundle.get('test')).toBeInstanceOf(TTestPlugin)
+		expect(bundle.get(TTestPlugin.key)).toBeInstanceOf(TTestPlugin)
 	})
 
 	it('get() returns undefined for missing plugin', () => {

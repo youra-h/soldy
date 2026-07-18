@@ -8,7 +8,7 @@ import { TInstancePlugin } from '../instance'
  * Вычисляет ширину и высоту placeholder'а на основе size или кастомных width/height.
  */
 export class TSkeletonStylePlugin extends TBasePlugin {
-	static readonly key = 'skeleton-style'
+	static readonly key = Symbol('skeleton-style')
 
 	protected _styles: Record<string, string | number> = {}
 

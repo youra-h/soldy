@@ -9,7 +9,7 @@ import type { TSpinnerStylePluginEvents } from './types'
  * Плагин для управления стилями спиннера.
  */
 export class TSpinnerStylePlugin extends TBasePlugin<TSpinnerStylePluginEvents> {
-	static readonly key = 'spinner-style'
+	static readonly key = Symbol('spinner-style')
 
 	protected _styles: Record<string, string | number> = {}
 

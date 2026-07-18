@@ -10,7 +10,7 @@ import { TListItemPlugin } from '../item/item.plugin'
  * которым нужно управлять состоянием конкретного элемента.
  */
 export class TListItemAccumulationPlugin extends TAccumulationPlugin<TListItemPlugin> {
-	static readonly key = 'list-item-accumulation'
+	static readonly key = Symbol('list-item-accumulation')
 
 	protected _track(uid: string | number, bundle: IPluginBundle): void {
 		const plugin = bundle.get(TListItemPlugin)

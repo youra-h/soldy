@@ -9,8 +9,7 @@ import type { TEventHandler } from '@soldy/core'
 import type { Accessor } from '../runtime/Accessor'
 import type { RuntimeProvider } from '../runtime/RuntimeProvider'
 import type { ContractMember } from '../contract/types'
-import { instanceContributionId } from '../contributions/instance.contribution'
-import type { TInstancePlugin } from '@soldy/plugins'
+import { TInstancePlugin } from '@soldy/plugins'
 
 export class InstancePluginAccessorProvider implements RuntimeProvider {
 	constructor(private plugin: TInstancePlugin) {}
@@ -25,7 +24,7 @@ export class InstancePluginAccessorProvider implements RuntimeProvider {
 	}
 
 	getAccessor(member: ContractMember): Accessor | undefined {
-		if (member.ownerId !== instanceContributionId) return undefined
+		if (member.ownerId !== TInstancePlugin.key) return undefined
 
 		if (member.name === 'instance') {
 			const { plugin } = this

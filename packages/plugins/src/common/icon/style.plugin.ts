@@ -8,7 +8,7 @@ import type { TIconStylePluginEvents } from './types'
  * Плагин для управления стилями иконки.
  */
 export class TIconStylePlugin extends TBasePlugin<TIconStylePluginEvents> {
-	static readonly key = 'icon-style'
+	static readonly key = Symbol('icon-style')
 
 	protected _styles: Record<string, string | number> = {}
 

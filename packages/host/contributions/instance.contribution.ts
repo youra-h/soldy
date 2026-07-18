@@ -6,17 +6,16 @@
  */
 
 import type { Contribution } from '../contract/Contribution'
-
-export const instanceContributionId = Symbol('instance')
+import { TInstancePlugin } from '@soldy/plugins'
 
 export const InstanceContribution: Contribution = {
-	id: instanceContributionId,
+	id: TInstancePlugin.key,
 	members: [
 		{
 			name: 'instance',
 			kind: 'state',
 			mutable: false,
-			ownerId: instanceContributionId,
+			ownerId: TInstancePlugin.key,
 		},
 	],
 	events: ['ready', 'removed'],

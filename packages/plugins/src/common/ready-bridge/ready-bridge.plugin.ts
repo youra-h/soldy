@@ -10,7 +10,7 @@ import { TInstancePlugin } from '../instance'
  * Позволяет компоненту знать, когда он готов к взаимодействию с DOM.
  */
 export class TReadyBridgePlugin extends TBasePlugin {
-	static readonly key = 'ready-bridge'
+	static readonly key = Symbol('ready-bridge')
 
 	override install(bundle: IPluginBundle): void {
 		const elementPlugin = bundle.get(TElementPlugin)

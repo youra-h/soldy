@@ -15,7 +15,7 @@ import type { TListLayoutPluginEvents } from './types'
  * Устанавливает max-height и overflow-y: auto на контейнер.
  */
 export class TListLayoutPlugin extends TBasePlugin<TListLayoutPluginEvents> {
-	static readonly key = 'list-layout'
+	static readonly key = Symbol('list-layout')
 
 	private _element: HTMLElement | null = null
 	private _list: IList | null = null

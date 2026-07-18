@@ -5,7 +5,7 @@ import { TElementAccumulationPlugin } from '../../collection'
 import type { TTabsLayoutPluginEvents } from './types'
 
 export class TTabsLayoutPlugin extends TBasePlugin<TTabsLayoutPluginEvents> {
-	static readonly key = 'tabs-layout'
+	static readonly key = Symbol('tabs-layout')
 
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()

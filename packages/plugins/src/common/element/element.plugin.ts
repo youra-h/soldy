@@ -3,7 +3,7 @@ import type { TElementPluginEvents } from './types'
 import { TEvented } from '@soldy/core'
 
 export class TElementPlugin extends TBasePlugin<TElementPluginEvents> {
-	static readonly key = 'element'
+	static readonly key = Symbol('element')
 
 	private _element: HTMLElement | null = null
 	private _readyResolve: ((element: HTMLElement) => void) | null = null

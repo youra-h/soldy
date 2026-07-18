@@ -23,7 +23,7 @@ import { TEvented } from '@soldy/core'
  * // stylePlugin.styles → { position: 'fixed', left: '100px', top: '200px', zIndex: 1001 }
  */
 export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
-	static readonly key = 'frame-style'
+	static readonly key = Symbol('frame-style')
 
 	protected _styles: Record<string, string | number> = {}
 	protected _frame: IFrame | null = null
