@@ -9,11 +9,11 @@ import {
 	createComponentViewBundle,
 } from '@soldy/plugins'
 import {
-	Runtime,
-	AggregateRuntimeProvider,
-	ComponentAccessorProvider,
-	ElementPluginAccessorProvider,
-	InstancePluginAccessorProvider,
+	TRuntime,
+	TAggregateEventProvider,
+	TComponentAccessorProvider,
+	TElementPluginAccessorProvider,
+	TInstancePluginAccessorProvider,
 } from '@soldy/host'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
@@ -44,15 +44,13 @@ export default {
 		instancePlugin.instance = instance
 
 		// 4. Строим провайдер
-		const provider = new AggregateRuntimeProvider()
-		provider.addProvider(new ComponentAccessorProvider(instance as any))
-		provider.addProvider(new ElementPluginAccessorProvider(elementPlugin))
-		provider.addProvider(
-			new InstancePluginAccessorProvider(instancePlugin),
-		)
+		const provider = new TAggregateEventProvider()
+		provider.addProvider(new TComponentAccessorProvider(instance as any))
+		provider.addProvider(new TElementPluginAccessorProvider(elementPlugin))
+		provider.addProvider(new TInstancePluginAccessorProvider(instancePlugin))
 
 		// 5. Создаём Runtime
-		const runtime = new Runtime(componentViewModel, provider)
+		const runtime = new TRuntime(componentViewModel, provider)
 
 		// 7. Реактивные refs из Runtime (с автоподпиской)
 		const { refs } = useComponentRuntime(runtime, props, emit)

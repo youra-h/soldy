@@ -1,6 +1,6 @@
 export { shiftSize } from './utility/size'
 export { frameDebounce } from './utility/frame-debounce'
-export type { TComponentVariant, TComponentSize, TValuePayload, TScrollBehavior } from './types'
+export type { TComponentVariant, TComponentSize, TValuePayload, TScrollBehavior, TConstructor } from './types'
 export * from './event'
 export * from './state-unit'
 export * from './classes'
