@@ -125,7 +125,7 @@ TEntity (абстракт)
 Новый адаптационный слой, заменяющий старый `schema`. Архитектура:
 
 ```
-Contribution (декларация членов/событий)
+Contribution (декларация свойств/событий)
   ↓
 compileComponent() → ComponentModel (immutable DTO)
   ↓
@@ -135,20 +135,20 @@ useComponentRuntime() → reactive refs для шаблона
 ```
 
 Ключевые концепции:
-- **Contribution** — вклад от источника (компонент/плагин) с `ownerId` (symbol) и списком `events`
-- **ComponentModel** — immutable DTO: `members: ContractMember[]`. События — такие же члены с `kind: 'event'`
-- **ContractMember** — `{ name, kind ('state'|'computed'|'event'), mutable, ownerId }`
+- **Contribution** — вклад от источника (компонент/плагин) с `ownerId` (symbol) и списком `events` и `props`
+- **ComponentModel** — immutable DTO: `props: IContractProp[]`. События — такие же свойства с `kind: 'event'`
+- **IContractProp** — `{ name, kind: 'state'|'computed'|'event', mutable, ownerId }`
 - **Accessor** — интерфейс `{ get?, set?, subscribe }` — единый доступ к свойствам и событиям
-- **AccessorProvider** — создаёт Accessor по ContractMember, фильтруя по `ownerId`. Для событий (`kind: 'event'`) Accessor имеет только `subscribe`, для свойств — ещё `get` (+ `set` если `mutable`)
+- **AccessorProvider** — создаёт Accessor по IContractProp, фильтруя по `ownerId`. Для событий (`kind: 'event'`) Accessor имеет только `subscribe`, для свойств — ещё `get` (+ `set` если `mutable`)
 - **AggregateAccessorProvider** — композит из нескольких провайдеров
-- **Runtime** — единый механизм: для каждого члена получает Accessor у провайдера, подписывается и нотифицирует подписчиков. Не различает свойства и события — всё через Accessor
+- **Runtime** — единый механизм: для каждого свойства получает Accessor у провайдера, подписывается и нотифицирует подписчиков. Не различает свойства и события — всё через Accessor
 
 Структура:
-- `contract/` — `Contribution`, `ComponentModel`, `ContractMember`, `MemberKind`
-- `compiler/` — `compileComponent()` — чистая функция, собирает модель из Contribution. События contribution превращает в члены с `kind: 'event'`
-- `runtime/` — `Runtime`, `Accessor`, `AccessorProvider`, `AggregateProvider`, `track()`
-- `contributions/` — `ComponentContribution`, `ElementContribution`, `InstanceContribution`
-- `providers/` — `ComponentAccessorProvider`, `ElementPluginAccessorProvider`, `InstancePluginAccessorProvider`
+- `contract/` — `IContribution`, `IComponentModel`, `IContractProp`, `TPropKind`
+- `compiler/` — `compileComponent()` — чистая функция, собирает модель из IContribution. События contribution превращает в свойства с `kind: 'event'`
+- `runtime/` — `TRuntime`, `TAccessor`, `IAccessorProvider`, `TAggregateEventProvider`, `track()`
+- `contributions/` — `IComponentContribution`, `IElementContribution`, `IInstanceContribution`
+- `providers/` — `TComponentAccessorProvider`, `TElementPluginAccessorProvider`, `TInstancePluginAccessorProvider`
 
 ---
 

@@ -19,7 +19,7 @@ export interface IAccessor<T = any> {
 // --- IAccessorProvider: создаёт IAccessor для IContractProp ---
 
 export interface IAccessorProvider {
-	/** Для данного члена контракта создать IAccessor (state/computed). */
+	/** Для данного свойстваа контракта создать IAccessor (state/computed). */
 	getAccessor(prop: IContractProp): IAccessor | undefined
 }
 

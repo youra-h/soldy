@@ -2,7 +2,7 @@
  * @soldy/host — providers/elementPluginAccessorProvider.ts
  *
  * IAccessorProvider для плагина TElementPlugin.
- * Принимает готовый экземпляр плагина, реализует getAccessor() для членов с ownerId = elementContributionId.
+ * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerId = elementContributionId.
  */
 
 import type { TEventHandler } from '@soldy/core'

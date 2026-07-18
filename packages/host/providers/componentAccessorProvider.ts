@@ -2,7 +2,7 @@
  * @soldy/host — providers/componentAccessorProvider.ts
  *
  * IAccessorProvider для core-компонента TComponent / TComponentView.
- * Принимает готовый экземпляр, реализует getAccessor() для членов с ownerId = componentContributionId.
+ * Принимает готовый экземпляр, реализует getAccessor() для свойств с ownerId = componentContributionId.
  */
 
 import type { IAccessor, IEventProvider } from '../runtime'

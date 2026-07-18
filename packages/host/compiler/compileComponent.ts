@@ -16,7 +16,7 @@ export function compileComponent(
 	const props: IContractProp[] = []
 	const events: string[] = []
 
-	// Собираем члены от всех вкладов
+	// Собираем свойства от всех вкладов
 	for (const c of contributions) {
 		const ownedProps = c.props.map((m) => ({
 			...m,
@@ -26,7 +26,7 @@ export function compileComponent(
 		events.push(...c.events)
 	}
 
-	// Пользовательские члены
+	// Пользовательские свойства
 	if (userProps) {
 		props.push(...userProps)
 	}

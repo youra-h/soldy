@@ -15,7 +15,7 @@ export function useComponentRuntime(
 ) {
 	const refs: Record<string, Ref<any>> = {}
 
-	// 1. Создаём реактивные переменные для всех членов модели (кроме event)
+	// 1. Создаём реактивные переменные для всех свойств модели (кроме event)
 	for (const member of runtime.model.members) {
 		if (member.kind !== 'event') {
 			refs[member.name] = ref(runtime.getValue(member.name))
