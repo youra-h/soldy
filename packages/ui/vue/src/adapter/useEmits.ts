@@ -12,7 +12,9 @@ export function useEmits(model: IComponentModel): string[] {
 
 	for (const m of model.members) {
 		if (m.kind === 'event') continue
+
 		emits.push(`change:${m.name}`)
+
 		if (m.mutable) {
 			emits.push(`update:${m.name}`)
 		}
