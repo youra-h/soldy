@@ -11,8 +11,11 @@ export type TPropKind = 'state' | 'computed' | 'event'
 export interface IContractProp {
 	name: string
 	kind: TPropKind
-	/** Может ли свойство быть изменено извне (есть ли setter) */
-	mutable: boolean
+	/**
+	 * Может ли свойство быть изменено извне (есть ли setter).
+	 * По умолчанию: state → true, computed → false.
+	 */
+	mutable?: boolean
 	/** Идентификатор источника (IContribution.id), которому принадлежит свойство */
 	ownerId: symbol
 }

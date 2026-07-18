@@ -18,10 +18,17 @@ export function compileComponent(
 
 	// Собираем свойства от всех вкладов
 	for (const c of contributions) {
-		const ownedProps = c.props.map((m) => ({
-			...m,
-			ownerId: c.id,
-		}))
+		const ownedProps = c.props.map((p) => {
+			const mutable = p.kind === 'computed'
+				? false
+				: p.mutable ?? true
+
+			return {
+				...p,
+				mutable,
+				ownerId: c.id,
+			}
+		})
 		props.push(...ownedProps)
 		events.push(...c.events)
 	}

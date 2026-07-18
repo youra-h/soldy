@@ -25,7 +25,7 @@ export function useProps(model: IComponentModel, ctor: TConstructor): Record<str
 
 	const props: Record<string, any> = {}
 
-	for (const m of model.members) {
+	for (const m of model.props) {
 		if (m.kind === 'event') continue
 
 		const d = defaults[m.name]

@@ -15,19 +15,16 @@ export const ComponentContribution: IContribution = {
 		{
 			name: 'rendered',
 			kind: 'state',
-			mutable: true,
 			ownerId: componentContributionId,
 		},
 		{
 			name: 'visible',
 			kind: 'state',
-			mutable: true,
 			ownerId: componentContributionId,
 		},
 		{
 			name: 'present',
 			kind: 'computed',
-			mutable: false,
 			ownerId: componentContributionId,
 		},
 	],
