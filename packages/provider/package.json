@@ -11,7 +11,8 @@
 		"./runtime": "./runtime/index.ts"
 	},
 	"dependencies": {
-		"@soldy/core": "*"
+		"@soldy/core": "*",
+		"@soldy/plugins": "*"
 	},
 	"devDependencies": {
 		"@soldy/setup": "*"

@@ -2,20 +2,10 @@ import type { SetupContext } from 'vue'
 import { toRaw } from 'vue'
 import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import { TComponentView } from '@soldy/core'
-import {
-	TElementPlugin,
-	TInstancePlugin,
-	TReadyBridgePlugin,
-	createComponentViewBundle,
-} from '@soldy/plugins'
-import { TRuntime, TAggregateProvider, TObservingAccessorProvider } from '@soldy/provider'
-import {
-	TElementPluginAccessorProvider,
-	TInstancePluginAccessorProvider,
-} from '@soldy/setup'
+import { TInstancePlugin } from '@soldy/plugins'
+import { ComponentViewDescriptor } from '@soldy/setup'
 import { useElementBinding } from '../../composables/useElementBinding'
 import { useComponentRuntime } from '../../composables/useComponentRuntime'
-import { componentViewModel } from '@soldy/setup'
 import BaseComponentView from './base.component'
 import type { TBaseComponentViewProps } from './types'
 
@@ -34,26 +24,22 @@ export default {
 
 		// 2. Создаём или используем готовый бандл плагинов
 		const providedPlugins = props.plugins
-		const bundle = providedPlugins ?? createComponentViewBundle()
-		const elementPlugin = bundle.get(TElementPlugin)!
-		const instancePlugin = bundle.get(TInstancePlugin)!
+		const bundle = providedPlugins ?? ComponentViewDescriptor.createBundle()
 
 		// 3. Настраиваем связи (ready-bridge)
+		const instancePlugin = bundle.get(TInstancePlugin)!
 		instancePlugin.instance = instance
 
-		// 4. Строим провайдер
-		const provider = new TAggregateProvider()
-		provider.add(new TObservingAccessorProvider(instance as any))
-		provider.add(new TElementPluginAccessorProvider(elementPlugin))
-		provider.add(new TInstancePluginAccessorProvider(instancePlugin))
+		// 4. Создаём Runtime одной строкой
+		const runtime = ComponentViewDescriptor.createRuntime({
+			instance: toRaw(instance) as any,
+			bundle,
+		})
 
-		// 5. Создаём Runtime
-		const runtime = new TRuntime(componentViewModel, provider)
-
-		// 7. Реактивные refs из Runtime (с автоподпиской)
+		// 5. Реактивные refs из Runtime (с автоподпиской)
 		const { refs } = useComponentRuntime(runtime, props, emit)
 
-		// 8. Привязка корневого DOM-элемента
+		// 6. Привязка корневого DOM-элемента
 		const rootElement = useElementBinding(bundle)
 
 		return { ctrl: instance, plugins: bundle, rootElement, ...refs }

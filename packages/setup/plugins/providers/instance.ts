@@ -7,13 +7,13 @@
 
 import type { IAccessor, IAccessorProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
-import { TInstancePlugin } from '@soldy/plugins'
+import type { TInstancePlugin } from '@soldy/plugins'
 
 export class TInstancePluginAccessorProvider implements IAccessorProvider {
 	constructor(private plugin: TInstancePlugin) {}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (prop.ownerCtor !== TInstancePlugin) return undefined
+		if (prop.name !== 'instance') return undefined
 
 		if (prop.name === 'instance') {
 			const { plugin } = this

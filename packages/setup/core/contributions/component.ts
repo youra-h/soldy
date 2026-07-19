@@ -4,10 +4,8 @@
  */
 
 import type { IContribution } from '@soldy/provider'
-import { TComponent } from '@soldy/core'
 
 export const ComponentContribution: IContribution = {
-	ctor: TComponent,
 	props: [
 		{ name: 'rendered', kind: 'state', triggers: ['change:rendered'] },
 		{ name: 'visible', kind: 'state', triggers: ['change:visible'] },

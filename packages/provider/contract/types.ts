@@ -2,11 +2,14 @@
  * Базовые типы контракта компонента.
  * Модель (IComponentModel) — immutable DTO, результат компиляции.
  * Не содержит instance, не знает о плагинах.
+ *
+ * Contribution — чистое описание свойств и событий, без идентификации источника.
+ * Идентификация теперь внешняя — через ComponentDescriptor.
  */
 
 export type TPropKind = 'state' | 'computed' | 'event'
 
-/** Входное описание свойства в контрибуции. Без ownerCtor — компилятор всегда добавляет его из Contribution.ctor. */
+/** Входное описание свойства в контрибуции. */
 export interface IContributionProp {
 	name: string
 	kind: TPropKind
@@ -19,11 +22,9 @@ export interface IContributionProp {
 	triggers?: string[]
 }
 
-/** Скомпилированное свойство: всегда содержит ownerCtor и нормализованный mutable. */
+/** Скомпилированное свойство: нормализованный mutable. */
 export interface IContractProp extends IContributionProp {
 	mutable: boolean
-	/** Класс-источник (IContribution.ctor), которому принадлежит свойство */
-	ownerCtor: Function
 }
 
 export interface IComponentModel {
@@ -33,12 +34,10 @@ export interface IComponentModel {
 }
 
 /**
- * Вклад (IContribution) — декларация свойств и событий от одного источника.
- * Источником может быть core-компонент, плагин, пользовательский код.
- * Содержит только статическое описание, без instance.
+ * Вклад (IContribution) — чистое описание свойств и событий от одного источника.
+ * Не содержит идентификатора источника — связь устанавливается снаружи через ComponentDescriptor.
  */
 export interface IContribution {
-	ctor: Function
 	props: IContributionProp[]
 	/** Локальные имена событий */
 	events: string[]

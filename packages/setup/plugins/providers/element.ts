@@ -8,7 +8,7 @@
 import type { TEventHandler } from '@soldy/core'
 import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
-import { TElementPlugin } from '@soldy/plugins'
+import type { TElementPlugin } from '@soldy/plugins'
 
 export class TElementPluginAccessorProvider implements IAccessorProvider, IEventProvider {
 	constructor(private plugin: TElementPlugin) {}
@@ -29,7 +29,7 @@ export class TElementPluginAccessorProvider implements IAccessorProvider, IEvent
 	}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (prop.ownerCtor !== TElementPlugin) return undefined
+		if (prop.name !== 'element') return undefined
 
 		if (prop.name === 'element') {
 			const { plugin } = this

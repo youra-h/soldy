@@ -1,1 +1,1 @@
-export { compileComponent } from './compileComponent'
+export { compileDescriptor } from '../descriptor/defineComponent'

@@ -1,39 +1,7 @@
 /**
- * Чистая функция: собирает IComponentModel из массива IContribution и/или IComponentModel.
- * Принимает отдельный элемент или массив.
- * IComponentModel (родитель) — наследуется как есть (props + events копируются напрямую).
- * IContribution — компилируется: добавляется ownerCtor, нормализуется mutable.
- * Не имеет доступа к instance, плагинам, эмиттерам.
+ * @deprecated compileComponent удалён из публичного API.
+ * Используйте defineComponent() → descriptor.model.
+ * Внутренняя реализация: descriptor/defineComponent.ts → compileDescriptor().
  */
 
-import type { IComponentModel, IContractProp, IContribution } from '../contract'
-
-type TCompileSource = IContribution | IComponentModel
-
-export function compileComponent(
-	sources: TCompileSource | TCompileSource[],
-): IComponentModel {
-	const arr = Array.isArray(sources) ? sources : [sources]
-	const props: IContractProp[] = []
-	const events: string[] = []
-
-	for (const source of arr) {
-		if ('ctor' in source) {
-			// IContribution — компилируем
-			props.push(
-				...source.props.map((p) => ({
-					...p,
-					mutable: p.kind === 'computed' ? false : (p.mutable ?? true),
-					ownerCtor: source.ctor,
-				})),
-			)
-			events.push(...source.events)
-		} else {
-			// IComponentModel — наследуем как есть
-			props.push(...source.props)
-			events.push(...source.events)
-		}
-	}
-
-	return { props, events: [...new Set(events)] }
-}
+export { compileDescriptor } from '../descriptor/defineComponent'
