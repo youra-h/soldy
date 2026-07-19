@@ -84,15 +84,6 @@ describe('compileComponent', () => {
 		expect(model.events).toContain('hide')
 	})
 
-	it('добавляет пользовательские события', () => {
-		const model = compileComponent(
-			[{ id: idA, props: [], events: [] }],
-			['custom'],
-		)
-
-		expect(model.events).toContain('custom')
-	})
-
 	it('дедуплицирует события', () => {
 		const model = compileComponent([
 			{ id: idA, props: [], events: ['ready'] },
@@ -110,5 +101,36 @@ describe('compileComponent', () => {
 		}])
 
 		expect(model.props[0].triggers).toEqual(['change:x'])
+	})
+
+	it('принимает одну contribution без массива', () => {
+		const model = compileComponent({ id: idA, props: [{ name: 'x', kind: 'state' }], events: ['show'] })
+
+		expect(model.props).toHaveLength(1)
+		expect(model.events).toContain('show')
+	})
+
+	it('принимает IComponentModel как источник (наследование)', () => {
+		const parent = compileComponent({ id: idA, props: [{ name: 'a', kind: 'state' }], events: ['show'] })
+		const child = compileComponent([parent, { id: idB, props: [{ name: 'b', kind: 'state' }], events: ['hide'] }])
+
+		expect(child.props.map(p => p.name)).toEqual(['a', 'b'])
+		expect(child.events).toContain('show')
+		expect(child.events).toContain('hide')
+	})
+
+	it('наследует ownerId props из родительской модели без изменений', () => {
+		const parent = compileComponent({ id: idA, props: [{ name: 'a', kind: 'state' }], events: [] })
+		const child = compileComponent([parent, { id: idB, props: [{ name: 'b', kind: 'state' }], events: [] }])
+
+		expect(child.props[0].ownerId).toBe(idA)
+		expect(child.props[1].ownerId).toBe(idB)
+	})
+
+	it('дедуплицирует события при наследовании модели', () => {
+		const parent = compileComponent({ id: idA, props: [], events: ['show', 'hide'] })
+		const child = compileComponent([parent, { id: idB, props: [], events: ['hide'] }])
+
+		expect(child.events.filter(e => e === 'hide')).toHaveLength(1)
 	})
 })

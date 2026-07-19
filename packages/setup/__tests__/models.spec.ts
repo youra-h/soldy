@@ -41,7 +41,7 @@ describe('componentViewModel', () => {
 		expect(names).toContain('instance')
 	})
 
-	it('содержит пользовательское событие ready', () => {
+	it('содержит событие ready из ComponentViewContribution', () => {
 		expect(componentViewModel.events).toContain('ready')
 	})
 
