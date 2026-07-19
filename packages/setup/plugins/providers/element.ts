@@ -2,13 +2,13 @@
  * @soldy/setup — providers/plugins/element.ts
  *
  * IAccessorProvider для плагина TElementPlugin.
- * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerId = TElementPlugin.key.
+ * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerCtor === TElementPlugin.
  */
 
 import type { TEventHandler } from '@soldy/core'
 import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
-import type { TElementPlugin } from '@soldy/plugins'
+import { TElementPlugin } from '@soldy/plugins'
 
 export class TElementPluginAccessorProvider implements IAccessorProvider, IEventProvider {
 	constructor(private plugin: TElementPlugin) {}
@@ -29,7 +29,7 @@ export class TElementPluginAccessorProvider implements IAccessorProvider, IEvent
 	}
 
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (prop.ownerId !== this.plugin.key) return undefined
+		if (prop.ownerCtor !== TElementPlugin) return undefined
 
 		if (prop.name === 'element') {
 			const { plugin } = this

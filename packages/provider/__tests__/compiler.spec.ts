@@ -5,13 +5,13 @@ import { describe, it, expect } from 'vitest'
 import { compileComponent } from '../compiler/compileComponent'
 import type { IContribution } from '../contract/types'
 
-const idA = Symbol('a')
-const idB = Symbol('b')
+class ClassA {}
+class ClassB {}
 
 describe('compileComponent', () => {
 	it('собирает props из одной контрибуции', () => {
 		const c: IContribution = {
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'x', kind: 'state' }],
 			events: [],
 		}
@@ -19,12 +19,12 @@ describe('compileComponent', () => {
 
 		expect(model.props).toHaveLength(1)
 		expect(model.props[0].name).toBe('x')
-		expect(model.props[0].ownerId).toBe(idA)
+		expect(model.props[0].ownerCtor).toBe(ClassA)
 	})
 
 	it('state по умолчанию mutable: true', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'x', kind: 'state' }],
 			events: [],
 		}])
@@ -34,7 +34,7 @@ describe('compileComponent', () => {
 
 	it('computed всегда mutable: false', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'y', kind: 'computed' }],
 			events: [],
 		}])
@@ -44,7 +44,7 @@ describe('compileComponent', () => {
 
 	it('уважает явный mutable: false для state', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'z', kind: 'state', mutable: false }],
 			events: [],
 		}])
@@ -52,30 +52,30 @@ describe('compileComponent', () => {
 		expect(model.props[0].mutable).toBe(false)
 	})
 
-	it('добавляет ownerId из контрибуции', () => {
+	it('добавляет ownerCtor из контрибуции', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'a', kind: 'state' }],
 			events: [],
 		}])
 
-		expect(model.props[0].ownerId).toBe(idA)
+		expect(model.props[0].ownerCtor).toBe(ClassA)
 	})
 
 	it('объединяет props из нескольких контрибуций', () => {
 		const model = compileComponent([
-			{ id: idA, props: [{ name: 'a', kind: 'state' }], events: [] },
-			{ id: idB, props: [{ name: 'b', kind: 'state' }], events: [] },
+			{ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: [] },
+			{ ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: [] },
 		])
 
 		expect(model.props).toHaveLength(2)
-		expect(model.props[0].ownerId).toBe(idA)
-		expect(model.props[1].ownerId).toBe(idB)
+		expect(model.props[0].ownerCtor).toBe(ClassA)
+		expect(model.props[1].ownerCtor).toBe(ClassB)
 	})
 
 	it('собирает события из контрибуций', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [],
 			events: ['show', 'hide'],
 		}])
@@ -86,8 +86,8 @@ describe('compileComponent', () => {
 
 	it('дедуплицирует события', () => {
 		const model = compileComponent([
-			{ id: idA, props: [], events: ['ready'] },
-			{ id: idB, props: [], events: ['ready'] },
+			{ ctor: ClassA, props: [], events: ['ready'] },
+			{ ctor: ClassB, props: [], events: ['ready'] },
 		])
 
 		expect(model.events).toEqual(['ready'])
@@ -95,7 +95,7 @@ describe('compileComponent', () => {
 
 	it('пробрасывает triggers в скомпилированную модель', () => {
 		const model = compileComponent([{
-			id: idA,
+			ctor: ClassA,
 			props: [{ name: 'x', kind: 'state', triggers: ['change:x'] }],
 			events: [],
 		}])
@@ -104,32 +104,32 @@ describe('compileComponent', () => {
 	})
 
 	it('принимает одну contribution без массива', () => {
-		const model = compileComponent({ id: idA, props: [{ name: 'x', kind: 'state' }], events: ['show'] })
+		const model = compileComponent({ ctor: ClassA, props: [{ name: 'x', kind: 'state' }], events: ['show'] })
 
 		expect(model.props).toHaveLength(1)
 		expect(model.events).toContain('show')
 	})
 
 	it('принимает IComponentModel как источник (наследование)', () => {
-		const parent = compileComponent({ id: idA, props: [{ name: 'a', kind: 'state' }], events: ['show'] })
-		const child = compileComponent([parent, { id: idB, props: [{ name: 'b', kind: 'state' }], events: ['hide'] }])
+		const parent = compileComponent({ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: ['show'] })
+		const child = compileComponent([parent, { ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: ['hide'] }])
 
 		expect(child.props.map(p => p.name)).toEqual(['a', 'b'])
 		expect(child.events).toContain('show')
 		expect(child.events).toContain('hide')
 	})
 
-	it('наследует ownerId props из родительской модели без изменений', () => {
-		const parent = compileComponent({ id: idA, props: [{ name: 'a', kind: 'state' }], events: [] })
-		const child = compileComponent([parent, { id: idB, props: [{ name: 'b', kind: 'state' }], events: [] }])
+	it('наследует ownerCtor props из родительской модели без изменений', () => {
+		const parent = compileComponent({ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: [] })
+		const child = compileComponent([parent, { ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: [] }])
 
-		expect(child.props[0].ownerId).toBe(idA)
-		expect(child.props[1].ownerId).toBe(idB)
+		expect(child.props[0].ownerCtor).toBe(ClassA)
+		expect(child.props[1].ownerCtor).toBe(ClassB)
 	})
 
 	it('дедуплицирует события при наследовании модели', () => {
-		const parent = compileComponent({ id: idA, props: [], events: ['show', 'hide'] })
-		const child = compileComponent([parent, { id: idB, props: [], events: ['hide'] }])
+		const parent = compileComponent({ ctor: ClassA, props: [], events: ['show', 'hide'] })
+		const child = compileComponent([parent, { ctor: ClassB, props: [], events: ['hide'] }])
 
 		expect(child.events.filter(e => e === 'hide')).toHaveLength(1)
 	})

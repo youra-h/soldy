@@ -11,7 +11,7 @@ function makeProp(overrides: Partial<IContractProp> = {}): IContractProp {
 		name: 'testProp',
 		kind: 'state',
 		mutable: true,
-		ownerId: Symbol('test'),
+		ownerCtor: class {},
 		triggers: ['change:testProp'],
 		...overrides,
 	}

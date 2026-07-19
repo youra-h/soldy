@@ -4,11 +4,10 @@
  */
 
 import type { IContribution } from '@soldy/provider'
-
-export const componentViewContributionId = Symbol('component-view')
+import { TComponentView } from '@soldy/core'
 
 export const ComponentViewContribution: IContribution = {
-	id: componentViewContributionId,
+	ctor: TComponentView,
 	props: [
 		{ name: 'tag', kind: 'state', triggers: ['change:tag'] },
 		{ name: 'classes', kind: 'computed', triggers: ['change:classes'] },

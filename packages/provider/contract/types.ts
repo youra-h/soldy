@@ -6,7 +6,7 @@
 
 export type TPropKind = 'state' | 'computed' | 'event'
 
-/** Входное описание свойства в контрибуции. Без ownerId — компилятор всегда добавляет его из Contribution.id. */
+/** Входное описание свойства в контрибуции. Без ownerCtor — компилятор всегда добавляет его из Contribution.ctor. */
 export interface IContributionProp {
 	name: string
 	kind: TPropKind
@@ -19,11 +19,11 @@ export interface IContributionProp {
 	triggers?: string[]
 }
 
-/** Скомпилированное свойство: всегда содержит ownerId и нормализованный mutable. */
+/** Скомпилированное свойство: всегда содержит ownerCtor и нормализованный mutable. */
 export interface IContractProp extends IContributionProp {
 	mutable: boolean
-	/** Идентификатор источника (IContribution.id), которому принадлежит свойство */
-	ownerId: symbol
+	/** Класс-источник (IContribution.ctor), которому принадлежит свойство */
+	ownerCtor: Function
 }
 
 export interface IComponentModel {
@@ -38,7 +38,7 @@ export interface IComponentModel {
  * Содержит только статическое описание, без instance.
  */
 export interface IContribution {
-	id: symbol
+	ctor: Function
 	props: IContributionProp[]
 	/** Локальные имена событий */
 	events: string[]

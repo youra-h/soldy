@@ -1,2 +1,2 @@
-export { ComponentContribution, componentContributionId } from './component'
-export { ComponentViewContribution, componentViewContributionId } from './component-view'
+export { ComponentContribution } from './component'
+export { ComponentViewContribution } from './component-view'

@@ -45,10 +45,10 @@ describe('componentViewModel', () => {
 		expect(componentViewModel.events).toContain('ready')
 	})
 
-	it('все пропы имеют ownerId', () => {
+	it('все пропы имеют ownerCtor', () => {
 		for (const p of componentViewModel.props) {
-			expect(p.ownerId).toBeDefined()
-			expect(typeof p.ownerId).toBe('symbol')
+			expect(p.ownerCtor).toBeDefined()
+			expect(typeof p.ownerCtor).toBe('function')
 		}
 	})
 
