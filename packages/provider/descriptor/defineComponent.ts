@@ -94,6 +94,7 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 		get model(): IComponentModel {
 			// Вычисляется лениво при первом обращении
 			const value = compileDescriptor(descriptor)
+
 			Object.defineProperty(descriptor, 'model', {
 				value,
 				writable: false,
