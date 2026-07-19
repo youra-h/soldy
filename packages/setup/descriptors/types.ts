@@ -5,8 +5,8 @@
  * Заменяет ручную сборку compileComponent([...]) и ручную регистрацию провайдеров.
  */
 
-import type { IContribution, IComponentModel } from '../contract'
-import type { IAccessorProvider, IEventProvider } from '../runtime'
+import type { IContribution, IComponentModel } from '@soldy/provider'
+import type { IAccessorProvider, IEventProvider } from '@soldy/provider'
 
 /** Определение плагина в составе дескриптора: конструктор + contribution + provider. */
 export interface IPluginDefinition {

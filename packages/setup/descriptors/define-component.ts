@@ -6,7 +6,7 @@
  */
 
 import type { IComponentModel, IContractProp, IContribution } from '@soldy/provider'
-import type { IPluginDefinition, IComponentDescriptor, IComponentDescriptorOptions } from '@soldy/provider'
+import type { IPluginDefinition, IComponentDescriptor, IComponentDescriptorOptions } from './types'
 import { TAggregateProvider, TRuntime } from '@soldy/provider'
 import { TPluginBundle } from '@soldy/plugins'
 
