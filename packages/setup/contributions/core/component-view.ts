@@ -13,5 +13,5 @@ export const ComponentViewContribution: IContribution = {
 		{ name: 'tag', kind: 'state', triggers: ['change:tag'] },
 		{ name: 'classes', kind: 'computed', triggers: ['change:classes'] },
 	],
-	events: [],
+	events: ['ready'],
 }
