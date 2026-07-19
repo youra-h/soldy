@@ -13,7 +13,7 @@ import { TPluginBundle } from '@soldy/plugins'
 // --- definePlugin ---
 
 export function definePlugin(options: {
-	plugin: new (...args: any[]) => any
+	ctor: new (...args: any[]) => any
 	contribution?: IContribution
 	provider?: new (instance: any) => any
 }): IPluginDefinition {
@@ -71,9 +71,9 @@ function collectPlugins(
 	}
 
 	for (const pluginDef of descriptor.plugins) {
-		if (!seen.has(pluginDef.plugin)) {
-			seen.add(pluginDef.plugin)
-			bundle.use(pluginDef.plugin as any)
+		if (!seen.has(pluginDef.ctor)) {
+			seen.add(pluginDef.ctor)
+			bundle.use(pluginDef.ctor as any)
 		}
 	}
 }
@@ -110,7 +110,7 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 			for (const pluginDef of this.plugins) {
 				if (!pluginDef.provider) continue
 
-				const pluginInstance = ctx.bundle.get(pluginDef.plugin as any)
+				const pluginInstance = ctx.bundle.get(pluginDef.ctor as any)
 				if (pluginInstance) {
 					provider.add(new pluginDef.provider(pluginInstance))
 				}

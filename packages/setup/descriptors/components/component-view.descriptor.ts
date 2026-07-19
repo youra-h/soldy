@@ -16,12 +16,12 @@ export const ComponentViewDescriptor = defineComponent({
 
 	plugins: [
 		definePlugin({
-			plugin: TElementPlugin,
+			ctor: TElementPlugin,
 			contribution: ElementContribution,
 			provider: TElementPluginAccessorProvider,
 		}),
 		definePlugin({
-			plugin: TInstancePlugin,
+			ctor: TInstancePlugin,
 		}),
 	],
 

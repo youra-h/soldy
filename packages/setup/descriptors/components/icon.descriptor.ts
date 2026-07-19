@@ -22,7 +22,7 @@ export const IconDescriptor = defineComponent({
 	plugins: [
 		...ComponentViewDescriptor.plugins,
 		definePlugin({
-			plugin: TIconStylePlugin,
+			ctor: TIconStylePlugin,
 		}),
 	],
 

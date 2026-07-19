@@ -127,7 +127,7 @@ describe('defineComponent', () => {
 			contribution: ContribA,
 			plugins: [
 				definePlugin({
-					plugin: MockPlugin,
+					ctor: MockPlugin,
 					contribution: ContribPlugin,
 					provider: MockProvider,
 				}),
@@ -147,7 +147,7 @@ describe('defineComponent', () => {
 			contribution: ContribA,
 			plugins: [
 				definePlugin({
-					plugin: MockPlugin,
+					ctor: MockPlugin,
 					contribution: ContribPlugin,
 					provider: MockProvider,
 				}),
@@ -225,12 +225,12 @@ describe('defineComponent', () => {
 
 	it('definePlugin возвращает переданные опции', () => {
 		const pluginDef = definePlugin({
-			plugin: MockPlugin,
+			ctor: MockPlugin,
 			contribution: ContribPlugin,
 			provider: MockProvider,
 		})
 
-		expect(pluginDef.plugin).toBe(MockPlugin)
+		expect(pluginDef.ctor).toBe(MockPlugin)
 		expect(pluginDef.contribution).toBe(ContribPlugin)
 		expect(pluginDef.provider).toBe(MockProvider)
 	})
