@@ -2,8 +2,8 @@
  * @soldy/setup — тесты моделей
  */
 import { describe, it, expect } from 'vitest'
-import { componentModel } from '../models/component'
-import { componentViewModel } from '../models/component-view'
+import { componentModel } from '../core/models/component'
+import { componentViewModel } from '../core/models/component-view'
 
 describe('componentModel', () => {
 	it('содержит props от TComponent', () => {

@@ -2,7 +2,7 @@
  * @soldy/setup — тесты TElementPluginAccessorProvider
  */
 import { describe, it, expect, vi } from 'vitest'
-import { TElementPluginAccessorProvider } from '../providers/plugins/element'
+import { TElementPluginAccessorProvider } from '../plugins/providers/element'
 import { TEvented } from '@soldy/core'
 import type { IContractProp } from '@soldy/provider'
 

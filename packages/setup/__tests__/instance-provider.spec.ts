@@ -2,7 +2,7 @@
  * @soldy/setup — тесты TInstancePluginAccessorProvider
  */
 import { describe, it, expect, vi } from 'vitest'
-import { TInstancePluginAccessorProvider } from '../providers/plugins/instance'
+import { TInstancePluginAccessorProvider } from '../plugins/providers/instance'
 import { TEvented, TComponent } from '@soldy/core'
 import type { IContractProp } from '@soldy/provider'
 

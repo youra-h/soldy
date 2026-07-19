@@ -1,8 +1,7 @@
 import { compileComponent } from '@soldy/provider'
 import { componentModel } from './component'
-import { ComponentViewContribution } from '../contributions/core/component-view'
-import { ElementContribution } from '../contributions/plugins/element'
-import { InstanceContribution } from '../contributions/plugins/instance'
+import { ComponentViewContribution } from '../contributions'
+import { ElementContribution, InstanceContribution } from '../../plugins'
 
 export const componentViewModel = compileComponent([
 	componentModel,
