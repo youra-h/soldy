@@ -12,11 +12,14 @@ export function createAdapter(
 	descriptor: IComponentDescriptor,
 	options: { ctrl?: any; plugins?: any; props?: any },
 ) {
+	// Если instance не передан — создаём его через конструктор из дескриптора.
 	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
 
+	// Если bundle не передан — создаём его через дескриптор.
 	const bundle = options.plugins ?? descriptor.createBundle()
 
 	const instancePlugin = bundle.get(TInstancePlugin)
+
 	if (instancePlugin) {
 		instancePlugin.instance = instance
 	}
