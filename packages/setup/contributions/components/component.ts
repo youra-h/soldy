@@ -1,8 +1,3 @@
-/**
- * Вклад от core-компонента (TComponent).
- * Описывает свойства rendered, visible, present и события жизненного цикла.
- */
-
 import type { IContribution } from '@soldy/provider'
 
 export const ComponentContribution: IContribution = {

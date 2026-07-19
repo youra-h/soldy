@@ -2,8 +2,8 @@
  * @soldy/setup — тесты дескрипторов (замена compileComponent)
  */
 import { describe, it, expect } from 'vitest'
-import { ComponentDescriptor } from '../descriptors/component.descriptor'
-import { ComponentViewDescriptor } from '../descriptors/component-view.descriptor'
+import { ComponentDescriptor } from '../descriptors/components/component.descriptor'
+import { ComponentViewDescriptor } from '../descriptors/components/component-view.descriptor'
 
 describe('ComponentDescriptor', () => {
 	it('содержит props от TComponent', () => {

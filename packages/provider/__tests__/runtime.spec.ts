@@ -2,9 +2,8 @@
  * @soldy/provider — тесты TRuntime
  */
 import { describe, it, expect, vi } from 'vitest'
-import { defineComponent } from '../descriptor/defineComponent'
 import { ComponentDescriptor } from '@soldy/setup'
-import { TObservingAccessorProvider } from '../runtime/accessor-provider.class'
+import { TObservingAccessorProvider } from '@soldy/setup'
 import { TRuntime } from '../runtime/runtime.class'
 import { TAggregateProvider } from '../runtime/aggregate-provider.class'
 import type { IContribution } from '../contract/types'

@@ -1,9 +1,13 @@
-// Moved to @soldy/setup/descriptors/define-component.ts
+/**
+ * defineComponent / definePlugin — фабрики дескрипторов компонентов.
+ *
+ * Перенесено из @soldy/provider: использует TPluginBundle из @soldy/plugins.
+ * В @soldy/provider остаются только интерфейсы (IComponentDescriptor и др.).
+ */
 
-
-import type { IComponentModel, IContractProp, IContribution } from '../contract'
-import type { IPluginDefinition, IComponentDescriptor, IComponentDescriptorOptions } from './types'
-import { TAggregateProvider, TRuntime } from '../runtime'
+import type { IComponentModel, IContractProp, IContribution } from '@soldy/provider'
+import type { IPluginDefinition, IComponentDescriptor, IComponentDescriptorOptions } from '@soldy/provider'
+import { TAggregateProvider, TRuntime } from '@soldy/provider'
 import { TPluginBundle } from '@soldy/plugins'
 
 // --- definePlugin ---
@@ -16,7 +20,7 @@ export function definePlugin(options: {
 	return options as IPluginDefinition
 }
 
-// --- compileDescriptor (внутренняя, рекурсивная) ---
+// --- compileDescriptor (рекурсивная) ---
 
 export function compileDescriptor(descriptor: IComponentDescriptor): IComponentModel {
 	const props: IContractProp[] = []
@@ -27,10 +31,8 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 		if (seen.has(d)) return
 		seen.add(d)
 
-		// 1. Родитель (extends) — сначала
 		if (d.extends) collect(d.extends)
 
-		// 2. Собственная contribution
 		for (const p of d.contribution.props) {
 			props.push({
 				...p,
@@ -39,7 +41,6 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 		}
 		events.push(...d.contribution.events)
 
-		// 3. Contributions от плагинов
 		for (const pluginDef of d.plugins) {
 			for (const p of pluginDef.contribution.props) {
 				props.push({
@@ -56,19 +57,17 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 	return { props, events: [...new Set(events)] }
 }
 
-// --- collectPlugins (внутренняя, рекурсивная) ---
+// --- collectPlugins (рекурсивная) ---
 
 function collectPlugins(
 	descriptor: IComponentDescriptor,
 	bundle: TPluginBundle,
 	seen = new Set<Function>(),
 ): void {
-	// 1. Родитель — сначала
 	if (descriptor.extends) {
 		collectPlugins(descriptor.extends, bundle, seen)
 	}
 
-	// 2. Собственные плагины
 	for (const pluginDef of descriptor.plugins) {
 		if (!seen.has(pluginDef.plugin)) {
 			seen.add(pluginDef.plugin)
@@ -88,9 +87,7 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 		provider: options.provider,
 
 		get model(): IComponentModel {
-			// Вычисляется лениво при первом обращении
 			const value = compileDescriptor(descriptor)
-
 			Object.defineProperty(descriptor, 'model', {
 				value,
 				writable: false,
@@ -107,18 +104,13 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 
 		createProvider(ctx: { instance: any; bundle: any }) {
 			const provider = new TAggregateProvider()
-
-			// Провайдер самого компонента
 			provider.add(new this.provider(ctx.instance))
-
-			// Провайдеры плагинов
 			for (const pluginDef of this.plugins) {
 				const pluginInstance = ctx.bundle.get(pluginDef.plugin as any)
 				if (pluginInstance) {
 					provider.add(new pluginDef.provider(pluginInstance))
 				}
 			}
-
 			return provider
 		},
 

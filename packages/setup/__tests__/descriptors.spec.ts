@@ -10,8 +10,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { TComponent, TComponentView } from '@soldy/core'
 import { TElementPlugin, TInstancePlugin, TReadyBridgePlugin } from '@soldy/plugins'
 import { TAggregateProvider } from '@soldy/provider'
-import { ComponentDescriptor } from '../descriptors/component.descriptor'
-import { ComponentViewDescriptor } from '../descriptors/component-view.descriptor'
+import { ComponentDescriptor } from '../descriptors/components/component.descriptor'
+import { ComponentViewDescriptor } from '../descriptors/components/component-view.descriptor'
 
 // ============================================================
 // ComponentDescriptor

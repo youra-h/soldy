@@ -1,8 +1,3 @@
-/**
- * Вклад от плагина TInstancePlugin.
- * Описывает свойство instance.
- */
-
 import type { IContribution } from '@soldy/provider'
 
 export const InstanceContribution: IContribution = {

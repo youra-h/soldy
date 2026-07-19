@@ -1,3 +1,3 @@
-export * from './core'
-export * from './plugins'
+export * from './contributions'
+export * from './providers'
 export * from './descriptors'

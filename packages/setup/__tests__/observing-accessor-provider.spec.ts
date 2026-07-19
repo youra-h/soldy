@@ -1,8 +1,10 @@
-// Moved to @soldy/setup/__tests__/observing-accessor-provider.spec.ts
-
+/**
+ * @soldy/setup — тесты TObservingAccessorProvider
+ * Перенесено из @soldy/provider, т.к. класс теперь в @soldy/setup.
+ */
 import { describe, it, expect, vi } from 'vitest'
-import { TObservingAccessorProvider } from '../runtime/accessor-provider.class'
-import type { IContractProp } from '../contract/types'
+import { TObservingAccessorProvider } from '../providers/components/observing-accessor'
+import type { IContractProp } from '@soldy/provider'
 import { TEvented, type IComponent } from '@soldy/core'
 
 function makeProp(overrides: Partial<IContractProp> = {}): IContractProp {

@@ -1,10 +1,3 @@
-/**
- * @soldy/setup — providers/plugins/element.ts
- *
- * IAccessorProvider для плагина TElementPlugin.
- * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerCtor === TElementPlugin.
- */
-
 import type { TEventHandler } from '@soldy/core'
 import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'

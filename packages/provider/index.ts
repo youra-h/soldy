@@ -1,16 +1,11 @@
 /**
  * @soldy/provider — точка входа
  *
- * Слой адаптации (provider) между core/plugins и UI-фреймворками.
- *
- * Основные концепции:
- * - IContribution — чистое описание свойств и событий (без идентификации источника)
- * - IComponentModel — immutable DTO, результат компиляции вкладов
- * - IComponentDescriptor — единый источник истины: консолидирует Contribution + Provider + Constructor + Plugins
- * - IAccessor / IAccessorProvider — абстракция доступа к свойствам
- * - TRuntime — живая система, связывающая модель с провайдерами
+ * Чистые абстракции: контракты, интерфейсы провайдеров, TRuntime, TAggregateProvider.
+ * Конкретные реализации (TObservingAccessorProvider, defineComponent) — в @soldy/setup.
  */
 
 export * from './contract'
 export * from './runtime'
+export type { IPluginDefinition, IComponentDescriptorOptions, IComponentDescriptor } from './descriptor/types'
 export * from './descriptor'

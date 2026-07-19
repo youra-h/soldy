@@ -1,8 +1,10 @@
-// Moved to @soldy/setup/__tests__/define-component.spec.ts
-
+/**
+ * @soldy/setup — тесты defineComponent / definePlugin
+ * Перенесено из @soldy/provider, т.к. реализация теперь в @soldy/setup.
+ */
 import { describe, it, expect } from 'vitest'
-import { defineComponent, definePlugin } from '../descriptor/defineComponent'
-import type { IContribution } from '../contract/types'
+import { defineComponent, definePlugin } from '../descriptors/define-component'
+import type { IContribution } from '@soldy/provider'
 
 class ClassA {
 	a = 'a'

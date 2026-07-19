@@ -1,8 +1,3 @@
-/**
- * Вклад от плагина TElementPlugin.
- * Описывает свойство element и события ready/removed.
- */
-
 import type { IContribution } from '@soldy/provider'
 
 export const ElementContribution: IContribution = {

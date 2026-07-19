@@ -1,5 +1,4 @@
 export type { IAccessor, IAccessorProvider, IEventProvider, IProvider, TEmitPayload } from './types'
 export { TAggregateProvider } from './aggregate-provider.class'
-export { TObservingAccessorProvider } from './accessor-provider.class'
 export { TRuntime } from './runtime.class'
 export { track } from './track'

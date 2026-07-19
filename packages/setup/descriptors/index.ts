@@ -1,2 +1,2 @@
-export { ComponentDescriptor } from './component.descriptor'
-export { ComponentViewDescriptor } from './component-view.descriptor'
+export * from './define-component'
+export * from './components'

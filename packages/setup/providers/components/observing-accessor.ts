@@ -1,8 +1,10 @@
-// Moved to @soldy/setup/providers/components/observing-accessor.ts
+/**
+ * Универсальный IAccessorProvider для любого IComponent.
+ * Перенесён из @soldy/provider: использует IComponent из @soldy/core.
+ */
 
-
-import type { IAccessor, IAccessorProvider, IEventProvider } from './types'
-import type { IContractProp } from '../contract/types'
+import type { IAccessor, IAccessorProvider, IEventProvider } from '@soldy/provider'
+import type { IContractProp } from '@soldy/provider'
 import type { IComponent, TEventHandler } from '@soldy/core'
 
 export class TObservingAccessorProvider implements IAccessorProvider, IEventProvider {

@@ -1,10 +1,3 @@
-/**
- * @soldy/setup — providers/plugins/instance.ts
- *
- * IAccessorProvider для плагина TInstancePlugin.
- * Принимает готовый экземпляр плагина, реализует getAccessor() для свойств с ownerCtor === TInstancePlugin.
- */
-
 import type { IAccessor, IAccessorProvider } from '@soldy/provider'
 import type { IContractProp } from '@soldy/provider'
 import type { TInstancePlugin } from '@soldy/plugins'
