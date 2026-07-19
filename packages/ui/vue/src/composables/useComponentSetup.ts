@@ -3,7 +3,7 @@ import type { IPluginBundle } from '@soldy/plugins'
 import { TInstancePlugin } from '@soldy/plugins'
 import { useInstance } from './useInstance'
 import { useBundle } from './useBundle'
-import { useElementBinding } from './useElementBinding'
+import { useElementBinding } from './../adapter'
 
 /**
  * Контекст, передаваемый в {@link IComponentSetupConfig.sync}.

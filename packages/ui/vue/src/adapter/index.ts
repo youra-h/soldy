@@ -1,2 +1,5 @@
 export { useEmits } from './useEmits'
 export { useProps } from './useProps'
+export { useAdapter } from './useAdapter'
+export { useComponentRuntime } from './useComponentRuntime'
+export { useElementBinding } from './useElementBinding'
