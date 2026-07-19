@@ -39,7 +39,6 @@ describe('ComponentViewDescriptor', () => {
 	it('содержит props от плагинов', () => {
 		const names = ComponentViewDescriptor.model.props.map(p => p.name)
 		expect(names).toContain('element')
-		expect(names).toContain('instance')
 	})
 
 	it('содержит событие ready из ComponentViewContribution', () => {

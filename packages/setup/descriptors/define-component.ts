@@ -14,8 +14,8 @@ import { TPluginBundle } from '@soldy/plugins'
 
 export function definePlugin(options: {
 	plugin: new (...args: any[]) => any
-	contribution: IContribution
-	provider: new (instance: any) => any
+	contribution?: IContribution
+	provider?: new (instance: any) => any
 }): IPluginDefinition {
 	return options as IPluginDefinition
 }
@@ -42,6 +42,8 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 		events.push(...d.contribution.events)
 
 		for (const pluginDef of d.plugins) {
+			if (!pluginDef.contribution) continue
+
 			for (const p of pluginDef.contribution.props) {
 				props.push({
 					...p,
@@ -106,6 +108,8 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 			const provider = new TAggregateProvider()
 			provider.add(new this.provider(ctx.instance))
 			for (const pluginDef of this.plugins) {
+				if (!pluginDef.provider) continue
+
 				const pluginInstance = ctx.bundle.get(pluginDef.plugin as any)
 				if (pluginInstance) {
 					provider.add(new pluginDef.provider(pluginInstance))

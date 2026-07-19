@@ -165,7 +165,6 @@ describe('ComponentViewDescriptor', () => {
 
 		// Плагины
 		expect(names).toContain('element')
-		expect(names).toContain('instance')
 
 		// Порядок: родитель → свой → плагины
 		const renderedIdx = names.indexOf('rendered')
@@ -330,6 +329,13 @@ describe('Цепочка наследования дескрипторов', () 
 		expect(names).not.toContain('tag')
 		expect(names).not.toContain('classes')
 		expect(names).not.toContain('element')
+	})
+
+	it('ComponentViewDescriptor.model не содержит props от Icon', () => {
+		const names = ComponentViewDescriptor.model.props.map(p => p.name)
+		expect(names).not.toContain('size')
+		expect(names).not.toContain('width')
+		expect(names).not.toContain('height')
 	})
 
 	it('ComponentViewDescriptor.model содержит все props родителя', () => {

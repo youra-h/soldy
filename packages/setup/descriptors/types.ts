@@ -8,11 +8,13 @@
 import type { IContribution, IComponentModel } from '@soldy/provider'
 import type { IAccessorProvider, IEventProvider } from '@soldy/provider'
 
-/** Определение плагина в составе дескриптора: конструктор + contribution + provider. */
+/** Определение плагина в составе дескриптора.
+ * contribution и provider опциональны — если плагин не выставляет пропы наружу (например, TInstancePlugin),
+ * он просто добавляется в bundle без попадания в модель. */
 export interface IPluginDefinition {
 	plugin: new (...args: any[]) => any
-	contribution: IContribution
-	provider: new (instance: any) => IAccessorProvider & IEventProvider
+	contribution?: IContribution
+	provider?: new (instance: any) => IAccessorProvider & IEventProvider
 }
 
 /** Опции для defineComponent(). */
