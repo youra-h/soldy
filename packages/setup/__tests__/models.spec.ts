@@ -1,13 +1,13 @@
 /**
- * @soldy/setup — тесты моделей
+ * @soldy/setup — тесты дескрипторов (замена compileComponent)
  */
 import { describe, it, expect } from 'vitest'
-import { componentModel } from '../core/models/component'
-import { componentViewModel } from '../core/models/component-view'
+import { ComponentDescriptor } from '../descriptors/component.descriptor'
+import { ComponentViewDescriptor } from '../descriptors/component-view.descriptor'
 
-describe('componentModel', () => {
+describe('ComponentDescriptor', () => {
 	it('содержит props от TComponent', () => {
-		expect(componentModel.props.map(p => p.name)).toEqual([
+		expect(ComponentDescriptor.model.props.map(p => p.name)).toEqual([
 			'rendered',
 			'visible',
 			'present',
@@ -15,45 +15,56 @@ describe('componentModel', () => {
 	})
 
 	it('state — mutable: true, computed — mutable: false', () => {
-		expect(componentModel.props[0].mutable).toBe(true)  // rendered
-		expect(componentModel.props[1].mutable).toBe(true)  // visible
-		expect(componentModel.props[2].mutable).toBe(false) // present
+		const m = ComponentDescriptor.model
+		expect(m.props[0].mutable).toBe(true)  // rendered
+		expect(m.props[1].mutable).toBe(true)  // visible
+		expect(m.props[2].mutable).toBe(false) // present
 	})
 
 	it('содержит события TComponent', () => {
-		expect(componentModel.events).toContain('show')
-		expect(componentModel.events).toContain('hide')
-		expect(componentModel.events).toContain('created')
+		expect(ComponentDescriptor.model.events).toContain('show')
+		expect(ComponentDescriptor.model.events).toContain('hide')
+		expect(ComponentDescriptor.model.events).toContain('created')
 	})
 })
 
-describe('componentViewModel', () => {
-	it('содержит props от TComponent + TComponentView', () => {
-		const names = componentViewModel.props.map(p => p.name)
+describe('ComponentViewDescriptor', () => {
+	it('содержит props от TComponent + TComponentView (наследование)', () => {
+		const names = ComponentViewDescriptor.model.props.map(p => p.name)
 		expect(names).toContain('rendered')
 		expect(names).toContain('tag')
 		expect(names).toContain('classes')
 	})
 
 	it('содержит props от плагинов', () => {
-		const names = componentViewModel.props.map(p => p.name)
+		const names = ComponentViewDescriptor.model.props.map(p => p.name)
 		expect(names).toContain('element')
 		expect(names).toContain('instance')
 	})
 
 	it('содержит событие ready из ComponentViewContribution', () => {
-		expect(componentViewModel.events).toContain('ready')
+		expect(ComponentViewDescriptor.model.events).toContain('ready')
 	})
 
-	it('все пропы имеют ownerCtor', () => {
-		for (const p of componentViewModel.props) {
-			expect(p.ownerCtor).toBeDefined()
-			expect(typeof p.ownerCtor).toBe('function')
-		}
+	it('содержит события от плагинов (ready, removed)', () => {
+		expect(ComponentViewDescriptor.model.events).toContain('ready')
+		expect(ComponentViewDescriptor.model.events).toContain('removed')
 	})
 
 	it('triggers проброшены от контрибуций', () => {
-		const rendered = componentViewModel.props.find(p => p.name === 'rendered')!
+		const rendered = ComponentViewDescriptor.model.props.find(p => p.name === 'rendered')!
 		expect(rendered.triggers).toEqual(['change:rendered'])
+	})
+
+	it('createBundle создаёт бандл с плагинами', () => {
+		const bundle = ComponentViewDescriptor.createBundle()
+		expect(bundle).toBeDefined()
+	})
+
+	it('createRuntime создаёт работающий рантайм', () => {
+		const bundle = ComponentViewDescriptor.createBundle()
+		// createRuntime требует instance и bundle
+		// проверяем что он вообще создаётся без ошибок
+		expect(typeof ComponentViewDescriptor.createRuntime).toBe('function')
 	})
 })

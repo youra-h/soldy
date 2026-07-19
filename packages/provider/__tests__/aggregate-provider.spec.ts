@@ -7,17 +7,14 @@ import type { IAccessor, IAccessorProvider, IEventProvider } from '../runtime/ty
 import type { IContractProp } from '../contract/types'
 import type { TEventHandler } from '@soldy/core'
 
-class ClassA {}
-class ClassB {}
-
-function makeProp(ownerCtor: Function): IContractProp {
-	return { name: 'x', kind: 'state', mutable: true, ownerCtor, triggers: ['change:x'] }
+function makeProp(name = 'x'): IContractProp {
+	return { name, kind: 'state', mutable: true, triggers: ['change:x'] }
 }
 
 class MockAccessorProvider implements IAccessorProvider {
-	constructor(private ownerCtor: Function) {}
+	constructor(private propName: string) {}
 	getAccessor(prop: IContractProp): IAccessor | undefined {
-		if (prop.ownerCtor !== this.ownerCtor) return undefined
+		if (prop.name !== this.propName) return undefined
 		let value = 'default'
 		return {
 			get: () => value,
@@ -39,16 +36,16 @@ class MockEventProvider implements IEventProvider {
 describe('TAggregateProvider', () => {
 	it('add() возвращает this (fluent API)', () => {
 		const agg = new TAggregateProvider()
-		expect(agg.add(new MockAccessorProvider(ClassA))).toBe(agg)
+		expect(agg.add(new MockAccessorProvider('a'))).toBe(agg)
 	})
 
 	it('getAccessor делегирует правильному провайдеру', () => {
 		const agg = new TAggregateProvider()
-		agg.add(new MockAccessorProvider(ClassA))
-		agg.add(new MockAccessorProvider(ClassB))
+		agg.add(new MockAccessorProvider('a'))
+		agg.add(new MockAccessorProvider('b'))
 
-		const a = agg.getAccessor(makeProp(ClassA))
-		const b = agg.getAccessor(makeProp(ClassB))
+		const a = agg.getAccessor(makeProp('a'))
+		const b = agg.getAccessor(makeProp('b'))
 
 		expect(a).toBeDefined()
 		expect(b).toBeDefined()
@@ -56,9 +53,9 @@ describe('TAggregateProvider', () => {
 
 	it('getAccessor возвращает undefined когда ни один провайдер не подходит', () => {
 		const agg = new TAggregateProvider()
-		agg.add(new MockAccessorProvider(ClassA))
+		agg.add(new MockAccessorProvider('a'))
 
-		expect(agg.getAccessor(makeProp(class UnknownClass {}))).toBeUndefined()
+		expect(agg.getAccessor(makeProp('unknown'))).toBeUndefined()
 	})
 
 	it('subscribe делегирует провайдеру с событиями', () => {
@@ -78,7 +75,7 @@ describe('TAggregateProvider', () => {
 
 	it('subscribe пропускает провайдеры без subscribe', () => {
 		const agg = new TAggregateProvider()
-		agg.add(new MockAccessorProvider(ClassA))
+		agg.add(new MockAccessorProvider('a'))
 		// accessor-only провайдер не ломает subscribe
 
 		expect(agg.subscribe('anything', vi.fn())).toBeUndefined()
@@ -87,11 +84,11 @@ describe('TAggregateProvider', () => {
 	it('смешанные провайдеры работают вместе', () => {
 		const agg = new TAggregateProvider()
 		agg
-			.add(new MockAccessorProvider(ClassA))
+			.add(new MockAccessorProvider('a'))
 			.add(new MockEventProvider())
 
 		// accessor работает
-		expect(agg.getAccessor(makeProp(ClassA))).toBeDefined()
+		expect(agg.getAccessor(makeProp('a'))).toBeDefined()
 		// events работают
 		expect(agg.subscribe('known', vi.fn())).toBeDefined()
 	})

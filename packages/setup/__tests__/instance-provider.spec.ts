@@ -6,14 +6,11 @@ import { TInstancePluginAccessorProvider } from '../plugins/providers/instance'
 import { TEvented, TComponent } from '@soldy/core'
 import type { IContractProp } from '@soldy/provider'
 
-import { TInstancePlugin } from '@soldy/plugins'
-
-function makeInstanceProp(ownerCtor: Function): IContractProp {
+function makeInstanceProp(): IContractProp {
 	return {
 		name: 'instance',
 		kind: 'state',
 		mutable: false,
-		ownerCtor,
 	}
 }
 
@@ -31,23 +28,23 @@ describe('TInstancePluginAccessorProvider', () => {
 		const plugin = makePlugin()
 		const p = new TInstancePluginAccessorProvider(plugin as any)
 
-		const a = p.getAccessor(makeInstanceProp(TInstancePlugin))
+		const a = p.getAccessor(makeInstanceProp())
 
 		expect(a).toBeDefined()
 		expect(a!.get()).toBe(plugin.instance)
 	})
 
-	it('getAccessor возвращает undefined для чужого ownerCtor', () => {
+	it('getAccessor возвращает undefined для чужого имени пропа', () => {
 		const plugin = makePlugin()
 		const p = new TInstancePluginAccessorProvider(plugin as any)
 
-		expect(p.getAccessor(makeInstanceProp(class OtherClass {}))).toBeUndefined()
+		expect(p.getAccessor({ name: 'other', kind: 'state', mutable: false })).toBeUndefined()
 	})
 
 	it('accessor не имеет set (instance только для чтения)', () => {
 		const plugin = makePlugin()
 		const p = new TInstancePluginAccessorProvider(plugin as any)
-		const a = p.getAccessor(makeInstanceProp(TInstancePlugin))!
+		const a = p.getAccessor(makeInstanceProp())!
 
 		expect(a.set).toBeUndefined()
 	})
@@ -55,7 +52,7 @@ describe('TInstancePluginAccessorProvider', () => {
 	it('accessor.subscribe реагирует на ready/removed', () => {
 		const plugin = makePlugin()
 		const p = new TInstancePluginAccessorProvider(plugin as any)
-		const a = p.getAccessor(makeInstanceProp(TInstancePlugin))!
+		const a = p.getAccessor(makeInstanceProp())!
 
 		const spy = vi.fn()
 		a.subscribe(spy)
@@ -69,7 +66,7 @@ describe('TInstancePluginAccessorProvider', () => {
 	it('accessor.subscribe возвращает функцию отписки', () => {
 		const plugin = makePlugin()
 		const p = new TInstancePluginAccessorProvider(plugin as any)
-		const a = p.getAccessor(makeInstanceProp(plugin.key))!
+		const a = p.getAccessor(makeInstanceProp())!
 
 		const spy = vi.fn()
 		const unsub = a.subscribe(spy)

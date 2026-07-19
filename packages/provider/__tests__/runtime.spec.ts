@@ -2,25 +2,24 @@
  * @soldy/provider — тесты TRuntime
  */
 import { describe, it, expect, vi } from 'vitest'
-import { compileComponent } from '../compiler/compileComponent'
-import { ComponentContribution } from '@soldy/setup'
+import { defineComponent } from '../descriptor/defineComponent'
+import { ComponentDescriptor } from '@soldy/setup'
 import { TObservingAccessorProvider } from '../runtime/accessor-provider.class'
 import { TRuntime } from '../runtime/runtime.class'
 import { TAggregateProvider } from '../runtime/aggregate-provider.class'
 import type { IContribution } from '../contract/types'
 import { TComponent } from '@soldy/core'
 
-function makeRuntime(contributions: IContribution[] = [ComponentContribution]) {
-	const model = compileComponent(contributions)
+function makeRuntime() {
 	const component = new TComponent()
 	const provider = new TAggregateProvider()
 	provider.add(new TObservingAccessorProvider(component))
-	return { runtime: new TRuntime(model, provider), component }
+	return { runtime: new TRuntime(ComponentDescriptor.model, provider), component }
 }
 
 describe('TRuntime', () => {
-	it('собирает модель из IContribution', () => {
-		const model = compileComponent([ComponentContribution])
+	it('модель дескриптора содержит props от TComponent', () => {
+		const model = ComponentDescriptor.model
 
 		expect(model.props).toHaveLength(3)
 		expect(model.props.map(m => m.name)).toEqual([
@@ -124,12 +123,7 @@ describe('TRuntime', () => {
 	})
 
 	it('уведомляет о событиях из модели', () => {
-		const testContribution: IContribution = {
-			id: Symbol('test'),
-			props: [],
-			events: ['show'],
-		}
-		const { runtime, component } = makeRuntime([testContribution])
+		const { runtime, component } = makeRuntime()
 
 		const events: any[] = []
 		runtime.subscribe((payload) => {

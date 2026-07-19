@@ -1,136 +1,236 @@
 /**
- * @soldy/provider — тесты compileComponent
+ * @soldy/provider — тесты defineComponent / definePlugin
  */
 import { describe, it, expect } from 'vitest'
-import { compileComponent } from '../compiler/compileComponent'
+import { defineComponent, definePlugin } from '../descriptor/defineComponent'
 import type { IContribution } from '../contract/types'
 
-class ClassA {}
-class ClassB {}
+class ClassA {
+	a = 'a'
+	events = { on: (_e: string, _h: any) => {}, off: (_e: string, _h: any) => {} }
+}
+class ClassB {
+	b = 'b'
+	events = { on: (_e: string, _h: any) => {}, off: (_e: string, _h: any) => {} }
+}
 
-describe('compileComponent', () => {
-	it('собирает props из одной контрибуции', () => {
-		const c: IContribution = {
+const ContribA: IContribution = {
+	props: [{ name: 'a', kind: 'state' }],
+	events: ['show'],
+}
+
+const ContribB: IContribution = {
+	props: [{ name: 'b', kind: 'computed' }],
+	events: ['hide'],
+}
+
+const ContribPlugin: IContribution = {
+	props: [{ name: 'pluginProp', kind: 'state', mutable: false }],
+	events: ['pluginReady'],
+}
+
+class MockProvider {
+	constructor(_instance: any) {}
+	getAccessor() { return undefined }
+	subscribe() { return undefined }
+}
+
+class MockPlugin {
+	static readonly key = Symbol('mock')
+	install(_bundle: any) {}
+	destroy() {}
+}
+
+describe('defineComponent', () => {
+	it('создаёт дескриптор с моделью из contribution', () => {
+		const d = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'x', kind: 'state' }],
-			events: [],
-		}
-		const model = compileComponent([c])
+			contribution: ContribA,
+			provider: MockProvider,
+		})
 
-		expect(model.props).toHaveLength(1)
-		expect(model.props[0].name).toBe('x')
-		expect(model.props[0].ownerCtor).toBe(ClassA)
+		expect(d.model.props).toHaveLength(1)
+		expect(d.model.props[0].name).toBe('a')
+		expect(d.model.events).toContain('show')
 	})
 
 	it('state по умолчанию mutable: true', () => {
-		const model = compileComponent([{
+		const d = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'x', kind: 'state' }],
-			events: [],
-		}])
+			contribution: { props: [{ name: 'x', kind: 'state' }], events: [] },
+			provider: MockProvider,
+		})
 
-		expect(model.props[0].mutable).toBe(true)
+		expect(d.model.props[0].mutable).toBe(true)
 	})
 
 	it('computed всегда mutable: false', () => {
-		const model = compileComponent([{
+		const d = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'y', kind: 'computed' }],
-			events: [],
-		}])
+			contribution: { props: [{ name: 'y', kind: 'computed' }], events: [] },
+			provider: MockProvider,
+		})
 
-		expect(model.props[0].mutable).toBe(false)
+		expect(d.model.props[0].mutable).toBe(false)
 	})
 
 	it('уважает явный mutable: false для state', () => {
-		const model = compileComponent([{
+		const d = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'z', kind: 'state', mutable: false }],
-			events: [],
-		}])
+			contribution: { props: [{ name: 'z', kind: 'state', mutable: false }], events: [] },
+			provider: MockProvider,
+		})
 
-		expect(model.props[0].mutable).toBe(false)
+		expect(d.model.props[0].mutable).toBe(false)
 	})
 
-	it('добавляет ownerCtor из контрибуции', () => {
-		const model = compileComponent([{
+	it('наследование через extends', () => {
+		const parent = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'a', kind: 'state' }],
-			events: [],
-		}])
+			contribution: ContribA,
+			provider: MockProvider,
+		})
 
-		expect(model.props[0].ownerCtor).toBe(ClassA)
+		const child = defineComponent({
+			ctor: ClassB,
+			extends: parent,
+			contribution: ContribB,
+			provider: MockProvider,
+		})
+
+		expect(child.model.props.map(p => p.name)).toEqual(['a', 'b'])
+		expect(child.model.events).toContain('show')
+		expect(child.model.events).toContain('hide')
 	})
 
-	it('объединяет props из нескольких контрибуций', () => {
-		const model = compileComponent([
-			{ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: [] },
-			{ ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: [] },
-		])
-
-		expect(model.props).toHaveLength(2)
-		expect(model.props[0].ownerCtor).toBe(ClassA)
-		expect(model.props[1].ownerCtor).toBe(ClassB)
-	})
-
-	it('собирает события из контрибуций', () => {
-		const model = compileComponent([{
+	it('дедуплицирует события при наследовании', () => {
+		const parent = defineComponent({
 			ctor: ClassA,
-			props: [],
-			events: ['show', 'hide'],
-		}])
+			contribution: { props: [], events: ['show', 'hide'] },
+			provider: MockProvider,
+		})
 
-		expect(model.events).toContain('show')
-		expect(model.events).toContain('hide')
+		const child = defineComponent({
+			ctor: ClassB,
+			extends: parent,
+			contribution: { props: [], events: ['hide'] },
+			provider: MockProvider,
+		})
+
+		expect(child.model.events.filter(e => e === 'hide')).toHaveLength(1)
 	})
 
-	it('дедуплицирует события', () => {
-		const model = compileComponent([
-			{ ctor: ClassA, props: [], events: ['ready'] },
-			{ ctor: ClassB, props: [], events: ['ready'] },
-		])
-
-		expect(model.events).toEqual(['ready'])
-	})
-
-	it('пробрасывает triggers в скомпилированную модель', () => {
-		const model = compileComponent([{
+	it('плагины добавляют props и events в модель', () => {
+		const d = defineComponent({
 			ctor: ClassA,
-			props: [{ name: 'x', kind: 'state', triggers: ['change:x'] }],
-			events: [],
-		}])
+			contribution: ContribA,
+			plugins: [
+				definePlugin({
+					plugin: MockPlugin,
+					contribution: ContribPlugin,
+					provider: MockProvider,
+				}),
+			],
+			provider: MockProvider,
+		})
 
-		expect(model.props[0].triggers).toEqual(['change:x'])
+		const names = d.model.props.map(p => p.name)
+		expect(names).toContain('a')
+		expect(names).toContain('pluginProp')
+		expect(d.model.events).toContain('pluginReady')
 	})
 
-	it('принимает одну contribution без массива', () => {
-		const model = compileComponent({ ctor: ClassA, props: [{ name: 'x', kind: 'state' }], events: ['show'] })
+	it('плагины наследуются через extends (createBundle)', () => {
+		const parent = defineComponent({
+			ctor: ClassA,
+			contribution: ContribA,
+			plugins: [
+				definePlugin({
+					plugin: MockPlugin,
+					contribution: ContribPlugin,
+					provider: MockProvider,
+				}),
+			],
+			provider: MockProvider,
+		})
 
-		expect(model.props).toHaveLength(1)
-		expect(model.events).toContain('show')
+		const child = defineComponent({
+			ctor: ClassB,
+			extends: parent,
+			contribution: ContribB,
+			provider: MockProvider,
+		})
+
+		const bundle = child.createBundle()
+		expect(bundle.get(MockPlugin as any)).toBeDefined()
 	})
 
-	it('принимает IComponentModel как источник (наследование)', () => {
-		const parent = compileComponent({ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: ['show'] })
-		const child = compileComponent([parent, { ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: ['hide'] }])
+	it('createProvider создаёт агрегатный провайдер', () => {
+		const d = defineComponent({
+			ctor: ClassA,
+			contribution: ContribA,
+			provider: MockProvider,
+		})
 
-		expect(child.props.map(p => p.name)).toEqual(['a', 'b'])
-		expect(child.events).toContain('show')
-		expect(child.events).toContain('hide')
+		const instance = new ClassA()
+		const bundle = d.createBundle()
+		const provider = d.createProvider({ instance, bundle })
+
+		expect(provider).toBeDefined()
+		expect(typeof provider.getAccessor).toBe('function')
+		expect(typeof provider.subscribe).toBe('function')
 	})
 
-	it('наследует ownerCtor props из родительской модели без изменений', () => {
-		const parent = compileComponent({ ctor: ClassA, props: [{ name: 'a', kind: 'state' }], events: [] })
-		const child = compileComponent([parent, { ctor: ClassB, props: [{ name: 'b', kind: 'state' }], events: [] }])
+	it('createRuntime создаёт TRuntime с правильной моделью', () => {
+		const d = defineComponent({
+			ctor: ClassA,
+			contribution: ContribA,
+			provider: MockProvider,
+		})
 
-		expect(child.props[0].ownerCtor).toBe(ClassA)
-		expect(child.props[1].ownerCtor).toBe(ClassB)
+		const instance = new ClassA()
+		const bundle = d.createBundle()
+		const runtime = d.createRuntime({ instance, bundle })
+
+		expect(runtime).toBeDefined()
+		expect(runtime.model).toBe(d.model)
+		runtime.dispose()
 	})
 
-	it('дедуплицирует события при наследовании модели', () => {
-		const parent = compileComponent({ ctor: ClassA, props: [], events: ['show', 'hide'] })
-		const child = compileComponent([parent, { ctor: ClassB, props: [], events: ['hide'] }])
+	it('model кешируется (ленивое вычисление)', () => {
+		const d = defineComponent({
+			ctor: ClassA,
+			contribution: ContribA,
+			provider: MockProvider,
+		})
 
-		expect(child.events.filter(e => e === 'hide')).toHaveLength(1)
+		const m1 = d.model
+		const m2 = d.model
+		expect(m1).toBe(m2)
+	})
+
+	it('triggers проброшены от contribution в модель', () => {
+		const d = defineComponent({
+			ctor: ClassA,
+			contribution: {
+				props: [{ name: 'x', kind: 'state', triggers: ['change:x'] }],
+				events: [],
+			},
+			provider: MockProvider,
+		})
+
+		expect(d.model.props[0].triggers).toEqual(['change:x'])
+	})
+
+	it('definePlugin возвращает переданные опции', () => {
+		const pluginDef = definePlugin({
+			plugin: MockPlugin,
+			contribution: ContribPlugin,
+			provider: MockProvider,
+		})
+
+		expect(pluginDef.plugin).toBe(MockPlugin)
+		expect(pluginDef.contribution).toBe(ContribPlugin)
+		expect(pluginDef.provider).toBe(MockProvider)
 	})
 })

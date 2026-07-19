@@ -6,14 +6,11 @@ import { TElementPluginAccessorProvider } from '../plugins/providers/element'
 import { TEvented } from '@soldy/core'
 import type { IContractProp } from '@soldy/provider'
 
-import { TElementPlugin } from '@soldy/plugins'
-
-function makeElementProp(ownerCtor: Function): IContractProp {
+function makeElementProp(): IContractProp {
 	return {
 		name: 'element',
 		kind: 'state',
 		mutable: false,
-		ownerCtor,
 		triggers: ['ready', 'removed'],
 	}
 }
@@ -32,23 +29,23 @@ describe('TElementPluginAccessorProvider', () => {
 		const plugin = makePlugin()
 		const p = new TElementPluginAccessorProvider(plugin as any)
 
-		const a = p.getAccessor(makeElementProp(TElementPlugin))
+		const a = p.getAccessor(makeElementProp())
 
 		expect(a).toBeDefined()
 		expect(a!.get()).toBe(plugin.element)
 	})
 
-	it('getAccessor возвращает undefined для чужого ownerCtor', () => {
+	it('getAccessor возвращает undefined для чужого имени пропа', () => {
 		const plugin = makePlugin()
 		const p = new TElementPluginAccessorProvider(plugin as any)
 
-		expect(p.getAccessor(makeElementProp(class OtherClass {}))).toBeUndefined()
+		expect(p.getAccessor({ name: 'other', kind: 'state', mutable: false })).toBeUndefined()
 	})
 
 	it('accessor.set обновляет element', () => {
 		const plugin = makePlugin()
 		const p = new TElementPluginAccessorProvider(plugin as any)
-		const a = p.getAccessor(makeElementProp(TElementPlugin))!
+		const a = p.getAccessor(makeElementProp())!
 
 		const div = {} as HTMLElement
 		a.set!(div)
@@ -58,7 +55,7 @@ describe('TElementPluginAccessorProvider', () => {
 	it('accessor.subscribe реагирует на ready/removed', () => {
 		const plugin = makePlugin()
 		const p = new TElementPluginAccessorProvider(plugin as any)
-		const a = p.getAccessor(makeElementProp(TElementPlugin))!
+		const a = p.getAccessor(makeElementProp())!
 
 		const spy = vi.fn()
 		a.subscribe(spy)
