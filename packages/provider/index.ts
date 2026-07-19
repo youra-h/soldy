@@ -12,6 +12,5 @@
  */
 
 export * from './contract'
-export * from './compiler'
 export * from './runtime'
 export * from './descriptor'
