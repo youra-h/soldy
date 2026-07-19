@@ -1,6 +1,5 @@
 export * from './useBundle'
 export * from './useDragContext'
-export * from './useElementBinding'
 export * from './useEventState'
 export * from './useIconImport'
 export * from './useInheritProps'
