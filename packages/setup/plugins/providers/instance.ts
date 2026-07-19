@@ -15,25 +15,21 @@ export class TInstancePluginAccessorProvider implements IAccessorProvider {
 	getAccessor(prop: IContractProp): IAccessor | undefined {
 		if (prop.name !== 'instance') return undefined
 
-		if (prop.name === 'instance') {
-			const { plugin } = this
+		const { plugin } = this
 
-			return {
-				get: () => plugin.instance,
-				subscribe: (handler) => {
-					const events = plugin.events as any
+		return {
+			get: () => plugin.instance,
+			subscribe: (handler) => {
+				const events = plugin.events as any
 
-					events.on('ready', handler)
-					events.on('removed', handler)
+				events.on('ready', handler)
+				events.on('removed', handler)
 
-					return () => {
-						events.off('ready', handler)
-						events.off('removed', handler)
-					}
-				},
-			}
+				return () => {
+					events.off('ready', handler)
+					events.off('removed', handler)
+				}
+			},
 		}
-
-		return undefined
 	}
 }

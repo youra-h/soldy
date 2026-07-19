@@ -31,28 +31,24 @@ export class TElementPluginAccessorProvider implements IAccessorProvider, IEvent
 	getAccessor(prop: IContractProp): IAccessor | undefined {
 		if (prop.name !== 'element') return undefined
 
-		if (prop.name === 'element') {
-			const { plugin } = this
+		const { plugin } = this
 
-			return {
-				get: () => plugin.element,
-				set: (value: any) => {
-					plugin.element = value
-				},
-				subscribe: (handler) => {
-					const events = plugin.events as any
+		return {
+			get: () => plugin.element,
+			set: (value: any) => {
+				plugin.element = value
+			},
+			subscribe: (handler) => {
+				const events = plugin.events as any
 
-					events.on('ready', handler)
-					events.on('removed', handler)
+				events.on('ready', handler)
+				events.on('removed', handler)
 
-					return () => {
-						events.off('ready', handler)
-						events.off('removed', handler)
-					}
-				},
-			}
+				return () => {
+					events.off('ready', handler)
+					events.off('removed', handler)
+				}
+			},
 		}
-
-		return undefined
 	}
 }
