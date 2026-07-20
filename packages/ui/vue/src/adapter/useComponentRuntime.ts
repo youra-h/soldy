@@ -46,25 +46,13 @@ export function useComponentRuntime(
 		() => ({ ...externalProps }),
 		(newProps) => {
 			for (const key of Object.keys(newProps)) {
-				if (
-					runtime.model.props.some(
-						m => m.name === key && m.kind !== 'event',
-					)
-				) {
+				if (runtime.model.props.some((m) => m.name === key && m.kind !== 'event')) {
 					runtime.setValue(key, (newProps as any)[key])
 				}
 			}
 		},
 		{ deep: true },
 	)
-
-	// 4. Генерация emits для Vue (статическое описание)
-	const emits: string[] = [...runtime.model.events]
-	for (const prop of runtime.model.props) {
-		if (prop.kind !== 'event') {
-			emits.push(`change:${prop.name}`)
-		}
-	}
 
 	// 5. Cleanup
 	onUnmounted(() => {
@@ -75,6 +63,5 @@ export function useComponentRuntime(
 
 	return {
 		refs,
-		emits,
 	}
 }
