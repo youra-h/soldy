@@ -7,7 +7,7 @@
  * Идентификация теперь внешняя — через ComponentDescriptor.
  */
 
-export type TPropKind = 'state' | 'computed' | 'event'
+export type TPropKind = 'state' | 'computed'
 
 /** Входное описание свойства в контрибуции. */
 export interface IContributionProp {

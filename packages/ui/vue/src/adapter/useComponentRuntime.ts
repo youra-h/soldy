@@ -17,12 +17,8 @@ export function useComponentRuntime(
 
 	// 1. Создаём реактивные переменные для всех свойств модели (кроме event)
 	for (const prop of runtime.model.props) {
-		if (prop.kind !== 'event') {
-			refs[prop.name] = ref(runtime.getValue(prop.name))
-		}
+		refs[prop.name] = ref(runtime.getValue(prop.name))
 	}
-
-	// 2. Подписываемся на изменения из Runtime
 	const unsub = runtime.subscribe((payload: TEmitPayload) => {
 		if (payload.type === 'property' && refs[payload.name] !== undefined) {
 			refs[payload.name]!.value = payload.value
@@ -45,7 +41,6 @@ export function useComponentRuntime(
 	const stopWatches: (() => void)[] = []
 
 	for (const prop of runtime.model.publicProps) {
-		if (prop.kind === 'event') continue
 		if (!prop.mutable) continue
 
 		stopWatches.push(

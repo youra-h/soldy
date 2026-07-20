@@ -18,7 +18,6 @@ export class TRuntime {
 
 		// 1. Подписка на изменения свойств через IAccessor
 		for (const prop of model.props) {
-			if (prop.kind === 'event') continue
 
 			const accessor = provider.getAccessor(prop)
 			if (!accessor) continue
