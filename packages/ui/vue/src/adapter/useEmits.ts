@@ -18,5 +18,7 @@ export function useEmits(model: IComponentModel): string[] {
 		}
 	}
 
-	return [...new Set(emits)]
+	const uniqueEmits = new Set(emits)
+
+	return [...uniqueEmits]
 }
