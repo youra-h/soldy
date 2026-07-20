@@ -10,13 +10,13 @@ import type { IComponentModel } from '@soldy/provider'
 export function useEmits(model: IComponentModel): string[] {
 	const emits: string[] = [...model.events]
 
-	for (const m of model.props) {
-		if (m.kind === 'event') continue
+	for (const prop of model.props) {
+		if (prop.kind === 'event') continue
 
-		emits.push(`change:${m.name}`)
+		emits.push(`change:${prop.name}`)
 
-		if (m.mutable) {
-			emits.push(`update:${m.name}`)
+		if (prop.mutable) {
+			emits.push(`update:${prop.name}`)
 		}
 	}
 

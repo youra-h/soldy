@@ -90,11 +90,13 @@ export function defineComponent(options: IComponentDescriptorOptions): IComponen
 
 		get model(): IComponentModel {
 			const value = compileDescriptor(descriptor)
+
 			Object.defineProperty(descriptor, 'model', {
 				value,
 				writable: false,
 				configurable: false,
 			})
+
 			return value
 		},
 

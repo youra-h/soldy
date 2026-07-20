@@ -25,14 +25,14 @@ export function useProps(model: IComponentModel, ctor: TConstructor): Record<str
 
 	const props: Record<string, any> = {}
 
-	for (const m of model.props) {
-		if (m.kind === 'event') continue
+	for (const prop of model.props) {
+		if (prop.kind === 'event') continue
 
-		const d = defaults[m.name]
+		const value = defaults[prop.name]
 
-		props[m.name] = {
-			type: inferVueType(d),
-			default: d,
+		props[prop.name] = {
+			type: inferVueType(value),
+			default: value,
 		}
 	}
 
