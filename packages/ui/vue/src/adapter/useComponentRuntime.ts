@@ -44,7 +44,7 @@ export function useComponentRuntime(
 	// 3. Синхронизация внешних props → Runtime (индивидуальные watch)
 	const stopWatches: (() => void)[] = []
 
-	for (const prop of runtime.model.props) {
+	for (const prop of runtime.model.publicProps) {
 		if (prop.kind === 'event') continue
 		if (!prop.mutable) continue
 

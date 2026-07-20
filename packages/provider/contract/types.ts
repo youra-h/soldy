@@ -18,17 +18,22 @@ export interface IContributionProp {
 	 * По умолчанию: state → true, computed → false.
 	 */
 	mutable?: boolean
+	/** Свойство доступно снаружи как prop. По умолчанию: kind !== 'computed'. */
+	public?: boolean
 	/** События instance, при которых свойство считается изменённым */
 	triggers?: string[]
 }
 
-/** Скомпилированное свойство: нормализованный mutable. */
+/** Скомпилированное свойство: нормализованный mutable и public. */
 export interface IContractProp extends IContributionProp {
 	mutable: boolean
+	public: boolean
 }
 
 export interface IComponentModel {
 	props: IContractProp[]
+	/** Только public свойства (для генерации props во фреймворках) */
+	publicProps: IContractProp[]
 	/** Имена всех событий (для генерации emits) */
 	events: string[]
 }

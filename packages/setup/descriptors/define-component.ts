@@ -37,6 +37,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 			props.push({
 				...p,
 				mutable: p.kind === 'computed' ? false : (p.mutable ?? true),
+				public: p.public ?? (p.kind !== 'computed'),
 			})
 		}
 		events.push(...d.contribution.events)
@@ -48,6 +49,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 				props.push({
 					...p,
 					mutable: p.kind === 'computed' ? false : (p.mutable ?? true),
+					public: p.public ?? (p.kind !== 'computed'),
 				})
 			}
 			events.push(...pluginDef.contribution.events)
@@ -56,7 +58,11 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 
 	collect(descriptor)
 
-	return { props, events: [...new Set(events)] }
+	return {
+		props,
+		publicProps: props.filter((p) => p.public),
+		events: [...new Set(events)],
+	}
 }
 
 // --- collectPlugins (рекурсивная) ---
