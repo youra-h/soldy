@@ -25,6 +25,7 @@ export function useAdapter(
 	})
 
 	const { refs } = useRuntime(runtime, props, emit)
+
 	const rootElement = useElementBinding(bundle)
 
 	return { ctrl: instance, plugins: bundle, rootElement, ...refs }

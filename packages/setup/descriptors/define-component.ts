@@ -36,10 +36,11 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 		for (const p of d.contribution.props) {
 			props.push({
 				...p,
-				mutable: p.kind === 'computed' ? false : (p.mutable ?? true),
-				public: p.public ?? (p.kind !== 'computed'),
+				mutable: p.mutable ?? true,
+				public: p.public ?? p.kind !== 'computed',
 			})
 		}
+
 		events.push(...d.contribution.events)
 
 		for (const pluginDef of d.plugins) {
@@ -48,8 +49,8 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 			for (const p of pluginDef.contribution.props) {
 				props.push({
 					...p,
-					mutable: p.kind === 'computed' ? false : (p.mutable ?? true),
-					public: p.public ?? (p.kind !== 'computed'),
+					mutable: p.mutable ?? true,
+					public: p.public ?? p.kind !== 'computed',
 				})
 			}
 			events.push(...pluginDef.contribution.events)
