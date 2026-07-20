@@ -17,8 +17,11 @@ export function useComponentRuntime(
 
 	// 1. Создаём реактивные переменные для всех свойств модели (кроме event)
 	for (const prop of runtime.model.props) {
+		if (!prop.mutable) continue
+
 		refs[prop.name] = ref(runtime.getValue(prop.name))
 	}
+
 	const unsub = runtime.subscribe((payload: TEmitPayload) => {
 		if (payload.type === 'property' && refs[payload.name] !== undefined) {
 			refs[payload.name]!.value = payload.value
