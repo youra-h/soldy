@@ -41,23 +41,29 @@ export function useComponentRuntime(
 		}
 	})
 
-	// 3. Синхронизация внешних props → Runtime (только при изменениях)
-	const stopWatch = watch(
-		() => ({ ...externalProps }),
-		(newProps) => {
-			for (const key of Object.keys(newProps)) {
-				if (runtime.model.props.some((m) => m.name === key && m.kind !== 'event')) {
-					runtime.setValue(key, (newProps as any)[key])
-				}
-			}
-		},
-		{ deep: true },
-	)
+	// 3. Синхронизация внешних props → Runtime (индивидуальные watch)
+	const stopWatches: (() => void)[] = []
 
-	// 5. Cleanup
+	for (const prop of runtime.model.props) {
+		if (prop.kind === 'event') continue
+		if (!prop.mutable) continue
+
+		stopWatches.push(
+			watch(
+				() => externalProps[prop.name],
+				(newVal) => {
+					if (newVal !== undefined) {
+						runtime.setValue(prop.name, newVal)
+					}
+				},
+			),
+		)
+	}
+
+	// 4. Cleanup
 	onUnmounted(() => {
 		unsub()
-		stopWatch()
+		stopWatches.forEach((fn) => fn())
 		runtime.dispose()
 	})
 
