@@ -8,7 +8,7 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import type { TRuntime, TEmitPayload } from '@soldy/provider'
 
-export function useComponentRuntime(
+export function useRuntime(
 	runtime: TRuntime,
 	externalProps: Record<string, any>,
 	emit?: (event: string, ...args: any[]) => void,

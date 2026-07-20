@@ -10,7 +10,7 @@
 import { toRaw } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter } from '@soldy/setup'
-import { useComponentRuntime } from './useComponentRuntime'
+import { useRuntime } from './useRuntime'
 import { useElementBinding } from './useElementBinding'
 
 export function useAdapter(
@@ -24,7 +24,7 @@ export function useAdapter(
 		props,
 	})
 
-	const { refs } = useComponentRuntime(runtime, props, emit)
+	const { refs } = useRuntime(runtime, props, emit)
 	const rootElement = useElementBinding(bundle)
 
 	return { ctrl: instance, plugins: bundle, rootElement, ...refs }

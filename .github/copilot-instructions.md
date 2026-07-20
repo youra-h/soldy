@@ -242,7 +242,7 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 
 Модель компонента выносится в отдельный файл (`component-view.model.ts`), используется и для emits/props, и для Runtime.
 
-Ключевые composables: `useEventState()`, `useSyncProps()`, `useElementBinding()`, `useComponentRuntime()`.
+Ключевые composables: `useEventState()`, `useSyncProps()`, `useElementBinding()`, `useRuntime()`.
 
 Структура Vue-компонента:
 ```
@@ -253,7 +253,7 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 
 ### React (`packages/ui/react/`) — частично
 
-Реализованы: `Component.tsx`, `ComponentView.tsx`. Использует ручную подписку через `useEffect` + `instance.events.on()`. Runtime-based адаптер (`useComponentRuntime`) пока не реализован.
+Реализованы: `Component.tsx`, `ComponentView.tsx`. Использует ручную подписку через `useEffect` + `instance.events.on()`. Runtime-based адаптер (`useRuntime`) пока не реализован.
 
 ### Solid, Svelte, Angular — не реализованы
 
@@ -276,12 +276,12 @@ Core class (TStateUnit меняет значение)
 TObservingAccessorProvider подписан на triggers → TRuntime.notify()
     │ TEmitPayload { type: 'property' | 'event' }
     ▼
-useComponentRuntime → реактивные refs → шаблон
+useRuntime → реактивные refs → шаблон
 ```
 
 **Двунаправленная синхронизация:**
 1. Props → Core: `watch` → `runtime.setValue()` → воздействует на instance через IAccessor
-2. Core → View: события instance → TObservingAccessorProvider (через triggers) → TRuntime → useComponentRuntime → реактивные refs
+2. Core → View: события instance → TObservingAccessorProvider (через triggers) → TRuntime → useRuntime → реактивные refs
 3. Plugin → Core: TReadyBridgePlugin слушает TElementPlugin → устанавливает `instance.ready`
 4. DOM → Plugin: useElementBinding синхронизирует `$el` → TElementPlugin.element
 
