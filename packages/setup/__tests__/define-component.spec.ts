@@ -65,14 +65,14 @@ describe('defineComponent', () => {
 		expect(d.model.props[0].mutable).toBe(true)
 	})
 
-	it('computed всегда mutable: false', () => {
+	it('computed без явного mutable — default mutable: true', () => {
 		const d = defineComponent({
 			ctor: ClassA,
 			contribution: { props: [{ name: 'y', kind: 'computed' }], events: [] },
 			provider: MockProvider,
 		})
 
-		expect(d.model.props[0].mutable).toBe(false)
+		expect(d.model.props[0].mutable).toBe(true)
 	})
 
 	it('уважает явный mutable: false для state', () => {

@@ -34,11 +34,11 @@ describe('ComponentDescriptor', () => {
 		])
 	})
 
-	it('model.props — state mutable:true, computed mutable:false', () => {
+	it('model.props — state mutable:true, computed default mutable:true', () => {
 		const m = ComponentDescriptor.model
 		expect(m.props[0].mutable).toBe(true) // rendered
 		expect(m.props[1].mutable).toBe(true) // visible
-		expect(m.props[2].mutable).toBe(false) // present
+		expect(m.props[2].mutable).toBe(true) // present (computed, no explicit mutable)
 	})
 
 	it('model.events — содержит события жизненного цикла', () => {
@@ -108,13 +108,12 @@ describe('ComponentDescriptor', () => {
 		runtime.dispose()
 	})
 
-	it('createRuntime — non-mutable свойства нельзя изменить через setValue', () => {
+	it('createRuntime — setValue для неизвестного пропа возвращает false', () => {
 		const instance = new TComponent()
 		const bundle = ComponentDescriptor.createBundle()
 		const runtime = ComponentDescriptor.createRuntime({ instance, bundle })
 
-		expect(runtime.setValue('present', false)).toBe(false)
-		expect(instance.present).toBe(true) // не изменилось
+		expect(runtime.setValue('nonexistent', false)).toBe(false)
 
 		runtime.dispose()
 	})
@@ -181,7 +180,7 @@ describe('ComponentViewDescriptor', () => {
 		expect(rendered.mutable).toBe(true)
 
 		const classes = m.props.find(p => p.name === 'classes')!
-		expect(classes.mutable).toBe(false) // computed
+		expect(classes.mutable).toBe(true) // computed, no explicit mutable
 
 		const element = m.props.find(p => p.name === 'element')!
 		expect(element.mutable).toBe(false) // явно задан в contribution

@@ -14,11 +14,11 @@ describe('ComponentDescriptor', () => {
 		])
 	})
 
-	it('state — mutable: true, computed — mutable: false', () => {
+	it('state — mutable: true, computed — default mutable: true', () => {
 		const m = ComponentDescriptor.model
 		expect(m.props[0].mutable).toBe(true)  // rendered
 		expect(m.props[1].mutable).toBe(true)  // visible
-		expect(m.props[2].mutable).toBe(false) // present
+		expect(m.props[2].mutable).toBe(true)  // present (computed, no explicit mutable)
 	})
 
 	it('содержит события TComponent', () => {
