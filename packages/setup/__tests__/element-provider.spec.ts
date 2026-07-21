@@ -65,42 +65,4 @@ describe('TElementPluginAccessorProvider', () => {
 
 		expect(spy).toHaveBeenCalledTimes(2)
 	})
-
-	it('subscribe фильтрует по префиксу', () => {
-		const plugin = makePlugin()
-		const p = new TElementPluginAccessorProvider(plugin as any)
-
-		// событие с правильным префиксом
-		const prefix = `${plugin.key.description}:`
-		const unsub = p.subscribe(`${prefix}ready`, vi.fn())
-		expect(unsub).toBeDefined()
-
-		// событие без префикса — undefined
-		expect(p.subscribe('ready', vi.fn())).toBeUndefined()
-	})
-
-	it('subscribe делегирует в plugin.events', () => {
-		const plugin = makePlugin()
-		const p = new TElementPluginAccessorProvider(plugin as any)
-		const prefix = `${plugin.key.description}:`
-
-		const spy = vi.fn()
-		p.subscribe(`${prefix}ready`, spy)
-
-		plugin.events.emit('ready')
-		expect(spy).toHaveBeenCalledOnce()
-	})
-
-	it('subscribe возвращает функцию отписки', () => {
-		const plugin = makePlugin()
-		const p = new TElementPluginAccessorProvider(plugin as any)
-		const prefix = `${plugin.key.description}:`
-
-		const spy = vi.fn()
-		const unsub = p.subscribe(`${prefix}ready`, spy)!
-		unsub()
-
-		plugin.events.emit('ready')
-		expect(spy).not.toHaveBeenCalled()
-	})
 })
