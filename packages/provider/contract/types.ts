@@ -7,18 +7,10 @@
  * Идентификация теперь внешняя — через ComponentDescriptor.
  */
 
-export type TPropKind = 'state' | 'computed'
-
 /** Входное описание свойства в контрибуции. */
 export interface IContributionProp {
 	name: string
-	kind: TPropKind
-	/**
-	 * Может ли свойство быть изменено извне (есть ли setter).
-	 * По умолчанию: state → true, computed → false.
-	 */
 	mutable?: boolean
-	/** Свойство доступно снаружи как prop. По умолчанию: kind !== 'computed'. */
 	public?: boolean
 	/** События instance, при которых свойство считается изменённым */
 	triggers?: string[]

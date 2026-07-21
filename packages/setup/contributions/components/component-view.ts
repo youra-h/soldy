@@ -2,8 +2,8 @@ import type { IContribution } from '@soldy/provider'
 
 export const ComponentViewContribution: IContribution = {
 	props: [
-		{ name: 'tag', kind: 'state', triggers: ['change:tag'] },
-		{ name: 'classes', kind: 'computed', public: false, triggers: ['change:classes'] },
+		{ name: 'tag', mutable: true, triggers: ['change:tag'] },
+		{ name: 'classes', mutable: false, public: false, triggers: ['change:classes'] },
 	],
 	events: ['ready'],
 }

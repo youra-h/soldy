@@ -37,7 +37,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 			props.push({
 				...p,
 				mutable: p.mutable ?? true,
-				public: p.public ?? p.kind !== 'computed',
+				public: p.public ?? true,
 			})
 		}
 
@@ -50,7 +50,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 				props.push({
 					...p,
 					mutable: p.mutable ?? true,
-					public: p.public ?? p.kind !== 'computed',
+					public: p.public ?? true,
 				})
 			}
 			events.push(...pluginDef.contribution.events)
