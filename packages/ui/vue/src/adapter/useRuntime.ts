@@ -15,10 +15,8 @@ export function useRuntime(
 ) {
 	const refs: Record<string, Ref<any>> = {}
 
-	// 1. Создаём реактивные переменные для всех свойств модели (кроме event)
+	// 1. Создаём реактивные переменные для всех свойств модели
 	for (const prop of runtime.model.props) {
-		if (!prop.mutable) continue
-
 		refs[prop.name] = ref(runtime.getValue(prop.name))
 	}
 
@@ -31,7 +29,7 @@ export function useRuntime(
 		if (emit) {
 			if (payload.type === 'property') {
 				emit(`change:${payload.name}`, payload.value)
-				if (payload.mutable) {
+				if (payload.writable) {
 					emit(`update:${payload.name}`, payload.value)
 				}
 			} else {
@@ -40,11 +38,11 @@ export function useRuntime(
 		}
 	})
 
-	// 3. Синхронизация внешних props → Runtime (индивидуальные watch)
+	// 3. Синхронизация внешних props → Runtime
 	const stopWatches: (() => void)[] = []
 
-	for (const prop of runtime.model.publicProps) {
-		if (!prop.mutable) continue
+	for (const prop of runtime.model.props) {
+		if (prop.protected) continue
 
 		stopWatches.push(
 			watch(

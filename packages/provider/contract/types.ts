@@ -10,22 +10,19 @@
 /** Входное описание свойства в контрибуции. */
 export interface IContributionProp {
 	name: string
-	mutable?: boolean
-	public?: boolean
+	/** Свойство защищено: нет внешнего пропа, нет сеттера. По умолчанию false. */
+	protected?: boolean
 	/** События instance, при которых свойство считается изменённым */
 	triggers?: string[]
 }
 
-/** Скомпилированное свойство: нормализованный mutable и public. */
+/** Скомпилированное свойство: нормализованный protected. */
 export interface IContractProp extends IContributionProp {
-	mutable: boolean
-	public: boolean
+	protected: boolean
 }
 
 export interface IComponentModel {
 	props: IContractProp[]
-	/** Только public свойства (для генерации props во фреймворках) */
-	publicProps: IContractProp[]
 	/** Имена всех событий (для генерации emits) */
 	events: string[]
 }
@@ -35,7 +32,7 @@ export interface IComponentModel {
  * Не содержит идентификатора источника — связь устанавливается снаружи через ComponentDescriptor.
  */
 export interface IContribution {
-	props: IContributionProp[]
+	props?: IContributionProp[]
 	/** Локальные имена событий */
-	events: string[]
+	events?: string[]
 }

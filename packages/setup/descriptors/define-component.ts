@@ -36,8 +36,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 		for (const p of d.contribution.props) {
 			props.push({
 				...p,
-				mutable: p.mutable ?? true,
-				public: p.public ?? true,
+				protected: p.protected ?? false,
 			})
 		}
 
@@ -49,8 +48,7 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 			for (const p of pluginDef.contribution.props) {
 				props.push({
 					...p,
-					mutable: p.mutable ?? true,
-					public: p.public ?? true,
+					protected: p.protected ?? false,
 				})
 			}
 			events.push(...pluginDef.contribution.events)
@@ -61,7 +59,6 @@ export function compileDescriptor(descriptor: IComponentDescriptor): IComponentM
 
 	return {
 		props,
-		publicProps: props.filter((p) => p.public),
 		events: [...new Set(events)],
 	}
 }

@@ -29,7 +29,7 @@ export class TRuntime {
 					type: 'property',
 					name: prop.name,
 					value: accessor.get(),
-					mutable: prop.mutable ?? true, // по умолчанию state → true, computed → false
+					writable: !prop.protected,
 				})
 			})
 			this.disposers.push(unsub)

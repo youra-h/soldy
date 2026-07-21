@@ -10,12 +10,11 @@ import type { IComponentModel } from '@soldy/provider'
 export function useEmits(model: IComponentModel): string[] {
 	const emits: string[] = [...model.events]
 
-	for (const prop of model.publicProps) {
-		emits.push(`change:${prop.name}`)
+	for (const prop of model.props) {
+		if (prop.protected) continue
 
-		if (prop.mutable) {
-			emits.push(`update:${prop.name}`)
-		}
+		emits.push(`change:${prop.name}`)
+		emits.push(`update:${prop.name}`)
 	}
 
 	const uniqueEmits = new Set(emits)

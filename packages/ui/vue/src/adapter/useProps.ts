@@ -25,7 +25,9 @@ export function useProps(model: IComponentModel, ctor: TConstructor): Record<str
 
 	const props: Record<string, any> = {}
 
-	for (const prop of model.publicProps) {
+	for (const prop of model.props) {
+		if (prop.protected) continue
+
 		const value = defaults[prop.name]
 
 		props[prop.name] = {

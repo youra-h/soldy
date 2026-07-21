@@ -27,13 +27,13 @@ export class TObservingAccessorProvider implements IAccessorProvider, IEventProv
 
 		return {
 			get: () => (instance as any)[prop.name],
-			...(prop.mutable
-				? {
+			...(prop.protected
+				? {}
+				: {
 						set: (value: any) => {
 							;(instance as any)[prop.name] = value
 						},
-					}
-				: {}),
+					}),
 			subscribe: (handler) => {
 				const unsubs = triggers.map((event) => {
 					events.on(event, handler)

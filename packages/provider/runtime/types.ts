@@ -36,5 +36,5 @@ export interface IEventProvider {
 export interface IProvider extends IAccessorProvider, IEventProvider {}
 
 export type TEmitPayload =
-	| { type: 'property'; name: string; value: any; mutable: boolean }
+	| { type: 'property'; name: string; value: any; writable: boolean }
 	| { type: 'event'; name: string; args: any[] }
