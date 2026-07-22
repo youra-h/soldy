@@ -1,44 +1,26 @@
 /**
- * Vue-адаптер: генерирует props из ComponentModel.
+ * Vue-адаптер: генерирует props из ComponentAccessor.
  *
- * Для каждого свойства модели (кроме event) создаёт Vue prop
- * с типом, выведенным из defaultValues конструктора.
+ * Для каждого публичного свойства создаёт Vue prop.
  */
 
-import type { IDescriptor } from '@soldy/provider'
-import type { TConstructor } from '@soldy/core'
+import type { ComponentAccessor } from '@soldy/provider'
 
-function inferVueType(value: unknown): any {
-	if (typeof value === 'boolean') return Boolean
+export function useProps(accessor: ComponentAccessor, defaultValues: Record<string, any> = {}): Record<string, any> {
+    const props: Record<string, any> = {}
 
-	if (typeof value === 'string') return String
+    // Берем только публичные пропы
+    for (const prop of accessor.getProps(false)) {
+        const exportName = accessor.getExportName(prop)
 
-	if (typeof value === 'number') return Number
+        props[exportName] = {
+            default: defaultValues[prop.name],
+        }
+    }
 
-	if (Array.isArray(value)) return Array
+    // Системные пропы для передачи контроллера или плагинов напрямую
+    props.ctrl = { type: Object, default: undefined }
+    props.plugins = { type: Object, default: undefined }
 
-	return [Object]
-}
-
-export function useProps(descriptor: IDescriptor): Record<string, any> {
-	const defaults: Record<string, any> = (descriptor.ctor as any).defaultValues ?? {}
-
-	const props: Record<string, any> = {}
-
-	for (const prop of descriptor.props) {
-		if (prop.protected) continue
-
-		const value = defaults[prop.name]
-
-		props[prop.name] = {
-			type: inferVueType(value),
-			default: value,
-		}
-	}
-
-	// entity-level props
-	props.ctrl = { type: Object, default: undefined }
-	props.plugins = { type: Object, default: undefined }
-
-	return props
+    return props
 }

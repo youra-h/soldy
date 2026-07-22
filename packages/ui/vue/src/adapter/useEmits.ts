@@ -1,22 +1,31 @@
 /**
- * Vue-адаптер: генерирует emits из ComponentModel.
+ * Vue-адаптер: генерирует emits из ComponentAccessor.
  *
- * - events модели → эмитятся как есть
- * - свойства модели → change:{name} для всех, update:{name} для mutable
+ * - Явные события (через getExportName)
+ * - Триггеры свойств (через getTriggers)
+ * - update:* для v-model (только публичные свойства)
  */
 
-import type { IDescriptor } from '@soldy/provider'
+import type { ComponentAccessor } from '@soldy/provider'
 
-export function useEmits(descriptor: IDescriptor): string[] {
-	const emits: string[] = [...descriptor.events]
+export function useEmits(accessor: ComponentAccessor): string[] {
+    const emits: string[] = []
 
-	for (const prop of descriptor.props) {
-		if (prop.protected) continue
+    // 1. Все явные события ('ready', 'element:ready' и т.д.)
+    for (const evt of accessor.getEvents()) {
+        emits.push(accessor.getExportName(evt))
+    }
 
-		emits.push(`update:${prop.name}`)
-	}
+    // 2. Все триггеры и v-model события свойств
+    for (const prop of accessor.getProps(true)) {
+        // Добавляем готовые триггеры свойства
+        emits.push(...accessor.getTriggers(prop))
 
-	const uniqueEmits = new Set(emits)
+        // Добавляем update:* для публичных свойств (v-model)
+        if (!prop.protected) {
+            emits.push(`update:${accessor.getExportName(prop)}`)
+        }
+    }
 
-	return [...uniqueEmits]
+    return Array.from(new Set(emits))
 }
