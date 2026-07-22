@@ -3,7 +3,6 @@ import type { IPluginBundle } from '@soldy/plugins'
 import { TInstancePlugin } from '@soldy/plugins'
 import { useInstance } from './useInstance'
 import { useBundle } from './useBundle'
-import { useElementBinding } from './../adapter'
 
 /**
  * Контекст, передаваемый в {@link IComponentSetupConfig.sync}.
@@ -116,7 +115,7 @@ export function useComponentSetup<TCtor extends new (...args: any[]) => any>(
 		const plugins = useBundle(config.plugins, props?.plugins)
 		plugins.get(TInstancePlugin)!.instance = instance
 
-		const rootElement = useElementBinding(plugins)
+		const rootElement = undefined;//useElementBinding(plugins)
 
 		const ctx: ISetupContext = { props, instance, plugins, emit }
 		const state = config.sync(ctx)
