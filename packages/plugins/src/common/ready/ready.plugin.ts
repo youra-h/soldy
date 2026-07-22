@@ -9,8 +9,8 @@ import { TInstancePlugin } from '../instance'
  * Устанавливает ready в true, когда элемент готов, и в false, когда элемент удаляется.
  * Позволяет компоненту знать, когда он готов к взаимодействию с DOM.
  */
-export class TReadyBridgePlugin extends TBasePlugin {
-	static readonly key = Symbol('ready-bridge')
+export class TReadyPlugin extends TBasePlugin {
+	static readonly key = Symbol('ready')
 
 	override install(bundle: IPluginBundle): void {
 		const elementPlugin = bundle.get(TElementPlugin)
