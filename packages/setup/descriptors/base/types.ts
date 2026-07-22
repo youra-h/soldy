@@ -2,10 +2,7 @@
  * Типы для ComponentDescriptor — единого источника истины о компоненте.
  *
  * Дескриптор консолидирует: Contribution + Constructor + Plugins.
- * Заменяет ручную сборку compileComponent([...]) и ручную регистрацию провайдеров.
- *
  * Вся логика форматирования имён (namespace:name) инкапсулирована в ComponentAccessor.
- * Дескриптор лишь хранит скомпилированные props/events и умеет создавать bundle + accessor.
  */
 
 import type { IContribution, ICompiledProp, ICompiledEvent, ComponentAccessor } from '@soldy/provider'

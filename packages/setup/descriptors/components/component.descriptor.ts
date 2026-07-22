@@ -1,4 +1,4 @@
-import { defineComponent } from '../define-component'
+import { defineComponent } from '../base'
 import { TComponent } from '@soldy/core'
 import { ComponentContribution } from '../../contributions'
 import { EntityDescriptor } from './entity.descriptor'

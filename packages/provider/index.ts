@@ -9,9 +9,4 @@
 
 export * from './contract'
 export { ComponentAccessor } from './accessor'
-
-// Устаревшие экспорты (для обратной совместимости на время миграции)
-export type { IAccessor, IAccessorProvider, IEventProvider, IProvider, TEmitPayload } from './runtime/types'
-export { TAggregateProvider } from './runtime/aggregate-provider.class'
-export { TRuntime } from './runtime/runtime.class'
-export { track } from './runtime/track'
+export { track } from './runtime'

@@ -5,22 +5,22 @@
  * и добавляет size, width, height + плагин IconStyle.
  */
 
-import { defineComponent, definePlugin } from '../define-component'
+import { defineComponent, definePlugin } from '../base'
 import { TIcon } from '@soldy/core'
 import { TIconStylePlugin } from '@soldy/plugins'
-import { IconContribution } from '../../contributions/components/icon'
+import { IconContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const IconDescriptor = defineComponent({
-    ctor: TIcon,
+	ctor: TIcon,
 
-    extends: ComponentViewDescriptor,
+	extends: ComponentViewDescriptor,
 
-    contribution: IconContribution,
+	contribution: IconContribution,
 
-    plugins: [
-        definePlugin({
-            ctor: TIconStylePlugin,
-        }),
-    ],
+	plugins: [
+		definePlugin({
+			ctor: TIconStylePlugin,
+		}),
+	],
 })

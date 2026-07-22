@@ -1,5 +1,2 @@
-export * from './define-component'
+export * from './base'
 export * from './components'
-export * from './define-component'
-export * from './components'
-export type { IPluginDefinition, IComponentDefinitionOptions, IComponentDescriptor } from './types'
