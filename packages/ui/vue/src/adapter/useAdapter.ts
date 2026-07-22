@@ -14,19 +14,19 @@ import { useRuntime } from './useRuntime'
 import { useElementBinding } from './useElementBinding'
 
 export function useAdapter(
-	descriptor: IComponentDescriptor,
-	props: Record<string, any>,
-	emit?: (event: string, ...args: any[]) => void,
+    descriptor: IComponentDescriptor,
+    props: Record<string, any>,
+    emit?: (event: string, ...args: any[]) => void,
 ) {
-	const { instance, bundle, runtime } = createAdapter(descriptor, {
-		ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-		plugins: props.plugins,
-		props,
-	})
+    const { instance, bundle, accessor } = createAdapter(descriptor, {
+        ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+        plugins: props.plugins,
+        props,
+    })
 
-	const { refs } = useRuntime(runtime, props, emit)
+    const { refs } = useRuntime(accessor, props, emit)
 
-	const rootElement = useElementBinding(bundle)
+    const rootElement = useElementBinding(bundle)
 
-	return { ctrl: instance, plugins: bundle, rootElement, ...refs }
+    return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 }

@@ -5,11 +5,9 @@ import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { IconDescriptor } from '@soldy/setup'
 
-const model = IconDescriptor.model
+export const emitsIcon: TEmits = useEmits(IconDescriptor) as unknown as TEmits
 
-export const emitsIcon: TEmits = useEmits(model) as unknown as TEmits
-
-export const propsIcon: TProps = useProps(model) as TProps
+export const propsIcon: TProps = useProps(IconDescriptor) as TProps
 
 export default {
 	name: 'BaseIcon',
