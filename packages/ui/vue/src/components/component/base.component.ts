@@ -5,7 +5,7 @@ import { ComponentDescriptor } from '@soldy/setup'
 
 export const emitsComponent: TEmits = useEmits(ComponentDescriptor.model) as unknown as TEmits
 
-export const propsComponent: TProps = useProps(ComponentDescriptor.model, TComponent) as TProps
+export const propsComponent: TProps = useProps(ComponentDescriptor.model) as TProps
 
 export default {
 	name: 'BaseComponent',

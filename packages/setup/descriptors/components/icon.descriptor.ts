@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, definePlugin } from '../define-component'
-import { TObservingAccessorProvider } from '../../providers/components'
+import { TAccessorProvider } from '../../providers/components'
 import { TIcon } from '@soldy/core'
 import { TIconStylePlugin } from '@soldy/plugins'
 import { IconContribution } from '../../contributions/components/icon'
@@ -20,11 +20,10 @@ export const IconDescriptor = defineComponent({
 	contribution: IconContribution,
 
 	plugins: [
-		...ComponentViewDescriptor.plugins,
 		definePlugin({
 			ctor: TIconStylePlugin,
 		}),
 	],
 
-	provider: TObservingAccessorProvider,
+	provider: TAccessorProvider,
 })

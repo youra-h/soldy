@@ -5,7 +5,7 @@
  * с типом, выведенным из defaultValues конструктора.
  */
 
-import type { IComponentModel } from '@soldy/provider'
+import type { IDescriptor } from '@soldy/provider'
 import type { TConstructor } from '@soldy/core'
 
 function inferVueType(value: unknown): any {
@@ -17,15 +17,15 @@ function inferVueType(value: unknown): any {
 
 	if (Array.isArray(value)) return Array
 
-	return [String, Object]
+	return [Object]
 }
 
-export function useProps(model: IComponentModel, ctor: TConstructor): Record<string, any> {
-	const defaults: Record<string, any> = (ctor as any).defaultValues ?? {}
+export function useProps(descriptor: IDescriptor): Record<string, any> {
+	const defaults: Record<string, any> = (descriptor.ctor as any).defaultValues ?? {}
 
 	const props: Record<string, any> = {}
 
-	for (const prop of model.props) {
+	for (const prop of descriptor.props) {
 		if (prop.protected) continue
 
 		const value = defaults[prop.name]

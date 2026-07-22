@@ -1,10 +1,14 @@
 import { defineComponent } from '../define-component'
-import { TObservingAccessorProvider } from '../../providers/components'
+import { TAccessorProvider } from '../../providers/components'
 import { TComponent } from '@soldy/core'
-import { ComponentContribution } from '../../contributions/components'
+import { ComponentContribution } from '../../contributions'
 
 export const ComponentDescriptor = defineComponent({
 	ctor: TComponent,
+
+	extends: EntityContribution,
+
 	contribution: ComponentContribution,
-	provider: TObservingAccessorProvider,
+
+	provider: TAccessorProvider,
 })

@@ -6,7 +6,7 @@ import { ComponentViewDescriptor } from '@soldy/setup'
 
 export const emitsComponentView: TEmits = useEmits(ComponentViewDescriptor.model) as unknown as TEmits
 
-export const propsComponentView: TProps = useProps(ComponentViewDescriptor.model, TComponentView) as TProps
+export const propsComponentView: TProps = useProps(ComponentViewDescriptor.model) as TProps
 
 console.log(propsComponentView, emitsComponentView)
 

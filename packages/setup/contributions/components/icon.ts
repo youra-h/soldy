@@ -6,5 +6,4 @@ export const IconContribution: IContribution = {
 		{ name: 'width', triggers: ['change:width'] },
 		{ name: 'height', triggers: ['change:height'] },
 	],
-	events: ['change:size', 'change:width', 'change:height'],
 }

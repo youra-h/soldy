@@ -1,5 +1,5 @@
 import { defineComponent, definePlugin } from '../define-component'
-import { TObservingAccessorProvider } from '../../providers/components'
+import { TAccessorProvider } from '../../providers/components'
 import { TComponentView } from '@soldy/core'
 import { TElementPlugin, TInstancePlugin } from '@soldy/plugins'
 import { ComponentViewContribution } from '../../contributions/components'
@@ -25,5 +25,5 @@ export const ComponentViewDescriptor = defineComponent({
 		}),
 	],
 
-	provider: TObservingAccessorProvider,
+	provider: TAccessorProvider,
 })

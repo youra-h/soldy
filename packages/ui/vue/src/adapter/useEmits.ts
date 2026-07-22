@@ -5,15 +5,14 @@
  * - свойства модели → change:{name} для всех, update:{name} для mutable
  */
 
-import type { IComponentModel } from '@soldy/provider'
+import type { IDescriptor } from '@soldy/provider'
 
-export function useEmits(model: IComponentModel): string[] {
-	const emits: string[] = [...model.events]
+export function useEmits(descriptor: IDescriptor): string[] {
+	const emits: string[] = [...descriptor.events]
 
-	for (const prop of model.props) {
+	for (const prop of descriptor.props) {
 		if (prop.protected) continue
 
-		emits.push(`change:${prop.name}`)
 		emits.push(`update:${prop.name}`)
 	}
 

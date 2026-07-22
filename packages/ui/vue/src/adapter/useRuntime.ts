@@ -7,6 +7,7 @@
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import type { TRuntime, TEmitPayload } from '@soldy/provider'
+import { useRefs } from './useRefs'
 
 export function useRuntime(
 	runtime: TRuntime,
@@ -16,27 +17,7 @@ export function useRuntime(
 	const refs: Record<string, Ref<any>> = {}
 
 	// 1. Создаём реактивные переменные для всех свойств модели
-	for (const prop of runtime.model.props) {
-		refs[prop.name] = ref(runtime.getValue(prop.name))
-	}
-
-	const unsub = runtime.subscribe((payload: TEmitPayload) => {
-		if (payload.type === 'property' && refs[payload.name] !== undefined) {
-			refs[payload.name]!.value = payload.value
-		}
-
-		// Пробрасываем событие наружу (для Vue emit)
-		if (emit) {
-			if (payload.type === 'property') {
-				emit(`change:${payload.name}`, payload.value)
-				if (payload.writable) {
-					emit(`update:${payload.name}`, payload.value)
-				}
-			} else {
-				emit(payload.name as any, ...payload.args)
-			}
-		}
-	})
+	useRefs()
 
 	// 3. Синхронизация внешних props → Runtime
 	const stopWatches: (() => void)[] = []
@@ -58,7 +39,6 @@ export function useRuntime(
 
 	// 4. Cleanup
 	onUnmounted(() => {
-		unsub()
 		stopWatches.forEach((fn) => fn())
 		runtime.dispose()
 	})
