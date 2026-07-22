@@ -1,5 +1,5 @@
 /**
- * Framework-agnostic адаптер: создаёт instance, bundle, runtime из дескриптора.
+ * Framework-agnostic адаптер: создаёт instance, bundle, accessor из дескриптора.
  *
  * Не зависит от конкретного фреймворка — используется как фундамент для
  * Vue-адаптера (useAdapter), React-адаптера, и т.д.
@@ -9,22 +9,22 @@ import type { IComponentDescriptor } from '../descriptors/types'
 import { TInstancePlugin } from '@soldy/plugins'
 
 export function createAdapter(
-	descriptor: IComponentDescriptor,
-	options: { ctrl?: any; plugins?: any; props?: any },
+    descriptor: IComponentDescriptor,
+    options: { ctrl?: any; plugins?: any; props?: any },
 ) {
-	// Если instance не передан — создаём его через конструктор из дескриптора.
-	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
+    // Если instance не передан — создаём его через конструктор из дескриптора.
+    const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
 
-	// Если bundle не передан — создаём его через дескриптор.
-	const bundle = options.plugins ?? descriptor.createBundle()
+    // Если bundle не передан — создаём его через дескриптор.
+    const bundle = options.plugins ?? descriptor.createBundle()
 
-	const instancePlugin = bundle.get(TInstancePlugin)
+    const instancePlugin = bundle.get(TInstancePlugin)
 
-	if (instancePlugin) {
-		instancePlugin.instance = instance
-	}
+    if (instancePlugin) {
+        instancePlugin.instance = instance
+    }
 
-	const runtime = descriptor.createRuntime({ instance, bundle })
+    const accessor = descriptor.createAccessor(instance, bundle)
 
-	return { instance, bundle, runtime }
+    return { instance, bundle, accessor }
 }

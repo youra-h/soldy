@@ -7,7 +7,6 @@
 	"exports": {
 		".": "./index.ts",
 		"./contract": "./contract/index.ts",
-		"./compiler": "./compiler/index.ts",
 		"./runtime": "./runtime/index.ts"
 	},
 	"dependencies": {
