@@ -25,7 +25,7 @@ UI (Vue / React / Solid / Svelte / Angular)
 | `@soldy/core` | `packages/core/` | Headless-ядро: классы компонентов, стейты, события |
 | `@soldy/accessor` | `packages/accessor/` | Абстракции: контракты (IContribution), компилятор (compileComponent), Runtime (TRuntime), интерфейсы (IAccessor, IAccessorProvider, IEventProvider) |
 | `@soldy/setup` | `packages/setup/` | Конкретные реализации: contributions и providers для core-компонентов и плагинов |
-| `@soldy/plugins` | `packages/plugins/` | DOM-плагины (element, instance, ready-bridge и др.) |
+| `@soldy/plugins` | `packages/plugins/` | DOM-плагины (element, instance, ready и др.) |
 | `@soldy/foundation` | `packages/foundation/` | CSS-токены, Tailwind-тема, стили |
 | `@soldy/icons` | `packages/icons/` | SVG-иконки (raw импорт) |
 | `@soldy/ui-vue` | `packages/ui/vue/` | Vue-обёртки (полноценно реализованы) |
@@ -111,14 +111,14 @@ TEntity (абстракт)
 |--------|------|------------|
 | `TElementPlugin` | `'element'` | Управление HTMLElement. Методы: `element`, `ready(): Promise<HTMLElement>`. События: `ready` (после rAF), `removed` |
 | `TInstancePlugin` | `'instance'` | Ссылка на core-инстанс. События: `ready`, `removed` |
-| `TReadyBridgePlugin` | `'ready-bridge'` | Мост: подписывается на `TElementPlugin.ready/removed` → устанавливает `instance.ready` |
+| `TReadyPlugin` | `'ready'` | Мост: подписывается на `TElementPlugin.ready/removed` → устанавливает `instance.ready` |
 
 Остальные плагины: `Spinner`, `Skeleton`, `Icon`, `Tabs` (active-tab, view, layout), `Collection`, `List`, `Collapse`, `DragAndDrop`, `InputControl`, `InputBool`, `Input`, `Frame`.
 
 ### Бандлы (`packages/plugins/src/bundles/`)
 
 Фабрики предопределённых наборов плагинов:
-- `createComponentViewBundle()` — TElementPlugin + TInstancePlugin + TReadyBridgePlugin
+- `createComponentViewBundle()` — TElementPlugin + TInstancePlugin + TReadyPlugin
 - `createControlBundle()`, `createTabsBundle()`, `createCollapseBundle()`, `createListBundle()`, `createListItemBundle()`, `createCollectionBundle()`, `createInputControlBundle()`, `createInputBoolBundle()`, `createInputBundle()`, `createFrameBundle()`
 
 ---
@@ -282,7 +282,7 @@ useRuntime → реактивные refs → шаблон
 **Двунаправленная синхронизация:**
 1. Props → Core: `watch` → `runtime.setValue()` → воздействует на instance через IAccessor
 2. Core → View: события instance → TObservingAccessorProvider (через triggers) → TRuntime → useRuntime → реактивные refs
-3. Plugin → Core: TReadyBridgePlugin слушает TElementPlugin → устанавливает `instance.ready`
+3. Plugin → Core: TReadyPlugin слушает TElementPlugin → устанавливает `instance.ready`
 4. DOM → Plugin: useElementBinding синхронизирует `$el` → TElementPlugin.element
 
 ---
