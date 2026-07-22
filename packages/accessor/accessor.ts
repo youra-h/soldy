@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — accessor.ts
+ * @soldy/accessor — accessor.ts
  *
  * ComponentAccessor — единая точка доступа к свойствам и событиям компонента.
  *

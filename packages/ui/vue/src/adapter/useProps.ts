@@ -6,7 +6,7 @@
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import { DescriptorInspector } from '@soldy/provider'
+import { DescriptorInspector } from '@soldy/accessor'
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, any> {
     const defaults = (descriptor.ctor as any)?.defaultValues ?? {}

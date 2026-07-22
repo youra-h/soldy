@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — inspector.ts
+ * @soldy/accessor — inspector.ts
  *
  * DescriptorInspector — статический анализатор схемы компонента.
  *

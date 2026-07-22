@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — тесты ComponentAccessor
+ * @soldy/accessor — тесты ComponentAccessor
  */
 import { describe, it, expect, vi } from 'vitest'
 import { ComponentAccessor } from '../accessor'

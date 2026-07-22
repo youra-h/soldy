@@ -16,7 +16,7 @@
     "dev:angular": "npm run dev --workspace=@soldy/ui-angular",
     "dev:svelte": "npm run dev --workspace=@soldy/ui-svelte",
     "dev:solid": "npm run dev --workspace=@soldy/ui-solid",
-    "test:provider": "npm run test --workspace=@soldy/provider",
+    "test:provider": "npm run test --workspace=@soldy/accessor",
     "test:setup": "npm run test --workspace=@soldy/setup",
     "test:core": "npm run test --workspace=@soldy/core",
     "test:plugins": "npm run test --workspace=@soldy/plugins",

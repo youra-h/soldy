@@ -7,7 +7,7 @@
  */
 
 import { watch, onUnmounted, type Ref } from 'vue'
-import type { ComponentAccessor } from '@soldy/provider'
+import type { ComponentAccessor } from '@soldy/accessor'
 import { useRefs } from './useRefs'
 
 export function useRuntime(

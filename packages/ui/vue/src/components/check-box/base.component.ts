@@ -11,7 +11,7 @@ import type { TEmits, TProps, ISyncComponentOptions } from '../../types/common'
 import { Icon } from '../icon'
 import { useSyncProps } from '../../composables/useSyncProps'
 import { useInheritProps } from '../../composables/useInheritProps'
-import { track } from '@soldy/provider'
+import { track } from '@soldy/accessor'
 
 export const emitsCheckBox: TEmits = [
 	...emitsInputControl,

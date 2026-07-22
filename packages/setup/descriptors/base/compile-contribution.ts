@@ -3,7 +3,7 @@
  * Если передан namespace, он добавляется к каждому триггеру.
  */
 
-import type { IContribution, ICompiledProp, ICompiledEvent } from '@soldy/provider'
+import type { IContribution, ICompiledProp, ICompiledEvent } from '@soldy/accessor'
 
 export function compileContribution(
     contribution?: IContribution,

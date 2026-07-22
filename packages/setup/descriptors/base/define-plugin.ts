@@ -3,7 +3,7 @@
  * Namespace извлекается из Symbol.key.description.
  */
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 import type { IPluginDefinition } from './types'
 
 export function definePlugin(options: {

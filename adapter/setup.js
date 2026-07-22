@@ -35,7 +35,7 @@ export function createAdapter(
 
 // === ./soldy/packages\setup\contributions\components\entity.ts ===
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const EntityContribution: IContribution = {
 	props: [
@@ -47,7 +47,7 @@ export const EntityContribution: IContribution = {
 
 // === ./soldy/packages\setup\contributions\components\component.ts ===
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const ComponentContribution: IContribution = {
 	props: [
@@ -61,7 +61,7 @@ export const ComponentContribution: IContribution = {
 
 // === ./soldy/packages\setup\contributions\components\component-view.ts ===
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const ComponentViewContribution: IContribution = {
 	props: [
@@ -74,7 +74,7 @@ export const ComponentViewContribution: IContribution = {
 
 // === ./soldy/packages\setup\contributions\components\icon.ts ===
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const IconContribution: IContribution = {
 	props: [
@@ -87,7 +87,7 @@ export const IconContribution: IContribution = {
 
 // === ./soldy/packages\setup\contributions\plugins\element.ts ===
 
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const ElementContribution: IContribution = {
 	events: ['ready', 'removed'],
@@ -127,8 +127,8 @@ export interface IComponentDescriptor {
 /**
  * defineComponent / definePlugin — фабрики дескрипторов компонентов.
  *
- * Перенесено из @soldy/provider: использует TPluginBundle из @soldy/plugins.
- * В @soldy/provider остаются только интерфейсы (IComponentDescriptor и др.).
+ * Перенесено из @soldy/accessor: использует TPluginBundle из @soldy/plugins.
+ * В @soldy/accessor остаются только интерфейсы (IComponentDescriptor и др.).
  */
 
 import type {

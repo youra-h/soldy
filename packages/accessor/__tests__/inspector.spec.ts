@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — тесты DescriptorInspector
+ * @soldy/accessor — тесты DescriptorInspector
  */
 import { describe, it, expect } from 'vitest'
 import { DescriptorInspector } from '../inspector'

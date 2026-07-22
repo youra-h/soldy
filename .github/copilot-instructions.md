@@ -23,7 +23,7 @@ UI (Vue / React / Solid / Svelte / Angular)
 | Пакет | Путь | Назначение |
 |-------|------|------------|
 | `@soldy/core` | `packages/core/` | Headless-ядро: классы компонентов, стейты, события |
-| `@soldy/provider` | `packages/provider/` | Абстракции: контракты (IContribution), компилятор (compileComponent), Runtime (TRuntime), интерфейсы (IAccessor, IAccessorProvider, IEventProvider) |
+| `@soldy/accessor` | `packages/provider/` | Абстракции: контракты (IContribution), компилятор (compileComponent), Runtime (TRuntime), интерфейсы (IAccessor, IAccessorProvider, IEventProvider) |
 | `@soldy/setup` | `packages/setup/` | Конкретные реализации: contributions и providers для core-компонентов и плагинов |
 | `@soldy/plugins` | `packages/plugins/` | DOM-плагины (element, instance, ready-bridge и др.) |
 | `@soldy/foundation` | `packages/foundation/` | CSS-токены, Tailwind-тема, стили |
@@ -233,7 +233,7 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 ### Vue (`packages/ui/vue/`) — полноценно реализован
 
 Два подхода:
-1. **`useRuntimeComponent(runtime, props, emit)`** — новый Runtime-based адаптер. Работает с `@soldy/provider`. Создаёт реактивные refs из ComponentModel + Runtime, подписывается на изменения свойств и событий.
+1. **`useRuntimeComponent(runtime, props, emit)`** — новый Runtime-based адаптер. Работает с `@soldy/accessor`. Создаёт реактивные refs из ComponentModel + Runtime, подписывается на изменения свойств и событий.
 2. **`useComponentSetup({ Ctor, plugins, sync })`** — упрощённый вариант (без Runtime, прямая работа с core-классами).
 
 Адаптеры (`ui/vue/src/adapter/`):

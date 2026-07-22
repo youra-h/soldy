@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — тесты track
+ * @soldy/accessor — тесты track
  */
 import { describe, it, expect, vi } from 'vitest'
 import { track } from '../runtime/track'

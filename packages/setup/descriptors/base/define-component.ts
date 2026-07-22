@@ -6,7 +6,7 @@
  */
 
 import { TPluginBundle } from '@soldy/plugins'
-import { ComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/provider'
+import { ComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
 import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { compileContribution } from './compile-contribution'
 

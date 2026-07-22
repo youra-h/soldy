@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — точка входа
+ * @soldy/accessor — точка входа
  *
  * Чистые абстракции: контракты (IPropContribution, IContribution, ...)
  * и ComponentAccessor — единый интерфейс доступа к свойствам/событиям.

@@ -1,5 +1,5 @@
 /**
- * @soldy/provider — contract/types.ts
+ * @soldy/accessor — contract/types.ts
  *
  * Базовые типы контрактов: описание свойств и событий.
  * Чистые абстракции, без привязки к конкретным классам.

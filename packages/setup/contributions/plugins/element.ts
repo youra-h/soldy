@@ -1,4 +1,4 @@
-import type { IContribution } from '@soldy/provider'
+import type { IContribution } from '@soldy/accessor'
 
 export const ElementContribution: IContribution = {
 	events: ['ready', 'removed'],

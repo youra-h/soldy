@@ -77,7 +77,7 @@ export function useElementBinding(
  * - свойства модели → change:{name} для всех, update:{name} для mutable
  */
 
-import type { IDescriptor } from '@soldy/provider'
+import type { IDescriptor } from '@soldy/accessor'
 
 export function useEmits(descriptor: IDescriptor): string[] {
 	const emits: string[] = [...descriptor.events]
@@ -103,7 +103,7 @@ export function useEmits(descriptor: IDescriptor): string[] {
  * с типом, выведенным из defaultValues конструктора.
  */
 
-import type { IDescriptor } from '@soldy/provider'
+import type { IDescriptor } from '@soldy/accessor'
 import type { TConstructor } from '@soldy/core'
 
 function inferVueType(value: unknown): any {
@@ -194,14 +194,14 @@ export function useRefs<T>(
 // === ./soldy/packages\ui\vue\src\adapter\useRuntime.ts ===
 
 /**
- * Vue-адаптер для @soldy/provider Runtime.
+ * Vue-адаптер для @soldy/accessor Runtime.
  *
  * Создаёт реактивные Vue-refs из Runtime и подписывается на изменения.
  * Синхронизирует внешние props в Runtime.
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import type { TRuntime, TEmitPayload } from '@soldy/provider'
+import type { TRuntime, TEmitPayload } from '@soldy/accessor'
 import { useRefs } from './useRefs'
 
 export function useRuntime(

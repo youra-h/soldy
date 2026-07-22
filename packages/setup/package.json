@@ -11,7 +11,7 @@
 	"dependencies": {
 		"@soldy/core": "*",
 		"@soldy/plugins": "*",
-		"@soldy/provider": "*"
+		"@soldy/accessor": "*"
 	},
 	"scripts": {
 		"test": "vitest run"

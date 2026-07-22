@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { defineComponent, definePlugin, compileContribution } from '../descriptors/base'
-import { ComponentAccessor, type IContribution } from '@soldy/provider'
+import { ComponentAccessor, type IContribution } from '@soldy/accessor'
 import { TPluginBundle } from '@soldy/plugins'
 
 // --- test fixtures ---

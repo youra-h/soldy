@@ -5,7 +5,7 @@
  * Вся логика форматирования имён (namespace:name) инкапсулирована в ComponentAccessor.
  */
 
-import type { IContribution, ICompiledProp, ICompiledEvent, ComponentAccessor } from '@soldy/provider'
+import type { IContribution, ICompiledProp, ICompiledEvent, ComponentAccessor } from '@soldy/accessor'
 import type { IPluginBundle, TPluginConstructor } from '@soldy/plugins'
 
 /** Определение плагина в составе дескриптора. */

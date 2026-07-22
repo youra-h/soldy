@@ -8,7 +8,7 @@
 
 ---
 
-## 1. Слой Provide (`@soldy/provider`)
+## 1. Слой Provide (`@soldy/accessor`)
 
 Этот слой не знает ни про какие `core`/`plugins`. Он принимает исходные `IContribution` (где у плагина может быть передан `namespace`, а у компонента — нет), а также объект с экземплярами и дает унифицированный интерфейс взаимодействия.
 
@@ -108,7 +108,7 @@ export class ComponentAccessor {
 
 ```typescript
 import { TPluginBundle } from '@soldy/plugins'
-import { ComponentAccessor, type IContribution, type ICompiledProp, type ICompiledEvent } from '@soldy/provider'
+import { ComponentAccessor, type IContribution, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
 import type { IPluginDefinition, IComponentDefinitionOptions, IComponentDescriptor } from './types'
 
 function compileContribution(
@@ -211,7 +211,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
 ```typescript
 import { watch, type Ref } from 'vue'
-import type { ComponentAccessor } from '@soldy/provider'
+import type { ComponentAccessor } from '@soldy/accessor'
 import { useRefs } from './useRefs'
 
 export function useRuntime(
@@ -505,7 +505,7 @@ export function useRuntime(
 
 ---
 
-### 1. Расширяем `ComponentAccessor` в `@soldy/provider`
+### 1. Расширяем `ComponentAccessor` в `@soldy/accessor`
 
 Добавим в `ComponentAccessor` готовый метод `getTriggers()`, который возвращает скомпилированные триггеры с учетом их `namespace`:
 
@@ -544,7 +544,7 @@ export class ComponentAccessor {
 Теперь `useEmits` вообще ничего не знает про регулярки, двоеточия и склейки строк — он просто опрашивает `accessor`:
 
 ```typescript
-import type { ComponentAccessor } from '@soldy/provider'
+import type { ComponentAccessor } from '@soldy/accessor'
 
 export function useEmits(accessor: ComponentAccessor): string[] {
 	const emits: string[] = []
@@ -577,7 +577,7 @@ export function useEmits(accessor: ComponentAccessor): string[] {
 В `useProps` аналогично исчезает любая склейка namespace:
 
 ```typescript
-import type { ComponentAccessor } from '@soldy/provider'
+import type { ComponentAccessor } from '@soldy/accessor'
 
 export function useProps(accessor: ComponentAccessor, defaultValues: Record<string, any> = {}): Record<string, any> {
 	const props: Record<string, any> = {}
