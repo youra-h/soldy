@@ -1,4 +1,3 @@
-import { TComponent } from '@soldy/core'
 import type { TEmits, TProps } from '../../types'
 import { useEmits, useProps } from '../../adapter'
 import { ComponentDescriptor } from '@soldy/setup'

@@ -9,4 +9,5 @@
 
 export * from './contract'
 export { ComponentAccessor } from './accessor'
+export { DescriptorInspector } from './inspector'
 export { track } from './runtime'

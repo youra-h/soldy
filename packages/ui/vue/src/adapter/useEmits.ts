@@ -1,29 +1,21 @@
 /**
- * Vue-адаптер: генерирует emits из ComponentAccessor.
+ * Vue-адаптер: генерирует emits из дескриптора.
  *
- * - Явные события (через getExportName)
- * - Триггеры свойств (через getTriggers)
- * - update:* для v-model (только публичные свойства)
+ * Использует DescriptorInspector для статического анализа схемы.
+ * Добавляет update:* для v-model (специфика Vue).
  */
 
-import type { ComponentAccessor } from '@soldy/provider'
+import type { IComponentDescriptor } from '@soldy/setup'
+import { DescriptorInspector } from '@soldy/provider'
 
-export function useEmits(accessor: ComponentAccessor): string[] {
-    const emits: string[] = []
+export function useEmits(descriptor: IComponentDescriptor): string[] {
+    const inspector = new DescriptorInspector(descriptor)
+    const emits = inspector.getExportEvents()
 
-    // 1. Все явные события ('ready', 'element:ready' и т.д.)
-    for (const evt of accessor.getEvents()) {
-        emits.push(accessor.getExportName(evt))
-    }
-
-    // 2. Все триггеры и v-model события свойств
-    for (const prop of accessor.getProps(true)) {
-        // Добавляем готовые триггеры свойства
-        emits.push(...accessor.getTriggers(prop))
-
-        // Добавляем update:* для публичных свойств (v-model)
+    // Добавляем update:* для v-model (только Vue)
+    for (const prop of descriptor.props) {
         if (!prop.protected) {
-            emits.push(`update:${accessor.getExportName(prop)}`)
+            emits.push(`update:${inspector.getExportName(prop)}`)
         }
     }
 

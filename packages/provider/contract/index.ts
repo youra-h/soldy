@@ -4,4 +4,5 @@ export type {
     ICompiledItem,
     ICompiledProp,
     ICompiledEvent,
+    IComponentSchema,
 } from './types'

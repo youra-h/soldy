@@ -1,26 +1,23 @@
 /**
- * Vue-адаптер: генерирует props из ComponentAccessor.
+ * Vue-адаптер: генерирует props из дескриптора.
  *
- * Для каждого публичного свойства создаёт Vue prop.
+ * Использует DescriptorInspector для статического анализа схемы.
+ * Системные пропы (ctrl, plugins) добавляются здесь — provider о них не знает.
  */
 
-import type { ComponentAccessor } from '@soldy/provider'
+import type { IComponentDescriptor } from '@soldy/setup'
+import { DescriptorInspector } from '@soldy/provider'
 
-export function useProps(accessor: ComponentAccessor, defaultValues: Record<string, any> = {}): Record<string, any> {
-    const props: Record<string, any> = {}
+export function useProps(descriptor: IComponentDescriptor): Record<string, any> {
+    const defaults = (descriptor.ctor as any)?.defaultValues ?? {}
+    const inspector = new DescriptorInspector(descriptor)
 
-    // Берем только публичные пропы
-    for (const prop of accessor.getProps(false)) {
-        const exportName = accessor.getExportName(prop)
+    return {
+        // 1. Все пропы из доменной модели компонентов и плагинов
+        ...inspector.getExportProps(defaults),
 
-        props[exportName] = {
-            default: defaultValues[prop.name],
-        }
+        // 2. Системные служебные пропы, специфичные для Vue-адаптера
+        ctrl: { type: Object, default: undefined },
+        plugins: { type: Object, default: undefined },
     }
-
-    // Системные пропы для передачи контроллера или плагинов напрямую
-    props.ctrl = { type: Object, default: undefined }
-    props.plugins = { type: Object, default: undefined }
-
-    return props
 }
