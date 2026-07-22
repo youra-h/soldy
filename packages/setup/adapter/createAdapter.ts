@@ -5,7 +5,7 @@
  * Vue-адаптера (useAdapter), React-адаптера, и т.д.
  */
 
-import type { IComponentDescriptor } from '../descriptors/types'
+import type { IComponentDescriptor } from '../descriptors'
 import { TInstancePlugin } from '@soldy/plugins'
 
 export function createAdapter(
