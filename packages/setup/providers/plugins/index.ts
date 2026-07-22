@@ -1,1 +1,0 @@
-export { TElementPluginAccessorProvider } from './element'
