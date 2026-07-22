@@ -23,7 +23,7 @@ UI (Vue / React / Solid / Svelte / Angular)
 | Пакет | Путь | Назначение |
 |-------|------|------------|
 | `@soldy/core` | `packages/core/` | Headless-ядро: классы компонентов, стейты, события |
-| `@soldy/accessor` | `packages/provider/` | Абстракции: контракты (IContribution), компилятор (compileComponent), Runtime (TRuntime), интерфейсы (IAccessor, IAccessorProvider, IEventProvider) |
+| `@soldy/accessor` | `packages/accessor/` | Абстракции: контракты (IContribution), компилятор (compileComponent), Runtime (TRuntime), интерфейсы (IAccessor, IAccessorProvider, IEventProvider) |
 | `@soldy/setup` | `packages/setup/` | Конкретные реализации: contributions и providers для core-компонентов и плагинов |
 | `@soldy/plugins` | `packages/plugins/` | DOM-плагины (element, instance, ready-bridge и др.) |
 | `@soldy/foundation` | `packages/foundation/` | CSS-токены, Tailwind-тема, стили |
@@ -123,7 +123,7 @@ TEntity (абстракт)
 
 ---
 
-## Layer 3: Provider (`packages/provider/`)
+## Layer 3: Provider (`packages/accessor/`)
 
 Чистые абстракции — интерфейсы, компилятор, Runtime. Без привязки к конкретным классам.
 
@@ -181,7 +181,7 @@ IComponentModel {
 
 ## Layer 4: Setup (`packages/setup/`)
 
-Конкретные реализации — связывает классы (TComponent, TElementPlugin, ...) с абстракциями provider'а.
+Конкретные реализации — связывает классы (TComponent, TElementPlugin, ...) с абстракциями accessor'а.
 
 ### Структура
 
@@ -205,9 +205,9 @@ models/
 
 ### Ключевые паттерны
 
-- **Contribution + Provider** — для каждого источника (core-компонент, плагин) есть contribution (декларация свойств/событий) и provider (реализация IAccessorProvider/IEventProvider).
+- **Contribution + Provider** — для каждого источника (core-компонент, плагин) есть contribution (декларация свойств/событий) и accessor (реализация IAccessorProvider/IEventProvider).
 - **triggers в IContributionProp** — провайдер использует triggers для подписки на изменения, не зная о конкретных классах.
-- **TObservingAccessorProvider** — не в setup, а в provider/runtime (универсальный, не знает о контрибуциях).
+- **TObservingAccessorProvider** — не в setup, а в accessor/runtime (универсальный, не знает о контрибуциях).
 
 ---
 

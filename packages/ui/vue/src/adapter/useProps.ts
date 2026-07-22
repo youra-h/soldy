@@ -2,7 +2,7 @@
  * Vue-адаптер: генерирует props из дескриптора.
  *
  * Использует DescriptorInspector для статического анализа схемы.
- * Системные пропы (ctrl, plugins) добавляются здесь — provider о них не знает.
+ * Системные пропы (ctrl, plugins) добавляются здесь — accessor о них не знает.
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'

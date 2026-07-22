@@ -105,7 +105,7 @@ export const ElementContribution: IContribution = {
 
 
 /** Определение плагина в составе дескриптора.
- * contribution и provider опциональны — если плагин не выставляет пропы наружу,
+ * contribution и accessor опциональны — если плагин не выставляет пропы наружу,
  * он просто добавляется в bundle без попадания в модель. */
 export interface IPluginDefinition {
 }
@@ -171,7 +171,7 @@ export const ComponentDescriptor = defineComponent({
 
 	contribution: ComponentContribution,
 
-	provider: TAccessorProvider,
+	accessor: TAccessorProvider,
 })
 
 
@@ -197,14 +197,14 @@ export const ComponentViewDescriptor = defineComponent({
 		definePlugin({
 			ctor: TElementPlugin,
 			contribution: ElementContribution,
-			provider: TElementPluginAccessorProvider,
+			accessor: TElementPluginAccessorProvider,
 		}),
 		definePlugin({
 			ctor: TInstancePlugin,
 		}),
 	],
 
-	provider: TAccessorProvider,
+	accessor: TAccessorProvider,
 })
 
 
@@ -237,7 +237,7 @@ export const IconDescriptor = defineComponent({
 		}),
 	],
 
-	provider: TAccessorProvider,
+	accessor: TAccessorProvider,
 })
 
 

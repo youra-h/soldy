@@ -12,7 +12,7 @@
 
 Этот слой не знает ни про какие `core`/`plugins`. Он принимает исходные `IContribution` (где у плагина может быть передан `namespace`, а у компонента — нет), а также объект с экземплярами и дает унифицированный интерфейс взаимодействия.
 
-#### `packages/provider/src/types.ts`
+#### `packages/accessor/src/types.ts`
 
 ```typescript
 export interface IPropContribution {
@@ -41,7 +41,7 @@ export interface ICompiledEvent extends ICompiledItem {}
 
 ```
 
-#### `packages/provider/src/accessor.ts`
+#### `packages/accessor/src/accessor.ts`
 
 ```typescript
 import type { ICompiledProp, ICompiledEvent } from './types'
@@ -510,7 +510,7 @@ export function useRuntime(
 Добавим в `ComponentAccessor` готовый метод `getTriggers()`, который возвращает скомпилированные триггеры с учетом их `namespace`:
 
 ```typescript
-// packages/provider/src/accessor.ts
+// packages/accessor/src/accessor.ts
 
 export class ComponentAccessor {
 	constructor(
