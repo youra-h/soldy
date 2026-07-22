@@ -1,32 +1,35 @@
 /**
  * Vue-адаптер: связывает дескриптор с Vue-реактивностью.
  *
- * Оборачивает framework-agnostic createAdapter из @soldy/setup,
+ * Оборачивает framework-agnostic createAdapter + bindPlugins из @soldy/setup,
  * добавляя Vue-специфичную логику: toRaw, реактивные refs, привязку DOM-элемента.
- *
- * Компоненту остаётся только передать дескриптор.
  */
 
-import { toRaw } from 'vue'
+import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
-import { createAdapter } from '@soldy/setup'
+import { createAdapter, bindPlugins } from '@soldy/setup'
 import { useRuntime } from './useRuntime'
-import { useElementBinding } from './useElementBinding'
 
 export function useAdapter(
-    descriptor: IComponentDescriptor,
-    props: Record<string, any>,
-    emit?: (event: string, ...args: any[]) => void,
+	descriptor: IComponentDescriptor,
+	props: Record<string, any>,
+	emit?: (event: string, ...args: any[]) => void,
 ) {
-    const { instance, bundle, accessor } = createAdapter(descriptor, {
-        ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-        plugins: props.plugins,
-        props,
-    })
+	const { instance, bundle, accessor } = createAdapter(descriptor, {
+		ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+		plugins: props.plugins,
+		props,
+	})
 
-    const { refs } = useRuntime(accessor, props, emit)
+	const { refs } = useRuntime(accessor, props, emit)
 
-    const rootElement = useElementBinding(bundle)
+	const { bindElement } = bindPlugins(bundle, instance)
 
-    return { ctrl: instance, plugins: bundle, rootElement, ...refs }
+	const rootElement = ref<Element | null>(null)
+
+	watch(rootElement, (el) => bindElement(el ?? null), { flush: 'post' })
+
+	onUnmounted(() => bindElement(null))
+
+	return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 }

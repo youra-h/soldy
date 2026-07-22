@@ -6,7 +6,6 @@
  */
 
 import type { IComponentDescriptor } from '../descriptors'
-import { TInstancePlugin } from '@soldy/plugins'
 
 export function createAdapter(
     descriptor: IComponentDescriptor,
@@ -17,12 +16,6 @@ export function createAdapter(
 
     // Если bundle не передан — создаём его через дескриптор.
     const bundle = options.plugins ?? descriptor.createBundle()
-
-    const instancePlugin = bundle.get(TInstancePlugin)
-
-    if (instancePlugin) {
-        instancePlugin.instance = instance
-    }
 
     const accessor = descriptor.createAccessor(instance, bundle)
 
