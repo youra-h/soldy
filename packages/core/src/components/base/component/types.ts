@@ -4,8 +4,6 @@ import type { IStateUnit } from '../../../common'
 import type { IVisibilityState } from '../../../common'
 
 export type TComponentEvents = {
-	/** Создан (после конструктора, async). */
-	created: (component: IComponent) => void
 	/** show */
 	show: () => void
 	/** hide */

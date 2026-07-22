@@ -6,5 +6,5 @@ export const ComponentContribution: IContribution = {
 		{ name: 'visible', triggers: ['change:visible'] },
 		{ name: 'present', protected: true, triggers: ['change:rendered', 'change:visible'] },
 	],
-	events: ['created', 'show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after'],
+	events: ['show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after'],
 }

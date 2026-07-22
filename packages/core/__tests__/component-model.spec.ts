@@ -44,14 +44,4 @@ describe('TComponent', () => {
 		const m = new TComponent<IComponentProps>({ rendered: false })
 		expect(m.toJSON()).toMatchObject({ rendered: false })
 	})
-
-	it('эмитит created асинхронно после конструктора', () => {
-		const m = new TComponent<IComponentProps>({ rendered: true })
-		const handler = vi.fn()
-		m.events.on('created', handler)
-
-		vi.runAllTimers()
-		expect(handler).toHaveBeenCalledTimes(1)
-		expect(handler.mock.calls[0]?.[0]).toBe(m)
-	})
 })

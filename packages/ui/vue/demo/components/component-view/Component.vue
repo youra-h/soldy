@@ -22,7 +22,14 @@ const { handlers } = useEventLogger(emit, emitsComponentView)
 
 <template>
 	<PanelDemo info="Controlled by props from Properties panel">
-		<ComponentView :tag="tag" :visible="visible" :rendered="rendered" v-bind="handlers">
+		<ComponentView
+			:tag="tag"
+			:visible="visible"
+			:rendered="rendered"
+			v-bind="handlers"
+			@ready="console.log('ComponentView ready', $event)"
+			@element:ready="console.log('ComponentView destroyed', $event)"
+		>
 			<div style="text-align: center">
 				<div style="font-weight: 600">Props Demo</div>
 				<div style="font-size: 0.875rem; color: #666">Component with props</div>

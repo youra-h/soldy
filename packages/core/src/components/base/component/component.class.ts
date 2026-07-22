@@ -58,8 +58,6 @@ export default class TComponent<
 			;(this.events as TEvented<TComponentEvents>).emit('change:visible', payload.newValue)
 			this._emitPresent()
 		})
-
-		queueMicrotask(() => (this.events as TEvented<TComponentEvents>).emit('created', this))
 	}
 
 	static prepareOptions<TProps extends IComponentProps = IComponentProps, TStates = any>(
