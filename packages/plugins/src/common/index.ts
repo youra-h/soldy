@@ -1,6 +1,6 @@
 export * from './element'
 export * from './instance'
-export * from './ready-bridge'
+export * from './ready'
 export * from './icon'
 export * from './spinner'
 export * from './skeleton'
