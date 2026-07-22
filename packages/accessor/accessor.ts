@@ -1,17 +1,17 @@
 /**
  * @soldy/accessor — accessor.ts
  *
- * ComponentAccessor — единая точка доступа к свойствам и событиям компонента.
+ * TComponentAccessor — единая точка доступа к свойствам и событиям компонента.
  *
- * Делегирует форматирование имён DescriptorInspector'у.
+ * Делегирует форматирование имён TDescriptorInspector'у.
  * Сам занимается только рантайм-доступом: getValue, setValue, getEventSource.
  */
 
-import { DescriptorInspector } from './inspector'
+import { TDescriptorInspector } from './inspector'
 import type { ICompiledProp, ICompiledEvent, ICompiledItem } from './contract'
 
-export class ComponentAccessor {
-	private inspector: DescriptorInspector
+export class TComponentAccessor {
+	private inspector: TDescriptorInspector
 
 	constructor(
 		private props: ICompiledProp[],
@@ -19,7 +19,7 @@ export class ComponentAccessor {
 		private instance: any,
 		private pluginsMap: Map<string, any>,
 	) {
-		this.inspector = new DescriptorInspector({ props, events })
+		this.inspector = new TDescriptorInspector({ props, events })
 	}
 
 	/** Получить объект-источник по namespace.

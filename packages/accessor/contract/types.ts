@@ -33,7 +33,7 @@ export interface ICompiledProp extends ICompiledItem {
 /** Скомпилированное событие */
 export interface ICompiledEvent extends ICompiledItem {}
 
-/** Схема компонента: скомпилированные props + events (контракт для DescriptorInspector) */
+/** Схема компонента: скомпилированные props + events (контракт для TDescriptorInspector) */
 export interface IComponentSchema {
     props: ICompiledProp[]
     events: ICompiledEvent[]

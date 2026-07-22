@@ -6,7 +6,7 @@
  */
 
 import { TPluginBundle } from '@soldy/plugins'
-import { ComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
+import { TComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
 import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { compileContribution } from './compile-contribution'
 
@@ -66,7 +66,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
                 }
             }
 
-            return new ComponentAccessor(props, events, instance, pluginsMap)
+            return new TComponentAccessor(props, events, instance, pluginsMap)
         },
     }
 }

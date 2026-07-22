@@ -46,7 +46,7 @@ export interface ICompiledEvent extends ICompiledItem {}
 ```typescript
 import type { ICompiledProp, ICompiledEvent } from './types'
 
-export class ComponentAccessor {
+export class TComponentAccessor {
 	constructor(
 		private props: ICompiledProp[],
 		private events: ICompiledEvent[],
@@ -108,7 +108,7 @@ export class ComponentAccessor {
 
 ```typescript
 import { TPluginBundle } from '@soldy/plugins'
-import { ComponentAccessor, type IContribution, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
+import { TComponentAccessor, type IContribution, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
 import type { IPluginDefinition, IComponentDefinitionOptions, IComponentDescriptor } from './types'
 
 function compileContribution(
@@ -194,7 +194,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 				}
 			}
 
-			return new ComponentAccessor(props, events, instance, pluginsMap)
+			return new TComponentAccessor(props, events, instance, pluginsMap)
 		},
 	}
 }
@@ -211,11 +211,11 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
 ```typescript
 import { watch, type Ref } from 'vue'
-import type { ComponentAccessor } from '@soldy/accessor'
+import type { TComponentAccessor } from '@soldy/accessor'
 import { useRefs } from './useRefs'
 
 export function useRuntime(
-	accessor: ComponentAccessor,
+	accessor: TComponentAccessor,
 	externalProps: Record<string, any>,
 	emit?: (event: string, ...args: any[]) => void,
 ) {
@@ -317,7 +317,7 @@ export function useEmits(descriptor: IComponentDescriptor): string[] {
 
 1. Исчезли монструозные типы `IPropSchema` с `targetKey`, `fullName` и прочим шлаком.
 2. Никаких `isMain`, `namespace === 'main'`. Namespace — обычный опциональный `string | undefined`.
-3. Провайдер `ComponentAccessor` берет плагин из своей `Map<string, any>` по ключу `namespace`, а если `namespace` равен `undefined`, то берет `instance`. Всё абсолютно прозрачно."
+3. Провайдер `TComponentAccessor` берет плагин из своей `Map<string, any>` по ключу `namespace`, а если `namespace` равен `undefined`, то берет `instance`. Всё абсолютно прозрачно."
 
 Вопрос: "Вроде все хорошо кроме useEmits export function useEmits(descriptor: IComponentDescriptor): string[] {
 	const emits: string[] = descriptor.events.map((e) =>
@@ -419,7 +419,7 @@ export function useEmits(descriptor: IComponentDescriptor): string[] {
 
 ```typescript
 export function useRuntime(
-	accessor: ComponentAccessor,
+	accessor: TComponentAccessor,
 	externalProps: Record<string, any>,
 	emit?: (event: string, ...args: any[]) => void,
 ) {
@@ -494,9 +494,9 @@ export function useRuntime(
 
 Ответ: "Это **абсолютно точное и правильное архитектурное замечание**!
 
-В `useProps` и `useEmits` передавать `descriptor` — значит заставлять UI-слой снова руками собирать строки типа `${namespace}:${name}`, дублируя то, что уже умеет и должен делать `ComponentAccessor`.
+В `useProps` и `useEmits` передавать `descriptor` — значит заставлять UI-слой снова руками собирать строки типа `${namespace}:${name}`, дублируя то, что уже умеет и должен делать `TComponentAccessor`.
 
-Если вынести логику работы со свойствами, событиями и триггерами в `ComponentAccessor`, то:
+Если вынести логику работы со свойствами, событиями и триггерами в `TComponentAccessor`, то:
 
 1. `useEmits` и `useProps` становятся невероятно простыми и чистыми.
 2. Вся работа по соглашению именования (напр. экспортируемое имя `element:visible`) инкапсулируется **в одном месте — внутри `accessor**`.
@@ -505,14 +505,14 @@ export function useRuntime(
 
 ---
 
-### 1. Расширяем `ComponentAccessor` в `@soldy/accessor`
+### 1. Расширяем `TComponentAccessor` в `@soldy/accessor`
 
-Добавим в `ComponentAccessor` готовый метод `getTriggers()`, который возвращает скомпилированные триггеры с учетом их `namespace`:
+Добавим в `TComponentAccessor` готовый метод `getTriggers()`, который возвращает скомпилированные триггеры с учетом их `namespace`:
 
 ```typescript
 // packages/accessor/src/accessor.ts
 
-export class ComponentAccessor {
+export class TComponentAccessor {
 	constructor(
 		private props: ICompiledProp[],
 		private events: ICompiledEvent[],
@@ -544,9 +544,9 @@ export class ComponentAccessor {
 Теперь `useEmits` вообще ничего не знает про регулярки, двоеточия и склейки строк — он просто опрашивает `accessor`:
 
 ```typescript
-import type { ComponentAccessor } from '@soldy/accessor'
+import type { TComponentAccessor } from '@soldy/accessor'
 
-export function useEmits(accessor: ComponentAccessor): string[] {
+export function useEmits(accessor: TComponentAccessor): string[] {
 	const emits: string[] = []
 
 	// 1. Все явные события ('ready', 'element:ready' и т.д.)
@@ -577,9 +577,9 @@ export function useEmits(accessor: ComponentAccessor): string[] {
 В `useProps` аналогично исчезает любая склейка namespace:
 
 ```typescript
-import type { ComponentAccessor } from '@soldy/accessor'
+import type { TComponentAccessor } from '@soldy/accessor'
 
-export function useProps(accessor: ComponentAccessor, defaultValues: Record<string, any> = {}): Record<string, any> {
+export function useProps(accessor: TComponentAccessor, defaultValues: Record<string, any> = {}): Record<string, any> {
 	const props: Record<string, any> = {}
 
 	// Берем только публичные пропы
@@ -605,6 +605,6 @@ export function useProps(accessor: ComponentAccessor, defaultValues: Record<stri
 ### Что это дает?
 
 1. **Единая точка правды (Single Source of Truth):**
-Только `ComponentAccessor` решает, как именно форматируются имена событий и свойств (`getExportName`, `getTriggers`). Если завтра вы захотите поменять формат с `element:ready` на `element/ready` — вы измените **одну строчку в одном файле `accessor.ts**`, а UI-слой даже не заметит изменений.
+Только `TComponentAccessor` решает, как именно форматируются имена событий и свойств (`getExportName`, `getTriggers`). Если завтра вы захотите поменять формат с `element:ready` на `element/ready` — вы измените **одну строчку в одном файле `accessor.ts**`, а UI-слой даже не заметит изменений.
 2. **Нулевой бойлерплейт во Vue:**
 Компоненты Vue становятся тонкими обертками без единой строчки бизнес-логики или парсинга метаданных."

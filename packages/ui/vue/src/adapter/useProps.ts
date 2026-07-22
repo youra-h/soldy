@@ -1,16 +1,16 @@
 /**
  * Vue-адаптер: генерирует props из дескриптора.
  *
- * Использует DescriptorInspector для статического анализа схемы.
+ * Использует TDescriptorInspector для статического анализа схемы.
  * Системные пропы (ctrl, plugins) добавляются здесь — accessor о них не знает.
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import { DescriptorInspector } from '@soldy/accessor'
+import { TDescriptorInspector } from '@soldy/accessor'
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, any> {
     const defaults = (descriptor.ctor as any)?.defaultValues ?? {}
-    const inspector = new DescriptorInspector(descriptor)
+    const inspector = new TDescriptorInspector(descriptor)
 
     return {
         // 1. Все пропы из доменной модели компонентов и плагинов

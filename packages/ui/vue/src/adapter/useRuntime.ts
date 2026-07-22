@@ -1,5 +1,5 @@
 /**
- * Vue-адаптер для ComponentAccessor.
+ * Vue-адаптер для TComponentAccessor.
  *
  * Создаёт реактивные Vue-refs из accessor'а и подписывается на изменения.
  * Синхронизирует внешние props → accessor.
@@ -7,11 +7,11 @@
  */
 
 import { watch, onUnmounted, type Ref } from 'vue'
-import type { ComponentAccessor } from '@soldy/accessor'
+import type { TComponentAccessor } from '@soldy/accessor'
 import { useRefs } from './useRefs'
 
 export function useRuntime(
-    accessor: ComponentAccessor,
+    accessor: TComponentAccessor,
     externalProps: Record<string, any>,
     emit?: (event: string, ...args: any[]) => void,
 ) {

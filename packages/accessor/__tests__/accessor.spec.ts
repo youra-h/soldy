@@ -1,8 +1,8 @@
 /**
- * @soldy/accessor — тесты ComponentAccessor
+ * @soldy/accessor — тесты TComponentAccessor
  */
 import { describe, it, expect, vi } from 'vitest'
-import { ComponentAccessor } from '../accessor'
+import { TComponentAccessor } from '../accessor'
 import type { ICompiledProp, ICompiledEvent } from '../contract'
 import { TEvented } from '@soldy/core'
 
@@ -20,7 +20,7 @@ function makeEvent(name: string, namespace?: string): ICompiledEvent {
 }
 
 function makeAccessor(instance?: any, pluginsMap?: Map<string, any>) {
-    return new ComponentAccessor(
+    return new TComponentAccessor(
         [
             makeProp({ name: 'rendered', triggers: ['change:rendered'] }),
             makeProp({ name: 'visible', triggers: ['change:visible'] }),
@@ -35,7 +35,7 @@ function makeAccessor(instance?: any, pluginsMap?: Map<string, any>) {
     )
 }
 
-describe('ComponentAccessor', () => {
+describe('TComponentAccessor', () => {
     // --- getProps ---
 
     it('getProps(false) — только публичные', () => {
@@ -63,7 +63,7 @@ describe('ComponentAccessor', () => {
 
     // --- getExportName ---
 
-    it('getExportName — делегирует DescriptorInspector', () => {
+    it('getExportName — делегирует TDescriptorInspector', () => {
         const accessor = makeAccessor()
 
         expect(accessor.getExportName({ name: 'tag' })).toBe('tag')
@@ -72,7 +72,7 @@ describe('ComponentAccessor', () => {
 
     // --- getTriggers ---
 
-    it('getTriggers — делегирует DescriptorInspector', () => {
+    it('getTriggers — делегирует TDescriptorInspector', () => {
         const accessor = makeAccessor()
         const prop = makeProp({ name: 'visible', namespace: 'element', triggers: ['change:visible'] })
 

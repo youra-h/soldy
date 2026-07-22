@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { defineComponent, definePlugin, compileContribution } from '../descriptors/base'
-import { ComponentAccessor, type IContribution } from '@soldy/accessor'
+import { TComponentAccessor, type IContribution } from '@soldy/accessor'
 import { TPluginBundle } from '@soldy/plugins'
 
 // --- test fixtures ---
@@ -259,7 +259,7 @@ describe('defineComponent', () => {
 
     // --- createAccessor ---
 
-    it('createAccessor: возвращает ComponentAccessor', () => {
+    it('createAccessor: возвращает TComponentAccessor', () => {
         const d = defineComponent({
             ctor: TestComponent,
             contribution: ContribA,
@@ -269,7 +269,7 @@ describe('defineComponent', () => {
         const bundle = d.createBundle()
         const accessor = d.createAccessor(instance, bundle)
 
-        expect(accessor).toBeInstanceOf(ComponentAccessor)
+        expect(accessor).toBeInstanceOf(TComponentAccessor)
     })
 
     it('createAccessor: плагины попадают в pluginsMap', () => {

@@ -1,8 +1,8 @@
 /**
- * @soldy/accessor — тесты DescriptorInspector
+ * @soldy/accessor — тесты TDescriptorInspector
  */
 import { describe, it, expect } from 'vitest'
-import { DescriptorInspector } from '../inspector'
+import { TDescriptorInspector } from '../inspector'
 import type { ICompiledProp, ICompiledEvent } from '../contract'
 
 function makeProp(overrides: Partial<ICompiledProp> = {}): ICompiledProp {
@@ -18,17 +18,17 @@ function makeEvent(name: string, namespace?: string): ICompiledEvent {
     return { name, namespace }
 }
 
-describe('DescriptorInspector', () => {
+describe('TDescriptorInspector', () => {
     // --- getExportName ---
 
     it('getExportName: без namespace — просто имя', () => {
-        const inspector = new DescriptorInspector({ props: [], events: [] })
+        const inspector = new TDescriptorInspector({ props: [], events: [] })
 
         expect(inspector.getExportName({ name: 'tag' })).toBe('tag')
     })
 
     it('getExportName: с namespace — namespace:name', () => {
-        const inspector = new DescriptorInspector({ props: [], events: [] })
+        const inspector = new TDescriptorInspector({ props: [], events: [] })
 
         expect(inspector.getExportName({ name: 'ready', namespace: 'element' })).toBe('element:ready')
     })
@@ -36,14 +36,14 @@ describe('DescriptorInspector', () => {
     // --- getExportTriggers ---
 
     it('getExportTriggers: без namespace — триггеры как есть', () => {
-        const inspector = new DescriptorInspector({ props: [], events: [] })
+        const inspector = new TDescriptorInspector({ props: [], events: [] })
         const prop = makeProp({ triggers: ['change:value'] })
 
         expect(inspector.getExportTriggers(prop)).toEqual(['change:value'])
     })
 
     it('getExportTriggers: с namespace — префикс к каждому триггеру', () => {
-        const inspector = new DescriptorInspector({ props: [], events: [] })
+        const inspector = new TDescriptorInspector({ props: [], events: [] })
         const prop = makeProp({ namespace: 'element', triggers: ['change:visible', 'ready'] })
 
         expect(inspector.getExportTriggers(prop)).toEqual([
@@ -55,7 +55,7 @@ describe('DescriptorInspector', () => {
     // --- getExportEvents ---
 
     it('getExportEvents: объединяет явные события и триггеры', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [
                 makeProp({ name: 'rendered', triggers: ['change:rendered'] }),
             ],
@@ -73,7 +73,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportEvents: события плагинов с namespace', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [
                 makeProp({ name: 'element', namespace: 'element', triggers: ['ready', 'removed'] }),
             ],
@@ -90,7 +90,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportEvents: дедуплицирует повторы', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [
                 makeProp({ name: 'x', triggers: ['change:x'] }),
             ],
@@ -106,7 +106,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportEvents: не содержит update:* (это ответственность Vue)', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'value' })],
             events: [],
         })
@@ -117,7 +117,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportEvents: кэширует результат', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'x', triggers: ['change:x'] })],
             events: [makeEvent('show')],
         })
@@ -131,7 +131,7 @@ describe('DescriptorInspector', () => {
     // --- getExportProps ---
 
     it('getExportProps: только публичные свойства', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [
                 makeProp({ name: 'public' }),
                 makeProp({ name: 'secret', protected: true }),
@@ -146,7 +146,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportProps: свойства плагинов с namespace', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [
                 makeProp({ name: 'element', namespace: 'element' }),
                 makeProp({ name: 'tag' }),
@@ -161,7 +161,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportProps: defaultValues подставляются', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'rendered' })],
             events: [],
         })
@@ -172,7 +172,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportProps: default undefined если нет в defaultValues', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'size' })],
             events: [],
         })
@@ -183,7 +183,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportProps: кэширует результат', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'x' })],
             events: [],
         })
@@ -195,7 +195,7 @@ describe('DescriptorInspector', () => {
     })
 
     it('getExportProps: не содержит ctrl/plugins', () => {
-        const inspector = new DescriptorInspector({
+        const inspector = new TDescriptorInspector({
             props: [makeProp({ name: 'rendered' })],
             events: [],
         })

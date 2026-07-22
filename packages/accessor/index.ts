@@ -2,12 +2,12 @@
  * @soldy/accessor — точка входа
  *
  * Чистые абстракции: контракты (IPropContribution, IContribution, ...)
- * и ComponentAccessor — единый интерфейс доступа к свойствам/событиям.
+ * и TComponentAccessor — единый интерфейс доступа к свойствам/событиям.
  *
  * Конкретные реализации (defineComponent, definePlugin) — в @soldy/setup.
  */
 
 export * from './contract'
-export { ComponentAccessor } from './accessor'
-export { DescriptorInspector } from './inspector'
+export { TComponentAccessor } from './accessor'
+export { TDescriptorInspector } from './inspector'
 export { track } from './runtime'

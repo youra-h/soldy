@@ -2,10 +2,10 @@
  * Типы для ComponentDescriptor — единого источника истины о компоненте.
  *
  * Дескриптор консолидирует: Contribution + Constructor + Plugins.
- * Вся логика форматирования имён (namespace:name) инкапсулирована в ComponentAccessor.
+ * Вся логика форматирования имён (namespace:name) инкапсулирована в TComponentAccessor.
  */
 
-import type { IContribution, ICompiledProp, ICompiledEvent, ComponentAccessor } from '@soldy/accessor'
+import type { IContribution, ICompiledProp, ICompiledEvent, TComponentAccessor } from '@soldy/accessor'
 import type { IPluginBundle, TPluginConstructor } from '@soldy/plugins'
 
 /** Определение плагина в составе дескриптора. */
@@ -49,6 +49,6 @@ export interface IComponentDescriptor {
     /** Создать бандл плагинов */
     createBundle(): IPluginBundle
 
-    /** Создать ComponentAccessor для переданных instance и bundle */
-    createAccessor(instance: any, bundle: IPluginBundle): ComponentAccessor
+    /** Создать TComponentAccessor для переданных instance и bundle */
+    createAccessor(instance: any, bundle: IPluginBundle): TComponentAccessor
 }

@@ -1,19 +1,19 @@
 /**
  * @soldy/accessor — inspector.ts
  *
- * DescriptorInspector — статический анализатор схемы компонента.
+ * TDescriptorInspector — статический анализатор схемы компонента.
  *
  * Не зависит от рантайма (instance, bundle). Занимается только
  * форматированием имён (namespace:name) и кэширует результаты.
  *
  * Используется:
- * - ComponentAccessor'ом (делегирование)
+ * - TComponentAccessor'ом (делегирование)
  * - UI-адаптерами напрямую (useEmits/useProps на уровне модуля)
  */
 
 import type { ICompiledProp, ICompiledEvent, IComponentSchema } from './contract'
 
-export class DescriptorInspector {
+export class TDescriptorInspector {
     private props: ICompiledProp[]
     private events: ICompiledEvent[]
 
