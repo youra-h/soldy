@@ -8,8 +8,6 @@ export const emitsComponentView: TEmits = useEmits(ComponentViewDescriptor) as u
 
 export const propsComponentView: TProps = useProps(ComponentViewDescriptor) as TProps
 
-console.log(propsComponentView, emitsComponentView)
-
 export default {
 	name: 'BaseComponentView',
 	extends: BaseComponent,
