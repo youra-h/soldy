@@ -1,7 +1,7 @@
 import { defineComponent, definePlugin } from '../base'
 import { TComponentView } from '@soldy/core'
 import { TElementPlugin, TInstancePlugin } from '@soldy/plugins'
-import { ComponentViewContribution, ElementContribution } from '../../contributions'
+import { ComponentViewContribution, ElementContribution, InstanceContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const ComponentViewDescriptor = defineComponent({
@@ -18,6 +18,7 @@ export const ComponentViewDescriptor = defineComponent({
 		}),
 		definePlugin({
 			ctor: TInstancePlugin,
+			contribution: InstanceContribution,
 		}),
 	],
 })

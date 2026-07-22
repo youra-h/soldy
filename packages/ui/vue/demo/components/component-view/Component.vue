@@ -28,7 +28,8 @@ const { handlers } = useEventLogger(emit, emitsComponentView)
 			:rendered="rendered"
 			v-bind="handlers"
 			@ready="console.log('ComponentView ready', $event)"
-			@element:ready="console.log('ComponentView destroyed', $event)"
+			@element:ready="console.log('ComponentView element ready', $event)"
+			@instance:ready="console.log('ComponentView instance ready', $event)"
 		>
 			<div style="text-align: center">
 				<div style="font-weight: 600">Props Demo</div>

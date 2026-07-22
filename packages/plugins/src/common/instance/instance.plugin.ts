@@ -22,9 +22,9 @@ export class TInstancePlugin<T extends IComponent = IComponent> extends TBasePlu
 		if (value) {
 			this._readyResolve?.(value)
 			this._readyResolve = null
-				; (this.events as TEvented<TInstancePluginEvents<T>>).emit('ready', { instance: value })
+			;(this.events as TEvented<TInstancePluginEvents<T>>).emit('ready', { instance: value })
 		} else {
-			; (this.events as TEvented<TInstancePluginEvents<T>>).emit('removed')
+			;(this.events as TEvented<TInstancePluginEvents<T>>).emit('removed')
 		}
 	}
 
