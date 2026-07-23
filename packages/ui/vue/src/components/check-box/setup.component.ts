@@ -1,24 +1,17 @@
-import type { SetupContext } from 'vue'
-import { TCheckBox, type ICheckBox, type ICheckBoxProps } from '@soldy/core'
-import BaseCheckBox, { syncCheckBox } from './base.component'
-import { createInputBoolBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../composables/useComponentSetup'
+import { useAdapter } from '../../adapter'
+import { CheckBoxDescriptor } from '@soldy/setup'
+import BaseCheckBox from './base.component'
 import { useIconImport, useSplitAttrs } from '../../composables'
-import type { TBaseComponentViewProps } from '../component-view'
+import type { TBaseComponentProps } from '../../types'
+import { type ICheckBoxProps, type ICheckBox } from '@soldy/core'
 
 export default {
 	name: '_CheckBox',
 	inheritAttrs: false,
 	extends: BaseCheckBox,
-	setup(props: TBaseComponentViewProps<ICheckBoxProps, ICheckBox>, ctx: SetupContext) {
-		const base = useComponentSetup({
-			Ctor: TCheckBox,
-			plugins: createInputBoolBundle,
-			sync: (ctx) => syncCheckBox(ctx),
-		})(props, ctx)
-
+	setup(props: TBaseComponentProps<ICheckBoxProps, ICheckBox>, { emit }: any) {
 		return {
-			...base,
+			...useAdapter(CheckBoxDescriptor, props, emit),
 			defaultIconTag: useIconImport('check'),
 			defaultIndeterminateIconTag: useIconImport('checkIndeterminate'),
 			...useSplitAttrs(),

@@ -1,3 +1,4 @@
+export { CheckBoxDescriptor } from './check-box.descriptor'
 export { InputDescriptor } from './input.descriptor'
 export { InputControlDescriptor } from './input-control.descriptor'
 export { TextableDescriptor } from './textable.descriptor'
