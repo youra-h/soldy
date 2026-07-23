@@ -1,2 +1,2 @@
 export * from './types'
-export * from './style.plugin'
+export * from './styles.plugin'

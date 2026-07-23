@@ -3,7 +3,7 @@ import type { IPluginBundle } from '../../base/types'
 import { TBasePlugin } from '../../base/plugin'
 import { TInstancePlugin } from '../instance'
 import { toCssValue } from '../../base/css-value'
-import type { TFrameStylePluginEvents } from './types'
+import type { TFrameStylesPluginEvents } from './types'
 import { TEvented } from '@soldy/core'
 
 /**
@@ -18,11 +18,11 @@ import { TEvented } from '@soldy/core'
  *
  * @example
  * const bundle = createFrameBundle()
- * const stylePlugin = bundle.get(TFrameStylePlugin)!
+ * const stylePlugin = bundle.get(TFrameStylesPlugin)!
  * stylePlugin.setAnchor(someButton)
  * // stylePlugin.styles → { position: 'fixed', left: '100px', top: '200px', zIndex: 1001 }
  */
-export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
+export class TFrameStylesPlugin extends TBasePlugin<TFrameStylesPluginEvents> {
 	static readonly key = Symbol('frame-style')
 
 	protected _styles: Record<string, string | number> = {}
@@ -49,7 +49,7 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 		this._anchorOffsets = { x: this._frame?.x ?? 0, y: this._frame?.y ?? 0 }
 		this._subscribeScroll()
 		this._update()
-			; (this.events as TEvented<TFrameStylePluginEvents>).emit('change:anchor', element)
+			; (this.events as TEvented<TFrameStylesPluginEvents>).emit('change:anchor', element)
 	}
 
 	/**
@@ -59,7 +59,7 @@ export class TFrameStylePlugin extends TBasePlugin<TFrameStylePluginEvents> {
 		this._anchor = null
 		this._unsubscribeScroll()
 		this._update()
-			; (this.events as TEvented<TFrameStylePluginEvents>).emit('change:anchor', null)
+			; (this.events as TEvented<TFrameStylesPluginEvents>).emit('change:anchor', null)
 	}
 
 	/**

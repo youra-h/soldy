@@ -10,7 +10,7 @@ import {
 	type IComponentState,
 } from '../component'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { TFrameStylePlugin } from '@soldy/plugins'
+import { TFrameStylesPlugin } from '@soldy/plugins'
 
 export const emitsFrame: TEmits = [
 	...emitsComponent,
@@ -141,7 +141,7 @@ export function syncFrame(options: ISyncComponentOptions<IFrameProps, IFrame>): 
 		}
 	})
 
-	const stylePlugin = plugins.get(TFrameStylePlugin)!
+	const stylePlugin = plugins.get(TFrameStylesPlugin)!
 
 	return {
 		...syncProps,
