@@ -3,13 +3,13 @@ import type { IPluginBundle } from '../../base/types'
 import { TBasePlugin } from '../../base/plugin'
 import { toCssValue } from '../../base/css-value'
 import { TInstancePlugin } from '../instance'
-import type { TSpinnerStylePluginEvents } from './types'
+import type { TSpinnerStylesPluginEvents } from './types'
 
 /**
  * Плагин для управления стилями спиннера.
  */
-export class TSpinnerStylePlugin extends TBasePlugin<TSpinnerStylePluginEvents> {
-	static readonly key = Symbol('spinner-style')
+export class TSpinnerStylesPlugin extends TBasePlugin<TSpinnerStylesPluginEvents> {
+	static readonly key = Symbol('spinner-styles')
 
 	protected _styles: Record<string, string | number> = {}
 

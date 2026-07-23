@@ -1,5 +1,6 @@
 export { EntityContribution } from './entity'
 export { ComponentContribution } from './component'
 export { ComponentViewContribution } from './component-view'
+export { StylableContribution } from './stylable'
 export { IconContribution } from './icon'
 export { SpinnerContribution } from './spinner'

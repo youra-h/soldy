@@ -7,20 +7,20 @@
 
 import { defineComponent, definePlugin } from '../base'
 import { TSpinner } from '@soldy/core'
-import { TSpinnerStylePlugin } from '@soldy/plugins'
+import { TSpinnerStylesPlugin } from '@soldy/plugins'
 import { SpinnerContribution, SpinnerStyleContribution } from '../../contributions'
-import { ComponentViewDescriptor } from './component-view.descriptor'
+import { StylableDescriptor } from './stylable.descriptor'
 
 export const SpinnerDescriptor = defineComponent({
 	ctor: TSpinner,
 
-	extends: ComponentViewDescriptor,
+	extends: StylableDescriptor,
 
 	contribution: SpinnerContribution,
 
 	plugins: [
 		definePlugin({
-			ctor: TSpinnerStylePlugin,
+			ctor: TSpinnerStylesPlugin,
 			contribution: SpinnerStyleContribution,
 		}),
 	],

@@ -1,4 +1,5 @@
 export { ComponentDescriptor } from './component.descriptor'
 export { ComponentViewDescriptor } from './component-view.descriptor'
+export { StylableDescriptor } from './stylable.descriptor'
 export { IconDescriptor } from './icon.descriptor'
 export { SpinnerDescriptor } from './spinner.descriptor'
