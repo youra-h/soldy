@@ -1,78 +1,15 @@
-import { type PropType, type Ref } from 'vue'
-import {
-	type ISpinnerProps,
-	TSpinner,
-	type ISpinner,
-} from '@soldy/core'
-import {
-	BaseStylable,
-	emitsStylable,
-	propsStylable,
-	syncStylable,
-	type IStylableState,
-} from '../stylable'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../types/common'
-import { useSyncProps } from '../../composables/useSyncProps'
-import { useInheritProps } from '../../composables/useInheritProps'
-import { TSpinnerStylePlugin } from '@soldy/plugins'
-import { track } from '@soldy/accessor'
+import { ComponentView } from '../component-view'
+import { useEmits, useProps } from '../../adapter'
+import type { TEmits, TProps } from '../../types/common'
+import { SpinnerDescriptor } from '@soldy/setup'
 
-export const emitsSpinner: TEmits = [
-	...emitsStylable,
-	'change:borderWidth',
-	'update:borderWidth',
-] as const
+export const emitsSpinner: TEmits = useEmits(SpinnerDescriptor) as unknown as TEmits
 
-export const propsSpinner: TProps = {
-	...useInheritProps(propsStylable, TSpinner),
-	borderWidth: {
-		type: [String, Number] as PropType<ISpinnerProps['borderWidth']>,
-		default: TSpinner.defaultValues.borderWidth,
-	},
-}
+export const propsSpinner: TProps = useProps(SpinnerDescriptor) as TProps
 
 export default {
 	name: 'BaseSpinner',
-	extends: BaseStylable,
+	extends: ComponentView,
 	emits: emitsSpinner,
 	props: propsSpinner,
-}
-
-export interface ISpinnerState extends IStylableState {
-	borderWidth: Ref<number | 'auto'>
-	styles: Ref<Record<string, string | number>>
-}
-
-/**
- * Bind props to instance properties.
- */
-export function syncSpinner(
-	options: ISyncComponentOptions<ISpinnerProps, ISpinner>,
-): ISpinnerState {
-	const syncProps = syncStylable(options)
-
-	const { instance, props, emit, plugins } = options
-
-	const stylePlugin = plugins.get(TSpinnerStylePlugin)!
-
-	instance.events.on('change:borderWidth', (value: number | 'auto') => {
-		emit?.('change:borderWidth', value)
-		emit?.('update:borderWidth', value)
-	})
-
-	track(props, 'borderWidth', (value) => {
-		if (value !== undefined && value !== instance.borderWidth) {
-			instance.borderWidth = value
-		}
-	})
-
-	return {
-		...syncProps,
-		...useSyncProps(instance.events as any, {
-			borderWidth: () => instance.borderWidth,
-		}),
-		...useSyncProps(stylePlugin.events, {
-			styles: () => stylePlugin.styles,
-		}),
-	}
 }

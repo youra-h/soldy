@@ -1,0 +1,1 @@
+export { SpinnerStyleContribution } from './styles'
