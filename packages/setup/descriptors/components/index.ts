@@ -1,3 +1,4 @@
+export { FrameDescriptor } from './frame.descriptor'
 export { SkeletonDescriptor } from './skeleton.descriptor'
 export { ButtonDescriptor } from './button.descriptor'
 export { SwitchDescriptor } from './switch.descriptor'

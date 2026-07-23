@@ -1,3 +1,4 @@
+export { FrameContribution } from './frame'
 export { SkeletonContribution } from './skeleton'
 export { ButtonContribution } from './button'
 export { CheckBoxContribution } from './check-box'
