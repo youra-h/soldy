@@ -1,3 +1,4 @@
+export { TextableDescriptor } from './textable.descriptor'
 export { ValueControlDescriptor } from './value-control.descriptor'
 export { InteractiveDescriptor } from './interactive.descriptor'
 export { ComponentDescriptor } from './component.descriptor'
