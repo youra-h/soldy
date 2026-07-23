@@ -1,3 +1,4 @@
+export { ButtonContribution } from './button'
 export { CheckBoxContribution } from './check-box'
 export { InputContribution } from './input'
 export { InputControlContribution } from './input-control'

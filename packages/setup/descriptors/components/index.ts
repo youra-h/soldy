@@ -1,3 +1,5 @@
+export { ButtonDescriptor } from './button.descriptor'
+export { SwitchDescriptor } from './switch.descriptor'
 export { CheckBoxDescriptor } from './check-box.descriptor'
 export { InputDescriptor } from './input.descriptor'
 export { InputControlDescriptor } from './input-control.descriptor'
