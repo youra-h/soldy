@@ -161,12 +161,13 @@ IComponentSchema {            // Схема: props + events (контракт д
 
 ### TComponentAccessor (`accessor.ts`)
 
-Единая точка runtime-доступа к свойствам и событиям. Делегирует форматирование имён `TDescriptorInspector`'у.
+Единая точка runtime-доступа к свойствам и событиям. Делегирует форматирование имён внутреннему `TDescriptorInspector`'у.
 
 ```ts
 class TComponentAccessor {
     constructor(props: ICompiledProp[], events: ICompiledEvent[], instance: any, pluginsMap: Map<string, any>)
 
+    getSchema(): IComponentSchema                     // возвращает схему для создания TDescriptorInspector
     getProps(includeProtected?: boolean): ICompiledProp[]
     getEvents(): ICompiledEvent[]
     getExportName(item: ICompiledItem): string        // 'tag' или 'element:ready'
@@ -179,20 +180,34 @@ class TComponentAccessor {
 
 ### TDescriptorInspector (`inspector.ts`)
 
-Статический анализатор схемы. Кэширует результаты. Используется UI-адаптерами на уровне модуля (без instance).
+Статический анализатор схемы. Кэширует результаты. Принимает опциональный `INamingStrategy` для форматирования имён под конкретный фреймворк. Используется UI-адаптерами на уровне модуля (без instance).
 
 ```ts
 class TDescriptorInspector {
-    constructor(schema: IComponentSchema)
+    constructor(schema: IComponentSchema, naming?: INamingStrategy)
 
-    getExportName(item): string                        // namespace:name
-    getExportTriggers(prop): string[]                   // триггеры с namespace
-    getExportEvents(): string[]                         // события + триггеры (без update:*)
-    getExportProps(defaultValues?): Record<string, any> // публичные пропы (без ctrl/plugins)
+    getExportName(item): string                        // namespace:name (без стратегии)
+    getExportPropName(prop): string                    // имя пропа через стратегию (camelCase для Vue)
+    getExportEventName(item): string                   // имя события через стратегию
+    getExportTriggers(prop): string[]                   // триггеры с namespace (для emit)
+    getRawTriggers(prop): string[]                      // сырые триггеры без namespace (для подписки на eventSource)
+    getExportEvents(): string[]                         // все экспортируемые события + триггеры (кэшируется)
+    getExportProps(defaultValues?): Record<string, any> // публичные пропы (без ctrl/plugins, кэшируется)
 }
 ```
 
 **Важно:** `getExportEvents()` не содержит `update:*` — это Vue-специфика, добавляется в `useEmits`. `getExportProps()` не содержит `ctrl/plugins` — их добавляет UI-слой.
+
+### INamingStrategy (`contract/types.ts`)
+
+Стратегия форматирования имён props и событий под конкретный фреймворк:
+
+```ts
+interface INamingStrategy {
+    prop: (name: string, namespace?: string) => string   // 'styles' + 'icon-styles' → 'iconStyles_styles'
+    event: (name: string, namespace?: string) => string   // 'ready' + 'element' → 'element:ready'
+}
+```
 
 ### track (`runtime/track.ts`)
 
@@ -276,10 +291,16 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 
 Адаптеры (`ui/vue/src/adapter/`):
 
-- **`useEmits(descriptor)`** — `new TDescriptorInspector(descriptor).getExportEvents()` + `update:*` для v-model
-- **`useProps(descriptor)`** — `new TDescriptorInspector(descriptor).getExportProps(defaultValues)` + `ctrl`/`plugins`
-- **`useRuntime(accessor, externalProps, emit?)`** — создаёт реактивные refs, подписывается на события/триггеры, синхронизирует props → accessor
-- **`useAdapter(descriptor, props, emit?)`** — композиция: `createAdapter` + `useRuntime` + `bindPlugins` + Vue ref для element
+- **`vueNaming`** (`naming.ts`) — стратегия именования для Vue: props в camelCase (`icon-styles:styles` → `iconStyles_styles`), события с двоеточием (`element:ready`).
+
+- **`createVueAdapter(naming?)`** (`createAdapter.ts`) — фабрика, принимает `INamingStrategy` (по умолчанию `vueNaming`), возвращает `{ useProps, useEmits, useRuntime, useAdapter }`. Экспортируется также готовый инстанс `{ useProps, useEmits, useRuntime, useAdapter }` с `vueNaming`.
+
+  - **`useProps(descriptor)`** — получает defaults из `descriptor.ctor.defaultValues`, создаёт `TDescriptorInspector` с naming-стратегией, возвращает `inspector.getExportProps(defaults)` + `ctrl`/`plugins`.
+  - **`useEmits(descriptor)`** — `inspector.getExportEvents()` + `update:{propName}` для каждого публичного пропа (v-model).
+  - **`useRuntime(accessor, externalProps, emit?)`** — создаёт `TDescriptorInspector` из `accessor.getSchema()`, делегирует в:
+    - **`useSyncProps(accessor, inspector, options?)`** (`useSyncProps.ts`) — возвращает `{ refs, bindOutput, bindInput, cleanup }`. `bindOutput()` создаёт Vue refs и подписывается на `getRawTriggers`; `bindInput(externalProps)` вешает watchers на внешние props. Поддерживает `ISyncOptions` с хуками `onInput`/`onOutput`.
+    - **`useSyncEvents(accessor, inspector, emit)`** (`useSyncEvents.ts`) — пробрасывает события Core → Vue: триггеры свойств (`getExportTriggers`/`getRawTriggers`) и явные события (`getExportEventName`).
+  - **`useAdapter(descriptor, props, emit?)`** — композиция: `createAdapter` + `useRuntime` + `bindPlugins` + Vue ref (`rootElement`) с `watch(rootElement, bindElement)` и `onUnmounted`.
 
 Структура Vue-компонента:
 ```
