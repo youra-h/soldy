@@ -37,6 +37,7 @@ export class TComponentAccessor {
 	/** Все свойства. Если includeProtected=false — только публичные. */
 	getProps(includeProtected = false): ICompiledProp[] {
 		if (includeProtected) return this.props
+
 		return this.props.filter((p) => !p.protected)
 	}
 
@@ -63,15 +64,19 @@ export class TComponentAccessor {
 
 	/** Прочитать значение свойства из целевого объекта */
 	getValue(prop: ICompiledProp): any {
-		console.log('getValue', prop)
 		const target = this.getTarget(prop.namespace)
-		return target ? target[prop.name] : undefined
+
+		const value = target ? target[prop.name]?.valueOf() : undefined
+
+		return value
 	}
 
 	/** Записать значение свойства в целевой объект (только для не-protected) */
 	setValue(prop: ICompiledProp, value: any): void {
 		if (prop.protected) return
+
 		const target = this.getTarget(prop.namespace)
+
 		if (target && prop.name in target) {
 			target[prop.name] = value
 		}
