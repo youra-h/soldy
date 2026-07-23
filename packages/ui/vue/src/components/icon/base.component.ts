@@ -7,6 +7,8 @@ export const emitsIcon: TEmits = useEmits(IconDescriptor) as unknown as TEmits
 
 export const propsIcon: TProps = useProps(IconDescriptor) as TProps
 
+console.log('propsIcon', propsIcon, emitsIcon)
+
 export default {
 	name: 'BaseIcon',
 	extends: ComponentView,
