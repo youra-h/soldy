@@ -8,7 +8,7 @@
  */
 
 import { TDescriptorInspector } from './inspector'
-import type { ICompiledProp, ICompiledEvent, ICompiledItem } from './contract'
+import type { ICompiledProp, ICompiledEvent, ICompiledItem, IComponentSchema } from './contract'
 
 export class TComponentAccessor {
 	private inspector: TDescriptorInspector
@@ -20,6 +20,11 @@ export class TComponentAccessor {
 		private pluginsMap: Map<string, any>,
 	) {
 		this.inspector = new TDescriptorInspector({ props, events })
+	}
+
+	/** Возвращает схему компонента — используется createVueAdapter для создания DescriptorInspector */
+	getSchema(): IComponentSchema {
+		return { props: this.props, events: this.events }
 	}
 
 	/** Получить объект-источник по namespace.

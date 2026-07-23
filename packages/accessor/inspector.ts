@@ -11,7 +11,7 @@
  * - UI-адаптерами напрямую (useEmits/useProps на уровне модуля)
  */
 
-import type { ICompiledProp, ICompiledEvent, IComponentSchema } from './contract'
+import type { ICompiledProp, ICompiledEvent, IComponentSchema, INamingStrategy, ICompiledItem } from './contract'
 
 export class TDescriptorInspector {
     private props: ICompiledProp[]
@@ -73,5 +73,80 @@ export class TDescriptorInspector {
 
         this.cachedExportProps = props
         return this.cachedExportProps
+    }
+}
+
+/**
+ * DescriptorInspector — расширенный анализатор с поддержкой INamingStrategy.
+ *
+ * В отличие от TDescriptorInspector (жёсткий формат namespace:name),
+ * этот класс делегирует форматирование имён внешней стратегии,
+ * что позволяет адаптировать ключи под конкретный фреймворк.
+ *
+ * Используется UI-адаптерами (createVueAdapter).
+ */
+export class DescriptorInspector {
+    private props: ICompiledProp[]
+    private events: ICompiledEvent[]
+    private naming: INamingStrategy
+
+    private cachedExportProps?: Record<string, any>
+    private cachedExportEvents?: string[]
+
+    constructor(schema: IComponentSchema, naming: INamingStrategy) {
+        this.props = schema.props
+        this.events = schema.events
+        this.naming = naming
+    }
+
+    /** Форматирует имя prop'а через стратегию */
+    getExportPropName(prop: ICompiledProp): string {
+        return this.naming.prop(prop.name, prop.namespace)
+    }
+
+    /** Форматирует имя события через стратегию */
+    getExportEventName(item: ICompiledItem): string {
+        return this.naming.event(item.name, item.namespace)
+    }
+
+    /** Готовый словарь props (для useProps). Без ctrl/plugins — их добавляет UI-слой. */
+    getExportProps(defaultValues: Record<string, any> = {}): Record<string, any> {
+        if (this.cachedExportProps) return this.cachedExportProps
+
+        const props: Record<string, any> = {}
+
+        for (const prop of this.props) {
+            if (prop.protected) continue
+
+            const exportName = this.getExportPropName(prop)
+            props[exportName] = {
+                default: defaultValues[prop.name],
+            }
+        }
+
+        this.cachedExportProps = props
+        return props
+    }
+
+    /** Готовый список всех экспортируемых событий (для useEmits) */
+    getExportEvents(): string[] {
+        if (this.cachedExportEvents) return this.cachedExportEvents
+
+        const events: string[] = []
+
+        for (const evt of this.events) {
+            events.push(this.getExportEventName(evt))
+        }
+
+        for (const prop of this.props) {
+            for (const trigger of prop.triggers) {
+                events.push(
+                    this.getExportEventName({ name: trigger, namespace: prop.namespace }),
+                )
+            }
+        }
+
+        this.cachedExportEvents = Array.from(new Set(events))
+        return this.cachedExportEvents
     }
 }

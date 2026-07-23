@@ -9,5 +9,5 @@
 
 export * from './contract'
 export { TComponentAccessor } from './accessor'
-export { TDescriptorInspector } from './inspector'
+export { TDescriptorInspector, DescriptorInspector } from './inspector'
 export { track } from './runtime'

@@ -5,4 +5,5 @@ export type {
     ICompiledProp,
     ICompiledEvent,
     IComponentSchema,
+    INamingStrategy,
 } from './types'

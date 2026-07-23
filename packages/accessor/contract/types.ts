@@ -38,3 +38,14 @@ export interface IComponentSchema {
     props: ICompiledProp[]
     events: ICompiledEvent[]
 }
+
+/**
+ * Стратегия форматирования имён props и событий под конкретный фреймворк.
+ *
+ * - prop(name, ns):  'styles' + 'icon-styles' → 'iconStyles_styles' (Vue/JS)
+ * - event(name, ns): 'ready' + 'element'    → 'element:ready'      (Vue)
+ */
+export interface INamingStrategy {
+    prop: (name: string, namespace?: string) => string
+    event: (name: string, namespace?: string) => string
+}
