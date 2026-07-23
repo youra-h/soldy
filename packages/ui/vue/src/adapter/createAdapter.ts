@@ -12,8 +12,9 @@ import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
 import type { TComponentAccessor, INamingStrategy, IComponentSchema, ICompiledProp } from '@soldy/accessor'
 import { TDescriptorInspector } from '@soldy/accessor'
-import { useRefs } from './useRefs'
 import { vueNaming } from './naming'
+import { useSyncProps } from './useSyncProps'
+import { useSyncEvents } from './useSyncEvents'
 
 export function createVueAdapter(naming: INamingStrategy = vueNaming) {
     const getInspector = (target: any): TDescriptorInspector => {
@@ -56,65 +57,16 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
         emit?: (event: string, ...args: any[]) => void,
     ) {
         const inspector = getInspector(accessor)
-        const refs: Record<string, Ref<any>> = {}
 
-		// создать реактивные refs для всех props (включая protected)
-        for (const prop of accessor.getProps(true) as ICompiledProp[]) {
-            const formattedPropName = inspector.getExportPropName(prop)
-            const eventSource = accessor.getEventSource(prop)
-            const triggers = accessor.getTriggers(prop)
+        const { refs, bindOutput, bindInput } = useSyncProps(accessor, inspector)
 
-            refs[formattedPropName] = useRefs(
-                eventSource,
-                () => accessor.getValue(prop),
-                triggers,
-            )
+		// Связать Core → Vue (Output)
+        bindOutput()
+		// Связать Vue → Core (Input)
+        bindInput(externalProps)
 
-            if (eventSource && emit) {
-                const exportTriggers = inspector.getExportTriggers(prop)
-                const rawTriggers = inspector.getRawTriggers(prop)
-
-                for (let i = 0; i < rawTriggers.length; i++) {
-                    eventSource.on(rawTriggers[i], (val: any) => {
-                        emit(exportTriggers[i], val)
-                    })
-                }
-            }
-        }
-
-		// создать подписки на события (включая триггеры) и пробросить их через emit
-        for (const evt of accessor.getEvents()) {
-            const eventName = inspector.getExportEventName(evt)
-            const eventSource = accessor.getEventSource(evt)
-
-            if (eventSource && emit) {
-                eventSource.on(evt.name, (...args: any[]) => {
-                    emit(eventName, ...args)
-                })
-            }
-        }
-
-        const stopWatches: (() => void)[] = []
-		// создать реактивные подписки на внешние props (включая protected) для синхронизации с внутренними значениями через accessor.setValue
-        for (const prop of accessor.getProps(false) as ICompiledProp[]) {
-            const formattedPropName = inspector.getExportPropName(prop)
-
-            stopWatches.push(
-                watch(
-                    () => externalProps[formattedPropName] ?? externalProps[prop.name],
-                    (newVal) => {
-						console.log('watch', formattedPropName, newVal)
-                        if (newVal !== undefined) {
-                            accessor.setValue(prop, newVal)
-                        }
-                    },
-                ),
-            )
-        }
-
-        onUnmounted(() => {
-            stopWatches.forEach((fn) => fn())
-        })
+		// Связать события Core → Vue (Emit)
+        useSyncEvents(accessor, inspector, emit)
 
         return { refs }
     }
