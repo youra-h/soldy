@@ -1,3 +1,4 @@
+export { InteractiveContribution } from './interactive'
 export { EntityContribution } from './entity'
 export { ComponentContribution } from './component'
 export { ComponentViewContribution } from './component-view'
