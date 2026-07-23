@@ -47,6 +47,7 @@ export default class TValueControl<
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
 			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('change:value', payload)
 			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('input:value', payload)
+			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('input', payload)
 		})
 	}
 

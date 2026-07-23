@@ -1,3 +1,4 @@
+export { ValueControlContribution } from './value-control'
 export { InteractiveContribution } from './interactive'
 export { EntityContribution } from './entity'
 export { ComponentContribution } from './component'

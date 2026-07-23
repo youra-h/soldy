@@ -1,3 +1,4 @@
+export { ValueControlDescriptor } from './value-control.descriptor'
 export { InteractiveDescriptor } from './interactive.descriptor'
 export { ComponentDescriptor } from './component.descriptor'
 export { ComponentViewDescriptor } from './component-view.descriptor'
