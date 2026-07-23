@@ -1,18 +1,13 @@
-import type { SetupContext } from 'vue'
-import { TSkeleton, type ISkeletonProps, type ISkeleton } from '@soldy/core'
-import BaseSkeleton, { syncSkeleton } from './base.component'
-import { createComponentViewBundle, TSkeletonStylePlugin } from '@soldy/plugins'
-import { useComponentSetup } from '../../composables/useComponentSetup'
-import type { TBaseComponentViewProps } from '../component-view'
+import { useAdapter } from '../../adapter'
+import { SkeletonDescriptor } from '@soldy/setup'
+import BaseSkeleton from './base.component'
+import type { TBaseComponentProps } from '../../types'
+import { type ISkeletonProps, type ISkeleton } from '@soldy/core'
 
 export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
-	setup(props: TBaseComponentViewProps<ISkeletonProps, ISkeleton>, ctx: SetupContext) {
-		return useComponentSetup({
-			Ctor: TSkeleton,
-			plugins: () => createComponentViewBundle().use(TSkeletonStylePlugin),
-			sync: (ctx) => syncSkeleton(ctx),
-		})(props, ctx)
+	setup(props: TBaseComponentProps<ISkeletonProps, ISkeleton>, { emit }: any) {
+		return useAdapter(SkeletonDescriptor, props, emit)
 	},
 }

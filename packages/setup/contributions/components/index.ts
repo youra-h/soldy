@@ -1,3 +1,4 @@
+export { SkeletonContribution } from './skeleton'
 export { ButtonContribution } from './button'
 export { CheckBoxContribution } from './check-box'
 export { InputContribution } from './input'

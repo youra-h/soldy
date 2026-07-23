@@ -1,1 +1,1 @@
-export { SpinnerStyleContribution } from './styles'
+export { SpinnerStylesContribution } from './styles'

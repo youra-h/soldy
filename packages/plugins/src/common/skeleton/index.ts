@@ -1,1 +1,1 @@
-export { TSkeletonStylePlugin } from './style.plugin'
+export { TSkeletonStylesPlugin } from './styles.plugin'

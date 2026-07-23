@@ -7,8 +7,8 @@ import { TInstancePlugin } from '../instance'
  * Плагин для управления стилями скелетона.
  * Вычисляет ширину и высоту placeholder'а на основе size или кастомных width/height.
  */
-export class TSkeletonStylePlugin extends TBasePlugin {
-	static readonly key = Symbol('skeleton-style')
+export class TSkeletonStylesPlugin extends TBasePlugin {
+	static readonly key = Symbol('skeleton-styles')
 
 	protected _styles: Record<string, string | number> = {}
 

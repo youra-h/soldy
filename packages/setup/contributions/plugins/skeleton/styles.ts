@@ -1,5 +1,5 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const SpinnerStylesContribution: IContribution = {
+export const SkeletonStylesContribution: IContribution = {
 	props: [{ name: 'styles', protected: true, triggers: ['change:styles'] }],
 }

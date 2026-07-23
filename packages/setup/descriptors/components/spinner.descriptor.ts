@@ -8,7 +8,7 @@
 import { defineComponent, definePlugin } from '../base'
 import { TSpinner } from '@soldy/core'
 import { TSpinnerStylesPlugin } from '@soldy/plugins'
-import { SpinnerContribution, SpinnerStyleContribution } from '../../contributions'
+import { SpinnerContribution, SpinnerStylesContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const SpinnerDescriptor = defineComponent({
@@ -21,7 +21,7 @@ export const SpinnerDescriptor = defineComponent({
 	plugins: [
 		definePlugin({
 			ctor: TSpinnerStylesPlugin,
-			contribution: SpinnerStyleContribution,
+			contribution: SpinnerStylesContribution,
 		}),
 	],
 })
