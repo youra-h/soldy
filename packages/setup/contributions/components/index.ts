@@ -1,3 +1,4 @@
+export { InputContribution } from './input'
 export { InputControlContribution } from './input-control'
 export { TextableContribution } from './textable'
 export { ValueControlContribution } from './value-control'

@@ -1,22 +1,15 @@
-import type { SetupContext } from 'vue'
-import { TInput, type IInputProps, type IInput } from '@soldy/core'
-import BaseInput, { syncInput } from './base.component'
-import { createInputBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../composables/useComponentSetup'
+import { useAdapter } from '../../adapter'
+import { InputDescriptor } from '@soldy/setup'
+import BaseInput from './base.component'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
-import type { TBaseComponentViewProps } from '../component-view'
+import type { TBaseComponentProps } from '../../types'
+import { type IInputProps, type IInput } from '@soldy/core'
 
 export default {
 	name: '_Input',
 	inheritAttrs: false,
 	extends: BaseInput,
-	setup(props: TBaseComponentViewProps<IInputProps, IInput>, ctx: SetupContext) {
-		const base = useComponentSetup({
-			Ctor: TInput,
-			plugins: createInputBundle,
-			sync: (ctx) => syncInput(ctx),
-		})(props, ctx)
-
-		return { ...base, ...useSplitAttrs() }
+	setup(props: TBaseComponentProps<IInputProps, IInput>, { emit }: any) {
+		return { ...useAdapter(InputDescriptor, props, emit), ...useSplitAttrs() }
 	},
 }

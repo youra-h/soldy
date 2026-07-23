@@ -1,3 +1,3 @@
-export { default as BaseInput } from './base.component'
-export { default as Input } from './Input.vue'
-export * from './base.component'
+export { default as BaseInput, emitsInput, propsInput } from './base.component'
+import Input from './Input.vue'
+export { Input }

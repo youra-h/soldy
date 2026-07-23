@@ -1,3 +1,4 @@
+export { InputDescriptor } from './input.descriptor'
 export { InputControlDescriptor } from './input-control.descriptor'
 export { TextableDescriptor } from './textable.descriptor'
 export { ValueControlDescriptor } from './value-control.descriptor'
