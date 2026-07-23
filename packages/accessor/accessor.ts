@@ -63,6 +63,7 @@ export class TComponentAccessor {
 
 	/** Прочитать значение свойства из целевого объекта */
 	getValue(prop: ICompiledProp): any {
+		console.log('getValue', prop)
 		const target = this.getTarget(prop.namespace)
 		return target ? target[prop.name] : undefined
 	}

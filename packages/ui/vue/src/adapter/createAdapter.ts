@@ -58,6 +58,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
         const inspector = getInspector(accessor)
         const refs: Record<string, Ref<any>> = {}
 
+		// создать реактивные refs для всех props (включая protected)
         for (const prop of accessor.getProps(true) as ICompiledProp[]) {
             const formattedPropName = inspector.getExportPropName(prop)
             const eventSource = accessor.getEventSource(prop)
@@ -81,6 +82,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
             }
         }
 
+		// создать подписки на события (включая триггеры) и пробросить их через emit
         for (const evt of accessor.getEvents()) {
             const eventName = inspector.getExportEventName(evt)
             const eventSource = accessor.getEventSource(evt)
@@ -93,7 +95,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
         }
 
         const stopWatches: (() => void)[] = []
-
+		// создать реактивные подписки на внешние props (включая protected) для синхронизации с внутренними значениями через accessor.setValue
         for (const prop of accessor.getProps(false) as ICompiledProp[]) {
             const formattedPropName = inspector.getExportPropName(prop)
 
@@ -101,6 +103,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
                 watch(
                     () => externalProps[formattedPropName] ?? externalProps[prop.name],
                     (newVal) => {
+						console.log('watch', formattedPropName, newVal)
                         if (newVal !== undefined) {
                             accessor.setValue(prop, newVal)
                         }
