@@ -1,6 +1,4 @@
-import { type PropType } from 'vue'
-import { type IIconProps, TIcon } from '@soldy/core'
-import { ComponentView, emitsComponentView, propsComponentView } from '../component-view'
+import { ComponentView } from '../component-view'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { IconDescriptor } from '@soldy/setup'

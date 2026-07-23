@@ -1,3 +1,4 @@
+export { useFormatProp } from './useFormatProp'
 export { useEmits } from './useEmits'
 export { useProps } from './useProps'
 export { useAdapter } from './useAdapter'

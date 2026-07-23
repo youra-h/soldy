@@ -1,1 +1,1 @@
-export { TIconStylePlugin } from './style.plugin'
+export { TIconStylesPlugin } from './styles.plugin'

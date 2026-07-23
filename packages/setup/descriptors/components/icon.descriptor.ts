@@ -7,8 +7,8 @@
 
 import { defineComponent, definePlugin } from '../base'
 import { TIcon } from '@soldy/core'
-import { TIconStylePlugin } from '@soldy/plugins'
-import { IconContribution } from '../../contributions'
+import { TIconStylesPlugin } from '@soldy/plugins'
+import { IconContribution, IconStylesContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const IconDescriptor = defineComponent({
@@ -20,7 +20,8 @@ export const IconDescriptor = defineComponent({
 
 	plugins: [
 		definePlugin({
-			ctor: TIconStylePlugin,
+			ctor: TIconStylesPlugin,
+			contribution: IconStylesContribution,
 		}),
 	],
 })
