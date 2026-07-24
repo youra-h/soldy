@@ -29,14 +29,19 @@ export function useSyncProps(
     // 1. Core → Vue (Output): создать refs, подписаться на триггеры
     function bindOutput() {
         for (const prop of accessor.getProps(true) as ICompiledProp[]) {
+            const rawTriggers = inspector.getRawTriggers(prop)
+
+            // Пропускаем свойства без триггеров — pass-through (ctrl, plugins)
+            if (rawTriggers.length === 0) continue
+
             const formattedPropName = inspector.getExportPropName(prop)
             const initialValue = accessor.getValue(prop)
 
             const propRef = ref(initialValue)
-            refs[formattedPropName] = propRef
+
+			refs[formattedPropName] = propRef
 
             const eventSource = accessor.getEventSource(prop)
-            const rawTriggers = inspector.getRawTriggers(prop)
 
             if (eventSource) {
                 for (const rawTrigger of rawTriggers) {

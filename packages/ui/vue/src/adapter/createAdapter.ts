@@ -132,6 +132,8 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 			}
 		})
 
+
+
 		return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 	}
 
