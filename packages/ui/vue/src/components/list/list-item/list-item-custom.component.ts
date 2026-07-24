@@ -1,44 +1,11 @@
-import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/accessor'
-import {
-	type IListItemCustom,
-	type IListItemCustomProps,
-	TListItemCustom,
-	type TValuePayload,
-} from '@soldy/core'
-import {
-	BaseValueControl,
-	emitsValueControl,
-	propsValueControl,
-	syncValueControl,
-	type IValueControlState,
-} from '../../value-control'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
-import { useSyncProps } from '../../../composables/useSyncProps'
+import { BaseValueControl } from '../../value-control'
+import { useEmits, useProps } from '../../../adapter'
+import type { TEmits, TProps } from '../../../types/common'
+import { ListItemCustomDescriptor } from '@soldy/setup'
 
-export const emitsListItemCustom: TEmits = [
-	...emitsValueControl,
-	'change:text',
-	'update:text',
-	'change:wordWrap',
-	'update:wordWrap',
-] as const
+export const emitsListItemCustom: TEmits = useEmits(ListItemCustomDescriptor) as unknown as TEmits
 
-export const propsListItemCustom: TProps = {
-	...propsValueControl,
-	tag: {
-		type: [Object, String] as PropType<IListItemCustomProps['tag']>,
-		default: TListItemCustom.defaultValues.tag,
-	},
-	text: {
-		type: String as PropType<IListItemCustomProps['text']>,
-		default: TListItemCustom.defaultValues.text,
-	},
-	wordWrap: {
-		type: Boolean as PropType<IListItemCustomProps['wordWrap']>,
-		default: TListItemCustom.defaultValues.wordWrap,
-	},
-}
+export const propsListItemCustom: TProps = useProps(ListItemCustomDescriptor) as TProps
 
 export default {
 	name: 'BaseListItemCustom',
@@ -46,18 +13,6 @@ export default {
 	emits: emitsListItemCustom,
 	props: propsListItemCustom,
 }
-
-export interface IListItemCustomState extends IValueControlState {
-	text: Ref<string>
-	wordWrap: Ref<boolean | undefined>
-}
-
-export function syncListItemCustom(
-	options: ISyncComponentOptions<IListItemCustomProps, IListItemCustom>,
-): IListItemCustomState {
-	const syncProps = syncValueControl(options)
-
-	const { props, instance, emit } = options
 
 	instance.events.on('change:text', (payload: TValuePayload<string>) => {
 		emit?.('change:text', payload)

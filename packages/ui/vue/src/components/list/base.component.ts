@@ -1,73 +1,11 @@
-import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/accessor'
-import {
-	type IList,
-	type IListProps,
-	type IListItem,
-	TList,
-	type TSelectionMode,
-	type TScrollBehavior,
-	type ICollectionSource,
-} from '@soldy/core'
-import {
-	BaseControl,
-	emitsControl,
-	propsControl,
-	syncControl,
-	type IControlState,
-} from '../control'
-import {
-	emitsSelectableCollection,
-	syncSelectableCollection,
-	propsSelectableCollection,
-	type ISelectableCollectionState,
-} from '../collection/selectable'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
-import { useSyncProps } from '../../composables/useSyncProps'
-import { useInheritProps } from '../../composables/useInheritProps'
+import { BaseControl } from '../control'
+import { useEmits, useProps } from '../../adapter'
+import type { TEmits, TProps } from '../../types/common'
+import { ListDescriptor } from '@soldy/setup'
 
-export const emitsList: TEmits = [
-	...emitsControl,
-	...emitsSelectableCollection,
-	'change:maxRows',
-	'update:maxRows',
-	'change:autoWidth',
-	'update:autoWidth',
-	'change:wordWrap',
-	'update:wordWrap',
-	'change:scrollBehavior',
-	'update:scrollBehavior',
-	'item:disabled',
-	'item:text',
-	'item:rendered',
-	'item:visible',
-	'item:present',
-] as const
+export const emitsList: TEmits = useEmits(ListDescriptor) as unknown as TEmits
 
-export const propsList: TProps = {
-	...useInheritProps(propsControl, TList),
-	...propsSelectableCollection,
-	mode: {
-		type: String as PropType<TSelectionMode>,
-		default: TList.defaultValues.mode,
-	},
-	maxRows: {
-		type: Number as PropType<IListProps['maxRows']>,
-		default: TList.defaultValues.maxRows,
-	},
-	autoWidth: {
-		type: Boolean as PropType<IListProps['autoWidth']>,
-		default: TList.defaultValues.autoWidth,
-	},
-	wordWrap: {
-		type: Boolean as PropType<IListProps['wordWrap']>,
-		default: TList.defaultValues.wordWrap,
-	},
-	scrollBehavior: {
-		type: String as PropType<TScrollBehavior>,
-		default: TList.defaultValues.scrollBehavior,
-	},
-}
+export const propsList: TProps = useProps(ListDescriptor) as TProps
 
 export default {
 	name: 'BaseList',
@@ -75,19 +13,6 @@ export default {
 	emits: emitsList,
 	props: propsList,
 }
-
-export interface IListState<TItem extends IListItem = IListItem>
-	extends IControlState, ISelectableCollectionState<TItem> {}
-
-export function syncList<TItem extends IListItem = IListItem>(
-	options: ISyncComponentOptions<IListProps<TItem> & ICollectionSource<TItem>, IList<TItem>>,
-): IListState<TItem> {
-	const syncPropsControl = syncControl(options)
-
-	const { props, instance, emit, plugins } = options
-
-	const syncPropsSelectableCollection = syncSelectableCollection<TItem>({
-		props,
 		instance: instance.collection,
 		emit,
 		plugins,

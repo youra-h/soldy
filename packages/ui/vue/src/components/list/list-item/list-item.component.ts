@@ -1,44 +1,17 @@
-import { type IListItem, type IListItemProps } from '@soldy/core'
+import { useEmits, useProps } from '../../../adapter'
+import type { TEmits, TProps } from '../../../types/common'
+import { ListItemDescriptor } from '@soldy/setup'
 import {
 	default as BaseListItemCustom,
-	emitsListItemCustom,
-	propsListItemCustom,
-	syncListItemCustom,
-	type IListItemCustomState,
 } from './list-item-custom.component'
-import {
-	emitsSelectableCollectionItem,
-	syncSelectableCollectionItem,
-	propsSelectableCollectionItem,
-	type ISelectableCollectionItemState,
-} from '../../collection/selectable'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
 
-export const emitsListItem: TEmits = [
-	...emitsListItemCustom,
-	...emitsSelectableCollectionItem,
-] as const
+export const emitsListItem: TEmits = useEmits(ListItemDescriptor) as unknown as TEmits
 
-export const propsListItem: TProps = {
-	...propsListItemCustom,
-	...propsSelectableCollectionItem,
-}
+export const propsListItem: TProps = useProps(ListItemDescriptor) as TProps
 
 export default {
 	name: 'BaseListItem',
 	extends: BaseListItemCustom,
 	emits: emitsListItem,
 	props: propsListItem,
-}
-
-export interface IListItemState
-	extends IListItemCustomState, ISelectableCollectionItemState<IListItem> {}
-
-export function syncListItem(
-	options: ISyncComponentOptions<IListItemProps, IListItem>,
-): IListItemState {
-	return {
-		...syncListItemCustom(options),
-		...syncSelectableCollectionItem(options),
-	}
 }
