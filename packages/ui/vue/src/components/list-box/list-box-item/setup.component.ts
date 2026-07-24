@@ -1,22 +1,22 @@
-import type { SetupContext } from 'vue'
-import { TListBoxItem, type IListItemProps, type IListBoxItem } from '@soldy/core'
-import BaseListBoxItem, { syncListBoxItem } from './list-box-item.component'
-import { createListItemBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../../composables/useComponentSetup'
+import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../../adapter'
+import { ListBoxItemDescriptor } from '@soldy/setup'
+import BaseListBoxItem from './list-box-item.component'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
-import type { TBaseComponentViewProps } from '../../component-view'
+import type { TBaseComponentProps } from '../../../types'
+import { type IListItemProps, type IListBoxItem } from '@soldy/core'
 
 export default {
 	name: '_ListBoxItem',
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
-	setup(props: TBaseComponentViewProps<IListItemProps, IListBoxItem>, ctx: SetupContext) {
-		const base = useComponentSetup({
-			Ctor: TListBoxItem,
-			plugins: createListItemBundle,
-			sync: (ctx) => syncListBoxItem(ctx),
-		})(props, ctx)
+	setup(props: TBaseComponentProps<IListItemProps, IListBoxItem>, { emit }: any) {
+		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
 
-		return { ...base, ...useSplitAttrs() }
+		return {
+			...useAdapter(ListBoxItemDescriptor, props, emit, {
+				elevators: { collection: collectionElevator },
+			}),
+			...useSplitAttrs(),
+		}
 	},
 }

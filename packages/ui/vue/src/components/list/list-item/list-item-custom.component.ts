@@ -13,34 +13,3 @@ export default {
 	emits: emitsListItemCustom,
 	props: propsListItemCustom,
 }
-
-	instance.events.on('change:text', (payload: TValuePayload<string>) => {
-		emit?.('change:text', payload)
-		emit?.('update:text', payload.newValue)
-	})
-
-	instance.events.on('change:wordWrap', (value: boolean) => {
-		emit?.('change:wordWrap', value)
-		emit?.('update:wordWrap', value)
-	})
-
-	track(props, 'text', (value) => {
-		if (value !== undefined && value !== instance.text) {
-			instance.text = value
-		}
-	})
-
-	track(props, 'wordWrap', (value) => {
-		if (value !== undefined && value !== instance.wordWrap) {
-			instance.wordWrap = value
-		}
-	})
-
-	return {
-		...syncProps,
-		...useSyncProps(instance.events as any, {
-			text: () => instance.text,
-			wordWrap: () => instance.wordWrap,
-		}),
-	}
-}

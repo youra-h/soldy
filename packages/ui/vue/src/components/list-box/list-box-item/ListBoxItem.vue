@@ -21,7 +21,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 			:size="size"
 			:variant="variant"
 			:aria-selected="selected"
-			:data-highlighted="highlighted"
+			:data-highlighted="listItem_highlighted"
 			@click="ctrl.toggleSelected()"
 			v-bind="controlAttrs"
 		>
