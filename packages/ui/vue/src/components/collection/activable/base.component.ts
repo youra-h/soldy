@@ -1,17 +1,15 @@
 import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
 import { ActivatableCollectionDescriptor } from '@soldy/setup'
-import { default as BaseCollection, emitsCollection, propsCollection } from '../base.component'
+import { default as BaseCollection } from '../base.component'
 
-export const emitsActivatableCollection: TEmits = {
-	...emitsCollection,
-	...(useEmits(ActivatableCollectionDescriptor) as unknown as TEmits),
-}
+export const emitsActivatableCollection: TEmits = useEmits(
+	ActivatableCollectionDescriptor,
+) as unknown as TEmits
 
-export const propsActivatableCollection: TProps = {
-	...propsCollection,
-	...useProps(ActivatableCollectionDescriptor),
-} as TProps
+export const propsActivatableCollection: TProps = useProps(
+	ActivatableCollectionDescriptor,
+) as TProps
 
 export default {
 	name: 'BaseActivatableCollection',
