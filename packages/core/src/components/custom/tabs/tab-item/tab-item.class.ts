@@ -1,4 +1,4 @@
-import { ActivatableComponentMixin } from '../../../base/collection'
+import { ActivatableComponentMixin, type IActivatableComponentItem } from '../../../base/collection'
 import TTabItemCustom from './tab-item-custom.class'
 import type { ITabItem, TTabItemOptions, ITabItemProps, TTabItemEvents } from './types'
 
@@ -8,14 +8,14 @@ import type { ITabItem, TTabItemOptions, ITabItemProps, TTabItemEvents } from '.
  */
 export default class TTabItem
 	extends ActivatableComponentMixin(TTabItemCustom<ITabItemProps, TTabItemEvents>)
-	implements ITabItem
+	implements ITabItem, IActivatableComponentItem
 {
 	constructor(options: TTabItemOptions | Partial<ITabItemProps> = {}) {
 		const { collection, ...componentOptions } = options as TTabItemOptions
 
 		super(componentOptions)
 
-		this._initActivatableComposition(collection)
+		this.init(collection)
 	}
 
 	override getProps(): ITabItemProps {

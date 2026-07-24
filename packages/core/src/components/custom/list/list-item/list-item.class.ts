@@ -16,7 +16,7 @@ export default class TListItem
 
 		super(componentOptions)
 
-		this._initSelectableComposition(collection)
+		this.init(collection)
 	}
 
 	override getProps(): IListItemProps {

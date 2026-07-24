@@ -105,6 +105,7 @@ export interface ISelectableComponentItem {
 	collectionItem: ISelectableCollectionItem
 	order: number
 	selected: boolean
+	init(collection: any | null | undefined): void
 	toggleSelected(): void
 	select(): void
 	deselect(): void

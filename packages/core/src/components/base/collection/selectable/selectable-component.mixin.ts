@@ -17,7 +17,7 @@ import type { ISelectableComponentItem } from './types'
  *   constructor(options) {
  *     const { collection, ...rest } = options
  *     super(rest)
- *     this._initSelectableComposition(collection)
+ *     this._init(collection)
  *   }
  * }
  * ```
@@ -33,7 +33,7 @@ export function SelectableComponentMixin<
 	class SelectableComponent extends Base implements ISelectableComponentItem {
 		protected _collectionItem!: TSelectableCollectionItem
 
-		protected _initSelectableComposition(collection: TCollection | null | undefined): void {
+		init(collection: TCollection | null | undefined): void {
 			this._collectionItem = new TSelectableCollectionItem({
 				collection: collection ?? undefined,
 			})

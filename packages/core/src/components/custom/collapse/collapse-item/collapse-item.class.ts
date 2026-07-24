@@ -20,7 +20,7 @@ export default class TCollapseItem
 
 		super(componentOptions)
 
-		this._initSelectableComposition(collection)
+		this.init(collection)
 	}
 
 	open(): void {

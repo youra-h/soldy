@@ -105,6 +105,7 @@ export interface IActivatableComponentItem {
 	readonly collectionItem: IActivatableCollectionItem
 	order: number
 	active: boolean
+	init(collection: any | null | undefined): void
 	toggleActive(): void
 	free(): void
 }

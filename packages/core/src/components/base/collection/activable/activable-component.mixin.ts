@@ -20,7 +20,7 @@ export function ActivatableComponentMixin<
 	class ActivatableComponent extends Base implements IActivatableComponentItem {
 		protected _collectionItem!: TActivatableCollectionItem
 
-		protected _initActivatableComposition(collection: TCollection | null | undefined): void {
+		init(collection: TCollection | null | undefined): void {
 			this._collectionItem = new TActivatableCollectionItem({
 				collection: collection ?? undefined,
 			})
