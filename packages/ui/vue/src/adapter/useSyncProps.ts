@@ -42,7 +42,10 @@ export function useSyncProps(
                 for (const rawTrigger of rawTriggers) {
                     eventSource.on(rawTrigger, () => {
                         const val = accessor.getValue(prop)
-                        propRef.value = val
+
+                        // clone: если плагин мутирует объект in-place, Vue не увидит изменение
+                        propRef.value = typeof val === 'object' && val !== null ? { ...val } : val
+
                         options.onOutput?.(prop, val)
                     })
                 }
@@ -62,6 +65,7 @@ export function useSyncProps(
                         const valueToSet = options.onInput
                             ? options.onInput(prop, newVal)
                             : newVal
+
                         accessor.setValue(prop, valueToSet)
                     }
                 },
