@@ -1,24 +1,21 @@
-import type { SetupContext } from 'vue'
-import { TTabItem, type ITabItemProps, type ITabItem } from '@soldy/core'
-import BaseTabItem, { syncTabItem } from './tab-item.component'
-import { createComponentViewBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../../composables/useComponentSetup'
+import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../../adapter'
+import { TabItemDescriptor } from '@soldy/setup'
+import BaseTabItem from './tab-item.component'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import type { TBaseComponentViewProps } from '../../component-view'
+import type { TBaseComponentProps } from '../../../types'
+import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 export default {
 	name: '_TabItem',
 	inheritAttrs: false,
 	extends: BaseTabItem,
-	setup(props: TBaseComponentViewProps<ITabItemProps, ITabItem>, ctx: SetupContext) {
-		const base = useComponentSetup({
-			Ctor: TTabItem,
-			plugins: createComponentViewBundle,
-			sync: (ctx) => syncTabItem(ctx),
-		})(props, ctx)
+	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
+		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
 
 		return {
-			...base,
+			...useAdapter(TabItemDescriptor, props, emit, {
+				elevators: { collection: collectionElevator },
+			}),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

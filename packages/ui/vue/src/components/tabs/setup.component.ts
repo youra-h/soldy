@@ -1,14 +1,17 @@
-import { TTabs } from '@soldy/core'
-import BaseTabs, { syncTabs } from './base.component'
-import { createTabsBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../composables/useComponentSetup'
+import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../adapter'
+import { TabsDescriptor } from '@soldy/setup'
+import BaseTabs from './base.component'
+import type { TBaseComponentProps } from '../../types'
+import { type ITabsProps, type ITabs } from '@soldy/core'
 
 export default {
 	name: '_Tabs',
 	extends: BaseTabs,
-	setup: useComponentSetup({
-		Ctor: TTabs,
-		plugins: createTabsBundle,
-		sync: (ctx) => syncTabs(ctx),
-	}),
+	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
+		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
+
+		return useAdapter(TabsDescriptor, props, emit, {
+			elevators: { collection: collectionElevator },
+		})
+	},
 }
