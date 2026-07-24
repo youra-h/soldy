@@ -24,8 +24,8 @@ export interface IPluginDefinition {
 export interface IComponentDefinitionOptions {
     /** Конструктор core-компонента */
     ctor?: any
-    /** Родительский дескриптор(ы) — одиночное или множественное наследование */
-    extends?: IComponentDescriptor | IComponentDescriptor[]
+    /** Родительский дескриптор (наследование props, events, plugins) */
+    extends?: IComponentDescriptor
     /** Собственная контрибуция компонента */
     contribution?: IContribution
     /** Плагины (каждый — результат definePlugin) */

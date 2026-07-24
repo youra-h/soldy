@@ -1,11 +1,8 @@
 /**
  * defineComponent — создаёт дескриптор компонента.
  *
- * Компилирует contributions в props/events, объединяет с родительскими
- * дескрипторами (extends — один или массив), добавляет плагины с namespace.
- *
- * Поддерживает множественное наследование:
- * extends: [ControlDescriptor, ActivatableCollectionDescriptor]
+ * Компилирует contributions в props/events, объединяет с родительским
+ * дескриптором (extends), добавляет плагины с namespace.
  */
 
 import { TPluginBundle } from '@soldy/plugins'
@@ -13,77 +10,63 @@ import { TComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@so
 import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { compileContribution } from './compile-contribution'
 
-function toArray<T>(val: T | T[] | undefined): T[] {
-	if (!val) return []
-	return Array.isArray(val) ? val : [val]
-}
-
 export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
-	const parents: IComponentDescriptor[] = toArray(options.extends)
+    const parent = options.extends
 
-	// Плагины: от всех родителей + свои (дедупликация по ctor через Map)
-	const pluginsMap = new Map<any, IPluginDefinition>()
+    // Плагины: родительские + свои
+    const plugins: IPluginDefinition[] = [
+        ...(parent?.plugins ?? []),
+        ...(options.plugins ?? []),
+    ]
 
-	for (const p of parents) {
-		for (const pl of p.plugins ?? []) {
-			pluginsMap.set(pl.namespace, pl)
-		}
-	}
-	for (const pl of options.plugins ?? []) {
-		pluginsMap.set(pl.namespace, pl)
-	}
+    // 1. Компонент (без namespace)
+    const own = compileContribution(options.contribution)
 
-	const plugins: IPluginDefinition[] = [...pluginsMap.values()]
+    // 2. Плагины (с namespace)
+    const pluginContributions = (options.plugins ?? []).map((plugin) =>
+        compileContribution(plugin.contribution, plugin.namespace),
+    )
 
-	// 1. Свой вклад
-	const own = compileContribution(options.contribution)
+    // Объединяем props: родитель → свои → плагинов
+    const props: ICompiledProp[] = [
+        ...(parent?.props ?? []),
+        ...own.props,
+        ...pluginContributions.flatMap((c) => c.props),
+    ]
 
-	// 2. Плагины (с namespace)
-	const pluginContributions = (options.plugins ?? []).map((plugin) =>
-		compileContribution(plugin.contribution, plugin.namespace),
-	)
+    // Объединяем events
+    const events: ICompiledEvent[] = [
+        ...(parent?.events ?? []),
+        ...own.events,
+        ...pluginContributions.flatMap((c) => c.events),
+    ]
 
-	// Объединяем props: все родители → свои → плагинов
-	const props: ICompiledProp[] = [
-		...parents.flatMap((p) => p.props ?? []),
-		...own.props,
-		...pluginContributions.flatMap((c) => c.props),
-	]
+    return {
+        ctor: options.ctor ?? parent?.ctor ?? Object,
 
-	// Объединяем events
-	const events: ICompiledEvent[] = [
-		...parents.flatMap((p) => p.events ?? []),
-		...own.events,
-		...pluginContributions.flatMap((c) => c.events),
-	]
+        props,
+        events,
+        plugins,
 
-	return {
-		ctor: options.ctor ?? parents[0]?.ctor ?? Object,
+        createBundle() {
+            const bundle = new TPluginBundle()
+            for (const plugin of plugins) {
+                bundle.use(plugin.ctor)
+            }
+            return bundle
+        },
 
-		props,
-		events,
-		plugins,
+        createAccessor(instance: any, bundle: TPluginBundle) {
+            const pluginsMap = new Map<string, any>()
 
-		createBundle() {
-			const bundle = new TPluginBundle()
-			for (const plugin of plugins) {
-				bundle.use(plugin.ctor)
-			}
-			return bundle
-		},
+            for (const pluginDef of plugins) {
+                const pluginInstance = bundle.get(pluginDef.ctor)
+                if (pluginInstance) {
+                    pluginsMap.set(pluginDef.namespace, pluginInstance)
+                }
+            }
 
-		createAccessor(instance: any, bundle: TPluginBundle) {
-			const pluginsMap = new Map<string, any>()
-
-			for (const pluginDef of plugins) {
-				const pluginInstance = bundle.get(pluginDef.ctor)
-
-				if (pluginInstance) {
-					pluginsMap.set(pluginDef.namespace, pluginInstance)
-				}
-			}
-
-			return new TComponentAccessor(props, events, instance, pluginsMap)
-		},
-	}
+            return new TComponentAccessor(props, events, instance, pluginsMap)
+        },
+    }
 }
