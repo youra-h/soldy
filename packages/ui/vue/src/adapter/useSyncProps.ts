@@ -43,8 +43,15 @@ export function useSyncProps(
                     eventSource.on(rawTrigger, () => {
                         const val = accessor.getValue(prop)
 
-                        // clone: если плагин мутирует объект in-place, Vue не увидит изменение
-                        propRef.value = typeof val === 'object' && val !== null ? { ...val } : val
+                        // Плагины (TIconStylesPlugin, TSpinnerStylesPlugin и др.)
+                        // мутируют свой объект _styles in-place и эмитят change:styles.
+                        // accessor.getValue() возвращает ссылку на этот же объект.
+                        // Если присвоить ту же ссылку в ref.value — Vue считает
+                        // oldValue === newValue и НЕ триггерит watch/ререндер.
+                        // Клонируем только plain-объекты (не Vue-компоненты, не массивы).
+                        const isPlainObj = typeof val === 'object' && val !== null
+                            && val.constructor === Object && !('__v_skip' in val) && !('render' in val)
+                        propRef.value = isPlainObj ? { ...val } : val
 
                         options.onOutput?.(prop, val)
                     })
