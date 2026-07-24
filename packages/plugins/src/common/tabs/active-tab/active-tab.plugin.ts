@@ -15,6 +15,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 	private _collectionElements: TElementAccumulationPlugin | null = null
 
 	override install(bundle: IPluginBundle): void {
+		debugger
 		bundle.get(TElementPlugin)?.events.on('ready', ({ element }) => {
 			this._element = element
 			this._emitOffset()
