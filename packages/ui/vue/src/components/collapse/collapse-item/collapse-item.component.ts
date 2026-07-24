@@ -1,56 +1,15 @@
-import type { PropType, Ref } from 'vue'
-import {
-	type ICollapse,
-	type ICollapseItem,
-	type ICollapseItemProps,
-	type TCollapseView,
-} from '@soldy/core'
-import {
-	default as BaseCollapseItemCustom,
-	emitsCollapseItemCustom,
-	propsCollapseItemCustom,
-	syncCollapseItemCustom,
-	type ICollapseItemCustomState,
-} from './collapse-item-custom.component'
-import {
-	emitsSelectableCollectionItem,
-	syncSelectableCollectionItem,
-	propsSelectableCollectionItem,
-	type ISelectableCollectionItemState,
-} from '../../collection/selectable'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
+import { useEmits, useProps } from '../../../adapter'
+import type { TEmits, TProps } from '../../../types/common'
+import { CollapseItemDescriptor } from '@soldy/setup'
+import { default as BaseCollapseItemCustom } from './collapse-item-custom.component'
 
-export const emitsCollapseItem: TEmits = [
-	...emitsCollapseItemCustom,
-	...emitsSelectableCollectionItem,
-] as const
+export const emitsCollapseItem: TEmits = useEmits(CollapseItemDescriptor) as unknown as TEmits
 
-export const propsCollapseItem: TProps = {
-	...propsCollapseItemCustom,
-	...propsSelectableCollectionItem,
-	view: {
-		type: String as PropType<ICollapse['view']>,
-		default: 'plain',
-	},
-}
+export const propsCollapseItem: TProps = useProps(CollapseItemDescriptor) as TProps
 
 export default {
 	name: 'BaseCollapseItem',
 	extends: BaseCollapseItemCustom,
 	emits: emitsCollapseItem,
 	props: propsCollapseItem,
-}
-
-export interface ICollapseItemState
-	extends ICollapseItemCustomState, ISelectableCollectionItemState<ICollapseItem> {
-	view: Ref<TCollapseView>
-}
-
-export function syncCollapseItem(
-	options: ISyncComponentOptions<ICollapseItemProps, ICollapseItem>,
-): ICollapseItemState {
-	return {
-		...syncCollapseItemCustom(options),
-		...syncSelectableCollectionItem(options),
-	}
 }

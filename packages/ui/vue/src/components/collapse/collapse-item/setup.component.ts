@@ -1,24 +1,21 @@
-import type { SetupContext } from 'vue'
-import { TCollapseItem, type ICollapseItemProps, type ICollapseItem } from '@soldy/core'
-import BaseCollapseItem, { syncCollapseItem } from './collapse-item.component'
-import { createComponentViewBundle } from '@soldy/plugins'
-import { useComponentSetup } from '../../../composables/useComponentSetup'
+import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../../adapter'
+import { CollapseItemDescriptor } from '@soldy/setup'
+import BaseCollapseItem from './collapse-item.component'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import type { TBaseComponentViewProps } from '../../component-view'
+import type { TBaseComponentProps } from '../../../types'
+import { type ICollapseItemProps, type ICollapseItem } from '@soldy/core'
 
 export default {
 	name: '_CollapseItem',
 	inheritAttrs: false,
 	extends: BaseCollapseItem,
-	setup(props: TBaseComponentViewProps<ICollapseItemProps, ICollapseItem>, ctx: SetupContext) {
-		const base = useComponentSetup({
-			Ctor: TCollapseItem,
-			plugins: createComponentViewBundle,
-			sync: (ctx) => syncCollapseItem(ctx),
-		})(props, ctx)
+	setup(props: TBaseComponentProps<ICollapseItemProps, ICollapseItem>, { emit }: any) {
+		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
 
 		return {
-			...base,
+			...useAdapter(CollapseItemDescriptor, props, emit, {
+				elevators: { collection: collectionElevator },
+			}),
 			arrowIconTag: useIconImport('arrowRight'),
 			...useSplitAttrs(),
 		}

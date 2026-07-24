@@ -13,7 +13,7 @@ import { TTabs } from '@soldy/core'
 import { TTabsLayoutPlugin, TTabsActiveTabPlugin, TTabsViewPlugin, TDragPlugin } from '@soldy/plugins'
 import { TabsContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
-import { ActivatableCollectionDescriptor } from '../collection/activable/activatable-collection.descriptor'
+import { ActivatableCollectionDescriptor } from '../collection'
 
 export const TabsDescriptor = defineComponent({
 	ctor: TTabs,
