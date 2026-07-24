@@ -32,9 +32,9 @@ export class TDescriptorInspector {
         this.naming = naming
     }
 
-    /** Имя с префиксом namespace (без стратегии): 'tag' или 'element:ready' */
+    /** Имя с префиксом namespace (без стратегии): 'tag' или 'element:ready'. Пустая строка — без префикса. */
     getExportName(item: { name: string; namespace?: string }): string {
-        return item.namespace ? `${item.namespace}:${item.name}` : item.name
+        return (item.namespace && item.namespace !== '') ? `${item.namespace}:${item.name}` : item.name
     }
 
     /** Форматирует имя prop'а через стратегию (если есть), иначе ns:name */
@@ -54,7 +54,7 @@ export class TDescriptorInspector {
     /**
      * Триггеры для emit.
      * Триггеры в ICompiledProp УЖЕ содержат namespace (compileContribution),
-     * возвращаем как есть.
+     * возвращаем как есть. Пустая строка namespace — без префикса.
      */
     getExportTriggers(prop: ICompiledProp): string[] {
         return prop.triggers

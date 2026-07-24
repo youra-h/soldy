@@ -29,10 +29,13 @@ export class TComponentAccessor {
 	}
 
 	/** Получить объект-источник по namespace.
-	 *  Если namespace нет — это сам компонент (instance).
-	 *  Если есть — сначала композиция, потом плагин. */
+	 *  Если namespace === undefined — сам компонент (instance).
+	 *  Если namespace === '' — безымянная композиция.
+	 *  Иначе — именованная композиция или плагин. */
 	private getTarget(namespace?: string): any {
-		if (!namespace) {
+		if (namespace === undefined) return this.instance
+
+		if (namespace === '') {
 			const comp = this.compositionsMap.get('')
 			return comp ? comp(this.instance) : this.instance
 		}

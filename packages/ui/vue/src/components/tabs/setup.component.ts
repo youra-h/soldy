@@ -10,8 +10,12 @@ export default {
 	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
 		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
 
-		return useAdapter(TabsDescriptor, props, emit, {
+		const result = useAdapter(TabsDescriptor, props, emit, {
 			elevators: { collection: collectionElevator },
 		})
+
+		console.log('setup', result)
+
+		return result
 	},
 }

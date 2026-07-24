@@ -37,14 +37,15 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
     const compositionContributions = (options.composition ?? []).map((comp) => ({
         props: comp.descriptor.props.map((p) => ({
             ...p,
-            namespace: comp.namespace ?? p.namespace,
+            // Безымянная композиция → '' (чтобы отличать от undefined у собственных props)
+            namespace: comp.namespace ?? '',
             triggers: comp.namespace
                 ? p.triggers.map((t) => `${comp.namespace}:${t}`)
                 : p.triggers,
         })),
         events: comp.descriptor.events.map((e) => ({
             ...e,
-            namespace: comp.namespace ?? e.namespace,
+            namespace: comp.namespace ?? '',
         })),
     }))
 
