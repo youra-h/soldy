@@ -101,6 +101,7 @@ export class TDescriptorInspector {
             if (prop.protected) continue
 
             const exportName = this.getExportPropName(prop)
+
             props[exportName] = {
                 default: defaultValues[prop.name],
             }
