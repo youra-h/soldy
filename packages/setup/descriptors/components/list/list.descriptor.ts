@@ -1,9 +1,11 @@
 /**
  * Дескриптор List (TList).
  *
- * Множественное наследование:
+ * Наследование:
  * - ControlDescriptor (disabled, focused, size, variant, ...)
- * - SelectableCollectionDescriptor (items, mode, selected, events: item:selected/...)
+ *
+ * Композиция:
+ * - SelectableCollectionDescriptor → collection:* (items, mode, selected, events)
  */
 
 import { defineComponent } from '../../base'
@@ -15,7 +17,13 @@ import { SelectableCollectionDescriptor } from '../collection'
 export const ListDescriptor = defineComponent({
 	ctor: TList,
 
-	extends: [ControlDescriptor, SelectableCollectionDescriptor],
+	extends: ControlDescriptor,
 
 	contribution: ListContribution,
+
+	composition: [{
+		namespace: 'collection',
+		descriptor: SelectableCollectionDescriptor,
+		get: (instance) => instance._collection,
+	}],
 })

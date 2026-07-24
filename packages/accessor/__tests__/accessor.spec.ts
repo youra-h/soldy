@@ -72,9 +72,9 @@ describe('TComponentAccessor', () => {
 
     // --- getTriggers ---
 
-    it('getTriggers — делегирует TDescriptorInspector', () => {
+    it('getTriggers — делегирует TDescriptorInspector (триггеры уже скомпилированы)', () => {
         const accessor = makeAccessor()
-        const prop = makeProp({ name: 'visible', namespace: 'element', triggers: ['change:visible'] })
+        const prop = makeProp({ name: 'visible', namespace: 'element', triggers: ['element:change:visible'] })
 
         expect(accessor.getTriggers(prop)).toEqual(['element:change:visible'])
     })

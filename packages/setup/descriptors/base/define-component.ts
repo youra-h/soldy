@@ -7,7 +7,7 @@
 
 import { TPluginBundle } from '@soldy/plugins'
 import { TComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
-import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
+import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition, ICompositionDefinition } from './types'
 import { compileContribution } from './compile-contribution'
 
 export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
@@ -19,6 +19,12 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
         ...(options.plugins ?? []),
     ]
 
+    // Композиции: родительские + свои
+    const composition: ICompositionDefinition[] = [
+        ...(parent?.composition ?? []),
+        ...(options.composition ?? []),
+    ]
+
     // 1. Компонент (без namespace)
     const own = compileContribution(options.contribution)
 
@@ -27,11 +33,25 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
         compileContribution(plugin.contribution, plugin.namespace),
     )
 
-    // Объединяем props: родитель → свои → плагинов
+    // 3. Композиции (с namespace) — дескриптор уже скомпилирован, только добавляем namespace
+    const compositionContributions = (options.composition ?? []).map((comp) => ({
+        props: comp.descriptor.props.map((p) => ({
+            ...p,
+            namespace: comp.namespace,
+            triggers: p.triggers.map((t) => `${comp.namespace}:${t}`),
+        })),
+        events: comp.descriptor.events.map((e) => ({
+            ...e,
+            namespace: comp.namespace,
+        })),
+    }))
+
+    // Объединяем props: родитель → свои → плагинов → композиций
     const props: ICompiledProp[] = [
         ...(parent?.props ?? []),
         ...own.props,
         ...pluginContributions.flatMap((c) => c.props),
+        ...compositionContributions.flatMap((c) => c.props),
     ]
 
     // Объединяем events
@@ -39,6 +59,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
         ...(parent?.events ?? []),
         ...own.events,
         ...pluginContributions.flatMap((c) => c.events),
+        ...compositionContributions.flatMap((c) => c.events),
     ]
 
     return {
@@ -47,6 +68,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
         props,
         events,
         plugins,
+        composition,
 
         createBundle() {
             const bundle = new TPluginBundle()
@@ -66,7 +88,12 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
                 }
             }
 
-            return new TComponentAccessor(props, events, instance, pluginsMap)
+            const compositionsMap = new Map<string, (instance: any) => any>()
+            for (const compDef of composition) {
+                compositionsMap.set(compDef.namespace, compDef.get)
+            }
+
+            return new TComponentAccessor(props, events, instance, pluginsMap, compositionsMap)
         },
     }
 }

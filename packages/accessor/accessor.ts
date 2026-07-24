@@ -18,6 +18,7 @@ export class TComponentAccessor {
 		private events: ICompiledEvent[],
 		private instance: any,
 		private pluginsMap: Map<string, any>,
+		private compositionsMap: Map<string, (instance: any) => any> = new Map(),
 	) {
 		this.inspector = new TDescriptorInspector({ props, events })
 	}
@@ -29,9 +30,14 @@ export class TComponentAccessor {
 
 	/** Получить объект-источник по namespace.
 	 *  Если namespace нет — это сам компонент (instance).
-	 *  Если есть — соответствующий плагин из pluginsMap. */
+	 *  Если есть — сначала композиция, потом плагин. */
 	private getTarget(namespace?: string): any {
-		return namespace ? this.pluginsMap.get(namespace) : this.instance
+		if (!namespace) return this.instance
+
+		const comp = this.compositionsMap.get(namespace)
+		if (comp) return comp(this.instance)
+
+		return this.pluginsMap.get(namespace)
 	}
 
 	/** Все свойства. Если includeProtected=false — только публичные. */

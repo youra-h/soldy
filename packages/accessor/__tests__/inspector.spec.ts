@@ -42,9 +42,9 @@ describe('TDescriptorInspector', () => {
         expect(inspector.getExportTriggers(prop)).toEqual(['change:value'])
     })
 
-    it('getExportTriggers: с namespace — префикс к каждому триггеру', () => {
+    it('getExportTriggers: с namespace — триггеры уже скомпилированы, возвращаются как есть', () => {
         const inspector = new TDescriptorInspector({ props: [], events: [] })
-        const prop = makeProp({ namespace: 'element', triggers: ['change:visible', 'ready'] })
+        const prop = makeProp({ namespace: 'element', triggers: ['element:change:visible', 'element:ready'] })
 
         expect(inspector.getExportTriggers(prop)).toEqual([
             'element:change:visible',

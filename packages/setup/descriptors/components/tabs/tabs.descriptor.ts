@@ -1,9 +1,11 @@
 /**
  * Дескриптор Tabs (TTabs).
  *
- * Множественное наследование:
+ * Наследование:
  * - ControlDescriptor (disabled, focused, size, variant, rendered, visible, present, tag, classes)
- * - ActivatableCollectionDescriptor (items, activeItem, events: item:activated/item:deactivated/...)
+ *
+ * Композиция:
+ * - ActivatableCollectionDescriptor → collection:* (items, activeItem, events)
  *
  * Добавляет: orientation, alignment, position, view, closable + плагины Tabs.
  */
@@ -18,9 +20,15 @@ import { ActivatableCollectionDescriptor } from '../collection'
 export const TabsDescriptor = defineComponent({
 	ctor: TTabs,
 
-	extends: [ControlDescriptor, ActivatableCollectionDescriptor],
+	extends: ControlDescriptor,
 
 	contribution: TabsContribution,
+
+	composition: [{
+		namespace: 'collection',
+		descriptor: ActivatableCollectionDescriptor,
+		get: (instance) => instance._collection,
+	}],
 
 	plugins: [
 		definePlugin({
