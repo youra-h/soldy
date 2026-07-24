@@ -88,12 +88,12 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		config?: IElevatorConfig,
 	) {
 		// 1. Подняться на лифте — получить родительский контекст
-		const parentContexts: Record<string, any> = {}
-		if (config?.elevators) {
-			for (const [key, elevator] of Object.entries(config.elevators)) {
-				parentContexts[key] = elevator.up()
-			}
-		}
+		// const parentContexts: Record<string, any> = {}
+		// if (config?.elevators) {
+		// 	for (const [key, elevator] of Object.entries(config.elevators)) {
+		// 		parentContexts[key] = elevator.up()
+		// 	}
+		// }
 
 		const { instance, bundle, accessor } = createAdapter(descriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
@@ -106,19 +106,19 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		const { bindElement } = bindPlugins(bundle, instance)
 
 		// 2. Если есть родительская коллекция — зарегистрироваться в ней
-		const parentCollection = parentContexts['collection'] as
-			| { insertAt(item: any, index?: number): boolean; deleteItem(item: any): boolean }
-			| undefined
-		if (parentCollection && 'uid' in (instance as any)) {
-			parentCollection.insertAt(instance)
-		}
+		// const parentCollection = parentContexts['collection'] as
+		// 	| { insertAt(item: any, index?: number): boolean; deleteItem(item: any): boolean }
+		// 	| undefined
+		// if (parentCollection && 'uid' in (instance as any)) {
+		// 	parentCollection.insertAt(instance)
+		// }
 
-		// 3. Опуститься на лифте — передать себя детям
-		if (config?.elevators) {
-			for (const [, elevator] of Object.entries(config.elevators)) {
-				elevator.down(instance)
-			}
-		}
+		// // 3. Опуститься на лифте — передать себя детям
+		// if (config?.elevators) {
+		// 	for (const [, elevator] of Object.entries(config.elevators)) {
+		// 		elevator.down(instance)
+		// 	}
+		// }
 
 		const rootElement = ref<Element | null>(null)
 
@@ -127,9 +127,9 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		onUnmounted(() => {
 			bindElement(null)
 			// 4. При размонтировании — удалиться из родительской коллекции
-			if (parentCollection && 'uid' in (instance as any)) {
-				parentCollection.deleteItem(instance)
-			}
+			// if (parentCollection && 'uid' in (instance as any)) {
+			// 	parentCollection.deleteItem(instance)
+			// }
 		})
 
 
