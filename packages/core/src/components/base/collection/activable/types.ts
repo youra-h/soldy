@@ -14,8 +14,7 @@ export interface IActivatableCollectionItemMeta extends ICollectionItemMeta {
  * Свойства элемента коллекции с поддержкой активности.
  */
 export interface IActivatableCollectionItemProps
-	extends ICollectionItemProps,
-		IActivatableCollectionItemMeta {}
+	extends ICollectionItemProps, IActivatableCollectionItemMeta {}
 
 /**
  * События элемента коллекции с поддержкой активности.
@@ -35,8 +34,8 @@ export interface IActivatableCollectionItem<
 	TProps extends IActivatableCollectionItemProps = IActivatableCollectionItemProps,
 	// @ts-ignore
 	TEvents extends TActivatableItemEvents = TActivatableItemEvents,
-> extends ICollectionItem<TProps, TEvents>,
-		IActivatableCollectionItemProps {}
+>
+	extends ICollectionItem<TProps, TEvents>, IActivatableCollectionItemProps {}
 
 /**
  * Свойства коллекции с поддержкой активности.
@@ -103,6 +102,7 @@ export interface IActivatableCollection<
  */
 export interface IActivatableComponentItem {
 	collection: any | null
+	readonly collectionItem: IActivatableCollectionItem
 	order: number
 	active: boolean
 	toggleActive(): void

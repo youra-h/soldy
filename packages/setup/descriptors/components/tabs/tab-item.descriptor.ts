@@ -1,9 +1,11 @@
 /**
  * Дескриптор TabItem (TTabItem).
  *
- * Множественное наследование:
+ * Наследование:
  * - TabItemCustomDescriptor (tag, text, closable, value, name, disabled, focused, size, variant, ...)
- * - ActivatableCollectionItemDescriptor (active)
+ *
+ * Композиция:
+ * - ActivatableCollectionItemDescriptor → collection:* (active)
  */
 
 import { defineComponent } from '../../base'
@@ -15,7 +17,13 @@ import { ActivatableCollectionItemDescriptor } from '../collection'
 export const TabItemDescriptor = defineComponent({
 	ctor: TTabItem,
 
-	extends: [TabItemCustomDescriptor, ActivatableCollectionItemDescriptor],
+	extends: TabItemCustomDescriptor,
 
 	contribution: TabItemContribution,
+
+	composition: [{
+		namespace: 'collection',
+		descriptor: ActivatableCollectionItemDescriptor,
+		get: (instance) => instance.collectionItem,
+	}],
 })

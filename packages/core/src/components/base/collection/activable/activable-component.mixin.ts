@@ -47,6 +47,10 @@ export function ActivatableComponentMixin<
 			this._collectionItem.collection = value
 		}
 
+		get collectionItem(): TActivatableCollectionItem {
+			return this._collectionItem
+		}
+
 		get active(): boolean {
 			return this._collectionItem.active
 		}

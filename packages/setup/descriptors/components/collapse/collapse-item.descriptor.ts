@@ -1,9 +1,11 @@
 /**
  * Дескриптор CollapseItem (TCollapseItem).
  *
- * Множественное наследование:
+ * Наследование:
  * - CollapseItemCustomDescriptor (tag, text, arrowPlacement, value, name, ...)
- * - SelectableCollectionItemDescriptor (selected)
+ *
+ * Композиция:
+ * - SelectableCollectionItemDescriptor → collection:* (selected)
  *
  * Добавляет: view.
  */
@@ -17,7 +19,13 @@ import { SelectableCollectionItemDescriptor } from '../collection'
 export const CollapseItemDescriptor = defineComponent({
 	ctor: TCollapseItem,
 
-	extends: [CollapseItemCustomDescriptor, SelectableCollectionItemDescriptor],
+	extends: CollapseItemCustomDescriptor,
 
 	contribution: CollapseItemContribution,
+
+	composition: [{
+		namespace: 'collection',
+		descriptor: SelectableCollectionItemDescriptor,
+		get: (instance) => instance._collection,
+	}],
 })

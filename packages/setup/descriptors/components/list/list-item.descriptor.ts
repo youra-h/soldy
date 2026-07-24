@@ -1,9 +1,11 @@
 /**
  * Дескриптор ListItem (TListItem).
  *
- * Множественное наследование:
+ * Наследование:
  * - ListItemCustomDescriptor (tag, text, wordWrap, value, name, ...)
- * - SelectableCollectionItemDescriptor (selected)
+ *
+ * Композиция:
+ * - SelectableCollectionItemDescriptor → collection:* (selected)
  */
 
 import { defineComponent } from '../../base'
@@ -15,7 +17,13 @@ import { SelectableCollectionItemDescriptor } from '../collection'
 export const ListItemDescriptor = defineComponent({
 	ctor: TListItem,
 
-	extends: [ListItemCustomDescriptor, SelectableCollectionItemDescriptor],
+	extends: ListItemCustomDescriptor,
 
 	contribution: ListItemContribution,
+
+	composition: [{
+		namespace: 'collection',
+		descriptor: SelectableCollectionItemDescriptor,
+		get: (instance) => instance.collectionItem,
+	}],
 })

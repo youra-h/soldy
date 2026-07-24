@@ -60,6 +60,10 @@ export function SelectableComponentMixin<
 			this._collectionItem.collection = value
 		}
 
+		get collectionItem(): TSelectableCollectionItem {
+			return this._collectionItem
+		}
+
 		get selected(): boolean {
 			return this._collectionItem.selected
 		}
