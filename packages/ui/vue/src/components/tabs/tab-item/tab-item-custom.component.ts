@@ -1,45 +1,11 @@
-import type { PropType, Ref } from 'vue'
-import { track } from '@soldy/accessor'
-import {
-	type ITabItemCustom,
-	type ITabItemCustomProps,
-	TTabItemCustom,
-	type TValuePayload,
-} from '@soldy/core'
-import {
-	BaseValueControl,
-	emitsValueControl,
-	propsValueControl,
-	syncValueControl,
-	type IValueControlState,
-} from '../../value-control'
-import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
-import { useSyncProps } from '../../../composables/useSyncProps'
+import { BaseValueControl } from '../../value-control'
+import { useEmits, useProps } from '../../../adapter'
+import type { TEmits, TProps } from '../../../types/common'
+import { TabItemCustomDescriptor } from '@soldy/setup'
 
-export const emitsTabItemCustom: TEmits = [
-	...emitsValueControl,
-	'change:text',
-	'update:text',
-	'change:closable',
-	'update:closable',
-	'close',
-] as const
+export const emitsTabItemCustom: TEmits = useEmits(TabItemCustomDescriptor) as unknown as TEmits
 
-export const propsTabItemCustom: TProps = {
-	...propsValueControl,
-	tag: {
-		type: [Object, String] as PropType<ITabItemCustomProps['tag']>,
-		default: TTabItemCustom.defaultValues.tag,
-	},
-	text: {
-		type: String as PropType<ITabItemCustomProps['text']>,
-		default: TTabItemCustom.defaultValues.text,
-	},
-	closable: {
-		type: Boolean as PropType<ITabItemCustomProps['closable']>,
-		default: TTabItemCustom.defaultValues.closable,
-	},
-}
+export const propsTabItemCustom: TProps = useProps(TabItemCustomDescriptor) as TProps
 
 export default {
 	name: 'BaseTabItemCustom',
@@ -47,17 +13,6 @@ export default {
 	emits: emitsTabItemCustom,
 	props: propsTabItemCustom,
 }
-
-export interface ITabItemCustomState extends IValueControlState {
-	text: Ref<string>
-	closable: Ref<boolean | undefined>
-}
-
-/**
- * Синхронизация props и событий для TabItemCustom
- */
-export function syncTabItemCustom(
-	options: ISyncComponentOptions<ITabItemCustomProps, ITabItemCustom>,
 ) {
 	const syncProps = syncValueControl(options)
 
