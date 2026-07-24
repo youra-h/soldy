@@ -26,8 +26,8 @@ export interface ICompositionDefinition {
     descriptor: IComponentDescriptor
     /** Функция доступа к экземпляру: (instance) => instance._collection */
     get: (instance: any) => any
-    /** Пространство имён для экспорта: 'collection', 'list', etc. */
-    namespace: string
+    /** Пространство имён для экспорта. Если не указан — свойства сливаются без префикса. */
+    namespace?: string
 }
 
 /** Опции для defineComponent(). */

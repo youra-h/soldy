@@ -32,7 +32,10 @@ export class TComponentAccessor {
 	 *  Если namespace нет — это сам компонент (instance).
 	 *  Если есть — сначала композиция, потом плагин. */
 	private getTarget(namespace?: string): any {
-		if (!namespace) return this.instance
+		if (!namespace) {
+			const comp = this.compositionsMap.get('')
+			return comp ? comp(this.instance) : this.instance
+		}
 
 		const comp = this.compositionsMap.get(namespace)
 		if (comp) return comp(this.instance)

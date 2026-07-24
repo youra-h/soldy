@@ -25,7 +25,6 @@ export const CollapseDescriptor = defineComponent({
 	contribution: CollapseContribution,
 
 	composition: [{
-		namespace: 'collection',
 		descriptor: SelectableCollectionDescriptor,
 		get: (instance) => instance.collection,
 	}],

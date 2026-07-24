@@ -22,7 +22,6 @@ export const ListItemDescriptor = defineComponent({
 	contribution: ListItemContribution,
 
 	composition: [{
-		namespace: 'collection',
 		descriptor: SelectableCollectionItemDescriptor,
 		get: (instance) => instance.collectionItem,
 	}],

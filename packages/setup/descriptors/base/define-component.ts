@@ -33,16 +33,18 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
         compileContribution(plugin.contribution, plugin.namespace),
     )
 
-    // 3. Композиции (с namespace) — дескриптор уже скомпилирован, только добавляем namespace
+    // 3. Композиции — дескриптор уже скомпилирован, добавляем namespace если указан
     const compositionContributions = (options.composition ?? []).map((comp) => ({
         props: comp.descriptor.props.map((p) => ({
             ...p,
-            namespace: comp.namespace,
-            triggers: p.triggers.map((t) => `${comp.namespace}:${t}`),
+            namespace: comp.namespace ?? p.namespace,
+            triggers: comp.namespace
+                ? p.triggers.map((t) => `${comp.namespace}:${t}`)
+                : p.triggers,
         })),
         events: comp.descriptor.events.map((e) => ({
             ...e,
-            namespace: comp.namespace,
+            namespace: comp.namespace ?? e.namespace,
         })),
     }))
 
@@ -90,7 +92,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
             const compositionsMap = new Map<string, (instance: any) => any>()
             for (const compDef of composition) {
-                compositionsMap.set(compDef.namespace, compDef.get)
+                compositionsMap.set(compDef.namespace ?? '', compDef.get)
             }
 
             return new TComponentAccessor(props, events, instance, pluginsMap, compositionsMap)

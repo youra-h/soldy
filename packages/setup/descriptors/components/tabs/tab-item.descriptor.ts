@@ -22,7 +22,6 @@ export const TabItemDescriptor = defineComponent({
 	contribution: TabItemContribution,
 
 	composition: [{
-		namespace: 'collection',
 		descriptor: ActivatableCollectionItemDescriptor,
 		get: (instance) => instance.collectionItem,
 	}],
