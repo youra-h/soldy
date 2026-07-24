@@ -1,5 +1,6 @@
 export { FrameDescriptor } from './frame.descriptor'
 export { SkeletonDescriptor } from './skeleton.descriptor'
+export { DragAndDropDescriptor } from './drag-and-drop.descriptor'
 export { ButtonDescriptor } from './button.descriptor'
 export { SwitchDescriptor } from './switch.descriptor'
 export { CheckBoxDescriptor } from './check-box.descriptor'

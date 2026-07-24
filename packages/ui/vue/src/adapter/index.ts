@@ -1,2 +1,5 @@
 export { vueNaming } from './naming'
 export { createVueAdapter, useProps, useEmits, useRuntime, useAdapter } from './createAdapter'
+export type { IElevatorConfig } from './createAdapter'
+export { VueElevator } from './elevator'
+export { COLLECTION_ELEVATOR, COLLECTION_PLUGINS_ELEVATOR, DRAG_CONTEXT_ELEVATOR } from './elevator-keys'

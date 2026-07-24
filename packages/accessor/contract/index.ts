@@ -6,4 +6,5 @@ export type {
     ICompiledEvent,
     IComponentSchema,
     INamingStrategy,
+    IContextElevator,
 } from './types'

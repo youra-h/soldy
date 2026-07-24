@@ -1,5 +1,6 @@
 export { FrameContribution } from './frame'
 export { SkeletonContribution } from './skeleton'
+export { DragAndDropContribution } from './drag-and-drop'
 export { ButtonContribution } from './button'
 export { CheckBoxContribution } from './check-box'
 export { InputContribution } from './input'

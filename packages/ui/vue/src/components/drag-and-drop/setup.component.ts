@@ -1,17 +1,17 @@
-import type { TBaseComponentProps } from '../component'
-import { TDragAndDrop, type IDragAndDropProps } from '@soldy/core'
+import { useAdapter, VueElevator, DRAG_CONTEXT_ELEVATOR } from '../../adapter'
+import { DragAndDropDescriptor } from '@soldy/setup'
 import BaseDragAndDrop from './base.component'
-import { useInstance } from '../../composables/useInstance'
-import { useProvideDragContext } from '../../composables/useDragContext'
+import type { TBaseComponentProps } from '../../types'
+import { type IDragAndDropProps } from '@soldy/core'
 
 export default {
 	name: '_DragAndDrop',
 	extends: BaseDragAndDrop,
-	setup(props: TBaseComponentProps<IDragAndDropProps>) {
-		const instance = useInstance(TDragAndDrop, props)
+	setup(props: TBaseComponentProps<IDragAndDropProps>, { emit }: any) {
+		const dragElevator = new VueElevator<boolean>(DRAG_CONTEXT_ELEVATOR)
 
-		useProvideDragContext()
-
-		return { ctrl: instance }
+		return useAdapter(DragAndDropDescriptor, props, emit, {
+			elevators: { drag: dragElevator },
+		})
 	},
 }

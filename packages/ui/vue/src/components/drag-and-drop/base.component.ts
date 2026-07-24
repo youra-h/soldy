@@ -1,11 +1,11 @@
-import type { TEmits, TProps } from '../../types'
-import { BaseComponent, emitsComponent, propsComponent } from '../component'
+import { BaseComponent } from '../component'
+import { useEmits, useProps } from '../../adapter'
+import type { TEmits, TProps } from '../../types/common'
+import { DragAndDropDescriptor } from '@soldy/setup'
 
-export const emitsDragAndDrop: TEmits = [...emitsComponent] as const
+export const emitsDragAndDrop: TEmits = useEmits(DragAndDropDescriptor) as unknown as TEmits
 
-export const propsDragAndDrop: TProps = {
-	...propsComponent,
-}
+export const propsDragAndDrop: TProps = useProps(DragAndDropDescriptor) as TProps
 
 export default {
 	name: 'BaseDragAndDrop',

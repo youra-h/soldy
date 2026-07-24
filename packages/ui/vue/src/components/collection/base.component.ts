@@ -8,9 +8,7 @@ import {
 	type TCollectionItemSource,
 	type TCollectionEvents,
 } from '@soldy/core'
-import { TCollectionItemPlugins, TDragPlugin } from '@soldy/plugins'
-import { useProvideCollection } from '../../composables/useProvideCollection'
-import { useProvideCollectionPlugins } from '../../composables/useProvideCollectionPlugins'
+import { TDragPlugin } from '@soldy/plugins'
 import { useInjectDragContext } from '../../composables/useDragContext'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../types'
 import { useSyncProps } from '../../composables/useSyncProps'
@@ -63,17 +61,7 @@ export function syncCollection<TItem extends ICollectionItem = ICollectionItem>(
 ): ICollectionState<TItem> {
 	const { instance, emit, props, plugins } = options
 
-	useProvideCollection(instance)
-
-	const collectionItemPlugins = plugins.get(TCollectionItemPlugins)
-
-	if (collectionItemPlugins) {
-		useProvideCollectionPlugins((uid, bundle) => {
-			collectionItemPlugins?.register(uid, bundle)
-		})
-	}
-
-	// Если компонент находится внутри контекста DragAndDrop, активируем плагин для этой коллекции
+	// DragAndDrop — условная активация плагина
 	if (useInjectDragContext()) {
 		plugins.get(TDragPlugin)?.activate(instance)
 	}

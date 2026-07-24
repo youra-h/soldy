@@ -1,6 +1,4 @@
 import { type ICollectionItem, type ICollectionItemProps } from '@soldy/core'
-import { useInjectCollectionItem } from '../../../composables/useInjectCollectionItem'
-import { useInjectCollectionItemPlugins } from '../../../composables/useInjectCollectionItemPlugins'
 import { useSyncProps } from '../../../composables/useSyncProps'
 import type { Ref } from 'vue'
 import type { TEmits, TProps, ISyncComponentOptions } from '../../../types'
@@ -27,10 +25,8 @@ export function syncCollectionItem(
 ): ICollectionItemState {
 	const { instance, emit, plugins } = options
 
-	// Использовать inject для получения коллекции родителя и автоматической регистрации в ней (если декларативный режим)
-	useInjectCollectionItem(instance)
-	// Использовать inject для получения плагинов коллекции родителя и автоматической регистрации в них (если декларативный режим)
-	useInjectCollectionItemPlugins(instance.uid, plugins)
+	// Родитель-ребёнок связь теперь через IContextElevator в useAdapter
+	// (useInjectCollectionItem + useInjectCollectionItemPlugins удалены)
 
 	// Пробрасываем события core-инстанса наружу (Vue events)
 	instance.events.on('free', (item: ICollectionItem) => {

@@ -49,3 +49,19 @@ export interface INamingStrategy {
     prop: (name: string, namespace?: string) => string
     event: (name: string, namespace?: string) => string
 }
+
+/**
+ * Адаптер контекста родитель-ребёнок (Elevator).
+ *
+ * Абстрагирует provide/inject (Vue), React.Context, Angular DI
+ * за единым интерфейсом. Вызовы up()/down() должны происходить
+ * синхронно во время инициализации UI-компонента.
+ *
+ * @template T — тип передаваемого значения
+ */
+export interface IContextElevator<T = any> {
+    /** Передать значение вниз по дереву (provide) */
+    down(value: T): void
+    /** Получить значение от ближайшего родителя (inject) */
+    up(): T | undefined
+}
