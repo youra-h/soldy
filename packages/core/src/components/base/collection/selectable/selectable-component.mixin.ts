@@ -29,7 +29,7 @@ export function SelectableComponentMixin<
 		rendered: boolean
 		classes: TClasses
 	}>,
->(Base: TBase) {
+>(Base: TBase): TBase & (new (...args: any[]) => ISelectableComponentItem) {
 	class SelectableComponent extends Base implements ISelectableComponentItem {
 		protected _collectionItem!: TSelectableCollectionItem
 

@@ -16,7 +16,7 @@ export function ActivatableComponentMixin<
 		rendered: boolean
 		classes: TClasses
 	}>,
->(Base: TBase) {
+>(Base: TBase): TBase & (new (...args: any[]) => IActivatableComponentItem) {
 	class ActivatableComponent extends Base implements IActivatableComponentItem {
 		protected _collectionItem!: TActivatableCollectionItem
 
