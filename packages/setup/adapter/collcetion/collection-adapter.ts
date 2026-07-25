@@ -43,7 +43,8 @@ export function createCollectionAdapter(
 
     // 4. Если у коллекции есть плагин элементов — спускаем регистратор плагинов вниз
     const collectionItemPlugins = bundle.get(TCollectionItemPlugins)
-    if (collectionItemPlugins) {
+
+	if (collectionItemPlugins) {
         pluginsElevator.down((uid: string | number, itemBundle: any) => {
             collectionItemPlugins.register(uid, itemBundle)
         })
