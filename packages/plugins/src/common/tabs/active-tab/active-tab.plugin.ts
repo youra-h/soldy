@@ -15,7 +15,6 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 	private _collectionElements: TElementAccumulationPlugin | null = null
 
 	override install(bundle: IPluginBundle): void {
-		debugger
 		bundle.get(TElementPlugin)?.events.on('ready', ({ element }) => {
 			this._element = element
 			this._emitOffset()
@@ -35,8 +34,12 @@ export class TTabsActiveTabPlugin extends TBasePlugin<TTabsActiveTabPluginEvents
 			this._tabs = instance
 
 			instance.events.on('item:activated', () => this._emitOffset())
-			instance.events.on('item:afterDelete', () => requestAnimationFrame(() => this._emitOffset()))
-			instance.events.on('item:afterMove', () => requestAnimationFrame(() => this._emitOffset()))
+			instance.events.on('item:afterDelete', () =>
+				requestAnimationFrame(() => this._emitOffset()),
+			)
+			instance.events.on('item:afterMove', () =>
+				requestAnimationFrame(() => this._emitOffset()),
+			)
 			instance.events.on('item:deactivated', () => this._emitOffset())
 			instance.events.on('change:view', () => this._emitOffset())
 		})
