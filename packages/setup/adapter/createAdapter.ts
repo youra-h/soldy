@@ -6,15 +6,13 @@
  */
 
 import type { IComponentDescriptor } from '../descriptors'
+import type { IAdapter } from './types'
 
 export function createAdapter(
     descriptor: IComponentDescriptor,
     options: { ctrl?: any; plugins?: any; props?: any },
-) {
-    // Если instance не передан — создаём его через конструктор из дескриптора.
+): IAdapter {
     const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
-
-    // Если bundle не передан — создаём его через дескриптор.
     const bundle = options.plugins ?? descriptor.createBundle()
 
     const accessor = descriptor.createAccessor(instance, bundle)
