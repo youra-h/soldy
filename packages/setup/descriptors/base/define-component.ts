@@ -13,16 +13,17 @@ import { compileContribution } from './compile-contribution'
 export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
     const parent = options.extends
 
-    // Плагины: родительские + свои
-    const plugins: IPluginDefinition[] = [
-        ...(parent?.plugins ?? []),
-        ...(options.plugins ?? []),
-    ]
-
-    // Композиции: родительские + свои
+    // Композиции: родительские + свои (объявляем до plugins, чтобы включить их плагины)
     const composition: ICompositionDefinition[] = [
         ...(parent?.composition ?? []),
         ...(options.composition ?? []),
+    ]
+
+    // Плагины: родительские + свои + из композиций
+    const plugins: IPluginDefinition[] = [
+        ...(parent?.plugins ?? []),
+        ...(options.plugins ?? []),
+        ...composition.flatMap((c) => c.descriptor.plugins),
     ]
 
     // 1. Компонент (без namespace)
