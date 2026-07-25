@@ -1,4 +1,4 @@
-import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../../adapter'
+import { useCollectionItemAdapter } from '../../../adapter'
 import { ListBoxItemDescriptor } from '@soldy/setup'
 import BaseListBoxItem from './list-box-item.component'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
@@ -10,12 +10,8 @@ export default {
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
 	setup(props: TBaseComponentProps<IListItemProps, IListBoxItem>, { emit }: any) {
-		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
-
 		return {
-			...useAdapter(ListBoxItemDescriptor, props, emit, {
-				elevators: { collection: collectionElevator },
-			}),
+			...useCollectionItemAdapter(ListBoxItemDescriptor, props, emit),
 			...useSplitAttrs(),
 		}
 	},

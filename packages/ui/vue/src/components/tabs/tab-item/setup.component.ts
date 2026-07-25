@@ -1,4 +1,4 @@
-import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../../adapter'
+import { useCollectionItemAdapter } from '../../../adapter'
 import { TabItemDescriptor } from '@soldy/setup'
 import BaseTabItem from './tab-item.component'
 import { useIconImport, useSplitAttrs } from '../../../composables'
@@ -10,12 +10,8 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
-		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
-
 		return {
-			...useAdapter(TabItemDescriptor, props, emit, {
-				elevators: { collection: collectionElevator },
-			}),
+			...useCollectionItemAdapter(TabItemDescriptor, props, emit),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

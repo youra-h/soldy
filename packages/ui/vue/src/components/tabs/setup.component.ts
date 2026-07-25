@@ -1,4 +1,4 @@
-import { useAdapter, VueElevator, COLLECTION_ELEVATOR } from '../../adapter'
+import { useCollectionAdapter } from '../../adapter'
 import { TabsDescriptor } from '@soldy/setup'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
@@ -8,10 +8,6 @@ export default {
 	name: '_Tabs',
 	extends: BaseTabs,
 	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
-		const collectionElevator = new VueElevator(COLLECTION_ELEVATOR)
-
-		return useAdapter(TabsDescriptor, props, emit, {
-			elevators: { collection: collectionElevator },
-		})
+		return useCollectionAdapter(TabsDescriptor, props, emit)
 	},
 }

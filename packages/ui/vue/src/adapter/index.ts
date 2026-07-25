@@ -1,4 +1,4 @@
 export { vueNaming } from './naming'
 export { createVueAdapter, useProps, useEmits, useRuntime, useAdapter } from './createAdapter'
-export type { IElevatorConfig } from './createAdapter'
-export * from './elevator'
+export { VueElevator } from './elevator'
+export { useCollectionAdapter, useCollectionItemAdapter } from './collection-helpers'
