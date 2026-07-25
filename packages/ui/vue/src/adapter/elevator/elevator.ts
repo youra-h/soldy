@@ -1,33 +1,15 @@
 /**
  * VueElevator — реализация IContextElevator через Vue provide/inject.
  *
+ * Наследует TElevator из @soldy/setup (кэширование ключей).
  * Ключевое ограничение: up()/down() должны вызываться синхронно
  * внутри setup() UI-компонента.
  */
 
-import { provide, inject, type InjectionKey } from 'vue'
-import type { IContextElevator } from '@soldy/accessor'
+import { provide, inject } from 'vue'
+import { TElevator } from '@soldy/setup'
 
-const KEY_MAP = new Map<string | symbol, InjectionKey<any>>()
-
-function getKey(key: string | symbol): InjectionKey<any> {
-    let k = KEY_MAP.get(key)
-
-    if (!k) {
-        k = Symbol(key.toString())
-        KEY_MAP.set(key, k)
-    }
-
-    return k
-}
-
-export class VueElevator<T> implements IContextElevator<T> {
-    private _key: InjectionKey<T>
-
-    constructor(key: string | symbol) {
-        this._key = getKey(key)
-    }
-
+export class VueElevator<T = any> extends TElevator<T> {
     down(value: T): void {
         provide(this._key, value)
     }

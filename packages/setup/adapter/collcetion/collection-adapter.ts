@@ -13,7 +13,7 @@
 
 import { createAdapter } from '../createAdapter'
 import type { IComponentDescriptor } from '../../descriptors'
-import type { TElevatorFactory } from '../elevator/keys'
+import type { TElevatorFactory } from '../elevator'
 import {
     COLLECTION_ELEVATOR,
     COLLECTION_PLUGINS_ELEVATOR,
