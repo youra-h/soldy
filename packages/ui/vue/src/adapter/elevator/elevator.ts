@@ -12,10 +12,12 @@ const KEY_MAP = new Map<string | symbol, InjectionKey<any>>()
 
 function getKey(key: string | symbol): InjectionKey<any> {
     let k = KEY_MAP.get(key)
+
     if (!k) {
         k = Symbol(key.toString())
         KEY_MAP.set(key, k)
     }
+
     return k
 }
 
