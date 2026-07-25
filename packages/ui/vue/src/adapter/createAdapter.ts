@@ -11,7 +11,7 @@
  */
 
 import { toRaw, ref, watch, onUnmounted } from 'vue'
-import type { IComponentDescriptor, IAdapter } from '@soldy/setup'
+import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
 import type {
 	TComponentAccessor,
@@ -85,20 +85,6 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 			props,
 		})
 
-		return useVueRuntime({ instance, bundle, accessor }, props, emit)
-	}
-
-	// --- VUE RUNTIME ---
-	// Чистый Vue-биндинг. Не создаёт adapter — только связывает готовый
-	// instance/bundle/accessor с Vue-реактивностью. Используется напрямую
-	// в collection-helpers.ts для пайплайна createAdapter → decorate → useVueRuntime.
-	function useVueRuntime(
-		adapter: IAdapter,
-		props: Record<string, any>,
-		emit?: (event: string, ...args: any[]) => void,
-	) {
-		const { instance, bundle, accessor } = adapter
-
 		const { refs } = useRuntime(accessor, props, emit)
 
 		const { bindElement } = bindPlugins(bundle, instance)
@@ -114,7 +100,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 	}
 
-	return { useProps, useEmits, useRuntime, useAdapter, useVueRuntime }
+	return { useProps, useEmits, useRuntime, useAdapter }
 }
 
-export const { useProps, useEmits, useRuntime, useAdapter, useVueRuntime } = createVueAdapter(vueNaming)
+export const { useProps, useEmits, useRuntime, useAdapter } = createVueAdapter(vueNaming)

@@ -1,5 +1,4 @@
 export { createAdapter } from './createAdapter'
 export { bindPlugins } from './bindPlugins'
-export * from './decorators'
+export * from './collcetion'
 export * from './elevator'
-export * from './types'

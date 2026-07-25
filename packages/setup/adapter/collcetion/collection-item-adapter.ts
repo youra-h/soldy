@@ -1,7 +1,7 @@
 /**
- * Декоратор элемента коллекции.
+ * Framework-agnostic адаптер элемента коллекции.
  *
- * Принимает готовый adapter { instance, bundle } и настраивает
+ * Создаёт instance/bundle/accessor через createAdapter и настраивает
  * связь ребёнок-родитель через IContextElevator:
  *   - получает родительскую коллекцию (COLLECTION_ELEVATOR) и регистрируется в ней
  *   - получает регистратор плагинов (COLLECTION_PLUGINS_ELEVATOR) и регистрирует свой bundle
@@ -11,18 +11,21 @@
  * коллбэк жизненного цикла, который предоставляет конкретный фреймворк.
  */
 
+import { createAdapter } from '../createAdapter'
+import type { IComponentDescriptor } from '../../descriptors'
 import type { TElevatorFactory } from '../elevator'
-import type { IAdapter } from '../types'
 import {
     COLLECTION_ELEVATOR,
     COLLECTION_PLUGINS_ELEVATOR,
 } from '../elevator'
 
-export function decorateCollectionItem(
-    adapter: IAdapter,
+export function createCollectionItemAdapter(
+    descriptor: IComponentDescriptor,
+    options: { ctrl?: any; plugins?: any; props?: any },
     elevatorFactory: TElevatorFactory,
     onUnmount: (callback: () => void) => void,
-): void {
+) {
+    // 1. Ищем родительскую коллекцию и регистратор плагинов НАВЕРХУ
     const collectionElevator = elevatorFactory(COLLECTION_ELEVATOR)
     const pluginsElevator = elevatorFactory(COLLECTION_PLUGINS_ELEVATOR)
 
@@ -34,9 +37,11 @@ export function decorateCollectionItem(
         | ((uid: string | number, bundle: any) => void)
         | undefined
 
-    const { instance, bundle } = adapter
+    // 2. Инициализируем базовый адаптер
+    const adapterResult = createAdapter(descriptor, options)
+    const { instance, bundle } = adapterResult
 
-    // Автоматическая регистрация в родительской коллекции (если в декларативном режиме)
+    // 3. Автоматическая регистрация в родительской коллекции (если в декларативном режиме)
     if (parentCollection && instance && instance.collection === null) {
         parentCollection.insertAt(instance)
 
@@ -48,4 +53,6 @@ export function decorateCollectionItem(
     if (registerItemPlugins) {
         registerItemPlugins(instance.uid, bundle)
     }
+
+    return adapterResult
 }
