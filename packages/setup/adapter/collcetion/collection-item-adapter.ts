@@ -41,21 +41,17 @@ export function createCollectionItemAdapter(
     const adapterResult = createAdapter(descriptor, options)
     const { instance, bundle } = adapterResult
 
-    // Item instance может быть подполем композиции
-    const itemInstance = 'collectionItem' in instance ? instance.collectionItem : instance
-
     // 3. Автоматическая регистрация в родительской коллекции (если в декларативном режиме)
-    if (parentCollection && itemInstance && itemInstance.collection === null) {
-        parentCollection.insertAt(itemInstance)
+    if (parentCollection && instance && instance.collection === null) {
+        parentCollection.insertAt(instance)
 
         onUnmount(() => {
-            parentCollection.deleteItem(itemInstance)
+            parentCollection.deleteItem(instance)
         })
     }
 
-    // 4. Регистрация бандла плагинов элемента в плагине коллекции родителя
-    if (registerItemPlugins && itemInstance?.uid) {
-        registerItemPlugins(itemInstance.uid, bundle)
+    if (registerItemPlugins) {
+        registerItemPlugins(instance.uid, bundle)
     }
 
     return adapterResult

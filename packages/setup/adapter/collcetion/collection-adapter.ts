@@ -35,11 +35,8 @@ export function createCollectionAdapter(
     const adapterResult = createAdapter(descriptor, options)
     const { instance, bundle } = adapterResult
 
-    // Коллекция может быть как самим instance, так и его свойством (например, ctrl.collection в Tabs)
-    const collectionInstance = 'collection' in instance ? instance.collection : instance
-
     // 3. Спускаем инстанс коллекции вниз детям
-    collectionElevator.down(collectionInstance)
+    collectionElevator.down(instance)
 
     // 4. Если у коллекции есть плагин элементов — спускаем регистратор плагинов вниз
     const collectionItemPlugins = bundle.get(TCollectionItemPlugins)
@@ -52,8 +49,9 @@ export function createCollectionAdapter(
 
     // 5. Проверяем DragAndDrop контекст сверху (если родитель дал drag context)
     const dragContext = dragElevator.up()
+
     if (dragContext) {
-        bundle.get(TDragPlugin)?.activate(collectionInstance)
+        bundle.get(TDragPlugin)?.activate(instance)
     }
 
     return adapterResult
