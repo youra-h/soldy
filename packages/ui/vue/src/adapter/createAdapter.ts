@@ -10,7 +10,7 @@
  * родитель-ребёнок (замена provide/inject).
  */
 
-import { toRaw, ref, watch, onUnmounted, type Ref } from 'vue'
+import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
 import type {
@@ -26,9 +26,9 @@ import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
 /** Конфигурация elevators для useAdapter */
-export interface IElevatorConfig {
-	elevators?: Record<string, IContextElevator>
-}
+// export interface IElevatorConfig {
+// 	elevators?: Record<string, IContextElevator>
+// }
 
 export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 	const getInspector = (target: any): TDescriptorInspector => {
@@ -85,7 +85,7 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		descriptor: IComponentDescriptor,
 		props: Record<string, any>,
 		emit?: (event: string, ...args: any[]) => void,
-		config?: IElevatorConfig,
+		// config?: IElevatorConfig,
 	) {
 		// 1. Подняться на лифте — получить родительский контекст
 		// const parentContexts: Record<string, any> = {}
@@ -131,8 +131,6 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 			// 	parentCollection.deleteItem(instance)
 			// }
 		})
-
-
 
 		return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 	}
