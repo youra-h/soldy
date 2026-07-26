@@ -23,7 +23,7 @@ export class TComponentAccessor {
 		this.inspector = new TDescriptorInspector({ props, events })
 	}
 
-	/** Возвращает схему компонента — используется createVueAdapter для создания DescriptorInspector */
+	/** Возвращает схему компонента — используется для создания DescriptorInspector */
 	getSchema(): IComponentSchema {
 		return { props: this.props, events: this.events }
 	}
