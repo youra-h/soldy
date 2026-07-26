@@ -335,7 +335,6 @@ adapter/
 │   ├── factory.ts              #   VueElevatorFactory
 │   └── index.ts
 │
-├── createAdapter.ts            # createVueAdapter (legacy-фабрика) DEPRECATED
 └── index.ts
 ```
 

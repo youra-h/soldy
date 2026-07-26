@@ -12,7 +12,6 @@
  *
  * Используется:
  * - TComponentAccessor'ом (делегирование)
- * - UI-адаптерами напрямую (createVueAdapter)
  */
 
 import type { ICompiledProp, ICompiledEvent, IComponentSchema, INamingStrategy, ICompiledItem } from './contract'
