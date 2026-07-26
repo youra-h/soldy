@@ -16,11 +16,9 @@ export default class TCollapseItem
 	implements ICollapseItem
 {
 	constructor(options: TCollapseItemOptions | Partial<ICollapseItemProps> = {}) {
-		const { collection, ...componentOptions } = options as TCollapseItemOptions
+		super(options)
 
-		super(componentOptions)
-
-		this.init(collection)
+		this.init(options)
 	}
 
 	open(): void {
