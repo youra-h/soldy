@@ -8,51 +8,51 @@
 import type { IComponentDescriptor } from '../descriptors'
 
 export interface IAdapterContext {
-    instance: any
-    bundle: any
-    accessor: any
+	instance: any
+	bundle: any
+	accessor: any
 
-    /** Зарегистрировать коллбэк очистки ресурсов */
-    onDispose(fn: () => void): void
+	/** Зарегистрировать коллбэк очистки ресурсов */
+	onDispose(fn: () => void): void
 
-    /** Запустить все коллбэки очистки */
-    destroy(): void
+	/** Запустить все коллбэки очистки */
+	destroy(): void
 
-    /** Метод для чейнинга плагинов/декораторов */
-    use<T extends IAdapterContext>(plugin: (context: this) => void): this
+	/** Метод для чейнинга плагинов/декораторов */
+	use<T extends IAdapterContext>(extension: (context: this) => void): this
 }
 
 export function createAdapterContext(
-    descriptor: IComponentDescriptor,
-    options: { ctrl?: any; plugins?: any; props?: any },
+	descriptor: IComponentDescriptor,
+	options: { ctrl?: any; plugins?: any; props?: any },
 ): IAdapterContext {
-    const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
-    const bundle = options.plugins ?? descriptor.createBundle()
-    const accessor = descriptor.createAccessor(instance, bundle)
+	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
+	const bundle = options.plugins ?? descriptor.createBundle()
+	const accessor = descriptor.createAccessor(instance, bundle)
 
-    const disposers: (() => void)[] = []
+	const disposers: (() => void)[] = []
 
-    const context: IAdapterContext = {
-        instance,
-        bundle,
-        accessor,
+	const context: IAdapterContext = {
+		instance,
+		bundle,
+		accessor,
 
-        onDispose(fn: () => void) {
-            disposers.push(fn)
-        },
+		onDispose(fn: () => void) {
+			disposers.push(fn)
+		},
 
-        destroy() {
-            for (const fn of disposers) {
-                fn()
-            }
-            disposers.length = 0
-        },
+		destroy() {
+			for (const fn of disposers) {
+				fn()
+			}
+			disposers.length = 0
+		},
 
-        use(plugin) {
-            plugin(this)
-            return this
-        },
-    }
+		use(extension) {
+			extension(this)
+			return this
+		},
+	}
 
-    return context
+	return context
 }
