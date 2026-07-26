@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, TPluginsBindingExtension, TCollectionItemExtension, ListBoxItemDescriptor } from '@soldy/setup'
+import { createAdapterContext, TCollectionItemExtension, ListBoxItemDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useSplitAttrs } from '../../../composables/useSplitAttrs'
 import BaseListBoxItem from './list-box-item.component'
@@ -15,9 +15,7 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		})
-			.use(TPluginsBindingExtension)
-			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useVue(adapter, props, emit),
