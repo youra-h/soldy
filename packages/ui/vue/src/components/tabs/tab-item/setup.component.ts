@@ -1,7 +1,8 @@
-import { useCollectionItemAdapter } from '../../../adapter'
-import { TabItemDescriptor } from '@soldy/setup'
-import BaseTabItem from './tab-item.component'
+import { toRaw } from 'vue'
+import { createAdapterContext, withCollectionItem, TabItemDescriptor } from '@soldy/setup'
+import { useVue, vueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
+import BaseTabItem from './tab-item.component'
 import type { TBaseComponentProps } from '../../../types'
 import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
@@ -10,8 +11,14 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
+		const adapter = createAdapterContext(TabItemDescriptor, {
+			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			plugins: props.plugins,
+			props,
+		}).use(withCollectionItem(vueElevatorFactory))
+
 		return {
-			...useCollectionItemAdapter(TabItemDescriptor, props, emit),
+			...useVue(adapter, props, emit),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

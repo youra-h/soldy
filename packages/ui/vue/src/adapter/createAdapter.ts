@@ -2,63 +2,31 @@
  * Центральная фабрика Vue-адаптера: createVueAdapter.
  *
  * Собирает useProps, useEmits, useRuntime и useAdapter в единый «запечённый»
- * контекст с фиксированной стратегией именования. Заменяет разрозненные файлы
- * useProps.ts, useEmits.ts, useRuntime.ts, useAdapter.ts — теперь вся логика
- * форматирования делегируется TDescriptorInspector'у из @soldy/accessor.
+ * контекст с фиксированной стратегией именования.
  *
- * Для компонентов-коллекций используйте useCollectionAdapter / useCollectionItemAdapter
- * из collection-helpers.ts — они добавляют связь родитель-ребёнок через IContextElevator.
+ * useProps / useEmits теперь живут в helpers.ts и используют единый getInspector.
+ * createVueAdapter делегирует туда же.
+ *
+ * Для нового кода используйте createAdapterContext + useVue из @soldy/setup и ./useVue.
+ * Для компонентов-коллекций — createAdapterContext + .use(withCollection).
  */
 
 import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
-import type {
-	TComponentAccessor,
-	INamingStrategy,
-	IComponentSchema,
-} from '@soldy/accessor'
-import { TDescriptorInspector } from '@soldy/accessor'
-import { vueNaming } from './naming'
-import { useSyncProps } from './useSyncProps'
-import { useSyncEvents } from './useSyncEvents'
+import type { TComponentAccessor, INamingStrategy } from '@soldy/accessor'
+import { getInspector } from './helpers'
+import { useSyncProps } from './runtime/useSyncProps'
+import { useSyncEvents } from './runtime/useSyncEvents'
 
-export function createVueAdapter(naming: INamingStrategy = vueNaming) {
-	const getInspector = (target: any): TDescriptorInspector => {
-		const schema: IComponentSchema = target.getSchema ? target.getSchema() : target
-
-		return new TDescriptorInspector(schema, naming)
-	}
-
-	// --- USE PROPS ---
-	function useProps(descriptor: IComponentDescriptor): Record<string, any> {
-		const defaults = (descriptor.ctor as any)?.defaultValues ?? {}
-		const inspector = getInspector(descriptor)
-
-		return inspector.getExportProps(defaults)
-	}
-
-	// --- USE EMITS ---
-	function useEmits(descriptor: IComponentDescriptor): string[] {
-		const inspector = getInspector(descriptor)
-		const emits = inspector.getExportEvents()
-
-		for (const prop of descriptor.props) {
-			if (!prop.protected && prop.triggers.length > 0) {
-				emits.push(`update:${inspector.getExportPropName(prop)}`)
-			}
-		}
-
-		return Array.from(new Set(emits))
-	}
-
+export function createVueAdapter(naming: INamingStrategy = undefined as any) {
 	// --- USE RUNTIME ---
 	function useRuntime(
 		accessor: TComponentAccessor,
 		externalProps: Record<string, any>,
 		emit?: (event: string, ...args: any[]) => void,
 	) {
-		const inspector = getInspector(accessor)
+		const inspector = getInspector(accessor, naming)
 
 		const { refs, bindOutput, bindInput } = useSyncProps(accessor, inspector)
 
@@ -100,7 +68,8 @@ export function createVueAdapter(naming: INamingStrategy = vueNaming) {
 		return { ctrl: instance, plugins: bundle, rootElement, ...refs }
 	}
 
-	return { useProps, useEmits, useRuntime, useAdapter }
+	return { useRuntime, useAdapter }
 }
 
-export const { useProps, useEmits, useRuntime, useAdapter } = createVueAdapter(vueNaming)
+// Предзапечённые экземпляры с vueNaming по умолчанию
+export const { useRuntime, useAdapter } = createVueAdapter()

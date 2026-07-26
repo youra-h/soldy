@@ -1,5 +1,6 @@
-import { useAdapter } from '../../adapter'
-import { ComponentViewDescriptor } from '@soldy/setup'
+import { toRaw } from 'vue'
+import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
+import { useVue } from '../../adapter'
 import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import type { TBaseComponentProps } from './../../types'
 import BaseComponentView from './base.component'
@@ -8,6 +9,12 @@ export default {
 	name: '_ComponentView',
 	extends: BaseComponentView,
 	setup(props: TBaseComponentProps<IComponentViewProps, IComponentView>, { emit }: any) {
-		return useAdapter(ComponentViewDescriptor, props, emit)
+		const adapter = createAdapterContext(ComponentViewDescriptor, {
+			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			plugins: props.plugins,
+			props,
+		})
+
+		return useVue(adapter, props, emit)
 	},
 }
