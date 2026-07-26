@@ -1,5 +1,6 @@
-import { useAdapter } from '../../adapter'
-import { CheckBoxDescriptor } from '@soldy/setup'
+import { toRaw } from 'vue'
+import { createAdapterContext, CheckBoxDescriptor } from '@soldy/setup'
+import { useVue } from '../../adapter'
 import BaseCheckBox from './base.component'
 import { useIconImport, useSplitAttrs } from '../../composables'
 import type { TBaseComponentProps } from '../../types'
@@ -10,8 +11,14 @@ export default {
 	inheritAttrs: false,
 	extends: BaseCheckBox,
 	setup(props: TBaseComponentProps<ICheckBoxProps, ICheckBox>, { emit }: any) {
+		const adapter = createAdapterContext(CheckBoxDescriptor, {
+			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			plugins: props.plugins,
+			props,
+		})
+
 		return {
-			...useAdapter(CheckBoxDescriptor, props, emit),
+			...useVue(adapter, props, emit),
 			defaultIconTag: useIconImport('check'),
 			defaultIndeterminateIconTag: useIconImport('checkIndeterminate'),
 			...useSplitAttrs(),
