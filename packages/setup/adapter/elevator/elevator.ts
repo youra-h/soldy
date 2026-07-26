@@ -6,7 +6,7 @@
  * (или их аналогах в React/Solid/Angular).
  *
  * Конкретные реализации:
- *   - VueElevator extends TElevator (provide/inject)
+ *   - TVueElevator extends TElevator (provide/inject)
  *   - ReactElevator extends TElevator (React.Context)
  */
 

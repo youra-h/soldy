@@ -2,7 +2,7 @@
  * Абстрактные ключи элеваторов и фабрика.
  *
  * Это единое пространство имён для всех фреймворков.
- * Конкретная реализация IContextElevator (VueElevator, React.Context, ...)
+ * Конкретная реализация IContextElevator (TVueElevator, React.Context, ...)
  * живёт в своём UI-пакете и передаётся сюда через TElevatorFactory.
  */
 

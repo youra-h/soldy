@@ -3,7 +3,7 @@ import { provide, inject, type InjectionKey } from 'vue'
 export const DRAG_CONTEXT_KEY: InjectionKey<boolean> = Symbol('drag-context')
 
 /**
- * @deprecated Используйте VueElevator с ключом DRAG_CONTEXT_ELEVATOR из adapter/elevator-keys.
+ * @deprecated Используйте TVueElevator с ключом DRAG_CONTEXT_ELEVATOR из adapter/elevator-keys.
  * Будет удалено после миграции Collection на useAdapter.
  */
 export function useProvideDragContext(): void {
@@ -11,7 +11,7 @@ export function useProvideDragContext(): void {
 }
 
 /**
- * @deprecated Используйте VueElevator с ключом DRAG_CONTEXT_ELEVATOR из adapter/elevator-keys.
+ * @deprecated Используйте TVueElevator с ключом DRAG_CONTEXT_ELEVATOR из adapter/elevator-keys.
  * Будет удалено после миграции Collection на useAdapter.
  */
 export function useInjectDragContext(): boolean {

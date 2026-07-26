@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, withCollectionItem, TabItemDescriptor } from '@soldy/setup'
-import { useVue, vueElevatorFactory } from '../../../adapter'
+import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseTabItem from './tab-item.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -15,7 +15,7 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		}).use(withCollectionItem(vueElevatorFactory))
+		}).use(withCollectionItem(VueElevatorFactory))
 
 		return {
 			...useVue(adapter, props, emit),

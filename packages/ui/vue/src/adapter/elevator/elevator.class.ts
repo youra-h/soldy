@@ -1,5 +1,5 @@
 /**
- * VueElevator — реализация IContextElevator через Vue provide/inject.
+ * TVueElevator — реализация IContextElevator через Vue provide/inject.
  *
  * Наследует TElevator из @soldy/setup (кэширование ключей).
  * Ключевое ограничение: up()/down() должны вызываться синхронно
@@ -9,7 +9,7 @@
 import { provide, inject } from 'vue'
 import { TElevator } from '@soldy/setup'
 
-export class VueElevator<T = any> extends TElevator<T> {
+export class TVueElevator<T = any> extends TElevator<T> {
     down(value: T): void {
         provide(this._key, value)
     }

@@ -5,7 +5,7 @@ import type { IContextElevator } from '@soldy/accessor'
  *
  * Пример для Vue:
  * ```ts
- * const vueElevatorFactory = <T>(key: string | symbol) => new VueElevator<T>(key)
+ * const VueElevatorFactory = <T>(key: string | symbol) => new TVueElevator<T>(key)
  * ```
  */
 export type TElevatorFactory = <T>(key: string | symbol) => IContextElevator<T>
