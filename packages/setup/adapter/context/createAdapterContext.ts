@@ -8,13 +8,14 @@
  */
 
 import { TEvented } from '@soldy/core'
-import type { IComponentDescriptor } from '../../descriptors'
 import type { IAdapterContext, TAdapterEvents, IAdapterExtensionCtor } from './types'
+import { TPluginsBindingExtension } from '../extensions'
+import type { IComponentDescriptor } from '@soldy/setup'
 
 export function createAdapterContext(
 	descriptor: IComponentDescriptor,
 	options: { ctrl?: any; plugins?: any; props?: any },
-	defaultExtensions: Array<IAdapterExtensionCtor<any, any>> = [],
+	defaultExtensions: Array<IAdapterExtensionCtor<any, any>> = [TPluginsBindingExtension],
 ): IAdapterContext {
 	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
 	const bundle = options.plugins ?? descriptor.createBundle()

@@ -2,7 +2,37 @@
 
 ## Цель
 
-Заменить ручное описание `emits`, `props`, `sync`-функций и `useComponentSetup` на декларативную систему на основе **Contribution** → **Descriptor** → **Adapter**.
+Заменить ручное описание `emits`, `props`, `sync`-функций и `useComponentSetup` на декларативную систему на основе **Contribution** → **Descriptor** → **Adapter Context + Extensions**.
+
+---
+
+## Архитектура адаптера (Registry-паттерн)
+
+Адаптер построен на трёх китах:
+
+| Слой | Файлы | Назначение |
+|------|-------|------------|
+| **Context** | `packages/setup/adapter/context/` | `IAdapterContext`: `instance`, `bundle`, `accessor`, `events` (TEvented). `.use(Ctor, opts?)`, `.get(Ctor)`, `.destroy()` |
+| **Extensions** | `packages/setup/adapter/extensions/` | `TPluginsBindingExtension`, `TCollectionExtension`, `TCollectionItemExtension` — классы с `static key` |
+| **Vue Runtime** | `packages/ui/vue/src/adapter/runtime/` | `useVue(adapter, props, emit)` — единственный хук: реактивность + DOM-биндинг + очистка |
+
+**Ключевое правило:** Расширения регистрируются через `.use(Ctor, opts?)` и извлекаются через `.get(Ctor)`. Это идентично архитектуре плагинов (`bundle.use()` / `bundle.get()`).
+
+```ts
+// Обычный компонент
+const adapter = createAdapterContext(Descriptor, { ... })
+    .use(TPluginsBindingExtension)
+
+// Коллекция-родитель
+const adapter = createAdapterContext(Descriptor, { ... })
+    .use(TPluginsBindingExtension)
+    .use(TCollectionExtension, { elevator: VueElevatorFactory })
+
+// Элемент коллекции
+const adapter = createAdapterContext(Descriptor, { ... })
+    .use(TPluginsBindingExtension)
+    .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+```
 
 ---
 
@@ -13,9 +43,9 @@
 ─────────────────────────────────────      ──────────────────────────────────
 Ручные emits:  [...events..., ...triggers]  useEmits(Descriptor) — авто
 Ручные props:  { type, default }            useProps(Descriptor) — авто
-Ручной sync:   emit/on/track/useSyncProps   useAdapter(Descriptor, props, emit)
-Ручной bundle: useComponentSetup(...)       createBundle() внутри Дескриптора
-Ручной state:  interface IState {}          Не нужен (refs из useAdapter)
+Ручной sync:   emit/on/track/useSyncProps   useVue(adapter, props, emit)
+Ручной bundle: useComponentSetup(...)       createAdapterContext(Descriptor, ...).use(...)
+Ручной state:  interface IState {}          Не нужен (refs из useVue)
 ```
 
 ---
@@ -229,7 +259,9 @@ export const emitsComponent: TEmits = useEmits(ComponentDescriptor) as unknown a
 export const propsComponent: TProps = useProps(ComponentDescriptor) as TProps
 ```
 
-### `setup.component.ts` — заменить useComponentSetup на useAdapter
+### `setup.component.ts` — заменить useComponentSetup на createAdapterContext + useVue
+
+**Обычный компонент (ComponentView):**
 
 ```ts
 // БЫЛО:
@@ -246,12 +278,77 @@ export default {
 }
 
 // СТАЛО:
-import { useAdapter } from '../../adapter'
-import { ComponentViewDescriptor } from '@soldy/setup'
+import { toRaw } from 'vue'
+import { createAdapterContext, TPluginsBindingExtension, ComponentViewDescriptor } from '@soldy/setup'
+import { useVue } from '../../adapter'
 
 export default {
-    setup(props: TBaseComponentProps<IComponentViewProps, IComponentView>, { emit }: any) {
-        return useAdapter(ComponentViewDescriptor, props, emit)
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(ComponentViewDescriptor, {
+            ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+            plugins: props.plugins,
+            props,
+        }).use(TPluginsBindingExtension)
+
+        return useVue(adapter, props, emit)
+    },
+}
+```
+
+**Коллекция-родитель (Tabs):**
+
+```ts
+import { toRaw } from 'vue'
+import {
+    createAdapterContext,
+    TPluginsBindingExtension,
+    TCollectionExtension,
+    TabsDescriptor,
+} from '@soldy/setup'
+import { useVue, VueElevatorFactory } from '../../adapter'
+
+export default {
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(TabsDescriptor, {
+            ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+            plugins: props.plugins,
+            props,
+        })
+            .use(TPluginsBindingExtension)
+            .use(TCollectionExtension, { elevator: VueElevatorFactory })
+
+        return useVue(adapter, props, emit)
+    },
+}
+```
+
+**Элемент коллекции (TabItem):**
+
+```ts
+import { toRaw } from 'vue'
+import {
+    createAdapterContext,
+    TPluginsBindingExtension,
+    TCollectionItemExtension,
+    TabItemDescriptor,
+} from '@soldy/setup'
+import { useVue, VueElevatorFactory } from '../../../adapter'
+
+export default {
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(TabItemDescriptor, {
+            ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+            plugins: props.plugins,
+            props,
+        })
+            .use(TPluginsBindingExtension)
+            .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+
+        return {
+            ...useVue(adapter, props, emit),
+            closeIconTag: useIconImport('close'),
+            ...useSplitAttrs(),
+        }
     },
 }
 ```
@@ -259,7 +356,7 @@ export default {
 ### Удалить:
 
 - `_base.component.ts` — старые sync-функции и state-интерфейсы больше не нужны. Если они ещё реэкспортируются, пометить как `@deprecated`.
-- Ручные вызовы `track()`, `instance.events.on()`, `useSyncProps()` — всё это теперь делает `useAdapter` автоматически.
+- Ручные вызовы `track()`, `instance.events.on()`, `useSyncProps()` — всё это теперь делает `useVue` автоматически.
 
 ### Имена в шаблоне
 
@@ -304,7 +401,10 @@ export default {
 
 5. **Обнови Vue-компонент**:
    - `base.component.ts`: `useEmits(Descriptor)` + `useProps(Descriptor)`
-   - `setup.component.ts`: `useAdapter(Descriptor, props, emit)`
+   - `setup.component.ts`:
+     - Обычный компонент: `createAdapterContext(Descriptor, {...}).use(TPluginsBindingExtension)` → `useVue(adapter, props, emit)`
+     - Коллекция-родитель: `...use(TPluginsBindingExtension).use(TCollectionExtension, { elevator })`
+     - Элемент коллекции: `...use(TPluginsBindingExtension).use(TCollectionItemExtension, { elevator })`
    - Шаблон: проверь имена свойств (могут измениться из-за naming strategy)
 
 6. **Экспортируй**: добавь новый Contribution и Descriptor в `index.ts` соответствующих пакетов.

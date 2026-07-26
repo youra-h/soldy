@@ -9,7 +9,7 @@ Core (бизнес-логика, headless)
   ↓
 Accessor (контракты, TComponentAccessor, TDescriptorInspector)
   ↓
-Setup (contributions, defineComponent/definePlugin, bindPlugins)
+Setup (contributions, defineComponent/definePlugin, adapter context + extensions)
   ↓
 Plugins (DOM-логика)
   ↓
@@ -24,7 +24,7 @@ UI (Vue / React / Solid / Svelte / Angular)
 |-------|------|------------|
 | `@soldy/core` | `packages/core/` | Headless-ядро: классы компонентов, стейты, события |
 | `@soldy/accessor` | `packages/accessor/` | Контракты (IContribution, ICompiledProp), TComponentAccessor (runtime-доступ), TDescriptorInspector (статический анализ имён) |
-| `@soldy/setup` | `packages/setup/` | Конкретные contributions, defineComponent/definePlugin, bindPlugins |
+| `@soldy/setup` | `packages/setup/` | Конкретные contributions, defineComponent/definePlugin, adapter context + extensions |
 | `@soldy/plugins` | `packages/plugins/` | DOM-плагины (element, instance, ready и др.) |
 | `@soldy/foundation` | `packages/foundation/` | CSS-токены, Tailwind-тема, стили |
 | `@soldy/icons` | `packages/icons/` | SVG-иконки (raw импорт) |
@@ -245,17 +245,44 @@ descriptors/
     icon.descriptor.ts
 
 adapter/
-  createAdapter.ts          ← создаёт instance, bundle, accessor (без сайд-эффектов)
-  bind-plugin.ts            ← bindPlugins(bundle, instance) → { bindElement }
+  context/
+    types.ts                 ← IAdapterContext, IAdapterExtensionCtor, IAdapterExtensionCtorNoOpts
+    createAdapterContext.ts   ← createAdapterContext(descriptor, options, defaultExtensions?)
+    index.ts
+  extensions/
+    TPluginsBindingExtension.ts   ← биндинг instance/DOM к плагинам (TInstancePlugin, TElementPlugin)
+    TCollectionExtension.ts        ← связь родитель-ребёнок для коллекций (Tabs, Collapse, ListBox)
+    TCollectionItemExtension.ts    ← авто-регистрация элемента в коллекции (TabItem, ListItem, etc.)
+    index.ts
+  createAdapter.ts          ← createAdapter (legacy, чистая фабрика instance/bundle/accessor)
+  elevator/                 ← IContextElevator: TElevator, TElevatorFactory, ключи
+  index.ts
 ```
+
+### IAdapterContext + Registry-паттерн
+
+- **`IAdapterContext`** — единый headless-контекст: `instance`, `bundle`, `accessor`, `events` (TEvented).
+- **`IAdapterExtensionCtor<T, TOpts>`** — интерфейс расширения с опциями: `{ key: symbol, new(ctx, options: TOpts): T }`.
+- **`IAdapterExtensionCtorNoOpts<T>`** — интерфейс расширения без опций: `{ key: symbol, new(ctx): T }`.
+- **`.use(Ctor)`** / **`.use(Ctor, opts)`** — регистрация расширений (аналог `bundle.use()` для плагинов).
+- **`.get(Ctor)`** — получение зарегистрированного расширения.
+- **`.destroy()`** — эмитит `'destroy'` через `TEvented`, все расширения отписываются сами.
+
+### Расширения (extensions/)
+
+| Расширение | Назначение |
+|-----------|-----------|
+| `TPluginsBindingExtension` | Биндинг instance → TInstancePlugin, метод `bindElement(el)` → TElementPlugin, авто-сброс при destroy |
+| `TCollectionExtension` | Спускает коллекцию и регистратор плагинов детям, проверяет Drag&Drop контекст. Опции: `{ elevator }` |
+| `TCollectionItemExtension` | Авто-регистрация в родительской коллекции + удаление при destroy. Опции: `{ elevator }` |
 
 ### Ключевые функции
 
 - **`compileContribution(contribution?, namespace?)`** — компилирует сырую контрибуцию. Если есть namespace — добавляет префикс к каждому триггеру (`'change:visible'` → `'element:change:visible'`).
 - **`definePlugin({ ctor, contribution? })`** — создаёт определение плагина. Namespace извлекается из `ctor.key.description`.
 - **`defineComponent({ ctor?, extends?, contribution?, plugins? })`** — создаёт дескриптор. Объединяет props/events/plugins от родителя (`extends`), свои и плагинов. Возвращает `{ ctor, props, events, plugins, createBundle(), createAccessor() }`.
-- **`createAdapter(descriptor, { ctrl?, plugins?, props? })`** — создаёт `{ instance, bundle, accessor }`. Чистая функция, без сайд-эффектов.
-- **`bindPlugins(bundle, instance)`** — устанавливает `instance` в TInstancePlugin, возвращает `{ bindElement(el) }` для TElementPlugin. Framework-agnostic.
+- **`createAdapterContext(descriptor, options, defaultExtensions?)`** — создаёт `IAdapterContext`. По умолчанию без расширений — каждое расширение добавляется явно через `.use()`.
+- **`createAdapter(descriptor, { ctrl?, plugins?, props? })`** — legacy: создаёт `{ instance, bundle, accessor }`. Чистая функция, без сайд-эффектов.
 
 ### Паттерн наследования дескрипторов
 
@@ -291,21 +318,104 @@ SVG-иконки, импортируемые как raw: `arrowRight`, `check`, 
 
 Адаптеры (`ui/vue/src/adapter/`):
 
-- **`vueNaming`** (`naming.ts`) — стратегия именования для Vue: props в camelCase (`icon-styles:styles` → `iconStyles_styles`), события с двоеточием (`element:ready`).
+```
+adapter/
+├── common/                     # Общие утилиты (Build Time + Runtime)
+│   ├── createInspector.ts      #   createInspector(target, naming?) → TDescriptorInspector
+│   └── index.ts
+│
+├── static/                     # Build Time — объявление компонента (без сайд-эффектов)
+│   ├── useProps.ts             #   useProps(descriptor) → props для Options API
+│   ├── useEmits.ts             #   useEmits(descriptor) → emits для Options API
+│   └── index.ts
+│
+├── runtime/                    # Runtime — выполняется внутри setup()
+│   ├── useVue.ts               #   useVue(adapter, props, emit) — главный хук
+│   ├── useSyncProps.ts         #   синхронизация Core ↔ Vue (refs, watch)
+│   ├── useSyncEvents.ts        #   проброс событий Core → Vue emit
+│   └── index.ts
+│
+├── elevator/                   # Vue-реализация IContextElevator
+│   ├── elevator.class.ts       #   TVueElevator extends TElevator (provide/inject)
+│   ├── factory.ts              #   VueElevatorFactory
+│   └── index.ts
+│
+├── createAdapter.ts            # createVueAdapter (legacy-фабрика)
+└── index.ts
+```
 
-- **`createVueAdapter(naming?)`** (`createAdapter.ts`) — фабрика, принимает `INamingStrategy` (по умолчанию `vueNaming`), возвращает `{ useProps, useEmits, useRuntime, useAdapter }`. Экспортируется также готовый инстанс `{ useProps, useEmits, useRuntime, useAdapter }` с `vueNaming`.
+- **`createInspector(target, naming?)`** (`common/createInspector.ts`) — единый генератор `TDescriptorInspector`. Принимает и `IComponentDescriptor`, и `TComponentAccessor`. Используется во всех хелперах: `useVue`, `useProps`, `useEmits`, `useSyncProps`, `useSyncEvents`.
 
-  - **`useProps(descriptor)`** — получает defaults из `descriptor.ctor.defaultValues`, создаёт `TDescriptorInspector` с naming-стратегией, возвращает `inspector.getExportProps(defaults)` + `ctrl`/`plugins`.
-  - **`useEmits(descriptor)`** — `inspector.getExportEvents()` + `update:{propName}` для каждого публичного пропа (v-model).
-  - **`useRuntime(accessor, externalProps, emit?)`** — создаёт `TDescriptorInspector` из `accessor.getSchema()`, делегирует в:
-    - **`useSyncProps(accessor, inspector, options?)`** (`useSyncProps.ts`) — возвращает `{ refs, bindOutput, bindInput, cleanup }`. `bindOutput()` создаёт Vue refs и подписывается на `getRawTriggers`; `bindInput(externalProps)` вешает watchers на внешние props. Поддерживает `ISyncOptions` с хуками `onInput`/`onOutput`.
-    - **`useSyncEvents(accessor, inspector, emit)`** (`useSyncEvents.ts`) — пробрасывает события Core → Vue: триггеры свойств (`getExportTriggers`/`getRawTriggers`) и явные события (`getExportEventName`).
-  - **`useAdapter(descriptor, props, emit?)`** — композиция: `createAdapter` + `useRuntime` + `bindPlugins` + Vue ref (`rootElement`) с `watch(rootElement, bindElement)` и `onUnmounted`.
+- **`useProps(descriptor)`** (`static/useProps.ts`) — статический хелпер для `base.component.ts`. Получает defaults из `descriptor.ctor.defaultValues`, возвращает `inspector.getExportProps(defaults)`.
+
+- **`useEmits(descriptor)`** (`static/useEmits.ts`) — статический хелпер для `base.component.ts`. Возвращает `inspector.getExportEvents()` + `update:{propName}` для каждого публичного пропа (v-model).
+
+- **`useVue(adapter, props, emit?)`** (`runtime/useVue.ts`) — единственный Vue runtime-хук:
+  1. Создаёт `TDescriptorInspector` через `createInspector(adapter.accessor)`
+  2. `useSyncProps` — реактивность Core ↔ Vue (refs, watch)
+  3. `useSyncEvents` — проброс событий Core → Vue emit
+  4. DOM-биндинг через `adapter.get(TPluginsBindingExtension).bindElement(el)`
+  5. `onUnmounted(() => adapter.destroy())` — единая точка очистки
+
+- **`VueElevatorFactory`** (`elevator/factory.ts`) — фабрика `TVueElevator` для передачи в `TCollectionExtension` / `TCollectionItemExtension`.
 
 Структура Vue-компонента:
 ```
 {name}.vue              — шаблон + импорт setup
 base.component.ts       — emits/props через useEmits/useProps (module-level, статика)
+setup.component.ts      — createAdapterContext + .use(...) + useVue (runtime)
+```
+
+### Паттерны setup.component.ts
+
+**Обычный компонент (ComponentView):**
+```ts
+import { createAdapterContext, TPluginsBindingExtension, ComponentViewDescriptor } from '@soldy/setup'
+import { useVue } from '../../adapter'
+
+export default {
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(ComponentViewDescriptor, {
+            ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+            plugins: props.plugins,
+            props,
+        }).use(TPluginsBindingExtension)
+
+        return useVue(adapter, props, emit)
+    },
+}
+```
+
+**Коллекция-родитель (Tabs):**
+```ts
+import { createAdapterContext, TPluginsBindingExtension, TCollectionExtension, TabsDescriptor } from '@soldy/setup'
+import { useVue, VueElevatorFactory } from '../../adapter'
+
+export default {
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(TabsDescriptor, { ... })
+            .use(TPluginsBindingExtension)
+            .use(TCollectionExtension, { elevator: VueElevatorFactory })
+
+        return useVue(adapter, props, emit)
+    },
+}
+```
+
+**Элемент коллекции (TabItem):**
+```ts
+import { createAdapterContext, TPluginsBindingExtension, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
+import { useVue, VueElevatorFactory } from '../../../adapter'
+
+export default {
+    setup(props, { emit }) {
+        const adapter = createAdapterContext(TabItemDescriptor, { ... })
+            .use(TPluginsBindingExtension)
+            .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+
+        return { ...useVue(adapter, props, emit), /* локальные composables */ }
+    },
+}
 ```
 
 ### React (`packages/ui/react/`) — частично
@@ -322,23 +432,24 @@ base.component.ts       — emits/props через useEmits/useProps (module-lev
 Vue Template
     │ props (вход от пользователя)
     ▼
-useRuntime: watch external props → accessor.setValue(prop, value)
+useVue → useSyncProps: watch external props → accessor.setValue(prop, value)
     │
     ▼
 Core class (TStateUnit меняет значение)
     │ instance.events.emit('change:*')
     ▼
-useRuntime: подписан на eventSource через accessor.getEventSource()
-    │ получает событие → emit() в шаблон
+useVue → useSyncProps: подписан на eventSource через accessor.getEventSource()
+    │ получает событие → ref.value = newValue → шаблон
     ▼
-useRefs → реактивные refs → шаблон
+useVue → useSyncEvents: получает событие → emit() в шаблон
 ```
 
 **Ключевые потоки:**
-1. **Props → Core:** `watch` → `accessor.setValue()` → пишет в instance или плагин
-2. **Core → View:** события instance → `useRuntime` через `eventSource.on()` → `emit()` → шаблон
-3. **Plugin lifecycle:** `bindPlugins(bundle, instance)` — instance после подписок → `TReadyPlugin` слушает element → `instance.ready = true`
-4. **DOM → Plugin:** `bindPlugins.bindElement(el)` → `TElementPlugin.element = el`
+1. **Props → Core:** `useSyncProps.bindInput()` → `watch` → `accessor.setValue()` → пишет в instance или плагин
+2. **Core → View (refs):** `useSyncProps.bindOutput()` → подписка на `getRawTriggers` → `ref.value = ...` → шаблон
+3. **Core → View (emit):** `useSyncEvents()` → подписка на триггеры/события → `emit(eventName, ...args)` → родительский компонент
+4. **Extension lifecycle:** `adapter.use(TPluginsBindingExtension)` → биндит instance/DOM. `adapter.destroy()` → `events.emit('destroy')` → все extensions отписываются
+5. **Collection:** `TCollectionExtension` спускает инстанс детям. `TCollectionItemExtension` регистрируется в родителе и удаляется при destroy
 
 ---
 

@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, TPluginsBindingExtension, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
+import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseTabItem from './tab-item.component'
@@ -15,9 +15,7 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		})
-			.use(TPluginsBindingExtension)
-			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useVue(adapter, props, emit),
