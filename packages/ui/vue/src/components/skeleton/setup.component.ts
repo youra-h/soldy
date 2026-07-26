@@ -1,5 +1,6 @@
-import { useAdapter } from '../../adapter'
-import { SkeletonDescriptor } from '@soldy/setup'
+import { toRaw } from 'vue'
+import { createAdapterContext, SkeletonDescriptor } from '@soldy/setup'
+import { useVue } from '../../adapter'
 import BaseSkeleton from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type ISkeletonProps, type ISkeleton } from '@soldy/core'
@@ -8,6 +9,12 @@ export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
 	setup(props: TBaseComponentProps<ISkeletonProps, ISkeleton>, { emit }: any) {
-		return useAdapter(SkeletonDescriptor, props, emit)
+		const adapter = createAdapterContext(SkeletonDescriptor, {
+			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			plugins: props.plugins,
+			props,
+		})
+
+		return useVue(adapter, props, emit)
 	},
 }
