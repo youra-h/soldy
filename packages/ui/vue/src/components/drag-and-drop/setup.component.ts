@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, DragAndDropDescriptor, DRAG_CONTEXT_ELEVATOR } from '@soldy/setup'
+import { createAdapterContext, TPluginsBindingExtension, DragAndDropDescriptor, DRAG_CONTEXT_ELEVATOR } from '@soldy/setup'
 import { useVue, TVueElevator } from '../../adapter'
 import BaseDragAndDrop from './base.component'
 import type { TBaseComponentProps } from '../../types'
@@ -11,7 +11,7 @@ export default {
 	setup(props: TBaseComponentProps<IDragAndDropProps>, { emit }: any) {
 		const dragElevator = new TVueElevator<boolean>(DRAG_CONTEXT_ELEVATOR)
 
-		// Опускаем флаг drag-контекста вниз — withCollection
+		// Опускаем флаг drag-контекста вниз — TCollectionExtension
 		// в дочерней коллекции поймает его через dragElevator.up()
 		dragElevator.down(true)
 
@@ -19,7 +19,7 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		})
+		}).use(TPluginsBindingExtension)
 
 		return useVue(adapter, props, emit)
 	},

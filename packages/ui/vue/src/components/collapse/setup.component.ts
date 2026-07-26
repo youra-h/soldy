@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, withCollection, CollapseDescriptor } from '@soldy/setup'
+import { createAdapterContext, TPluginsBindingExtension, TCollectionExtension, CollapseDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseCollapse from './base.component'
 import type { TBaseComponentProps } from '../../types'
@@ -13,7 +13,9 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		}).use(withCollection(VueElevatorFactory))
+		})
+			.use(TPluginsBindingExtension)
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 
 		return useVue(adapter, props, emit)
 	},

@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
+import { createAdapterContext, TPluginsBindingExtension, ComponentViewDescriptor } from '@soldy/setup'
 import { useVue } from '../../adapter'
 import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import type { TBaseComponentProps } from './../../types'
@@ -13,7 +13,7 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
-		})
+		}).use(TPluginsBindingExtension)
 
 		return useVue(adapter, props, emit)
 	},
