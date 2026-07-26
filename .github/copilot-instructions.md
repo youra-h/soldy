@@ -115,12 +115,6 @@ TEntity (абстракт)
 
 Остальные плагины: `Spinner`, `Skeleton`, `Icon`, `Tabs` (active-tab, view, layout), `Collection`, `List`, `Collapse`, `DragAndDrop`, `InputControl`, `InputBool`, `Input`, `Frame`.
 
-### Бандлы (`packages/plugins/src/bundles/`)
-
-Фабрики предопределённых наборов плагинов:
-- `createComponentViewBundle()` — TElementPlugin + TInstancePlugin + TReadyPlugin
-- `createControlBundle()`, `createTabsBundle()`, `createCollapseBundle()`, `createListBundle()`, `createListItemBundle()`, `createCollectionBundle()`, `createInputControlBundle()`, `createInputBoolBundle()`, `createInputBundle()`, `createFrameBundle()`
-
 ---
 
 ## Layer 3: Accessor (`packages/accessor/`)
@@ -282,6 +276,7 @@ adapter/
 - **`definePlugin({ ctor, contribution? })`** — создаёт определение плагина. Namespace извлекается из `ctor.key.description`.
 - **`defineComponent({ ctor?, extends?, contribution?, plugins? })`** — создаёт дескриптор. Объединяет props/events/plugins от родителя (`extends`), свои и плагинов. Возвращает `{ ctor, props, events, plugins, createBundle(), createAccessor() }`.
 - **`createAdapterContext(descriptor, options, defaultExtensions?)`** — создаёт `IAdapterContext`. По умолчанию без расширений — каждое расширение добавляется явно через `.use()`.
+// deprecated
 - **`createAdapter(descriptor, { ctrl?, plugins?, props? })`** — legacy: создаёт `{ instance, bundle, accessor }`. Чистая функция, без сайд-эффектов.
 
 ### Паттерн наследования дескрипторов
@@ -340,7 +335,7 @@ adapter/
 │   ├── factory.ts              #   VueElevatorFactory
 │   └── index.ts
 │
-├── createAdapter.ts            # createVueAdapter (legacy-фабрика)
+├── createAdapter.ts            # createVueAdapter (legacy-фабрика) DEPRECATED
 └── index.ts
 ```
 
@@ -370,7 +365,7 @@ setup.component.ts      — createAdapterContext + .use(...) + useVue (runtime)
 
 **Обычный компонент (ComponentView):**
 ```ts
-import { createAdapterContext, TPluginsBindingExtension, ComponentViewDescriptor } from '@soldy/setup'
+import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
 import { useVue } from '../../adapter'
 
 export default {
@@ -379,7 +374,7 @@ export default {
             ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
             plugins: props.plugins,
             props,
-        }).use(TPluginsBindingExtension)
+        })
 
         return useVue(adapter, props, emit)
     },
@@ -388,13 +383,12 @@ export default {
 
 **Коллекция-родитель (Tabs):**
 ```ts
-import { createAdapterContext, TPluginsBindingExtension, TCollectionExtension, TabsDescriptor } from '@soldy/setup'
+import { createAdapterContext, TCollectionExtension, TabsDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../adapter'
 
 export default {
     setup(props, { emit }) {
         const adapter = createAdapterContext(TabsDescriptor, { ... })
-            .use(TPluginsBindingExtension)
             .use(TCollectionExtension, { elevator: VueElevatorFactory })
 
         return useVue(adapter, props, emit)
@@ -404,14 +398,13 @@ export default {
 
 **Элемент коллекции (TabItem):**
 ```ts
-import { createAdapterContext, TPluginsBindingExtension, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
+import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../../adapter'
 
 export default {
     setup(props, { emit }) {
         const adapter = createAdapterContext(TabItemDescriptor, { ... })
-            .use(TPluginsBindingExtension)
-            .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+              .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
         return { ...useVue(adapter, props, emit), /* локальные composables */ }
     },
