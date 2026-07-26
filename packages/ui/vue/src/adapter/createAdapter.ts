@@ -4,7 +4,7 @@
  * Собирает useProps, useEmits, useRuntime и useAdapter в единый «запечённый»
  * контекст с фиксированной стратегией именования.
  *
- * useProps / useEmits теперь живут в helpers.ts и используют единый getInspector.
+ * useProps / useEmits теперь живут в helpers.ts и используют единый createInspector.
  * createVueAdapter делегирует туда же.
  *
  * Для нового кода используйте createAdapterContext + useVue из @soldy/setup и ./useVue.
@@ -15,7 +15,7 @@ import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
 import type { TComponentAccessor, INamingStrategy } from '@soldy/accessor'
-import { getInspector } from './helpers'
+import { createInspector } from './createInspector'
 import { useSyncProps } from './runtime/useSyncProps'
 import { useSyncEvents } from './runtime/useSyncEvents'
 
@@ -26,7 +26,7 @@ export function createVueAdapter(naming: INamingStrategy = undefined as any) {
 		externalProps: Record<string, any>,
 		emit?: (event: string, ...args: any[]) => void,
 	) {
-		const inspector = getInspector(accessor, naming)
+		const inspector = createInspector(accessor, naming)
 
 		const { refs, bindOutput, bindInput } = useSyncProps(accessor, inspector)
 

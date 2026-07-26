@@ -6,10 +6,10 @@
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import { getInspector } from '../helpers'
+import { createInspector } from '../createInspector'
 
 export function useEmits(descriptor: IComponentDescriptor): string[] {
-    const inspector = getInspector(descriptor)
+    const inspector = createInspector(descriptor)
     const emits = inspector.getExportEvents()
 
     for (const prop of descriptor.props) {

@@ -11,7 +11,7 @@
 import { ref, watch, onUnmounted } from 'vue'
 import type { IAdapterContext } from '@soldy/setup'
 import { bindPlugins } from '@soldy/setup'
-import { getInspector } from '../helpers'
+import { createInspector } from '../createInspector'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
@@ -20,7 +20,7 @@ export function useVue(
     externalProps: Record<string, any>,
     emit?: (event: string, ...args: any[]) => void,
 ) {
-    const inspector = getInspector(adapter.accessor)
+    const inspector = createInspector(adapter.accessor)
 
     // 1. Реактивность
     const { refs, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector)
