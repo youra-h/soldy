@@ -8,6 +8,7 @@
 import type { IAdapterContext } from '../context'
 import type { TElevatorFactory } from '../elevator'
 import { COLLECTION_ELEVATOR, COLLECTION_PLUGINS_ELEVATOR } from '../elevator/keys'
+import type { ICollection } from '@soldy/core'
 
 export interface ICollectionItemExtensionOptions {
 	elevator: TElevatorFactory
@@ -21,9 +22,7 @@ export class TCollectionItemExtension {
 		const collectionElevator = elevator(COLLECTION_ELEVATOR)
 		const pluginsElevator = elevator(COLLECTION_PLUGINS_ELEVATOR)
 
-		const parentCollection = collectionElevator.up() as
-			| { insertAt(item: any, index?: number): boolean; deleteItem(item: any): boolean }
-			| undefined
+		const parentCollection = collectionElevator.up() as ICollection | undefined
 
 		const registerItemPlugins = pluginsElevator.up() as
 			| ((uid: string | number, bundle: any) => void)
