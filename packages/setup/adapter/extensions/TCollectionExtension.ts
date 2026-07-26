@@ -23,6 +23,7 @@ export class TCollectionExtension {
 
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
 		const { elevator } = options
+
 		const collectionElevator = elevator(COLLECTION_ELEVATOR)
 		const pluginsElevator = elevator(COLLECTION_PLUGINS_ELEVATOR)
 		const dragElevator = elevator(DRAG_CONTEXT_ELEVATOR)
@@ -30,10 +31,11 @@ export class TCollectionExtension {
 		const { instance, bundle } = context
 
 		// 1. Спускаем инстанс коллекции вниз детям
-		collectionElevator.down(instance)
+		collectionElevator.down(instance.collection)
 
 		// 2. Если есть плагин элементов — спускаем регистратор
 		const collectionItemPlugins = bundle.get(TCollectionItemPlugins)
+
 		if (collectionItemPlugins) {
 			pluginsElevator.down((uid: string | number, itemBundle: any) => {
 				collectionItemPlugins.register(uid, itemBundle)
@@ -42,6 +44,7 @@ export class TCollectionExtension {
 
 		// 3. Проверяем DragAndDrop контекст
 		const dragContext = dragElevator.up()
+
 		if (dragContext) {
 			bundle.get(TDragPlugin)?.activate(instance)
 		}
