@@ -21,7 +21,9 @@ export function useVue(
 
     // 1. Реактивность
     const { refs, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector)
+	// 1.1. Привязка к внешним пропсам (выход в родительский компонент)
     bindOutput()
+	// 1.2. Привязка к внешним пропсам (вход от пользователя)
     bindInput(externalProps)
 
     // 2. Эмиты
