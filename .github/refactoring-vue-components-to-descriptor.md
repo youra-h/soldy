@@ -21,16 +21,13 @@
 ```ts
 // Обычный компонент
 const adapter = createAdapterContext(Descriptor, { ... })
-    .use(TPluginsBindingExtension)
 
 // Коллекция-родитель
 const adapter = createAdapterContext(Descriptor, { ... })
-    .use(TPluginsBindingExtension)
     .use(TCollectionExtension, { elevator: VueElevatorFactory })
 
 // Элемент коллекции
 const adapter = createAdapterContext(Descriptor, { ... })
-    .use(TPluginsBindingExtension)
     .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 ```
 
@@ -288,7 +285,7 @@ export default {
             ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
             plugins: props.plugins,
             props,
-        }).use(TPluginsBindingExtension)
+        })
 
         return useVue(adapter, props, emit)
     },
@@ -314,7 +311,6 @@ export default {
             plugins: props.plugins,
             props,
         })
-            .use(TPluginsBindingExtension)
             .use(TCollectionExtension, { elevator: VueElevatorFactory })
 
         return useVue(adapter, props, emit)
@@ -341,7 +337,6 @@ export default {
             plugins: props.plugins,
             props,
         })
-            .use(TPluginsBindingExtension)
             .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
         return {
