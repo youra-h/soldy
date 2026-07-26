@@ -3,7 +3,7 @@ import type { TCollection } from '../collection.class'
 import { TEvented } from '../../../../common'
 import type { TClasses } from '../../../../common'
 import type { TConstructor } from '../../../../common'
-import type { IActivatableComponentItem } from './types'
+import type { IActivatableComponentItem, IActivatableCollectionItemMeta } from './types'
 
 /**
  * Миксин для компонентов-элементов активируемой коллекции (TTabItem, etc.).
@@ -20,13 +20,12 @@ export function ActivatableComponentMixin<
 	class ActivatableComponent extends Base implements IActivatableComponentItem {
 		protected _collectionItem!: TActivatableCollectionItem
 
-		init(
-			options?: { collection?: TCollection | null; props?: Record<string, any> } | any,
-		): void {
+		init(options?: {
+			collection?: TCollection | null
+			props?: IActivatableCollectionItemMeta & Record<string, any>
+		}): void {
 			const collection = options?.collection ?? null
 			const props = options?.props ?? {}
-
-			console.log('ActivatableComponentMixin.init', { collection, props })
 
 			this._collectionItem = new TActivatableCollectionItem({
 				collection: collection ?? undefined,

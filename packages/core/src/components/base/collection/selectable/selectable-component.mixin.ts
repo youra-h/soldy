@@ -3,7 +3,7 @@ import type { TCollection } from '../collection.class'
 import { TEvented } from '../../../../common'
 import type { TClasses } from '../../../../common'
 import type { TConstructor } from '../../../../common'
-import type { ISelectableComponentItem } from './types'
+import type { ISelectableComponentItem, ISelectableCollectionItemMeta } from './types'
 
 /** * Миксин для компонентов-элементов выбираемой коллекции (TCollapseItem, TListItem, etc.).
  * Инкапсулирует композицию с TSelectableCollectionItem и проксирование свойств/событий.
@@ -33,10 +33,21 @@ export function SelectableComponentMixin<
 	class SelectableComponent extends Base implements ISelectableComponentItem {
 		protected _collectionItem!: TSelectableCollectionItem
 
-		init(collection: TCollection | null | undefined): void {
+		init(options?: {
+			collection?: TCollection | null
+			props?: ISelectableCollectionItemMeta & Record<string, any>
+		}): void {
+			const collection = options?.collection ?? null
+			const props = options?.props ?? {}
+
 			this._collectionItem = new TSelectableCollectionItem({
 				collection: collection ?? undefined,
 			})
+
+			// Если active был передан явно в props/options — устанавливаем его!
+			if (props?.selected !== undefined) {
+				this._collectionItem.selected = Boolean(props.selected)
+			}
 
 			this._collectionItem.events.on('change:selection', (item) => {
 				this.classes.toggle('--selected', !!item.selected)
