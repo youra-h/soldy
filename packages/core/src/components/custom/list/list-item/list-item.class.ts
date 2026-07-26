@@ -1,22 +1,15 @@
 import { SelectableComponentMixin } from '../../../base/collection'
 import TListItemCustom from './list-item-custom.class'
-import type {
-	IListItem,
-	TListItemOptions,
-	IListItemProps,
-	TListItemEvents,
-} from './types'
+import type { IListItem, TListItemOptions, IListItemProps, TListItemEvents } from './types'
 
 export default class TListItem
 	extends SelectableComponentMixin(TListItemCustom<IListItemProps, TListItemEvents>)
 	implements IListItem
 {
 	constructor(options: TListItemOptions | Partial<IListItemProps> = {}) {
-		const { collection, ...componentOptions } = options as TListItemOptions
+		super(options)
 
-		super(componentOptions)
-
-		this.init(collection)
+		this.init(options)
 	}
 
 	override getProps(): IListItemProps {
