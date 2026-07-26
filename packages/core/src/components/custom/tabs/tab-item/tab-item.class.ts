@@ -11,11 +11,9 @@ export default class TTabItem
 	implements ITabItem, IActivatableComponentItem
 {
 	constructor(options: TTabItemOptions | Partial<ITabItemProps> = {}) {
-		const { collection, ...componentOptions } = options as TTabItemOptions
+		super(options)
 
-		super(componentOptions)
-
-		this.init(collection)
+		this.init(options)
 	}
 
 	override getProps(): ITabItemProps {

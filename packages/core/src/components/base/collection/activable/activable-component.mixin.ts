@@ -20,10 +20,22 @@ export function ActivatableComponentMixin<
 	class ActivatableComponent extends Base implements IActivatableComponentItem {
 		protected _collectionItem!: TActivatableCollectionItem
 
-		init(collection: TCollection | null | undefined): void {
+		init(
+			options?: { collection?: TCollection | null; props?: Record<string, any> } | any,
+		): void {
+			const collection = options?.collection ?? null
+			const props = options?.props ?? {}
+
+			console.log('ActivatableComponentMixin.init', { collection, props })
+
 			this._collectionItem = new TActivatableCollectionItem({
 				collection: collection ?? undefined,
 			})
+
+			// Если active был передан явно в props/options — устанавливаем его!
+			if (props?.active !== undefined) {
+				this._collectionItem.active = Boolean(props.active)
+			}
 
 			this._collectionItem.events.on('change:activation', (item) => {
 				this.classes.toggle('--active', !!item.active)
