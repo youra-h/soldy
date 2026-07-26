@@ -1,2 +1,2 @@
-export type { IAdapterContext, TAdapterEvents, IAdapterExtensionCtor } from './types'
+export type { IAdapterContext, TAdapterEvents, IAdapterExtensionCtor, IAdapterExtensionCtorNoOpts } from './types'
 export { createAdapterContext } from './createAdapterContext'

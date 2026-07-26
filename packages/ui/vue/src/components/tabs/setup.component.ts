@@ -1,5 +1,10 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, TPluginsBindingExtension, TCollectionExtension, TabsDescriptor } from '@soldy/setup'
+import {
+	createAdapterContext,
+	TPluginsBindingExtension,
+	TCollectionExtension,
+	TabsDescriptor,
+} from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
