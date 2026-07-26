@@ -15,7 +15,7 @@ import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createAdapter, bindPlugins } from '@soldy/setup'
 import type { TComponentAccessor, INamingStrategy } from '@soldy/accessor'
-import { createInspector } from './createInspector'
+import { createInspector } from './common/createInspector'
 import { useSyncProps } from './runtime/useSyncProps'
 import { useSyncEvents } from './runtime/useSyncEvents'
 

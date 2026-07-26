@@ -1,4 +1,3 @@
-export { vueNaming } from './naming'
 export * from './static'
 export * from './runtime'
 export * from './elevator'

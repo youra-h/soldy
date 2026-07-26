@@ -11,7 +11,7 @@
 import { ref, watch, onUnmounted } from 'vue'
 import type { IAdapterContext } from '@soldy/setup'
 import { bindPlugins } from '@soldy/setup'
-import { createInspector } from '../createInspector'
+import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 

@@ -10,7 +10,7 @@
 import type { IComponentDescriptor } from '@soldy/setup'
 import type { TComponentAccessor, INamingStrategy, IComponentSchema } from '@soldy/accessor'
 import { TDescriptorInspector } from '@soldy/accessor'
-import { vueNaming } from './naming'
+import { VueNaming } from './naming'
 
 /**
  * Единый генератор инспектора.
@@ -18,12 +18,12 @@ import { vueNaming } from './naming'
  * для useVue, useSyncProps, useSyncEvents, useProps и useEmits.
  */
 export function createInspector(
-    target: IComponentDescriptor | TComponentAccessor,
-    naming: INamingStrategy = vueNaming,
+	target: IComponentDescriptor | TComponentAccessor,
+	naming: INamingStrategy = VueNaming,
 ): TDescriptorInspector {
-    const schema: IComponentSchema = (target as any).getSchema
-        ? (target as any).getSchema()
-        : target
+	const schema: IComponentSchema = (target as any).getSchema
+		? (target as any).getSchema()
+		: target
 
-    return new TDescriptorInspector(schema, naming || vueNaming)
+	return new TDescriptorInspector(schema, naming || VueNaming)
 }

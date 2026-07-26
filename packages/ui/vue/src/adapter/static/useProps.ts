@@ -6,10 +6,10 @@
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from '../createInspector'
+import { createInspector } from '../common'
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, any> {
-    const defaults = (descriptor.ctor as any)?.defaultValues ?? {}
+	const defaults = (descriptor.ctor as any)?.defaultValues ?? {}
 
-    return createInspector(descriptor).getExportProps(defaults)
+	return createInspector(descriptor).getExportProps(defaults)
 }

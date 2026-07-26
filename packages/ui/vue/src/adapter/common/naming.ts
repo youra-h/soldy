@@ -7,7 +7,7 @@
 
 import type { INamingStrategy } from '@soldy/accessor'
 
-export const vueNaming: INamingStrategy = {
+export const VueNaming: INamingStrategy = {
     prop: (name, ns) => {
         if (!ns) return name
 

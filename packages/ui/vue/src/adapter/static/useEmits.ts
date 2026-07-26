@@ -6,7 +6,7 @@
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from '../createInspector'
+import { createInspector } from '../common'
 
 export function useEmits(descriptor: IComponentDescriptor): string[] {
     const inspector = createInspector(descriptor)
