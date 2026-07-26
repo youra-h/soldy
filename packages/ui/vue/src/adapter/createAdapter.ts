@@ -13,7 +13,7 @@
 
 import { toRaw, ref, watch, onUnmounted } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
-import { createAdapter, bindPlugins } from '@soldy/setup'
+import { createAdapterContext } from '@soldy/setup'
 import type { TComponentAccessor, INamingStrategy } from '@soldy/accessor'
 import { createInspector } from './common/createInspector'
 import { useSyncProps } from './runtime/useSyncProps'
@@ -47,25 +47,23 @@ export function createVueAdapter(naming: INamingStrategy = undefined as any) {
 		props: Record<string, any>,
 		emit?: (event: string, ...args: any[]) => void,
 	) {
-		const { instance, bundle, accessor } = createAdapter(descriptor, {
+		const adapter = createAdapterContext(descriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			plugins: props.plugins,
 			props,
 		})
 
-		const { refs } = useRuntime(accessor, props, emit)
-
-		const { bindElement } = bindPlugins(bundle, instance)
+		const { refs } = useRuntime(adapter.accessor, props, emit)
 
 		const rootElement = ref<Element | null>(null)
 
-		watch(rootElement, (el) => bindElement(el ?? null), { flush: 'post' })
+		watch(rootElement, (el) => adapter.bindElement?.(el ?? null), { flush: 'post' })
 
 		onUnmounted(() => {
-			bindElement(null)
+			adapter.destroy()
 		})
 
-		return { ctrl: instance, plugins: bundle, rootElement, ...refs }
+		return { ctrl: adapter.instance, plugins: adapter.bundle, rootElement, ...refs }
 	}
 
 	return { useRuntime, useAdapter }

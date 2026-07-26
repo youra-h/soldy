@@ -1,6 +1,5 @@
 export { createAdapter } from './createAdapter'
 export { createAdapterContext } from './context'
-export type { IAdapterContext } from './context'
-export { bindPlugins } from './bindPlugins'
-export { withCollection, withCollectionItem } from './extensions'
+export type { IAdapterContext, TAdapterExtension } from './context'
+export * from './extensions'
 export * from './elevator'

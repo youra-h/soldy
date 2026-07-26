@@ -2,15 +2,21 @@
  * IAdapterContext — единый headless-контекст жизненного цикла компонента.
  *
  * Владеет массивом disposers и методом `.use()` для чейнинга декораторов.
- * Заменяет разрозненные createAdapter / createCollectionAdapter / createCollectionItemAdapter.
+ * По умолчанию применяет withPluginsBinding — биндинг instance/элемента к плагинам.
  */
 
 import type { IComponentDescriptor } from '../descriptors'
+import { withPluginsBinding } from './extensions/withPluginsBinding'
+
+export type TAdapterExtension = (context: IAdapterContext) => void
 
 export interface IAdapterContext {
 	instance: any
 	bundle: any
 	accessor: any
+
+	/** Метод для взаимодействия с DOM-элементом (устанавливается withPluginsBinding) */
+	bindElement?(el: Element | null): void
 
 	/** Зарегистрировать коллбэк очистки ресурсов */
 	onDispose(fn: () => void): void
@@ -19,12 +25,13 @@ export interface IAdapterContext {
 	destroy(): void
 
 	/** Метод для чейнинга плагинов/декораторов */
-	use<T extends IAdapterContext>(extension: (context: this) => void): this
+	use(extension: TAdapterExtension): this
 }
 
 export function createAdapterContext(
 	descriptor: IComponentDescriptor,
 	options: { ctrl?: any; plugins?: any; props?: any },
+	extensions: TAdapterExtension[] = [withPluginsBinding],
 ): IAdapterContext {
 	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
 	const bundle = options.plugins ?? descriptor.createBundle()
@@ -52,6 +59,11 @@ export function createAdapterContext(
 			extension(this)
 			return this
 		},
+	}
+
+	// Применяем стартовый набор расширений
+	for (const extension of extensions) {
+		context.use(extension)
 	}
 
 	return context
