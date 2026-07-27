@@ -100,10 +100,17 @@ export class TDescriptorInspector {
             if (prop.protected) continue
 
             const exportName = this.getExportPropName(prop)
+            const propConfig: Record<string, any> = {}
 
-            props[exportName] = {
-                default: defaultValues[prop.name],
+            if (prop.type !== undefined) {
+                propConfig.type = prop.type
             }
+
+            if (defaultValues[prop.name] !== undefined) {
+                propConfig.default = defaultValues[prop.name]
+            }
+
+            props[exportName] = propConfig
         }
 
         this.cachedExportProps = props

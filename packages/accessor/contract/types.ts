@@ -8,6 +8,7 @@
 /** Вход: декларация одного свойства в контрибуции */
 export interface IPropContribution {
     name: string
+    type?: any
     protected?: boolean
     triggers?: string[]
 }
@@ -26,6 +27,7 @@ export interface ICompiledItem {
 
 /** Скомпилированное свойство: всегда с нормализованным protected и triggers */
 export interface ICompiledProp extends ICompiledItem {
+    type?: any
     protected: boolean
     triggers: string[]
 }

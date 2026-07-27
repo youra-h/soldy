@@ -2,7 +2,7 @@ import type { IContribution } from '@soldy/accessor'
 
 export const ControlContribution: IContribution = {
 	props: [
-		{ name: 'disabled', triggers: ['change:disabled'] },
-		{ name: 'focused', triggers: ['change:focused'] },
+		{ name: 'disabled', type: Boolean, triggers: ['change:disabled'] },
+		{ name: 'focused', type: Boolean, triggers: ['change:focused'] },
 	],
 }

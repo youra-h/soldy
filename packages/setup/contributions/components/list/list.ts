@@ -2,10 +2,10 @@ import type { IContribution } from '@soldy/accessor'
 
 export const ListContribution: IContribution = {
 	props: [
-		{ name: 'maxRows', triggers: ['change:maxRows'] },
-		{ name: 'autoWidth', triggers: ['change:autoWidth'] },
-		{ name: 'wordWrap', triggers: ['change:wordWrap'] },
-		{ name: 'scrollBehavior', triggers: ['change:scrollBehavior'] },
+		{ name: 'maxRows', type: Number, triggers: ['change:maxRows'] },
+		{ name: 'autoWidth', type: Boolean, triggers: ['change:autoWidth'] },
+		{ name: 'wordWrap', type: Boolean, triggers: ['change:wordWrap'] },
+		{ name: 'scrollBehavior', type: String, triggers: ['change:scrollBehavior'] },
 	],
 	events: [
 		'item:disabled',
