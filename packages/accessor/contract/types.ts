@@ -8,7 +8,7 @@
 /** Вход: декларация одного свойства в контрибуции */
 export interface IPropContribution {
 	name: string
-	type?: any
+	type?: any | any[]
 	protected?: boolean
 	triggers?: string[]
 }

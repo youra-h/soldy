@@ -4,7 +4,7 @@ export const TabItemCustomContribution: IContribution = {
 	props: [
 		{ name: 'tag', type: String, triggers: ['change:tag'] },
 		{ name: 'text', type: String, triggers: ['change:text'] },
-		{ name: 'closable', type: Boolean, triggers: ['change:closable'] },
+		{ name: 'closable', type: [Boolean, Object], triggers: ['change:closable'] },
 	],
 	events: ['close'],
 }
