@@ -22,7 +22,7 @@ export default {
 		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
-			...useVue(adapter, props, emit),
+			...useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit),
 			arrowIconTag: useIconImport('arrowRight'),
 			...useSplitAttrs(),
 		}
