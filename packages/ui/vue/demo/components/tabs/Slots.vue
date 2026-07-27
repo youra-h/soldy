@@ -12,13 +12,13 @@ defineProps<Props>()
 
 const APPEARANCES = ['line', 'contained', 'outline'] as const
 
-const tabsInstance = new TTabs({
-	items: [
-		{ text: 'Users', value: 'users', active: true },
-		{ text: 'Settings', value: 'settings' },
-		{ text: 'Profile', value: 'profile' },
-	],
-})
+// const tabsInstance = new TTabs({
+// 	items: [
+// 		{ text: 'Users', value: 'users', active: true },
+// 		{ text: 'Settings', value: 'settings' },
+// 		{ text: 'Profile', value: 'profile' },
+// 	],
+// })
 </script>
 
 <template>
