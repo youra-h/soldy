@@ -39,7 +39,9 @@ export function createAdapterContext(
 
 		use(ExtensionCtor: any, opts?: any) {
 			const ext = new ExtensionCtor(this, opts)
+
 			extensionsMap.set(ExtensionCtor.key, ext)
+
 			return this
 		},
 
