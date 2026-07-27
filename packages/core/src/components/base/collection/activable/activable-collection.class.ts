@@ -15,10 +15,10 @@ import { TEvented } from '../../../../common'
  * Коллекция элементов с поддержкой активности.
  */
 export class TActivatableCollection<
-		TProps extends IActivatableCollectionProps = IActivatableCollectionProps,
-		TEvents extends TActivatableCollectionEvents = TActivatableCollectionEvents,
-		TItem extends IActivatableCollectionItem = IActivatableCollectionItem,
-	>
+	TProps extends IActivatableCollectionProps = IActivatableCollectionProps,
+	TEvents extends TActivatableCollectionEvents = TActivatableCollectionEvents,
+	TItem extends IActivatableCollectionItem = IActivatableCollectionItem,
+>
 	extends TCollection<TProps, TEvents, TItem>
 	implements IActivatableCollection<TProps, TEvents, TItem>
 {
@@ -123,12 +123,7 @@ export class TActivatableCollection<
 		// assign() установил active:true до подписки — запоминаем без эмита событий,
 		// но деактивируем предыдущий, чтобы не было двух активных
 		if (item.active) {
-			const prev = this._activeItem
-			this._activeItem = item
-
-			if (prev && !isSame(prev, item)) {
-				prev.active = false
-			}
+			this.setActive(item)
 		}
 	}
 	/**

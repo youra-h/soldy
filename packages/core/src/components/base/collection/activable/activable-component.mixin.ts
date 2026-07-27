@@ -31,11 +31,6 @@ export function ActivatableComponentMixin<
 				collection: collection ?? undefined,
 			})
 
-			// Если active был передан явно в props/options — устанавливаем его!
-			if (props?.active !== undefined) {
-				this._collectionItem.active = Boolean(props.active)
-			}
-
 			this._collectionItem.events.on('change:activation', (item) => {
 				this.classes.toggle('--active', !!item.active)
 				;(this.events as TEvented<any>).emit('change:activation', this)
@@ -48,6 +43,11 @@ export function ActivatableComponentMixin<
 			this._collectionItem.events.on('free', () => {
 				;(this.events as TEvented<any>).emit('free', this)
 			})
+
+			// Если active был передан явно в props/options — устанавливаем его!
+			if (props?.active!== undefined) {
+				this.active = Boolean(props.active)
+			}
 		}
 
 		get collection(): TCollection | null {
