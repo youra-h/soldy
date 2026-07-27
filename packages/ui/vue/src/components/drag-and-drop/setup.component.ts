@@ -15,6 +15,6 @@ export default {
 			props,
 		}).use(TDragAndDropExtension, { elevator: VueElevatorFactory })
 
-		return useVue(adapter, props, emit)
+		return useVue<IDragAndDropProps>(adapter, props, emit)
 	},
 }
