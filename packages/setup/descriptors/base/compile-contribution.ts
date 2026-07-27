@@ -13,6 +13,7 @@ export function compileContribution(
 
     const props: ICompiledProp[] = (contribution.props ?? []).map((p) => ({
         name: p.name,
+        type: p.type,
         protected: !!p.protected,
         // Если есть namespace, проставляем его каждому триггеру
         // (например: 'change:visible' → 'element:change:visible')

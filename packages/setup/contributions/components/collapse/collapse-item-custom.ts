@@ -2,8 +2,8 @@ import type { IContribution } from '@soldy/accessor'
 
 export const CollapseItemCustomContribution: IContribution = {
 	props: [
-		{ name: 'tag', triggers: ['change:tag'] },
-		{ name: 'text', triggers: ['change:text'] },
-		{ name: 'arrowPlacement', triggers: ['change:arrowPlacement'] },
+		{ name: 'tag', type: String, triggers: ['change:tag'] },
+		{ name: 'text', type: String, triggers: ['change:text'] },
+		{ name: 'arrowPlacement', type: String, triggers: ['change:arrowPlacement'] },
 	],
 }

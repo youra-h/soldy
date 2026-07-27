@@ -2,8 +2,8 @@ import type { IContribution } from '@soldy/accessor'
 
 export const IconContribution: IContribution = {
 	props: [
-		{ name: 'size', triggers: ['change:size'] },
-		{ name: 'width', triggers: ['change:width'] },
-		{ name: 'height', triggers: ['change:height'] },
+		{ name: 'size', type: String, triggers: ['change:size'] },
+		{ name: 'width', type: Number, triggers: ['change:width'] },
+		{ name: 'height', type: Number, triggers: ['change:height'] },
 	],
 }
