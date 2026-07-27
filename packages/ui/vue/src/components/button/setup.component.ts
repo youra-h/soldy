@@ -15,6 +15,6 @@ export default {
 			props,
 		})
 
-		return useVue(adapter, props, emit)
+		return useVue<IButtonProps, IButton>(adapter, props, emit)
 	},
 }

@@ -17,6 +17,6 @@ export default {
 			props,
 		})
 
-		return { ...useVue(adapter, props, emit), ...useSplitAttrs() }
+		return { ...useVue<ISwitchProps, ISwitch>(adapter, props, emit), ...useSplitAttrs() }
 	},
 }

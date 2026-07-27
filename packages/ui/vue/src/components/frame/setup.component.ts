@@ -15,6 +15,6 @@ export default {
 			props,
 		})
 
-		return useVue(adapter, props, emit)
+		return useVue<IFrameProps, IFrame>(adapter, props, emit)
 	},
 }

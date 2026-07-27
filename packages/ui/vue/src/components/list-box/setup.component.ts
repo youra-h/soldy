@@ -15,6 +15,6 @@ export default {
 			props,
 		}).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		return useVue(adapter, props, emit)
+		return useVue<IListBoxProps, IListBox>(adapter, props, emit)
 	},
 }

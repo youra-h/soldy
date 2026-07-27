@@ -18,7 +18,7 @@ export default {
 		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
-			...useVue(adapter, props, emit),
+			...useVue<IListItemProps, IListBoxItem>(adapter, props, emit),
 			...useSplitAttrs(),
 		}
 	},

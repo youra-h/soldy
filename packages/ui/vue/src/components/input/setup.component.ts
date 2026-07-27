@@ -17,6 +17,6 @@ export default {
 			props,
 		})
 
-		return { ...useVue(adapter, props, emit), ...useSplitAttrs() }
+		return { ...useVue<IInputProps, IInput>(adapter, props, emit), ...useSplitAttrs() }
 	},
 }
