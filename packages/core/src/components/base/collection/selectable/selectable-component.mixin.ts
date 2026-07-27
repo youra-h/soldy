@@ -44,11 +44,6 @@ export function SelectableComponentMixin<
 				collection: collection ?? undefined,
 			})
 
-			// Если active был передан явно в props/options — устанавливаем его!
-			if (props?.selected !== undefined) {
-				this._collectionItem.selected = Boolean(props.selected)
-			}
-
 			this._collectionItem.events.on('change:selection', (item) => {
 				this.classes.toggle('--selected', !!item.selected)
 				;(this.events as TEvented<any>).emit('change:selection', this)
@@ -61,6 +56,11 @@ export function SelectableComponentMixin<
 			this._collectionItem.events.on('free', () => {
 				;(this.events as TEvented<any>).emit('free', this)
 			})
+
+			// Если active был передан явно в props/options — устанавливаем его!
+			if (props?.selected !== undefined) {
+				this.selected = Boolean(props.selected)
+			}
 		}
 
 		get collection(): TCollection | null {
