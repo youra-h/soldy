@@ -67,9 +67,3 @@ export interface IContextElevator<T = any> {
 	/** Получить значение от ближайшего родителя (inject) */
 	up(): T | undefined
 }
-
-// Создаем наш собственный брендированный тип для ядра
-export type TPropType<T> = {
-	readonly __type: T
-	readonly ctor: any // Ссылка на JS-конструктор (Object, Array, String и т.д.)
-}
