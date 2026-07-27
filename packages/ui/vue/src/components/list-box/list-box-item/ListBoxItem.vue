@@ -52,6 +52,8 @@ export default { ...SetupListBoxItem, components: { Button } }
 
 	&--word-wrap {
 		.s-button {
+			@apply min-h-fit;
+
 			&__text {
 				@apply whitespace-normal overflow-visible;
 			}
