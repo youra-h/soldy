@@ -111,7 +111,7 @@ const handleHide = () => instanceDemoRef.value?.hide()
 			</div>
 		</template>
 
-		<!-- <template #props-demo>
+		<template #props-demo>
 			<PropsDemo v-bind="componentProps" @log="emit('log', $event)" />
 		</template>
 
@@ -121,7 +121,7 @@ const handleHide = () => instanceDemoRef.value?.hide()
 				v-bind="componentProps"
 				@log="emit('log', $event)"
 			/>
-		</template> -->
+		</template>
 
 		<template #slots-demo>
 			<SlotsDemo :size="componentProps.size" :variant="componentProps.variant" />
