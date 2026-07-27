@@ -18,7 +18,7 @@ export default {
 		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
-			...useVue(adapter, props, emit),
+			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

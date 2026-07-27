@@ -18,7 +18,7 @@ export default {
 		})
 
 		return {
-			...useVue(adapter, props, emit),
+			...useVue<ICheckBoxProps, ICheckBox>(adapter, props, emit),
 			defaultIconTag: useIconImport('check'),
 			defaultIndeterminateIconTag: useIconImport('checkIndeterminate'),
 			...useSplitAttrs(),
