@@ -7,4 +7,5 @@ export type {
     IComponentSchema,
     INamingStrategy,
     IContextElevator,
+	TPropType,
 } from './types'

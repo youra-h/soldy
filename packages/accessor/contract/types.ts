@@ -7,29 +7,29 @@
 
 /** Вход: декларация одного свойства в контрибуции */
 export interface IPropContribution {
-    name: string
-    type?: any
-    protected?: boolean
-    triggers?: string[]
+	name: string
+	type?: any
+	protected?: boolean
+	triggers?: string[]
 }
 
 /** Вход: декларация контрибуции — набор свойств + событий */
 export interface IContribution {
-    props?: IPropContribution[]
-    events?: string[]
+	props?: IPropContribution[]
+	events?: string[]
 }
 
 /** Базовый скомпилированный элемент (prop или event) с опциональным namespace */
 export interface ICompiledItem {
-    name: string
-    namespace?: string
+	name: string
+	namespace?: string
 }
 
 /** Скомпилированное свойство: всегда с нормализованным protected и triggers */
 export interface ICompiledProp extends ICompiledItem {
-    type?: any
-    protected: boolean
-    triggers: string[]
+	type?: any
+	protected: boolean
+	triggers: string[]
 }
 
 /** Скомпилированное событие */
@@ -37,8 +37,8 @@ export interface ICompiledEvent extends ICompiledItem {}
 
 /** Схема компонента: скомпилированные props + events (контракт для TDescriptorInspector) */
 export interface IComponentSchema {
-    props: ICompiledProp[]
-    events: ICompiledEvent[]
+	props: ICompiledProp[]
+	events: ICompiledEvent[]
 }
 
 /**
@@ -48,8 +48,8 @@ export interface IComponentSchema {
  * - event(name, ns): 'ready' + 'element'    → 'element:ready'      (Vue)
  */
 export interface INamingStrategy {
-    prop: (name: string, namespace?: string) => string
-    event: (name: string, namespace?: string) => string
+	prop: (name: string, namespace?: string) => string
+	event: (name: string, namespace?: string) => string
 }
 
 /**
@@ -62,8 +62,14 @@ export interface INamingStrategy {
  * @template T — тип передаваемого значения
  */
 export interface IContextElevator<T = any> {
-    /** Передать значение вниз по дереву (provide) */
-    down(value: T): void
-    /** Получить значение от ближайшего родителя (inject) */
-    up(): T | undefined
+	/** Передать значение вниз по дереву (provide) */
+	down(value: T): void
+	/** Получить значение от ближайшего родителя (inject) */
+	up(): T | undefined
+}
+
+// Создаем наш собственный брендированный тип для ядра
+export type TPropType<T> = {
+	readonly __type: T
+	readonly ctor: any // Ссылка на JS-конструктор (Object, Array, String и т.д.)
 }
