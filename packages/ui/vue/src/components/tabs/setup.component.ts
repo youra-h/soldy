@@ -15,6 +15,7 @@ export default {
 			props,
 		}).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		return useVue(adapter, props, emit)
+		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
+		return useVue<ITabsProps, ITabs>(adapter, props, emit)
 	},
 }

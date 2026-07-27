@@ -15,7 +15,7 @@ export interface ISyncOptions {
  * возвращает { refs, bindOutput, bindInput, cleanup }.
  *
  * - bindOutput(): создаёт refs с начальными значениями и подписывается на триггеры
- * - bindInput(externalProps): вешает watchers на внешние props
+ * - bindInput(props): вешает watchers на внешние props
  * - cleanup(): снимает все watchers (вызывается автоматически на onUnmounted)
  */
 export function useSyncProps(
@@ -66,12 +66,12 @@ export function useSyncProps(
     }
 
     // 2. Vue → Core (Input): watch внешних props
-    function bindInput(externalProps: Record<string, any>) {
+    function bindInput(props: Record<string, any>) {
         for (const prop of accessor.getProps(false) as ICompiledProp[]) {
             const formattedPropName = inspector.getExportPropName(prop)
 
             const stopWatch = watch(
-                () => externalProps[formattedPropName] ?? externalProps[prop.name],
+                () => props[formattedPropName] ?? props[prop.name],
                 (newVal) => {
                     if (newVal !== undefined) {
                         const valueToSet = options.onInput
