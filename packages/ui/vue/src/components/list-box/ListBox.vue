@@ -51,8 +51,14 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		@apply w-max min-w-0 max-w-none;
 	}
 
-	&--word-wrap .s-button__text {
-		@apply whitespace-normal overflow-visible;
+	&--word-wrap {
+		.s-button {
+			@apply min-h-fit;
+			
+			&__text {
+				@apply whitespace-normal overflow-visible;
+			}
+		}
 	}
 }
 </style>
