@@ -7,7 +7,7 @@
  * Сам занимается только рантайм-доступом: getValue, setValue, getEventSource.
  */
 
-import { TDescriptorInspector } from './inspector'
+import { TDescriptorInspector } from './descriptor-inspector.class'
 import type { ICompiledProp, ICompiledEvent, ICompiledItem, IComponentSchema } from './contract'
 
 export class TComponentAccessor {
