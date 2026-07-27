@@ -16,6 +16,6 @@ export type TBaseComponentProps<
 	TCoreProps,
 	TInstance extends IComponent = IComponent,
 > = TCoreProps & {
-	ctrl?: TInstance | UnwrapNestedRefs<TInstance>
+	ctrl?: TInstance | Partial<TInstance> | UnwrapNestedRefs<TInstance>
 	plugins?: IPluginBundle | undefined
 }
