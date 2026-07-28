@@ -25,6 +25,6 @@ export const CollapseItemDescriptor = defineComponent({
 
 	composition: [{
 		descriptor: SelectableCollectionItemDescriptor,
-		get: (instance) => instance._collection,
+		get: (instance) => instance.collectionItem,
 	}],
 })
