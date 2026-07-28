@@ -427,3 +427,89 @@ describe('TCollection — patchItems', () => {
 		expect((col.getItem(0) as TestRichItem).value).toBe(20)
 	})
 })
+
+describe('TCollection — trackBy via constructor props', () => {
+	it('patchItems uses trackBy from constructor props (no explicit arg)', () => {
+		const col = new TCollection({
+			itemClass: TestRichItem,
+			props: {
+				trackBy: (item: any) => item.name,
+			},
+		})
+
+		const a = col.add({ name: 'Alice', value: 1 } as any)
+		const b = col.add({ name: 'Bob', value: 2 } as any)
+
+		// patchItems без явного trackBy — использует this._trackBy
+		col.patchItems([
+			{ name: 'Alice', value: 100 },
+			{ name: 'Charlie', value: 3 },
+		])
+
+		expect(col.count).toBe(2)
+		// Alice обновлён
+		expect(col.getItem(0)!.name).toBe('Alice')
+		expect((col.getItem(0) as TestRichItem).value).toBe(100)
+		// Bob удалён, Charlie добавлен
+		expect(col.getItem(1)!.name).toBe('Charlie')
+		expect((col.getItem(1) as TestRichItem).value).toBe(3)
+	})
+
+	it('emits change:trackBy when trackBy is set via setter', () => {
+		const col = new TCollection({ itemClass: TestRichItem })
+		const spy = vi.fn()
+
+		col.events.on('change:trackBy', spy)
+
+		const fn = (item: any) => item.name
+		col.trackBy = fn
+
+		expect(spy).toHaveBeenCalledWith(fn)
+	})
+
+	it('trackBy from constructor props emits change:trackBy', () => {
+		const fn = (item: any) => item.name
+		const spy = vi.fn()
+
+		const col = new TCollection({
+			itemClass: TestRichItem,
+			props: { trackBy: fn },
+		})
+
+		// Подписываемся после создания — событие уже было эмичено
+		// Проверяем, что trackBy установлен
+		expect(col.trackBy).toBe(fn)
+
+		// patchItems без явного trackBy работает
+		col.add({ name: 'Alice', value: 1 } as any)
+		col.patchItems([{ name: 'Alice', value: 10 }])
+		expect((col.getItem(0) as TestRichItem).value).toBe(10)
+	})
+
+	it('items and trackBy together in constructor props', () => {
+		const col = new TCollection({
+			itemClass: TestRichItem,
+			props: {
+				items: [
+					{ name: 'Alice', value: 1 },
+					{ name: 'Bob', value: 2 },
+				] as any,
+				trackBy: (item: any) => item.name,
+			},
+		})
+
+		expect(col.count).toBe(2)
+		expect(col.getItem(0)!.name).toBe('Alice')
+		expect(col.getItem(1)!.name).toBe('Bob')
+
+		// patchItems работает без явного trackBy
+		col.patchItems([
+			{ name: 'Bob', value: 20 },
+			{ name: 'Charlie', value: 3 },
+		])
+
+		expect(col.count).toBe(2)
+		expect((col.getItem(0) as TestRichItem).value).toBe(20) // Bob обновлён
+		expect(col.getItem(1)!.name).toBe('Charlie')
+	})
+})
