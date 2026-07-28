@@ -70,7 +70,7 @@ describe('TSelectableCollection', () => {
 	it('multiple mode: allows multiple selection', () => {
 		const col = new TSelectableCollection({
 			itemClass: TSelectableCollectionItem,
-			mode: 'multiple',
+			props: { mode: 'multiple' },
 		})
 
 		const a = col.add({})
@@ -88,7 +88,7 @@ describe('TSelectableCollection', () => {
 	it('none mode: selection is ignored and immediately cleared', () => {
 		const col = new TSelectableCollection({
 			itemClass: TSelectableCollectionItem,
-			mode: 'none',
+			props: { mode: 'none' },
 		})
 
 		const a = col.add({})
@@ -103,7 +103,7 @@ describe('TSelectableCollection', () => {
 	it('clear deselects all and emits', () => {
 		const col = new TSelectableCollection({
 			itemClass: TSelectableCollectionItem,
-			mode: 'multiple',
+			props: { mode: 'multiple' },
 		})
 
 		const a = col.add({})
@@ -124,7 +124,7 @@ describe('TSelectableCollection', () => {
 	it('addItems() subscribes to item events and maintains selection state', () => {
 		const col = new TSelectableCollection({
 			itemClass: TSelectableCollectionItem,
-			mode: 'multiple',
+			props: { mode: 'multiple' },
 		})
 
 		const selectedSpy = vi.fn()
@@ -149,7 +149,7 @@ describe('TSelectableCollection', () => {
 	it('changing mode from multiple to single keeps only first selected', () => {
 		const col = new TSelectableCollection({
 			itemClass: TSelectableCollectionItem,
-			mode: 'multiple',
+			props: { mode: 'multiple' },
 		})
 
 		const a = col.add({})
@@ -173,7 +173,7 @@ describe('TSelectableCollection', () => {
 		it('setItems extracts _.selected and applies it to elements', () => {
 			const col = new TSelectableCollection({
 				itemClass: TSelectableCollectionItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			col.setItems([
@@ -192,7 +192,7 @@ describe('TSelectableCollection', () => {
 		it('setItems does not emit item:selected or change:selected during init', () => {
 			const col = new TSelectableCollection({
 				itemClass: TSelectableCollectionItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			const selectedSpy = vi.fn()
@@ -214,7 +214,7 @@ describe('TSelectableCollection', () => {
 		it('updates selection state via patchItems', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			const a = col.add({ id: 1 } as any)
@@ -236,7 +236,7 @@ describe('TSelectableCollection', () => {
 		it('patchItems emits item:selected and change:selected when selecting existing item', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			const selectedSpy = vi.fn()
@@ -257,7 +257,7 @@ describe('TSelectableCollection', () => {
 		it('adds new items with selected state via patchItems', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			col.patchItems(
@@ -275,7 +275,7 @@ describe('TSelectableCollection', () => {
 		it('deletes items and updates selected count', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			const a = col.add({ id: 1 } as any)
@@ -292,7 +292,7 @@ describe('TSelectableCollection', () => {
 		it('patchItems from change:selected handler does not cause infinite recursion', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			// Добавляем 3 элемента через setItems
@@ -335,7 +335,7 @@ describe('TSelectableCollection', () => {
 		it('setItems from change:selected handler causes infinite recursion', () => {
 			const col = new TSelectableCollection({
 				itemClass: TestSelectableItem,
-				mode: 'multiple',
+				props: { mode: 'multiple' },
 			})
 
 			col.setItems([

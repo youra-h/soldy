@@ -124,7 +124,7 @@ describe('TCollapseItem', () => {
 	let collection: TSelectableCollection<any, any, TCollapseItem>
 
 	beforeEach(() => {
-		collection = new TSelectableCollection({ itemClass: TCollapseItem as any, mode: 'multiple' })
+		collection = new TSelectableCollection({ itemClass: TCollapseItem as any, props: { mode: 'multiple' } })
 	})
 
 	describe('initialization', () => {
