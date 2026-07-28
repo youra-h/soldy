@@ -300,23 +300,6 @@ export class TCollection<
 	}
 
 	/**
-	 * Хук, вызываемый перед добавлением элемента в коллекцию.
-	 * Вернуть false — отменить добавление.
-	 * @param item Элемент для добавления
-	 * @protected
-	 */
-	protected _onBeforeItemAdd(item: TItem): boolean | void {}
-
-	/**
-	 * Хук, вызываемый после успешного добавления элемента в коллекцию.
-	 * Переопределяется в наследниках для подписки на события элемента
-	 * и инициализации начального состояния.
-	 * @param item Добавленный элемент
-	 * @protected
-	 */
-	protected _onAfterItemAdd(item: TItem): void {}
-
-	/**
 	 * Возвращает элемент по индексу или undefined, если индекс вне диапазона.
 	 * @param index Индекс запрашиваемого элемента.
 	 */
@@ -368,9 +351,9 @@ export class TCollection<
 			return false
 		}
 
-		if (this._onBeforeItemAdd(item) === false) {
-			return false
-		}
+		// if (this._onBeforeItemAdd(item) === false) {
+		// 	return false
+		// }
 
 		this._items.splice(index, 0, item)
 		item.collection = this
@@ -378,8 +361,6 @@ export class TCollection<
 		// После вставки элемента пересчитываем order для всех элементов, начиная с позиции вставки
 		this._recalculateOrder(index)
 		;(this.events as TEvented<TCollectionEvents>).emit('item:added', { collection: this, item })
-
-		this._onAfterItemAdd(item)
 
 		// Общий сигнал об изменении коллекции
 		this._notifyItems(item)

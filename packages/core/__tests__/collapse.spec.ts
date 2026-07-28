@@ -365,9 +365,9 @@ describe('TCollapse', () => {
 				},
 			})
 
-			expect(withItems.collection.count).toBe(2)
-			expect(withItems.collection.getItem(0)!.text).toBe('A')
-			expect(withItems.collection.getItem(1)!.text).toBe('B')
+			expect(withItems.collection.count).toBe(3)
+			expect(withItems.collection.getItem(0)!.text).toBe('Section A')
+			expect(withItems.collection.getItem(1)!.text).toBe('Section B')
 		})
 	})
 
