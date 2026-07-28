@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { TCollapse, TCollapseItemCustom, TCollapseItem, TSelectableCollection} from '@soldy/core'
+import { TCollapse, TCollapseItemCustom, TCollapseItem, TSelectableCollection } from '@soldy/core'
 
 describe('TCollapseItemCustom', () => {
 	let item: TCollapseItemCustom
@@ -124,7 +124,10 @@ describe('TCollapseItem', () => {
 	let collection: TSelectableCollection<any, any, TCollapseItem>
 
 	beforeEach(() => {
-		collection = new TSelectableCollection({ itemClass: TCollapseItem as any, props: { mode: 'multiple' } })
+		collection = new TSelectableCollection({
+			itemClass: TCollapseItem as any,
+			props: { mode: 'multiple' },
+		})
 	})
 
 	describe('initialization', () => {
@@ -345,6 +348,27 @@ describe('TCollapse', () => {
 			expect(custom.view).toBe('outlined')
 			expect(custom.mode).toBe('single')
 		})
+
+		it('creates with items and trackBy without crash', () => {
+			// Триггерит цепочку: TSelectableCollection._applyProps → setItems → reset()
+			// На момент reset() поле _selected ещё не инициализировано (field initializer
+			// в JS выполняется после super()). Проверяем, что reset() не падает.
+			const withItems = new TCollapse({
+				props: {
+					items: [
+						{ text: 'Section A', value: 'sA', _: { selected: true } },
+						{ text: 'Section B', value: 'sB' },
+						{ text: 'Section C', value: 'sC' },
+					],
+					mode: 'multiple',
+					trackBy: (item: any) => item.text,
+				},
+			})
+
+			expect(withItems.collection.count).toBe(2)
+			expect(withItems.collection.getItem(0)!.text).toBe('A')
+			expect(withItems.collection.getItem(1)!.text).toBe('B')
+		})
 	})
 
 	describe('view', () => {
@@ -472,9 +496,7 @@ describe('TCollapse', () => {
 
 			item.selected = true
 
-			expect(spy).toHaveBeenCalledWith(
-				expect.objectContaining({ item }),
-			)
+			expect(spy).toHaveBeenCalledWith(expect.objectContaining({ item }))
 		})
 
 		it('emits item:unselected when item is deselected', () => {
@@ -486,9 +508,7 @@ describe('TCollapse', () => {
 
 			item.selected = false
 
-			expect(spy).toHaveBeenCalledWith(
-				expect.objectContaining({ item }),
-			)
+			expect(spy).toHaveBeenCalledWith(expect.objectContaining({ item }))
 		})
 
 		it('emits change:selected when selection changes', () => {
