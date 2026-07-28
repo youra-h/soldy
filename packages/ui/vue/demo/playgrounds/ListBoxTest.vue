@@ -305,13 +305,13 @@ function loadData() {
 					placeholder="Фильтр..."
 				/>
 
-				<!-- <ListBox
+				<ListBox
 					mode="multiple"
 					:items="filteredItems3"
 					:track-by="(item) => item.value"
 					:max-rows="6"
 					@change:selected="handleSelected3"
-				/> -->
+				/>
 
 				<div class="list-box-test__selected">
 					<strong>Выбрано:</strong>
