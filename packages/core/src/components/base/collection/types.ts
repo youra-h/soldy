@@ -51,6 +51,11 @@ export type TCollectionEvents<TItem extends ICollectionItem = ICollectionItem> =
 	 */
 	'change:count': (count: number) => void
 
+	/**
+	 * После изменения функции идентификации элементов (trackBy).
+	 */
+	'change:trackBy': (trackBy?: (item: Partial<TItem>) => unknown) => void
+
 	/** Сброс состояния коллекции (очистка, удаление всех элементов) */
 	reset: () => void
 
