@@ -122,7 +122,10 @@ export class TCollection<
 	}
 
 	set trackBy(value: ((item: Partial<TItem>) => unknown) | undefined) {
+		if (this._trackBy === value) return
+
 		this._trackBy = value
+		;(this.events as TEvented<TCollectionEvents>).emit('change:trackBy', value)
 	}
 
 	/**

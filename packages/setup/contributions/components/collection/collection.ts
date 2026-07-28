@@ -14,6 +14,11 @@ export const CollectionContribution: IContribution = {
 			type: Number,
 			triggers: ['change:count'],
 		},
+		{
+			name: 'trackBy',
+			type: Function,
+			triggers: ['change:trackBy'],
+		}
 	],
 	events: [
 		'changed',
