@@ -45,12 +45,12 @@ export class TCollapse
 
 		this._collection = new TSelectableCollection<any, any, ICollapseItem>({
 			itemClass: TCollapseItem,
-			mode: props.mode ?? ctor.defaultValues.mode!,
+			props: {
+				mode: props.mode ?? ctor.defaultValues.mode!,
+				items: props.items,
+				trackBy: props.trackBy,
+			},
 		})
-
-		if (props.items) {
-			this._collection.setItems(props.items)
-		}
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
 

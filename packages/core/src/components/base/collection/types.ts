@@ -5,6 +5,7 @@ import {
 } from './item/types'
 import type { IEntity } from '../../base/entity'
 import { TEvented } from '../../../common'
+import type { TConstructor } from '../../../common'
 
 /**
  * Базовый интерфейс коллекции элементов.
@@ -258,4 +259,23 @@ export interface ICollection<
 	readonly items: TItem[]
 	/** Количество элементов в коллекции */
 	readonly count: number
+}
+
+/**
+ * Опции для создания коллекции.
+ *
+ * Аналог {@link IComponentOptions} — позволяет передать
+ * и `itemClass`, и начальные `props` в одном объекте.
+ *
+ * Дискриминант: наличие ключа `itemClass` или `props`
+ * отличает объект опций от плоских props.
+ */
+export interface ICollectionOptions<
+	TProps extends ICollectionProps = ICollectionProps,
+	TItem extends ICollectionItem = ICollectionItem,
+> {
+	/** Конструктор элементов коллекции */
+	itemClass: TConstructor<TItem>
+	/** Начальные свойства коллекции (items, trackBy и др.) */
+	props?: Partial<TProps>
 }
