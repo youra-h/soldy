@@ -27,7 +27,7 @@ export class TDragAndDropCollectionExtension {
 		const dragContext = dragElevator.up()
 
 		if (dragContext) {
-			bundle.get(TDragPlugin)?.activate(instance)
+			bundle.get(TDragPlugin)?.activate(instance.collection)
 		}
 	}
 }
