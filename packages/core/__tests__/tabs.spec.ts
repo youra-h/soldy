@@ -341,4 +341,101 @@ describe('TTabs', () => {
 			expect(item2.size).toBe('lg')
 		})
 	})
+
+	describe('trackBy', () => {
+		const trackBy = (item: any) => item.text
+
+		it('trackBy passed via props is used by collection', () => {
+			const tabs = new TTabs({
+				props: { trackBy },
+			})
+
+			expect(tabs.collection.trackBy).toBe(trackBy)
+		})
+
+		it('patchItems uses trackBy from constructor props', () => {
+			const tabs = new TTabs({
+				props: {
+					trackBy,
+					items: [
+						{ text: 'Tab 1' },
+						{ text: 'Tab 2' },
+						{ text: 'Tab 3' },
+					],
+				},
+			})
+
+			expect(tabs.count).toBe(3)
+
+			// Обновляем Tab 1, удаляем Tab 3, добавляем Tab 4
+			tabs.collection.patchItems([
+				{ text: 'Tab 1' },
+				{ text: 'Tab 2' },
+				{ text: 'Tab 4' },
+			])
+
+			expect(tabs.count).toBe(3)
+			expect(tabs.collection.getItem(0)!.text).toBe('Tab 1')
+			expect(tabs.collection.getItem(1)!.text).toBe('Tab 2')
+			expect(tabs.collection.getItem(2)!.text).toBe('Tab 4')
+		})
+
+		it('patchItems with explicit trackBy overrides the one from props', () => {
+			const tabs = new TTabs({
+				props: {
+					trackBy,
+					items: [
+						{ text: 'Tab 1' },
+						{ text: 'Tab 2' },
+					],
+				},
+			})
+
+			// Явный trackBy при вызове patchItems переопределяет trackBy из props
+			const nameTrackBy = (item: any) => item.text ?? item
+			tabs.collection.patchItems(
+				[
+					{ text: 'Tab 1' },
+					{ text: 'Tab 3' },
+				],
+				nameTrackBy,
+			)
+
+			// Tab 1 сохранён, Tab 2 удалён (нет в source), Tab 3 добавлен
+			expect(tabs.count).toBe(2)
+			expect(tabs.collection.getItem(0)!.text).toBe('Tab 1')
+			expect(tabs.collection.getItem(1)!.text).toBe('Tab 3')
+		})
+
+		it('trackBy as flat prop (short form) flows to collection', () => {
+			const tabs = new TTabs({ trackBy } as any)
+
+			expect(tabs.collection.trackBy).toBe(trackBy)
+		})
+
+		it('items with trackBy create and sync collection', () => {
+			const tabs = new TTabs({
+				props: {
+					trackBy,
+					items: [
+						{ text: 'Tab 1' },
+						{ text: 'Tab 2' },
+					],
+				},
+			})
+
+			expect(tabs.count).toBe(2)
+
+			// Меняем items через сеттер коллекции
+			tabs.collection.items = [
+				{ text: 'Tab 2' },
+				{ text: 'Tab 3' },
+			] as any
+
+			// trackBy используется сеттером items (patchItems)
+			expect(tabs.count).toBe(2)
+			expect(tabs.collection.getItem(0)!.text).toBe('Tab 2')
+			expect(tabs.collection.getItem(1)!.text).toBe('Tab 3')
+		})
+	})
 })
