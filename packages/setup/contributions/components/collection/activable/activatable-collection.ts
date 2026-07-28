@@ -8,8 +8,8 @@ export const ActivatableCollectionContribution: IContribution = {
 			name: 'activeItem',
 			type: defineType<IActivatableCollection>(Object),
 			protected: true,
-			triggers: ['item:activated', 'item:deactivated'],
+			triggers: ['change:activeItem'],
 		},
 	],
-	events: ['item:activated', 'item:deactivated', 'change:activeItem'],
+	events: ['item:activated', 'item:deactivated'],
 }
