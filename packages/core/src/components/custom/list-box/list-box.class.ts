@@ -1,7 +1,7 @@
 import { TList } from '../list'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import { TSelectableCollection, type TSelectionMode } from '../../base/collection'
+import { TSelectableCollection } from '../../base/collection'
 import TListBoxItem from './list-box-item/list-box-item.class'
 import type { IListBoxItem } from './list-box-item/types'
 import type {
@@ -27,11 +27,11 @@ export class TListBox
 	protected _view!: TListBoxView
 
 	protected override _createCollection(
-		mode: TSelectionMode,
+		props: Partial<IListBoxProps>,
 	): TSelectableCollection<any, any, IListBoxItem> {
 		return new TSelectableCollection<any, any, IListBoxItem>({
 			itemClass: TListBoxItem,
-			mode,
+			props,
 		})
 	}
 

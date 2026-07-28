@@ -45,14 +45,16 @@ export class TList<
 	 *
 	 * Переопределяется в потомках (например, {@link TListBox}) для подмены `itemClass`.
 	 *
-	 * @param mode - Режим выбора (`single` / `multiple` / `none`)
+	 * @param props - Начальные свойства коллекции (mode, items и др.)
 	 * @returns Новая `TSelectableCollection`
 	 * @protected
 	 */
-	protected _createCollection(mode: TSelectionMode): TSelectableCollection<any, any, any> {
+	protected _createCollection(
+		props: Partial<IListProps>,
+	): TSelectableCollection<any, any, any> {
 		return new TSelectableCollection<any, any, IListItem>({
 			itemClass: TListItem,
-			mode,
+			props,
 		})
 	}
 
@@ -63,11 +65,11 @@ export class TList<
 
 		const { props } = TComponentView.prepareOptions<TProps, TStates>(options)
 
-		this._collection = this._createCollection(props.mode ?? ctor.defaultValues.mode!)
-
-		if (props.items) {
-			this._collection.setItems(props.items)
-		}
+		this._collection = this._createCollection({
+			mode: props.mode ?? ctor.defaultValues.mode!,
+			items: props.items,
+			trackBy: props.trackBy,
+		} as Partial<IListProps>)
 
 		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows!
 
