@@ -14,7 +14,7 @@ const APPEARANCES = ['plain', 'outlined', 'filled'] as const
 
 const collapseInstance = new TCollapse({
 	items: [
-		{ text: 'Section A', value: 'sA', selected: true },
+		{ text: 'Section A', value: 'sA', _: { selected: true } },
 		{ text: 'Section B', value: 'sB' },
 		{ text: 'Section C', value: 'sC' },
 	],
