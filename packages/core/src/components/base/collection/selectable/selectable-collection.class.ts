@@ -1,4 +1,5 @@
 import { TCollection } from '../collection.class'
+import type { ICollectionOptions } from '../types'
 import { TSelectableCollectionItem } from './selectable-collection-item.class'
 import type {
 	ISelectableCollection,
@@ -16,10 +17,10 @@ import { TEvented } from '../../../../common'
  * Коллекция элементов с поддержкой выбора.
  */
 export class TSelectableCollection<
-		TProps extends ISelectableCollectionProps = ISelectableCollectionProps,
-		TEvents extends TSelectableCollectionEvents = TSelectableCollectionEvents,
-		TItem extends ISelectableCollectionItem = ISelectableCollectionItem,
-	>
+	TProps extends ISelectableCollectionProps = ISelectableCollectionProps,
+	TEvents extends TSelectableCollectionEvents = TSelectableCollectionEvents,
+	TItem extends ISelectableCollectionItem = ISelectableCollectionItem,
+>
 	extends TCollection<TProps, TEvents, TItem>
 	implements ISelectableCollection<TProps, TEvents, TItem>
 {
@@ -30,14 +31,17 @@ export class TSelectableCollection<
 	protected _mode: TSelectionMode
 	private _selected: Set<TItem> = new Set()
 
-	constructor(options?: { itemClass?: TConstructor<TItem>; mode?: TSelectionMode }) {
-		super({
-			itemClass: (options?.itemClass ?? TSelectableCollectionItem) as TConstructor<TItem>,
-		})
-
+	constructor(options: ICollectionOptions<TProps, TItem> | Partial<TProps>) {
 		const ctor = new.target as typeof TSelectableCollection
 
-		this._mode = options?.mode ?? ctor.defaultValues.mode!
+		const { props, itemClass } = ctor.prepareOptions<TProps, TItem>(options ?? {})
+
+		super({
+			itemClass: (itemClass ?? TSelectableCollectionItem) as TConstructor<TItem>,
+			props,
+		})
+
+		this._mode = props.mode ?? ctor.defaultValues.mode!
 	}
 
 	get mode(): TSelectionMode {

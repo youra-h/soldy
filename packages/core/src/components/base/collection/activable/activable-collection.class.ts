@@ -1,4 +1,5 @@
 import { TCollection } from '../collection.class'
+import type { ICollectionOptions } from '../types'
 import type {
 	IActivatableCollection,
 	IActivatableCollectionProps,
@@ -24,9 +25,16 @@ export class TActivatableCollection<
 {
 	private _activeItem?: TItem
 
-	constructor(options?: { itemClass?: TConstructor<TItem> }) {
+	constructor(
+		options:
+			| ICollectionOptions<IActivatableCollectionProps, TItem>
+			| Partial<IActivatableCollectionProps>,
+	) {
+		const { props, itemClass } = TCollection.prepareOptions(options ?? {})
+
 		super({
-			itemClass: (options?.itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
+			itemClass: (itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
+			props,
 		})
 	}
 
