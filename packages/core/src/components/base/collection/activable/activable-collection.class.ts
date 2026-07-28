@@ -26,14 +26,17 @@ export class TActivatableCollection<
 	private _activeItem?: TItem
 
 	constructor(
-		options:
-			| ICollectionOptions<IActivatableCollectionProps, TItem>
-			| Partial<IActivatableCollectionProps>,
+		options?:
+			| ICollectionOptions<TProps, TItem>
+			| Partial<TProps>,
 	) {
-		const { props, itemClass } = TCollection.prepareOptions(options ?? {})
+		const { props, itemClass } = TCollection.prepareOptions<TProps, TItem>(
+			options ?? {},
+		)
 
 		super({
-			itemClass: (itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
+			itemClass:
+				(itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
 			props,
 		})
 	}
