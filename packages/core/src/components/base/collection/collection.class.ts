@@ -19,10 +19,10 @@ import { TEntity } from '../../base/entity'
  * @fires afterMove - Элемент был перемещён
  */
 export class TCollection<
-		TProps extends ICollectionProps = ICollectionProps,
-		TEvents extends TCollectionEvents = TCollectionEvents,
-		TItem extends ICollectionItem = ICollectionItem,
-	>
+	TProps extends ICollectionProps = ICollectionProps,
+	TEvents extends TCollectionEvents = TCollectionEvents,
+	TItem extends ICollectionItem = ICollectionItem,
+>
 	extends TEntity<TProps>
 	implements ICollection<TProps, TEvents, TItem>, Iterable<TItem>
 {
@@ -31,6 +31,7 @@ export class TCollection<
 	 * @protected
 	 */
 	protected _items: TItem[] = []
+	protected _trackBy?: (item: Partial<TItem>) => unknown
 
 	/**
 	 * Конструктор класса элементов, используемый при создании новых элементов.
@@ -66,6 +67,22 @@ export class TCollection<
 		return this._items
 	}
 
+	set items(value: TItem[]) {
+		if (this._trackBy) {
+			this.patchItems(value, this._trackBy)
+		} else {
+			this.setItems(value)
+		}
+	}
+
+	get trackBy(): ((item: Partial<TItem>) => unknown) | undefined {
+		return this._trackBy
+	}
+
+	set trackBy(value: ((item: Partial<TItem>) => unknown) | undefined) {
+		this._trackBy = value
+	}
+
 	/**
 	 * Заменяет содержимое коллекции: очищает и заполняет из массива данных.
 	 */
@@ -93,13 +110,15 @@ export class TCollection<
 		sources: TCollectionItemSource<TItem, TMeta>[],
 		trackBy?: (item: Partial<TItem>) => unknown,
 	): void {
-		if (!trackBy) return
+		const trackByFn = trackBy ?? this._trackBy
+
+		if (!trackByFn) return
 
 		// Сопоставляем ключи существующим элементам
 		const itemByKey = new Map<unknown, TItem>()
 
 		this._items.forEach((item) => {
-			const key = trackBy(item)
+			const key = trackByFn(item)
 
 			if (key === undefined) {
 				throw new Error('patchItems: trackBy вернул undefined для элемента коллекции')
@@ -114,7 +133,7 @@ export class TCollection<
 		const matchedKeys = new Set<unknown>()
 
 		sources.forEach((source) => {
-			const key = trackBy(source)
+			const key = trackByFn(source)
 
 			if (key === undefined) {
 				throw new Error('patchItems: trackBy вернул undefined для source')
