@@ -1,18 +1,17 @@
 /**
- * TCollectionExtension — настраивает родительскую коллекцию и Drag&Drop.
+ * TCollectionExtension — настраивает родительскую коллекцию:
+ * спускает инстанс коллекции и регистратор плагинов вниз детям.
+ *
+ * Drag&Drop вынесен в отдельный TDragAndDropCollectionExtension.
  *
  * Использование:
  *   adapter.use(TCollectionExtension, { elevator: vueElevatorFactory })
  */
 
-import { TCollectionItemPlugins, TDragPlugin } from '@soldy/plugins'
+import { TCollectionItemPlugins } from '@soldy/plugins'
 import type { IAdapterContext } from '../context'
 import type { TElevatorFactory } from '../elevator'
-import {
-	COLLECTION_ELEVATOR,
-	COLLECTION_PLUGINS_ELEVATOR,
-	DRAG_CONTEXT_ELEVATOR,
-} from '../elevator/keys'
+import { COLLECTION_ELEVATOR, COLLECTION_PLUGINS_ELEVATOR } from '../elevator/keys'
 
 export interface ICollectionExtensionOptions {
 	elevator: TElevatorFactory
@@ -26,7 +25,6 @@ export class TCollectionExtension {
 
 		const collectionElevator = elevator(COLLECTION_ELEVATOR)
 		const pluginsElevator = elevator(COLLECTION_PLUGINS_ELEVATOR)
-		const dragElevator = elevator(DRAG_CONTEXT_ELEVATOR)
 
 		const { instance, bundle } = context
 
@@ -40,13 +38,6 @@ export class TCollectionExtension {
 			pluginsElevator.down((uid: string | number, itemBundle: any) => {
 				collectionItemPlugins.register(uid, itemBundle)
 			})
-		}
-
-		// 3. Проверяем DragAndDrop контекст
-		const dragContext = dragElevator.up()
-
-		if (dragContext) {
-			bundle.get(TDragPlugin)?.activate(instance)
 		}
 	}
 }
