@@ -125,7 +125,7 @@ export class TCollection<
 		if (this._trackBy === value) return
 
 		this._trackBy = value
-		;(this.events as TEvented<TCollectionEvents>).emit('change:trackBy', value)
+		;(this.events as TEvented<TCollectionEvents<TItem>>).emit('change:trackBy', value)
 	}
 
 	/**
