@@ -1,5 +1,5 @@
 import { TEvented } from '../../../common'
-import type { TCollectionEvents, ICollection, ICollectionProps } from './types'
+import type { TCollectionEvents, ICollection, ICollectionProps, ICollectionOptions } from './types'
 import {
 	type ICollectionItem,
 	type TCollectionItemSource,
@@ -43,16 +43,58 @@ export class TCollection<
 	public readonly events: TEvented<TEvents>
 
 	/**
-	 * Создаёт коллекцию, которая будет создавать элементы типа itemClass.
-	 * @param options Опции коллекции
+	 * Разбирает аргумент конструктора: отличает {@link ICollectionOptions} от плоских props.
+	 *
+	 * Дискриминант: наличие ключа `itemClass` или `props`.
 	 */
-	constructor(options: { itemClass: TConstructor<TItem> }) {
+	static prepareOptions<TProps extends ICollectionProps, TItem extends ICollectionItem>(
+		options: ICollectionOptions<TProps, TItem> | Partial<TProps>,
+	): { props: Partial<TProps>; itemClass?: TConstructor<TItem> } {
+		const raw = options as Record<string, unknown>
+		const hasItemClass = Object.prototype.hasOwnProperty.call(raw, 'itemClass')
+		const hasProps = Object.prototype.hasOwnProperty.call(raw, 'props')
+
+		if (hasItemClass || hasProps) {
+			const opt = options as ICollectionOptions<TProps, TItem>
+
+			return {
+				props: (opt.props ?? {}) as Partial<TProps>,
+				itemClass: opt.itemClass,
+			}
+		}
+
+		return { props: options as Partial<TProps> }
+	}
+
+	/**
+	 * Создаёт коллекцию элементов.
+	 *
+	 * @example
+	 * // Полная форма (опции):
+	 * new TCollection({ itemClass: MyItem, props: { items: [...], trackBy: fn } })
+	 *
+	 * @example
+	 * // Короткая форма (только props — для сабклассов с дефолтным itemClass):
+	 * new TActivatableCollection({ items: [...] })
+	 */
+	constructor(options: ICollectionOptions<TProps, TItem> | Partial<TProps>) {
+		const { props, itemClass } = TCollection.prepareOptions<TProps, TItem>(options)
+
 		super()
 
-		this._itemClass = options.itemClass
+		this._itemClass = itemClass!
 
 		this.events = new TEvented<TEvents>()
+
+		this._trackBy = props.trackBy
+			? (props.trackBy as (item: Partial<TItem>) => unknown)
+			: undefined
+
+		if (props.items) {
+			this.setItems(props.items as TCollectionItemSource<TItem, any>[])
+		}
 	}
+
 	/**
 	 * Количество элементов в коллекции.
 	 */

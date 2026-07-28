@@ -56,11 +56,11 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 		// Создаем коллекцию табов
 		this._collection = new TActivatableCollection<any, any, ITabItem>({
 			itemClass: TTabItem,
+			props: {
+				items: props.items,
+				trackBy: props.trackBy,
+			},
 		})
-
-		if (props.items) {
-			this._collection.setItems(props.items)
-		}
 
 		// Инициализация простых свойств
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation!)
