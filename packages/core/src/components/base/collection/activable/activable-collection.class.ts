@@ -25,19 +25,22 @@ export class TActivatableCollection<
 {
 	private _activeItem?: TItem
 
-	constructor(
-		options?:
-			| ICollectionOptions<TProps, TItem>
-			| Partial<TProps>,
-	) {
-		const { props, itemClass } = TCollection.prepareOptions<TProps, TItem>(
-			options ?? {},
-		)
+	constructor(options?: ICollectionOptions<TProps, TItem> | Partial<TProps>) {
+		const { props, itemClass } = TCollection.prepareOptions<TProps, TItem>(options ?? {})
 
 		super({
-			itemClass:
-				(itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
+			itemClass: (itemClass ?? TActivatableCollectionItem) as TConstructor<TItem>,
 			props,
+		})
+
+		this.events.on('item:added', (payload) => {
+			this._subscribeItem(payload.item as TItem)
+
+			// assign() установил active:true до подписки — запоминаем без эмита событий,
+			// но деактивируем предыдущий, чтобы не было двух активных
+			if (payload.item.active) {
+				this.setActive(payload.item as TItem)
+			}
 		})
 	}
 
@@ -123,20 +126,6 @@ export class TActivatableCollection<
 		}
 	}
 
-	/**
-	 * Переопределяем хук для подписки на события элемента перед assign
-	 * @param item Элемент коллекции
-	 * @protected
-	 */
-	protected override _onAfterItemAdd(item: TItem): void {
-		this._subscribeItem(item)
-
-		// assign() установил active:true до подписки — запоминаем без эмита событий,
-		// но деактивируем предыдущий, чтобы не было двух активных
-		if (item.active) {
-			this.setActive(item)
-		}
-	}
 	/**
 	 * Подписываемся на события элемента
 	 * @param item Элемент коллекции

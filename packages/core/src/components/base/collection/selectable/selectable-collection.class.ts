@@ -41,6 +41,18 @@ export class TSelectableCollection<
 			props,
 		})
 
+		this.events.on('item:added', (payload) => {
+			this._subscribeItem(payload.item as TItem)
+
+			if (payload.item.selected) {
+				if (!this.multiple) {
+					this._selected.clear()
+				}
+
+				this._selected.add(payload.item as TItem)
+			}
+		})
+
 		this._mode = props.mode ?? ctor.defaultValues.mode!
 	}
 
@@ -91,25 +103,6 @@ export class TSelectableCollection<
 	protected override _assignItemMeta(item: TItem, meta: ISelectableCollectionItemMeta): void {
 		if (meta?.selected !== undefined) {
 			item.selected = meta.selected
-		}
-	}
-
-	/**
-	 * Переопределяем хук для подписки на события элемента.
-	 * Если элемент уже помечен как selected (из _assignItemMeta),
-	 * добавляем в _selected без эмита событий — это инициализация, не изменение выделения.
-	 * @param item Элемент коллекции
-	 * @protected
-	 */
-	protected override _onAfterItemAdd(item: TItem): void {
-		this._subscribeItem(item)
-
-		if (item.selected) {
-			if (!this.multiple) {
-				this._selected.clear()
-			}
-
-			this._selected.add(item)
 		}
 	}
 
@@ -178,7 +171,7 @@ export class TSelectableCollection<
 	}
 
 	reset(): void {
-		if (this._selected.size > 0) {
+		if (this._selected?.size > 0) {
 			this._selected.forEach((it) => (it.selected = false))
 
 			this._selected.clear()
