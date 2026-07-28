@@ -20,17 +20,6 @@ export interface ICollectionProps<
 	 * Поддерживает мета-поле _ для передачи состояний (selected, active и т.д.).
 	 */
 	items?: TCollectionItemSource<TItem, TMeta>[]
-}
-
-/**
- * Внешний контракт синхронизации: данные для наполнения коллекции
- * и опциональная функция идентификации для умного обновления (patchItems).
- * Не является частью TCollection — используется только на уровне представления.
- */
-export interface ICollectionSource<
-	TItem extends ICollectionItem = ICollectionItem,
-	TMeta extends ICollectionItemMeta = ICollectionItemMeta,
-> extends ICollectionProps<TItem, TMeta> {
 	/** Функция идентификации: (item) => ключ. Используется внутри patchItems. */
 	trackBy?: (item: Partial<TItem>) => unknown
 }
