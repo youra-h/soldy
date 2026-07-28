@@ -66,10 +66,9 @@ export default class TComponent<
 		const raw = options as Record<string, unknown>
 		const hasPropsKey = Object.prototype.hasOwnProperty.call(raw, 'props')
 		const hasStatesKey = Object.prototype.hasOwnProperty.call(raw, 'states')
-		const hasRenderConfigKey = Object.prototype.hasOwnProperty.call(raw, 'renderConfig')
 
-		// Если есть props/states/renderConfig — это точно options-объект
-		const isOptionsObject = hasPropsKey || hasStatesKey || hasRenderConfigKey
+		// Если есть props/states — это точно options-объект
+		const isOptionsObject = hasPropsKey || hasStatesKey
 
 		if (isOptionsObject) {
 			const opt = options as IComponentOptions<TProps, TStates>
