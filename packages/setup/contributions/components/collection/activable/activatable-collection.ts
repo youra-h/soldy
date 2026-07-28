@@ -1,12 +1,12 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from './../../../defineType'
-import type { IActivatableCollection } from '@soldy/core'
+import type { IActivatableCollectionItem } from '@soldy/core'
 
 export const ActivatableCollectionContribution: IContribution = {
 	props: [
 		{
 			name: 'activeItem',
-			type: defineType<IActivatableCollection>(Object),
+			type: defineType<IActivatableCollectionItem>(Object),
 			protected: true,
 			triggers: ['change:activeItem'],
 		},

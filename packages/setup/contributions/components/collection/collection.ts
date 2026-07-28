@@ -1,10 +1,12 @@
 import type { IContribution } from '@soldy/accessor'
+import type { ICollectionItem } from '@soldy/core'
+import { defineType } from './../../defineType'
 
 export const CollectionContribution: IContribution = {
 	props: [
 		{
 			name: 'items',
-			type: Object,
+			type: defineType<ICollectionItem[]>(Array),
 			triggers: ['change:items'],
 		},
 		{
