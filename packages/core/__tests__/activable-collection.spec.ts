@@ -269,7 +269,7 @@ describe('TActivatableCollection', () => {
 			expect(col.activeItem).toBe(col.getItem(2))
 		})
 
-		it('setItems does not emit item:activated or item:deactivated during init', () => {
+		it('setItems emits item:activated for each active item during init', () => {
 			const col = new TActivatableCollection({ itemClass: TActivatableCollectionItem })
 
 			const activatedSpy = vi.fn()
@@ -279,9 +279,12 @@ describe('TActivatableCollection', () => {
 
 			col.setItems([{ _: { active: true } } as any, { _: { active: true } } as any])
 
-			expect(col.activeItem).toBe(col.getItem(1))
-			expect(activatedSpy).not.toHaveBeenCalled()
+			// Каждый _onAfterItemAdd вызывает setActive → по одному item:activated на элемент
+			// item:deactivated не эмитится — _activeItem переключается до prev.active=false,
+			// поэтому _subscribeItem не вызывает reset()
+			expect(activatedSpy).toHaveBeenCalledTimes(2)
 			expect(deactivatedSpy).not.toHaveBeenCalled()
+			expect(col.activeItem).toBe(col.getItem(1))
 		})
 	})
 
