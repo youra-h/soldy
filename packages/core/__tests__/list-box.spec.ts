@@ -115,3 +115,37 @@ describe('TListBox — patchItems', () => {
 		expect(listBox.collection.count).toBe(1)
 	})
 })
+
+describe('TListBox — constructor with items and trackBy', () => {
+	const trackBy = (item: any) => item.value
+
+	it('emits change:selected when item is selected via getItem', () => {
+		const items = [
+			{ value: '1', label: 'Item 1' },
+			{ value: '2', label: 'Item 2' },
+			{ value: '3', label: 'Item 3' },
+			{ value: '4', label: 'Item 4' },
+			{ value: '5', label: 'Item 5' },
+			{ value: '6', label: 'Item 6' },
+			{ value: '7', label: 'Item 7' },
+		]
+
+		const spy = vi.fn()
+
+		const listBox = new TListBox({
+			props: {
+				mode: 'multiple',
+				items,
+				trackBy,
+				maxRows: 6,
+			},
+		})
+
+		listBox.events.on('change:selected', spy)
+
+		listBox.collection.getItem(0)!.selected = true
+
+		expect(spy).toHaveBeenCalledTimes(1)
+		expect(listBox.collection.selectedCount).toBe(1)
+	})
+})

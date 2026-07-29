@@ -43,6 +43,71 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _items: TEventEmitter<TEvents> = new TEventEmitter()
 
 	/**
+	 * Счётчик глушения событий.
+	 * Значение > 0 означает, что генерация событий временно приостановлена.
+	 */
+	private _muteDepth = 0
+
+	/**
+	 * Флаг, указывающий, заглушен ли эмиттер в данный момент.
+	 */
+	get isMuted(): boolean {
+		return this._muteDepth > 0
+	}
+
+	/**
+	 * Приостанавливает отправку всех событий (увеличивает глубину блокировки).
+	 *
+	 * Парный вызов {@link resume} восстанавливает отправку.
+	 * Поддерживает вложенность: блокировка снимется только после того,
+	 * как `resume()` будет вызван столько же раз, сколько и `pause()`.
+	 */
+	pause(): void {
+		this._muteDepth++
+	}
+
+	/**
+	 * Возобновляет отправку событий (уменьшает глубину блокировки).
+	 *
+	 * Если счётчик достигает нуля — события снова начнут доставляться.
+	 */
+	resume(): void {
+		if (this._muteDepth > 0) {
+			this._muteDepth--
+		}
+	}
+
+	/**
+	 * Выполняет функцию `fn` в «тихом» режиме.
+	 * Любые вызовы `emit` внутри `fn` будут проигнорированы.
+	 *
+	 * Благодаря счётчику `_muteDepth`, даже если внутри `silent`
+	 * вызовы будут вложенными, блокировка снимется только тогда,
+	 * когда завершится самый верхний блок `silent`.
+	 *
+	 * @param fn - Функция, внутри которой события должны быть отключены.
+	 * @returns Результат выполнения функции `fn`.
+	 *
+	 * @example
+	 * // Эмитит 'item:text'
+	 * tab.text = 'Новое имя'
+	 *
+	 * // НЕ эмитит ничего наверх, так как вызвано внутри silent
+	 * tabs.events.silent(() => {
+	 *     tab.text = 'Скрытое имя'
+	 * })
+	 */
+	silent<T>(fn: () => T): T {
+		this.pause()
+
+		try {
+			return fn()
+		} finally {
+			this.resume()
+		}
+	}
+
+	/**
 	 * Подписка на событие
 	 * @param event - имя события
 	 * @param handler - обработчик события
@@ -61,38 +126,48 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	}
 
 	/**
-	 * Вызов события
+	 * Вызов события.
+	 * Если эмиттер заглушен (см. {@link isMuted}, {@link silent}) — вызов игнорируется.
+	 *
 	 * @param event - имя события
 	 * @param args - аргументы события
 	 */
 	emit<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): void {
+		if (this.isMuted) return
 		this._items.emit(event, ...args)
 	}
 
 	/**
-	 * Выполняет событие и возвращает результат выполнения обработчиков
+	 * Выполняет событие и возвращает результат выполнения обработчиков.
+	 * При глушении возвращает `true` (считаем, что проверка/действие разрешено по умолчанию).
+	 *
 	 * @param event
 	 * @param args
 	 * @returns {boolean}
 	 */
 	emitWithResult<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): boolean {
+		if (this.isMuted) return true
 		return this._items.emitWithResult(event, ...args)
 	}
 
 	/**
 	 * Выполняет событие и возвращает первый не-undefined результат (short-circuit).
+	 * При глушении возвращает `undefined`.
 	 */
 	emitResolve<T, K extends keyof TEvents>(
 		event: K,
 		...args: Parameters<TEvents[K]>
 	): T | undefined {
+		if (this.isMuted) return undefined
 		return this._items.emitResolve<T, K>(event, ...args)
 	}
 
 	/**
 	 * Выполняет событие и возвращает все не-undefined результаты обработчиков.
+	 * При глушении возвращает пустой массив `[]`.
 	 */
 	emitResolveAll<T, K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): T[] {
+		if (this.isMuted) return []
 		return this._items.emitResolveAll<T, K>(event, ...args)
 	}
 
@@ -157,12 +232,15 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		const src = source as TEvented<any>
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const tgt = this as TEvented<any>
+
 		for (const rule of rules) {
 			if (typeof rule === 'string' || typeof rule === 'symbol') {
 				src.on(rule as any, (...args: any[]) => tgt.emit(rule as any, ...args))
 			} else {
 				const { from, as: targetEvent, then: hook } = rule as TRelayRule<TSource, TEvents>
+
 				const target = targetEvent ?? from
+
 				src.on(from as any, (...args: any[]) => {
 					hook?.(...args)
 					tgt.emit(target as any, ...args)
