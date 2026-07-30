@@ -5,7 +5,15 @@ import type { ICommand } from './command';
 import type { TEngineEvents } from './types';
 import { TEvented } from '../../../common/event';
 
+export interface ICollectionEngine<T> extends ReadonlyArray<T> {
+    readonly events: TEvented<TEngineEvents<T>>;
+    execute(command: ICommand<T>): void;
+    batch(action: () => void): void;
+}
+
 export class TCollectionEngine<T> {
+    [index: number]: T;
+
     private _storage: IStorage<T>;
     private _isBatching = false;
     private _pendingCommands: ICommand<T>[] = [];
@@ -14,10 +22,27 @@ export class TCollectionEngine<T> {
 
     constructor(storage: IStorage<T>) {
         this._storage = storage;
-    }
 
-    get storage(): IStorage<T> {
-        return this._storage;
+        return new Proxy(this, {
+            get(target, prop, receiver) {
+                if (prop in target) {
+                    return Reflect.get(target, prop, receiver);
+                }
+
+                if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+                    return target._storage.items[Number(prop)];
+                }
+
+                const items = target._storage.items;
+                const value = Reflect.get(items, prop);
+
+                if (typeof value === 'function') {
+                    return value.bind(items);
+                }
+
+                return value;
+            },
+        }) as unknown as TCollectionEngine<T>;
     }
 
     public execute(command: ICommand<T>): void {
