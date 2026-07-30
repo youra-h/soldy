@@ -9,7 +9,7 @@ export { TArrayStorage } from './storage'
 
 // Команды
 export type { ICommand } from './command'
-export { TAddCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './command'
+export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './command'
 
 // Расширения
 export type { IExtension, IExtensionContext } from './extension'

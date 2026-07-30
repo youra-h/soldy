@@ -25,6 +25,7 @@ export class TCollection<
         this.extensions = (options.extensions ?? {}) as TExtensions;
 
         const ctx = this._createContext();
+
         for (const ext of Object.values<IExtension<T>>(this.extensions)) {
             ext.install(ctx);
         }
