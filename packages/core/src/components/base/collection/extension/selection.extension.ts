@@ -2,7 +2,7 @@ import type { IExtension, IExtensionContext } from './types'
 import { TEvented } from '../../../../common/event'
 
 export type TSelectionEvents<T> = {
-    'selection:changed': (items: T[]) => void
+    'change:selection': (items: T[]) => void
 }
 
 /**
@@ -31,13 +31,13 @@ export class TSelectionExtension<T> implements IExtension<T> {
     select(item: T): void {
         if (this.ctx.engine.includes(item)) {
             this.selected.add(item)
-            this.events.emit('selection:changed', Array.from(this.selected))
+            this.events.emit('change:selection', Array.from(this.selected))
         }
     }
 
     deselect(item: T): void {
         this.selected.delete(item)
-        this.events.emit('selection:changed', Array.from(this.selected))
+        this.events.emit('change:selection', Array.from(this.selected))
     }
 
     toggle(item: T): void {

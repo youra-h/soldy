@@ -42,7 +42,7 @@ export type TTabsEvents = TControlEvents &
 		/** Массовое удаление (от batch-расширения) */
 		'items:removed': (items: ITabItem[]) => void
 		/** Изменение выборки (от selection-расширения) */
-		'selection:changed': (items: ITabItem[]) => void
+		'change:selection': (items: ITabItem[]) => void
 	}
 
 export interface ITabsProps extends IControlProps {
