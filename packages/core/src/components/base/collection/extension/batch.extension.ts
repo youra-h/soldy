@@ -24,6 +24,7 @@ export class TBatchExtension<T> implements IExtension<T> {
         this.ctx.batch(() => {
             items.forEach((item) => this.ctx.execute(new TInsertCommand(item)))
         })
+
         this.events.emit('items:added', items)
     }
 
@@ -31,6 +32,7 @@ export class TBatchExtension<T> implements IExtension<T> {
         this.ctx.batch(() => {
             items.forEach((item) => this.ctx.execute(new TRemoveCommand(item)))
         })
+
         this.events.emit('items:removed', items)
     }
 

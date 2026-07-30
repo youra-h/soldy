@@ -1,12 +1,9 @@
-// collection.class.ts — фасад TCollection
-
 import { TCollectionEngine } from './collection-engine';
 import type { ICollectionEngine } from './collection-engine';
 import { TArrayStorage } from './storage';
 import type { IStorage } from './storage';
 import type { IExtension, IExtensionContext } from './extension';
 import type { ICommand } from './command';
-import type { TEngineEvents } from './types';
 
 export class TCollection<
     T,
