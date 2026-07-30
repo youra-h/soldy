@@ -131,7 +131,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         ])
 
         this.events.relay(this._collection.extensions.selection.events, [
-            'selection:changed',
+            'change:selection',
         ])
 
         this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
