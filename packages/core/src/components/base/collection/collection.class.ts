@@ -33,7 +33,7 @@ export class TCollection<
     private _createContext(): IExtensionContext<T> {
         return {
             storage: this._engine.storage,
-            events: this._engine.events as TEvented<Record<string, (...args: any[]) => void>>,
+            events: this._engine.events as TEvented<any>,
             collection: this as any,
             execute: (cmd: ICommand<T>) => this._engine.execute(cmd),
             batch: (action: () => void) => this._engine.batch(action),

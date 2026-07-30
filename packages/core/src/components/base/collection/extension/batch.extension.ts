@@ -16,18 +16,18 @@ export class TBatchExtension<T> implements IExtension<T> {
         this.ctx.batch(() => {
             items.forEach(item => this.ctx.execute(new TAddCommand(item)));
         });
-        this.ctx.events.emit('items:added', { type: 'items:added', items });
+        this.ctx.events.emit('items:added', items);
     }
 
     removeMany(items: T[]): void {
         this.ctx.batch(() => {
             items.forEach(item => this.ctx.execute(new TRemoveCommand(item)));
         });
-        this.ctx.events.emit('items:removed', { type: 'items:removed', items });
+        this.ctx.events.emit('items:removed', items);
     }
 
     clear(): void {
         this.ctx.execute(new TClearCommand());
-        this.ctx.events.emit('items:removed', { type: 'items:removed', items: [] });
+        this.ctx.events.emit('items:removed', []);
     }
 }

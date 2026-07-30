@@ -1,9 +1,10 @@
 // command/types.ts — интерфейс ICommand
 
 import type { IStorage } from '../storage';
-import type { TBaseCollectionEvent } from '../types';
+import type { TEvented } from '../../../../common/event';
+import type { TEngineEvents } from '../types';
 
 export interface ICommand<T> {
-    apply(storage: IStorage<T>): void;
-    toEvents(): TBaseCollectionEvent<T>[];
+    apply(storage: IStorage<T>): void
+    emitEvents(events: TEvented<TEngineEvents<T>>, storage: IStorage<T>): void
 }
