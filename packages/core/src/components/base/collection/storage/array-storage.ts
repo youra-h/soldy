@@ -9,8 +9,8 @@ export class TArrayStorage<T> implements IStorage<T> {
         return this._items;
     }
 
-    add(item: T): void {
-        this._items.push(item);
+    insert(item: T, index: number): void {
+        this._items.splice(index, 0, item);
     }
 
     remove(item: T): void {

@@ -1,50 +1,51 @@
-// extension/plain.extension.ts — базовые CRUD-операции
+import type { IExtension, IExtensionContext } from './types'
+import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../command'
 
-import type { IExtension, IExtensionContext } from './types';
-import { TAddCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../command';
-
+/**
+ * PlainExtension — расширение для базовых операций с коллекцией
+ */
 export class TPlainExtension<T> implements IExtension<T> {
-    readonly name = 'plain';
+	readonly name = 'plain'
 
-    private ctx!: IExtensionContext<T>;
+	private ctx!: IExtensionContext<T>
 
-    install(ctx: IExtensionContext<T>): void {
-        this.ctx = ctx;
-    }
+	install(ctx: IExtensionContext<T>): void {
+		this.ctx = ctx
+	}
 
-    add(item: T): void {
-        this.ctx.execute(new TAddCommand(item));
-    }
+	insert(item: T, index: number = 0): void {
+		this.ctx.execute(new TInsertCommand(item, index))
+	}
 
-    remove(item: T): void {
-        this.ctx.execute(new TRemoveCommand(item));
-    }
+	remove(item: T): void {
+		this.ctx.execute(new TRemoveCommand(item))
+	}
 
-    update(item: T, changes: Partial<T>): void {
-        this.ctx.execute(new TUpdateCommand(item, changes));
-    }
+	update(item: T, changes: Partial<T>): void {
+		this.ctx.execute(new TUpdateCommand(item, changes))
+	}
 
-    move(item: T, newIndex: number, oldIndex?: number): void {
-        this.ctx.execute(new TMoveCommand(item, newIndex, oldIndex));
-    }
+	move(item: T, newIndex: number, oldIndex?: number): void {
+		this.ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
+	}
 
-    getAll(): T[] {
-        return [...this.ctx.storage.items];
-    }
+	getAll(): T[] {
+		return [...this.ctx.storage.items]
+	}
 
-    find(predicate: (item: T) => boolean): T | undefined {
-        return this.ctx.storage.items.find(predicate);
-    }
+	find(predicate: (item: T) => boolean): T | undefined {
+		return this.ctx.storage.items.find(predicate)
+	}
 
-    filter(predicate: (item: T) => boolean): T[] {
-        return this.ctx.storage.items.filter(predicate);
-    }
+	filter(predicate: (item: T) => boolean): T[] {
+		return this.ctx.storage.items.filter(predicate)
+	}
 
-    get(index: number): T | undefined {
-        return this.ctx.storage.items[index];
-    }
+	get(index: number): T | undefined {
+		return this.ctx.storage.items[index]
+	}
 
-    get length(): number {
-        return this.ctx.storage.items.length;
-    }
+	get length(): number {
+		return this.ctx.storage.items.length
+	}
 }

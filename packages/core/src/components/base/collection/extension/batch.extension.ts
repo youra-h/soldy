@@ -1,33 +1,34 @@
-// extension/batch.extension.ts — массовые операции
+import type { IExtension, IExtensionContext } from './types'
+import { TInsertCommand, TRemoveCommand, TClearCommand } from '../command'
 
-import type { IExtension, IExtensionContext } from './types';
-import { TAddCommand, TRemoveCommand, TClearCommand } from '../command';
-
+/**
+ * BatchExtension — расширение для пакетного добавления и удаления элементов из коллекции
+ */
 export class TBatchExtension<T> implements IExtension<T> {
-    readonly name = 'batch';
+	readonly name = 'batch'
 
-    private ctx!: IExtensionContext<T>;
+	private ctx!: IExtensionContext<T>
 
-    install(ctx: IExtensionContext<T>): void {
-        this.ctx = ctx;
-    }
+	install(ctx: IExtensionContext<T>): void {
+		this.ctx = ctx
+	}
 
-    addMany(items: T[]): void {
-        this.ctx.batch(() => {
-            items.forEach(item => this.ctx.execute(new TAddCommand(item)));
-        });
-        this.ctx.events.emit('items:added', items);
-    }
+	add(items: T[]): void {
+		this.ctx.batch(() => {
+			items.forEach((item) => this.ctx.execute(new TInsertCommand(item)))
+		})
+		this.ctx.events.emit('items:added', items)
+	}
 
-    removeMany(items: T[]): void {
-        this.ctx.batch(() => {
-            items.forEach(item => this.ctx.execute(new TRemoveCommand(item)));
-        });
-        this.ctx.events.emit('items:removed', items);
-    }
+	remove(items: T[]): void {
+		this.ctx.batch(() => {
+			items.forEach((item) => this.ctx.execute(new TRemoveCommand(item)))
+		})
+		this.ctx.events.emit('items:removed', items)
+	}
 
-    clear(): void {
-        this.ctx.execute(new TClearCommand());
-        this.ctx.events.emit('items:removed', []);
-    }
+	clear(): void {
+		this.ctx.execute(new TClearCommand())
+		this.ctx.events.emit('items:removed', [])
+	}
 }
