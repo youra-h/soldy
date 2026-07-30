@@ -30,22 +30,22 @@ export class TPlainExtension<T> implements IExtension<T> {
 	}
 
 	getAll(): T[] {
-		return [...this.ctx.storage.items]
+		return [...this.ctx.engine]
 	}
 
 	find(predicate: (item: T) => boolean): T | undefined {
-		return this.ctx.storage.items.find(predicate)
+		return this.ctx.engine.find(predicate)
 	}
 
 	filter(predicate: (item: T) => boolean): T[] {
-		return this.ctx.storage.items.filter(predicate)
+		return this.ctx.engine.filter(predicate)
 	}
 
 	get(index: number): T | undefined {
-		return this.ctx.storage.items[index]
+		return this.ctx.engine[index]
 	}
 
 	get length(): number {
-		return this.ctx.storage.items.length
+		return this.ctx.engine.length
 	}
 }

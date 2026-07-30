@@ -79,10 +79,10 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
             const preparedItems = props.items.map((item) =>
                 item instanceof TTabItem ? item : new TTabItem({ props: item }),
             )
-            this._collection.extensions.batch.addMany(preparedItems)
+            this._collection.extensions.batch.add(preparedItems)
         }
 
-        this._collection.events.on('item:added', (item: ITabItem) => {
+        this._collection.engine.events.on('item:added', (item: ITabItem) => {
             item.events.on('close', () => this.closeTab(item))
             item.setClosableResolver(() => this._closable)
 
@@ -115,7 +115,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
             item.variant = this.variant
         })
 
-        this.events.relay(this._collection.events, [
+        this.events.relay(this._collection.engine.events, [
             'item:added',
             'item:removed',
             'item:updated',
@@ -126,19 +126,19 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         ])
 
         this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-            this._collection.storage.items.forEach((item) => {
+            this._collection.engine.forEach((item) => {
                 item.size = payload.newValue
             })
         })
 
         this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-            this._collection.storage.items.forEach((item) => {
+            this._collection.engine.forEach((item) => {
                 item.variant = payload.newValue
             })
         })
 
         this.events.on('change:disabled', (value: boolean) => {
-            this._collection.storage.items.forEach((item) => {
+            this._collection.engine.forEach((item) => {
                 item.disabled = value
             })
         })
@@ -233,7 +233,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
     protected _applyClosable(value: boolean) {
         this._closable = value
-        this._collection.storage.items.forEach((item) => {
+        this._collection.engine.forEach((item) => {
             if (item instanceof TTabItem) {
                 item.notifyClosableChange(this._closable || item.closable)
             }
@@ -245,7 +245,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
     }
 
     get count(): number {
-        return this._collection.storage.items.length
+        return this._collection.engine.length
     }
 
     get collection(): TCollection<ITabItem, TTabsExtensions> {
@@ -260,7 +260,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
     }
 
     hasEnabledTabs(): boolean {
-        return this._collection.storage.items.some(
+        return this._collection.engine.some(
             (item) => !item.disabled && item.visible && item.rendered,
         )
     }

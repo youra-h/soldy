@@ -16,7 +16,6 @@ export type { IExtension, IExtensionContext } from './extension'
 export { TPlainExtension, TBatchExtension, TSelectionExtension } from './extension'
 
 // Ядро
-export { TCollectionEngine } from './collection-engine'
-
+export { TCollectionEngine } from './collection-engine'export type { ICollectionEngine } from './collection-engine';
 // Фасад
 export { TCollection } from './collection.class'

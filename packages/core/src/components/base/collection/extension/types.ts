@@ -1,13 +1,11 @@
 // extension/types.ts — интерфейсы IExtension и IExtensionContext
 
-import type { TEvented } from '../../../../common/event';
-import type { IStorage } from '../storage';
+import type { ICollectionEngine } from '../collection-engine';
 import type { ICommand } from '../command';
 import type { TCollection } from '../collection.class';
 
 export interface IExtensionContext<T> {
-    readonly storage: IStorage<T>
-    readonly events: TEvented<any>
+    readonly engine: ICollectionEngine<T>
     readonly collection: TCollection<T, any>
     execute(command: ICommand<T>): void
     batch(action: () => void): void
