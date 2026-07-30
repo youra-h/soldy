@@ -5,13 +5,7 @@ import type {
 	TValueControlStates,
 } from '../../../base/value-control'
 import type { IStateUnit, TValuePayload } from '../../../../common'
-import type {
-	IActivatableCollectionItemProps,
-	TActivatableItemEvents,
-	IActivatableComponentItem,
-} from '../../../base/collection'
 import type { IComponentViewOptions } from '../../../base/component-view'
-import type { TCollectableOptions } from '../../../base/collection'
 
 // ============ TTabItemCustom (логика таба без коллекции) ============
 
@@ -21,7 +15,7 @@ export type TTabItemCustomEvents<TTab = any> = TValueControlEvents<string | numb
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
 	/** close */
-	close: (tab: TTab) => void
+	'close': (tab: TTab) => void
 }
 
 export interface ITabItemCustomProps extends IValueControlProps<string | number> {
@@ -36,10 +30,6 @@ export type TTabItemCustomStates = TValueControlStates<string | number> & {
 	closable: IStateUnit<boolean | undefined>
 }
 
-/**
- * Интерфейс кастомного таба с generic TProps для гибкости наследования.
- * По умолчанию использует ITabItemCustomProps, но можно переопределить (например, ITabItemProps в ITabItem).
- */
 export interface ITabItemCustom<
 	TProps extends ITabItemCustomProps = ITabItemCustomProps,
 	TStates extends TTabItemCustomStates = TTabItemCustomStates,
@@ -54,14 +44,12 @@ export interface ITabItemCustom<
 	setClosableResolver(resolver: () => boolean): void
 }
 
-// ============ TTabItem (коллекционный элемент с композицией) ============
+// ============ TTabItem (коллекционный элемент) ============
 
-export type TTabItemOptions = TCollectableOptions<
-	IComponentViewOptions<ITabItemProps, TTabItemCustomStates>
->
+export type TTabItemOptions = IComponentViewOptions<ITabItemProps, TTabItemCustomStates>
 
-export type TTabItemEvents = TActivatableItemEvents<ITabItem> & TTabItemCustomEvents<ITabItem>
+export type TTabItemEvents = TTabItemCustomEvents<ITabItem>
 
-export interface ITabItemProps extends IActivatableCollectionItemProps, ITabItemCustomProps {}
+export interface ITabItemProps extends ITabItemCustomProps {}
 
-export interface ITabItem extends ITabItemCustom<ITabItemProps>, IActivatableComponentItem {}
+export interface ITabItem extends ITabItemCustom<ITabItemProps> {}
