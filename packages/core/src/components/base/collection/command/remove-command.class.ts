@@ -1,7 +1,8 @@
 // command/remove-command.class.ts
 
 import type { IStorage } from '../storage';
-import type { TBaseCollectionEvent } from '../types';
+import type { TEvented } from '../../../../common/event';
+import type { TEngineEvents } from '../types';
 import type { ICommand } from './types';
 
 export class TRemoveCommand<T> implements ICommand<T> {
@@ -11,7 +12,8 @@ export class TRemoveCommand<T> implements ICommand<T> {
         storage.remove(this.item);
     }
 
-    toEvents(): TBaseCollectionEvent<T>[] {
-        return [{ type: 'item:removed', item: this.item }];
+    emitEvents(events: TEvented<TEngineEvents<T>>, storage: IStorage<T>): void {
+        events.emit('item:removed', this.item);
+        events.emit('change:count', storage.items.length);
     }
 }

@@ -1,7 +1,8 @@
 // command/update-command.class.ts
 
 import type { IStorage } from '../storage';
-import type { TBaseCollectionEvent } from '../types';
+import type { TEvented } from '../../../../common/event';
+import type { TEngineEvents } from '../types';
 import type { ICommand } from './types';
 
 export class TUpdateCommand<T> implements ICommand<T> {
@@ -11,7 +12,7 @@ export class TUpdateCommand<T> implements ICommand<T> {
         Object.assign(this.item as object, this.changes);
     }
 
-    toEvents(): TBaseCollectionEvent<T>[] {
-        return [{ type: 'item:updated', item: this.item, changes: this.changes }];
+    emitEvents(events: TEvented<TEngineEvents<T>>): void {
+        events.emit('item:updated', this.item, this.changes);
     }
 }

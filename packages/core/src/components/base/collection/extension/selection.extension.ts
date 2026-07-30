@@ -11,14 +11,12 @@ export class TSelectionExtension<T> implements IExtension<T> {
     install(ctx: IExtensionContext<T>): void {
         this.ctx = ctx;
 
-        // Авто-очистка выбора при удалении элементов
-        ctx.events.on('item:removed', (e: any) => this.selected.delete(e.item));
-        ctx.events.on('items:removed', (e: any) => e.items.forEach((i: T) => this.selected.delete(i)));
+        ctx.events.on('item:removed', (item: T) => this.selected.delete(item));
+        ctx.events.on('reset', () => this.selected.clear());
 
-        // Защита: при полной смене items проверяем, что выбранные ещё в storage
-        ctx.events.on('change:items', () => {
+        ctx.events.on('change:items', (items: readonly T[]) => {
             this.selected.forEach(item => {
-                if (!ctx.storage.items.includes(item)) this.selected.delete(item);
+                if (!items.includes(item)) this.selected.delete(item);
             });
         });
     }
@@ -26,19 +24,13 @@ export class TSelectionExtension<T> implements IExtension<T> {
     select(item: T): void {
         if (this.ctx.storage.items.includes(item)) {
             this.selected.add(item);
-            this.ctx.events.emit('selection:changed', {
-                type: 'selection:changed',
-                items: Array.from(this.selected),
-            });
+            this.ctx.events.emit('selection:changed', Array.from(this.selected));
         }
     }
 
     deselect(item: T): void {
         this.selected.delete(item);
-        this.ctx.events.emit('selection:changed', {
-            type: 'selection:changed',
-            items: Array.from(this.selected),
-        });
+        this.ctx.events.emit('selection:changed', Array.from(this.selected));
     }
 
     toggle(item: T): void {

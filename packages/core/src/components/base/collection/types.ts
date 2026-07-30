@@ -1,12 +1,24 @@
-// types.ts — общие типы коллекции
-
-export type TBaseCollectionEvent<T> =
-    | { type: 'item:added'; item: T }
-    | { type: 'item:removed'; item: T }
-    | { type: 'item:updated'; item: T; changes: Partial<T> }
-    | { type: 'item:moved'; item: T; oldIndex: number; newIndex: number }
-    | { type: 'change:items'; items: readonly T[] };
+// types.ts — словарь событий коллекции
 
 export type TEngineEvents<T> = {
-    [K in TBaseCollectionEvent<T>['type']]: (payload: Extract<TBaseCollectionEvent<T>, { type: K }>) => void;
-};
+    /** Вызывается при добавлении элемента */
+    'item:added': (item: T) => void
+
+    /** Вызывается при удалении элемента */
+    'item:removed': (item: T) => void
+
+    /** Вызывается при изменении элемента */
+    'item:updated': (item: T, changes: Partial<T>) => void
+
+    /** Вызывается при перемещении элемента */
+    'item:moved': (item: T, oldIndex: number, newIndex: number) => void
+
+    /** Массовые или системные изменения массива элементов */
+    'change:items': (items: readonly T[]) => void
+
+    /** Изменение количества элементов */
+    'change:count': (count: number) => void
+
+    /** Полный сброс или очистка коллекции */
+    'reset': () => void
+}

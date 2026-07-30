@@ -1,7 +1,7 @@
 // collection/index.ts — главный экспорт модуля
 
 // Типы
-export type { TBaseCollectionEvent, TEngineEvents } from './types';
+export type { TEngineEvents } from './types';
 
 // Хранилище
 export type { IStorage } from './storage';

@@ -1,7 +1,8 @@
 // command/move-command.class.ts
 
 import type { IStorage } from '../storage';
-import type { TBaseCollectionEvent } from '../types';
+import type { TEvented } from '../../../../common/event';
+import type { TEngineEvents } from '../types';
 import type { ICommand } from './types';
 
 export class TMoveCommand<T> implements ICommand<T> {
@@ -20,14 +21,9 @@ export class TMoveCommand<T> implements ICommand<T> {
         storage.move(oldIdx, this.newIndex);
     }
 
-    toEvents(): TBaseCollectionEvent<T>[] {
-        return [
-            {
-                type: 'item:moved',
-                item: this.item,
-                oldIndex: this._resolvedOldIndex,
-                newIndex: this.newIndex,
-            },
-        ];
+    emitEvents(events: TEvented<TEngineEvents<T>>): void {
+        if (this._resolvedOldIndex !== -1) {
+            events.emit('item:moved', this.item, this._resolvedOldIndex, this.newIndex);
+        }
     }
 }
