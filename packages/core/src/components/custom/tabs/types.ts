@@ -37,6 +37,12 @@ export type TTabsEvents = TControlEvents &
 		'item:visible': (item: ITabItem, value: boolean) => void
 		'item:present': (item: ITabItem, value: boolean) => void
 		'item:disabled': (item: ITabItem, value: boolean) => void
+		/** Массовое добавление (от batch-расширения) */
+		'items:added': (items: ITabItem[]) => void
+		/** Массовое удаление (от batch-расширения) */
+		'items:removed': (items: ITabItem[]) => void
+		/** Изменение выборки (от selection-расширения) */
+		'selection:changed': (items: ITabItem[]) => void
 	}
 
 export interface ITabsProps extends IControlProps {

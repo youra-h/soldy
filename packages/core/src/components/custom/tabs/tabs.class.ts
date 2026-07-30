@@ -125,6 +125,15 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
             'reset',
         ])
 
+        this.events.relay(this._collection.extensions.batch.events, [
+            'items:added',
+            'items:removed',
+        ])
+
+        this.events.relay(this._collection.extensions.selection.events, [
+            'selection:changed',
+        ])
+
         this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
             this._collection.engine.forEach((item) => {
                 item.size = payload.newValue
