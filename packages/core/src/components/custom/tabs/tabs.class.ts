@@ -51,7 +51,11 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
     protected _view!: TTabsView
     protected _closable!: boolean
 
-    protected _collection: TCollection<ITabItem, TTabsExtensions>
+    /**
+     * @deprecated Коллекция теперь создаётся плагином TCollectionPlugin.
+     * Поле оставлено для обратной совместимости — плагин устанавливает его через instance._collection.
+     */
+    protected _collection!: TCollection<ITabItem, TTabsExtensions>
 
     constructor(
         options: IComponentViewOptions<ITabsProps, TTabsStates> | Partial<ITabsProps> = {},
@@ -61,13 +65,14 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         const ctor = new.target as typeof TTabs
         const { props = {} } = TComponentView.prepareOptions<ITabsProps, TTabsStates>(options)
 
-        this._collection = new TCollection<ITabItem, TTabsExtensions>({
-            extensions: {
-                plain: new TPlainExtension<ITabItem>(),
-                batch: new TBatchExtension<ITabItem>(),
-                selection: new TSelectionExtension<ITabItem>(),
-            },
-        })
+        // @deprecated Коллекция создаётся плагином TCollectionPlugin
+        // this._collection = new TCollection<ITabItem, TTabsExtensions>({
+        //     extensions: {
+        //         plain: new TPlainExtension<ITabItem>(),
+        //         batch: new TBatchExtension<ITabItem>(),
+        //         selection: new TSelectionExtension<ITabItem>(),
+        //     },
+        // })
 
         this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation!)
         this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment!)
@@ -75,82 +80,30 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         this._applyView(props.view ?? ctor.defaultValues.view!)
         this._applyClosable(props.closable ?? ctor.defaultValues.closable!)
 
-        if (Array.isArray(props.items) && props.items.length > 0) {
-            const preparedItems = props.items.map((item) =>
-                item instanceof TTabItem ? item : new TTabItem({ props: item }),
-            )
-            this._collection.extensions.batch.add(preparedItems)
-        }
+        // @deprecated Начальные элементы передаются через ICollectionPluginOptions.items
+        // if (Array.isArray(props.items) && props.items.length > 0) {
+        //     const preparedItems = props.items.map((item) =>
+        //         item instanceof TTabItem ? item : new TTabItem({ props: item }),
+        //     )
+        //     this._collection.extensions.batch.add(preparedItems)
+        // }
 
-        this._collection.engine.events.on('item:added', (item: ITabItem) => {
-            item.events.on('close', () => this.closeTab(item))
-            item.setClosableResolver(() => this._closable)
+        // @deprecated Per-item setup теперь в TCollectionPlugin.onItemAdded
+        // this._collection.engine.events.on('item:added', (item: ITabItem) => {
+        //     item.events.on('close', () => this.closeTab(item))
+        //     item.setClosableResolver(() => this._closable)
+        //     ...
+        // })
 
-            item.events.on('change:closable', (value: boolean | undefined) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:closable', item, !!value)
-            })
+        // @deprecated Relay событий теперь в TCollectionPlugin.install()
+        // this.events.relay(this._collection.engine.events, [...])
+        // this.events.relay(this._collection.extensions.batch.events, [...])
+        // this.events.relay(this._collection.extensions.selection.events, [...])
 
-            item.events.on('change:disabled', (value: boolean) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:disabled', item, value)
-            })
-
-            item.events.on('change:text', (payload: TValuePayload<string>) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:text', item, payload.newValue)
-            })
-
-            item.events.on('change:rendered', (value: boolean) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:rendered', item, value)
-            })
-
-            item.events.on('change:visible', (value: boolean) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:visible', item, value)
-            })
-
-            item.events.on('change:present', (value: boolean) => {
-                ;(this.events as TEvented<TTabsEvents>).emit('item:present', item, value)
-            })
-
-            item.disabled = this.disabled
-            item.size = this.size
-            item.variant = this.variant
-        })
-
-        this.events.relay(this._collection.engine.events, [
-            'item:added',
-            'item:removed',
-            'item:updated',
-            'item:moved',
-            'change:items',
-            'change:count',
-            'reset',
-        ])
-
-        this.events.relay(this._collection.extensions.batch.events, [
-            'items:added',
-            'items:removed',
-        ])
-
-        this.events.relay(this._collection.extensions.selection.events, [
-            'change:selection',
-        ])
-
-        this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-            this._collection.engine.forEach((item) => {
-                item.size = payload.newValue
-            })
-        })
-
-        this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-            this._collection.engine.forEach((item) => {
-                item.variant = payload.newValue
-            })
-        })
-
-        this.events.on('change:disabled', (value: boolean) => {
-            this._collection.engine.forEach((item) => {
-                item.disabled = value
-            })
-        })
+        // @deprecated Пропагация теперь в TCollectionPlugin.onPropagate
+        // this.events.on('change:size', ...)
+        // this.events.on('change:variant', ...)
+        // this.events.on('change:disabled', ...)
     }
 
     get orientation(): TTabsOrientation {

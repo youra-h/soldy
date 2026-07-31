@@ -8,7 +8,6 @@
 import type { IAdapterContext } from '../context'
 import type { TElevatorFactory } from '../elevator'
 import { COLLECTION_ELEVATOR, COLLECTION_PLUGINS_ELEVATOR } from '../elevator/keys'
-import type { ICollection } from '@soldy/core'
 
 export interface ICollectionItemExtensionOptions {
 	elevator: TElevatorFactory
@@ -22,7 +21,7 @@ export class TCollectionItemExtension {
 		const collectionElevator = elevator(COLLECTION_ELEVATOR)
 		const pluginsElevator = elevator(COLLECTION_PLUGINS_ELEVATOR)
 
-		const parentCollection = collectionElevator.up() as ICollection | undefined
+		const parentCollection = collectionElevator.up() as any
 
 		const registerItemPlugins = pluginsElevator.up() as
 			| ((uid: string | number, bundle: any) => void)
@@ -32,11 +31,11 @@ export class TCollectionItemExtension {
 
 		// Автоматическая регистрация в родителе
 		if (parentCollection && instance && instance.collection === null) {
-			parentCollection.insertAt(instance)
+			parentCollection.insertItem?.(instance)
 
 			// Удаляем себя из родительской коллекции при destroy
 			context.events.on('destroy', () => {
-				parentCollection.deleteItem(instance)
+				parentCollection.removeItem?.(instance)
 			})
 		}
 
