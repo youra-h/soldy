@@ -4,18 +4,25 @@
  * Наследование:
  * - ControlDescriptor (disabled, focused, size, variant, rendered, visible, present, tag, classes)
  *
- * Композиция:
- * - ActivatableCollectionDescriptor → collection:* (items, activeItem, events)
+ * @deprecated composition: ActivatableCollectionDescriptor — коллекция теперь управляется плагином TTabsCollectionPlugin
  *
  * Добавляет: orientation, alignment, position, view, closable + плагины Tabs.
  */
 
 import { defineComponent, definePlugin } from '../../base'
 import { TTabs } from '@soldy/core'
-import { TTabsLayoutPlugin, TTabsActiveTabPlugin, TTabsViewPlugin, TDragPlugin } from '@soldy/plugins'
+import {
+    TTabsLayoutPlugin,
+    TTabsActiveTabPlugin,
+    TTabsViewPlugin,
+    TDragPlugin,
+    TTabsCollectionPlugin,
+    TCollectionItemPlugins,
+    TElementAccumulationPlugin,
+    TInstanceAccumulationPlugin,
+} from '@soldy/plugins'
 import { TabsContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
-import { ActivatableCollectionDescriptor } from '../collection'
 
 export const TabsDescriptor = defineComponent({
 	ctor: TTabs,
@@ -24,23 +31,24 @@ export const TabsDescriptor = defineComponent({
 
 	contribution: TabsContribution,
 
+	// @deprecated composition: коллекция теперь создаётся плагином TTabsCollectionPlugin
+	/*
 	composition: [{
 		descriptor: ActivatableCollectionDescriptor,
 		get: (instance) => instance.collection,
 	}],
+	*/
 
 	plugins: [
-		definePlugin({
-			ctor: TTabsLayoutPlugin,
-		}),
-		definePlugin({
-			ctor: TTabsActiveTabPlugin,
-		}),
-		definePlugin({
-			ctor: TTabsViewPlugin,
-		}),
-		definePlugin({
-			ctor: TDragPlugin,
-		}),
+		// Коллекция и накопление
+		definePlugin({ ctor: TTabsCollectionPlugin }),
+		definePlugin({ ctor: TCollectionItemPlugins }),
+		definePlugin({ ctor: TElementAccumulationPlugin }),
+		definePlugin({ ctor: TInstanceAccumulationPlugin }),
+		// Tabs-специфичные
+		definePlugin({ ctor: TTabsLayoutPlugin }),
+		definePlugin({ ctor: TTabsActiveTabPlugin }),
+		definePlugin({ ctor: TTabsViewPlugin }),
+		definePlugin({ ctor: TDragPlugin }),
 	],
 })

@@ -40,4 +40,26 @@ export class TCollection<
     batch(action: () => void): void {
         this.engine.batch(action);
     }
+
+    /**
+     * Вставляет элемент в коллекцию через plain-расширение.
+     * Используется TCollectionItemExtension для авто-регистрации.
+     */
+    insertItem(item: T, index?: number): void {
+        const plain = (this.extensions as any).plain
+        if (plain?.insert) {
+            plain.insert(item, index ?? 0)
+        }
+    }
+
+    /**
+     * Удаляет элемент из коллекции через plain-расширение.
+     * Используется TCollectionItemExtension для авто-удаления.
+     */
+    removeItem(item: T): void {
+        const plain = (this.extensions as any).plain
+        if (plain?.remove) {
+            plain.remove(item)
+        }
+    }
 }
