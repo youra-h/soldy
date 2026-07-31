@@ -88,22 +88,75 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         //     this._collection.extensions.batch.add(preparedItems)
         // }
 
-        // @deprecated Per-item setup теперь в TCollectionPlugin.onItemAdded
         // this._collection.engine.events.on('item:added', (item: ITabItem) => {
         //     item.events.on('close', () => this.closeTab(item))
         //     item.setClosableResolver(() => this._closable)
-        //     ...
+
+        //     item.events.on('change:closable', (value: boolean | undefined) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:closable', item, !!value)
+        //     })
+
+        //     item.events.on('change:disabled', (value: boolean) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:disabled', item, value)
+        //     })
+
+        //     item.events.on('change:text', (payload: TValuePayload<string>) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:text', item, payload.newValue)
+        //     })
+
+        //     item.events.on('change:rendered', (value: boolean) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:rendered', item, value)
+        //     })
+
+        //     item.events.on('change:visible', (value: boolean) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:visible', item, value)
+        //     })
+
+        //     item.events.on('change:present', (value: boolean) => {
+        //         ;(this.events as TEvented<TTabsEvents>).emit('item:present', item, value)
+        //     })
+
+        //     item.disabled = this.disabled
+        //     item.size = this.size
+        //     item.variant = this.variant
         // })
 
-        // @deprecated Relay событий теперь в TCollectionPlugin.install()
-        // this.events.relay(this._collection.engine.events, [...])
-        // this.events.relay(this._collection.extensions.batch.events, [...])
-        // this.events.relay(this._collection.extensions.selection.events, [...])
+        // this.events.relay(this._collection.engine.events, [
+        //     'item:added',
+        //     'item:removed',
+        //     'item:updated',
+        //     'item:moved',
+        //     'change:items',
+        //     'change:count',
+        //     'reset',
+        // ])
 
-        // @deprecated Пропагация теперь в TCollectionPlugin.onPropagate
-        // this.events.on('change:size', ...)
-        // this.events.on('change:variant', ...)
-        // this.events.on('change:disabled', ...)
+        // this.events.relay(this._collection.extensions.batch.events, [
+        //     'items:added',
+        //     'items:removed',
+        // ])
+
+        // this.events.relay(this._collection.extensions.selection.events, [
+        //     'change:selection',
+        // ])
+
+        // this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+        //     this._collection.engine.forEach((item) => {
+        //         item.size = payload.newValue
+        //     })
+        // })
+
+        // this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+        //     this._collection.engine.forEach((item) => {
+        //         item.variant = payload.newValue
+        //     })
+        // })
+
+        // this.events.on('change:disabled', (value: boolean) => {
+        //     this._collection.engine.forEach((item) => {
+        //         item.disabled = value
+        //     })
+        // })
     }
 
     get orientation(): TTabsOrientation {
