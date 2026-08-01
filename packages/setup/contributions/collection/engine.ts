@@ -7,13 +7,7 @@ import type { IContribution } from '@soldy/accessor'
 export const CollectionContribution: IContribution = {
 	props: [
 		{ name: 'items', type: Array, triggers: ['change:items'] },
-		{ name: 'count', type: Number, triggers: ['change:count'] },
+		{ name: 'count', type: Number, protected: true, triggers: ['change:count'] },
 	],
-	events: [
-		'item:added',
-		'item:removed',
-		'item:updated',
-		'item:moved',
-		'reset',
-	],
+	events: ['item:added', 'item:removed', 'item:updated', 'item:moved', 'reset'],
 }
