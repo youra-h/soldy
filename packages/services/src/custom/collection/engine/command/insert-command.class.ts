@@ -1,5 +1,5 @@
 import type { IStorage } from '../storage'
-import type { TEvented } from '../../../../common/event'
+import { TEvented } from '@soldy/core'
 import type { TEngineEvents } from '../types'
 import type { ICommand } from './types'
 

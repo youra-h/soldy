@@ -1,5 +1,3 @@
-// extension/types.ts — интерфейсы IExtension и IExtensionContext
-
 import type { ICollectionEngine } from '../collection-engine';
 import type { ICommand } from '../command';
 import type { TCollection } from '../collection.class';

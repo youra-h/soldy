@@ -1,7 +1,7 @@
 import type { IStorage } from './storage'
 import type { ICommand } from './command'
 import type { TEngineEvents } from './types'
-import { TEvented } from '../../../common/event'
+import { TEvented } from '@soldy/core'
 
 export interface ICollectionEngine<T> extends ReadonlyArray<T> {
 	readonly events: TEvented<TEngineEvents<T>>

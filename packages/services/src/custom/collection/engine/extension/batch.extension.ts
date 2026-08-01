@@ -1,6 +1,6 @@
 import type { IExtension, IExtensionContext } from './types'
 import { TInsertCommand, TRemoveCommand, TClearCommand } from '../command'
-import { TEvented } from '../../../../common/event'
+import { TEvented } from '@soldy/core'
 
 export type TBatchEvents<T> = {
     'items:added': (items: T[]) => void
