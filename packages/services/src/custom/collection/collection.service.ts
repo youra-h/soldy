@@ -6,30 +6,30 @@ import { TCollection } from './engine'
 import type { IExtension } from './engine'
 import { TEvented } from '@soldy/core'
 
-export interface ICollectionServiceOptions<T> {
-	extensions?: Record<string, IExtension<T>>
-	items?: T[]
+export interface ICollectionServiceOptions<TInstance> {
+	extensions?: Record<string, IExtension<TInstance>>
+	items?: TInstance[]
 }
 
 /**
  * TCollectionService — сервис коллекции.
  * Создаёт TCollection, relay'ит события на instance.
  */
-export class TCollectionService<T> extends TBaseService {
-	readonly name = 'collection'
+export class TCollectionService<TInstance> extends TBaseService<TInstance> {
+	readonly namespace = Symbol('collection')
 
-	private _options: ICollectionServiceOptions<T>
+	private _options: ICollectionServiceOptions<TInstance>
 
-	constructor(options: ICollectionServiceOptions<T> = {}) {
+	constructor(options: ICollectionServiceOptions<TInstance> = {}) {
 		super()
 		this._options = options
 	}
 
-	install(ctx: IServiceContext): void {
+	install(ctx: IServiceContext<TInstance>): void {
 		const { instance } = ctx
 
-		const collection = new TCollection<T, Record<string, IExtension<T>>>({
-			extensions: this._options.extensions ?? ({} as Record<string, IExtension<T>>),
+		const collection = new TCollection<TInstance, Record<string, IExtension<TInstance>>>({
+			extensions: this._options.extensions ?? ({} as Record<string, IExtension<TInstance>>),
 		})
 
 		;(instance as any)._collection = collection
@@ -57,5 +57,7 @@ export class TCollectionService<T> extends TBaseService {
 		if (Array.isArray(this._options.items) && this._options.items.length > 0) {
 			;(collection.extensions as any).batch?.add?.(this._options.items)
 		}
+
+		super.install(ctx)
 	}
 }

@@ -1,10 +1,20 @@
-// services/base/service.ts
+import type { IService, IServiceContext, TServiceEvents } from './types'
+import { TEvented } from '@soldy/core'
 
-import type { IService, IServiceContext } from './types'
+export abstract class TBaseService<
+	TInstance = any,
+	TEvents extends Record<string, (...args: any) => any> = TServiceEvents<TInstance>,
+> implements IService<TInstance, TEvents> {
+	abstract readonly namespace: symbol
+	readonly events: TEvented<TEvents> = new TEvented<TEvents>()
 
-export abstract class TBaseService<TInstance = any> implements IService<TInstance> {
-    abstract readonly name: string
-    abstract install(ctx: IServiceContext<TInstance>): void
+	install(ctx: IServiceContext<TInstance>): void {
+		;(this.events as TEvented<TServiceEvents<TInstance>>).emit('install', ctx)
+	}
 
-    destroy(): void {}
+	destroy(): void {
+		;(this.events as TEvented<TServiceEvents<TInstance>>).emit('destroy', {
+			instance: null,
+		} as IServiceContext<TInstance>)
+	}
 }
