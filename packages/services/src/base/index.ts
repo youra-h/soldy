@@ -1,2 +1,3 @@
-export type { IService, IServiceContext, IServiceConstructor } from './types'
-export { TBaseService } from './service'
+export type { IService, IServiceContext, IServiceConstructor, IServiceContainer, TServiceEvents } from './types'
+export { TBaseService } from './base-service.class'
+export { TServiceContainer } from './container'

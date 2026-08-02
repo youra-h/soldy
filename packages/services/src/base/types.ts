@@ -1,4 +1,5 @@
 import type { TEvented } from '@soldy/core'
+
 /**
  * Контекст, передаваемый сервису при установке.
  */
@@ -13,7 +14,6 @@ export type TServiceEvents<TInstance = any> = {
 
 /**
  * Сервис — независимая единица логики, устанавливаемая на компонент.
- * Заменяет плагины и коллекции.
  */
 export interface IService<
 	TInstance = any,
@@ -25,10 +25,24 @@ export interface IService<
 	destroy(): void
 }
 
+/**
+ * Конструктор сервиса (со статическим namespace).
+ */
 export interface IServiceConstructor<
 	TInstance = any,
 	TEvents extends Record<string, (...args: any) => any> = TServiceEvents,
+	S extends IService<TInstance, TEvents> = IService<TInstance, TEvents>,
 > {
-	readonly name: string
-	new (): IService<TInstance, TEvents>
+	new (): S
+	readonly namespace: symbol
+}
+
+/**
+ * Контейнер сервисов.
+ */
+export interface IServiceContainer {
+	use<S extends IService<any, any>>(ServiceCtor: IServiceConstructor<any, any, S>): this
+	get<S extends IService<any, any>>(ctor: IServiceConstructor<any, any, S>): S | undefined
+	get(namespace: symbol): IService | undefined
+	remove<S extends IService<any, any>>(ServiceCtor: IServiceConstructor<any, any, S>): void
 }
