@@ -1,63 +1,78 @@
-// services/custom/collection/collection.service.ts
-
 import { TBaseService } from '../../base'
 import type { IServiceContext } from '../../base'
 import { TCollection } from './engine'
-import type { IExtension } from './engine'
+import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
 
-export interface ICollectionServiceOptions<TInstance> {
-	extensions?: Record<string, IExtension<TInstance>>
-	items?: TInstance[]
+export interface ICollectionServiceOptions<T> {
+	extensions?: Record<string, IExtension<T>>
+	items?: T[]
 }
 
 /**
  * TCollectionService — сервис коллекции.
- * Создаёт TCollection, relay'ит события на instance.
+ * Владеет TCollection, relay'ит события на свои events.
  */
-export class TCollectionService<TInstance> extends TBaseService<TInstance> {
-	readonly namespace = Symbol('collection')
+export class TCollectionService<T> extends TBaseService<any, TEngineEvents<T>> {
+	static readonly namespace = Symbol('collection')
 
-	private _options: ICollectionServiceOptions<TInstance>
+	get namespace(): symbol {
+		return TCollectionService.namespace
+	}
 
-	constructor(options: ICollectionServiceOptions<TInstance> = {}) {
+	private _collection!: TCollection<T, any>
+	private _options: ICollectionServiceOptions<T>
+
+	constructor(options: ICollectionServiceOptions<T> = {}) {
 		super()
 		this._options = options
 	}
 
-	install(ctx: IServiceContext<TInstance>): void {
-		const { instance } = ctx
+	override install(ctx: IServiceContext): void {
+		super.install(ctx)
 
-		const collection = new TCollection<TInstance, Record<string, IExtension<TInstance>>>({
-			extensions: this._options.extensions ?? ({} as Record<string, IExtension<TInstance>>),
+		this._collection = new TCollection<T, Record<string, IExtension<T>>>({
+			extensions: this._options.extensions ?? ({} as Record<string, IExtension<T>>),
 		})
 
-		;(instance as any)._collection = collection
+		// Relay движка → сервис
+		this._collection.engine.events.relay(this.events, [
+			'item:added',
+			'item:removed',
+			'item:updated',
+			'item:moved',
+			'change:items',
+			'change:count',
+			'reset',
+		])
 
-		const instEvents = (instance as any).events as TEvented<any>
-		if (instEvents?.relay) {
-			instEvents.relay(collection.engine.events, [
-				'item:added',
-				'item:removed',
-				'item:updated',
-				'item:moved',
-				'change:items',
-				'change:count',
-				'reset',
-			])
-		}
-
-		for (const ext of Object.values(collection.extensions)) {
+		// Relay расширений → сервис
+		for (const ext of Object.values(this._collection.extensions)) {
 			const extEvents = (ext as any).events as TEvented<any> | undefined
-			if (extEvents?.relay && instEvents?.relay) {
-				instEvents.relay(extEvents, Object.keys(extEvents as any) as string[])
+			if (extEvents?.relay) {
+				const eventKeys = Object.keys(extEvents as any) as string[]
+				;(this.events as TEvented<any>).relay(extEvents, eventKeys)
 			}
 		}
 
 		if (Array.isArray(this._options.items) && this._options.items.length > 0) {
-			;(collection.extensions as any).batch?.add?.(this._options.items)
+			;(this._collection.extensions as any).batch?.add?.(this._options.items)
 		}
+	}
 
-		super.install(ctx)
+	get items(): readonly T[] {
+		return this._collection.engine
+	}
+
+	get length(): number {
+		return this._collection.engine.length
+	}
+
+	insert(item: T, index?: number): void {
+		;(this._collection.extensions as any).plain?.insert?.(item, index ?? 0)
+	}
+
+	remove(item: T): void {
+		;(this._collection.extensions as any).plain?.remove?.(item)
 	}
 }
