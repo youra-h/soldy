@@ -1,4 +1,3 @@
-import { SelectableComponentMixin } from '../../../base/collection'
 import TListItemCustom from './list-item-custom.class'
 import type { IListItem, TListItemOptions, IListItemProps, TListItemEvents } from './types'
 
