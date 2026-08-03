@@ -1,5 +1,4 @@
 export { ElementContribution } from './element'
-export { InstanceContribution } from './instance'
 export * from './icon'
 export * from './spinner'
 export * from './frame'
