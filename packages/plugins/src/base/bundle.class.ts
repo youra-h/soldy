@@ -3,9 +3,15 @@ import type { IPlugin, IPluginBundle, IPluginConstructor } from './types'
 export class TPluginBundle implements IPluginBundle {
 	private _plugins = new Map<symbol, IPlugin<any, any>>()
 
-	use<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): this {
-		const plugin = new PluginCtor()
+	use<P extends IPlugin<any, any>>(
+		PluginCtor: IPluginConstructor<any, any, P>,
+		options?: Record<string, any>,
+	): this {
+		const plugin = new PluginCtor(this, options)
+		// Добавляем плагин в коллекцию, используя его namespace в качестве ключа
 		this._plugins.set(PluginCtor.namespace, plugin)
+
+		plugin.install({ instance: options?.instance ?? null })
 
 		return this
 	}
