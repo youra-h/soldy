@@ -1,12 +1,10 @@
 import { TControl } from '../../base/control'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import { TSelectableCollection } from '../../base/collection'
 import TListItem from './list-item/list-item.class'
 import type { IListItem } from './list-item/types'
 import type { IList, IListProps, TListEvents, TListStates } from './types'
 import { TEvented } from '../../../common/event/evented'
-import type { TSelectionMode } from '../../base/collection'
 import type {
 	TValuePayload,
 	TComponentSize,

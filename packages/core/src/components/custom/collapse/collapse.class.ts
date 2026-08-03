@@ -1,7 +1,6 @@
 import TControl from '../../base/control/control.class'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import { TSelectableCollection } from '../../base/collection'
 import TCollapseItem from './collapse-item/collapse-item.class'
 import type { ICollapseItem } from './collapse-item/types'
 import type {
@@ -12,7 +11,6 @@ import type {
 	TCollapseView,
 } from './types'
 import { TEvented } from '../../../common/event/evented'
-import type { TSelectionMode } from '../../base/collection'
 import type { TValuePayload, TComponentSize, TComponentVariant } from '../../../common'
 
 export class TCollapse

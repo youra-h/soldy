@@ -1,7 +1,6 @@
 import { TList } from '../list'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import { TSelectableCollection } from '../../base/collection'
 import TListBoxItem from './list-box-item/list-box-item.class'
 import type { IListBoxItem } from './list-box-item/types'
 import type {
