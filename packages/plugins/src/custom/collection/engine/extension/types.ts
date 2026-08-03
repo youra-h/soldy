@@ -1,4 +1,4 @@
-import type { ICollectionEngine } from '../collection-engine';
+import type { ICollectionEngine } from '../engine.class';
 import type { ICommand } from '../command';
 import type { TCollection } from '../collection.class';
 

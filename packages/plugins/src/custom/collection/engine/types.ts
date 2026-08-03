@@ -1,4 +1,5 @@
-// types.ts — словарь событий движка коллекции
+import type { ICommand } from './command'
+import { TEvented } from '@soldy/core'
 
 export type TEngineEvents<T> = {
     /** Вызывается при добавлении одного элемента */
@@ -21,4 +22,10 @@ export type TEngineEvents<T> = {
 
     /** Полный сброс или очистка коллекции */
     'reset': () => void
+}
+
+export interface ICollectionEngine<T> extends ReadonlyArray<T> {
+	readonly events: TEvented<TEngineEvents<T>>
+	execute(command: ICommand<T>): void
+	batch(action: () => void): void
 }

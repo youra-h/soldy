@@ -1,5 +1,5 @@
-import { TCollectionEngine } from './collection-engine'
-import type { ICollectionEngine } from './collection-engine'
+import { TCollectionEngine } from './engine.class'
+import type { ICollectionEngine } from './engine.class'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
