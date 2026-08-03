@@ -21,11 +21,11 @@ import { compileContribution } from './compile-contribution'
  * приоритет определяется порядком вызовов.
  */
 function createPluginCollector() {
-	const map = new Map<symbol, IPluginDefinition>()
+	const map = new Map<string, IPluginDefinition>()
 
 	return {
 		add(plugins: IPluginDefinition[]): void {
-			for (const p of plugins) map.set(p.key, p)
+			for (const p of plugins) map.set(p.namespace, p)
 		},
 		toArray(): IPluginDefinition[] {
 			return [...map.values()]
@@ -105,11 +105,13 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		plugins,
 		composition,
 
-		createBundle() {
-			const bundle = new TPluginBundle()
+		createBundle(instance: any) {
+			const bundle = new TPluginBundle(instance)
+
 			for (const plugin of plugins) {
-				bundle.use(plugin.ctor)
+				bundle.use(plugin.ctor, {})
 			}
+
 			return bundle
 		},
 

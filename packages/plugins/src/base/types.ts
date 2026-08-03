@@ -3,13 +3,15 @@ import type { TEvented } from '@soldy/core'
 /**
  * Контекст, передаваемый плагину при установке.
  */
-export interface IPluginContext<TInstance = any> {
-	readonly instance: TInstance | null
+export interface IPluginContext {
+	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
+	get(namespace: symbol): IPlugin | undefined
+	getInstance<T>(): T | null
 }
 
-export type TPluginEvents<TInstance = any> = {
-	install: (ctx: IPluginContext<TInstance>) => void
-	destroy: (ctx: IPluginContext<TInstance>) => void
+export type TPluginEvents = {
+	install: (ctx: IPluginContext, options?: any) => void
+	destroy: (ctx: IPluginContext, options?: any) => void
 }
 
 /**
@@ -17,11 +19,11 @@ export type TPluginEvents<TInstance = any> = {
  */
 export interface IPlugin<
 	TInstance = any,
-	TEvents extends Record<string, (...args: any) => any> = TPluginEvents<TInstance>,
+	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 > {
 	readonly namespace: symbol
 	readonly events: TEvented<TEvents>
-	install(ctx: IPluginContext<TInstance>): void
+	install(ctx: IPluginContext, options?: any): void
 	destroy(): void
 }
 
@@ -33,7 +35,7 @@ export interface IPluginConstructor<
 	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 	P extends IPlugin<TInstance, TEvents> = IPlugin<TInstance, TEvents>,
 > {
-	new (bundle: IPluginBundle, options?: any): P
+	new (): P
 	readonly namespace: symbol
 }
 

@@ -1,24 +1,23 @@
 /**
  * definePlugin — создаёт определение плагина.
- * Namespace извлекается из Symbol.key.description.
+ * Namespace берётся из статического поля ctor.namespace (symbol).
+ * Строковое представление — из description символа.
  */
 
 import type { IContribution } from '@soldy/accessor'
+import type { IPluginConstructor } from '@soldy/plugins'
 import type { IPluginDefinition } from './types'
 
 export function definePlugin(options: {
-    ctor: any
-    contribution?: IContribution
+	ctor: IPluginConstructor<any, any, any>
+	contribution?: IContribution
 }): IPluginDefinition {
-    const key: symbol = options.ctor.key
-    // Namespace извлекаем из описания символа плагина
-    const namespace: string =
-        key.description || String(key).replace(/^Symbol\((.*)\)$/, '$1')
+	const ns: symbol = options.ctor.namespace
+	const nsString: string = ns.description || String(ns).replace(/^Symbol\((.*)\)$/, '$1')
 
-    return {
-        ctor: options.ctor,
-        contribution: options.contribution,
-        key,
-        namespace,
-    }
+	return {
+		ctor: options.ctor,
+		contribution: options.contribution,
+		namespace: nsString,
+	}
 }
