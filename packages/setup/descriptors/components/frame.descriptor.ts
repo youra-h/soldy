@@ -10,12 +10,11 @@
 
 import { defineComponent, definePlugin } from '../base'
 import { TFrame } from '@soldy/core'
-import { TElementPlugin, TInstancePlugin, TReadyPlugin, TFrameStylesPlugin } from '@soldy/plugins'
+import { TElementPlugin, TReadyPlugin, TFrameStylesPlugin } from '@soldy/plugins'
 import {
 	FrameContribution,
 	FrameStylesContribution,
 	ElementContribution,
-	InstanceContribution,
 } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
@@ -30,10 +29,6 @@ export const FrameDescriptor = defineComponent({
 		definePlugin({
 			ctor: TElementPlugin,
 			contribution: ElementContribution,
-		}),
-		definePlugin({
-			ctor: TInstancePlugin,
-			contribution: InstanceContribution,
 		}),
 		definePlugin({
 			ctor: TReadyPlugin,
