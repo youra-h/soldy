@@ -12,7 +12,6 @@ import { defineComponent } from '../../base'
 import { TTabItem } from '@soldy/core'
 import { TabItemContribution } from '../../../contributions'
 import { TabItemCustomDescriptor } from './tab-item-custom.descriptor'
-import { ActivatableCollectionItemDescriptor } from '../collection'
 
 export const TabItemDescriptor = defineComponent({
 	ctor: TTabItem,
@@ -20,9 +19,4 @@ export const TabItemDescriptor = defineComponent({
 	extends: TabItemCustomDescriptor,
 
 	contribution: TabItemContribution,
-
-	composition: [{
-		descriptor: ActivatableCollectionItemDescriptor,
-		get: (instance) => instance.collectionItem,
-	}],
 })

@@ -12,10 +12,9 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TCollapse } from '@soldy/core'
-import { TCollapseHeightPlugin, TDragPlugin } from '@soldy/plugins'
+import { TDragPlugin } from '@soldy/plugins'
 import { CollapseContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
-import { SelectableCollectionDescriptor } from '../collection'
 
 export const CollapseDescriptor = defineComponent({
 	ctor: TCollapse,
@@ -24,15 +23,7 @@ export const CollapseDescriptor = defineComponent({
 
 	contribution: CollapseContribution,
 
-	composition: [{
-		descriptor: SelectableCollectionDescriptor,
-		get: (instance) => instance.collection,
-	}],
-
 	plugins: [
-		definePlugin({
-			ctor: TCollapseHeightPlugin,
-		}),
 		definePlugin({
 			ctor: TDragPlugin,
 		}),

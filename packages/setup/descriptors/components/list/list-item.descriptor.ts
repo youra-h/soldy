@@ -12,7 +12,6 @@ import { defineComponent } from '../../base'
 import { TListItem } from '@soldy/core'
 import { ListItemContribution } from '../../../contributions'
 import { ListItemCustomDescriptor } from './list-item-custom.descriptor'
-import { SelectableCollectionItemDescriptor } from '../collection'
 
 export const ListItemDescriptor = defineComponent({
 	ctor: TListItem,
@@ -20,9 +19,4 @@ export const ListItemDescriptor = defineComponent({
 	extends: ListItemCustomDescriptor,
 
 	contribution: ListItemContribution,
-
-	composition: [{
-		descriptor: SelectableCollectionItemDescriptor,
-		get: (instance) => instance.collectionItem,
-	}],
 })
