@@ -11,7 +11,6 @@ export default {
 	setup(props: TBaseComponentProps<IFrameProps, IFrame>, { emit }: any) {
 		const adapter = createAdapterContext(FrameDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

@@ -13,7 +13,6 @@ export default {
 	setup(props: TBaseComponentProps<ISwitchProps, ISwitch>, { emit }: any) {
 		const adapter = createAdapterContext(SwitchDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

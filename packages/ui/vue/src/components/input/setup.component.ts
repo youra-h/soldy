@@ -13,7 +13,6 @@ export default {
 	setup(props: TBaseComponentProps<IInputProps, IInput>, { emit }: any) {
 		const adapter = createAdapterContext(InputDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

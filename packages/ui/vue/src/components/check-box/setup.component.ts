@@ -13,7 +13,6 @@ export default {
 	setup(props: TBaseComponentProps<ICheckBoxProps, ICheckBox>, { emit }: any) {
 		const adapter = createAdapterContext(CheckBoxDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 
