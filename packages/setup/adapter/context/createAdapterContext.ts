@@ -25,7 +25,7 @@ export function createAdapterContext(
 	defaultExtensions: Array<TAnyExtensionCtor> = [TPluginsBindingExtension],
 ): IAdapterContext {
 	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
-	const bundle = options.plugins ?? descriptor.createBundle()
+	const bundle = options.plugins ?? descriptor.createBundle(instance)
 	const accessor = descriptor.createAccessor(instance, bundle)
 
 	const events = new TEvented<TAdapterEvents>()

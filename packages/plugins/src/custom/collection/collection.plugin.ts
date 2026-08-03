@@ -1,14 +1,10 @@
 import { TBasePlugin } from '../../base'
-import type { IPluginContext, IPluginBundle } from '../../base'
+import type { IPluginContext } from '../../base'
 import { TCollection } from './engine'
 import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
 import type { ICollectionPluginOptions } from './types'
 
-/**
- * TCollectionPlugin — плагин коллекции.
- * Владеет TCollection, relay'ит события на свои events.
- */
 export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 	static readonly namespace = Symbol('collection')
 
@@ -18,31 +14,18 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 
 	private _collection!: TCollection<T, any>
 
-	constructor(bundle: IPluginBundle, options?: ICollectionPluginOptions<T>) {
-		super(bundle, options)
-	}
-
-	override install(ctx: IPluginContext): void {
-		super.install(ctx)
-
-		const opts = this.options as ICollectionPluginOptions<T> | undefined
+	override install(ctx: IPluginContext, options?: ICollectionPluginOptions<T>): void {
+		super.install(ctx, options)
 
 		this._collection = new TCollection<T, Record<string, IExtension<T>>>({
-			extensions: opts?.extensions ?? ({} as Record<string, IExtension<T>>),
+			extensions: options?.extensions ?? ({} as Record<string, IExtension<T>>),
 		})
 
-		// Relay движка → плагин
 		this._collection.engine.events.relay(this.events, [
-			'item:added',
-			'item:removed',
-			'item:updated',
-			'item:moved',
-			'change:items',
-			'change:count',
-			'reset',
+			'item:added', 'item:removed', 'item:updated',
+			'item:moved', 'change:items', 'change:count', 'reset',
 		])
 
-		// Relay расширений → плагин
 		for (const ext of Object.values(this._collection.extensions)) {
 			const extEvents = (ext as any).events as TEvented<any> | undefined
 			if (extEvents?.relay) {
@@ -51,8 +34,8 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 			}
 		}
 
-		if (Array.isArray(opts?.items) && opts.items.length > 0) {
-			;(this._collection.extensions as any).batch?.add?.(opts.items)
+		if (Array.isArray(options?.items) && options.items.length > 0) {
+			;(this._collection.extensions as any).batch?.add?.(options.items)
 		}
 	}
 
