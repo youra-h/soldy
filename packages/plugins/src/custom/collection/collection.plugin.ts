@@ -1,5 +1,5 @@
 import { TBasePlugin } from '../../base'
-import type { IPluginContext } from '../../base'
+import type { IPluginContext, IPluginBundle } from '../../base'
 import { TCollection } from './engine'
 import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
@@ -17,18 +17,18 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 	}
 
 	private _collection!: TCollection<T, any>
-	private _options: ICollectionPluginOptions<T>
 
-	constructor(options: ICollectionPluginOptions<T> = {}) {
-		super()
-		this._options = options
+	constructor(bundle: IPluginBundle, options?: ICollectionPluginOptions<T>) {
+		super(bundle, options)
 	}
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
+		const opts = this.options as ICollectionPluginOptions<T> | undefined
+
 		this._collection = new TCollection<T, Record<string, IExtension<T>>>({
-			extensions: this._options.extensions ?? ({} as Record<string, IExtension<T>>),
+			extensions: opts?.extensions ?? ({} as Record<string, IExtension<T>>),
 		})
 
 		// Relay движка → плагин
@@ -51,8 +51,8 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 			}
 		}
 
-		if (Array.isArray(this._options.items) && this._options.items.length > 0) {
-			;(this._collection.extensions as any).batch?.add?.(this._options.items)
+		if (Array.isArray(opts?.items) && opts.items.length > 0) {
+			;(this._collection.extensions as any).batch?.add?.(opts.items)
 		}
 	}
 

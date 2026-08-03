@@ -33,7 +33,7 @@ export interface IPluginConstructor<
 	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 	P extends IPlugin<TInstance, TEvents> = IPlugin<TInstance, TEvents>,
 > {
-	new (): P
+	new (bundle: IPluginBundle, options?: any): P
 	readonly namespace: symbol
 }
 
@@ -41,7 +41,10 @@ export interface IPluginConstructor<
  * Контейнер плагинов.
  */
 export interface IPluginBundle {
-	use<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): this
+	use<P extends IPlugin<any, any>>(
+		PluginCtor: IPluginConstructor<any, any, P>,
+		options?: Record<string, any>,
+	): this
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
 	get(namespace: symbol): IPlugin<any, any> | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void
