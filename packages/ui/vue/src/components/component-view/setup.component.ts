@@ -11,7 +11,6 @@ export default {
 	setup(props: TBaseComponentProps<IComponentViewProps, IComponentView>, { emit }: any) {
 		const adapter = createAdapterContext(ComponentViewDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

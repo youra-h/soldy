@@ -11,7 +11,6 @@ export default {
 	setup(props: TBaseComponentProps<IButtonProps, IButton>, { emit }: any) {
 		const adapter = createAdapterContext(ButtonDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

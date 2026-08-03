@@ -11,7 +11,6 @@ export default {
 	setup(props: TBaseComponentProps<ISpinnerProps, ISpinner>, { emit }: any) {
 		const adapter = createAdapterContext(SpinnerDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 

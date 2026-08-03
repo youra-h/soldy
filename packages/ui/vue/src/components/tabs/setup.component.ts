@@ -16,7 +16,6 @@ export default {
 	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
 		const adapter = createAdapterContext(TabsDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
-			plugins: props.plugins,
 			props,
 		})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
