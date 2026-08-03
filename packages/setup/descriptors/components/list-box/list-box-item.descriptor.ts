@@ -7,7 +7,7 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TListBoxItem } from '@soldy/core'
-import { TListItemPlugin } from '@soldy/plugins'
+// import { TListItemPlugin } from '@soldy/plugins'
 import { ListBoxItemContribution, ListItemPluginContribution } from '../../../contributions'
 import { ListItemDescriptor } from '../list'
 
@@ -19,9 +19,9 @@ export const ListBoxItemDescriptor = defineComponent({
 	contribution: ListBoxItemContribution,
 
 	plugins: [
-		definePlugin({
-			ctor: TListItemPlugin,
-			contribution: ListItemPluginContribution,
-		}),
+		// definePlugin({
+		// 	ctor: TListItemPlugin,
+		// 	contribution: ListItemPluginContribution,
+		// }),
 	],
 })

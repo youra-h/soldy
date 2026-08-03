@@ -2,11 +2,11 @@ import TListItemCustom from './list-item-custom.class'
 import type { IListItem, TListItemOptions, IListItemProps, TListItemEvents } from './types'
 
 export default class TListItem
-	extends SelectableComponentMixin(TListItemCustom<IListItemProps, TListItemEvents>)
+	// extends SelectableComponentMixin(TListItemCustom<IListItemProps, TListItemEvents>)
 	implements IListItem
 {
 	constructor(options: TListItemOptions | Partial<IListItemProps> = {}) {
-		super(options)
+		// super(options)
 
 		this.init(options)
 	}

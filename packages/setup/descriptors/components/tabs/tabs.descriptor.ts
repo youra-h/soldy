@@ -11,16 +11,16 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TTabs } from '@soldy/core'
-import {
-    TTabsLayoutPlugin,
-    TTabsActiveTabPlugin,
-    TTabsViewPlugin,
-    TDragPlugin,
-    TTabsCollectionPlugin,
-    TCollectionItemPlugins,
-    TElementAccumulationPlugin,
-    TInstanceAccumulationPlugin,
-} from '@soldy/plugins'
+// import {
+//     TTabsLayoutPlugin,
+//     TTabsActiveTabPlugin,
+//     TTabsViewPlugin,
+//     TDragPlugin,
+//     TTabsCollectionPlugin,
+//     TCollectionItemPlugins,
+//     TElementAccumulationPlugin,
+//     TInstanceAccumulationPlugin,
+// } from '@soldy/plugins'
 import { TabsContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 
@@ -31,24 +31,16 @@ export const TabsDescriptor = defineComponent({
 
 	contribution: TabsContribution,
 
-	// @deprecated composition: коллекция теперь создаётся плагином TTabsCollectionPlugin
-	/*
-	composition: [{
-		descriptor: ActivatableCollectionDescriptor,
-		get: (instance) => instance.collection,
-	}],
-	*/
-
 	plugins: [
-		// Коллекция и накопление
-		definePlugin({ ctor: TTabsCollectionPlugin }),
-		definePlugin({ ctor: TCollectionItemPlugins }),
-		definePlugin({ ctor: TElementAccumulationPlugin }),
-		definePlugin({ ctor: TInstanceAccumulationPlugin }),
-		// Tabs-специфичные
-		definePlugin({ ctor: TTabsLayoutPlugin }),
-		definePlugin({ ctor: TTabsActiveTabPlugin }),
-		definePlugin({ ctor: TTabsViewPlugin }),
-		definePlugin({ ctor: TDragPlugin }),
+		// // Коллекция и накопление
+		// definePlugin({ ctor: TTabsCollectionPlugin }),
+		// definePlugin({ ctor: TCollectionItemPlugins }),
+		// definePlugin({ ctor: TElementAccumulationPlugin }),
+		// definePlugin({ ctor: TInstanceAccumulationPlugin }),
+		// // Tabs-специфичные
+		// definePlugin({ ctor: TTabsLayoutPlugin }),
+		// definePlugin({ ctor: TTabsActiveTabPlugin }),
+		// definePlugin({ ctor: TTabsViewPlugin }),
+		// definePlugin({ ctor: TDragPlugin }),
 	],
 })

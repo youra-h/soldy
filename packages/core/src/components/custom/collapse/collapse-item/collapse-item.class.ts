@@ -11,11 +11,11 @@ import type {
  * Архитектура: наследование от TCollapseItemCustom (UI-компонент) + SelectableComponentMixin (логика коллекции).
  */
 export default class TCollapseItem
-	extends SelectableComponentMixin(TCollapseItemCustom<ICollapseItemProps, TCollapseItemEvents>)
+	// extends SelectableComponentMixin(TCollapseItemCustom<ICollapseItemProps, TCollapseItemEvents>)
 	implements ICollapseItem
 {
 	constructor(options: TCollapseItemOptions | Partial<ICollapseItemProps> = {}) {
-		super(options)
+		// super(options)
 
 		this.init(options)
 	}

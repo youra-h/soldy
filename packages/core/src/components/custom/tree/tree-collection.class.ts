@@ -6,13 +6,13 @@ export class TTreeCollection<
 	TItem extends ITreeItem = ITreeItem,
 	TEvents extends TCollectionEvents = TCollectionEvents,
 >
-	extends TCollection<ITreeCollectionProps, TEvents, TItem>
+	// extends TCollection<ITreeCollectionProps, TEvents, TItem>
 	implements ITreeCollection
 {
 	protected _parentItem: ITreeItem | null = null
 
 	constructor(options: { itemClass: TConstructor<TItem>; parentItem?: ITreeItem | null }) {
-		super(options)
+		// super(options)
 		this._parentItem = options.parentItem ?? null
 	}
 

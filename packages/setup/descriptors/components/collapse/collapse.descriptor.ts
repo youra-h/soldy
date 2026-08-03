@@ -12,7 +12,7 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TCollapse } from '@soldy/core'
-import { TDragPlugin } from '@soldy/plugins'
+// import { TDragPlugin } from '@soldy/plugins'
 import { CollapseContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 
@@ -24,8 +24,8 @@ export const CollapseDescriptor = defineComponent({
 	contribution: CollapseContribution,
 
 	plugins: [
-		definePlugin({
-			ctor: TDragPlugin,
-		}),
+		// definePlugin({
+		// 	ctor: TDragPlugin,
+		// }),
 	],
 })

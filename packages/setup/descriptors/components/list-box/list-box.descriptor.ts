@@ -7,12 +7,12 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TListBox } from '@soldy/core'
-import {
-	TListLayoutPlugin,
-	TListScrollPlugin,
-	TListKeyboardPlugin,
-	TListItemAccumulationPlugin,
-} from '@soldy/plugins'
+// import {
+// 	TListLayoutPlugin,
+// 	TListScrollPlugin,
+// 	TListKeyboardPlugin,
+// 	TListItemAccumulationPlugin,
+// } from '@soldy/plugins'
 import { ListBoxContribution } from '../../../contributions'
 import { ListDescriptor } from '../list'
 
@@ -24,17 +24,17 @@ export const ListBoxDescriptor = defineComponent({
 	contribution: ListBoxContribution,
 
 	plugins: [
-		definePlugin({
-			ctor: TListItemAccumulationPlugin,
-		}),
-		definePlugin({
-			ctor: TListLayoutPlugin,
-		}),
-		definePlugin({
-			ctor: TListKeyboardPlugin,
-		}),
-		definePlugin({
-			ctor: TListScrollPlugin,
-		}),
+		// definePlugin({
+		// 	ctor: TListItemAccumulationPlugin,
+		// }),
+		// definePlugin({
+		// 	ctor: TListLayoutPlugin,
+		// }),
+		// definePlugin({
+		// 	ctor: TListKeyboardPlugin,
+		// }),
+		// definePlugin({
+		// 	ctor: TListScrollPlugin,
+		// }),
 	],
 })
