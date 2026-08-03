@@ -17,7 +17,7 @@ export type TPluginEvents<TInstance = any> = {
  */
 export interface IPlugin<
 	TInstance = any,
-	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
+	TEvents extends Record<string, (...args: any) => any> = TPluginEvents<TInstance>,
 > {
 	readonly namespace: symbol
 	readonly events: TEvented<TEvents>
@@ -40,9 +40,9 @@ export interface IPluginConstructor<
 /**
  * Контейнер плагинов.
  */
-export interface IPluginContainer {
+export interface IPluginBundle {
 	use<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): this
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
-	get(namespace: symbol): IPlugin | undefined
+	get(namespace: symbol): IPlugin<any, any> | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void
 }
