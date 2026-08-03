@@ -1,5 +1,3 @@
-// collection/index.ts — главный экспорт модуля
-
 // Типы
 export type { TEngineEvents } from './types'
 
@@ -16,8 +14,8 @@ export type { IExtension, IExtensionContext } from './extension'
 export { TPlainExtension, TBatchExtension, TSelectionExtension } from './extension'
 
 // Ядро
-export { TCollectionEngine } from './collection-engine'
-export type { ICollectionEngine } from './collection-engine'
+export { TCollectionEngine } from './engine.class'
+export type { ICollectionEngine } from './engine.class'
 
 // Фасад
 export { TCollection } from './collection.class'
