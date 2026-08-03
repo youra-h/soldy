@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { computed, markRaw, ref } from 'vue'
+import EventLog from './common/EventLog.vue'
+import type { EventLogEntry } from './common/EventLog.vue'
 import ComponentView from './playgrounds/ComponentView.vue'
-// import Icon from './playgrounds/Icon.vue'
-// import Spinner from './playgrounds/Spinner.vue'
-// import Skeleton from './playgrounds/Skeleton.vue'
-// import Button from './playgrounds/Button.vue'
-// import CheckBox from './playgrounds/CheckBox.vue'
-// import Switch from './playgrounds/Switch.vue'
-// import Input from './playgrounds/Input.vue'
+import Icon from './playgrounds/Icon.vue'
+import Spinner from './playgrounds/Spinner.vue'
+import Skeleton from './playgrounds/Skeleton.vue'
+import Button from './playgrounds/Button.vue'
+import CheckBox from './playgrounds/CheckBox.vue'
+import Switch from './playgrounds/Switch.vue'
+import Input from './playgrounds/Input.vue'
 // import Tabs from './playgrounds/Tabs.vue'
 // import Collapse from './playgrounds/Collapse.vue'
 // import ListBox from './playgrounds/ListBox.vue'
 // import ListBoxTest from './playgrounds/ListBoxTest.vue'
 // import DragAndDrop from './playgrounds/DragAndDrop.vue'
-// import Frame from './playgrounds/Frame.vue'
-// import EventLog from './common/EventLog.vue'
-// import type { EventLogEntry } from './common/EventLog.vue'
+import Frame from './playgrounds/Frame.vue'
 
 /**
  *  Manager
@@ -29,19 +29,19 @@ import ComponentView from './playgrounds/ComponentView.vue'
 // Маппинг доступных playground компонентов
 const playgrounds = {
 	'component-view': { component: markRaw(ComponentView), label: 'ComponentView' },
-	// icon: { component: markRaw(Icon), label: 'Icon' },
-	// spinner: { component: markRaw(Spinner), label: 'Spinner' },
-	// skeleton: { component: markRaw(Skeleton), label: 'Skeleton' },
-	// button: { component: markRaw(Button), label: 'Button' },
-	// 'check-box': { component: markRaw(CheckBox), label: 'CheckBox' },
-	// switch: { component: markRaw(Switch), label: 'Switch' },
-	// input: { component: markRaw(Input), label: 'Input' },
+	icon: { component: markRaw(Icon), label: 'Icon' },
+	spinner: { component: markRaw(Spinner), label: 'Spinner' },
+	skeleton: { component: markRaw(Skeleton), label: 'Skeleton' },
+	button: { component: markRaw(Button), label: 'Button' },
+	'check-box': { component: markRaw(CheckBox), label: 'CheckBox' },
+	switch: { component: markRaw(Switch), label: 'Switch' },
+	input: { component: markRaw(Input), label: 'Input' },
 	// tabs: { component: markRaw(Tabs), label: 'Tabs' },
 	// collapse: { component: markRaw(Collapse), label: 'Collapse' },
 	// 'list-box': { component: markRaw(ListBox), label: 'ListBox' },
 	// 'list-box-test': { component: markRaw(ListBoxTest), label: 'ListBox test' },
 	// 'drag-and-drop': { component: markRaw(DragAndDrop), label: 'DragAndDrop' },
-	// frame: { component: markRaw(Frame), label: 'Frame' },
+	frame: { component: markRaw(Frame), label: 'Frame' },
 } as const
 
 // Активный playground (можно управлять через меню)
