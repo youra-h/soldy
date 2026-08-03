@@ -1,6 +1,6 @@
-import type { IPlugin, IPluginContainer, IPluginConstructor } from './types'
+import type { IPlugin, IPluginBundle, IPluginConstructor } from './types'
 
-export class TPluginContainer implements IPluginContainer {
+export class TPluginBundle implements IPluginBundle {
 	private _plugins = new Map<symbol, IPlugin<any, any>>()
 
 	use<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): this {
