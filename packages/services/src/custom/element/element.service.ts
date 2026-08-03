@@ -26,7 +26,9 @@ export class TElementService extends TBaseService<any, TElementServiceEvents> {
 		if (el && !prev) {
 			requestAnimationFrame(() => {
 				if (this._element !== el) return
+
 				this._readyResolve?.(el)
+
 				this._readyResolve = null
 				;(this.events as TEvented<TElementServiceEvents>).emit('ready', el)
 			})
@@ -37,6 +39,7 @@ export class TElementService extends TBaseService<any, TElementServiceEvents> {
 
 	ready(): Promise<HTMLElement> {
 		if (this._element) return Promise.resolve(this._element)
+
 		return new Promise<HTMLElement>((resolve) => {
 			this._readyResolve = resolve
 		})
@@ -44,9 +47,5 @@ export class TElementService extends TBaseService<any, TElementServiceEvents> {
 
 	override install(ctx: IServiceContext): void {
 		super.install(ctx)
-	}
-
-	getContext() {
-		return { element: this._element }
 	}
 }
