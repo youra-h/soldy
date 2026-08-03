@@ -44,8 +44,4 @@ export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 			this._readyResolve = resolve
 		})
 	}
-
-	override install(ctx: IPluginContext): void {
-		super.install(ctx)
-	}
 }
