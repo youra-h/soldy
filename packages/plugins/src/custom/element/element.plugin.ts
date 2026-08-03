@@ -1,13 +1,13 @@
-import { TBaseService } from '../../base'
-import type { IServiceContext } from '../../base'
+import { TBasePlugin } from '../../base'
+import type { IPluginContext } from '../../base'
 import { TEvented } from '@soldy/core'
 import type { TElementServiceEvents } from './types'
 
-export class TElementService extends TBaseService<any, TElementServiceEvents> {
+export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 	static readonly namespace = Symbol('element')
 
 	get namespace(): symbol {
-		return TElementService.namespace
+		return TElementPlugin.namespace
 	}
 
 	private _element: HTMLElement | null = null
@@ -45,7 +45,7 @@ export class TElementService extends TBaseService<any, TElementServiceEvents> {
 		})
 	}
 
-	override install(ctx: IServiceContext): void {
+	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 	}
 }
