@@ -5,6 +5,22 @@ import { toCssValue } from '../../utils/toCssValue'
 import type { TFrameStylesPluginEvents } from './types'
 import { TEvented } from '@soldy/core'
 
+/**
+ * Плагин для управления CSS-стилями Frame (позиционирование + z-index + anchor).
+ *
+ * Подписывается на события TFrame (change:x, change:y, change:width, change:height, change:zIndex, change:position)
+ * и вычисляет объект стилей для применения к DOM-элементу.
+ *
+ * При установке anchor-элемента через {@link setAnchor} координаты x/y
+ * становятся отступом относительно anchor. При скролле/ресайзе позиция
+ * пересчитывается через getBoundingClientRect.
+ *
+ * @example
+ * const bundle = createFrameBundle()
+ * const stylePlugin = bundle.get(TFrameStylesPlugin)!
+ * stylePlugin.setAnchor(someButton)
+ * // stylePlugin.styles → { position: 'fixed', left: '100px', top: '200px', zIndex: 1001 }
+ */
 export class TFrameStylesPlugin extends TBasePlugin<any, TFrameStylesPluginEvents> {
 	static readonly namespace = Symbol('frame-style')
 
