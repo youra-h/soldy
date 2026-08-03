@@ -6,10 +6,6 @@ import type { TElementServiceEvents } from './types'
 export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 	static readonly namespace = Symbol('element')
 
-	get namespace(): symbol {
-		return TElementPlugin.namespace
-	}
-
 	private _element: HTMLElement | null = null
 	private _readyResolve: ((el: HTMLElement) => void) | null = null
 
