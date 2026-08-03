@@ -8,7 +8,7 @@
  *   adapter.use(TCollectionExtension, { elevator: vueElevatorFactory })
  */
 
-import { TCollectionItemPlugins } from '@soldy/plugins'
+// import { TCollectionItemPlugins } from '@soldy/plugins'
 import type { IAdapterContext } from '../context'
 import type { TElevatorFactory } from '../elevator'
 import { COLLECTION_ELEVATOR, COLLECTION_PLUGINS_ELEVATOR } from '../elevator/keys'

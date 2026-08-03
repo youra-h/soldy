@@ -1,15 +1,11 @@
 import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
-import { SelectableCollectionItemDescriptor } from '@soldy/setup'
+// import { SelectableCollectionItemDescriptor } from '@soldy/setup'
 import { BaseCollectionItem } from '../item'
 
-export const emitsSelectableCollectionItem: TEmits = useEmits(
-	SelectableCollectionItemDescriptor,
-) as unknown as TEmits
+export const emitsSelectableCollectionItem: TEmits = useEmits({ events: [], props: [] } as TEmits) as unknown as TEmits
 
-export const propsSelectableCollectionItem: TProps = useProps(
-	SelectableCollectionItemDescriptor,
-) as TProps
+export const propsSelectableCollectionItem: TProps = useProps({ ctor: Object, props: [] }) as TProps
 
 export default {
 	name: 'BaseSelectableCollectionItem',

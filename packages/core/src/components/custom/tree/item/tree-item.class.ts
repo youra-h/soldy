@@ -10,7 +10,7 @@ export class TTreeItem<
 		TProps extends ITreeItemProps = ITreeItemProps,
 		TEvents extends TTreeItemEvents = TTreeItemEvents,
 	>
-	extends TCollectionItem<TProps, TEvents>
+	// extends TCollectionItem<TProps, TEvents>
 	implements ITreeItem
 {
 	protected _child: ITreeCollection | null = null
