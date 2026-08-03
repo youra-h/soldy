@@ -1,9 +1,9 @@
 import type { IStorage } from './storage'
 import type { ICommand } from './command'
-import type { TEngineEvents, ICollectionEngine } from './types'
+import type { TEngineEvents } from './types'
 import { TEvented } from '@soldy/core'
 
-export class TCollectionEngine<T> implements ICollectionEngine<T> {
+export class TCollectionEngine<T> {
 	[index: number]: T
 
 	private _storage: IStorage<T> // Хранилище элементов коллекции

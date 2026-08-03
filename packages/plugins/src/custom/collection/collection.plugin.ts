@@ -3,11 +3,7 @@ import type { IPluginContext } from '../../base'
 import { TCollection } from './engine'
 import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
-
-export interface ICollectionPluginOptions<T> {
-	extensions?: Record<string, IExtension<T>>
-	items?: T[]
-}
+import type { ICollectionPluginOptions } from './types'
 
 /**
  * TCollectionPlugin — плагин коллекции.
