@@ -1,2 +1,2 @@
 export type { TElementServiceEvents } from './types'
-export { TElementService } from './element.service'
+export { TElementPlugin } from './element.plugin'

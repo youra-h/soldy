@@ -1,41 +1,41 @@
-import { TBaseService } from '../../base'
-import type { IServiceContext } from '../../base'
+import { TBasePlugin } from '../../base'
+import type { IPluginContext } from '../../base'
 import { TCollection } from './engine'
 import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
 
-export interface ICollectionServiceOptions<T> {
+export interface ICollectionPluginOptions<T> {
 	extensions?: Record<string, IExtension<T>>
 	items?: T[]
 }
 
 /**
- * TCollectionService — сервис коллекции.
+ * TCollectionPlugin — плагин коллекции.
  * Владеет TCollection, relay'ит события на свои events.
  */
-export class TCollectionService<T> extends TBaseService<any, TEngineEvents<T>> {
+export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 	static readonly namespace = Symbol('collection')
 
 	get namespace(): symbol {
-		return TCollectionService.namespace
+		return TCollectionPlugin.namespace
 	}
 
 	private _collection!: TCollection<T, any>
-	private _options: ICollectionServiceOptions<T>
+	private _options: ICollectionPluginOptions<T>
 
-	constructor(options: ICollectionServiceOptions<T> = {}) {
+	constructor(options: ICollectionPluginOptions<T> = {}) {
 		super()
 		this._options = options
 	}
 
-	override install(ctx: IServiceContext): void {
+	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
 		this._collection = new TCollection<T, Record<string, IExtension<T>>>({
 			extensions: this._options.extensions ?? ({} as Record<string, IExtension<T>>),
 		})
 
-		// Relay движка → сервис
+		// Relay движка → плагин
 		this._collection.engine.events.relay(this.events, [
 			'item:added',
 			'item:removed',
@@ -46,7 +46,7 @@ export class TCollectionService<T> extends TBaseService<any, TEngineEvents<T>> {
 			'reset',
 		])
 
-		// Relay расширений → сервис
+		// Relay расширений → плагин
 		for (const ext of Object.values(this._collection.extensions)) {
 			const extEvents = (ext as any).events as TEvented<any> | undefined
 			if (extEvents?.relay) {
