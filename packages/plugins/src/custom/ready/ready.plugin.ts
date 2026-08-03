@@ -9,10 +9,6 @@ import type { IComponentView } from '@soldy/core'
 export class TReadyPlugin extends TBasePlugin {
 	static readonly namespace = Symbol('ready')
 
-	get namespace(): symbol {
-		return TReadyPlugin.namespace
-	}
-
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 

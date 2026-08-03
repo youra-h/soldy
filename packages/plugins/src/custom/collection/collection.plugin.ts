@@ -8,10 +8,6 @@ import type { ICollectionPluginOptions } from './types'
 export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 	static readonly namespace = Symbol('collection')
 
-	get namespace(): symbol {
-		return TCollectionPlugin.namespace
-	}
-
 	private _collection!: TCollection<T, any>
 
 	override install(ctx: IPluginContext, options?: ICollectionPluginOptions<T>): void {
