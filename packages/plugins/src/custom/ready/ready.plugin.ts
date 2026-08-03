@@ -4,7 +4,9 @@ import { TElementPlugin } from '../element'
 import type { IComponentView } from '@soldy/core'
 
 /**
- * TReadyPlugin — синхронизирует ready между DOM-элементом и инстансом.
+ * Плагин-мост для синхронизации состояния ready между элементом и инстансом компонента.
+ * Устанавливает ready в true, когда элемент готов, и в false, когда элемент удаляется.
+ * Позволяет компоненту знать, когда он готов к взаимодействию с DOM.
  */
 export class TReadyPlugin extends TBasePlugin {
 	static readonly namespace = Symbol('ready')

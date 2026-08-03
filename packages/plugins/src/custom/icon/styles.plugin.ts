@@ -4,6 +4,9 @@ import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils/toCssValue'
 import type { TIconStylesPluginEvents } from './types'
 
+/**
+ * Плагин для управления стилями иконки.
+ */
 export class TIconStylesPlugin extends TBasePlugin<any, TIconStylesPluginEvents> {
 	static readonly namespace = Symbol('icon-styles')
 
