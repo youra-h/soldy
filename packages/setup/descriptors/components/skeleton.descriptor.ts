@@ -9,12 +9,12 @@ import { defineComponent, definePlugin } from '../base'
 import { TSkeleton } from '@soldy/core'
 import { TSkeletonStylesPlugin } from '@soldy/plugins'
 import { SkeletonContribution, SkeletonStylesContribution } from '../../contributions'
-import { StylableDescriptor } from './stylable.descriptor'
+import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = defineComponent({
 	ctor: TSkeleton,
 
-	extends: StylableDescriptor,
+	extends: ComponentViewDescriptor,
 
 	contribution: SkeletonContribution,
 
