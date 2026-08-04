@@ -9,7 +9,6 @@ import {
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance';
 import type { EventLogEntry } from '../../common/EventLog.vue';
 import type {
-    TComponentSize,
     TComponentVariant,
     TSkeletonShape,
     TSkeletonAnimation,
@@ -18,10 +17,11 @@ import type {
 type Props = {
     visible?: boolean;
     rendered?: boolean;
-    size?: TComponentSize;
     variant?: TComponentVariant;
     shape?: TSkeletonShape;
     animation?: TSkeletonAnimation;
+    width?: number | string;
+    height?: number | string;
 };
 
 const props = defineProps<Props>();
@@ -33,10 +33,11 @@ const emit = defineEmits<{
 const instance = new TSkeleton({
     rendered: props.rendered ?? true,
     visible: props.visible ?? true,
-    size: props.size || 'normal',
     variant: props.variant || 'normal',
     shape: props.shape || 'rect',
     animation: props.animation || 'pulse',
+    width: props.width,
+    height: props.height,
 });
 
 defineExpose({
