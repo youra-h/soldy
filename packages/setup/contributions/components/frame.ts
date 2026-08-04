@@ -7,7 +7,7 @@ export const FrameContribution: IContribution = {
 		{ name: 'width', type: Number, triggers: ['change:width'] },
 		{ name: 'height', type: Number, triggers: ['change:height'] },
 		{ name: 'position', type: String, triggers: ['change:position'] },
-		{ name: 'target', type: Object, triggers: ['change:target'] },
+		{ name: 'target', type: [Object, String], triggers: ['change:target'] },
 	],
 	events: ['change:zIndex'],
 }
