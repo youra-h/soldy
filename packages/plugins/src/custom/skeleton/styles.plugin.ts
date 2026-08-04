@@ -2,12 +2,14 @@ import type { ISkeleton } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils/toCssValue'
+import type { TSkeletonStylesPluginEvents } from './types'
 
 /**
  * Плагин для управления стилями скелетона.
  * Вычисляет ширину и высоту placeholder'а на основе size или кастомных width/height.
  */
-export class TSkeletonStylesPlugin extends TBasePlugin {
+
+export class TSkeletonStylesPlugin extends TBasePlugin<any, TSkeletonStylesPluginEvents> {
 	static readonly namespace = Symbol('skeleton-styles')
 
 	private _styles: Record<string, string | number> = {}
@@ -23,16 +25,14 @@ export class TSkeletonStylesPlugin extends TBasePlugin {
 	}
 
 	private _bindDimension(skeleton: ISkeleton, prop: 'width' | 'height'): void {
-		if (!!skeleton[prop]) {
-			this._styles[prop] = toCssValue(skeleton[prop])
-		}
+		const value = skeleton[prop] || 'auto'
+
+		this._styles[prop] = toCssValue(skeleton[prop])
 
 		skeleton.events.on(`change:${prop}` as any, (value: number | string) => {
-			if (!value) {
-				delete this._styles[prop]
-			} else {
-				this._styles[prop] = toCssValue(value)
-			}
+			const newValue = value || 'auto'
+			this._styles[prop] = toCssValue(newValue)
+			;(this.events as any).emit('change:styles', { ...this._styles })
 		})
 	}
 
