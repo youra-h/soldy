@@ -109,7 +109,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 			const bundle = new TPluginBundle(instance)
 
 			for (const plugin of plugins) {
-				bundle.use(plugin.ctor, {})
+				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
 
 			return bundle
