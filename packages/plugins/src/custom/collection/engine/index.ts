@@ -15,7 +15,7 @@ export { TPlainExtension, TBatchExtension, TSelectionExtension } from './extensi
 
 // Ядро
 export { TCollectionEngine } from './engine.class'
-export type { ICollectionEngine } from './engine.class'
+export type { ICollectionEngine } from './types'
 
 // Фасад
 export { TCollection } from './collection.class'
