@@ -5,6 +5,20 @@
 
 import type { IContribution, ICompiledProp, ICompiledEvent } from '@soldy/accessor'
 
+/**
+ * Объединяет несколько contributions в одну.
+ * Props и events сливаются без дедупликации — считается, что дубликатов нет.
+ */
+export function mergeContributions(...contributions: (IContribution | undefined)[]): IContribution {
+	const props = contributions.flatMap((c) => c?.props ?? [])
+	const events = contributions.flatMap((c) => c?.events ?? [])
+
+	return {
+		props: props.length > 0 ? props : undefined,
+		events: events.length > 0 ? events : undefined,
+	}
+}
+
 export function compileContribution(
     contribution?: IContribution,
     namespace?: string,
