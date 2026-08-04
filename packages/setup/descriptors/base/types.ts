@@ -17,6 +17,8 @@ import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 export interface IPluginDefinition {
 	ctor: IPluginConstructor<any, any, any>
 	contribution?: IContribution
+	/** Опции, передаваемые в plugin.install(ctx, options) */
+	options?: Record<string, any>
 	namespace: string
 }
 
