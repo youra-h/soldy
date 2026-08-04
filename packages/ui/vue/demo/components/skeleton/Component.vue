@@ -17,6 +17,8 @@ type Props = {
     variant?: TComponentVariant;
     shape?: TSkeletonShape;
     animation?: TSkeletonAnimation;
+    width?: number | string;
+    height?: number | string;
 };
 
 const props = defineProps<Props>();
@@ -37,6 +39,8 @@ const { handlers } = useEventLogger(emit, emitsSkeleton);
             :variant="variant"
             :shape="shape"
             :animation="animation"
+            :width="width"
+            :height="height"
             v-bind="handlers"
         >
             <Button>Loaded Content</Button>

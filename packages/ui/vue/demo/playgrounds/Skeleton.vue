@@ -24,6 +24,8 @@ const propertiesSchema: TPropertiesSchema = {
 	variant: { type: 'select', default: 'normal', options: VARIANTS },
 	shape: { type: 'select', default: 'rect', options: SHAPES },
 	animation: { type: 'select', default: 'pulse', options: ANIMATIONS },
+	width: { type: 'string', placeholder: 'auto' },
+	height: { type: 'string', placeholder: 'auto' },
 }
 
 const componentProps = ref<{
@@ -33,6 +35,8 @@ const componentProps = ref<{
 	variant: TComponentVariant
 	shape: TSkeletonShape
 	animation: TSkeletonAnimation
+	width?: number | string
+	height?: number | string
 }>({
 	visible: true,
 	rendered: true,
@@ -40,6 +44,8 @@ const componentProps = ref<{
 	variant: 'normal',
 	shape: 'rect',
 	animation: 'pulse',
+	width: undefined,
+	height: undefined,
 })
 
 const instanceDemoRef = ref<InstanceType<typeof InstanceDemo>>()
