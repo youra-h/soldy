@@ -1,6 +1,6 @@
-import { TStylable } from '../../base/stylable'
+import { TStateUnit, TEvented } from '../../../common'
+import type { TComponentVariant, TValuePayload } from '../../../common'
 import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
-import { type TEvented } from '../../../common'
 import type {
 	ISkeleton,
 	ISkeletonProps,
@@ -11,16 +11,16 @@ import type {
 } from './types'
 
 export default class TSkeleton
-	extends TStylable<ISkeletonProps, TSkeletonEvents>
+	extends TComponentView<ISkeletonProps, TSkeletonEvents, TSkeletonStates>
 	implements ISkeleton
 {
 	static override baseClass = 's-skeleton'
 
 	static defaultValues: Partial<ISkeletonProps> = {
-		...TStylable.defaultValues,
-		size: 'normal',
+		...TComponentView.defaultValues,
 		shape: 'rounded',
 		animation: 'pulse',
+		variant: 'normal',
 		width: 'auto',
 		height: 'auto',
 	}
@@ -39,7 +39,7 @@ export default class TSkeleton
 
 		const ctor = new.target as typeof TSkeleton
 
-		const { props = {} as Partial<ISkeletonProps> } = TComponentView.prepareOptions<
+		const { props = {} as Partial<ISkeletonProps>, states } = TComponentView.prepareOptions<
 			ISkeletonProps,
 			TSkeletonStates
 		>(options)
@@ -51,6 +51,32 @@ export default class TSkeleton
 
 		this._classes.add(`--${this._shape}`)
 		this._classes.add(`--${this._animation}`)
+
+		this._states.variant =
+			states?.variant ??
+			new TStateUnit<TComponentVariant>({
+				initial: props.variant ?? (ctor.defaultValues.variant as TComponentVariant),
+			})
+
+		this._states.variant.events.on('change', (payload: TValuePayload<TComponentVariant>) => {
+			this._classes.swapClass({
+				oldClass: `--${payload.oldValue}`,
+				newClass: `--${payload.newValue}`,
+			})
+			;(this.events as TEvented<TSkeletonEvents>).emit('change:variant', payload)
+		})
+
+		this._classes.add(`--${this._states.variant.value}`)
+	}
+
+	get variant(): TComponentVariant {
+		return this._states.variant.value
+	}
+
+	set variant(value: TComponentVariant) {
+		if (value === this._states.variant.value) return
+
+		this._states.variant.value = value
 	}
 
 	get shape(): TSkeletonShape {
@@ -108,6 +134,7 @@ export default class TSkeleton
 	getProps(): ISkeletonProps {
 		return {
 			...super.getProps(),
+			variant: this._states.variant.value,
 			shape: this._shape,
 			animation: this._animation,
 			width: this._width,
