@@ -15,7 +15,6 @@ import {
 	TBatchExtension,
 	TSelectionExtension,
 } from '@soldy/plugins'
-
 // import {
 //     TTabsLayoutPlugin,
 //     TTabsActiveTabPlugin,
@@ -27,7 +26,7 @@ import {
 //     TInstanceAccumulationPlugin,
 // } from '@soldy/plugins'
 
-import { TabsContribution, CollectionContribution } from '../../../contributions'
+import { TabsContribution, CollectionContribution, BatchExtensionContribution, SelectionExtensionContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 
 export const TabsDescriptor = defineComponent({
@@ -40,7 +39,11 @@ export const TabsDescriptor = defineComponent({
 	plugins: [
 		definePlugin({
 			ctor: TCollectionPlugin,
-			contribution: CollectionContribution,
+			contribution: [
+				CollectionContribution,
+				BatchExtensionContribution,
+				SelectionExtensionContribution,
+			],
 			options: {
 				extensions: {
 					plain: TPlainExtension<ITabItem>,
