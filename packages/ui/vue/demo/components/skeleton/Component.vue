@@ -4,7 +4,6 @@ import PanelDemo from '../../common/PanelDemo.vue';
 import { useEventLogger } from '../../common/useEventLogger';
 import type { EventLogEntry } from '../../common/EventLog.vue';
 import type {
-    TComponentSize,
     TComponentVariant,
     TSkeletonShape,
     TSkeletonAnimation,
@@ -13,7 +12,6 @@ import type {
 type Props = {
     visible?: boolean;
     rendered?: boolean;
-    size?: TComponentSize;
     variant?: TComponentVariant;
     shape?: TSkeletonShape;
     animation?: TSkeletonAnimation;
@@ -35,7 +33,6 @@ const { handlers } = useEventLogger(emit, emitsSkeleton);
         <Skeleton
             :visible="visible"
             :rendered="rendered"
-            :size="size"
             :variant="variant"
             :shape="shape"
             :animation="animation"

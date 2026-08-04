@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Skeleton, Button, CheckBox, Switch } from '@soldy/ui-vue';
-import { SIZES, VARIANTS } from '../../common/items';
 import type {
-    TComponentSize,
     TComponentVariant,
     TSkeletonShape,
     TSkeletonAnimation,
@@ -15,55 +13,38 @@ type Props = {
 
 const props = defineProps<Props>();
 
-const sizes: TComponentSize[] = SIZES;
-const variants: TComponentVariant[] = VARIANTS;
-const shapes: TSkeletonShape[] = ['rect', 'rounded', 'circle'];
-const animations: TSkeletonAnimation[] = ['pulse', 'wave', 'none'];
+const variations = [
+    { variant: 'normal' as TComponentVariant, shape: 'rect' as TSkeletonShape, animation: 'pulse' as TSkeletonAnimation },
+    { variant: 'accent' as TComponentVariant, shape: 'rounded' as TSkeletonShape, animation: 'wave' as TSkeletonAnimation },
+    { variant: 'positive' as TComponentVariant, shape: 'circle' as TSkeletonShape, animation: 'pulse' as TSkeletonAnimation },
+    { variant: 'negative' as TComponentVariant, shape: 'rect' as TSkeletonShape, animation: 'wave' as TSkeletonAnimation },
+    { variant: 'caution' as TComponentVariant, shape: 'rounded' as TSkeletonShape, animation: 'none' as TSkeletonAnimation },
+]
+const shapes: TSkeletonShape[] = ['rect', 'rounded', 'circle']
+const animations: TSkeletonAnimation[] = ['pulse', 'wave', 'none']
 </script>
 
 <template>
     <div class="sizes-demo">
-        <!-- Grid: sizes × variants -->
+        <!-- Variants grid -->
         <div class="sizes-demo__section">
-            <div class="sizes-demo__title">Sizes × Variants (rect, pulse)</div>
-            <div class="sizes-demo__grid">
-                <div class="sizes-demo__grid-header">
-                    <div
-                        class="sizes-demo__grid-cell sizes-demo__grid-cell--header"
-                    >
-                        Size / Variant
-                    </div>
-                    <div
-                        v-for="variant in variants"
-                        :key="variant"
-                        class="sizes-demo__grid-cell sizes-demo__grid-cell--header"
-                    >
-                        {{ variant }}
-                    </div>
-                </div>
-
+            <div class="sizes-demo__title">Variants (rect, pulse, w=120px, h=40px)</div>
+            <div class="sizes-demo__shapes">
                 <div
-                    v-for="size in sizes"
-                    :key="size"
-                    class="sizes-demo__grid-row"
+                    v-for="v in variations"
+                    :key="v.variant"
+                    class="sizes-demo__shape-item"
                 >
-                    <div
-                        class="sizes-demo__grid-cell sizes-demo__grid-cell--label"
-                    >
-                        {{ size }}
-                    </div>
-                    <div
-                        v-for="variant in variants"
-                        :key="variant"
-                        class="sizes-demo__grid-cell"
-                    >
-                        <Skeleton
-                            :visible="visible"
-                            :rendered="rendered"
-                            :size="size"
-                            :variant="variant"
-                        />
-                    </div>
+                    <div class="sizes-demo__shape-label">{{ v.variant }}</div>
+                    <Skeleton
+                        :visible="visible"
+                        :rendered="rendered"
+                        :variant="v.variant"
+                        :shape="v.shape"
+                        :animation="v.animation"
+                        width="120px"
+                        height="40px"
+                    />
                 </div>
             </div>
         </div>
@@ -129,7 +110,6 @@ const animations: TSkeletonAnimation[] = ['pulse', 'wave', 'none'];
                     <Skeleton
                         :visible="visible"
                         :rendered="rendered"
-                        size="lg"
                         variant="accent"
                         shape="rounded"
                         animation="wave"
