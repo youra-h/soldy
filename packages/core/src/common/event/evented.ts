@@ -1,4 +1,5 @@
-import { TEventEmitter, type TEventHandler } from './event-emitter'
+import { TEventEmitter } from './event-emitter'
+import type { TEventContext, TEventMiddleware } from './middleware'
 
 /**
  * Описание правила проброса одного события из источника.
@@ -43,6 +44,11 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _items: TEventEmitter<TEvents> = new TEventEmitter()
 
 	/**
+	 * Список зарегистрированных сквозных перехватчиков (middleware).
+	 */
+	private _middlewares: TEventMiddleware<TEvents>[] = []
+
+	/**
 	 * Счётчик глушения событий.
 	 * Значение > 0 означает, что генерация событий временно приостановлена.
 	 */
@@ -53,6 +59,63 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	get isMuted(): boolean {
 		return this._muteDepth > 0
+	}
+
+	/**
+	 * Регистрирует сквозной перехватчик для ВСЕХ событий.
+	 * Удобно для логирования, трейсинга, аналитики и проброса событий.
+	 *
+	 * @param middleware - Функция, вызываемая при каждом срабатывании событий.
+	 * @returns Функция отписки от перехватчика.
+	 *
+	 * @example
+	 * const unuse = events.use(({ event, args, type }) => {
+	 *     console.log(`[${type}] ${String(event)}`, args)
+	 * })
+	 *
+	 * @example
+	 * // Сквозной проброс всех событий из источника:
+	 * source.events.use(({ event, args }) => {
+	 *     this.events.emit(event, ...args)
+	 * })
+	 */
+	use(middleware: TEventMiddleware<TEvents>): () => void {
+		this._middlewares.push(middleware)
+
+		return () => {
+			const index = this._middlewares.indexOf(middleware)
+
+			if (index !== -1) {
+				this._middlewares.splice(index, 1)
+			}
+		}
+	}
+
+	/**
+	 * Внутренний метод для оповещения всех перехватчиков.
+	 * Выполняется за O(N) без рекурсии и лишних замыканий.
+	 */
+	private _notifyMiddlewares(
+		type: TEventContext['type'],
+		event: keyof TEvents,
+		args: any[],
+	): void {
+		if (this._middlewares.length === 0) return
+
+		const ctx: TEventContext<TEvents> = {
+			event,
+			args: args as Parameters<TEvents[keyof TEvents]>,
+			type,
+			timestamp: Date.now(),
+		}
+
+		for (let i = 0; i < this._middlewares.length; i++) {
+			try {
+				this._middlewares[i](ctx)
+			} catch (error) {
+				console.error(`Error in TEvented middleware for event "${String(event)}":`, error)
+			}
+		}
 	}
 
 	/**
@@ -134,6 +197,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	emit<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): void {
 		if (this.isMuted) return
+		this._notifyMiddlewares('emit', event, args)
 		this._items.emit(event, ...args)
 	}
 
@@ -147,6 +211,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	emitWithResult<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): boolean {
 		if (this.isMuted) return true
+		this._notifyMiddlewares('emitWithResult', event, args)
 		return this._items.emitWithResult(event, ...args)
 	}
 
@@ -159,6 +224,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		...args: Parameters<TEvents[K]>
 	): T | undefined {
 		if (this.isMuted) return undefined
+		this._notifyMiddlewares('emitResolve', event, args)
 		return this._items.emitResolve<T, K>(event, ...args)
 	}
 
@@ -168,6 +234,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	emitResolveAll<T, K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): T[] {
 		if (this.isMuted) return []
+		this._notifyMiddlewares('emitResolveAll', event, args)
 		return this._items.emitResolveAll<T, K>(event, ...args)
 	}
 

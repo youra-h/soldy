@@ -17,16 +17,19 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 			extensions: options?.extensions ?? ({} as Record<string, IExtension<T>>),
 		})
 
-		this._collection.engine.events.relay(this.events, [
-			'item:added', 'item:removed', 'item:updated',
-			'item:moved', 'change:items', 'change:count', 'reset',
-		])
+		// Сквозной проброс всех событий engine (item:added, item:removed, ...)
+		this._collection.engine.events.use(({ event, args }) => {
+			;(this.events as TEvented<any>).emit(event, ...args)
+		})
 
+		// Сквозной проброс всех событий расширений (items:added, change:selection, ...)
 		for (const ext of Object.values(this._collection.extensions)) {
 			const extEvents = (ext as any).events as TEvented<any> | undefined
-			if (extEvents?.relay) {
-				const eventKeys = Object.keys(extEvents as any) as string[]
-				;(this.events as TEvented<any>).relay(extEvents, eventKeys)
+
+			if (extEvents) {
+				extEvents.use(({ event, args }) => {
+					;(this.events as TEvented<any>).emit(event, ...args)
+				})
 			}
 		}
 
