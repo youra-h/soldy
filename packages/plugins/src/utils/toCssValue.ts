@@ -8,6 +8,10 @@ const CSS_UNIT_RE = /^-?\d+(\.\d+)?$/u
  * - `'auto'` → как есть
  */
 export function toCssValue(value: string | number): string {
+	if (value === 'auto') {
+		return value
+	}
+
 	if (typeof value === 'number') {
 		return `${value}px`
 	}

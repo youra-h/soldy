@@ -23,12 +23,12 @@ export class TSkeletonStylesPlugin extends TBasePlugin {
 	}
 
 	private _bindDimension(skeleton: ISkeleton, prop: 'width' | 'height'): void {
-		if (skeleton[prop] !== 'auto') {
+		if (!!skeleton[prop]) {
 			this._styles[prop] = toCssValue(skeleton[prop])
 		}
 
 		skeleton.events.on(`change:${prop}` as any, (value: number | string) => {
-			if (value === 'auto') {
+			if (!value) {
 				delete this._styles[prop]
 			} else {
 				this._styles[prop] = toCssValue(value)
