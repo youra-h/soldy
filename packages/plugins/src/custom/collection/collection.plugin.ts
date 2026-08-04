@@ -13,8 +13,15 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 	override install(ctx: IPluginContext, options?: ICollectionPluginOptions<T>): void {
 		super.install(ctx, options)
 
+		// Создаём экземпляры расширений из конструкторов
+		const extInstances: Record<string, IExtension<T>> = {}
+
+		for (const [name, Ctor] of Object.entries(options?.extensions ?? {})) {
+			extInstances[name] = new Ctor()
+		}
+
 		this._collection = new TCollection<T, Record<string, IExtension<T>>>({
-			extensions: options?.extensions ?? ({} as Record<string, IExtension<T>>),
+			extensions: extInstances,
 		})
 
 		// Сквозной проброс всех событий engine (item:added, item:removed, ...)
