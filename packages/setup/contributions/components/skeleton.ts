@@ -4,7 +4,7 @@ export const SkeletonContribution: IContribution = {
 	props: [
 		{ name: 'shape', type: String, triggers: ['change:shape'] },
 		{ name: 'animation', type: String, triggers: ['change:animation'] },
-		{ name: 'width', type: Number, triggers: ['change:width'] },
-		{ name: 'height', type: Number, triggers: ['change:height'] },
+		{ name: 'width', type: [Number, String], triggers: ['change:width'] },
+		{ name: 'height', type: [Number, String], triggers: ['change:height'] },
 	],
 }
