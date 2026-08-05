@@ -1,4 +1,5 @@
 export type { TCollectionServiceEvents } from './types'
 export { TCollectionPlugin } from './collection.plugin'
-export type { ICollectionPluginOptions } from './types'
+export type { ICollectionPluginOptions, TExtensionConstructor } from './types'
 export * from './engine'
+export * from './accumulation'
