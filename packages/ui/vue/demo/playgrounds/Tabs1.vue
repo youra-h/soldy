@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { TTabs } from '@soldy/core'
-import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
+import { Tabs, TabItem } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
@@ -10,15 +10,15 @@ tabs.variant = 'accent'
 tabs.view = 'contained'
 tabs.orientation = 'horizontal'
 
-tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
-tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
-tabs.collection.add({ text: 'Tab 3', value: 'tab3' })
-tabs.collection.add({ text: 'Tab 4', value: 'tab4' })
-tabs.collection.add({ text: 'Tab 5', value: 'tab5' })
-tabs.collection.add({ text: 'Tab 6', value: 'tab6' })
+// tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
+// tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
+// tabs.collection.add({ text: 'Tab 3', value: 'tab3' })
+// tabs.collection.add({ text: 'Tab 4', value: 'tab4' })
+// tabs.collection.add({ text: 'Tab 5', value: 'tab5' })
+// tabs.collection.add({ text: 'Tab 6', value: 'tab6' })
 
-const item2 = tabs.collection.findBy('value', 'tab1')!
-tabs.collection.setActive(item2)
+// const item2 = tabs.collection.findBy('value', 'tab1')!
+// tabs.collection.setActive(item2)
 
 // setTimeout(() => {
 // 	console.log('Moving Tab 1 to the end...')
@@ -45,16 +45,16 @@ const tabItems = ref([
 	<div style="display: flex; flex-direction: column; gap: 2rem">
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<DragAndDrop>
-				<Tabs >
+			<!-- <DragAndDrop> -->
+				<Tabs>
 					<TabItem text="Tab 1" value="t1" active />
-				<TabItem text="Tab 2" value="t2" />
-				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
+					<TabItem text="Tab 2" value="t2" />
+					<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
 					<template #panel:t1><p>Content 1</p></template>
 					<template #panel:t2><p>Content 2</p></template>
 					<template #panel:t3><p>Content 3</p></template>
 				</Tabs>
-			</DragAndDrop>
+			<!-- </DragAndDrop> -->
 		</div>
 
 		<!-- <section>
