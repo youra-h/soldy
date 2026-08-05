@@ -45,6 +45,10 @@ export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
 		}
 	}
 
+	get collection(): TCollection<T, any> {
+		return this._collection
+	}
+
 	get items(): readonly T[] {
 		return this._collection.engine
 	}
