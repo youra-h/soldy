@@ -6,11 +6,8 @@
  * живёт в своём UI-пакете и передаётся сюда через TElevatorFactory.
  */
 
-/** Родительская коллекция (ICollectionHost). Используется Tabs/ListBox + TabItem/ListItem. */
+/** Родительская коллекция. Ребёнок толкает { instance, bundle } наверх. */
 export const COLLECTION_ELEVATOR = 'soldy:collection'
-
-/** Плагины коллекции (TCollectionItemPlugins registrar). */
-export const COLLECTION_PLUGINS_ELEVATOR = 'soldy:collection-plugins'
 
 /** Drag-and-drop контекст. DragAndDrop → Collection. */
 export const DRAG_CONTEXT_ELEVATOR = 'soldy:drag-context'
