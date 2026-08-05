@@ -20,7 +20,7 @@ export default class TTabItem<
 	TEvents extends TTabItemEvents<any> = TTabItemEvents,
 >
 	extends TValueControl<string | number, TProps, TEvents, TTabItemStates>
-	implements ITabItem<TProps>
+	implements ITabItem<TProps, TEvents>
 {
 	static override baseClass = 's-tab-item'
 

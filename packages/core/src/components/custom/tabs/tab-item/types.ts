@@ -7,8 +7,6 @@ import type {
 import type { IStateUnit, TValuePayload } from '../../../../common'
 import type { IComponentViewOptions } from '../../../base/component-view'
 
-// ============ TTabItem (логика таба без коллекции) ============
-
 export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
@@ -32,8 +30,9 @@ export type TTabItemStates = TValueControlStates<string | number> & {
 
 export interface ITabItem<
 	TProps extends ITabItemProps = ITabItemProps,
+	TEvents extends TTabItemEvents<any> = TTabItemEvents,
 	TStates extends TTabItemStates = TTabItemStates,
-> extends IValueControl<string | number, TProps, TTabItemEvents<any>, TStates> {
+> extends IValueControl<string | number, TProps, TEvents, TStates> {
 	/** Текст таба */
 	text: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
