@@ -1,12 +1,6 @@
 import { TControl } from '../../base/control'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import {
-    TCollection,
-    TPlainExtension,
-    TBatchExtension,
-    TSelectionExtension,
-} from '../../base/collection'
 import TTabItem from './tab-item/tab-item.class'
 import type { ITabItem } from './tab-item/types'
 import { TEvented } from '../../../common'
@@ -21,12 +15,6 @@ import type {
     TTabsPosition,
     TTabsView,
 } from './types'
-
-type TTabsExtensions = {
-    plain: TPlainExtension<ITabItem>
-    batch: TBatchExtension<ITabItem>
-    selection: TSelectionExtension<ITabItem>
-}
 
 /**
  * Компонент табов (TTabs).
@@ -51,12 +39,6 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
     protected _view!: TTabsView
     protected _closable!: boolean
 
-    /**
-     * @deprecated Коллекция теперь создаётся плагином TCollectionPlugin.
-     * Поле оставлено для обратной совместимости — плагин устанавливает его через instance._collection.
-     */
-    protected _collection!: TCollection<ITabItem, TTabsExtensions>
-
     constructor(
         options: IComponentViewOptions<ITabsProps, TTabsStates> | Partial<ITabsProps> = {},
     ) {
@@ -64,15 +46,6 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
         const ctor = new.target as typeof TTabs
         const { props = {} } = TComponentView.prepareOptions<ITabsProps, TTabsStates>(options)
-
-        // @deprecated Коллекция создаётся плагином TCollectionPlugin
-        // this._collection = new TCollection<ITabItem, TTabsExtensions>({
-        //     extensions: {
-        //         plain: new TPlainExtension<ITabItem>(),
-        //         batch: new TBatchExtension<ITabItem>(),
-        //         selection: new TSelectionExtension<ITabItem>(),
-        //     },
-        // })
 
         this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation!)
         this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment!)
@@ -248,36 +221,32 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
     protected _applyClosable(value: boolean) {
         this._closable = value
-        this._collection.engine.forEach((item) => {
-            if (item instanceof TTabItem) {
-                item.notifyClosableChange(this._closable || item.closable)
-            }
-        })
+        // this._collection.engine.forEach((item) => {
+        //     if (item instanceof TTabItem) {
+        //         item.notifyClosableChange(this._closable || item.closable)
+        //     }
+        // })
     }
 
-    get activeItem(): ITabItem | undefined {
-        return this._collection.extensions.selection.getSelected()[0]
-    }
+    // get activeItem(): ITabItem | undefined {
+    //     return this._collection.extensions.selection.getSelected()[0]
+    // }
 
-    get count(): number {
-        return this._collection.engine.length
-    }
-
-    get collection(): TCollection<ITabItem, TTabsExtensions> {
-        return this._collection
-    }
+    // get count(): number {
+    //     return this._collection.engine.length
+    // }
 
     closeTab(item: ITabItem): boolean {
         if (!item.closable) return false
         ;(this.events as TEvented<TTabsEvents>).emit('item:close', item)
-        this._collection.extensions.plain.remove(item)
+        // this._collection.extensions.plain.remove(item)
         return true
     }
 
     hasEnabledTabs(): boolean {
-        return this._collection.engine.some(
-            (item) => !item.disabled && item.visible && item.rendered,
-        )
+        // return this._collection.engine.some(
+        //     (item) => !item.disabled && item.visible && item.rendered,
+        // )
     }
 
     override getProps(): ITabsProps {
