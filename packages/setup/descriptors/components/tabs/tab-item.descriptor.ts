@@ -1,22 +1,19 @@
 /**
- * Дескриптор TabItem (TTabItem).
+ * Дескриптор TabItem.
  *
- * Наследование:
- * - TabItemCustomDescriptor (tag, text, closable, value, name, disabled, focused, size, variant, ...)
- *
- * Композиция:
- * - ActivatableCollectionItemDescriptor → collection:* (active)
+ * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
+ * и добавляет tag, text, closable.
  */
 
 import { defineComponent } from '../../base'
 import { TTabItem } from '@soldy/core'
 import { TabItemContribution } from '../../../contributions'
-import { TabItemCustomDescriptor } from './tab-item-custom.descriptor'
+import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const TabItemDescriptor = defineComponent({
 	ctor: TTabItem,
 
-	extends: TabItemCustomDescriptor,
+	extends: ValueControlDescriptor,
 
 	contribution: TabItemContribution,
 })
