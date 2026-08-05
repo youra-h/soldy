@@ -1,6 +1,4 @@
 export type { IExtension, IExtensionContext } from './types'
-export { TPlainExtension } from './plain.extension'
-export type { TBatchEvents } from './batch.extension'
-export { TBatchExtension } from './batch.extension'
-export { TSelectionExtension } from './selection'
+export * from './plain'
+export * from './batch'
 export * from './selection'

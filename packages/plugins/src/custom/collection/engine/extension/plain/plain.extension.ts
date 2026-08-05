@@ -1,8 +1,8 @@
-import type { IExtension, IExtensionContext } from './types'
-import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../command'
+import type { IExtension, IExtensionContext } from '../types'
+import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../command'
 
 /**
- * PlainExtension — расширение для базовых операций с коллекцией
+ * TPlainExtension — расширение для базовых операций с коллекцией
  */
 export class TPlainExtension<T> implements IExtension<T> {
 	readonly name = 'plain'
