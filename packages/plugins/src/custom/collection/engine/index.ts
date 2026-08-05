@@ -11,7 +11,7 @@ export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCom
 
 // Расширения
 export type { IExtension, IExtensionContext } from './extension'
-export { TPlainExtension, TBatchExtension, TSelectionExtension } from './extension'
+export { TPlainExtension, TBatchExtension, TSelectionExtension, TActivationExtension } from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'
