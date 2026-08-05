@@ -7,33 +7,33 @@ import type {
 import type { IStateUnit, TValuePayload } from '../../../../common'
 import type { IComponentViewOptions } from '../../../base/component-view'
 
-// ============ TTabItemCustom (логика таба без коллекции) ============
+// ============ TTabItem (логика таба без коллекции) ============
 
-export type TTabItemCustomEvents<TTab = any> = TValueControlEvents<string | number> & {
+export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
 	/** close */
-	'close': (tab: TTab) => void
+	close: (tab: TTab) => void
 }
 
-export interface ITabItemCustomProps extends IValueControlProps<string | number> {
+export interface ITabItemProps extends IValueControlProps<string | number> {
 	/** Текст таба */
 	text?: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
 	closable?: boolean
 }
 
-export type TTabItemCustomStates = TValueControlStates<string | number> & {
+export type TTabItemStates = TValueControlStates<string | number> & {
 	text: IStateUnit<string>
 	closable: IStateUnit<boolean | undefined>
 }
 
-export interface ITabItemCustom<
-	TProps extends ITabItemCustomProps = ITabItemCustomProps,
-	TStates extends TTabItemCustomStates = TTabItemCustomStates,
-> extends IValueControl<string | number, TProps, TTabItemCustomEvents<any>, TStates> {
+export interface ITabItem<
+	TProps extends ITabItemProps = ITabItemProps,
+	TStates extends TTabItemStates = TTabItemStates,
+> extends IValueControl<string | number, TProps, TTabItemEvents<any>, TStates> {
 	/** Текст таба */
 	text: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
@@ -44,12 +44,4 @@ export interface ITabItemCustom<
 	setClosableResolver(resolver: () => boolean): void
 }
 
-// ============ TTabItem (коллекционный элемент) ============
-
-export type TTabItemOptions = IComponentViewOptions<ITabItemProps, TTabItemCustomStates>
-
-export type TTabItemEvents = TTabItemCustomEvents<ITabItem>
-
-export interface ITabItemProps extends ITabItemCustomProps {}
-
-export interface ITabItem extends ITabItemCustom<ITabItemProps> {}
+export type TTabItemOptions = IComponentViewOptions<ITabItemProps, TTabItemStates>
