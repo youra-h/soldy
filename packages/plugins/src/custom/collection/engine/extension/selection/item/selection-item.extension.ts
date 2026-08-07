@@ -1,4 +1,5 @@
 import type { TSelectionExtension } from '../selection.extension'
+import type { ISelectionItemExtension } from './types'
 
 /**
  * TSelectionItemExtension — stateless-делегат элемента для управления выборкой.
@@ -7,7 +8,7 @@ import type { TSelectionExtension } from '../selection.extension'
  *
  * @template TItem — тип элемента (пользователь может расширить)
  */
-export class TSelectionItemExtension<TItem extends object = any> {
+export class TSelectionItemExtension<TItem extends object = any> implements ISelectionItemExtension<TItem> {
 	constructor(
 		private readonly _owner: TItem,
 		private readonly _parent: TSelectionExtension<TItem>,

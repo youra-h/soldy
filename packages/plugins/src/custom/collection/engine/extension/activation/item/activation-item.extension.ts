@@ -1,4 +1,5 @@
 import type { TActivationExtension } from '../activation.extension'
+import type { IActivationItemExtension } from './types'
 
 /**
  * TActivationItemExtension — stateless-делегат элемента для управления активностью.
@@ -7,7 +8,7 @@ import type { TActivationExtension } from '../activation.extension'
  *
  * @template TItem — тип элемента (пользователь может расширить)
  */
-export class TActivationItemExtension<TItem extends object = any> {
+export class TActivationItemExtension<TItem extends object = any> implements IActivationItemExtension<TItem> {
 	constructor(
 		private readonly _owner: TItem,
 		private readonly _parent: TActivationExtension<TItem>,

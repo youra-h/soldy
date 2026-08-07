@@ -1,8 +1,8 @@
 import type { IExtension, IExtensionContext } from '../types'
-import type { TSelectionEvents, TSelectionMode } from './types'
+import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './types'
 import { TEvented } from '@soldy/core'
-import type { TConstructor } from '@soldy/core'
-import { TSelectionItemExtension } from './item'
+import type { IItemExtensionCtor } from '../types'
+import { TSelectionItemExtension, type ISelectionItemExtension } from './item'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -14,22 +14,24 @@ import { TSelectionItemExtension } from './item'
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
-export class TSelectionExtension<TItem extends object = any> implements IExtension<TItem> {
+export class TSelectionExtension<TItem extends object = any> implements IExtension<TItem>, ISelectionExtension<TItem> {
 	readonly name = 'selection'
 	readonly events = new TEvented<TSelectionEvents<TItem>>()
 
 	private ctx!: IExtensionContext<TItem>
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
-	private readonly _itemCtor?: TConstructor<TItem>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>>
 
-	constructor(options?: { itemCtor?: TConstructor<TItem> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 
 	/** Создаёт stateless-делегат для конкретного элемента */
-	createItem(owner: TItem): TSelectionItemExtension<TItem> {
-		return new TSelectionItemExtension(owner, this)
+	createItem(owner: TItem): ISelectionItemExtension<TItem> {
+		const Ctor = this._itemCtor ?? TSelectionItemExtension
+
+		return new Ctor(owner, this)
 	}
 
 	get mode(): TSelectionMode {

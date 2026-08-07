@@ -1,8 +1,8 @@
 import type { IExtension, IExtensionContext } from '../types'
-import type { TOrderEvents } from './types'
+import type { TOrderEvents, IOrderExtension } from './types'
 import { TEvented } from '@soldy/core'
-import type { TConstructor } from '@soldy/core'
-import { TOrderItemExtension } from './item'
+import type { IItemExtensionCtor } from '../types'
+import { TOrderItemExtension, type IOrderItemExtension } from './item'
 
 /**
  * TOrderExtension — расширение-наблюдатель за порядком элементов в коллекции.
@@ -13,20 +13,22 @@ import { TOrderItemExtension } from './item'
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
-export class TOrderExtension<TItem extends object = any> implements IExtension<TItem> {
+export class TOrderExtension<TItem extends object = any> implements IExtension<TItem>, IOrderExtension<TItem> {
 	readonly name = 'order'
 	readonly events = new TEvented<TOrderEvents>()
 
 	private _ctx!: IExtensionContext<TItem>
-	private readonly _itemCtor?: TConstructor<TItem>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>>
 
-	constructor(options?: { itemCtor?: TConstructor<TItem> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 
 	/** Создаёт stateless-делегат для конкретного элемента */
-	createItem(owner: TItem): TOrderItemExtension<TItem> {
-		return new TOrderItemExtension(owner, this)
+	createItem(owner: TItem): IOrderItemExtension<TItem> {
+		const Ctor = this._itemCtor ?? TOrderItemExtension
+
+		return new Ctor(owner, this)
 	}
 
 	install(ctx: IExtensionContext<TItem>): void {

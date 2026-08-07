@@ -1,4 +1,4 @@
-export type { IExtension, IExtensionContext } from './types'
+export type { IExtension, IExtensionContext, IItemExtension, IItemExtensionCtor, IExtensionItems } from './types'
 export * from './plain'
 export * from './batch'
 export * from './selection'

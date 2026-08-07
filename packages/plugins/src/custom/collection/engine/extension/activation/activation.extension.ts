@@ -1,8 +1,8 @@
 import type { IExtension, IExtensionContext } from '../types'
-import type { TActivationEvents } from './types'
-import { TActivationItemExtension } from './item'
+import type { TActivationEvents, IActivationExtension } from './types'
+import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TEvented } from '@soldy/core'
-import type { TConstructor } from '@soldy/core'
+import type { IItemExtensionCtor } from '../types'
 
 /**
  * TActivationExtension — расширение для управления активным элементом коллекции.
@@ -11,21 +11,25 @@ import type { TConstructor } from '@soldy/core'
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
-export class TActivationExtension<TItem extends object = any> implements IExtension<TItem> {
+export class TActivationExtension<
+	TItem extends object = any,
+> implements IExtension<TItem>, IActivationExtension<TItem> {
 	readonly name = 'activation'
 	readonly events = new TEvented<TActivationEvents<TItem>>()
 
 	private ctx!: IExtensionContext<TItem>
 	private _activeItem?: TItem
-	private readonly _itemCtor?: TConstructor<TItem>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>>
 
-	constructor(options?: { itemCtor?: TConstructor<TItem> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 
 	/** Создаёт stateless-делегат для конкретного элемента */
-	createItem(owner: TItem): TActivationItemExtension<TItem> {
-		return new TActivationItemExtension(owner, this)
+	createItem(owner: TItem): IActivationItemExtension<TItem> {
+		const Ctor = this._itemCtor ?? TActivationItemExtension
+
+		return new Ctor(owner, this)
 	}
 
 	get activeItem(): TItem | undefined {
