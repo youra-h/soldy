@@ -13,6 +13,10 @@ export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCom
 export type { IExtension, IExtensionContext } from './extension'
 export { TPlainExtension, TBatchExtension, TSelectionExtension, TActivationExtension, TOrderExtension } from './extension'
 
+// База
+export { TBaseExtension, TBaseItemExtension } from './extension/base'
+export type { IBaseItemExtensionOptions } from './extension/base'
+
 // Ядро
 export { TCollectionEngine } from './engine.class'
 export type { ICollectionEngine } from './types'

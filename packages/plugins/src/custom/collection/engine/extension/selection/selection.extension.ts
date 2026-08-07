@@ -1,8 +1,8 @@
-import type { IExtension, IExtensionContext } from '../types'
+import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
 import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './types'
-import { TEvented } from '@soldy/core'
-import type { IItemExtensionCtor } from '../types'
-import { TSelectionItemExtension, type ISelectionItemExtension } from './item'
+import type { ISelectionItemExtension } from './item'
+import { TSelectionItemExtension } from './item'
+import { TBaseItemExtension } from '../base-item-extension.class'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -14,24 +14,17 @@ import { TSelectionItemExtension, type ISelectionItemExtension } from './item'
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
-export class TSelectionExtension<TItem extends object = any> implements IExtension<TItem>, ISelectionExtension<TItem> {
+export class TSelectionExtension<TItem extends object = any>
+	extends TBaseItemExtension<TItem, ISelectionItemExtension<TItem>, TSelectionEvents<TItem>>
+	implements IExtension<TItem>, ISelectionExtension<TItem>
+{
 	readonly name = 'selection'
-	readonly events = new TEvented<TSelectionEvents<TItem>>()
 
-	private ctx!: IExtensionContext<TItem>
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
-	private readonly _itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>, ISelectionItemExtension<TItem>>
 
-	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>, ISelectionItemExtension<TItem>> }) {
-		this._itemCtor = options?.itemCtor
-	}
-
-	/** Создаёт stateless-делегат для конкретного элемента */
-	createItem(owner: TItem): ISelectionItemExtension<TItem> {
-		const Ctor = this._itemCtor ?? TSelectionItemExtension
-
-		return new Ctor(owner, this)
+	constructor(options?: IBaseItemExtensionOptions<TItem, ISelectionItemExtension<TItem>>) {
+		super(TSelectionItemExtension, options)
 	}
 
 	get mode(): TSelectionMode {
@@ -67,7 +60,7 @@ export class TSelectionExtension<TItem extends object = any> implements IExtensi
 	}
 
 	install(ctx: IExtensionContext<TItem>): void {
-		this.ctx = ctx
+		super.install(ctx)
 
 		ctx.engine.events.on('item:removed', (item: TItem) => {
 			if (this._selected.has(item)) {
@@ -88,7 +81,7 @@ export class TSelectionExtension<TItem extends object = any> implements IExtensi
 
 	select(item: TItem): void {
 		if (this._mode === 'none') return
-		if (!this.ctx.engine.includes(item)) return
+		if (!this._ctx.engine.includes(item)) return
 
 		if (!this.multiple) {
 			// снять выделение с предыдущего

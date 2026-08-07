@@ -1,51 +1,45 @@
-import type { IExtension, IExtensionContext } from '../types'
+import type { IExtension } from '../types'
 import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../command'
+import { TBaseExtension } from '../base-extension.class'
 
 /**
  * TPlainExtension — расширение для базовых операций с коллекцией
  */
-export class TPlainExtension<T> implements IExtension<T> {
+export class TPlainExtension<TItem extends object> extends TBaseExtension<TItem, {}> implements IExtension<TItem> {
 	readonly name = 'plain'
-
-	private ctx!: IExtensionContext<T>
-
-	install(ctx: IExtensionContext<T>): void {
-		this.ctx = ctx
+	insert(item: TItem, index: number = 0): void {
+		this._ctx.execute(new TInsertCommand(item, index))
 	}
 
-	insert(item: T, index: number = 0): void {
-		this.ctx.execute(new TInsertCommand(item, index))
+	remove(item: TItem): void {
+		this._ctx.execute(new TRemoveCommand(item))
 	}
 
-	remove(item: T): void {
-		this.ctx.execute(new TRemoveCommand(item))
+	update(item: TItem, changes: Partial<TItem>): void {
+		this._ctx.execute(new TUpdateCommand(item, changes))
 	}
 
-	update(item: T, changes: Partial<T>): void {
-		this.ctx.execute(new TUpdateCommand(item, changes))
+	move(item: TItem, newIndex: number, oldIndex?: number): void {
+		this._ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
 	}
 
-	move(item: T, newIndex: number, oldIndex?: number): void {
-		this.ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
+	getAll(): TItem[] {
+		return [...this._ctx.engine]
 	}
 
-	getAll(): T[] {
-		return [...this.ctx.engine]
+	find(predicate: (item: TItem) => boolean): TItem | undefined {
+		return this._ctx.engine.find(predicate)
 	}
 
-	find(predicate: (item: T) => boolean): T | undefined {
-		return this.ctx.engine.find(predicate)
+	filter(predicate: (item: TItem) => boolean): TItem[] {
+		return this._ctx.engine.filter(predicate)
 	}
 
-	filter(predicate: (item: T) => boolean): T[] {
-		return this.ctx.engine.filter(predicate)
-	}
-
-	get(index: number): T | undefined {
-		return this.ctx.engine[index]
+	get(index: number): TItem | undefined {
+		return this._ctx.engine[index]
 	}
 
 	get length(): number {
-		return this.ctx.engine.length
+		return this._ctx.engine.length
 	}
 }

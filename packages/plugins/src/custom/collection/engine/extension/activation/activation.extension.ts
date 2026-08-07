@@ -1,8 +1,7 @@
-import type { IExtension, IExtensionContext } from '../types'
+import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
-import { TEvented } from '@soldy/core'
-import type { IItemExtensionCtor } from '../types'
+import { TBaseItemExtension } from '../base-item-extension.class'
 
 /**
  * TActivationExtension — расширение для управления активным элементом коллекции.
@@ -11,33 +10,24 @@ import type { IItemExtensionCtor } from '../types'
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
-export class TActivationExtension<
-	TItem extends object = any,
-> implements IExtension<TItem>, IActivationExtension<TItem> {
+export class TActivationExtension<TItem extends object = any>
+	extends TBaseItemExtension<TItem, IActivationItemExtension<TItem>, TActivationEvents<TItem>>
+	implements IExtension<TItem>, IActivationExtension<TItem>
+{
 	readonly name = 'activation'
-	readonly events = new TEvented<TActivationEvents<TItem>>()
 
-	private ctx!: IExtensionContext<TItem>
 	private _activeItem?: TItem
-	private readonly _itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>, IActivationItemExtension<TItem>>
 
-	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>, IActivationItemExtension<TItem>> }) {
-		this._itemCtor = options?.itemCtor
-	}
-
-	/** Создаёт stateless-делегат для конкретного элемента */
-	createItem(owner: TItem): IActivationItemExtension<TItem> {
-		const Ctor = this._itemCtor ?? TActivationItemExtension
-
-		return new Ctor(owner, this)
+	constructor(options?: IBaseItemExtensionOptions<TItem, IActivationItemExtension<TItem>>) {
+		super(TActivationItemExtension, options)
 	}
 
 	get activeItem(): TItem | undefined {
 		return this._activeItem
 	}
 
-	install(ctx: IExtensionContext<TItem>): void {
-		this.ctx = ctx
+	override install(ctx: IExtensionContext<TItem>): void {
+		super.install(ctx)
 
 		ctx.engine.events.on('item:removed', (item: TItem) => {
 			if (this._activeItem === item) {
@@ -57,7 +47,7 @@ export class TActivationExtension<
 	 */
 	activate(item: TItem): void {
 		if (this._activeItem === item) return
-		if (!this.ctx.engine.includes(item)) return
+		if (!this._ctx.engine.includes(item)) return
 
 		const prev = this._activeItem
 
@@ -122,17 +112,17 @@ export class TActivationExtension<
 	 */
 	findActivatable(predicate?: (item: TItem) => boolean, fromItem?: TItem): TItem | undefined {
 		const check = predicate ?? (() => true)
-		const fromIndex = fromItem !== undefined ? this.ctx.engine.indexOf(fromItem) : -1
+		const fromIndex = fromItem !== undefined ? this._ctx.engine.indexOf(fromItem) : -1
 
 		// Сначала вперёд: fromIndex+1, fromIndex+2, ...
-		for (let i = fromIndex + 1; i < this.ctx.engine.length; i++) {
-			const item = this.ctx.engine[i]
+		for (let i = fromIndex + 1; i < this._ctx.engine.length; i++) {
+			const item = this._ctx.engine[i]
 			if (item && check(item)) return item
 		}
 
 		// Затем назад: fromIndex-1, fromIndex-2, ...
 		for (let i = fromIndex - 1; i >= 0; i--) {
-			const item = this.ctx.engine[i]
+			const item = this._ctx.engine[i]
 			if (item && check(item)) return item
 		}
 

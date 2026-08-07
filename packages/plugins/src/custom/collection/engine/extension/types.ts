@@ -20,6 +20,17 @@ export interface IExtension<T> {
 	install(ctx: IExtensionContext<T>): void
 }
 
+/**
+ * Опции конструктора для расширений с item-адаптерами.
+ */
+export interface IBaseItemExtensionOptions<
+	TItem extends object,
+	TItemExt extends IItemExtension<TItem>,
+> {
+	/** Пользовательский конструктор item-адаптера (если не указан — используется дефолтный). */
+	itemCtor?: IItemExtensionCtor<TItem, any, TItemExt>
+}
+
 // --- Контракты для расширений с item-адаптерами ---
 
 /**
