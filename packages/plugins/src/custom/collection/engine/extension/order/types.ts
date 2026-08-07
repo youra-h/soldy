@@ -8,7 +8,7 @@ export type TOrderEvents = {
 
 /** Контракт расширения порядка. Реализуется TOrderExtension. */
 export interface IOrderExtension<TItem extends object = any>
-	extends IExtension<TItem>, IExtensionItems<TItem> {
+	extends IExtension<TItem>, IExtensionItems<TItem, IOrderItemExtension<TItem>> {
 	/** События расширения: change:order. */
 	readonly events: TEvented<TOrderEvents>
 

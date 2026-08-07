@@ -18,9 +18,9 @@ export class TOrderExtension<TItem extends object = any> implements IExtension<T
 	readonly events = new TEvented<TOrderEvents>()
 
 	private _ctx!: IExtensionContext<TItem>
-	private readonly _itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>, IOrderItemExtension<TItem>>
 
-	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TOrderExtension<TItem>, IOrderItemExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 

@@ -33,19 +33,32 @@ export interface IItemExtension<TItem extends object = any> {}
  *
  * @param owner — элемент коллекции, для которого создаётся адаптер
  * @param parent — родительское расширение, к которому привязан адаптер
+ * @template TItem — тип элемента коллекции
+ * @template TParent — тип родительского расширения
+ * @template TItemExt — конкретный тип item-адаптера (возвращаемый)
  */
-export interface IItemExtensionCtor<TItem extends object = any, TParent = any> {
-	new (owner: TItem, parent: TParent): IItemExtension<TItem>
+export interface IItemExtensionCtor<
+	TItem extends object = any,
+	TParent = any,
+	TItemExt extends IItemExtension<TItem> = IItemExtension<TItem>,
+> {
+	new (owner: TItem, parent: TParent): TItemExt
 }
 
 /**
  * Примесь: расширение способно создавать item-адаптеры.
  * Не наследует IExtension — используется вместе с ним через множественное наследование.
+ *
+ * @template TItem — тип элемента коллекции
+ * @template TItemExt — конкретный тип item-адаптера (IActivationItemExtension, IOrderItemExtension, ...)
  */
-export interface IExtensionItems<TItem extends object = any> {
+export interface IExtensionItems<
+	TItem extends object = any,
+	TItemExt extends IItemExtension<TItem> = IItemExtension<TItem>,
+> {
 	/**
 	 * Создать item-адаптер для указанного элемента.
 	 * Вызывается для каждого элемента при его добавлении в коллекцию.
 	 */
-	createItem(owner: TItem): IItemExtension<TItem>
+	createItem(owner: TItem): TItemExt
 }

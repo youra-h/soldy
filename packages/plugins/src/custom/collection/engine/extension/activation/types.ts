@@ -10,7 +10,7 @@ export type TActivationEvents<TItem> = {
 
 /** Контракт расширения активации. Реализуется TActivationExtension. */
 export interface IActivationExtension<TItem extends object = any>
-	extends IExtension<TItem>, IExtensionItems<TItem> {
+	extends IExtension<TItem>, IExtensionItems<TItem, IActivationItemExtension<TItem>> {
 	/** События расширения: change:activation, item:activated, item:deactivated. */
 	readonly events: TEvented<TActivationEvents<TItem>>
 

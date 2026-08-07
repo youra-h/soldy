@@ -21,9 +21,9 @@ export class TSelectionExtension<TItem extends object = any> implements IExtensi
 	private ctx!: IExtensionContext<TItem>
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
-	private readonly _itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>, ISelectionItemExtension<TItem>>
 
-	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TSelectionExtension<TItem>, ISelectionItemExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 

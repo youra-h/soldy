@@ -11,7 +11,7 @@ export type TSelectionEvents<TItem> = {
 
 /** Контракт расширения выборки. Реализуется TSelectionExtension. */
 export interface ISelectionExtension<TItem extends object = any>
-	extends IExtension<TItem>, IExtensionItems<TItem> {
+	extends IExtension<TItem>, IExtensionItems<TItem, ISelectionItemExtension<TItem>> {
 	/** События расширения: change:selection, change:mode. */
 	readonly events: TEvented<TSelectionEvents<TItem>>
 

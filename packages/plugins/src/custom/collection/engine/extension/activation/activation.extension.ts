@@ -19,9 +19,9 @@ export class TActivationExtension<
 
 	private ctx!: IExtensionContext<TItem>
 	private _activeItem?: TItem
-	private readonly _itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>>
+	private readonly _itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>, IActivationItemExtension<TItem>>
 
-	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>> }) {
+	constructor(options?: { itemCtor?: IItemExtensionCtor<TItem, TActivationExtension<TItem>, IActivationItemExtension<TItem>> }) {
 		this._itemCtor = options?.itemCtor
 	}
 
