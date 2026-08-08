@@ -14,6 +14,7 @@ import {
 	TPlainExtension,
 	TBatchExtension,
 	TActivationExtension,
+	TOrderExtension,
 } from '@soldy/plugins'
 // import {
 //     TTabsLayoutPlugin,
@@ -26,7 +27,7 @@ import {
 //     TInstanceAccumulationPlugin,
 // } from '@soldy/plugins'
 
-import { TabsContribution, CollectionContribution, BatchExtensionContribution, ActivationExtensionContribution } from '../../../contributions'
+import { TabsContribution, CollectionContribution, BatchExtensionContribution, ActivationExtensionContribution, OrderExtensionContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 
 export const TabsDescriptor = defineComponent({
@@ -43,12 +44,14 @@ export const TabsDescriptor = defineComponent({
 				CollectionContribution,
 				BatchExtensionContribution,
 				ActivationExtensionContribution,
+				OrderExtensionContribution,
 			],
 			options: {
 				extensions: {
 					plain: TPlainExtension<ITabItem>,
 					batch: TBatchExtension<ITabItem>,
 					activation: TActivationExtension<ITabItem>,
+					order: TOrderExtension<ITabItem>,
 				},
 			},
 		}),

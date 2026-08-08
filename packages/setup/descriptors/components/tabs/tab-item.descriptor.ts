@@ -2,12 +2,13 @@
  * Дескриптор TabItem.
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
- * и добавляет tag, text, closable.
+ * и добавляет tag, text, closable + коллекционный плагин (active, order).
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent, definePlugin } from '../../base'
 import { TTabItem } from '@soldy/core'
-import { TabItemContribution } from '../../../contributions'
+import { TCollectionItemPlugin } from '@soldy/plugins'
+import { TabItemContribution, ActivationItemExtensionContribution, OrderItemExtensionContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const TabItemDescriptor = defineComponent({
@@ -16,4 +17,14 @@ export const TabItemDescriptor = defineComponent({
 	extends: ValueControlDescriptor,
 
 	contribution: TabItemContribution,
+
+	plugins: [
+		definePlugin({
+			ctor: TCollectionItemPlugin,
+			contribution: [
+				ActivationItemExtensionContribution,
+				OrderItemExtensionContribution,
+			],
+		}),
+	],
 })
