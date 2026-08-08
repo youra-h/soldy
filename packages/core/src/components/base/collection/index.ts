@@ -14,8 +14,8 @@ export type { IExtension, IExtensionContext } from './extension'
 export { TPlainExtension, TBatchExtension, TSelectionExtension, TActivationExtension, TOrderExtension } from './extension'
 
 // База
-export { TBaseExtension, TBaseItemExtension } from './extension/base'
-export type { IBaseItemExtensionOptions } from './extension/base'
+export { TBaseExtension, TBaseItemExtension } from './extension'
+export type { IBaseItemExtensionOptions } from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'

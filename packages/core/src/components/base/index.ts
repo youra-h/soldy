@@ -1,6 +1,7 @@
 export * from './entity'
 export * from './component'
 export * from './component-view'
+export * from './collection'
 export * from './interactive'
 export * from './stylable'
 export * from './control'
