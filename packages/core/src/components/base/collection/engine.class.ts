@@ -3,6 +3,19 @@ import type { ICommand } from './command'
 import type { TEngineEvents } from './types'
 import { TEvented } from '@soldy/core'
 
+// Список мутирующих методов массива JS, которые категорически нельзя вызывать напрямую
+const MUTATING_ARRAY_METHODS = new Set([
+	'push',
+	'pop',
+	'shift',
+	'unshift',
+	'splice',
+	'sort',
+	'reverse',
+	'fill',
+	'copyWithin',
+])
+
 export class TCollectionEngine<T> {
 	[index: number]: T
 
@@ -17,17 +30,29 @@ export class TCollectionEngine<T> {
 
 		return new Proxy(this, {
 			get(target, prop, receiver) {
+				// 1. Если свойство или метод существует прямо в TCollectionEngine (execute, batch, events, _storage) — возвращаем его
 				if (prop in target) {
 					return Reflect.get(target, prop, receiver)
 				}
 
+				// 2. Блокировка мутирующих методов массива
+				if (typeof prop === 'string' && MUTATING_ARRAY_METHODS.has(prop)) {
+					throw new Error(
+						`[TCollectionEngine] Array mutation method "${prop}()" is forbidden on engine. ` +
+							`Use commands via engine.execute() or extension methods (e.g. extension.insert()) instead.`,
+					)
+				}
+
+				// 3. Чтение по числовому индексу (engine[0], engine[1]...)
 				if (typeof prop === 'string' && /^\d+$/.test(prop)) {
 					return target._storage.items[Number(prop)]
 				}
 
+				// 4. Безопасные методы чтения и свойства массива storage.items (length, find, filter, map, includes, Symbol.iterator и т.д.)
 				const items = target._storage.items
 				const value = Reflect.get(items, prop)
 
+				// Если метод массива (например, items.find, items.filter, items.slice)
 				if (typeof value === 'function') {
 					return value.bind(items)
 				}

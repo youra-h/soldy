@@ -24,8 +24,16 @@ export type TEngineEvents<T> = {
 	reset: () => void
 }
 
+/**
+ * ICollectionEngine предоставляет ТОЛЬКО доступ для чтения к элементам коллекции
+ * через интерфейс ReadonlyArray<T> + методы выполнения команд и батчинга.
+ */
 export interface ICollectionEngine<T> extends ReadonlyArray<T> {
 	readonly events: TEvented<TEngineEvents<T>>
+
+	/** Единственный легитимный способ изменить состояние через Engine */
 	execute(command: ICommand<T>): void
+
+	/** Пакетное выполнение команд */
 	batch(action: () => void): void
 }
