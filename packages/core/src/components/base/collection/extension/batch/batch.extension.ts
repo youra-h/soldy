@@ -11,6 +11,7 @@ export class TBatchExtension<TItem extends object>
 	implements IExtension<TItem>
 {
 	readonly name = 'batch'
+
 	add(items: TItem[]): void {
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
