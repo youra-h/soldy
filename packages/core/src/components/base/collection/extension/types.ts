@@ -1,10 +1,9 @@
 import type { ICommand } from '../command'
-import type { TCollection } from '../collection.class'
 import type { ICollectionEngine } from '../types'
 
 export interface IExtensionContext<T> {
 	readonly engine: ICollectionEngine<T>
-	readonly collection: TCollection<T, any>
+	readonly extensions: Record<string, IExtension<T>>
 	execute(command: ICommand<T>): void
 	batch(action: () => void): void
 }

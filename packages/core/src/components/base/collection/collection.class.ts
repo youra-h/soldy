@@ -33,7 +33,7 @@ export class TCollection<
 	private _createContext(): IExtensionContext<T> {
 		return {
 			engine: this.engine,
-			collection: this as any,
+			extensions: this.extensions,
 			execute: (cmd: ICommand<T>) => this.engine.execute(cmd),
 			batch: (action: () => void) => this.engine.batch(action),
 		}
