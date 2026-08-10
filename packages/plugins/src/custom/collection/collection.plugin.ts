@@ -5,7 +5,7 @@ import type { IExtension, TEngineEvents } from './engine'
 import { TEvented } from '@soldy/core'
 import type { ICollectionPluginOptions } from './types'
 
-export class TCollectionPlugin<T> extends TBasePlugin<any, TEngineEvents<T>> {
+export class TCollectionPlugin<T extends object> extends TBasePlugin<any, TEngineEvents<T>> {
 	static readonly namespace = Symbol('collection')
 
 	private _collection!: TCollection<T, any>

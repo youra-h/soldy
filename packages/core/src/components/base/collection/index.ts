@@ -23,3 +23,6 @@ export type { ICollectionEngine } from './types'
 
 // Фасад
 export { TCollection } from './collection.class'
+
+// Контекст
+export { TItemContext, TItemContextRegistry } from './context'
