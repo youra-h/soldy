@@ -6,7 +6,6 @@ describe('TSkeleton', () => {
 	it('should create with default values', () => {
 		const skeleton = new TSkeleton()
 
-		expect(skeleton.size).toBe('normal')
 		expect(skeleton.variant).toBe('normal')
 		expect(skeleton.shape).toBe('rounded')
 		expect(skeleton.animation).toBe('pulse')
@@ -16,7 +15,6 @@ describe('TSkeleton', () => {
 
 	it('should create with custom props', () => {
 		const skeleton = new TSkeleton({
-			size: 'lg',
 			variant: 'accent',
 			shape: 'circle',
 			animation: 'wave',
@@ -24,7 +22,6 @@ describe('TSkeleton', () => {
 			height: 60,
 		})
 
-		expect(skeleton.size).toBe('lg')
 		expect(skeleton.variant).toBe('accent')
 		expect(skeleton.shape).toBe('circle')
 		expect(skeleton.animation).toBe('wave')
@@ -32,14 +29,6 @@ describe('TSkeleton', () => {
 		expect(skeleton.height).toBe(60)
 	})
 
-	it('should change size', () => {
-		const skeleton = new TSkeleton()
-
-		expect(skeleton.size).toBe('normal')
-
-		skeleton.size = 'xl'
-		expect(skeleton.size).toBe('xl')
-	})
 
 	it('should change shape', () => {
 		const skeleton = new TSkeleton()
@@ -81,33 +70,22 @@ describe('TSkeleton', () => {
 		const skeleton = new TSkeleton()
 		const events: string[] = []
 
-		skeleton.events.on('change:size', () => events.push('size'))
 		skeleton.events.on('change:shape', () => events.push('shape'))
 		skeleton.events.on('change:animation', () => events.push('animation'))
 		skeleton.events.on('change:width', () => events.push('width'))
 		skeleton.events.on('change:height', () => events.push('height'))
 
-		skeleton.size = 'sm'
 		skeleton.shape = 'circle'
 		skeleton.animation = 'wave'
 		skeleton.width = 100
 		skeleton.height = 50
 
-		expect(events).toEqual(['size', 'shape', 'animation', 'width', 'height'])
+		expect(events).toEqual(['shape', 'animation', 'width', 'height'])
 	})
 
 	it('should have base class', () => {
 		const skeleton = new TSkeleton()
 		expect(skeleton.classes.base).toBe('s-skeleton')
-	})
-
-	it('should have size class', () => {
-		const skeleton = new TSkeleton()
-		expect(skeleton.classes.has('--size-normal')).toBe(true)
-
-		skeleton.size = 'lg'
-		expect(skeleton.classes.has('--size-lg')).toBe(true)
-		expect(skeleton.classes.has('--size-normal')).toBe(false)
 	})
 
 	it('should have shape class', () => {
