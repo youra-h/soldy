@@ -6,7 +6,7 @@ import {
 	TSelectionExtension,
 	TOrderExtension,
 	TItemContextRegistry,
-	TBaseItemExtension,
+	TBaseOwnerItemExtension,
 } from '@soldy/core'
 import type {
 	IExtension,
@@ -41,7 +41,7 @@ class TCustomItemExtension implements ICustomItemExtension {
 }
 
 class TCustomExtension
-	extends TBaseItemExtension<Item, ICustomItemExtension, {}>
+	extends TBaseOwnerItemExtension<Item, ICustomItemExtension, {}>
 	implements IExtension<Item>, IExtensionItems<Item, ICustomItemExtension>
 {
 	readonly name = 'customFeature'

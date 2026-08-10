@@ -1,7 +1,7 @@
 import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
-import { TBaseItemExtension } from '../base-item-extension.class'
+import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 
 /**
  * TActivationExtension — расширение для управления активным элементом коллекции.
@@ -11,7 +11,7 @@ import { TBaseItemExtension } from '../base-item-extension.class'
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
 export class TActivationExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, IActivationItemExtension<TItem>, TActivationEvents<TItem>>
+	extends TBaseOwnerItemExtension<TItem, IActivationItemExtension<TItem>, TActivationEvents<TItem>>
 	implements IExtension<TItem>, IActivationExtension<TItem>
 {
 	readonly name = 'activation' as const

@@ -2,7 +2,7 @@ import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '.
 import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './types'
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
-import { TBaseItemExtension } from '../base-item-extension.class'
+import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -15,7 +15,7 @@ import { TBaseItemExtension } from '../base-item-extension.class'
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
 export class TSelectionExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, ISelectionItemExtension<TItem>, TSelectionEvents<TItem>>
+	extends TBaseOwnerItemExtension<TItem, ISelectionItemExtension<TItem>, TSelectionEvents<TItem>>
 	implements IExtension<TItem>, ISelectionExtension<TItem>
 {
 	readonly name = 'selection' as const

@@ -2,7 +2,7 @@ import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '.
 import type { TOrderEvents, IOrderExtension } from './types'
 import type { IOrderItemExtension } from './item'
 import { TOrderItemExtension } from './item'
-import { TBaseItemExtension } from '../base-item-extension.class'
+import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 
 /**
  * TOrderExtension — расширение-наблюдатель за порядком элементов в коллекции.
@@ -14,7 +14,7 @@ import { TBaseItemExtension } from '../base-item-extension.class'
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
 export class TOrderExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, IOrderItemExtension<TItem>, TOrderEvents>
+	extends TBaseOwnerItemExtension<TItem, IOrderItemExtension<TItem>, TOrderEvents>
 	implements IExtension<TItem>, IOrderExtension<TItem>
 {
 	readonly name = 'order' as const

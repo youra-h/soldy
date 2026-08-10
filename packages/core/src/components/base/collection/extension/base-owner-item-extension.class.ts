@@ -14,7 +14,7 @@ import { TBaseExtension } from './base-extension.class'
  * @template TItemExt — конкретный тип item-адаптера
  * @template TEvents  — тип событий расширения
  */
-export abstract class TBaseItemExtension<
+export abstract class TBaseOwnerItemExtension<
 	TItem extends object,
 	TItemExt extends IItemExtension<TItem>,
 	TEvents extends Record<string, (...args: any) => any>,
