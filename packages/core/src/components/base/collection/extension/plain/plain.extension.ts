@@ -6,7 +6,7 @@ import { TBaseExtension } from '../base-extension.class'
  * TPlainExtension — расширение для базовых операций с коллекцией
  */
 export class TPlainExtension<TItem extends object> extends TBaseExtension<TItem, {}> implements IExtension<TItem> {
-	readonly name = 'plain'
+	readonly name = 'plain' as const
 	insert(item: TItem, index: number = 0): void {
 		this._ctx.execute(new TInsertCommand(item, index))
 	}

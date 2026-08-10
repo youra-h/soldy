@@ -17,7 +17,7 @@ export class TOrderExtension<TItem extends object = any>
 	extends TBaseItemExtension<TItem, IOrderItemExtension<TItem>, TOrderEvents>
 	implements IExtension<TItem>, IOrderExtension<TItem>
 {
-	readonly name = 'order'
+	readonly name = 'order' as const
 
 	constructor(options?: IBaseItemExtensionOptions<TItem, IOrderItemExtension<TItem>>) {
 		super(TOrderItemExtension, options)

@@ -18,7 +18,7 @@ export class TSelectionExtension<TItem extends object = any>
 	extends TBaseItemExtension<TItem, ISelectionItemExtension<TItem>, TSelectionEvents<TItem>>
 	implements IExtension<TItem>, ISelectionExtension<TItem>
 {
-	readonly name = 'selection'
+	readonly name = 'selection' as const
 
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'

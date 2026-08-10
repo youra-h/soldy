@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollection, TPlainExtension, TActivationExtension, TSelectionExtension } from '@soldy/core'
+import {
+	TCollection,
+	TPlainExtension,
+	TActivationExtension,
+	TSelectionExtension,
+	TItemContextRegistry,
+} from '@soldy/core'
 
 type Item = { id: number; name: string }
 
@@ -111,5 +117,97 @@ describe('TCollection', () => {
 		})
 
 		expect(col.engine.length).toBe(0)
+	})
+
+	// --- .use() — fluent-добавление расширений ---
+
+	it('use: добавляет расширение после создания', () => {
+		const col = new TCollection<Item>()
+			.use(new TPlainExtension<Item>())
+
+		expect(col.engine.length).toBe(0)
+		expect(col.extensions.plain).toBeDefined()
+	})
+
+	it('use: цепочка добавляет несколько расширений с сохранением типов', () => {
+		const col = new TCollection<Item>()
+			.use(new TPlainExtension<Item>())
+			.use(new TActivationExtension<Item>())
+			.use(new TSelectionExtension<Item>())
+
+		const item: Item = { id: 1, name: 'a' }
+
+		col.extensions.plain.insert(item)
+		col.extensions.activation.activate(item)
+		col.extensions.selection.select(item)
+
+		expect(col.engine.length).toBe(1)
+		expect(col.extensions.activation.isActive(item)).toBe(true)
+		expect(col.extensions.selection.isSelected(item)).toBe(true)
+	})
+
+	it('use: install вызывается при добавлении', () => {
+		const col = new TCollection<Item>()
+			.use(new TPlainExtension<Item>())
+
+		// plain готов к работе сразу после .use()
+		col.extensions.plain.insert({ id: 1, name: 'a' })
+
+		expect(col.engine.length).toBe(1)
+	})
+
+	it('use: возвращает this (тот же объект)', () => {
+		const col = new TCollection<Item>()
+
+		const result = col.use(new TPlainExtension<Item>())
+
+		expect(result).toBe(col)
+	})
+
+	it('use: расширения через конструктор + .use() работают вместе', () => {
+		const plain = new TPlainExtension<Item>()
+
+		const col = new TCollection<Item, { plain: TPlainExtension<Item> }>({
+			extensions: { plain },
+		}).use(new TActivationExtension<Item>())
+
+		const item: Item = { id: 1, name: 'a' }
+
+		col.extensions.plain.insert(item)
+		col.extensions.activation.activate(item)
+
+		expect(col.extensions.activation.activeItem).toBe(item)
+	})
+
+	it('use: события работают после добавления через .use()', () => {
+		const col = new TCollection<Item>()
+			.use(new TPlainExtension<Item>())
+
+		const added = vi.fn()
+
+		col.engine.events.on('item:added', added)
+		col.extensions.plain.insert({ id: 1, name: 'a' })
+
+		expect(added).toHaveBeenCalledOnce()
+	})
+
+	it('use: TItemContextRegistry работает с .use() расширениями', () => {
+		const col = new TCollection<Item>()
+			.use(new TPlainExtension<Item>())
+			.use(new TActivationExtension<Item>())
+
+		const registry = new TItemContextRegistry(col.extensions)
+		const item: Item = { id: 1, name: 'test' }
+
+		col.extensions.plain.insert(item)
+
+		const ctx = registry.get(item)
+
+		expect(ctx.adapters.activation).toBeDefined()
+		expect(ctx.adapters.activation.active).toBe(false)
+
+		ctx.adapters.activation.active = true
+
+		expect(col.extensions.activation.isActive(item)).toBe(true)
 	})
 })

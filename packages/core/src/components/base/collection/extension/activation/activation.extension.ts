@@ -14,7 +14,7 @@ export class TActivationExtension<TItem extends object = any>
 	extends TBaseItemExtension<TItem, IActivationItemExtension<TItem>, TActivationEvents<TItem>>
 	implements IExtension<TItem>, IActivationExtension<TItem>
 {
-	readonly name = 'activation'
+	readonly name = 'activation' as const
 
 	private _activeItem?: TItem
 

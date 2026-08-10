@@ -10,7 +10,7 @@ export class TBatchExtension<TItem extends object>
 	extends TBaseExtension<TItem, TBatchEvents<TItem>>
 	implements IExtension<TItem>
 {
-	readonly name = 'batch'
+	readonly name = 'batch' as const
 
 	add(items: TItem[]): void {
 		this._ctx.batch(() => {
