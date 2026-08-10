@@ -1,4 +1,4 @@
-import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
+import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } from '../types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
@@ -18,7 +18,7 @@ export class TActivationExtension<TItem extends object = any>
 
 	private _activeItem?: TItem
 
-	constructor(options?: IBaseItemExtensionOptions<TItem, IActivationItemExtension<TItem>>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IActivationItemExtension<TItem>>) {
 		super(TActivationItemExtension, options)
 	}
 

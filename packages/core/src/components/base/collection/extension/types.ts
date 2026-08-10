@@ -22,7 +22,7 @@ export interface IExtension<T> {
 /**
  * Опции конструктора для расширений с item-адаптерами.
  */
-export interface IBaseItemExtensionOptions<
+export interface IBaseOwnerItemExtensionOptions<
 	TItem extends object,
 	TItemExt extends IItemExtension<TItem>,
 > {

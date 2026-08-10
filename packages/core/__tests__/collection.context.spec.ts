@@ -12,7 +12,7 @@ import type {
 	IExtension,
 	IItemExtension,
 	IExtensionItems,
-	IBaseItemExtensionOptions,
+	IBaseOwnerItemExtensionOptions,
 	TExtractItemAdapters,
 } from '@soldy/core'
 
@@ -48,7 +48,7 @@ class TCustomExtension
 
 	private _activeItem?: Item
 
-	constructor(options?: IBaseItemExtensionOptions<Item, ICustomItemExtension>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<Item, ICustomItemExtension>) {
 		super(TCustomItemExtension, options)
 	}
 

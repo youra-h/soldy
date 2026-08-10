@@ -15,7 +15,7 @@ export { TPlainExtension, TBatchExtension, TSelectionExtension, TActivationExten
 
 // База
 export { TBaseExtension, TBaseItemExtension, TBaseOwnerItemExtension } from './extension'
-export type { IBaseItemExtensionOptions } from './extension'
+export type { IBaseOwnerItemExtensionOptions } from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'

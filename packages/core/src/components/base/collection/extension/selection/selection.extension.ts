@@ -1,4 +1,4 @@
-import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
+import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } from '../types'
 import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './types'
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
@@ -23,7 +23,7 @@ export class TSelectionExtension<TItem extends object = any>
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
 
-	constructor(options?: IBaseItemExtensionOptions<TItem, ISelectionItemExtension<TItem>>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectionItemExtension<TItem>>) {
 		super(TSelectionItemExtension, options)
 	}
 

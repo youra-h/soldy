@@ -1,4 +1,4 @@
-import type { IExtension, IExtensionContext, IBaseItemExtensionOptions } from '../types'
+import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } from '../types'
 import type { TOrderEvents, IOrderExtension } from './types'
 import type { IOrderItemExtension } from './item'
 import { TOrderItemExtension } from './item'
@@ -19,7 +19,7 @@ export class TOrderExtension<TItem extends object = any>
 {
 	readonly name = 'order' as const
 
-	constructor(options?: IBaseItemExtensionOptions<TItem, IOrderItemExtension<TItem>>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IOrderItemExtension<TItem>>) {
 		super(TOrderItemExtension, options)
 	}
 

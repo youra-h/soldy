@@ -2,7 +2,7 @@ import type {
 	IItemExtension,
 	IItemExtensionCtor,
 	IExtensionItems,
-	IBaseItemExtensionOptions,
+	IBaseOwnerItemExtensionOptions,
 } from './types'
 import { TBaseExtension } from './base-extension.class'
 
@@ -26,7 +26,7 @@ export abstract class TBaseOwnerItemExtension<
 
 	constructor(
 		private readonly _defaultItemCtor: IItemExtensionCtor<TItem, any, TItemExt>,
-		options?: IBaseItemExtensionOptions<TItem, TItemExt>,
+		options?: IBaseOwnerItemExtensionOptions<TItem, TItemExt>,
 	) {
 		super()
 		this._itemCtor = options?.itemCtor

@@ -4,7 +4,7 @@ export type {
 	IItemExtension,
 	IItemExtensionCtor,
 	IExtensionItems,
-	IBaseItemExtensionOptions,
+	IBaseOwnerItemExtensionOptions,
 } from './types'
 export { TBaseExtension } from './base-extension.class'
 export { TBaseItemExtension } from './base-item-extension.class'
