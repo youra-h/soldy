@@ -1,5 +1,6 @@
 import type { TOrderExtension } from '../order.extension'
 import type { IOrderItemExtension } from './types'
+import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
  * TOrderItemExtension — stateless-делегат элемента для доступа к order.
@@ -8,12 +9,10 @@ import type { IOrderItemExtension } from './types'
  *
  * @template TItem — тип элемента (пользователь может расширить)
  */
-export class TOrderItemExtension<TItem extends object = any> implements IOrderItemExtension<TItem> {
-	constructor(
-		private readonly _owner: TItem,
-		private readonly _parent: TOrderExtension<TItem>,
-	) {}
-
+export class TOrderItemExtension<TItem extends object = any>
+	extends TBaseItemExtension<TItem, TOrderExtension<TItem>>
+	implements IOrderItemExtension<TItem>
+{
 	/**
 	 * Порядковый номер элемента в коллекции.
 	 * Вычисляется на лету через родительский TOrderExtension.

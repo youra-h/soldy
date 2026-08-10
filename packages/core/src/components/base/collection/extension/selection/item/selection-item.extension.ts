@@ -1,5 +1,6 @@
 import type { TSelectionExtension } from '../selection.extension'
 import type { ISelectionItemExtension } from './types'
+import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
  * TSelectionItemExtension — stateless-делегат элемента для управления выборкой.
@@ -8,12 +9,10 @@ import type { ISelectionItemExtension } from './types'
  *
  * @template TItem — тип элемента (пользователь может расширить)
  */
-export class TSelectionItemExtension<TItem extends object = any> implements ISelectionItemExtension<TItem> {
-	constructor(
-		private readonly _owner: TItem,
-		private readonly _parent: TSelectionExtension<TItem>,
-	) {}
-
+export class TSelectionItemExtension<TItem extends object = any>
+	extends TBaseItemExtension<TItem, TSelectionExtension<TItem>>
+	implements ISelectionItemExtension<TItem>
+{
 	/** Выбран ли элемент. Вычисляется на лету через родительский TSelectionExtension. */
 	get selected(): boolean {
 		return this._parent.isSelected(this._owner)
