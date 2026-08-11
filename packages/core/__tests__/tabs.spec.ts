@@ -491,4 +491,54 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		expect(ctx.adapters.activation.active).toBe(true)
 		expect(collection.extensions.activation.isActive(tab)).toBe(true)
 	})
+
+	// --- TTabItemExtension.close() через контекст ---
+
+	it('TTabItemExtension.close() удаляет таб и эмитит item:close', () => {
+		const tabs = new TTabs({ closable: true })
+		const { collection } = createTabsCollection(tabs)
+
+		const tab1 = createTab('Tab 1')
+		const tab2 = createTab('Tab 2')
+
+		collection.extensions.plain.insert(tab1)
+		collection.extensions.plain.insert(tab2)
+
+		const onClose = vi.fn()
+		collection.extensions.tabs.events.on('item:close', onClose)
+
+		const registry = new TItemContextRegistry(
+			collection.extensions as unknown as Record<string, any>,
+		)
+
+		// Получаем адаптер и вызываем close()
+		const ctx = registry.get(tab1)
+		ctx.adapters.tabs.close()
+
+		expect(onClose).toHaveBeenCalledWith(tab1)
+		expect(collection.engine.length).toBe(1)
+		expect(collection.engine.includes(tab1)).toBe(false)
+		expect(collection.engine.includes(tab2)).toBe(true)
+	})
+
+	it('TTabItemExtension.close() не удаляет не-closable таб', () => {
+		const tabs = new TTabs({ closable: false })
+		const { collection } = createTabsCollection(tabs)
+
+		const tab = createTab('Tab')
+		collection.extensions.plain.insert(tab)
+
+		const onClose = vi.fn()
+		collection.extensions.tabs.events.on('item:close', onClose)
+
+		const registry = new TItemContextRegistry(
+			collection.extensions as unknown as Record<string, any>,
+		)
+		const ctx = registry.get(tab)
+
+		ctx.adapters.tabs.close()
+
+		expect(onClose).not.toHaveBeenCalled()
+		expect(collection.engine.length).toBe(1)
+	})
 })
