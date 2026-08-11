@@ -22,4 +22,10 @@ export class TTabItemExtension<TItem extends ITabItem = ITabItem, TParent = any>
 	get closable(): boolean {
 		return this._owner.closable ?? (this._parent as any).closable
 	}
+
+	close(): void {
+		if (this.closable) {
+			this._parent.closeTab(this._owner)
+		}
+	}
 }

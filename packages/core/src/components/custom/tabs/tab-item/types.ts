@@ -12,8 +12,6 @@ export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & 
 	'change:text': (payload: TValuePayload<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
-	/** close */
-	close: (tab: TTab) => void
 }
 
 export interface ITabItemProps extends IValueControlProps<string | number> {
@@ -37,10 +35,6 @@ export interface ITabItem<
 	text: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
 	closable?: boolean | undefined
-	/** Закрыть таб (emit close event) */
-	close(): void
-	/** Инжектирует резолвер для наследования через TTabs */
-	setClosableResolver(resolver: () => boolean): void
 }
 
 export type TTabItemOptions = IComponentViewOptions<ITabItemProps, TTabItemStates>

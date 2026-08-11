@@ -6,5 +6,5 @@ export const TabItemContribution: IContribution = {
 		{ name: 'text', type: String, triggers: ['change:text'] },
 		{ name: 'closable', type: Boolean, triggers: ['change:closable'] },
 	],
-	events: ['close'],
+	// events: ['close'],
 }

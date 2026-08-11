@@ -3,12 +3,7 @@ import type { IComponentViewOptions } from '../../../base/component-view'
 import { TComponentView } from '../../../base/component-view'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
-import type {
-	ITabItem,
-	ITabItemProps,
-	TTabItemEvents,
-	TTabItemStates,
-} from './types'
+import type { ITabItem, ITabItemProps, TTabItemEvents, TTabItemStates } from './types'
 
 /**
  * Кастомная логика элемента таба (без коллекционной части).
@@ -33,9 +28,7 @@ export default class TTabItem<
 		tag: 'button',
 	}
 
-	constructor(
-		options: IComponentViewOptions<TProps, TTabItemStates> | Partial<TProps> = {},
-	) {
+	constructor(options: IComponentViewOptions<TProps, TTabItemStates> | Partial<TProps> = {}) {
 		super(options)
 
 		const ctor = new.target as typeof TTabItem
@@ -65,8 +58,6 @@ export default class TTabItem<
 
 		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
 			this._classes.toggle(`--closable`, !!payload.newValue)
-
-			this.notifyClosableChange(payload.newValue)
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
@@ -98,25 +89,6 @@ export default class TTabItem<
 		if (this._states.closable.rawValue === value || this.disabled) return
 
 		this._states.closable.value = value
-	}
-
-	/** Инжектируется из TTabs при добавлении таба в коллекцию */
-	setClosableResolver(resolver: () => boolean): void {
-		;(this._states.closable as TStateUnit<boolean | undefined>).setResolver(
-			(current) => current ?? resolver() ?? false,
-		)
-	}
-
-	/**
-	 * Уведомляет UI об изменении closable, чтобы отобразить или скрыть крестик. Вызывается при изменении локального closable или при изменении родительского (через resolved).
-	 * @param value Новое значение closable, которое нужно отразить в UI (например, показать или скрыть крестик).
-	 */
-	notifyClosableChange(value: boolean | undefined) {
-		;(this.events as TEvented<TTabItemEvents>).emit('change:closable', value)
-	}
-
-	close(): void {
-		;(this.events as TEvented<TTabItemEvents>).emit('close', this)
 	}
 
 	override getProps(): TProps {

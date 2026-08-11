@@ -8,13 +8,13 @@ export const TabsContribution: IContribution = {
 		{ name: 'view', type: String, triggers: ['change:view'] },
 		{ name: 'closable', type: Boolean, triggers: ['change:closable'] },
 	],
-	events: [
-		'item:close',
-		'item:closable',
-		'item:disabled',
-		'item:text',
-		'item:rendered',
-		'item:visible',
-		'item:present',
-	],
+	// events: [
+	// 	'item:close',
+	// 	'item:closable',
+	// 	'item:disabled',
+	// 	'item:text',
+	// 	'item:rendered',
+	// 	'item:visible',
+	// 	'item:present',
+	// ],
 }
