@@ -1,7 +1,7 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import { TCollection } from './engine'
-import type { IExtension, TEngineEvents } from './engine'
+import { TCollection } from '@soldy/core'
+import type { IExtension, TEngineEvents } from '@soldy/core'
 import { TEvented } from '@soldy/core'
 import type { ICollectionPluginOptions } from './types'
 

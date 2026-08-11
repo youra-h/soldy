@@ -1,5 +1,5 @@
 import { TBasePlugin } from '../../base'
-import type { IExtension } from './engine'
+import type { IExtension } from '@soldy/core'
 
 export type TCollectionItemPluginEvents = {}
 
