@@ -6,7 +6,7 @@ import {
 } from '../../../base/collection'
 import type { ITabItem } from '../tab-item/types'
 import type { ITabs } from '../types'
-import type { TTabsExtensionEvents, ITabsExtensionOptions, TTabsExtensions } from './types'
+import type { TTabsExtensionEvents, ITabsExtensionOptions, TTabsExtensions, ITabsExtension } from './types'
 import { TTabItemExtension, type ITabItemExtension } from './item'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../common'
 
@@ -22,7 +22,7 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  */
 export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem = ITabItem>
 	extends TBaseOwnerItemExtension<TItem, ITabItemExtension<TItem>, TTabsExtensionEvents>
-	implements IExtension<TItem>
+	implements IExtension<TItem>, ITabsExtension<TItem>
 {
 	readonly name = 'tabs' as const
 

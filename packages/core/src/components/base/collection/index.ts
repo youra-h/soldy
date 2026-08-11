@@ -10,12 +10,7 @@ export type { ICommand } from './commands'
 export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './commands'
 
 // Расширения
-export type { IExtension, IExtensionContext } from './extension'
-export { TPlainExtension, TBatchExtension, TSelectionExtension, TActivationExtension, TOrderExtension } from './extension'
-
-// База
-export { TBaseExtension, TBaseItemExtension, TBaseOwnerItemExtension } from './extension'
-export type { IBaseOwnerItemExtensionOptions } from './extension'
+export * from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'

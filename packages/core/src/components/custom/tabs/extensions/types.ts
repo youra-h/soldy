@@ -1,8 +1,27 @@
 import type { ITabs } from '../types'
-import type { IBaseOwnerItemExtensionOptions, IExtension } from '../../../base/collection'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtension,
+	IExtensionItems,
+} from '../../../base/collection'
 import type { TTabsExtension } from './tabs.extension'
 import type { ITabItemExtension } from './item'
 import type { ITabItem } from '../tab-item/types'
+
+/**
+ * Контракт расширения табов.
+ * Используется как тип TParent в TTabItemExtension для типизированного доступа к _parent.
+ */
+export interface ITabsExtension<TItem extends ITabItem = ITabItem>
+	extends IExtension<TItem>, IExtensionItems<TItem, ITabItemExtension<TItem>> {
+	/** Глобальный closable с инстанса TTabs. */
+	readonly closable: boolean
+
+	/** Проверить, есть ли в коллекции активные табы. */
+	hasEnabledTabs(): boolean
+	/** Закрыть таб (удалить элемент из коллекции). */
+	closeTab(item: TItem): boolean
+}
 
 /**
  * Опции конструктора TTabsExtension.

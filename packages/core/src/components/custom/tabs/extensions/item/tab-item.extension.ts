@@ -1,6 +1,7 @@
 import { TBaseItemExtension } from '../../../../base/collection'
 import type { ITabItemExtension } from './types'
 import type { ITabItem } from '../../tab-item/types'
+import type { ITabsExtension } from '../types'
 
 /**
  * TTabItemExtension — stateless-делегат элемента таба.
@@ -9,9 +10,12 @@ import type { ITabItem } from '../../tab-item/types'
  * родительского расширения (fallback на TTabs.closable).
  *
  * @template TItem   — тип элемента (ITabItem или наследник)
- * @template TParent — тип родительского расширения (обычно TTabsExtension)
+ * @template TParent — тип родительского расширения (ITabsExtension или наследник)
  */
-export class TTabItemExtension<TItem extends ITabItem = ITabItem, TParent = any>
+export class TTabItemExtension<
+	TItem extends ITabItem = ITabItem,
+	TParent extends ITabsExtension<TItem> = ITabsExtension<TItem>,
+>
 	extends TBaseItemExtension<TItem, TParent>
 	implements ITabItemExtension<TItem>
 {
@@ -20,9 +24,13 @@ export class TTabItemExtension<TItem extends ITabItem = ITabItem, TParent = any>
 	 * Явное значение элемента > глобальное значение из расширения.
 	 */
 	get closable(): boolean {
-		return this._item.closable ?? (this._parent as any).closable
+		return this._item.closable ?? this._parent.closable
 	}
 
+	/**
+	 * Закрыть таб.
+	 * Делегирует в родительское расширение.
+	 */
 	close(): void {
 		if (this.closable) {
 			this._parent.closeTab(this._item)
