@@ -27,16 +27,16 @@ interface ICustomItemExtension extends IItemExtension<Item> {
 
 class TCustomItemExtension implements ICustomItemExtension {
 	constructor(
-		private readonly _owner: Item,
+		private readonly _item: Item,
 		private readonly _parent: TCustomExtension,
 	) {}
 
 	get active(): boolean {
-		return this._parent.isActiveItem(this._owner)
+		return this._parent.isActiveItem(this._item)
 	}
 
 	customAction(): string {
-		return `custom:${this._owner.name}`
+		return `custom:${this._item.name}`
 	}
 }
 

@@ -20,12 +20,12 @@ export class TTabItemExtension<TItem extends ITabItem = ITabItem, TParent = any>
 	 * Явное значение элемента > глобальное значение из расширения.
 	 */
 	get closable(): boolean {
-		return this._owner.closable ?? (this._parent as any).closable
+		return this._item.closable ?? (this._parent as any).closable
 	}
 
 	close(): void {
 		if (this.closable) {
-			this._parent.closeTab(this._owner)
+			this._parent.closeTab(this._item)
 		}
 	}
 }

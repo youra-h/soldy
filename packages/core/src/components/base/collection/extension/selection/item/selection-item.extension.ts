@@ -15,20 +15,20 @@ export class TSelectionItemExtension<TItem extends object = any>
 {
 	/** Выбран ли элемент. Вычисляется на лету через родительский TSelectionExtension. */
 	get selected(): boolean {
-		return this._parent.isSelected(this._owner)
+		return this._parent.isSelected(this._item)
 	}
 
 	/** Установить выбор элемента. Делегирует в родительский TSelectionExtension. */
 	set selected(value: boolean) {
 		if (value) {
-			this._parent.select(this._owner)
+			this._parent.select(this._item)
 		} else {
-			this._parent.deselect(this._owner)
+			this._parent.deselect(this._item)
 		}
 	}
 
 	/** Переключить выбор элемента. */
 	toggle(): void {
-		this._parent.toggle(this._owner)
+		this._parent.toggle(this._item)
 	}
 }

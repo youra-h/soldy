@@ -18,7 +18,7 @@ export class TActivationItemExtension<TItem extends object = any>
 	 * Вычисляется на лету через родительский TActivationExtension.
 	 */
 	get active(): boolean {
-		return this._parent.isActive(this._owner)
+		return this._parent.isActive(this._item)
 	}
 
 	/**
@@ -27,9 +27,9 @@ export class TActivationItemExtension<TItem extends object = any>
 	 */
 	set active(value: boolean) {
 		if (value) {
-			this._parent.activate(this._owner)
+			this._parent.activate(this._item)
 		} else {
-			this._parent.deactivate(this._owner)
+			this._parent.deactivate(this._item)
 		}
 	}
 }

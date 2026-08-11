@@ -18,6 +18,6 @@ export class TOrderItemExtension<TItem extends object = any>
 	 * Вычисляется на лету через родительский TOrderExtension.
 	 */
 	get order(): number {
-		return this._parent.getItemOrder(this._owner)
+		return this._parent.getItemOrder(this._item)
 	}
 }

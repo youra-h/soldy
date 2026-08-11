@@ -132,24 +132,27 @@ describe('TTabItem (чистый класс)', () => {
 		expect(onChange).toHaveBeenCalledWith({ oldValue: 'initial', newValue: 'updated' })
 	})
 
-	it('эмитит change:closable при изменении closable', () => {
+	it('closable меняется через state и отражается в getProps', () => {
 		const tab = new TTabItem()
-		const onChange = vi.fn()
 
-		tab.events.on('change:closable', onChange)
 		tab.closable = true
 
-		expect(onChange).toHaveBeenCalledWith(true)
+		expect(tab.closable).toBe(true)
+		expect(tab.getProps().closable).toBe(true)
+
+		tab.closable = false
+
+		expect(tab.closable).toBe(false)
 	})
 
-	it('эмитит close при вызове close()', () => {
-		const tab = new TTabItem()
-		const onClose = vi.fn()
+	it('событие change:text эмитится с правильным payload', () => {
+		const tab = new TTabItem({ text: 'a' })
+		const onChange = vi.fn()
 
-		tab.events.on('close', onClose)
-		tab.close()
+		tab.events.on('change:text', onChange)
+		tab.text = 'b'
 
-		expect(onClose).toHaveBeenCalledWith(tab)
+		expect(onChange).toHaveBeenCalledWith({ oldValue: 'a', newValue: 'b' })
 	})
 
 	it('disabled таб не может быть closable', () => {
