@@ -120,12 +120,14 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
 			for (const pluginDef of plugins) {
 				const pluginInstance = bundle.get(pluginDef.ctor)
+
 				if (pluginInstance) {
 					pluginsMap.set(pluginDef.namespace, pluginInstance)
 				}
 			}
 
 			const compositionsMap = new Map<string, (instance: any) => any>()
+
 			for (const compDef of composition) {
 				compositionsMap.set(compDef.namespace ?? '', compDef.get)
 			}
