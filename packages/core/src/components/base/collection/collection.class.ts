@@ -3,7 +3,7 @@ import type { ICollectionEngine } from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
-import type { ICommand } from './command'
+import type { ICommand } from './commands'
 
 export class TCollection<
 	T extends object,

@@ -1,4 +1,4 @@
-import type { ICommand } from '../command'
+import type { ICommand } from '../commands'
 import type { ICollectionEngine } from '../types'
 
 export interface IExtensionContext<T> {

@@ -1,6 +1,6 @@
 import type { IExtension } from '../types'
 import type { TBatchEvents } from './types'
-import { TInsertCommand, TRemoveCommand, TClearCommand } from '../../command'
+import { TInsertCommand, TRemoveCommand, TClearCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
 
 /**

@@ -1,4 +1,4 @@
-import type { ICommand } from './command'
+import type { ICommand } from './commands'
 import { TEvented } from '@soldy/core'
 
 export type TEngineEvents<T> = {

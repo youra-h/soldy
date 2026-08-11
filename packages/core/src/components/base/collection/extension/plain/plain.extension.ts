@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../command'
+import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
 
 /**

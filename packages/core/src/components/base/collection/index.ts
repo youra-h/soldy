@@ -6,8 +6,8 @@ export type { IStorage } from './storage'
 export { TArrayStorage } from './storage'
 
 // Команды
-export type { ICommand } from './command'
-export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './command'
+export type { ICommand } from './commands'
+export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './commands'
 
 // Расширения
 export type { IExtension, IExtensionContext } from './extension'
