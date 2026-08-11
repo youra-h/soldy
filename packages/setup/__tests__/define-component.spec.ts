@@ -67,52 +67,6 @@ describe('defineComponent', () => {
         expect(d.props.find(p => p.name === 'element')!.triggers).toEqual(['test-plugin-a:ready', 'test-plugin-a:removed'])
     })
 
-    // --- composition ---
-
-    it('composition без namespace: сливает props напрямую', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const d = defineComponent({ ctor: TestComponent, contribution: ContribB, composition: [{ descriptor: col, get: (i: any) => i._col }] })
-        expect(d.props.map(p => p.name)).toContain('a')
-        expect(d.props.map(p => p.name)).toContain('b')
-    })
-
-    it('composition с namespace: добавляет префикс', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const d = defineComponent({ ctor: TestComponent, contribution: ContribB, composition: [{ namespace: 'col', descriptor: col, get: (i: any) => i._col }] })
-        expect(d.props.find(p => p.name === 'a')!.namespace).toBe('col')
-    })
-
-    it('composition: getValue из под-объекта', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const d = defineComponent({ ctor: TestComponent, contribution: ContribB, composition: [{ descriptor: col, get: (i: any) => i._col }] })
-        const sub = { a: 'hello', events: { on: () => {}, off: () => {} } }
-        const accessor = d.createAccessor({ b: 'world', _col: sub }, d.createBundle())
-        expect(accessor.getValue(d.props.find(p => p.name === 'a')!)).toBe('hello')
-        expect(accessor.getValue(d.props.find(p => p.name === 'b')!)).toBe('world')
-    })
-
-    it('composition: setValue в под-объект', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const d = defineComponent({ ctor: TestComponent, contribution: ContribB, composition: [{ descriptor: col, get: (i: any) => i._col }] })
-        const sub = { a: 'hello', events: { on: () => {}, off: () => {} } }
-        d.createAccessor({ _col: sub }, d.createBundle()).setValue(d.props.find(p => p.name === 'a')!, 'updated')
-        expect(sub.a).toBe('updated')
-    })
-
-    it('composition: getEventSource из под-объекта', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const d = defineComponent({ ctor: TestComponent, contribution: ContribB, composition: [{ descriptor: col, get: (i: any) => i._col }] })
-        const subEv = { on: () => {}, off: () => {} }
-        const accessor = d.createAccessor({ _col: { a: 'x', events: subEv }, events: { on: () => {}, off: () => {} } }, d.createBundle())
-        expect(accessor.getEventSource(d.props.find(p => p.name === 'a')!)).toBe(subEv)
-    })
-
-    it('composition: наследуется от parent', () => {
-        const col = defineComponent({ ctor: TestComponent, contribution: ContribA })
-        const parent = defineComponent({ ctor: TestComponent, contribution: ContribA, composition: [{ descriptor: col, get: (i: any) => i._col }] })
-        expect(defineComponent({ ctor: TestComponent, extends: parent, contribution: ContribB }).composition.length).toBe(1)
-    })
-
     // --- createBundle ---
 
     it('createBundle: с плагинами', () => {

@@ -11,7 +11,6 @@ import type {
 	IComponentDefinitionOptions,
 	IComponentDescriptor,
 	IPluginDefinition,
-	ICompositionDefinition,
 } from './types'
 import { compileContribution } from './compile-contribution'
 
@@ -36,24 +35,11 @@ function createPluginCollector() {
 export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
 
-	// Композиции: родительские + свои (объявляем до plugins, чтобы включить их плагины)
-	const composition: ICompositionDefinition[] = [
-		...(parent?.composition ?? []),
-		...(options.composition ?? []),
-	]
-
-	// Плагины: родительские → композиций → свои (с дедупликацией).
-	// Порядок важен: плагины композиций (TElementAccumulationPlugin)
-	// должны быть установлены ДО своих плагинов (TTabsActiveTabPlugin),
-	// потому что свои плагины в install() ищут плагины композиций через bundle.get().
+	// Плагины: родительские → свои (с дедупликацией)
 	const collector = createPluginCollector()
 
-	// Добавляем плагины родителя (если есть) и плагины композиций
+	// Добавляем плагины родителя (если есть)
 	collector.add(parent?.plugins ?? [])
-	// Композиции уже скомпилированы, берем их плагины
-	for (const comp of composition) {
-		collector.add(comp.descriptor.plugins)
-	}
 	// Добавляем свои плагины (если есть)
 	collector.add(options.plugins ?? [])
 
@@ -67,26 +53,11 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		compileContribution(plugin.contribution, plugin.namespace),
 	)
 
-	// 3. Композиции — дескриптор уже скомпилирован, добавляем namespace если указан
-	const compositionContributions = (options.composition ?? []).map((comp) => ({
-		props: comp.descriptor.props.map((p) => ({
-			...p,
-			// Безымянная композиция → '' (чтобы отличать от undefined у собственных props)
-			namespace: comp.namespace ?? '',
-			triggers: comp.namespace ? p.triggers.map((t) => `${comp.namespace}:${t}`) : p.triggers,
-		})),
-		events: comp.descriptor.events.map((e) => ({
-			...e,
-			namespace: comp.namespace ?? '',
-		})),
-	}))
-
-	// Объединяем props: родитель → свои → плагинов → композиций
+	// Объединяем props: родитель → свои → плагинов
 	const props: ICompiledProp[] = [
 		...(parent?.props ?? []),
 		...own.props,
 		...pluginContributions.flatMap((c) => c.props),
-		...compositionContributions.flatMap((c) => c.props),
 	]
 
 	// Объединяем events
@@ -94,7 +65,6 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		...(parent?.events ?? []),
 		...own.events,
 		...pluginContributions.flatMap((c) => c.events),
-		...compositionContributions.flatMap((c) => c.events),
 	]
 
 	return {
@@ -103,7 +73,6 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		props,
 		events,
 		plugins,
-		composition,
 
 		createBundle(instance: any) {
 			const bundle = new TPluginBundle(instance)
@@ -126,13 +95,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 				}
 			}
 
-			const compositionsMap = new Map<string, (instance: any) => any>()
-
-			for (const compDef of composition) {
-				compositionsMap.set(compDef.namespace ?? '', compDef.get)
-			}
-
-			return new TComponentAccessor(props, events, instance, pluginsMap, compositionsMap)
+			return new TComponentAccessor(props, events, instance, pluginsMap)
 		},
 	}
 }

@@ -1,10 +1,10 @@
 /**
- * @soldy/setup — тесты TabsDescriptor (composition)
+ * @soldy/setup — тесты TabsDescriptor
  */
 import { describe, it, expect } from 'vitest'
 import { TabsDescriptor } from '../descriptors/components/tabs'
 
-describe('TabsDescriptor (composition)', () => {
+describe('TabsDescriptor', () => {
     it('содержит props от ControlDescriptor (extends)', () => {
         const names = TabsDescriptor.props.map(p => p.name)
         expect(names).toContain('disabled')
@@ -44,30 +44,5 @@ describe('TabsDescriptor (composition)', () => {
         expect(names).toContain('alignment')
         expect(names).toContain('view')
         expect(names).toContain('closable')
-    })
-
-    it('содержит props от ActivatableCollectionDescriptor (composition)', () => {
-        const names = TabsDescriptor.props.map(p => p.name)
-        expect(names).toContain('activeItem')
-        expect(names).toContain('items')
-    })
-
-    it('props композиции без namespace — нет префикса в имени', () => {
-        const activeItem = TabsDescriptor.props.find(p => p.name === 'activeItem')
-
-        expect(activeItem!.namespace).toBe('')
-    })
-
-    it('содержит события от ActivatableCollectionDescriptor (composition)', () => {
-        const events = TabsDescriptor.events.map(e => e.name)
-        expect(events).toContain('item:activated')
-        expect(events).toContain('item:deactivated')
-        expect(events).toContain('change:activeItem')
-    })
-
-    it('composition определена', () => {
-        expect(TabsDescriptor.composition).toHaveLength(1)
-        expect(TabsDescriptor.composition[0].namespace).toBeUndefined()
-        expect(TabsDescriptor.composition[0].descriptor).toBeDefined()
     })
 })

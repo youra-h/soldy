@@ -22,16 +22,6 @@ export interface IPluginDefinition {
 	namespace: string
 }
 
-/** Определение композиции — компонент, встроенный через свойство (не наследование). */
-export interface ICompositionDefinition {
-	/** Дескриптор компонента, чьи свойства/события выставляются наружу */
-	descriptor: IComponentDescriptor
-	/** Функция доступа к экземпляру: (instance) => instance._collection */
-	get: (instance: any) => any
-	/** Пространство имён для экспорта. Если не указан — свойства сливаются без префикса. */
-	namespace?: string
-}
-
 /** Опции для defineComponent(). */
 export interface IComponentDefinitionOptions {
 	/** Конструктор core-компонента */
@@ -42,8 +32,6 @@ export interface IComponentDefinitionOptions {
 	contribution?: IContribution
 	/** Плагины (каждый — результат definePlugin) */
 	plugins?: IPluginDefinition[]
-	/** Композиция — компоненты, встроенные через свойства (не наследование) */
-	composition?: ICompositionDefinition[]
 }
 
 /**
@@ -59,8 +47,6 @@ export interface IComponentDescriptor {
 	events: ICompiledEvent[]
 	/** Определения плагинов */
 	plugins: IPluginDefinition[]
-	/** Определения композиций */
-	composition: ICompositionDefinition[]
 
 	/** Создать бандл плагинов */
 	createBundle(instance: any): IPluginBundle
