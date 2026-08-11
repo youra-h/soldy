@@ -14,9 +14,7 @@ export default {
 		const adapter = createAdapterContext(TabItemDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
-		})
-		// Расширения использовались для старых коллекций
-		// .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),

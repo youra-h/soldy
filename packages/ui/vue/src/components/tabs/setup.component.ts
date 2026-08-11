@@ -18,9 +18,8 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
-		// Расширения использовались для старых коллекций
-			// .use(TCollectionExtension, { elevator: VueElevatorFactory })
-			// .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
 		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
 		return useVue<ITabsProps, ITabs>(adapter, props, emit)
