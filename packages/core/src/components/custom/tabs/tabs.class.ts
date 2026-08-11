@@ -53,14 +53,6 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
         this._applyView(props.view ?? ctor.defaultValues.view!)
         this._applyClosable(props.closable ?? ctor.defaultValues.closable!)
 
-        // @deprecated Начальные элементы передаются через ICollectionPluginOptions.items
-        // if (Array.isArray(props.items) && props.items.length > 0) {
-        //     const preparedItems = props.items.map((item) =>
-        //         item instanceof TTabItem ? item : new TTabItem({ props: item }),
-        //     )
-        //     this._collection.extensions.batch.add(preparedItems)
-        // }
-
         // this._collection.engine.events.on('item:added', (item: ITabItem) => {
         //     item.events.on('close', () => this.closeTab(item))
         //     item.setClosableResolver(() => this._closable)

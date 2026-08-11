@@ -29,6 +29,7 @@ export abstract class TBaseOwnerItemExtension<
 		options?: IBaseOwnerItemExtensionOptions<TItem, TItemExt>,
 	) {
 		super()
+
 		this._itemCtor = options?.itemCtor
 	}
 
