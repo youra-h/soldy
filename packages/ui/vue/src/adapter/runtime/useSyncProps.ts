@@ -2,10 +2,10 @@ import { ref, watch, onUnmounted, type Ref } from 'vue'
 import type { TComponentAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
 
 export interface ISyncOptions {
-    /** Коллбэк перед записью значения из Vue во внутренний Core */
-    onInput?: (prop: ICompiledProp, value: any) => any
-    /** Коллбэк при обновлении значения из Core во Vue */
-    onOutput?: (prop: ICompiledProp, value: any) => void
+	/** Коллбэк перед записью значения из Vue во внутренний Core */
+	onInput?: (prop: ICompiledProp, value: any) => any
+	/** Коллбэк при обновлении значения из Core во Vue */
+	onOutput?: (prop: ICompiledProp, value: any) => void
 }
 
 /**
@@ -19,83 +19,85 @@ export interface ISyncOptions {
  * - cleanup(): снимает все watchers (вызывается автоматически на onUnmounted)
  */
 export function useSyncProps(
-    accessor: TComponentAccessor,
-    inspector: TDescriptorInspector,
-    options: ISyncOptions = {},
+	accessor: TComponentAccessor,
+	inspector: TDescriptorInspector,
+	options: ISyncOptions = {},
 ) {
-    const refs: Record<string, Ref<any>> = {}
-    const cleanupFns: (() => void)[] = []
+	const refs: Record<string, Ref<any>> = {}
+	const cleanupFns: (() => void)[] = []
 
-    // 1. Core → Vue (Output): создать refs, подписаться на триггеры
-    function bindOutput() {
-        for (const prop of accessor.getProps(true) as ICompiledProp[]) {
-            const rawTriggers = inspector.getRawTriggers(prop)
+	// 1. Core → Vue (Output): создать refs, подписаться на триггеры
+	function bindOutput() {
+		for (const prop of accessor.getProps(true) as ICompiledProp[]) {
+			const rawTriggers = inspector.getRawTriggers(prop)
 
-            // Пропускаем свойства без триггеров — pass-through (ctrl, plugins)
-            if (rawTriggers.length === 0) continue
+			// Пропускаем свойства без триггеров — pass-through (ctrl, plugins)
+			if (rawTriggers.length === 0) continue
 
-            const formattedPropName = inspector.getExportPropName(prop)
-            const initialValue = accessor.getValue(prop)
+			const formattedPropName = inspector.getExportPropName(prop)
+			const initialValue = accessor.getValue(prop)
 
-            const propRef = ref(initialValue)
+			const propRef = ref(initialValue)
 
 			refs[formattedPropName] = propRef
 
-            const eventSource = accessor.getEventSource(prop)
+			const eventSource = accessor.getEventSource(prop)
 
-            if (eventSource) {
-                for (const rawTrigger of rawTriggers) {
-                    eventSource.on(rawTrigger, () => {
-                        const val = accessor.getValue(prop)
+			if (eventSource) {
+				for (const rawTrigger of rawTriggers) {
+					eventSource.on(rawTrigger, () => {
+						const val = accessor.getValue(prop)
 
-                        // Плагины (TIconStylesPlugin, TSpinnerStylesPlugin и др.)
-                        // мутируют свой объект _styles in-place и эмитят change:styles.
-                        // accessor.getValue() возвращает ссылку на этот же объект.
-                        // Если присвоить ту же ссылку в ref.value — Vue считает
-                        // oldValue === newValue и НЕ триггерит watch/ререндер.
-                        // Клонируем только plain-объекты (не Vue-компоненты, не массивы).
-                        const isPlainObj = typeof val === 'object' && val !== null
-                            && val.constructor === Object && !('__v_skip' in val) && !('render' in val)
-                        propRef.value = isPlainObj ? { ...val } : val
+						// Плагины (TIconStylesPlugin, TSpinnerStylesPlugin и др.)
+						// мутируют свой объект _styles in-place и эмитят change:styles.
+						// accessor.getValue() возвращает ссылку на этот же объект.
+						// Если присвоить ту же ссылку в ref.value — Vue считает
+						// oldValue === newValue и НЕ триггерит watch/ререндер.
+						// Клонируем только plain-объекты (не Vue-компоненты, не массивы).
+						const isPlainObj =
+							typeof val === 'object' &&
+							val !== null &&
+							val.constructor === Object &&
+							!('__v_skip' in val) &&
+							!('render' in val)
+						propRef.value = isPlainObj ? { ...val } : val
 
-                        options.onOutput?.(prop, val)
-                    })
-                }
-            }
-        }
-    }
+						options.onOutput?.(prop, val)
+					})
+				}
+			}
+		}
+	}
 
-    // 2. Vue → Core (Input): watch внешних props
-    function bindInput(props: Record<string, any>) {
-        for (const prop of accessor.getProps(false) as ICompiledProp[]) {
-            const formattedPropName = inspector.getExportPropName(prop)
+	// 2. Vue → Core (Input): watch внешних props
+	function bindInput(props: Record<string, any>) {
+		for (const prop of accessor.getProps(false) as ICompiledProp[]) {
+			const formattedPropName = inspector.getExportPropName(prop)
 
-            const stopWatch = watch(
-                () => props[formattedPropName] ?? props[prop.name],
-                (newVal) => {
-                    if (newVal !== undefined) {
-                        const valueToSet = options.onInput
-                            ? options.onInput(prop, newVal)
-                            : newVal
+			const stopWatch = watch(
+				() => props[formattedPropName] ?? props[prop.name],
+				(newVal) => {
+					if (newVal !== undefined) {
+						const valueToSet = options.onInput ? options.onInput(prop, newVal) : newVal
 
-                        accessor.setValue(prop, valueToSet)
-                    }
-                },
-            )
-            cleanupFns.push(stopWatch)
-        }
-    }
+						accessor.setValue(prop, valueToSet)
+					}
+				},
+			)
+			cleanupFns.push(stopWatch)
+		}
+	}
 
-    function cleanup() {
-        cleanupFns.forEach((fn) => fn())
-    }
+	function cleanup() {
+		cleanupFns.forEach((fn) => fn())
+	}
 
-    onUnmounted(cleanup)
+	onUnmounted(cleanup)
 
-    return {
-        refs,
-        bindOutput,
-        bindInput,
-        cleanup,
-    }
+	return {
+		refs,
+		bindOutput,
+		bindInput,
+		cleanup,
+	}
 }
