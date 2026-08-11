@@ -1,5 +1,6 @@
 import type { ITabs } from '../types'
-import type { IBaseOwnerItemExtensionOptions } from '../../../base/collection/extension'
+import type { IBaseOwnerItemExtensionOptions, IExtension } from '../../../base/collection'
+import type { TTabsExtension } from './tabs.extension'
 import type { ITabItemExtension } from './item'
 import type { ITabItem } from '../tab-item/types'
 
@@ -18,4 +19,11 @@ export interface ITabsExtensionOptions<
 /**
  * События расширения TTabsExtension.
  */
-export type TTabsExtensionEvents = Record<string, never>
+export type TTabsExtensionEvents = {
+	'item:close': (item: ITabItem) => void
+}
+
+export type TTabsExtensions<TItem extends ITabItem> = {
+	tabs: TTabsExtension<any, TItem>
+	[key: string]: IExtension<TItem>
+}

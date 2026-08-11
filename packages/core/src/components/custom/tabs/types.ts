@@ -1,9 +1,4 @@
-import type {
-	IControl,
-	IControlProps,
-	TControlEvents,
-	TControlStates,
-} from '../../base/control'
+import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
 import type { TEngineEvents } from '../../base/collection'
 import type { ITabItem } from './tab-item/types'
 import type { TCollection } from '../../base/collection'
@@ -73,14 +68,4 @@ export interface ITabs extends IControl<ITabsProps, TTabsEvents> {
 	view: TTabsView
 	/** Разрешить закрытие табов */
 	closable: boolean
-	/** Активный таб */
-	readonly activeItem: ITabItem | undefined
-	/** Количество табов */
-	readonly count: number
-	/** Доступ к коллекции табов */
-	readonly collection: TCollection<ITabItem, any>
-	/** Закрывает таб */
-	closeTab(item: ITabItem): boolean
-	/** Возвращает true, если есть хотя бы один активный таб */
-	hasEnabledTabs(): boolean
 }

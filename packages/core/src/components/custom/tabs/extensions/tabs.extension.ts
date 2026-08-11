@@ -1,8 +1,12 @@
-import type { IExtension, IExtensionContext } from '../../../base/collection/extension'
-import { TBaseOwnerItemExtension } from '../../../base/collection/extension'
+import type { IExtension, IExtensionContext } from '../../../base/collection'
+import {
+	TBaseOwnerItemExtension,
+	TItemContextRegistry,
+	TRemoveCommand,
+} from '../../../base/collection'
 import type { ITabItem } from '../tab-item/types'
 import type { ITabs } from '../types'
-import type { TTabsExtensionEvents, ITabsExtensionOptions } from './types'
+import type { TTabsExtensionEvents, ITabsExtensionOptions, TTabsExtensions } from './types'
 import { TTabItemExtension, type ITabItemExtension } from './item'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../common'
 
@@ -30,6 +34,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 	 * @type {TOwner}
 	 */
 	private readonly _owner: TOwner
+	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
 
 	constructor(options: ITabsExtensionOptions<TOwner, TItem>) {
 		super(TTabItemExtension, options)
@@ -44,6 +49,9 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
+
+		// Реестр для доступа к item-адаптерам (кеширует через WeakMap)
+		this._itemRegistry = new TItemContextRegistry(ctx.extensions as TTabsExtensions<TItem>)
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
 		ctx.engine.events.on('item:added', (item: TItem) => {
@@ -72,11 +80,33 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 		})
 	}
 
-	closeTab(item: ITabItem): boolean {
-		if (!item.closable) return false
+	/**
+	 * Проверяет, есть ли в коллекции хотя бы один элемент, который одновременно:
+	 * - не disabled
+	 * - visible
+	 * - rendered
+	 *
+	 * @returns true, если есть хотя бы один такой элемент, иначе false
+	 */
+	hasEnabledTabs(): boolean {
+		return this._ctx.engine.some((item) => !item.disabled && item.visible && item.rendered)
+	}
 
-		;(this.events as TEvented<TTabsEvents>).emit('item:close', item)
-		// this._collection.extensions.plain.remove(item)
+	/**
+	 * Закрыть таб (удалить элемент из коллекции).
+	 * Если элемент не является closable — ничего не делает.
+	 * @param item
+	 * @returns true, если элемент был удалён, иначе false
+	 */
+	closeTab(item: ITabItem): boolean {
+		const { tabs } = this._itemRegistry.get(item as TItem).adapters
+
+		if (!tabs.closable) return false
+
+		this.events.emit('item:close', item as TItem)
+
+		this._ctx.execute(new TRemoveCommand(item as TItem))
+
 		return true
 	}
 }
