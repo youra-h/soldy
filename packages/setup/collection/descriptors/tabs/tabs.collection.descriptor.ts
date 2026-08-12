@@ -1,5 +1,5 @@
 import { defineCollection } from '../base'
-import { TabsCollectionContribution } from '../../../contributions/tabs'
+import { TabsCollectionContribution } from '../../contributions/tabs'
 import { TCollection, TPlainExtension, TActivationExtension } from '@soldy/core'
 import { TTabsExtension } from '@soldy/core'
 import type { ITabItem } from '@soldy/core'
