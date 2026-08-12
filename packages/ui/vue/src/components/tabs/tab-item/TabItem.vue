@@ -12,7 +12,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="{ order: item_order }"
+		:style="{ order: order }"
 		v-bind="containerAttrs"
 	>
 		<Button
@@ -20,7 +20,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 			view="none"
 			:size="size"
 			:variant="variant"
-			@click="item_active = true"
+			@click="active = true"
 			role="tab"
 			v-bind="controlAttrs"
 		>
