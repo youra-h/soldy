@@ -20,8 +20,10 @@ export default {
 			props,
 		})
 
-		const colCtx = createCollectionContext(TabsCollectionDescriptor, adapter.instance)
-			.use(TCollectionItemElevatorExtension, { elevator: VueElevatorFactory })
+		const colCtx = createCollectionContext(TabsCollectionDescriptor, adapter.instance).use(
+			TCollectionItemElevatorExtension,
+			{ elevator: VueElevatorFactory },
+		)
 
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
