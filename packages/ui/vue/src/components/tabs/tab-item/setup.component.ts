@@ -83,13 +83,13 @@ export default {
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 
-			...useSyncProps(context.adapters.activation.events, {
+			...useSyncProps(collection!.extensions.activation.events, {
 				active: {
 					value: () => () => context.adapters.activation.active,
 					triggers: ['change:activation'],
 				},
 			}),
-			...useSyncProps(context.adapters.order.events, {
+			...useSyncProps(collection!.extensions.order.events, {
 				order: {
 					value: () => () => context.adapters.order.order,
 					triggers: ['change:order'],
