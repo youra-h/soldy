@@ -30,3 +30,14 @@ export interface ICollectionDefinitionOptions<TItem extends object = any> {
 	/** Контрибуция коллекции */
 	contribution?: ICollectionContribution
 }
+
+/** Дескриптор элемента коллекции. Props компилируются с namespace 'item'. */
+export interface ICollectionItemDescriptor {
+	readonly props: ICompiledCollectionProp[]
+	readonly events: ICompiledEvent[]
+}
+
+/** Опции для defineCollectionItem() */
+export interface ICollectionItemDefinitionOptions {
+	contribution?: ICollectionContribution
+}

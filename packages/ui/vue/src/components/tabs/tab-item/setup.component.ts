@@ -1,6 +1,12 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
-import { useVue, VueElevatorFactory } from '../../../adapter'
+import {
+	createAdapterContext,
+	TCollectionItemExtension,
+	TCollectionItemContextExtension,
+	TabItemDescriptor,
+	TabsCollectionItemDescriptor,
+} from '@soldy/setup'
+import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseTabItem from './tab-item.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -14,10 +20,20 @@ export default {
 		const adapter = createAdapterContext(TabItemDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
-		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+		})
+			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionItemContextExtension, {
+				elevator: VueElevatorFactory,
+				descriptor: TabsCollectionItemDescriptor,
+			})
+
+		const itemExt = adapter.get(TCollectionItemContextExtension)
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
+			...useVueCollectionItem(itemExt, props, emit),
+			// close() делегирует в TTabItemExtension через item-адаптер
+			close: () => itemExt?.itemAdapters?.tabs?.close(),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

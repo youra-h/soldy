@@ -1,2 +1,2 @@
-export type { ICollectionDescriptor, ICollectionDefinitionOptions } from './types'
-export { defineCollection, mergeCollectionContributions } from './define-collection'
+export type { ICollectionDescriptor, ICollectionItemDescriptor, ICollectionDefinitionOptions, ICollectionItemDefinitionOptions } from './types'
+export { defineCollection, defineCollectionItem, mergeCollectionContributions } from './define-collection'

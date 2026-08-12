@@ -11,3 +11,6 @@ export const COLLECTION_ELEVATOR = 'soldy:collection'
 
 /** Drag-and-drop контекст. DragAndDrop → Collection. */
 export const DRAG_CONTEXT_ELEVATOR = 'soldy:drag-context'
+
+/** Контекст коллекции для дочернего элемента. Родитель → дочерний элемент. */
+export const ITEM_CONTEXT_ELEVATOR = 'soldy:item-context'
