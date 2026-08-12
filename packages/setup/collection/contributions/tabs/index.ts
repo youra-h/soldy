@@ -1,1 +1,1 @@
-export { TabsCollectionContribution } from './tabs.collection.contribution'
+export { TabsCollectionContribution, TabsCollectionItemContribution } from './tabs.collection.contribution'

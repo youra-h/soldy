@@ -1,1 +1,3 @@
-export { TabsCollectionContribution } from './tabs/tabs.collection.contribution'
+export * from './extensions'
+export * from './custom'
+export * from './tabs'

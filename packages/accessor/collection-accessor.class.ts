@@ -75,16 +75,16 @@ export class TCollectionAccessor {
 
 	/** Прочитать значение свойства из коллекции */
 	getValue(prop: ICompiledCollectionProp): any {
-		const target = this.getTarget(prop)
-
-		if (!target) return undefined
-
-		// engine[propName] — для engine это свойство напрямую (через Proxy)
 		if (prop.source === 'engine') {
-			return target[prop.name]
+			// engine — ReadonlyArray<T> proxy, именованных свойств нет
+			if (prop.name === 'items') return [...this.collection.engine]
+			if (prop.name === 'count') return this.collection.engine.length
+			return undefined
 		}
 
-		return target[prop.name]?.valueOf?.() ?? target[prop.name]
+		const ext = this.collection.extensions[prop.source]
+
+		return ext?.[prop.name]?.valueOf?.() ?? ext?.[prop.name]
 	}
 
 	/** Записать значение в коллекцию (только для не-protected) */

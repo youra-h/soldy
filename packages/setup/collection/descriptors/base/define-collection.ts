@@ -30,6 +30,18 @@ function compileCollectionContribution(
 	return { props, events }
 }
 
+export function mergeCollectionContributions(
+	...contributions: (ICollectionContribution | undefined)[]
+): ICollectionContribution {
+	const props = contributions.flatMap((c) => c?.props ?? [])
+	const events = contributions.flatMap((c) => c?.events ?? [])
+
+	return {
+		props: props.length > 0 ? props : undefined,
+		events: events.length > 0 ? events : undefined,
+	}
+}
+
 export function defineCollection<TItem extends object = any>(
 	options: ICollectionDefinitionOptions<TItem>,
 ): ICollectionDescriptor<TItem> {
