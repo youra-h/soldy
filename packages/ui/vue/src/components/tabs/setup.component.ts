@@ -42,7 +42,7 @@ import {
 import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type ITabsProps, type ITabs } from '@soldy/core'
+import { type ITabsProps, type ITabs, type ITabItem } from '@soldy/core'
 import {
 	TTabs,
 	TCollection,
@@ -51,14 +51,8 @@ import {
 	TOrderExtension,
 	TTabsExtension,
 } from '@soldy/core'
-import type { ITabItem } from '@soldy/core'
-
-type TabsExtensions = {
-	order: TOrderExtension<ITabItem>
-	plain: TPlainExtension<ITabItem>
-	activation: TActivationExtension<ITabItem>
-	tabs: TTabsExtension
-}
+import type { TabsCollection } from './collection.types'
+import { TABS_COLLECTION_KEY } from './collection.types'
 
 export default {
 	name: '_Tabs',
@@ -77,7 +71,7 @@ export default {
 		// .use(TCollectionExtension, { elevator: VueElevatorFactory })
 		// .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collection: TCollection<ITabItem, TabsExtensions> = new TCollection({
+		const collection: TabsCollection = new TCollection({
 			extensions: {
 				order: new TOrderExtension<ITabItem>(),
 				plain: new TPlainExtension<ITabItem>(),
@@ -86,7 +80,7 @@ export default {
 			},
 		})
 
-		provide('tabsCollection', collection)
+		provide(TABS_COLLECTION_KEY, collection)
 
 		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
 		return useVue<ITabsProps, ITabs>(adapter, props, emit)
