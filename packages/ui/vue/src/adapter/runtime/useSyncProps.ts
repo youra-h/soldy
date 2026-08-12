@@ -1,5 +1,5 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import type { TComponentAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
+import type { IAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
 
 export interface ISyncOptions {
 	/** Коллбэк перед записью значения из Vue во внутренний Core */
@@ -19,7 +19,7 @@ export interface ISyncOptions {
  * - cleanup(): снимает все watchers (вызывается автоматически на onUnmounted)
  */
 export function useSyncProps(
-	accessor: TComponentAccessor,
+	accessor: IAccessor,
 	inspector: TDescriptorInspector,
 	options: ISyncOptions = {},
 ) {

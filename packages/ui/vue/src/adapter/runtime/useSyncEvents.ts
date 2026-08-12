@@ -1,4 +1,4 @@
-import type { TComponentAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
+import type { IAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
 
 /**
  * Проброс событий из Core наружу через emit.
@@ -7,7 +7,7 @@ import type { TComponentAccessor, TDescriptorInspector, ICompiledProp } from '@s
  * - Явные события (ready → element:ready)
  */
 export function useSyncEvents(
-    accessor: TComponentAccessor,
+    accessor: IAccessor,
     inspector: TDescriptorInspector,
     emit?: (event: string, ...args: any[]) => void,
 ) {

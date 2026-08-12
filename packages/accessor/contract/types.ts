@@ -35,6 +35,29 @@ export interface ICompiledProp extends ICompiledItem {
 /** Скомпилированное событие */
 export interface ICompiledEvent extends ICompiledItem {}
 
+/** Вход: декларация одного свойства коллекции в контрибуции (с указанием источника) */
+export interface ICollectionPropContribution extends IPropContribution {
+	/** Где живёт свойство: 'engine' — collection.engine, иначе — collection.extensions[name] */
+	source: 'engine' | string
+}
+
+/** Вход: декларация контрибуции коллекции */
+export interface ICollectionContribution {
+	props?: ICollectionPropContribution[]
+	events?: string[]
+}
+
+/** Скомпилированное свойство коллекции: ICompiledProp + source */
+export interface ICompiledCollectionProp extends ICompiledProp {
+	source: 'engine' | string
+}
+
+/** Схема коллекции: скомпилированные props + events (контракт для TDescriptorInspector + TCollectionAccessor) */
+export interface ICollectionSchema {
+	props: ICompiledCollectionProp[]
+	events: ICompiledEvent[]
+}
+
 /** Схема компонента: скомпилированные props + events (контракт для TDescriptorInspector) */
 export interface IComponentSchema {
 	props: ICompiledProp[]

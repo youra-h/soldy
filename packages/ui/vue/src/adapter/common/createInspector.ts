@@ -8,22 +8,21 @@
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
-import type { TComponentAccessor, INamingStrategy, IComponentSchema } from '@soldy/accessor'
+import type { TComponentAccessor, TCollectionAccessor, INamingStrategy, IComponentSchema, ICollectionSchema } from '@soldy/accessor'
 import { TDescriptorInspector } from '@soldy/accessor'
 import { VueNaming } from './naming'
 
 /**
  * Единый генератор инспектора.
- * Принимает как Descriptor, так и Accessor — унифицирует создание TDescriptorInspector
- * для useVue, useSyncProps, useSyncEvents, useProps и useEmits.
+ * Принимает Descriptor (любого типа), Accessor или Schema — унифицирует создание TDescriptorInspector.
  */
 export function createInspector(
-	target: IComponentDescriptor | TComponentAccessor,
+	target: IComponentDescriptor | TComponentAccessor | TCollectionAccessor | IComponentSchema | ICollectionSchema,
 	naming: INamingStrategy = VueNaming,
 ): TDescriptorInspector {
-	const schema: IComponentSchema = (target as any).getSchema
+	const schema: IComponentSchema = ((target as any).getSchema
 		? (target as any).getSchema()
-		: target
+		: target) as IComponentSchema
 
 	return new TDescriptorInspector(schema, naming || VueNaming)
 }

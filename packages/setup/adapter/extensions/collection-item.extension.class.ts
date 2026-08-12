@@ -1,6 +1,6 @@
 /**
  * TCollectionItemExtension — регистрирует элемент в родительской коллекции
- * через elevator (толкает себя наверх).
+ * через elevator (толкает instance наверх).
  *
  * Использование:
  *   adapter.use(TCollectionItemExtension, { elevator: vueElevatorFactory })
@@ -22,14 +22,12 @@ export class TCollectionItemExtension {
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 
 		const register = itemElevator.up() as
-			| ((payload: { instance: any; bundle: any }) => () => void)
+			| ((item: any) => () => void)
 			| undefined
 
 		if (!register) return
 
-		const { instance, bundle } = context
-
-		const cleanup = register({ instance, bundle })
+		const cleanup = register(context.instance)
 
 		context.events.on('destroy', cleanup)
 	}

@@ -8,4 +8,8 @@ export type {
     INamingStrategy,
     IContextElevator,
 	TPropType,
+    ICollectionPropContribution,
+    ICollectionContribution,
+    ICompiledCollectionProp,
+    ICollectionSchema,
 } from './types'
