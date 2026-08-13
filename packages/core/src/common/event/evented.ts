@@ -49,6 +49,16 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _middlewares: TEventMiddleware<TEvents>[] = []
 
 	/**
+	 * Список исходящих подписок, созданных через {@link relay}.
+	 * Нужен для того, чтобы {@link dispose} мог отписаться от всех источников.
+	 */
+	private _relays: {
+		source: TEvented<any>
+		event: any
+		handler: (...args: any[]) => void
+	}[] = []
+
+	/**
 	 * Счётчик глушения событий.
 	 * Значение > 0 означает, что генерация событий временно приостановлена.
 	 */
@@ -302,17 +312,38 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 
 		for (const rule of rules) {
 			if (typeof rule === 'string' || typeof rule === 'symbol') {
-				src.on(rule as any, (...args: any[]) => tgt.emit(rule as any, ...args))
+				const event = rule as any
+				const handler = (...args: any[]) => tgt.emit(event, ...args)
+
+				src.on(event, handler)
+				this._relays.push({ source: src, event, handler })
 			} else {
 				const { from, as: targetEvent, then: hook } = rule as TRelayRule<TSource, TEvents>
 
 				const target = targetEvent ?? from
 
-				src.on(from as any, (...args: any[]) => {
+				const handler = (...args: any[]) => {
 					hook?.(...args)
 					tgt.emit(target as any, ...args)
-				})
+				}
+
+				src.on(from as any, handler)
+				this._relays.push({ source: src, event: from as any, handler })
 			}
 		}
+	}
+
+	/**
+	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий ({@link relay}),
+	 * снимает middleware и удаляет входящие подписки.
+	 */
+	dispose(): void {
+		for (const { source, event, handler } of this._relays) {
+			source.off(event, handler)
+		}
+
+		this._relays = []
+		this._middlewares = []
+		this._items.remove()
 	}
 }
