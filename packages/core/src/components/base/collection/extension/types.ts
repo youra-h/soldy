@@ -1,5 +1,6 @@
 import type { ICommand } from '../commands'
 import type { ICollectionEngine } from '../types'
+import type { TEvented } from '@soldy/core'
 
 export interface IExtensionContext<T> {
 	readonly engine: ICollectionEngine<T>
@@ -8,9 +9,15 @@ export interface IExtensionContext<T> {
 	batch(action: () => void): void
 }
 
-export interface IExtension<T> {
+export interface IExtension<
+	T,
+	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
+> {
 	/** Уникальное имя расширения (plain, batch, activation, order, selection). */
 	readonly name: string
+
+	/** События расширения. */
+	readonly events: TEvented<TEvents>
 
 	/**
 	 * Вызывается движком при регистрации расширения.
@@ -36,7 +43,13 @@ export interface IBaseOwnerItemExtensionOptions<
  * Базовый контракт item-адаптера.
  * Конкретные адаптеры (активации, порядка, выборки) расширяют этот интерфейс.
  */
-export interface IItemExtension<TItem extends object = any> {}
+export interface IItemExtension<
+	TItem extends object = any,
+	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
+> {
+	/** Собственные события item-адаптера (для реактивности в UI-слое). */
+	readonly events: TEvented<TEvents>
+}
 
 /**
  * Конструктор item-адаптера.

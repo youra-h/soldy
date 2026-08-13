@@ -11,7 +11,7 @@ import { TEvented } from '@soldy/core'
 export abstract class TBaseExtension<
 	TItem extends object,
 	TEvents extends Record<string, (...args: any) => any>,
-> implements IExtension<TItem> {
+> implements IExtension<TItem, TEvents> {
 	abstract readonly name: string
 
 	readonly events = new TEvented<TEvents>()
