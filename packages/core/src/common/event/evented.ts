@@ -337,7 +337,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий ({@link relay}),
 	 * снимает middleware и удаляет входящие подписки.
 	 */
-	dispose(): void {
+	destroy(): void {
 		for (const { source, event, handler } of this._relays) {
 			source.off(event, handler)
 		}

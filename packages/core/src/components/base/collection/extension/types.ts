@@ -49,6 +49,9 @@ export interface IItemExtension<
 > {
 	/** Собственные события item-адаптера (для реактивности в UI-слое). */
 	readonly events: TEvented<TEvents>
+
+	/** Очистить собственные события item-адаптера (отписки, middleware, входящие подписки). */
+	destroy(): void
 }
 
 /**

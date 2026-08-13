@@ -19,4 +19,11 @@ export abstract class TBaseItemExtension<
 		protected readonly _item: TItem,
 		protected readonly _parent: TParent,
 	) {}
+
+	/**
+	 * Очистить собственные события item-адаптера (отписки, middleware, входящие подписки).
+	 */
+	destroy(): void {
+		this.events.destroy()
+	}
 }
