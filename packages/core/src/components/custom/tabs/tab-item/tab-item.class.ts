@@ -58,6 +58,7 @@ export default class TTabItem<
 
 		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
 			this._classes.toggle(`--closable`, !!payload.newValue)
+			;(this.events as TEvented<TTabItemEvents>).emit('change:closable', payload.newValue)
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
