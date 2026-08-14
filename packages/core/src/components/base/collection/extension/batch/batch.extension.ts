@@ -26,6 +26,15 @@ export class TBatchExtension<TItem extends object>
 		this.events.emit('change:trackBy', fn)
 	}
 
+	set items(items: TItem[]) {
+		this.clear()
+		this.set(items)
+	}
+
+	get items(): TItem[] {
+		return this._ctx.engine
+	}
+
 	set(items: TItem[]): void {
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
