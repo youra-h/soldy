@@ -2,18 +2,19 @@ import type { IEntity } from '../entity'
 import { TEvented } from '../../../common'
 import type { IStateUnit } from '../../../common'
 import type { IVisibilityState } from '../../../common'
+import type { TActionEvent } from '../../../common'
 
 export type TComponentEvents = {
 	/** show */
 	show: () => void
 	/** hide */
 	hide: () => void
-	/** show:before (можно отменить, вернув false) */
-	'show:before': () => boolean
+	/** show:before — вызов e.preventDefault() отменяет показ */
+	'show:before': (e: TActionEvent) => void
 	/** show:after */
 	'show:after': () => void
-	/** hide:before (можно отменить, вернув false) */
-	'hide:before': () => boolean
+	/** hide:before — вызов e.preventDefault() отменяет скрытие */
+	'hide:before': (e: TActionEvent) => void
 	/** hide:after */
 	'hide:after': () => void
 

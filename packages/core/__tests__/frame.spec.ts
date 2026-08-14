@@ -102,7 +102,7 @@ describe('TFrame', () => {
 
 	it('beforeShow может отменить показ', () => {
 		const frame = new TFrame()
-		frame.events.on('show:before' as any, () => false)
+		frame.events.on('show:before' as any, (e: any) => e.preventDefault())
 
 		frame.show()
 		expect(frame.visible).toBe(false)
@@ -111,7 +111,7 @@ describe('TFrame', () => {
 
 	it('beforeHide может отменить скрытие', () => {
 		const frame = new TFrame({ visible: true })
-		frame.events.on('hide:before' as any, () => false)
+		frame.events.on('hide:before' as any, (e: any) => e.preventDefault())
 
 		frame.hide()
 		expect(frame.visible).toBe(true)
@@ -123,12 +123,10 @@ describe('TFrame', () => {
 
 		frame.events.on('show:before' as any, () => {
 			log.push('show:before')
-			return true
 		})
 		frame.events.on('show' as any, () => log.push('show'))
 		frame.events.on('hide:before' as any, () => {
 			log.push('hide:before')
-			return true
 		})
 		frame.events.on('hide' as any, () => log.push('hide'))
 

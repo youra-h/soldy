@@ -1,5 +1,6 @@
 // Типы
 export type { TEngineEvents } from './types'
+export { TInsertEvent } from './types'
 
 // Хранилище
 export type { IStorage } from './storage'

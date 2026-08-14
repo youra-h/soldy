@@ -19,20 +19,6 @@ describe('TEventEmitter', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('emitWithResult: возвращает true если все обработчики true/undefined', () => {
-		const emitter = new TEventEmitter()
-		emitter.on('test', () => true)
-		emitter.on('test', () => undefined)
-		expect(emitter.emitWithResult('test')).toBe(true)
-	})
-
-	it('emitWithResult: возвращает false если хотя бы один обработчик false', () => {
-		const emitter = new TEventEmitter()
-		emitter.on('test', () => true)
-		emitter.on('test', () => false)
-		expect(emitter.emitWithResult('test')).toBe(false)
-	})
-
 	it('remove: удаляет все события', () => {
 		const emitter = new TEventEmitter()
 		const handler = vi.fn()

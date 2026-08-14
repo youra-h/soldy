@@ -212,20 +212,6 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	}
 
 	/**
-	 * Выполняет событие и возвращает результат выполнения обработчиков.
-	 * При глушении возвращает `true` (считаем, что проверка/действие разрешено по умолчанию).
-	 *
-	 * @param event
-	 * @param args
-	 * @returns {boolean}
-	 */
-	emitWithResult<K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): boolean {
-		if (this.isMuted) return true
-		this._notifyMiddlewares('emitWithResult', event, args)
-		return this._items.emitWithResult(event, ...args)
-	}
-
-	/**
 	 * Выполняет событие и возвращает первый не-undefined результат (short-circuit).
 	 * При глушении возвращает `undefined`.
 	 */

@@ -1,5 +1,5 @@
 import { TEntity } from '../entity'
-import { TEvented, TStateUnit, TVisibilityState } from '../../../common'
+import { TEvented, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
 import type { IVisibilityState, TValuePayload } from '../../../common'
 import type {
 	IComponent,
@@ -129,8 +129,9 @@ export default class TComponent<
 	show(): void {
 		if (!this.beforeShow()) return
 
-		const canShow = (this.events as TEvented<TComponentEvents>).emitWithResult('show:before')
-		if (!canShow) return
+		const e = new TActionEvent()
+		;(this.events as TEvented<TComponentEvents>).emit('show:before', e)
+		if (e.defaultPrevented) return
 
 		if (this.visible) return
 		;(this._states.visible as IVisibilityState).show()
@@ -145,8 +146,9 @@ export default class TComponent<
 
 		if (!this.beforeHide()) return
 
-		const canHide = (this.events as TEvented<TComponentEvents>).emitWithResult('hide:before')
-		if (!canHide) return
+		const e = new TActionEvent()
+		;(this.events as TEvented<TComponentEvents>).emit('hide:before', e)
+		if (e.defaultPrevented) return
 		;(this._states.visible as IVisibilityState).hide()
 		;(this.events as TEvented<TComponentEvents>).emit('hide')
 

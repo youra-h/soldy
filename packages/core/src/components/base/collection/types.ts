@@ -1,14 +1,20 @@
 import type { ICommand } from './commands'
 import { TEvented } from '@soldy/core'
+import { TActionEvent } from '../../../common/event/action-event'
+
+export class TInsertEvent<T> extends TActionEvent {
+	constructor(public item: T) {
+		super()
+	}
+}
 
 export type TEngineEvents<T> = {
 	/**
 	 * Вызывается ПЕРЕД добавлением элемента (до мутации хранилища).
-	 * Обработчик может вернуть подменённый элемент — например, создать инстанс
-	 * из сырого объекта (item factory). Возврат `undefined` означает
-	 * «оставить элемент без изменений».
+	 * - Изменить `e.item` — подменить элемент (например, item factory).
+	 * - Вызвать `e.preventDefault()` — отменить вставку.
 	 */
-	'item:add:before': (item: unknown) => T | void
+	'item:add:before': (e: TInsertEvent<T>) => void
 
 	/** Вызывается при добавлении одного элемента */
 	'item:added': (item: T) => void

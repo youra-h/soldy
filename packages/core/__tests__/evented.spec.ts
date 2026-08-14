@@ -31,24 +31,6 @@ describe('TEvented', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('emitWithResult: true если все обработчики true/undefined', () => {
-		const events = new TEvented<TestEvents>()
-
-		events.on('change', () => true)
-		events.on('change', () => undefined)
-
-		expect(events.emitWithResult('change', 'x')).toBe(true)
-	})
-
-	it('emitWithResult: false если хотя бы один обработчик false', () => {
-		const events = new TEvented<TestEvents>()
-
-		events.on('change', () => true)
-		events.on('change', () => false)
-
-		expect(events.emitWithResult('change', 'x')).toBe(false)
-	})
-
 	// --- Middleware (use) ---
 
 	it('use: middleware вызывается при emit и получает контекст', () => {
@@ -83,17 +65,7 @@ describe('TEvented', () => {
 		expect(middleware.mock.calls[2][0].event).toBe('reset')
 	})
 
-	it('use: middleware получает правильный type для emitWithResult', () => {
-		const events = new TEvented<TestEvents>()
-		const middleware = vi.fn()
-
-		events.use(middleware)
-		events.emitWithResult('change', 'x')
-
-		expect(middleware.mock.calls[0][0].type).toBe('emitWithResult')
-	})
-
-	it('use: middleware получает правильный type для emitResolve', () => {
+	it('use: миддлвар получает правильный type для emitResolve', () => {
 		const events = new TEvented<TestEvents>()
 		const middleware = vi.fn()
 
@@ -297,15 +269,6 @@ describe('TEvented', () => {
 	})
 
 	// --- Поведение emit-методов при глушении ---
-
-	it('emitWithResult: возвращает true при глушении', () => {
-		const events = new TEvented<TestEvents>()
-
-		events.on('change', () => false)
-		events.pause()
-
-		expect(events.emitWithResult('change', 'x')).toBe(true)
-	})
 
 	it('emitResolve: возвращает undefined при глушении', () => {
 		const events = new TEvented<TestEvents>()

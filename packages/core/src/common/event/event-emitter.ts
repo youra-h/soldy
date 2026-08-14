@@ -9,7 +9,6 @@ export interface IEventSource {
 
 export interface IEventEmitter extends IEventSource {
 	emit(event: string, ...args: unknown[]): void
-	emitWithResult(event: string, ...args: unknown[]): boolean
 	emitResolve<T>(event: string, ...args: unknown[]): T | undefined
 	emitResolveAll<T>(event: string, ...args: unknown[]): T[]
 	remove(event?: string): void
@@ -44,25 +43,6 @@ export class TEventEmitter<
 
 	emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
 		this._items.get(event as string)?.forEach((handler) => handler(...args))
-	}
-
-	/**
-	 * Выполняет событие и возвращает результат выполнения обработчиков.
-	 * Если хотя бы один обработчик вернул false — возвращает false.
-	 */
-	emitWithResult<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): boolean {
-		const handlers = this._items.get(event as string)
-		if (!handlers) return true
-
-		let result = true
-
-		for (const handler of handlers) {
-			if (handler(...args) === false) {
-				result = false
-			}
-		}
-
-		return result
 	}
 
 	/**

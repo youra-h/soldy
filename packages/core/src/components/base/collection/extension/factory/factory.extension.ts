@@ -39,7 +39,11 @@ export class TItemFactoryExtension<TItem extends object>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:add:before', (item) => this._normalize(item))
+		ctx.engine.events.on('item:add:before', (e) => {
+			if (!(e.item instanceof this.itemCtor)) {
+				e.item = new this.itemCtor(e.item)
+			}
+		})
 	}
 
 	create(source: any): TItem {
@@ -48,11 +52,5 @@ export class TItemFactoryExtension<TItem extends object>
 
 	isSource(value: unknown): boolean {
 		return !(value instanceof this.itemCtor)
-	}
-
-	private _normalize(value: unknown): TItem {
-		if (value instanceof this.itemCtor) return value
-
-		return new this.itemCtor(value)
 	}
 }
