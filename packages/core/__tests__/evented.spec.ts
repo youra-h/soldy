@@ -369,4 +369,42 @@ describe('TEvented', () => {
 
 		expect(callOrder).toEqual(['hook', 'handler'])
 	})
+
+	// --- destroy ---
+
+	it('destroy: отписывает relay-подписки от источника', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<{ forwarded: (value: string) => void }>()
+		const emitSpy = vi.spyOn(target, 'emit')
+
+		target.relay(source, [{ from: 'change', as: 'forwarded' }])
+		target.destroy()
+		emitSpy.mockClear()
+
+		source.emit('change', 'hello')
+
+		expect(emitSpy).not.toHaveBeenCalled()
+	})
+
+	it('destroy: удаляет входящие подписки', () => {
+		const events = new TEvented<TestEvents>()
+		const handler = vi.fn()
+
+		events.on('change', handler)
+		events.destroy()
+		events.emit('change', 'hello')
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('destroy: снимает middleware', () => {
+		const events = new TEvented<TestEvents>()
+		const middleware = vi.fn()
+
+		events.use(middleware)
+		events.destroy()
+		events.emit('change', 'x')
+
+		expect(middleware).not.toHaveBeenCalled()
+	})
 })
