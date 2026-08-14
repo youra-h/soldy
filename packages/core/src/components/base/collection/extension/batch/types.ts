@@ -14,6 +14,12 @@ export interface IBatchExtension<TItem extends object = any> {
 	set(items: TItem[]): void
 
 	/**
+	 * Удалить элементы из коллекции.
+	 * @param items — элементы для удаления.
+	 */
+	remove(items: TItem[]): void
+
+	/**
 	 * Патчить элементы в коллекцию.
 	 * @param items — элементы для патчинга.
 	 */
