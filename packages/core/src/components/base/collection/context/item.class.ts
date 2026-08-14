@@ -62,5 +62,10 @@ export class TItemContext<
 		}
 
 		this._cache.clear()
+
+		// Если у элемента есть свойство `rendered`, то при удалении элемента из коллекции оно сбрасывается в `false`.
+		if ('rendered' in this.owner) {
+			;(this.owner as { rendered: boolean }).rendered = false
+		}
 	}
 }
