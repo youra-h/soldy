@@ -34,11 +34,11 @@ tabs.orientation = 'horizontal'
 // }, 2000)
 
 // --- Вариант 2: через prop items ---
-const tabItems = ref([
+const tabItems = [
 	{ text: 'Alpha', value: 'alpha', closable: true },
 	{ text: 'Beta', value: 'beta', active: true, closable: true },
 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
-])
+]
 </script>
 
 <template>
@@ -46,14 +46,14 @@ const tabItems = ref([
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
 			<!-- <DragAndDrop> -->
-				<Tabs closable>
-					<TabItem text="Tab 1" value="t1" active />
-					<TabItem text="Tab 2" value="t2" />
-					<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
-					<template #panel:t1><p>Content 1</p></template>
-					<template #panel:t2><p>Content 2</p></template>
-					<template #panel:t3><p>Content 3</p></template>
-				</Tabs>
+			<Tabs closable>
+				<TabItem text="Tab 1" value="t1" active />
+				<TabItem text="Tab 2" value="t2" />
+				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
+				<template #panel:t1><p>Content 1</p></template>
+				<template #panel:t2><p>Content 2</p></template>
+				<template #panel:t3><p>Content 3</p></template>
+			</Tabs>
 			<!-- </DragAndDrop> -->
 		</div>
 
@@ -76,7 +76,7 @@ const tabItems = ref([
 				<template #trailing>trailing</template>
 			</Tabs>
 		</section>
-<!--
+		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
 			<Tabs view="contained">

@@ -27,6 +27,8 @@ export class TBatchExtension<TItem extends object>
 	}
 
 	set(items: TItem[]): void {
+		if (!items.length) return
+
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
 		})
@@ -44,6 +46,8 @@ export class TBatchExtension<TItem extends object>
 	}
 
 	patch(items: TItem[]): void {
+		if (!items.length) return
+
 		const trackBy = this._trackBy
 
 		if (!trackBy) {
@@ -100,6 +104,8 @@ export class TBatchExtension<TItem extends object>
 	}
 
 	remove(items: TItem[]): void {
+		if (!items.length) return
+
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TRemoveCommand(item)))
 		})

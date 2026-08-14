@@ -101,7 +101,7 @@ export default {
 			...useSyncProps(collection.engine.events, {
 				items: {
 					value: () => {
-						console.log('collection.engine.items', collection.engine)
+						console.log('collection.engine', collection.engine)
 						return collection.engine
 					},
 					triggers: ['change:items'],
