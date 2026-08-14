@@ -1,2 +1,2 @@
-export type { ISelectionItemExtension } from './types'
+export type { ISelectionItemExtension, TSelectionItemEvents } from './types'
 export { TSelectionItemExtension } from './selection-item.extension'

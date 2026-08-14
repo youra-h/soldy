@@ -1,5 +1,5 @@
 import type { TActivationExtension } from '../activation.extension'
-import type { IActivationItemExtension } from './types'
+import type { IActivationItemExtension, TActivationItemEvents } from './types'
 import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
@@ -10,9 +10,20 @@ import { TBaseItemExtension } from '../../base-item-extension.class'
  * @template TItem — тип элемента (пользователь может расширить)
  */
 export class TActivationItemExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, TActivationExtension<TItem>>
+	extends TBaseItemExtension<TItem, TActivationExtension<TItem>, TActivationItemEvents>
 	implements IActivationItemExtension<TItem>
 {
+	constructor(item: TItem, parent: TActivationExtension<TItem>) {
+		super(item, parent)
+
+		this.events.relay(parent.events, [
+			{
+				from: 'change:activation',
+				as: 'change:active',
+			},
+		])
+	}
+
 	/**
 	 * Активен ли элемент.
 	 * Вычисляется на лету через родительский TActivationExtension.

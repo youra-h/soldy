@@ -1,5 +1,5 @@
 import type { TSelectionExtension } from '../selection.extension'
-import type { ISelectionItemExtension } from './types'
+import type { ISelectionItemExtension, TSelectionItemEvents } from './types'
 import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
@@ -10,9 +10,15 @@ import { TBaseItemExtension } from '../../base-item-extension.class'
  * @template TItem — тип элемента (пользователь может расширить)
  */
 export class TSelectionItemExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, TSelectionExtension<TItem>>
+	extends TBaseItemExtension<TItem, TSelectionExtension<TItem>, TSelectionItemEvents>
 	implements ISelectionItemExtension<TItem>
 {
+	constructor(item: TItem, parent: TSelectionExtension<TItem>) {
+		super(item, parent)
+
+		this.events.relay(parent.events, [{ from: 'change:selection', as: 'change:selected' }])
+	}
+
 	/** Выбран ли элемент. Вычисляется на лету через родительский TSelectionExtension. */
 	get selected(): boolean {
 		return this._parent.isSelected(this._item)
