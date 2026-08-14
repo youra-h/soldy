@@ -400,9 +400,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		tab1.closable = false
 		// tab2, tab3 — наследуют tabs.closable = true
 
-		const registry = new TItemContextRegistry(
-			collection.extensions as unknown as Record<string, any>,
-		)
+		const registry = new TItemContextRegistry(collection.getCore())
 
 		const ctx1 = registry.get(tab1)
 		// Явный false у элемента — приоритет
@@ -478,9 +476,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		collection.extensions.plain.insert(tab)
 
-		const registry = new TItemContextRegistry(
-			collection.extensions as unknown as Record<string, any>,
-		)
+		const registry = new TItemContextRegistry(collection.getCore())
 		const ctx = registry.get(tab)
 
 		expect(ctx.adapters.activation).toBeDefined()
@@ -507,9 +503,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		const onClose = vi.fn()
 		collection.extensions.tabs.events.on('item:close', onClose)
 
-		const registry = new TItemContextRegistry(
-			collection.extensions as unknown as Record<string, any>,
-		)
+		const registry = new TItemContextRegistry(collection.getCore())
 
 		// Получаем адаптер и вызываем close()
 		const ctx = registry.get(tab1)
@@ -531,9 +525,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		const onClose = vi.fn()
 		collection.extensions.tabs.events.on('item:close', onClose)
 
-		const registry = new TItemContextRegistry(
-			collection.extensions as unknown as Record<string, any>,
-		)
+		const registry = new TItemContextRegistry(collection.getCore())
 		const ctx = registry.get(tab)
 
 		ctx.adapters.tabs.close()

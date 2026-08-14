@@ -86,7 +86,7 @@ function createCollection() {
 describe('TItemContext + TItemContextRegistry', () => {
 	it('registry.get возвращает контекст для элемента', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -97,7 +97,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('registry кеширует контекст (один и тот же объект)', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -110,7 +110,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters.activation: работает через Proxy', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -128,7 +128,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters.selection: работает через Proxy', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -149,7 +149,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters.order: возвращает индекс элемента', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const a: Item = { id: 1, name: 'a' }
 		const b: Item = { id: 2, name: 'b' }
 
@@ -163,7 +163,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters.customFeature: пользовательское расширение работает', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -177,7 +177,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters: кеширует адаптеры (один и тот же объект)', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -191,7 +191,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('adapters: plain не имеет createItem — возвращает undefined', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
@@ -206,7 +206,7 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 	it('TExtractItemAdapters выводит правильные типы', () => {
 		const col = createCollection()
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 
 		// Это проверка на уровне типов:
 		// TypeScript должен разрешить все эти обращения

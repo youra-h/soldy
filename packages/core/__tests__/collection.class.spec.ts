@@ -196,7 +196,7 @@ describe('TCollection', () => {
 			.use(new TPlainExtension<Item>())
 			.use(new TActivationExtension<Item>())
 
-		const registry = new TItemContextRegistry(col.extensions)
+		const registry = new TItemContextRegistry(col.getCore())
 		const item: Item = { id: 1, name: 'test' }
 
 		col.extensions.plain.insert(item)
