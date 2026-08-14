@@ -49,7 +49,7 @@ export type TBaseItemEventsExtension = {
  */
 export interface IItemExtension<
 	TItem extends object = any,
-	TEvents extends Record<string, (...args: any) => any> = TBaseItemEventsExtension,
+	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
 > {
 	/** Собственные события item-адаптера (для реактивности в UI-слое). */
 	readonly events: TEvented<TEvents>

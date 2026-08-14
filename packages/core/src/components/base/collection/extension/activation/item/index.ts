@@ -1,2 +1,2 @@
-export type { IActivationItemExtension, TActivationItemEvents } from './types'
+export type { IActivationItemExtension, TActivationItemEventsExtension } from './types'
 export { TActivationItemExtension } from './activation-item.extension'

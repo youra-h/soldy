@@ -1,2 +1,2 @@
-export type { IOrderItemExtension, TOrderItemEvents } from './types'
+export type { IOrderItemExtension, TOrderItemEventsExtension } from './types'
 export { TOrderItemExtension } from './order-item.extension'
