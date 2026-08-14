@@ -1,2 +1,2 @@
-export { TItemFactoryExtension } from './factory.extension'
-export type { TItemFactoryEvents, IItemFactoryExtension } from './types'
+export { TFactoryExtension } from './factory.extension'
+export type { TFactoryEvents, IFactoryExtension } from './types'

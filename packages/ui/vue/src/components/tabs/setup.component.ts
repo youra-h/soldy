@@ -48,6 +48,7 @@ import {
 	TCollection,
 	TPlainExtension,
 	TBatchExtension,
+	TFactoryExtension,
 	TActivationExtension,
 	TOrderExtension,
 	TTabsExtension,

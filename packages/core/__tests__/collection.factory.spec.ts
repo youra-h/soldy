@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TCollection, TBatchExtension, TItemFactoryExtension } from '@soldy/core'
+import { TCollection, TBatchExtension, TFactoryExtension } from '@soldy/core'
 
 interface ITestItem {
 	id: number
@@ -21,12 +21,12 @@ class TTestItem implements ITestItem {
 }
 
 function createCollection() {
-	const factory = new TItemFactoryExtension<ITestItem>(TTestItem)
+	const factory = new TFactoryExtension<ITestItem>(TTestItem)
 	const batch = new TBatchExtension<ITestItem>()
 
 	const col = new TCollection<
 		ITestItem,
-		{ factory: TItemFactoryExtension<ITestItem>; batch: TBatchExtension<ITestItem> }
+		{ factory: TFactoryExtension<ITestItem>; batch: TBatchExtension<ITestItem> }
 	>({
 		extensions: { factory, batch },
 	})
@@ -34,7 +34,7 @@ function createCollection() {
 	return { col, factory, batch }
 }
 
-describe('TItemFactoryExtension + TBatchExtension.update/trackBy', () => {
+describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 	it('update без trackBy: plain-объекты превращаются в инстансы', () => {
 		const { col } = createCollection()
 

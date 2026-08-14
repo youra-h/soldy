@@ -1,11 +1,11 @@
 import type { IExtension } from '../types'
 
 /** События item-factory расширения (собственных событий нет). */
-export type TItemFactoryEvents = Record<string, never>
+export type TFactoryEvents = Record<string, never>
 
 /** Контракт расширения фабрики элементов. */
-export interface IItemFactoryExtension<TItem extends object = any>
-	extends IExtension<TItem, TItemFactoryEvents> {
+export interface IFactoryExtension<TItem extends object = any>
+	extends IExtension<TItem, TFactoryEvents> {
 	/** Создать инстанс элемента из сырого источника. */
 	create(source: any): TItem
 
