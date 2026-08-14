@@ -37,3 +37,8 @@ export interface ICollectionEngine<T> extends ReadonlyArray<T> {
 	/** Пакетное выполнение команд */
 	batch(action: () => void): void
 }
+
+export interface ICollectionCore<T, TExtensions extends Record<string, any>> {
+	readonly engine: ICollectionEngine<T>
+	readonly extensions: TExtensions
+}

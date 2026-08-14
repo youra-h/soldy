@@ -1,5 +1,5 @@
 import { TCollectionEngine } from './engine.class'
-import type { ICollectionEngine } from './types'
+import type { ICollectionEngine, ICollectionCore } from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
@@ -56,6 +56,16 @@ export class TCollection<
 		extension.install(ctx)
 
 		return this as unknown as TCollection<T, TExtensions & { [K in E['name']]: E }>
+	}
+
+	/**
+	 * Возвращает основные компоненты коллекции: движок и подключённые расширения.
+	 */
+	public getCore(): ICollectionCore<T, TExtensions> {
+		return {
+			engine: this.engine,
+			extensions: this.extensions,
+		}
 	}
 
 	private _createContext(): IExtensionContext<T> {

@@ -6,7 +6,12 @@ import {
 } from '../../../base/collection'
 import type { ITabItem } from '../tab-item/types'
 import type { ITabs } from '../types'
-import type { TTabsExtensionEvents, ITabsExtensionOptions, TTabsExtensions, ITabsExtension } from './types'
+import type {
+	TTabsExtensionEvents,
+	ITabsExtensionOptions,
+	TTabsExtensions,
+	ITabsExtension,
+} from './types'
 import { TTabItemExtension, type ITabItemExtension } from './item'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../common'
 
@@ -51,7 +56,10 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 		super.install(ctx)
 
 		// Реестр для доступа к item-адаптерам (кеширует через WeakMap)
-		this._itemRegistry = new TItemContextRegistry(ctx.extensions as TTabsExtensions<TItem>)
+		this._itemRegistry = new TItemContextRegistry({
+			extensions: ctx.extensions as TTabsExtensions<TItem>,
+			engine: ctx.engine,
+		})
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
 		ctx.engine.events.on('item:added', (item: TItem) => {

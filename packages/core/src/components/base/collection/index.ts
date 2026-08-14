@@ -7,14 +7,20 @@ export { TArrayStorage } from './storage'
 
 // Команды
 export type { ICommand } from './commands'
-export { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand, TClearCommand } from './commands'
+export {
+	TInsertCommand,
+	TRemoveCommand,
+	TUpdateCommand,
+	TMoveCommand,
+	TClearCommand,
+} from './commands'
 
 // Расширения
 export * from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'
-export type { ICollectionEngine } from './types'
+export type { ICollectionEngine, ICollectionCore } from './types'
 
 // Фасад
 export { TCollection } from './collection.class'

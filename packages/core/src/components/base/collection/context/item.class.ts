@@ -1,4 +1,4 @@
-import type { IExtension, IExtensionItems } from '../extension'
+import type { IExtension, IExtensionItems, IItemExtension } from '../extension'
 import type { TExtractItemAdapters } from './types'
 
 /**
@@ -14,6 +14,7 @@ export class TItemContext<
 	TItem extends object,
 	TExtensions extends Record<string, IExtension<TItem>> = Record<string, any>,
 > {
+	private readonly _cache = new Map<string, IItemExtension<TItem>>()
 	/**
 	 * Динамический объект адаптеров с автовыводом типов.
 	 * Адаптеры создаются лениво (при первом обращении) и кешируются.
@@ -24,12 +25,10 @@ export class TItemContext<
 		public readonly owner: TItem,
 		extensions: TExtensions,
 	) {
-		const cache = new Map<string, unknown>()
-
 		this.adapters = new Proxy({} as TExtractItemAdapters<TExtensions>, {
-			get(_target, prop: string) {
-				if (cache.has(prop)) {
-					return cache.get(prop)
+			get: (_target, prop: string) => {
+				if (this._cache.has(prop)) {
+					return this._cache.get(prop)
 				}
 
 				const ext = extensions[prop]
@@ -40,7 +39,7 @@ export class TItemContext<
 				) {
 					const adapter = (ext as unknown as IExtensionItems<TItem>).createItem(owner)
 
-					cache.set(prop, adapter)
+					this._cache.set(prop, adapter)
 
 					return adapter
 				}
@@ -48,5 +47,20 @@ export class TItemContext<
 				return undefined
 			},
 		})
+	}
+
+	/**
+	 * Очистить кеш адаптеров и вызвать `destroy()` у каждого.
+	 * Вызывается при удалении элемента из коллекции. В item идет отписка от событий расширений, middleware, входящие подписки.
+	 * После вызова `destroy()` контекст элемента больше не должен использоваться.
+	 * (Вызов `destroy()` у адаптеров не вызывает удаление их из кеша — это делает сам контекст.)
+	 * @internal
+	 */
+	destroy(): void {
+		for (const adapter of this._cache.values()) {
+			adapter.destroy()
+		}
+
+		this._cache.clear()
 	}
 }
