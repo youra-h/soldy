@@ -90,6 +90,12 @@ export default {
 					triggers: ['change:items'],
 				},
 			}),
+			...useSyncProps(collection.extensions.activation.events, {
+				activeItem: {
+					value: () => collection.extensions.activation.activeItem,
+					triggers: ['change:activation'],
+				},
+			}),
 		}
 	},
 }

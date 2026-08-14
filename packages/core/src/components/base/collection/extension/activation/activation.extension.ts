@@ -47,6 +47,7 @@ export class TActivationExtension<TItem extends object = any>
 	 */
 	activate(item: TItem): void {
 		if (this._activeItem === item) return
+
 		if (!this._ctx.engine.includes(item)) return
 
 		const prev = this._activeItem
