@@ -8,7 +8,7 @@ import {
 	TClearCommand,
 	TEvented,
 } from '@soldy/core'
-import type { TEngineEvents } from '@soldy/core'
+import type { TEngineEvents, ICommandContext } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
@@ -16,12 +16,19 @@ function createEvents() {
 	return new TEvented<TEngineEvents<Item>>()
 }
 
+function createContext(
+	storage: TArrayStorage<Item>,
+	events = createEvents(),
+): ICommandContext<Item> {
+	return { storage, events }
+}
+
 describe('TInsertCommand', () => {
 	it('apply: вставляет элемент по индексу', () => {
 		const storage = new TArrayStorage<Item>()
 		const item: Item = { id: 1, name: 'a' }
 
-		new TInsertCommand(item, 0).apply(storage)
+		new TInsertCommand(item, 0).apply(createContext(storage))
 
 		expect(storage.items).toEqual([item])
 	})
@@ -38,7 +45,7 @@ describe('TInsertCommand', () => {
 		const item: Item = { id: 1, name: 'a' }
 
 		storage.insert(item, 0)
-		new TInsertCommand(item, 0).emitEvents(events, storage)
+		new TInsertCommand(item, 0).emitEvents(createContext(storage, events))
 
 		expect(added).toHaveBeenCalledWith(item)
 		expect(count).toHaveBeenCalledWith(1)
@@ -51,7 +58,7 @@ describe('TRemoveCommand', () => {
 		const item: Item = { id: 1, name: 'a' }
 
 		storage.insert(item, 0)
-		new TRemoveCommand(item).apply(storage)
+		new TRemoveCommand(item).apply(createContext(storage))
 
 		expect(storage.items).toEqual([])
 	})
@@ -69,7 +76,7 @@ describe('TRemoveCommand', () => {
 
 		storage.insert(item, 0)
 		storage.remove(item)
-		new TRemoveCommand(item).emitEvents(events, storage)
+		new TRemoveCommand(item).emitEvents(createContext(storage, events))
 
 		expect(removed).toHaveBeenCalledWith(item)
 		expect(count).toHaveBeenCalledWith(0)
@@ -82,7 +89,7 @@ describe('TUpdateCommand', () => {
 		const item: Item = { id: 1, name: 'a' }
 
 		storage.insert(item, 0)
-		new TUpdateCommand(item, { name: 'b' }).apply(storage)
+		new TUpdateCommand(item, { name: 'b' }).apply(createContext(storage))
 
 		expect(item.name).toBe('b')
 	})
@@ -97,7 +104,7 @@ describe('TUpdateCommand', () => {
 		const item: Item = { id: 1, name: 'a' }
 		const changes = { name: 'b' }
 
-		new TUpdateCommand(item, changes).emitEvents(events, storage)
+		new TUpdateCommand(item, changes).emitEvents(createContext(storage, events))
 
 		expect(updated).toHaveBeenCalledWith(item, changes)
 	})
@@ -112,7 +119,7 @@ describe('TMoveCommand', () => {
 		storage.insert(a, 0)
 		storage.insert(b, 1)
 
-		new TMoveCommand(a, 1, 0).apply(storage)
+		new TMoveCommand(a, 1, 0).apply(createContext(storage))
 
 		expect(storage.items).toEqual([b, a])
 	})
@@ -125,7 +132,7 @@ describe('TMoveCommand', () => {
 		storage.insert(a, 0)
 		storage.insert(b, 1)
 
-		new TMoveCommand(a, 1).apply(storage)
+		new TMoveCommand(a, 1).apply(createContext(storage))
 
 		expect(storage.items).toEqual([b, a])
 	})
@@ -141,10 +148,11 @@ describe('TMoveCommand', () => {
 
 		storage.insert(a, 0)
 
+		const ctx = createContext(storage, events)
 		const cmd = new TMoveCommand(a, 0, 0)
 
-		cmd.apply(storage)
-		cmd.emitEvents(events, storage)
+		cmd.apply(ctx)
+		cmd.emitEvents(ctx)
 
 		expect(moved).not.toHaveBeenCalled() // oldIndex === newIndex — не эмитится
 	})
@@ -162,10 +170,11 @@ describe('TMoveCommand', () => {
 		storage.insert(a, 0)
 		storage.insert(b, 1)
 
+		const ctx = createContext(storage, events)
 		const cmd = new TMoveCommand(a, 1, 0)
 
-		cmd.apply(storage)
-		cmd.emitEvents(events, storage)
+		cmd.apply(ctx)
+		cmd.emitEvents(ctx)
 
 		expect(moved).toHaveBeenCalledWith(a, 0, 1)
 	})
@@ -177,7 +186,7 @@ describe('TClearCommand', () => {
 		storage.insert({ id: 1, name: 'a' }, 0)
 		storage.insert({ id: 2, name: 'b' }, 1)
 
-		new TClearCommand<Item>().apply(storage)
+		new TClearCommand<Item>().apply(createContext(storage))
 
 		expect(storage.items).toEqual([])
 	})
@@ -199,10 +208,11 @@ describe('TClearCommand', () => {
 		storage.insert(a, 0)
 		storage.insert(b, 1)
 
+		const ctx = createContext(storage, events)
 		const cmd = new TClearCommand<Item>()
 
-		cmd.apply(storage)
-		cmd.emitEvents(events, storage)
+		cmd.apply(ctx)
+		cmd.emitEvents(ctx)
 
 		expect(removed).toHaveBeenCalledTimes(2)
 		expect(count).toHaveBeenCalledWith(0)

@@ -1,7 +1,4 @@
-import type { IStorage } from '../storage'
-import { TEvented } from '@soldy/core'
-import type { TEngineEvents } from '../types'
-import type { ICommand } from './types'
+import type { ICommand, ICommandContext } from './types'
 
 /**
  * Команда очистки коллекции. Удаляет все элементы из хранилища и сохраняет их для последующего уведомления о событиях.
@@ -9,15 +6,15 @@ import type { ICommand } from './types'
 export class TClearCommand<T> implements ICommand<T> {
 	private _removedItems: T[] = []
 
-	apply(storage: IStorage<T>): void {
-		this._removedItems = [...storage.items]
-		storage.clear()
+	apply(ctx: ICommandContext<T>): void {
+		this._removedItems = [...ctx.storage.items]
+		ctx.storage.clear()
 	}
 
-	emitEvents(events: TEvented<TEngineEvents<T>>, storage: IStorage<T>): void {
-		this._removedItems.forEach((item) => events.emit('item:removed', item))
+	emitEvents(ctx: ICommandContext<T>): void {
+		this._removedItems.forEach((item) => ctx.events.emit('item:removed', item))
 
-		events.emit('change:count', storage.items.length)
-		events.emit('reset')
+		ctx.events.emit('change:count', ctx.storage.items.length)
+		ctx.events.emit('reset')
 	}
 }

@@ -1,4 +1,4 @@
-export type { ICommand } from './types';
+export type { ICommand, ICommandContext } from './types';
 export { TInsertCommand } from './insert-command.class';
 export { TRemoveCommand } from './remove-command.class';
 export { TUpdateCommand } from './update-command.class';

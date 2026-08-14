@@ -1,7 +1,4 @@
-import type { IStorage } from '../storage'
-import { TEvented } from '@soldy/core'
-import type { TEngineEvents } from '../types'
-import type { ICommand } from './types'
+import type { ICommand, ICommandContext } from './types'
 
 /**
  * Команда удаления элемента из коллекции. Удаляет элемент из хранилища и уведомляет о событиях.
@@ -9,12 +6,12 @@ import type { ICommand } from './types'
 export class TRemoveCommand<T> implements ICommand<T> {
 	constructor(public item: T) {}
 
-	apply(storage: IStorage<T>): void {
-		storage.remove(this.item)
+	apply(ctx: ICommandContext<T>): void {
+		ctx.storage.remove(this.item)
 	}
 
-	emitEvents(events: TEvented<TEngineEvents<T>>, storage: IStorage<T>): void {
-		events.emit('item:removed', this.item)
-		events.emit('change:count', storage.items.length)
+	emitEvents(ctx: ICommandContext<T>): void {
+		ctx.events.emit('item:removed', this.item)
+		ctx.events.emit('change:count', ctx.storage.items.length)
 	}
 }

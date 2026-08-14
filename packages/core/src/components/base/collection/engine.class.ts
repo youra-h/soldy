@@ -1,5 +1,5 @@
 import type { IStorage } from './storage'
-import type { ICommand } from './commands'
+import type { ICommand, ICommandContext } from './commands'
 import type { TEngineEvents } from './types'
 import { TEvented } from '@soldy/core'
 
@@ -67,10 +67,14 @@ export class TCollectionEngine<T> {
 	 * @param command Команда для выполнения
 	 */
 	public execute(command: ICommand<T>): void {
-		command.apply(this._storage)
+		// apply отвечает за мутацию и синхронные «before»-хуки (например, item factory).
+		// Выполняется всегда сразу, в том числе внутри батча.
+		const ctx: ICommandContext<T> = { storage: this._storage, events: this.events }
+
+		command.apply(ctx)
 
 		if (!this._isBatching) {
-			command.emitEvents(this.events, this._storage)
+			command.emitEvents(ctx)
 			this.events.emit('change:items', this._storage.items)
 		} else {
 			this._pendingCommands.push(command)
@@ -94,7 +98,9 @@ export class TCollectionEngine<T> {
 				const commandsToEmit = [...this._pendingCommands]
 				this._pendingCommands = []
 
-				commandsToEmit.forEach((cmd) => cmd.emitEvents(this.events, this._storage))
+				commandsToEmit.forEach((cmd) =>
+					cmd.emitEvents({ storage: this._storage, events: this.events }),
+				)
 
 				this.events.emit('change:items', this._storage.items)
 			}

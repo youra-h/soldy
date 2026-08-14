@@ -6,7 +6,7 @@ export type { IStorage } from './storage'
 export { TArrayStorage } from './storage'
 
 // Команды
-export type { ICommand } from './commands'
+export type { ICommand, ICommandContext } from './commands'
 export {
 	TInsertCommand,
 	TRemoveCommand,

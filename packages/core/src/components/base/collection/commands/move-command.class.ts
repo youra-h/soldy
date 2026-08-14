@@ -1,7 +1,4 @@
-import type { IStorage } from '../storage'
-import { TEvented } from '@soldy/core'
-import type { TEngineEvents } from '../types'
-import type { ICommand } from './types'
+import type { ICommand, ICommandContext } from './types'
 
 /**
  * Команда перемещения элемента в коллекции. Перемещает элемент из старого индекса в новый индекс в хранилище.
@@ -15,18 +12,18 @@ export class TMoveCommand<T> implements ICommand<T> {
 		public oldIndex?: number,
 	) {}
 
-	apply(storage: IStorage<T>): void {
-		const oldIdx = this.oldIndex ?? storage.items.indexOf(this.item)
+	apply(ctx: ICommandContext<T>): void {
+		const oldIdx = this.oldIndex ?? ctx.storage.items.indexOf(this.item)
 
 		if (oldIdx === -1 || oldIdx === this.newIndex) return
 
 		this._resolvedOldIndex = oldIdx
-		storage.move(oldIdx, this.newIndex)
+		ctx.storage.move(oldIdx, this.newIndex)
 	}
 
-	emitEvents(events: TEvented<TEngineEvents<T>>): void {
+	emitEvents(ctx: ICommandContext<T>): void {
 		if (this._resolvedOldIndex !== -1) {
-			events.emit('item:moved', this.item, this._resolvedOldIndex, this.newIndex)
+			ctx.events.emit('item:moved', this.item, this._resolvedOldIndex, this.newIndex)
 		}
 	}
 }
