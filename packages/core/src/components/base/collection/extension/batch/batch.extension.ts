@@ -27,8 +27,12 @@ export class TBatchExtension<TItem extends object>
 	}
 
 	set items(items: TItem[]) {
-		this.clear()
-		this.set(items)
+		if (this._trackBy) {
+			this.patch(items)
+		} else {
+			this.clear()
+			this.set(items)
+		}
 	}
 
 	get items(): TItem[] {
