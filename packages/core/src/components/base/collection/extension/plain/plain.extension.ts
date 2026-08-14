@@ -5,10 +5,27 @@ import { TBaseExtension } from '../base-extension.class'
 /**
  * TPlainExtension — расширение для базовых операций с коллекцией
  */
-export class TPlainExtension<TItem extends object> extends TBaseExtension<TItem, {}> implements IExtension<TItem> {
+export class TPlainExtension<TItem extends object>
+	extends TBaseExtension<TItem, {}>
+	implements IExtension<TItem>
+{
 	readonly name = 'plain' as const
+
+	/**
+	 * Вставить элемент в коллекцию. Либо вставлять в начало по умолчанию, либо в конец через push().
+	 * @param item
+	 * @param index
+	 */
 	insert(item: TItem, index: number = 0): void {
 		this._ctx.execute(new TInsertCommand(item, index))
+	}
+
+	/**
+	 * Вставить элемент в конец коллекции.
+	 * @param item
+	 */
+	push(item: TItem): void {
+		this._ctx.execute(new TInsertCommand(item, this._ctx.engine.length))
 	}
 
 	remove(item: TItem): void {
