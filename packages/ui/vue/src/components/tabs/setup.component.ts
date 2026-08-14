@@ -53,6 +53,7 @@ import {
 } from '@soldy/core'
 import type { TabsCollection } from './collection.types'
 import { TABS_COLLECTION_KEY } from './collection.types'
+import { useSyncProps } from '../../composables'
 
 export default {
 	name: '_Tabs',
@@ -83,6 +84,14 @@ export default {
 		provide(TABS_COLLECTION_KEY, collection)
 
 		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
-		return useVue<ITabsProps, ITabs>(adapter, props, emit)
+		return {
+			...useVue<ITabsProps, ITabs>(adapter, props, emit),
+			...useSyncProps(collection.engine.events, {
+				items: {
+					value: () => collection.engine,
+					triggers: ['change:items'],
+				},
+			}),
+		}
 	},
 }
