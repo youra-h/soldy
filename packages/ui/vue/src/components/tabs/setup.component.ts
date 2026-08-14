@@ -64,8 +64,6 @@ export default {
 			props,
 		})
 
-		console.log('adapter', props)
-
 		// Можно полуить Instance tabs через adapter.instance, если нужно вызвать методы напрямую
 		const instance = adapter.instance
 
