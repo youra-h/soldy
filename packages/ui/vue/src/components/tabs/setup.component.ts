@@ -32,7 +32,7 @@
 // 	},
 // }
 
-import { toRaw, provide } from 'vue'
+import { toRaw, provide, watch } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -63,7 +63,7 @@ export default {
 			props,
 		})
 
-		console.log('adapter', adapter)
+		console.log('adapter', props)
 
 		// Можно полуить Instance tabs через adapter.instance, если нужно вызвать методы напрямую
 		const instance = adapter.instance

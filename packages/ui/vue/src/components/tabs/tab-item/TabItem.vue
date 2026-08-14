@@ -15,8 +15,6 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		:style="{ order: order }"
 		v-bind="containerAttrs"
 	>
-		{{ console.log('TabItem.vue: rendered', rendered, 'active', active) }}
-		{{ active }}
 		<Button
 			:disabled="disabled"
 			view="none"

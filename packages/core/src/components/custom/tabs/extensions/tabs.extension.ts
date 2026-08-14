@@ -107,6 +107,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 	 * @returns true, если элемент был удалён, иначе false
 	 */
 	closeTab(item: ITabItem): boolean {
+		debugger
 		const { tabs } = this._itemRegistry.get(item as TItem).adapters
 
 		if (!tabs.closable) return false

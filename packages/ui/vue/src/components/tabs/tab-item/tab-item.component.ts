@@ -33,10 +33,6 @@ export const propsTabItem: TProps = {
 		type: Boolean,
 		default: false,
 	},
-	closable: {
-		type: Boolean,
-		default: false,
-	},
 }
 
 export default {
