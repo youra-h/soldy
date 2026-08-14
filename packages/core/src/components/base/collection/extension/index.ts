@@ -5,6 +5,7 @@ export type {
 	IItemExtensionCtor,
 	IExtensionItems,
 	IBaseOwnerItemExtensionOptions,
+	TBaseItemEventsExtension,
 } from './types'
 export { TBaseExtension } from './base-extension.class'
 export { TBaseItemExtension } from './base-item-extension.class'

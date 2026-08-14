@@ -1,6 +1,6 @@
-import type { IItemExtension } from '../../../../base/collection'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../../../base/collection'
 
-export type TTabItemEventsExtension = {
+export type TTabItemEventsExtension = TBaseItemEventsExtension & {
 	'change:closable': (value: boolean) => void
 }
 

@@ -1,7 +1,7 @@
-import type { IItemExtension } from '../../types'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../types'
 
 /** События item-адаптера выборки. */
-export type TSelectionItemEventsExtension = {
+export type TSelectionItemEventsExtension = TBaseItemEventsExtension & {
 	'change:selected': () => void
 }
 

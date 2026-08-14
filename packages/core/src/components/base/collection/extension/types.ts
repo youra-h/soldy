@@ -39,13 +39,17 @@ export interface IBaseOwnerItemExtensionOptions<
 
 // --- Контракты для расширений с item-адаптерами ---
 
+export type TBaseItemEventsExtension = {
+	destroy: () => void
+}
+
 /**
  * Базовый контракт item-адаптера.
  * Конкретные адаптеры (активации, порядка, выборки) расширяют этот интерфейс.
  */
 export interface IItemExtension<
 	TItem extends object = any,
-	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
+	TEvents extends Record<string, (...args: any) => any> = TBaseItemEventsExtension,
 > {
 	/** Собственные события item-адаптера (для реактивности в UI-слое). */
 	readonly events: TEvented<TEvents>

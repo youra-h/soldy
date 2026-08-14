@@ -1,7 +1,7 @@
-import type { IItemExtension } from '../../types'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../types'
 
 /** События item-адаптера активации. */
-export type TActivationItemEventsExtension = {
+export type TActivationItemEventsExtension = TBaseItemEventsExtension & {
 	'change:active': () => void
 }
 

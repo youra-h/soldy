@@ -1,4 +1,4 @@
-import type { IItemExtension } from './types'
+import type { IItemExtension, TBaseItemEventsExtension } from './types'
 import { TEvented } from '@soldy/core'
 
 /**
@@ -11,7 +11,7 @@ import { TEvented } from '@soldy/core'
 export abstract class TBaseItemExtension<
 	TItem extends object = any,
 	TParent = any,
-	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
+	TEvents extends TBaseItemEventsExtension = TBaseItemEventsExtension,
 > implements IItemExtension<TItem, TEvents> {
 	readonly events = new TEvented<TEvents>()
 
@@ -24,6 +24,7 @@ export abstract class TBaseItemExtension<
 	 * Очистить собственные события item-адаптера (отписки, middleware, входящие подписки).
 	 */
 	destroy(): void {
+		;(this.events as TEvented<TBaseItemEventsExtension>).emit('destroy')
 		this.events.destroy()
 	}
 }

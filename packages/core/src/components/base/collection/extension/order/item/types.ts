@@ -1,7 +1,7 @@
-import type { IItemExtension } from '../../types'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../types'
 
 /** События item-адаптера порядка. */
-export type TOrderItemEventsExtension = {
+export type TOrderItemEventsExtension = TBaseItemEventsExtension & {
 	'change:order': () => void
 }
 
