@@ -7,11 +7,13 @@ import type {
 	TOrderExtension,
 	TPlainExtension,
 	TTabsExtension,
+	TFactoryExtension,
 } from '@soldy/core'
 
 export const TABS_COLLECTION_KEY = 'tabsCollection' as const
 
 export type TTabsExtensions = {
+	factory: TFactoryExtension<ITabItem>
 	order: TOrderExtension<ITabItem>
 	plain: TPlainExtension<ITabItem>
 	batch: TBatchExtension<ITabItem>
