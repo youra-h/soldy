@@ -50,7 +50,7 @@ import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 import { TItemContextRegistry } from '@soldy/core'
 import { useSyncProps, useEventState } from '../../../composables'
-import type { TabsCollection, TabsExtensions } from '../collection.types'
+import type { TTabsCollection, TTabsExtensions } from '../collection.types'
 import { TABS_COLLECTION_KEY } from '../collection.types'
 
 export default {
@@ -65,7 +65,7 @@ export default {
 		// .use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
 		// Представим, что получили parent collection
-		const collection = inject(TABS_COLLECTION_KEY) as TabsCollection | undefined
+		const collection = inject(TABS_COLLECTION_KEY) as TTabsCollection | undefined
 
 		const instance = adapter.instance
 
@@ -73,7 +73,7 @@ export default {
 		collection?.extensions.plain.push(instance)
 
 		// Создаем реестр для доступа к item-адаптерам (кеширует через WeakMap)
-		const registry = new TItemContextRegistry<ITabItem, TabsExtensions>(collection!.getCore())
+		const registry = new TItemContextRegistry<ITabItem, TTabsExtensions>(collection!.getCore())
 
 		// Получаем контекст для текущего item
 		const context = registry.get(instance as ITabItem)

@@ -20,8 +20,6 @@
 // 	props: propsTabs,
 // }
 
-
-
 import { BaseControl } from '../control'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
@@ -29,7 +27,13 @@ import { TabsDescriptor } from '@soldy/setup'
 
 export const emitsTabs: TEmits = useEmits(TabsDescriptor) as unknown as TEmits
 
-export const propsTabs: TProps = useProps(TabsDescriptor) as TProps
+export const propsTabs: TProps = {
+	...(useProps(TabsDescriptor) as TProps),
+	items: {
+		type: Array,
+		default: () => [],
+	},
+}
 
 export default {
 	name: 'BaseTabs',

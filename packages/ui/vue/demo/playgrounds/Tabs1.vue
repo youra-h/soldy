@@ -57,7 +57,7 @@ const tabItems = ref([
 			<!-- </DragAndDrop> -->
 		</div>
 
-		<!-- <section>
+		<section>
 			<h2>Вариант 1: программный (через instance)</h2>
 			<Tabs :ctrl="tabs">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
@@ -76,7 +76,7 @@ const tabItems = ref([
 				<template #trailing>trailing</template>
 			</Tabs>
 		</section>
-
+<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
 			<Tabs view="contained">

@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import type { TBatchEvents } from './types'
+import type { TBatchEvents, IBatchExtension } from './types'
 import { TInsertCommand, TRemoveCommand, TClearCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
 
@@ -8,11 +8,25 @@ import { TBaseExtension } from '../base-extension.class'
  */
 export class TBatchExtension<TItem extends object>
 	extends TBaseExtension<TItem, TBatchEvents<TItem>>
-	implements IExtension<TItem>
+	implements IExtension<TItem>, IBatchExtension<TItem>
 {
 	readonly name = 'batch' as const
 
-	add(items: TItem[]): void {
+	private _trackBy: (item: TItem) => any = (item) => item
+
+	get trackBy(): (item: TItem) => any {
+		return this._trackBy
+	}
+
+	set trackBy(fn: (item: TItem) => any) {
+		if (this._trackBy === fn) return
+
+		this._trackBy = fn
+
+		this.events.emit('change:trackBy', fn)
+	}
+
+	set(items: TItem[]): void {
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
 		})
@@ -20,12 +34,16 @@ export class TBatchExtension<TItem extends object>
 		this.events.emit('items:added', items)
 	}
 
-	remove(items: TItem[]): void {
-		this._ctx.batch(() => {
-			items.forEach((item) => this._ctx.execute(new TRemoveCommand(item)))
-		})
+	patch(items: TItem[]): void {
+		if (!this._trackBy) {
+			throw new Error('trackBy function is not set')
+		}
 
-		this.events.emit('items:removed', items)
+		// this._ctx.batch(() => {
+		// 	items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
+		// })
+
+		this.events.emit('items:added', items)
 	}
 
 	clear(): void {

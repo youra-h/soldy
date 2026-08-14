@@ -47,11 +47,12 @@ import {
 	TTabs,
 	TCollection,
 	TPlainExtension,
+	TBatchExtension,
 	TActivationExtension,
 	TOrderExtension,
 	TTabsExtension,
 } from '@soldy/core'
-import type { TabsCollection } from './collection.types'
+import type { TTabsCollection } from './collection.types'
 import { TABS_COLLECTION_KEY } from './collection.types'
 import { useSyncProps } from '../../composables'
 
@@ -70,10 +71,11 @@ export default {
 		// .use(TCollectionExtension, { elevator: VueElevatorFactory })
 		// .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collection: TabsCollection = new TCollection({
+		const collection: TTabsCollection = new TCollection({
 			extensions: {
 				order: new TOrderExtension<ITabItem>(),
 				plain: new TPlainExtension<ITabItem>(),
+				batch: new TBatchExtension<ITabItem>(),
 				activation: new TActivationExtension<ITabItem>(),
 				tabs: new TTabsExtension({ owner: instance }),
 			},
@@ -81,12 +83,26 @@ export default {
 
 		provide(TABS_COLLECTION_KEY, collection)
 
+		watch(
+			() => props.items,
+			(newItems) => {
+				if (newItems) {
+					collection.extensions.batch.clear()
+					collection.extensions.batch.set(newItems)
+				}
+			},
+			{ immediate: true },
+		)
+
 		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
 			...useSyncProps(collection.engine.events, {
 				items: {
-					value: () => collection.engine,
+					value: () => {
+						console.log('collection.engine.items', collection.engine)
+						return collection.engine
+					},
 					triggers: ['change:items'],
 				},
 			}),
