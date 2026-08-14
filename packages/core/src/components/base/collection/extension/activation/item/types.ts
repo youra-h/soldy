@@ -1,7 +1,7 @@
 import type { IItemExtension } from '../../types'
 
 /** События item-адаптера активации. */
-export type TActivationItemEvents = {
+export type TActivationItemEventsExtension = {
 	'change:active': () => void
 }
 
@@ -11,7 +11,7 @@ export type TActivationItemEvents = {
  */
 export interface IActivationItemExtension<TItem extends object = any> extends IItemExtension<
 	TItem,
-	TActivationItemEvents
+	TActivationItemEventsExtension
 > {
 	/** Активен ли элемент. При установке вызывает activate/deactivate на родителе. */
 	active: boolean

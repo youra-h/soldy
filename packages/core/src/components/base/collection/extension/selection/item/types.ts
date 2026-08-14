@@ -1,7 +1,7 @@
 import type { IItemExtension } from '../../types'
 
 /** События item-адаптера выборки. */
-export type TSelectionItemEvents = {
+export type TSelectionItemEventsExtension = {
 	'change:selected': () => void
 }
 
@@ -10,7 +10,7 @@ export type TSelectionItemEvents = {
  * Предоставляет геттер/сеттер selected и метод toggle.
  */
 export interface ISelectionItemExtension<TItem extends object = any>
-	extends IItemExtension<TItem, TSelectionItemEvents> {
+	extends IItemExtension<TItem, TSelectionItemEventsExtension> {
 	/** Выбран ли элемент. При установке вызывает select/deselect на родителе. */
 	selected: boolean
 

@@ -1,7 +1,6 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
 import type { TEngineEvents } from '../../base/collection'
 import type { ITabItem } from './tab-item/types'
-import type { TCollection } from '../../base/collection'
 
 export type TTabsOrientation = 'horizontal' | 'vertical'
 export type TTabsAlignment = 'start' | 'center' | 'end' | 'stretch'

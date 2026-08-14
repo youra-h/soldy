@@ -1,7 +1,7 @@
 import type { IItemExtension } from '../../types'
 
 /** События item-адаптера порядка. */
-export type TOrderItemEvents = {
+export type TOrderItemEventsExtension = {
 	'change:order': () => void
 }
 
@@ -11,7 +11,7 @@ export type TOrderItemEvents = {
  */
 export interface IOrderItemExtension<TItem extends object = any> extends IItemExtension<
 	TItem,
-	TOrderItemEvents
+	TOrderItemEventsExtension
 > {
 	/** Порядковый номер элемента. Вычисляется на лету через indexOf. */
 	readonly order: number

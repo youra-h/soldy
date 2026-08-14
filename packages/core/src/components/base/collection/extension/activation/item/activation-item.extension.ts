@@ -1,5 +1,5 @@
 import type { TActivationExtension } from '../activation.extension'
-import type { IActivationItemExtension, TActivationItemEvents } from './types'
+import type { IActivationItemExtension, TActivationItemEventsExtension } from './types'
 import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
@@ -10,7 +10,7 @@ import { TBaseItemExtension } from '../../base-item-extension.class'
  * @template TItem — тип элемента (пользователь может расширить)
  */
 export class TActivationItemExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, TActivationExtension<TItem>, TActivationItemEvents>
+	extends TBaseItemExtension<TItem, TActivationExtension<TItem>, TActivationItemEventsExtension>
 	implements IActivationItemExtension<TItem>
 {
 	constructor(item: TItem, parent: TActivationExtension<TItem>) {

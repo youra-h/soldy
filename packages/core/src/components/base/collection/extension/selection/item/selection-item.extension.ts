@@ -1,5 +1,5 @@
 import type { TSelectionExtension } from '../selection.extension'
-import type { ISelectionItemExtension, TSelectionItemEvents } from './types'
+import type { ISelectionItemExtension, TSelectionItemEventsExtension } from './types'
 import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
@@ -10,7 +10,7 @@ import { TBaseItemExtension } from '../../base-item-extension.class'
  * @template TItem — тип элемента (пользователь может расширить)
  */
 export class TSelectionItemExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, TSelectionExtension<TItem>, TSelectionItemEvents>
+	extends TBaseItemExtension<TItem, TSelectionExtension<TItem>, TSelectionItemEventsExtension>
 	implements ISelectionItemExtension<TItem>
 {
 	constructor(item: TItem, parent: TSelectionExtension<TItem>) {

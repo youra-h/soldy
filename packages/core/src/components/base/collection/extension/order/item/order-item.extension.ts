@@ -1,5 +1,5 @@
 import type { TOrderExtension } from '../order.extension'
-import type { IOrderItemExtension, TOrderItemEvents } from './types'
+import type { IOrderItemExtension, TOrderItemEventsExtension } from './types'
 import { TBaseItemExtension } from '../../base-item-extension.class'
 
 /**
@@ -10,7 +10,7 @@ import { TBaseItemExtension } from '../../base-item-extension.class'
  * @template TItem — тип элемента (пользователь может расширить)
  */
 export class TOrderItemExtension<TItem extends object = any>
-	extends TBaseItemExtension<TItem, TOrderExtension<TItem>, TOrderItemEvents>
+	extends TBaseItemExtension<TItem, TOrderExtension<TItem>, TOrderItemEventsExtension>
 	implements IOrderItemExtension<TItem>
 {
 	constructor(item: TItem, parent: TOrderExtension<TItem>) {

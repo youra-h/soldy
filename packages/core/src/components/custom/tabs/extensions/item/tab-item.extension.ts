@@ -1,7 +1,8 @@
 import { TBaseItemExtension } from '../../../../base/collection'
-import type { ITabItemExtension } from './types'
+import type { ITabItemExtension, TTabItemEventsExtension } from './types'
 import type { ITabItem } from '../../tab-item/types'
 import type { ITabsExtension } from '../types'
+import type { TTabsExtension } from '../tabs.extension'
 
 /**
  * TTabItemExtension — stateless-делегат элемента таба.
@@ -16,9 +17,16 @@ export class TTabItemExtension<
 	TItem extends ITabItem = ITabItem,
 	TParent extends ITabsExtension<TItem> = ITabsExtension<TItem>,
 >
-	extends TBaseItemExtension<TItem, TParent>
+	extends TBaseItemExtension<TItem, TParent, TTabItemEventsExtension>
 	implements ITabItemExtension<TItem>
 {
+	constructor(item: TItem, parent: TParent) {
+		super(item, parent)
+
+		this.events.relay(parent.events, ['change:closable'])
+		this.events.relay(item.events, ['change:closable'])
+	}
+
 	/**
 	 * Может ли таб быть закрыт.
 	 * Явное значение элемента > глобальное значение из расширения.
