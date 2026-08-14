@@ -15,12 +15,14 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		:style="{ order: order }"
 		v-bind="containerAttrs"
 	>
+		{{ console.log('TabItem.vue: rendered', rendered, 'active', active) }}
+		{{ active }}
 		<Button
 			:disabled="disabled"
 			view="none"
 			:size="size"
 			:variant="variant"
-			@click="active = true"
+			@click="context.adapters.activation.active = true"
 			role="tab"
 			v-bind="controlAttrs"
 		>
@@ -35,7 +37,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 			<template #trailing>
 				<slot name="trailing" />
 				<Button
-					:rendered="!!item_closable"
+					:rendered="!!closable"
 					class="s-tab-item__close"
 					@click.stop="close()"
 					view="plain"

@@ -40,7 +40,7 @@
 // 	},
 // }
 
-import { toRaw, inject } from 'vue'
+import { toRaw, inject, watch } from 'vue'
 import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
 import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
@@ -49,7 +49,7 @@ import type { TBaseComponentProps } from '../../../types'
 import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 import { TItemContextRegistry } from '@soldy/core'
-import { useSyncProps } from '../../../composables'
+import { useSyncProps, useEventState } from '../../../composables'
 import type { TabsCollection, TabsExtensions } from '../collection.types'
 import { TABS_COLLECTION_KEY } from '../collection.types'
 
@@ -58,6 +58,7 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
+		console.log('TabItem setup', props)
 		const adapter = createAdapterContext(TabItemDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
@@ -70,32 +71,48 @@ export default {
 		const instance = adapter.instance
 
 		// Добавили item в collection
-		collection?.extensions.plain.insert(instance)
+		collection?.extensions.plain.push(instance)
 
 		// Создаем реестр для доступа к item-адаптерам (кеширует через WeakMap)
-		const registry = new TItemContextRegistry<ITabItem, TabsExtensions>((collection?.extensions ?? {}) as TabsExtensions)
+		const registry = new TItemContextRegistry<ITabItem, TabsExtensions>(collection!.getCore())
 
 		// Получаем контекст для текущего item
 		const context = registry.get(instance as ITabItem)
+
+		watch(
+			() => props.active,
+			(newValue) => {
+				context.adapters.activation.active = newValue
+			},
+			{ immediate: true },
+		)
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 
-			...useSyncProps(collection!.extensions.activation.events, {
+			context,
+
+			...useSyncProps(context.adapters.activation.events, {
 				active: {
-					value: () => () => context.adapters.activation.active,
-					triggers: ['change:activation'],
+					value: () => context.adapters.activation.active,
+					triggers: ['change:active'],
 				},
 			}),
-			...useSyncProps(collection!.extensions.order.events, {
+			...useSyncProps(context.adapters.order.events, {
 				order: {
-					value: () => () => context.adapters.order.order,
+					value: () => context.adapters.order.order,
 					triggers: ['change:order'],
 				},
 			}),
-			close: () => context.adapters.tabs.close(),
+			...useSyncProps(context.adapters.tabs.events, {
+				closable: {
+					value: () => context.adapters.tabs.closable,
+					triggers: ['change:closable'],
+				},
+			}),
+			close: () => collection?.extensions.tabs.closeTab(instance as ITabItem),
 		}
 	},
 }
