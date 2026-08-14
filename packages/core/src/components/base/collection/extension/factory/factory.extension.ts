@@ -1,6 +1,6 @@
 import type { IExtension, IExtensionContext } from '../types'
 import { TBaseExtension } from '../base-extension.class'
-import type { TFactoryEvents, IFactoryExtension } from './types'
+import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from './types'
 
 /**
  * TFactoryExtension — фабрика элементов коллекции.
@@ -17,7 +17,7 @@ import type { TFactoryEvents, IFactoryExtension } from './types'
  * ```ts
  * const col = new TCollection<ITabItem>({
  *     extensions: {
- *         factory: new TFactoryExtension<ITabItem>(TTabItem),
+ *         factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
  *         batch: new TBatchExtension<ITabItem>(),
  *     },
  * })
@@ -32,25 +32,43 @@ export class TFactoryExtension<TItem extends object>
 {
 	readonly name = 'factory' as const
 
-	constructor(private readonly itemCtor: new (source: any) => TItem) {
+	private readonly _itemCtor?: new (source: any) => TItem
+
+	constructor(options: IFactoryExtensionOptions<TItem>) {
 		super()
+
+		this._itemCtor = options.itemCtor
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		if (!this._itemCtor) return
+
+		const ctor = this._itemCtor
+
 		ctx.engine.events.on('item:add:before', (e) => {
-			if (!(e.item instanceof this.itemCtor)) {
-				e.item = new this.itemCtor(e.item)
+			if (!(e.item instanceof ctor)) {
+				e.item = new ctor(e.item)
 			}
 		})
 	}
 
 	create(source: any): TItem {
-		return new this.itemCtor(source)
+		const ctor = this._itemCtor
+
+		if (!ctor) {
+			throw new Error('TFactoryExtension: ctor is not defined')
+		}
+
+		return new ctor(source)
 	}
 
 	isSource(value: unknown): boolean {
-		return !(value instanceof this.itemCtor)
+		const ctor = this._itemCtor
+
+		if (!ctor) return true
+
+		return !(value instanceof ctor)
 	}
 }

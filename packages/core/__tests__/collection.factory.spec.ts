@@ -21,7 +21,7 @@ class TTestItem implements ITestItem {
 }
 
 function createCollection() {
-	const factory = new TFactoryExtension<ITestItem>(TTestItem)
+	const factory = new TFactoryExtension<ITestItem>({ itemCtor: TTestItem })
 	const batch = new TBatchExtension<ITestItem>()
 
 	const col = new TCollection<
@@ -65,7 +65,7 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 	it('update + trackBy: двумерный массив превращается в массив инстансов', () => {
 		const { col } = createCollection()
 		col.extensions.batch.trackBy = (item) =>
-			item instanceof TTestItem ? item.id : item[0]
+			item instanceof TTestItem ? item.id : (item as any)[0]
 
 		col.extensions.batch.update([
 			[1, 'a'],

@@ -42,7 +42,7 @@ import {
 import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type ITabsProps, type ITabs, type ITabItem } from '@soldy/core'
+import { type ITabsProps, type ITabs, type ITabItem, TTabItem } from '@soldy/core'
 import {
 	TTabs,
 	TCollection,
@@ -74,6 +74,7 @@ export default {
 
 		const collection: TTabsCollection = new TCollection({
 			extensions: {
+				factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
 				order: new TOrderExtension<ITabItem>(),
 				plain: new TPlainExtension<ITabItem>(),
 				batch: new TBatchExtension<ITabItem>(),
