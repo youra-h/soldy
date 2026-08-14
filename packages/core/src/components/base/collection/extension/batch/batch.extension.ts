@@ -12,13 +12,13 @@ export class TBatchExtension<TItem extends object>
 {
 	readonly name = 'batch' as const
 
-	private _trackBy: (item: TItem) => any = (item) => item
+	private _trackBy?: (item: TItem) => any
 
-	get trackBy(): (item: TItem) => any {
+	get trackBy(): ((item: TItem) => any) | undefined {
 		return this._trackBy
 	}
 
-	set trackBy(fn: (item: TItem) => any) {
+	set trackBy(fn: ((item: TItem) => any) | undefined) {
 		if (this._trackBy === fn) return
 
 		this._trackBy = fn
