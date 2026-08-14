@@ -87,8 +87,7 @@ export default {
 			() => props.items,
 			(newItems) => {
 				if (newItems) {
-					collection.extensions.batch.clear()
-					collection.extensions.batch.set(newItems)
+					collection.extensions.batch.update(newItems)
 				}
 			},
 			{ immediate: true },

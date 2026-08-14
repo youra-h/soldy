@@ -7,13 +7,17 @@ export type TBatchEvents<T> = {
 export interface IBatchExtension<TItem extends object = any> {
 	trackBy: (item: TItem) => any
 
-	items: TItem[]
-
 	/**
 	 * Добавить элементы в коллекцию.
 	 * @param items — элементы для добавления.
 	 */
 	set(items: TItem[]): void
+
+	/**
+	 * Обновить элементы в коллекции.
+	 * @param items — элементы для обновления.
+	 */
+	update(items: TItem[]): void
 
 	/**
 	 * Удалить элементы из коллекции.

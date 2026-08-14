@@ -26,25 +26,21 @@ export class TBatchExtension<TItem extends object>
 		this.events.emit('change:trackBy', fn)
 	}
 
-	set items(items: TItem[]) {
-		if (this._trackBy) {
-			this.patch(items)
-		} else {
-			this.clear()
-			this.set(items)
-		}
-	}
-
-	get items(): TItem[] {
-		return this._ctx.engine
-	}
-
 	set(items: TItem[]): void {
 		this._ctx.batch(() => {
 			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
 		})
 
 		this.events.emit('items:added', items)
+	}
+
+	update(items: TItem[]): void {
+		if (this._trackBy) {
+			this.patch(items)
+		} else {
+			this.clear()
+			this.set(items)
+		}
 	}
 
 	patch(items: TItem[]): void {
