@@ -1,4 +1,6 @@
 import type { ICommand, ICommandContext } from './types'
+import type { TEngineEvents } from '../types'
+import { TEvented } from '@soldy/core'
 
 /**
  * Команда вставки элемента в коллекцию. Добавляет элемент в хранилище по указанному индексу и уведомляет о событиях.
@@ -11,7 +13,10 @@ export class TInsertCommand<T> implements ICommand<T> {
 
 	apply(ctx: ICommandContext<T>): void {
 		// Синхронный «before»-хук: расширения (item factory) могут подменить элемент.
-		const resolved = ctx.events.emitResolve<T>('item:add:before', this.item)
+		const resolved = (ctx.events as TEvented<TEngineEvents<T>>).emitResolve(
+			'item:add:before',
+			this.item,
+		) as T | undefined
 
 		this.item = resolved ?? this.item
 
