@@ -36,16 +36,15 @@ tabs.orientation = 'horizontal'
 // --- Вариант 2: через prop items ---
 const tabItems = [
 	{ text: 'Alpha', value: 'alpha', closable: true },
-	{ text: 'Beta', value: 'beta', active: true, closable: true },
+	{ text: 'Beta', value: 'beta', closable: true },
 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
 ]
 </script>
 
 <template>
 	<div style="display: flex; flex-direction: column; gap: 2rem">
-		<div class="tabs-slots-demo__section">
+		<!-- <div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<!-- <DragAndDrop> -->
 			<Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
 				<TabItem text="Tab 2" value="t2" />
@@ -54,7 +53,6 @@ const tabItems = [
 				<template #panel:t2><p>Content 2</p></template>
 				<template #panel:t3><p>Content 3</p></template>
 			</Tabs>
-			<!-- </DragAndDrop> -->
 		</div>
 
 		<section>
@@ -64,7 +62,7 @@ const tabItems = [
 				<template #panel:tab2><p>Содержимое Tab 2</p></template>
 				<template #panel:tab3><p>Содержимое Tab 3</p></template>
 			</Tabs>
-		</section>
+		</section> -->
 
 		<section>
 			<h2>Вариант 2: prop items</h2>

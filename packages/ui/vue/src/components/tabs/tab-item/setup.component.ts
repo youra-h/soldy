@@ -70,7 +70,9 @@ export default {
 		const instance = adapter.instance
 
 		// Добавили item в collection
-		collection?.extensions.plain.push(instance)
+		if (!collection?.extensions?.unique.has(instance)) {
+			collection?.extensions.plain.push(instance)
+		}
 
 		// Создаем реестр для доступа к item-адаптерам (кеширует через WeakMap)
 		const registry = new TItemContextRegistry<ITabItem, TTabsExtensions>(collection!.getCore())

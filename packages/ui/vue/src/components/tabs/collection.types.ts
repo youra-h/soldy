@@ -8,12 +8,14 @@ import type {
 	TPlainExtension,
 	TTabsExtension,
 	TFactoryExtension,
+	TUniqueExtension,
 } from '@soldy/core'
 
 export const TABS_COLLECTION_KEY = 'tabsCollection' as const
 
 export type TTabsExtensions = {
 	factory: TFactoryExtension<ITabItem>
+	unique: TUniqueExtension<ITabItem>
 	order: TOrderExtension<ITabItem>
 	plain: TPlainExtension<ITabItem>
 	batch: TBatchExtension<ITabItem>

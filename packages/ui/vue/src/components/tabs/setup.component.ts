@@ -52,6 +52,7 @@ import {
 	TActivationExtension,
 	TOrderExtension,
 	TTabsExtension,
+	TUniqueExtension,
 } from '@soldy/core'
 import type { TTabsCollection } from './collection.types'
 import { TABS_COLLECTION_KEY } from './collection.types'
@@ -75,6 +76,7 @@ export default {
 		const collection: TTabsCollection = new TCollection({
 			extensions: {
 				factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
+				unique: new TUniqueExtension<ITabItem>(),
 				order: new TOrderExtension<ITabItem>(),
 				plain: new TPlainExtension<ITabItem>(),
 				batch: new TBatchExtension<ITabItem>(),
@@ -100,10 +102,7 @@ export default {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
 			...useSyncProps(collection.engine.events, {
 				items: {
-					value: () => {
-						console.log('collection.engine', collection.engine)
-						return collection.engine
-					},
+					value: () => collection.engine,
 					triggers: ['change:items'],
 				},
 			}),
