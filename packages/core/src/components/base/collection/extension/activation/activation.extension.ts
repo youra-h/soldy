@@ -60,8 +60,6 @@ export class TActivationExtension<TItem extends object = any>
 
 		if (!this._ctx.engine.includes(item)) return
 
-		const prev = this._activeItem
-
 		this._activeItem = item
 
 		this.events.emit('item:activated', item)
@@ -76,6 +74,8 @@ export class TActivationExtension<TItem extends object = any>
 		if (this._activeItem !== item) return
 
 		this._activeItem = undefined
+
+		console.log('TActivationExtension.deactivate', { item })
 
 		this.events.emit('item:deactivated', undefined)
 		this.events.emit('change:activation', undefined)

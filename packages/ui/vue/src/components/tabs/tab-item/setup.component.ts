@@ -84,8 +84,7 @@ export default {
 			() => props.active,
 			(newValue) => {
 				context.adapters.activation.active = newValue
-			},
-			{ immediate: true },
+			}
 		)
 
 		return {
