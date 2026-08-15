@@ -48,9 +48,12 @@ export class TFactoryExtension<TItem extends object>
 		const ctor = this._itemCtor
 
 		ctx.engine.events.on('item:add:before', (e) => {
-			if (!(e.item instanceof ctor)) {
-				e.item = new ctor(e.item)
-			}
+			if (e.item instanceof ctor) return
+
+			const source = e.item as any
+			const item = new ctor(source)
+
+			e.item = item
 		})
 	}
 

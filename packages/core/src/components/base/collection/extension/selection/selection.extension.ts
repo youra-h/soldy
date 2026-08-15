@@ -77,6 +77,22 @@ export class TSelectionExtension<TItem extends object = any>
 				if (!items.includes(item)) this._selected.delete(item)
 			})
 		})
+
+		let _selected = false
+
+		ctx.engine.events.on('item:add:before', (e) => {
+			_selected = false
+
+			if ((e.item as any)?._?.selected) {
+				_selected = true
+			}
+		})
+
+		ctx.engine.events.on('item:added', (item) => {
+			if (!_selected) return
+
+			this.select(item)
+		})
 	}
 
 	select(item: TItem): void {

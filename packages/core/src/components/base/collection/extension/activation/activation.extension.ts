@@ -38,6 +38,22 @@ export class TActivationExtension<TItem extends object = any>
 		ctx.engine.events.on('reset', () => {
 			this.reset()
 		})
+
+		let _active = false
+
+		ctx.engine.events.on('item:add:before', (e) => {
+			_active = false
+
+			if ((e.item as any)?._?.active) {
+				_active = true
+			}
+		})
+
+		ctx.engine.events.on('item:added', (item) => {
+			if (! _active) return
+
+			this.activate(item)
+		})
 	}
 
 	/**

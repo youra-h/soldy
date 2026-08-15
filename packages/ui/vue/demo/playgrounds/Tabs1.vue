@@ -36,7 +36,7 @@ tabs.orientation = 'horizontal'
 // --- Вариант 2: через prop items ---
 const tabItems = [
 	{ text: 'Alpha', value: 'alpha', closable: true },
-	{ text: 'Beta', value: 'beta', closable: true },
+	{ text: 'Beta', value: 'beta', closable: true, _: { active: true } },
 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
 ]
 </script>

@@ -3,8 +3,18 @@ import { TEvented } from '@soldy/core'
 import { TActionEvent } from '../../../common/event/action-event'
 
 export class TInsertEvent<T> extends TActionEvent {
+	private _: Record<string, any> = {}
+
 	constructor(public item: T) {
 		super()
+
+		if (typeof (item as any)?._ === 'object') {
+			this._ = (item as any)?._ ?? {}
+		}
+	}
+
+	get meta(): Record<string, any> {
+		return this._
 	}
 }
 
