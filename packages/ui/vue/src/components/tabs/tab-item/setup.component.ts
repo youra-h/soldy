@@ -50,7 +50,7 @@ import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 import { TItemContextRegistry } from '@soldy/core'
 import { useSyncProps, useEventState } from '../../../composables'
-import type { TTabsCollection, TTabsExtensions } from '../collection.types'
+import type { TTabsCollection, TTabsFactoryExtensions } from '@soldy/core'
 import { TABS_COLLECTION_KEY } from '../collection.types'
 
 export default {
@@ -75,7 +75,9 @@ export default {
 		}
 
 		// Создаем реестр для доступа к item-адаптерам (кеширует через WeakMap)
-		const registry = new TItemContextRegistry<ITabItem, TTabsExtensions>(collection!.getCore())
+		const registry = new TItemContextRegistry<ITabItem, TTabsFactoryExtensions>(
+			collection!.getCore(),
+		)
 
 		// Получаем контекст для текущего item
 		const context = registry.get(instance as ITabItem)
@@ -83,8 +85,11 @@ export default {
 		watch(
 			() => props.active,
 			(newValue) => {
-				context.adapters.activation.active = newValue
-			}
+				if (typeof newValue === 'boolean') {
+					context.adapters.activation.active = newValue
+				}
+			},
+			{ immediate: true },
 		)
 
 		return {

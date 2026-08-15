@@ -29,6 +29,10 @@ export const emitsTabs: TEmits = useEmits(TabsDescriptor) as unknown as TEmits
 
 export const propsTabs: TProps = {
 	...(useProps(TabsDescriptor) as TProps),
+	cn: {
+		type: Object,
+		default: undefined,
+	},
 	items: {
 		type: Array,
 		default: () => [],

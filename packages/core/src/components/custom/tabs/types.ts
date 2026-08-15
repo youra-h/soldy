@@ -1,6 +1,16 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
 import type { TEngineEvents } from '../../base/collection'
 import type { ITabItem } from './tab-item/types'
+import {
+	TActivationExtension,
+	TBatchExtension,
+	TCollection,
+	TOrderExtension,
+	TPlainExtension,
+	TFactoryExtension,
+	TUniqueExtension,
+} from '../../base/collection'
+import { TTabsExtension } from './extensions'
 
 export type TTabsOrientation = 'horizontal' | 'vertical'
 export type TTabsAlignment = 'start' | 'center' | 'end' | 'stretch'
@@ -68,3 +78,15 @@ export interface ITabs extends IControl<ITabsProps, TTabsEvents> {
 	/** Разрешить закрытие табов */
 	closable: boolean
 }
+
+export type TTabsFactoryExtensions = {
+	factory: TFactoryExtension<ITabItem>
+	unique: TUniqueExtension<ITabItem>
+	order: TOrderExtension<ITabItem>
+	plain: TPlainExtension<ITabItem>
+	batch: TBatchExtension<ITabItem>
+	activation: TActivationExtension<ITabItem>
+	tabs: TTabsExtension<ITabs, ITabItem>
+}
+
+export type TTabsCollection = TCollection<ITabItem, TTabsFactoryExtensions>

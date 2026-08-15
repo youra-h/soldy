@@ -54,7 +54,7 @@ import {
 	TTabsExtension,
 	TUniqueExtension,
 } from '@soldy/core'
-import type { TTabsCollection } from './collection.types'
+import type { TTabsCollection } from '@soldy/core'
 import { TABS_COLLECTION_KEY } from './collection.types'
 import { useSyncProps } from '../../composables'
 
@@ -73,24 +73,28 @@ export default {
 		// .use(TCollectionExtension, { elevator: VueElevatorFactory })
 		// .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collection: TTabsCollection = new TCollection({
-			extensions: {
-				factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
-				unique: new TUniqueExtension<ITabItem>(),
-				order: new TOrderExtension<ITabItem>(),
-				plain: new TPlainExtension<ITabItem>(),
-				batch: new TBatchExtension<ITabItem>(),
-				activation: new TActivationExtension<ITabItem>(),
-				tabs: new TTabsExtension({ owner: instance }),
-			},
-		})
+		const collection: TTabsCollection = props.cn
+			? toRaw(props.cn)
+			: new TCollection({
+					extensions: {
+						factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
+						unique: new TUniqueExtension<ITabItem>(),
+						order: new TOrderExtension<ITabItem>(),
+						plain: new TPlainExtension<ITabItem>(),
+						batch: new TBatchExtension<ITabItem>(),
+						activation: new TActivationExtension<ITabItem>(),
+						tabs: new TTabsExtension({ owner: instance }),
+					},
+				})
+
+		console.log('collection', collection)
 
 		provide(TABS_COLLECTION_KEY, collection)
 
 		watch(
 			() => props.items,
 			(newItems) => {
-				if (newItems) {
+				if (newItems && newItems.length > 0) {
 					collection.extensions.batch.update(newItems)
 				}
 			},

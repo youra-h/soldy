@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { TTabs } from '@soldy/core'
+import {
+	TTabs,
+	TTabItem,
+	TTabsCollection,
+	TCollection,
+	TPlainExtension,
+	TBatchExtension,
+	TFactoryExtension,
+	TActivationExtension,
+	TOrderExtension,
+	TTabsExtension,
+	TUniqueExtension,
+} from '@soldy/core'
+import type { ITabItem } from '@soldy/core'
 import { Tabs, TabItem } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
@@ -9,6 +22,24 @@ const tabs = new TTabs()
 tabs.variant = 'accent'
 tabs.view = 'contained'
 tabs.orientation = 'horizontal'
+
+const collection: TTabsCollection = new TCollection({
+	extensions: {
+		factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
+		unique: new TUniqueExtension<ITabItem>(),
+		order: new TOrderExtension<ITabItem>(),
+		plain: new TPlainExtension<ITabItem>(),
+		batch: new TBatchExtension<ITabItem>(),
+		activation: new TActivationExtension<ITabItem>(),
+		tabs: new TTabsExtension({ owner: tabs }),
+	},
+})
+
+const { plain } = collection.extensions
+
+plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
+plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
+plain.push({ text: 'Tab 3', value: 'tab3' })
 
 // tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
 // tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
@@ -43,7 +74,7 @@ const tabItems = [
 
 <template>
 	<div style="display: flex; flex-direction: column; gap: 2rem">
-		<div class="tabs-slots-demo__section">
+		<!-- <div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
 			<Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
@@ -53,18 +84,18 @@ const tabItems = [
 				<template #panel:t2><p>Content 2</p></template>
 				<template #panel:t3><p>Content 3</p></template>
 			</Tabs>
-		</div>
+		</div> -->
 
 		<section>
 			<h2>Вариант 1: программный (через instance)</h2>
-			<Tabs :ctrl="tabs">
+			<Tabs :ctrl="tabs" :cn="collection">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
 				<template #panel:tab2><p>Содержимое Tab 2</p></template>
 				<template #panel:tab3><p>Содержимое Tab 3</p></template>
 			</Tabs>
 		</section>
 
-		<section>
+		<!-- <section>
 			<h2>Вариант 2: prop items</h2>
 			<Tabs :items="tabItems" view="outline" variant="normal">
 				<template #leading>leading</template>
@@ -73,7 +104,7 @@ const tabItems = [
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section>
+		</section> -->
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>

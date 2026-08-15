@@ -31,7 +31,7 @@ export const propsTabItem: TProps = {
 	...(useProps(TabItemDescriptor) as TProps),
 	active: {
 		type: Boolean,
-		default: false,
+		default: undefined,
 	},
 }
 

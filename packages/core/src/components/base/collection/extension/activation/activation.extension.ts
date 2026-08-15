@@ -75,8 +75,6 @@ export class TActivationExtension<TItem extends object = any>
 
 		this._activeItem = undefined
 
-		console.log('TActivationExtension.deactivate', { item })
-
 		this.events.emit('item:deactivated', undefined)
 		this.events.emit('change:activation', undefined)
 	}
