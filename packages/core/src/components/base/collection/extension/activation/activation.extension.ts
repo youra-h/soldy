@@ -11,7 +11,11 @@ import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
 export class TActivationExtension<TItem extends object = any>
-	extends TBaseOwnerItemExtension<TItem, IActivationItemExtension<TItem>, TActivationEvents<TItem>>
+	extends TBaseOwnerItemExtension<
+		TItem,
+		IActivationItemExtension<TItem>,
+		TActivationEvents<TItem>
+	>
 	implements IExtension<TItem>, IActivationExtension<TItem>
 {
 	readonly name = 'activation' as const
@@ -39,20 +43,10 @@ export class TActivationExtension<TItem extends object = any>
 			this.reset()
 		})
 
-		let _active = false
+		ctx.engine.events.on('item:added', (e) => {
+			if (!e._.active) return
 
-		ctx.engine.events.on('item:add:before', (e) => {
-			_active = false
-
-			if ((e.item as any)?._?.active) {
-				_active = true
-			}
-		})
-
-		ctx.engine.events.on('item:added', (item) => {
-			if (! _active) return
-
-			this.activate(item)
+			this.activate(e.item)
 		})
 	}
 

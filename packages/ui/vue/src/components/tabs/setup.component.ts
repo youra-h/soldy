@@ -97,6 +97,8 @@ export default {
 			{ immediate: true },
 		)
 
+		console.log('collection', collection.extensions.activation.activeItem)
+
 		// Явно прокидываем дженерик ITabs во второй параметр useVue (или он выведется сам, если адаптер типизирован)
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),

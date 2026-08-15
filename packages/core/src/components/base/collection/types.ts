@@ -3,18 +3,33 @@ import { TEvented } from '@soldy/core'
 import { TActionEvent } from '../../../common/event/action-event'
 
 export class TInsertEvent<T> extends TActionEvent {
-	private _: Record<string, any> = {}
+	public _: Record<string, any> = {}
 
-	constructor(public item: T) {
+	constructor(private _item: T) {
 		super()
 
-		if (typeof (item as any)?._ === 'object') {
-			this._ = (item as any)?._ ?? {}
-		}
+		this.#syncMetadata(this._item)
 	}
 
-	get meta(): Record<string, any> {
-		return this._
+	get item(): T {
+		return this._item
+	}
+
+	set item(value: T) {
+		this._item = value
+	}
+
+	#syncMetadata(value: T): void {
+		if (typeof value === 'object' && value !== null && '_' in value) {
+			const meta = (value as Record<string, unknown>)._
+
+			if (typeof meta === 'object' && meta !== null) {
+				this._ = meta as Record<string, unknown>
+				return
+			}
+		}
+
+		this._ = {}
 	}
 }
 
@@ -27,7 +42,7 @@ export type TEngineEvents<T> = {
 	'item:add:before': (e: TInsertEvent<T>) => void
 
 	/** Вызывается при добавлении одного элемента */
-	'item:added': (item: T) => void
+	'item:added': (e: TInsertEvent<T>) => void
 
 	/** Вызывается при удалении одного элемента */
 	'item:removed': (item: T) => void

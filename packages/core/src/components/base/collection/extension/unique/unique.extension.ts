@@ -28,7 +28,9 @@ export class TUniqueExtension<TItem extends object = any>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:added', (item) => {
+		ctx.engine.events.on('item:added', (e) => {
+			const { item } = e
+
 			if ('uid' in item) {
 				this._known.add((item as any).uid)
 			}

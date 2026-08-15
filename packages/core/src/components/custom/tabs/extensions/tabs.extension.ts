@@ -62,10 +62,10 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 		})
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.engine.events.on('item:added', (item: TItem) => {
-			item.disabled = this._owner.disabled
-			item.size = this._owner.size
-			item.variant = this._owner.variant
+		ctx.engine.events.on('item:added', (e) => {
+			e.item.disabled = this._owner.disabled
+			e.item.size = this._owner.size
+			e.item.variant = this._owner.variant
 		})
 
 		// При изменении свойств владельца — пробрасываем на все элементы
