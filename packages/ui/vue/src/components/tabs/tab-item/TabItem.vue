@@ -13,6 +13,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		v-show="visible"
 		:class="classes"
 		:style="{ order: order }"
+		:aria-selected="active"
 		v-bind="containerAttrs"
 	>
 		<Button
@@ -70,7 +71,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		}
 	}
 
-	&--active {
+	&[aria-selected='true'] {
 		> * {
 			@apply opacity-100;
 		}

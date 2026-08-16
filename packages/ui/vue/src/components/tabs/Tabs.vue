@@ -233,7 +233,7 @@ export default { ...SetupTabs, components: { TabItem } }
 					transition: opacity 0.2s ease;
 				}
 
-				&--active::before {
+				&[aria-selected='true']::before {
 					@apply opacity-0;
 				}
 			}
