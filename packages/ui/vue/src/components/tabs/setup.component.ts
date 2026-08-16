@@ -43,17 +43,7 @@ import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type ITabsProps, type ITabs, type ITabItem, TTabItem } from '@soldy/core'
-import {
-	TTabs,
-	TCollection,
-	TPlainExtension,
-	TBatchExtension,
-	TFactoryExtension,
-	TActivationExtension,
-	TOrderExtension,
-	TTabsExtension,
-	TUniqueExtension,
-} from '@soldy/core'
+import { TabsFactory } from '@soldy/core'
 import type { TTabsCollection } from '@soldy/core'
 import { TABS_COLLECTION_KEY } from './collection.types'
 import { useSyncProps } from '../../composables'
@@ -73,19 +63,7 @@ export default {
 		// .use(TCollectionExtension, { elevator: VueElevatorFactory })
 		// .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collection: TTabsCollection = props.cn
-			? toRaw(props.cn)
-			: new TCollection({
-					extensions: {
-						factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
-						unique: new TUniqueExtension<ITabItem>(),
-						order: new TOrderExtension<ITabItem>(),
-						plain: new TPlainExtension<ITabItem>(),
-						batch: new TBatchExtension<ITabItem>(),
-						activation: new TActivationExtension<ITabItem>(),
-						tabs: new TTabsExtension({ owner: instance }),
-					},
-				})
+		const collection: TTabsCollection = props.cn ? toRaw(props.cn) : TabsFactory(instance)
 
 		provide(TABS_COLLECTION_KEY, collection)
 

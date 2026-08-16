@@ -50,7 +50,7 @@ import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 import { TItemContextRegistry } from '@soldy/core'
 import { useSyncProps, useEventState } from '../../../composables'
-import type { TTabsCollection, TTabsFactoryExtensions } from '@soldy/core'
+import type { TTabsCollection, TTabsCollectionExtensions } from '@soldy/core'
 import { TABS_COLLECTION_KEY } from '../collection.types'
 
 export default {
@@ -75,7 +75,7 @@ export default {
 		}
 
 		// Создаем реестр для доступа к item-адаптерам (кеширует через WeakMap)
-		const registry = new TItemContextRegistry<ITabItem, TTabsFactoryExtensions>(
+		const registry = new TItemContextRegistry<ITabItem, TTabsCollectionExtensions>(
 			collection!.getCore(),
 		)
 

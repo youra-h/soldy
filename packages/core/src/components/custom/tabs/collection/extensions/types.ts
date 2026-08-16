@@ -1,12 +1,12 @@
-import type { ITabs } from '../types'
+import type { ITabs } from '../../types'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionItems,
-} from '../../../base/collection'
+} from '../../../../base/collection'
 import type { TTabsExtension } from './tabs.extension'
 import type { ITabItemExtension } from './item'
-import type { ITabItem } from '../tab-item/types'
+import type { ITabItem } from '../../tab-item/types'
 
 /**
  * Контракт расширения табов.

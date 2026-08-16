@@ -1,18 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
-	TTabs,
-	TTabItem,
-	TTabsCollection,
-	TCollection,
-	TPlainExtension,
-	TBatchExtension,
-	TFactoryExtension,
-	TActivationExtension,
-	TOrderExtension,
-	TTabsExtension,
-	TUniqueExtension,
-} from '@soldy/core'
+import { TTabs, TTabsCollection, TabsFactory } from '@soldy/core'
 import type { ITabItem } from '@soldy/core'
 import { Tabs, TabItem } from '@soldy/ui-vue'
 
@@ -23,17 +11,7 @@ tabs.variant = 'accent'
 tabs.view = 'contained'
 tabs.orientation = 'horizontal'
 
-const collection: TTabsCollection = new TCollection({
-	extensions: {
-		factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
-		unique: new TUniqueExtension<ITabItem>(),
-		order: new TOrderExtension<ITabItem>(),
-		plain: new TPlainExtension<ITabItem>(),
-		batch: new TBatchExtension<ITabItem>(),
-		activation: new TActivationExtension<ITabItem>(),
-		tabs: new TTabsExtension({ owner: tabs }),
-	},
-})
+const collection: TTabsCollection = TabsFactory(tabs)
 
 const { plain, activation } = collection.extensions
 

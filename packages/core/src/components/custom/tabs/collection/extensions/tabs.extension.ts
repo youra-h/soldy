@@ -1,11 +1,11 @@
-import type { IExtension, IExtensionContext } from '../../../base/collection'
+import type { IExtension, IExtensionContext } from '../../../../base/collection'
 import {
 	TBaseOwnerItemExtension,
 	TItemContextRegistry,
 	TRemoveCommand,
-} from '../../../base/collection'
-import type { ITabItem } from '../tab-item/types'
-import type { ITabs } from '../types'
+} from '../../../../base/collection'
+import type { ITabItem } from '../../tab-item/types'
+import type { ITabs } from '../../types'
 import type {
 	TTabsExtensionEvents,
 	ITabsExtensionOptions,
@@ -13,7 +13,7 @@ import type {
 	ITabsExtension,
 } from './types'
 import { TTabItemExtension, type ITabItemExtension } from './item'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../common'
+import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../common'
 
 /**
  * TTabsExtension — расширение коллекции для управления табами.

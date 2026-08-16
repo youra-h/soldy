@@ -1,8 +1,7 @@
-import { TBaseItemExtension } from '../../../../base/collection'
+import { TBaseItemExtension } from '../../../../../base/collection'
 import type { ITabItemExtension, TTabItemEventsExtension } from './types'
-import type { ITabItem } from '../../tab-item/types'
+import type { ITabItem } from '../../../tab-item/types'
 import type { ITabsExtension } from '../types'
-import type { TTabsExtension } from '../tabs.extension'
 
 /**
  * TTabItemExtension — stateless-делегат элемента таба.
