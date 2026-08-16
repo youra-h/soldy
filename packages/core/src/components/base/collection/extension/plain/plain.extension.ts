@@ -16,7 +16,7 @@ export class TPlainExtension<TItem extends object>
 	 * @param item
 	 * @param index
 	 */
-	insert(item: TItem, index: number = 0): void {
+	insert(item: Partial<TItem>, index: number = 0): void {
 		this._ctx.execute(new TInsertCommand(item, index))
 	}
 
@@ -24,7 +24,7 @@ export class TPlainExtension<TItem extends object>
 	 * Вставить элемент в конец коллекции.
 	 * @param item
 	 */
-	push(item: TItem): void {
+	push(item: Partial<TItem>): void {
 		this._ctx.execute(new TInsertCommand(item, this._ctx.engine.length))
 	}
 
