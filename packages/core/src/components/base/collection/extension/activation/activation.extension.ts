@@ -46,7 +46,17 @@ export class TActivationExtension<TItem extends object = any>
 		ctx.engine.events.on('item:added', (e) => {
 			if (!e._.active) return
 
-			this.activate(e.item)
+			this.activate(e.item as TItem)
+		})
+
+		ctx.engine.events.on('item:removed', (item: TItem) => {
+			this._activeItem === item && this.reset()
+
+			const next = this.findActivatable(undefined, item)
+
+			if (next) {
+				this.activate(next)
+			}
 		})
 	}
 
