@@ -87,8 +87,6 @@ export default {
 					},
 				})
 
-		console.log('collection', collection)
-
 		provide(TABS_COLLECTION_KEY, collection)
 
 		watch(

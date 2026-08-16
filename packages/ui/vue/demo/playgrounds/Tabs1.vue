@@ -41,6 +41,8 @@ plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
 plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
 plain.push({ text: 'Tab 3', value: 'tab3' })
 
+
+
 // tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
 // tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
 // tabs.collection.add({ text: 'Tab 3', value: 'tab3' })

@@ -22,7 +22,7 @@
 				}
 			}
 
-			&--active {
+			&[aria-selected='true'] {
 				> * {
 					@apply #{'text-s-' + $color + '-' + $text};
 				}
@@ -45,7 +45,7 @@
 			}
 		}
 
-		&--active {
+		&[aria-selected='true'] {
 			> * {
 				@apply bg-white shadow-sm;
 				@apply #{'text-s-' + $color + '-' + $text};
@@ -77,7 +77,7 @@
 			}
 		}
 
-		&--active {
+		&[aria-selected='true'] {
 			> * {
 				@apply #{'text-s-' + $color + '-' + $text};
 			}
