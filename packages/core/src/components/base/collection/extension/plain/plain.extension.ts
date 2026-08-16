@@ -16,16 +16,20 @@ export class TPlainExtension<TItem extends object>
 	 * @param item
 	 * @param index
 	 */
-	insert(item: Partial<TItem>, index: number = 0): void {
-		this._ctx.execute(new TInsertCommand(item, index))
+	insert(item: Partial<TItem>, index: number = 0): TItem {
+		const command = new TInsertCommand(item, index)
+
+		this._ctx.execute(command)
+
+		return command.item as TItem
 	}
 
 	/**
 	 * Вставить элемент в конец коллекции.
 	 * @param item
 	 */
-	push(item: Partial<TItem>): void {
-		this._ctx.execute(new TInsertCommand(item, this._ctx.engine.length))
+	push(item: Partial<TItem>): TItem {
+		return this.insert(item, this._ctx.engine.length)
 	}
 
 	remove(item: TItem): void {

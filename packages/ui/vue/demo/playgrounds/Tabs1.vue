@@ -35,13 +35,13 @@ const collection: TTabsCollection = new TCollection({
 	},
 })
 
-const { plain } = collection.extensions
+const { plain, activation } = collection.extensions
 
 plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
-plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
+const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
 plain.push({ text: 'Tab 3', value: 'tab3' })
 
-
+activation.activate(tab)
 
 // tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
 // tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
