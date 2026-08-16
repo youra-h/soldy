@@ -8,12 +8,12 @@ import type { TEngineEvents } from '../types'
  * Передаётся в {@link ICommand.apply} (мутация + синхронные «before»-хуки)
  * и в {@link ICommand.emitEvents} (уведомления, которые движок откладывает при батче).
  */
-export interface ICommandContext<T> {
-	readonly storage: IStorage<T>
-	readonly events: TEvented<TEngineEvents<T>>
+export interface ICommandContext<TItem> {
+	readonly storage: IStorage<TItem>
+	readonly events: TEvented<TEngineEvents<TItem>>
 }
 
-export interface ICommand<T> {
-	apply(ctx: ICommandContext<T>): void
-	emitEvents(ctx: ICommandContext<T>): void
+export interface ICommand<TItem> {
+	apply(ctx: ICommandContext<TItem>): void
+	emitEvents(ctx: ICommandContext<TItem>): void
 }

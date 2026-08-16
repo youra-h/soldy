@@ -1,7 +1,8 @@
-export interface IStorage<T> {
-    readonly items: readonly T[];
-    insert(item: T, index: number): void;
-    remove(item: T): void;
-    move(from: number, to: number): void;
-    clear(): void;
+export interface IStorage<TItem> {
+	readonly items: readonly TItem[]
+
+	insert(item: TItem, index: number): void
+	remove(item: TItem): void
+	move(from: number, to: number): void
+	clear(): void
 }

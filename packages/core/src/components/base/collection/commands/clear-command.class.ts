@@ -3,15 +3,15 @@ import type { ICommand, ICommandContext } from './types'
 /**
  * Команда очистки коллекции. Удаляет все элементы из хранилища и сохраняет их для последующего уведомления о событиях.
  */
-export class TClearCommand<T> implements ICommand<T> {
-	private _removedItems: T[] = []
+export class TClearCommand<TItem> implements ICommand<TItem> {
+	private _removedItems: TItem[] = []
 
-	apply(ctx: ICommandContext<T>): void {
+	apply(ctx: ICommandContext<TItem>): void {
 		this._removedItems = [...ctx.storage.items]
 		ctx.storage.clear()
 	}
 
-	emitEvents(ctx: ICommandContext<T>): void {
+	emitEvents(ctx: ICommandContext<TItem>): void {
 		this._removedItems.forEach((item) => ctx.events.emit('item:removed', item))
 
 		ctx.events.emit('change:count', ctx.storage.items.length)

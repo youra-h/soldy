@@ -1,17 +1,17 @@
 import type { IStorage } from './types'
 
-export class TArrayStorage<T> implements IStorage<T> {
-	private _items: T[] = []
+export class TArrayStorage<TItem> implements IStorage<TItem> {
+	private _items: TItem[] = []
 
-	get items(): readonly T[] {
+	get items(): readonly TItem[] {
 		return this._items
 	}
 
-	insert(item: T, index: number): void {
+	insert(item: TItem, index: number): void {
 		this._items.splice(index, 0, item)
 	}
 
-	remove(item: T): void {
+	remove(item: TItem): void {
 		const idx = this._items.indexOf(item)
 
 		if (idx !== -1) this._items.splice(idx, 1)

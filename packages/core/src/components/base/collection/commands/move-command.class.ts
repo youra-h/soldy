@@ -3,16 +3,16 @@ import type { ICommand, ICommandContext } from './types'
 /**
  * Команда перемещения элемента в коллекции. Перемещает элемент из старого индекса в новый индекс в хранилище.
  */
-export class TMoveCommand<T> implements ICommand<T> {
+export class TMoveCommand<TItem> implements ICommand<TItem> {
 	private _resolvedOldIndex: number = -1
 
 	constructor(
-		public item: T,
+		public item: TItem,
 		public newIndex: number,
 		public oldIndex?: number,
 	) {}
 
-	apply(ctx: ICommandContext<T>): void {
+	apply(ctx: ICommandContext<TItem>): void {
 		const oldIdx = this.oldIndex ?? ctx.storage.items.indexOf(this.item)
 
 		if (oldIdx === -1 || oldIdx === this.newIndex) return
@@ -21,7 +21,7 @@ export class TMoveCommand<T> implements ICommand<T> {
 		ctx.storage.move(oldIdx, this.newIndex)
 	}
 
-	emitEvents(ctx: ICommandContext<T>): void {
+	emitEvents(ctx: ICommandContext<TItem>): void {
 		if (this._resolvedOldIndex !== -1) {
 			ctx.events.emit('item:moved', this.item, this._resolvedOldIndex, this.newIndex)
 		}
