@@ -24,6 +24,9 @@ export interface ISelectionExtension<TItem extends object = any>
 	/** Удобный доступ: true если режим single. */
 	readonly single: boolean
 
+	/** Получить массив выбранных элементов. */
+	readonly selected: TItem[]
+
 	/** Количество выбранных элементов. */
 	readonly selectedCount: number
 
@@ -35,9 +38,6 @@ export interface ISelectionExtension<TItem extends object = any>
 
 	/** Переключить выделение элемента. */
 	toggle(item: TItem): void
-
-	/** Получить массив выбранных элементов. */
-	getSelected(): TItem[]
 
 	/** Проверить, выбран ли указанный элемент. */
 	isSelected(item: TItem): boolean

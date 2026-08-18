@@ -81,7 +81,7 @@ export class TSelectionExtension<TItem extends object = any>
 		ctx.engine.events.on('item:added', (e) => {
 			if (!e._.selected) return
 
-			this.select(e.item)
+			this.select(e.item as TItem)
 		})
 	}
 
@@ -119,7 +119,7 @@ export class TSelectionExtension<TItem extends object = any>
 		}
 	}
 
-	getSelected(): TItem[] {
+	get selected(): TItem[] {
 		return Array.from(this._selected)
 	}
 
@@ -146,6 +146,6 @@ export class TSelectionExtension<TItem extends object = any>
 	 * Уведомление об изменении выделения.
 	 */
 	private _notifySelected(): void {
-		this.events.emit('change:selection', this.getSelected())
+		this.events.emit('change:selection', this.selected)
 	}
 }

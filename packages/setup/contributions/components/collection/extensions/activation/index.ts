@@ -1,1 +1,1 @@
-export { ActivationContribution, ActivationItemContribution } from './activation.contribution'
+export * from './activation.contribution'

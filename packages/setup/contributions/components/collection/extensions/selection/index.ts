@@ -1,1 +1,1 @@
-export { SelectionContribution, SelectionItemContribution } from './selection.contribution'
+export * from './selection.contribution'

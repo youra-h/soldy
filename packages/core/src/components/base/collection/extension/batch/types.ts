@@ -4,8 +4,13 @@ export type TBatchEvents<T> = {
 	'change:trackBy': (fn?: (item: T) => any) => void
 }
 
+import type { TReadonlyEngineArray } from '../../types'
+
 export interface IBatchExtension<TItem extends object = any> {
 	trackBy?: (item: TItem) => any
+
+	get items(): TReadonlyEngineArray<TItem>
+	set items(items: TItem[])
 
 	/**
 	 * Добавить элементы в коллекцию.

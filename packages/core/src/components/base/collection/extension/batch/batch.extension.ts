@@ -2,6 +2,7 @@ import type { IExtension } from '../types'
 import type { TBatchEvents, IBatchExtension } from './types'
 import { TInsertCommand, TRemoveCommand, TClearCommand, TUpdateCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
+import type { TReadonlyEngineArray } from '../../types'
 
 /**
  * TBatchExtension — расширение для пакетных операций
@@ -24,6 +25,15 @@ export class TBatchExtension<TItem extends object>
 		this._trackBy = fn
 
 		this.events.emit('change:trackBy', fn)
+	}
+
+	get items(): TReadonlyEngineArray<TItem> {
+		// Приведение типа, если engine реализует методы чтения ReadonlyArray
+		return this._ctx.engine as unknown as TReadonlyEngineArray<TItem>
+	}
+
+	set items(items: TItem[]) {
+		this.update(items)
 	}
 
 	set(items: TItem[]): void {

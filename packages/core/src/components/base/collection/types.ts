@@ -77,6 +77,9 @@ export interface ICollectionEngine<TItem> extends ReadonlyArray<TItem> {
 	batch(action: () => void): void
 }
 
+// Описываем тип движка, исключающий мутирующие методы
+export type TReadonlyEngineArray<T> = ReadonlyArray<T> & ICollectionEngine<T>
+
 export interface ICollectionCore<TItem, TExtensions extends Record<string, any>> {
 	readonly engine: ICollectionEngine<TItem>
 	readonly extensions: TExtensions

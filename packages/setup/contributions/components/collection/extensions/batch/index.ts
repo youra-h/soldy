@@ -1,1 +1,1 @@
-export { BatchEventsContribution } from './batch.contribution'
+export * from './batch.contribution'

@@ -1,1 +1,1 @@
-export { OrderItemContribution } from './order.contribution'
+export * from './order.contribution'
