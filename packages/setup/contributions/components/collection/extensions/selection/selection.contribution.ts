@@ -4,7 +4,7 @@ import type { ICollectionContribution } from '@soldy/accessor'
 export const SelectionExtensionContribution: ICollectionContribution = {
 	props: [
 		{ name: 'mode', triggers: ['change:mode'] },
-		{ name: 'selected', protected: true, triggers: ['change:selection'] },
+		{ name: '_selected', protected: true, triggers: ['change:selection'] },
 	],
 }
 

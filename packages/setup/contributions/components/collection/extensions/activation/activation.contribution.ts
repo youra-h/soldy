@@ -2,7 +2,7 @@ import type { ICollectionContribution } from '@soldy/accessor'
 
 /** activeItem на родительском уровне (Tabs, Collapse) */
 export const ActivationExtensionContribution: ICollectionContribution = {
-	props: [{ name: 'activeItem', protected: true, triggers: ['change:activation'] }],
+	props: [{ name: '_activeItem', protected: true, triggers: ['change:activation'] }],
 	events: ['item:activated', 'item:deactivated'],
 }
 
