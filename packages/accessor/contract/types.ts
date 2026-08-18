@@ -35,10 +35,12 @@ export interface ICompiledProp extends ICompiledItem {
 /** Скомпилированное событие */
 export interface ICompiledEvent extends ICompiledItem {}
 
-/** Вход: декларация одного свойства коллекции в контрибуции (с указанием источника) */
+/** Вход: декларация одного свойства коллекции в контрибуции */
 export interface ICollectionPropContribution extends IPropContribution {
-	/** Где живёт свойство: 'engine' — collection.engine, иначе — collection.extensions[name] */
-	source: 'engine' | string
+	/** Явный геттер — нужен только когда source[name] не работает напрямую (напр. engine.items) */
+	get?: (ctx: any) => any
+	/** Явный сеттер; отсутствие = default source[name] = value */
+	set?: (ctx: any, value: any) => void
 }
 
 /** Вход: декларация контрибуции коллекции */
@@ -47,9 +49,19 @@ export interface ICollectionContribution {
 	events?: string[]
 }
 
-/** Скомпилированное свойство коллекции: ICompiledProp + source */
+/** Скомпилированное свойство коллекции: source проставляется через defineCollectionExtension */
 export interface ICompiledCollectionProp extends ICompiledProp {
+	/** Устанавливается в defineCollectionExtension, аналог namespace в definePlugin */
 	source: 'engine' | string
+	get?: (ctx: any) => any
+	set?: (ctx: any, value: any) => void
+}
+
+/** Дескриптор расширения коллекции — результат defineCollectionExtension */
+export interface ICollectionExtensionDescriptor {
+	source: 'engine' | string
+	props: ICompiledCollectionProp[]
+	events: ICompiledEvent[]
 }
 
 /** Схема коллекции: скомпилированные props + events (контракт для TDescriptorInspector + TCollectionAccessor) */

@@ -11,5 +11,6 @@ export type {
     ICollectionPropContribution,
     ICollectionContribution,
     ICompiledCollectionProp,
+    ICollectionExtensionDescriptor,
     ICollectionSchema,
 } from './types'

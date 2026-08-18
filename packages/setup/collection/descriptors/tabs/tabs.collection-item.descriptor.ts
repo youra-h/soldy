@@ -1,6 +1,12 @@
 import { defineCollectionItem } from '../base'
-import { TabsCollectionItemContribution } from '../../../contributions/tabs'
+import { ActivationItemExtensionDescriptor } from '../extensions/activation'
+import { OrderItemExtensionDescriptor } from '../extensions/order'
+import { TabsItemExtensionDescriptor } from '../custom/tabs'
 
 export const TabsCollectionItemDescriptor = defineCollectionItem({
-	contribution: TabsCollectionItemContribution,
+	extensions: [
+		ActivationItemExtensionDescriptor,
+		OrderItemExtensionDescriptor,
+		TabsItemExtensionDescriptor,
+	],
 })

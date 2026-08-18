@@ -2,7 +2,7 @@
  * useVueCollectionItem — реактивная привязка item-адаптеров к Vue.
  *
  * Аналог useVueCollection, но для дочернего элемента коллекции (TabItem).
- * Переиспользует useSyncProps / useSyncEvents без изменений.
+ * Возвращает context (TItemContext) — аналог ctrl в useVue, для прямого доступа в шаблоне.
  */
 
 import { onUnmounted } from 'vue'
@@ -25,5 +25,8 @@ export function useVueCollectionItem(
 	bindInput(props)
 	useSyncEvents(itemExt.accessor, inspector, emit)
 
-	return refs
+	return {
+		context: itemExt.itemContext,  // TItemContext — как ctrl в useVue
+		...refs,
+	}
 }

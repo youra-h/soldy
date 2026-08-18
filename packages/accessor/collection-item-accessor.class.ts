@@ -1,11 +1,10 @@
 /**
  * TCollectionItemAccessor — единая точка доступа к item-адаптерам коллекции.
  *
- * Аналог TCollectionAccessor, но для дочерней стороны (TabItem, CollapseItem).
- * Читает значения из adapters[source][name] вместо collection.extensions[source][name].
- * Event source — родительские extension events (те же, что у TCollectionAccessor).
- *
- * Публичный API идентичен TComponentAccessor — useSyncProps / useSyncEvents без изменений.
+ * Принимает TItemContext (= { owner, adapters }).
+ * getValue: prop.get(itemContext) или adapters[source][name] как fallback.
+ * getEventSource: adapters[source].events — АДАПТЕРНЫЕ события с relay (change:active, change:order...).
+ * setValue: prop.set(itemContext, value) или adapters[source][name] = value.
  */
 
 import { TDescriptorInspector } from './descriptor-inspector.class'
@@ -23,10 +22,8 @@ export class TCollectionItemAccessor {
 	constructor(
 		private props: ICompiledCollectionProp[],
 		private events: ICompiledEvent[],
-		/** item adapters: TItemContext.adapters (activation, order, tabs, ...) */
-		private adapters: any,
-		/** родительская коллекция — источник events */
-		private collection: any,
+		/** TItemContext = { owner, adapters } */
+		private itemContext: any,
 	) {
 		this.inspector = new TDescriptorInspector({ props, events } as any)
 	}
@@ -52,23 +49,24 @@ export class TCollectionItemAccessor {
 		return this.inspector.getExportTriggers(prop)
 	}
 
-	/** Event source живёт на родительском расширении, не на адаптере */
+	/** Источник событий — собственные события АДАПТЕРА (содержат relay: change:active, change:order...) */
 	getEventSource(item: ICompiledItem): any {
-		const source = (item as ICompiledCollectionProp).source ?? 'engine'
-		if (source === 'engine') return this.collection.engine.events
-		return this.collection.extensions[source]?.events
+		const source = (item as ICompiledCollectionProp).source
+		return this.itemContext.adapters[source]?.events
 	}
 
-	/** Читаем из адаптера элемента, не из коллекции */
 	getValue(prop: ICompiledCollectionProp): any {
-		return this.adapters?.[prop.source]?.[prop.name]
+		if (prop.get) return prop.get(this.itemContext)
+		return this.itemContext.adapters[prop.source]?.[prop.name]
 	}
 
-	/** Пишем через адаптер (set active, set selected — через parent extension) */
 	setValue(prop: ICompiledCollectionProp, value: any): void {
 		if (prop.protected) return
-		if (this.adapters?.[prop.source]) {
-			this.adapters[prop.source][prop.name] = value
+		if (prop.set) {
+			prop.set(this.itemContext, value)
+		} else {
+			const adapter = this.itemContext.adapters[prop.source]
+			if (adapter && prop.name in adapter) adapter[prop.name] = value
 		}
 	}
 }

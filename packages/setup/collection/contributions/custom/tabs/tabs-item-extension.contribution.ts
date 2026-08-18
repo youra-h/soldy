@@ -6,6 +6,6 @@ import type { ICollectionContribution } from '@soldy/accessor'
  */
 export const TabsItemExtensionContribution: ICollectionContribution = {
 	props: [
-		{ name: 'closable', source: 'tabs', triggers: [], protected: true },
+		{ name: 'closable', protected: true, triggers: ['change:closable'] },
 	],
 }

@@ -3,8 +3,8 @@ import type { ICollectionContribution } from '@soldy/accessor'
 /** selectedItems/selectedCount на родительском уровне (Select, ListBox) */
 export const SelectionContribution: ICollectionContribution = {
 	props: [
-		{ name: 'selectedItems', source: 'selection', triggers: ['change:selection'], protected: true },
-		{ name: 'selectedCount', source: 'selection', triggers: ['change:selectionCount'], protected: true },
+		{ name: 'selectedItems', protected: true, triggers: ['change:selection'] },
+		{ name: 'selectedCount', protected: true, triggers: ['change:selectionCount'] },
 	],
 	events: ['change:selection'],
 }
@@ -12,6 +12,6 @@ export const SelectionContribution: ICollectionContribution = {
 /** selected на уровне элемента (ListBoxItem, SelectItem) */
 export const SelectionItemContribution: ICollectionContribution = {
 	props: [
-		{ name: 'selected', source: 'selection', triggers: ['change:selection'] },
+		{ name: 'selected', triggers: ['change:selected'] },
 	],
 }

@@ -3,41 +3,33 @@ import type {
 	ICompiledCollectionProp,
 	ICompiledEvent,
 	ICollectionSchema,
+	ICollectionExtensionDescriptor,
 } from '@soldy/accessor'
 
-/**
- * Дескриптор коллекции — результат компиляции ICollectionContribution.
- *
- * Аналог IComponentDescriptor, но:
- * - factory создаёт TCollection (вместо new ctor)
- * - props имеет source (engine / extension name)
- * - нет extends / plugins / bundle — это параллельная система
- */
 export interface ICollectionDescriptor<TItem extends object = any> {
-	/** Props коллекции (скомпилированные) */
 	readonly props: ICompiledCollectionProp[]
-	/** Events коллекции (скомпилированные) */
 	readonly events: ICompiledEvent[]
-
-	/** Создать TCollection для переданного владельца */
-	factory(owner: any): any // TCollection<TItem, any>
+	factory(owner: any): any
 }
 
-/** Опции для defineCollection() */
+/** Опции для defineCollection(): extensions — аналог plugins в defineComponent */
 export interface ICollectionDefinitionOptions<TItem extends object = any> {
-	/** Фабрика: (owner) → TCollection */
 	factory: (owner: any) => any
-	/** Контрибуция коллекции */
-	contribution?: ICollectionContribution
+	extensions: ICollectionExtensionDescriptor[]
 }
 
-/** Дескриптор элемента коллекции. Props компилируются с namespace 'item'. */
 export interface ICollectionItemDescriptor {
 	readonly props: ICompiledCollectionProp[]
 	readonly events: ICompiledEvent[]
 }
 
-/** Опции для defineCollectionItem() */
+/** Опции для defineCollectionItem(): extensions — аналог plugins в defineComponent */
 export interface ICollectionItemDefinitionOptions {
+	extensions: ICollectionExtensionDescriptor[]
+}
+
+/** Опции для defineCollectionExtension() — аналог definePlugin */
+export interface ICollectionExtensionDefinitionOptions {
+	source: 'engine' | string
 	contribution?: ICollectionContribution
 }

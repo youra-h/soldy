@@ -24,7 +24,8 @@ export function createCollectionContext<TItem extends object = any>(
 	owner: any,
 ): ICollectionAdapterContext {
 	const collection = descriptor.factory(owner)
-	const accessor = new TCollectionAccessor(descriptor.props, descriptor.events, collection)
+	const core = collection.getCore()
+	const accessor = new TCollectionAccessor(descriptor.props, descriptor.events, core)
 
 	const events = new TEvented<TCollectionAdapterEvents>()
 	const extensionsMap = new Map<symbol, any>()

@@ -1,1 +1,4 @@
-export { TabsCollectionDescriptor } from './tabs/tabs.collection.descriptor'
+export * from './base'
+export * from './extensions'
+export * from './custom'
+export * from './tabs'

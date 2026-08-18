@@ -1,13 +1,10 @@
 /**
- * TCollectionItemElevatorExtension — предоставляет дочерним элементам
- * функцию регистрации через elevator (паттерн slot: <tabs><tab-item/></tabs>).
- *
- * Родитель (Tabs) вызывает down(registerFn).
- * Ребёнок (TabItem) вызывает up() → registerFn({ instance, bundle }) → cleanup.
- *
- * Замена старого TCollectionExtension — теперь работает напрямую с TCollection.plain.
+ * TCollectionItemElevatorExtension — родительская сторона:
+ * 1. Регистрирует slot-based элементы через COLLECTION_ELEVATOR (plain.push + unique guard)
+ * 2. Предоставляет TItemContextRegistry дочерним элементам через ITEM_CONTEXT_ELEVATOR
  */
 
+import { TItemContextRegistry } from '@soldy/core'
 import type { ICollectionAdapterContext } from '../types'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
@@ -22,16 +19,19 @@ export class TCollectionItemElevatorExtension {
 	constructor(context: ICollectionAdapterContext, options: ICollectionItemElevatorOptions) {
 		const { elevator } = options
 		const { collection } = context
-		const plain = collection.extensions.plain
+		const { plain, unique } = collection.extensions
 
-		// Регистрация элемента в коллекции (slot-based паттерн)
+		// Slot-based: ребёнок поднимает instance наверх, родитель регистрирует его
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 		itemElevator.down((item: any) => {
-			plain.insert(item, collection.engine.length)
+			if (!unique?.has(item)) {
+				plain.insert(item, collection.engine.length)
+			}
 			return () => plain.remove(item)
 		})
 
-		// Контекст коллекции для item-адаптеров (active, order, closable)
-		elevator(ITEM_CONTEXT_ELEVATOR).down(context)
+		// Item-контекст: ребёнок получает registry для создания адаптеров
+		const registry = new TItemContextRegistry(collection.getCore())
+		elevator(ITEM_CONTEXT_ELEVATOR).down(registry)
 	}
 }
