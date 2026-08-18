@@ -1,10 +1,7 @@
 import { TControl } from '../../base/control'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import TTabItem from './tab-item/tab-item.class'
-import type { ITabItem } from './tab-item/types'
 import { TEvented } from '../../../common'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../common'
 import type {
 	ITabs,
 	ITabsProps,

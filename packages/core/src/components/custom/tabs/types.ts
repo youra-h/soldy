@@ -19,29 +19,27 @@ export type TTabsEvents = TControlEvents &
 		'change:view': (value: TTabsView) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
-		/** item:close — эмитится перед удалением таба при закрытии */
-		'item:close': (item: ITabItem) => void
-		/** item:closable — эмитится при изменении свойства closable у таба */
-		'item:closable': (item: ITabItem, value: boolean) => void
-		/** item:text — эмитится при изменении текста таба */
-		'item:text': (item: ITabItem, value: string) => void
-		/** item:rendered — эмитится при изменении rendered у таба */
-		'item:rendered': (item: ITabItem, value: boolean) => void
-		/** item:visible — эмитится при изменении visible у таба */
-		'item:visible': (item: ITabItem, value: boolean) => void
-		'item:present': (item: ITabItem, value: boolean) => void
-		'item:disabled': (item: ITabItem, value: boolean) => void
-		/** Массовое добавление (от batch-расширения) */
-		'items:added': (items: ITabItem[]) => void
-		/** Массовое удаление (от batch-расширения) */
-		'items:removed': (items: ITabItem[]) => void
-		/** Изменение выборки (от selection-расширения) */
-		'change:selection': (items: ITabItem[]) => void
+		// /** item:close — эмитится перед удалением таба при закрытии */
+		// 'item:close': (item: ITabItem) => void
+		// /** item:closable — эмитится при изменении свойства closable у таба */
+		// 'item:closable': (item: ITabItem, value: boolean) => void
+		// /** item:text — эмитится при изменении текста таба */
+		// 'item:text': (item: ITabItem, value: string) => void
+		// /** item:rendered — эмитится при изменении rendered у таба */
+		// 'item:rendered': (item: ITabItem, value: boolean) => void
+		// /** item:visible — эмитится при изменении visible у таба */
+		// 'item:visible': (item: ITabItem, value: boolean) => void
+		// 'item:present': (item: ITabItem, value: boolean) => void
+		// 'item:disabled': (item: ITabItem, value: boolean) => void
+		// /** Массовое добавление (от batch-расширения) */
+		// 'items:added': (items: ITabItem[]) => void
+		// /** Массовое удаление (от batch-расширения) */
+		// 'items:removed': (items: ITabItem[]) => void
+		// /** Изменение выборки (от selection-расширения) */
+		// 'change:selection': (items: ITabItem[]) => void
 	}
 
 export interface ITabsProps extends IControlProps {
-	/** Начальные элементы табов */
-	items?: any[]
 	/** Ориентация табов */
 	orientation?: TTabsOrientation
 	/** Выравнивание табов */
