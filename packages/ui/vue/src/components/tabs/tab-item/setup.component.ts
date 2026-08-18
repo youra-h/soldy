@@ -105,13 +105,13 @@ export default {
 // 				},
 // 			}),
 // 			...useSyncProps(context.adapters.order.events, {
-// 				order: {
+// 				_order: {
 // 					value: () => context.adapters.order.order,
 // 					triggers: ['change:order'],
 // 				},
 // 			}),
 // 			...useSyncProps(context.adapters.tabs.events, {
-// 				closable: {
+// 				_closable: {
 // 					value: () => context.adapters.tabs.closable,
 // 					triggers: ['change:closable'],
 // 				},

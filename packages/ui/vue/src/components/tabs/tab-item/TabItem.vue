@@ -12,7 +12,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="{ order: order }"
+		:style="{ order: _order }"
 		:aria-selected="active"
 		v-bind="containerAttrs"
 	>
@@ -36,7 +36,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 			<template #trailing>
 				<slot name="trailing" />
 				<Button
-					:rendered="!!closable"
+					:rendered="!!_closable"
 					class="s-tab-item__close"
 					@click.stop="close()"
 					view="plain"
