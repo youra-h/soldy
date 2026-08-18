@@ -1,3 +1,3 @@
 import type { ICollectionContribution } from '@soldy/accessor'
 
-export const FactoryExtensionContribution: ICollectionContribution = {}
+export const UniqueExtensionContribution: ICollectionContribution = {}

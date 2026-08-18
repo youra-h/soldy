@@ -1,15 +1,31 @@
-import type { IExtension } from '../types'
+import type { IExtension, IExtensionContext } from '../types'
 import { TInsertCommand, TRemoveCommand, TUpdateCommand, TMoveCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
+import type { TPlainEvents } from './types'
 
 /**
  * TPlainExtension — расширение для базовых операций с коллекцией
  */
 export class TPlainExtension<TItem extends object>
-	extends TBaseExtension<TItem, {}>
+	extends TBaseExtension<TItem, TPlainEvents<TItem>>
 	implements IExtension<TItem>
 {
 	readonly name = 'plain' as const
+
+	override install(ctx: IExtensionContext<TItem>): void {
+		super.install(ctx)
+
+		ctx.engine.events.relay(this.events, [
+			'item:add:before',
+			'item:added',
+			'item:removed',
+			'item:updated',
+			'item:moved',
+			'change:items',
+			'change:count',
+			'reset',
+		])
+	}
 
 	/**
 	 * Вставить элемент в коллекцию. Либо вставлять в начало по умолчанию, либо в конец через push().
