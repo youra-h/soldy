@@ -1,7 +1,7 @@
 import { TTabsExtension } from '@soldy/core'
 import { TabsExtensionContribution } from '../../../contributions'
 
-export const TabsExtensionDescriptor = defineCollection({
+export const TabsExtensionDescriptor = defineExtension({
 	ctor: TTabsExtension,
 
 	contribution: TabsExtensionContribution,
