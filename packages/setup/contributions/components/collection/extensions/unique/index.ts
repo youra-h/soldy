@@ -1,1 +1,1 @@
-export * from './factory.contribution'
+export * from './unique.contribution'

@@ -1,0 +1,7 @@
+export * from './activation.descriptors'
+export * from './factory.descriptors'
+export * from './unique.descriptors'
+export * from './order.descriptorsts'
+export * from './plain.descriptors'
+export * from './batch.descriptors'
+export * from './selection.descriptors'
