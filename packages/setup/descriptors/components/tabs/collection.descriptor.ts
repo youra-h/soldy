@@ -1,12 +1,15 @@
 import { TTabsExtension } from '@soldy/core'
 import { TabsExtensionContribution } from '../../../contributions'
 
-export const TabsExtensionDescriptor = defineExtension({
-	ctor: TTabsExtension,
+export const TabsExtensionDescriptor = (owner) =>
+	defineExtension({
+		ctor: TTabsExtension,
 
-	contribution: TabsExtensionContribution,
-})
+		contribution: TabsExtensionContribution,
 
-export const TabsCollectionDescriptor = defineCollection({
-	contribution: TabsExtensionContribution,
-})
+		options: {
+			owner,
+		},
+	})
+
+export const TabsCollectionDescriptor = defineCollection({})

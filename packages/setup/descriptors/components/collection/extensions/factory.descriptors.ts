@@ -1,7 +1,7 @@
 import { TFactoryExtension } from '@soldy/core'
 import { FactoryExtensionContribution } from '../../../../contributions'
 
-export const FactoryExtensionDescriptor = ({ itemCtor }) => defineExtension<TItem = object>({
+export const FactoryExtensionDescriptor =  defineExtension<TItem = object>({
 	ctor: TFactoryExtension<TItem>,
 
 	contribution: FactoryExtensionContribution,
