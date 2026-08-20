@@ -43,33 +43,6 @@ export interface ICollectionPropContribution extends IPropContribution {
 	set?: (ctx: any, value: any) => void
 }
 
-/** Вход: декларация контрибуции коллекции */
-export interface ICollectionContribution {
-	props?: ICollectionPropContribution[]
-	events?: string[]
-}
-
-/** Скомпилированное свойство коллекции: source проставляется через defineCollectionExtension */
-export interface ICompiledCollectionProp extends ICompiledProp {
-	/** Устанавливается в defineCollectionExtension, аналог namespace в definePlugin */
-	source: 'engine' | string
-	get?: (ctx: any) => any
-	set?: (ctx: any, value: any) => void
-}
-
-/** Дескриптор расширения коллекции — результат defineCollectionExtension */
-export interface ICollectionExtensionDescriptor {
-	source: 'engine' | string
-	props: ICompiledCollectionProp[]
-	events: ICompiledEvent[]
-}
-
-/** Схема коллекции: скомпилированные props + events (контракт для TDescriptorInspector + TCollectionAccessor) */
-export interface ICollectionSchema {
-	props: ICompiledCollectionProp[]
-	events: ICompiledEvent[]
-}
-
 /** Схема компонента: скомпилированные props + events (контракт для TDescriptorInspector) */
 export interface IComponentSchema {
 	props: ICompiledProp[]

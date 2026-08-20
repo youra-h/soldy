@@ -9,13 +9,6 @@
 
 import { defineComponent, definePlugin } from '../../base'
 import { TTabs, type ITabItem } from '@soldy/core'
-import {
-	TCollectionPlugin,
-	// TPlainExtension,
-	// TBatchExtension,
-	// TActivationExtension,
-	// TOrderExtension,
-} from '@soldy/plugins'
 // import {
 //     TTabsLayoutPlugin,
 //     TTabsActiveTabPlugin,
@@ -38,23 +31,6 @@ export const TabsDescriptor = defineComponent({
 	contribution: TabsContribution,
 
 	plugins: [
-		// definePlugin({
-		// 	ctor: TCollectionPlugin,
-		// 	contribution: [
-		// 		CollectionContribution,
-		// 		BatchExtensionContribution,
-		// 		ActivationExtensionContribution,
-		// 		OrderExtensionContribution,
-		// 	],
-		// 	options: {
-		// 		extensions: {
-		// 			plain: TPlainExtension<ITabItem>,
-		// 			batch: TBatchExtension<ITabItem>,
-		// 			activation: TActivationExtension<ITabItem>,
-		// 			order: TOrderExtension<ITabItem>,
-		// 		},
-		// 	},
-		// }),
 		// // Коллекция и накопление
 		// definePlugin({ ctor: TTabsCollectionPlugin }),
 		// definePlugin({ ctor: TCollectionItemPlugins }),

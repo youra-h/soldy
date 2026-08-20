@@ -6,9 +6,9 @@
  *   adapter.use(TCollectionItemExtension, { elevator: vueElevatorFactory })
  */
 
-import type { IAdapterContext } from '../context'
-import type { TElevatorFactory } from '../elevator'
-import { COLLECTION_ELEVATOR } from '../elevator/keys'
+import type { IAdapterContext } from '../../context'
+import type { TElevatorFactory } from '../../elevator'
+import { COLLECTION_ELEVATOR } from '../../elevator/keys'
 
 export interface ICollectionItemExtensionOptions {
 	elevator: TElevatorFactory

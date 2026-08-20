@@ -1,5 +1,2 @@
+export * from './collection'
 export * from './plugins-binding.extension.class'
-export * from './collection.extension.class'
-export * from './collection-item.extension.class'
-export * from './drag-and-drop.extension.class'
-export * from './drag-and-drop-collection.extension.class'

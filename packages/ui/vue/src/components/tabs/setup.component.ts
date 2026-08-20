@@ -1,10 +1,10 @@
 import { toRaw } from 'vue'
 import {
 	createAdapterContext,
-	createCollectionContext,
-	TCollectionItemElevatorExtension,
+	TCollectionExtension,
 	TabsDescriptor,
 	TabsCollectionDescriptor,
+	TCollectionFactoryExtension,
 } from '@soldy/setup'
 import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
@@ -19,17 +19,14 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
-
-		const colCtx = createCollectionContext(TabsCollectionDescriptor, adapter.instance)
-			.use(TCollectionItemElevatorExtension, { elevator: VueElevatorFactory })
+		.use(TCollectionFactoryExtension, { descriptor: TabsCollectionDescriptor })
+		.use(TCollectionExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
-			...useVueCollection(colCtx, props, emit),
 		}
 	},
 }
-
 
 // import { toRaw, provide, watch } from 'vue'
 // import {
