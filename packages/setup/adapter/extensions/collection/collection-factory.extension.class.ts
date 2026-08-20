@@ -1,20 +1,33 @@
 /**
- * TCollectionFactoryExtension — создает фабрику коллекций, которая позволяет создавать коллекции с определенными параметрами и поведением.
+ * TCollectionFactoryExtension — создаёт коллекцию через дескриптор и передаёт её вниз через ITEM_CONTEXT_ELEVATOR.
+ *
+ * Использование:
+ *   adapter.use(TCollectionFactoryExtension, { descriptor: TabsCollectionDescriptor, elevator: VueElevatorFactory })
  */
 
-import { TCollectionPlugin, TCollectionItemPlugins } from '@soldy/plugins'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
-import { COLLECTION_ELEVATOR } from '../../elevator/keys'
+import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import type { ICollectionDescriptor } from '@soldy/setup'
 
 export interface ICollectionFactoryExtensionOptions {
 	descriptor: ICollectionDescriptor
+	elevator: TElevatorFactory
 }
 
 export class TCollectionFactoryExtension {
 	static readonly key = Symbol('TCollectionFactoryExtension')
 
+	readonly collection: any
+	readonly descriptor: ICollectionDescriptor
+
 	constructor(context: IAdapterContext, options: ICollectionFactoryExtensionOptions) {
-		const { descriptor } = options
+		const { descriptor, elevator } = options
+
+		this.descriptor = descriptor
+		this.collection = descriptor.create(context.instance)
+
+		// Передаём коллекцию дочерним элементам через элеватор
+		elevator(ITEM_CONTEXT_ELEVATOR).down(this.collection)
 	}
 }

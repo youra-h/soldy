@@ -1,8 +1,10 @@
 import { TOrderExtension } from '@soldy/core'
-import { OrderExtensionContribution } from '../../../../contributions'
+import { OrderExtensionContribution, OrderItemExtensionContribution } from '../../../../contributions'
+import { defineExtension } from '../../../base'
 
-export const OrderExtensionDescriptor = defineExtension<TItem = object>({
-	ctor: TOrderExtension<TItem>,
-
+export const OrderExtensionDescriptor = defineExtension({
+	name: 'order',
+	ctor: TOrderExtension,
 	contribution: OrderExtensionContribution,
+	itemContribution: OrderItemExtensionContribution,
 })

@@ -10,6 +10,11 @@ import type {
 	ICompiledProp,
 	ICompiledEvent,
 	TComponentAccessor,
+	ICollectionExtensionDescriptor,
+	ICollectionSchema,
+	TCollectionAccessor,
+	TItemContextAccessor,
+	INamingStrategy,
 } from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 
@@ -54,3 +59,19 @@ export interface IComponentDescriptor {
 	/** Создать TComponentAccessor для переданных instance и bundle */
 	createAccessor(instance: any, bundle: IPluginBundle): TComponentAccessor
 }
+
+/**
+ * Дескриптор коллекции — единый источник истины о структуре коллекции.
+ * Создаётся через defineCollection({ extensions: [...] }).
+ */
+export interface ICollectionDescriptor {
+	readonly schema: ICollectionSchema
+	/** Создать экземпляр TCollection со всеми расширениями */
+	create(instance: any): any
+	/** Создать TCollectionAccessor для реактивного состояния родительского компонента */
+	createAccessor(collection: any, naming?: INamingStrategy): TCollectionAccessor
+	/** Создать TItemContextAccessor для реактивного состояния дочернего компонента */
+	createItemAccessor(context: any, naming?: INamingStrategy): TItemContextAccessor
+}
+
+export type { ICollectionExtensionDescriptor }

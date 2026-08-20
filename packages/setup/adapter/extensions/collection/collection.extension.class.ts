@@ -1,18 +1,17 @@
 /**
- * TCollectionExtension — настраивает родительскую коллекцию:
- * предоставляет детям функцию регистрации через elevator.
+ * TCollectionExtension — предоставляет детям функцию регистрации через COLLECTION_ELEVATOR.
  *
- * Ребёнок вызывает register({ instance, bundle }) → получает cleanup-функцию.
- * При destroy ребёнок вызывает cleanup → remove из коллекции + unregister плагинов.
+ * Предполагает: TCollectionFactoryExtension должен быть зарегистрирован до вызова .use(TCollectionExtension).
  *
  * Использование:
- *   adapter.use(TCollectionExtension, { elevator: vueElevatorFactory })
+ *   adapter.use(TCollectionFactoryExtension, { descriptor, elevator })
+ *          .use(TCollectionExtension, { elevator })
  */
 
-import { TCollectionPlugin, TCollectionItemPlugins } from '@soldy/plugins'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ELEVATOR } from '../../elevator/keys'
+import { TCollectionFactoryExtension } from './collection-factory.extension.class'
 
 export interface ICollectionExtensionOptions {
 	elevator: TElevatorFactory
@@ -25,34 +24,14 @@ export class TCollectionExtension {
 		const { elevator } = options
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 
-		const { bundle } = context
+		const collection = context.get(TCollectionFactoryExtension)?.collection
 
-		const collectionPlugin = bundle.get(TCollectionPlugin)
-		const itemPlugins = bundle.get(TCollectionItemPlugins)
+		itemElevator.down((instance: any) => {
+			collection?.extensions?.plain?.insert(instance)
 
-		itemElevator.down(
-			({ instance, bundle: itemBundle }: { instance: any; bundle: any }) => {
-				// Регистрация в коллекции
-				if (collectionPlugin && instance) {
-					collectionPlugin.insert(instance)
-				}
-
-				// Регистрация плагинов элемента
-				if (itemPlugins && instance) {
-					itemPlugins.register(instance.uid, itemBundle, instance)
-				}
-
-				// Возвращаем cleanup
-				return () => {
-					if (collectionPlugin && instance) {
-						collectionPlugin.remove(instance)
-					}
-
-					if (itemPlugins && instance) {
-						itemPlugins.unregister(instance.uid)
-					}
-				}
-			},
-		)
+			return () => {
+				collection?.extensions?.plain?.remove(instance)
+			}
+		})
 	}
 }

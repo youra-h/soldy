@@ -1,8 +1,13 @@
 import { TActivationExtension } from '@soldy/core'
-import { ActivationExtensionContribution } from './../../../../contributions'
+import {
+	ActivationExtensionContribution,
+	ActivationItemExtensionContribution,
+} from './../../../../contributions'
+import { defineExtension } from '../../../base'
 
-export const ActivationExtensionDescriptor = defineExtension<TItem = object>({
-	ctor: TActivationExtension<TItem>,
-
+export const ActivationExtensionDescriptor = defineExtension({
+	name: 'activation',
+	ctor: TActivationExtension,
 	contribution: ActivationExtensionContribution,
+	itemContribution: ActivationItemExtensionContribution,
 })

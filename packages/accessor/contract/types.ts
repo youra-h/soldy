@@ -60,6 +60,51 @@ export interface INamingStrategy {
 	event: (name: string, namespace?: string) => string
 }
 
+/** Вспомогательный тип для описания Vue-prop в статическом слое (build time) */
+export type TPropType = { type?: any; default?: any; required?: boolean }
+
+/** Контрибуция коллекции: props с поддержкой get/set + события */
+export interface ICollectionContribution {
+	props?: ICollectionPropContribution[]
+	events?: string[]
+}
+
+/** Скомпилированный prop коллекции: добавляет явные get/set к базовому ICompiledProp */
+export interface ICompiledCollectionProp extends ICompiledProp {
+	/** Явный геттер — нужен когда source[name] не совпадает с реальным свойством */
+	get?: (target: any) => any
+	/** Явный сеттер; отсутствие = target[name] = value */
+	set?: (target: any, value: any) => void
+}
+
+/**
+ * Дескриптор расширения коллекции (результат defineExtension).
+ * Используется в defineCollection для сборки ICollectionDescriptor.
+ */
+export interface ICollectionExtensionDescriptor<TItem = any> {
+	/** Имя расширения: ключ в collection.extensions (e.g. 'activation', 'batch') */
+	name: string
+	/** Конструктор расширения коллекции */
+	ctor: new (options?: any) => any
+	/** Props/events для родительского компонента (collection-level) */
+	contribution?: ICollectionContribution
+	/** Props/events для дочернего компонента (item-level) */
+	itemContribution?: ICollectionContribution
+	/** Фабрика опций с поздним связыванием (e.g. { owner: instance }) */
+	optionsFactory?: (instance: any) => any
+}
+
+/**
+ * Схема коллекции: скомпилированные props/events родительского и дочернего уровней.
+ * Используется TCollectionAccessor и TItemContextAccessor.
+ */
+export interface ICollectionSchema {
+	parentProps: ICompiledCollectionProp[]
+	parentEvents: ICompiledEvent[]
+	itemProps: ICompiledCollectionProp[]
+	itemEvents: ICompiledEvent[]
+}
+
 /**
  * Адаптер контекста родитель-ребёнок (Elevator).
  *

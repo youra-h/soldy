@@ -1,5 +1,6 @@
 export * from './collection-factory.extension.class'
 export * from './collection.extension.class'
 export * from './collection-item.extension.class'
+export * from './collection-item-context.extension.class'
 export * from './drag-and-drop.extension.class'
 export * from './drag-and-drop-collection.extension.class'

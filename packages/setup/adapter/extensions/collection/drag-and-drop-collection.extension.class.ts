@@ -8,9 +8,9 @@
  */
 
 // import { TDragPlugin } from '@soldy/plugins'
-import type { IAdapterContext } from '../context'
-import type { TElevatorFactory } from '../elevator'
-import { DRAG_CONTEXT_ELEVATOR } from '../elevator/keys'
+import type { IAdapterContext } from '../../context'
+import type { TElevatorFactory } from '../../elevator'
+import { DRAG_CONTEXT_ELEVATOR } from '../../elevator/keys'
 
 export interface IDragAndDropCollectionExtensionOptions {
 	elevator: TElevatorFactory

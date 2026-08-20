@@ -3,7 +3,7 @@
  * Если передан namespace, он добавляется к каждому триггеру.
  */
 
-import type { IContribution, ICompiledProp, ICompiledEvent } from '@soldy/accessor'
+import type { IContribution, ICompiledProp, ICompiledEvent, ICollectionContribution, ICompiledCollectionProp } from '@soldy/accessor'
 
 /**
  * Объединяет несколько contributions в одну.
@@ -41,4 +41,29 @@ export function compileContribution(
     }))
 
     return { props, events }
+}
+
+/** Компилирует коллекционную контрибуцию, сохраняя get/set геттеры. */
+export function compileCollectionContribution(
+	contribution?: ICollectionContribution,
+	namespace?: string,
+): { props: ICompiledCollectionProp[]; events: ICompiledEvent[] } {
+	if (!contribution) return { props: [], events: [] }
+
+	const props: ICompiledCollectionProp[] = (contribution.props ?? []).map((p) => ({
+		name: p.name,
+		type: p.type,
+		protected: !!p.protected,
+		triggers: (p.triggers ?? []).map((t) => (namespace ? `${namespace}:${t}` : t)),
+		namespace,
+		get: p.get,
+		set: p.set,
+	}))
+
+	const events: ICompiledEvent[] = (contribution.events ?? []).map((name) => ({
+		name,
+		namespace,
+	}))
+
+	return { props, events }
 }

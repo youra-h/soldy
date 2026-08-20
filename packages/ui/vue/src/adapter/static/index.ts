@@ -1,6 +1,4 @@
 export { useProps } from './useProps'
 export { useEmits } from './useEmits'
-export { useCollectionProps } from './useCollectionProps'
-export { useCollectionEmits } from './useCollectionEmits'
-export { useCollectionItemProps } from './useCollectionItemProps'
-export { useCollectionItemEmits } from './useCollectionItemEmits'
+export { useCollectionProps, useCollectionItemProps } from './useCollectionProps'
+export { useCollectionEmits, useCollectionItemEmits } from './useCollectionEmits'

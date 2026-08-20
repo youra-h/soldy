@@ -5,5 +5,11 @@ export const TabsExtensionContribution: ICollectionContribution = {
 }
 
 export const TabsItemExtensionContribution: ICollectionContribution = {
-	props: [{ name: '_closable', protected: true, triggers: ['change:closable'] }],
+	props: [{
+		name: '_closable',
+		protected: true,
+		triggers: ['change:closable'],
+		// tabsItemExt.closable — реальное имя свойства не совпадает с _closable
+		get: (ext: any) => ext.closable,
+	}],
 }

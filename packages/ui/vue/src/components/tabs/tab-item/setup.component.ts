@@ -20,20 +20,21 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
-			// Надо передать дженерики, чтобы корректно создать контекст для item в коллекции
-			.use(TCollectionItemContextExtension<ITabItem, TTabsCollectionExtensions>)
+			.use(TCollectionItemContextExtension, { elevator: VueElevatorFactory })
 			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
-		const { context } = adapter.get(TCollectionItemContextExtension)
+		const { context, ...itemRefs } = useVueCollectionItem<ITabItem, TTabsCollectionExtensions>(adapter)
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
-			close: () => context.adapters.tabs.close(),
+			...itemRefs,
+			close: () => context?.adapters?.tabs?.close(),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}
 	},
 }
+
 
 // import { toRaw, inject, watch } from 'vue'
 // import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'

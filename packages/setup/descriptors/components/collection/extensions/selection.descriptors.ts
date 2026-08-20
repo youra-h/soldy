@@ -1,8 +1,10 @@
 import { TSelectionExtension } from '@soldy/core'
-import { SelectionExtensionContribution } from '../../../../contributions'
+import { SelectionExtensionContribution, SelectionItemExtensionContribution } from '../../../../contributions'
+import { defineExtension } from '../../../base'
 
-export const SelectionExtensionDescriptor = defineExtension<TItem = object>({
-	ctor: TSelectionExtension<TItem>,
-
+export const SelectionExtensionDescriptor = defineExtension({
+	name: 'selection',
+	ctor: TSelectionExtension,
 	contribution: SelectionExtensionContribution,
+	itemContribution: SelectionItemExtensionContribution,
 })

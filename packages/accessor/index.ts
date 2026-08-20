@@ -10,4 +10,5 @@
 export * from './contract'
 export type { IAccessor } from './accessor.interface'
 export { TComponentAccessor } from './component-accessor.class'
+export { TCollectionAccessor, TItemContextAccessor } from './collection-accessor.class'
 export { TDescriptorInspector } from './descriptor-inspector.class'
