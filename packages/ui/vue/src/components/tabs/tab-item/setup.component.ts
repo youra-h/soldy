@@ -4,13 +4,12 @@ import {
 	TCollectionItemExtension,
 	TCollectionItemContextExtension,
 	TabItemDescriptor,
-	TabsCollectionItemDescriptor,
 } from '@soldy/setup'
+import type { ITabItemProps, ITabItem, TTabsCollectionExtensions } from '@soldy/core'
 import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseTabItem from './tab-item.component'
 import type { TBaseComponentProps } from '../../../types'
-import { type ITabItemProps, type ITabItem } from '@soldy/core'
 
 export default {
 	name: '_TabItem',
@@ -21,18 +20,15 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
+			// Надо передать дженерики, чтобы корректно создать контекст для item в коллекции
+			.use(TCollectionItemContextExtension<ITabItem, TTabsCollectionExtensions>)
 			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
-			.use(TCollectionItemContextExtension, {
-				elevator: VueElevatorFactory,
-				descriptor: TabsCollectionItemDescriptor,
-			})
 
-		const itemExt = adapter.get(TCollectionItemContextExtension)
+		const { context } = adapter.get(TCollectionItemContextExtension)
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
-			...useVueCollectionItem(itemExt, props, emit),
-			close: () => itemExt?.itemContext?.adapters?.tabs?.close(),
+			close: () => context.adapters.tabs.close(),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}
@@ -120,4 +116,3 @@ export default {
 // 		}
 // 	},
 // }
-
