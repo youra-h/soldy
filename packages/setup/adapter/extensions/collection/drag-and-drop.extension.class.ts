@@ -8,9 +8,9 @@
  *   adapter.use(TDragAndDropExtension, { elevator: VueElevatorFactory })
  */
 
-import { DRAG_CONTEXT_ELEVATOR } from '../elevator/keys'
-import type { IAdapterContext } from '../context'
-import type { TElevatorFactory } from '../elevator'
+import { DRAG_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import type { IAdapterContext } from '../../context'
+import type { TElevatorFactory } from '../../elevator'
 
 export interface IDragAndDropExtensionOptions {
 	elevator: TElevatorFactory
