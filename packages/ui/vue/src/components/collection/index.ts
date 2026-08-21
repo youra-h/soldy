@@ -1,5 +1,0 @@
-export { default as BaseCollection } from './base.component'
-export * from './base.component'
-export * from './item'
-export * from './activable'
-export * from './selectable'
