@@ -11,9 +11,9 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="_classes"
-		:style="{ order: _order }"
-		:aria-selected="active"
+		:class="classes"
+		:style="{ order: order_order }"
+		:aria-selected="activation_active"
 		v-bind="containerAttrs"
 	>
 		<Button
@@ -29,14 +29,14 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 				<slot name="leading" />
 			</template>
 
-			<slot :text="text" :active="active">
+			<slot :text="text" :active="activation_active">
 				{{ text }}
 			</slot>
 
 			<template #trailing>
 				<slot name="trailing" />
 				<Button
-					:rendered="!!_closable"
+					:rendered="!!tabs_closable"
 					class="s-tab-item__close"
 					@click.stop="close()"
 					view="plain"

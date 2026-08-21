@@ -10,7 +10,7 @@ export default { ...SetupCheckBox }
         ref="rootElement"
         v-if="rendered"
         v-show="visible"
-        :class="_classes"
+        :class="classes"
         v-bind="containerAttrs"
     >
         <input

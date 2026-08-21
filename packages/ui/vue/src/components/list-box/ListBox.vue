@@ -10,7 +10,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="_classes"
+		:class="classes"
 		:aria-disabled="disabled"
 		tabindex="0"
 	>

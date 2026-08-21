@@ -5,10 +5,9 @@ export const SelectionExtensionContribution: IContribution = {
 	props: [
 		{ name: 'mode', triggers: ['change:mode'] },
 		{
-			name: '_selected',
+			name: 'selected',
 			protected: true,
 			triggers: ['change:selection'],
-			get: (ext) => ext.selected,
 		},
 	],
 }

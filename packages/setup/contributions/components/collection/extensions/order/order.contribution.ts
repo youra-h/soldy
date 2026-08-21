@@ -6,10 +6,9 @@ export const OrderExtensionContribution: IContribution = {}
 export const OrderItemExtensionContribution: IContribution = {
 	props: [
 		{
-			name: '_order',
+			name: 'order',
 			protected: true,
 			triggers: ['change:order'],
-			get: (ext) => ext.order,
 		},
 	],
 }

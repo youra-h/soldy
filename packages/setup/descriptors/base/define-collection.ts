@@ -30,7 +30,7 @@ export function defineCollection(options: {
 		}
 
 		if (def.itemContribution) {
-			const { props, events } = normalizeContribution(def.itemContribution)
+			const { props, events } = normalizeContribution(def.itemContribution, def.name)
 
 			itemProps.push(...props)
 			itemEvents.push(...events)
@@ -70,7 +70,7 @@ export function defineCollection(options: {
 			const units = extensions
 				.filter((def) => def.itemContribution)
 				.map((def) => {
-					const { props, events } = normalizeContribution(def.itemContribution)
+					const { props, events } = normalizeContribution(def.itemContribution, def.name)
 					return {
 						instance: context.adapters[def.name],
 						props,

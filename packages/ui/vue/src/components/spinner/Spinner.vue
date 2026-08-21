@@ -10,7 +10,7 @@ export default { ...SetupSpinner }
 		:is="tag"
 		v-if="rendered"
 		v-show="visible"
-		:class="_classes"
+		:class="classes"
 		:style="spinnerStyles_styles"
 	>
 		<slot />

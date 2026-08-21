@@ -10,7 +10,7 @@ export default { ...SetupIcon }
 		:is="tag"
 		v-if="rendered"
 		v-show="visible"
-		:class="_classes"
+		:class="classes"
 		:style="iconStyles_styles"
 	>
 	</component>

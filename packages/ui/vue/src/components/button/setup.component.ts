@@ -14,6 +14,12 @@ export default {
 			props,
 		})
 
-		return useVue<IButtonProps, IButton>(adapter, props, emit)
+		const result =  useVue<IButtonProps, IButton>(adapter, props, emit)
+
+		console.log('Button setup', result)
+
+		return {
+			...result,
+		}
 	},
 }

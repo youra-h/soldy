@@ -11,13 +11,13 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="_classes"
+		:class="classes"
 		:style="{ order }"
 		v-bind="containerAttrs"
 	>
 		<Button
 			class="s-collapse-item__header"
-			:view="_view"
+			:view="view"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"

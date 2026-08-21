@@ -5,10 +5,9 @@ export const ComponentContribution: IContribution = {
 		{ name: 'rendered', type: Boolean, triggers: ['change:rendered'] },
 		{ name: 'visible', type: Boolean, triggers: ['change:visible'] },
 		{
-			name: '_present',
+			name: 'present',
 			type: Boolean,
 			protected: true,
-			get: (instance) => instance.present,
 			triggers: ['change:rendered', 'change:visible'],
 		},
 	],

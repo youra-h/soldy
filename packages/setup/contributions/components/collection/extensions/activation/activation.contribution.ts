@@ -4,10 +4,9 @@ import type { IContribution } from '@soldy/accessor'
 export const ActivationExtensionContribution: IContribution = {
 	props: [
 		{
-			name: '_activeItem',
+			name: 'activeItem',
 			protected: true,
 			triggers: ['change:activation'],
-			get: (ext) => ext.activeItem,
 		},
 	],
 	events: ['item:activated', 'item:deactivated'],
