@@ -7,8 +7,8 @@
 
 import { defineComponent, definePlugin } from '../base'
 import { TSkeleton } from '@soldy/core'
-import { TSkeletonStylesPlugin } from '@soldy/plugins'
-import { SkeletonContribution, SkeletonStylesContribution } from '../../contributions'
+import { TSkeletonLayoutPlugin } from '@soldy/plugins'
+import { SkeletonContribution, SkeletonLayoutContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = defineComponent({
@@ -20,8 +20,8 @@ export const SkeletonDescriptor = defineComponent({
 
 	plugins: [
 		definePlugin({
-			ctor: TSkeletonStylesPlugin,
-			contribution: SkeletonStylesContribution,
+			ctor: TSkeletonLayoutPlugin,
+			contribution: SkeletonLayoutContribution,
 		}),
 	],
 })

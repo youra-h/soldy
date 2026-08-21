@@ -1,1 +1,1 @@
-export { SkeletonStylesContribution } from './styles'
+export { SkeletonLayoutContribution } from './layout'

@@ -2,13 +2,13 @@ import type { IIcon } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils/toCssValue'
-import type { TIconStylesPluginEvents } from './types'
+import type { TIconLayoutPluginEvents } from './types'
 
 /**
  * Плагин для управления стилями иконки.
  */
-export class TIconStylesPlugin extends TBasePlugin<any, TIconStylesPluginEvents> {
-	static readonly namespace = Symbol('icon-styles')
+export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents> {
+	static readonly namespace = Symbol('layout')
 
 	private _styles: Record<string, string | number> = {}
 

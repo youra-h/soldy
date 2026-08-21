@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const FrameStylesContribution: IContribution = {
+export const FrameLayoutContribution: IContribution = {
 	props: [
 		{
 			name: '_styles',

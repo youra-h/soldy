@@ -1,2 +1,2 @@
-export type { TIconStylesPluginEvents } from './types'
-export { TIconStylesPlugin } from './styles.plugin'
+export type { TIconLayoutPluginEvents } from './types'
+export { TIconLayoutPlugin } from './layout.plugin'

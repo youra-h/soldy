@@ -1,4 +1,2 @@
-// plugins/custom/frame/index.ts
-
-export type { TFrameStylesPluginEvents } from './types'
-export { TFrameStylesPlugin } from './styles.plugin'
+export type { TFrameLayoutPluginEvents } from './types'
+export { TFrameLayoutPlugin } from './layout.plugin'

@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const SkeletonStylesContribution: IContribution = {
+export const SkeletonLayoutContribution: IContribution = {
 	props: [
 		{
 			name: '_styles',

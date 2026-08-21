@@ -1,1 +1,1 @@
-export { SpinnerStylesContribution } from './styles'
+export { SpinnerLayoutContribution } from './layout'

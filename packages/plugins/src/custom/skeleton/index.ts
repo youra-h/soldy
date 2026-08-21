@@ -1,2 +1,2 @@
-export { TSkeletonStylesPlugin } from './styles.plugin'
-export type { TSkeletonStylesPluginEvents } from './types'
+export { TSkeletonLayoutPlugin } from './layout.plugin'
+export type { TSkeletonLayoutPluginEvents } from './types'

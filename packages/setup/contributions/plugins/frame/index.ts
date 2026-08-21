@@ -1,1 +1,1 @@
-export { FrameStylesContribution } from './styles'
+export { FrameLayoutContribution } from './layout'

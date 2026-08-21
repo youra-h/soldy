@@ -2,15 +2,15 @@ import type { ISkeleton } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils/toCssValue'
-import type { TSkeletonStylesPluginEvents } from './types'
+import type { TSkeletonLayoutPluginEvents } from './types'
 
 /**
  * Плагин для управления стилями скелетона.
  * Вычисляет ширину и высоту placeholder'а на основе size или кастомных width/height.
  */
 
-export class TSkeletonStylesPlugin extends TBasePlugin<any, TSkeletonStylesPluginEvents> {
-	static readonly namespace = Symbol('skeleton-styles')
+export class TSkeletonLayoutPlugin extends TBasePlugin<any, TSkeletonLayoutPluginEvents> {
+	static readonly namespace = Symbol('layout')
 
 	private _styles: Record<string, string | number> = {}
 

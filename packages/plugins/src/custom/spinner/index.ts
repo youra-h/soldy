@@ -1,2 +1,2 @@
-export type { TSpinnerStylesPluginEvents } from './types'
-export { TSpinnerStylesPlugin } from './styles.plugin'
+export type { TSpinnerLayoutPluginEvents } from './types'
+export { TSpinnerLayoutPlugin } from './layout.plugin'

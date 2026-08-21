@@ -2,13 +2,13 @@ import type { ISpinner } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils/toCssValue'
-import type { TSpinnerStylesPluginEvents } from './types'
+import type { TSpinnerLayoutPluginEvents } from './types'
 
 /**
  * Плагин для управления стилями спиннера.
  */
-export class TSpinnerStylesPlugin extends TBasePlugin<any, TSpinnerStylesPluginEvents> {
-	static readonly namespace = Symbol('spinner-styles')
+export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginEvents> {
+	static readonly namespace = Symbol('layout')
 
 	private _styles: Record<string, string | number> = {}
 

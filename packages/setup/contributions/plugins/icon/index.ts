@@ -1,1 +1,1 @@
-export { IconStylesContribution } from './styles'
+export { IconLayoutContribution } from './layout'
