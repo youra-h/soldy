@@ -10,7 +10,7 @@ export default { ...SetupButton }
 		:is="tag"
 		v-if="rendered"
 		v-show="visible"
-		:class="classes"
+		:class="_classes"
 		:disabled="tag === 'button' ? disabled : undefined"
 		:aria-disabled="tag !== 'button' ? disabled : undefined"
 	>

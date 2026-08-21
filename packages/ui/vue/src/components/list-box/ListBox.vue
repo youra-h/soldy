@@ -10,7 +10,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="classes"
+		:class="_classes"
 		:aria-disabled="disabled"
 		tabindex="0"
 	>
@@ -54,7 +54,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 	&--word-wrap {
 		.s-button {
 			@apply min-h-fit;
-			
+
 			&__text {
 				@apply whitespace-normal overflow-visible;
 			}

@@ -6,20 +6,20 @@ import { Tabs, TabItem } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
-const tabs = new TTabs()
-tabs.variant = 'accent'
-tabs.view = 'contained'
-tabs.orientation = 'horizontal'
+// const tabs = new TTabs()
+// tabs.variant = 'accent'
+// tabs.view = 'contained'
+// tabs.orientation = 'horizontal'
 
-const collection: TTabsCollection = TabsFactory(tabs)
+// const collection: TTabsCollection = TabsFactory(tabs)
 
-const { plain, activation } = collection.extensions
+// const { plain, activation } = collection.extensions
 
-plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
-const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
-plain.push({ text: 'Tab 3', value: 'tab3' })
+// plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
+// const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
+// plain.push({ text: 'Tab 3', value: 'tab3' })
 
-activation.activate(tab)
+// activation.activate(tab)
 
 // tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
 // tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
@@ -66,7 +66,7 @@ const tabItems = [
 			</Tabs>
 		</div>
 
-		<section>
+		<!-- <section>
 			<h2>Вариант 1: программный (через instance)</h2>
 			<Tabs :ctrl="tabs" :cn="collection">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
@@ -84,7 +84,7 @@ const tabItems = [
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section>
+		</section> -->
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>

@@ -11,7 +11,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="classes"
+		:class="_classes"
 		:style="{ order: _order }"
 		:aria-selected="active"
 		v-bind="containerAttrs"

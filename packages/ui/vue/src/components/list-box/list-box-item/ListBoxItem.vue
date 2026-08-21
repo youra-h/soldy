@@ -10,7 +10,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 		ref="rootElement"
 		v-if="rendered"
 		v-show="visible"
-		:class="classes"
+		:class="_classes"
 		:style="{ order }"
 		v-bind="containerAttrs"
 	>

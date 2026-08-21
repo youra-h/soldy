@@ -5,8 +5,8 @@ export default { ...SetupSkeleton }
 </script>
 
 <template>
-	<component ref="rootElement" :is="tag" :class="classes" :style="skeletonStyles_styles">
-		<div class="s-skeleton__placeholder" v-if="present" />
+	<component ref="rootElement" :is="tag" :class="_classes" :style="skeletonStyles_styles">
+		<div class="s-skeleton__placeholder" v-if="_present" />
 		<slot />
 	</component>
 </template>

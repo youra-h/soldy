@@ -25,6 +25,8 @@ export default {
 			})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 
+		
+
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
 			...useVueCollection(adapter),
