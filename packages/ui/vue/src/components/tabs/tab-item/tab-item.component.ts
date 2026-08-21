@@ -1,5 +1,10 @@
 import { BaseValueControl } from '../../value-control'
-import { useEmits, useProps, useCollectionItemProps, useCollectionItemEmits } from '../../../adapter'
+import {
+	useEmits,
+	useProps,
+	useCollectionItemProps,
+	useCollectionItemEmits,
+} from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
 import { TabItemDescriptor, TabsCollectionDescriptor } from '@soldy/setup'
 

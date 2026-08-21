@@ -19,7 +19,10 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
-			.use(TCollectionFactoryExtension, { descriptor: TabsCollectionDescriptor, elevator: VueElevatorFactory })
+			.use(TCollectionFactoryExtension, {
+				descriptor: TabsCollectionDescriptor,
+				elevator: VueElevatorFactory,
+			})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 
 		return {
@@ -28,7 +31,6 @@ export default {
 		}
 	},
 }
-
 
 // import { toRaw, provide, watch } from 'vue'
 // import {
