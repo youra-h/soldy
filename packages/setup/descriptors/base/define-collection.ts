@@ -1,5 +1,5 @@
 import { TCollection } from '@soldy/core'
-import { TAccessor } from '@soldy/accessor'
+import { TAccessor, TName } from '@soldy/accessor'
 import type { ICollectionExtensionDescriptor, ICollectionDescriptor } from './types'
 import { normalizeContribution } from './compile-contribution'
 
@@ -17,9 +17,9 @@ export function defineCollection(options: {
 
 	// Статические объявления для useCollectionProps / useCollectionItemProps
 	const parentProps: any[] = []
-	const parentEvents: string[] = []
+	const parentEvents: TName[] = []
 	const itemProps: any[] = []
-	const itemEvents: string[] = []
+	const itemEvents: TName[] = []
 
 	for (const def of extensions) {
 		if (def.contribution) {

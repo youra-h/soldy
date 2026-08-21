@@ -7,8 +7,7 @@ import type {
 	IContribution,
 	IPropDeclaration,
 	TAccessor,
-	IAccessorUnit,
-	INamingStrategy,
+	TName,
 } from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 
@@ -18,7 +17,7 @@ export interface IPluginDefinition {
 	/** Нормализованные props из contribution */
 	props: IPropDeclaration[]
 	/** Нормализованные events из contribution */
-	events: string[]
+	events: TName[]
 	/** Опции, передаваемые в plugin.install(ctx, options) */
 	options?: Record<string, any>
 }
@@ -44,7 +43,7 @@ export interface IComponentDescriptor {
 	ctor: any
 	/** Статические объявления для useProps/useEmits (без instances) */
 	props: IPropDeclaration[]
-	events: string[]
+	events: TName[]
 	plugins: IPluginDefinition[]
 
 	createBundle(instance: any): IPluginBundle
@@ -72,9 +71,9 @@ export interface ICollectionExtensionDescriptor<TItem = any> {
 export interface ICollectionDescriptor {
 	/** Статические объявления props/events для каждого уровня */
 	parentProps: IPropDeclaration[]
-	parentEvents: string[]
+	parentEvents: TName[]
 	itemProps: IPropDeclaration[]
-	itemEvents: string[]
+	itemEvents: TName[]
 
 	create(instance: any): any
 	/** TAccessor для родительского компонента (items, activeItem...) */

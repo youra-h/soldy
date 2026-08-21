@@ -2,25 +2,27 @@
  * TDescriptorInspector — форматирует имена props/events для конкретного фреймворка.
  *
  * Принимает либо IAccessor (runtime), либо статические массивы (build time, useProps/useEmits).
- * Не знает ничего о instances, plugins или коллекциях — только имена и типы.
+ * Не знает ничего о instances, plugins или коллекциях — только TName и naming strategy.
  */
 
 import type { IAccessor } from './accessor.interface'
-import type { IAccessorProp, IAccessorEvent, IPropDeclaration, INamingStrategy } from './contract'
+import type { INamingStrategy, TName } from './contract'
 
-type TStaticProp = Pick<IAccessorProp | IPropDeclaration, 'name' | 'type'> & {
+type TStaticProp = {
+	name: TName
+	type?: any
 	protected?: boolean
-	triggers?: string[]
+	triggers?: TName[]
 }
 
 export class TDescriptorInspector {
 	private readonly _props: TStaticProp[]
-	private readonly _events: string[]
+	private readonly _events: TName[]
 	private readonly _naming?: INamingStrategy
 
 	constructor(
 		propsOrAccessor: TStaticProp[] | IAccessor,
-		eventsOrNaming?: string[] | INamingStrategy,
+		eventsOrNaming?: TName[] | INamingStrategy,
 		naming?: INamingStrategy,
 	) {
 		if (Array.isArray(propsOrAccessor)) {
@@ -38,21 +40,23 @@ export class TDescriptorInspector {
 	}
 
 	getExportPropName(prop: TStaticProp): string {
-		return this._naming ? this._naming.prop(prop.name) : prop.name
+		return this._naming ? this._naming.prop(prop.name) : prop.name.getName()
 	}
 
-	getExportEventName(name: string | IAccessorEvent): string {
-		const n = typeof name === 'string' ? name : name.name
-		return this._naming ? this._naming.event(n) : n
+	getExportEventName(item: TName): string {
+		return this._naming ? this._naming.event(item) : item.getName()
 	}
 
+	/** Raw имена триггеров — для подписки на instance.events */
 	getRawTriggers(prop: TStaticProp): string[] {
-		return prop.triggers ?? []
+		return (prop.triggers ?? []).map((t) => t.name)
 	}
 
+	/** Полные имена триггеров — для emit наружу */
 	getExportTriggers(prop: TStaticProp): string[] {
-		if (!this._naming) return this.getRawTriggers(prop)
-		return this.getRawTriggers(prop).map((t) => this._naming!.event(t))
+		return (prop.triggers ?? []).map((t) =>
+			this._naming ? this._naming.event(t) : t.getName(),
+		)
 	}
 
 	/** Для useProps/useEmits (статический слой) */
@@ -66,7 +70,7 @@ export class TDescriptorInspector {
 			const config: Record<string, any> = {}
 
 			if (prop.type !== undefined) config.type = prop.type
-			if (prop.name in defaults) config.default = defaults[prop.name]
+			if (prop.name.name in defaults) config.default = defaults[prop.name.name]
 
 			result[exportName] = config
 		}

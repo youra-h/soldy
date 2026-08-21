@@ -30,11 +30,11 @@ export function useSyncEvents(
 
 	// 2. Подписка на явные события
 	for (const evt of accessor.getEvents()) {
-		const eventName = inspector.getExportEventName(evt)
+		const eventName = inspector.getExportEventName(evt.name)
 		const eventSource = accessor.getEventSource(evt)
 
 		if (eventSource) {
-			eventSource.on(evt.name, (...args: any[]) => {
+			eventSource.on(evt.name.name, (...args: any[]) => {
 				emit(eventName, ...args)
 			})
 		}

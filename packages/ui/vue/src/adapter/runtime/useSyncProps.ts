@@ -48,7 +48,7 @@ export function useSyncProps(
 					eventSource.on(rawTrigger, () => {
 						const val = accessor.getValue(prop)
 
-						// Плагины (TIconStylesPlugin, TSpinnerStylesPlugin и др.)
+						// Плагины (TIconLayoutPlugin, TSpinnerLayoutPlugin и др.)
 						// мутируют свой объект _styles in-place и эмитят change:styles.
 						// accessor.getValue() возвращает ссылку на этот же объект.
 						// Если присвоить ту же ссылку в ref.value — Vue считает
@@ -75,7 +75,7 @@ export function useSyncProps(
 			const formattedPropName = inspector.getExportPropName(prop)
 
 			const stopWatch = watch(
-				() => props[formattedPropName] ?? props[prop.name],
+				() => props[formattedPropName] ?? props[prop.name.name],
 				(newVal) => {
 					if (newVal !== undefined) {
 						const valueToSet = options.onInput ? options.onInput(prop, newVal) : newVal

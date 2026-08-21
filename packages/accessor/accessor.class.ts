@@ -23,11 +23,11 @@ export class TAccessor implements IAccessor {
 			if (!unit.instance) continue
 
 			for (const decl of unit.props ?? []) {
-				if (seenProps.has(decl.name)) {
-					throw new Error(`[TAccessor] Duplicate prop "${decl.name}"`)
+				if (seenProps.has(decl.name.getName())) {
+					throw new Error(`[TAccessor] Duplicate prop "${decl.name.getName()}"`)
 				}
 
-				seenProps.add(decl.name)
+				seenProps.add(decl.name.getName())
 
 				this._props.push({
 					name: decl.name,
@@ -41,11 +41,11 @@ export class TAccessor implements IAccessor {
 			}
 
 			for (const name of unit.events ?? []) {
-				if (seenEvents.has(name)) {
-					throw new Error(`[TAccessor] Duplicate event "${name}"`)
+				if (seenEvents.has(name.getName())) {
+					throw new Error(`[TAccessor] Duplicate event "${name.getName()}"`)
 				}
 
-				seenEvents.add(name)
+				seenEvents.add(name.getName())
 
 				this._events.push({ name, instance: unit.instance })
 			}
@@ -64,7 +64,7 @@ export class TAccessor implements IAccessor {
 	getValue(prop: IAccessorProp): any {
 		if (prop.get) return prop.get(prop.instance)
 
-		const val = prop.instance[prop.name]
+		const val = prop.instance[prop.name.name]
 
 		return val?.valueOf?.() ?? val
 	}
@@ -78,8 +78,8 @@ export class TAccessor implements IAccessor {
 			return
 		}
 
-		if (prop.name in prop.instance) {
-			prop.instance[prop.name] = value
+		if (prop.name.name in prop.instance) {
+			prop.instance[prop.name.name] = value
 		}
 	}
 

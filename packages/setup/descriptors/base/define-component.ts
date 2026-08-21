@@ -47,7 +47,7 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		...own.props,
 	]
 
-	const events: string[] = [
+	const events = [
 		...(parent?.events ?? []),
 		...own.events,
 	]
