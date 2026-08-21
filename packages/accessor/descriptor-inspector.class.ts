@@ -1,121 +1,91 @@
 /**
- * @soldy/accessor — inspector.ts
+ * TDescriptorInspector — форматирует имена props/events для конкретного фреймворка.
  *
- * TDescriptorInspector — статический анализатор схемы компонента.
- *
- * Не зависит от рантайма (instance, bundle). Занимается только
- * форматированием имён и кэширует результаты.
- *
- * Принимает опциональный INamingStrategy. Без стратегии использует
- * формат namespace:name (обратная совместимость). Со стратегией —
- * форматирует имена под конкретный фреймворк (например, camelCase для Vue).
- *
- * Используется:
- * - TComponentAccessor'ом (делегирование)
+ * Принимает либо IAccessor (runtime), либо статические массивы (build time, useProps/useEmits).
+ * Не знает ничего о instances, plugins или коллекциях — только имена и типы.
  */
 
-import type {
-	ICompiledProp,
-	ICompiledEvent,
-	IComponentSchema,
-	INamingStrategy,
-	ICompiledItem,
-} from './contract'
+import type { IAccessor } from './accessor.interface'
+import type { IAccessorProp, IAccessorEvent, IPropDeclaration, INamingStrategy } from './contract'
+
+type TStaticProp = Pick<IAccessorProp | IPropDeclaration, 'name' | 'type'> & {
+	protected?: boolean
+	triggers?: string[]
+}
 
 export class TDescriptorInspector {
-	private props: ICompiledProp[]
-	private events: ICompiledEvent[]
-	private naming?: INamingStrategy
+	private readonly _props: TStaticProp[]
+	private readonly _events: string[]
+	private readonly _naming?: INamingStrategy
 
-	// Кэш
-	private cachedExportProps?: Record<string, any>
-	private cachedExportEvents?: string[]
-
-	constructor(schema: IComponentSchema, naming?: INamingStrategy) {
-		this.props = schema.props
-		this.events = schema.events
-		this.naming = naming
-	}
-
-	/** Имя с префиксом namespace (без стратегии): 'tag' или 'element:ready'. Пустая строка — без префикса. */
-	getExportName(item: { name: string; namespace?: string }): string {
-		return item.namespace && item.namespace !== ''
-			? `${item.namespace}:${item.name}`
-			: item.name
-	}
-
-	/** Форматирует имя prop'а через стратегию (если есть), иначе ns:name */
-	getExportPropName(prop: ICompiledProp): string {
-		return this.naming ? this.naming.prop(prop.name, prop.namespace) : this.getExportName(prop)
-	}
-
-	/** Форматирует имя события через стратегию (если есть), иначе ns:name */
-	getExportEventName(item: ICompiledItem): string {
-		return this.naming ? this.naming.event(item.name, item.namespace) : this.getExportName(item)
-	}
-
-	/**
-	 * Триггеры для emit.
-	 * Триггеры в ICompiledProp УЖЕ содержат namespace (compileContribution),
-	 * возвращаем как есть. Пустая строка namespace — без префикса.
-	 */
-	getExportTriggers(prop: ICompiledProp): string[] {
-		return prop.triggers
-	}
-
-	/**
-	 * Сырые имена триггеров (без namespace) — для подписки на eventSource.
-	 * 'icon-styles:change:styles' → 'change:styles'
-	 */
-	getRawTriggers(prop: ICompiledProp): string[] {
-		if (!prop.namespace) return prop.triggers
-
-		const prefix = `${prop.namespace}:`
-		return prop.triggers.map((t) => (t.startsWith(prefix) ? t.slice(prefix.length) : t))
-	}
-
-	/** Готовый список всех экспортируемых событий (для useEmits) */
-	getExportEvents(): string[] {
-		if (this.cachedExportEvents) return this.cachedExportEvents
-
-		const events: string[] = []
-
-		for (const evt of this.events) {
-			events.push(this.getExportEventName(evt))
+	constructor(
+		propsOrAccessor: TStaticProp[] | IAccessor,
+		eventsOrNaming?: string[] | INamingStrategy,
+		naming?: INamingStrategy,
+	) {
+		if (Array.isArray(propsOrAccessor)) {
+			// Статический режим: props[] + events[]
+			this._props = propsOrAccessor
+			this._events = Array.isArray(eventsOrNaming) ? eventsOrNaming : []
+			this._naming = Array.isArray(eventsOrNaming) ? naming : (eventsOrNaming as INamingStrategy)
+		} else {
+			// Runtime режим: IAccessor
+			const accessor = propsOrAccessor as IAccessor
+			this._props = accessor.getProps(true)
+			this._events = accessor.getEvents().map((e) => e.name)
+			this._naming = eventsOrNaming as INamingStrategy | undefined
 		}
-
-		for (const prop of this.props) {
-			events.push(...this.getExportTriggers(prop))
-		}
-
-		this.cachedExportEvents = Array.from(new Set(events))
-		return this.cachedExportEvents
 	}
 
-	/** Готовый словарь props (для useProps). Без ctrl/plugins — их добавляет UI-слой. */
-	getExportProps(defaultValues: Record<string, any> = {}): Record<string, any> {
-		if (this.cachedExportProps) return this.cachedExportProps
+	getExportPropName(prop: TStaticProp): string {
+		return this._naming ? this._naming.prop(prop.name) : prop.name
+	}
 
-		const props: Record<string, any> = {}
+	getExportEventName(name: string | IAccessorEvent): string {
+		const n = typeof name === 'string' ? name : name.name
+		return this._naming ? this._naming.event(n) : n
+	}
 
-		for (const prop of this.props) {
+	getRawTriggers(prop: TStaticProp): string[] {
+		return prop.triggers ?? []
+	}
+
+	getExportTriggers(prop: TStaticProp): string[] {
+		if (!this._naming) return this.getRawTriggers(prop)
+		return this.getRawTriggers(prop).map((t) => this._naming!.event(t))
+	}
+
+	/** Для useProps/useEmits (статический слой) */
+	getExportProps(defaults: Record<string, any> = {}): Record<string, any> {
+		const result: Record<string, any> = {}
+
+		for (const prop of this._props) {
 			if (prop.protected) continue
 
 			const exportName = this.getExportPropName(prop)
-			const propConfig: Record<string, any> = {}
+			const config: Record<string, any> = {}
 
-			if (prop.type !== undefined) {
-				propConfig.type = prop.type
-			}
+			if (prop.type !== undefined) config.type = prop.type
+			if (prop.name in defaults) config.default = defaults[prop.name]
 
-			if (prop.name in defaultValues) {
-				propConfig.default = defaultValues[prop.name]
-			}
-
-			props[exportName] = propConfig
+			result[exportName] = config
 		}
 
-		this.cachedExportProps = props
-		return this.cachedExportProps
+		return result
+	}
+
+	/** Для useEmits (статический слой) */
+	getExportEvents(): string[] {
+		const result: string[] = []
+
+		for (const name of this._events) {
+			result.push(this.getExportEventName(name))
+		}
+
+		for (const prop of this._props) {
+			result.push(...this.getExportTriggers(prop))
+		}
+
+		return [...new Set(result)]
 	}
 }

@@ -1,15 +1,16 @@
-import type { ICollectionContribution } from '@soldy/accessor'
+import type { IContribution } from '@soldy/accessor'
 
-export const TabsExtensionContribution: ICollectionContribution = {
+export const TabsExtensionContribution: IContribution = {
 	events: ['item:close'],
 }
 
-export const TabsItemExtensionContribution: ICollectionContribution = {
-	props: [{
-		name: '_closable',
-		protected: true,
-		triggers: ['change:closable'],
-		// tabsItemExt.closable — реальное имя свойства не совпадает с _closable
-		get: (ext: any) => ext.closable,
-	}],
+export const TabsItemExtensionContribution: IContribution = {
+	props: [
+		{
+			name: '_closable',
+			protected: true,
+			triggers: ['change:closable'],
+			get: (ext) => ext.closable,
+		},
+	],
 }

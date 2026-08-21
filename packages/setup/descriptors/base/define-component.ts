@@ -1,30 +1,27 @@
 /**
  * defineComponent — создаёт дескриптор компонента.
  *
- * Компилирует contributions в props/events, объединяет с родительским
- * дескриптором (extends), добавляет плагины с namespace.
+ * createAccessor строит TAccessor из Unit'ов:
+ *   - Unit[0]: сам instance + собственные props/events
+ *   - Unit[N]: plugin instance + его props/events
+ * Никакого namespace или pluginsMap.
  */
 
 import { TPluginBundle } from '@soldy/plugins'
-import { TComponentAccessor, type ICompiledProp, type ICompiledEvent } from '@soldy/accessor'
+import { TAccessor, type IPropDeclaration } from '@soldy/accessor'
 import type {
 	IComponentDefinitionOptions,
 	IComponentDescriptor,
 	IPluginDefinition,
 } from './types'
-import { compileContribution } from './compile-contribution'
+import { normalizeContribution } from './compile-contribution'
 
-/**
- * Сборщик плагинов с дедупликацией по key.
- * Каждый следующий add перезаписывает плагин с тем же ключом —
- * приоритет определяется порядком вызовов.
- */
 function createPluginCollector() {
-	const map = new Map<string, IPluginDefinition>()
+	const map = new Map<any, IPluginDefinition>()
 
 	return {
 		add(plugins: IPluginDefinition[]): void {
-			for (const p of plugins) map.set(p.namespace, p)
+			for (const p of plugins) map.set(p.ctor, p)
 		},
 		toArray(): IPluginDefinition[] {
 			return [...map.values()]
@@ -35,36 +32,24 @@ function createPluginCollector() {
 export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
 
-	// Плагины: родительские → свои (с дедупликацией)
 	const collector = createPluginCollector()
-
-	// Добавляем плагины родителя (если есть)
 	collector.add(parent?.plugins ?? [])
-	// Добавляем свои плагины (если есть)
 	collector.add(options.plugins ?? [])
-
 	const plugins = collector.toArray()
 
-	// 1. Компонент (без namespace)
-	const own = compileContribution(options.contribution)
+	const own = normalizeContribution(options.contribution)
 
-	// 2. Плагины (с namespace)
-	const pluginContributions = (options.plugins ?? []).map((plugin) =>
-		compileContribution(plugin.contribution, plugin.namespace),
-	)
-
-	// Объединяем props: родитель → свои → плагинов
-	const props: ICompiledProp[] = [
+	// Статические props/events: для useProps/useEmits (без instances)
+	const props: IPropDeclaration[] = [
 		...(parent?.props ?? []),
 		...own.props,
-		...pluginContributions.flatMap((c) => c.props),
+		...plugins.flatMap((p) => p.props),
 	]
 
-	// Объединяем events
-	const events: ICompiledEvent[] = [
+	const events: string[] = [
 		...(parent?.events ?? []),
 		...own.events,
-		...pluginContributions.flatMap((c) => c.events),
+		...plugins.flatMap((p) => p.events),
 	]
 
 	return {
@@ -76,26 +61,26 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
 		createBundle(instance: any) {
 			const bundle = new TPluginBundle(instance)
-
 			for (const plugin of plugins) {
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
-
 			return bundle
 		},
 
 		createAccessor(instance: any, bundle: TPluginBundle) {
-			const pluginsMap = new Map<string, any>()
-
-			for (const pluginDef of plugins) {
-				const pluginInstance = bundle.get(pluginDef.ctor)
-
-				if (pluginInstance) {
-					pluginsMap.set(pluginDef.namespace, pluginInstance)
-				}
-			}
-
-			return new TComponentAccessor(props, events, instance, pluginsMap)
+			return new TAccessor([
+				// Unit компонента
+				{ instance, props: own.props, events: own.events },
+				// Units плагинов
+				...plugins
+					.map((def) => ({
+						instance: bundle.get(def.ctor),
+						props: def.props,
+						events: def.events,
+					}))
+					.filter((u) => u.instance != null),
+			])
 		},
 	}
+
 }

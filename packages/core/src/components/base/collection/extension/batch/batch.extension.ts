@@ -1,4 +1,4 @@
-import type { IExtension } from '../types'
+import type { IExtension, IExtensionContext } from '../types'
 import type { TBatchEvents, IBatchExtension } from './types'
 import { TInsertCommand, TRemoveCommand, TClearCommand, TUpdateCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
@@ -17,6 +17,13 @@ export class TBatchExtension<TItem extends object>
 
 	get trackBy(): ((item: TItem) => any) | undefined {
 		return this._trackBy
+	}
+
+	override install(ctx: IExtensionContext<TItem>): void {
+		super.install(ctx)
+
+		// items живут в engine — relay позволяет batch.events реагировать на change:items
+		ctx.engine.events.relay(this.events, ['change:items'])
 	}
 
 	set trackBy(fn: ((item: TItem) => any) | undefined) {

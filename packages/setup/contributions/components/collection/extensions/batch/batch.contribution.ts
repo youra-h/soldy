@@ -1,6 +1,6 @@
-import type { ICollectionContribution } from '@soldy/accessor'
+import type { IContribution } from '@soldy/accessor'
 
-export const BatchExtensionContribution: ICollectionContribution = {
+export const BatchExtensionContribution: IContribution = {
 	props: [
 		{ name: 'items', triggers: ['change:items'] },
 		{ name: 'trackBy', triggers: ['change:trackBy'] },

@@ -1,11 +1,11 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import type { IAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
+import type { IAccessor, TDescriptorInspector, IAccessorProp } from '@soldy/accessor'
 
 export interface ISyncOptions {
 	/** Коллбэк перед записью значения из Vue во внутренний Core */
-	onInput?: (prop: ICompiledProp, value: any) => any
+	onInput?: (prop: IAccessorProp, value: any) => any
 	/** Коллбэк при обновлении значения из Core во Vue */
-	onOutput?: (prop: ICompiledProp, value: any) => void
+	onOutput?: (prop: IAccessorProp, value: any) => void
 }
 
 /**
@@ -28,7 +28,7 @@ export function useSyncProps(
 
 	// 1. Core → Vue (Output): создать refs, подписаться на триггеры
 	function bindOutput() {
-		for (const prop of accessor.getProps(true) as ICompiledProp[]) {
+		for (const prop of accessor.getProps(true) as IAccessorProp[]) {
 			const rawTriggers = inspector.getRawTriggers(prop)
 
 			// Пропускаем свойства без триггеров — pass-through (ctrl, plugins)
@@ -71,7 +71,7 @@ export function useSyncProps(
 
 	// 2. Vue → Core (Input): watch внешних props
 	function bindInput(props: Record<string, any>) {
-		for (const prop of accessor.getProps(false) as ICompiledProp[]) {
+		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const formattedPropName = inspector.getExportPropName(prop)
 
 			const stopWatch = watch(

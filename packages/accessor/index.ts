@@ -1,14 +1,11 @@
 /**
  * @soldy/accessor — точка входа
  *
- * Чистые абстракции: контракты (IPropContribution, IContribution, ...)
- * и TComponentAccessor — единый интерфейс доступа к свойствам/событиям.
- *
- * Конкретные реализации (defineComponent, definePlugin) — в @soldy/setup.
+ * Концепция: accessor = множество Unit'ов, каждый Unit = {instance, props, events}.
+ * Никакого namespace, pluginsMap или collection-специфики.
  */
 
 export * from './contract'
 export type { IAccessor } from './accessor.interface'
-export { TComponentAccessor } from './component-accessor.class'
-export { TCollectionAccessor, TItemContextAccessor } from './collection-accessor.class'
+export { TAccessor } from './accessor.class'
 export { TDescriptorInspector } from './descriptor-inspector.class'

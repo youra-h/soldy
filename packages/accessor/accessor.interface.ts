@@ -1,11 +1,10 @@
-/** Базовый контракт аксессора — общий для TComponentAccessor и TCollectionAccessor */
+import type { IAccessorProp, IAccessorEvent } from './contract'
+
+/** Базовый контракт accessor'а */
 export interface IAccessor {
-	getProps(includeProtected?: boolean): any[]
-	getEvents(): any[]
-	getValue(prop: any): any
-	setValue(prop: any, value: any): void
-	getEventSource(item: any): any
-	getSchema(): { props: any[]; events: any[] }
-	getExportName(item: any): string
-	getTriggers(prop: any): string[]
+	getProps(includeProtected?: boolean): IAccessorProp[]
+	getEvents(): IAccessorEvent[]
+	getValue(prop: IAccessorProp): any
+	setValue(prop: IAccessorProp, value: any): void
+	getEventSource(item: IAccessorProp | IAccessorEvent): any
 }

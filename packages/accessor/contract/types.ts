@@ -1,12 +1,69 @@
 /**
  * @soldy/accessor — contract/types.ts
  *
- * Базовые типы контрактов: описание свойств и событий.
- * Чистые абстракции, без привязки к конкретным классам.
+ * Концепция: accessor = множество Unit'ов, Unit = { instance, props, events }.
+ * instance[prop.name] — чтение, instance.events.on(trigger) — подписка.
+ * Никаких namespace, pluginsMap, collection в accessor.
  */
 
-/** Вход: декларация одного свойства в контрибуции */
-export interface IPropContribution {
+/** Стратегия форматирования имён для конкретного фреймворка */
+export interface INamingStrategy {
+	prop(name: string): string
+	event(name: string): string
+}
+
+/** Объявление свойства в contribution */
+export interface IPropDeclaration {
+	/** Ключ свойства на instance (instance[name]) */
+	name: string
+	type?: any
+	protected?: boolean
+	/** События на instance.events, сигнализирующие об изменении */
+	triggers?: string[]	/** Нетривиальное чтение: вместо instance[name] */
+	get?: (instance: any) => any
+	/** Нетривиальная запись: вместо instance[name] = value */
+	set?: (instance: any, value: any) => void}
+
+/** Contribution: группа объявлений props + events */
+export interface IContribution {
+	props?: IPropDeclaration[]
+	events?: string[]
+}
+
+/**
+ * Единица accessor'а: один instance со своими props и events.
+ * Компонент = несколько Unit'ов: сам instance, плагины, расширения коллекции и т.д.
+ */
+export interface IAccessorUnit {
+	instance: any
+	props?: IPropDeclaration[]
+	events?: string[]
+}
+
+/** Скомпилированное свойство: привязано к своему instance */
+export interface IAccessorProp {
+	name: string
+	/** Объект-владелец: instance[name] = значение, instance.events = источник событий */
+	instance: any
+	type?: any
+	protected: boolean
+	triggers: string[]
+	get?: (instance: any) => any
+	set?: (instance: any, value: any) => void
+}
+
+/** Скомпилированное событие: привязано к своему instance */
+export interface IAccessorEvent {
+	name: string
+	instance: any
+}
+
+/** Elevator: DI-абстракция для передачи значений от родителя к детям */
+export interface IContextElevator<T = any> {
+	down(value: T): void
+	up(): T | undefined
+}
+
 	name: string
 	type?: any | any[]
 	protected?: boolean

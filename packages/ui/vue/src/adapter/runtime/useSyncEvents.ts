@@ -1,4 +1,4 @@
-import type { IAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/accessor'
+import type { IAccessor, TDescriptorInspector, IAccessorProp } from '@soldy/accessor'
 
 /**
  * Проброс событий из Core наружу через emit.
@@ -7,36 +7,36 @@ import type { IAccessor, TDescriptorInspector, ICompiledProp } from '@soldy/acce
  * - Явные события (ready → element:ready)
  */
 export function useSyncEvents(
-    accessor: IAccessor,
-    inspector: TDescriptorInspector,
-    emit?: (event: string, ...args: any[]) => void,
+	accessor: IAccessor,
+	inspector: TDescriptorInspector,
+	emit?: (event: string, ...args: any[]) => void,
 ) {
-    if (!emit) return
+	if (!emit) return
 
-    // 1. Подписка на триггеры свойств
-    for (const prop of accessor.getProps(true) as ICompiledProp[]) {
-        const eventSource = accessor.getEventSource(prop)
-        if (!eventSource) continue
+	// 1. Подписка на триггеры свойств
+	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
+		const eventSource = accessor.getEventSource(prop)
+		if (!eventSource) continue
 
-        const exportTriggers = inspector.getExportTriggers(prop)
-        const rawTriggers = inspector.getRawTriggers(prop)
+		const exportTriggers = inspector.getExportTriggers(prop)
+		const rawTriggers = inspector.getRawTriggers(prop)
 
-        for (let i = 0; i < rawTriggers.length; i++) {
-            eventSource.on(rawTriggers[i], (val: any) => {
-                emit(exportTriggers[i], val)
-            })
-        }
-    }
+		for (let i = 0; i < rawTriggers.length; i++) {
+			eventSource.on(rawTriggers[i], (val: any) => {
+				emit(exportTriggers[i], val)
+			})
+		}
+	}
 
-    // 2. Подписка на явные события
-    for (const evt of accessor.getEvents()) {
-        const eventName = inspector.getExportEventName(evt)
-        const eventSource = accessor.getEventSource(evt)
+	// 2. Подписка на явные события
+	for (const evt of accessor.getEvents()) {
+		const eventName = inspector.getExportEventName(evt)
+		const eventSource = accessor.getEventSource(evt)
 
-        if (eventSource) {
-            eventSource.on(evt.name, (...args: any[]) => {
-                emit(eventName, ...args)
-            })
-        }
-    }
+		if (eventSource) {
+			eventSource.on(evt.name, (...args: any[]) => {
+				emit(eventName, ...args)
+			})
+		}
+	}
 }

@@ -1,6 +1,6 @@
-import type { ICollectionContribution } from '@soldy/accessor'
+import type { IContribution } from '@soldy/accessor'
 
-export const PlainExtensionContribution: ICollectionContribution = {
+export const PlainExtensionContribution: IContribution = {
 	events: [
 		'item:add:before',
 		'item:added',

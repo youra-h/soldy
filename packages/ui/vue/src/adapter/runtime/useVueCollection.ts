@@ -1,37 +1,26 @@
-import { onUnmounted, type Ref } from 'vue'
+import { type Ref } from 'vue'
 import type { IAdapterContext } from '@soldy/setup'
 import { TCollectionFactoryExtension } from '@soldy/setup'
-import { createInspector } from '../common'
+import { TDescriptorInspector } from '@soldy/accessor'
+import { VueNaming } from '../common/naming'
 import { useSyncProps } from './useSyncProps'
 
 /**
  * useVueCollection — реактивный хук для коллекции (родительский компонент).
- *
- * Возвращает { collection, ...refs } где refs — реактивные Ref для collection-level props
- * (items, _activeItem и др.) на основе ICollectionDescriptor.schema.parentProps.
+ * Возвращает { collection, ...refs } где refs = реактивные свойства коллекции (items, activeItem...).
  */
-export function useVueCollection<
-	TItem = any,
-	TExtensions extends Record<string, any> = any,
->(
+export function useVueCollection(
 	adapter: IAdapterContext,
 ): { collection: any } & Record<string, Ref<any>> {
 	const factory = adapter.get(TCollectionFactoryExtension)
 
-	if (!factory?.collection) {
-		return { collection: undefined } as any
-	}
+	if (!factory?.collection) return { collection: undefined } as any
 
 	const collectionAccessor = factory.descriptor.createAccessor(factory.collection)
-	const inspector = createInspector(collectionAccessor)
+	const inspector = new TDescriptorInspector(collectionAccessor, VueNaming)
 
-	const { refs, bindOutput, bindInput } = useSyncProps(collectionAccessor, inspector)
-
-	// Выход: Core → Vue (реактивные refs collection state)
+	const { refs, bindOutput } = useSyncProps(collectionAccessor, inspector)
 	bindOutput()
 
-	return {
-		collection: factory.collection,
-		...refs,
-	} as { collection: any } & Record<string, Ref<any>>
+	return { collection: factory.collection, ...refs } as any
 }

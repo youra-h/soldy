@@ -2,6 +2,7 @@ export type TBatchEvents<T> = {
 	'items:added': (items: T[]) => void
 	'items:removed': (items: T[]) => void
 	'change:trackBy': (fn?: (item: T) => any) => void
+	'change:items': (items: T[]) => void
 }
 
 import type { TReadonlyEngineArray } from '../../types'

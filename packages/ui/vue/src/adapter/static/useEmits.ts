@@ -9,14 +9,14 @@ import type { IComponentDescriptor } from '@soldy/setup'
 import { createInspector } from '../common'
 
 export function useEmits(descriptor: IComponentDescriptor): string[] {
-    const inspector = createInspector(descriptor)
-    const emits = inspector.getExportEvents()
+	const inspector = createInspector(descriptor)
+	const emits = inspector.getExportEvents()
 
-    for (const prop of descriptor.props) {
-        if (!prop.protected && prop.triggers.length > 0) {
-            emits.push(`update:${inspector.getExportPropName(prop)}`)
-        }
-    }
+	for (const prop of descriptor.props) {
+		if (!prop.protected && prop.triggers && prop.triggers.length > 0) {
+			emits.push(`update:${inspector.getExportPropName(prop)}`)
+		}
+	}
 
-    return Array.from(new Set(emits))
+	return Array.from(new Set(emits))
 }

@@ -1,14 +1,15 @@
-import type { ICollectionContribution } from '@soldy/accessor'
+import type { IContribution } from '@soldy/accessor'
 
-export const OrderExtensionContribution: ICollectionContribution = {}
+export const OrderExtensionContribution: IContribution = {}
 
-/** order на уровне элемента (TabItem, CollapseItem, ListBoxItem) */
-export const OrderItemExtensionContribution: ICollectionContribution = {
-	props: [{
-		name: '_order',
-		protected: true,
-		triggers: ['change:order'],
-		// orderItemExt.order — реальное имя свойства не совпадает с _order
-		get: (ext: any) => ext.order,
-	}],
+/** order на уровне элемента */
+export const OrderItemExtensionContribution: IContribution = {
+	props: [
+		{
+			name: '_order',
+			protected: true,
+			triggers: ['change:order'],
+			get: (ext) => ext.order,
+		},
+	],
 }

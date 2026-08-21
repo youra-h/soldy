@@ -1,19 +1,13 @@
 /**
- * Типы для ComponentDescriptor — единого источника истины о компоненте.
- *
- * Дескриптор консолидирует: Contribution + Constructor + Plugins.
- * Вся логика форматирования имён (namespace:name) инкапсулирована в TComponentAccessor.
+ * Типы для ComponentDescriptor и CollectionDescriptor.
+ * Работают через TAccessor: Unit = { instance, props, events }.
  */
 
 import type {
 	IContribution,
-	ICompiledProp,
-	ICompiledEvent,
-	TComponentAccessor,
-	ICollectionExtensionDescriptor,
-	ICollectionSchema,
-	TCollectionAccessor,
-	TItemContextAccessor,
+	IPropDeclaration,
+	TAccessor,
+	IAccessorUnit,
 	INamingStrategy,
 } from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
@@ -21,10 +15,12 @@ import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 /** Определение плагина в составе дескриптора. */
 export interface IPluginDefinition {
 	ctor: IPluginConstructor<any, any, any>
-	contribution?: IContribution
+	/** Нормализованные props из contribution */
+	props: IPropDeclaration[]
+	/** Нормализованные events из contribution */
+	events: string[]
 	/** Опции, передаваемые в plugin.install(ctx, options) */
 	options?: Record<string, any>
-	namespace: string
 }
 
 /** Опции для defineComponent(). */
@@ -41,37 +37,48 @@ export interface IComponentDefinitionOptions {
 
 /**
  * Дескриптор компонента — единственный источник истины.
- * Содержит всё необходимое для создания бандла и accessor'а.
+ * props/events — статические объявления для useProps/useEmits.
+ * createAccessor создаёт TAccessor с Unit'ами { instance, props, events }.
  */
 export interface IComponentDescriptor {
-	/** Конструктор core-компонента */
 	ctor: any
-	/** Скомпилированные свойства (с namespace от плагинов и композиций) */
-	props: ICompiledProp[]
-	/** Скомпилированные события (с namespace от плагинов и композиций) */
-	events: ICompiledEvent[]
-	/** Определения плагинов */
+	/** Статические объявления для useProps/useEmits (без instances) */
+	props: IPropDeclaration[]
+	events: string[]
 	plugins: IPluginDefinition[]
 
-	/** Создать бандл плагинов */
 	createBundle(instance: any): IPluginBundle
-
-	/** Создать TComponentAccessor для переданных instance и bundle */
-	createAccessor(instance: any, bundle: IPluginBundle): TComponentAccessor
+	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
+	createAccessor(instance: any, bundle: IPluginBundle): TAccessor
 }
 
 /**
- * Дескриптор коллекции — единый источник истины о структуре коллекции.
- * Создаётся через defineCollection({ extensions: [...] }).
+ * Дескриптор расширения коллекции (результат defineExtension).
  */
-export interface ICollectionDescriptor {
-	readonly schema: ICollectionSchema
-	/** Создать экземпляр TCollection со всеми расширениями */
-	create(instance: any): any
-	/** Создать TCollectionAccessor для реактивного состояния родительского компонента */
-	createAccessor(collection: any, naming?: INamingStrategy): TCollectionAccessor
-	/** Создать TItemContextAccessor для реактивного состояния дочернего компонента */
-	createItemAccessor(context: any, naming?: INamingStrategy): TItemContextAccessor
+export interface ICollectionExtensionDescriptor<TItem = any> {
+	name: string
+	ctor: new (options?: any) => any
+	/** Props/events для родительского компонента (collection-level) */
+	contribution?: IContribution
+	/** Props/events для дочернего компонента (item-level) */
+	itemContribution?: IContribution
+	optionsFactory?: (instance: any) => any
 }
 
-export type { ICollectionExtensionDescriptor }
+/**
+ * Дескриптор коллекции (результат defineCollection).
+ * createAccessor/createItemAccessor возвращают TAccessor.
+ */
+export interface ICollectionDescriptor {
+	/** Статические объявления props/events для каждого уровня */
+	parentProps: IPropDeclaration[]
+	parentEvents: string[]
+	itemProps: IPropDeclaration[]
+	itemEvents: string[]
+
+	create(instance: any): any
+	/** TAccessor для родительского компонента (items, activeItem...) */
+	createAccessor(collection: any): TAccessor
+	/** TAccessor для дочернего компонента (active, order, closable...) */
+	createItemAccessor(context: any): TAccessor
+}

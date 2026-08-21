@@ -1,6 +1,7 @@
-export { compileContribution, compileCollectionContribution } from './compile-contribution'
+export { normalizeContribution, compileContribution } from './compile-contribution'
 export { definePlugin } from './define-plugin'
 export { defineComponent } from './define-component'
 export { defineExtension } from './define-extension'
 export { defineCollection } from './define-collection'
 export type { IPluginDefinition, IComponentDefinitionOptions, IComponentDescriptor, ICollectionDescriptor, ICollectionExtensionDescriptor } from './types'
+

@@ -18,7 +18,7 @@ export interface ICollectionItemContextExtensionOptions {
 	elevator: TElevatorFactory
 }
 
-export class TCollectionItemContextExtension<TItem = any, TExtensions = any> {
+export class TCollectionItemContextExtension<TItem extends object = any, TExtensions = any> {
 	static readonly key = Symbol('TCollectionItemContextExtension')
 
 	readonly context: any
@@ -30,6 +30,6 @@ export class TCollectionItemContextExtension<TItem = any, TExtensions = any> {
 		if (!collection) return
 
 		const registry = new TItemContextRegistry(collection.getCore())
-		this.context = registry.get(context.instance as TItem)
+		this.context = registry.get(context.instance)
 	}
 }
