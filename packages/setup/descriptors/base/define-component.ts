@@ -33,23 +33,23 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 	const parent = options.extends
 
 	const collector = createPluginCollector()
+
 	collector.add(parent?.plugins ?? [])
 	collector.add(options.plugins ?? [])
+
 	const plugins = collector.toArray()
 
 	const own = normalizeContribution(options.contribution)
 
-	// Статические props/events: для useProps/useEmits (без instances)
+	// Статические props/events: свои + наследуемые (без плагинов — они в plugins[])
 	const props: IPropDeclaration[] = [
 		...(parent?.props ?? []),
 		...own.props,
-		...plugins.flatMap((p) => p.props),
 	]
 
 	const events: string[] = [
 		...(parent?.events ?? []),
 		...own.events,
-		...plugins.flatMap((p) => p.events),
 	]
 
 	return {
@@ -69,8 +69,8 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 
 		createAccessor(instance: any, bundle: TPluginBundle) {
 			return new TAccessor([
-				// Unit компонента
-				{ instance, props: own.props, events: own.events },
+				// Unit компонента: все наследуемые + собственные props/events
+				{ instance, props, events },
 				// Units плагинов
 				...plugins
 					.map((def) => ({
