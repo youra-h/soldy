@@ -1,7 +1,7 @@
 /**
  * Vue-стратегия именования props и событий.
  *
- * - props:  `icon-styles:styles` → `iconStyles_styles` (camelCase для JS)
+ * - props:  `icon-styles:styles` → `layout_styles` (camelCase для JS)
  * - events: `element:ready`     → `element:ready` (двоеточия допустимы в emit)
  */
 

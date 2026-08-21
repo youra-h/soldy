@@ -11,7 +11,7 @@ export default { ...SetupSpinner }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="spinnerStyles_styles"
+		:style="layout_styles"
 	>
 		<slot />
 	</component>

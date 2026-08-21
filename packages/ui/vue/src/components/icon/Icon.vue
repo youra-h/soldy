@@ -11,7 +11,7 @@ export default { ...SetupIcon }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="iconStyles_styles"
+		:style="layout_styles"
 	>
 	</component>
 </template>
