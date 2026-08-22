@@ -25,12 +25,8 @@ export default {
 			})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const result = useVue<ITabsProps, ITabs>(adapter, props, emit)
-
-		console.log('Tabs setup', result)
-
 		return {
-			...result,
+			...useVue<ITabsProps, ITabs>(adapter, props, emit),
 			...useVueCollection(adapter),
 		}
 	},

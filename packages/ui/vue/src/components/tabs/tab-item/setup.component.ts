@@ -4,6 +4,7 @@ import {
 	TCollectionItemExtension,
 	TCollectionItemContextExtension,
 	TabItemDescriptor,
+	TabsCollectionDescriptor,
 } from '@soldy/setup'
 import type { ITabItemProps, ITabItem, TTabsCollectionExtensions } from '@soldy/core'
 import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
@@ -20,21 +21,26 @@ export default {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,
 		})
-			.use(TCollectionItemContextExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionItemContextExtension, {
+				descriptor: TabsCollectionDescriptor,
+				elevator: VueElevatorFactory,
+			})
 			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 
-		const { context, ...itemRefs } = useVueCollectionItem<ITabItem, TTabsCollectionExtensions>(adapter)
+		const { context, ...itemRefs } = useVueCollectionItem<ITabItem, TTabsCollectionExtensions>(
+			adapter,
+		)
 
 		return {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
 			...itemRefs,
+			context,
 			close: () => context?.adapters?.tabs?.close(),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}
 	},
 }
-
 
 // import { toRaw, inject, watch } from 'vue'
 // import { createAdapterContext, TCollectionItemExtension, TabItemDescriptor } from '@soldy/setup'
