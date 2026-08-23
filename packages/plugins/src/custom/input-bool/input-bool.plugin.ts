@@ -5,8 +5,6 @@ import { TElementPlugin } from '../element'
 import type { TInputBoolPluginEvents } from './types'
 
 export class TInputBoolPlugin extends TBasePlugin<any, TInputBoolPluginEvents> {
-	static readonly namespace = Symbol('input-bool')
-
 	private _input: HTMLInputElement | null = null
 	private _instance: ICheckBox | null = null
 	private _onChange = this._handleChange.bind(this)

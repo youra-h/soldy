@@ -5,8 +5,6 @@ import { TElementPlugin } from '../element'
 import type { TInputControlPluginEvents } from './types'
 
 export class TInputControlPlugin extends TBasePlugin<any, TInputControlPluginEvents> {
-	static readonly namespace = Symbol('input-control')
-
 	private _input: HTMLInputElement | null = null
 	private _instance: IInputControl<any> | null = null
 	private _onClick = this._handleClick.bind(this)

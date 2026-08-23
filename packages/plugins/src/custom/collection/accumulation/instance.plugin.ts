@@ -17,8 +17,6 @@ export class TInstanceAccumulationPlugin extends TAccumulationPlugin<
 	IComponentView,
 	TInstanceAccumulationEvents
 > {
-	static readonly namespace = Symbol('collection-instances')
-
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 	}

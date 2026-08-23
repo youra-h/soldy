@@ -4,6 +4,7 @@ import { defineExtension } from '../../../base'
 
 export const SelectionExtensionDescriptor = defineExtension({
 	name: 'selection',
+	namespace: 'selection',
 	ctor: TSelectionExtension,
 	contribution: SelectionExtensionContribution,
 	itemContribution: SelectionItemExtensionContribution,

@@ -5,7 +5,6 @@ import type { TEvented } from '@soldy/core'
  */
 export interface IPluginContext {
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
-	get(namespace: symbol): IPlugin | undefined
 	getInstance<T>(): T | null
 }
 
@@ -21,7 +20,6 @@ export interface IPlugin<
 	TInstance = any,
 	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 > {
-	readonly namespace: symbol
 	readonly events: TEvented<TEvents>
 	install(ctx: IPluginContext, options?: any): void
 	destroy(): void
@@ -36,7 +34,6 @@ export interface IPluginConstructor<
 	P extends IPlugin<TInstance, TEvents> = IPlugin<TInstance, TEvents>,
 > {
 	new (): P
-	readonly namespace: symbol
 }
 
 /**
@@ -48,6 +45,5 @@ export interface IPluginBundle {
 		options?: Record<string, any>,
 	): this
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
-	get(namespace: symbol): IPlugin<any, any> | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void
 }

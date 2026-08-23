@@ -8,14 +8,14 @@
  * Но ему нужны плагины element/instance/ready как у ComponentViewDescriptor.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TFrame } from '@soldy/core'
-import { TElementPlugin, TReadyPlugin, TFrameLayoutPlugin } from '@soldy/plugins'
 import {
-	FrameContribution,
-	FrameLayoutContribution,
-	ElementContribution,
-} from '../../contributions'
+	ElementPluginDescriptor,
+	ReadyPluginDescriptor,
+	FrameLayoutPluginDescriptor,
+} from '../plugins'
+import { FrameContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const FrameDescriptor = defineComponent({
@@ -25,17 +25,5 @@ export const FrameDescriptor = defineComponent({
 
 	contribution: FrameContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TElementPlugin,
-			contribution: ElementContribution,
-		}),
-		definePlugin({
-			ctor: TReadyPlugin,
-		}),
-		definePlugin({
-			ctor: TFrameLayoutPlugin,
-			contribution: FrameLayoutContribution,
-		}),
-	],
+	plugins: [ElementPluginDescriptor, ReadyPluginDescriptor, FrameLayoutPluginDescriptor],
 })

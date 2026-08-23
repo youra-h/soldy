@@ -5,9 +5,9 @@
  * и добавляет indeterminate, plain + плагин InputBool.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TCheckBox } from '@soldy/core'
-import { TInputBoolPlugin } from '@soldy/plugins'
+import { InputBoolPluginDescriptor } from '../plugins'
 import { CheckBoxContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
@@ -18,9 +18,5 @@ export const CheckBoxDescriptor = defineComponent({
 
 	contribution: CheckBoxContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TInputBoolPlugin,
-		}),
-	],
+	plugins: [InputBoolPluginDescriptor],
 })

@@ -4,8 +4,6 @@ import { TEvented } from '@soldy/core'
 import type { TElementServiceEvents } from './types'
 
 export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
-	static readonly namespace = Symbol('element')
-
 	private _element: HTMLElement | null = null
 	private _readyResolve: ((el: HTMLElement) => void) | null = null
 

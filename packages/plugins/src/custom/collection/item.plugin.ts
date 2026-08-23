@@ -13,5 +13,4 @@ export class TCollectionItemPlugin<T extends object = any> extends TBasePlugin<
 	any,
 	TCollectionItemPluginEvents
 > {
-	static readonly namespace = Symbol('item')
 }

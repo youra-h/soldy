@@ -22,8 +22,6 @@ import { TEvented } from '@soldy/core'
  * // stylePlugin.styles → { position: 'fixed', left: '100px', top: '200px', zIndex: 1001 }
  */
 export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvents> {
-	static readonly namespace = Symbol('layout')
-
 	private _styles: Record<string, string | number> = {}
 	private _frame: IFrame | null = null
 	private _anchor: HTMLElement | null = null

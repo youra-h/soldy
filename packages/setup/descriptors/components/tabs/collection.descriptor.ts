@@ -12,6 +12,7 @@ import { defineExtension, defineCollection } from '../../base'
 
 export const TabsExtensionDescriptor = defineExtension({
 	name: 'tabs',
+	namespace: 'tabs',
 	ctor: TTabsExtension,
 	contribution: TabsExtensionContribution,
 	itemContribution: TabsItemExtensionContribution,

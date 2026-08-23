@@ -10,8 +10,6 @@ import type { TSkeletonLayoutPluginEvents } from './types'
  */
 
 export class TSkeletonLayoutPlugin extends TBasePlugin<any, TSkeletonLayoutPluginEvents> {
-	static readonly namespace = Symbol('layout')
-
 	private _styles: Record<string, string | number> = {}
 
 	override install(ctx: IPluginContext): void {

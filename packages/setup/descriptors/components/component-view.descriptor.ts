@@ -1,7 +1,7 @@
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TComponentView } from '@soldy/core'
-import { TElementPlugin, TReadyPlugin } from '@soldy/plugins'
-import { ComponentViewContribution, ElementContribution } from '../../contributions'
+import { ElementPluginDescriptor, ReadyPluginDescriptor } from '../plugins'
+import { ComponentViewContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const ComponentViewDescriptor = defineComponent({
@@ -11,13 +11,5 @@ export const ComponentViewDescriptor = defineComponent({
 
 	contribution: ComponentViewContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TElementPlugin,
-			contribution: ElementContribution,
-		}),
-		definePlugin({
-			ctor: TReadyPlugin
-		}),
-	],
+	plugins: [ElementPluginDescriptor, ReadyPluginDescriptor],
 })

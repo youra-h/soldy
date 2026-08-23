@@ -9,8 +9,6 @@ import type { IComponentView } from '@soldy/core'
  * Позволяет компоненту знать, когда он готов к взаимодействию с DOM.
  */
 export class TReadyPlugin extends TBasePlugin {
-	static readonly namespace = Symbol('ready')
-
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 

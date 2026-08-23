@@ -5,10 +5,10 @@
  * и добавляет size, variant, borderWidth + плагин SpinnerStyle.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TSpinner } from '@soldy/core'
-import { TSpinnerLayoutPlugin } from '@soldy/plugins'
-import { SpinnerContribution, SpinnerLayoutContribution } from '../../contributions'
+import { SpinnerLayoutPluginDescriptor } from '../plugins'
+import { SpinnerContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const SpinnerDescriptor = defineComponent({
@@ -18,10 +18,5 @@ export const SpinnerDescriptor = defineComponent({
 
 	contribution: SpinnerContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TSpinnerLayoutPlugin,
-			contribution: SpinnerLayoutContribution,
-		}),
-	],
+	plugins: [SpinnerLayoutPluginDescriptor],
 })

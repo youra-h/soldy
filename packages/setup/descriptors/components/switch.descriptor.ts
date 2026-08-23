@@ -5,9 +5,9 @@
  * и добавляет плагин InputBool.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TSwitch } from '@soldy/core'
-import { TInputBoolPlugin } from '@soldy/plugins'
+import { InputBoolPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const SwitchDescriptor = defineComponent({
@@ -15,9 +15,5 @@ export const SwitchDescriptor = defineComponent({
 
 	extends: InputControlDescriptor,
 
-	plugins: [
-		definePlugin({
-			ctor: TInputBoolPlugin,
-		}),
-	],
+	plugins: [InputBoolPluginDescriptor],
 })

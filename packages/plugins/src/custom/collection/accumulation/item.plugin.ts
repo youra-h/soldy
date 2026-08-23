@@ -9,8 +9,6 @@ import type { TCollectionItemPluginsEvents } from './types'
  * плагин конкретного item'а через getPlugin(uid, PluginClass).
  */
 export class TCollectionItemPlugins extends TBasePlugin<any, TCollectionItemPluginsEvents> {
-	static readonly namespace = Symbol('collection-item-plugins')
-
 	private readonly _bundles = new Map<string | number, IPluginBundle>()
 
 	register(uid: string | number, bundle: IPluginBundle, instance: unknown): void {

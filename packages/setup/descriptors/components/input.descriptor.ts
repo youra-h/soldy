@@ -5,9 +5,9 @@
  * и добавляет placeholder + плагины input-control, input.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TInput } from '@soldy/core'
-import { TInputControlPlugin, TInputPlugin } from '@soldy/plugins'
+import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
@@ -18,12 +18,5 @@ export const InputDescriptor = defineComponent({
 
 	contribution: InputContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TInputControlPlugin,
-		}),
-		definePlugin({
-			ctor: TInputPlugin,
-		}),
-	],
+	plugins: [InputControlPluginDescriptor, InputPluginDescriptor],
 })

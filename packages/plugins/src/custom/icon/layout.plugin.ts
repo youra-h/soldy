@@ -8,8 +8,6 @@ import type { TIconLayoutPluginEvents } from './types'
  * Плагин для управления стилями иконки.
  */
 export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents> {
-	static readonly namespace = Symbol('layout')
-
 	private _styles: Record<string, string | number> = {}
 
 	override install(ctx: IPluginContext): void {

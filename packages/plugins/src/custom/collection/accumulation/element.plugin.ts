@@ -20,8 +20,6 @@ export class TElementAccumulationPlugin extends TAccumulationPlugin<
 	HTMLElement,
 	TElementAccumulationEvents
 > {
-	static readonly namespace = Symbol('collection-elements')
-
 	private readonly _present = new Map<string | number, boolean>()
 
 	override install(ctx: IPluginContext): void {

@@ -5,10 +5,10 @@
  * и добавляет shape, animation, width, height + плагин SkeletonStyle.
  */
 
-import { defineComponent, definePlugin } from '../base'
+import { defineComponent } from '../base'
 import { TSkeleton } from '@soldy/core'
-import { TSkeletonLayoutPlugin } from '@soldy/plugins'
-import { SkeletonContribution, SkeletonLayoutContribution } from '../../contributions'
+import { SkeletonLayoutPluginDescriptor } from '../plugins'
+import { SkeletonContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = defineComponent({
@@ -18,10 +18,5 @@ export const SkeletonDescriptor = defineComponent({
 
 	contribution: SkeletonContribution,
 
-	plugins: [
-		definePlugin({
-			ctor: TSkeletonLayoutPlugin,
-			contribution: SkeletonLayoutContribution,
-		}),
-	],
+	plugins: [SkeletonLayoutPluginDescriptor],
 })

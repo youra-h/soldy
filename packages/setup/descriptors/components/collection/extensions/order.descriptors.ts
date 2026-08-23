@@ -4,6 +4,7 @@ import { defineExtension } from '../../../base'
 
 export const OrderExtensionDescriptor = defineExtension({
 	name: 'order',
+	namespace: 'order',
 	ctor: TOrderExtension,
 	contribution: OrderExtensionContribution,
 	itemContribution: OrderItemExtensionContribution,

@@ -8,8 +8,6 @@ import type { TSpinnerLayoutPluginEvents } from './types'
  * Плагин для управления стилями спиннера.
  */
 export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginEvents> {
-	static readonly namespace = Symbol('layout')
-
 	private _styles: Record<string, string | number> = {}
 
 	override install(ctx: IPluginContext): void {

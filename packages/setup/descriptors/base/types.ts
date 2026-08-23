@@ -56,6 +56,8 @@ export interface IComponentDescriptor {
  */
 export interface ICollectionExtensionDescriptor<TItem = any> {
 	name: string
+	/** Префикс экспорта props/events; если не задан — имена используются как есть. */
+	namespace?: string
 	ctor: new (options?: any) => any
 	/** Props/events для родительского компонента (collection-level) */
 	contribution?: IContribution
