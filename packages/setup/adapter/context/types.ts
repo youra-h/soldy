@@ -18,6 +18,7 @@ export interface IAdapterContext {
 	readonly instance: any
 	readonly bundle: any
 	readonly accessor: any
+	readonly props: Readonly<Record<string, any>>
 	readonly events: TEvented<TAdapterEvents>
 
 	/** Подключить расширение БЕЗ опций */

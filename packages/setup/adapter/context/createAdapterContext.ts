@@ -21,7 +21,7 @@ type TAnyExtensionCtor = IAdapterExtensionCtorNoOpts<any> | IAdapterExtensionCto
 
 export function createAdapterContext(
 	descriptor: IComponentDescriptor,
-	options: { ctrl?: any; props?: any },
+	options: { ctrl?: any; props?: Readonly<Record<string, any>> },
 	defaultExtensions: Array<TAnyExtensionCtor> = [TPluginsBindingExtension],
 ): IAdapterContext {
 	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
@@ -35,6 +35,7 @@ export function createAdapterContext(
 		instance,
 		bundle,
 		accessor,
+		props: options.props ?? {},
 		events,
 
 		use(ExtensionCtor: any, opts?: any) {
