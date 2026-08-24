@@ -21,6 +21,7 @@ export class TCollection<
 		this.engine = new TCollectionEngine(
 			options.storage ?? new TArrayStorage<T>(),
 		) as unknown as ICollectionEngine<T>
+
 		this.extensions = (options.extensions ?? {}) as TExtensions
 
 		const ctx = this._createContext()
