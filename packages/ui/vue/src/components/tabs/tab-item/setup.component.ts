@@ -17,6 +17,8 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
+		console.log('TabItem setup', props)
+
 		const adapter = createAdapterContext(TabItemDescriptor, {
 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
 			props,

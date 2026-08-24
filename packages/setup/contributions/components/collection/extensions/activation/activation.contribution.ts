@@ -5,6 +5,7 @@ export const ActivationExtensionContribution: IContribution = {
 	props: [
 		{
 			name: 'activeItem',
+			type: Object,
 			protected: true,
 			triggers: ['change:activation'],
 		},
@@ -14,5 +15,5 @@ export const ActivationExtensionContribution: IContribution = {
 
 /** active на уровне элемента (TabItem, CollapseItem) */
 export const ActivationItemExtensionContribution: IContribution = {
-	props: [{ name: 'active', triggers: ['change:active'] }],
+	props: [{ name: 'active', type: Boolean, triggers: ['change:active'] }],
 }
