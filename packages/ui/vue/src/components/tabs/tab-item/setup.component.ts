@@ -35,7 +35,6 @@ export default {
 			...useVue<ITabItemProps, ITabItem>(adapter, props, emit),
 			...itemRefs,
 			context,
-			close: () => context?.adapters?.tabs?.close(),
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

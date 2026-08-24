@@ -36,9 +36,9 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 			<template #trailing>
 				<slot name="trailing" />
 				<Button
-					:rendered="!!tabs_closable"
+					:rendered="!!context.adapters.tabs.closable"
 					class="s-tab-item__close"
-					@click.stop="close()"
+					@click.stop="context?.adapters?.tabs?.close()"
 					view="plain"
 				>
 					<slot name="close-icon">
