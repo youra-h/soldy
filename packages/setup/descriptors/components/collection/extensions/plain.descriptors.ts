@@ -4,7 +4,6 @@ import { defineExtension } from '../../../base'
 
 export const PlainExtensionDescriptor = defineExtension({
 	name: 'plain',
-	namespace: 'plain',
 	ctor: TPlainExtension,
 	contribution: PlainExtensionContribution,
 })

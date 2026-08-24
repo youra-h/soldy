@@ -7,7 +7,7 @@ import { defineExtension } from '../../../base'
 
 export const ActivationExtensionDescriptor = defineExtension({
 	name: 'activation',
-	namespace: 'activation',
+	// namespace: 'activation',
 	ctor: TActivationExtension,
 	contribution: ActivationExtensionContribution,
 	itemContribution: ActivationItemExtensionContribution,

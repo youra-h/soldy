@@ -12,8 +12,8 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="{ order: order_order }"
-		:aria-selected="activation_active"
+		:style="{ order: order }"
+		:aria-selected="active"
 		v-bind="containerAttrs"
 	>
 		<Button
@@ -29,7 +29,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 				<slot name="leading" />
 			</template>
 
-			<slot :text="text" :active="activation_active">
+			<slot :text="text" :active="active">
 				{{ text }}
 			</slot>
 
