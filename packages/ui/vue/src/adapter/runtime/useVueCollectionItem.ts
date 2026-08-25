@@ -13,6 +13,7 @@ import { useSyncProps } from './useSyncProps'
  */
 export function useVueCollectionItem<TItem = any, TExtensions = any>(
 	adapter: IAdapterContext,
+	props: Record<string, any>,
 ): { context: any } & Record<string, Ref<any>> {
 	const contextExt = adapter.get(TCollectionItemContextExtension) as any
 
@@ -24,8 +25,13 @@ export function useVueCollectionItem<TItem = any, TExtensions = any>(
 	const itemAccessor = descriptor.createItemAccessor(context)
 	const inspector = new TDescriptorInspector(itemAccessor, VueNaming)
 
-	const { refs, bindOutput } = useSyncProps(itemAccessor, inspector)
+	const { refs, bindOutput, bindInput } = useSyncProps(itemAccessor, inspector)
+
 	bindOutput()
+
+	// Отслеживаем изменения входных (не protected) item-пропсов (active, selected, ...).
+	// Инициализация уже выполнена TCollectionItemMetaExtension — здесь только реактивные изменения.
+	bindInput(props)
 
 	return { context, ...refs } as any
 }

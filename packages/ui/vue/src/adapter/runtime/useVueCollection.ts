@@ -11,6 +11,7 @@ import { useSyncProps } from './useSyncProps'
  */
 export function useVueCollection(
 	adapter: IAdapterContext,
+	props: Record<string, any>,
 ): { collection: any } & Record<string, Ref<any>> {
 	const factory = adapter.get(TCollectionFactoryExtension)
 
@@ -19,9 +20,13 @@ export function useVueCollection(
 	const collectionAccessor = factory.descriptor.createAccessor(factory.collection)
 	const inspector = new TDescriptorInspector(collectionAccessor, VueNaming)
 
-	const { refs, bindOutput } = useSyncProps(collectionAccessor, inspector)
+	const { refs, bindOutput, bindInput } = useSyncProps(collectionAccessor, inspector)
 
 	bindOutput()
+
+	// Отслеживаем изменения входных (не protected) пропсов коллекции (items, trackBy, ...).
+	// Инициализация уже выполнена TCollectionPropsExtension — здесь только реактивные изменения.
+	bindInput(props)
 
 	return { collection: factory.collection, ...refs } as any
 }
