@@ -1,6 +1,6 @@
 // Типы
 export type { TEngineEvents } from './types'
-export { TInsertEvent } from './types'
+export { TInsertEvent, TUpdateEvent, TItemEvent } from './types'
 
 // Хранилище
 export type { IStorage } from './storage'

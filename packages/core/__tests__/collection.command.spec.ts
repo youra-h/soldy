@@ -47,7 +47,8 @@ describe('TInsertCommand', () => {
 		storage.insert(item, 0)
 		new TInsertCommand(item, 0).emitEvents(createContext(storage, events))
 
-		expect(added).toHaveBeenCalledWith(item)
+		expect(added).toHaveBeenCalledTimes(1)
+		expect(added.mock.calls[0][0].item).toBe(item)
 		expect(count).toHaveBeenCalledWith(1)
 	})
 })
@@ -94,7 +95,7 @@ describe('TUpdateCommand', () => {
 		expect(item.name).toBe('b')
 	})
 
-	it('emitEvents: эмитит item:updated с changes', () => {
+	it('emitEvents: эмитит item:updated с TUpdateEvent', () => {
 		const storage = new TArrayStorage<Item>()
 		const events = createEvents()
 		const updated = vi.fn()
@@ -106,7 +107,11 @@ describe('TUpdateCommand', () => {
 
 		new TUpdateCommand(item, changes).emitEvents(createContext(storage, events))
 
-		expect(updated).toHaveBeenCalledWith(item, changes)
+		expect(updated).toHaveBeenCalledTimes(1)
+
+		const event = updated.mock.calls[0][0]
+		expect(event.item).toBe(item)
+		expect(event.changes).toEqual({ name: 'b' })
 	})
 })
 

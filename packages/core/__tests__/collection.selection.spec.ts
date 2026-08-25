@@ -17,7 +17,7 @@ describe('TSelectionExtension', () => {
 		const col = createCollection()
 
 		expect(col.extensions.selection.selectedCount).toBe(0)
-		expect(col.extensions.selection.getSelected()).toEqual([])
+		expect(col.extensions.selection.selected).toEqual([])
 	})
 
 	it('режим по умолчанию — single', () => {

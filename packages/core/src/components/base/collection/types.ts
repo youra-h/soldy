@@ -2,13 +2,33 @@ import type { ICommand } from './commands'
 import { TEvented } from '@soldy/core'
 import { TActionEvent } from '../../../common/event/action-event'
 
-export class TInsertEvent<TItem> extends TActionEvent {
+/**
+ * База событий коллекции, которые несут meta-снапшот `_`.
+ * Мета снимается с сырого источника в конструкторе — до любых `*:before`-хендлеров,
+ * поэтому factory-подмена item не влияет на уже захваченный `_`.
+ */
+export abstract class TItemEvent<TItem = any> extends TActionEvent {
 	public _: Record<string, any> = {}
 
+	protected captureMeta(source: unknown): void {
+		if (typeof source === 'object' && source !== null && '_' in source) {
+			const meta = (source as Record<string, unknown>)._
+
+			if (typeof meta === 'object' && meta !== null) {
+				this._ = meta as Record<string, unknown>
+				return
+			}
+		}
+
+		this._ = {}
+	}
+}
+
+export class TInsertEvent<TItem> extends TItemEvent<TItem> {
 	constructor(private _item: Partial<TItem>) {
 		super()
 
-		this.#syncMetadata(this._item)
+		this.captureMeta(this._item)
 	}
 
 	get item(): Partial<TItem> {
@@ -18,18 +38,25 @@ export class TInsertEvent<TItem> extends TActionEvent {
 	set item(value: Partial<TItem>) {
 		this._item = value
 	}
+}
 
-	#syncMetadata(value: Partial<TItem>): void {
-		if (typeof value === 'object' && value !== null && '_' in value) {
-			const meta = (value as Record<string, unknown>)._
+export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
+	/** changes без `_` — то, что реально пойдёт в Object.assign. */
+	readonly changes: Partial<TItem>
 
-			if (typeof meta === 'object' && meta !== null) {
-				this._ = meta as Record<string, unknown>
-				return
-			}
-		}
+	constructor(
+		public item: TItem,
+		source: Partial<TItem>,
+	) {
+		super()
 
-		this._ = {}
+		this.captureMeta(source)
+
+		// отделяем meta от данных, чтобы `_` не «прилип» к item при Object.assign
+		const changes = { ...(source as Record<string, unknown>) }
+		delete changes._
+
+		this.changes = changes as Partial<TItem>
 	}
 }
 
@@ -47,8 +74,11 @@ export type TEngineEvents<TItem> = {
 	/** Вызывается при удалении одного элемента */
 	'item:removed': (item: TItem) => void
 
-	/** Вызывается при изменении элемента */
-	'item:updated': (item: TItem, changes: Partial<TItem>) => void
+	/** Вызывается ПЕРЕД изменением элемента (до мутации). Можно подменить `e.item`/`e.changes` или `preventDefault()`. */
+	'item:update:before': (e: TUpdateEvent<TItem>) => void
+
+	/** Вызывается при изменении одного элемента */
+	'item:updated': (e: TUpdateEvent<TItem>) => void
 
 	/** Вызывается при перемещении элемента */
 	'item:moved': (item: TItem, oldIndex: number, newIndex: number) => void

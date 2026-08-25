@@ -3,6 +3,7 @@ import {
 	createAdapterContext,
 	TCollectionItemExtension,
 	TCollectionItemContextExtension,
+	TCollectionItemMetaExtension,
 	TabItemDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
@@ -28,6 +29,10 @@ export default {
 				elevator: VueElevatorFactory,
 			})
 			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionItemMetaExtension, {
+				descriptor: TabsCollectionDescriptor,
+				elevator: VueElevatorFactory,
+			})
 
 		const { context, ...itemRefs } = useVueCollectionItem<ITabItem, TTabsCollectionExtensions>(
 			adapter,

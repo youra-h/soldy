@@ -7,6 +7,7 @@ import {
 	OrderExtensionDescriptor,
 	PlainExtensionDescriptor,
 	UniqueExtensionDescriptor,
+	MetaExtensionDescriptor,
 } from '../collection'
 import { defineExtension, defineCollection } from '../../base'
 
@@ -23,6 +24,7 @@ export const TabsCollectionDescriptor = defineCollection({
 	extensions: [
 		{ ...FactoryExtensionDescriptor, optionsFactory: () => ({ itemCtor: TTabItem }) },
 		UniqueExtensionDescriptor,
+		MetaExtensionDescriptor,
 		OrderExtensionDescriptor,
 		PlainExtensionDescriptor,
 		BatchExtensionDescriptor,

@@ -104,7 +104,8 @@ describe('TCollectionEngine', () => {
 		engine.execute(new TInsertCommand(item, 0))
 
 		expect(engine.length).toBe(1)
-		expect(added).toHaveBeenCalledWith(item)
+		expect(added).toHaveBeenCalledTimes(1)
+		expect(added.mock.calls[0][0].item).toBe(item)
 		expect(count).toHaveBeenCalledWith(1)
 	})
 

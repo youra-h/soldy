@@ -2,6 +2,7 @@ import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } fr
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
+import type { TMetaExtension } from '../meta'
 
 /**
  * TActivationExtension — расширение для управления активным элементом коллекции.
@@ -43,11 +44,21 @@ export class TActivationExtension<TItem extends object = any>
 			this.reset()
 		})
 
-		ctx.engine.events.on('item:added', (e) => {
-			if (!e._.active) return
+		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
-			this.activate(e.item as TItem)
-		})
+		if (meta) {
+			meta.events.on('meta:applied', (item, m) => {
+				if (!m.active) return
+
+				this.activate(item)
+			})
+
+			meta.events.on('meta:changed', (item, m) => {
+				if (!m.active) return
+
+				this.activate(item)
+			})
+		}
 
 		ctx.engine.events.on('item:removed', (item: TItem) => {
 			this._activeItem === item && this.reset()

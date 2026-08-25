@@ -8,6 +8,7 @@ import {
 	TActivationExtension,
 	TOrderExtension,
 	TUniqueExtension,
+	TMetaExtension,
 } from './../../../base'
 import TTabItem from './../tab-item/tab-item.class'
 import type { ITabItem } from './../tab-item/types'
@@ -18,6 +19,7 @@ export const TabsFactory = (instance: ITabs): TTabsCollection =>
 		extensions: {
 			factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
 			unique: new TUniqueExtension<ITabItem>(),
+			meta: new TMetaExtension<ITabItem>(),
 			order: new TOrderExtension<ITabItem>(),
 			plain: new TPlainExtension<ITabItem>(),
 			batch: new TBatchExtension<ITabItem>(),

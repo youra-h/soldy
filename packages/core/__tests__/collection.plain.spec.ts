@@ -21,7 +21,8 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
 		expect(col.engine.length).toBe(1)
-		expect(added).toHaveBeenCalledWith({ id: 1, name: 'a' })
+		expect(added).toHaveBeenCalledTimes(1)
+		expect(added.mock.calls[0][0].item).toEqual({ id: 1, name: 'a' })
 	})
 
 	it('insert: по умолчанию в начало', () => {
@@ -71,7 +72,11 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.update(item, { name: 'b' })
 
 		expect(item.name).toBe('b')
-		expect(updated).toHaveBeenCalledWith(item, { name: 'b' })
+		expect(updated).toHaveBeenCalledTimes(1)
+
+		const event = updated.mock.calls[0][0]
+		expect(event.item).toBe(item)
+		expect(event.changes).toEqual({ name: 'b' })
 	})
 
 	it('move: перемещает элемент и эмитит события', () => {

@@ -3,6 +3,7 @@ import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './ty
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
+import type { TMetaExtension } from '../meta'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -78,11 +79,21 @@ export class TSelectionExtension<TItem extends object = any>
 			})
 		})
 
-		ctx.engine.events.on('item:added', (e) => {
-			if (!e._.selected) return
+		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
-			this.select(e.item as TItem)
-		})
+		if (meta) {
+			meta.events.on('meta:applied', (item, m) => {
+				if (!m.selected) return
+
+				this.select(item)
+			})
+
+			meta.events.on('meta:changed', (item, m) => {
+				if (!m.selected) return
+
+				this.select(item)
+			})
+		}
 	}
 
 	select(item: TItem): void {
