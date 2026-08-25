@@ -13,7 +13,7 @@ import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import type { ICollectionDescriptor } from '@soldy/setup'
-import type { IPropDeclaration } from '@soldy/accessor'
+import { collectItemProps } from '../../../descriptors/base/collect-props'
 
 export interface ICollectionItemMetaExtensionOptions {
 	descriptor: ICollectionDescriptor
@@ -31,31 +31,8 @@ export class TCollectionItemMetaExtension {
 
 		if (!metaExt) return
 
-		const meta = collectItemMeta(descriptor.itemProps, context.props)
+		const meta = collectItemProps(descriptor.itemProps, context.props)
 
 		metaExt.apply(context.instance, meta)
 	}
-}
-
-/**
- * Собрать meta из входных (не protected) item-пропсов дескриптора,
- * присутствующих в props. Генерично для любой коллекции: `active`, `selected`, ...
- */
-function collectItemMeta(
-	itemProps: IPropDeclaration[],
-	props: Readonly<Record<string, any>>,
-): Record<string, unknown> {
-	const meta: Record<string, unknown> = {}
-
-	for (const decl of itemProps) {
-		if (decl.protected) continue
-
-		const key = decl.name.name
-
-		if (key in props && props[key] !== undefined) {
-			meta[key] = props[key]
-		}
-	}
-
-	return meta
 }

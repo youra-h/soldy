@@ -56,14 +56,14 @@ const tabItems = [
 	<div style="display: flex; flex-direction: column; gap: 2rem">
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<Tabs closable>
+			<!-- <Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
 				<TabItem text="Tab 2" value="t2" />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
 				<template #panel:t1><p>Content 1</p></template>
 				<template #panel:t2><p>Content 2</p></template>
 				<template #panel:t3><p>Content 3</p></template>
-			</Tabs>
+			</Tabs> -->
 		</div>
 
 		<!-- <section>
@@ -73,7 +73,7 @@ const tabItems = [
 				<template #panel:tab2><p>Содержимое Tab 2</p></template>
 				<template #panel:tab3><p>Содержимое Tab 3</p></template>
 			</Tabs>
-		</section>
+		</section> -->
 
 		<section>
 			<h2>Вариант 2: prop items</h2>
@@ -84,7 +84,7 @@ const tabItems = [
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section> -->
+		</section>
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>

@@ -3,6 +3,7 @@ import {
 	createAdapterContext,
 	TCollectionExtension,
 	TCollectionFactoryExtension,
+	TCollectionPropsExtension,
 	TabsDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
@@ -23,11 +24,16 @@ export default {
 				descriptor: TabsCollectionDescriptor,
 				elevator: VueElevatorFactory,
 			})
+			.use(TCollectionPropsExtension)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+
+		const result = useVueCollection(adapter)
+
+		console.log('Tabs setup', result)
 
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
-			...useVueCollection(adapter),
+			...result,
 		}
 	},
 }

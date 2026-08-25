@@ -20,6 +20,7 @@ export function useVueCollection(
 	const inspector = new TDescriptorInspector(collectionAccessor, VueNaming)
 
 	const { refs, bindOutput } = useSyncProps(collectionAccessor, inspector)
+
 	bindOutput()
 
 	return { collection: factory.collection, ...refs } as any
