@@ -19,7 +19,7 @@ export default {
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
 		const adapter = createAdapterContext(TabItemDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 			.use(TCollectionItemContextExtension, {
@@ -66,7 +66,7 @@ export default {
 // 	extends: BaseTabItem,
 // 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
 // 		const adapter = createAdapterContext(TabItemDescriptor, {
-// 			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+// 			ctrl: toRaw(props.ctrl),
 // 			props,
 // 		})
 // 		// .use(TCollectionItemExtension, { elevator: VueElevatorFactory })

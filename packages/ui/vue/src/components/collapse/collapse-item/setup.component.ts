@@ -16,7 +16,7 @@ export default {
 	extends: BaseCollapseItem,
 	setup(props: TBaseComponentProps<ICollapseItemProps, ICollapseItem>, { emit }: any) {
 		const adapter = createAdapterContext(CollapseItemDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
 

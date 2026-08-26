@@ -2,12 +2,8 @@ import { TTabsExtension, TTabItem, type ITabs } from '@soldy/core'
 import { TabsExtensionContribution, TabsItemExtensionContribution } from '../../../contributions'
 import {
 	ActivationExtensionDescriptor,
-	BatchExtensionDescriptor,
+	CollectionDescriptor,
 	FactoryExtensionDescriptor,
-	OrderExtensionDescriptor,
-	PlainExtensionDescriptor,
-	UniqueExtensionDescriptor,
-	MetaExtensionDescriptor,
 } from '../collection'
 import { defineExtension, defineCollection } from '../../base'
 
@@ -21,13 +17,10 @@ export const TabsExtensionDescriptor = defineExtension({
 })
 
 export const TabsCollectionDescriptor = defineCollection({
+	extends: CollectionDescriptor,
+
 	extensions: [
 		{ ...FactoryExtensionDescriptor, optionsFactory: () => ({ itemCtor: TTabItem }) },
-		UniqueExtensionDescriptor,
-		MetaExtensionDescriptor,
-		OrderExtensionDescriptor,
-		PlainExtensionDescriptor,
-		BatchExtensionDescriptor,
 		ActivationExtensionDescriptor,
 		{ ...TabsExtensionDescriptor, optionsFactory: (instance: ITabs) => ({ owner: instance }) },
 	],

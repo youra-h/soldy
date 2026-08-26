@@ -10,7 +10,7 @@ export default {
 	extends: BaseFrame,
 	setup(props: TBaseComponentProps<IFrameProps, IFrame>, { emit }: any) {
 		const adapter = createAdapterContext(FrameDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 

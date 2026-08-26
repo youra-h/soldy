@@ -10,7 +10,7 @@ export default {
 	extends: BaseSkeleton,
 	setup(props: TBaseComponentProps<ISkeletonProps, ISkeleton>, { emit }: any) {
 		const adapter = createAdapterContext(SkeletonDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 

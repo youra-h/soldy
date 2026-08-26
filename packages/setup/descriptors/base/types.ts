@@ -77,6 +77,9 @@ export interface ICollectionDescriptor {
 	itemProps: IPropDeclaration[]
 	itemEvents: TName[]
 
+	/** Дескрипторы расширений коллекции (для наследования через `extends`). */
+	extensions: ICollectionExtensionDescriptor[]
+
 	create(instance: any): any
 	/** TAccessor для родительского компонента (items, activeItem...) */
 	createAccessor(collection: any): TAccessor

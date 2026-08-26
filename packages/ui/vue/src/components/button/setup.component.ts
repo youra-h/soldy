@@ -10,7 +10,7 @@ export default {
 	extends: BaseButton,
 	setup(props: TBaseComponentProps<IButtonProps, IButton>, { emit }: any) {
 		const adapter = createAdapterContext(ButtonDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 

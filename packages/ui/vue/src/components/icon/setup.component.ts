@@ -10,7 +10,7 @@ export default {
 	extends: BaseIcon,
 	setup(props: TBaseComponentProps<IIconProps, IIcon>, { emit }: any) {
 		const adapter = createAdapterContext(IconDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 

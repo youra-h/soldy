@@ -6,43 +6,20 @@ import { Tabs, TabItem } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
-// const tabs = new TTabs()
-// tabs.variant = 'accent'
-// tabs.view = 'contained'
-// tabs.orientation = 'horizontal'
+const tabs = new TTabs()
+tabs.variant = 'accent'
+tabs.view = 'contained'
+tabs.orientation = 'horizontal'
 
-// const collection: TTabsCollection = TabsFactory(tabs)
+const collection: TTabsCollection = TabsFactory(tabs)
 
-// const { plain, activation } = collection.extensions
+const { plain, activation } = collection.extensions
 
-// plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
-// const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
-// plain.push({ text: 'Tab 3', value: 'tab3' })
+plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
+const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
+plain.push({ text: 'Tab 3', value: 'tab3' })
 
-// activation.activate(tab)
-
-// tabs.collection.add({ text: 'Tab 1', value: 'tab1', closable: true })
-// tabs.collection.add({ text: 'Tab 2', value: 'tab2', closable: true })
-// tabs.collection.add({ text: 'Tab 3', value: 'tab3' })
-// tabs.collection.add({ text: 'Tab 4', value: 'tab4' })
-// tabs.collection.add({ text: 'Tab 5', value: 'tab5' })
-// tabs.collection.add({ text: 'Tab 6', value: 'tab6' })
-
-// const item2 = tabs.collection.findBy('value', 'tab1')!
-// tabs.collection.setActive(item2)
-
-// setTimeout(() => {
-// 	console.log('Moving Tab 1 to the end...')
-// 	tabs.collection.move(0, 2) // Переместить первую вкладку в конец
-
-// 	const item2 = tabs.collection.findBy('value', 'tab2')!
-// 	tabs.collection.setActive(item2)
-// }, 1000)
-
-// setTimeout(() => {
-// 	console.log('Closing Tab 2...')
-// 	tabs.collection.delete(0) // Удалить вторую вкладку
-// }, 2000)
+activation.activate(tab)
 
 // --- Вариант 2: через prop items ---
 const tabItems = [
@@ -56,24 +33,24 @@ const tabItems = [
 	<div style="display: flex; flex-direction: column; gap: 2rem">
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<!-- <Tabs closable>
+			<Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
 				<TabItem text="Tab 2" value="t2" />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
 				<template #panel:t1><p>Content 1</p></template>
 				<template #panel:t2><p>Content 2</p></template>
 				<template #panel:t3><p>Content 3</p></template>
-			</Tabs> -->
+			</Tabs>
 		</div>
 
-		<!-- <section>
+		<section>
 			<h2>Вариант 1: программный (через instance)</h2>
-			<Tabs :ctrl="tabs" :cn="collection">
+			<Tabs :ctrl="tabs" :engine="collection">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
 				<template #panel:tab2><p>Содержимое Tab 2</p></template>
 				<template #panel:tab3><p>Содержимое Tab 3</p></template>
 			</Tabs>
-		</section> -->
+		</section>
 
 		<section>
 			<h2>Вариант 2: prop items</h2>

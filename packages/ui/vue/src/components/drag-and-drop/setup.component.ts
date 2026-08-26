@@ -10,7 +10,7 @@ export default {
 	extends: BaseDragAndDrop,
 	setup(props: TBaseComponentProps<IDragAndDropProps>, { emit }: any) {
 		const adapter = createAdapterContext(DragAndDropDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		}).use(TDragAndDropExtension, { elevator: VueElevatorFactory })
 

@@ -10,7 +10,7 @@ export default {
 	extends: BaseComponentView,
 	setup(props: TBaseComponentProps<IComponentViewProps, IComponentView>, { emit }: any) {
 		const adapter = createAdapterContext(ComponentViewDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 

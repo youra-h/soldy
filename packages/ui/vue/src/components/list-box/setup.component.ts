@@ -10,7 +10,7 @@ export default {
 	extends: BaseListBox,
 	setup(props: TBaseComponentProps<IListBoxProps, IListBox>, { emit }: any) {
 		const adapter = createAdapterContext(ListBoxDescriptor, {
-			ctrl: props.ctrl ? toRaw(props.ctrl) : undefined,
+			ctrl: toRaw(props.ctrl),
 			props,
 		})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })

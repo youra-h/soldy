@@ -13,6 +13,8 @@ import type { ICollectionDescriptor } from '@soldy/setup'
 export interface ICollectionFactoryExtensionOptions {
 	descriptor: ICollectionDescriptor
 	elevator: TElevatorFactory
+	/** Готовая коллекция (pass-through из props.engine). Если задана — используется вместо создания новой. */
+	engine?: any
 }
 
 export class TCollectionFactoryExtension {
@@ -22,10 +24,10 @@ export class TCollectionFactoryExtension {
 	readonly descriptor: ICollectionDescriptor
 
 	constructor(context: IAdapterContext, options: ICollectionFactoryExtensionOptions) {
-		const { descriptor, elevator } = options
+		const { descriptor, elevator, engine } = options
 
 		this.descriptor = descriptor
-		this.collection = descriptor.create(context.instance)
+		this.collection = engine ?? descriptor.create(context.instance)
 
 		// Передаём коллекцию дочерним элементам через элеватор
 		elevator(ITEM_CONTEXT_ELEVATOR).down(this.collection)
