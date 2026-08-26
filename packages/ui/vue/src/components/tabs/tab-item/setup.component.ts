@@ -10,7 +10,7 @@ import {
 import type { ITabItemProps, ITabItem, TTabsCollectionExtensions } from '@soldy/core'
 import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import BaseTabItem from './tab-item.component'
+import BaseTabItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
 
 export default {
