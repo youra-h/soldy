@@ -8,6 +8,11 @@ import {
 	TUniqueExtension,
 	TMetaExtension,
 } from '../../../base/collection'
+import type {
+	ICollectionProps,
+	IBatchCollectionProps,
+	IActivationCollectionItemProps,
+} from '../../../base/collection'
 import { TTabsExtension } from './extensions'
 import type { ITabs } from '../types'
 import type { ITabItem } from '../tab-item/types'
@@ -24,3 +29,17 @@ export type TTabsCollectionExtensions = {
 }
 
 export type TTabsCollection = TCollection<ITabItem, TTabsCollectionExtensions>
+
+/**
+ * Owner-level props коллекции Tabs.
+ * Объединяет pass-through engine + batch (items, trackBy).
+ */
+export interface ITabsCollectionProps<TItem = ITabItem>
+	extends ICollectionProps<TTabsCollection>,
+		IBatchCollectionProps<TItem> {}
+
+/**
+ * Item-level props элемента Tabs.
+ * Объединяет activation (active) + потенциальные item-расширения.
+ */
+export interface ITabsCollectionItemProps extends IActivationCollectionItemProps {}

@@ -16,3 +16,9 @@ export interface IActivationItemExtension<TItem extends object = any> extends II
 	/** Активен ли элемент. При установке вызывает activate/deactivate на родителе. */
 	active: boolean
 }
+
+/**
+ * Item-level props элемента от activation-расширения. Зеркало ActivationItemExtensionContribution.
+ * Выводится из контракта адаптера — поля совпадают, но опциональны.
+ */
+export type IActivationCollectionItemProps = Partial<Pick<IActivationItemExtension, 'active'>>

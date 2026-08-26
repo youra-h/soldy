@@ -4,6 +4,12 @@ import type { ISelectionItemExtension } from './item/types'
 
 export type TSelectionMode = 'none' | 'single' | 'multiple'
 
+/** Owner-level props коллекции от selection-расширения. Зеркало SelectionExtensionContribution. */
+export interface ISelectionCollectionProps {
+	/** Режим выделения. */
+	mode?: TSelectionMode
+}
+
 export type TSelectionEvents<TItem> = {
 	'change:selection': (items: TItem[]) => void
 	'change:mode': (value: TSelectionMode) => void

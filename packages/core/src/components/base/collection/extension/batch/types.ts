@@ -1,11 +1,19 @@
+import type { TReadonlyEngineArray } from '../../types'
+
+/** Owner-level props коллекции от batch-расширения. Зеркало BatchExtensionContribution. */
+export interface IBatchCollectionProps<TItem = any> {
+	/** Данные для наполнения коллекции. */
+	items?: TItem[]
+	/** Функция идентификации элемента для патчинга. */
+	trackBy?: (item: TItem) => any
+}
+
 export type TBatchEvents<T> = {
 	'items:added': (items: T[]) => void
 	'items:removed': (items: T[]) => void
 	'change:trackBy': (fn?: (item: T) => any) => void
 	'change:items': (items: T[]) => void
 }
-
-import type { TReadonlyEngineArray } from '../../types'
 
 export interface IBatchExtension<TItem extends object = any> {
 	trackBy?: (item: TItem) => any

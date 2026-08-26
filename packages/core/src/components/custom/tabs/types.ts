@@ -1,5 +1,6 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
 import type { TEngineEvents } from '../../base/collection'
+import type { ITabsCollectionProps } from './collection/types'
 import type { ITabItem } from './tab-item/types'
 
 export type TTabsOrientation = 'horizontal' | 'vertical'
@@ -39,7 +40,9 @@ export type TTabsEvents = TControlEvents &
 		// 'change:selection': (items: ITabItem[]) => void
 	}
 
-export interface ITabsProps extends IControlProps {
+export interface ITabsProps
+	extends IControlProps,
+		ITabsCollectionProps<ITabItem> {
 	/** Ориентация табов */
 	orientation?: TTabsOrientation
 	/** Выравнивание табов */

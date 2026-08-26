@@ -6,6 +6,7 @@ import type {
 } from '../../../base/value-control'
 import type { IStateUnit, TValuePayload } from '../../../../common'
 import type { IComponentViewOptions } from '../../../base/component-view'
+import type { ITabsCollectionItemProps } from '../collection/types'
 
 export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
@@ -14,7 +15,9 @@ export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & 
 	'change:closable': (value: boolean | undefined) => void
 }
 
-export interface ITabItemProps extends IValueControlProps<string | number> {
+export interface ITabItemProps
+	extends IValueControlProps<string | number>,
+		ITabsCollectionItemProps {
 	/** Текст таба */
 	text?: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */

@@ -17,3 +17,9 @@ export interface ISelectionItemExtension<TItem extends object = any>
 	/** Переключить выбор элемента. */
 	toggle(): void
 }
+
+/**
+ * Item-level props элемента от selection-расширения. Зеркало SelectionItemExtensionContribution.
+ * Выводится из контракта адаптера — поля совпадают, но опциональны.
+ */
+export type ISelectionCollectionItemProps = Partial<Pick<ISelectionItemExtension, 'selected'>>
