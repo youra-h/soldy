@@ -122,3 +122,12 @@ export interface ICollectionCore<TItem, TExtensions extends Record<string, any>>
 export interface ICollectionProps<TCollection = unknown> {
 	engine?: TCollection
 }
+
+/**
+ * Сырой источник элемента коллекции: props + опциональная meta `_`.
+ * Используется для `items` — состояния (active, selected) передаются через `_.{state}`.
+ */
+export type TCollectionItemSource<TItemProps = any, TMeta = Record<string, any>> =
+	Partial<TItemProps> & {
+		_?: TMeta
+	}

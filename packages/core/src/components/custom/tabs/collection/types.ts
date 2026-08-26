@@ -16,6 +16,7 @@ import type {
 import { TTabsExtension } from './extensions'
 import type { ITabs } from '../types'
 import type { ITabItem } from '../tab-item/types'
+import type { ITabItemProps } from '../tab-item/types'
 
 export type TTabsCollectionExtensions = {
 	factory: TFactoryExtension<ITabItem>
@@ -34,9 +35,9 @@ export type TTabsCollection = TCollection<ITabItem, TTabsCollectionExtensions>
  * Owner-level props коллекции Tabs.
  * Объединяет pass-through engine + batch (items, trackBy).
  */
-export interface ITabsCollectionProps<TItem = ITabItem>
+export interface ITabsCollectionProps<TItemProps = ITabItemProps, TItem = ITabItem>
 	extends ICollectionProps<TTabsCollection>,
-		IBatchCollectionProps<TItem> {}
+		IBatchCollectionProps<TItemProps, TItem> {}
 
 /**
  * Item-level props элемента Tabs.
