@@ -1,5 +1,7 @@
 export { ElementPluginDescriptor } from './element.plugin'
 export { ReadyPluginDescriptor } from './ready.plugin'
+export { CollectionBundlesPluginDescriptor } from './collection-bundles.plugin'
+export { CollectionElementsPluginDescriptor } from './collection-elements.plugin'
 export { FrameLayoutPluginDescriptor } from './frame-layout.plugin'
 export { IconLayoutPluginDescriptor } from './icon-layout.plugin'
 export { InputPluginDescriptor } from './input.plugin'

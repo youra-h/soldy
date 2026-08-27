@@ -7,21 +7,27 @@
  * Добавляет: orientation, alignment, position, view, closable + плагины Tabs.
  */
 
-import { defineComponent, definePlugin } from '../../base'
+import { defineComponent } from '../../base'
 import { TTabs, type ITabItem } from '@soldy/core'
 // import {
 //     TTabsLayoutPlugin,
 //     TTabsActiveTabPlugin,
 //     TTabsViewPlugin,
 //     TDragPlugin,
-//     TTabsCollectionPlugin,
-//     TCollectionItemPlugins,
-//     TElementAccumulationPlugin,
-//     TInstanceAccumulationPlugin,
 // } from '@soldy/plugins'
 
-import { TabsContribution, CollectionContribution, BatchExtensionContribution, ActivationExtensionContribution, OrderExtensionContribution } from '../../../contributions'
+import {
+	TabsContribution,
+	CollectionContribution,
+	BatchExtensionContribution,
+	ActivationExtensionContribution,
+	OrderExtensionContribution,
+} from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
+import {
+	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
+} from '../../plugins'
 
 export const TabsDescriptor = defineComponent({
 	ctor: TTabs,
@@ -31,11 +37,9 @@ export const TabsDescriptor = defineComponent({
 	contribution: TabsContribution,
 
 	plugins: [
-		// // Коллекция и накопление
-		// definePlugin({ ctor: TTabsCollectionPlugin }),
-		// definePlugin({ ctor: TCollectionItemPlugins }),
-		// definePlugin({ ctor: TElementAccumulationPlugin }),
-		// definePlugin({ ctor: TInstanceAccumulationPlugin }),
+		// Коллекция: реестр bundles + доступ к DOM-элементам
+		CollectionBundlesPluginDescriptor,
+		CollectionElementsPluginDescriptor,
 		// // Tabs-специфичные
 		// definePlugin({ ctor: TTabsLayoutPlugin }),
 		// definePlugin({ ctor: TTabsActiveTabPlugin }),

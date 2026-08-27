@@ -21,11 +21,13 @@ export class TCollectionItemExtension {
 		const { elevator } = options
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 
-		const register = itemElevator.up() as ((item: any) => () => void) | undefined
+		const register = itemElevator.up() as
+			| ((item: any, bundle: any) => () => void)
+			| undefined
 
 		if (!register) return
 
-		const cleanup = register(context.instance)
+		const cleanup = register(context.instance, context.bundle)
 
 		context.events.on('destroy', cleanup)
 	}
