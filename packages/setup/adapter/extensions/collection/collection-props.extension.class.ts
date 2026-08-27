@@ -7,7 +7,7 @@
  *
  * Использование:
  *   adapter.use(TCollectionFactoryExtension, { descriptor, elevator })
- *          .use(TCollectionPropsExtension, { init: true })
+ *          .use(TCollectionPropsExtension)
  *
  * Регистрируется ПОСЛЕ TCollectionFactoryExtension, чтобы коллекция уже существовала.
  */

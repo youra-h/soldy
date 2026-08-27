@@ -1,26 +1,45 @@
 /**
- * TCollectionExtension — предоставляет детям функцию регистрации через COLLECTION_ELEVATOR.
+ * TCollectionExtension — единая точка входа для настройки коллекции.
  *
- * Предполагает: TCollectionFactoryExtension должен быть зарегистрирован до вызова .use(TCollectionExtension).
+ * Композиция из трёх шагов:
+ *   1. создание коллекции (TCollectionFactoryExtension);
+ *   2. применение owner-пропсов (TCollectionPropsExtension);
+ *   3. привязка коллекции к реестру bundles + регистрация item-ов через COLLECTION_ELEVATOR.
+ *
+ * `descriptor` опционален: если он не задан, шаги 1-2 пропускаются
+ * (коллекция должна быть создана ранее — например, pass-through через `engine`).
  *
  * Использование:
- *   adapter.use(TCollectionFactoryExtension, { descriptor, elevator })
- *          .use(TCollectionExtension, { elevator })
+ *   adapter.use(TCollectionExtension, { descriptor, elevator, engine? })
  */
 
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ELEVATOR } from '../../elevator/keys'
 import { TCollectionFactoryExtension } from './collection-factory.extension.class'
+import { TCollectionPropsExtension } from './collection-props.extension.class'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
+import type { ICollectionDescriptor } from '@soldy/setup'
 
 export interface ICollectionExtensionOptions {
+	/** Дескриптор коллекции. Если задан — коллекция создаётся и настраивается. */
+	descriptor?: ICollectionDescriptor
 	elevator: TElevatorFactory
+	/** Готовая коллекция (pass-through из props.engine). */
+	engine?: any
 }
 
 export class TCollectionExtension {
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
-		const { elevator } = options
+		const { descriptor, elevator, engine } = options
+
+		// 1-2. Создание коллекции и применение owner-пропсов.
+		if (descriptor) {
+			context.use(TCollectionFactoryExtension, { descriptor, elevator, engine })
+			context.use(TCollectionPropsExtension)
+		}
+
+		// 3. Привязка коллекции к реестру bundles + регистрация элементов.
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 
 		const collection = context.get(TCollectionFactoryExtension)?.collection

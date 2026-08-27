@@ -2,8 +2,6 @@ import { toRaw } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
-	TCollectionFactoryExtension,
-	TCollectionPropsExtension,
 	TDragAndDropCollectionExtension,
 	TabsDescriptor,
 	TabsCollectionDescriptor,
@@ -21,13 +19,11 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionFactoryExtension, {
+			.use(TCollectionExtension, {
 				descriptor: TabsCollectionDescriptor,
 				engine: toRaw(props.engine),
 				elevator: VueElevatorFactory,
 			})
-			.use(TCollectionPropsExtension)
-			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
 		return {

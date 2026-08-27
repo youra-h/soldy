@@ -2,8 +2,6 @@ import { toRaw } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionItemExtension,
-	TCollectionItemContextExtension,
-	TCollectionItemMetaExtension,
 	TabItemDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
@@ -22,12 +20,7 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionItemContextExtension, {
-				descriptor: TabsCollectionDescriptor,
-				elevator: VueElevatorFactory,
-			})
-			.use(TCollectionItemExtension, { elevator: VueElevatorFactory })
-			.use(TCollectionItemMetaExtension, {
+			.use(TCollectionItemExtension, {
 				descriptor: TabsCollectionDescriptor,
 				elevator: VueElevatorFactory,
 			})
