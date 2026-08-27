@@ -1,15 +1,7 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
 import type { TCollection } from '@soldy/core'
-
-/** События реестра bundles элементов коллекции. */
-export type TBundlesEvents = {
-	'bundle:registered': (payload: {
-		uid: string | number
-		bundle: IPluginBundle
-	}) => void
-	'bundle:unregistered': (payload: { uid: string | number }) => void
-}
+import type { TBundlesEvents } from './types'
 
 /**
  * TCollectionBundlesPlugin — реестр plugin-bundles элементов коллекции.
@@ -48,6 +40,9 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 		collection.engine.events.on('reset', () => {
 			this._bundles.clear()
 		})
+
+		// Оповещаем плагины о том, что коллекция привязана.
+		this.events.emit('collection:bound', collection)
 	}
 
 	/** Ссылка на коллекцию, к которой привязан реестр. */
