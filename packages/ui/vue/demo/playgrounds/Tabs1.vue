@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { TTabs, TTabsCollection, TabsFactory } from '@soldy/core'
 import type { ITabItem } from '@soldy/core'
-import { Tabs, TabItem } from '@soldy/ui-vue'
+import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
@@ -42,6 +42,20 @@ const tabItems = [
 				<template #panel:t3><p>Content 3</p></template>
 			</Tabs>
 		</div>
+
+		<section>
+			<h2>Drag-and-drop</h2>
+			<DragAndDrop>
+				<Tabs>
+					<TabItem text="Tab 1" value="t1" active />
+					<TabItem text="Tab 2" value="t2" />
+					<TabItem text="Tab 3" value="t3" />
+					<template #panel:t1><p>Content 1</p></template>
+					<template #panel:t2><p>Content 2</p></template>
+					<template #panel:t3><p>Content 3</p></template>
+				</Tabs>
+			</DragAndDrop>
+		</section>
 
 		<section>
 			<h2>Вариант 1: программный (через instance)</h2>

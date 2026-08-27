@@ -15,6 +15,7 @@ import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
+	DragPluginDescriptor,
 	TabsActiveTabPluginDescriptor,
 	TabsLayoutPluginDescriptor,
 	TabsViewPluginDescriptor,
@@ -35,5 +36,7 @@ export const TabsDescriptor = defineComponent({
 		TabsLayoutPluginDescriptor,
 		TabsActiveTabPluginDescriptor,
 		TabsViewPluginDescriptor,
+		// Drag-and-drop
+		DragPluginDescriptor,
 	],
 })

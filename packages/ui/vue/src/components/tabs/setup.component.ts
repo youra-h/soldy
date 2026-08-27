@@ -4,6 +4,7 @@ import {
 	TCollectionExtension,
 	TCollectionFactoryExtension,
 	TCollectionPropsExtension,
+	TDragAndDropCollectionExtension,
 	TabsDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
@@ -27,6 +28,7 @@ export default {
 			})
 			.use(TCollectionPropsExtension)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
 		return {
 			...useVue<ITabsProps, ITabs>(adapter, props, emit),
