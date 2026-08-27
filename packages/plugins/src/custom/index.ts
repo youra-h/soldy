@@ -1,4 +1,5 @@
 export * from './collection'
+export * from './drag-and-drop'
 export * from './element'
 export * from './frame'
 export * from './icon'

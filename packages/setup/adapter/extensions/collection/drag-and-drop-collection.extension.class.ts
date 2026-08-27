@@ -7,27 +7,30 @@
  *     .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
  */
 
-// import { TDragPlugin } from '@soldy/plugins'
+import { TDragPlugin } from '@soldy/plugins'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { DRAG_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import { TCollectionFactoryExtension } from './collection-factory.extension.class'
 
 export interface IDragAndDropCollectionExtensionOptions {
 	elevator: TElevatorFactory
 }
 
 export class TDragAndDropCollectionExtension {
-	static readonly key = Symbol('TDragAndDropCollectionExtension')
-
 	constructor(context: IAdapterContext, options: IDragAndDropCollectionExtensionOptions) {
 		const { elevator } = options
-		const { instance, bundle } = context
+		const { bundle } = context
 
-		const dragElevator = elevator(DRAG_CONTEXT_ELEVATOR)
+		const dragElevator = elevator<boolean>(DRAG_CONTEXT_ELEVATOR)
 		const dragContext = dragElevator.up()
 
-		// if (dragContext) {
-		// 	bundle.get(TDragPlugin)?.activate(instance.collection)
-		// }
+		if (!dragContext) return
+
+		const collection = context.get(TCollectionFactoryExtension)?.collection
+
+		if (collection) {
+			bundle.get(TDragPlugin)?.activate(collection)
+		}
 	}
 }

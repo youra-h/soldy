@@ -17,8 +17,6 @@ import { TCollectionFactoryExtension } from './collection-factory.extension.clas
 import { collectOwnerProps } from '../../../descriptors/base/collect-props'
 
 export class TCollectionPropsExtension {
-	static readonly key = Symbol('TCollectionPropsExtension')
-
 	/** Собранные owner-level пропсы (items, trackBy, ...). */
 	readonly ownerProps: Record<string, any>
 

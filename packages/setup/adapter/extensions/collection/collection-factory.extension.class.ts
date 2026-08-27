@@ -18,8 +18,6 @@ export interface ICollectionFactoryExtensionOptions {
 }
 
 export class TCollectionFactoryExtension {
-	static readonly key = Symbol('TCollectionFactoryExtension')
-
 	readonly collection: any
 	readonly descriptor: ICollectionDescriptor
 

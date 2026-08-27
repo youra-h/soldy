@@ -5,8 +5,6 @@ import { TElementPlugin } from '@soldy/plugins'
 import type { IAdapterContext } from '../context'
 
 export class TPluginsBindingExtension {
-	static readonly key = Symbol('TPluginsBindingExtension')
-
 	private _elementPlugin: TElementPlugin | undefined
 
 	constructor(context: IAdapterContext) {

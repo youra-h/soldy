@@ -21,8 +21,6 @@ export interface ICollectionItemMetaExtensionOptions {
 }
 
 export class TCollectionItemMetaExtension {
-	static readonly key = Symbol('TCollectionItemMetaExtension')
-
 	constructor(context: IAdapterContext, options: ICollectionItemMetaExtensionOptions) {
 		const { descriptor, elevator } = options
 

@@ -19,8 +19,6 @@ export interface ICollectionExtensionOptions {
 }
 
 export class TCollectionExtension {
-	static readonly key = Symbol('TCollectionExtension')
-
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
 		const { elevator } = options
 		const itemElevator = elevator(COLLECTION_ELEVATOR)

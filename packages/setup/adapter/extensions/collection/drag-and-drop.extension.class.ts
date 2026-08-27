@@ -17,8 +17,6 @@ export interface IDragAndDropExtensionOptions {
 }
 
 export class TDragAndDropExtension {
-	static readonly key = Symbol('TDragAndDropExtension')
-
 	constructor(context: IAdapterContext, options: IDragAndDropExtensionOptions) {
 		const { elevator } = options
 

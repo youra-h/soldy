@@ -4,7 +4,7 @@
  * Registry-паттерн: расширения регистрируются через .use(Ctor, opts?) и извлекаются через .get(Ctor).
  * Жизненный цикл управляется через TEvented — destroy() эмитит событие 'destroy'.
  *
- * Идентичен архитектуре плагинов: .use() / .get() / статический key.
+ * Идентичен архитектуре плагинов: .use() / .get() по классу.
  */
 
 import { TEvented } from '@soldy/core'
@@ -29,7 +29,7 @@ export function createAdapterContext(
 	const accessor = descriptor.createAccessor(instance, bundle)
 
 	const events = new TEvented<TAdapterEvents>()
-	const extensionsMap = new Map<symbol, any>()
+	const extensionsMap = new Map<TAnyExtensionCtor, any>()
 
 	const context: IAdapterContext = {
 		instance,
@@ -41,14 +41,13 @@ export function createAdapterContext(
 		use(ExtensionCtor: any, opts?: any) {
 			const ext = new ExtensionCtor(this, opts)
 
-			extensionsMap.set(ExtensionCtor.key, ext)
+			extensionsMap.set(ExtensionCtor, ext)
 
 			return this
 		},
 
-		get(ctorOrKey: any) {
-			const key = typeof ctorOrKey === 'symbol' ? ctorOrKey : ctorOrKey.key
-			return extensionsMap.get(key)
+		get(ExtensionCtor: any) {
+			return extensionsMap.get(ExtensionCtor)
 		},
 
 		destroy() {

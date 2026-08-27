@@ -21,8 +21,6 @@ export interface ICollectionItemContextExtensionOptions {
 }
 
 export class TCollectionItemContextExtension<TItem extends object = any, TExtensions = any> {
-	static readonly key = Symbol('TCollectionItemContextExtension')
-
 	readonly context: any
 	readonly descriptor: ICollectionDescriptor
 
