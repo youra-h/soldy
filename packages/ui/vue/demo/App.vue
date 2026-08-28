@@ -10,7 +10,7 @@ import Button from './playgrounds/Button.vue'
 import CheckBox from './playgrounds/CheckBox.vue'
 import Switch from './playgrounds/Switch.vue'
 import Input from './playgrounds/Input.vue'
-// import Tabs from './playgrounds/Tabs.vue'
+import Tabs from './playgrounds/Tabs.vue'
 import Tabs1 from './playgrounds/Tabs1.vue'
 // import Collapse from './playgrounds/Collapse.vue'
 // import ListBox from './playgrounds/ListBox.vue'
@@ -37,7 +37,7 @@ const playgrounds = {
 	'check-box': { component: markRaw(CheckBox), label: 'CheckBox' },
 	switch: { component: markRaw(Switch), label: 'Switch' },
 	input: { component: markRaw(Input), label: 'Input' },
-	tabs: { component: markRaw(Tabs1), label: 'Tabs1' },
+	tabs: { component: markRaw(Tabs), label: 'Tabs' },
 	// collapse: { component: markRaw(Collapse), label: 'Collapse' },
 	// 'list-box': { component: markRaw(ListBox), label: 'ListBox' },
 	// 'list-box-test': { component: markRaw(ListBoxTest), label: 'ListBox test' },

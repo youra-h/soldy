@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TTabs } from '@soldy/core'
+import { TTabs, TabsFactory } from '@soldy/core'
 import { Tabs, TabItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
@@ -12,13 +12,15 @@ defineProps<Props>()
 
 const APPEARANCES = ['line', 'contained', 'outline'] as const
 
-const tabsInstance = new TTabs({
-	items: [
-		{ text: 'Users', value: 'users', active: true },
-		{ text: 'Settings', value: 'settings' },
-		{ text: 'Profile', value: 'profile' },
-	],
-})
+const tabsInstance = new TTabs()
+const collection = TabsFactory(tabsInstance)
+const { plain, activation } = collection.extensions
+
+const usersTab = plain.push({ text: 'Users', value: 'users' })
+plain.push({ text: 'Settings', value: 'settings' })
+plain.push({ text: 'Profile', value: 'profile' })
+
+activation.activate(usersTab)
 </script>
 
 <template>
@@ -74,15 +76,15 @@ const tabsInstance = new TTabs({
 		<!-- #item slot — кастомизация через scoped slot -->
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Custom #item slot</h4>
-			<Tabs :instance="tabsInstance" view="line" :size="size" :variant="variant">
-				<template #item="{ ctrl, text, value }">
-					<TabItem :ctrl="ctrl">
-						<template #leading>
-							<span v-if="value === 'users'">👤</span>
-							<span v-else-if="value === 'settings'">⚙️</span>
-							<span v-else>📋</span>
-						</template>
-					</TabItem>
+			<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
+				<template #item:users:leading>
+					<span>👤</span>
+				</template>
+				<template #item:settings:leading>
+					<span>⚙️</span>
+				</template>
+				<template #item:profile:leading>
+					<span>📋</span>
 				</template>
 				<template #panel:users><p>Users panel</p></template>
 				<template #panel:settings><p>Settings panel</p></template>
@@ -155,12 +157,12 @@ const tabsInstance = new TTabs({
 			<!-- Per-item slots via Tabs: item:value:leading / item:value / item:value:trailing -->
 			<div class="tabs-slots-demo__section">
 				<h4 class="tabs-slots-demo__subtitle">Per-item slots via Tabs</h4>
-				<Tabs :ctrl="tabsInstance" view="line" :size="size" :variant="variant">
+				<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
 					<template #item:users:leading>
 						<span>👤</span>
 					</template>
 					<template #item:settings="{ item }">
-						<span :class="{ 'font-bold': item.active }">{{ item.text }}</span>
+						<span class="font-bold">{{ item.text }}</span>
 					</template>
 					<template #item:profile:trailing>
 						<span class="tabs-slots-demo__badge">new</span>
@@ -174,11 +176,11 @@ const tabsInstance = new TTabs({
 			<!-- #item catch-all -->
 			<div class="tabs-slots-demo__section">
 				<h4 class="tabs-slots-demo__subtitle">Custom #item slot (catch-all)</h4>
-				<Tabs :ctrl="tabsInstance" view="line" :size="size" :variant="variant">
+				<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
 					<template #item="{ item }">
 						<div class="flex items-center gap-2">
-							<span>{{ item.active ? '🔵' : '⚪' }}</span>
-							<span :class="{ 'font-bold': item.active }">{{ item.text }}</span>
+							<span>⚪</span>
+							<span>{{ item.text }}</span>
 						</div>
 					</template>
 					<template #panel:users><p>Users panel</p></template>

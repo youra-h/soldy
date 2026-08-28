@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { Tabs, emitsTabs } from '@soldy/ui-vue'
-import { TTabs } from '@soldy/core'
+import { TTabs, TabsFactory } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -56,9 +56,14 @@ const instance = new TTabs({
 	closable: props.closable ?? false,
 })
 
-instance.collection.add({ text: 'Tab 1', value: 'tab1', active: true })
-instance.collection.add({ text: 'Tab 2', value: 'tab2' })
-instance.collection.add({ text: 'Tab 3', value: 'tab3' })
+const collection = TabsFactory(instance)
+const { plain, activation } = collection.extensions
+
+const tab1 = plain.push({ text: 'Tab 1', value: 'tab1' })
+plain.push({ text: 'Tab 2', value: 'tab2' })
+plain.push({ text: 'Tab 3', value: 'tab3' })
+
+activation.activate(tab1)
 
 const { handlers, logEvent } = useEventLogger(emit, emitsTabs)
 useCoreEventLogger(instance, logEvent, emitsTabs)
@@ -80,7 +85,7 @@ useSyncPropsToInstance(props, instance, [
 watch(
 	[() => props.tabDisabled, () => props.tabClosable, () => props.tabApplyTarget],
 	() => {
-		instance.collection.items.forEach((item, index) => {
+		collection.engine.forEach((item, index) => {
 			const apply = props.tabApplyTarget === 'all' || index === 0
 			item.disabled = apply ? !!props.tabDisabled : false
 			item.closable = apply ? props.tabClosable : undefined
@@ -92,7 +97,7 @@ watch(
 
 <template>
 	<PanelDemo info="Instance-based demo">
-		<Tabs :ctrl="instance" v-bind="handlers">
+		<Tabs :ctrl="instance" :engine="collection" v-bind="handlers">
 			<template #panel:tab1><p>Content for Tab 1</p></template>
 			<template #panel:tab2><p>Content for Tab 2</p></template>
 			<template #panel:tab3><p>Content for Tab 3</p></template>
