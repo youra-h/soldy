@@ -40,9 +40,8 @@ export type TTabsEvents = TControlEvents &
 		// 'change:selection': (items: ITabItem[]) => void
 	}
 
-export interface ITabsProps
-	extends IControlProps,
-		ITabsCollectionProps<ITabItemProps, ITabItem> {
+/** Пропсы самого компонента Tabs (без коллекционной части). */
+export interface ITabsComponentProps extends IControlProps {
 	/** Ориентация табов */
 	orientation?: TTabsOrientation
 	/** Выравнивание табов */
@@ -54,6 +53,11 @@ export interface ITabsProps
 	/** Разрешить закрытие табов (по умолчанию false) */
 	closable?: boolean
 }
+
+/** Полный набор пропсов Tabs: компонент + коллекция (items, engine, trackBy). */
+export interface ITabsProps
+	extends ITabsComponentProps,
+		ITabsCollectionProps<ITabItemProps, ITabItem> {}
 
 export type TTabsStates = TControlStates
 
