@@ -40,6 +40,7 @@ export interface ITabsExtensionOptions<
  */
 export type TTabsExtensionEvents = {
 	'item:close': (item: ITabItem) => void
+	'change:closable': (value: boolean) => void
 }
 
 export type TTabsExtensions<TItem extends ITabItem> = {

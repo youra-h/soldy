@@ -86,6 +86,10 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 				item.variant = payload.newValue
 			})
 		})
+
+		// Глобальный closable: пробрасываем change:closable в item-адаптеры
+		// (TTabItemExtension резолвит closable из item ?? owner).
+		this.events.relay(this._owner.events, ['change:closable'])
 	}
 
 	/**
