@@ -47,7 +47,10 @@ export class TBatchExtension<TItem extends object>
 		if (!items.length) return
 
 		this._ctx.batch(() => {
-			items.forEach((item) => this._ctx.execute(new TInsertCommand(item)))
+			items.forEach((item) => {
+				// Добавляем в конец, чтобы сохранить порядок items.
+				this._ctx.execute(new TInsertCommand(item, this._ctx.engine.length))
+			})
 		})
 
 		this.events.emit('items:added', items)
@@ -104,8 +107,8 @@ export class TBatchExtension<TItem extends object>
 					this._ctx.execute(new TUpdateCommand(existing, source))
 					matchedKeys.add(key)
 				} else {
-					// Добавляем новый элемент
-					this._ctx.execute(new TInsertCommand(source))
+					// Добавляем новый элемент в конец (сохраняем порядок).
+					this._ctx.execute(new TInsertCommand(source, this._ctx.engine.length))
 				}
 			})
 

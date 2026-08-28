@@ -22,8 +22,8 @@ describe('TBatchExtension', () => {
 		col.extensions.batch.set(items)
 
 		expect(col.engine.length).toBe(2)
-		// insert по умолчанию в index 0 → порядок обратный
-		expect([...col.engine]).toEqual([items[1], items[0]])
+		// порядок сохраняется (как в items)
+		expect([...col.engine]).toEqual(items)
 	})
 
 	it('set: эмитит items:added с массивом элементов', () => {

@@ -52,8 +52,10 @@ export class TCollectionExtension {
 		}
 
 		itemElevator.down((instance: any, bundle: any) => {
-			// 1. Вставляем элемент в коллекцию (эмитится item:added).
-			collection?.extensions?.plain?.insert(instance)
+			// 1. Добавляем элемент в конец коллекции (эмитится item:added).
+			//    push (а не insert) сохраняет порядок DOM: item-ы приходят через
+			//    elevator по мере монтирования, поэтому добавляем их последовательно.
+			collection?.extensions?.plain?.push(instance)
 
 			// 2. Регистрируем bundle элемента (ключ — uid элемента).
 			bundles?.register(bundle, instance)
