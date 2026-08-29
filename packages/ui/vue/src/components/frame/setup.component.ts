@@ -9,7 +9,7 @@ export default {
 	name: '_Frame',
 	extends: BaseFrame,
 	setup(props: TBaseComponentProps<IFrameProps, IFrame>, { emit }: any) {
-		const adapter = createAdapterContext(FrameDescriptor, {
+		const adapter = createAdapterContext(FrameDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})

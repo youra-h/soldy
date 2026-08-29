@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const ComponentContribution: IContribution = {
+export const ComponentContribution = (): IContribution => ({
 	props: [
 		{ name: 'rendered', type: Boolean, triggers: ['change:rendered'] },
 		{ name: 'visible', type: Boolean, triggers: ['change:visible'] },
@@ -12,4 +12,4 @@ export const ComponentContribution: IContribution = {
 		},
 	],
 	events: ['show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after'],
-}
+})

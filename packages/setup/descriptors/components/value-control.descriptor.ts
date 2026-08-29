@@ -10,10 +10,11 @@ import { TValueControl } from '@soldy/core'
 import { ValueControlContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
-export const ValueControlDescriptor = defineComponent({
-	ctor: TValueControl,
+export const ValueControlDescriptor = () =>
+	defineComponent({
+		ctor: TValueControl,
 
-	extends: ControlDescriptor,
+		extends: ControlDescriptor(),
 
-	contribution: ValueControlContribution,
-})
+		contribution: ValueControlContribution(),
+	})

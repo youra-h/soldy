@@ -11,12 +11,13 @@ import { SkeletonLayoutPluginDescriptor } from '../plugins'
 import { SkeletonContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const SkeletonDescriptor = defineComponent({
-	ctor: TSkeleton,
+export const SkeletonDescriptor = () =>
+	defineComponent({
+		ctor: TSkeleton,
 
-	extends: ComponentViewDescriptor,
+		extends: ComponentViewDescriptor(),
 
-	contribution: SkeletonContribution,
+		contribution: SkeletonContribution(),
 
-	plugins: [SkeletonLayoutPluginDescriptor],
-})
+		plugins: [SkeletonLayoutPluginDescriptor()],
+	})

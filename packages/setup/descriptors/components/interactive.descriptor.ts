@@ -10,10 +10,11 @@ import { TInteractive } from '@soldy/core'
 import { InteractiveContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const InteractiveDescriptor = defineComponent({
-	ctor: TInteractive,
+export const InteractiveDescriptor = () =>
+	defineComponent({
+		ctor: TInteractive,
 
-	extends: ComponentViewDescriptor,
+		extends: ComponentViewDescriptor(),
 
-	contribution: InteractiveContribution,
-})
+		contribution: InteractiveContribution(),
+	})

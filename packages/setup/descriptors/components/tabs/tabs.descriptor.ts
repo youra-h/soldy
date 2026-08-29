@@ -21,22 +21,23 @@ import {
 	TabsViewPluginDescriptor,
 } from '../../plugins'
 
-export const TabsDescriptor = defineComponent({
-	ctor: TTabs,
+export const TabsDescriptor = () =>
+	defineComponent({
+		ctor: TTabs,
 
-	extends: ControlDescriptor,
+		extends: ControlDescriptor(),
 
-	contribution: TabsContribution,
+		contribution: TabsContribution(),
 
-	plugins: [
-		// Коллекция: реестр bundles + доступ к DOM-элементам
-		CollectionBundlesPluginDescriptor,
-		CollectionElementsPluginDescriptor,
-		// Tabs-специфичные
-		TabsLayoutPluginDescriptor,
-		TabsActiveTabPluginDescriptor,
-		TabsViewPluginDescriptor,
-		// Drag-and-drop
-		DragPluginDescriptor,
-	],
-})
+		plugins: [
+			// Коллекция: реестр bundles + доступ к DOM-элементам
+			CollectionBundlesPluginDescriptor(),
+			CollectionElementsPluginDescriptor(),
+			// Tabs-специфичные
+			TabsLayoutPluginDescriptor(),
+			TabsActiveTabPluginDescriptor(),
+			TabsViewPluginDescriptor(),
+			// Drag-and-drop
+			DragPluginDescriptor(),
+		],
+	})

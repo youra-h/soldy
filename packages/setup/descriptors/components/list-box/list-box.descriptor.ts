@@ -16,25 +16,26 @@ import { TListBox } from '@soldy/core'
 import { ListBoxContribution } from '../../../contributions'
 import { ListDescriptor } from '../list'
 
-export const ListBoxDescriptor = defineComponent({
-	ctor: TListBox,
+export const ListBoxDescriptor = () =>
+	defineComponent({
+		ctor: TListBox,
 
-	extends: ListDescriptor,
+		extends: ListDescriptor(),
 
-	contribution: ListBoxContribution,
+		contribution: ListBoxContribution(),
 
-	plugins: [
-		// definePlugin({
-		// 	ctor: TListItemAccumulationPlugin,
-		// }),
-		// definePlugin({
-		// 	ctor: TListLayoutPlugin,
-		// }),
-		// definePlugin({
-		// 	ctor: TListKeyboardPlugin,
-		// }),
-		// definePlugin({
-		// 	ctor: TListScrollPlugin,
-		// }),
-	],
-})
+		plugins: [
+			// definePlugin({
+			// 	ctor: TListItemAccumulationPlugin,
+			// }),
+			// definePlugin({
+			// 	ctor: TListLayoutPlugin,
+			// }),
+			// definePlugin({
+			// 	ctor: TListKeyboardPlugin,
+			// }),
+			// definePlugin({
+			// 	ctor: TListScrollPlugin,
+			// }),
+		],
+	})

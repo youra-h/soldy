@@ -11,7 +11,7 @@ export default {
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
 	setup(props: TBaseComponentProps<IListItemProps, IListBoxItem>, { emit }: any) {
-		const adapter = createAdapterContext(ListBoxItemDescriptor, {
+		const adapter = createAdapterContext(ListBoxItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })

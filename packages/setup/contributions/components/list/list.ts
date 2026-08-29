@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const ListContribution: IContribution = {
+export const ListContribution = (): IContribution => ({
 	props: [
 		{ name: 'maxRows', type: Number, triggers: ['change:maxRows'] },
 		{ name: 'autoWidth', type: Boolean, triggers: ['change:autoWidth'] },
@@ -14,4 +14,4 @@ export const ListContribution: IContribution = {
 		'item:visible',
 		'item:present',
 	],
-}
+})

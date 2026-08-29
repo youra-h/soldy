@@ -14,14 +14,15 @@ import { defineCollection } from '../../base'
  * Конкретные коллекции наследуют через `defineCollection({ extends: CollectionDescriptor, ... })`
  * и добавляют свои специфичные расширения (factory, activation, tabs, selection, ...).
  */
-export const CollectionDescriptor = defineCollection({
-	contribution: CollectionContribution,
+export const CollectionDescriptor = () =>
+	defineCollection({
+		contribution: CollectionContribution(),
 
-	extensions: [
-		UniqueExtensionDescriptor,
-		MetaExtensionDescriptor,
-		OrderExtensionDescriptor,
-		PlainExtensionDescriptor,
-		BatchExtensionDescriptor,
-	],
-})
+		extensions: [
+			UniqueExtensionDescriptor(),
+			MetaExtensionDescriptor(),
+			OrderExtensionDescriptor(),
+			PlainExtensionDescriptor(),
+			BatchExtensionDescriptor(),
+		],
+	})

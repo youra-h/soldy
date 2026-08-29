@@ -5,10 +5,11 @@ import {
 } from './../../../../contributions'
 import { defineExtension } from '../../../base'
 
-export const ActivationExtensionDescriptor = defineExtension({
-	name: 'activation',
-	// namespace: 'activation',
-	ctor: TActivationExtension,
-	contribution: ActivationExtensionContribution,
-	itemContribution: ActivationItemExtensionContribution,
-})
+export const ActivationExtensionDescriptor = () =>
+	defineExtension({
+		name: 'activation',
+		// namespace: 'activation',
+		ctor: TActivationExtension,
+		contribution: ActivationExtensionContribution(),
+		itemContribution: ActivationItemExtensionContribution(),
+	})

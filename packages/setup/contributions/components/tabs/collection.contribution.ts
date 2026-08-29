@@ -1,10 +1,10 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const TabsExtensionContribution: IContribution = {
+export const TabsExtensionContribution = (): IContribution => ({
 	events: ['item:close'],
-}
+})
 
-export const TabsItemExtensionContribution: IContribution = {
+export const TabsItemExtensionContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'closable',
@@ -12,4 +12,4 @@ export const TabsItemExtensionContribution: IContribution = {
 			triggers: ['change:closable'],
 		},
 	],
-}
+})

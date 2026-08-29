@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const ListItemPluginContribution: IContribution = {
+export const ListItemPluginContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'highlighted',
@@ -8,4 +8,4 @@ export const ListItemPluginContribution: IContribution = {
 			triggers: ['change:highlighted'],
 		},
 	],
-}
+})

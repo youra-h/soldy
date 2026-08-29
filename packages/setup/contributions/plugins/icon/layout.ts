@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const IconLayoutContribution: IContribution = {
+export const IconLayoutContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'styles',
@@ -9,4 +9,4 @@ export const IconLayoutContribution: IContribution = {
 			triggers: ['change:styles'],
 		},
 	],
-}
+})

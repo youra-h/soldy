@@ -10,10 +10,11 @@ import { TDragAndDrop } from '@soldy/core'
 import { DragAndDropContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
-export const DragAndDropDescriptor = defineComponent({
-	ctor: TDragAndDrop,
+export const DragAndDropDescriptor = () =>
+	defineComponent({
+		ctor: TDragAndDrop,
 
-	extends: ComponentDescriptor,
+		extends: ComponentDescriptor(),
 
-	contribution: DragAndDropContribution,
-})
+		contribution: DragAndDropContribution(),
+	})

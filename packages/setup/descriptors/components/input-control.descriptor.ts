@@ -10,10 +10,11 @@ import { TInputControl } from '@soldy/core'
 import { InputControlContribution } from '../../contributions'
 import { ValueControlDescriptor } from './value-control.descriptor'
 
-export const InputControlDescriptor = defineComponent({
-	ctor: TInputControl,
+export const InputControlDescriptor = () =>
+	defineComponent({
+		ctor: TInputControl,
 
-	extends: ValueControlDescriptor,
+		extends: ValueControlDescriptor(),
 
-	contribution: InputControlContribution,
-})
+		contribution: InputControlContribution(),
+	})

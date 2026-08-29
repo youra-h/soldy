@@ -5,9 +5,9 @@ import {
 	default as BaseListItemCustom,
 } from './list-item-custom.component'
 
-export const emitsListItem: TEmits = useEmits(ListItemDescriptor) as unknown as TEmits
+export const emitsListItem: TEmits = useEmits(ListItemDescriptor()) as unknown as TEmits
 
-export const propsListItem: TProps = useProps(ListItemDescriptor) as TProps
+export const propsListItem: TProps = useProps(ListItemDescriptor()) as TProps
 
 export default {
 	name: 'BaseListItem',

@@ -2,7 +2,7 @@ import type { IContribution } from '@soldy/accessor'
 // import { defineType } from './../../../../defineType'
 
 /** activeItem на родительском уровне (Tabs, Collapse) */
-export const ActivationExtensionContribution: IContribution = {
+export const ActivationExtensionContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'activeItem',
@@ -13,9 +13,9 @@ export const ActivationExtensionContribution: IContribution = {
 		},
 	],
 	events: ['item:activated', 'item:deactivated'],
-}
+})
 
 /** active на уровне элемента (TabItem, CollapseItem) */
-export const ActivationItemExtensionContribution: IContribution = {
+export const ActivationItemExtensionContribution = (): IContribution => ({
 	props: [{ name: 'active', type: Boolean, triggers: ['change:active'] }],
-}
+})

@@ -1,9 +1,9 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const OrderExtensionContribution: IContribution = {}
+export const OrderExtensionContribution = (): IContribution => ({})
 
 /** order на уровне элемента */
-export const OrderItemExtensionContribution: IContribution = {
+export const OrderItemExtensionContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'order',
@@ -12,4 +12,4 @@ export const OrderItemExtensionContribution: IContribution = {
 			triggers: ['change:order'],
 		},
 	],
-}
+})

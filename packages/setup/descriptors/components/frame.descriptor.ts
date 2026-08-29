@@ -18,12 +18,17 @@ import {
 import { FrameContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
-export const FrameDescriptor = defineComponent({
-	ctor: TFrame,
+export const FrameDescriptor = () =>
+	defineComponent({
+		ctor: TFrame,
 
-	extends: ComponentDescriptor,
+		extends: ComponentDescriptor(),
 
-	contribution: FrameContribution,
+		contribution: FrameContribution(),
 
-	plugins: [ElementPluginDescriptor, ReadyPluginDescriptor, FrameLayoutPluginDescriptor],
-})
+		plugins: [
+			ElementPluginDescriptor(),
+			ReadyPluginDescriptor(),
+			FrameLayoutPluginDescriptor(),
+		],
+	})

@@ -3,10 +3,11 @@ import { TComponent } from '@soldy/core'
 import { ComponentContribution } from '../../contributions'
 import { EntityDescriptor } from './entity.descriptor'
 
-export const ComponentDescriptor = defineComponent({
-    ctor: TComponent,
+export const ComponentDescriptor = () =>
+	defineComponent({
+		ctor: TComponent,
 
-    extends: EntityDescriptor,
+		extends: EntityDescriptor(),
 
-    contribution: ComponentContribution,
-})
+		contribution: ComponentContribution(),
+	})

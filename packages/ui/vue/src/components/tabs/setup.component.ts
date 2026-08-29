@@ -9,18 +9,18 @@ import {
 import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type ITabsProps, type ITabsComponentProps, type ITabs, type ITabItem } from '@soldy/core'
+import { type ITabsProps, type ITabsComponentProps, type ITabs } from '@soldy/core'
 
 export default {
 	name: '_Tabs',
 	extends: BaseTabs,
 	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
-		const adapter = createAdapterContext(TabsDescriptor, {
+		const adapter = createAdapterContext(TabsDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
 			.use(TCollectionExtension, {
-				descriptor: TabsCollectionDescriptor,
+				descriptor: TabsCollectionDescriptor(),
 				engine: toRaw(props.engine),
 				elevator: VueElevatorFactory,
 			})
@@ -28,7 +28,7 @@ export default {
 
 		return {
 			...useVue<ITabsComponentProps, ITabs>(adapter, props, emit),
-			...useVueCollection<ITabItem>(adapter, props),
+			...useVueCollection(adapter, props),
 		}
 	},
 }

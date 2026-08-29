@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const CollapseContribution: IContribution = {
+export const CollapseContribution = (): IContribution => ({
 	props: [
 		{ name: 'view', type: String, triggers: ['change:view'] },
 	],
@@ -11,4 +11,4 @@ export const CollapseContribution: IContribution = {
 		'item:visible',
 		'item:present',
 	],
-}
+})

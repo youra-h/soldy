@@ -16,14 +16,13 @@ import { CollapseContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 import { DragPluginDescriptor } from '../../plugins'
 
-export const CollapseDescriptor = defineComponent({
-	ctor: TCollapse,
+export const CollapseDescriptor = () =>
+	defineComponent({
+		ctor: TCollapse,
 
-	extends: ControlDescriptor,
+		extends: ControlDescriptor(),
 
-	contribution: CollapseContribution,
+		contribution: CollapseContribution(),
 
-	plugins: [
-		DragPluginDescriptor,
-	],
-})
+		plugins: [DragPluginDescriptor()],
+	})

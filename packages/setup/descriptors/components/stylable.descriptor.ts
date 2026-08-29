@@ -10,10 +10,11 @@ import { TStylable } from '@soldy/core'
 import { StylableContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const StylableDescriptor = defineComponent({
-	ctor: TStylable,
+export const StylableDescriptor = () =>
+	defineComponent({
+		ctor: TStylable,
 
-	extends: ComponentViewDescriptor,
+		extends: ComponentViewDescriptor(),
 
-	contribution: StylableContribution,
-})
+		contribution: StylableContribution(),
+	})

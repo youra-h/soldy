@@ -7,21 +7,26 @@ import {
 } from '../collection'
 import { defineExtension, defineCollection } from '../../base'
 
-export const TabsExtensionDescriptor = defineExtension({
-	name: 'tabs',
-	namespace: 'tabs',
-	ctor: TTabsExtension,
-	contribution: TabsExtensionContribution,
-	itemContribution: TabsItemExtensionContribution,
-	// owner передаётся через optionsFactory в TabsCollectionDescriptor
-})
+export const TabsExtensionDescriptor = () =>
+	defineExtension({
+		name: 'tabs',
+		namespace: 'tabs',
+		ctor: TTabsExtension,
+		contribution: TabsExtensionContribution(),
+		itemContribution: TabsItemExtensionContribution(),
+		// owner передаётся через optionsFactory в TabsCollectionDescriptor
+	})
 
-export const TabsCollectionDescriptor = defineCollection({
-	extends: CollectionDescriptor,
+export const TabsCollectionDescriptor = () =>
+	defineCollection({
+		extends: CollectionDescriptor(),
 
-	extensions: [
-		{ ...FactoryExtensionDescriptor, optionsFactory: () => ({ itemCtor: TTabItem }) },
-		ActivationExtensionDescriptor,
-		{ ...TabsExtensionDescriptor, optionsFactory: (instance: ITabs) => ({ owner: instance }) },
-	],
-})
+		extensions: [
+			{ ...FactoryExtensionDescriptor(), optionsFactory: () => ({ itemCtor: TTabItem }) },
+			ActivationExtensionDescriptor(),
+			{
+				...TabsExtensionDescriptor(),
+				optionsFactory: (instance: ITabs) => ({ owner: instance }),
+			},
+		],
+	})

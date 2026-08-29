@@ -10,10 +10,11 @@ import { TControl } from '@soldy/core'
 import { ControlContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
-export const ControlDescriptor = defineComponent({
-	ctor: TControl,
+export const ControlDescriptor = () =>
+	defineComponent({
+		ctor: TControl,
 
-	extends: StylableDescriptor,
+		extends: StylableDescriptor(),
 
-	contribution: ControlContribution,
-})
+		contribution: ControlContribution(),
+	})

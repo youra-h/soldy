@@ -10,10 +10,11 @@ import { TTabItem } from '@soldy/core'
 import { TabItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
-export const TabItemDescriptor = defineComponent({
-	ctor: TTabItem,
+export const TabItemDescriptor = () =>
+	defineComponent({
+		ctor: TTabItem,
 
-	extends: ValueControlDescriptor,
+		extends: ValueControlDescriptor(),
 
-	contribution: TabItemContribution,
-})
+		contribution: TabItemContribution(),
+	})

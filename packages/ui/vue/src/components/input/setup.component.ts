@@ -11,7 +11,7 @@ export default {
 	inheritAttrs: false,
 	extends: BaseInput,
 	setup(props: TBaseComponentProps<IInputProps, IInput>, { emit }: any) {
-		const adapter = createAdapterContext(InputDescriptor, {
+		const adapter = createAdapterContext(InputDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})

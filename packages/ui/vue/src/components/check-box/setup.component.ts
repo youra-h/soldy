@@ -11,7 +11,7 @@ export default {
 	inheritAttrs: false,
 	extends: BaseCheckBox,
 	setup(props: TBaseComponentProps<ICheckBoxProps, ICheckBox>, { emit }: any) {
-		const adapter = createAdapterContext(CheckBoxDescriptor, {
+		const adapter = createAdapterContext(CheckBoxDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})

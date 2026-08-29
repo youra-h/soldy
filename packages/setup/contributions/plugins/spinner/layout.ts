@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const SpinnerLayoutContribution: IContribution = {
+export const SpinnerLayoutContribution = (): IContribution => ({
 	props: [
 		{
 			name: 'styles',
@@ -8,4 +8,4 @@ export const SpinnerLayoutContribution: IContribution = {
 			triggers: ['change:styles'],
 		},
 	],
-}
+})

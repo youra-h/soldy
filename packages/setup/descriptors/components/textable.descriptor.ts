@@ -10,10 +10,11 @@ import { TTextable } from '@soldy/core'
 import { TextableContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
-export const TextableDescriptor = defineComponent({
-	ctor: TTextable,
+export const TextableDescriptor = () =>
+	defineComponent({
+		ctor: TTextable,
 
-	extends: ControlDescriptor,
+		extends: ControlDescriptor(),
 
-	contribution: TextableContribution,
-})
+		contribution: TextableContribution(),
+	})

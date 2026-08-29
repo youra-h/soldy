@@ -9,7 +9,7 @@ export default {
 	name: '_ListBox',
 	extends: BaseListBox,
 	setup(props: TBaseComponentProps<IListBoxProps, IListBox>, { emit }: any) {
-		const adapter = createAdapterContext(ListBoxDescriptor, {
+		const adapter = createAdapterContext(ListBoxDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})

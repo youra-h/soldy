@@ -11,17 +11,18 @@ import { TListBoxItem } from '@soldy/core'
 import { ListBoxItemContribution, ListItemPluginContribution } from '../../../contributions'
 import { ListItemDescriptor } from '../list'
 
-export const ListBoxItemDescriptor = defineComponent({
-	ctor: TListBoxItem,
+export const ListBoxItemDescriptor = () =>
+	defineComponent({
+		ctor: TListBoxItem,
 
-	extends: ListItemDescriptor,
+		extends: ListItemDescriptor(),
 
-	contribution: ListBoxItemContribution,
+		contribution: ListBoxItemContribution(),
 
-	plugins: [
-		// definePlugin({
-		// 	ctor: TListItemPlugin,
-		// 	contribution: ListItemPluginContribution,
-		// }),
-	],
-})
+		plugins: [
+			// definePlugin({
+			// 	ctor: TListItemPlugin,
+			// 	contribution: ListItemPluginContribution,
+			// }),
+		],
+	})

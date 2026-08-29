@@ -1,3 +1,3 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const UniqueExtensionContribution: IContribution = {}
+export const UniqueExtensionContribution = (): IContribution => ({})

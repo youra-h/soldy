@@ -11,12 +11,13 @@ import { IconLayoutPluginDescriptor } from '../plugins'
 import { IconContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const IconDescriptor = defineComponent({
-	ctor: TIcon,
+export const IconDescriptor = () =>
+	defineComponent({
+		ctor: TIcon,
 
-	extends: ComponentViewDescriptor,
+		extends: ComponentViewDescriptor(),
 
-	contribution: IconContribution,
+		contribution: IconContribution(),
 
-	plugins: [IconLayoutPluginDescriptor],
-})
+		plugins: [IconLayoutPluginDescriptor()],
+	})

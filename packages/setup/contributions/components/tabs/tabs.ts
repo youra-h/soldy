@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const TabsContribution: IContribution = {
+export const TabsContribution = (): IContribution => ({
 	props: [
 		{ name: 'orientation', type: String, triggers: ['change:orientation'] },
 		{ name: 'alignment', type: String, triggers: ['change:alignment'] },
@@ -17,4 +17,4 @@ export const TabsContribution: IContribution = {
 	// 	'item:visible',
 	// 	'item:present',
 	// ],
-}
+})

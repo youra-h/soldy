@@ -13,10 +13,11 @@ import { TList } from '@soldy/core'
 import { ListContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 
-export const ListDescriptor = defineComponent({
-	ctor: TList,
+export const ListDescriptor = () =>
+	defineComponent({
+		ctor: TList,
 
-	extends: ControlDescriptor,
+		extends: ControlDescriptor(),
 
-	contribution: ListContribution,
-})
+		contribution: ListContribution(),
+	})

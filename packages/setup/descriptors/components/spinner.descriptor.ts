@@ -11,12 +11,13 @@ import { SpinnerLayoutPluginDescriptor } from '../plugins'
 import { SpinnerContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
-export const SpinnerDescriptor = defineComponent({
-	ctor: TSpinner,
+export const SpinnerDescriptor = () =>
+	defineComponent({
+		ctor: TSpinner,
 
-	extends: StylableDescriptor,
+		extends: StylableDescriptor(),
 
-	contribution: SpinnerContribution,
+		contribution: SpinnerContribution(),
 
-	plugins: [SpinnerLayoutPluginDescriptor],
-})
+		plugins: [SpinnerLayoutPluginDescriptor()],
+	})

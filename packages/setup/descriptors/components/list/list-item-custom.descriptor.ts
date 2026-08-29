@@ -7,10 +7,11 @@ import { TListItemCustom } from '@soldy/core'
 import { ListItemCustomContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
-export const ListItemCustomDescriptor = defineComponent({
-	ctor: TListItemCustom,
+export const ListItemCustomDescriptor = () =>
+	defineComponent({
+		ctor: TListItemCustom,
 
-	extends: ValueControlDescriptor,
+		extends: ValueControlDescriptor(),
 
-	contribution: ListItemCustomContribution,
-})
+		contribution: ListItemCustomContribution(),
+	})

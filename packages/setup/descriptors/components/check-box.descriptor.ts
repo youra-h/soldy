@@ -11,12 +11,13 @@ import { InputBoolPluginDescriptor } from '../plugins'
 import { CheckBoxContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
-export const CheckBoxDescriptor = defineComponent({
-	ctor: TCheckBox,
+export const CheckBoxDescriptor = () =>
+	defineComponent({
+		ctor: TCheckBox,
 
-	extends: InputControlDescriptor,
+		extends: InputControlDescriptor(),
 
-	contribution: CheckBoxContribution,
+		contribution: CheckBoxContribution(),
 
-	plugins: [InputBoolPluginDescriptor],
-})
+		plugins: [InputBoolPluginDescriptor()],
+	})

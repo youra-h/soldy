@@ -11,12 +11,13 @@ import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
-export const InputDescriptor = defineComponent({
-	ctor: TInput,
+export const InputDescriptor = () =>
+	defineComponent({
+		ctor: TInput,
 
-	extends: InputControlDescriptor,
+		extends: InputControlDescriptor(),
 
-	contribution: InputContribution,
+		contribution: InputContribution(),
 
-	plugins: [InputControlPluginDescriptor, InputPluginDescriptor],
-})
+		plugins: [InputControlPluginDescriptor(), InputPluginDescriptor()],
+	})

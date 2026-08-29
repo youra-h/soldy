@@ -4,12 +4,13 @@ import { ElementPluginDescriptor, ReadyPluginDescriptor } from '../plugins'
 import { ComponentViewContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
-export const ComponentViewDescriptor = defineComponent({
-	ctor: TComponentView,
+export const ComponentViewDescriptor = () =>
+	defineComponent({
+		ctor: TComponentView,
 
-	extends: ComponentDescriptor,
+		extends: ComponentDescriptor(),
 
-	contribution: ComponentViewContribution,
+		contribution: ComponentViewContribution(),
 
-	plugins: [ElementPluginDescriptor, ReadyPluginDescriptor],
-})
+		plugins: [ElementPluginDescriptor(), ReadyPluginDescriptor()],
+	})

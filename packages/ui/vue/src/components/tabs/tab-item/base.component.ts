@@ -9,13 +9,13 @@ import type { TEmits, TProps } from '../../../types/common'
 import { TabItemDescriptor, TabsCollectionDescriptor } from '@soldy/setup'
 
 export const emitsTabItem: TEmits = [
-	...useEmits(TabItemDescriptor),
-	...useCollectionItemEmits(TabsCollectionDescriptor),
+	...useEmits(TabItemDescriptor()),
+	...useCollectionItemEmits(TabsCollectionDescriptor()),
 ] as unknown as TEmits
 
 export const propsTabItem: TProps = {
-	...(useProps(TabItemDescriptor) as TProps),
-	...(useCollectionItemProps(TabsCollectionDescriptor) as TProps),
+	...(useProps(TabItemDescriptor()) as TProps),
+	...(useCollectionItemProps(TabsCollectionDescriptor()) as TProps),
 }
 
 export default {

@@ -1,7 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const SpinnerContribution: IContribution = {
+export const SpinnerContribution = (): IContribution => ({
 	props: [
 		{ name: 'borderWidth', type: [Number, String], triggers: ['change:borderWidth'] },
 	],
-}
+})

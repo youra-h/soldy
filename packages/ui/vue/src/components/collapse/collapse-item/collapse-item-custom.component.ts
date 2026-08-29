@@ -4,10 +4,10 @@ import type { TEmits, TProps } from '../../../types/common'
 import { CollapseItemCustomDescriptor } from '@soldy/setup'
 
 export const emitsCollapseItemCustom: TEmits = useEmits(
-	CollapseItemCustomDescriptor,
+	CollapseItemCustomDescriptor(),
 ) as unknown as TEmits
 
-export const propsCollapseItemCustom: TProps = useProps(CollapseItemCustomDescriptor) as TProps
+export const propsCollapseItemCustom: TProps = useProps(CollapseItemCustomDescriptor()) as TProps
 
 export default {
 	name: 'BaseCollapseItemCustom',

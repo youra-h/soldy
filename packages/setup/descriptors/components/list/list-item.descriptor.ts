@@ -13,10 +13,11 @@ import { TListItem } from '@soldy/core'
 import { ListItemContribution } from '../../../contributions'
 import { ListItemCustomDescriptor } from './list-item-custom.descriptor'
 
-export const ListItemDescriptor = defineComponent({
-	ctor: TListItem,
+export const ListItemDescriptor = () =>
+	defineComponent({
+		ctor: TListItem,
 
-	extends: ListItemCustomDescriptor,
+		extends: ListItemCustomDescriptor(),
 
-	contribution: ListItemContribution,
-})
+		contribution: ListItemContribution(),
+	})

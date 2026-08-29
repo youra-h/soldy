@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const PlainExtensionContribution: IContribution = {
+export const PlainExtensionContribution = (): IContribution => ({
 	events: [
 		'item:add:before',
 		'item:added',
@@ -11,4 +11,4 @@ export const PlainExtensionContribution: IContribution = {
 		'change:count',
 		'reset',
 	],
-}
+})

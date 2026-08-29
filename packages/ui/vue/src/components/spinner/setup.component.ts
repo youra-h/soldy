@@ -9,7 +9,7 @@ export default {
 	name: '_Spinner',
 	extends: BaseSpinner,
 	setup(props: TBaseComponentProps<ISpinnerProps, ISpinner>, { emit }: any) {
-		const adapter = createAdapterContext(SpinnerDescriptor, {
+		const adapter = createAdapterContext(SpinnerDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})

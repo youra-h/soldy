@@ -10,10 +10,11 @@ import { TSwitch } from '@soldy/core'
 import { InputBoolPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
-export const SwitchDescriptor = defineComponent({
-	ctor: TSwitch,
+export const SwitchDescriptor = () =>
+	defineComponent({
+		ctor: TSwitch,
 
-	extends: InputControlDescriptor,
+		extends: InputControlDescriptor(),
 
-	plugins: [InputBoolPluginDescriptor],
-})
+		plugins: [InputBoolPluginDescriptor()],
+	})

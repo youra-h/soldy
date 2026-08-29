@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const ComponentViewContribution: IContribution = {
+export const ComponentViewContribution = (): IContribution => ({
 	props: [
 		{ name: 'tag', type: [String, Object], triggers: ['change:tag'] },
 		{
@@ -11,4 +11,4 @@ export const ComponentViewContribution: IContribution = {
 		},
 	],
 	events: ['ready'],
-}
+})

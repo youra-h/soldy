@@ -16,12 +16,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
-		const adapter = createAdapterContext(TabItemDescriptor, {
+		const adapter = createAdapterContext(TabItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
 			.use(TCollectionItemExtension, {
-				descriptor: TabsCollectionDescriptor,
+				descriptor: TabsCollectionDescriptor(),
 				elevator: VueElevatorFactory,
 			})
 

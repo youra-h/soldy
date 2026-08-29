@@ -8,8 +8,8 @@ import type { ICollectionExtensionDescriptor } from './types'
  * export const ActivationExtensionDescriptor = defineExtension({
  *   name: 'activation',
  *   ctor: TActivationExtension,
- *   contribution: ActivationExtensionContribution,
- *   itemContribution: ActivationItemExtensionContribution,
+ *   contribution: ActivationExtensionContribution(),
+ *   itemContribution: ActivationItemExtensionContribution(),
  * })
  * ```
  */

@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 
-export const FrameContribution: IContribution = {
+export const FrameContribution = (): IContribution => ({
 	props: [
 		{ name: 'x', type: Number, triggers: ['change:x'] },
 		{ name: 'y', type: Number, triggers: ['change:y'] },
@@ -10,4 +10,4 @@ export const FrameContribution: IContribution = {
 		{ name: 'target', type: [Object, String], triggers: ['change:target'] },
 	],
 	events: ['change:zIndex'],
-}
+})

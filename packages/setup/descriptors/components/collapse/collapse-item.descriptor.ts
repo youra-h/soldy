@@ -15,10 +15,11 @@ import { TCollapseItem } from '@soldy/core'
 import { CollapseItemContribution } from '../../../contributions'
 import { CollapseItemCustomDescriptor } from './collapse-item-custom.descriptor'
 
-export const CollapseItemDescriptor = defineComponent({
-	ctor: TCollapseItem,
+export const CollapseItemDescriptor = () =>
+	defineComponent({
+		ctor: TCollapseItem,
 
-	extends: CollapseItemCustomDescriptor,
+		extends: CollapseItemCustomDescriptor(),
 
-	contribution: CollapseItemContribution,
-})
+		contribution: CollapseItemContribution(),
+	})

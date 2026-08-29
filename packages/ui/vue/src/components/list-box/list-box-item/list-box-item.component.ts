@@ -5,9 +5,9 @@ import {
 	BaseListItem,
 } from '../../list/list-item'
 
-export const emitsListBoxItem: TEmits = useEmits(ListBoxItemDescriptor) as unknown as TEmits
+export const emitsListBoxItem: TEmits = useEmits(ListBoxItemDescriptor()) as unknown as TEmits
 
-export const propsListBoxItem: TProps = useProps(ListBoxItemDescriptor) as TProps
+export const propsListBoxItem: TProps = useProps(ListBoxItemDescriptor()) as TProps
 
 export default {
 	name: 'BaseListBoxItem',

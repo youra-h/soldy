@@ -10,10 +10,11 @@ import { TButton } from '@soldy/core'
 import { ButtonContribution } from '../../contributions'
 import { TextableDescriptor } from './textable.descriptor'
 
-export const ButtonDescriptor = defineComponent({
-	ctor: TButton,
+export const ButtonDescriptor = () =>
+	defineComponent({
+		ctor: TButton,
 
-	extends: TextableDescriptor,
+		extends: TextableDescriptor(),
 
-	contribution: ButtonContribution,
-})
+		contribution: ButtonContribution(),
+	})

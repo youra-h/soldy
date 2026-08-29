@@ -14,7 +14,7 @@ export default {
 	name: '_Collapse',
 	extends: BaseCollapse,
 	setup(props: TBaseComponentProps<ICollapseProps, ICollapse>, { emit }: any) {
-		const adapter = createAdapterContext(CollapseDescriptor, {
+		const adapter = createAdapterContext(CollapseDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
