@@ -4,10 +4,16 @@ import type { ISelectionItemExtension } from './item/types'
 
 export type TSelectionMode = 'none' | 'single' | 'multiple'
 
-/** Owner-level props коллекции от selection-расширения. Зеркало SelectionExtensionContribution. */
+/** Owner-level props коллекции от selection-расширения (input). Зеркало SelectionExtensionContribution. */
 export interface ISelectionCollectionProps {
 	/** Режим выделения. */
 	mode?: TSelectionMode
+}
+
+/** Owner-level state коллекции от selection-расширения (output для refs). */
+export interface ISelectionProps<TItem extends object = any> {
+	mode: TSelectionMode
+	readonly selected: TItem[]
 }
 
 export type TSelectionEvents<TItem> = {
@@ -17,7 +23,7 @@ export type TSelectionEvents<TItem> = {
 
 /** Контракт расширения выборки. Реализуется TSelectionExtension. */
 export interface ISelectionExtension<TItem extends object = any>
-	extends IExtension<TItem>, IExtensionItems<TItem, ISelectionItemExtension<TItem>> {
+	extends IExtension<TItem, TSelectionEvents<TItem>, ISelectionProps<TItem>>, IExtensionItems<TItem, ISelectionItemExtension<TItem>> {
 	/** События расширения: change:selection, change:mode. */
 	readonly events: TEvented<TSelectionEvents<TItem>>
 

@@ -12,6 +12,7 @@ export interface IExtensionContext<T> {
 export interface IExtension<
 	T,
 	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
+	TOwnerProps extends object = Record<string, never>,
 > {
 	/** Уникальное имя расширения (plain, batch, activation, order, selection). */
 	readonly name: string
