@@ -5,14 +5,21 @@ import { TDescriptorInspector } from '@soldy/accessor'
 import { VueNaming } from '../common/naming'
 import { useSyncProps } from './useSyncProps'
 
+/** Тип реактивных refs, выводимый из output-типа коллекции. */
+export type TVueCollectionRefs<TProps extends object> = {
+	[K in keyof TProps]: Ref<TProps[K]>
+}
+
 /**
  * useVueCollection — реактивный хук для коллекции (родительский компонент).
- * Возвращает { collection, ...refs } где refs = реактивные свойства коллекции (items, activeItem...).
+ * Возвращает { collection, ...refs } где refs = реактивные свойства коллекции.
+ *
+ * @template TOutput — output-состояние коллекции (ITabsCollectionOutput и т.п.).
  */
-export function useVueCollection(
+export function useVueCollection<TOutput extends object = Record<string, any>>(
 	adapter: IAdapterContext,
 	props: Record<string, any>,
-): { collection: any } & Record<string, Ref<any>> {
+): { collection: any } & TVueCollectionRefs<TOutput> {
 	const factory = adapter.get(TCollectionFactoryExtension)
 
 	if (!factory?.collection) return { collection: undefined } as any

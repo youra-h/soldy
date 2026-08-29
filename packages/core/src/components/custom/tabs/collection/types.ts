@@ -32,12 +32,20 @@ export type TTabsCollectionExtensions = {
 export type TTabsCollection = TCollection<ITabItem, TTabsCollectionExtensions>
 
 /**
+ * Output-состояние коллекции Tabs (возвращается useVueCollection как refs).
+ */
+export interface ITabsCollectionOutput {
+	items: ReadonlyArray<ITabItem>
+	trackBy?: (item: ITabItem) => any
+	activeItem: ITabItem | undefined
+}
+
+/**
  * Owner-level props коллекции Tabs.
  * Объединяет pass-through engine + batch (items, trackBy).
  */
 export interface ITabsCollectionProps<TItemProps = ITabItemProps, TItem = ITabItem>
-	extends ICollectionProps<TTabsCollection>,
-		IBatchCollectionProps<TItemProps, TItem> {}
+	extends ICollectionProps<TTabsCollection>, IBatchCollectionProps<TItemProps, TItem> {}
 
 /**
  * Item-level props элемента Tabs.

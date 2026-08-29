@@ -9,7 +9,12 @@ import {
 import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type ITabsProps, type ITabsComponentProps, type ITabs } from '@soldy/core'
+import {
+	type ITabsProps,
+	type ITabsComponentProps,
+	type ITabs,
+	type ITabsCollectionOutput,
+} from '@soldy/core'
 
 export default {
 	name: '_Tabs',
@@ -26,9 +31,11 @@ export default {
 			})
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
+		const collectionRefs = useVueCollection<ITabsCollectionOutput>(adapter, props)
+
 		return {
 			...useVue<ITabsComponentProps, ITabs>(adapter, props, emit),
-			...useVueCollection(adapter, props),
+			...collectionRefs,
 		}
 	},
 }

@@ -21,7 +21,13 @@ export * from './extension'
 
 // Ядро
 export { TCollectionEngine } from './engine.class'
-export type { ICollectionEngine, ICollectionCore, ICollectionProps, TCollectionItemSource } from './types'
+export type {
+	ICollectionEngine,
+	ICollectionCore,
+	ICollectionProps,
+	TCollectionItemSource,
+	TReadonlyEngineArray,
+} from './types'
 
 // Фасад
 export { TCollection } from './collection.class'

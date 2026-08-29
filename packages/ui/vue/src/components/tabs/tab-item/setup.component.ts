@@ -19,11 +19,10 @@ export default {
 		const adapter = createAdapterContext(TabItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
+		}).use(TCollectionItemExtension, {
+			descriptor: TabsCollectionDescriptor(),
+			elevator: VueElevatorFactory,
 		})
-			.use(TCollectionItemExtension, {
-				descriptor: TabsCollectionDescriptor(),
-				elevator: VueElevatorFactory,
-			})
 
 		const { context, ...itemRefs } = useVueCollectionItem<ITabItem, TTabsCollectionExtensions>(
 			adapter,

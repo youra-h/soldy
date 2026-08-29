@@ -3,12 +3,7 @@
  * Работают через TAccessor: Unit = { instance, props, events }.
  */
 
-import type {
-	IContribution,
-	IPropDeclaration,
-	TAccessor,
-	TName,
-} from '@soldy/accessor'
+import type { IContribution, IPropDeclaration, TAccessor, TName } from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 
 /** Определение плагина в составе дескриптора. */

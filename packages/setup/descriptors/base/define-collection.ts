@@ -93,7 +93,10 @@ export function defineCollection(options: {
 			const units = allExtensions
 				.filter((def) => def.itemContribution)
 				.map((def) => {
-					const { props, events } = normalizeContribution(def.itemContribution, def.namespace)
+					const { props, events } = normalizeContribution(
+						def.itemContribution,
+						def.namespace,
+					)
 					return {
 						instance: context.adapters[def.name],
 						props,
