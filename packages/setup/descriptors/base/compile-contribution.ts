@@ -12,13 +12,13 @@ export function normalizeContribution(
 	if (!contribution) return { props: [], events: [] }
 
 	return {
-		props: (contribution.props ?? []).map((p) => ({
-			name: new TName(p.name, namespace),
-			type: p.type,
-			protected: !!p.protected,
-			triggers: (p.triggers ?? []).map((t) => new TName(t, namespace)),
-			get: p.get,
-			set: p.set,
+		props: Object.entries(contribution.props ?? {}).map(([name, def]) => ({
+			name: new TName(name, namespace),
+			type: def.type,
+			protected: !!def.protected,
+			triggers: (def.triggers ?? []).map((t) => new TName(t, namespace)),
+			get: def.get,
+			set: def.set,
 		})),
 		events: (contribution.events ?? []).map((e) => new TName(e, namespace)),
 	}

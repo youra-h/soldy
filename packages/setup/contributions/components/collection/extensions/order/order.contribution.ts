@@ -4,12 +4,11 @@ export const OrderExtensionContribution = (): IContribution => ({})
 
 /** order на уровне элемента */
 export const OrderItemExtensionContribution = (): IContribution => ({
-	props: [
-		{
-			name: 'order',
+	props: {
+		order: {
 			type: Number,
 			protected: true,
 			triggers: ['change:order'],
 		},
-	],
+	},
 })

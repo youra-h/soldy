@@ -5,11 +5,10 @@ export const TabsExtensionContribution = (): IContribution => ({
 })
 
 export const TabsItemExtensionContribution = (): IContribution => ({
-	props: [
-		{
-			name: 'closable',
+	props: {
+		closable: {
 			protected: true,
 			triggers: ['change:closable'],
 		},
-	],
+	},
 })

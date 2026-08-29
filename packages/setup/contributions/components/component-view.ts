@@ -1,14 +1,13 @@
 import type { IContribution } from '@soldy/accessor'
 
 export const ComponentViewContribution = (): IContribution => ({
-	props: [
-		{ name: 'tag', type: [String, Object], triggers: ['change:tag'] },
-		{
-			name: 'classes',
+	props: {
+		tag: { type: [String, Object], triggers: ['change:tag'] },
+		classes: {
 			type: Object,
 			protected: true,
 			triggers: ['change:classes'],
 		},
-	],
+	},
 	events: ['ready'],
 })

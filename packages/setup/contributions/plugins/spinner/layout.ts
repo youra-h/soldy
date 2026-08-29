@@ -1,11 +1,10 @@
 import type { IContribution } from '@soldy/accessor'
 
 export const SpinnerLayoutContribution = (): IContribution => ({
-	props: [
-		{
-			name: 'styles',
+	props: {
+		styles: {
 			protected: true,
 			triggers: ['change:styles'],
 		},
-	],
+	},
 })

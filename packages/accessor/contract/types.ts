@@ -32,9 +32,8 @@ export interface INamingStrategy {
 	event(name: TName): string
 }
 
-/** Входная декларация свойства (raw строки, как пишет автор contribution) */
-export interface IPropContribution {
-	name: string
+/** Декларация одного свойства. Ключ словаря props — имя свойства. */
+export interface IPropDefinition {
 	type?: any
 	protected?: boolean
 	triggers?: string[]
@@ -54,9 +53,9 @@ export interface IPropDeclaration {
 	set?: (instance: any, value: any) => void
 }
 
-/** Contribution: группа объявлений props + events (raw строки) */
+/** Contribution: словарь props (имя → декларация) + events (raw строки). */
 export interface IContribution {
-	props?: IPropContribution[]
+	props?: Record<string, IPropDefinition>
 	events?: string[]
 }
 

@@ -23,16 +23,16 @@ export class TestPluginB {
 }
 
 export const ContribA: IContribution = {
-    props: [{ name: 'a', triggers: ['change:a'] }],
+    props: { a: { triggers: ['change:a'] } },
     events: ['show'],
 }
 
 export const ContribB: IContribution = {
-    props: [{ name: 'b', triggers: ['change:b'] }],
+    props: { b: { triggers: ['change:b'] } },
     events: ['hide'],
 }
 
 export const PluginContrib: IContribution = {
-    props: [{ name: 'element', triggers: ['ready', 'removed'] }],
+    props: { element: { triggers: ['ready', 'removed'] } },
     events: ['ready', 'removed'],
 }
