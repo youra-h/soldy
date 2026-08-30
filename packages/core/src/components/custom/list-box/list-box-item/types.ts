@@ -1,26 +1,10 @@
-import type {
-	IListItem,
-	TListItemOptions,
-	IListItemProps,
-	TListItemEvents,
-	TListItemCustomStates,
-} from '../../list'
-import type { TListBoxView } from '../types'
+import type { IListItem, IListItemProps, TListItemEvents } from '../../list/list-item/types'
+import type { IListBoxCollectionItemProps } from '../collection/types'
 
-export type TListBoxItemEvents = TListItemEvents & {
-	/** change:view */
-	'change:view': (value: TListBoxView) => void
-}
+export type TListBoxItemEvents = TListItemEvents
 
-export type TListBoxItemStates = TListItemCustomStates
+export interface IListBoxItemProps extends IListItemProps, IListBoxCollectionItemProps {}
 
-export interface IListBoxItemProps extends IListItemProps {}
+export interface IListBoxItem
+	extends IListItem<IListBoxItemProps, TListBoxItemEvents> {}
 
-export type TListBoxItemOptions = TListItemOptions<IListBoxItemProps, TListBoxItemStates>
-
-export interface IListBoxItem extends IListItem<IListBoxItemProps, TListBoxItemEvents> {
-	/** Внешний вид (readonly, наследуется от TListBox) */
-	readonly view: TListBoxView
-	/** Инжектирует резолвер view из TListBox */
-	setViewResolver(resolver: () => TListBoxView): void
-}

@@ -1,30 +1,26 @@
-import type { IList, IListProps, TListEvents, TListStates } from '../list/types'
-import type { TItemProxyEvents } from '../../base/collection'
-import type { IListBoxItem } from './list-box-item/types'
+import type { IList, IListComponentProps, TListEvents, TListStates } from '../list/types'
+import type { IListBoxCollectionProps } from './collection/types'
+import type { IListBoxItem, IListBoxItemProps } from './list-box-item/types'
 
 export type TListBoxView = 'plain' | 'outlined' | 'filled'
 
-export type TListBoxEvents = TListEvents &
-	TItemProxyEvents<IListBoxItem> & {
-		/** change:view */
-		'change:view': (value: TListBoxView) => void
-	}
+export type TListBoxEvents = TListEvents & {
+	/** change:view */
+	'change:view': (value: TListBoxView) => void
+}
 
-export interface IListBoxProps<
-	TItem extends IListBoxItem = IListBoxItem,
-> extends IListProps<TItem> {
+/** Полный набор пропсов ListBox: наследует List (компонентные) + view + коллекция (engine, items, mode). */
+export interface IListBoxProps
+	extends IListComponentProps,
+		IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {
 	/** Внешний вид компонента */
 	view?: TListBoxView
 }
 
 export type TListBoxStates = TListStates
 
-export interface IListBox extends IList<
-	IListBoxItem,
-	IListBoxProps,
-	TListBoxEvents,
-	TListBoxStates
-> {
+export interface IListBox extends IList<IListBoxProps, TListBoxEvents, TListBoxStates> {
 	/** Внешний вид компонента */
 	view: TListBoxView
 }
+

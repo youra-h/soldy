@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { ListBox, emitsListBox } from '@soldy/ui-vue'
-import { TListBox } from '@soldy/core'
+import { TListBox, ListBoxFactory } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -47,15 +47,21 @@ const instance = new TListBox({
 	size: props.size ?? 'normal',
 	variant: props.variant ?? 'normal',
 	view: props.view ?? 'plain',
-	mode: props.mode ?? 'single',
 	maxRows: props.maxRows ?? 0,
 	autoWidth: props.autoWidth ?? false,
 	wordWrap: props.wordWrap ?? false,
 })
 
-instance.collection.add({ text: 'Item 1', value: 'item1', selected: true })
-instance.collection.add({ text: 'Item 2', value: 'item2' })
-instance.collection.add({ text: 'Item 3', value: 'item3' })
+const collection = ListBoxFactory(instance)
+const { plain, selection } = collection.extensions
+
+selection.mode = props.mode ?? 'single'
+
+const item1 = plain.push({ text: 'Item 1', value: 'item1' })
+plain.push({ text: 'Item 2', value: 'item2' })
+plain.push({ text: 'Item 3', value: 'item3' })
+
+selection.select(item1)
 
 const { handlers, logEvent } = useEventLogger(emit, emitsListBox)
 useCoreEventLogger(instance, logEvent, emitsListBox)
@@ -67,7 +73,6 @@ useSyncPropsToInstance(props, instance, [
 	'size',
 	'variant',
 	'view',
-	'mode',
 	'maxRows',
 	'autoWidth',
 	'wordWrap',
@@ -76,7 +81,7 @@ useSyncPropsToInstance(props, instance, [
 watch(
 	[() => props.itemDisabled, () => props.itemWordWrap, () => props.itemApplyTarget],
 	() => {
-		instance.collection.items.forEach((item, index) => {
+		collection.engine.forEach((item, index) => {
 			const apply = props.itemApplyTarget === 'all' || index === 0
 			item.disabled = apply ? !!props.itemDisabled : false
 			item.wordWrap = apply ? props.itemWordWrap : undefined
@@ -88,6 +93,6 @@ watch(
 
 <template>
 	<PanelDemo info="Instance-based demo">
-		<ListBox :ctrl="instance" v-bind="handlers" />
+		<ListBox :ctrl="instance" :engine="collection" v-bind="handlers" />
 	</PanelDemo>
 </template>

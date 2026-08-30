@@ -11,18 +11,19 @@ export default { ...SetupListBoxItem, components: { Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="{ order }"
+		:style="{ order: order }"
+		:data-word-wrap="list_wordWrap"
 		v-bind="containerAttrs"
 	>
 		<Button
 			:tag="tag"
-			:view="view"
+			:view="list_view"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
 			:aria-selected="selected"
 			:data-highlighted="listItem_highlighted"
-			@click="ctrl.toggleSelected()"
+			@click="context.adapters.selection.toggle()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>
@@ -50,7 +51,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 		}
 	}
 
-	&--word-wrap {
+	&[data-word-wrap='true'] {
 		.s-button {
 			@apply min-h-fit;
 

@@ -1,23 +1,20 @@
 /**
  * Дескриптор ListItem (TListItem).
  *
- * Наследование:
- * - ListItemCustomDescriptor (tag, text, wordWrap, value, name, ...)
- *
- * Композиция:
- * - SelectableCollectionItemDescriptor → collection:* (selected)
+ * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
+ * и добавляет text, wordWrap + коллекционные item-пропсы (selected, order).
  */
 
 import { defineComponent } from '../../base'
 import { TListItem } from '@soldy/core'
 import { ListItemContribution } from '../../../contributions'
-import { ListItemCustomDescriptor } from './list-item-custom.descriptor'
+import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const ListItemDescriptor = () =>
 	defineComponent({
 		ctor: TListItem,
 
-		extends: ListItemCustomDescriptor(),
+		extends: ValueControlDescriptor(),
 
 		contribution: ListItemContribution(),
 	})

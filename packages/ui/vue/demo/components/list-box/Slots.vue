@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TListBox } from '@soldy/core';
+import { TListBox, ListBoxFactory } from '@soldy/core';
 import { ListBox, ListBoxItem } from '@soldy/ui-vue';
 import type { TComponentSize, TComponentVariant } from '@soldy/core';
 
@@ -13,14 +13,16 @@ defineProps<Props>();
 const APPEARANCES = ['plain', 'outlined', 'filled'] as const;
 
 // Instance с предустановленными элементами для #item slot
-const fruitInstance = new TListBox({
-    items: [
-        { text: 'Apple', value: 'apple' },
-        { text: 'Banana', value: 'banana' },
-        { text: 'Cherry', value: 'cherry', selected: true },
-    ],
-    mode: 'multiple',
-});
+const fruitInstance = new TListBox();
+const fruitCollection = ListBoxFactory(fruitInstance);
+const { plain, selection } = fruitCollection.extensions;
+selection.mode = 'multiple';
+
+plain.push({ text: 'Apple', value: 'apple' });
+plain.push({ text: 'Banana', value: 'banana' });
+const cherry = plain.push({ text: 'Cherry', value: 'cherry' });
+
+selection.select(cherry);
 </script>
 
 <template>
@@ -63,24 +65,17 @@ const fruitInstance = new TListBox({
         <div class="list-box-slots-demo__section">
             <h4 class="list-box-slots-demo__subtitle">Custom #item slot</h4>
             <ListBox
-                :instance="fruitInstance"
+                :ctrl="fruitInstance"
+                :engine="fruitCollection"
                 view="outlined"
                 :size="size"
                 :variant="variant"
                 mode="multiple"
             >
-                <template #item="{ ctrl, text, selected }">
-                    <ListBoxItem :ctrl="ctrl">
-                        <div class="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                :checked="selected"
-                                class="size-4"
-                                readonly
-                            />
-                            <span>{{ text }}</span>
-                        </div>
-                    </ListBoxItem>
+                <template #item="{ item }">
+                    <div class="flex items-center gap-2">
+                        <span>{{ item.text }}</span>
+                    </div>
                 </template>
             </ListBox>
         </div>
@@ -114,7 +109,7 @@ const fruitInstance = new TListBox({
             <h4 class="list-box-slots-demo__subtitle">
                 Per-item slots via ListBox
             </h4>
-            <ListBox :ctrl="fruitInstance">
+            <ListBox :ctrl="fruitInstance" :engine="fruitCollection">
                 <template #item:apple:leading>
                     <span class="list-box-slots-demo__badge">🍎</span>
                 </template>
@@ -122,9 +117,7 @@ const fruitInstance = new TListBox({
                     <span class="list-box-slots-demo__badge">🍌</span>
                 </template>
                 <template #item:cherry="{ item }">
-                    <span :class="{ 'font-bold': item.selected }">{{
-                        item.text
-                    }}</span>
+                    <span class="font-bold">{{ item.text }}</span>
                 </template>
             </ListBox>
         </div>
@@ -136,13 +129,14 @@ const fruitInstance = new TListBox({
             </h4>
             <ListBox
                 :ctrl="fruitInstance"
+                :engine="fruitCollection"
                 view="outlined"
                 :size="size"
                 :variant="variant"
             >
                 <template #item="{ item }">
                     <div class="flex items-center gap-2">
-                        <span>{{ item.selected ? '✅' : '⬜' }}</span>
+                        <span>⬜</span>
                         <span>{{ item.text }}</span>
                         <span class="list-box-slots-demo__badge">{{
                             item.value

@@ -1,9 +1,19 @@
 import { toRaw } from 'vue'
-import { createAdapterContext, TCollectionExtension, TDragAndDropCollectionExtension, ListBoxDescriptor } from '@soldy/setup'
-import { useVue, VueElevatorFactory } from '../../adapter'
+import {
+	createAdapterContext,
+	TCollectionExtension,
+	TDragAndDropCollectionExtension,
+	ListBoxDescriptor,
+	ListBoxCollectionDescriptor,
+} from '@soldy/setup'
+import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
 import BaseListBox from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type IListBoxProps, type IListBox } from '@soldy/core'
+import {
+	type IListBoxProps,
+	type IListBox,
+	type IListBoxCollectionOutput,
+} from '@soldy/core'
 
 export default {
 	name: '_ListBox',
@@ -13,9 +23,18 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionExtension, {
+				descriptor: ListBoxCollectionDescriptor(),
+				engine: toRaw(props.engine),
+				elevator: VueElevatorFactory,
+			})
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		return useVue<IListBoxProps, IListBox>(adapter, props, emit)
+		const collectionRefs = useVueCollection<IListBoxCollectionOutput>(adapter, props)
+
+		return {
+			...useVue<IListBoxProps, IListBox>(adapter, props, emit),
+			...collectionRefs,
+		}
 	},
 }

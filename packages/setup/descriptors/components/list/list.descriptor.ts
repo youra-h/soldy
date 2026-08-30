@@ -1,11 +1,8 @@
 /**
  * Дескриптор List (TList).
  *
- * Наследование:
- * - ControlDescriptor (disabled, focused, size, variant, ...)
- *
- * Композиция:
- * - SelectableCollectionDescriptor → collection:* (items, mode, selected, events)
+ * Headless-модель списка (без визуальной части): наследует ControlDescriptor
+ * и добавляет maxRows, autoWidth, wordWrap, scrollBehavior.
  */
 
 import { defineComponent } from '../../base'

@@ -2,19 +2,21 @@
  * Дескриптор ListBox (TListBox).
  *
  * Наследует ListDescriptor (maxRows, autoWidth, wordWrap, scrollBehavior, ...)
- * и добавляет view + плагины.
+ * и добавляет view + плагины коллекции, списка и drag-and-drop.
  */
 
-import { defineComponent, definePlugin } from '../../base'
+import { defineComponent } from '../../base'
 import { TListBox } from '@soldy/core'
-// import {
-// 	TListLayoutPlugin,
-// 	TListScrollPlugin,
-// 	TListKeyboardPlugin,
-// 	TListItemAccumulationPlugin,
-// } from '@soldy/plugins'
 import { ListBoxContribution } from '../../../contributions'
 import { ListDescriptor } from '../list'
+import {
+	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
+	DragPluginDescriptor,
+	ListLayoutPluginDescriptor,
+	ListKeyboardPluginDescriptor,
+	ListScrollPluginDescriptor,
+} from '../../plugins'
 
 export const ListBoxDescriptor = () =>
 	defineComponent({
@@ -25,17 +27,14 @@ export const ListBoxDescriptor = () =>
 		contribution: ListBoxContribution(),
 
 		plugins: [
-			// definePlugin({
-			// 	ctor: TListItemAccumulationPlugin,
-			// }),
-			// definePlugin({
-			// 	ctor: TListLayoutPlugin,
-			// }),
-			// definePlugin({
-			// 	ctor: TListKeyboardPlugin,
-			// }),
-			// definePlugin({
-			// 	ctor: TListScrollPlugin,
-			// }),
+			// Коллекция: реестр bundles + доступ к DOM-элементам
+			CollectionBundlesPluginDescriptor(),
+			CollectionElementsPluginDescriptor(),
+			// Список: maxRows, клавиатура, скролл
+			ListLayoutPluginDescriptor(),
+			ListKeyboardPluginDescriptor(),
+			ListScrollPluginDescriptor(),
+			// Drag-and-drop
+			DragPluginDescriptor(),
 		],
 	})

@@ -1,3 +1,3 @@
-export { default as BaseListBoxItem } from './list-box-item.component'
-export * from './list-box-item.component'
+export * from './base.component'
+export { default as BaseListBoxItem } from './base.component'
 export { default as ListBoxItem } from './ListBoxItem.vue'

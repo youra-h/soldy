@@ -1,17 +1,11 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
-import type {
-	TSelectableCollection,
-	TSelectableCollectionEvents,
-	TSelectionMode,
-	TItemProxyEvents,
-	ISelectableCollectionProps,
-} from '../../base/collection'
-import type { IListItem } from './list-item/types'
+import type { TEngineEvents } from '../../base/collection'
 import type { TScrollBehavior } from '../../../common'
+import type { IListCollectionProps } from './collection/types'
+import type { IListItem, IListItemProps } from './list-item/types'
 
 export type TListEvents = TControlEvents &
-	TSelectableCollectionEvents<IListItem> &
-	TItemProxyEvents<IListItem> & {
+	TEngineEvents<IListItem> & {
 		/** change:maxRows */
 		'change:maxRows': (value: number) => void
 		/** change:autoWidth */
@@ -20,14 +14,10 @@ export type TListEvents = TControlEvents &
 		'change:wordWrap': (value: boolean) => void
 		/** change:scrollBehavior */
 		'change:scrollBehavior': (value: TScrollBehavior) => void
-		'item:text': (item: IListItem, value: string) => void
-		'item:rendered': (item: IListItem, value: boolean) => void
-		'item:visible': (item: IListItem, value: boolean) => void
-		'item:present': (item: IListItem, value: boolean) => void
 	}
 
-export interface IListProps<TItem extends IListItem = IListItem>
-	extends IControlProps, ISelectableCollectionProps<TItem> {
+/** Пропсы самого компонента List (без коллекционной части). */
+export interface IListComponentProps extends IControlProps {
 	/** Максимальное количество видимых строк (0 = без ограничений) */
 	maxRows?: number
 	/** Ширина бокса определяется по самому длинному тексту */
@@ -38,16 +28,17 @@ export interface IListProps<TItem extends IListItem = IListItem>
 	scrollBehavior?: TScrollBehavior
 }
 
+/** Полный набор пропсов List: компонент + коллекция (engine, items, trackBy, mode). */
+export interface IListProps
+	extends IListComponentProps, IListCollectionProps<IListItemProps, IListItem> {}
+
 export type TListStates = TControlStates
 
 export interface IList<
-	TItem extends IListItem = IListItem,
-	TProps extends IListProps = IListProps,
+	TProps extends IListComponentProps = IListProps,
 	TEvents extends TListEvents = TListEvents,
 	TStates extends TListStates = TListStates,
 > extends IControl<TProps, TEvents, TStates> {
-	/** Режим выбора */
-	mode: TSelectionMode
 	/** Максимальное количество видимых строк (0 = без ограничений) */
 	maxRows: number
 	/** Ширина бокса определяется по самому длинному тексту */
@@ -56,8 +47,4 @@ export interface IList<
 	wordWrap: boolean
 	/** Поведение скролла при выделении элемента */
 	scrollBehavior: TScrollBehavior
-	/** Доступ к коллекции элементов */
-	readonly collection: TSelectableCollection<any, any, TItem>
-	/** Возвращает количество видимых элементов в списке */
-	getVisibleItemCount(): number
 }

@@ -1,38 +1,26 @@
 import { TList } from '../list'
+import type { IListComponentProps } from '../list/types'
 import type { IComponentViewOptions } from '../../base/component-view'
 import { TComponentView } from '../../base/component-view'
-import TListBoxItem from './list-box-item/list-box-item.class'
-import type { IListBoxItem } from './list-box-item/types'
-import type {
-	IListBoxProps,
-	TListBoxView,
-	TListBoxEvents,
-	TListBoxStates,
-	IListBox,
-} from './types'
 import { TEvented } from '../../../common'
+import type { IListBoxProps, TListBoxView, TListBoxEvents, TListBoxStates, IListBox } from './types'
 
+/**
+ * Компонент ListBox (TListBox).
+ * Наследует TList (maxRows, autoWidth, wordWrap, scrollBehavior) и добавляет view.
+ */
 export class TListBox
-	extends TList<IListBoxItem, IListBoxProps, TListBoxEvents, TListBoxStates>
+	extends TList<IListBoxProps, TListBoxEvents, TListBoxStates>
 	implements IListBox
 {
 	static override baseClass = 's-list-box'
 
-	static defaultValues: Partial<IListBoxProps> = {
+	static defaultValues: Partial<IListComponentProps & { view?: TListBoxView }> = {
 		...TList.defaultValues,
 		view: 'plain',
 	}
 
 	protected _view!: TListBoxView
-
-	protected override _createCollection(
-		props: Partial<IListBoxProps>,
-	): TSelectableCollection<any, any, IListBoxItem> {
-		return new TSelectableCollection<any, any, IListBoxItem>({
-			itemClass: TListBoxItem,
-			props,
-		})
-	}
 
 	constructor(
 		options: IComponentViewOptions<IListBoxProps, TListBoxStates> | Partial<IListBoxProps> = {},
@@ -41,24 +29,23 @@ export class TListBox
 
 		const ctor = new.target as typeof TListBox
 
-		const { props = {} } = TComponentView.prepareOptions<IListBoxProps, TListBoxStates>(options)
+		const { props = {} as Partial<IListBoxProps> } = TComponentView.prepareOptions<
+			IListBoxProps,
+			TListBoxStates
+		>(options)
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
-
-		this.events.relay(this._collection.events, [
-			{
-				from: 'item:added',
-				then: (payload: any) => {
-					const { item } = payload as { collection: any; item: IListBoxItem }
-
-					item.setViewResolver(() => this._view)
-				},
-			},
-		])
 	}
 
 	get view(): TListBoxView {
 		return this._view
+	}
+
+	set view(value: TListBoxView) {
+		if (this._view !== value) {
+			this._applyView(value, this._view)
+			;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
+		}
 	}
 
 	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView) {
@@ -66,19 +53,7 @@ export class TListBox
 			oldClass: `--${oldValue}`,
 			newClass: `--${newValue}`,
 		})
-
 		this._view = newValue
-	}
-
-	set view(value: TListBoxView) {
-		if (this._view !== value) {
-			this._applyView(value, this._view)
-
-			this._collection.forEach((item) => {
-				item.events.emit('change:view', value)
-			})
-			;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
-		}
 	}
 
 	override getProps(): IListBoxProps {

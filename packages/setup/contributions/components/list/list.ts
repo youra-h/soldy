@@ -7,5 +7,4 @@ export const ListContribution = (): IContribution => ({
 		wordWrap: { type: Boolean, triggers: ['change:wordWrap'] },
 		scrollBehavior: { type: String, triggers: ['change:scrollBehavior'] },
 	},
-	events: ['item:disabled', 'item:text', 'item:rendered', 'item:visible', 'item:present'],
 })

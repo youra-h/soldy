@@ -1,15 +1,15 @@
 /**
  * Дескриптор ListBoxItem (TListBoxItem).
  *
- * Наследует ListItemDescriptor (tag, text, wordWrap, selected, value, name, ...)
- * и добавляет view + плагин ListItem.
+ * Наследует ListItemDescriptor (text, wordWrap, selected, value, name, ...)
+ * и добавляет плагин подсветки элемента (клавиатурная навигация).
  */
 
-import { defineComponent, definePlugin } from '../../base'
+import { defineComponent } from '../../base'
 import { TListBoxItem } from '@soldy/core'
-// import { TListItemPlugin } from '@soldy/plugins'
-import { ListBoxItemContribution, ListItemPluginContribution } from '../../../contributions'
+import { ListBoxItemContribution } from '../../../contributions'
 import { ListItemDescriptor } from '../list'
+import { ListItemPluginDescriptor } from '../../plugins'
 
 export const ListBoxItemDescriptor = () =>
 	defineComponent({
@@ -19,10 +19,5 @@ export const ListBoxItemDescriptor = () =>
 
 		contribution: ListBoxItemContribution(),
 
-		plugins: [
-			// definePlugin({
-			// 	ctor: TListItemPlugin,
-			// 	contribution: ListItemPluginContribution,
-			// }),
-		],
+		plugins: [ListItemPluginDescriptor()],
 	})
