@@ -4,6 +4,7 @@ import EventLog from './common/EventLog.vue'
 import type { EventLogEntry } from './common/EventLog.vue'
 import ComponentView from './playgrounds/ComponentView.vue'
 import Icon from './playgrounds/Icon.vue'
+import ListBox from './playgrounds/ListBox.vue'
 import Spinner from './playgrounds/Spinner.vue'
 import Skeleton from './playgrounds/Skeleton.vue'
 import Button from './playgrounds/Button.vue'
@@ -40,14 +41,14 @@ const playgrounds = {
 	tabs: { component: markRaw(Tabs), label: 'Tabs' },
 	// tabs1: { component: markRaw(Tabs1), label: 'Tabs1' },
 	collapse: { component: markRaw(Collapse), label: 'Collapse' },
-	// 'list-box': { component: markRaw(ListBox), label: 'ListBox' },
+	'list-box': { component: markRaw(ListBox), label: 'ListBox' },
 	// 'list-box-test': { component: markRaw(ListBoxTest), label: 'ListBox test' },
 	// 'drag-and-drop': { component: markRaw(DragAndDrop), label: 'DragAndDrop' },
 	frame: { component: markRaw(Frame), label: 'Frame' },
 } as const
 
 // Активный playground (можно управлять через меню)
-const active = ref<keyof typeof playgrounds>('collapse')
+const active = ref<keyof typeof playgrounds>('list-box')
 
 // View mode: 'sandbox' | 'logs'
 const activeView = ref<'sandbox' | 'logs'>('sandbox')
