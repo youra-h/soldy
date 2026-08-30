@@ -14,9 +14,8 @@ import Input from './playgrounds/Input.vue'
 import Tabs from './playgrounds/Tabs.vue'
 // import Tabs1 from './playgrounds/Tabs1.vue'
 import Collapse from './playgrounds/Collapse.vue'
-// import ListBox from './playgrounds/ListBox.vue'
 // import ListBoxTest from './playgrounds/ListBoxTest.vue'
-// import DragAndDrop from './playgrounds/DragAndDrop.vue'
+import DragAndDrop from './playgrounds/DragAndDrop.vue'
 import Frame from './playgrounds/Frame.vue'
 
 /**
@@ -43,7 +42,7 @@ const playgrounds = {
 	collapse: { component: markRaw(Collapse), label: 'Collapse' },
 	'list-box': { component: markRaw(ListBox), label: 'ListBox' },
 	// 'list-box-test': { component: markRaw(ListBoxTest), label: 'ListBox test' },
-	// 'drag-and-drop': { component: markRaw(DragAndDrop), label: 'DragAndDrop' },
+	'drag-and-drop': { component: markRaw(DragAndDrop), label: 'DragAndDrop' },
 	frame: { component: markRaw(Frame), label: 'Frame' },
 } as const
 

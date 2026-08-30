@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { TTabs, TCollapse, CollapseFactory } from '@soldy/core';
+import {
+    TTabs,
+    TabsFactory,
+    TCollapse,
+    CollapseFactory,
+    TListBox,
+    ListBoxFactory,
+} from '@soldy/core';
 import type {
     TComponentSize,
     TComponentVariant,
@@ -12,6 +19,8 @@ import {
     TabItem,
     Collapse,
     CollapseItem,
+    ListBox,
+    ListBoxItem,
 } from '@soldy/ui-vue';
 
 type Props = {
@@ -29,15 +38,21 @@ tabs.variant = 'accent';
 tabs.view = 'contained';
 tabs.orientation = 'horizontal';
 
-tabs.collection.add({ text: 'Dashboard', value: 'dashboard', closable: true });
-tabs.collection.add({ text: 'Reports', value: 'reports', closable: true });
-tabs.collection.add({ text: 'Users', value: 'users' });
-tabs.collection.add({ text: 'Logs', value: 'logs' });
-tabs.collection.add({ text: 'Storage', value: 'storage' });
-tabs.collection.add({ text: 'Config', value: 'config' });
+const tabsCollection = TabsFactory(tabs);
+const { plain: tabsPlain, activation } = tabsCollection.extensions;
 
-const dashboardItem = tabs.collection.findBy('value', 'dashboard')!;
-tabs.collection.setActive(dashboardItem);
+const dashboardTab = tabsPlain.push({
+    text: 'Dashboard',
+    value: 'dashboard',
+    closable: true,
+});
+tabsPlain.push({ text: 'Reports', value: 'reports', closable: true });
+tabsPlain.push({ text: 'Users', value: 'users' });
+tabsPlain.push({ text: 'Logs', value: 'logs' });
+tabsPlain.push({ text: 'Storage', value: 'storage' });
+tabsPlain.push({ text: 'Config', value: 'config' });
+
+activation.activate(dashboardTab);
 
 // --- Вариант 2: через prop items ---
 
@@ -46,8 +61,8 @@ const tabItems = ref([
     {
         text: 'Notifications',
         value: 'notifications',
-        active: true,
         closable: true,
+        _: { active: true },
     },
     { text: 'Security', value: 'security', closable: true },
     { text: 'Billing', value: 'billing' },
@@ -84,6 +99,32 @@ const collapseItems = ref([
     { text: 'API Reference', value: 'api-reference' },
     { text: 'Examples', value: 'examples' },
     { text: 'FAQ', value: 'faq' },
+]);
+
+// --- ListBox: через instance ---
+
+const listBox = new TListBox();
+listBox.variant = 'accent';
+listBox.view = 'outlined';
+
+const listBoxCollection = ListBoxFactory(listBox);
+const { plain: listBoxPlain, selection: listBoxSelection } =
+    listBoxCollection.extensions;
+listBoxSelection.mode = 'multiple';
+
+listBoxPlain.push({ text: 'Alpha', value: 'alpha' });
+listBoxPlain.push({ text: 'Beta', value: 'beta' });
+const gammaItem = listBoxPlain.push({ text: 'Gamma', value: 'gamma' });
+listBoxPlain.push({ text: 'Delta', value: 'delta' });
+
+listBoxSelection.select(gammaItem);
+
+// --- ListBox: через prop items ---
+
+const listBoxItems = ref([
+    { text: 'One', value: 'one', _: { selected: true } },
+    { text: 'Two', value: 'two' },
+    { text: 'Three', value: 'three' },
 ]);
 </script>
 
@@ -127,7 +168,7 @@ const collapseItems = ref([
         <section class="drag-slots-demo__section">
             <h3 class="drag-slots-demo__title">Instance (:ctrl)</h3>
             <DragAndDrop>
-                <Tabs :ctrl="tabs">
+                <Tabs :ctrl="tabs" :engine="tabsCollection">
                     <template #panel:dashboard
                         ><p>Dashboard content</p></template
                     >
@@ -233,6 +274,45 @@ const collapseItems = ref([
                     <template #panel:examples><p>Examples content</p></template>
                     <template #panel:faq><p>FAQ content</p></template>
                 </Collapse>
+            </DragAndDrop>
+        </section>
+
+        <!-- === ListBox === -->
+
+        <!-- ListBox: декларативный (ListBoxItem в слоте) -->
+        <section class="drag-slots-demo__section">
+            <h3 class="drag-slots-demo__title">
+                ListBox — Declarative (ListBoxItem slots)
+            </h3>
+            <DragAndDrop>
+                <ListBox mode="multiple" view="plain">
+                    <ListBoxItem text="Item 1" value="i1" :selected="true" />
+                    <ListBoxItem text="Item 2" value="i2" />
+                    <ListBoxItem text="Item 3" value="i3" />
+                    <ListBoxItem text="Item 4" value="i4" />
+                </ListBox>
+            </DragAndDrop>
+        </section>
+
+        <!-- ListBox: программный (через :ctrl) -->
+        <section class="drag-slots-demo__section">
+            <h3 class="drag-slots-demo__title">ListBox — Instance (:ctrl)</h3>
+            <DragAndDrop>
+                <ListBox :ctrl="listBox" :engine="listBoxCollection" />
+            </DragAndDrop>
+        </section>
+
+        <!-- ListBox: через prop :items -->
+        <section class="drag-slots-demo__section">
+            <h3 class="drag-slots-demo__title">
+                ListBox — Items prop (:items)
+            </h3>
+            <DragAndDrop>
+                <ListBox
+                    :items="listBoxItems"
+                    mode="multiple"
+                    view="outlined"
+                />
             </DragAndDrop>
         </section>
     </div>
