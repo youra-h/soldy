@@ -4,11 +4,17 @@ import {
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
 	CollapseDescriptor,
+	CollapseCollectionDescriptor,
 } from '@soldy/setup'
-import { useVue, VueElevatorFactory } from '../../adapter'
+import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
 import BaseCollapse from './base.component'
 import type { TBaseComponentProps } from '../../types'
-import { type ICollapseProps, type ICollapse } from '@soldy/core'
+import {
+	type ICollapseProps,
+	type ICollapseComponentProps,
+	type ICollapse,
+	type ICollapseCollectionOutput,
+} from '@soldy/core'
 
 export default {
 	name: '_Collapse',
@@ -18,9 +24,18 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TCollectionExtension, {
+				descriptor: CollapseCollectionDescriptor(),
+				engine: toRaw(props.engine),
+				elevator: VueElevatorFactory,
+			})
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		return useVue<ICollapseProps, ICollapse>(adapter, props, emit)
+		const collectionRefs = useVueCollection<ICollapseCollectionOutput>(adapter, props)
+
+		return {
+			...useVue<ICollapseComponentProps, ICollapse>(adapter, props, emit),
+			...collectionRefs,
+		}
 	},
 }

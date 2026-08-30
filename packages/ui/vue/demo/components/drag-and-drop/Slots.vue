@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { TTabs, TCollapse } from '@soldy/core';
+import { TTabs, TCollapse, CollapseFactory } from '@soldy/core';
 import type {
     TComponentSize,
     TComponentVariant,
@@ -59,21 +59,27 @@ const tabItems = ref([
 const collapse = new TCollapse();
 collapse.variant = 'accent';
 collapse.view = 'outlined';
-collapse.mode = 'multiple';
 
-collapse.collection.add({ text: 'Getting Started', value: 'getting-started' });
-collapse.collection.add({ text: 'Installation', value: 'installation' });
-collapse.collection.add({ text: 'Configuration', value: 'configuration' });
-collapse.collection.add({ text: 'Deployment', value: 'deployment' });
-collapse.collection.add({ text: 'Troubleshooting', value: 'troubleshooting' });
+const collapseCollection = CollapseFactory(collapse);
+const { plain: collapsePlain, selection: collapseSelection } =
+    collapseCollection.extensions;
+collapseSelection.mode = 'multiple';
 
-const gettingStarted = collapse.collection.findBy('value', 'getting-started')!;
-gettingStarted.selected = true;
+collapsePlain.push({ text: 'Getting Started', value: 'getting-started' });
+collapsePlain.push({ text: 'Installation', value: 'installation' });
+collapsePlain.push({ text: 'Configuration', value: 'configuration' });
+collapsePlain.push({ text: 'Deployment', value: 'deployment' });
+collapsePlain.push({ text: 'Troubleshooting', value: 'troubleshooting' });
+
+const gettingStarted = collapsePlain.find(
+    (item) => item.value === 'getting-started',
+)!;
+collapseSelection.select(gettingStarted);
 
 // --- Collapse: через prop items ---
 
 const collapseItems = ref([
-    { text: 'Overview', value: 'overview', selected: true },
+    { text: 'Overview', value: 'overview', _: { selected: true } },
     { text: 'Quick Start', value: 'quick-start' },
     { text: 'API Reference', value: 'api-reference' },
     { text: 'Examples', value: 'examples' },
@@ -186,7 +192,7 @@ const collapseItems = ref([
         <section class="drag-slots-demo__section">
             <h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
             <DragAndDrop>
-                <Collapse :ctrl="collapse">
+                <Collapse :ctrl="collapse" :engine="collapseCollection">
                     <template #panel:getting-started
                         ><p>Getting Started content</p></template
                     >

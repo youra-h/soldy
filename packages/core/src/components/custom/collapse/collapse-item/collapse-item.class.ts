@@ -1,44 +1,93 @@
-import TCollapseItemCustom from './collapse-item-custom.class'
+import { TValueControl } from '../../../base/value-control'
+import type { IComponentViewOptions } from '../../../base/component-view'
+import { TComponentView } from '../../../base/component-view'
+import { TStateUnit, TEvented } from '../../../../common'
+import type { TValuePayload } from '../../../../common'
 import type {
 	ICollapseItem,
-	TCollapseItemOptions,
 	ICollapseItemProps,
+	TCollapseArrowPlacement,
 	TCollapseItemEvents,
+	TCollapseItemStates,
 } from './types'
 
 /**
- * Элемент collapse для работы в коллекции.
- * Архитектура: наследование от TCollapseItemCustom (UI-компонент) + SelectableComponentMixin (логика коллекции).
+ * Логика элемента Collapse (без коллекционной части).
+ * Наследуется от TValueControl, где value — это ключ элемента.
+ * Generic TProps позволяет передавать расширенные Props (например, ICollapseItemProps с selected).
  */
-export default class TCollapseItem
-	// extends SelectableComponentMixin(TCollapseItemCustom<ICollapseItemProps, TCollapseItemEvents>)
-	implements ICollapseItem
+export default class TCollapseItem<
+	TProps extends ICollapseItemProps = ICollapseItemProps,
+	TEvents extends TCollapseItemEvents = TCollapseItemEvents,
+>
+	extends TValueControl<string | number, TProps, TEvents, TCollapseItemStates>
+	implements ICollapseItem<TProps, TEvents>
 {
-	constructor(options: TCollapseItemOptions | Partial<ICollapseItemProps> = {}) {
-		// super(options)
+	static override baseClass = 's-collapse-item'
 
-		this.init(options)
+	static defaultValues: Partial<ICollapseItemProps> = {
+		...TValueControl.defaultValues,
+		text: '',
+		value: '',
+		arrowPlacement: 'start',
+		variant: 'normal',
+		tag: 'button',
 	}
 
-	open(): void {
-		this.selected = true
+	protected _arrowPlacement!: TCollapseArrowPlacement
+
+	constructor(
+		options: IComponentViewOptions<TProps, TCollapseItemStates> | Partial<TProps> = {},
+	) {
+		super(options)
+
+		const ctor = new.target as typeof TCollapseItem
+
+		const { props = {}, states } = TComponentView.prepareOptions<
+			TProps,
+			TCollapseItemStates
+		>(options)
+
+		// Type assertion: TProps extends ICollapseItemProps, поэтому props содержит text и arrowPlacement
+		const customProps = props as Partial<ICollapseItemProps>
+
+		// Инициализация state-объектов
+		this._states.text =
+			states?.text ??
+			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
+
+		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement!
+
+		// Подписка на изменения state-объектов
+		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
+			;(this.events as TEvented<TCollapseItemEvents>).emit('change:text', payload)
+		})
 	}
 
-	close(): void {
-		this.selected = false
+	get text(): string {
+		return this._states.text.value
 	}
 
-	override getProps(): ICollapseItemProps {
-		return {
-			...super.getProps(),
-			selected: this.selected,
-			order: this.order,
+	set text(value: string) {
+		this._states.text.value = value
+	}
+
+	get arrowPlacement(): TCollapseArrowPlacement {
+		return this._arrowPlacement
+	}
+
+	set arrowPlacement(value: TCollapseArrowPlacement) {
+		if (this._arrowPlacement !== value) {
+			this._arrowPlacement = value
+			;(this.events as TEvented<TCollapseItemEvents>).emit('change:arrowPlacement', value)
 		}
 	}
 
-	override assign(source: Partial<ICollapseItem>): void {
-		super.assign(source)
-
-		if (source.selected !== undefined) this.selected = source.selected
+	override getProps(): TProps {
+		return {
+			...super.getProps(),
+			text: this.text,
+			arrowPlacement: this._arrowPlacement,
+		} as TProps
 	}
 }

@@ -12,16 +12,17 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:style="{ order }"
+		:style="{ order: order }"
+		:aria-selected="selected"
 		v-bind="containerAttrs"
 	>
 		<Button
 			class="s-collapse-item__header"
-			:view="view"
+			:view="collapse_view"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			@click="ctrl.toggleSelected()"
+			@click="context.adapters.selection.toggle()"
 			v-bind="controlAttrs"
 		>
 			<template #leading>
@@ -83,7 +84,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		@apply shrink-0;
 	}
 
-	&--selected &__arrow {
+	&[aria-selected='true'] &__arrow {
 		@apply rotate-90;
 	}
 
@@ -92,7 +93,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		transition: grid-template-rows 300ms ease;
 	}
 
-	&--selected > &__body {
+	&[aria-selected='true'] > &__body {
 		@apply grid-rows-[1fr];
 	}
 
@@ -101,7 +102,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		transition: padding 300ms ease;
 	}
 
-	&--selected &__content {
+	&[aria-selected='true'] &__content {
 		@apply py-2;
 	}
 }

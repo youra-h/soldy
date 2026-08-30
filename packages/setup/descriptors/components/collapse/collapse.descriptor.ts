@@ -2,19 +2,20 @@
  * Дескриптор Collapse (TCollapse).
  *
  * Наследование:
- * - ControlDescriptor (disabled, focused, size, variant, ...)
+ * - ControlDescriptor (disabled, focused, size, variant, rendered, visible, present, tag, classes)
  *
- * Композиция:
- * - SelectableCollectionDescriptor → collection:* (items, mode, selected, events)
- *
- * Добавляет: view + плагины.
+ * Добавляет: view + плагины (коллекция + drag-and-drop).
  */
 
 import { defineComponent } from '../../base'
 import { TCollapse } from '@soldy/core'
 import { CollapseContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
-import { DragPluginDescriptor } from '../../plugins'
+import {
+	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
+	DragPluginDescriptor,
+} from '../../plugins'
 
 export const CollapseDescriptor = () =>
 	defineComponent({
@@ -24,5 +25,11 @@ export const CollapseDescriptor = () =>
 
 		contribution: CollapseContribution(),
 
-		plugins: [DragPluginDescriptor()],
+		plugins: [
+			// Коллекция: реестр bundles + доступ к DOM-элементам
+			CollectionBundlesPluginDescriptor(),
+			CollectionElementsPluginDescriptor(),
+			// Drag-and-drop
+			DragPluginDescriptor(),
+		],
 	})

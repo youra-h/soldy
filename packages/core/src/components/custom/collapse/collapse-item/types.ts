@@ -4,67 +4,42 @@ import type {
 	TValueControlEvents,
 	TValueControlStates,
 } from '../../../base/value-control'
-import type {
-	ISelectableCollectionItemProps,
-	TSelectableItemEvents,
-	ISelectableComponentItem,
-} from '../../../base/collection'
-import type { TCollectableOptions } from '../../../base/collection'
-import type { IComponentViewOptions } from '../../../base/component-view'
 import type { IStateUnit, TValuePayload } from '../../../../common'
-import type { TCollapseView } from '../types'
-
-// ============ TCollapseItemCustom (UI-логика без коллекции) ============
+import type { IComponentViewOptions } from '../../../base/component-view'
+import type { ICollapseCollectionItemProps } from '../collection/types'
 
 export type TCollapseArrowPlacement = 'start' | 'end'
 
-export type TCollapseItemCustomEvents<TItem = any> = TValueControlEvents<string | number> & {
+export type TCollapseItemEvents = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
 	/** change:arrowPlacement */
 	'change:arrowPlacement': (value: TCollapseArrowPlacement) => void
-	/** change:view */
-	'change:view': (value: TCollapseView) => void
 }
 
-export interface ICollapseItemCustomProps extends IValueControlProps<string | number> {
+export interface ICollapseItemProps
+	extends IValueControlProps<string | number>,
+		ICollapseCollectionItemProps {
 	/** Текст заголовка элемента */
 	text?: string
-	/** Позиция иконки */
+	/** Позиция иконки-стрелки */
 	arrowPlacement?: TCollapseArrowPlacement
 }
 
-export type TCollapseItemCustomStates = TValueControlStates<string | number> & {
+export type TCollapseItemStates = TValueControlStates<string | number> & {
 	text: IStateUnit<string>
 }
 
-export interface ICollapseItemCustom<
-	TProps extends ICollapseItemCustomProps = ICollapseItemCustomProps,
-> extends IValueControl<string | number, TProps, TCollapseItemCustomEvents<any>> {
+export interface ICollapseItem<
+	TProps extends ICollapseItemProps = ICollapseItemProps,
+	TEvents extends TCollapseItemEvents = TCollapseItemEvents,
+	TStates extends TCollapseItemStates = TCollapseItemStates,
+> extends IValueControl<string | number, TProps, TEvents, TStates> {
 	/** Текст заголовка элемента */
 	text: string
-	/** Позиция иконки */
+	/** Позиция иконки-стрелки */
 	arrowPlacement: TCollapseArrowPlacement
-	/** Внешний вид (readonly, наследуется от TCollapse) */
-	readonly view: TCollapseView
-	/** Инжектирует резолвер view из TCollapse */
-	setViewResolver(resolver: () => TCollapseView): void
 }
 
-// ============ TCollapseItem (коллекционный элемент с композицией) ============
+export type TCollapseItemOptions = IComponentViewOptions<ICollapseItemProps, TCollapseItemStates>
 
-export type TCollapseItemOptions = TCollectableOptions<
-	IComponentViewOptions<ICollapseItemProps, TCollapseItemCustomStates>
->
-
-export type TCollapseItemEvents = TSelectableItemEvents<ICollapseItem> &
-	TCollapseItemCustomEvents<ICollapseItem>
-
-export interface ICollapseItemProps
-	extends ISelectableCollectionItemProps, ICollapseItemCustomProps {}
-
-export interface ICollapseItem
-	extends ICollapseItemCustom<ICollapseItemProps>, ISelectableComponentItem {
-	open(): void
-	close(): void
-}

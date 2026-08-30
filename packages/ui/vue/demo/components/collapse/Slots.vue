@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TCollapse } from '@soldy/core'
+import { TCollapse, CollapseFactory } from '@soldy/core'
 import { Collapse, CollapseItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
@@ -12,14 +12,15 @@ defineProps<Props>()
 
 const APPEARANCES = ['plain', 'outlined', 'filled'] as const
 
-const collapseInstance = new TCollapse({
-	items: [
-		{ text: 'Section A', value: 'sA', _: { selected: true } },
-		{ text: 'Section B', value: 'sB' },
-		{ text: 'Section C', value: 'sC' },
-	],
-	mode: 'multiple',
-})
+const collapseInstance = new TCollapse()
+const collection = CollapseFactory(collapseInstance)
+const { plain, selection } = collection.extensions
+
+const sectionA = plain.push({ text: 'Section A', value: 'sA' })
+plain.push({ text: 'Section B', value: 'sB' })
+plain.push({ text: 'Section C', value: 'sC' })
+
+selection.select(sectionA)
 </script>
 
 <template>
@@ -77,24 +78,15 @@ const collapseInstance = new TCollapse({
 		<div class="collapse-slots-demo__section">
 			<h4 class="collapse-slots-demo__subtitle">Custom #item slot</h4>
 			<Collapse
-				:instance="collapseInstance"
+				:ctrl="collapseInstance"
+				:engine="collection"
 				view="outlined"
 				:size="size"
 				:variant="variant"
 				mode="multiple"
 			>
-				<template #item="{ ctrl, text, selected }">
-					{{ text }} — {{ selected ? 'selected' : 'not selected' }}
-					<!-- <CollapseItem :ctrl="ctrl">
-						<template #leading>
-							<span class="collapse-slots-demo__badge">{{
-								selected ? '📂' : '📁'
-							}}</span>
-						</template>
-						<p>
-							Content for <strong>{{ text }}</strong>
-						</p>
-					</CollapseItem> -->
+				<template #item="{ item }">
+					{{ item.text }}
 				</template>
 			</Collapse>
 		</div>
@@ -123,6 +115,7 @@ const collapseInstance = new TCollapse({
 			<h4 class="collapse-slots-demo__subtitle">Per-item slots via Collapse</h4>
 			<Collapse
 				:ctrl="collapseInstance"
+				:engine="collection"
 				view="outlined"
 				:size="size"
 				:variant="variant"
@@ -131,7 +124,7 @@ const collapseInstance = new TCollapse({
 					<span class="collapse-slots-demo__badge">📂</span>
 				</template>
 				<template #item:sB:header="{ item }">
-					<span :class="{ 'font-bold': item.selected }">{{ item.text }}</span>
+					<span class="font-bold">{{ item.text }}</span>
 				</template>
 				<template #item:sC:trailing>
 					<span class="collapse-slots-demo__badge">🔒</span>
@@ -147,14 +140,15 @@ const collapseInstance = new TCollapse({
 			<h4 class="collapse-slots-demo__subtitle">Custom #item slot (catch-all)</h4>
 			<Collapse
 				:ctrl="collapseInstance"
+				:engine="collection"
 				view="outlined"
 				:size="size"
 				:variant="variant"
 			>
 				<template #item="{ item }">
 					<div class="flex items-center gap-2">
-						<span>{{ item.selected ? '📂' : '📁' }}</span>
-						<span :class="{ 'font-bold': item.selected }">{{ item.text }}</span>
+						<span>📁</span>
+						<span>{{ item.text }}</span>
 					</div>
 				</template>
 				<template #panel:sA><p>Content A</p></template>

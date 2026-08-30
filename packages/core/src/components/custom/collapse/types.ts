@@ -1,40 +1,30 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
-import type {
-	TSelectableCollection,
-	TSelectableCollectionEvents,
-	TSelectionMode,
-	TItemProxyEvents,
-	ISelectableCollectionProps,
-} from '../../base/collection'
-import type { ICollapseItem } from './collapse-item/types'
+import type { TEngineEvents } from '../../base/collection'
+import type { ICollapseCollectionProps } from './collection/types'
+import type { ICollapseItem, ICollapseItemProps } from './collapse-item/types'
 
 export type TCollapseView = 'plain' | 'outlined' | 'filled'
 
 export type TCollapseEvents = TControlEvents &
-	TSelectableCollectionEvents &
-	TItemProxyEvents<ICollapseItem> & {
+	TEngineEvents<ICollapseItem> & {
 		/** change:view */
 		'change:view': (value: TCollapseView) => void
-		'item:text': (item: ICollapseItem, value: string) => void
-		'item:rendered': (item: ICollapseItem, value: boolean) => void
-		'item:visible': (item: ICollapseItem, value: boolean) => void
-		'item:present': (item: ICollapseItem, value: boolean) => void
 	}
 
-export interface ICollapseProps<
-	TItem extends ICollapseItem = ICollapseItem,
-> extends IControlProps, ISelectableCollectionProps<TItem> {
+/** Пропсы самого компонента Collapse (без коллекционной части). */
+export interface ICollapseComponentProps extends IControlProps {
 	/** Внешний вид компонента */
 	view?: TCollapseView
 }
+
+/** Полный набор пропсов Collapse: компонент + коллекция (engine, items, trackBy, mode). */
+export interface ICollapseProps
+	extends ICollapseComponentProps,
+		ICollapseCollectionProps<ICollapseItemProps, ICollapseItem> {}
 
 export type TCollapseStates = TControlStates
 
 export interface ICollapse extends IControl<ICollapseProps, TCollapseEvents> {
 	/** Внешний вид компонента */
 	view: TCollapseView
-	/** Режим выбора */
-	mode: TSelectionMode
-	/** Доступ к коллекции элементов */
-	readonly collection: TSelectableCollection<any, any, ICollapseItem>
 }

@@ -1,5 +1,3 @@
-export { default as BaseCollapseItem } from './collapse-item.component'
-export * from './collapse-item.component'
-export { default as BaseCollapseItemCustom } from './collapse-item-custom.component'
-export * from './collapse-item-custom.component'
+export * from './base.component'
+export { default as BaseCollapseItem } from './base.component'
 export { default as CollapseItem } from './CollapseItem.vue'

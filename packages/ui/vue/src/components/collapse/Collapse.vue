@@ -8,7 +8,7 @@ export default { ...SetupCollapse, components: { CollapseItem } }
 <template>
 	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes">
 		<slot>
-			<CollapseItem v-for="item in items" :key="item.uid" :ctrl="item" :view="view">
+			<CollapseItem v-for="item in items" :key="item.uid" :ctrl="item">
 				<template #leading>
 					<slot :name="`item:${item.value}:leading`" :item="item" />
 				</template>
@@ -27,10 +27,7 @@ export default { ...SetupCollapse, components: { CollapseItem } }
 </template>
 
 <style lang="scss">
-@use './_mixines' as mixines;
 .s-collapse {
-	$this: &;
-
 	@apply flex flex-col gap-1;
 }
 </style>

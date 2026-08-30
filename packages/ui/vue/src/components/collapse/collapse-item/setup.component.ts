@@ -3,12 +3,13 @@ import {
 	createAdapterContext,
 	TCollectionItemExtension,
 	CollapseItemDescriptor,
+	CollapseCollectionDescriptor,
 } from '@soldy/setup'
-import { useVue, VueElevatorFactory } from '../../../adapter'
+import type { ICollapseItemProps, ICollapseItem, TCollapseCollectionExtensions } from '@soldy/core'
+import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import BaseCollapseItem from './collapse-item.component'
+import BaseCollapseItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
-import { type ICollapseItemProps, type ICollapseItem } from '@soldy/core'
 
 export default {
 	name: '_CollapseItem',
@@ -18,10 +19,20 @@ export default {
 		const adapter = createAdapterContext(CollapseItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
-		}).use(TCollectionItemExtension, { elevator: VueElevatorFactory })
+		}).use(TCollectionItemExtension, {
+			descriptor: CollapseCollectionDescriptor(),
+			elevator: VueElevatorFactory,
+		})
+
+		const { context, ...itemRefs } = useVueCollectionItem<
+			ICollapseItem,
+			TCollapseCollectionExtensions
+		>(adapter, props)
 
 		return {
 			...useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit),
+			...itemRefs,
+			context,
 			arrowIconTag: useIconImport('arrowRight'),
 			...useSplitAttrs(),
 		}
