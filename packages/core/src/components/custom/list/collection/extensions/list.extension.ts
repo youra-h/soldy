@@ -1,4 +1,4 @@
-import type { IExtension, IExtensionContext } from '../../../../base/collection'
+import type { IExtension, IExtensionContext, IItemExtensionCtor } from '../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../base/collection'
 import type { IListItem } from '../../list-item/types'
 import type { IList } from '../../types'
@@ -13,26 +13,38 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  * пробрасывает свойства (disabled, size, variant, wordWrap) на добавляемые элементы,
  * а также подписывается на изменения владельца для синхронизации.
  *
- * @template TOwner — тип владельца (TList или наследник)
- * @template TItem  — тип элемента (IListItem или наследник)
+ * @template TOwner   — тип владельца (TList или наследник)
+ * @template TItem    — тип элемента (IListItem или наследник)
+ * @template TItemExt — тип item-адаптера (переопределяется в наследниках)
  */
-export class TListExtension<TOwner extends IList = IList, TItem extends IListItem = IListItem>
-	extends TBaseOwnerItemExtension<TItem, IListItemExtension<TItem>, TListExtensionEvents>
-	implements IExtension<TItem>, IListExtension<TItem>
+export class TListExtension<
+	TOwner extends IList<any, any, any> = IList<any, any, any>,
+	TItem extends IListItem = IListItem,
+	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+>
+	extends TBaseOwnerItemExtension<TItem, TItemExt, TListExtensionEvents>
+	implements IExtension<TItem>, IListExtension<TItem, TItemExt>
 {
-	readonly name = 'list' as const
+	readonly name: string = 'list'
 
 	/**
 	 * Ссылка на инстанс TList, переданная через конструктор.
 	 * Используется для проброса свойств на элементы и подписки на события.
-	 * @private
+	 * @protected
 	 * @readonly
 	 * @type {TOwner}
 	 */
-	private readonly _owner: TOwner
+	protected readonly _owner: TOwner
 
-	constructor(options: IListExtensionOptions<TOwner, TItem>) {
-		super(TListItemExtension, options)
+	constructor(
+		options: IListExtensionOptions<TOwner, TItem, TItemExt>,
+		itemCtor: IItemExtensionCtor<
+			TItem,
+			any,
+			TItemExt
+		> = TListItemExtension as unknown as IItemExtensionCtor<TItem, any, TItemExt>,
+	) {
+		super(itemCtor, options)
 
 		this._owner = options.owner
 	}

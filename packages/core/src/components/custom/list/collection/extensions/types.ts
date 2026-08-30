@@ -12,8 +12,11 @@ import type { IListItem } from '../../list-item/types'
  * Контракт расширения list.
  * Используется как тип TParent в TListItemExtension для типизированного доступа к _parent.
  */
-export interface IListExtension<TItem extends IListItem = IListItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, IListItemExtension<TItem>> {
+export interface IListExtension<
+	TItem extends IListItem = IListItem,
+	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+>
+	extends IExtension<TItem>, IExtensionItems<TItem, TItemExt> {
 	/** Глобальный wordWrap с инстанса TList. */
 	readonly wordWrap: boolean
 }
@@ -23,9 +26,10 @@ export interface IListExtension<TItem extends IListItem = IListItem>
  * Расширяет IBaseOwnerItemExtensionOptions ссылкой на инстанс TList.
  */
 export interface IListExtensionOptions<
-	TOwner extends IList = IList,
+	TOwner extends IList<any, any, any> = IList<any, any, any>,
 	TItem extends IListItem = IListItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, IListItemExtension<TItem>> {
+	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+> extends IBaseOwnerItemExtensionOptions<TItem, TItemExt> {
 	/** Ссылка на инстанс компонента TList. */
 	owner: TOwner
 }

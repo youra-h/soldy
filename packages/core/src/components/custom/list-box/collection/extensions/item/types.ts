@@ -1,20 +1,19 @@
-import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../base/collection'
+import type {
+	IListItemExtension,
+	TListItemEventsExtension,
+} from '../../../../list/collection/extensions/item/types'
 
-export type TListBoxItemEventsExtension = TBaseItemEventsExtension & {
-	'change:wordWrap': (value: boolean) => void
+export type TListBoxItemEventsExtension = TListItemEventsExtension & {
 	'change:view': (value: string) => void
 }
 
 /**
  * Контракт item-адаптера listBox.
- * Предоставляет wordWrap (элемент ?? владелец) и view (владелец).
+ * Наследует IListItemExtension (wordWrap) и добавляет view (владелец).
  */
-export interface IListBoxItemExtension<TItem extends object = any> extends IItemExtension<
-	TItem,
-	TListBoxItemEventsExtension
-> {
-	/** Перенос текста (элемент ?? родительский TListBox). */
-	readonly wordWrap: boolean
+export interface IListBoxItemExtension<
+	TItem extends object = any,
+> extends IListItemExtension<TItem> {
 	/** Внешний вид элемента (наследуется от TListBox). */
 	readonly view: string
 }
