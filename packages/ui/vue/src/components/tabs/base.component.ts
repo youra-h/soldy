@@ -1,16 +1,16 @@
 import { BaseControl } from '../control'
-import { useEmits, useProps, useCollectionProps, useCollectionEmits } from '../../adapter'
+import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { TabsDescriptor, TabsCollectionDescriptor } from '@soldy/setup'
 
 export const emitsTabs: TEmits = [
 	...useEmits(TabsDescriptor()),
-	...useCollectionEmits(TabsCollectionDescriptor()),
+	...useEmits(TabsCollectionDescriptor()),
 ] as unknown as TEmits
 
 export const propsTabs: TProps = {
 	...(useProps(TabsDescriptor()) as TProps),
-	...(useCollectionProps(TabsCollectionDescriptor()) as TProps),
+	...(useProps(TabsCollectionDescriptor()) as TProps),
 }
 
 export default {

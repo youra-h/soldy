@@ -1,16 +1,16 @@
 import { BaseControl } from '../control'
-import { useEmits, useProps, useCollectionProps, useCollectionEmits } from '../../adapter'
+import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { CollapseDescriptor, CollapseCollectionDescriptor } from '@soldy/setup'
 
 export const emitsCollapse: TEmits = [
 	...useEmits(CollapseDescriptor()),
-	...useCollectionEmits(CollapseCollectionDescriptor()),
+	...useEmits(CollapseCollectionDescriptor()),
 ] as unknown as TEmits
 
 export const propsCollapse: TProps = {
 	...(useProps(CollapseDescriptor()) as TProps),
-	...(useCollectionProps(CollapseCollectionDescriptor()) as TProps),
+	...(useProps(CollapseCollectionDescriptor()) as TProps),
 }
 
 export default {

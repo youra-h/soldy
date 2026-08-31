@@ -27,7 +27,9 @@ export class TDragAndDropCollectionExtension {
 
 		if (!dragContext) return
 
-		const collection = context.get(TCollectionFactoryExtension)?.collection
+		const collection =
+			(context.instance as any)?.collection ??
+			context.get(TCollectionFactoryExtension)?.collection
 
 		if (collection) {
 			bundle.get(TDragPlugin)?.activate(collection)

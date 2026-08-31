@@ -6,14 +6,14 @@ import {
 	TabsDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
-import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
+import { TTabsCollectionFacade } from '@soldy/core'
+import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseTabs from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import {
 	type ITabsProps,
 	type ITabsComponentProps,
 	type ITabs,
-	type ITabsCollectionOutput,
 } from '@soldy/core'
 
 export default {
@@ -24,18 +24,28 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionExtension, {
-				descriptor: TabsCollectionDescriptor(),
-				engine: toRaw(props.engine),
-				elevator: VueElevatorFactory,
-			})
+
+		const facade = new TTabsCollectionFacade(adapter.instance, {
+			engine: toRaw(props.engine),
+			items: toRaw(props.items),
+			trackBy: toRaw(props.trackBy),
+		})
+
+		const collectionAdapter = createAdapterContext(TabsCollectionDescriptor(), {
+			ctrl: facade,
+			props,
+		})
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collectionRefs = useVueCollection<ITabsCollectionOutput>(adapter, props)
+		const collectionBinding = useVue<Record<string, any>, TTabsCollectionFacade>(
+			collectionAdapter,
+			props,
+			emit,
+		)
 
-		return {
-			...useVue<ITabsComponentProps, ITabs>(adapter, props, emit),
-			...collectionRefs,
-		}
+		const ownerBinding = useVue<ITabsComponentProps, ITabs>(adapter, props, emit)
+
+		return { ...collectionBinding, ...ownerBinding }
 	},
 }

@@ -1,28 +1,25 @@
 /**
  * TCollectionExtension — единая точка входа для настройки коллекции.
  *
- * Композиция из трёх шагов:
- *   1. создание коллекции (TCollectionFactoryExtension);
- *   2. применение owner-пропсов (TCollectionPropsExtension);
- *   3. привязка коллекции к реестру bundles + регистрация item-ов через COLLECTION_ELEVATOR.
+ * Два режима:
+ *  1. Фасад (context.instance владеет `collection`) — Tabs/Collapse после рефакторинга.
+ *  2. Legacy (descriptor + TCollectionFactoryExtension) — List/ListBox.
  *
- * `descriptor` опционален: если он не задан, шаги 1-2 пропускаются
- * (коллекция должна быть создана ранее — например, pass-through через `engine`).
- *
- * Использование:
- *   adapter.use(TCollectionExtension, { descriptor, elevator, engine? })
+ * В обоих режимах выполняется: привязка коллекции к реестру bundles,
+ * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
+ * через COLLECTION_ELEVATOR.
  */
 
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
-import { COLLECTION_ELEVATOR } from '../../elevator/keys'
+import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { TCollectionFactoryExtension } from './collection-factory.extension.class'
 import { TCollectionPropsExtension } from './collection-props.extension.class'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
 import type { ICollectionDescriptor } from '@soldy/setup'
 
 export interface ICollectionExtensionOptions {
-	/** Дескриптор коллекции. Если задан — коллекция создаётся и настраивается. */
+	/** Legacy-режим: дескриптор коллекции (defineCollection). */
 	descriptor?: ICollectionDescriptor
 	elevator: TElevatorFactory
 	/** Готовая коллекция (pass-through из props.engine). */
@@ -33,16 +30,33 @@ export class TCollectionExtension {
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
 		const { descriptor, elevator, engine } = options
 
-		// 1-2. Создание коллекции и применение owner-пропсов.
+		// Фасад-режим: инстанс сам владеет коллекцией (context.instance — фасад).
+		const facade = context.instance as any
+		const fromFacade = facade && typeof facade.collection !== 'undefined' ? facade.collection : undefined
+
+		if (fromFacade) {
+			elevator(ITEM_CONTEXT_ELEVATOR).down(fromFacade)
+			this._wire(context, elevator, fromFacade)
+			return
+		}
+
+		// Legacy-режим: коллекция создаётся через descriptor.
 		if (descriptor) {
 			context.use(TCollectionFactoryExtension, { descriptor, elevator, engine })
 			context.use(TCollectionPropsExtension)
+
+			const collection = context.get(TCollectionFactoryExtension)?.collection
+
+			this._wire(context, elevator, collection)
+			return
 		}
 
-		// 3. Привязка коллекции к реестру bundles + регистрация элементов.
-		const itemElevator = elevator(COLLECTION_ELEVATOR)
+		// Pass-through без descriptor и без фасада.
+		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
+		this._wire(context, elevator, engine)
+	}
 
-		const collection = context.get(TCollectionFactoryExtension)?.collection
+	private _wire(context: IAdapterContext, elevator: TElevatorFactory, collection: any): void {
 		const bundles = context.bundle?.get(TCollectionBundlesPlugin)
 
 		// Передаём ссылку на коллекцию в плагин — это единственный источник
@@ -51,13 +65,15 @@ export class TCollectionExtension {
 			bundles.bindCollection(collection)
 		}
 
+		const itemElevator = elevator(COLLECTION_ELEVATOR)
+
 		itemElevator.down((instance: any, bundle: any) => {
-			// 1. Добавляем элемент в конец коллекции (эмитится item:added).
-			//    push (а не insert) сохраняет порядок DOM: item-ы приходят через
-			//    elevator по мере монтирования, поэтому добавляем их последовательно.
+			// Добавляем элемент в конец коллекции (эмитится item:added).
+			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
+			// elevator по мере монтирования, поэтому добавляем их последовательно.
 			collection?.extensions?.plain?.push(instance)
 
-			// 2. Регистрируем bundle элемента (ключ — uid элемента).
+			// Регистрируем bundle элемента (ключ — uid элемента).
 			bundles?.register(bundle, instance)
 
 			return () => {

@@ -1,38 +1,21 @@
-import { TCollapseExtension, TCollapseItem, type ICollapse } from '@soldy/core'
+import { defineComponent } from '../../base'
 import {
-	CollapseExtensionContribution,
-	CollapseItemExtensionContribution,
+	TCollapseCollectionFacade,
+	TCollapseItemCollectionFacade,
+} from '@soldy/core'
+import {
+	CollapseCollectionContribution,
+	CollapseCollectionItemContribution,
 } from '../../../contributions'
-import {
-	CollectionDescriptor,
-	FactoryExtensionDescriptor,
-	SelectionExtensionDescriptor,
-} from '../collection'
-import { defineExtension, defineCollection } from '../../base'
-
-export const CollapseExtensionDescriptor = () =>
-	defineExtension({
-		name: 'collapse',
-		namespace: 'collapse',
-		ctor: TCollapseExtension,
-		contribution: CollapseExtensionContribution(),
-		itemContribution: CollapseItemExtensionContribution(),
-		// owner передаётся через optionsFactory в CollapseCollectionDescriptor
-	})
 
 export const CollapseCollectionDescriptor = () =>
-	defineCollection({
-		extends: CollectionDescriptor(),
+	defineComponent({
+		ctor: TCollapseCollectionFacade,
+		contribution: CollapseCollectionContribution(),
+	})
 
-		extensions: [
-			{
-				...FactoryExtensionDescriptor(),
-				optionsFactory: () => ({ itemCtor: TCollapseItem }),
-			},
-			SelectionExtensionDescriptor(),
-			{
-				...CollapseExtensionDescriptor(),
-				optionsFactory: (instance: ICollapse) => ({ owner: instance }),
-			},
-		],
+export const CollapseCollectionItemDescriptor = () =>
+	defineComponent({
+		ctor: TCollapseItemCollectionFacade,
+		contribution: CollapseCollectionItemContribution(),
 	})

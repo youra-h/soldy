@@ -1,5 +1,6 @@
 export * from './tab-item/types'
 export { default as TTabItem } from './tab-item/tab-item.class'
+export { TTabItemCollectionFacade } from './tab-item/facade'
 export * from './types'
 export { TTabs } from './tabs.class'
 export * from './collection'

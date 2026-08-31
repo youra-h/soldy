@@ -1,5 +1,6 @@
 export * from './collapse-item/types'
 export { default as TCollapseItem } from './collapse-item/collapse-item.class'
+export { TCollapseItemCollectionFacade } from './collapse-item/facade'
 export * from './types'
 export { TCollapse } from './collapse.class'
 export * from './collection'

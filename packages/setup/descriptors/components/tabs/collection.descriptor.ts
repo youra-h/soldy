@@ -1,32 +1,21 @@
-import { TTabsExtension, TTabItem, type ITabs } from '@soldy/core'
-import { TabsExtensionContribution, TabsItemExtensionContribution } from '../../../contributions'
+import { defineComponent } from '../../base'
 import {
-	ActivationExtensionDescriptor,
-	CollectionDescriptor,
-	FactoryExtensionDescriptor,
-} from '../collection'
-import { defineExtension, defineCollection } from '../../base'
-
-export const TabsExtensionDescriptor = () =>
-	defineExtension({
-		name: 'tabs',
-		namespace: 'tabs',
-		ctor: TTabsExtension,
-		contribution: TabsExtensionContribution(),
-		itemContribution: TabsItemExtensionContribution(),
-		// owner передаётся через optionsFactory в TabsCollectionDescriptor
-	})
+	TTabsCollectionFacade,
+	TTabItemCollectionFacade,
+} from '@soldy/core'
+import {
+	TabsCollectionContribution,
+	TabsCollectionItemContribution,
+} from '../../../contributions'
 
 export const TabsCollectionDescriptor = () =>
-	defineCollection({
-		extends: CollectionDescriptor(),
+	defineComponent({
+		ctor: TTabsCollectionFacade,
+		contribution: TabsCollectionContribution(),
+	})
 
-		extensions: [
-			{ ...FactoryExtensionDescriptor(), optionsFactory: () => ({ itemCtor: TTabItem }) },
-			ActivationExtensionDescriptor(),
-			{
-				...TabsExtensionDescriptor(),
-				optionsFactory: (instance: ITabs) => ({ owner: instance }),
-			},
-		],
+export const TabsCollectionItemDescriptor = () =>
+	defineComponent({
+		ctor: TTabItemCollectionFacade,
+		contribution: TabsCollectionItemContribution(),
 	})

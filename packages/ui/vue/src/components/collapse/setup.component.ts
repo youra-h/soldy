@@ -6,14 +6,14 @@ import {
 	CollapseDescriptor,
 	CollapseCollectionDescriptor,
 } from '@soldy/setup'
-import { useVue, useVueCollection, VueElevatorFactory } from '../../adapter'
+import { TCollapseCollectionFacade } from '@soldy/core'
+import { useVue, VueElevatorFactory } from '../../adapter'
 import BaseCollapse from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import {
 	type ICollapseProps,
 	type ICollapseComponentProps,
 	type ICollapse,
-	type ICollapseCollectionOutput,
 } from '@soldy/core'
 
 export default {
@@ -24,18 +24,28 @@ export default {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
-			.use(TCollectionExtension, {
-				descriptor: CollapseCollectionDescriptor(),
-				engine: toRaw(props.engine),
-				elevator: VueElevatorFactory,
-			})
+
+		const facade = new TCollapseCollectionFacade(adapter.instance, {
+			engine: toRaw(props.engine),
+			items: toRaw(props.items),
+			trackBy: toRaw(props.trackBy),
+		})
+
+		const collectionAdapter = createAdapterContext(CollapseCollectionDescriptor(), {
+			ctrl: facade,
+			props,
+		})
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const collectionRefs = useVueCollection<ICollapseCollectionOutput>(adapter, props)
+		const collectionBinding = useVue<Record<string, any>, TCollapseCollectionFacade>(
+			collectionAdapter,
+			props,
+			emit,
+		)
 
-		return {
-			...useVue<ICollapseComponentProps, ICollapse>(adapter, props, emit),
-			...collectionRefs,
-		}
+		const ownerBinding = useVue<ICollapseComponentProps, ICollapse>(adapter, props, emit)
+
+		return { ...collectionBinding, ...ownerBinding }
 	},
 }

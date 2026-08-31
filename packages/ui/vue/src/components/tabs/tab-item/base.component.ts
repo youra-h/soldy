@@ -1,21 +1,16 @@
 import { BaseValueControl } from '../../value-control'
-import {
-	useEmits,
-	useProps,
-	useCollectionItemProps,
-	useCollectionItemEmits,
-} from '../../../adapter'
+import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
-import { TabItemDescriptor, TabsCollectionDescriptor } from '@soldy/setup'
+import { TabItemDescriptor, TabsCollectionItemDescriptor } from '@soldy/setup'
 
 export const emitsTabItem: TEmits = [
 	...useEmits(TabItemDescriptor()),
-	...useCollectionItemEmits(TabsCollectionDescriptor()),
+	...useEmits(TabsCollectionItemDescriptor()),
 ] as unknown as TEmits
 
 export const propsTabItem: TProps = {
 	...(useProps(TabItemDescriptor()) as TProps),
-	...(useCollectionItemProps(TabsCollectionDescriptor()) as TProps),
+	...(useProps(TabsCollectionItemDescriptor()) as TProps),
 }
 
 export default {

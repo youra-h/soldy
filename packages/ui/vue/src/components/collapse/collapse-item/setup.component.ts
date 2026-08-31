@@ -3,10 +3,11 @@ import {
 	createAdapterContext,
 	TCollectionItemExtension,
 	CollapseItemDescriptor,
-	CollapseCollectionDescriptor,
+	CollapseCollectionItemDescriptor,
 } from '@soldy/setup'
-import type { ICollapseItemProps, ICollapseItem, TCollapseCollectionExtensions } from '@soldy/core'
-import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
+import { TCollapseItemCollectionFacade } from '@soldy/core'
+import type { ICollapseItemProps, ICollapseItem } from '@soldy/core'
+import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseCollapseItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -16,23 +17,29 @@ export default {
 	inheritAttrs: false,
 	extends: BaseCollapseItem,
 	setup(props: TBaseComponentProps<ICollapseItemProps, ICollapseItem>, { emit }: any) {
+		const facade = new TCollapseItemCollectionFacade()
+
 		const adapter = createAdapterContext(CollapseItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		}).use(TCollectionItemExtension, {
-			descriptor: CollapseCollectionDescriptor(),
+			facade,
+			itemDescriptor: CollapseCollectionItemDescriptor(),
 			elevator: VueElevatorFactory,
 		})
 
-		const { context, ...itemRefs } = useVueCollectionItem<
-			ICollapseItem,
-			TCollapseCollectionExtensions
-		>(adapter, props)
+		const itemAdapter = createAdapterContext(CollapseCollectionItemDescriptor(), {
+			ctrl: facade,
+			props,
+		})
+
+		const itemBinding = useVue<Record<string, any>, TCollapseItemCollectionFacade>(itemAdapter, props, emit)
+		const ownerBinding = useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit)
 
 		return {
-			...useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit),
-			...itemRefs,
-			context,
+			...itemBinding,
+			...ownerBinding,
+			context: facade.context,
 			arrowIconTag: useIconImport('arrowRight'),
 			...useSplitAttrs(),
 		}
