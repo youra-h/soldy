@@ -30,7 +30,7 @@ export type {
 } from './types'
 
 // Фасад
-export { TCollectionEngine } from './collection.class'
+export { TCollectionEngine } from './engine.class'
 
 // Контекст
 export { TItemContext, TItemContextRegistry } from './context'

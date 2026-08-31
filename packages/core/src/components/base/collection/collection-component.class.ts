@@ -1,6 +1,6 @@
 import { TComponent } from '../component'
 import type { IComponentProps, TComponentEvents } from '../component'
-import { TCollectionEngine } from './collection.class'
+import { TCollectionEngine } from './engine.class'
 import type { ICollectionStorageDriver } from './types'
 import type { IExtension } from './extension'
 
