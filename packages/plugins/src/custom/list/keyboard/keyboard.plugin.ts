@@ -66,7 +66,7 @@ export class TListKeyboardPlugin extends TBasePlugin<any, TListKeyboardPluginEve
 
 	/** Текущий список элементов коллекции. */
 	private _getItems(): IListItem[] {
-		return (this._collection?.engine ?? []) as IListItem[]
+		return (this._collection?.driver ?? []) as IListItem[]
 	}
 
 	private _getIndex(uid: string | number): number {

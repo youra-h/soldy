@@ -135,7 +135,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const uid = collectionElements.getUidByElement(target)
 			if (uid === undefined) return
 
-			draggingIndex = collection.engine.findIndex((item: any) => item.uid === uid)
+			draggingIndex = collection.driver.findIndex((item: any) => item.uid === uid)
 			if (draggingIndex === -1) {
 				draggingIndex = null
 				draggingUid = null
@@ -147,7 +147,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 			e.dataTransfer!.effectAllowed = 'move'
 
-			const item = collection.engine[draggingIndex]
+			const item = collection.driver[draggingIndex]
 
 			if (item) {
 				item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
@@ -160,7 +160,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		const onDragEnd = (e: DragEvent) => {
 			if (draggingUid !== null) {
-				const item = collection.engine.find((i: any) => i.uid === draggingUid)
+				const item = collection.driver.find((i: any) => i.uid === draggingUid)
 
 				if (item) {
 					item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
@@ -197,10 +197,10 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const targetUid = collectionElements.getUidByElement(target)
 			if (targetUid === undefined) return
 
-			const targetIndex = collection.engine.findIndex((item: any) => item.uid === targetUid)
+			const targetIndex = collection.driver.findIndex((item: any) => item.uid === targetUid)
 			if (targetIndex === -1 || targetIndex === draggingIndex) return
 
-			const draggingItem = collection.engine[draggingIndex]
+			const draggingItem = collection.driver[draggingIndex]
 			collection.extensions.plain.move(draggingItem, targetIndex, draggingIndex)
 			draggingIndex = targetIndex
 		}
@@ -215,7 +215,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			element.removeEventListener('dragover', onDragOver)
 			this._bundles?.events.off('bundle:registered', onBundleRegistered)
 
-			collection.engine.forEach((item: any) => {
+			collection.driver.forEach((item: any) => {
 				item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
 			})
 

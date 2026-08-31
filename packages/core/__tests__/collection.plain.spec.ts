@@ -12,15 +12,15 @@ function createCollection() {
 }
 
 describe('TPlainExtension', () => {
-	it('insert: добавляет элемент и эмитит события engine', () => {
+	it('insert: добавляет элемент и эмитит события driver', () => {
 		const col = createCollection()
 		const added = vi.fn()
 
-		col.engine.events.on('item:added', added)
+		col.driver.events.on('item:added', added)
 
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.engine.length).toBe(1)
+		expect(col.driver.length).toBe(1)
 		expect(added).toHaveBeenCalledTimes(1)
 		expect(added.mock.calls[0][0].item).toEqual({ id: 1, name: 'a' })
 	})
@@ -31,7 +31,7 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 		col.extensions.plain.insert({ id: 2, name: 'b' })
 
-		expect([...col.engine]).toEqual([
+		expect([...col.driver]).toEqual([
 			{ id: 2, name: 'b' },
 			{ id: 1, name: 'a' },
 		])
@@ -43,7 +43,7 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' }, 0)
 		col.extensions.plain.insert({ id: 2, name: 'b' }, 1)
 
-		expect([...col.engine]).toEqual([
+		expect([...col.driver]).toEqual([
 			{ id: 1, name: 'a' },
 			{ id: 2, name: 'b' },
 		])
@@ -55,10 +55,10 @@ describe('TPlainExtension', () => {
 		const removed = vi.fn()
 
 		col.extensions.plain.insert(item)
-		col.engine.events.on('item:removed', removed)
+		col.driver.events.on('item:removed', removed)
 		col.extensions.plain.remove(item)
 
-		expect(col.engine.length).toBe(0)
+		expect(col.driver.length).toBe(0)
 		expect(removed).toHaveBeenCalledWith(item)
 	})
 
@@ -68,7 +68,7 @@ describe('TPlainExtension', () => {
 		const updated = vi.fn()
 
 		col.extensions.plain.insert(item)
-		col.engine.events.on('item:updated', updated)
+		col.driver.events.on('item:updated', updated)
 		col.extensions.plain.update(item, { name: 'b' })
 
 		expect(item.name).toBe('b')
@@ -89,7 +89,7 @@ describe('TPlainExtension', () => {
 
 		col.extensions.plain.move(a, 1)
 
-		expect([...col.engine]).toEqual([b, a])
+		expect([...col.driver]).toEqual([b, a])
 	})
 
 	it('getAll: возвращает все элементы', () => {

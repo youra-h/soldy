@@ -43,9 +43,9 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 			{ id: 2, text: 'b' },
 		])
 
-		expect(col.engine.length).toBe(2)
-		expect([...col.engine].every((i) => i instanceof TTestItem)).toBe(true)
-		expect([...col.engine].map((i) => i.id).sort()).toEqual([1, 2])
+		expect(col.driver.length).toBe(2)
+		expect([...col.driver].every((i) => i instanceof TTestItem)).toBe(true)
+		expect([...col.driver].map((i) => i.id).sort()).toEqual([1, 2])
 	})
 
 	it('update + trackBy: plain-объекты превращаются в инстансы (patch)', () => {
@@ -57,9 +57,9 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 			{ id: 2, text: 'b' },
 		])
 
-		expect(col.engine.length).toBe(2)
-		expect([...col.engine].every((i) => i instanceof TTestItem)).toBe(true)
-		expect([...col.engine].map((i) => i.text).sort()).toEqual(['a', 'b'])
+		expect(col.driver.length).toBe(2)
+		expect([...col.driver].every((i) => i instanceof TTestItem)).toBe(true)
+		expect([...col.driver].map((i) => i.text).sort()).toEqual(['a', 'b'])
 	})
 
 	it('update + trackBy: двумерный массив превращается в массив инстансов', () => {
@@ -72,10 +72,10 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 			[2, 'b'],
 		] as unknown as ITestItem[])
 
-		expect(col.engine.length).toBe(2)
-		expect([...col.engine].every((i) => i instanceof TTestItem)).toBe(true)
-		expect([...col.engine].map((i) => i.id).sort()).toEqual([1, 2])
-		expect([...col.engine].map((i) => i.text).sort()).toEqual(['a', 'b'])
+		expect(col.driver.length).toBe(2)
+		expect([...col.driver].every((i) => i instanceof TTestItem)).toBe(true)
+		expect([...col.driver].map((i) => i.id).sort()).toEqual([1, 2])
+		expect([...col.driver].map((i) => i.text).sort()).toEqual(['a', 'b'])
 	})
 
 	it('update + trackBy: обновляет существующий инстанс и добавляет новый', () => {
@@ -92,7 +92,7 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 			{ id: 3, text: 'c' },
 		])
 
-		const byId = new Map([...col.engine].map((i) => [i.id, i]))
+		const byId = new Map([...col.driver].map((i) => [i.id, i]))
 
 		expect(byId.size).toBe(2)
 		expect(byId.get(1)).toBeInstanceOf(TTestItem)

@@ -38,12 +38,12 @@ export class TCollectionStorageDriver<T> {
 				// 2. Блокировка мутирующих методов массива
 				if (typeof prop === 'string' && MUTATING_ARRAY_METHODS.has(prop)) {
 					throw new Error(
-						`[TCollectionStorageDriver] Array mutation method "${prop}()" is forbidden on engine. ` +
-							`Use commands via engine.execute() or extension methods (e.g. extension.insert()) instead.`,
+						`[TCollectionStorageDriver] Array mutation method "${prop}()" is forbidden on driver. ` +
+							`Use commands via driver.execute() or extension methods (e.g. extension.insert()) instead.`,
 					)
 				}
 
-				// 3. Чтение по числовому индексу (engine[0], engine[1]...)
+				// 3. Чтение по числовому индексу (driver[0], driver[1]...)
 				if (typeof prop === 'string' && /^\d+$/.test(prop)) {
 					return target._storage.items[Number(prop)]
 				}

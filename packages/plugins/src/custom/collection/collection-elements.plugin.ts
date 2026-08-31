@@ -45,7 +45,7 @@ export class TCollectionElements extends TCollectionBundlesAccess {
 	getUidByElement(element: HTMLElement): string | number | undefined {
 		if (!this.bundles?.collection) return undefined
 
-		for (const item of this.bundles.collection.engine) {
+		for (const item of this.bundles.collection.driver) {
 			if (this.getElementByItem(item) === element) {
 				return (item as { uid?: string | number }).uid
 			}

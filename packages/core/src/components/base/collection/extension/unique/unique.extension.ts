@@ -28,7 +28,7 @@ export class TUniqueExtension<TItem extends object = any>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:added', (e) => {
+		ctx.driver.events.on('item:added', (e) => {
 			const { item } = e
 
 			if ('uid' in item) {
@@ -36,18 +36,18 @@ export class TUniqueExtension<TItem extends object = any>
 			}
 		})
 
-		ctx.engine.events.on('item:removed', (item) => {
+		ctx.driver.events.on('item:removed', (item) => {
 			if ('uid' in item) {
 				this._known.delete((item as any).uid)
 			}
 		})
 
-		ctx.engine.events.on('reset', () => {
+		ctx.driver.events.on('reset', () => {
 			this._known.clear()
 		})
 
 		// Отменяем вставку, если элемент уже зарегистрирован.
-		ctx.engine.events.on('item:add:before', (e) => {
+		ctx.driver.events.on('item:add:before', (e) => {
 			if (this._known.has((e.item as any).uid)) {
 				e.preventDefault()
 			}

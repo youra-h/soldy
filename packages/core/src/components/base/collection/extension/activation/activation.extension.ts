@@ -34,13 +34,13 @@ export class TActivationExtension<TItem extends object = any>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:removed', (item: TItem) => {
+		ctx.driver.events.on('item:removed', (item: TItem) => {
 			if (this._activeItem === item) {
 				this.reset()
 			}
 		})
 
-		ctx.engine.events.on('reset', () => {
+		ctx.driver.events.on('reset', () => {
 			this.reset()
 		})
 
@@ -60,7 +60,7 @@ export class TActivationExtension<TItem extends object = any>
 			})
 		}
 
-		ctx.engine.events.on('item:removed', (item: TItem) => {
+		ctx.driver.events.on('item:removed', (item: TItem) => {
 			this._activeItem === item && this.reset()
 
 			const next = this.findActivatable(undefined, item)
@@ -79,7 +79,7 @@ export class TActivationExtension<TItem extends object = any>
 	activate(item: TItem): void {
 		if (this._activeItem === item) return
 
-		if (!this._ctx.engine.includes(item)) return
+		if (!this._ctx.driver.includes(item)) return
 
 		this._activeItem = item
 
@@ -142,17 +142,17 @@ export class TActivationExtension<TItem extends object = any>
 	 */
 	findActivatable(predicate?: (item: TItem) => boolean, fromItem?: TItem): TItem | undefined {
 		const check = predicate ?? (() => true)
-		const fromIndex = fromItem !== undefined ? this._ctx.engine.indexOf(fromItem) : -1
+		const fromIndex = fromItem !== undefined ? this._ctx.driver.indexOf(fromItem) : -1
 
 		// Сначала вперёд: fromIndex+1, fromIndex+2, ...
-		for (let i = fromIndex + 1; i < this._ctx.engine.length; i++) {
-			const item = this._ctx.engine[i]
+		for (let i = fromIndex + 1; i < this._ctx.driver.length; i++) {
+			const item = this._ctx.driver[i]
 			if (item && check(item)) return item
 		}
 
 		// Затем назад: fromIndex-1, fromIndex-2, ...
 		for (let i = fromIndex - 1; i >= 0; i--) {
-			const item = this._ctx.engine[i]
+			const item = this._ctx.driver[i]
 			if (item && check(item)) return item
 		}
 

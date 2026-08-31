@@ -9,7 +9,7 @@ export class TCollectionEngine<
 	T extends object,
 	TExtensions extends Record<string, IExtension<T>> = Record<string, never>,
 > {
-	public readonly engine: ICollectionStorageDriver<T>
+	public readonly driver: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions
 
 	constructor(
@@ -18,7 +18,7 @@ export class TCollectionEngine<
 			extensions?: TExtensions
 		} = {},
 	) {
-		this.engine = new TCollectionStorageDriver(
+		this.driver = new TCollectionStorageDriver(
 			options.storage ?? new TArrayStorage<T>(),
 		) as unknown as ICollectionStorageDriver<T>
 
@@ -64,21 +64,21 @@ export class TCollectionEngine<
 	 */
 	public getCore(): ICollectionCore<T, TExtensions> {
 		return {
-			engine: this.engine,
+			driver: this.driver,
 			extensions: this.extensions,
 		}
 	}
 
 	private _createContext(): IExtensionContext<T> {
 		return {
-			engine: this.engine,
+			driver: this.driver,
 			extensions: this.extensions,
-			execute: (cmd: ICommand<T>) => this.engine.execute(cmd),
-			batch: (action: () => void) => this.engine.batch(action),
+			execute: (cmd: ICommand<T>) => this.driver.execute(cmd),
+			batch: (action: () => void) => this.driver.batch(action),
 		}
 	}
 
 	batch(action: () => void): void {
-		this.engine.batch(action)
+		this.driver.batch(action)
 	}
 }

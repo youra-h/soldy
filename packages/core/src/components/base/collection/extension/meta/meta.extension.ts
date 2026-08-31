@@ -22,13 +22,13 @@ export class TMetaExtension<TItem extends object = any>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:added', (e) => {
+		ctx.driver.events.on('item:added', (e) => {
 			if (Object.keys(e._).length === 0) return
 
 			this.events.emit('meta:applied', e.item as TItem, e._)
 		})
 
-		ctx.engine.events.on('item:updated', (e) => {
+		ctx.driver.events.on('item:updated', (e) => {
 			if (Object.keys(e._).length === 0) return
 
 			this.events.emit('meta:changed', e.item as TItem, e._)

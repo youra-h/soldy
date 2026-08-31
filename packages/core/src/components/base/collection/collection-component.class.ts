@@ -27,7 +27,7 @@ export abstract class TCollectionComponent<
 		this.collection = collection
 
 		// Системные события движка: item:*, change:items/count, reset.
-		this.events.relay(this.collection.engine.events, [
+		this.events.relay(this.collection.driver.events, [
 			'item:add:before',
 			'item:added',
 			'item:removed',
@@ -39,8 +39,8 @@ export abstract class TCollectionComponent<
 		])
 	}
 
-	get engine(): ICollectionStorageDriver<TItem> {
-		return this.collection.engine
+	get driver(): ICollectionStorageDriver<TItem> {
+		return this.collection.driver
 	}
 
 	get extensions(): TExtensions {

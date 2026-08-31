@@ -111,7 +111,7 @@ export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
 export type TReadonlyStorageDriverArray<T> = ReadonlyArray<T> & ICollectionStorageDriver<T>
 
 export interface ICollectionCore<TItem, TExtensions extends Record<string, any>> {
-	readonly engine: ICollectionStorageDriver<TItem>
+	readonly driver: ICollectionStorageDriver<TItem>
 	readonly extensions: TExtensions
 }
 

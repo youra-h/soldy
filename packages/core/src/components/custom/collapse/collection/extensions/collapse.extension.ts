@@ -53,7 +53,7 @@ export class TCollapseExtension<
 		super.install(ctx)
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.engine.events.on('item:added', (e) => {
+		ctx.driver.events.on('item:added', (e) => {
 			e.item.disabled = this._owner.disabled
 			e.item.size = this._owner.size
 			e.item.variant = this._owner.variant
@@ -61,19 +61,19 @@ export class TCollapseExtension<
 
 		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.engine.forEach((item) => {
+			ctx.driver.forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.engine.forEach((item) => {
+			ctx.driver.forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.engine.forEach((item) => {
+			ctx.driver.forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})

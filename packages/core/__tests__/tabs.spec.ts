@@ -216,9 +216,9 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		collection.extensions.plain.insert(tab1)
 		collection.extensions.plain.insert(tab2)
 
-		expect(collection.engine.length).toBe(2)
-		expect(collection.engine.includes(tab1)).toBe(true)
-		expect(collection.engine.includes(tab2)).toBe(true)
+		expect(collection.driver.length).toBe(2)
+		expect(collection.driver.includes(tab1)).toBe(true)
+		expect(collection.driver.includes(tab2)).toBe(true)
 	})
 
 	it('TTabsExtension пробрасывает свойства владельца при добавлении элемента', () => {
@@ -300,7 +300,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(collection.extensions.activation.isActive(tab)).toBe(true)
 
-		// Удаляем через engine
+		// Удаляем через driver
 		collection.extensions.plain.remove(tab)
 
 		expect(collection.extensions.activation.activeItem).toBeUndefined()
@@ -326,9 +326,9 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(result).toBe(true)
 		expect(onClose).toHaveBeenCalledWith(tab2)
-		expect(collection.engine.length).toBe(1)
-		expect(collection.engine.includes(tab1)).toBe(true)
-		expect(collection.engine.includes(tab2)).toBe(false)
+		expect(collection.driver.length).toBe(1)
+		expect(collection.driver.includes(tab1)).toBe(true)
+		expect(collection.driver.includes(tab2)).toBe(false)
 	})
 
 	it('closeTab не удаляет не-closable таб', () => {
@@ -346,7 +346,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(result).toBe(false)
 		expect(onClose).not.toHaveBeenCalled()
-		expect(collection.engine.length).toBe(1)
+		expect(collection.driver.length).toBe(1)
 	})
 
 	it('движок генерит item:removed после closeTab', () => {
@@ -359,7 +359,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		const onRemoved = vi.fn()
 
-		collection.engine.events.on('item:removed', onRemoved)
+		collection.driver.events.on('item:removed', onRemoved)
 
 		collection.extensions.tabs.closeTab(tab)
 
@@ -433,15 +433,15 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		const r1 = collection.extensions.tabs.closeTab(tab1)
 
 		expect(r1).toBe(false)
-		expect(collection.engine.length).toBe(3)
+		expect(collection.driver.length).toBe(3)
 
 		// tab2 должен закрыться (наследует closable = true)
 		const r2 = collection.extensions.tabs.closeTab(tab2)
 
 		expect(r2).toBe(true)
-		expect(collection.engine.length).toBe(2)
-		expect(collection.engine.includes(tab1)).toBe(true)
-		expect(collection.engine.includes(tab3)).toBe(true)
+		expect(collection.driver.length).toBe(2)
+		expect(collection.driver.includes(tab1)).toBe(true)
+		expect(collection.driver.includes(tab3)).toBe(true)
 	})
 
 	it('после closeTab всех closable — остаётся только не-closable', () => {
@@ -458,14 +458,14 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		collection.extensions.tabs.closeTab(tab2)
 
-		expect(collection.engine.length).toBe(1)
-		expect(collection.engine.includes(tab1)).toBe(true)
+		expect(collection.driver.length).toBe(1)
+		expect(collection.driver.includes(tab1)).toBe(true)
 
 		// Попытка закрыть tab1 не должна сработать
 		const r = collection.extensions.tabs.closeTab(tab1)
 
 		expect(r).toBe(false)
-		expect(collection.engine.length).toBe(1)
+		expect(collection.driver.length).toBe(1)
 	})
 
 	// --- Адаптеры через контекст ---
@@ -510,9 +510,9 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		ctx.adapters.tabs.close()
 
 		expect(onClose).toHaveBeenCalledWith(tab1)
-		expect(collection.engine.length).toBe(1)
-		expect(collection.engine.includes(tab1)).toBe(false)
-		expect(collection.engine.includes(tab2)).toBe(true)
+		expect(collection.driver.length).toBe(1)
+		expect(collection.driver.includes(tab1)).toBe(false)
+		expect(collection.driver.includes(tab2)).toBe(true)
 	})
 
 	it('TTabItemExtension.close() не удаляет не-closable таб', () => {
@@ -531,6 +531,6 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		ctx.adapters.tabs.close()
 
 		expect(onClose).not.toHaveBeenCalled()
-		expect(collection.engine.length).toBe(1)
+		expect(collection.driver.length).toBe(1)
 	})
 })

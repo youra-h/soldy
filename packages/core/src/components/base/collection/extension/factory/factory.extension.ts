@@ -6,12 +6,12 @@ import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from
  * TFactoryExtension — фабрика элементов коллекции.
  *
  * Принимает конструктор элемента (например, `TTabItem`) и подписывается на
- * engine-событие `item:add:before`. Если в коллекцию добавляется сырое значение
+ * driver-событие `item:add:before`. Если в коллекцию добавляется сырое значение
  * (обычный объект с props, а не инстанс `itemCtor`), оно подменяется на
  * `new itemCtor(source)`.
  *
  * Позволяет прокидывать в коллекцию сырые данные (например, `:items="[...]"`)
- * и получать в engine полноценные объекты элементов.
+ * и получать в driver полноценные объекты элементов.
  *
  * @example
  * ```ts
@@ -23,7 +23,7 @@ import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from
  * })
  *
  * col.extensions.batch.update([{ text: 'Tab 1', value: 'tab1' }])
- * // в engine лежат инстансы TTabItem
+ * // в driver лежат инстансы TTabItem
  * ```
  */
 export class TFactoryExtension<TItem extends object>
@@ -47,7 +47,7 @@ export class TFactoryExtension<TItem extends object>
 
 		const ctor = this._itemCtor
 
-		ctx.engine.events.on('item:add:before', (e) => {
+		ctx.driver.events.on('item:add:before', (e) => {
 			if (e.item instanceof ctor) return
 
 			const source = e.item as any

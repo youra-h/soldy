@@ -196,7 +196,7 @@ describe('TActivationExtension', () => {
 		expect(handler).toHaveBeenCalledWith(undefined)
 	})
 
-	it('сбрасывает активацию при reset engine', () => {
+	it('сбрасывает активацию при reset driver', () => {
 		const col = createCollection()
 		const item: Item = { id: 1, name: 'a' }
 		const handler = vi.fn()
@@ -205,8 +205,8 @@ describe('TActivationExtension', () => {
 		col.extensions.activation.activate(item)
 		col.extensions.activation.events.on('change:activation', handler)
 
-		// Явно эмитим reset на engine
-		col.engine.events.emit('reset')
+		// Явно эмитим reset на driver
+		col.driver.events.emit('reset')
 
 		expect(col.extensions.activation.activeItem).toBeUndefined()
 		expect(handler).toHaveBeenCalledWith(undefined)

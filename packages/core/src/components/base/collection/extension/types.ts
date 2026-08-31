@@ -3,7 +3,7 @@ import type { ICollectionStorageDriver } from '../types'
 import type { TEvented } from '@soldy/core'
 
 export interface IExtensionContext<T> {
-	readonly engine: ICollectionStorageDriver<T>
+	readonly driver: ICollectionStorageDriver<T>
 	readonly extensions: Record<string, IExtension<T>>
 	execute(command: ICommand<T>): void
 	batch(action: () => void): void
@@ -21,7 +21,7 @@ export interface IExtension<
 
 	/**
 	 * Вызывается движком при регистрации расширения.
-	 * Здесь расширение подписывается на события engine и инициализирует состояние.
+	 * Здесь расширение подписывается на события driver и инициализирует состояние.
 	 */
 	install(ctx: IExtensionContext<T>): void
 }

@@ -63,17 +63,17 @@ export class TSelectionExtension<TItem extends object = any>
 	install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.engine.events.on('item:removed', (item: TItem) => {
+		ctx.driver.events.on('item:removed', (item: TItem) => {
 			if (this._selected.has(item)) {
 				this._selected.delete(item)
 			}
 		})
 
-		ctx.engine.events.on('reset', () => {
+		ctx.driver.events.on('reset', () => {
 			this.resetSelection()
 		})
 
-		ctx.engine.events.on('change:items', (items: readonly TItem[]) => {
+		ctx.driver.events.on('change:items', (items: readonly TItem[]) => {
 			this._selected.forEach((item) => {
 				if (!items.includes(item)) this._selected.delete(item)
 			})
@@ -98,7 +98,7 @@ export class TSelectionExtension<TItem extends object = any>
 
 	select(item: TItem): void {
 		if (this._mode === 'none') return
-		if (!this._ctx.engine.includes(item)) return
+		if (!this._ctx.driver.includes(item)) return
 
 		if (!this.multiple) {
 			// снять выделение с предыдущего

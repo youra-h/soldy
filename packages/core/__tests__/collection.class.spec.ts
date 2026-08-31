@@ -14,7 +14,7 @@ describe('TCollectionEngine', () => {
 		const col = new TCollectionEngine<Item>()
 
 		expect(col.extensions).toEqual({})
-		expect(col.engine.length).toBe(0)
+		expect(col.driver.length).toBe(0)
 	})
 
 	it('создаётся с расширениями', () => {
@@ -34,11 +34,11 @@ describe('TCollectionEngine', () => {
 			extensions: { plain },
 		})
 
-		// plain должен иметь доступ к engine через _ctx
+		// plain должен иметь доступ к driver через _ctx
 		expect(plain.length).toBe(0)
 	})
 
-	it('расширения могут взаимодействовать через engine', () => {
+	it('расширения могут взаимодействовать через driver', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
@@ -54,11 +54,11 @@ describe('TCollectionEngine', () => {
 		plain.insert(item)
 		activation.activate(item)
 
-		expect(col.engine.length).toBe(1)
+		expect(col.driver.length).toBe(1)
 		expect(activation.activeItem).toBe(item)
 	})
 
-	it('batch: делегирует в engine', () => {
+	it('batch: делегирует в driver', () => {
 		const plain = new TPlainExtension<Item>()
 
 		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
@@ -67,7 +67,7 @@ describe('TCollectionEngine', () => {
 
 		const changeItems = vi.fn()
 
-		col.engine.events.on('change:items', changeItems)
+		col.driver.events.on('change:items', changeItems)
 
 		col.batch(() => {
 			plain.insert({ id: 1, name: 'a' })
@@ -77,7 +77,7 @@ describe('TCollectionEngine', () => {
 		expect(changeItems).toHaveBeenCalledTimes(1)
 	})
 
-	it('события engine пробрасываются корректно через расширения', () => {
+	it('события driver пробрасываются корректно через расширения', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
@@ -90,9 +90,9 @@ describe('TCollectionEngine', () => {
 
 		const order: string[] = []
 
-		col.engine.events.on('item:added', () => order.push('engine:added'))
-		col.engine.events.on('change:count', () => order.push('engine:count'))
-		col.engine.events.on('change:items', () => order.push('engine:items'))
+		col.driver.events.on('item:added', () => order.push('driver:added'))
+		col.driver.events.on('change:count', () => order.push('driver:count'))
+		col.driver.events.on('change:items', () => order.push('driver:items'))
 		activation.events.on('change:activation', () => order.push('activation:change'))
 
 		const item: Item = { id: 1, name: 'a' }
@@ -101,9 +101,9 @@ describe('TCollectionEngine', () => {
 		activation.activate(item)
 
 		expect(order).toEqual([
-			'engine:added',
-			'engine:count',
-			'engine:items',
+			'driver:added',
+			'driver:count',
+			'driver:items',
 			'activation:change',
 		])
 	})
@@ -116,7 +116,7 @@ describe('TCollectionEngine', () => {
 			extensions: { plain },
 		})
 
-		expect(col.engine.length).toBe(0)
+		expect(col.driver.length).toBe(0)
 	})
 
 	// --- .use() — fluent-добавление расширений ---
@@ -125,7 +125,7 @@ describe('TCollectionEngine', () => {
 		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 
-		expect(col.engine.length).toBe(0)
+		expect(col.driver.length).toBe(0)
 		expect(col.extensions.plain).toBeDefined()
 	})
 
@@ -141,7 +141,7 @@ describe('TCollectionEngine', () => {
 		col.extensions.activation.activate(item)
 		col.extensions.selection.select(item)
 
-		expect(col.engine.length).toBe(1)
+		expect(col.driver.length).toBe(1)
 		expect(col.extensions.activation.isActive(item)).toBe(true)
 		expect(col.extensions.selection.isSelected(item)).toBe(true)
 	})
@@ -153,7 +153,7 @@ describe('TCollectionEngine', () => {
 		// plain готов к работе сразу после .use()
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.engine.length).toBe(1)
+		expect(col.driver.length).toBe(1)
 	})
 
 	it('use: возвращает this (тот же объект)', () => {
@@ -185,7 +185,7 @@ describe('TCollectionEngine', () => {
 
 		const added = vi.fn()
 
-		col.engine.events.on('item:added', added)
+		col.driver.events.on('item:added', added)
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
 		expect(added).toHaveBeenCalledOnce()

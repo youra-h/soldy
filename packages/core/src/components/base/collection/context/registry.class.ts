@@ -22,15 +22,15 @@ export class TItemContextRegistry<
 	TExtensions extends Record<string, IExtension<TItem>> = Record<string, any>,
 > {
 	private readonly _extensions: TExtensions
-	private readonly _engine: ICollectionStorageDriver<TItem>
+	private readonly _driver: ICollectionStorageDriver<TItem>
 
 	private _contexts = new WeakMap<TItem, TItemContext<TItem, TExtensions>>()
 
 	constructor(collectionCore: ICollectionCore<TItem, TExtensions>) {
 		this._extensions = collectionCore.extensions
-		this._engine = collectionCore.engine
+		this._driver = collectionCore.driver
 
-		this._engine.events.on('item:removed', (item) => this.destroy(item))
+		this._driver.events.on('item:removed', (item) => this.destroy(item))
 	}
 
 	/**

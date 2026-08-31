@@ -22,8 +22,8 @@ export class TBatchExtension<TItem extends object>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// items живут в engine — relay позволяет batch.events реагировать на change:items
-		ctx.engine.events.relay(this.events, ['change:items'])
+		// items живут в driver — relay позволяет batch.events реагировать на change:items
+		ctx.driver.events.relay(this.events, ['change:items'])
 	}
 
 	set trackBy(fn: ((item: TItem) => any) | undefined) {
@@ -35,8 +35,8 @@ export class TBatchExtension<TItem extends object>
 	}
 
 	get items(): TReadonlyStorageDriverArray<TItem> {
-		// Приведение типа, если engine реализует методы чтения ReadonlyArray
-		return this._ctx.engine as unknown as TReadonlyStorageDriverArray<TItem>
+		// Приведение типа, если driver реализует методы чтения ReadonlyArray
+		return this._ctx.driver as unknown as TReadonlyStorageDriverArray<TItem>
 	}
 
 	set items(items: TItem[]) {
@@ -49,7 +49,7 @@ export class TBatchExtension<TItem extends object>
 		this._ctx.batch(() => {
 			items.forEach((item) => {
 				// Добавляем в конец, чтобы сохранить порядок items.
-				this._ctx.execute(new TInsertCommand(item, this._ctx.engine.length))
+				this._ctx.execute(new TInsertCommand(item, this._ctx.driver.length))
 			})
 		})
 
@@ -78,7 +78,7 @@ export class TBatchExtension<TItem extends object>
 			// Сопоставляем ключи существующим элементам
 			const itemByKey = new Map<unknown, TItem>()
 
-			this._ctx.engine.forEach((item) => {
+			this._ctx.driver.forEach((item) => {
 				const key = trackBy(item)
 
 				if (key === undefined) {
@@ -108,7 +108,7 @@ export class TBatchExtension<TItem extends object>
 					matchedKeys.add(key)
 				} else {
 					// Добавляем новый элемент в конец (сохраняем порядок).
-					this._ctx.execute(new TInsertCommand(source, this._ctx.engine.length))
+					this._ctx.execute(new TInsertCommand(source, this._ctx.driver.length))
 				}
 			})
 

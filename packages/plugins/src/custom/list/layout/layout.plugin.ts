@@ -52,8 +52,8 @@ export class TListLayoutPlugin extends TBasePlugin<any, TListLayoutPluginEvents>
 		bundles?.events.on('collection:bound', (collection) => {
 			this._collection = collection
 
-			collection.engine.events.on('change:items', () => this._scheduleUpdate())
-			collection.engine.events.on('item:removed', () => this._scheduleUpdate())
+			collection.driver.events.on('change:items', () => this._scheduleUpdate())
+			collection.driver.events.on('item:removed', () => this._scheduleUpdate())
 		})
 
 		bundles?.events.on('bundle:registered', ({ uid, bundle }) => {
