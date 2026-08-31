@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 	TSelectionExtension,
@@ -22,7 +22,7 @@ type TestExtensions = {
 }
 
 function createCollection() {
-	return new TCollection<Item, TestExtensions>({
+	return new TCollectionEngine<Item, TestExtensions>({
 		extensions: {
 			plain: new TPlainExtension<Item>(),
 			activation: new TActivationExtension<Item>(),
@@ -85,7 +85,7 @@ describe('Item-адаптеры: проброс событий из расшир
 
 	it('tabs: change:closable элемента пробрасывается в адаптер', () => {
 		const tabs = new TTabs({ closable: true })
-		const col = new TCollection<
+		const col = new TCollectionEngine<
 			ITabItem,
 			{ plain: TPlainExtension<ITabItem>; tabs: TTabsExtension<ITabs, ITabItem> }
 		>({

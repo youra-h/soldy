@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollection, TBatchExtension } from '@soldy/core'
+import { TCollectionEngine, TBatchExtension } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
 function createCollection() {
 	const batch = new TBatchExtension<Item>()
 
-	return new TCollection<Item, { batch: TBatchExtension<Item> }>({
+	return new TCollectionEngine<Item, { batch: TBatchExtension<Item> }>({
 		extensions: { batch },
 	})
 }

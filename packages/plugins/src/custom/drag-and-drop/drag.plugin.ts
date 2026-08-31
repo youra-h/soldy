@@ -1,4 +1,4 @@
-import type { TCollection } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'
@@ -30,7 +30,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	private _active = false
 
 	/** Коллекция, порядок элементов которой синхронизируется при перетаскивании. */
-	private _collection: TCollection<any, any> | null = null
+	private _collection: TCollectionEngine<any, any> | null = null
 
 	/** Корневой DOM-элемент, на котором висят обработчики drag-событий. */
 	private _element: HTMLElement | null = null
@@ -70,7 +70,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	 * Активирует перетаскивание для указанной коллекции.
 	 * Если DOM-элемент уже готов, немедленно навешивает обработчики.
 	 */
-	activate(collection: TCollection<any, any>): void {
+	activate(collection: TCollectionEngine<any, any>): void {
 		this._collection = collection
 		this._active = true
 		if (this._element) this._setup()

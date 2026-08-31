@@ -1,6 +1,6 @@
 import {
 	TFactoryExtension,
-	TCollection,
+	TCollectionEngine,
 	TOrderExtension,
 	TPlainExtension,
 	TUniqueExtension,
@@ -31,7 +31,7 @@ export type TCollapseCollectionExtensions = {
 	collapse: TCollapseExtension<ICollapse, ICollapseItem>
 }
 
-export type TCollapseCollection = TCollection<ICollapseItem, TCollapseCollectionExtensions>
+export type TCollapseCollection = TCollectionEngine<ICollapseItem, TCollapseCollectionExtensions>
 
 /**
  * Output-состояние коллекции Collapse (возвращается useVueCollection как refs).

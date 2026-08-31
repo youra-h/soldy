@@ -8,7 +8,7 @@ import type { ICollapse } from '../types'
 /**
  * Фасад коллекции collapse.
  *
- * Владеет `TCollection` (engine + расширения) и выставляет коллекционные props/методы
+ * Владеет `TCollectionEngine` (engine + расширения) и выставляет коллекционные props/методы
  * как обычные свойства компонента. Используется как `ctor` в `CollapseCollectionDescriptor`.
  */
 export class TCollapseCollectionFacade extends TCollectionComponent<

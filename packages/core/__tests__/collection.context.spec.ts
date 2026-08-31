@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 	TSelectionExtension,
@@ -72,7 +72,7 @@ type TestExtensions = {
 }
 
 function createCollection() {
-	return new TCollection<Item, TestExtensions>({
+	return new TCollectionEngine<Item, TestExtensions>({
 		extensions: {
 			plain: new TPlainExtension<Item>(),
 			activation: new TActivationExtension<Item>(),

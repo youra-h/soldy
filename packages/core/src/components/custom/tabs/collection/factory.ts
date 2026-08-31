@@ -1,7 +1,7 @@
 import { TTabsCollection } from './types'
 import { TTabsExtension } from './extensions/tabs.extension'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TBatchExtension,
 	TFactoryExtension,
@@ -15,7 +15,7 @@ import type { ITabItem } from './../tab-item/types'
 import type { ITabs } from './../types'
 
 export const TabsFactory = (instance: ITabs): TTabsCollection =>
-	new TCollection({
+	new TCollectionEngine({
 		extensions: {
 			factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
 			unique: new TUniqueExtension<ITabItem>(),

@@ -7,7 +7,7 @@ import type { ITabs } from '../types'
 /**
  * Фасад коллекции табов.
  *
- * Владеет `TCollection` (engine + расширения) и выставляет коллекционные props/методы
+ * Владеет `TCollectionEngine` (engine + расширения) и выставляет коллекционные props/методы
  * как обычные свойства компонента. Используется как `ctor` в `TabsCollectionDescriptor`.
  */
 export class TTabsCollectionFacade extends TCollectionComponent<

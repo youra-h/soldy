@@ -1,7 +1,7 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TCollectionBundlesPlugin } from './bundles.plugin'
-import type { TCollection } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy/core'
 
 /**
  * TCollectionBundlesAccess — базовый плагин доступа к bundles элементов коллекции.
@@ -24,7 +24,7 @@ export abstract class TCollectionBundlesAccess extends TBasePlugin<any> {
 	}
 
 	/** Ссылка на коллекцию, к которой привязан реестр bundles. */
-	get collection(): TCollection<any, any> | null {
+	get collection(): TCollectionEngine<any, any> | null {
 		return this.bundles?.collection ?? null
 	}
 

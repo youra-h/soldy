@@ -1,4 +1,4 @@
-import type { IList, IListItem, TCollection, TScrollBehavior } from '@soldy/core'
+import type { IList, IListItem, TCollectionEngine, TScrollBehavior } from '@soldy/core'
 import { frameDebounce } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
@@ -66,7 +66,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		super.destroy()
 	}
 
-	private _subscribeToCollection(collection: TCollection<any, any>): void {
+	private _subscribeToCollection(collection: TCollectionEngine<any, any>): void {
 		const selected = collection.extensions.selection.selected as IListItem[]
 
 		if (selected.length > 0) {

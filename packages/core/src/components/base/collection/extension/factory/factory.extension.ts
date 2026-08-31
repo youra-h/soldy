@@ -15,7 +15,7 @@ import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from
  *
  * @example
  * ```ts
- * const col = new TCollection<ITabItem>({
+ * const col = new TCollectionEngine<ITabItem>({
  *     extensions: {
  *         factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
  *         batch: new TBatchExtension<ITabItem>(),

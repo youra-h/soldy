@@ -1,4 +1,4 @@
-import type { IList, IListItem, TCollection } from '@soldy/core'
+import type { IList, IListItem, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -15,7 +15,7 @@ import type { TListKeyboardPluginEvents } from './types'
 export class TListKeyboardPlugin extends TBasePlugin<any, TListKeyboardPluginEvents> {
 	private _element: HTMLElement | null = null
 	private _list: IList | null = null
-	private _collection: TCollection<any, any> | null = null
+	private _collection: TCollectionEngine<any, any> | null = null
 	private _bundles: TCollectionBundlesPlugin | null = null
 	private _highlightedUid: string | number | null = null
 

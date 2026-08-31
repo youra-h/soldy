@@ -1,4 +1,4 @@
-import type { IList, TCollection } from '@soldy/core'
+import type { IList, TCollectionEngine } from '@soldy/core'
 import { frameDebounce } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
@@ -16,7 +16,7 @@ export class TListLayoutPlugin extends TBasePlugin<any, TListLayoutPluginEvents>
 	private _element: HTMLElement | null = null
 	private _list: IList | null = null
 	private _collectionElements: TCollectionElements | null = null
-	private _collection: TCollection<any, any> | null = null
+	private _collection: TCollectionEngine<any, any> | null = null
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
 	private readonly _scheduleUpdate: () => void

@@ -15,7 +15,7 @@ import type {
 
 /**
  * Компонент табов (TTabs).
- * Управляет коллекцией табов на базе TCollection с расширениями (Plain, Batch, Selection).
+ * Управляет коллекцией табов на базе TCollectionEngine с расширениями (Plain, Batch, Selection).
  */
 export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implements ITabs {
 	static override baseClass = 's-tabs'

@@ -5,7 +5,7 @@ import {
 	TTabsExtension,
 	TTabItemExtension,
 	TItemContextRegistry,
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 } from '@soldy/core'
@@ -191,13 +191,13 @@ function createTabsCollection(tabs?: TTabs) {
 
 	return {
 		owner,
-		collection: new TCollection<ITabItem, TabsExtensions>({
+		collection: new TCollectionEngine<ITabItem, TabsExtensions>({
 			extensions: {
 				plain: new TPlainExtension<ITabItem>(),
 				activation: new TActivationExtension<ITabItem>(),
 				tabs: new TTabsExtension({ owner }),
 			},
-		}) as unknown as TCollection<ITabItem, TabsExtensions>,
+		}) as unknown as TCollectionEngine<ITabItem, TabsExtensions>,
 	}
 }
 

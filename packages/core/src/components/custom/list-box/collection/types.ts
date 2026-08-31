@@ -1,6 +1,6 @@
 import {
 	TFactoryExtension,
-	TCollection,
+	TCollectionEngine,
 	TOrderExtension,
 	TPlainExtension,
 	TUniqueExtension,
@@ -31,7 +31,7 @@ export type TListBoxCollectionExtensions = {
 	listBox: TListBoxExtension<IListBox, IListBoxItem>
 }
 
-export type TListBoxCollection = TCollection<IListBoxItem, TListBoxCollectionExtensions>
+export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>
 
 /**
  * Output-состояние коллекции ListBox (возвращается useVueCollection как refs).

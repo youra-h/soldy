@@ -1,7 +1,7 @@
 import { TCollapseCollection } from './types'
 import { TCollapseExtension } from './extensions/collapse.extension'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TBatchExtension,
 	TFactoryExtension,
@@ -15,7 +15,7 @@ import type { ICollapseItem } from './../collapse-item/types'
 import type { ICollapse } from './../types'
 
 export const CollapseFactory = (instance: ICollapse): TCollapseCollection =>
-	new TCollection({
+	new TCollectionEngine({
 		extensions: {
 			factory: new TFactoryExtension<ICollapseItem>({ itemCtor: TCollapseItem }),
 			unique: new TUniqueExtension<ICollapseItem>(),

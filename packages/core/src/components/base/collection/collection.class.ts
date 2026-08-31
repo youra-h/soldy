@@ -5,7 +5,7 @@ import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
 import type { ICommand } from './commands'
 
-export class TCollection<
+export class TCollectionEngine<
 	T extends object,
 	TExtensions extends Record<string, IExtension<T>> = Record<string, never>,
 > {
@@ -39,7 +39,7 @@ export class TCollection<
 	 *
 	 * @example
 	 * ```ts
-	 * const col = new TCollection<Item>()
+	 * const col = new TCollectionEngine<Item>()
 	 *   .use(new TPlainExtension())
 	 *   .use(new TActivationExtension())
 	 *
@@ -49,14 +49,14 @@ export class TCollection<
 	 */
 	public use<E extends IExtension<T>>(
 		extension: E,
-	): TCollection<T, TExtensions & { [K in E['name']]: E }> {
+	): TCollectionEngine<T, TExtensions & { [K in E['name']]: E }> {
 		;(this.extensions as Record<string, IExtension<T>>)[extension.name] = extension
 
 		const ctx = this._createContext()
 
 		extension.install(ctx)
 
-		return this as unknown as TCollection<T, TExtensions & { [K in E['name']]: E }>
+		return this as unknown as TCollectionEngine<T, TExtensions & { [K in E['name']]: E }>
 	}
 
 	/**

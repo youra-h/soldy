@@ -1,7 +1,7 @@
 import { TListBoxCollection } from './types'
 import { TListBoxExtension } from './extensions/list-box.extension'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TBatchExtension,
 	TFactoryExtension,
@@ -15,7 +15,7 @@ import type { IListBoxItem } from './../list-box-item/types'
 import type { IListBox } from './../types'
 
 export const ListBoxFactory = (instance: IListBox): TListBoxCollection =>
-	new TCollection({
+	new TCollectionEngine({
 		extensions: {
 			factory: new TFactoryExtension<IListBoxItem>({ itemCtor: TListBoxItem }),
 			unique: new TUniqueExtension<IListBoxItem>(),

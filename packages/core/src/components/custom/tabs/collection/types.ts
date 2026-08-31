@@ -1,7 +1,7 @@
 import {
 	TActivationExtension,
 	TBatchExtension,
-	TCollection,
+	TCollectionEngine,
 	TOrderExtension,
 	TPlainExtension,
 	TFactoryExtension,
@@ -29,7 +29,7 @@ export type TTabsCollectionExtensions = {
 	tabs: TTabsExtension<ITabs, ITabItem>
 }
 
-export type TTabsCollection = TCollection<ITabItem, TTabsCollectionExtensions>
+export type TTabsCollection = TCollectionEngine<ITabItem, TTabsCollectionExtensions>
 
 /**
  * Output-состояние коллекции Tabs (возвращается useVueCollection как refs).

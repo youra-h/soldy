@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-	TCollection,
+	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 	TSelectionExtension,
@@ -9,9 +9,9 @@ import {
 
 type Item = { id: number; name: string }
 
-describe('TCollection', () => {
+describe('TCollectionEngine', () => {
 	it('создаётся без расширений', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 
 		expect(col.extensions).toEqual({})
 		expect(col.engine.length).toBe(0)
@@ -20,7 +20,7 @@ describe('TCollection', () => {
 	it('создаётся с расширениями', () => {
 		const plain = new TPlainExtension<Item>()
 
-		const col = new TCollection<Item, { plain: TPlainExtension<Item> }>({
+		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			extensions: { plain },
 		})
 
@@ -30,7 +30,7 @@ describe('TCollection', () => {
 	it('расширения устанавливаются (install вызывается)', () => {
 		const plain = new TPlainExtension<Item>()
 
-		new TCollection<Item, { plain: TPlainExtension<Item> }>({
+		new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			extensions: { plain },
 		})
 
@@ -42,7 +42,7 @@ describe('TCollection', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
-		const col = new TCollection<Item, {
+		const col = new TCollectionEngine<Item, {
 			plain: TPlainExtension<Item>
 			activation: TActivationExtension<Item>
 		}>({
@@ -61,7 +61,7 @@ describe('TCollection', () => {
 	it('batch: делегирует в engine', () => {
 		const plain = new TPlainExtension<Item>()
 
-		const col = new TCollection<Item, { plain: TPlainExtension<Item> }>({
+		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			extensions: { plain },
 		})
 
@@ -81,7 +81,7 @@ describe('TCollection', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
-		const col = new TCollection<Item, {
+		const col = new TCollectionEngine<Item, {
 			plain: TPlainExtension<Item>
 			activation: TActivationExtension<Item>
 		}>({
@@ -111,7 +111,7 @@ describe('TCollection', () => {
 	it('можно использовать с кастомным storage', () => {
 		const plain = new TPlainExtension<Item>()
 
-		const col = new TCollection<Item, { plain: TPlainExtension<Item> }>({
+		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			storage: undefined, // дефолтный TArrayStorage
 			extensions: { plain },
 		})
@@ -122,7 +122,7 @@ describe('TCollection', () => {
 	// --- .use() — fluent-добавление расширений ---
 
 	it('use: добавляет расширение после создания', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 
 		expect(col.engine.length).toBe(0)
@@ -130,7 +130,7 @@ describe('TCollection', () => {
 	})
 
 	it('use: цепочка добавляет несколько расширений с сохранением типов', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 			.use(new TActivationExtension<Item>())
 			.use(new TSelectionExtension<Item>())
@@ -147,7 +147,7 @@ describe('TCollection', () => {
 	})
 
 	it('use: install вызывается при добавлении', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 
 		// plain готов к работе сразу после .use()
@@ -157,7 +157,7 @@ describe('TCollection', () => {
 	})
 
 	it('use: возвращает this (тот же объект)', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 
 		const result = col.use(new TPlainExtension<Item>())
 
@@ -167,7 +167,7 @@ describe('TCollection', () => {
 	it('use: расширения через конструктор + .use() работают вместе', () => {
 		const plain = new TPlainExtension<Item>()
 
-		const col = new TCollection<Item, { plain: TPlainExtension<Item> }>({
+		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			extensions: { plain },
 		}).use(new TActivationExtension<Item>())
 
@@ -180,7 +180,7 @@ describe('TCollection', () => {
 	})
 
 	it('use: события работают после добавления через .use()', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 
 		const added = vi.fn()
@@ -192,7 +192,7 @@ describe('TCollection', () => {
 	})
 
 	it('use: TItemContextRegistry работает с .use() расширениями', () => {
-		const col = new TCollection<Item>()
+		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 			.use(new TActivationExtension<Item>())
 

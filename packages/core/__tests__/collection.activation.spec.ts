@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollection, TPlainExtension, TActivationExtension } from '@soldy/core'
+import { TCollectionEngine, TPlainExtension, TActivationExtension } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
@@ -7,7 +7,7 @@ function createCollection() {
 	const plain = new TPlainExtension<Item>()
 	const activation = new TActivationExtension<Item>()
 
-	return new TCollection<Item, { plain: TPlainExtension<Item>; activation: TActivationExtension<Item> }>({
+	return new TCollectionEngine<Item, { plain: TPlainExtension<Item>; activation: TActivationExtension<Item> }>({
 		extensions: { plain, activation },
 	})
 }

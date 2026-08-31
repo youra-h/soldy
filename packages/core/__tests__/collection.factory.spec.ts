@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TCollection, TBatchExtension, TFactoryExtension } from '@soldy/core'
+import { TCollectionEngine, TBatchExtension, TFactoryExtension } from '@soldy/core'
 
 interface ITestItem {
 	id: number
@@ -24,7 +24,7 @@ function createCollection() {
 	const factory = new TFactoryExtension<ITestItem>({ itemCtor: TTestItem })
 	const batch = new TBatchExtension<ITestItem>()
 
-	const col = new TCollection<
+	const col = new TCollectionEngine<
 		ITestItem,
 		{ factory: TFactoryExtension<ITestItem>; batch: TBatchExtension<ITestItem> }
 	>({

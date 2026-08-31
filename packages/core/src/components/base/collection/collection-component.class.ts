@@ -1,13 +1,13 @@
 import { TComponent } from '../component'
 import type { IComponentProps, TComponentEvents } from '../component'
-import { TCollection } from './collection.class'
+import { TCollectionEngine } from './collection.class'
 import type { ICollectionStorageDriver } from './types'
 import type { IExtension } from './extension'
 
 /**
  * Фасад владельца коллекции.
  *
- * Похож на обычный `TComponent`, но внутри держит `TCollection` (engine + расширения)
+ * Похож на обычный `TComponent`, но внутри держит `TCollectionEngine` (engine + расширения)
  * и релеит события коллекции в собственный `events`. Благодаря этому дескриптор фасада
  * можно собрать обычным `defineComponent` — без `defineCollection`.
  *
@@ -19,9 +19,9 @@ export abstract class TCollectionComponent<
 	TExtensions extends Record<string, IExtension<TItem>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TComponent<IComponentProps, TEvents> {
-	public readonly collection: TCollection<TItem, TExtensions>
+	public readonly collection: TCollectionEngine<TItem, TExtensions>
 
-	constructor(collection: TCollection<TItem, TExtensions>) {
+	constructor(collection: TCollectionEngine<TItem, TExtensions>) {
 		super()
 
 		this.collection = collection

@@ -1,6 +1,6 @@
 import {
 	TFactoryExtension,
-	TCollection,
+	TCollectionEngine,
 	TOrderExtension,
 	TPlainExtension,
 	TUniqueExtension,
@@ -31,7 +31,7 @@ export type TListCollectionExtensions = {
 	list: TListExtension<IList, IListItem>
 }
 
-export type TListCollection = TCollection<IListItem, TListCollectionExtensions>
+export type TListCollection = TCollectionEngine<IListItem, TListCollectionExtensions>
 
 /**
  * Output-состояние коллекции List (возвращается useVueCollection как refs).
