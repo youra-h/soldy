@@ -110,7 +110,7 @@ export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
 // Описываем тип движка, исключающий мутирующие методы
 export type TReadonlyStorageDriverArray<T> = ReadonlyArray<T> & ICollectionStorageDriver<T>
 
-export interface ICollectionCore<TItem, TExtensions extends Record<string, any>> {
+export interface ICollectionEngineCore<TItem, TExtensions extends Record<string, any>> {
 	readonly driver: ICollectionStorageDriver<TItem>
 	readonly extensions: TExtensions
 }

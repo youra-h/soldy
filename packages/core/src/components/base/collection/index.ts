@@ -23,7 +23,7 @@ export * from './extension'
 export { TCollectionStorageDriver } from './driver.class'
 export type {
 	ICollectionStorageDriver,
-	ICollectionCore,
+	ICollectionEngineCore,
 	ICollectionProps,
 	TCollectionItemSource,
 	TReadonlyStorageDriverArray,

@@ -1,5 +1,5 @@
 import type { IExtension } from '../extension'
-import type { ICollectionStorageDriver, ICollectionCore } from '../types'
+import type { ICollectionStorageDriver, ICollectionEngineCore } from '../types'
 import { TItemContext } from './item.class'
 
 /**
@@ -26,7 +26,7 @@ export class TItemContextRegistry<
 
 	private _contexts = new WeakMap<TItem, TItemContext<TItem, TExtensions>>()
 
-	constructor(collectionCore: ICollectionCore<TItem, TExtensions>) {
+	constructor(collectionCore: ICollectionEngineCore<TItem, TExtensions>) {
 		this._extensions = collectionCore.extensions
 		this._driver = collectionCore.driver
 

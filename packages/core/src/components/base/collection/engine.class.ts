@@ -1,5 +1,5 @@
 import { TCollectionStorageDriver } from './driver.class'
-import type { ICollectionStorageDriver, ICollectionCore } from './types'
+import type { ICollectionStorageDriver, ICollectionEngineCore } from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
@@ -62,7 +62,7 @@ export class TCollectionEngine<
 	/**
 	 * Возвращает основные компоненты коллекции: движок и подключённые расширения.
 	 */
-	public getCore(): ICollectionCore<T, TExtensions> {
+	public getCore(): ICollectionEngineCore<T, TExtensions> {
 		return {
 			driver: this.driver,
 			extensions: this.extensions,
