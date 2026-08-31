@@ -1,5 +1,5 @@
 /**
- * Типы для ComponentDescriptor и CollectionDescriptor.
+ * Типы для ComponentDescriptor.
  * Работают через TAccessor: Unit = { instance, props, events }.
  */
 
@@ -46,38 +46,4 @@ export interface IComponentDescriptor {
 	createAccessor(instance: any, bundle: IPluginBundle): TAccessor
 }
 
-/**
- * Дескриптор расширения коллекции (результат defineExtension).
- */
-export interface ICollectionExtensionDescriptor<TItem = any> {
-	name: string
-	/** Префикс экспорта props/events; если не задан — имена используются как есть. */
-	namespace?: string
-	ctor: new (options?: any) => any
-	/** Props/events для родительского компонента (collection-level) */
-	contribution?: IContribution
-	/** Props/events для дочернего компонента (item-level) */
-	itemContribution?: IContribution
-	optionsFactory?: (instance: any) => any
-}
 
-/**
- * Дескриптор коллекции (результат defineCollection).
- * createAccessor/createItemAccessor возвращают TAccessor.
- */
-export interface ICollectionDescriptor {
-	/** Статические объявления props/events для каждого уровня */
-	parentProps: IPropDeclaration[]
-	parentEvents: TName[]
-	itemProps: IPropDeclaration[]
-	itemEvents: TName[]
-
-	/** Дескрипторы расширений коллекции (для наследования через `extends`). */
-	extensions: ICollectionExtensionDescriptor[]
-
-	create(instance: any): any
-	/** TAccessor для родительского компонента (items, activeItem...) */
-	createAccessor(collection: any): TAccessor
-	/** TAccessor для дочернего компонента (active, order, closable...) */
-	createItemAccessor(context: any): TAccessor
-}

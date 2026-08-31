@@ -1,11 +1,9 @@
 /**
  * TCollectionExtension — единая точка входа для настройки коллекции.
  *
- * Два режима:
- *  1. Фасад (context.instance владеет `collection`) — Tabs/Collapse после рефакторинга.
- *  2. Legacy (descriptor + TCollectionFactoryExtension) — List/ListBox.
+ * Режим фасада: context.instance владеет `collection` (Tabs/Collapse/...).
  *
- * В обоих режимах выполняется: привязка коллекции к реестру bundles,
+ * Выполняется: привязка коллекции к реестру bundles,
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
  * через COLLECTION_ELEVATOR.
  */
@@ -13,14 +11,9 @@
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
-import { TCollectionFactoryExtension } from './collection-factory.extension.class'
-import { TCollectionPropsExtension } from './collection-props.extension.class'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
-import type { ICollectionDescriptor } from '@soldy/setup'
 
 export interface ICollectionExtensionOptions {
-	/** Legacy-режим: дескриптор коллекции (defineCollection). */
-	descriptor?: ICollectionDescriptor
 	elevator: TElevatorFactory
 	/** Готовая коллекция (pass-through из props.engine). */
 	engine?: any
@@ -28,7 +21,7 @@ export interface ICollectionExtensionOptions {
 
 export class TCollectionExtension {
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
-		const { descriptor, elevator, engine } = options
+		const { elevator, engine } = options
 
 		// Фасад-режим: инстанс сам владеет коллекцией (context.instance — фасад).
 		const facade = context.instance as any
@@ -40,18 +33,7 @@ export class TCollectionExtension {
 			return
 		}
 
-		// Legacy-режим: коллекция создаётся через descriptor.
-		if (descriptor) {
-			context.use(TCollectionFactoryExtension, { descriptor, elevator, engine })
-			context.use(TCollectionPropsExtension)
-
-			const collection = context.get(TCollectionFactoryExtension)?.collection
-
-			this._wire(context, elevator, collection)
-			return
-		}
-
-		// Pass-through без descriptor и без фасада.
+		// Pass-through: готовая коллекция приходит из props.engine.
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
 		this._wire(context, elevator, engine)
 	}

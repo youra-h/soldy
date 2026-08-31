@@ -1,4 +1,3 @@
-export * from './collection'
 export { FrameContribution } from './frame'
 export { SkeletonContribution } from './skeleton'
 export { DragAndDropContribution } from './drag-and-drop'

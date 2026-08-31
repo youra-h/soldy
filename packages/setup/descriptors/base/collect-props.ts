@@ -33,11 +33,3 @@ export function collectItemProps(
 ): Record<string, any> {
 	return collectDeclaredProps(itemProps, props)
 }
-
-/** Owner-level (collection-level) пропсы (items, trackBy, ...). */
-export function collectOwnerProps(
-	parentProps: IPropDeclaration[],
-	props: Readonly<Record<string, any>>,
-): Record<string, any> {
-	return collectDeclaredProps(parentProps, props)
-}

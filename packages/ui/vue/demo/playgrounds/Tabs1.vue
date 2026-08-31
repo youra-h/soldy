@@ -6,41 +6,41 @@ import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
-const tabs = new TTabs()
-tabs.variant = 'accent'
-tabs.view = 'contained'
-tabs.orientation = 'horizontal'
+// const tabs = new TTabs()
+// tabs.variant = 'accent'
+// tabs.view = 'contained'
+// tabs.orientation = 'horizontal'
 
-const collection: TTabsCollection = TabsFactory(tabs)
+// const collection: TTabsCollection = TabsFactory(tabs)
 
-const { plain, activation } = collection.extensions
+// const { plain, activation } = collection.extensions
 
-plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
-const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
-plain.push({ text: 'Tab 3', value: 'tab3' })
+// plain.push({ text: 'Tab 1', value: 'tab1', closable: true })
+// const tab = plain.push({ text: 'Tab 2', value: 'tab2', closable: true })
+// plain.push({ text: 'Tab 3', value: 'tab3' })
 
-activation.activate(tab)
+// activation.activate(tab)
 
-// --- Вариант 2: через prop items ---
-const tabItems = [
-	{ text: 'Alpha', value: 'alpha', closable: true },
-	{ text: 'Beta', value: 'beta', closable: true, _: { active: true } },
-	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
-]
+// // --- Вариант 2: через prop items ---
+// const tabItems = [
+// 	{ text: 'Alpha', value: 'alpha', closable: true },
+// 	{ text: 'Beta', value: 'beta', closable: true, _: { active: true } },
+// 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
+// ]
 
-const closable = ref(false)
+// const closable = ref(false)
 
-setTimeout(() => {
-	console.log('Setting closable to true')
-	closable.value = true
-}, 1000);
+// setTimeout(() => {
+// 	console.log('Setting closable to true')
+// 	closable.value = true
+// }, 1000);
 </script>
 
 <template>
 	<div style="display: flex; flex-direction: column; gap: 2rem">
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<Tabs :closable="closable">
+			<Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
 				<TabItem text="Tab 2" value="t2" />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
@@ -50,7 +50,7 @@ setTimeout(() => {
 			</Tabs>
 		</div>
 
-		<section>
+		<!-- <section>
 			<h2>Drag-and-drop</h2>
 			<DragAndDrop>
 				<Tabs>
@@ -82,7 +82,7 @@ setTimeout(() => {
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section>
+		</section> -->
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
