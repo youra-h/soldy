@@ -23,14 +23,7 @@ export abstract class TCollectionItemComponent<
 	 */
 	setContext(context: TItemContext<TItem, TExtensions>): void {
 		this._context = context
-		this._relayAdapters()
 	}
-
-	/**
-	 * Пробросить события item-адаптеров в собственный `events`.
-	 * Переопределяется в конкретном item-фасаде.
-	 */
-	protected abstract _relayAdapters(): void
 
 	// Возвращаем `any`, чтобы не просачивать не-портируемые типы (TExtractItemAdapters)
 	// в inferred-тип setup() Vue-компонента (vue-tsc требует переносимые именованные типы).

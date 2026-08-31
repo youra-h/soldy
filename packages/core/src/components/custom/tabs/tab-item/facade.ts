@@ -1,4 +1,5 @@
 import { TCollectionItemComponent } from '../../../base/collection'
+import type { TItemContext } from '../../../base/collection'
 import type { TTabsCollectionExtensions } from '../collection/types'
 import type { ITabItem } from './types'
 
@@ -13,7 +14,9 @@ export class TTabItemCollectionFacade extends TCollectionItemComponent<
 	ITabItem,
 	TTabsCollectionExtensions
 > {
-	protected _relayAdapters(): void {
+	override setContext(context: TItemContext<ITabItem, TTabsCollectionExtensions>): void {
+		super.setContext(context)
+
 		if (!this._context) return
 
 		this.events.relay(this._context.adapters.activation.events, ['change:active'])
