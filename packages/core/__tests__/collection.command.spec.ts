@@ -8,12 +8,12 @@ import {
 	TClearCommand,
 	TEvented,
 } from '@soldy/core'
-import type { TStorageDriverEvents, ICommandContext } from '@soldy/core'
+import type { TCollectionStorageDriverEvents, ICommandContext } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
 function createEvents() {
-	return new TEvented<TStorageDriverEvents<Item>>()
+	return new TEvented<TCollectionStorageDriverEvents<Item>>()
 }
 
 function createContext(

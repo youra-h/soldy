@@ -1,4 +1,4 @@
-import type { TStorageDriverEvents } from '../../types'
+import type { TCollectionStorageDriverEvents } from '../../types'
 import type { TEvented } from '@soldy/core'
 
-export type TPlainEvents<TItem extends object = any> = TStorageDriverEvents<TItem> & {}
+export type TPlainEvents<TItem extends object = any> = TCollectionStorageDriverEvents<TItem> & {}

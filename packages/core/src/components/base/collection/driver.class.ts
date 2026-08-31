@@ -1,6 +1,6 @@
 import type { IStorage } from './storage'
 import type { ICommand, ICommandContext } from './commands'
-import type { TStorageDriverEvents } from './types'
+import type { TCollectionStorageDriverEvents } from './types'
 import { TEvented } from '@soldy/core'
 
 // Список мутирующих методов массива JS, которые категорически нельзя вызывать напрямую
@@ -23,7 +23,7 @@ export class TCollectionStorageDriver<T> {
 	private _isBatching = false // Флаг, указывающий, что в данный момент выполняется батч
 	private _pendingCommands: ICommand<T>[] = [] // Список команд, которые были выполнены во время батча и должны быть обработаны после его завершения
 
-	public readonly events = new TEvented<TStorageDriverEvents<T>>()
+	public readonly events = new TEvented<TCollectionStorageDriverEvents<T>>()
 
 	constructor(storage: IStorage<T>) {
 		this._storage = storage

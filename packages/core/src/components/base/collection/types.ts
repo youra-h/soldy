@@ -60,7 +60,7 @@ export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
 	}
 }
 
-export type TStorageDriverEvents<TItem> = {
+export type TCollectionStorageDriverEvents<TItem> = {
 	/**
 	 * Вызывается ПЕРЕД добавлением элемента (до мутации хранилища).
 	 * - Изменить `e.item` — подменить элемент (например, item factory).
@@ -98,7 +98,7 @@ export type TStorageDriverEvents<TItem> = {
  * через интерфейс ReadonlyArray<T> + методы выполнения команд и батчинга.
  */
 export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
-	readonly events: TEvented<TStorageDriverEvents<TItem>>
+	readonly events: TEvented<TCollectionStorageDriverEvents<TItem>>
 
 	/** Единственный легитимный способ изменить состояние через StorageDriver */
 	execute(command: ICommand<TItem>): void
