@@ -16,7 +16,7 @@ const MUTATING_ARRAY_METHODS = new Set([
 	'copyWithin',
 ])
 
-export class TCollectionEngine<T> {
+export class TCollectionStorageDriver<T> {
 	[index: number]: T
 
 	private _storage: IStorage<T> // Хранилище элементов коллекции
@@ -30,7 +30,7 @@ export class TCollectionEngine<T> {
 
 		return new Proxy(this, {
 			get(target, prop, receiver) {
-				// 1. Если свойство или метод существует прямо в TCollectionEngine (execute, batch, events, _storage) — возвращаем его
+				// 1. Если свойство или метод существует прямо в TCollectionStorageDriver (execute, batch, events, _storage) — возвращаем его
 				if (prop in target) {
 					return Reflect.get(target, prop, receiver)
 				}
@@ -38,7 +38,7 @@ export class TCollectionEngine<T> {
 				// 2. Блокировка мутирующих методов массива
 				if (typeof prop === 'string' && MUTATING_ARRAY_METHODS.has(prop)) {
 					throw new Error(
-						`[TCollectionEngine] Array mutation method "${prop}()" is forbidden on engine. ` +
+						`[TCollectionStorageDriver] Array mutation method "${prop}()" is forbidden on engine. ` +
 							`Use commands via engine.execute() or extension methods (e.g. extension.insert()) instead.`,
 					)
 				}
@@ -59,7 +59,7 @@ export class TCollectionEngine<T> {
 
 				return value
 			},
-		}) as unknown as TCollectionEngine<T>
+		}) as unknown as TCollectionStorageDriver<T>
 	}
 
 	/**

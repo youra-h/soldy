@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TInsertCommand, TArrayStorage } from '@soldy/core'
+import { TCollectionStorageDriver, TInsertCommand, TArrayStorage } from '@soldy/core'
 
 type Item = { id: number }
 
-describe('TCollectionEngine', () => {
+describe('TCollectionStorageDriver', () => {
 	function createEngine(items: Item[] = []) {
 		const storage = new TArrayStorage<Item>()
 
 		items.forEach((item, i) => storage.insert(item, i))
 
-		return new TCollectionEngine<Item>(storage)
+		return new TCollectionStorageDriver<Item>(storage)
 	}
 
 	// --- ReadonlyArray ---

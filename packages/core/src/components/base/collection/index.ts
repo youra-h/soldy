@@ -20,7 +20,7 @@ export {
 export * from './extension'
 
 // Ядро
-export { TCollectionEngine } from './engine.class'
+export { TCollectionStorageDriver } from './driver.class'
 export type {
 	ICollectionEngine,
 	ICollectionCore,

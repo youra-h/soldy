@@ -1,4 +1,4 @@
-import { TCollectionEngine } from './engine.class'
+import { TCollectionStorageDriver } from './driver.class'
 import type { ICollectionEngine, ICollectionCore } from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
@@ -18,7 +18,7 @@ export class TCollection<
 			extensions?: TExtensions
 		} = {},
 	) {
-		this.engine = new TCollectionEngine(
+		this.engine = new TCollectionStorageDriver(
 			options.storage ?? new TArrayStorage<T>(),
 		) as unknown as ICollectionEngine<T>
 
