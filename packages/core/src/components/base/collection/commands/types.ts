@@ -1,6 +1,6 @@
 import type { IStorage } from '../storage'
 import type { TEvented } from '@soldy/core'
-import type { TEngineEvents } from '../types'
+import type { TStorageDriverEvents } from '../types'
 
 /**
  * Контекст выполнения команды: хранилище + эмиттер событий движка.
@@ -10,7 +10,7 @@ import type { TEngineEvents } from '../types'
  */
 export interface ICommandContext<TItem> {
 	readonly storage: IStorage<TItem>
-	readonly events: TEvented<TEngineEvents<TItem>>
+	readonly events: TEvented<TStorageDriverEvents<TItem>>
 }
 
 export interface ICommand<TItem> {

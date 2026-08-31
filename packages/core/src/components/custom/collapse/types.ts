@@ -1,12 +1,12 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
-import type { TEngineEvents } from '../../base/collection'
+import type { TStorageDriverEvents } from '../../base/collection'
 import type { ICollapseCollectionProps } from './collection/types'
 import type { ICollapseItem, ICollapseItemProps } from './collapse-item/types'
 
 export type TCollapseView = 'plain' | 'outlined' | 'filled'
 
 export type TCollapseEvents = TControlEvents &
-	TEngineEvents<ICollapseItem> & {
+	TStorageDriverEvents<ICollapseItem> & {
 		/** change:view */
 		'change:view': (value: TCollapseView) => void
 	}

@@ -1,5 +1,5 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
-import type { TEngineEvents } from '../../base/collection'
+import type { TStorageDriverEvents } from '../../base/collection'
 import type { ITabsCollectionProps } from './collection/types'
 import type { ITabItem, ITabItemProps } from './tab-item/types'
 
@@ -9,7 +9,7 @@ export type TTabsPosition = 'start' | 'end'
 export type TTabsView = 'line' | 'contained' | 'outline'
 
 export type TTabsEvents = TControlEvents &
-	TEngineEvents<ITabItem> & {
+	TStorageDriverEvents<ITabItem> & {
 		/** change:orientation */
 		'change:orientation': (value: TTabsOrientation) => void
 		/** change:alignment */

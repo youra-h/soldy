@@ -1,9 +1,9 @@
 import type { ICommand } from '../commands'
-import type { ICollectionEngine } from '../types'
+import type { ICollectionStorageDriver } from '../types'
 import type { TEvented } from '@soldy/core'
 
 export interface IExtensionContext<T> {
-	readonly engine: ICollectionEngine<T>
+	readonly engine: ICollectionStorageDriver<T>
 	readonly extensions: Record<string, IExtension<T>>
 	execute(command: ICommand<T>): void
 	batch(action: () => void): void

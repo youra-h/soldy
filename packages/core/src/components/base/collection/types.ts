@@ -60,7 +60,7 @@ export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
 	}
 }
 
-export type TEngineEvents<TItem> = {
+export type TStorageDriverEvents<TItem> = {
 	/**
 	 * Вызывается ПЕРЕД добавлением элемента (до мутации хранилища).
 	 * - Изменить `e.item` — подменить элемент (например, item factory).
@@ -94,13 +94,13 @@ export type TEngineEvents<TItem> = {
 }
 
 /**
- * ICollectionEngine предоставляет ТОЛЬКО доступ для чтения к элементам коллекции
+ * ICollectionStorageDriver предоставляет ТОЛЬКО доступ для чтения к элементам коллекции
  * через интерфейс ReadonlyArray<T> + методы выполнения команд и батчинга.
  */
-export interface ICollectionEngine<TItem> extends ReadonlyArray<TItem> {
-	readonly events: TEvented<TEngineEvents<TItem>>
+export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
+	readonly events: TEvented<TStorageDriverEvents<TItem>>
 
-	/** Единственный легитимный способ изменить состояние через Engine */
+	/** Единственный легитимный способ изменить состояние через StorageDriver */
 	execute(command: ICommand<TItem>): void
 
 	/** Пакетное выполнение команд */
@@ -108,10 +108,10 @@ export interface ICollectionEngine<TItem> extends ReadonlyArray<TItem> {
 }
 
 // Описываем тип движка, исключающий мутирующие методы
-export type TReadonlyEngineArray<T> = ReadonlyArray<T> & ICollectionEngine<T>
+export type TReadonlyStorageDriverArray<T> = ReadonlyArray<T> & ICollectionStorageDriver<T>
 
 export interface ICollectionCore<TItem, TExtensions extends Record<string, any>> {
-	readonly engine: ICollectionEngine<TItem>
+	readonly engine: ICollectionStorageDriver<TItem>
 	readonly extensions: TExtensions
 }
 

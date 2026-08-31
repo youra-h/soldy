@@ -1,5 +1,5 @@
 import { TCollectionStorageDriver } from './driver.class'
-import type { ICollectionEngine, ICollectionCore } from './types'
+import type { ICollectionStorageDriver, ICollectionCore } from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
@@ -9,7 +9,7 @@ export class TCollection<
 	T extends object,
 	TExtensions extends Record<string, IExtension<T>> = Record<string, never>,
 > {
-	public readonly engine: ICollectionEngine<T>
+	public readonly engine: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions
 
 	constructor(
@@ -20,7 +20,7 @@ export class TCollection<
 	) {
 		this.engine = new TCollectionStorageDriver(
 			options.storage ?? new TArrayStorage<T>(),
-		) as unknown as ICollectionEngine<T>
+		) as unknown as ICollectionStorageDriver<T>
 
 		this.extensions = (options.extensions ?? {}) as TExtensions
 

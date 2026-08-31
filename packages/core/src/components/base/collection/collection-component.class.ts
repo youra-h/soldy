@@ -1,7 +1,7 @@
 import { TComponent } from '../component'
 import type { IComponentProps, TComponentEvents } from '../component'
 import { TCollection } from './collection.class'
-import type { ICollectionEngine } from './types'
+import type { ICollectionStorageDriver } from './types'
 import type { IExtension } from './extension'
 
 /**
@@ -39,7 +39,7 @@ export abstract class TCollectionComponent<
 		])
 	}
 
-	get engine(): ICollectionEngine<TItem> {
+	get engine(): ICollectionStorageDriver<TItem> {
 		return this.collection.engine
 	}
 

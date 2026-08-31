@@ -1,5 +1,5 @@
 // Типы
-export type { TEngineEvents } from './types'
+export type { TStorageDriverEvents } from './types'
 export { TInsertEvent, TUpdateEvent, TItemEvent } from './types'
 
 // Хранилище
@@ -22,11 +22,11 @@ export * from './extension'
 // Ядро
 export { TCollectionStorageDriver } from './driver.class'
 export type {
-	ICollectionEngine,
+	ICollectionStorageDriver,
 	ICollectionCore,
 	ICollectionProps,
 	TCollectionItemSource,
-	TReadonlyEngineArray,
+	TReadonlyStorageDriverArray,
 } from './types'
 
 // Фасад

@@ -1,11 +1,11 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
-import type { TEngineEvents } from '../../base/collection'
+import type { TStorageDriverEvents } from '../../base/collection'
 import type { TScrollBehavior } from '../../../common'
 import type { IListCollectionProps } from './collection/types'
 import type { IListItem, IListItemProps } from './list-item/types'
 
 export type TListEvents = TControlEvents &
-	TEngineEvents<IListItem> & {
+	TStorageDriverEvents<IListItem> & {
 		/** change:maxRows */
 		'change:maxRows': (value: number) => void
 		/** change:autoWidth */

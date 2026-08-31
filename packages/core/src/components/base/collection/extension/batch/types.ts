@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import type { TReadonlyEngineArray, TCollectionItemSource } from '../../types'
+import type { TReadonlyStorageDriverArray, TCollectionItemSource } from '../../types'
 
 /** Owner-level props коллекции от batch-расширения (input). Зеркало BatchExtensionContribution. */
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
@@ -22,7 +22,7 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 > {
 	trackBy?: (item: TItem) => any
 
-	get items(): TReadonlyEngineArray<TItem>
+	get items(): TReadonlyStorageDriverArray<TItem>
 	set items(items: TItem[])
 
 	/**

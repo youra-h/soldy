@@ -1,5 +1,5 @@
 import type { IExtension } from '../extension'
-import type { ICollectionEngine, ICollectionCore } from '../types'
+import type { ICollectionStorageDriver, ICollectionCore } from '../types'
 import { TItemContext } from './item.class'
 
 /**
@@ -22,7 +22,7 @@ export class TItemContextRegistry<
 	TExtensions extends Record<string, IExtension<TItem>> = Record<string, any>,
 > {
 	private readonly _extensions: TExtensions
-	private readonly _engine: ICollectionEngine<TItem>
+	private readonly _engine: ICollectionStorageDriver<TItem>
 
 	private _contexts = new WeakMap<TItem, TItemContext<TItem, TExtensions>>()
 
