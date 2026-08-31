@@ -25,7 +25,7 @@ export type {
 	ICollectionStorageDriver,
 	ICollectionEngineCore,
 	ICollectionProps,
-	TCollectionItemSource,
+	TCollectionEngineItemSource,
 	TReadonlyStorageDriverArray,
 } from './types'
 

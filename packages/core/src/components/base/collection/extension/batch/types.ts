@@ -1,10 +1,10 @@
 import type { IExtension } from '../types'
-import type { TReadonlyStorageDriverArray, TCollectionItemSource } from '../../types'
+import type { TReadonlyStorageDriverArray, TCollectionEngineItemSource } from '../../types'
 
 /** Owner-level props коллекции от batch-расширения (input). Зеркало BatchExtensionContribution. */
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
 	/** Данные для наполнения коллекции: сырые props (+ meta `_`) или готовые инстансы. */
-	items?: (TCollectionItemSource<TItemProps> | TItem)[]
+	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]
 	/** Функция идентификации элемента для патчинга (принимает инстанс). */
 	trackBy?: (item: TItem) => any
 }

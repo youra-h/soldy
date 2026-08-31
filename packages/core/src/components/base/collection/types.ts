@@ -127,7 +127,7 @@ export interface ICollectionProps<TCollectionEngine = unknown> {
  * Сырой источник элемента коллекции: props + опциональная meta `_`.
  * Используется для `items` — состояния (active, selected) передаются через `_.{state}`.
  */
-export type TCollectionItemSource<TItemProps = any, TMeta = Record<string, any>> =
+export type TCollectionEngineItemSource<TItemProps = any, TMeta = Record<string, any>> =
 	Partial<TItemProps> & {
 		_?: TMeta
 	}
