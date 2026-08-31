@@ -11,10 +11,17 @@ import type { ICollapse } from '../types'
  * Владеет `TCollection` (engine + расширения) и выставляет коллекционные props/методы
  * как обычные свойства компонента. Используется как `ctor` в `CollapseCollectionDescriptor`.
  */
-export class TCollapseCollectionFacade extends TCollectionComponent<ICollapseItem, TCollapseCollectionExtensions> {
+export class TCollapseCollectionFacade extends TCollectionComponent<
+	ICollapseItem,
+	TCollapseCollectionExtensions
+> {
 	constructor(
 		owner: ICollapse,
-		options: { engine?: TCollapseCollection; items?: any; trackBy?: (item: ICollapseItem) => any } = {},
+		options: {
+			engine?: TCollapseCollection
+			items?: any
+			trackBy?: (item: ICollapseItem) => any
+		} = {},
 	) {
 		super(options.engine ?? CollapseFactory(owner))
 
@@ -25,10 +32,12 @@ export class TCollapseCollectionFacade extends TCollectionComponent<ICollapseIte
 		if (options.trackBy) {
 			this.trackBy = options.trackBy
 		}
-	}
 
-	protected _relayCollection(): void {
-		this.events.relay(this.extensions.batch.events, ['items:added', 'items:removed', 'change:trackBy'])
+		this.events.relay(this.extensions.batch.events, [
+			'items:added',
+			'items:removed',
+			'change:trackBy',
+		])
 		this.events.relay(this.extensions.selection.events, ['change:selection', 'change:mode'])
 	}
 

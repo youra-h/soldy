@@ -37,15 +37,7 @@ export abstract class TCollectionComponent<
 			'change:count',
 			'reset',
 		])
-
-		this._relayCollection()
 	}
-
-	/**
-	 * Пробросить события конкретных расширений в собственный `events`.
-	 * Переопределяется в конкретном фасаде коллекции.
-	 */
-	protected abstract _relayCollection(): void
 
 	get engine(): ICollectionEngine<TItem> {
 		return this.collection.engine

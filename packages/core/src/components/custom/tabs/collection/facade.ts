@@ -27,9 +27,7 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 		if (options.trackBy) {
 			this.trackBy = options.trackBy
 		}
-	}
 
-	protected _relayCollection(): void {
 		this.events.relay(this.extensions.batch.events, [
 			'items:added',
 			'items:removed',
