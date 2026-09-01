@@ -4,10 +4,14 @@ import {
 	CollapseCollectionContribution,
 	CollapseCollectionItemContribution,
 } from '../../../contributions'
+import { CollectionDescriptor } from '../collection'
 
 export const CollapseCollectionDescriptor = () =>
 	defineComponent({
 		ctor: TCollapseCollectionFacade,
+
+		extends: CollectionDescriptor(),
+
 		contribution: CollapseCollectionContribution(),
 	})
 

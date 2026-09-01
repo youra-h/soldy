@@ -5,25 +5,9 @@ import type { IContribution } from '@soldy/accessor'
  */
 export const TabsCollectionContribution = (): IContribution => ({
 	props: {
-		// pass-through готовая коллекция — приходит через конструктор фасада
-		items: { type: Array, triggers: ['change:items'] },
-		trackBy: { type: Function, triggers: ['change:trackBy'] },
 		activeItem: { type: Object, protected: true, triggers: ['change:activation'] },
 	},
-	events: [
-		'item:add:before',
-		'item:added',
-		'item:removed',
-		'item:updated',
-		'item:moved',
-		'change:count',
-		'reset',
-		'items:added',
-		'items:removed',
-		'item:activated',
-		'item:deactivated',
-		'item:close',
-	],
+	events: ['item:activated', 'item:deactivated', 'item:close'],
 })
 
 /**
