@@ -33,7 +33,11 @@ export default {
 			props,
 		})
 
-		const itemBinding = useVue<Record<string, any>, TTabItemCollectionFacade>(itemAdapter, props, emit)
+		const itemBinding = useVue<Record<string, any>, TTabItemCollectionFacade>(
+			itemAdapter,
+			props,
+			emit,
+		)
 		const ownerBinding = useVue<ITabItemProps, ITabItem>(adapter, props, emit)
 
 		return {
