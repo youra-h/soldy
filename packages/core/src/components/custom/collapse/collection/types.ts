@@ -13,7 +13,6 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
-	TSelectionMode,
 } from '../../../base/collection'
 import { TCollapseExtension } from './extensions'
 import type { ICollapse } from '../types'
@@ -32,16 +31,6 @@ export type TCollapseCollectionExtensions = {
 }
 
 export type TCollapseCollection = TCollectionEngine<ICollapseItem, TCollapseCollectionExtensions>
-
-/**
- * Output-состояние коллекции Collapse (возвращается useVueCollection как refs).
- */
-export interface ICollapseCollectionOutput {
-	items: ReadonlyArray<ICollapseItem>
-	trackBy?: (item: ICollapseItem) => any
-	mode: TSelectionMode
-	selected: ICollapseItem[]
-}
 
 /**
  * Owner-level props коллекции Collapse.
