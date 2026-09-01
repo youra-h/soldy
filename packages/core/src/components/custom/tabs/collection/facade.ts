@@ -1,4 +1,8 @@
 import { TCollectionComponent } from '../../../base/collection'
+import type {
+	TCollectionFacadeOptions,
+	TCollectionFacadeProps,
+} from '../../../base/collection'
 import { TabsFactory } from './factory'
 import type { TTabsCollection, TTabsCollectionExtensions } from './types'
 import type { ITabItem } from '../tab-item/types'
@@ -15,17 +19,17 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 	TTabsCollectionExtensions
 > {
 	constructor(
-		owner: ITabs,
-		options: { engine?: TTabsCollection; items?: any; trackBy?: (item: ITabItem) => any } = {},
+		props: TCollectionFacadeProps<ITabItem> = {},
+		options: TCollectionFacadeOptions<TTabsCollection, ITabs> = {},
 	) {
-		super(options.engine ?? TabsFactory(owner))
+		super({}, { engine: options.engine ?? TabsFactory(options.owner!) })
 
-		if (options.items?.length) {
-			this.items = options.items
+		if (props.items?.length) {
+			this.items = props.items
 		}
 
-		if (options.trackBy) {
-			this.trackBy = options.trackBy
+		if (props.trackBy) {
+			this.trackBy = props.trackBy
 		}
 
 		this.events.relay(this.extensions.batch.events, [

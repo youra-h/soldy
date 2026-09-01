@@ -2,6 +2,7 @@ import { TComponent } from '../../component'
 import type { IComponentProps, TComponentEvents } from '../../component'
 import { TCollectionEngine } from './../engine'
 import type { ICollectionStorageDriver, IExtension } from './../engine'
+import type { ICollectionComponentOptions } from './types'
 
 /**
  * Фасад владельца коллекции.
@@ -20,10 +21,13 @@ export abstract class TCollectionComponent<
 > extends TComponent<IComponentProps, TEvents> {
 	public readonly engine: TCollectionEngine<TItem, TExtensions>
 
-	constructor(engine: TCollectionEngine<TItem, TExtensions>) {
-		super()
+	constructor(
+		props: Partial<IComponentProps> = {},
+		options: ICollectionComponentOptions<TItem, TExtensions>,
+	) {
+		super(props, options)
 
-		this.engine = engine
+		this.engine = options.engine
 
 		// Системные события движка: item:*, change:items/count, reset.
 		this.events.relay(this.engine.driver.events, [

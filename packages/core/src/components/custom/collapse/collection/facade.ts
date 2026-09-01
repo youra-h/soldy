@@ -1,5 +1,9 @@
 import { TCollectionComponent } from '../../../base/collection'
-import type { TSelectionMode } from '../../../base/collection'
+import type {
+	TCollectionFacadeOptions,
+	TCollectionFacadeProps,
+	TSelectionMode,
+} from '../../../base/collection'
 import { CollapseFactory } from './factory'
 import type { TCollapseCollection, TCollapseCollectionExtensions } from './types'
 import type { ICollapseItem } from '../collapse-item/types'
@@ -16,21 +20,17 @@ export class TCollapseCollectionFacade extends TCollectionComponent<
 	TCollapseCollectionExtensions
 > {
 	constructor(
-		owner: ICollapse,
-		options: {
-			engine?: TCollapseCollection
-			items?: any
-			trackBy?: (item: ICollapseItem) => any
-		} = {},
+		props: TCollectionFacadeProps<ICollapseItem> = {},
+		options: TCollectionFacadeOptions<TCollapseCollection, ICollapse> = {},
 	) {
-		super(options.engine ?? CollapseFactory(owner))
+		super({}, { engine: options.engine ?? CollapseFactory(options.owner!) })
 
-		if (options.items?.length) {
-			this.items = options.items
+		if (props.items?.length) {
+			this.items = props.items
 		}
 
-		if (options.trackBy) {
-			this.trackBy = options.trackBy
+		if (props.trackBy) {
+			this.trackBy = props.trackBy
 		}
 
 		this.events.relay(this.extensions.batch.events, [
