@@ -40,7 +40,7 @@ export class TTabItemCollectionFacade extends TCollectionItemComponent<
 		return this._context?.adapters.order.order ?? -1
 	}
 
-	get tabs_closable(): boolean {
+	get closable(): boolean {
 		return this._context?.adapters.tabs.closable ?? false
 	}
 }

@@ -40,7 +40,7 @@ export class TCollapseItemCollectionFacade extends TCollectionItemComponent<
 		return this._context?.adapters.order.order ?? -1
 	}
 
-	get collapse_view(): string {
+	get view(): string {
 		return this._context?.adapters.collapse.view ?? ''
 	}
 }
