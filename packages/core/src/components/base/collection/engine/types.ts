@@ -1,6 +1,6 @@
 import type { ICommand } from './commands'
 import { TEvented } from '@soldy/core'
-import { TActionEvent } from '../../../common/event/action-event'
+import { TActionEvent } from '../../../../common/event/action-event'
 
 /**
  * База событий коллекции, которые несут meta-снапшот `_`.
@@ -127,7 +127,9 @@ export interface ICollectionProps<TCollectionEngine = unknown> {
  * Сырой источник элемента коллекции: props + опциональная meta `_`.
  * Используется для `items` — состояния (active, selected) передаются через `_.{state}`.
  */
-export type TCollectionEngineItemSource<TItemProps = any, TMeta = Record<string, any>> =
-	Partial<TItemProps> & {
-		_?: TMeta
-	}
+export type TCollectionEngineItemSource<
+	TItemProps = any,
+	TMeta = Record<string, any>,
+> = Partial<TItemProps> & {
+	_?: TMeta
+}

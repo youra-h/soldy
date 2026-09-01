@@ -1,8 +1,7 @@
-import { TComponent } from '../component'
-import type { IComponentProps, TComponentEvents } from '../component'
-import { TCollectionEngine } from './engine.class'
-import type { ICollectionStorageDriver } from './types'
-import type { IExtension } from './extension'
+import { TComponent } from '../../component'
+import type { IComponentProps, TComponentEvents } from '../../component'
+import { TCollectionEngine } from './../engine'
+import type { ICollectionStorageDriver, IExtension } from './../engine'
 
 /**
  * Фасад владельца коллекции.
@@ -19,15 +18,15 @@ export abstract class TCollectionComponent<
 	TExtensions extends Record<string, IExtension<TItem>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TComponent<IComponentProps, TEvents> {
-	public readonly collection: TCollectionEngine<TItem, TExtensions>
+	public readonly engine: TCollectionEngine<TItem, TExtensions>
 
-	constructor(collection: TCollectionEngine<TItem, TExtensions>) {
+	constructor(engine: TCollectionEngine<TItem, TExtensions>) {
 		super()
 
-		this.collection = collection
+		this.engine = engine
 
 		// Системные события движка: item:*, change:items/count, reset.
-		this.events.relay(this.collection.driver.events, [
+		this.events.relay(this.engine.driver.events, [
 			'item:add:before',
 			'item:added',
 			'item:removed',
@@ -40,14 +39,14 @@ export abstract class TCollectionComponent<
 	}
 
 	get driver(): ICollectionStorageDriver<TItem> {
-		return this.collection.driver
+		return this.engine.driver
 	}
 
 	get extensions(): TExtensions {
-		return this.collection.extensions
+		return this.engine.extensions
 	}
 
 	batch(action: () => void): void {
-		this.collection.batch(action)
+		this.engine.batch(action)
 	}
 }

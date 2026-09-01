@@ -1,7 +1,7 @@
-import { TComponent } from '../component'
-import type { IComponentProps, TComponentEvents } from '../component'
-import { TItemContext } from './context'
-import type { IExtension } from './extension'
+import { TComponent } from '../../component'
+import type { IComponentProps, TComponentEvents } from '../../component'
+import { TItemContext } from './../engine'
+import type { IExtension } from './../engine'
 
 /**
  * Фасад элемента коллекции.
