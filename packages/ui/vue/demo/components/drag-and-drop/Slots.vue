@@ -19,8 +19,8 @@ import {
     TabItem,
     Collapse,
     CollapseItem,
-    ListBox,
-    ListBoxItem,
+    // ListBox,
+    // ListBoxItem,
 } from '@soldy/ui-vue';
 
 type Props = {

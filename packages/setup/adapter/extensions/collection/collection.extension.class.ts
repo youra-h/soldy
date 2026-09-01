@@ -15,29 +15,31 @@ import { TCollectionBundlesPlugin } from '@soldy/plugins'
 
 export interface ICollectionExtensionOptions {
 	elevator: TElevatorFactory
-	/** Готовая коллекция (pass-through из props.engine). */
-	engine?: any
 }
 
 export class TCollectionExtension {
 	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
-		const { elevator, engine } = options
+		const { elevator } = options
 
 		// Фасад-режим: инстанс сам владеет коллекцией (context.instance — фасад).
-		const facade = context.instance as any
-		const fromFacade = facade && typeof facade.collection !== 'undefined' ? facade.collection : undefined
+		const instance = context.instance as any
+		const engine = instance?.engine
 
-		if (fromFacade) {
-			elevator(ITEM_CONTEXT_ELEVATOR).down(fromFacade)
-			this._wire(context, elevator, fromFacade)
-			return
+		if (!engine) {
+			throw new Error('Engine is not available in the collection instance.')
 		}
 
-		// Pass-through: готовая коллекция приходит из props.engine.
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
+
 		this._wire(context, elevator, engine)
 	}
 
+	/**
+	 * Настраивает коллекцию, связывая её с плагинами и регистрируя элементы через лифт.
+	 * @param context Контекст адаптера, содержащий информацию о коллекции и её окружении.
+	 * @param elevator Лифт для передачи элементов коллекции.
+	 * @param collection Коллекция, которую необходимо настроить.
+	 */
 	private _wire(context: IAdapterContext, elevator: TElevatorFactory, collection: any): void {
 		const bundles = context.bundle?.get(TCollectionBundlesPlugin)
 
