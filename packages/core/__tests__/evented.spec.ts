@@ -65,26 +65,6 @@ describe('TEvented', () => {
 		expect(middleware.mock.calls[2][0].event).toBe('reset')
 	})
 
-	it('use: миддлвар получает правильный type для emitResolve', () => {
-		const events = new TEvented<TestEvents>()
-		const middleware = vi.fn()
-
-		events.use(middleware)
-		events.emitResolve('change', 'x')
-
-		expect(middleware.mock.calls[0][0].type).toBe('emitResolve')
-	})
-
-	it('use: middleware получает правильный type для emitResolveAll', () => {
-		const events = new TEvented<TestEvents>()
-		const middleware = vi.fn()
-
-		events.use(middleware)
-		events.emitResolveAll('change', 'x')
-
-		expect(middleware.mock.calls[0][0].type).toBe('emitResolveAll')
-	})
-
 	it('use: несколько middleware вызываются в порядке регистрации', () => {
 		const events = new TEvented<TestEvents>()
 		const order: number[] = []
@@ -266,26 +246,6 @@ describe('TEvented', () => {
 
 		expect(handler).toHaveBeenCalledTimes(1)
 		expect(handler).toHaveBeenCalledWith('outer')
-	})
-
-	// --- Поведение emit-методов при глушении ---
-
-	it('emitResolve: возвращает undefined при глушении', () => {
-		const events = new TEvented<TestEvents>()
-
-		events.on('change', () => 'result' as any)
-		events.pause()
-
-		expect(events.emitResolve('change', 'x')).toBeUndefined()
-	})
-
-	it('emitResolveAll: возвращает [] при глушении', () => {
-		const events = new TEvented<TestEvents>()
-
-		events.on('change', () => 'result' as any)
-		events.pause()
-
-		expect(events.emitResolveAll('change', 'x')).toEqual([])
 	})
 
 	// --- relay ---

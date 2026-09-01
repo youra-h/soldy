@@ -10,7 +10,7 @@ export type TEventContext<
 	/** Аргументы события */
 	args: Parameters<TEvents[K]>
 	/** Метод вызова эмиттера */
-	type: 'emit' | 'emitResolve' | 'emitResolveAll'
+	type: 'emit'
 	/** Временная метка вызова события */
 	timestamp: number
 }

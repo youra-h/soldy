@@ -9,8 +9,6 @@ export interface IEventSource {
 
 export interface IEventEmitter extends IEventSource {
 	emit(event: string, ...args: unknown[]): void
-	emitResolve<T>(event: string, ...args: unknown[]): T | undefined
-	emitResolveAll<T>(event: string, ...args: unknown[]): T[]
 	remove(event?: string): void
 }
 
@@ -43,53 +41,6 @@ export class TEventEmitter<
 
 	emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
 		this._items.get(event as string)?.forEach((handler) => handler(...args))
-	}
-
-	/**
-	 * Выполняет событие и возвращает первый не-undefined результат (short-circuit).
-	 * Если ни один обработчик не вернул значение — возвращает undefined.
-	 */
-	emitResolve<T, K extends keyof Events>(
-		event: K,
-		...args: Parameters<Events[K]>
-	): T | undefined {
-		const handlers = this._items.get(event as string)
-
-		if (!handlers) {
-			return undefined
-		}
-
-		for (const handler of handlers) {
-			const result = handler(...args)
-
-			if (result !== undefined) {
-				return result as T
-			}
-		}
-		return undefined
-	}
-
-	/**
-	 * Выполняет событие и возвращает все не-undefined результаты обработчиков.
-	 */
-	emitResolveAll<T, K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): T[] {
-		const handlers = this._items.get(event as string)
-
-		if (!handlers) {
-			return []
-		}
-
-		const results: T[] = []
-
-		for (const handler of handlers) {
-			const result = handler(...args)
-
-			if (result !== undefined) {
-				results.push(result as T)
-			}
-		}
-
-		return results
 	}
 
 	remove(event?: string): void {

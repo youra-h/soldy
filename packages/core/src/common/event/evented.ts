@@ -212,29 +212,6 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	}
 
 	/**
-	 * Выполняет событие и возвращает первый не-undefined результат (short-circuit).
-	 * При глушении возвращает `undefined`.
-	 */
-	emitResolve<T, K extends keyof TEvents>(
-		event: K,
-		...args: Parameters<TEvents[K]>
-	): T | undefined {
-		if (this.isMuted) return undefined
-		this._notifyMiddlewares('emitResolve', event, args)
-		return this._items.emitResolve<T, K>(event, ...args)
-	}
-
-	/**
-	 * Выполняет событие и возвращает все не-undefined результаты обработчиков.
-	 * При глушении возвращает пустой массив `[]`.
-	 */
-	emitResolveAll<T, K extends keyof TEvents>(event: K, ...args: Parameters<TEvents[K]>): T[] {
-		if (this.isMuted) return []
-		this._notifyMiddlewares('emitResolveAll', event, args)
-		return this._items.emitResolveAll<T, K>(event, ...args)
-	}
-
-	/**
 	 * Декларативный маппинг событий из источника (`source`) в текущий эмиттер.
 	 *
 	 * Каждый элемент массива `rules` — либо строка (имя события, пробрасывается как есть),
