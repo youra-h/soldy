@@ -1,6 +1,5 @@
 import { TControl } from '../control'
-import type { IComponentViewOptions } from '../component-view'
-import { TComponentView } from '../component-view'
+import type { IComponentOptions } from '../component'
 import type { IValueControlProps, TValueControlEvents, TValueControlStates } from './types'
 import { TStateUnit, TEvented } from '../../../common'
 import type { TValuePayload } from '../../../common'
@@ -28,21 +27,16 @@ export default class TValueControl<
 
 	protected _name: string
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TValueControl
-
-		const { props = {} as Partial<TProps>, states } = TComponentView.prepareOptions<
-			TProps,
-			TStates
-		>(options)
 
 		this._name = props.name ?? (ctor.defaultValues.name as string)
 
 		const value = props.value ?? (ctor.defaultValues.value as TValue)
 
-		this._states.value = states?.value ?? new TStateUnit<TValue>({ initial: value })
+		this._states.value = options.states?.value ?? new TStateUnit<TValue>({ initial: value })
 
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
 			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('change:value', payload)

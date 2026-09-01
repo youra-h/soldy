@@ -1,6 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentViewOptions } from '../../base/component-view'
-import { TComponentView } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type {
 	ICollapse,
@@ -30,16 +29,12 @@ export class TCollapse
 	protected _view!: TCollapseView
 
 	constructor(
-		options:
-			| IComponentViewOptions<ICollapseProps, TCollapseStates>
-			| Partial<ICollapseProps> = {},
+		props: Partial<ICollapseProps> = {},
+		options: IComponentOptions<TCollapseStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TCollapse
-		const { props = {} } = TComponentView.prepareOptions<ICollapseProps, TCollapseStates>(
-			options,
-		)
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
 	}

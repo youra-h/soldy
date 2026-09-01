@@ -24,7 +24,7 @@ export function createAdapterContext(
 	options: { ctrl?: any; props?: Readonly<Record<string, any>> },
 	defaultExtensions: Array<TAnyExtensionCtor> = [TPluginsBindingExtension],
 ): IAdapterContext {
-	const instance = options.ctrl ?? new (descriptor.ctor as any)({ props: options.props })
+	const instance = options.ctrl ?? new (descriptor.ctor as any)(options.props ?? {})
 	const bundle = descriptor.createBundle(instance)
 	const accessor = descriptor.createAccessor(instance, bundle)
 

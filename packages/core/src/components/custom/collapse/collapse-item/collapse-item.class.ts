@@ -1,6 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentViewOptions } from '../../../base/component-view'
-import { TComponentView } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
 import type {
@@ -37,23 +36,19 @@ export default class TCollapseItem<
 	protected _arrowPlacement!: TCollapseArrowPlacement
 
 	constructor(
-		options: IComponentViewOptions<TProps, TCollapseItemStates> | Partial<TProps> = {},
+		props: Partial<TProps> = {},
+		options: IComponentOptions<TCollapseItemStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TCollapseItem
-
-		const { props = {}, states } = TComponentView.prepareOptions<
-			TProps,
-			TCollapseItemStates
-		>(options)
 
 		// Type assertion: TProps extends ICollapseItemProps, поэтому props содержит text и arrowPlacement
 		const customProps = props as Partial<ICollapseItemProps>
 
 		// Инициализация state-объектов
 		this._states.text =
-			states?.text ??
+			options.states?.text ??
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement!

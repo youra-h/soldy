@@ -64,12 +64,10 @@ export interface IComponent<
 }
 
 /**
- * Опции для создания компонента.
- * props — начальные свойства.
+ * Внутренние настройки компонента (второй аргумент конструктора).
  * states — инъекция state-реализаций.
  */
-export interface IComponentOptions<TProps, TStates = any> {
-	props?: Partial<TProps>
+export interface IComponentOptions<TStates = any> {
 	/**
 	 * Инъекция state-реализаций.
 	 * Нужна, чтобы менять поведение state свойств без оверрайда геттеров/сеттеров.

@@ -1,6 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentViewOptions } from '../../base/component-view'
-import { TComponentView } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type {
 	ITabs,
@@ -37,12 +36,12 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	protected _closable!: boolean
 
 	constructor(
-		options: IComponentViewOptions<ITabsProps, TTabsStates> | Partial<ITabsProps> = {},
+		props: Partial<ITabsProps> = {},
+		options: IComponentOptions<TTabsStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TTabs
-		const { props = {} } = TComponentView.prepareOptions<ITabsProps, TTabsStates>(options)
 
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation!)
 		this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment!)

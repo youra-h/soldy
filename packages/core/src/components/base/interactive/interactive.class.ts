@@ -1,5 +1,6 @@
 import { TStateUnit, TEvented } from '../../../common'
-import { TComponentView, type IComponentViewOptions } from '../component-view'
+import { TComponentView } from '../component-view'
+import type { IComponentOptions } from '../component'
 import type { IInteractiveProps, TInteractiveEvents, TInteractiveStates } from './types'
 import type { TValuePayload } from '../../../common'
 
@@ -20,26 +21,23 @@ export default class TInteractive<
 		focused: false,
 	}
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TInteractive
-
-		const { props = {} as Partial<TProps>, states } = TComponentView.prepareOptions<
-			TProps,
-			TStates
-		>(options)
 
 		const disabled = props.disabled ?? (ctor.defaultValues.disabled as boolean)
 		const focused = props.focused ?? (ctor.defaultValues.focused as boolean)
 
-		this._states.disabled = states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
+		this._states.disabled =
+			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TInteractiveEvents>).emit('change:disabled', payload.newValue)
 		})
 
-		this._states.focused = states?.focused ?? new TStateUnit<boolean>({ initial: focused })
+		this._states.focused =
+			options.states?.focused ?? new TStateUnit<boolean>({ initial: focused })
 
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TInteractiveEvents>).emit('change:focused', payload.newValue)

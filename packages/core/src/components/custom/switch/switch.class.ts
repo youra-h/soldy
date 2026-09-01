@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import type { ISwitch, ISwitchProps, TSwitchEvents } from './types'
 
 export default class TSwitch
@@ -13,13 +13,10 @@ export default class TSwitch
 		variant: 'normal',
 	}
 
-	constructor(options: IComponentViewOptions<ISwitchProps> | Partial<ISwitchProps> = {}) {
-		super(options)
+	constructor(props: Partial<ISwitchProps> = {}, options: IComponentOptions = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TSwitch
-
-		const { props = {} as Partial<ISwitchProps> } =
-			TComponentView.prepareOptions<ISwitchProps>(options)
 
 		this.value = props.value ?? (ctor.defaultValues.value as boolean)
 	}

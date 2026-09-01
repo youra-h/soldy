@@ -1,7 +1,6 @@
 import type { TClasses } from './../../../common'
 import type {
 	IComponent,
-	IComponentOptions,
 	IComponentProps,
 	TComponentEvents,
 	TComponentStates,
@@ -21,15 +20,6 @@ export type TComponentViewEvents = TComponentEvents & {
 export interface IComponentViewProps extends IComponentProps {
 	tag?: string | object
 }
-
-/**
- * Опции для component-view-слоя.
- * props — начальные свойства, states — инъекция state-объектов.
- */
-export interface IComponentViewOptions<
-	TProps extends IComponentViewProps = IComponentViewProps,
-	TStates extends TComponentViewStates = TComponentViewStates,
-> extends IComponentOptions<TProps, TStates> {}
 
 export interface IComponentView<
 	TProps extends IComponentViewProps = IComponentViewProps,

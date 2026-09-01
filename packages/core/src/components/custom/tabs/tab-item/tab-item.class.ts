@@ -1,6 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentViewOptions } from '../../../base/component-view'
-import { TComponentView } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
 import type { ITabItem, ITabItemProps, TTabItemEvents, TTabItemStates } from './types'
@@ -28,25 +27,24 @@ export default class TTabItem<
 		tag: 'button',
 	}
 
-	constructor(options: IComponentViewOptions<TProps, TTabItemStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(
+		props: Partial<TProps> = {},
+		options: IComponentOptions<TTabItemStates> = {},
+	) {
+		super(props, options)
 
 		const ctor = new.target as typeof TTabItem
-
-		const { props = {}, states } = TComponentView.prepareOptions<TProps, TTabItemStates>(
-			options,
-		)
 
 		// Type assertion: TProps extends ITabItemProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabItemProps>
 
 		// Инициализация state-объектов
 		this._states.text =
-			states?.text ??
+			options.states?.text ??
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._states.closable =
-			states?.closable ??
+			options.states?.closable ??
 			new TStateUnit<boolean | undefined>({
 				initial: customProps.closable ?? ctor.defaultValues.closable,
 			})

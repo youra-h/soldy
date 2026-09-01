@@ -12,7 +12,7 @@ describe('TComponentView', () => {
 	})
 
 	it('принимает { props } корректно', () => {
-		const p = new TComponentView({ props: { tag: 'span', visible: false } })
+		const p = new TComponentView({ tag: 'span', visible: false })
 		expect(p.tag).toBe('span')
 		expect(p.visible).toBe(false)
 		expect(p.classes.toArray()).toContain(TComponentView.baseClass)
@@ -120,10 +120,10 @@ describe('TComponentView', () => {
 		const instanceVisible = new TLoggedVisibilityState({ initial: false })
 		const instanceRendered = new TVisibilityState({ initial: true })
 
-		const p1 = new TComponentView({
-			props: { visible: false },
-			states: { rendered: instanceRendered, visible: instanceVisible },
-		})
+		const p1 = new TComponentView(
+			{ visible: false },
+			{ states: { rendered: instanceRendered, visible: instanceVisible } },
+		)
 		p1.events.on('change:visible', (value) => {
 			log.push(`component-view:change:visible=${value}`)
 		})

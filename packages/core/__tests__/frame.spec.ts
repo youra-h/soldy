@@ -26,7 +26,7 @@ describe('TFrame', () => {
 	})
 
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TFrame({ props: { x: 10, y: 20 } })
+		const a = new TFrame({ x: 10, y: 20 })
 		expect(a.x).toBe(10)
 		expect(a.y).toBe(20)
 

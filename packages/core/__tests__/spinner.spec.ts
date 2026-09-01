@@ -3,7 +3,7 @@ import { TSpinner } from '@soldy/core'
 
 describe('TSpinner', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TSpinner({ props: { size: 'xl', variant: 'caution', borderWidth: 2 } })
+		const a = new TSpinner({ size: 'xl', variant: 'caution', borderWidth: 2 })
 		expect(a.size).toBe('xl')
 		expect(a.variant).toBe('caution')
 		expect(a.borderWidth).toBe(2)

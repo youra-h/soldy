@@ -6,7 +6,7 @@ import type {
 	TButtonEvents,
 	TButtonStates,
 } from './types'
-import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common/event/evented'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
@@ -22,17 +22,12 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 	protected _view!: TButtonView
 
 	constructor(
-		options:
-			| IComponentViewOptions<IButtonProps, TButtonStates>
-			| Partial<IButtonProps> = {},
+		props: Partial<IButtonProps> = {},
+		options: IComponentOptions<TButtonStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TButton
-		const { props = {} } = TComponentView.prepareOptions<
-			IButtonProps,
-			TButtonStates
-		>(options)
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
 	}

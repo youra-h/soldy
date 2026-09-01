@@ -6,7 +6,7 @@ describe('TValueControl', () => {
 	it('принимает value/name через { props } и через plain props', () => {
 		type P = IValueControlProps<string>
 
-		const a = new TValueControl<string, P>({ props: { value: 'A', name: 'n1' } } as any)
+		const a = new TValueControl<string, P>({ value: 'A', name: 'n1' } as any)
 		expect(a.value).toBe('A')
 		expect(a.name).toBe('n1')
 

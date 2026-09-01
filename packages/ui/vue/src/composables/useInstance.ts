@@ -1,5 +1,4 @@
 import { toRaw } from 'vue'
-import type { IComponentOptions } from '@soldy/core'
 
 /**
  * Returns a raw (non-reactive) instance of a component.
@@ -10,9 +9,9 @@ import type { IComponentOptions } from '@soldy/core'
  * @returns The managed instance of the component.
  */
 export function useInstance<T extends object>(
-	Ctor: new (options: IComponentOptions<any>) => T,
+	Ctor: new (props: any, options?: any) => T,
 	props: any,
 ): T {
 	const provided = props.ctrl
-	return provided ? (toRaw(provided) as T) : new Ctor({ props })
+	return provided ? (toRaw(provided) as T) : new Ctor(props)
 }

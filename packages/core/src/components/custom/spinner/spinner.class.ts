@@ -1,5 +1,5 @@
 import { TStylable } from '../../base/stylable'
-import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { type TEvented } from '../../../common'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
 
@@ -16,16 +16,12 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	protected _borderWidth: number | 'auto'
 
 	constructor(
-		options: IComponentViewOptions<ISpinnerProps, TSpinnerStates> | Partial<ISpinnerProps> = {},
+		props: Partial<ISpinnerProps> = {},
+		options: IComponentOptions<TSpinnerStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TSpinner
-
-		const { props = {} as Partial<ISpinnerProps> } = TComponentView.prepareOptions<
-			ISpinnerProps,
-			TSpinnerStates
-		>(options)
 
 		this._borderWidth = props.borderWidth ?? ctor.defaultValues.borderWidth!
 	}

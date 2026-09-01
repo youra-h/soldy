@@ -1,6 +1,7 @@
 import { TStateUnit, TEvented } from '../../../common'
 import type { TComponentVariant, TValuePayload } from '../../../common'
-import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
+import { TComponentView } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import type {
 	ISkeleton,
 	ISkeletonProps,
@@ -31,18 +32,12 @@ export default class TSkeleton
 	protected _height: number | string
 
 	constructor(
-		options:
-			| IComponentViewOptions<ISkeletonProps, TSkeletonStates>
-			| Partial<ISkeletonProps> = {},
+		props: Partial<ISkeletonProps> = {},
+		options: IComponentOptions<TSkeletonStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TSkeleton
-
-		const { props = {} as Partial<ISkeletonProps>, states } = TComponentView.prepareOptions<
-			ISkeletonProps,
-			TSkeletonStates
-		>(options)
 
 		this._shape = props.shape ?? ctor.defaultValues.shape!
 		this._animation = props.animation ?? ctor.defaultValues.animation!
@@ -53,7 +48,7 @@ export default class TSkeleton
 		this._classes.add(`--${this._animation}`)
 
 		this._states.variant =
-			states?.variant ??
+			options.states?.variant ??
 			new TStateUnit<TComponentVariant>({
 				initial: props.variant ?? (ctor.defaultValues.variant as TComponentVariant),
 			})

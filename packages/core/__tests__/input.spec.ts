@@ -3,7 +3,7 @@ import { TInput } from '@soldy/core'
 
 describe('TInput', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TInput({ props: { value: 'hello', readonly: true, required: true } })
+		const a = new TInput({ value: 'hello', readonly: true, required: true })
 		expect(a.value).toBe('hello')
 		expect(a.readonly).toBe(true)
 		expect(a.required).toBe(true)
@@ -82,18 +82,16 @@ describe('TInput', () => {
 
 	it('getProps возвращает все inherited props', () => {
 		const input = new TInput({
-			props: {
-				value: 'test',
-				name: 'email',
-				disabled: true,
-				focused: false,
-				readonly: false,
-				required: true,
-				variant: 'accent',
-				size: 'lg',
-				visible: false,
-				rendered: true,
-			},
+			value: 'test',
+			name: 'email',
+			disabled: true,
+			focused: false,
+			readonly: false,
+			required: true,
+			variant: 'accent',
+			size: 'lg',
+			visible: false,
+			rendered: true,
 		})
 
 		const props = input.getProps()

@@ -5,7 +5,7 @@ import type {
 	TValueControlStates,
 } from '../../../base/value-control'
 import type { IStateUnit, TValuePayload } from '../../../../common'
-import type { IComponentViewOptions } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import type { ICollapseCollectionItemProps } from '../collection/types'
 
 export type TCollapseArrowPlacement = 'start' | 'end'
@@ -41,5 +41,5 @@ export interface ICollapseItem<
 	arrowPlacement: TCollapseArrowPlacement
 }
 
-export type TCollapseItemOptions = IComponentViewOptions<ICollapseItemProps, TCollapseItemStates>
+export type TCollapseItemOptions = IComponentOptions<TCollapseItemStates>
 

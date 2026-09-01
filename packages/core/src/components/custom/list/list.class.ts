@@ -1,6 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentViewOptions } from '../../base/component-view'
-import { TComponentView } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { TScrollBehavior } from '../../../common'
 import type { IList, IListComponentProps, IListProps, TListEvents, TListStates } from './types'
@@ -33,14 +32,10 @@ export class TList<
 	protected _wordWrap!: boolean
 	protected _scrollBehavior: TScrollBehavior
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TList
-
-		const { props = {} as Partial<TProps> } = TComponentView.prepareOptions<TProps, TStates>(
-			options,
-		)
 
 		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows!
 		this._applyAutoWidth(props.autoWidth ?? ctor.defaultValues.autoWidth!)

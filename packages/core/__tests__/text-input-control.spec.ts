@@ -5,7 +5,7 @@ import type { ITextInputControlProps } from '@soldy/core'
 describe('TInputControl', () => {
 	it('принимает form-flags через { props } и через plain props', () => {
 		const a = new TInputControl<ITextInputControlProps>({
-			props: { value: '', readonly: true, required: true },
+			value: '', readonly: true, required: true,
 		} as any)
 		expect(a.readonly).toBe(true)
 		expect(a.required).toBe(true)

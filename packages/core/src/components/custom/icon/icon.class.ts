@@ -1,6 +1,6 @@
 import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
-import type { IComponentViewOptions } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
 import type { TValuePayload, TComponentSize } from '../../../common'
 
@@ -20,19 +20,15 @@ export default class TIcon
 	protected _height: string | number | undefined
 
 	constructor(
-		options: IComponentViewOptions<IIconProps, TIconStates> | Partial<IIconProps> = {},
+		props: Partial<IIconProps> = {},
+		options: IComponentOptions<TIconStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TIcon
 
-		const { props = {} as Partial<IIconProps>, states } = TComponentView.prepareOptions<
-			IIconProps,
-			TIconStates
-		>(options)
-
 		this._states.size =
-			states?.size ??
+			options.states?.size ??
 			new TStateUnit<TComponentSize>({
 				initial: (props.size ?? ctor.defaultValues.size!) as TComponentSize,
 			})
@@ -88,18 +84,18 @@ export default class TIcon
 	 * @param value Значение, по которому нужно получить иконку, если это уже экземпляр TIcon, он будет возвращен как есть, иначе будет создан новый экземпляр.
 	 * @returns Экземпляр иконки.
 	 */
-	static getInstance(value: TIcon | Object): TIcon {
+	static getInstance(value: TIcon | object): TIcon {
 		if (value instanceof TIcon) {
 			return value
 		}
 
 		// Если value - объект, создаем новый экземпляр с его свойствами
 		if (value && value instanceof Object && 'tag' in value) {
-			return new TIcon({ props: value as any })
+			return new TIcon(value as any)
 		}
 
 		// Иначе value - это объект с иконкой
-		return new TIcon({ props: { tag: value } })
+		return new TIcon({ tag: value })
 	}
 
 	getProps(): IIconProps {

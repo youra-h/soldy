@@ -3,7 +3,7 @@ import { TSwitch } from '@soldy/core'
 
 describe('TSwitch', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TSwitch({ props: { value: true } })
+		const a = new TSwitch({ value: true })
 		expect(a.value).toBe(true)
 		expect(a.classes.toArray()).toContain('s-switch')
 
@@ -11,7 +11,7 @@ describe('TSwitch', () => {
 		expect(b.value).toBe(false)
 
 		const c = new TSwitch({
-			props: { value: true, size: 'xl', variant: 'accent' },
+			value: true, size: 'xl', variant: 'accent',
 		})
 		expect(c.classes.toArray()).toContain('s-switch')
 	})

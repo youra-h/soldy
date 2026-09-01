@@ -19,7 +19,7 @@ export class TUniqueExtension<TItem extends object = any>
 {
 	readonly name = 'unique' as const
 
-	private readonly _known = new Set<Number>()
+	private readonly _known = new Set<number>()
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, IUniqueItemExtension<TItem>>) {
 		super(TUniqueItemExtension, options)

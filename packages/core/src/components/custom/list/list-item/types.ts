@@ -5,7 +5,7 @@ import type {
 	TValueControlStates,
 } from '../../../base/value-control'
 import type { IStateUnit, TValuePayload } from '../../../../common'
-import type { IComponentViewOptions } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import type { IListCollectionItemProps } from '../collection/types'
 
 export type TListItemEvents = TValueControlEvents<string | number> & {
@@ -39,5 +39,5 @@ export interface IListItem<
 	wordWrap: boolean | undefined
 }
 
-export type TListItemOptions = IComponentViewOptions<IListItemProps, TListItemStates>
+export type TListItemOptions = IComponentOptions<TListItemStates>
 

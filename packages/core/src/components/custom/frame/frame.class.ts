@@ -56,14 +56,10 @@ export default class TFrame
 	private _position: TFramePosition
 	private _target: string
 
-	constructor(options: IComponentOptions<IFrameProps, TFrameStates> | Partial<IFrameProps> = {}) {
+	constructor(props: Partial<IFrameProps> = {}, options: IComponentOptions<TFrameStates> = {}) {
 		const ctor = new.target as typeof TFrame
-		const { props = {} as Partial<IFrameProps> } = ctor.prepareOptions<
-			IFrameProps,
-			TFrameStates
-		>(options)
 
-		super(options)
+		super(props, options)
 
 		const x = props.x ?? ctor.defaultValues.x!
 		const y = props.y ?? ctor.defaultValues.y!

@@ -5,7 +5,7 @@ import type {
 	TValueControlStates,
 } from '../../../base/value-control'
 import type { IStateUnit, TValuePayload } from '../../../../common'
-import type { IComponentViewOptions } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
 export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & {
@@ -40,4 +40,4 @@ export interface ITabItem<
 	closable?: boolean | undefined
 }
 
-export type TTabItemOptions = IComponentViewOptions<ITabItemProps, TTabItemStates>
+export type TTabItemOptions = IComponentOptions<TTabItemStates>

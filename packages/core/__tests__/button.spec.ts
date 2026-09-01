@@ -3,14 +3,14 @@ import { TButton } from '@soldy/core'
 
 describe('TButton', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TButton({ props: { text: 'button 1' } })
+		const a = new TButton({ text: 'button 1' })
 		expect(a.text).toBe('button 1')
 		expect(a.classes.toArray()).toContain('s-button')
 
 		const b = new TButton({ text: 'button 2' })
 		expect(b.text).toBe('button 2')
 
-		const c = new TButton({ props: { text: 'x' } })
+		const c = new TButton({ text: 'x' })
 		expect(c.classes.toArray()).toContain('s-button')
 	})
 
@@ -29,12 +29,10 @@ describe('TButton', () => {
 
 	it('getProps/toJSON отражают ключевые props', () => {
 		const btn = new TButton({
-			props: {
-				text: 't',
-				variant: 'accent',
-				size: 'lg',
-				view: 'outlined',
-			},
+			text: 't',
+			variant: 'accent',
+			size: 'lg',
+			view: 'outlined',
 		})
 
 		const props = btn.getProps()

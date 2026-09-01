@@ -20,18 +20,17 @@ describe('TStylable', () => {
 	})
 
 	it('getProps отражает size и variant', () => {
-		const stylable = new TStylable<IStylableProps>({
-			props: { size: 'lg', variant: 'accent' },
-		})
+		const stylable = new TStylable<IStylableProps>({ size: 'lg', variant: 'accent' })
 		expect(stylable.getProps()).toMatchObject({ size: 'lg', variant: 'accent' })
 	})
 
 	it('states.size позволяет передать внешний TStateUnit и классы обновляются при его изменении', () => {
 		const customSizeState = new TStateUnit<TComponentSize>({ initial: 'xl' })
 
-		const stylable = new TStylable<IStylableProps>({
-			states: { size: customSizeState },
-		})
+		const stylable = new TStylable<IStylableProps>(
+			{},
+			{ states: { size: customSizeState } },
+		)
 
 		expect(stylable.size).toBe('xl')
 

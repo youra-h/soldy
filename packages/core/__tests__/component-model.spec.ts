@@ -12,7 +12,7 @@ describe('TComponent', () => {
 	})
 
 	it('принимает props в формате { props }', () => {
-		const m = new TComponent<IComponentProps>({ props: { rendered: false } })
+		const m = new TComponent<IComponentProps>({ rendered: false })
 		expect(m.rendered).toBe(false)
 	})
 

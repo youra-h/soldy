@@ -37,7 +37,7 @@ describe('TTabs (чистый класс)', () => {
 	})
 
 	it('принимает props через { props }', () => {
-		const tabs = new TTabs({ props: { orientation: 'vertical', alignment: 'center' } })
+		const tabs = new TTabs({ orientation: 'vertical', alignment: 'center' })
 
 		expect(tabs.orientation).toBe('vertical')
 		expect(tabs.alignment).toBe('center')

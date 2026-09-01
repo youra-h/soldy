@@ -1,7 +1,6 @@
 import { TList } from '../list'
 import type { IListComponentProps } from '../list/types'
-import type { IComponentViewOptions } from '../../base/component-view'
-import { TComponentView } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { IListBoxProps, TListBoxView, TListBoxEvents, TListBoxStates, IListBox } from './types'
 
@@ -23,16 +22,12 @@ export class TListBox
 	protected _view!: TListBoxView
 
 	constructor(
-		options: IComponentViewOptions<IListBoxProps, TListBoxStates> | Partial<IListBoxProps> = {},
+		props: Partial<IListBoxProps> = {},
+		options: IComponentOptions<TListBoxStates> = {},
 	) {
-		super(options)
+		super(props, options)
 
 		const ctor = new.target as typeof TListBox
-
-		const { props = {} as Partial<IListBoxProps> } = TComponentView.prepareOptions<
-			IListBoxProps,
-			TListBoxStates
-		>(options)
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
 	}

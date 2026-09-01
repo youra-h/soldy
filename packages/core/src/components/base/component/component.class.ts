@@ -30,12 +30,9 @@ export default class TComponent<
 	protected _states = {} as TStates
 	public readonly events: TEvented<TEvents>
 
-	constructor(options: IComponentOptions<TProps, TStates> | Partial<TProps> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		const ctor = new.target as typeof TComponent
 
-		const { props = {} as Partial<TProps>, states } = ctor.prepareOptions<TProps, TStates>(
-			options,
-		)
 		super()
 
 		this.events = new TEvented<TEvents>()
@@ -45,10 +42,11 @@ export default class TComponent<
 		const visible = props.visible ?? (ctor.defaultValues.visible as boolean)
 
 		this._states.rendered =
-			states?.rendered ??
+			options.states?.rendered ??
 			(new TStateUnit<boolean>({ initial: rendered }) as TStates['rendered'])
 		this._states.visible =
-			states?.visible ?? (new TVisibilityState({ initial: visible }) as TStates['visible'])
+			options.states?.visible ??
+			(new TVisibilityState({ initial: visible }) as TStates['visible'])
 
 		this._states.rendered.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TComponentEvents>).emit('change:rendered', payload.newValue)
@@ -60,39 +58,12 @@ export default class TComponent<
 		})
 	}
 
-	static prepareOptions<TProps extends IComponentProps = IComponentProps, TStates = any>(
-		options: IComponentOptions<TProps, TStates> | Partial<TProps>,
-	): { props: Partial<TProps>; states?: Partial<TStates> } {
-		const raw = options as Record<string, unknown>
-		const hasPropsKey = Object.prototype.hasOwnProperty.call(raw, 'props')
-		const hasStatesKey = Object.prototype.hasOwnProperty.call(raw, 'states')
-
-		// Если есть props/states — это точно options-объект
-		const isOptionsObject = hasPropsKey || hasStatesKey
-
-		if (isOptionsObject) {
-			const opt = options as IComponentOptions<TProps, TStates>
-			const props = (opt.props ?? {}) as Partial<TProps>
-
-			return {
-				props,
-				states: opt.states,
-			}
-		}
-
-		// Иначе это plain props
-		const props = options as Partial<TProps>
-
-		return {
-			props,
-		}
-	}
-
 	static create<T extends TComponent>(
-		this: new (options: any) => T,
+		this: new (...args: any[]) => T,
 		props?: Partial<T extends TComponent<infer P> ? P : IComponentProps>,
+		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : any>,
 	): T {
-		return new this({ props: props ?? {} })
+		return new this(props ?? {}, options ?? {})
 	}
 
 	get states(): TStates {

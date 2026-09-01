@@ -1,6 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentViewOptions } from '../../../base/component-view'
-import { TComponentView } from '../../../base/component-view'
+import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
 import type { IListItem, IListItemProps, TListItemEvents, TListItemStates } from './types'
@@ -30,21 +29,20 @@ export default class TListItem<
 
 	protected _wordWrap: boolean | undefined
 
-	constructor(options: IComponentViewOptions<TProps, TListItemStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(
+		props: Partial<TProps> = {},
+		options: IComponentOptions<TListItemStates> = {},
+	) {
+		super(props, options)
 
 		const ctor = new.target as typeof TListItem
-
-		const { props = {}, states } = TComponentView.prepareOptions<TProps, TListItemStates>(
-			options,
-		)
 
 		// Type assertion: TProps extends IListItemProps, поэтому props содержит text и wordWrap
 		const customProps = props as Partial<IListItemProps>
 
 		// Инициализация state-объектов
 		this._states.text =
-			states?.text ??
+			options.states?.text ??
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
 		this._wordWrap = customProps.wordWrap ?? ctor.defaultValues.wordWrap

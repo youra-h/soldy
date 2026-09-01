@@ -10,7 +10,7 @@ export default class TDragAndDrop
 		...TComponent.defaultValues,
 	}
 
-	constructor(options: IComponentOptions<IDragAndDropProps> | Partial<IDragAndDropProps> = {}) {
-		super(options)
+	constructor(props: Partial<IDragAndDropProps> = {}, options: IComponentOptions = {}) {
+		super(props, options)
 	}
 }

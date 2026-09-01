@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import { TComponentView, type IComponentViewOptions } from '../../base/component-view'
+import type { IComponentOptions } from '../../base/component'
 import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents } from './types'
 import { TEvented } from '../../../common/event/evented'
 
@@ -19,13 +19,10 @@ export default class TCheckBox
 	protected _indeterminate!: boolean
 	protected _plain!: boolean
 
-	constructor(options: IComponentViewOptions<ICheckBoxProps> | Partial<ICheckBoxProps> = {}) {
-		super(options)
+	constructor(props: Partial<ICheckBoxProps> = {}, options: IComponentOptions = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TCheckBox
-
-		const { props = {} as Partial<ICheckBoxProps> } =
-			TComponentView.prepareOptions<ICheckBoxProps>(options)
 
 		this.value = props.value ?? (ctor.defaultValues.value as boolean)
 		this._applyIndeterminate(props.indeterminate ?? ctor.defaultValues.indeterminate!)

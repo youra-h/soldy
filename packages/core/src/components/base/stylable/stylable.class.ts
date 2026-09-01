@@ -1,6 +1,7 @@
 import { TStateUnit, TEvented } from '../../../common'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../common'
-import { TComponentView, type IComponentViewOptions } from '../component-view'
+import { TComponentView } from '../component-view'
+import type { IComponentOptions } from '../component'
 import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
 
 /**
@@ -20,18 +21,13 @@ export default class TStylable<
 		variant: 'normal',
 	}
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TStylable
 
-		const { props = {} as Partial<TProps>, states } = TComponentView.prepareOptions<
-			TProps,
-			TStates
-		>(options)
-
 		this._states.size =
-			states?.size ??
+			options.states?.size ??
 			new TStateUnit<TComponentSize>({
 				initial: props.size ?? (ctor.defaultValues.size as TComponentSize),
 			})
@@ -47,7 +43,7 @@ export default class TStylable<
 		this._classes.add(`--size-${this._states.size.value}`)
 
 		this._states.variant =
-			states?.variant ??
+			options.states?.variant ??
 			new TStateUnit<TComponentVariant>({
 				initial: props.variant ?? (ctor.defaultValues.variant as TComponentVariant),
 			})

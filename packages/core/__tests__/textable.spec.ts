@@ -4,7 +4,7 @@ import type { ITextableProps } from '@soldy/core'
 
 describe('TTextable', () => {
 	it('принимает text через { props } и через plain props', () => {
-		const a = new TTextable<ITextableProps>({ props: { text: 'A' } })
+		const a = new TTextable<ITextableProps>({ text: 'A' })
 		expect(a.text).toBe('A')
 
 		const b = new TTextable<ITextableProps>({ text: 'B' })

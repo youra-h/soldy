@@ -3,7 +3,7 @@ import { TIcon } from '@soldy/core'
 
 describe('TIcon', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TIcon({ props: { tag: 'a', size: 'xl' } })
+		const a = new TIcon({ tag: 'a', size: 'xl' })
 		expect(a.tag).toBe('a')
 		expect(a.size).toBe('xl')
 		expect(a.classes.toArray()).toContain('s-icon')
@@ -48,7 +48,7 @@ describe('TIcon', () => {
 	})
 
 	it('IIconProps совместимы с create формы', () => {
-		const icon = new TIcon({ props: { tag: 'z' } })
+		const icon = new TIcon({ tag: 'z' })
 		expect(icon.tag).toBe('z')
 	})
 })

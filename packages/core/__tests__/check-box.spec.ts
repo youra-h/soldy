@@ -3,7 +3,7 @@ import { TCheckBox } from '@soldy/core'
 
 describe('TCheckBox', () => {
 	it('создаётся через { props } и через plain props', () => {
-		const a = new TCheckBox({ props: { value: true } })
+		const a = new TCheckBox({ value: true })
 		expect(a.value).toBe(true)
 		expect(a.classes.toArray()).toContain('s-check-box')
 
@@ -11,13 +11,13 @@ describe('TCheckBox', () => {
 		expect(b.value).toBe(false)
 
 		const c = new TCheckBox({
-			props: { value: true, size: 'xl', variant: 'accent', plain: true },
+			value: true, size: 'xl', variant: 'accent', plain: true,
 		})
 		expect(c.classes.toArray()).toContain('s-check-box')
 	})
 
 	it('classes меняются от indeterminate/plain + variant/size', () => {
-		const cb = new TCheckBox({ props: { variant: 'normal', size: 'normal' } })
+		const cb = new TCheckBox({ variant: 'normal', size: 'normal' })
 		expect(cb.classes.toArray()).toContain('s-check-box')
 
 		cb.variant = 'positive'

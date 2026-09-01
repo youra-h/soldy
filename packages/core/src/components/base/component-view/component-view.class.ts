@@ -1,6 +1,6 @@
 import { TComponent } from '../component'
+import type { IComponentOptions } from '../component'
 import type {
-	IComponentViewOptions,
 	IComponentViewProps,
 	TComponentViewEvents,
 	TComponentViewStates,
@@ -34,14 +34,10 @@ export default class TComponentView<
 	protected _classes: TClasses
 	protected _ready: boolean = false
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		const ctor = new.target as typeof TComponentView
 
-		const { props = {} as Partial<TProps> } = ctor.prepareOptions<TProps, TStates>(
-			options,
-		)
-
-		super(options)
+		super(props, options)
 
 		this._tag = props.tag ?? ctor.defaultValues.tag!
 

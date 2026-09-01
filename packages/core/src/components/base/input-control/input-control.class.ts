@@ -1,7 +1,6 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
-import type { IComponentViewOptions } from '../component-view'
-import { TComponentView } from '../component-view'
+import type { IComponentOptions } from '../component'
 import { TEvented } from '../../../common'
 
 /**
@@ -27,14 +26,10 @@ export default class TInputControl<
 	protected _readonly!: boolean
 	protected _required!: boolean
 
-	constructor(options: IComponentViewOptions<TProps, TStates> | Partial<TProps> = {}) {
-		super(options)
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+		super(props, options)
 
 		const ctor = new.target as typeof TInputControl
-
-		const { props = {} as Partial<TProps> } = TComponentView.prepareOptions<TProps, TStates>(
-			options,
-		)
 
 		// Простые свойства
 		// this._readonly = props.readonly ?? (ctor.defaultValues.readonly as boolean)
