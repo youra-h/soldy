@@ -45,5 +45,3 @@ export interface IComponentDescriptor {
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
 	createAccessor(instance: any, bundle: IPluginBundle): TAccessor
 }
-
-

@@ -1,5 +1,7 @@
 import type { IPropDeclaration } from '@soldy/accessor'
 
+// TODO remove
+
 /**
  * Собрать значения входных (не protected) пропсов, объявленных в `decls`,
  * из набора `props`. Ключ результата — сырое имя пропса (decl.name.name).

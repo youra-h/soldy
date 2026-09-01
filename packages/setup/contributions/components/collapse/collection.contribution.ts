@@ -32,6 +32,11 @@ export const CollapseCollectionItemContribution = (): IContribution => ({
 	props: {
 		selected: { type: Boolean, triggers: ['change:selected'] },
 		order: { type: Number, protected: true, triggers: ['change:order'] },
-		collapse_view: { type: String, protected: true, triggers: ['change:collapse_view'] },
+		view: {
+			type: String,
+			protected: true,
+			get: (instance) => instance.view,
+			triggers: ['change:view'],
+		},
 	},
 })

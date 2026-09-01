@@ -1,8 +1,5 @@
 import { defineComponent } from '../../base'
-import {
-	TCollapseCollectionFacade,
-	TCollapseItemCollectionFacade,
-} from '@soldy/core'
+import { TCollapseCollectionFacade, TCollapseItemCollectionFacade } from '@soldy/core'
 import {
 	CollapseCollectionContribution,
 	CollapseCollectionItemContribution,

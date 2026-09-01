@@ -34,6 +34,11 @@ export const TabsCollectionItemContribution = (): IContribution => ({
 	props: {
 		active: { type: Boolean, triggers: ['change:active'] },
 		order: { type: Number, protected: true, triggers: ['change:order'] },
-		tabs_closable: { type: Boolean, protected: true, triggers: ['change:tabs_closable'] },
+		tab_closable: {
+			type: Boolean,
+			protected: true,
+			get: (instance) => instance.closable,
+			triggers: ['change:closable'],
+		},
 	},
 })

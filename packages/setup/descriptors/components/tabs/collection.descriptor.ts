@@ -1,12 +1,6 @@
 import { defineComponent } from '../../base'
-import {
-	TTabsCollectionFacade,
-	TTabItemCollectionFacade,
-} from '@soldy/core'
-import {
-	TabsCollectionContribution,
-	TabsCollectionItemContribution,
-} from '../../../contributions'
+import { TTabsCollectionFacade, TTabItemCollectionFacade } from '@soldy/core'
+import { TabsCollectionContribution, TabsCollectionItemContribution } from '../../../contributions'
 
 export const TabsCollectionDescriptor = () =>
 	defineComponent({

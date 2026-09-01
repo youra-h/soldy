@@ -9,11 +9,7 @@
 
 import { TPluginBundle } from '@soldy/plugins'
 import { TAccessor, type IPropDeclaration } from '@soldy/accessor'
-import type {
-	IComponentDefinitionOptions,
-	IComponentDescriptor,
-	IPluginDefinition,
-} from './types'
+import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { normalizeContribution } from './compile-contribution'
 
 function createPluginCollector() {
@@ -42,15 +38,9 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 	const own = normalizeContribution(options.contribution)
 
 	// Статические props/events: свои + наследуемые (без плагинов — они в plugins[])
-	const props: IPropDeclaration[] = [
-		...(parent?.props ?? []),
-		...own.props,
-	]
+	const props: IPropDeclaration[] = [...(parent?.props ?? []), ...own.props]
 
-	const events = [
-		...(parent?.events ?? []),
-		...own.events,
-	]
+	const events = [...(parent?.events ?? []), ...own.events]
 
 	return {
 		ctor: options.ctor ?? parent?.ctor ?? Object,
@@ -82,5 +72,4 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 			])
 		},
 	}
-
 }
