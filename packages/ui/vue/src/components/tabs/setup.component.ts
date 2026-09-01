@@ -23,15 +23,9 @@ export default {
 
 		const refs = useVue<ITabsComponentProps, ITabs>(adapter, props, emit)
 
-		const facade = new TTabsCollectionFacade(adapter.instance, {
-			engine: toRaw(props.engine),
-			items: toRaw(props.items),
-			trackBy: toRaw(props.trackBy),
-		})
-
 		const collectionAdapter = createAdapterContext(TabsCollectionDescriptor(), {
-			ctrl: facade,
 			props,
+			options: { owner: adapter.instance },
 		})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })

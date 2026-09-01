@@ -23,15 +23,9 @@ export default {
 
 		const refs = useVue<ICollapseComponentProps, ICollapse>(adapter, props, emit)
 
-		const facade = new TCollapseCollectionFacade(adapter.instance, {
-			engine: toRaw(props.engine),
-			items: toRaw(props.items),
-			trackBy: toRaw(props.trackBy),
-		})
-
 		const collectionAdapter = createAdapterContext(CollapseCollectionDescriptor(), {
-			ctrl: facade,
 			props,
+			options: { owner: adapter.instance },
 		})
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
