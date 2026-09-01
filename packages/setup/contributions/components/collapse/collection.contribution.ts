@@ -6,7 +6,6 @@ import type { IContribution } from '@soldy/accessor'
 export const CollapseCollectionContribution = (): IContribution => ({
 	props: {
 		// pass-through готовая коллекция — приходит через конструктор фасада
-		engine: { triggers: [], set: () => {} },
 		items: { type: Array, triggers: ['change:items'] },
 		trackBy: { type: Function, triggers: ['change:trackBy'] },
 		mode: { type: String, triggers: ['change:mode'] },
