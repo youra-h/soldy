@@ -10,51 +10,41 @@ import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { collectItemProps } from '../../../descriptors/base/collect-props'
-import type { IComponentDescriptor } from '@soldy/setup'
 
 export interface ICollectionItemExtensionOptions {
-	/** item-фасад, которому передаётся TItemContext. */
-	facade?: any
-	/** item-дескриптор коллекции (defineComponent) для сбора meta. */
-	itemDescriptor?: IComponentDescriptor
+	/** Реальный элемент коллекции (инстанс из owner-дескриптора). */
+	item: any
 	elevator: TElevatorFactory
 }
 
 export class TCollectionItemExtension {
 	constructor(context: IAdapterContext, options: ICollectionItemExtensionOptions) {
-		const { facade, itemDescriptor, elevator } = options
+		const { item, elevator } = options
 
-		if (facade) {
-			// Контекст из коллекции-владельца, meta из item-пропсов.
-			const collection = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
+		// context.instance — item-фасад, созданный item-дескриптором.
+		const facade = context.instance as any
+		const collection = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
 
-			if (collection) {
-				const registry = new TItemContextRegistry(collection.getCore())
-				facade.setContext(registry.get(context.instance))
-			}
-
-			this._register(context, elevator)
-
-			if (itemDescriptor && collection?.extensions?.meta) {
-				const meta = collectItemProps(itemDescriptor.props, context.props)
-				collection.extensions.meta.apply(context.instance, meta)
-			}
-
-			return
+		if (collection) {
+			const registry = new TItemContextRegistry(collection.getCore())
+			facade.setContext(registry.get(item))
 		}
 
-		this._register(context, elevator)
+		this._register(context, item, elevator)
+
+		if (collection?.extensions?.meta) {
+			const meta = collectItemProps(context.descriptor.props, context.props)
+			collection.extensions.meta.apply(item, meta)
+		}
 	}
 
-	private _register(context: IAdapterContext, elevator: TElevatorFactory): void {
+	private _register(context: IAdapterContext, item: any, elevator: TElevatorFactory): void {
 		const itemElevator = elevator(COLLECTION_ELEVATOR)
 
-		const register = itemElevator.up() as
-			| ((item: any, bundle: any) => () => void)
-			| undefined
+		const register = itemElevator.up() as ((item: any, bundle: any) => () => void) | undefined
 
 		if (register) {
-			const cleanup = register(context.instance, context.bundle)
+			const cleanup = register(item, context.bundle)
 
 			context.events.on('destroy', cleanup)
 		}

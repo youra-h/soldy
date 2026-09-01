@@ -23,10 +23,14 @@ export default {
 
 		const refs = useVue<ICollapseComponentProps, ICollapse>(adapter, props, emit)
 
-		const collectionAdapter = createAdapterContext(CollapseCollectionDescriptor(), {
-			props,
-			options: { owner: adapter.instance },
-		})
+		const collectionAdapter = createAdapterContext(
+			CollapseCollectionDescriptor(),
+			{
+				props,
+				options: { owner: adapter.instance },
+			},
+			{ bundle: adapter.bundle, defaultExtensions: [] },
+		)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 

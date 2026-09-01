@@ -50,21 +50,27 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 		plugins,
 
 		createBundle(instance: any) {
+			if (plugins.length === 0) {
+				return null
+			}
+
 			const bundle = new TPluginBundle(instance)
+
 			for (const plugin of plugins) {
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
+
 			return bundle
 		},
 
-		createAccessor(instance: any, bundle: TPluginBundle) {
+		createAccessor(instance: any, bundle: TPluginBundle | null) {
 			return new TAccessor([
 				// Unit компонента: все наследуемые + собственные props/events
 				{ instance, props, events },
 				// Units плагинов
 				...plugins
 					.map((def) => ({
-						instance: bundle.get(def.ctor),
+						instance: bundle?.get(def.ctor),
 						props: def.props,
 						events: def.events,
 					}))

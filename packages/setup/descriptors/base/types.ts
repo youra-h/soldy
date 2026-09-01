@@ -41,7 +41,7 @@ export interface IComponentDescriptor {
 	events: TName[]
 	plugins: IPluginDefinition[]
 
-	createBundle(instance: any): IPluginBundle
+	createBundle(instance: any): IPluginBundle | null
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
-	createAccessor(instance: any, bundle: IPluginBundle): TAccessor
+	createAccessor(instance: any, bundle: IPluginBundle | null): TAccessor
 }

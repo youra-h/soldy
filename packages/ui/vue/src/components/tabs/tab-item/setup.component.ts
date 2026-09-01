@@ -17,20 +17,18 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabItem,
 	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
-		const facade = new TTabItemCollectionFacade()
-
 		const adapter = createAdapterContext(TabItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
-		}).use(TCollectionItemExtension, {
-			facade,
-			itemDescriptor: TabsCollectionItemDescriptor(),
-			elevator: VueElevatorFactory,
 		})
 
-		const itemAdapter = createAdapterContext(TabsCollectionItemDescriptor(), {
-			ctrl: facade,
-			props,
+		const itemAdapter = createAdapterContext(
+			TabsCollectionItemDescriptor(),
+			{ props },
+			{ bundle: adapter.bundle },
+		).use(TCollectionItemExtension, {
+			item: adapter.instance,
+			elevator: VueElevatorFactory,
 		})
 
 		const itemBinding = useVue<Record<string, any>, TTabItemCollectionFacade>(
@@ -43,7 +41,7 @@ export default {
 		return {
 			...itemBinding,
 			...ownerBinding,
-			context: facade.context,
+			context: itemAdapter.instance.context,
 			closeIconTag: useIconImport('close'),
 			...useSplitAttrs(),
 		}

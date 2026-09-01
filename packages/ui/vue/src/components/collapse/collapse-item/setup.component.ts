@@ -17,29 +17,31 @@ export default {
 	inheritAttrs: false,
 	extends: BaseCollapseItem,
 	setup(props: TBaseComponentProps<ICollapseItemProps, ICollapseItem>, { emit }: any) {
-		const facade = new TCollapseItemCollectionFacade()
-
 		const adapter = createAdapterContext(CollapseItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
-		}).use(TCollectionItemExtension, {
-			facade,
-			itemDescriptor: CollapseCollectionItemDescriptor(),
+		})
+
+		const itemAdapter = createAdapterContext(
+			CollapseCollectionItemDescriptor(),
+			{ props },
+			{ bundle: adapter.bundle },
+		).use(TCollectionItemExtension, {
+			item: adapter.instance,
 			elevator: VueElevatorFactory,
 		})
 
-		const itemAdapter = createAdapterContext(CollapseCollectionItemDescriptor(), {
-			ctrl: facade,
+		const itemBinding = useVue<Record<string, any>, TCollapseItemCollectionFacade>(
+			itemAdapter,
 			props,
-		})
-
-		const itemBinding = useVue<Record<string, any>, TCollapseItemCollectionFacade>(itemAdapter, props, emit)
+			emit,
+		)
 		const ownerBinding = useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit)
 
 		return {
 			...itemBinding,
 			...ownerBinding,
-			context: facade.context,
+			context: itemAdapter.instance.context,
 			arrowIconTag: useIconImport('arrowRight'),
 			...useSplitAttrs(),
 		}
