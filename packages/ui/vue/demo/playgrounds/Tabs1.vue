@@ -41,8 +41,8 @@ const tabItems = [
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
 			<Tabs closable>
-				<TabItem text="Tab 1" value="t1" active />
-				<TabItem text="Tab 2" value="t2" />
+				<TabItem text="Tab 1" value="t1" />
+				<TabItem text="Tab 2" value="t2" active />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
 				<template #panel:t1><p>Content 1</p></template>
 				<template #panel:t2><p>Content 2</p></template>
