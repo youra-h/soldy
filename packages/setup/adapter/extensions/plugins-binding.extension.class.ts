@@ -8,6 +8,10 @@ export class TPluginsBindingExtension {
 	private _elementPlugin: TElementPlugin | undefined
 
 	constructor(context: IAdapterContext) {
+		if (!context.bundle || !context.bundle.get(TElementPlugin)) {
+			throw new Error('TElementPlugin is not available in the context bundle.')
+		}
+
 		this._elementPlugin = context.bundle.get(TElementPlugin)
 
 		context.events.on('destroy', () => {
