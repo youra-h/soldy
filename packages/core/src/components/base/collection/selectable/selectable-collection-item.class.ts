@@ -1,0 +1,57 @@
+import { TCollectionItem } from '../item/collection-item.class'
+import type {
+	ISelectableCollectionItem,
+	ISelectableCollectionItemProps,
+	TSelectableItemEvents,
+} from './types'
+import { TEvented } from '../../../../common'
+
+/**
+ * Элемент коллекции с поддержкой выбранности.
+ *
+ * Наследуется от {@link TCollectionItem} и добавляет флаг `selected`.
+ *
+ * @template TProps Тип пропсов элемента
+ * @template TEvents Тип событий элемента
+ */
+export class TSelectableCollectionItem<
+		TProps extends ISelectableCollectionItemProps = ISelectableCollectionItemProps,
+		TEvents extends
+			TSelectableItemEvents<ISelectableCollectionItem> = TSelectableItemEvents<ISelectableCollectionItem>,
+	>
+	extends TCollectionItem<TProps, TEvents>
+	implements ISelectableCollectionItem
+{
+	static defaultValues: Partial<ISelectableCollectionItemProps> = {
+		selected: false,
+	}
+
+	private _selected = TSelectableCollectionItem.defaultValues.selected!
+
+	getProps(): TProps {
+		return {
+			...super.getProps(),
+		} as TProps
+	}
+
+	get selected(): boolean {
+		return this._selected
+	}
+
+	set selected(value: boolean) {
+		if (this._selected !== value) {
+			this._selected = value
+			;(this.events as TEvented<TSelectableItemEvents<ISelectableCollectionItem>>).emit(
+				'change:selection',
+				this,
+			)
+		}
+	}
+
+	/**
+	 * Переключает состояние выбранности.
+	 */
+	toggleSelected(): void {
+		this.selected = !this.selected
+	}
+}

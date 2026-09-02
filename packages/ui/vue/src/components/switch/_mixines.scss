@@ -1,0 +1,46 @@
+@mixin switch-size($this, $tw) {
+	$th: $tw * 0.5 + 1;
+	$ts: $th - 1;
+	$tx: $tw - $th;
+
+	#{$this}__track {
+		@apply w-#{$tw} h-#{$th};
+
+		&--thumb {
+			@apply w-#{$ts} h-#{$ts};
+			@apply top-0.5 left-0.5;
+		}
+	}
+
+	input:checked + #{$this}__track #{$this}__track--thumb {
+		@apply translate-x-#{$tx};
+	}
+}
+
+@mixin switch-variant(
+	$this,
+	$color: 'neutral',
+	$bg-checked: 500,
+	$bg: 200
+) {
+	input {
+		&:checked + #{$this}__track {
+			@apply #{'bg-s-' + $color + '-' + $bg-checked};
+		}
+
+		$bg-hover: $bg + 100;
+		// TODO: dark mode
+		// $bg-hover-dark: $bg - 100;
+		// [data-theme="dark"] &:hover:not(:disabled):not(:checked) + #{$this}__track {
+		//     @apply #{'bg-s-' + $color + '-' + $bg-hover-dark};
+		// }
+
+		&:hover:not(:disabled):not(:checked) + #{$this}__track {
+			@apply #{'bg-s-' + $color + '-' + $bg-hover};
+		}
+	}
+
+	#{$this}__track {
+		@apply #{'bg-s-' + $color + '-' + $bg};
+	}
+}

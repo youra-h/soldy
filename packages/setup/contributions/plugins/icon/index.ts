@@ -1,0 +1,1 @@
+export { IconStylesContribution } from './styles'

@@ -1,0 +1,12 @@
+{
+  "name": "@soldy/foundation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tailwind": "./src/tailwind/index.css",
+    "./tailwind/*": "./src/tailwind/*",
+    "./theme/*": "./src/theme/*",
+    "./styles/*": "./src/styles/*"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@soldy/ui-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@soldy/core": "*",
+    "@soldy/foundation": "*",
+    "@soldy/icons": "*",
+    "@soldy/plugins": "*",
+    "@soldy/accessor": "*",
+    "vue": "^3.5.32"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^26.1.1",
+    "postcss": "^8.5.9",
+    "sass": "^1.99.0",
+    "tailwindcss": "^4.2.2",
+    "vite-plugin-vue-devtools": "^8.1.5"
+  }
+}

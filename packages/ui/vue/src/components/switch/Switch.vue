@@ -1,0 +1,137 @@
+<script lang="ts">
+import SetupSwitch from './setup.component'
+
+export default { ...SetupSwitch }
+</script>
+
+<template>
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="containerAttrs">
+		<input
+			type="checkbox"
+			:id="ctrl.uid.toString()"
+			:checked="value"
+			:name="name"
+			:disabled="disabled"
+			:required="required"
+			:aria-checked="Boolean(value)"
+			v-bind="controlAttrs"
+		/>
+		<div class="s-switch__track">
+			<div class="s-switch__track--thumb">
+				<transition name="fade" mode="out-in">
+					<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
+					<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>
+				</transition>
+			</div>
+		</div>
+	</div>
+</template>
+
+<style lang="scss">
+@use './mixines' as mixines;
+@use './../../styles/fade';
+@use './../../styles/required' as required;
+.s-switch {
+	$this: &;
+
+	@include fade.fade-transition();
+
+	@apply relative select-none;
+	@apply inline-flex items-center;
+
+	input {
+		@apply absolute top-0 left-0 opacity-0;
+		@apply w-full h-full m-0 p-0;
+		@apply cursor-pointer;
+		@apply z-10;
+
+		&:disabled {
+			@apply cursor-default pointer-events-none;
+		}
+
+		&:disabled + #{$this}__track {
+			@apply opacity-s-component-disabled;
+		}
+
+		&:focus-visible {
+			+ #{$this}__track {
+				@apply outline-2 outline-offset-2 outline-s-component;
+			}
+		}
+
+		&:checked + #{$this}__track {
+			#{$this}__track--thumb {
+				@apply translate-x-4;
+			}
+		}
+	}
+
+	&__track {
+		@apply relative;
+		@apply rounded-full;
+		@apply transition-colors duration-200;
+
+		&--thumb {
+			@apply relative;
+			@apply flex items-center justify-center;
+			@apply bg-white;
+			@apply rounded-full shadow-md;
+			@apply absolute top-0.5 left-0.5;
+			@apply transition-transform duration-200;
+		}
+	}
+
+	&--size-sm {
+		@include mixines.switch-size($this, 6);
+	}
+	&--size-normal {
+		@include mixines.switch-size($this, 8);
+	}
+	&--size-lg {
+		@include mixines.switch-size($this, 10);
+	}
+	&--size-xl {
+		@include mixines.switch-size($this, 12);
+	}
+	&--size-2xl {
+		@include mixines.switch-size($this, 14);
+	}
+
+	&--normal {
+		@include mixines.switch-variant($this, $color: 'neutral');
+	}
+
+	&--accent {
+		@include mixines.switch-variant($this, $color: 'accent');
+	}
+
+	&--positive {
+		@include mixines.switch-variant($this, $color: 'positive');
+	}
+
+	&--negative {
+		@include mixines.switch-variant($this, $color: 'negative');
+	}
+
+	&--caution {
+		@include mixines.switch-variant($this, $color: 'caution');
+	}
+
+	&--required {
+		&::after {
+			@include required.required-indicator($top: '-top-0.5', $left: '-left-0.5');
+			@apply z-20;
+		}
+	}
+
+	&--readonly {
+		input {
+			@apply pointer-events-none;
+		}
+
+		#{$this}__track {
+			@apply opacity-60;
+		}
+	}
+}
+</style>
