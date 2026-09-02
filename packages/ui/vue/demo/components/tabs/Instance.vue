@@ -97,6 +97,7 @@ watch(
 
 		engine.driver.forEach((item, index) => {
 			const apply = props.tabApplyTarget === 'all' || index === 0
+
 			item.disabled = apply ? !!props.tabDisabled : false
 			item.closable = apply ? props.tabClosable : undefined
 		})

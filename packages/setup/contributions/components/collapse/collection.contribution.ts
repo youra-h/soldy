@@ -21,7 +21,6 @@ export const CollapseCollectionItemContribution = (): IContribution => ({
 		view: {
 			type: String,
 			protected: true,
-			get: (instance) => instance.view,
 			triggers: ['change:view'],
 		},
 	},

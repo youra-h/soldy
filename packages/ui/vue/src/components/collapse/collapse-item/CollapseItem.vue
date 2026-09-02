@@ -18,7 +18,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 	>
 		<Button
 			class="s-collapse-item__header"
-			:view="collapse_view"
+			:view="view"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"

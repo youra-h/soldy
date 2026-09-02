@@ -95,7 +95,9 @@ watch(
 
 		engine.driver.forEach((item, index) => {
 			const apply = props.itemApplyTarget === 'all' || index === 0
+
 			item.disabled = apply ? !!props.itemDisabled : false
+
 			if (props.arrowPlacement !== undefined) {
 				item.arrowPlacement = props.arrowPlacement
 			}

@@ -48,19 +48,31 @@ export function useSyncProps(
 					eventSource.on(rawTrigger, () => {
 						const val = accessor.getValue(prop)
 
-						// Плагины (TIconLayoutPlugin, TSpinnerLayoutPlugin и др.)
-						// мутируют свой объект _styles in-place и эмитят change:styles.
-						// accessor.getValue() возвращает ссылку на этот же объект.
-						// Если присвоить ту же ссылку в ref.value — Vue считает
-						// oldValue === newValue и НЕ триггерит watch/ререндер.
-						// Клонируем только plain-объекты (не Vue-компоненты, не массивы).
+						// Плагины и коллекции мутируют значения in-place (объект
+						// _styles, driver-прокси items/selected и т.д.) и эмитят
+						// change:*. accessor.getValue() возвращает ссылку на тот же
+						// объект — если присвоить ту же ссылку в ref.value, Vue
+						// считает oldValue === newValue и НЕ триггерит ререндер.
+						// Поэтому клонируем plain-объекты и array-like значения
+						// (не Vue-компоненты).
+						const isArrayLike =
+							val != null &&
+							typeof val === 'object' &&
+							typeof val.length === 'number' &&
+							typeof val[Symbol.iterator] === 'function'
+
 						const isPlainObj =
 							typeof val === 'object' &&
 							val !== null &&
 							val.constructor === Object &&
 							!('__v_skip' in val) &&
 							!('render' in val)
-						propRef.value = isPlainObj ? { ...val } : val
+
+						propRef.value = isArrayLike
+							? Array.from(val)
+							: isPlainObj
+								? { ...val }
+								: val
 
 						options.onOutput?.(prop, val)
 					})
