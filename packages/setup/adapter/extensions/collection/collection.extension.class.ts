@@ -1,7 +1,7 @@
 /**
  * TCollectionExtension — единая точка входа для настройки коллекции.
  *
- * Режим фасада: context.instance владеет `collection` (Tabs/Collapse/...).
+ * Режим фасада: context.instance владеет `engine` (Tabs/Collapse/...).
  *
  * Выполняется: привязка коллекции к реестру bundles,
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
@@ -26,7 +26,7 @@ export class TCollectionExtension {
 		const engine = instance?.engine
 
 		if (!engine) {
-			throw new Error('Engine is not available in the collection instance.')
+			throw new Error('Engine is not available in the engine instance.')
 		}
 
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
@@ -38,15 +38,17 @@ export class TCollectionExtension {
 	 * Настраивает коллекцию, связывая её с плагинами и регистрируя элементы через лифт.
 	 * @param context Контекст адаптера, содержащий информацию о коллекции и её окружении.
 	 * @param elevator Лифт для передачи элементов коллекции.
-	 * @param collection Коллекция, которую необходимо настроить.
+	 * @param engine Коллекция, которую необходимо настроить.
 	 */
-	private _wire(context: IAdapterContext, elevator: TElevatorFactory, collection: any): void {
+	private _wire(context: IAdapterContext, elevator: TElevatorFactory, engine: any): void {
 		const bundles = context.bundle?.get(TCollectionBundlesPlugin)
+
+		debugger
 
 		// Передаём ссылку на коллекцию в плагин — это единственный источник
 		// состояния коллекции (активный элемент, порядок, элементы) для плагинов.
-		if (bundles && collection) {
-			bundles.bindCollection(collection)
+		if (bundles && engine) {
+			bundles.bindEngine(engine)
 		}
 
 		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
@@ -55,7 +57,7 @@ export class TCollectionExtension {
 			// Добавляем элемент в конец коллекции (эмитится item:added).
 			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
 			// elevator по мере монтирования, поэтому добавляем их последовательно.
-			collection?.extensions?.plain?.push(instance)
+			engine?.extensions?.plain?.push(instance)
 
 			// Регистрируем bundle элемента (ключ — uid элемента).
 			bundles?.register(bundle, instance)
@@ -63,7 +65,7 @@ export class TCollectionExtension {
 			return () => {
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
-				collection?.extensions?.plain?.remove(instance)
+				engine?.extensions?.plain?.remove(instance)
 			}
 		})
 	}

@@ -6,7 +6,7 @@ import { TCollectionBundlesAccess } from './collection-bundles-access.plugin'
  *
  * Не хранит элементы: извлекает их на лету из bundle каждого item'а через
  * {@link TElementPlugin}. Сами элементы лежат в bundles (реестр
- * {@link TCollectionBundlesPlugin}), инстансы — в collection.
+ * {@link TCollectionBundlesPlugin}), инстансы — в engine.
  *
  * Зависит от TCollectionBundlesPlugin (регистрируется в том же bundle).
  */
@@ -43,9 +43,9 @@ export class TCollectionElements extends TCollectionBundlesAccess {
 
 	/** Найти uid по DOM-элементу. */
 	getUidByElement(element: HTMLElement): string | number | undefined {
-		if (!this.bundles?.collection) return undefined
+		if (!this.bundles?.engine) return undefined
 
-		for (const item of this.bundles.collection.driver) {
+		for (const item of this.bundles.engine.driver) {
 			if (this.getElementByItem(item) === element) {
 				return (item as { uid?: string | number }).uid
 			}

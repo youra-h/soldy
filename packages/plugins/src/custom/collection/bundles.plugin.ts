@@ -6,7 +6,7 @@ import type { TBundlesEvents } from './types'
 /**
  * TCollectionBundlesPlugin — реестр plugin-bundles элементов коллекции.
  *
- * Держит ссылку на коллекцию (`collection`), поэтому любой плагин имеет доступ
+ * Держит ссылку на коллекцию (`engine`), поэтому любой плагин имеет доступ
  * ко всему состоянию коллекции (активный элемент, порядок, элементы) без костылей
  * для каждого отдельного свойства.
  *
@@ -19,17 +19,17 @@ import type { TBundlesEvents } from './types'
  * привязывается через {@link bindCollection} из adapter-слоя после её создания.
  */
 export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
-	private _collection: TCollectiondriver<any, any> | null = null
+	private _engine: TCollectiondriver<any, any> | null = null
 	private readonly _bundles = new Map<string | number, IPluginBundle>()
 
 	/** Привязать коллекцию. Вызывается adapter-слоем после создания коллекции. */
-	bindCollection(collection: TCollectiondriver<any, any>): void {
-		if (this._collection === collection) return
+	bindCollection(engine: TCollectiondriver<any, any>): void {
+		if (this._engine === engine) return
 
-		this._collection = collection
+		this._engine = engine
 
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
-		collection.driver.events.on('item:removed', (item) => {
+		engine.driver.events.on('item:removed', (item) => {
 			const uid = this._uid(item)
 
 			if (uid !== undefined) {
@@ -37,17 +37,17 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 			}
 		})
 
-		collection.driver.events.on('reset', () => {
+		engine.driver.events.on('reset', () => {
 			this._bundles.clear()
 		})
 
 		// Оповещаем плагины о том, что коллекция привязана.
-		this.events.emit('collection:bound', collection)
+		this.events.emit('engine:bound', engine)
 	}
 
 	/** Ссылка на коллекцию, к которой привязан реестр. */
-	get collection(): TCollectiondriver<any, any> | null {
-		return this._collection
+	get engine(): TCollectiondriver<any, any> | null {
+		return this._engine
 	}
 
 	/** Зарегистрировать bundle элемента коллекции (ключ — uid элемента). */
@@ -82,11 +82,11 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 	/** Все bundles в порядке элементов коллекции. */
 	getAll(): IPluginBundle[] {
-		if (!this._collection) return Array.from(this._bundles.values())
+		if (!this._engine) return Array.from(this._bundles.values())
 
 		const result: IPluginBundle[] = []
 
-		for (const item of this._collection.driver) {
+		for (const item of this._engine.driver) {
 			const bundle = this.getByItem(item)
 
 			if (bundle) result.push(bundle)

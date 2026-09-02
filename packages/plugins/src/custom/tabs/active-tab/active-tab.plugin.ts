@@ -11,7 +11,7 @@ import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
  *
  * Использует:
  * - корневой DOM-элемент списка табов (через TElementPlugin);
- * - активный элемент коллекции (collection.extensions.activation);
+ * - активный элемент коллекции (engine.extensions.activation);
  * - DOM-элемент активного таба (через TCollectionElements).
  *
  * Пересчитывает offset при активации/деактивации, удалении/перемещении элементов,
@@ -21,7 +21,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 	private _element: HTMLElement | null = null
 	private _tabs: ITabs | null = null
 	private _collectionElements: TCollectionElements | null = null
-	private _collection: TTabsCollection | null = null
+	private _engine: TTabsCollection | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -42,16 +42,16 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 
 		// Коллекция привязывается к TCollectionBundlesPlugin ПОСЛЕ install() —
 		// слушаем момент привязки и подписываемся на события коллекции.
-		ctx.get(TCollectionBundlesPlugin)?.events.on('collection:bound', (collection) => {
-			this._collection = collection as TTabsCollection
+		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
+			this._engine = engine as TTabsCollection
 
-			collection.extensions.activation.events.on('item:activated', () => this._emitOffset())
-			collection.extensions.activation.events.on('item:deactivated', () => this._emitOffset())
+			engine.extensions.activation.events.on('item:activated', () => this._emitOffset())
+			engine.extensions.activation.events.on('item:deactivated', () => this._emitOffset())
 
-			collection.driver.events.on('item:removed', () =>
+			engine.driver.events.on('item:removed', () =>
 				requestAnimationFrame(() => this._emitOffset()),
 			)
-			collection.driver.events.on('item:moved', () =>
+			engine.driver.events.on('item:moved', () =>
 				requestAnimationFrame(() => this._emitOffset()),
 			)
 		})
@@ -63,7 +63,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 		this._element = null
 		this._tabs = null
 		this._collectionElements = null
-		this._collection = null
+		this._engine = null
 
 		super.destroy()
 	}
@@ -77,7 +77,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 	}
 
 	private _computeOffset(): TActiveTabOffset | null {
-		if (!this._element || !this._collectionElements || !this._collection || !this._tabs) {
+		if (!this._element || !this._collectionElements || !this._engine || !this._tabs) {
 			return null
 		}
 
@@ -86,7 +86,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 
 		if (!listEl) return null
 
-		const activeItem = this._collection.extensions.activation.activeItem
+		const activeItem = this._engine.extensions.activation.activeItem
 		const activeEl = activeItem
 			? this._collectionElements.getElementByUid(activeItem.uid)
 			: null

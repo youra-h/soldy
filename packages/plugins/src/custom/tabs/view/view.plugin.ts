@@ -17,7 +17,7 @@ type TViewHandler = (offset: TActiveTabOffset | null) => void
  */
 export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 	private _tabs: ITabs | null = null
-	private _collection: TTabsCollection | null = null
+	private _engine: TTabsCollection | null = null
 
 	private readonly _handlers: Partial<Record<TTabsView, TViewHandler>> = {
 		line: (offset) => this._updateLine(offset),
@@ -35,8 +35,8 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 			}
 		})
 
-		ctx.get(TCollectionBundlesPlugin)?.events.on('collection:bound', (collection) => {
-			this._collection = collection as TTabsCollection
+		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
+			this._engine = engine as TTabsCollection
 		})
 
 		ctx.get(TTabsActiveTabPlugin)?.events.on('change:active-tab', (offset) => {
@@ -47,17 +47,17 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 
 	override destroy(): void {
 		this._tabs = null
-		this._collection = null
+		this._engine = null
 
 		super.destroy()
 	}
 
 	private _updateLine(offset: TActiveTabOffset | null): void {
-		if (!offset || !this._collection) return
+		if (!offset || !this._engine) return
 
-		const activeItem = this._collection.extensions.activation.activeItem
+		const activeItem = this._engine.extensions.activation.activeItem
 
-		if (!activeItem && this._collection.extensions.tabs.hasEnabledTabs()) return
+		if (!activeItem && this._engine.extensions.tabs.hasEnabledTabs()) return
 
 		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
@@ -71,7 +71,7 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 	}
 
 	private _updateOutline(offset: TActiveTabOffset | null): void {
-		if (!offset || !this._collection) return
+		if (!offset || !this._engine) return
 
 		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 

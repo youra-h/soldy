@@ -9,7 +9,7 @@ import type { TDragPluginEvents } from './types'
  * TDragPlugin — drag-and-drop для перетаскивания элементов коллекции.
  *
  * Слушает нативные события `dragstart`, `dragend`, `dragover` на корневом
- * DOM-элементе компонента и при перетаскивании вызывает `collection.extensions.plain.move()`,
+ * DOM-элементе компонента и при перетаскивании вызывает `engine.extensions.plain.move()`,
  * синхронизируя порядок DOM-узлов с порядком элементов в коллекции.
  *
  * Зависит от плагинов, которые должны присутствовать в том же бандле:
@@ -30,7 +30,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	private _active = false
 
 	/** Коллекция, порядок элементов которой синхронизируется при перетаскивании. */
-	private _collection: TCollectionEngine<any, any> | null = null
+	private _engine: TCollectionEngine<any, any> | null = null
 
 	/** Корневой DOM-элемент, на котором висят обработчики drag-событий. */
 	private _element: HTMLElement | null = null
@@ -70,9 +70,11 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	 * Активирует перетаскивание для указанной коллекции.
 	 * Если DOM-элемент уже готов, немедленно навешивает обработчики.
 	 */
-	activate(collection: TCollectionEngine<any, any>): void {
-		this._collection = collection
+	activate(engine: TCollectionEngine<any, any>): void {
+		this._engine = engine
+
 		this._active = true
+
 		if (this._element) this._setup()
 	}
 
@@ -81,8 +83,10 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	 */
 	deactivate(): void {
 		this._teardown()
+
 		this._active = false
-		this._collection = null
+
+		this._engine = null
 	}
 
 	/**
@@ -93,7 +97,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		if (this._cleanup) return
 
 		const element = this._element!
-		const collection = this._collection!
+		const engine = this._engine!
 		const collectionElements = this._collectionElements!
 
 		// Индекс перетаскиваемого элемента; null — перетаскивание не активно.
@@ -135,7 +139,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const uid = collectionElements.getUidByElement(target)
 			if (uid === undefined) return
 
-			draggingIndex = collection.driver.findIndex((item: any) => item.uid === uid)
+			draggingIndex = engine.driver.findIndex((item: any) => item.uid === uid)
 			if (draggingIndex === -1) {
 				draggingIndex = null
 				draggingUid = null
@@ -147,7 +151,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 			e.dataTransfer!.effectAllowed = 'move'
 
-			const item = collection.driver[draggingIndex]
+			const item = engine.driver[draggingIndex]
 
 			if (item) {
 				item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
@@ -160,7 +164,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		const onDragEnd = (e: DragEvent) => {
 			if (draggingUid !== null) {
-				const item = collection.driver.find((i: any) => i.uid === draggingUid)
+				const item = engine.driver.find((i: any) => i.uid === draggingUid)
 
 				if (item) {
 					item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
@@ -197,11 +201,11 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const targetUid = collectionElements.getUidByElement(target)
 			if (targetUid === undefined) return
 
-			const targetIndex = collection.driver.findIndex((item: any) => item.uid === targetUid)
+			const targetIndex = engine.driver.findIndex((item: any) => item.uid === targetUid)
 			if (targetIndex === -1 || targetIndex === draggingIndex) return
 
-			const draggingItem = collection.driver[draggingIndex]
-			collection.extensions.plain.move(draggingItem, targetIndex, draggingIndex)
+			const draggingItem = engine.driver[draggingIndex]
+			engine.extensions.plain.move(draggingItem, targetIndex, draggingIndex)
 			draggingIndex = targetIndex
 		}
 
@@ -215,7 +219,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			element.removeEventListener('dragover', onDragOver)
 			this._bundles?.events.off('bundle:registered', onBundleRegistered)
 
-			collection.driver.forEach((item: any) => {
+			engine.driver.forEach((item: any) => {
 				item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
 			})
 

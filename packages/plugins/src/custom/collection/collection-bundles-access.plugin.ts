@@ -24,8 +24,8 @@ export abstract class TCollectionBundlesAccess extends TBasePlugin<any> {
 	}
 
 	/** Ссылка на коллекцию, к которой привязан реестр bundles. */
-	get collection(): TCollectionEngine<any, any> | null {
-		return this.bundles?.collection ?? null
+	get engine(): TCollectionEngine<any, any> | null {
+		return this.bundles?.engine ?? null
 	}
 
 	/** Bundle элемента по uid. */
@@ -40,7 +40,7 @@ export abstract class TCollectionBundlesAccess extends TBasePlugin<any> {
 
 	/** Элемент коллекции по порядковому индексу. */
 	protected getItemByIndex(index: number): unknown {
-		return this.bundles?.collection?.driver[index]
+		return this.bundles?.engine?.driver[index]
 	}
 
 	/** Все bundles в порядке элементов коллекции. */
