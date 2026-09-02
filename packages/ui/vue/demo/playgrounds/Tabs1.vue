@@ -21,12 +21,12 @@ import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 
 // activation.activate(tab)
 
-// // --- Вариант 2: через prop items ---
-// const tabItems = [
-// 	{ text: 'Alpha', value: 'alpha', closable: true },
-// 	{ text: 'Beta', value: 'beta', closable: true, _: { active: true } },
-// 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
-// ]
+// --- Вариант 2: через prop items ---
+const tabItems = [
+	{ text: 'Alpha', value: 'alpha', closable: true },
+	{ text: 'Beta', value: 'beta', closable: true, _: { active: true } },
+	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
+]
 
 // const closable = ref(false)
 
@@ -62,16 +62,16 @@ import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 					<template #panel:t3><p>Content 3</p></template>
 				</Tabs>
 			</DragAndDrop>
-		</section>
+		</section> -->
 
-		<section>
+		<!-- <section>
 			<h2>Вариант 1: программный (через instance)</h2>
 			<Tabs :ctrl="tabs" :engine="collection">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
 				<template #panel:tab2><p>Содержимое Tab 2</p></template>
 				<template #panel:tab3><p>Содержимое Tab 3</p></template>
 			</Tabs>
-		</section>
+		</section> -->
 
 		<section>
 			<h2>Вариант 2: prop items</h2>
@@ -82,7 +82,7 @@ import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section> -->
+		</section>
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>

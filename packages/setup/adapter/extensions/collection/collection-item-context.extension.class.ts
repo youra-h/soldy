@@ -9,6 +9,8 @@
  * который down(collection) через ITEM_CONTEXT_ELEVATOR.
  */
 
+// TODO remove
+
 import { TItemContextRegistry } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'

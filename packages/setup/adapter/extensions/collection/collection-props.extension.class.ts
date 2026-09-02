@@ -12,6 +12,8 @@
  * Регистрируется ПОСЛЕ TCollectionFactoryExtension, чтобы коллекция уже существовала.
  */
 
+// TODO remove
+
 import type { IAdapterContext } from '../../context'
 import { TCollectionFactoryExtension } from './collection-factory.extension.class'
 import { collectOwnerProps } from '../../../descriptors/base/collect-props'

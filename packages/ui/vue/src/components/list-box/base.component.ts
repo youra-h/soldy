@@ -1,4 +1,4 @@
-import { BaseList } from '../list'
+import { BaseControl } from '../control'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { ListBoxDescriptor, ListBoxCollectionDescriptor } from '@soldy/setup'
@@ -15,7 +15,7 @@ export const propsListBox: TProps = {
 
 export default {
 	name: 'BaseListBox',
-	extends: BaseList,
+	extends: BaseControl,
 	emits: emitsListBox,
 	props: propsListBox,
 }

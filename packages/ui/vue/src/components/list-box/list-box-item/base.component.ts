@@ -1,4 +1,4 @@
-import { BaseListItem } from '../../list/list-item'
+import { BaseValueControl } from '../../value-control'
 import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
 import { ListBoxItemDescriptor, ListBoxCollectionItemDescriptor } from '@soldy/setup'
@@ -15,7 +15,7 @@ export const propsListBoxItem: TProps = {
 
 export default {
 	name: 'BaseListBoxItem',
-	extends: BaseListItem,
+	extends: BaseValueControl,
 	emits: emitsListBoxItem,
 	props: propsListBoxItem,
 }

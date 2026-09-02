@@ -9,6 +9,8 @@
  * чтобы meta применилась к уже находящемуся в коллекции элементу.
  */
 
+// TODO remove
+
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
