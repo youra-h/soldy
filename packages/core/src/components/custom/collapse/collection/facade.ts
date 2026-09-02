@@ -38,7 +38,10 @@ export class TCollapseCollectionFacade extends TCollectionComponent<
 			'items:removed',
 			'change:trackBy',
 		])
+
 		this.events.relay(this.extensions.selection.events, ['change:selection', 'change:mode'])
+
+		this.events.relay(this.extensions.collapse.events, ['change:view'])
 	}
 
 	get items(): ReadonlyArray<ICollapseItem> {

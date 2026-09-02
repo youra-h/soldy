@@ -50,7 +50,7 @@ setTimeout(() => {
 			</Tabs>
 		</div>
 
-		<!-- <section>
+		<section>
 			<h2>Drag-and-drop</h2>
 			<DragAndDrop>
 				<Tabs>
@@ -82,7 +82,7 @@ setTimeout(() => {
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section> -->
+		</section>
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
