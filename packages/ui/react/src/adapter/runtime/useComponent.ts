@@ -105,9 +105,14 @@ export function useComponent<TProps extends Record<string, any> = Record<string,
 			const exportName = inspector.getExportPropName(prop)
 			const value = props[exportName] ?? props[prop.name.name]
 
-			if (value !== undefined) {
-				adapter.accessor.setValue(prop, value)
-			}
+			if (value === undefined) continue
+
+			// Не пишем в Core, если значение не изменилось: сеттеры вроде
+			// `visible` → show()/hide() эмитят show:before/hide:before даже
+			// при том же значении, что даёт бесконечный цикл ре-рендеров.
+			if (adapter.accessor.getValue(prop) === value) continue
+
+			adapter.accessor.setValue(prop, value)
 		}
 	}, [adapter, inspector, props])
 

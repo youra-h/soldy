@@ -1,32 +1,101 @@
-import { useState } from 'react'
-import { Button, ComponentView } from '@soldy/ui-react'
+import { useState, type ComponentType } from 'react'
+import EventLog from './common/EventLog'
+import type { EventLogEntry } from './common/EventLog'
+import ButtonPlayground from './playgrounds/Button'
+import ComponentViewPlayground from './playgrounds/ComponentView'
+import './demo.scss'
+
+type PlaygroundKey = 'component-view' | 'button'
+
+type PlaygroundComponent = ComponentType<{ onLog: (entry: EventLogEntry) => void }>
+
+const playgrounds: Record<PlaygroundKey, { component: PlaygroundComponent; label: string }> = {
+	'component-view': { component: ComponentViewPlayground, label: 'ComponentView' },
+	button: { component: ButtonPlayground, label: 'Button' },
+}
 
 export default function App() {
-	const [visible, setVisible] = useState(true)
+	const [active, setActive] = useState<PlaygroundKey>('component-view')
+	const [activeView, setActiveView] = useState<'sandbox' | 'logs'>('sandbox')
+	const [eventLog, setEventLog] = useState<EventLogEntry[]>([])
+
+	const handleLog = (entry: EventLogEntry) => {
+		setEventLog((prev) => [entry, ...prev].slice(0, 200))
+	}
+
+	const handleClearLogs = () => {
+		setEventLog([])
+	}
+
+	const Current = playgrounds[active]?.component
 
 	return (
-		<div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-			<h1 style={{ marginBottom: 16 }}>Soldy · React</h1>
-
-			<div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-				<Button
-					text="Toggle visible"
-					view="filled"
-					variant="accent"
-					onClick={() => setVisible((value) => !value)}
-				/>
-				<Button text="Plain" view="plain" />
-				<Button text="Outlined" view="outlined" disabled />
+		<div className="pg-app">
+			<div className="pg-app__nav">
+				<button
+					className={[
+						'pg-app__nav-btn',
+						activeView === 'sandbox' ? 'pg-app__nav-btn--active' : '',
+					].join(' ')}
+					onClick={() => setActiveView('sandbox')}
+				>
+					Sandbox
+				</button>
+				<button
+					className={[
+						'pg-app__nav-btn',
+						activeView === 'logs' ? 'pg-app__nav-btn--active' : '',
+					].join(' ')}
+					onClick={() => setActiveView('logs')}
+				>
+					Logs ({eventLog.length})
+				</button>
 			</div>
 
-			<ComponentView
-				tag="div"
-				visible={visible}
-				onReady={(value) => console.log('component-view ready', value)}
-				onChangeVisible={(value) => console.log('change:visible', value)}
-			>
-				ComponentView content — visible: {String(visible)}
-			</ComponentView>
+			<div className="pg-app__layout">
+				<aside className="pg-app__sidebar">
+					<h3 className="pg-app__sidebar-title">Components</h3>
+					<nav className="pg-app__menu">
+						{Object.entries(playgrounds).map(([key, value]) => (
+							<button
+								key={key}
+								className={[
+									'pg-app__menu-item',
+									active === key ? 'pg-app__menu-item--active' : '',
+								].join(' ')}
+								onClick={() => setActive(key as PlaygroundKey)}
+							>
+								{value.label}
+							</button>
+						))}
+					</nav>
+				</aside>
+
+				<main className="pg-app__main">
+					{activeView === 'sandbox' ? (
+						<div className="pg-app__content">
+							{Current ? (
+								<div className="pg-app__container">
+									<Current onLog={handleLog} />
+								</div>
+							) : (
+								<div className="pg-app__error">
+									<div className="pg-app__error-content">
+										<h1 className="pg-app__error-title">not found</h1>
+										<p className="pg-app__error-text">Check the active variable</p>
+									</div>
+								</div>
+							)}
+						</div>
+					) : (
+						<div className="pg-app__content">
+							<div className="pg-app__logs">
+								<EventLog events={eventLog} onClear={handleClearLogs} />
+							</div>
+						</div>
+					)}
+				</main>
+			</div>
 		</div>
 	)
 }
