@@ -38,7 +38,7 @@ const tabItems = [
 
 <template>
 	<div style="display: flex; flex-direction: column; gap: 2rem">
-		<!-- <div class="tabs-slots-demo__section">
+		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
 			<Tabs closable>
 				<TabItem text="Tab 1" value="t1" active />
@@ -48,7 +48,7 @@ const tabItems = [
 				<template #panel:t2><p>Content 2</p></template>
 				<template #panel:t3><p>Content 3</p></template>
 			</Tabs>
-		</div> -->
+		</div>
 
 		<section>
 			<h2>Drag-and-drop</h2>
@@ -64,7 +64,7 @@ const tabItems = [
 			</DragAndDrop>
 		</section>
 
-		<!-- <section>
+		<section>
 			<h2>Вариант 1: программный (через instance)</h2>
 			<Tabs :ctrl="tabs" @engine:create="onEngineCreate">
 				<template #panel:tab1><p>Содержимое Tab 1</p></template>
@@ -82,7 +82,7 @@ const tabItems = [
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section> -->
+		</section>
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
