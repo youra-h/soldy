@@ -7,7 +7,7 @@
  */
 
 /** Родительская коллекция. Ребёнок толкает { instance, bundle } наверх. */
-export const COLLECTION_ELEVATOR = 'soldy:collection'
+export const COLLECTION_ENGINE_ELEVATOR = 'soldy:collection-engine'
 
 /** Drag-and-drop контекст. DragAndDrop → Collection. */
 export const DRAG_CONTEXT_ELEVATOR = 'soldy:drag-context'

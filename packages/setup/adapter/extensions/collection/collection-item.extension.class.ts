@@ -8,7 +8,7 @@
 import { TItemContextRegistry } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
-import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { collectItemProps } from '../../../descriptors/base/collect-props'
 
 export interface ICollectionItemExtensionOptions {
@@ -23,23 +23,23 @@ export class TCollectionItemExtension {
 
 		// context.instance — item-фасад, созданный item-дескриптором.
 		const facade = context.instance as any
-		const collection = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
+		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
 
-		if (collection) {
-			const registry = new TItemContextRegistry(collection.getCore())
+		if (engine) {
+			const registry = new TItemContextRegistry(engine.getCore())
 			facade.setContext(registry.get(item))
 		}
 
 		this._register(context, item, elevator)
 
-		if (collection?.extensions?.meta) {
+		if (engine?.extensions?.meta) {
 			const meta = collectItemProps(context.descriptor.props, context.props)
-			collection.extensions.meta.apply(item, meta)
+			engine.extensions.meta.apply(item, meta)
 		}
 	}
 
 	private _register(context: IAdapterContext, item: any, elevator: TElevatorFactory): void {
-		const itemElevator = elevator(COLLECTION_ELEVATOR)
+		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
 
 		const register = itemElevator.up() as ((item: any, bundle: any) => () => void) | undefined
 

@@ -5,12 +5,12 @@
  *
  * Выполняется: привязка коллекции к реестру bundles,
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
- * через COLLECTION_ELEVATOR.
+ * через COLLECTION_ENGINE_ELEVATOR.
  */
 
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
-import { COLLECTION_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
 
 export interface ICollectionExtensionOptions {
@@ -49,7 +49,7 @@ export class TCollectionExtension {
 			bundles.bindCollection(collection)
 		}
 
-		const itemElevator = elevator(COLLECTION_ELEVATOR)
+		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
 
 		itemElevator.down((instance: any, bundle: any) => {
 			// Добавляем элемент в конец коллекции (эмитится item:added).
