@@ -28,19 +28,19 @@ const tabItems = [
 	{ text: 'Gamma', value: 'gamma', closable: true, disabled: true },
 ]
 
-// const closable = ref(false)
+const closable = ref(false)
 
-// setTimeout(() => {
-// 	console.log('Setting closable to true')
-// 	closable.value = true
-// }, 1000);
+setTimeout(() => {
+	console.log('Setting closable to true')
+	closable.value = true
+}, 1000)
 </script>
 
 <template>
 	<div style="display: flex; flex-direction: column; gap: 2rem">
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
-			<Tabs closable>
+			<Tabs :closable="closable">
 				<TabItem text="Tab 1" value="t1" />
 				<TabItem text="Tab 2" value="t2" active />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
@@ -50,7 +50,7 @@ const tabItems = [
 			</Tabs>
 		</div>
 
-		<section>
+		<!-- <section>
 			<h2>Drag-and-drop</h2>
 			<DragAndDrop>
 				<Tabs>
@@ -82,7 +82,7 @@ const tabItems = [
 				<template #panel:gamma><p>Содержимое Gamma</p></template>
 				<template #trailing>trailing</template>
 			</Tabs>
-		</section>
+		</section> -->
 		<!--
 		<section>
 			<h2>Вариант 3: декларативный (TabItem в слоте)</h2>
