@@ -22,9 +22,7 @@ export class TCollapseItemCollectionFacade extends TCollectionItemComponent<
 
 		this.events.relay(this._context.adapters.selection.events, ['change:selected'])
 		this.events.relay(this._context.adapters.order.events, ['change:order'])
-		this.events.relay(this._context.adapters.collapse.events, [
-			{ from: 'change:view', as: 'change:collapse_view' },
-		])
+		this.events.relay(this._context.adapters.collapse.events, ['change:view'])
 	}
 
 	get selected(): boolean {
