@@ -92,4 +92,4 @@ Button is the canonical minimal component. Copy its shape:
 - `packages/setup/descriptors/components/button.descriptor.ts`
 - `packages/ui/vue/src/components/button/{base.component.ts,setup.component.ts,Button.vue,index.ts}`
 
-For collection-based components (tabs, list, collapse) follow the Tabs shape instead — see `packages/setup/descriptors/components/tabs/` and the flat output interface (`ITabsCollectionOutput`) used by `useVueCollection<TOutput>`. Details: [Collection components reference](./references/collection-component.md).
+For collection-based components (tabs, collapse, list, list-box) follow the Tabs shape instead — see `packages/setup/descriptors/components/tabs/` and the collection facades (`TTabsCollectionFacade` / `TTabItemCollectionFacade`). Details: [Collection components reference](./references/collection-component.md).

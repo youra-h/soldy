@@ -27,7 +27,7 @@ npm run format       # Prettier
 
 | Package | Responsibility |
 |---|---|
-| `packages/core` | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollection`, extensions). |
+| `packages/core` | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
 | `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`). |
 | `packages/setup` | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`. |
 | `packages/plugins` | Runtime behavior extenders installed into `TPluginBundle`. |
@@ -37,9 +37,9 @@ npm run format       # Prettier
 
 ## Naming conventions
 
-- `T` prefix → type alias (e.g. `TCollection<TItem, TExtensions>`).
+- `T` prefix → type alias (e.g. `TCollectionEngine<TItem, TExtensions>`).
 - `I` prefix → interface (e.g. `IComponent`, `IExtension`).
-- Prefer **one flat output interface** per collection over intersecting multiple input/output interfaces.
+- Expose collection state through **facade getters** (`TCollectionComponent` / `TCollectionItemComponent` subclasses) — do not intersect separate input/output interfaces.
 
 ## Project-specific patterns
 
@@ -59,9 +59,9 @@ npm run format       # Prettier
 
 - **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).
 
-- **Vue collection hook**: `useVueCollection<TOutput>(adapter, props)` returns `{ collection, ...refs }`. `TOutput` is a flat interface (e.g. `ITabsCollectionOutput`) describing the reactive refs exposed to the template.
+- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`.
 
-- Collection **input** props (`IBatchCollectionProps`, `ISelectionCollectionProps`) and **output** state (`ITabsCollectionOutput`) are separate: inputs live on the props interface, the single output interface describes refs.
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`), calls `useVue` on each and merges `{ ...refs, ...refsCollection }`. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Pitfalls
 
