@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TPluginBundle, TDragPlugin, TElementPlugin } from '@soldy/plugins'
+import { TPluginBundle, TDragPlugin } from '@soldy/plugins'
 import {
 	createAdapterContext,
 	defineComponent,
@@ -14,11 +14,12 @@ import {
 	ITEM_CONTEXT_ELEVATOR,
 	DRAG_CONTEXT_ELEVATOR,
 	type TElevatorFactory,
+	type IAdapterContext,
 } from '@soldy/setup'
 
 /** Простая in-memory реализация фабрики элеваторов для тестов. */
 function createElevatorFactory() {
-	const store = new Map<string | symbol, any>()
+	const store = new Map<string | symbol, unknown>()
 
 	const factory: TElevatorFactory = <T>(key: string | symbol) => ({
 		down: (value: T) => {
@@ -31,9 +32,9 @@ function createElevatorFactory() {
 }
 
 describe('TElevator', () => {
-	class TestElevator extends TElevator<any> {
+	class TestElevator extends TElevator<unknown> {
 		down(): void {}
-		up(): any {
+		up(): unknown {
 			return undefined
 		}
 		get key(): symbol {
@@ -82,8 +83,8 @@ describe('createAdapterContext', () => {
 	it('передаёт props в конструктор и хранит accessor/descriptor', () => {
 		class WithProps {
 			text: string
-			constructor(props: any) {
-				this.text = props.text
+			constructor(props: { text?: string }) {
+				this.text = props.text ?? ''
 			}
 		}
 
@@ -120,7 +121,7 @@ describe('createAdapterContext', () => {
 	it('регистрирует и возвращает расширения через use/get', () => {
 		class MyExt {
 			constructor(
-				_context: unknown,
+				public readonly context: IAdapterContext,
 				public readonly opts?: { x: number },
 			) {}
 		}
@@ -139,7 +140,7 @@ describe('createAdapterContext', () => {
 
 	it('destroy эмитит событие и очищает расширения', () => {
 		class MyExt {
-			constructor(_context: unknown) {}
+			constructor(public readonly context: IAdapterContext) {}
 		}
 
 		const ctx = createAdapterContext(

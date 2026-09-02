@@ -16,8 +16,8 @@ describe('normalizeContribution', () => {
 	})
 
 	it('нормализует props: TName, type, protected, triggers, get/set', () => {
-		const get = (i: any) => i.text
-		const set = (i: any, v: any) => {
+		const get = (i: { text: string }) => i.text
+		const set = (i: { text: string }, v: string) => {
 			i.text = v
 		}
 
@@ -123,7 +123,7 @@ describe('defineComponent', () => {
 	it('создаёт null-бандл при отсутствии плагинов', () => {
 		const descriptor = defineComponent({ ctor: class {} })
 
-		expect(descriptor.createBundle(new (descriptor.ctor as any)())).toBeNull()
+		expect(descriptor.createBundle(new descriptor.ctor())).toBeNull()
 	})
 
 	it('createAccessor привязывает props/events к instance', () => {
@@ -135,7 +135,7 @@ describe('defineComponent', () => {
 			},
 		})
 
-		const instance = new (descriptor.ctor as any)()
+		const instance = new descriptor.ctor()
 		const accessor = descriptor.createAccessor(instance, null)
 
 		expect(accessor.getProps()).toHaveLength(1)
@@ -166,7 +166,7 @@ describe('defineComponent', () => {
 			plugins: [plugin],
 		})
 
-		const instance = new (descriptor.ctor as any)()
+		const instance = new descriptor.ctor()
 		const bundle = descriptor.createBundle(instance)
 		const accessor = descriptor.createAccessor(instance, bundle)
 

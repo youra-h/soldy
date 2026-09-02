@@ -124,6 +124,27 @@ describe('дескрипторы компонентов (наследовани�
 
 		expect(d.plugins.some((p) => p.ctor === TDragPlugin)).toBe(true)
 	})
+
+	it('TabsDescriptor наследует Control и добавляет orientation/view + Drag-плагин', () => {
+		const d = TabsDescriptor()
+		expect(d.ctor).toBe(TTabs)
+
+		const names = propNames(d)
+		expect(names).toContain('disabled') // Control
+		expect(names).toContain('orientation') // Tabs
+		expect(names).toContain('view') // Tabs
+
+		expect(d.plugins.some((p) => p.ctor === TDragPlugin)).toBe(true)
+	})
+
+	it('CollapseDescriptor наследует Control и добавляет view', () => {
+		const d = CollapseDescriptor()
+		expect(d.ctor).toBe(TCollapse)
+
+		const names = propNames(d)
+		expect(names).toContain('disabled') // Control
+		expect(names).toContain('view') // Collapse
+	})
 })
 
 describe('дескрипторы коллекций (фасады)', () => {
