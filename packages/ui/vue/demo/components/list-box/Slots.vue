@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { TListBox, ListBoxFactory } from '@soldy/core';
+import { TListBox } from '@soldy/core';
+import type { TListBoxCollection } from '@soldy/core';
 import { ListBox, ListBoxItem } from '@soldy/ui-vue';
 import type { TComponentSize, TComponentVariant } from '@soldy/core';
 
@@ -14,15 +15,17 @@ const APPEARANCES = ['plain', 'outlined', 'filled'] as const;
 
 // Instance с предустановленными элементами для #item slot
 const fruitInstance = new TListBox();
-const fruitCollection = ListBoxFactory(fruitInstance);
-const { plain, selection } = fruitCollection.extensions;
-selection.mode = 'multiple';
 
-plain.push({ text: 'Apple', value: 'apple' });
-plain.push({ text: 'Banana', value: 'banana' });
-const cherry = plain.push({ text: 'Cherry', value: 'cherry' });
+function onEngineCreate(engine: TListBoxCollection) {
+    const { plain, selection } = engine.extensions;
+    selection.mode = 'multiple';
 
-selection.select(cherry);
+    plain.push({ text: 'Apple', value: 'apple' });
+    plain.push({ text: 'Banana', value: 'banana' });
+    const cherry = plain.push({ text: 'Cherry', value: 'cherry' });
+
+    selection.select(cherry);
+}
 </script>
 
 <template>
@@ -66,7 +69,7 @@ selection.select(cherry);
             <h4 class="list-box-slots-demo__subtitle">Custom #item slot</h4>
             <ListBox
                 :ctrl="fruitInstance"
-                :engine="fruitCollection"
+                @engine:create="onEngineCreate"
                 view="outlined"
                 :size="size"
                 :variant="variant"
@@ -109,7 +112,7 @@ selection.select(cherry);
             <h4 class="list-box-slots-demo__subtitle">
                 Per-item slots via ListBox
             </h4>
-            <ListBox :ctrl="fruitInstance" :engine="fruitCollection">
+            <ListBox :ctrl="fruitInstance" @engine:create="onEngineCreate">
                 <template #item:apple:leading>
                     <span class="list-box-slots-demo__badge">🍎</span>
                 </template>
@@ -129,7 +132,7 @@ selection.select(cherry);
             </h4>
             <ListBox
                 :ctrl="fruitInstance"
-                :engine="fruitCollection"
+                @engine:create="onEngineCreate"
                 view="outlined"
                 :size="size"
                 :variant="variant"

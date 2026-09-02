@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { Collapse, emitsCollapse } from '@soldy/ui-vue'
-import { TCollapse, CollapseFactory } from '@soldy/core'
+import { TCollapse } from '@soldy/core'
+import type { TCollapseCollection } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -47,15 +48,20 @@ const instance = new TCollapse({
 	view: props.view ?? 'plain',
 })
 
-const collection = CollapseFactory(instance)
-const { plain, selection } = collection.extensions
+const collection = ref<TCollapseCollection | null>(null)
 
-const item1 = plain.push({ text: 'Section 1', value: 'sec1' })
-plain.push({ text: 'Section 2', value: 'sec2' })
-plain.push({ text: 'Section 3', value: 'sec3' })
+function onEngineCreate(engine: TCollapseCollection) {
+	collection.value = engine
 
-selection.mode = props.mode ?? 'multiple'
-selection.select(item1)
+	const { plain, selection } = engine.extensions
+
+	const item1 = plain.push({ text: 'Section 1', value: 'sec1' })
+	plain.push({ text: 'Section 2', value: 'sec2' })
+	plain.push({ text: 'Section 3', value: 'sec3' })
+
+	selection.mode = props.mode ?? 'multiple'
+	selection.select(item1)
+}
 
 const { handlers, logEvent } = useEventLogger(emit, emitsCollapse)
 useCoreEventLogger(instance, logEvent, emitsCollapse)
@@ -76,13 +82,18 @@ watch(
 		() => props.itemApplyTarget,
 		() => props.arrowPlacement,
 		() => props.mode,
+		collection,
 	],
 	() => {
+		const engine = collection.value
+
+		if (!engine) return
+
 		if (props.mode !== undefined) {
-			selection.mode = props.mode
+			engine.extensions.selection.mode = props.mode
 		}
 
-		collection.engine.forEach((item, index) => {
+		engine.driver.forEach((item, index) => {
 			const apply = props.itemApplyTarget === 'all' || index === 0
 			item.disabled = apply ? !!props.itemDisabled : false
 			if (props.arrowPlacement !== undefined) {
@@ -96,7 +107,7 @@ watch(
 
 <template>
 	<PanelDemo info="Instance-based demo">
-		<Collapse :ctrl="instance" :engine="collection" v-bind="handlers">
+		<Collapse :ctrl="instance" @engine:create="onEngineCreate" v-bind="handlers">
 			<template #panel:sec1>
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
 				incididunt ut labore et dolore magna aliqua.

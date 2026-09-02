@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { Tabs, emitsTabs } from '@soldy/ui-vue'
-import { TTabs, TabsFactory } from '@soldy/core'
+import { TTabs } from '@soldy/core'
+import type { TTabsCollection } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -56,14 +57,19 @@ const instance = new TTabs({
 	closable: props.closable ?? false,
 })
 
-const collection = TabsFactory(instance)
-const { plain, activation } = collection.extensions
+const collection = ref<TTabsCollection | null>(null)
 
-const tab1 = plain.push({ text: 'Tab 1', value: 'tab1' })
-plain.push({ text: 'Tab 2', value: 'tab2' })
-plain.push({ text: 'Tab 3', value: 'tab3' })
+function onEngineCreate(engine: TTabsCollection) {
+	collection.value = engine
 
-activation.activate(tab1)
+	const { plain, activation } = engine.extensions
+
+	const tab1 = plain.push({ text: 'Tab 1', value: 'tab1' })
+	plain.push({ text: 'Tab 2', value: 'tab2' })
+	plain.push({ text: 'Tab 3', value: 'tab3' })
+
+	activation.activate(tab1)
+}
 
 const { handlers, logEvent } = useEventLogger(emit, emitsTabs)
 useCoreEventLogger(instance, logEvent, emitsTabs)
@@ -83,9 +89,13 @@ useSyncPropsToInstance(props, instance, [
 
 // Синхронизация свойств вкладок
 watch(
-	[() => props.tabDisabled, () => props.tabClosable, () => props.tabApplyTarget],
+	[() => props.tabDisabled, () => props.tabClosable, () => props.tabApplyTarget, collection],
 	() => {
-		collection.engine.forEach((item, index) => {
+		const engine = collection.value
+
+		if (!engine) return
+
+		engine.driver.forEach((item, index) => {
 			const apply = props.tabApplyTarget === 'all' || index === 0
 			item.disabled = apply ? !!props.tabDisabled : false
 			item.closable = apply ? props.tabClosable : undefined
@@ -97,7 +107,7 @@ watch(
 
 <template>
 	<PanelDemo info="Instance-based demo">
-		<Tabs :ctrl="instance" :engine="collection" v-bind="handlers">
+		<Tabs :ctrl="instance" @engine:create="onEngineCreate" v-bind="handlers">
 			<template #panel:tab1><p>Content for Tab 1</p></template>
 			<template #panel:tab2><p>Content for Tab 2</p></template>
 			<template #panel:tab3><p>Content for Tab 3</p></template>

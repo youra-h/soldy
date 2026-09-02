@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ListBox, emitsListBox } from '@soldy/ui-vue'
-import { TListBox, ListBoxFactory } from '@soldy/core'
+import { TListBox } from '@soldy/core'
+import type { TListBoxCollection } from '@soldy/core'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useSyncPropsToInstance } from '../../common/useSyncPropsToInstance'
 import { useEventLogger, useCoreEventLogger } from '../../common/useEventLogger'
@@ -52,16 +53,21 @@ const instance = new TListBox({
 	wordWrap: props.wordWrap ?? false,
 })
 
-const collection = ListBoxFactory(instance)
-const { plain, selection } = collection.extensions
+const collection = ref<TListBoxCollection | null>(null)
 
-selection.mode = props.mode ?? 'single'
+function onEngineCreate(engine: TListBoxCollection) {
+	collection.value = engine
 
-const item1 = plain.push({ text: 'Item 1', value: 'item1' })
-plain.push({ text: 'Item 2', value: 'item2' })
-plain.push({ text: 'Item 3', value: 'item3' })
+	const { plain, selection } = engine.extensions
 
-selection.select(item1)
+	selection.mode = props.mode ?? 'single'
+
+	const item1 = plain.push({ text: 'Item 1', value: 'item1' })
+	plain.push({ text: 'Item 2', value: 'item2' })
+	plain.push({ text: 'Item 3', value: 'item3' })
+
+	selection.select(item1)
+}
 
 const { handlers, logEvent } = useEventLogger(emit, emitsListBox)
 useCoreEventLogger(instance, logEvent, emitsListBox)
@@ -79,9 +85,13 @@ useSyncPropsToInstance(props, instance, [
 ])
 
 watch(
-	[() => props.itemDisabled, () => props.itemWordWrap, () => props.itemApplyTarget],
+	[() => props.itemDisabled, () => props.itemWordWrap, () => props.itemApplyTarget, collection],
 	() => {
-		collection.engine.forEach((item, index) => {
+		const engine = collection.value
+
+		if (!engine) return
+
+		engine.driver.forEach((item, index) => {
 			const apply = props.itemApplyTarget === 'all' || index === 0
 			item.disabled = apply ? !!props.itemDisabled : false
 			item.wordWrap = apply ? props.itemWordWrap : undefined
@@ -93,6 +103,6 @@ watch(
 
 <template>
 	<PanelDemo info="Instance-based demo">
-		<ListBox :ctrl="instance" :engine="collection" v-bind="handlers" />
+		<ListBox :ctrl="instance" @engine:create="onEngineCreate" v-bind="handlers" />
 	</PanelDemo>
 </template>

@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-    TTabs,
-    TabsFactory,
-    TCollapse,
-    CollapseFactory,
-    TListBox,
-    ListBoxFactory,
-} from '@soldy/core';
+import { TTabs, TCollapse, TListBox } from '@soldy/core';
 import type {
+    TTabsCollection,
+    TCollapseCollection,
+    TListBoxCollection,
     TComponentSize,
     TComponentVariant,
     TTabsOrientation,
@@ -38,21 +34,22 @@ tabs.variant = 'accent';
 tabs.view = 'contained';
 tabs.orientation = 'horizontal';
 
-const tabsCollection = TabsFactory(tabs);
-const { plain: tabsPlain, activation } = tabsCollection.extensions;
+function onTabsEngineCreate(engine: TTabsCollection) {
+    const { plain, activation } = engine.extensions;
 
-const dashboardTab = tabsPlain.push({
-    text: 'Dashboard',
-    value: 'dashboard',
-    closable: true,
-});
-tabsPlain.push({ text: 'Reports', value: 'reports', closable: true });
-tabsPlain.push({ text: 'Users', value: 'users' });
-tabsPlain.push({ text: 'Logs', value: 'logs' });
-tabsPlain.push({ text: 'Storage', value: 'storage' });
-tabsPlain.push({ text: 'Config', value: 'config' });
+    const dashboardTab = plain.push({
+        text: 'Dashboard',
+        value: 'dashboard',
+        closable: true,
+    });
+    plain.push({ text: 'Reports', value: 'reports', closable: true });
+    plain.push({ text: 'Users', value: 'users' });
+    plain.push({ text: 'Logs', value: 'logs' });
+    plain.push({ text: 'Storage', value: 'storage' });
+    plain.push({ text: 'Config', value: 'config' });
 
-activation.activate(dashboardTab);
+    activation.activate(dashboardTab);
+}
 
 // --- Вариант 2: через prop items ---
 
@@ -75,21 +72,21 @@ const collapse = new TCollapse();
 collapse.variant = 'accent';
 collapse.view = 'outlined';
 
-const collapseCollection = CollapseFactory(collapse);
-const { plain: collapsePlain, selection: collapseSelection } =
-    collapseCollection.extensions;
-collapseSelection.mode = 'multiple';
+function onCollapseEngineCreate(engine: TCollapseCollection) {
+    const { plain, selection } = engine.extensions;
+    selection.mode = 'multiple';
 
-collapsePlain.push({ text: 'Getting Started', value: 'getting-started' });
-collapsePlain.push({ text: 'Installation', value: 'installation' });
-collapsePlain.push({ text: 'Configuration', value: 'configuration' });
-collapsePlain.push({ text: 'Deployment', value: 'deployment' });
-collapsePlain.push({ text: 'Troubleshooting', value: 'troubleshooting' });
+    plain.push({ text: 'Getting Started', value: 'getting-started' });
+    plain.push({ text: 'Installation', value: 'installation' });
+    plain.push({ text: 'Configuration', value: 'configuration' });
+    plain.push({ text: 'Deployment', value: 'deployment' });
+    plain.push({ text: 'Troubleshooting', value: 'troubleshooting' });
 
-const gettingStarted = collapsePlain.find(
-    (item) => item.value === 'getting-started',
-)!;
-collapseSelection.select(gettingStarted);
+    const gettingStarted = plain.find(
+        (item) => item.value === 'getting-started',
+    )!;
+    selection.select(gettingStarted);
+}
 
 // --- Collapse: через prop items ---
 
@@ -107,17 +104,17 @@ const listBox = new TListBox();
 listBox.variant = 'accent';
 listBox.view = 'outlined';
 
-const listBoxCollection = ListBoxFactory(listBox);
-const { plain: listBoxPlain, selection: listBoxSelection } =
-    listBoxCollection.extensions;
-listBoxSelection.mode = 'multiple';
+function onListBoxEngineCreate(engine: TListBoxCollection) {
+    const { plain, selection } = engine.extensions;
+    selection.mode = 'multiple';
 
-listBoxPlain.push({ text: 'Alpha', value: 'alpha' });
-listBoxPlain.push({ text: 'Beta', value: 'beta' });
-const gammaItem = listBoxPlain.push({ text: 'Gamma', value: 'gamma' });
-listBoxPlain.push({ text: 'Delta', value: 'delta' });
+    plain.push({ text: 'Alpha', value: 'alpha' });
+    plain.push({ text: 'Beta', value: 'beta' });
+    const gammaItem = plain.push({ text: 'Gamma', value: 'gamma' });
+    plain.push({ text: 'Delta', value: 'delta' });
 
-listBoxSelection.select(gammaItem);
+    selection.select(gammaItem);
+}
 
 // --- ListBox: через prop items ---
 
@@ -168,7 +165,7 @@ const listBoxItems = ref([
         <section class="drag-slots-demo__section">
             <h3 class="drag-slots-demo__title">Instance (:ctrl)</h3>
             <DragAndDrop>
-                <Tabs :ctrl="tabs" :engine="tabsCollection">
+                <Tabs :ctrl="tabs" @engine:create="onTabsEngineCreate">
                     <template #panel:dashboard
                         ><p>Dashboard content</p></template
                     >
@@ -233,7 +230,7 @@ const listBoxItems = ref([
         <section class="drag-slots-demo__section">
             <h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
             <DragAndDrop>
-                <Collapse :ctrl="collapse" :engine="collapseCollection">
+                <Collapse :ctrl="collapse" @engine:create="onCollapseEngineCreate">
                     <template #panel:getting-started
                         ><p>Getting Started content</p></template
                     >
@@ -298,7 +295,7 @@ const listBoxItems = ref([
         <section class="drag-slots-demo__section">
             <h3 class="drag-slots-demo__title">ListBox — Instance (:ctrl)</h3>
             <DragAndDrop>
-                <ListBox :ctrl="listBox" :engine="listBoxCollection" />
+                <ListBox :ctrl="listBox" @engine:create="onListBoxEngineCreate" />
             </DragAndDrop>
         </section>
 

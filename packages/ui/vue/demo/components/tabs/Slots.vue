@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { TTabs, TabsFactory } from '@soldy/core'
+import { TTabs } from '@soldy/core'
+import type { TTabsCollection } from '@soldy/core'
 import { Tabs, TabItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
@@ -13,14 +14,16 @@ defineProps<Props>()
 const APPEARANCES = ['line', 'contained', 'outline'] as const
 
 const tabsInstance = new TTabs()
-const collection = TabsFactory(tabsInstance)
-const { plain, activation } = collection.extensions
 
-const usersTab = plain.push({ text: 'Users', value: 'users' })
-plain.push({ text: 'Settings', value: 'settings' })
-plain.push({ text: 'Profile', value: 'profile' })
+function onEngineCreate(engine: TTabsCollection) {
+	const { plain, activation } = engine.extensions
 
-activation.activate(usersTab)
+	const usersTab = plain.push({ text: 'Users', value: 'users' })
+	plain.push({ text: 'Settings', value: 'settings' })
+	plain.push({ text: 'Profile', value: 'profile' })
+
+	activation.activate(usersTab)
+}
 </script>
 
 <template>
@@ -76,7 +79,7 @@ activation.activate(usersTab)
 		<!-- #item slot — кастомизация через scoped slot -->
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Custom #item slot</h4>
-			<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
+			<Tabs :ctrl="tabsInstance" @engine:create="onEngineCreate" view="line" :size="size" :variant="variant">
 				<template #item:users:leading>
 					<span>👤</span>
 				</template>
@@ -157,7 +160,7 @@ activation.activate(usersTab)
 			<!-- Per-item slots via Tabs: item:value:leading / item:value / item:value:trailing -->
 			<div class="tabs-slots-demo__section">
 				<h4 class="tabs-slots-demo__subtitle">Per-item slots via Tabs</h4>
-				<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
+				<Tabs :ctrl="tabsInstance" @engine:create="onEngineCreate" view="line" :size="size" :variant="variant">
 					<template #item:users:leading>
 						<span>👤</span>
 					</template>
@@ -176,7 +179,7 @@ activation.activate(usersTab)
 			<!-- #item catch-all -->
 			<div class="tabs-slots-demo__section">
 				<h4 class="tabs-slots-demo__subtitle">Custom #item slot (catch-all)</h4>
-				<Tabs :ctrl="tabsInstance" :engine="collection" view="line" :size="size" :variant="variant">
+				<Tabs :ctrl="tabsInstance" @engine:create="onEngineCreate" view="line" :size="size" :variant="variant">
 					<template #item="{ item }">
 						<div class="flex items-center gap-2">
 							<span>⚪</span>

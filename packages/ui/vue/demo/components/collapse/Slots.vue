@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { TCollapse, CollapseFactory } from '@soldy/core'
+import { TCollapse } from '@soldy/core'
+import type { TCollapseCollection } from '@soldy/core'
 import { Collapse, CollapseItem } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
@@ -13,14 +14,16 @@ defineProps<Props>()
 const APPEARANCES = ['plain', 'outlined', 'filled'] as const
 
 const collapseInstance = new TCollapse()
-const collection = CollapseFactory(collapseInstance)
-const { plain, selection } = collection.extensions
 
-const sectionA = plain.push({ text: 'Section A', value: 'sA' })
-plain.push({ text: 'Section B', value: 'sB' })
-plain.push({ text: 'Section C', value: 'sC' })
+function onEngineCreate(engine: TCollapseCollection) {
+	const { plain, selection } = engine.extensions
 
-selection.select(sectionA)
+	const sectionA = plain.push({ text: 'Section A', value: 'sA' })
+	plain.push({ text: 'Section B', value: 'sB' })
+	plain.push({ text: 'Section C', value: 'sC' })
+
+	selection.select(sectionA)
+}
 </script>
 
 <template>
@@ -79,7 +82,7 @@ selection.select(sectionA)
 			<h4 class="collapse-slots-demo__subtitle">Custom #item slot</h4>
 			<Collapse
 				:ctrl="collapseInstance"
-				:engine="collection"
+				@engine:create="onEngineCreate"
 				view="outlined"
 				:size="size"
 				:variant="variant"
@@ -115,7 +118,7 @@ selection.select(sectionA)
 			<h4 class="collapse-slots-demo__subtitle">Per-item slots via Collapse</h4>
 			<Collapse
 				:ctrl="collapseInstance"
-				:engine="collection"
+				@engine:create="onEngineCreate"
 				view="outlined"
 				:size="size"
 				:variant="variant"
@@ -140,7 +143,7 @@ selection.select(sectionA)
 			<h4 class="collapse-slots-demo__subtitle">Custom #item slot (catch-all)</h4>
 			<Collapse
 				:ctrl="collapseInstance"
-				:engine="collection"
+				@engine:create="onEngineCreate"
 				view="outlined"
 				:size="size"
 				:variant="variant"
