@@ -43,8 +43,6 @@ export class TCollectionExtension {
 	private _wire(context: IAdapterContext, elevator: TElevatorFactory, engine: any): void {
 		const bundles = context.bundle?.get(TCollectionBundlesPlugin)
 
-		debugger
-
 		// Передаём ссылку на коллекцию в плагин — это единственный источник
 		// состояния коллекции (активный элемент, порядок, элементы) для плагинов.
 		if (bundles && engine) {

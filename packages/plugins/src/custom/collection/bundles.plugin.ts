@@ -1,6 +1,6 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
-import type { TCollectiondriver } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy/core'
 import type { TBundlesEvents } from './types'
 
 /**
@@ -19,11 +19,11 @@ import type { TBundlesEvents } from './types'
  * привязывается через {@link bindCollection} из adapter-слоя после её создания.
  */
 export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
-	private _engine: TCollectiondriver<any, any> | null = null
+	private _engine: TCollectionEngine<any, any> | null = null
 	private readonly _bundles = new Map<string | number, IPluginBundle>()
 
 	/** Привязать коллекцию. Вызывается adapter-слоем после создания коллекции. */
-	bindCollection(engine: TCollectiondriver<any, any>): void {
+	bindEngine(engine: TCollectionEngine<any, any>): void {
 		if (this._engine === engine) return
 
 		this._engine = engine
@@ -46,7 +46,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 	}
 
 	/** Ссылка на коллекцию, к которой привязан реестр. */
-	get engine(): TCollectiondriver<any, any> | null {
+	get engine(): TCollectionEngine<any, any> | null {
 		return this._engine
 	}
 

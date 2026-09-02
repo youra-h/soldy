@@ -25,7 +25,7 @@ export default {
 		const itemAdapter = createAdapterContext(
 			CollapseCollectionItemDescriptor(),
 			{ props },
-			{ bundle: adapter.bundle },
+			{ bundle: adapter.bundle, defaultExtensions: [] },
 		).use(TCollectionItemExtension, {
 			item: adapter.instance,
 			elevator: VueElevatorFactory,

@@ -38,7 +38,7 @@ export type TUnwrapRefs<T> = {
 export type TVueBinding<TProps, TInstance> = {
 	ctrl: TInstance
 	plugins: any
-	rootElement: Ref<Element | null>
+	rootElement?: Ref<Element | null>
 } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
@@ -63,9 +63,11 @@ export function useVue<TProps extends Record<string, any> = Record<string, any>,
 
 	// 3. DOM-биндинг через экстеншн плагинов
 	const pluginsExt = adapter.get(TPluginsBindingExtension)
-	const rootElement = ref<Element | null>(null)
+	const rootElement = pluginsExt ? ref<Element | null>(null) : null
 
-	watch(rootElement, (el) => pluginsExt?.bindElement(el ?? null), { flush: 'post' })
+	if (pluginsExt && rootElement) {
+		watch(rootElement, (el) => pluginsExt.bindElement(el ?? null), { flush: 'post' })
+	}
 
 	// 4. Очистка (destroy эмитит 'destroy', все экстеншны отписываются сами)
 	onUnmounted(() => {
@@ -75,7 +77,7 @@ export function useVue<TProps extends Record<string, any> = Record<string, any>,
 	return {
 		ctrl: adapter.instance as TInstance,
 		plugins: adapter.bundle,
-		rootElement,
+		...(rootElement ? { rootElement } : {}),
 		...refs,
 	} as unknown as TVueBinding<TProps, TInstance>
 }
