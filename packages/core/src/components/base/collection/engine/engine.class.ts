@@ -1,5 +1,10 @@
+import { TEvented } from '@soldy/core'
 import { TCollectionStorageDriver } from './driver.class'
-import type { ICollectionStorageDriver, ICollectionEngineCore } from './types'
+import type {
+	ICollectionStorageDriver,
+	ICollectionEngineCore,
+	TCollectionEngineEvents,
+} from './types'
 import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
@@ -11,6 +16,7 @@ export class TCollectionEngine<
 > {
 	public readonly driver: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions
+	public readonly events = new TEvented<TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>>()
 
 	constructor(
 		options: {
@@ -29,6 +35,12 @@ export class TCollectionEngine<
 		for (const ext of Object.values<IExtension<T>>(this.extensions)) {
 			ext.install(ctx)
 		}
+
+		// Оповещаем подписчиков о создании движка. Отложено на микрозадачу,
+		// чтобы поздние подписчики (фасад коллекции, Vue-эмиты) успели подписаться.
+		Promise.resolve().then(() => {
+			this.events.emit('engine:create', this)
+		})
 	}
 
 	/**

@@ -40,6 +40,9 @@ export abstract class TCollectionComponent<
 			'change:count',
 			'reset',
 		])
+
+		// Релеи событий движка (включая engine:create).
+		this.events.relay(this.engine.events, ['engine:create'])
 	}
 
 	get driver(): ICollectionStorageDriver<TItem> {

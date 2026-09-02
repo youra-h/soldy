@@ -133,3 +133,12 @@ export type TCollectionEngineItemSource<
 > = Partial<TItemProps> & {
 	_?: TMeta
 }
+
+/**
+ * События движка коллекции (TCollectionEngine).
+ * Позволяют получить ссылку на движок в момент его создания.
+ */
+export type TCollectionEngineEvents<TEngine = unknown> = {
+	/** Движок создан и готов к использованию. Передаётся сам движок. */
+	'engine:create': (engine: TEngine) => void
+}

@@ -1,5 +1,5 @@
 // Типы
-export type { TCollectionStorageDriverEvents } from './types'
+export type { TCollectionStorageDriverEvents, TCollectionEngineEvents } from './types'
 export { TInsertEvent, TUpdateEvent, TItemEvent } from './types'
 
 // Хранилище

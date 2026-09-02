@@ -10,6 +10,7 @@ export const CollectionContribution = (): IContribution => ({
 		trackBy: { type: Function, triggers: ['change:trackBy'] },
 	},
 	events: [
+		'engine:create',
 		'item:add:before',
 		'item:added',
 		'item:removed',
