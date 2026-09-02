@@ -4,6 +4,7 @@ import type {
 	TCollectionFacadeProps,
 	TSelectionMode,
 } from '../../../base/collection'
+import type { TCollapseView } from '../types'
 import { CollapseFactory } from './factory'
 import type { TCollapseCollection, TCollapseCollectionExtensions } from './types'
 import type { ICollapseItem } from '../collapse-item/types'
@@ -68,7 +69,7 @@ export class TCollapseCollectionFacade extends TCollectionComponent<
 		return this.extensions.selection.selected
 	}
 
-	get view(): ICollapse['view'] {
+	get view(): TCollapseView {
 		return this.extensions.collapse.view
 	}
 }

@@ -2,6 +2,7 @@ import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
 import type { TCollapseCollectionExtensions } from '../collection/types'
 import type { ICollapseItem } from './types'
+import type { TCollapseView } from '../types'
 
 /**
  * Фасад элемента collapse.
@@ -40,7 +41,7 @@ export class TCollapseItemCollectionFacade extends TCollectionItemComponent<
 		return this._context?.adapters.order.order ?? -1
 	}
 
-	get view(): string {
-		return this._context?.adapters.collapse.view ?? ''
+	get view(): TCollapseView {
+		return this._context?.adapters.collapse.view!
 	}
 }

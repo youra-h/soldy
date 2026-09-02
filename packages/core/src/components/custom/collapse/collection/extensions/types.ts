@@ -1,4 +1,5 @@
 import type { ICollapse } from '../../types'
+import type { TCollapseView } from '../../types'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
@@ -15,7 +16,7 @@ import type { ICollapseItem } from '../../collapse-item/types'
 export interface ICollapseExtension<TItem extends ICollapseItem = ICollapseItem>
 	extends IExtension<TItem>, IExtensionItems<TItem, ICollapseItemExtension<TItem>> {
 	/** Внешний вид с инстанса TCollapse. */
-	readonly view: ICollapse['view']
+	readonly view: TCollapseView
 }
 
 /**
@@ -34,7 +35,7 @@ export interface ICollapseExtensionOptions<
  * События расширения TCollapseExtension.
  */
 export type TCollapseExtensionEvents = {
-	'change:view': (value: ICollapse['view']) => void
+	'change:view': (value: TCollapseView) => void
 }
 
 export type TCollapseExtensions<TItem extends ICollapseItem> = {

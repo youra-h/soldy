@@ -1,4 +1,5 @@
 import type { IExtension, IExtensionContext } from '../../../../base/collection'
+import type { TCollapseView } from '../../types'
 import { TBaseOwnerItemExtension } from '../../../../base/collection'
 import type { ICollapseItem } from '../../collapse-item/types'
 import type { ICollapse } from '../../types'
@@ -45,7 +46,7 @@ export class TCollapseExtension<
 	}
 
 	/** Внешний вид с инстанса TCollapse. */
-	get view(): ICollapse['view'] {
+	get view(): TCollapseView {
 		return this._owner.view
 	}
 

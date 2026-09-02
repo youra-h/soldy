@@ -2,6 +2,7 @@ import type { TItemContext } from '../../../base/collection'
 import { TListItemCollectionFacade } from '../../list/list-item/facade'
 import type { TListBoxCollectionExtensions } from '../collection/types'
 import type { IListBoxItem } from './types'
+import type { TListBoxView } from '../types'
 
 /**
  * Фасад элемента listBox.
@@ -21,7 +22,7 @@ export class TListBoxItemCollectionFacade extends TListItemCollectionFacade<
 		this.events.relay(this._context.adapters.list.events as any, ['change:view'])
 	}
 
-	get view(): string {
-		return this._context?.adapters.list.view ?? ''
+	get view(): TListBoxView {
+		return this._context?.adapters.list.view ?? 'plain'
 	}
 }

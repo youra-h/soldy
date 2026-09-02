@@ -1,4 +1,5 @@
 import type { TCollectionFacadeProps } from '../../../base/collection'
+import type { TListBoxView } from '../types'
 import { TListCollectionFacade } from '../../list/collection/facade'
 import type { TListCollectionFacadeOptions } from '../../list/collection/types'
 import { ListBoxFactory } from './factory'
@@ -25,7 +26,7 @@ export class TListBoxCollectionFacade extends TListCollectionFacade<
 		})
 	}
 
-	get view(): IListBox['view'] {
+	get view(): TListBoxView {
 		return this.extensions.list.view
 	}
 }

@@ -2,7 +2,7 @@ import { TBaseItemExtension } from '../../../../../base/collection'
 import type { ICollapseItemExtension, TCollapseItemEventsExtension } from './types'
 import type { ICollapseItem } from '../../../collapse-item/types'
 import type { ICollapseExtension } from '../types'
-
+import type { TCollapseView } from '../../../types'
 /**
  * TCollapseItemExtension — stateless-делегат элемента collapse.
  *
@@ -28,7 +28,7 @@ export class TCollapseItemExtension<
 	 * Внешний вид элемента.
 	 * Берётся из родительского расширения (TCollapse).
 	 */
-	get view(): string {
+	get view(): TCollapseView {
 		return this._parent.view
 	}
 }

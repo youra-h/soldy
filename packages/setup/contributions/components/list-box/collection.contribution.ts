@@ -1,4 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
+import { defineType } from './../../defineType'
+import { TButtonView } from '@soldy/core'
 
 /**
  * Специфичные коллекционные props/events владельца ListBox.
@@ -12,10 +14,9 @@ export const ListBoxCollectionContribution = (): IContribution => ({})
  */
 export const ListBoxCollectionItemContribution = (): IContribution => ({
 	props: {
-		list_view: {
-			type: String,
+		view: {
+			type: defineType<TButtonView>(String),
 			protected: true,
-			get: (instance) => instance.view,
 			triggers: ['change:view'],
 		},
 	},

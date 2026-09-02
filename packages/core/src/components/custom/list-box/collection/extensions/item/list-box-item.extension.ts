@@ -1,6 +1,7 @@
 import type { IListBoxItemExtension } from './types'
 import type { IListBoxItem } from '../../../list-box-item/types'
 import type { IListBoxExtension } from '../types'
+import type { TListBoxView } from '../../../types'
 import { TListItemExtension } from '../../../../list'
 
 /**
@@ -28,7 +29,7 @@ export class TListBoxItemExtension<
 	 * Внешний вид элемента.
 	 * Берётся из родительского расширения (TListBox).
 	 */
-	get view(): string {
+	get view(): TListBoxView {
 		return this._parent.view
 	}
 }

@@ -1,7 +1,8 @@
 import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../base/collection'
+import type { TCollapseView } from '../../../types'
 
 export type TCollapseItemEventsExtension = TBaseItemEventsExtension & {
-	'change:view': (value: string) => void
+	'change:view': (value: TCollapseView) => void
 }
 
 /**
@@ -13,5 +14,5 @@ export interface ICollapseItemExtension<TItem extends object = any> extends IIte
 	TCollapseItemEventsExtension
 > {
 	/** Внешний вид элемента (наследуется от TCollapse). */
-	readonly view: string
+	readonly view: TCollapseView
 }

@@ -1,6 +1,7 @@
 import type { IExtensionContext, IItemExtensionCtor } from '../../../../base/collection'
 import type { IListBoxItem } from '../../list-box-item/types'
 import type { IListBox } from '../../types'
+import type { TListBoxView } from '../../types'
 import { TListExtension } from '../../../list'
 import type { IListBoxExtensionOptions, IListBoxExtension } from './types'
 import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
@@ -35,7 +36,7 @@ export class TListBoxExtension<
 	}
 
 	/** Внешний вид с инстанса TListBox. */
-	get view(): IListBox['view'] {
+	get view(): TListBoxView {
 		return this._owner.view
 	}
 

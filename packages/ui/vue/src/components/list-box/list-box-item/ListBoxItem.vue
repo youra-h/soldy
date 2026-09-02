@@ -17,7 +17,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 	>
 		<Button
 			:tag="tag"
-			:view="list_view"
+			:view="view"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
