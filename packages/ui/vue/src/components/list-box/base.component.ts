@@ -1,16 +1,16 @@
 import { BaseList } from '../list'
-import { useEmits, useProps, useCollectionProps, useCollectionEmits } from '../../adapter'
+import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { ListBoxDescriptor, ListBoxCollectionDescriptor } from '@soldy/setup'
 
 export const emitsListBox: TEmits = [
 	...useEmits(ListBoxDescriptor()),
-	...useCollectionEmits(ListBoxCollectionDescriptor()),
+	...useEmits(ListBoxCollectionDescriptor()),
 ] as unknown as TEmits
 
 export const propsListBox: TProps = {
 	...(useProps(ListBoxDescriptor()) as TProps),
-	...(useCollectionProps(ListBoxCollectionDescriptor()) as TProps),
+	...(useProps(ListBoxCollectionDescriptor()) as TProps),
 }
 
 export default {

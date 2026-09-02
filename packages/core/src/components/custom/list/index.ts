@@ -1,5 +1,6 @@
 export * from './list-item/types'
 export { default as TListItem } from './list-item/list-item.class'
+export { TListItemCollectionFacade } from './list-item/facade'
 export * from './types'
 export { TList } from './list.class'
 export * from './collection'

@@ -1,32 +1,19 @@
-import { TListExtension, TListItem, type IList } from '@soldy/core'
-import { ListExtensionContribution, ListItemExtensionContribution } from '../../../contributions'
-import {
-	CollectionDescriptor,
-	FactoryExtensionDescriptor,
-	SelectionExtensionDescriptor,
-} from '../collection'
-import { defineExtension, defineCollection } from '../../base'
-
-export const ListExtensionDescriptor = () =>
-	defineExtension({
-		name: 'list',
-		namespace: 'list',
-		ctor: TListExtension,
-		contribution: ListExtensionContribution(),
-		itemContribution: ListItemExtensionContribution(),
-		// owner передаётся через optionsFactory в ListCollectionDescriptor
-	})
+import { defineComponent } from '../../base'
+import { TListCollectionFacade, TListItemCollectionFacade } from '@soldy/core'
+import { ListCollectionContribution, ListCollectionItemContribution } from '../../../contributions'
+import { CollectionDescriptor } from '../collection'
 
 export const ListCollectionDescriptor = () =>
-	defineCollection({
+	defineComponent({
+		ctor: TListCollectionFacade,
+
 		extends: CollectionDescriptor(),
 
-		extensions: [
-			{ ...FactoryExtensionDescriptor(), optionsFactory: () => ({ itemCtor: TListItem }) },
-			SelectionExtensionDescriptor(),
-			{
-				...ListExtensionDescriptor(),
-				optionsFactory: (instance: IList) => ({ owner: instance }),
-			},
-		],
+		contribution: ListCollectionContribution(),
+	})
+
+export const ListCollectionItemDescriptor = () =>
+	defineComponent({
+		ctor: TListItemCollectionFacade,
+		contribution: ListCollectionItemContribution(),
 	})

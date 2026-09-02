@@ -1,21 +1,16 @@
 import { BaseListItem } from '../../list/list-item'
-import {
-	useEmits,
-	useProps,
-	useCollectionItemProps,
-	useCollectionItemEmits,
-} from '../../../adapter'
+import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
-import { ListBoxItemDescriptor, ListBoxCollectionDescriptor } from '@soldy/setup'
+import { ListBoxItemDescriptor, ListBoxCollectionItemDescriptor } from '@soldy/setup'
 
 export const emitsListBoxItem: TEmits = [
 	...useEmits(ListBoxItemDescriptor()),
-	...useCollectionItemEmits(ListBoxCollectionDescriptor()),
+	...useEmits(ListBoxCollectionItemDescriptor()),
 ] as unknown as TEmits
 
 export const propsListBoxItem: TProps = {
 	...(useProps(ListBoxItemDescriptor()) as TProps),
-	...(useCollectionItemProps(ListBoxCollectionDescriptor()) as TProps),
+	...(useProps(ListBoxCollectionItemDescriptor()) as TProps),
 }
 
 export default {

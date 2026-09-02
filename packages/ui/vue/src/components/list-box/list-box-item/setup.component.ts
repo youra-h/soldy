@@ -3,14 +3,11 @@ import {
 	createAdapterContext,
 	TCollectionItemExtension,
 	ListBoxItemDescriptor,
-	ListBoxCollectionDescriptor,
+	ListBoxCollectionItemDescriptor,
 } from '@soldy/setup'
-import type {
-	IListBoxItemProps,
-	IListBoxItem,
-	TListBoxCollectionExtensions,
-} from '@soldy/core'
-import { useVue, useVueCollectionItem, VueElevatorFactory } from '../../../adapter'
+import { TListBoxItemCollectionFacade } from '@soldy/core'
+import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
+import { useVue, VueElevatorFactory } from '../../../adapter'
 import { useSplitAttrs } from '../../../composables'
 import BaseListBoxItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -23,20 +20,28 @@ export default {
 		const adapter = createAdapterContext(ListBoxItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
-		}).use(TCollectionItemExtension, {
-			descriptor: ListBoxCollectionDescriptor(),
+		})
+
+		const itemAdapter = createAdapterContext(
+			ListBoxCollectionItemDescriptor(),
+			{ props },
+			{ bundle: adapter.bundle, defaultExtensions: [] },
+		).use(TCollectionItemExtension, {
+			item: adapter.instance,
 			elevator: VueElevatorFactory,
 		})
 
-		const { context, ...itemRefs } = useVueCollectionItem<
-			IListBoxItem,
-			TListBoxCollectionExtensions
-		>(adapter, props)
+		const itemBinding = useVue<Record<string, any>, TListBoxItemCollectionFacade>(
+			itemAdapter,
+			props,
+			emit,
+		)
+		const ownerBinding = useVue<IListBoxItemProps, IListBoxItem>(adapter, props, emit)
 
 		return {
-			...useVue<IListBoxItemProps, IListBoxItem>(adapter, props, emit),
-			...itemRefs,
-			context,
+			...itemBinding,
+			...ownerBinding,
+			context: itemAdapter.instance.context,
 			...useSplitAttrs(),
 		}
 	},

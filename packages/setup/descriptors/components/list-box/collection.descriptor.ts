@@ -1,35 +1,22 @@
-import { TListBoxExtension, TListBoxItem, type IListBox } from '@soldy/core'
+import { defineComponent } from '../../base'
+import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy/core'
 import {
-	ListBoxExtensionContribution,
-	ListBoxItemExtensionContribution,
+	ListBoxCollectionContribution,
+	ListBoxCollectionItemContribution,
 } from '../../../contributions'
-import {
-	CollectionDescriptor,
-	FactoryExtensionDescriptor,
-	SelectionExtensionDescriptor,
-} from '../collection'
-import { defineExtension, defineCollection } from '../../base'
-
-export const ListBoxExtensionDescriptor = () =>
-	defineExtension({
-		name: 'listBox',
-		namespace: 'list',
-		ctor: TListBoxExtension,
-		contribution: ListBoxExtensionContribution(),
-		itemContribution: ListBoxItemExtensionContribution(),
-		// owner передаётся через optionsFactory в ListBoxCollectionDescriptor
-	})
+import { CollectionDescriptor } from '../collection'
 
 export const ListBoxCollectionDescriptor = () =>
-	defineCollection({
+	defineComponent({
+		ctor: TListBoxCollectionFacade,
+
 		extends: CollectionDescriptor(),
 
-		extensions: [
-			{ ...FactoryExtensionDescriptor(), optionsFactory: () => ({ itemCtor: TListBoxItem }) },
-			SelectionExtensionDescriptor(),
-			{
-				...ListBoxExtensionDescriptor(),
-				optionsFactory: (instance: IListBox) => ({ owner: instance }),
-			},
-		],
+		contribution: ListBoxCollectionContribution(),
+	})
+
+export const ListBoxCollectionItemDescriptor = () =>
+	defineComponent({
+		ctor: TListBoxItemCollectionFacade,
+		contribution: ListBoxCollectionItemContribution(),
 	})

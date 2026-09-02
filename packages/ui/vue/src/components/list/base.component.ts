@@ -1,16 +1,16 @@
 import { BaseControl } from '../control'
-import { useEmits, useProps, useCollectionProps, useCollectionEmits } from '../../adapter'
+import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps } from '../../types/common'
 import { ListDescriptor, ListCollectionDescriptor } from '@soldy/setup'
 
 export const emitsList: TEmits = [
 	...useEmits(ListDescriptor()),
-	...useCollectionEmits(ListCollectionDescriptor()),
+	...useEmits(ListCollectionDescriptor()),
 ] as unknown as TEmits
 
 export const propsList: TProps = {
 	...(useProps(ListDescriptor()) as TProps),
-	...(useCollectionProps(ListCollectionDescriptor()) as TProps),
+	...(useProps(ListCollectionDescriptor()) as TProps),
 }
 
 export default {

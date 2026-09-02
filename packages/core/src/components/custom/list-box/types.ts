@@ -9,13 +9,16 @@ export type TListBoxEvents = TListEvents & {
 	'change:view': (value: TListBoxView) => void
 }
 
-/** Полный набор пропсов ListBox: наследует List (компонентные) + view + коллекция (engine, items, mode). */
-export interface IListBoxProps
-	extends IListComponentProps,
-		IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {
+/** Пропсы самого компонента ListBox (без коллекционной части). */
+export interface IListBoxComponentProps extends IListComponentProps {
 	/** Внешний вид компонента */
 	view?: TListBoxView
 }
+
+/** Полный набор пропсов ListBox: наследует List (компонентные) + view + коллекция (engine, items, mode). */
+export interface IListBoxProps
+	extends IListBoxComponentProps,
+		IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {}
 
 export type TListBoxStates = TListStates
 

@@ -1,21 +1,16 @@
 import { BaseValueControl } from '../../value-control'
-import {
-	useEmits,
-	useProps,
-	useCollectionItemProps,
-	useCollectionItemEmits,
-} from '../../../adapter'
+import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps } from '../../../types/common'
-import { ListItemDescriptor, ListCollectionDescriptor } from '@soldy/setup'
+import { ListItemDescriptor, ListCollectionItemDescriptor } from '@soldy/setup'
 
 export const emitsListItem: TEmits = [
 	...useEmits(ListItemDescriptor()),
-	...useCollectionItemEmits(ListCollectionDescriptor()),
+	...useEmits(ListCollectionItemDescriptor()),
 ] as unknown as TEmits
 
 export const propsListItem: TProps = {
 	...(useProps(ListItemDescriptor()) as TProps),
-	...(useCollectionItemProps(ListCollectionDescriptor()) as TProps),
+	...(useProps(ListCollectionItemDescriptor()) as TProps),
 }
 
 export default {
