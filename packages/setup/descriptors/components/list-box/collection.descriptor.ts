@@ -4,13 +4,13 @@ import {
 	ListBoxCollectionContribution,
 	ListBoxCollectionItemContribution,
 } from '../../../contributions'
-import { CollectionDescriptor } from '../collection'
+import { ListCollectionDescriptor, ListCollectionItemDescriptor } from '../list'
 
 export const ListBoxCollectionDescriptor = () =>
 	defineComponent({
 		ctor: TListBoxCollectionFacade,
 
-		extends: CollectionDescriptor(),
+		extends: ListCollectionDescriptor(),
 
 		contribution: ListBoxCollectionContribution(),
 	})
@@ -18,5 +18,8 @@ export const ListBoxCollectionDescriptor = () =>
 export const ListBoxCollectionItemDescriptor = () =>
 	defineComponent({
 		ctor: TListBoxItemCollectionFacade,
+
+		extends: ListCollectionItemDescriptor(),
+
 		contribution: ListBoxCollectionItemContribution(),
 	})

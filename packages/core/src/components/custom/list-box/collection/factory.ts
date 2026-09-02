@@ -24,6 +24,6 @@ export const ListBoxFactory = (instance: IListBox): TListBoxCollection =>
 			plain: new TPlainExtension<IListBoxItem>(),
 			batch: new TBatchExtension<IListBoxItem>(),
 			selection: new TSelectionExtension<IListBoxItem>(),
-			listBox: new TListBoxExtension({ owner: instance }),
+			list: new TListBoxExtension({ owner: instance }),
 		},
 	})

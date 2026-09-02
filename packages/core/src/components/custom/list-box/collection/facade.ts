@@ -26,6 +26,6 @@ export class TListBoxCollectionFacade extends TListCollectionFacade<
 	}
 
 	get view(): IListBox['view'] {
-		return this.extensions.listBox.view
+		return this.extensions.list.view
 	}
 }

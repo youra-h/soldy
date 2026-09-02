@@ -15,8 +15,11 @@ import type {
 	ISelectionCollectionProps,
 	TCollectionFacadeOptions,
 	IExtension,
+	ISelectionItemExtension,
+	IOrderItemExtension,
 } from '../../../base/collection'
 import { TListExtension } from './extensions'
+import type { IListItemExtension } from './extensions/item/types'
 import type { IList } from '../types'
 import type { IListItem } from '../list-item/types'
 import type { IListItemProps } from '../list-item/types'
@@ -67,4 +70,14 @@ export type TListCollectionFacadeOptions<
 > = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, IList<any, any, any>> & {
 	/** Фабрика движка коллекции (переопределяется в ListBox). */
 	factory?: (owner: IList<any, any, any>) => TCollectionEngine<TItem, TExtensions>
+}
+
+/**
+ * Item-адаптеры коллекции List (selection, order, list).
+ * Используется фасадами для типизированного доступа к adapters.
+ */
+export type TListAdapters<TItem extends IListItem> = {
+	selection: ISelectionItemExtension<TItem>
+	order: IOrderItemExtension<TItem>
+	list: IListItemExtension<TItem>
 }

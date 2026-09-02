@@ -10,7 +10,7 @@ import type { IListBoxItem } from '../list-box-item/types'
 import type { IListBoxItemProps } from '../list-box-item/types'
 
 export type TListBoxCollectionExtensions = TListBaseCollectionExtensions<IListBoxItem> & {
-	listBox: TListBoxExtension<IListBox, IListBoxItem>
+	list: TListBoxExtension<IListBox, IListBoxItem>
 }
 
 export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>

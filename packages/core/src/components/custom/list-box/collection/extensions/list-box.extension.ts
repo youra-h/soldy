@@ -21,7 +21,7 @@ export class TListBoxExtension<
 	extends TListExtension<TOwner, TItem, IListBoxItemExtension<TItem>>
 	implements IListBoxExtension<TItem>
 {
-	readonly name = 'listBox' as const
+	readonly name = 'list' as const
 
 	constructor(options: IListBoxExtensionOptions<TOwner, TItem>) {
 		super(
