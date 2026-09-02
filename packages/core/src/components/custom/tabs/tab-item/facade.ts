@@ -20,10 +20,10 @@ export class TTabItemCollectionFacade extends TCollectionItemComponent<
 		if (!this._context) return
 
 		this.events.relay(this._context.adapters.activation.events, ['change:active'])
+
 		this.events.relay(this._context.adapters.order.events, ['change:order'])
-		this.events.relay(this._context.adapters.tabs.events, [
-			{ from: 'change:closable', as: 'change:tabs_closable' },
-		])
+
+		this.events.relay(this._context.adapters.tabs.events, ['change:closable'])
 	}
 
 	get active(): boolean {

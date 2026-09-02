@@ -1,8 +1,5 @@
 import { TCollectionComponent } from '../../../base/collection'
-import type {
-	TCollectionFacadeOptions,
-	TCollectionFacadeProps,
-} from '../../../base/collection'
+import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../base/collection'
 import { TabsFactory } from './factory'
 import type { TTabsCollection, TTabsCollectionExtensions } from './types'
 import type { ITabItem } from '../tab-item/types'
@@ -37,12 +34,14 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 			'items:removed',
 			'change:trackBy',
 		])
+
 		this.events.relay(this.extensions.activation.events, [
 			'change:activation',
 			'item:activated',
 			'item:deactivated',
 		])
-		this.events.relay(this.extensions.tabs.events, ['item:close'])
+
+		this.events.relay(this.extensions.tabs.events, ['item:close', 'change:closable'])
 	}
 
 	get items(): ReadonlyArray<ITabItem> {
