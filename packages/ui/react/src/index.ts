@@ -1,3 +1,4 @@
 // @soldy/ui-react
-export * from './components/component'
-export * from './components/component-view'
+export * from './types'
+export * from './adapter'
+export * from './components'

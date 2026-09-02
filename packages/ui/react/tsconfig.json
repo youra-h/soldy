@@ -7,6 +7,8 @@
     "strict": true,
     "noEmit": true,
     "paths": {
+      "@soldy/accessor": ["../../accessor"],
+      "@soldy/accessor/*": ["../../accessor/*"],
       "@soldy/core": ["../../core/src"],
       "@soldy/core/*": ["../../core/src/*"],
       "@soldy/foundation": ["../../foundation/src"],
@@ -14,7 +16,9 @@
       "@soldy/icons": ["../../icons/src"],
       "@soldy/icons/*": ["../../icons/src/*"],
       "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/plugins/*": ["../../plugins/src/*"]
+      "@soldy/plugins/*": ["../../plugins/src/*"],
+      "@soldy/setup": ["../../setup"],
+      "@soldy/setup/*": ["../../setup/*"]
     }
   },
   "include": ["env.d.ts", "src/**/*", "demo/**/*"]

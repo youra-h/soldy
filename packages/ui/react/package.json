@@ -13,10 +13,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/foundation": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
+    "@soldy/setup": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
