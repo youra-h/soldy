@@ -16,26 +16,3 @@ defineProps<Props>()
 		<div v-if="info" class="panel-demo__info">{{ info }}</div>
 	</div>
 </template>
-
-<style lang="scss" scoped>
-.panel-demo {
-	$this: &;
-
-	@apply p-6 bg-white rounded-lg shadow-sm;
-	@apply w-full;
-
-	&__title {
-		@apply text-base font-semibold mb-4;
-	}
-
-	&__content {
-		@apply flex items-center justify-center px-4 py-2;
-		@apply min-h-[100px];
-		@apply border-2 border-dashed border-gray-200 rounded;
-	}
-
-	&__info {
-		@apply mt-4 text-sm text-gray-500 text-center;
-	}
-}
-</style>

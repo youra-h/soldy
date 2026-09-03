@@ -3,7 +3,7 @@ import EventLog from './common/EventLog'
 import type { EventLogEntry } from './common/EventLog'
 import ButtonPlayground from './playgrounds/Button'
 import ComponentViewPlayground from './playgrounds/ComponentView'
-import './demo.scss'
+import './demo.css'
 
 type PlaygroundKey = 'component-view' | 'button'
 

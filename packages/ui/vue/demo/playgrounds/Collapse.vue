@@ -117,21 +117,3 @@ const handleHide = () => instanceDemoRef.value?.hide()
 		</template>
 	</PlaygroundLayout>
 </template>
-
-<style lang="scss" scoped>
-.collapse-properties {
-	@apply flex flex-col gap-4;
-
-	&__section {
-		@apply flex flex-col gap-3;
-	}
-
-	&__section-title {
-		@apply text-sm font-semibold text-gray-500 uppercase tracking-wide;
-	}
-
-	&__divider {
-		@apply border-t border-gray-200;
-	}
-}
-</style>

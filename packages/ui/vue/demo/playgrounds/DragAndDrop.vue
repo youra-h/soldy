@@ -41,11 +41,3 @@ const componentProps = ref<{
 		</template>
 	</PlaygroundLayout>
 </template>
-
-<style lang="scss" scoped>
-.drag-playground {
-	&__stub {
-		@apply text-sm text-gray-400;
-	}
-}
-</style>

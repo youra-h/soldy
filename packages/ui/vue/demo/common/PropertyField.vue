@@ -12,20 +12,3 @@ defineProps<{
 		</div>
 	</div>
 </template>
-
-<style lang="scss">
-.property-field {
-	@apply flex items-center;
-	@apply gap-2;
-
-	&__label {
-		@apply font-medium;
-		@apply text-sm;
-		@apply w-30;
-	}
-
-	&__control {
-		@apply flex-1;
-	}
-}
-</style>

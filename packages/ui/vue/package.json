@@ -21,12 +21,7 @@
     "vue": "^3.5.32"
   },
   "devDependencies": {
-    "@soldy/theme-oren": "*",
-    "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^26.1.1",
-    "postcss": "^8.5.9",
-    "sass": "^1.99.0",
-    "tailwindcss": "^4.2.2",
     "vite-plugin-vue-devtools": "^8.1.5"
   }
 }

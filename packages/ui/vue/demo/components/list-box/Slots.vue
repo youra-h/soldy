@@ -150,21 +150,3 @@ function onEngineCreate(engine: TListBoxCollection) {
         </div>
     </div>
 </template>
-
-<style lang="scss" scoped>
-.list-box-slots-demo {
-    @apply flex flex-col gap-8;
-
-    &__section {
-        @apply flex flex-col gap-3;
-    }
-
-    &__subtitle {
-        @apply text-sm font-semibold text-gray-600 uppercase tracking-wide;
-    }
-
-    &__badge {
-        @apply text-lg;
-    }
-}
-</style>

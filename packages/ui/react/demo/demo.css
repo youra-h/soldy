@@ -1,0 +1,460 @@
+/* Общие стили демо (plain CSS, без tailwind/scss) */
+
+/* Минимальный reset */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: system-ui, -apple-system, sans-serif;
+}
+
+button {
+	font-family: inherit;
+}
+
+/* ─── App ──────────────────────────────────────────────────── */
+.pg-app {
+	min-height: 100vh;
+	background-color: #f9fafb;
+}
+
+.pg-app__nav {
+	display: flex;
+	gap: 0.5rem;
+	background-color: #fff;
+	border-bottom: 1px solid #e5e7eb;
+	padding: 0.5rem 1rem;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+.pg-app__nav-btn {
+	padding: 0.5rem 1rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #4b5563;
+	border: none;
+	background: none;
+	border-radius: 0.375rem;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.pg-app__nav-btn:hover {
+	background-color: #f3f4f6;
+}
+
+.pg-app__nav-btn--active {
+	background-color: #dbeafe;
+	color: #1d4ed8;
+}
+
+.pg-app__nav-btn--active:hover {
+	background-color: #bfdbfe;
+}
+
+.pg-app__layout {
+	display: flex;
+	min-height: calc(100vh - 49px);
+}
+
+.pg-app__sidebar {
+	width: 16rem;
+	background-color: #fff;
+	border-right: 1px solid #e5e7eb;
+	padding: 1rem;
+	flex-shrink: 0;
+}
+
+.pg-app__sidebar-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #374151;
+	margin-bottom: 0.75rem;
+	padding: 0 0.5rem;
+}
+
+.pg-app__menu {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.pg-app__menu-item {
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	color: #374151;
+	border: none;
+	background: none;
+	border-radius: 0.375rem;
+	text-align: left;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.pg-app__menu-item:hover {
+	background-color: #f3f4f6;
+}
+
+.pg-app__menu-item--active {
+	background-color: #eff6ff;
+	color: #1d4ed8;
+	font-weight: 500;
+}
+
+.pg-app__main {
+	flex: 1 1 0%;
+	overflow: auto;
+}
+
+.pg-app__content {
+	min-height: 100%;
+}
+
+.pg-app__container,
+.pg-app__logs {
+	width: 100%;
+	max-width: 80rem;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.pg-app__logs {
+	padding: 1rem;
+}
+
+.pg-app__error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+}
+
+.pg-app__error-content {
+	text-align: center;
+}
+
+.pg-app__error-title {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: #dc2626;
+	margin-bottom: 0.5rem;
+}
+
+.pg-app__error-text {
+	color: #4b5563;
+}
+
+/* ─── PlaygroundLayout ─────────────────────────────────────── */
+.pg-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	padding: 1rem;
+}
+
+.pg-layout__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.pg-layout__title {
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+
+.pg-layout__section {
+	border-bottom: 1px solid #d1d5db;
+	padding: 1rem;
+}
+
+.pg-layout__section--properties {
+	background-color: #f9fafb;
+}
+
+.pg-layout__section-title {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin-bottom: 0.75rem;
+}
+
+.pg-layout__demo-grid {
+	display: flex;
+	gap: 1rem;
+}
+
+.pg-layout__demo-column {
+	border: 1px solid #d1d5db;
+	border-radius: 0.5rem;
+	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0%;
+	min-width: 0;
+}
+
+.pg-layout__demo-column:nth-child(3) {
+	overflow-y: auto;
+}
+
+.pg-layout__demo-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+	margin-bottom: 0.75rem;
+}
+
+.pg-layout__demo-content {
+	flex: 1 1 0%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ─── EventLog ─────────────────────────────────────────────── */
+.event-log {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: auto;
+}
+
+.event-log__empty {
+	color: #6b7280;
+	font-style: italic;
+	text-align: center;
+	padding: 1rem 0;
+}
+
+.event-log__content {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.event-log__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.75rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid #d1d5db;
+}
+
+.event-log__count {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #374151;
+}
+
+.event-log__clear-btn {
+	padding: 0.25rem 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	background-color: #ef4444;
+	color: #fff;
+	border: none;
+	border-radius: 0.25rem;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.event-log__clear-btn:hover {
+	background-color: #dc2626;
+}
+
+.event-log__list {
+	overflow: auto;
+	flex: 1 1 0%;
+}
+
+.event-log__entry {
+	font-family: monospace;
+	font-size: 0.875rem;
+	border-bottom: 1px solid #e5e7eb;
+	padding-bottom: 0.25rem;
+}
+
+.event-log__entry + .event-log__entry {
+	margin-top: 0.25rem;
+}
+
+.event-log__timestamp {
+	color: #6b7280;
+}
+
+.event-log__separator {
+	margin: 0 0.5rem;
+}
+
+.event-log__source {
+	font-weight: 600;
+}
+
+.event-log__source--props {
+	color: #2563eb;
+}
+
+.event-log__source--instance {
+	color: #16a34a;
+}
+
+.event-log__source--core {
+	color: #9333ea;
+}
+
+.event-log__source--vue,
+.event-log__source--react {
+	color: #ea580c;
+}
+
+.event-log__name {
+	color: #1f2937;
+}
+
+.event-log__payload {
+	color: #4b5563;
+	margin-left: 0.5rem;
+}
+
+/* ─── Properties ───────────────────────────────────────────── */
+.properties-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+}
+
+.properties-panel__input,
+.properties-panel__select {
+	border: 1px solid #d1d5db;
+	border-radius: 0.25rem;
+	padding: 0.25rem 0.5rem;
+	width: 15rem;
+	font-size: 0.875rem;
+	background-color: #fff;
+	color: #111827;
+}
+
+.properties-panel__checkbox {
+	width: 1.25rem;
+	height: 1.25rem;
+	cursor: pointer;
+}
+
+.properties-panel__actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.properties-panel__button {
+	border: none;
+	border-radius: 0.25rem;
+	padding: 0.25rem 0.75rem;
+	background-color: #3b82f6;
+	color: #fff;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.properties-panel__button:hover {
+	background-color: #2563eb;
+}
+
+/* ─── PropertyField ────────────────────────────────────────── */
+.property-field {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.property-field__label {
+	font-weight: 500;
+	font-size: 0.875rem;
+	width: 7.5rem;
+}
+
+.property-field__control {
+	flex: 1 1 0%;
+}
+
+/* ─── PanelDemo ────────────────────────────────────────────── */
+.panel-demo {
+	padding: 1.5rem;
+	background-color: #fff;
+	border-radius: 0.5rem;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	width: 100%;
+}
+
+.panel-demo__title {
+	font-size: 1rem;
+	font-weight: 600;
+	margin-bottom: 1rem;
+}
+
+.panel-demo__content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem 1rem;
+	min-height: 100px;
+	border: 2px dashed #e5e7eb;
+	border-radius: 0.25rem;
+}
+
+.panel-demo__info {
+	margin-top: 1rem;
+	font-size: 0.875rem;
+	color: #6b7280;
+	text-align: center;
+}
+
+/* ─── Slots demo ───────────────────────────────────────────── */
+.demo-container {
+	padding: 1.5rem;
+	background-color: #fff;
+	border-radius: 0.5rem;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.demo-title {
+	font-size: 1rem;
+	font-weight: 600;
+	margin-bottom: 1rem;
+}
+
+.demo-grid {
+	display: grid;
+	gap: 1rem;
+}
+
+.demo-section {
+	border: 1px solid #e5e7eb;
+	border-radius: 0.25rem;
+	padding: 1rem;
+}
+
+.demo-section-title {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: #374151;
+	margin-bottom: 0.75rem;
+}
+
+.demo-section-content {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.demo-info {
+	margin-top: 1rem;
+	font-size: 0.875rem;
+	color: #6b7280;
+	text-align: center;
+}

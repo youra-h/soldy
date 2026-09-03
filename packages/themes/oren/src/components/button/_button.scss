@@ -1,4 +1,4 @@
-@use '../mixins/button' as mixines;
+@use './mixins' as mixines;
 
 .s-button {
 	$this: &;

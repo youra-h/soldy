@@ -143,33 +143,3 @@ const icon3 = useIconImport('close');
         </div>
     </div>
 </template>
-
-<style lang="scss" scoped>
-.demo-container {
-    @apply p-6 bg-white rounded-lg shadow-sm;
-}
-
-.demo-title {
-    @apply text-base font-semibold mb-4;
-}
-
-.demo-grid {
-    @apply grid gap-4;
-}
-
-.demo-section {
-    @apply border border-gray-200 rounded p-4;
-
-    &-title {
-        @apply text-sm font-medium text-gray-700 mb-3;
-    }
-
-    &-content {
-        @apply flex flex-wrap gap-3;
-    }
-}
-
-.demo-info {
-    @apply mt-4 text-sm text-gray-500 text-center;
-}
-</style>

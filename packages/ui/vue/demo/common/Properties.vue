@@ -129,34 +129,3 @@ const hasVisibilityActions = computed(() => {
 		</PropertyField>
 	</div>
 </template>
-
-<style lang="scss">
-.properties-panel {
-	@apply flex flex-col;
-	@apply gap-1.5;
-
-	&__input,
-	&__select {
-		@apply border rounded;
-		@apply px-2 py-1;
-		@apply w-60;
-	}
-
-	&__checkbox {
-		@apply w-5 h-5;
-		@apply cursor-pointer;
-	}
-
-	&__actions {
-		@apply flex gap-2;
-	}
-
-	&__button {
-		@apply border rounded;
-		@apply px-3 py-1;
-		@apply bg-blue-500 text-white;
-		@apply hover:bg-blue-600;
-		@apply transition-colors;
-	}
-}
-</style>

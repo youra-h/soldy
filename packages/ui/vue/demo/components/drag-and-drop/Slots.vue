@@ -314,22 +314,3 @@ const listBoxItems = ref([
         </section>
     </div>
 </template>
-
-<style lang="scss" scoped>
-.drag-slots-demo {
-    @apply w-full;
-    @apply flex flex-col gap-6;
-
-    &__hint {
-        @apply text-xs text-gray-500;
-    }
-
-    &__section {
-        @apply flex flex-col gap-4;
-    }
-
-    &__title {
-        @apply text-sm font-medium text-gray-600;
-    }
-}
-</style>

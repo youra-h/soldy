@@ -86,10 +86,3 @@ const handleHide = () => {
 		</template>
 	</PlaygroundLayout>
 </template>
-
-<style lang="scss" scoped>
-.button-properties {
-	@apply flex flex-col;
-	@apply gap-4;
-}
-</style>
