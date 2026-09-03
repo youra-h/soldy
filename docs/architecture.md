@@ -300,17 +300,17 @@ BaseComponent (Entity props)
 - `adapter/common/` — `createInspector` (TDescriptorInspector + `ReactNaming`), `ReactNaming`, `resolveDefaultExtensions` (`[TPluginsBindingExtension]` only when descriptor has `TElementPlugin`, else `[]`), `naming.types.ts` (type-level mirror of `ReactNaming` for auto-derived event props)
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - `naming.types.ts` = PURE React naming transformers (`ReactEventName`, `ReactEventProps<T>`) mirroring `ReactNaming.event`. `plugins.types.ts` УДАЛЁН (per-plugin `TElementEventProps` и др. больше не нужны — всё покрывает `DescriptorAllEvents`). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `ReactEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
-- `adapter/runtime/` — `useReact(adapter, props)` (main hook — takes a READY adapter, аналог `useVue`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
+- `adapter/runtime/` — `useAdapter(adapter, props)` (main hook — takes a READY adapter, аналог `useVue`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
 - `adapter/elevator/` — `TReactElevator` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook, calls `createAdapterContext` directly) + view (`*.tsx`)
   - headless layers (`component`/`stylable`/`control`/`textable`): `base.component.ts` + `setup.component.ts` (no `.tsx` view, like Vue base layers)
   - concrete layers (`component-view`, `button`): `base.component.ts` + `setup.component.ts` + `.tsx` view
 
 **Key design decisions (React-specific):**
-- `useSetupXxx(props)` hook creates `IAdapterContext` once via lazy `useRef` (StrictMode-safe) and passes it to `useReact` — `createAdapterContext` is called DIRECTLY in setup hooks (not hidden in `useReact`), so users can pass custom `defaultExtensions`
-- `useReact` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`), `forwardProps` = DOM attrs not consumed by the component (`ctrl`/`plugins`/`children` + prop/event names are consumed)
+- `useSetupXxx(props)` hook creates `IAdapterContext` once via lazy `useRef` (StrictMode-safe) and passes it to `useAdapter` — `createAdapterContext` is called DIRECTLY in setup hooks (not hidden in `useAdapter`), so users can pass custom `defaultExtensions`
+- `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`), `forwardProps` = DOM attrs not consumed by the component (`ctrl`/`plugins`/`children` + prop/event names are consumed)
 - DOM binding goes directly through `adapter.bundle.get(TElementPlugin).element` (not `TPluginsBindingExtension`) so it survives `adapter.destroy()` on StrictMode remount
-- `useSyncProps` returns `{ state, bindOutput, bindInput, cleanup }` (mirrors Vue): `bindOutput()` = Core → React (subscribes to triggers, returns unsubscribe), `bindInput(props)` = React → Core (syncs props with `getValue === value` guard). `useReact` wires them via `useEffect(() => bindOutput(), [adapter, inspector])` + `useEffect(() => bindInput(props), [props, adapter, inspector])`
+- `useSyncProps` returns `{ state, bindOutput, bindInput, cleanup }` (mirrors Vue): `bindOutput()` = Core → React (subscribes to triggers, returns unsubscribe), `bindInput(props)` = React → Core (syncs props with `getValue === value` guard). `useAdapter` wires them via `useEffect(() => bindOutput(), [adapter, inspector])` + `useEffect(() => bindInput(props), [props, adapter, inspector])`
 - `useSyncEvents`: `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); reads latest `props` via `propsRef`
 - React naming quirk (same as Vue): protected `present` prop has triggers `change:rendered`+`change:visible`, so `onChangeVisible` fires TWICE per visible change
 
@@ -461,7 +461,7 @@ Framework-agnostic dependency injection:
 ## Missing/Incomplete Areas
 
 ### React
-- Hooks (`useReact`, `useSyncProps`, `useSyncEvents`), elevator (`TReactElevator`), DOM/plugin binding — done
+- Hooks (`useAdapter`, `useSyncProps`, `useSyncEvents`), elevator (`TReactElevator`), DOM/plugin binding — done
 - [ ] All 20+ component implementations (only `component-view`, `button` done)
 - [ ] Collection support (owner/item registration over the elevator)
 
@@ -493,7 +493,7 @@ Framework-agnostic dependency injection:
 | @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin |
 | @soldy/plugins | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin |
 | @soldy/ui-vue | Vue components (Button, CheckBox, etc.), useVue, useProps, useEmits |
-| @soldy/ui-react | Button, ComponentView, useReact, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
+| @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
 | @soldy/ui-angular | Empty (export {}) |
 | @soldy/ui-svelte | Empty |
 | @soldy/ui-solid | Empty |

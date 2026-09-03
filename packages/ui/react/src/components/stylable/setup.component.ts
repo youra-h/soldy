@@ -6,7 +6,7 @@ import { useRef } from 'react'
 import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { IStylable, IStylableProps } from '@soldy/core'
-import { useReact } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import { resolveDefaultExtensions } from '../../adapter'
 import type { StylableProps } from './base.component'
 
@@ -23,5 +23,5 @@ export function useSetupStylable(props: StylableProps) {
 		)
 	}
 
-	return useReact<IStylableProps, IStylable>(adapterRef.current, props)
+	return useAdapter<IStylableProps, IStylable>(adapterRef.current, props)
 }

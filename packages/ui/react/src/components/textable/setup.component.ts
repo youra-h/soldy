@@ -6,7 +6,7 @@ import { useRef } from 'react'
 import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { ITextable, ITextableProps } from '@soldy/core'
-import { useReact } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import { resolveDefaultExtensions } from '../../adapter'
 import type { TextableProps } from './base.component'
 
@@ -23,5 +23,5 @@ export function useSetupTextable(props: TextableProps) {
 		)
 	}
 
-	return useReact<ITextableProps, ITextable>(adapterRef.current, props)
+	return useAdapter<ITextableProps, ITextable>(adapterRef.current, props)
 }

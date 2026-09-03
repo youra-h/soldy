@@ -1,5 +1,5 @@
-export { useReact } from './useReact'
+export { useAdapter } from './useAdapter'
 export { useSyncProps } from './useSyncProps'
 export { useSyncEvents } from './useSyncEvents'
-export type { TReactBinding } from './useReact'
+export type { TReactBinding } from './useAdapter'
 export type { ISyncOptions } from './useSyncProps'

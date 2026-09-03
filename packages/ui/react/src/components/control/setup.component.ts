@@ -2,14 +2,14 @@
  * useSetupControl — setup-слой Control (аналог setup.component.ts во Vue).
  *
  * Создаёт adapter-context через createAdapterContext(ControlDescriptor(), ...)
- * и связывает его с React Runtime через useReact.
+ * и связывает его с React Runtime через useAdapter.
  */
 
 import { useRef } from 'react'
 import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { IControl, IControlProps } from '@soldy/core'
-import { useReact } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import { resolveDefaultExtensions } from '../../adapter'
 import type { ControlProps } from './base.component'
 
@@ -27,5 +27,5 @@ export function useSetupControl(props: ControlProps) {
 		)
 	}
 
-	return useReact<IControlProps, IControl>(adapterRef.current, props)
+	return useAdapter<IControlProps, IControl>(adapterRef.current, props)
 }

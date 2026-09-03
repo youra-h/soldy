@@ -6,7 +6,7 @@ import { useRef } from 'react'
 import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
-import { useReact } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import { resolveDefaultExtensions } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
@@ -23,5 +23,5 @@ export function useSetupComponentView(props: ComponentViewProps) {
 		)
 	}
 
-	return useReact<IComponentViewProps, IComponentView>(adapterRef.current, props)
+	return useAdapter<IComponentViewProps, IComponentView>(adapterRef.current, props)
 }

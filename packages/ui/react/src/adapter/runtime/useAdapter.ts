@@ -1,5 +1,5 @@
 /**
- * useReact — единственный React-хук на весь проект (аналог useVue из Vue-пакета).
+ * useAdapter — единственный React-хук на весь проект (аналог useVue из Vue-пакета).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
  * createAdapterContext) и связывает его с React:
@@ -60,7 +60,7 @@ function computeForwardProps(
 	return rest
 }
 
-export function useReact<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
+export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
 	adapter: IAdapterContext,
 	props: TProps,
 ): TReactBinding<TInstance> {
