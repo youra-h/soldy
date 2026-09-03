@@ -15,7 +15,6 @@ export const propsListBox: TProps = {
 
 export default {
 	name: 'BaseListBox',
-	extends: BaseControl,
 	emits: emitsListBox,
 	props: propsListBox,
 }

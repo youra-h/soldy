@@ -9,7 +9,6 @@ export const propsValueControl: TProps = useProps(ValueControlDescriptor()) as T
 
 export default {
 	name: 'BaseValueControl',
-	extends: BaseControl,
 	emits: emitsValueControl,
 	props: propsValueControl,
 }

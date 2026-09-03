@@ -9,7 +9,6 @@ export const propsComponentView: TProps = useProps(ComponentViewDescriptor()) as
 
 export default {
 	name: 'BaseComponentView',
-	extends: BaseComponent,
 	emits: emitsComponentView,
 	props: propsComponentView,
 }

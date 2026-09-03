@@ -9,7 +9,6 @@ export const propsInteractive: TProps = useProps(InteractiveDescriptor()) as TPr
 
 export default {
 	name: 'BaseInteractive',
-	extends: ComponentView,
 	emits: emitsInteractive,
 	props: propsInteractive,
 }

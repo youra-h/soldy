@@ -9,7 +9,6 @@ export const propsSpinner: TProps = useProps(SpinnerDescriptor()) as TProps
 
 export default {
 	name: 'BaseSpinner',
-	extends: BaseStylable,
 	emits: emitsSpinner,
 	props: propsSpinner,
 }

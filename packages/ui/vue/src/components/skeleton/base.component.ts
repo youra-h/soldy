@@ -9,7 +9,6 @@ export const propsSkeleton: TProps = useProps(SkeletonDescriptor()) as TProps
 
 export default {
 	name: 'BaseSkeleton',
-	extends: BaseStylable,
 	emits: emitsSkeleton,
 	props: propsSkeleton,
 }

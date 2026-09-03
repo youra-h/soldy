@@ -15,7 +15,6 @@ export const propsTabItem: TProps = {
 
 export default {
 	name: 'BaseTabItem',
-	extends: BaseValueControl,
 	emits: emitsTabItem,
 	props: propsTabItem,
 }

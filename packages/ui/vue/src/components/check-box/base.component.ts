@@ -10,7 +10,6 @@ export const propsCheckBox: TProps = useProps(CheckBoxDescriptor()) as TProps
 
 export default {
 	name: 'BaseCheckBox',
-	extends: BaseInputControl,
 	components: { Icon },
 	emits: emitsCheckBox,
 	props: propsCheckBox,

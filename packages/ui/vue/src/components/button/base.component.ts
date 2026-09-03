@@ -9,7 +9,6 @@ export const propsButton: TProps = useProps(ButtonDescriptor()) as TProps
 
 export default {
 	name: 'BaseButton',
-	extends: BaseTextable,
 	emits: emitsButton,
 	props: propsButton,
 }

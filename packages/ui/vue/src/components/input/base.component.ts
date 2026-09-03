@@ -9,7 +9,6 @@ export const propsInput: TProps = useProps(InputDescriptor()) as TProps
 
 export default {
 	name: 'BaseInput',
-	extends: BaseInputControl,
 	emits: emitsInput,
 	props: propsInput,
 }

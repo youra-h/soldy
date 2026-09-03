@@ -9,7 +9,6 @@ export const propsDragAndDrop: TProps = useProps(DragAndDropDescriptor()) as TPr
 
 export default {
 	name: 'BaseDragAndDrop',
-	extends: BaseComponent,
 	emits: emitsDragAndDrop,
 	props: propsDragAndDrop,
 }

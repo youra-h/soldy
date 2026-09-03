@@ -9,7 +9,6 @@ export const propsControl: TProps = useProps(ControlDescriptor()) as TProps
 
 export default {
 	name: 'BaseControl',
-	extends: BaseStylable,
 	emits: emitsControl,
 	props: propsControl,
 }

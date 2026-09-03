@@ -9,7 +9,6 @@ export const propsStylable: TProps = useProps(StylableDescriptor()) as TProps
 
 export default {
 	name: 'BaseStylable',
-	extends: BaseComponentView,
 	emits: emitsStylable,
 	props: propsStylable,
 }

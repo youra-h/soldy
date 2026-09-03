@@ -9,7 +9,6 @@ export const propsIcon: TProps = useProps(IconDescriptor()) as TProps
 
 export default {
 	name: 'BaseIcon',
-	extends: ComponentView,
 	emits: emitsIcon,
 	props: propsIcon,
 }

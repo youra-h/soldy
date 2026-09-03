@@ -15,7 +15,6 @@ export const propsTabs: TProps = {
 
 export default {
 	name: 'BaseTabs',
-	extends: BaseControl,
 	emits: emitsTabs,
 	props: propsTabs,
 }

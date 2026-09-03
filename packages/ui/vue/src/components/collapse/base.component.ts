@@ -15,7 +15,6 @@ export const propsCollapse: TProps = {
 
 export default {
 	name: 'BaseCollapse',
-	extends: BaseControl,
 	emits: emitsCollapse,
 	props: propsCollapse,
 }

@@ -9,7 +9,6 @@ export const propsFrame: TProps = useProps(FrameDescriptor()) as TProps
 
 export default {
 	name: 'BaseFrame',
-	extends: BaseComponent,
 	emits: emitsFrame,
 	props: propsFrame,
 }

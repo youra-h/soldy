@@ -10,7 +10,6 @@ export const propsSwitch: TProps = useProps(SwitchDescriptor()) as TProps
 
 export default {
 	name: 'BaseSwitch',
-	extends: BaseInputControl,
 	components: { Spinner },
 	emits: emitsSwitch,
 	props: propsSwitch,
