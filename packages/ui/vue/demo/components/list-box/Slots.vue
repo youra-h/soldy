@@ -1,152 +1,154 @@
 <script setup lang="ts">
-import { TListBox } from '@soldy/core';
-import type { TListBoxCollection } from '@soldy/core';
-import { ListBox, ListBoxItem } from '@soldy/ui-vue';
-import type { TComponentSize, TComponentVariant } from '@soldy/core';
+import { TListBox } from '@soldy/core'
+import type { TListBoxCollection } from '@soldy/core'
+import { ListBox, ListBoxItem } from '@soldy/ui-vue'
+import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
-    size?: TComponentSize;
-    variant?: TComponentVariant;
-};
+	size?: TComponentSize
+	variant?: TComponentVariant
+}
 
-defineProps<Props>();
+defineProps<Props>()
 
-const APPEARANCES = ['plain', 'outlined', 'filled'] as const;
+const APPEARANCES = ['plain', 'outlined', 'filled'] as const
 
 // Instance с предустановленными элементами для #item slot
-const fruitInstance = new TListBox();
+const fruitInstance = new TListBox()
 
 function onEngineCreate(engine: TListBoxCollection) {
-    const { plain, selection } = engine.extensions;
-    selection.mode = 'multiple';
+	const { plain, selection } = engine.extensions
+	selection.mode = 'multiple'
 
-    plain.push({ text: 'Apple', value: 'apple' });
-    plain.push({ text: 'Banana', value: 'banana' });
-    const cherry = plain.push({ text: 'Cherry', value: 'cherry' });
+	plain.push({ text: 'Apple', value: 'apple' })
+	plain.push({ text: 'Banana', value: 'banana' })
+	const cherry = plain.push({ text: 'Cherry', value: 'cherry' })
 
-    selection.select(cherry);
+	selection.select(cherry)
 }
 </script>
 
 <template>
-    <div class="list-box-slots-demo">
-        <!-- Views -->
-        <div
-            v-for="view in APPEARANCES"
-            :key="view"
-            class="list-box-slots-demo__section"
-        >
-            <h4 class="list-box-slots-demo__subtitle">{{ view }}</h4>
+	<div class="list-box-slots-demo">
+		<!-- Views -->
+		<div v-for="view in APPEARANCES" :key="view" class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">{{ view }}</h4>
 
-            <ListBox :view="view" :size="size" :variant="variant" mode="single">
-                <ListBoxItem text="Item 1" value="i1" :selected="true" />
-                <ListBoxItem text="Item 2" value="i2" />
-                <ListBoxItem text="Item 3" value="i3" />
-            </ListBox>
-        </div>
+			<ListBox :view="view" :size="size" :variant="variant" mode="single">
+				<ListBoxItem text="Item 1" value="i1" :selected="true" />
+				<ListBoxItem text="Item 2" value="i2" />
+				<ListBoxItem text="Item 3" value="i3" />
+			</ListBox>
+		</div>
 
-        <!-- Single / Multiple mode -->
-        <div class="list-box-slots-demo__section">
-            <h4 class="list-box-slots-demo__subtitle">mode: multiple</h4>
-            <ListBox
-                view="outlined"
-                :size="size"
-                :variant="variant"
-                mode="multiple"
-            >
-                <ListBoxItem
-                    text="Multiple — several selected"
-                    value="i1"
-                    :selected="true"
-                />
-                <ListBoxItem text="Item 2" value="i2" :selected="true" />
-                <ListBoxItem text="Item 3" value="i3" />
-            </ListBox>
-        </div>
+		<!-- Single / Multiple mode -->
+		<div class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">mode: multiple</h4>
+			<ListBox view="outlined" :size="size" :variant="variant" mode="multiple">
+				<ListBoxItem text="Multiple — several selected" value="i1" :selected="true" />
+				<ListBoxItem text="Item 2" value="i2" :selected="true" />
+				<ListBoxItem text="Item 3" value="i3" />
+			</ListBox>
+		</div>
 
-        <!-- #item slot — кастомизация через scoped slot -->
-        <div class="list-box-slots-demo__section">
-            <h4 class="list-box-slots-demo__subtitle">Custom #item slot</h4>
-            <ListBox
-                :ctrl="fruitInstance"
-                @engine:create="onEngineCreate"
-                view="outlined"
-                :size="size"
-                :variant="variant"
-                mode="multiple"
-            >
-                <template #item="{ item }">
-                    <div class="flex items-center gap-2">
-                        <span>{{ item.text }}</span>
-                    </div>
-                </template>
-            </ListBox>
-        </div>
+		<!-- #item slot — кастомизация через scoped slot -->
+		<div class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">Custom #item slot</h4>
+			<ListBox
+				:ctrl="fruitInstance"
+				@engine:create="onEngineCreate"
+				view="outlined"
+				:size="size"
+				:variant="variant"
+				mode="multiple"
+			>
+				<template #item="{ item }">
+					<div class="flex items-center gap-2">
+						<span>{{ item.text }}</span>
+					</div>
+				</template>
+			</ListBox>
+		</div>
 
-        <!-- Custom leading/trailing slots -->
-        <div class="list-box-slots-demo__section">
-            <h4 class="list-box-slots-demo__subtitle">
-                Custom leading/trailing slots
-            </h4>
-            <ListBox
-                view="outlined"
-                :size="size"
-                :variant="variant"
-                mode="multiple"
-            >
-                <ListBoxItem text="With icon leading" value="i1">
-                    <template #leading>
-                        <span class="list-box-slots-demo__badge">⭐</span>
-                    </template>
-                </ListBoxItem>
-                <ListBoxItem text="With icon trailing" value="i2">
-                    <template #trailing>
-                        <span class="list-box-slots-demo__badge">3</span>
-                    </template>
-                </ListBoxItem>
-            </ListBox>
-        </div>
+		<!-- Custom leading/trailing slots -->
+		<div class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">Custom leading/trailing slots</h4>
+			<ListBox view="outlined" :size="size" :variant="variant" mode="multiple">
+				<ListBoxItem text="With icon leading" value="i1">
+					<template #leading>
+						<span class="list-box-slots-demo__badge">⭐</span>
+					</template>
+				</ListBoxItem>
+				<ListBoxItem text="With icon trailing" value="i2">
+					<template #trailing>
+						<span class="list-box-slots-demo__badge">3</span>
+					</template>
+				</ListBoxItem>
+			</ListBox>
+		</div>
 
-        <!-- Per-item slots via ListBox: item:value:leading / item:value:trailing / item:value -->
-        <div class="list-box-slots-demo__section">
-            <h4 class="list-box-slots-demo__subtitle">
-                Per-item slots via ListBox
-            </h4>
-            <ListBox :ctrl="fruitInstance" @engine:create="onEngineCreate">
-                <template #item:apple:leading>
-                    <span class="list-box-slots-demo__badge">🍎</span>
-                </template>
-                <template #item:banana:trailing>
-                    <span class="list-box-slots-demo__badge">🍌</span>
-                </template>
-                <template #item:cherry="{ item }">
-                    <span class="font-bold">{{ item.text }}</span>
-                </template>
-            </ListBox>
-        </div>
+		<!-- Per-item slots via ListBox: item:value:leading / item:value:trailing / item:value -->
+		<div class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">Per-item slots via ListBox</h4>
+			<ListBox :ctrl="fruitInstance" @engine:create="onEngineCreate">
+				<template #item:apple:leading>
+					<span class="list-box-slots-demo__badge">🍎</span>
+				</template>
+				<template #item:banana:trailing>
+					<span class="list-box-slots-demo__badge">🍌</span>
+				</template>
+				<template #item:cherry="{ item }">
+					<span class="font-bold">{{ item.text }}</span>
+				</template>
+			</ListBox>
+		</div>
 
-        <!-- #option slot — catch-all template для всех items -->
-        <div class="list-box-slots-demo__section">
-            <h4 class="list-box-slots-demo__subtitle">
-                Custom #option slot (catch-all)
-            </h4>
-            <ListBox
-                :ctrl="fruitInstance"
-                @engine:create="onEngineCreate"
-                view="outlined"
-                :size="size"
-                :variant="variant"
-            >
-                <template #item="{ item }">
-                    <div class="flex items-center gap-2">
-                        <span>⬜</span>
-                        <span>{{ item.text }}</span>
-                        <span class="list-box-slots-demo__badge">{{
-                            item.value
-                        }}</span>
-                    </div>
-                </template>
-            </ListBox>
-        </div>
-    </div>
+		<!-- #option slot — catch-all template для всех items -->
+		<div class="list-box-slots-demo__section">
+			<h4 class="list-box-slots-demo__subtitle">Custom #option slot (catch-all)</h4>
+			<ListBox
+				:ctrl="fruitInstance"
+				@engine:create="onEngineCreate"
+				view="outlined"
+				:size="size"
+				:variant="variant"
+			>
+				<template #item="{ item }">
+					<div class="flex items-center gap-2">
+						<span>⬜</span>
+						<span>{{ item.text }}</span>
+						<span class="list-box-slots-demo__badge">{{ item.value }}</span>
+					</div>
+				</template>
+			</ListBox>
+		</div>
+	</div>
 </template>
+
+<style lang="scss" scoped>
+.list-box-slots-demo {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+
+	&__section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	&__subtitle {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 600;
+		color: #4b5563;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	&__badge {
+		font-size: 1.125rem;
+		line-height: 1.75rem;
+	}
+}
+</style>

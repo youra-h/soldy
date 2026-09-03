@@ -161,3 +161,50 @@ function onEngineCreate(engine: TCollapseCollection) {
 		</div>
 	</div>
 </template>
+
+<style lang="scss" scoped>
+.collapse-slots-demo {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+
+	&__section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	&__subtitle {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 600;
+		color: #4b5563;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	&__group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	&__label {
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: #9ca3af;
+	}
+
+	&__badge {
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+		padding-top: 0.125rem;
+		padding-bottom: 0.125rem;
+		background-color: #f3f4f6;
+		color: #6b7280;
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+	}
+}
+</style>

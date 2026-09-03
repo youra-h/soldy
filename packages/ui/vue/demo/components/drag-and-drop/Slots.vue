@@ -1,316 +1,297 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { TTabs, TCollapse, TListBox } from '@soldy/core';
+import { ref } from 'vue'
+import { TTabs, TCollapse, TListBox } from '@soldy/core'
 import type {
-    TTabsCollection,
-    TCollapseCollection,
-    TListBoxCollection,
-    TComponentSize,
-    TComponentVariant,
-    TTabsOrientation,
-} from '@soldy/core';
+	TTabsCollection,
+	TCollapseCollection,
+	TListBoxCollection,
+	TComponentSize,
+	TComponentVariant,
+	TTabsOrientation,
+} from '@soldy/core'
 import {
-    DragAndDrop,
-    Tabs,
-    TabItem,
-    Collapse,
-    CollapseItem,
-    ListBox,
-    ListBoxItem,
-} from '@soldy/ui-vue';
+	DragAndDrop,
+	Tabs,
+	TabItem,
+	Collapse,
+	CollapseItem,
+	ListBox,
+	ListBoxItem,
+} from '@soldy/ui-vue'
 
 type Props = {
-    orientation: TTabsOrientation;
-    size?: TComponentSize;
-    variant?: TComponentVariant;
-};
+	orientation: TTabsOrientation
+	size?: TComponentSize
+	variant?: TComponentVariant
+}
 
-defineProps<Props>();
+defineProps<Props>()
 
 // --- Вариант 1: через instance (программный) ---
 
-const tabs = new TTabs();
-tabs.variant = 'accent';
-tabs.view = 'contained';
-tabs.orientation = 'horizontal';
+const tabs = new TTabs()
+tabs.variant = 'accent'
+tabs.view = 'contained'
+tabs.orientation = 'horizontal'
 
 function onTabsEngineCreate(engine: TTabsCollection) {
-    const { plain, activation } = engine.extensions;
+	const { plain, activation } = engine.extensions
 
-    const dashboardTab = plain.push({
-        text: 'Dashboard',
-        value: 'dashboard',
-        closable: true,
-    });
-    plain.push({ text: 'Reports', value: 'reports', closable: true });
-    plain.push({ text: 'Users', value: 'users' });
-    plain.push({ text: 'Logs', value: 'logs' });
-    plain.push({ text: 'Storage', value: 'storage' });
-    plain.push({ text: 'Config', value: 'config' });
+	const dashboardTab = plain.push({
+		text: 'Dashboard',
+		value: 'dashboard',
+		closable: true,
+	})
+	plain.push({ text: 'Reports', value: 'reports', closable: true })
+	plain.push({ text: 'Users', value: 'users' })
+	plain.push({ text: 'Logs', value: 'logs' })
+	plain.push({ text: 'Storage', value: 'storage' })
+	plain.push({ text: 'Config', value: 'config' })
 
-    activation.activate(dashboardTab);
+	activation.activate(dashboardTab)
 }
 
 // --- Вариант 2: через prop items ---
 
 const tabItems = ref([
-    { text: 'Profile', value: 'profile', closable: true },
-    {
-        text: 'Notifications',
-        value: 'notifications',
-        closable: true,
-        _: { active: true },
-    },
-    { text: 'Security', value: 'security', closable: true },
-    { text: 'Billing', value: 'billing' },
-    { text: 'API Keys', value: 'api-keys', disabled: true },
-]);
+	{ text: 'Profile', value: 'profile', closable: true },
+	{
+		text: 'Notifications',
+		value: 'notifications',
+		closable: true,
+		_: { active: true },
+	},
+	{ text: 'Security', value: 'security', closable: true },
+	{ text: 'Billing', value: 'billing' },
+	{ text: 'API Keys', value: 'api-keys', disabled: true },
+])
 
 // --- Collapse: через instance ---
 
-const collapse = new TCollapse();
-collapse.variant = 'accent';
-collapse.view = 'outlined';
+const collapse = new TCollapse()
+collapse.variant = 'accent'
+collapse.view = 'outlined'
 
 function onCollapseEngineCreate(engine: TCollapseCollection) {
-    const { plain, selection } = engine.extensions;
-    selection.mode = 'multiple';
+	const { plain, selection } = engine.extensions
+	selection.mode = 'multiple'
 
-    plain.push({ text: 'Getting Started', value: 'getting-started' });
-    plain.push({ text: 'Installation', value: 'installation' });
-    plain.push({ text: 'Configuration', value: 'configuration' });
-    plain.push({ text: 'Deployment', value: 'deployment' });
-    plain.push({ text: 'Troubleshooting', value: 'troubleshooting' });
+	plain.push({ text: 'Getting Started', value: 'getting-started' })
+	plain.push({ text: 'Installation', value: 'installation' })
+	plain.push({ text: 'Configuration', value: 'configuration' })
+	plain.push({ text: 'Deployment', value: 'deployment' })
+	plain.push({ text: 'Troubleshooting', value: 'troubleshooting' })
 
-    const gettingStarted = plain.find(
-        (item) => item.value === 'getting-started',
-    )!;
-    selection.select(gettingStarted);
+	const gettingStarted = plain.find((item) => item.value === 'getting-started')!
+	selection.select(gettingStarted)
 }
 
 // --- Collapse: через prop items ---
 
 const collapseItems = ref([
-    { text: 'Overview', value: 'overview', _: { selected: true } },
-    { text: 'Quick Start', value: 'quick-start' },
-    { text: 'API Reference', value: 'api-reference' },
-    { text: 'Examples', value: 'examples' },
-    { text: 'FAQ', value: 'faq' },
-]);
+	{ text: 'Overview', value: 'overview', _: { selected: true } },
+	{ text: 'Quick Start', value: 'quick-start' },
+	{ text: 'API Reference', value: 'api-reference' },
+	{ text: 'Examples', value: 'examples' },
+	{ text: 'FAQ', value: 'faq' },
+])
 
 // --- ListBox: через instance ---
 
-const listBox = new TListBox();
-listBox.variant = 'accent';
-listBox.view = 'outlined';
+const listBox = new TListBox()
+listBox.variant = 'accent'
+listBox.view = 'outlined'
 
 function onListBoxEngineCreate(engine: TListBoxCollection) {
-    const { plain, selection } = engine.extensions;
-    selection.mode = 'multiple';
+	const { plain, selection } = engine.extensions
+	selection.mode = 'multiple'
 
-    plain.push({ text: 'Alpha', value: 'alpha' });
-    plain.push({ text: 'Beta', value: 'beta' });
-    const gammaItem = plain.push({ text: 'Gamma', value: 'gamma' });
-    plain.push({ text: 'Delta', value: 'delta' });
+	plain.push({ text: 'Alpha', value: 'alpha' })
+	plain.push({ text: 'Beta', value: 'beta' })
+	const gammaItem = plain.push({ text: 'Gamma', value: 'gamma' })
+	plain.push({ text: 'Delta', value: 'delta' })
 
-    selection.select(gammaItem);
+	selection.select(gammaItem)
 }
 
 // --- ListBox: через prop items ---
 
 const listBoxItems = ref([
-    { text: 'One', value: 'one', _: { selected: true } },
-    { text: 'Two', value: 'two' },
-    { text: 'Three', value: 'three' },
-]);
+	{ text: 'One', value: 'one', _: { selected: true } },
+	{ text: 'Two', value: 'two' },
+	{ text: 'Three', value: 'three' },
+])
 </script>
 
 <template>
-    <div class="drag-slots-demo">
-        <p class="drag-slots-demo__hint">
-            Зажмите вкладку и перетащите её в новое место. Проверьте поведение в
-            горизонтальной и вертикальной ориентации.
-        </p>
+	<div class="drag-slots-demo">
+		<p class="drag-slots-demo__hint">
+			Зажмите вкладку и перетащите её в новое место. Проверьте поведение в горизонтальной и
+			вертикальной ориентации.
+		</p>
 
-        <!-- Вариант 1: декларативный (TabItem в слоте) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">Declarative (TabItem slots)</h3>
-            <DragAndDrop>
-                <Tabs
-                    :orientation="orientation"
-                    :size="size"
-                    :variant="variant"
-                    view="line"
-                >
-                    <TabItem text="Overview" value="overview" active />
-                    <TabItem text="Details" value="details" />
-                    <TabItem text="Analytics" value="analytics" />
-                    <TabItem text="History" value="history" />
-                    <TabItem text="Files" value="files" />
-                    <TabItem text="Settings" value="settings" />
+		<!-- Вариант 1: декларативный (TabItem в слоте) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Declarative (TabItem slots)</h3>
+			<DragAndDrop>
+				<Tabs :orientation="orientation" :size="size" :variant="variant" view="line">
+					<TabItem text="Overview" value="overview" active />
+					<TabItem text="Details" value="details" />
+					<TabItem text="Analytics" value="analytics" />
+					<TabItem text="History" value="history" />
+					<TabItem text="Files" value="files" />
+					<TabItem text="Settings" value="settings" />
 
-                    <template #panel:overview><p>Overview content</p></template>
-                    <template #panel:details><p>Details content</p></template>
-                    <template #panel:analytics
-                        ><p>Analytics content</p></template
-                    >
-                    <template #panel:history><p>History content</p></template>
-                    <template #panel:files><p>Files content</p></template>
-                    <template #panel:settings><p>Settings content</p></template>
-                </Tabs>
-            </DragAndDrop>
-        </section>
+					<template #panel:overview><p>Overview content</p></template>
+					<template #panel:details><p>Details content</p></template>
+					<template #panel:analytics><p>Analytics content</p></template>
+					<template #panel:history><p>History content</p></template>
+					<template #panel:files><p>Files content</p></template>
+					<template #panel:settings><p>Settings content</p></template>
+				</Tabs>
+			</DragAndDrop>
+		</section>
 
-        <!-- Вариант 2: программный (через :ctrl) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">Instance (:ctrl)</h3>
-            <DragAndDrop>
-                <Tabs :ctrl="tabs" @engine:create="onTabsEngineCreate">
-                    <template #panel:dashboard
-                        ><p>Dashboard content</p></template
-                    >
-                    <template #panel:reports><p>Reports content</p></template>
-                    <template #panel:users><p>Users content</p></template>
-                    <template #panel:logs><p>Logs content</p></template>
-                    <template #panel:storage><p>Storage content</p></template>
-                    <template #panel:config><p>Config content</p></template>
-                </Tabs>
-            </DragAndDrop>
-        </section>
+		<!-- Вариант 2: программный (через :ctrl) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Instance (:ctrl)</h3>
+			<DragAndDrop>
+				<Tabs :ctrl="tabs" @engine:create="onTabsEngineCreate">
+					<template #panel:dashboard><p>Dashboard content</p></template>
+					<template #panel:reports><p>Reports content</p></template>
+					<template #panel:users><p>Users content</p></template>
+					<template #panel:logs><p>Logs content</p></template>
+					<template #panel:storage><p>Storage content</p></template>
+					<template #panel:config><p>Config content</p></template>
+				</Tabs>
+			</DragAndDrop>
+		</section>
 
-        <!-- Вариант 3: через prop :items -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">Items prop (:items)</h3>
-            <DragAndDrop>
-                <Tabs :items="tabItems" view="outline">
-                    <template #panel:profile><p>Profile content</p></template>
-                    <template #panel:notifications
-                        ><p>Notifications content</p></template
-                    >
-                    <template #panel:security><p>Security content</p></template>
-                    <template #panel:billing><p>Billing content</p></template>
-                    <template #panel:api-keys><p>API Keys content</p></template>
-                </Tabs>
-            </DragAndDrop>
-        </section>
+		<!-- Вариант 3: через prop :items -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Items prop (:items)</h3>
+			<DragAndDrop>
+				<Tabs :items="tabItems" view="outline">
+					<template #panel:profile><p>Profile content</p></template>
+					<template #panel:notifications><p>Notifications content</p></template>
+					<template #panel:security><p>Security content</p></template>
+					<template #panel:billing><p>Billing content</p></template>
+					<template #panel:api-keys><p>API Keys content</p></template>
+				</Tabs>
+			</DragAndDrop>
+		</section>
 
-        <!-- === Collapse === -->
+		<!-- === Collapse === -->
 
-        <!-- Collapse: декларативный (CollapseItem в слоте) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">
-                Collapse — Declarative (CollapseItem slots)
-            </h3>
-            <DragAndDrop>
-                <Collapse mode="multiple" view="plain">
-                    <CollapseItem
-                        text="Introduction"
-                        value="intro"
-                        :selected="true"
-                    >
-                        <p>Introduction content</p>
-                    </CollapseItem>
-                    <CollapseItem text="Setup" value="setup">
-                        <p>Setup content</p>
-                    </CollapseItem>
-                    <CollapseItem text="Usage" value="usage">
-                        <p>Usage content</p>
-                    </CollapseItem>
-                    <CollapseItem text="Advanced" value="advanced">
-                        <p>Advanced content</p>
-                    </CollapseItem>
-                    <CollapseItem text="Migration" value="migration">
-                        <p>Migration content</p>
-                    </CollapseItem>
-                </Collapse>
-            </DragAndDrop>
-        </section>
+		<!-- Collapse: декларативный (CollapseItem в слоте) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Collapse — Declarative (CollapseItem slots)</h3>
+			<DragAndDrop>
+				<Collapse mode="multiple" view="plain">
+					<CollapseItem text="Introduction" value="intro" :selected="true">
+						<p>Introduction content</p>
+					</CollapseItem>
+					<CollapseItem text="Setup" value="setup">
+						<p>Setup content</p>
+					</CollapseItem>
+					<CollapseItem text="Usage" value="usage">
+						<p>Usage content</p>
+					</CollapseItem>
+					<CollapseItem text="Advanced" value="advanced">
+						<p>Advanced content</p>
+					</CollapseItem>
+					<CollapseItem text="Migration" value="migration">
+						<p>Migration content</p>
+					</CollapseItem>
+				</Collapse>
+			</DragAndDrop>
+		</section>
 
-        <!-- Collapse: программный (через :ctrl) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
-            <DragAndDrop>
-                <Collapse :ctrl="collapse" @engine:create="onCollapseEngineCreate">
-                    <template #panel:getting-started
-                        ><p>Getting Started content</p></template
-                    >
-                    <template #panel:installation
-                        ><p>Installation content</p></template
-                    >
-                    <template #panel:configuration
-                        ><p>Configuration content</p></template
-                    >
-                    <template #panel:deployment
-                        ><p>Deployment content</p></template
-                    >
-                    <template #panel:troubleshooting
-                        ><p>Troubleshooting content</p></template
-                    >
-                </Collapse>
-            </DragAndDrop>
-        </section>
+		<!-- Collapse: программный (через :ctrl) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
+			<DragAndDrop>
+				<Collapse :ctrl="collapse" @engine:create="onCollapseEngineCreate">
+					<template #panel:getting-started><p>Getting Started content</p></template>
+					<template #panel:installation><p>Installation content</p></template>
+					<template #panel:configuration><p>Configuration content</p></template>
+					<template #panel:deployment><p>Deployment content</p></template>
+					<template #panel:troubleshooting><p>Troubleshooting content</p></template>
+				</Collapse>
+			</DragAndDrop>
+		</section>
 
-        <!-- Collapse: через prop :items -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">
-                Collapse — Items prop (:items)
-            </h3>
-            <DragAndDrop>
-                <Collapse
-                    :items="collapseItems"
-                    mode="multiple"
-                    view="outlined"
-                >
-                    <template #panel:overview><p>Overview content</p></template>
-                    <template #panel:quick-start
-                        ><p>Quick Start content</p></template
-                    >
-                    <template #panel:api-reference
-                        ><p>API Reference content</p></template
-                    >
-                    <template #panel:examples><p>Examples content</p></template>
-                    <template #panel:faq><p>FAQ content</p></template>
-                </Collapse>
-            </DragAndDrop>
-        </section>
+		<!-- Collapse: через prop :items -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">Collapse — Items prop (:items)</h3>
+			<DragAndDrop>
+				<Collapse :items="collapseItems" mode="multiple" view="outlined">
+					<template #panel:overview><p>Overview content</p></template>
+					<template #panel:quick-start><p>Quick Start content</p></template>
+					<template #panel:api-reference><p>API Reference content</p></template>
+					<template #panel:examples><p>Examples content</p></template>
+					<template #panel:faq><p>FAQ content</p></template>
+				</Collapse>
+			</DragAndDrop>
+		</section>
 
-        <!-- === ListBox === -->
+		<!-- === ListBox === -->
 
-        <!-- ListBox: декларативный (ListBoxItem в слоте) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">
-                ListBox — Declarative (ListBoxItem slots)
-            </h3>
-            <DragAndDrop>
-                <ListBox mode="multiple" view="plain">
-                    <ListBoxItem text="Item 1" value="i1" :selected="true" />
-                    <ListBoxItem text="Item 2" value="i2" />
-                    <ListBoxItem text="Item 3" value="i3" />
-                    <ListBoxItem text="Item 4" value="i4" />
-                </ListBox>
-            </DragAndDrop>
-        </section>
+		<!-- ListBox: декларативный (ListBoxItem в слоте) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">ListBox — Declarative (ListBoxItem slots)</h3>
+			<DragAndDrop>
+				<ListBox mode="multiple" view="plain">
+					<ListBoxItem text="Item 1" value="i1" :selected="true" />
+					<ListBoxItem text="Item 2" value="i2" />
+					<ListBoxItem text="Item 3" value="i3" />
+					<ListBoxItem text="Item 4" value="i4" />
+				</ListBox>
+			</DragAndDrop>
+		</section>
 
-        <!-- ListBox: программный (через :ctrl) -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">ListBox — Instance (:ctrl)</h3>
-            <DragAndDrop>
-                <ListBox :ctrl="listBox" @engine:create="onListBoxEngineCreate" />
-            </DragAndDrop>
-        </section>
+		<!-- ListBox: программный (через :ctrl) -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">ListBox — Instance (:ctrl)</h3>
+			<DragAndDrop>
+				<ListBox :ctrl="listBox" @engine:create="onListBoxEngineCreate" />
+			</DragAndDrop>
+		</section>
 
-        <!-- ListBox: через prop :items -->
-        <section class="drag-slots-demo__section">
-            <h3 class="drag-slots-demo__title">
-                ListBox — Items prop (:items)
-            </h3>
-            <DragAndDrop>
-                <ListBox
-                    :items="listBoxItems"
-                    mode="multiple"
-                    view="outlined"
-                />
-            </DragAndDrop>
-        </section>
-    </div>
+		<!-- ListBox: через prop :items -->
+		<section class="drag-slots-demo__section">
+			<h3 class="drag-slots-demo__title">ListBox — Items prop (:items)</h3>
+			<DragAndDrop>
+				<ListBox :items="listBoxItems" mode="multiple" view="outlined" />
+			</DragAndDrop>
+		</section>
+	</div>
 </template>
+
+<style lang="scss" scoped>
+.drag-slots-demo {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+
+	&__hint {
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: #6b7280;
+	}
+
+	&__section {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	&__title {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		color: #4b5563;
+	}
+}
+</style>

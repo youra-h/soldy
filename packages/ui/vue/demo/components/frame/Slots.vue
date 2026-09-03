@@ -189,3 +189,111 @@ const closeFrame = (frame: (typeof frames)[0]) => {
 		</Frame>
 	</PanelDemo>
 </template>
+
+<style lang="scss" scoped>
+.frame-demo {
+	&__toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75rem;
+	}
+
+	&__btn {
+		padding-left: 1rem;
+		padding-right: 1rem;
+		padding-top: 0.5rem;
+		padding-bottom: 0.5rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		color: #ffffff;
+		border-radius: 0.375rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		transition-property:
+			color, background-color, border-color, text-decoration-color, fill, stroke;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+		background-color: hsl(var(--hue, 200deg), 60%, 50%);
+
+		&:hover {
+			background-color: hsl(var(--hue, 200deg), 60%, 40%);
+		}
+
+		&--cascade {
+			background-color: hsl(280deg, 60%, 50%);
+
+			&:hover {
+				background-color: hsl(280deg, 60%, 40%);
+			}
+		}
+	}
+
+	&__card {
+		padding: 1rem;
+		background-color: #ffffff;
+		border-radius: 0.5rem;
+		box-shadow:
+			0 10px 15px -3px rgba(0, 0, 0, 0.1),
+			0 4px 6px -2px rgba(0, 0, 0, 0.05);
+		border: 1px solid #e5e7eb;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		color: #374151;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 200px;
+	}
+
+	&__card-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	&__z {
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: #9ca3af;
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+			monospace;
+	}
+
+	&__card-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-self: flex-end;
+	}
+
+	&__close {
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+		padding-top: 0.25rem;
+		padding-bottom: 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+		font-weight: 500;
+		color: #ffffff;
+		background-color: #ef4444;
+		border-radius: 0.25rem;
+		transition-property:
+			color, background-color, border-color, text-decoration-color, fill, stroke;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+
+		&:hover {
+			background-color: #dc2626;
+		}
+
+		&--all {
+			background-color: #ea580c;
+
+			&:hover {
+				background-color: #c2410c;
+			}
+		}
+	}
+}
+</style>
