@@ -11,9 +11,6 @@ export type {
 	DescriptorEvents,
 	DescriptorPlugins,
 	DescriptorAllEvents,
-	PluginDescriptorEvents,
-	PluginDescriptorNamespace,
 	NamespacedEvents,
-	MergeEvents,
 	TPluginEventsFrom,
 } from './types'

@@ -79,14 +79,6 @@ export type DescriptorEvents<T> =
 export type DescriptorPlugins<T> =
 	TDescriptorInstance<T> extends IComponentDescriptor<any, any, infer P> ? P : readonly []
 
-/** События плагина из дескриптора: PluginDescriptorEvents<typeof ElementPluginDescriptor> → TElementServiceEvents */
-export type PluginDescriptorEvents<T> =
-	TDescriptorInstance<T> extends IPluginDefinition<any, infer E> ? E : {}
-
-/** Namespace плагина из дескриптора: PluginDescriptorNamespace<typeof ElementPluginDescriptor> → 'element' */
-export type PluginDescriptorNamespace<T> =
-	TDescriptorInstance<T> extends IPluginDefinition<infer N, any> ? NonNullable<N> : never
-
 /* -------------------------------------------------------------------------- */
 /* Framework-agnostic composition helpers                                      */
 /* -------------------------------------------------------------------------- */
@@ -95,17 +87,6 @@ export type PluginDescriptorNamespace<T> =
 export type NamespacedEvents<T extends object, N extends string> = {
 	[K in keyof T as K extends string ? `${N}:${K}` : never]: T[K]
 }
-
-/** MergeEvents<[A, B]> → A & B (объединение нескольких событийных интерфейсов) */
-export type MergeEvents<T extends readonly object[]> = T extends [infer F, ...infer R]
-	? F extends object
-		? R extends object[]
-			? R extends []
-				? F
-				: F & MergeEvents<R>
-			: F
-		: {}
-	: {}
 
 /** События всех плагинов дескриптора (namespaced): { 'element:ready': ..., 'element:removed': ... } */
 export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extends readonly [
