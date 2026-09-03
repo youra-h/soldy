@@ -3,13 +3,17 @@
  */
 
 import type { HTMLAttributes } from 'react'
-import type { IComponentView, IComponentViewProps, TComponentViewEvents } from '@soldy/core'
+import type { IComponentView } from '@soldy/core'
+import type { ComponentViewDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
 import type { TReactComponentProps } from '../../types'
-import type { ReactEventProps, TElementEventProps } from '../../adapter'
+import type { ReactEventProps } from '../../adapter'
 
-/** События слоя ComponentView (core-события + element-плагин), выведены автоматически. */
-export type TComponentViewEventProps = ReactEventProps<TComponentViewEvents> & TElementEventProps
+/** События слоя ComponentView (core + плагины), выведены из дескриптора автоматически. */
+export type TComponentViewEventProps = ReactEventProps<DescriptorAllEvents<typeof ComponentViewDescriptor>>
 
-export type ComponentViewProps = TReactComponentProps<IComponentViewProps, IComponentView> &
+export type ComponentViewProps = TReactComponentProps<
+	DescriptorProps<typeof ComponentViewDescriptor>,
+	IComponentView
+> &
 	TComponentViewEventProps &
 	HTMLAttributes<HTMLElement>

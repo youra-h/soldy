@@ -104,9 +104,11 @@ Returns `IComponentDescriptor` with:
 - Descriptor files for: Control, ValueControl, TextInput, CheckBox, Switch, Tabs, ListBox, Tree, Collapse, Icon, Spinner, Skeleton, Input, Frame, DragAndDrop
 
 ### Key Exports
-- `IComponentDescriptor` - Metadata contract
-- `defineComponent(options)` - Create descriptor
-- `definePlugin(options)` - Create plugin definition
+- `IComponentDescriptor<TProps, TEvents, TPlugins>` - Metadata contract (phantom: props + события + TUPLE плагинов; `TProps extends object`, `TEvents extends object`, `TPlugins extends readonly IPluginDefinition[]`)
+- `IPluginDefinition<N, TEvents>` - Plugin definition (generic: namespace + plugin events)
+- `defineComponent` - **двойная сигнатура**: одноразовая `defineComponent({...})` (нетипизированные дескрипторы) и curried `defineComponent<TProps, TEvents>()({...})` (типизированные). Curried нужна из-за ограничения TS: явные type-аргументы ломают tuple-вывод из `plugins` в одном вызове.
+- `definePlugin<N, TEvents>(options)` - Create plugin definition
+- Extractors (types): `TDescriptorInstance<T>`, `DescriptorProps<T>`, `DescriptorEvents<T>` (свои события), `DescriptorPlugins<T>` (tuple плагинов), `DescriptorAllEvents<T>` (свои + namespaced события плагинов), `PluginDescriptorEvents<T>`, `PluginDescriptorNamespace<T>`. + framework-agnostic helpers `NamespacedEvents`, `MergeEvents`, `TPluginEventsFrom`. **Descriptor = единственный source of truth для типов props/events/plugin-events** (фреймворки не импортируют `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins).
 
 ### Component Descriptors (22+)
 Organized by inheritance:
@@ -297,7 +299,7 @@ BaseComponent (Entity props)
 **Structure (1:1 with Vue adapter, 3-module component split):**
 - `adapter/common/` — `createInspector` (TDescriptorInspector + `ReactNaming`), `ReactNaming`, `resolveDefaultExtensions` (`[TPluginsBindingExtension]` only when descriptor has `TElementPlugin`, else `[]`), `naming.types.ts` (type-level mirror of `ReactNaming` for auto-derived event props)
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
-  - `naming.types.ts` = PURE type transformers (`ReactEventName`, `ReactEventProps<T>`, `NamespacedEvents<T, N>`, `MergeEvents<T[]>`, `TDescriptorNamespace<T>`) mirroring `ReactNaming.event`; `plugins.types.ts` = per-plugin event props (`TElementEventProps`, `TFrameLayoutEventProps`, `TIconLayoutEventProps`, `TListItemEventProps`, `TSkeletonLayoutEventProps`, `TSpinnerLayoutEventProps`). **Namespace — единственный источник истины**: `IPluginDefinition<N>` + `definePlugin<N>` пробрасывают literal-namespace в тип дескриптора, а `TDescriptorNamespace<typeof XxxDescriptor>` выводит его оттуда (НЕ дублируется строкой в plugins.types.ts). Component event props derived from core types (`ReactEventProps<TButtonEvents> & TElementEventProps`), NOT hand-written
+  - `naming.types.ts` = PURE React naming transformers (`ReactEventName`, `ReactEventProps<T>`) mirroring `ReactNaming.event`; `NamespacedEvents`/`MergeEvents` перенесены в @soldy/setup. `plugins.types.ts` = per-plugin event props (`TElementEventProps`, `TFrameLayoutEventProps`, `TIconLayoutEventProps`, `TListItemEventProps`, `TSkeletonLayoutEventProps`, `TSpinnerLayoutEventProps`) derived from `typeof XxxPluginDescriptor` via `PluginDescriptorEvents`/`PluginDescriptorNamespace`. **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `ReactEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`), поэтому ручное `& TElementEventProps` больше НЕ нужно.
 - `adapter/runtime/` — `useReact(adapter, props)` (main hook — takes a READY adapter, аналог `useVue`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
 - `adapter/elevator/` — `TReactElevator` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook, calls `createAdapterContext` directly) + view (`*.tsx`)

@@ -2,11 +2,16 @@
  * Textable — слой text.
  */
 
-import type { ITextable, ITextableProps, TTextableEvents } from '@soldy/core'
+import type { ITextable } from '@soldy/core'
+import type { TextableDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
 import type { TReactComponentProps } from '../../types'
-import type { ReactEventProps, TElementEventProps } from '../../adapter'
+import type { ReactEventProps } from '../../adapter'
 
-/** События слоя Textable (core-события + element-плагин), выведены автоматически. */
-export type TTextableEventProps = ReactEventProps<TTextableEvents> & TElementEventProps
+/** События слоя Textable (core + плагины), выведены из дескриптора автоматически. */
+export type TTextableEventProps = ReactEventProps<DescriptorAllEvents<typeof TextableDescriptor>>
 
-export type TextableProps = TReactComponentProps<ITextableProps, ITextable> & TTextableEventProps
+export type TextableProps = TReactComponentProps<
+	DescriptorProps<typeof TextableDescriptor>,
+	ITextable
+> &
+	TTextableEventProps

@@ -5,12 +5,16 @@
  * как типы props и хуки, на которых строятся конкретные компоненты.
  */
 
-import type { IComponent, IComponentProps, TComponentEvents } from '@soldy/core'
+import type { IComponent } from '@soldy/core'
+import type { ComponentDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
 import type { TReactComponentProps } from '../../types'
 import type { ReactEventProps } from '../../adapter'
 
-/** События слоя Component (колбэки-пропсы React), выведены из TComponentEvents. */
-export type TComponentEventProps = ReactEventProps<TComponentEvents>
+/** События слоя Component (колбэки-пропсы React), выведены из ComponentDescriptor. */
+export type TComponentEventProps = ReactEventProps<DescriptorAllEvents<typeof ComponentDescriptor>>
 
-export type ComponentProps = TReactComponentProps<IComponentProps, IComponent> &
+export type ComponentProps = TReactComponentProps<
+	DescriptorProps<typeof ComponentDescriptor>,
+	IComponent
+> &
 	TComponentEventProps

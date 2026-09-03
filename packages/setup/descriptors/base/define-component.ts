@@ -16,7 +16,7 @@ function createPluginCollector() {
 	const map = new Map<any, IPluginDefinition>()
 
 	return {
-		add(plugins: IPluginDefinition[]): void {
+		add(plugins: readonly IPluginDefinition[]): void {
 			for (const p of plugins) map.set(p.ctor, p)
 		},
 		toArray(): IPluginDefinition[] {
@@ -25,7 +25,7 @@ function createPluginCollector() {
 	}
 }
 
-export function defineComponent(options: IComponentDefinitionOptions): IComponentDescriptor {
+function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
 
 	const collector = createPluginCollector()
@@ -78,4 +78,32 @@ export function defineComponent(options: IComponentDefinitionOptions): IComponen
 			])
 		},
 	}
+}
+
+/**
+ * Одноразовая форма (без явных type-аргументов): кортеж плагинов выводится из
+ * options.plugins. Используется дескрипторами без явного типа props/events.
+ */
+export function defineComponent<
+	const TPlugins extends readonly IPluginDefinition[] = readonly [],
+	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
+>(
+	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
+): IComponentDescriptor<Record<string, unknown>, {}, readonly [...TParentPlugins, ...TPlugins]>
+
+/**
+ * Curried-форма: явные TProps/TEvents на первом вызове, кортеж плагинов
+ * выводится на втором. Используется типизированными дескрипторами.
+ */
+export function defineComponent<TProps extends object, TEvents extends object>(): <
+	const TPlugins extends readonly IPluginDefinition[] = readonly [],
+	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
+>(
+	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
+) => IComponentDescriptor<TProps, TEvents, readonly [...TParentPlugins, ...TPlugins]>
+
+export function defineComponent(...args: any[]): any {
+	if (args.length > 0) return buildDescriptor(args[0])
+
+	return (options: IComponentDefinitionOptions) => buildDescriptor(options)
 }

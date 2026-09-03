@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../base'
 import { TStylable } from '@soldy/core'
+import type { IStylableProps, TStylableEvents } from '@soldy/core'
 import { StylableContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const StylableDescriptor = () =>
-	defineComponent({
+	defineComponent<IStylableProps, TStylableEvents>()({
 		ctor: TStylable,
 
 		extends: ComponentViewDescriptor(),

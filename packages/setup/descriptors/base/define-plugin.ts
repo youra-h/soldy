@@ -8,12 +8,15 @@ import type { IPluginConstructor } from '@soldy/plugins'
 import type { IPluginDefinition } from './types'
 import { normalizeContribution } from './compile-contribution'
 
-export function definePlugin<N extends string | undefined = undefined>(options: {
+export function definePlugin<
+	N extends string | undefined = undefined,
+	TEvents extends object = {},
+>(options: {
 	ctor: IPluginConstructor<any, any, any>
 	namespace?: N
 	contribution?: IContribution
 	options?: Record<string, any>
-}): IPluginDefinition<N> {
+}): IPluginDefinition<N, TEvents> {
 	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
 	return {

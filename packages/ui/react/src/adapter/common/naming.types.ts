@@ -6,9 +6,9 @@
  * условные типы. Оба определения должны изменяться СИНХРОННО.
  *
  * Благодаря этому событийные пропсы React-компонентов выводятся автоматически
- * из core-типов, без ручного дублирования:
+ * из дескрипторов (@soldy/setup), без ручного дублирования:
  *
- *   ReactEventProps<TComponentEvents>
+ *   ReactEventProps<DescriptorAllEvents<typeof ComponentDescriptor>>
  *     → { onShow?, onChangeVisible?, onChangePresent?, ... }
  */
 
@@ -41,41 +41,8 @@ type ToPascalCase<S extends string> = Join<CapitalizeAll<Split<S, '-' | ':'>>, '
 /** ReactEventName<'show:before'> → 'onShowBefore' (зеркалит ReactNaming.event) */
 export type ReactEventName<T extends string> = `on${ToPascalCase<T>}`
 
-/** ReactEventProps<TComponentEvents> → { onShow?: ..., onChangeVisible?: ... } */
-export type ReactEventProps<T extends Record<string, (...args: any[]) => any>> = {
+/** ReactEventProps<DescriptorAllEvents<...>> → { onShow?: ..., onChangeVisible?: ... } */
+export type ReactEventProps<T extends object> = {
 	[K in keyof T as K extends string ? ReactEventName<K> : never]?: T[K]
 }
-
-/** NamespacedEvents<T, 'element'> → { 'element:ready': ..., 'element:removed': ... } */
-export type NamespacedEvents<
-	T extends Record<string, (...args: any[]) => any>,
-	N extends string,
-> = {
-	[K in keyof T as K extends string ? `${N}:${K}` : never]: T[K]
-}
-
-/** MergeEvents<[A, B]> → A & B (объединение нескольких событийных интерфейсов) */
-export type MergeEvents<T extends readonly Record<string, (...args: any[]) => any>[]> = T extends [
-	infer F,
-	...infer R,
-]
-	? F extends Record<string, (...args: any[]) => any>
-		? R extends Record<string, (...args: any[]) => any>[]
-			? R extends []
-				? F
-				: F & MergeEvents<R>
-			: F
-		: Record<string, never>
-	: Record<string, never>
-
-/**
- * TDescriptorNamespace<typeof ElementPluginDescriptor> → 'element'.
- * Извлекает literal-namespace из фабрики дескриптора плагина, чтобы namespace
- * был объявлен ТОЛЬКО в дескрипторе, а типы выводились из него.
- */
-export type TDescriptorNamespace<T> = T extends (...args: any[]) => infer R
-	? R extends { namespace?: infer N }
-		? NonNullable<N>
-		: never
-	: never
 

@@ -1,5 +1,6 @@
 import { definePlugin } from '../base'
 import { TListItemPlugin } from '@soldy/plugins'
+import type { TListItemPluginEvents } from '@soldy/plugins'
 import { ListItemPluginContribution } from '../../contributions'
 
 /**
@@ -7,7 +8,7 @@ import { ListItemPluginContribution } from '../../contributions'
  * Устанавливается на item-компоненте (ListBoxItem).
  */
 export const ListItemPluginDescriptor = () =>
-	definePlugin({
+	definePlugin<'listItem', TListItemPluginEvents>({
 		ctor: TListItemPlugin,
 		namespace: 'listItem',
 		contribution: ListItemPluginContribution(),

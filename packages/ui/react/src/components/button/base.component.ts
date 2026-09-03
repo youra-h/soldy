@@ -3,13 +3,14 @@
  */
 
 import type { HTMLAttributes } from 'react'
-import type { IButton, IButtonProps, TButtonEvents } from '@soldy/core'
+import type { IButton } from '@soldy/core'
+import type { ButtonDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
 import type { TReactComponentProps } from '../../types'
-import type { ReactEventProps, TElementEventProps } from '../../adapter'
+import type { ReactEventProps } from '../../adapter'
 
-/** События слоя Button (core-события + element-плагин), выведены автоматически. */
-export type TButtonEventProps = ReactEventProps<TButtonEvents> & TElementEventProps
+/** События слоя Button (core + плагины), выведены из дескриптора автоматически. */
+export type TButtonEventProps = ReactEventProps<DescriptorAllEvents<typeof ButtonDescriptor>>
 
-export type ButtonProps = TReactComponentProps<IButtonProps, IButton> &
+export type ButtonProps = TReactComponentProps<DescriptorProps<typeof ButtonDescriptor>, IButton> &
 	TButtonEventProps &
 	HTMLAttributes<HTMLElement>

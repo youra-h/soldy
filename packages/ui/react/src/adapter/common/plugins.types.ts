@@ -1,23 +1,15 @@
 /**
- * plugins.types.ts — React-типы плагинов, выведенные из их contributions
+ * plugins.types.ts — React-типы плагинов, выведенные из их дескрипторов
  * (см. packages/setup/descriptors/plugins).
  *
  * Если у плагина есть contribution (props/events), то эти свойства и события
  * доступны фреймворку. Здесь для каждого такого плагина объявлен тип его
  * событийных колбэков в React-стиле (onXxx).
  *
- * namespace НЕ дублируется: он выводится из дескриптора плагина через
- * TDescriptorNamespace — единственный источник истины лежит в descriptors/plugins.
+ * namespace и события НЕ дублируются: оба выводятся из дескриптора плагина
+ * (PluginDescriptorNamespace / PluginDescriptorEvents из @soldy/setup).
  */
 
-import type {
-	TElementServiceEvents,
-	TFrameLayoutPluginEvents,
-	TIconLayoutPluginEvents,
-	TListItemPluginEvents,
-	TSkeletonLayoutPluginEvents,
-	TSpinnerLayoutPluginEvents,
-} from '@soldy/plugins'
 import type {
 	ElementPluginDescriptor,
 	FrameLayoutPluginDescriptor,
@@ -26,46 +18,28 @@ import type {
 	SkeletonLayoutPluginDescriptor,
 	SpinnerLayoutPluginDescriptor,
 } from '@soldy/setup'
-import type { NamespacedEvents, ReactEventProps, TDescriptorNamespace } from './naming.types'
+import type { PluginDescriptorEvents, PluginDescriptorNamespace, NamespacedEvents } from '@soldy/setup'
+import type { ReactEventProps } from './naming.types'
 
-/** Событийные колбэки плагина: namespace выводится из дескриптора. */
-type TPluginEventProps<
-	TEvents extends Record<string, (...args: any[]) => any>,
-	TDescriptor,
-> = ReactEventProps<NamespacedEvents<TEvents, TDescriptorNamespace<TDescriptor>>>
+/** Событийные колбэки плагина: namespace и события выводятся из дескриптора. */
+type TPluginEventProps<TDescriptor> = ReactEventProps<
+	NamespacedEvents<PluginDescriptorEvents<TDescriptor>, PluginDescriptorNamespace<TDescriptor>>
+>
 
 /** Element-плагин: onElementReady / onElementRemoved. */
-export type TElementEventProps = TPluginEventProps<
-	TElementServiceEvents,
-	typeof ElementPluginDescriptor
->
+export type TElementEventProps = TPluginEventProps<typeof ElementPluginDescriptor>
 
 /** FrameLayout-плагин: onLayoutChangeStyles / onLayoutChangeAnchor. */
-export type TFrameLayoutEventProps = TPluginEventProps<
-	TFrameLayoutPluginEvents,
-	typeof FrameLayoutPluginDescriptor
->
+export type TFrameLayoutEventProps = TPluginEventProps<typeof FrameLayoutPluginDescriptor>
 
 /** IconLayout-плагин: onLayoutChangeStyles. */
-export type TIconLayoutEventProps = TPluginEventProps<
-	TIconLayoutPluginEvents,
-	typeof IconLayoutPluginDescriptor
->
+export type TIconLayoutEventProps = TPluginEventProps<typeof IconLayoutPluginDescriptor>
 
 /** ListItem-плагин: onListItemChangeHighlighted. */
-export type TListItemEventProps = TPluginEventProps<
-	TListItemPluginEvents,
-	typeof ListItemPluginDescriptor
->
+export type TListItemEventProps = TPluginEventProps<typeof ListItemPluginDescriptor>
 
 /** SkeletonLayout-плагин: onLayoutChangeStyles. */
-export type TSkeletonLayoutEventProps = TPluginEventProps<
-	TSkeletonLayoutPluginEvents,
-	typeof SkeletonLayoutPluginDescriptor
->
+export type TSkeletonLayoutEventProps = TPluginEventProps<typeof SkeletonLayoutPluginDescriptor>
 
 /** SpinnerLayout-плагин: onLayoutChangeStyles. */
-export type TSpinnerLayoutEventProps = TPluginEventProps<
-	TSpinnerLayoutPluginEvents,
-	typeof SpinnerLayoutPluginDescriptor
->
+export type TSpinnerLayoutEventProps = TPluginEventProps<typeof SpinnerLayoutPluginDescriptor>
