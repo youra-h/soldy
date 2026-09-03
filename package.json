@@ -12,8 +12,9 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev:vue": "npm run build --workspace=@soldy/theme-oren && npm run dev --workspace=@soldy/ui-vue",
-    "dev:react": "npm run build --workspace=@soldy/theme-oren && npm run dev --workspace=@soldy/ui-react",
+    "watch:theme": "npm run watch --workspace=@soldy/theme-oren",
+    "dev:vue": "concurrently -k -n theme,vue -c blue,green \"npm run watch:theme\" \"npm run dev --workspace=@soldy/ui-vue\"",
+    "dev:react": "concurrently -k -n theme,react -c blue,green \"npm run watch:theme\" \"npm run dev --workspace=@soldy/ui-react\"",
     "dev:angular": "npm run dev --workspace=@soldy/ui-angular",
     "dev:svelte": "npm run dev --workspace=@soldy/ui-svelte",
     "dev:solid": "npm run dev --workspace=@soldy/ui-solid",
@@ -34,6 +35,7 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.5.0",
+    "concurrently": "^10.0.5",
     "eslint": "^10.2.0",
     "eslint-plugin-vue": "~10.8.0",
     "jsdom": "^29.1.1",
