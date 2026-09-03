@@ -10,18 +10,21 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:lib": "vite build -c vite.lib.config.ts",
+    "build:types": "vue-tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
+    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
-    "@soldy/accessor": "*",
     "vue": "^3.5.32"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "vite-plugin-vue-devtools": "^8.1.5"
+    "vite-plugin-vue-devtools": "^8.1.5",
+    "vue-tsc": "^3.3.11"
   }
 }
