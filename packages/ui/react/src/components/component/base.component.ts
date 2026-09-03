@@ -5,21 +5,12 @@
  * как типы props и хуки, на которых строятся конкретные компоненты.
  */
 
-import type { IComponent, IComponentProps, TActionEvent } from '@soldy/core'
+import type { IComponent, IComponentProps, TComponentEvents } from '@soldy/core'
 import type { TReactComponentProps } from '../../types'
+import type { ReactEventProps } from '../../adapter'
 
-/** События слоя Component (колбэки-пропсы React). */
-export type TComponentEventProps = {
-	onShow?: () => void
-	onHide?: () => void
-	onShowBefore?: (e: TActionEvent) => void
-	onShowAfter?: () => void
-	onHideBefore?: (e: TActionEvent) => void
-	onHideAfter?: () => void
-	onChangeRendered?: (value: boolean) => void
-	onChangeVisible?: (value: boolean) => void
-	onChangePresent?: (value: boolean) => void
-}
+/** События слоя Component (колбэки-пропсы React), выведены из TComponentEvents. */
+export type TComponentEventProps = ReactEventProps<TComponentEvents>
 
 export type ComponentProps = TReactComponentProps<IComponentProps, IComponent> &
 	TComponentEventProps

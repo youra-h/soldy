@@ -3,18 +3,12 @@
  */
 
 import type { HTMLAttributes } from 'react'
-import type { IComponentView, IComponentViewProps } from '@soldy/core'
-import type { TComponentEventProps } from '../component'
+import type { IComponentView, IComponentViewProps, TComponentViewEvents } from '@soldy/core'
 import type { TReactComponentProps } from '../../types'
+import type { ReactEventProps, TElementEventProps } from '../../adapter'
 
-/** События слоя ComponentView. */
-export type TComponentViewEventProps = TComponentEventProps & {
-	onReady?: (value: boolean) => void
-	onChangeTag?: (value: string | object) => void
-	onChangeClasses?: (value: string[]) => void
-	onElementReady?: (el: HTMLElement) => void
-	onElementRemoved?: () => void
-}
+/** События слоя ComponentView (core-события + element-плагин), выведены автоматически. */
+export type TComponentViewEventProps = ReactEventProps<TComponentViewEvents> & TElementEventProps
 
 export type ComponentViewProps = TReactComponentProps<IComponentViewProps, IComponentView> &
 	TComponentViewEventProps &

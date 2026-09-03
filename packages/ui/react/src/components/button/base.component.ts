@@ -3,14 +3,12 @@
  */
 
 import type { HTMLAttributes } from 'react'
-import type { IButton, IButtonProps, TButtonView } from '@soldy/core'
-import type { TTextableEventProps } from '../textable'
+import type { IButton, IButtonProps, TButtonEvents } from '@soldy/core'
 import type { TReactComponentProps } from '../../types'
+import type { ReactEventProps, TElementEventProps } from '../../adapter'
 
-/** События слоя Button. */
-export type TButtonEventProps = TTextableEventProps & {
-	onChangeView?: (value: TButtonView) => void
-}
+/** События слоя Button (core-события + element-плагин), выведены автоматически. */
+export type TButtonEventProps = ReactEventProps<TButtonEvents> & TElementEventProps
 
 export type ButtonProps = TReactComponentProps<IButtonProps, IButton> &
 	TButtonEventProps &
