@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TTabItemCollectionFacade } from '@soldy/core'
 import type { ITabItemProps, ITabItem } from '@soldy/core'
-import { useVue, VueElevatorFactory } from '../../../adapter'
+import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseTabItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -31,12 +31,12 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useVue<Record<string, any>, TTabItemCollectionFacade>(
+		const itemBinding = useAdapter<Record<string, any>, TTabItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,
 		)
-		const ownerBinding = useVue<ITabItemProps, ITabItem>(adapter, props, emit)
+		const ownerBinding = useAdapter<ITabItemProps, ITabItem>(adapter, props, emit)
 
 		return {
 			...itemBinding,

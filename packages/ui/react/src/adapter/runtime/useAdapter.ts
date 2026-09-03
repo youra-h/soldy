@@ -1,5 +1,5 @@
 /**
- * useAdapter — единственный React-хук на весь проект (аналог useVue из Vue-пакета).
+ * useAdapter — единственный React-хук на весь проект (аналог useAdapter из Vue-пакета).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
  * createAdapterContext) и связывает его с React:

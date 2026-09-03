@@ -63,7 +63,7 @@ export const <Name>Descriptor = () =>
 ### 4. Vue adapter — `packages/ui/vue/src/components/<name>/`
 
 - `base.component.ts`: `extends: Base<X>`, `props`/`emits` from `useProps(<Name>Descriptor())` / `useEmits(<Name>Descriptor())`.
-- `setup.component.ts`: `createAdapterContext(<Name>Descriptor(), { ctrl: toRaw(props.ctrl), props })`, return `useVue<I<Name>Props, I<Name>>(adapter, props, emit)`.
+- `setup.component.ts`: `createAdapterContext(<Name>Descriptor(), { ctrl: toRaw(props.ctrl), props })`, return `useAdapter<I<Name>Props, I<Name>>(adapter, props, emit)`.
 - `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"`.
 - `index.ts`: export `Base<Name>` + `props<Name>`/`emits<Name>` and the `.vue` default.
 

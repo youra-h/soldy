@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, CheckBoxDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseCheckBox from './base.component'
 import { useIconImport, useSplitAttrs } from '../../composables'
 import type { TBaseComponentProps } from '../../types'
@@ -17,7 +17,7 @@ export default {
 		})
 
 		return {
-			...useVue<ICheckBoxProps, ICheckBox>(adapter, props, emit),
+			...useAdapter<ICheckBoxProps, ICheckBox>(adapter, props, emit),
 			defaultIconTag: useIconImport('check'),
 			defaultIndeterminateIconTag: useIconImport('checkIndeterminate'),
 			...useSplitAttrs(),

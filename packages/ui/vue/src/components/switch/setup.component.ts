@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, SwitchDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseSwitch from './base.component'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import type { TBaseComponentProps } from '../../types'
@@ -16,6 +16,6 @@ export default {
 			props,
 		})
 
-		return { ...useVue<ISwitchProps, ISwitch>(adapter, props, emit), ...useSplitAttrs() }
+		return { ...useAdapter<ISwitchProps, ISwitch>(adapter, props, emit), ...useSplitAttrs() }
 	},
 }

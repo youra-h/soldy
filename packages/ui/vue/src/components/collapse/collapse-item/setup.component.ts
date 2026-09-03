@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TCollapseItemCollectionFacade } from '@soldy/core'
 import type { ICollapseItemProps, ICollapseItem } from '@soldy/core'
-import { useVue, VueElevatorFactory } from '../../../adapter'
+import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
 import BaseCollapseItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -31,12 +31,12 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useVue<Record<string, any>, TCollapseItemCollectionFacade>(
+		const itemBinding = useAdapter<Record<string, any>, TCollapseItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,
 		)
-		const ownerBinding = useVue<ICollapseItemProps, ICollapseItem>(adapter, props, emit)
+		const ownerBinding = useAdapter<ICollapseItemProps, ICollapseItem>(adapter, props, emit)
 
 		return {
 			...itemBinding,

@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseButton from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type IButtonProps, type IButton } from '@soldy/core'
@@ -14,6 +14,6 @@ export default {
 			props,
 		})
 
-		return useVue<IButtonProps, IButton>(adapter, props, emit)
+		return useAdapter<IButtonProps, IButton>(adapter, props, emit)
 	},
 }

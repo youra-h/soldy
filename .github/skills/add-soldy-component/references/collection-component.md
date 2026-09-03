@@ -158,11 +158,11 @@ They are installed on the owner component; the engine is bound from the adapter 
 
 ## Vue wiring
 
-The parent setup creates **two adapter contexts sharing one bundle**, calls `useVue` on each, and merges the refs:
+The parent setup creates **two adapter contexts sharing one bundle**, calls `useAdapter` on each, and merges the refs:
 
 ```ts
 const adapter = createAdapterContext(TabsDescriptor(), { ctrl: toRaw(props.ctrl), props })
-const refs = useVue<ITabsComponentProps, ITabs>(adapter, props, emit)
+const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
 
 const collectionAdapter = createAdapterContext(
 	TabsCollectionDescriptor(),
@@ -172,14 +172,14 @@ const collectionAdapter = createAdapterContext(
 	.use(TCollectionExtension, { elevator: VueElevatorFactory })
 	.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-const refsCollection = useVue<Record<string, any>, TTabsCollectionFacade>(collectionAdapter, props, emit)
+const refsCollection = useAdapter<Record<string, any>, TTabsCollectionFacade>(collectionAdapter, props, emit)
 
 return { ...refs, ...refsCollection }
 ```
 
-The item setup mirrors this: `TabItemDescriptor` + `TabsCollectionItemDescriptor` (shared bundle, `defaultExtensions: []`) + `TCollectionItemExtension`, then two `useVue` calls.
+The item setup mirrors this: `TabItemDescriptor` + `TabsCollectionItemDescriptor` (shared bundle, `defaultExtensions: []`) + `TCollectionItemExtension`, then two `useAdapter` calls.
 
-`useVue` creates a `rootElement` ref and watches it **only when** the adapter has `TPluginsBindingExtension` — the collection facade context (`defaultExtensions: []`) has none, so it does not expose a competing `rootElement`.
+`useAdapter` creates a `rootElement` ref and watches it **only when** the adapter has `TPluginsBindingExtension` — the collection facade context (`defaultExtensions: []`) has none, so it does not expose a competing `rootElement`.
 
 ## Key files
 

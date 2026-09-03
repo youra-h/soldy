@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, SpinnerDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseSpinner from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type ISpinnerProps, type ISpinner } from '@soldy/core'
@@ -14,6 +14,6 @@ export default {
 			props,
 		})
 
-		return useVue<ISpinnerProps, ISpinner>(adapter, props, emit)
+		return useAdapter<ISpinnerProps, ISpinner>(adapter, props, emit)
 	},
 }

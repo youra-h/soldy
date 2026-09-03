@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TListBoxItemCollectionFacade } from '@soldy/core'
 import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
-import { useVue, VueElevatorFactory } from '../../../adapter'
+import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useSplitAttrs } from '../../../composables'
 import BaseListBoxItem from './base.component'
 import type { TBaseComponentProps } from '../../../types'
@@ -31,12 +31,12 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useVue<Record<string, any>, TListBoxItemCollectionFacade>(
+		const itemBinding = useAdapter<Record<string, any>, TListBoxItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,
 		)
-		const ownerBinding = useVue<IListBoxItemProps, IListBoxItem>(adapter, props, emit)
+		const ownerBinding = useAdapter<IListBoxItemProps, IListBoxItem>(adapter, props, emit)
 
 		return {
 			...itemBinding,

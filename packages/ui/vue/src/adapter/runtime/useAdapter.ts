@@ -1,5 +1,5 @@
 /**
- * useVue — единственный Vue-хук на весь проект.
+ * useAdapter — единственный Vue-хук на весь проект.
  *
  * 1. Навешивает реактивность (SyncProps / SyncEvents)
  * 2. Привязывает DOM-элемент через TPluginsBindingExtension
@@ -29,7 +29,7 @@ export type TUnwrapRefs<T> = {
 }
 
 /**
- * Итоговый тип, который возвращает useVue и который видит Vue-шаблон:
+ * Итоговый тип, который возвращает useAdapter и который видит Vue-шаблон:
  * - ctrl: сам инстанс контроллера TInstance
  * - plugins: бандл плагинов
  * - rootElement: ссылка на DOM-узел
@@ -42,7 +42,7 @@ export type TVueBinding<TProps, TInstance> = {
 } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
-export function useVue<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
+export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
 	adapter: IAdapterContext,
 	props: TProps,
 	emit?: (event: string, ...args: any[]) => void,

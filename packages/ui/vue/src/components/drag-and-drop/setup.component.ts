@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, TDragAndDropExtension, DragAndDropDescriptor } from '@soldy/setup'
-import { useVue, VueElevatorFactory } from '../../adapter'
+import { useAdapter, VueElevatorFactory } from '../../adapter'
 import BaseDragAndDrop from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type IDragAndDropProps } from '@soldy/core'
@@ -18,6 +18,6 @@ export default {
 			{ defaultExtensions: [] },
 		).use(TDragAndDropExtension, { elevator: VueElevatorFactory })
 
-		return useVue<IDragAndDropProps>(adapter, props, emit)
+		return useAdapter<IDragAndDropProps>(adapter, props, emit)
 	},
 }

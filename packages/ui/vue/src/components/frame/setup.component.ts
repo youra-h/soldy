@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, FrameDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseFrame from './base.component'
 import type { TBaseComponentProps } from '../../types'
 import { type IFrameProps, type IFrame } from '@soldy/core'
@@ -14,6 +14,6 @@ export default {
 			props,
 		})
 
-		return useVue<IFrameProps, IFrame>(adapter, props, emit)
+		return useAdapter<IFrameProps, IFrame>(adapter, props, emit)
 	},
 }

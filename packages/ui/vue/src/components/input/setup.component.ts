@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, InputDescriptor } from '@soldy/setup'
-import { useVue } from '../../adapter'
+import { useAdapter } from '../../adapter'
 import BaseInput from './base.component'
 import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import type { TBaseComponentProps } from '../../types'
@@ -16,6 +16,6 @@ export default {
 			props,
 		})
 
-		return { ...useVue<IInputProps, IInput>(adapter, props, emit), ...useSplitAttrs() }
+		return { ...useAdapter<IInputProps, IInput>(adapter, props, emit), ...useSplitAttrs() }
 	},
 }

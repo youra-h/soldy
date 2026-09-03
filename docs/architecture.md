@@ -222,7 +222,7 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 - `useEmits(descriptor)` - Generate Vue emits array + update:prop triggers
 
 #### Runtime Layer (`adapter/runtime/`)
-- `useVue<TProps, TInstance>()` - Main hook (syncs props, events, DOM)
+- `useAdapter<TProps, TInstance>()` - Main hook (syncs props, events, DOM)
   - Returns TVueBinding with `ctrl`, `plugins`, `rootElement`, props refs
   - Subscribed to all events, syncs DOM via ref watchers
   - Calls adapter.destroy() on unmount
@@ -256,14 +256,14 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
   // setup.component.ts - Lifecycle + adapter
   setup(props, { emit }) {
     const adapter = createAdapterContext(ButtonDescriptor, { ctrl: props.ctrl, props })
-    return useVue<IButtonProps, IButton>(adapter, props, emit)
+    return useAdapter<IButtonProps, IButton>(adapter, props, emit)
   }
   ```
 
 ### Key Files
 - [adapter/static/useProps.ts](packages/ui/vue/src/adapter/static/useProps.ts) - Vue props factory
 - [adapter/static/useEmits.ts](packages/ui/vue/src/adapter/static/useEmits.ts) - Vue emits factory
-- [adapter/runtime/useVue.ts](packages/ui/vue/src/adapter/runtime/useVue.ts) - Main hook
+- [adapter/runtime/useAdapter.ts](packages/ui/vue/src/adapter/runtime/useAdapter.ts) - Main hook
 - [components/button/](packages/ui/vue/src/components/button/) - Button component example
 - [composables/useComponentSetup.ts](packages/ui/vue/src/composables/useComponentSetup.ts) - Setup helper
 
@@ -300,7 +300,7 @@ BaseComponent (Entity props)
 - `adapter/common/` — `createInspector` (TDescriptorInspector + `ReactNaming`), `ReactNaming`, `resolveDefaultExtensions` (`[TPluginsBindingExtension]` only when descriptor has `TElementPlugin`, else `[]`), `naming.types.ts` (type-level mirror of `ReactNaming` for auto-derived event props)
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - `naming.types.ts` = PURE React naming transformers (`ReactEventName`, `ReactEventProps<T>`) mirroring `ReactNaming.event`. `plugins.types.ts` УДАЛЁН (per-plugin `TElementEventProps` и др. больше не нужны — всё покрывает `DescriptorAllEvents`). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `ReactEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
-- `adapter/runtime/` — `useAdapter(adapter, props)` (main hook — takes a READY adapter, аналог `useVue`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
+- `adapter/runtime/` — `useAdapter(adapter, props)` (main hook — takes a READY adapter, аналог `useAdapter`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
 - `adapter/elevator/` — `TReactElevator` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook, calls `createAdapterContext` directly) + view (`*.tsx`)
   - headless layers (`component`/`stylable`/`control`/`textable`): `base.component.ts` + `setup.component.ts` (no `.tsx` view, like Vue base layers)
@@ -373,7 +373,7 @@ setup(props, { emit }) {
      - Create accessor (TComponentAccessor)
      - Register TPluginsBindingExtension
      ↓
-  2. useVue(adapter, props, emit)
+  2. useAdapter(adapter, props, emit)
      ↓
      - useSyncProps: bidirectional prop binding (component → Vue refs)
      - useSyncEvents: event subscription + emit forwarding
@@ -492,7 +492,7 @@ Framework-agnostic dependency injection:
 | @soldy/accessor | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor |
 | @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin |
 | @soldy/plugins | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin |
-| @soldy/ui-vue | Vue components (Button, CheckBox, etc.), useVue, useProps, useEmits |
+| @soldy/ui-vue | Vue components (Button, CheckBox, etc.), useAdapter, useProps, useEmits |
 | @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
 | @soldy/ui-angular | Empty (export {}) |
 | @soldy/ui-svelte | Empty |
