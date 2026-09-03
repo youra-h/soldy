@@ -10,9 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@ui-vue': path.resolve(__dirname, 'src/index.ts'),
-      '@soldy/foundation/tailwind': path.resolve(__dirname, '../../foundation/src/tailwind/index.css'),
       '@soldy/core': path.resolve(__dirname, '../../core/src'),
-      '@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
       '@soldy/icons': path.resolve(__dirname, '../../icons/src'),
       '@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
       vue: 'vue/dist/vue.esm-bundler.js',
@@ -22,7 +20,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: (content: string) => {
-          const importLine = `@import "${path.resolve(__dirname, '../../foundation/src/tailwind/index.css')}";\n`
+          const importLine = `@import "${path.resolve(__dirname, '../../themes/oren/src/base.css')}";\n`
           const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
           if (matches.length > 0) {
             const last = matches[matches.length - 1]

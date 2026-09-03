@@ -1,5 +1,4 @@
 import type { ElementType, ReactElement } from 'react'
-import './button.scss'
 import { useButton, type ButtonProps } from './index'
 
 /**

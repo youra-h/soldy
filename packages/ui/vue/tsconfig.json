@@ -6,7 +6,6 @@
       "@ui": ["./src/components"],
       "@ui/*": ["./src/components/*"],
       "@soldy/core": ["../../core/src"],
-      "@soldy/foundation": ["../../foundation/src"],
       "@soldy/icons": ["../../icons/src"],
       "@soldy/plugins": ["../../plugins/src"]
     }

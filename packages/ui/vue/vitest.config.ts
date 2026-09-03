@@ -8,7 +8,6 @@ export default defineConfig({
 		alias: {
 			'@soldy/ui-vue': path.resolve(__dirname, 'src/index.ts'),
 			'@soldy/core': path.resolve(__dirname, '../../core/src'),
-			'@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
 			'@soldy/icons': path.resolve(__dirname, '../../icons/src'),
 			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
 			'@soldy/accessor': path.resolve(__dirname, '../../accessor/index.ts'),

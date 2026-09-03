@@ -5,7 +5,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "packages/ui/*"
+    "packages/ui/*",
+    "packages/themes/*"
   ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

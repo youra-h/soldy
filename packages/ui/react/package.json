@@ -15,7 +15,6 @@
   "dependencies": {
     "@soldy/accessor": "*",
     "@soldy/core": "*",
-    "@soldy/foundation": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
     "@soldy/setup": "*",
@@ -23,6 +22,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@soldy/theme-oren": "*",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

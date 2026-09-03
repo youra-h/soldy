@@ -1,4 +1,4 @@
-import '@soldy/foundation/tailwind'
+import '@soldy/theme-oren'
 
 import { createApp } from 'vue'
 import App from './App.vue'

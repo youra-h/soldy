@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@soldy/core": "*",
-    "@soldy/foundation": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
     "svelte": "^5.0.0"

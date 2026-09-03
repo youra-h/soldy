@@ -3,7 +3,7 @@ declare module '*.css' {
     export default content;
 }
 
-declare module '@soldy/foundation/tailwind' {
+declare module '@soldy/theme-oren' {
     const content: string;
     export default content;
 }

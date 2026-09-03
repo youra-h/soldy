@@ -7,10 +7,8 @@ export default defineConfig({
   root: 'demo',
   resolve: {
     alias: {
-      '@soldy/foundation/tailwind': path.resolve(__dirname, '../../foundation/src/tailwind/index.css'),
       '@soldy/accessor': path.resolve(__dirname, '../../accessor'),
       '@soldy/core': path.resolve(__dirname, '../../core/src'),
-      '@soldy/foundation': path.resolve(__dirname, '../../foundation/src'),
       '@soldy/icons': path.resolve(__dirname, '../../icons/src'),
       '@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
       '@soldy/setup': path.resolve(__dirname, '../../setup'),
@@ -20,7 +18,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: (content: string) => {
-          const importLine = `@import "${path.resolve(__dirname, '../../foundation/src/tailwind/index.css')}";\n`
+          const importLine = `@import "${path.resolve(__dirname, '../../themes/oren/src/base.css')}";\n`
           const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
           if (matches.length > 0) {
             const last = matches[matches.length - 1]

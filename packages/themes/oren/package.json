@@ -1,0 +1,24 @@
+{
+  "name": "@soldy/theme-oren",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.css",
+  "style": "./dist/index.css",
+  "exports": {
+    ".": "./dist/index.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "postcss": "^8.5.9",
+    "sass": "^1.99.0",
+    "tailwindcss": "^4.2.2"
+  }
+}

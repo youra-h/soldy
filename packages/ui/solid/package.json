@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@soldy/core": "*",
-    "@soldy/foundation": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
     "solid-js": "^1.9.0"
