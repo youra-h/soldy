@@ -68,3 +68,14 @@ export type MergeEvents<T extends readonly Record<string, (...args: any[]) => an
 		: Record<string, never>
 	: Record<string, never>
 
+/**
+ * TDescriptorNamespace<typeof ElementPluginDescriptor> → 'element'.
+ * Извлекает literal-namespace из фабрики дескриптора плагина, чтобы namespace
+ * был объявлен ТОЛЬКО в дескрипторе, а типы выводились из него.
+ */
+export type TDescriptorNamespace<T> = T extends (...args: any[]) => infer R
+	? R extends { namespace?: infer N }
+		? NonNullable<N>
+		: never
+	: never
+

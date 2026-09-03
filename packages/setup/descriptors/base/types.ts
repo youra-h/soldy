@@ -7,7 +7,7 @@ import type { IContribution, IPropDeclaration, TAccessor, TName } from '@soldy/a
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 
 /** Определение плагина в составе дескриптора. */
-export interface IPluginDefinition {
+export interface IPluginDefinition<N extends string | undefined = string | undefined> {
 	ctor: IPluginConstructor<any, any, any>
 	/** Нормализованные props из contribution */
 	props: IPropDeclaration[]
@@ -15,6 +15,8 @@ export interface IPluginDefinition {
 	events: TName[]
 	/** Опции, передаваемые в plugin.install(ctx, options) */
 	options?: Record<string, any>
+	/** Namespace плагина (проброшен из definePlugin для вывода типов в адаптерах). */
+	namespace?: N
 }
 
 /** Опции для defineComponent(). */

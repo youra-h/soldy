@@ -4,13 +4,10 @@
  *
  * Если у плагина есть contribution (props/events), то эти свойства и события
  * доступны фреймворку. Здесь для каждого такого плагина объявлен тип его
- * событийных колбэков в React-стиле (onXxx), выведенный из событийного
- * интерфейса плагина и его namespace.
+ * событийных колбэков в React-стиле (onXxx).
  *
- * Используются совместно с трансформерами из naming.types.ts:
- *
- *   ReactEventProps<NamespacedEvents<TElementServiceEvents, 'element'>>
- *     → { onElementReady?, onElementRemoved? }
+ * namespace НЕ дублируется: он выводится из дескриптора плагина через
+ * TDescriptorNamespace — единственный источник истины лежит в descriptors/plugins.
  */
 
 import type {
@@ -21,34 +18,54 @@ import type {
 	TSkeletonLayoutPluginEvents,
 	TSpinnerLayoutPluginEvents,
 } from '@soldy/plugins'
-import type { NamespacedEvents, ReactEventProps } from './naming.types'
+import type {
+	ElementPluginDescriptor,
+	FrameLayoutPluginDescriptor,
+	IconLayoutPluginDescriptor,
+	ListItemPluginDescriptor,
+	SkeletonLayoutPluginDescriptor,
+	SpinnerLayoutPluginDescriptor,
+} from '@soldy/setup'
+import type { NamespacedEvents, ReactEventProps, TDescriptorNamespace } from './naming.types'
 
-/** Element-плагин (namespace 'element'): onElementReady / onElementRemoved. */
-export type TElementEventProps = ReactEventProps<
-	NamespacedEvents<TElementServiceEvents, 'element'>
+/** Событийные колбэки плагина: namespace выводится из дескриптора. */
+type TPluginEventProps<
+	TEvents extends Record<string, (...args: any[]) => any>,
+	TDescriptor,
+> = ReactEventProps<NamespacedEvents<TEvents, TDescriptorNamespace<TDescriptor>>>
+
+/** Element-плагин: onElementReady / onElementRemoved. */
+export type TElementEventProps = TPluginEventProps<
+	TElementServiceEvents,
+	typeof ElementPluginDescriptor
 >
 
-/** FrameLayout-плагин (namespace 'layout'): onLayoutChangeStyles / onLayoutChangeAnchor. */
-export type TFrameLayoutEventProps = ReactEventProps<
-	NamespacedEvents<TFrameLayoutPluginEvents, 'layout'>
+/** FrameLayout-плагин: onLayoutChangeStyles / onLayoutChangeAnchor. */
+export type TFrameLayoutEventProps = TPluginEventProps<
+	TFrameLayoutPluginEvents,
+	typeof FrameLayoutPluginDescriptor
 >
 
-/** IconLayout-плагин (namespace 'layout'): onLayoutChangeStyles. */
-export type TIconLayoutEventProps = ReactEventProps<
-	NamespacedEvents<TIconLayoutPluginEvents, 'layout'>
+/** IconLayout-плагин: onLayoutChangeStyles. */
+export type TIconLayoutEventProps = TPluginEventProps<
+	TIconLayoutPluginEvents,
+	typeof IconLayoutPluginDescriptor
 >
 
-/** ListItem-плагин (namespace 'listItem'): onListItemChangeHighlighted. */
-export type TListItemEventProps = ReactEventProps<
-	NamespacedEvents<TListItemPluginEvents, 'listItem'>
+/** ListItem-плагин: onListItemChangeHighlighted. */
+export type TListItemEventProps = TPluginEventProps<
+	TListItemPluginEvents,
+	typeof ListItemPluginDescriptor
 >
 
-/** SkeletonLayout-плагин (namespace 'layout'): onLayoutChangeStyles. */
-export type TSkeletonLayoutEventProps = ReactEventProps<
-	NamespacedEvents<TSkeletonLayoutPluginEvents, 'layout'>
+/** SkeletonLayout-плагин: onLayoutChangeStyles. */
+export type TSkeletonLayoutEventProps = TPluginEventProps<
+	TSkeletonLayoutPluginEvents,
+	typeof SkeletonLayoutPluginDescriptor
 >
 
-/** SpinnerLayout-плагин (namespace 'layout'): onLayoutChangeStyles. */
-export type TSpinnerLayoutEventProps = ReactEventProps<
-	NamespacedEvents<TSpinnerLayoutPluginEvents, 'layout'>
+/** SpinnerLayout-плагин: onLayoutChangeStyles. */
+export type TSpinnerLayoutEventProps = TPluginEventProps<
+	TSpinnerLayoutPluginEvents,
+	typeof SpinnerLayoutPluginDescriptor
 >
