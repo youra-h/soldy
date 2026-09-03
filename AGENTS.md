@@ -73,4 +73,5 @@ npm run format       # Prettier
 
 ## Docs
 
+- `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins/accessor, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
 - `packages/ui/vue/demo/README.md` — Vue playground structure and usage.
