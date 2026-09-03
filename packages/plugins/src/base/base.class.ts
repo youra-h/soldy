@@ -8,10 +8,10 @@ export abstract class TBasePlugin<
 	readonly events: TEvented<TEvents> = new TEvented<TEvents>()
 
 	install(ctx: IPluginContext, options?: any): void {
-		;(this.events as TEvented<TPluginEvents>).emit('install', ctx, options)
+		;(this.events as unknown as TEvented<TPluginEvents>).emit('install', ctx, options)
 	}
 
 	destroy(): void {
-		;(this.events as TEvented<TPluginEvents>).emit('destroy', {} as IPluginContext, undefined)
+		;(this.events as unknown as TEvented<TPluginEvents>).emit('destroy', {} as IPluginContext, undefined)
 	}
 }

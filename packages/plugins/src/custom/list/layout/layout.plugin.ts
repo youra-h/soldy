@@ -49,7 +49,7 @@ export class TListLayoutPlugin extends TBasePlugin<any, TListLayoutPluginEvents>
 
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
-		bundles?.events.on('collection:bound', (collection) => {
+		bundles?.events.on('engine:bound', (collection) => {
 			this._collection = collection
 
 			collection.driver.events.on('change:items', () => this._scheduleUpdate())

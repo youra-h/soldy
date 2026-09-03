@@ -45,7 +45,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
-		bundles?.events.on('collection:bound', (collection) => {
+		bundles?.events.on('engine:bound', (collection) => {
 			this._subscribeToCollection(collection)
 		})
 

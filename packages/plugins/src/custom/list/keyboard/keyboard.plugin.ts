@@ -35,7 +35,7 @@ export class TListKeyboardPlugin extends TBasePlugin<any, TListKeyboardPluginEve
 			this._element = null
 		})
 
-		this._bundles?.events.on('collection:bound', (collection) => {
+		this._bundles?.events.on('engine:bound', (collection) => {
 			this._collection = collection
 
 			const selected = collection.extensions.selection.selected as IListItem[]
