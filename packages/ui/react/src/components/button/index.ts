@@ -2,26 +2,11 @@
  * Button — конкретный компонент на базе TButton.
  */
 
-import type { HTMLAttributes } from 'react'
-import { ButtonDescriptor } from '@soldy/setup'
-import type { IButton, IButtonProps, TButtonView } from '@soldy/core'
-import { useComponent } from '../../adapter'
-import type { TComponentBinding } from '../../adapter'
-import type { TTextableEventProps } from '../textable'
-import type { TReactComponentProps } from '../../types'
+// 1. Base (типы и пропсы)
+export * from './base.component'
 
-/** События слоя Button. */
-export type TButtonEventProps = TTextableEventProps & {
-	onChangeView?: (value: TButtonView) => void
-}
+// 2. Setup (логика и хуки)
+export { useSetupButton } from './setup.component'
 
-export type ButtonProps = TReactComponentProps<IButtonProps, IButton> &
-	TButtonEventProps &
-	HTMLAttributes<HTMLElement>
-
-/** Хук слоя Button. */
-export function useButton(props: ButtonProps): TComponentBinding<IButton> {
-	return useComponent<IButtonProps, IButton>(ButtonDescriptor, props)
-}
-
+// 3. View (JSX-шаблон)
 export { Button } from './Button'

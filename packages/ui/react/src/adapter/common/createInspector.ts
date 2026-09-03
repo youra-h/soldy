@@ -20,8 +20,11 @@ export function createInspector(
 	// Статика: IComponentDescriptor
 	const descriptor = source as IComponentDescriptor
 
-	const allProps = [...descriptor.props, ...descriptor.plugins?.flatMap((p) => p.props)]
-	const allEvents = [...descriptor.events, ...descriptor.plugins?.flatMap((p) => p.events)]
+	const pluginProps = descriptor.plugins?.flatMap((p) => p.props ?? []) ?? []
+	const pluginEvents = descriptor.plugins?.flatMap((p) => p.events ?? []) ?? []
+
+	const allProps = [...descriptor.props, ...pluginProps]
+	const allEvents = [...descriptor.events, ...pluginEvents]
 
 	return new TDescriptorInspector(allProps, allEvents, naming)
 }

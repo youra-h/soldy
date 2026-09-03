@@ -1,5 +1,6 @@
 import type { ElementType, ReactElement } from 'react'
-import { useButton, type ButtonProps } from './index'
+import { useSetupButton } from './setup.component'
+import type { ButtonProps } from './base.component'
 
 /**
  * Button — рендерит кнопку с текстом из Core.
@@ -9,7 +10,7 @@ import { useButton, type ButtonProps } from './index'
  * - disabled → `disabled` у нативного button, иначе `aria-disabled`
  */
 export function Button(props: ButtonProps): ReactElement | null {
-	const { ref, forwardProps, state } = useButton(props)
+	const { ref, forwardProps, state } = useSetupButton(props)
 
 	const { rendered, visible, tag, classes, disabled, text } = state
 

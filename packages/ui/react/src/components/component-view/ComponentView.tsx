@@ -1,5 +1,6 @@
 import type { ElementType, ReactElement } from 'react'
-import { useComponentView, type ComponentViewProps } from './index'
+import { useSetupComponentView } from './setup.component'
+import type { ComponentViewProps } from './base.component'
 
 /**
  * ComponentView — рендерит динамический `tag` с классами из Core.
@@ -8,7 +9,7 @@ import { useComponentView, type ComponentViewProps } from './index'
  * - `visible` — v-show (display: none при false)
  */
 export function ComponentView(props: ComponentViewProps): ReactElement | null {
-	const { ref, forwardProps, state } = useComponentView(props)
+	const { ref, forwardProps, state } = useSetupComponentView(props)
 
 	const { rendered, visible, tag, classes } = state
 

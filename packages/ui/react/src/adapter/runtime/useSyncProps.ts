@@ -1,16 +1,27 @@
 /**
- * useSyncProps — связывает Core и React-состояние.
+ * useSyncProps — связывает Core и React-состояние (аналог Vue useSyncProps).
  *
- * - bindOutput: читает начальные значения из accessor и подписывается на триггеры
- *   (Core → React): при каждом событии перечитывает значение через accessor.getValue()
- *   и диспатчит обновление состояния.
+ * Возвращает { state, bindOutput, bindInput, cleanup }:
  *
- * Вход (React → Core) обрабатывается отдельно в useComponent через effect,
- * чтобы не плодить циклические обновления.
+ * - bindOutput(): Core → React (Output). Подписывается на триггеры props
+ *   и перечитывает значение через accessor.getValue() при каждом событии.
+ *   Возвращает функцию отписки (используется как cleanup useEffect'а).
+ *
+ * - bindInput(props): React → Core (Input). Синхронизирует внешние props
+ *   во внутреннее состояние Core (с guard'ом от записи того же значения).
+ *
+ * - cleanup(): снимает все подписки Output.
  */
 
-import { useEffect, useReducer } from 'react'
+import { useReducer } from 'react'
 import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/accessor'
+
+export interface ISyncOptions {
+	/** Коллбэк перед записью значения из React во внутренний Core */
+	onInput?: (prop: IAccessorProp, value: any) => any
+	/** Коллбэк при обновлении значения из Core в React */
+	onOutput?: (prop: IAccessorProp, value: any) => void
+}
 
 type TState = Record<string, any>
 type TAction = { name: string; value: any }
@@ -56,10 +67,16 @@ function reducer(prev: TState, action: TAction): TState {
 	return { ...prev, [action.name]: action.value }
 }
 
-export function useSyncProps(accessor: IAccessor, inspector: TDescriptorInspector): TState {
+export function useSyncProps(
+	accessor: IAccessor,
+	inspector: TDescriptorInspector,
+	options: ISyncOptions = {},
+) {
 	const [state, dispatch] = useReducer(reducer, undefined, () => buildState(accessor, inspector))
+	const cleanupFns: Array<() => void> = []
 
-	useEffect(() => {
+	// 1. Core → React (Output): подписка на триггеры props
+	function bindOutput(): () => void {
 		const offs: Array<() => void> = []
 
 		for (const prop of accessor.getProps(true) as IAccessorProp[]) {
@@ -74,7 +91,10 @@ export function useSyncProps(accessor: IAccessor, inspector: TDescriptorInspecto
 
 			for (const rawTrigger of rawTriggers) {
 				const handler = () => {
-					dispatch({ name: exportName, value: cloneValue(accessor.getValue(prop)) })
+					const value = cloneValue(accessor.getValue(prop))
+
+					dispatch({ name: exportName, value })
+					options.onOutput?.(prop, value)
 				}
 
 				eventSource.on(rawTrigger, handler)
@@ -82,8 +102,39 @@ export function useSyncProps(accessor: IAccessor, inspector: TDescriptorInspecto
 			}
 		}
 
-		return () => offs.forEach((off) => off())
-	}, [accessor, inspector])
+		cleanupFns.push(...offs)
 
-	return state
+		return () => offs.forEach((off) => off())
+	}
+
+	// 2. React → Core (Input): синхронизация внешних props
+	function bindInput(props: Record<string, any>): void {
+		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
+			const exportName = inspector.getExportPropName(prop)
+			const value = props[exportName] ?? props[prop.name.name]
+
+			if (value === undefined) continue
+
+			// Не пишем в Core, если значение не изменилось: сеттеры вроде
+			// `visible` → show()/hide() эмитят show:before/hide:before даже
+			// при том же значении, что даёт бесконечный цикл ре-рендеров.
+			if (accessor.getValue(prop) === value) continue
+
+			const valueToSet = options.onInput ? options.onInput(prop, value) : value
+
+			accessor.setValue(prop, valueToSet)
+		}
+	}
+
+	function cleanup(): void {
+		cleanupFns.forEach((fn) => fn())
+		cleanupFns.length = 0
+	}
+
+	return {
+		state,
+		bindOutput,
+		bindInput,
+		cleanup,
+	}
 }

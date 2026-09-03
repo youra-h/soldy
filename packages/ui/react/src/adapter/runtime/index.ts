@@ -1,8 +1,5 @@
-export { useComponent } from './useComponent'
+export { useReact } from './useReact'
 export { useSyncProps } from './useSyncProps'
 export { useSyncEvents } from './useSyncEvents'
-export type {
-	TDescriptorSource,
-	TUseComponentOptions,
-	TComponentBinding,
-} from './useComponent'
+export type { TReactBinding } from './useReact'
+export type { ISyncOptions } from './useSyncProps'
