@@ -25,9 +25,3 @@ export default { ...SetupCollapse, components: { CollapseItem } }
 		</slot>
 	</div>
 </template>
-
-<style lang="scss">
-.s-collapse {
-	@apply flex flex-col gap-1;
-}
-</style>

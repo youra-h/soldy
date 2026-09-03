@@ -33,32 +33,3 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		<slot name="footer" />
 	</div>
 </template>
-
-<style lang="scss">
-.s-list-box {
-	@apply flex flex-col gap-1;
-	@apply rounded-md;
-	@apply min-w-40 max-w-80;
-	@apply text-s-component;
-
-	&:focus-visible {
-		&:not([aria-disabled='true']) {
-			@apply outline-2 outline-offset-2 outline-s-component;
-		}
-	}
-
-	&--auto-width {
-		@apply w-max min-w-0 max-w-none;
-	}
-
-	&--word-wrap {
-		.s-button {
-			@apply min-h-fit;
-
-			&__text {
-				@apply whitespace-normal overflow-visible;
-			}
-		}
-	}
-}
-</style>

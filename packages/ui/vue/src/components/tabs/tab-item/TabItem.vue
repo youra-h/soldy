@@ -49,32 +49,3 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		</Button>
 	</div>
 </template>
-
-<style lang="scss">
-.s-tab-item {
-	$this: &;
-
-	> * {
-		@apply opacity-75;
-		@apply w-full py-2;
-
-		#{$this}__close {
-			@apply px-1;
-		}
-
-		&:hover:not([disabled]) {
-			@apply opacity-100;
-		}
-
-		&:focus-visible {
-			@apply outline-2 -outline-offset-2 outline-s-component;
-		}
-	}
-
-	&[aria-selected='true'] {
-		> * {
-			@apply opacity-100;
-		}
-	}
-}
-</style>

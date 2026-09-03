@@ -15,19 +15,3 @@ export default { ...SetupIcon }
 	>
 	</component>
 </template>
-
-<style lang="scss">
-.s-icon {
-	&--size-normal {
-		@apply w-[1em] h-[1em];
-	}
-
-	&--size-lg {
-		@apply w-[1.35em] h-[1.35em];
-	}
-
-	&--size-sm {
-		@apply w-[.875em] h-[.875em];
-	}
-}
-</style>

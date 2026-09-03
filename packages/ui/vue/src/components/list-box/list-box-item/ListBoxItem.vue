@@ -40,25 +40,3 @@ export default { ...SetupListBoxItem, components: { Button } }
 		</Button>
 	</div>
 </template>
-
-<style lang="scss">
-.s-list-box-item {
-	@apply min-h-fit;
-
-	.s-button {
-		&__text {
-			@apply text-left min-w-0;
-		}
-	}
-
-	&[data-word-wrap='true'] {
-		.s-button {
-			@apply min-h-fit;
-
-			&__text {
-				@apply whitespace-normal overflow-visible;
-			}
-		}
-	}
-}
-</style>
