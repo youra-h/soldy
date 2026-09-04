@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@soldy/accessor": ["../../accessor"],
+      "@soldy/core": ["../../core/src"],
+      "@soldy/icons": ["../../icons/src"],
+      "@soldy/plugins": ["../../plugins/src"],
+      "@soldy/setup": ["../../setup"]
+    }
+  },
+  "include": ["env.d.ts", "src/**/*", "demo/**/*"]
+}
