@@ -9,14 +9,13 @@ import { TTabItemCollectionFacade } from '@soldy/core'
 import type { ITabItemProps, ITabItem } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import BaseTabItem from './base.component'
-import type { TBaseComponentProps } from '../../../types'
+import BaseTabItem, { type TabItemProps } from './base.component'
 
 export default {
 	name: '_TabItem',
 	inheritAttrs: false,
 	extends: BaseTabItem,
-	setup(props: TBaseComponentProps<ITabItemProps, ITabItem>, { emit }: any) {
+	setup(props: TabItemProps, { emit }: any) {
 		const adapter = createAdapterContext(TabItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

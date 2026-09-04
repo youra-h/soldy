@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../base'
 import { TSwitch } from '@soldy/core'
+import type { ISwitchProps, TSwitchEvents } from '@soldy/core'
 import { InputBoolPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const SwitchDescriptor = () =>
-	defineComponent({
+	defineComponent<ISwitchProps, TSwitchEvents>()({
 		ctor: TSwitch,
 
 		extends: InputControlDescriptor(),

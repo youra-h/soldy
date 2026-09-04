@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../base'
 import { TValueControl } from '@soldy/core'
+import type { IValueControlProps, TValueControlEvents } from '@soldy/core'
 import { ValueControlContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
 export const ValueControlDescriptor = () =>
-	defineComponent({
+	defineComponent<IValueControlProps<any>, TValueControlEvents<any>>()({
 		ctor: TValueControl,
 
 		extends: ControlDescriptor(),

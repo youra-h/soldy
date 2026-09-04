@@ -7,12 +7,13 @@
 
 import { defineComponent } from '../base'
 import { TSkeleton } from '@soldy/core'
+import type { ISkeletonProps, TSkeletonEvents } from '@soldy/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'
 import { SkeletonContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = () =>
-	defineComponent({
+	defineComponent<ISkeletonProps, TSkeletonEvents>()({
 		ctor: TSkeleton,
 
 		extends: ComponentViewDescriptor(),

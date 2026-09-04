@@ -10,6 +10,7 @@
 
 import { defineComponent } from '../base'
 import { TFrame } from '@soldy/core'
+import type { IFrameProps, TFrameEvents } from '@soldy/core'
 import {
 	ElementPluginDescriptor,
 	ReadyPluginDescriptor,
@@ -19,7 +20,7 @@ import { FrameContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const FrameDescriptor = () =>
-	defineComponent({
+	defineComponent<IFrameProps, TFrameEvents>()({
 		ctor: TFrame,
 
 		extends: ComponentDescriptor(),

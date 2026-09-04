@@ -7,6 +7,7 @@
 
 import { defineComponent } from '../../base'
 import { TListBox } from '@soldy/core'
+import type { IListBoxProps, TListBoxEvents } from '@soldy/core'
 import { ListBoxContribution } from '../../../contributions'
 import { ListDescriptor } from '../list'
 import {
@@ -19,7 +20,7 @@ import {
 } from '../../plugins'
 
 export const ListBoxDescriptor = () =>
-	defineComponent({
+	defineComponent<IListBoxProps, TListBoxEvents>()({
 		ctor: TListBox,
 
 		extends: ListDescriptor(),

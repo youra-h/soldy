@@ -8,14 +8,13 @@ import {
 } from '@soldy/setup'
 import { TTabsCollectionFacade } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../adapter'
-import BaseTabs from './base.component'
-import type { TBaseComponentProps } from '../../types'
+import BaseTabs, { type TabsProps } from './base.component'
 import { type ITabsProps, type ITabsComponentProps, type ITabs } from '@soldy/core'
 
 export default {
 	name: '_Tabs',
 	extends: BaseTabs,
-	setup(props: TBaseComponentProps<ITabsProps, ITabs>, { emit }: any) {
+	setup(props: TabsProps, { emit }: any) {
 		const adapter = createAdapterContext(TabsDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

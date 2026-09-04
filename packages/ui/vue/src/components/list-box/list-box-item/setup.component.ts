@@ -9,14 +9,13 @@ import { TListBoxItemCollectionFacade } from '@soldy/core'
 import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useSplitAttrs } from '../../../composables'
-import BaseListBoxItem from './base.component'
-import type { TBaseComponentProps } from '../../../types'
+import BaseListBoxItem, { type ListBoxItemProps } from './base.component'
 
 export default {
 	name: '_ListBoxItem',
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
-	setup(props: TBaseComponentProps<IListBoxItemProps, IListBoxItem>, { emit }: any) {
+	setup(props: ListBoxItemProps, { emit }: any) {
 		const adapter = createAdapterContext(ListBoxItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

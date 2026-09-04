@@ -1,14 +1,13 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, SpinnerDescriptor } from '@soldy/setup'
 import { useAdapter } from '../../adapter'
-import BaseSpinner from './base.component'
-import type { TBaseComponentProps } from '../../types'
+import BaseSpinner, { type SpinnerProps } from './base.component'
 import { type ISpinnerProps, type ISpinner } from '@soldy/core'
 
 export default {
 	name: '_Spinner',
 	extends: BaseSpinner,
-	setup(props: TBaseComponentProps<ISpinnerProps, ISpinner>, { emit }: any) {
+	setup(props: SpinnerProps, { emit }: any) {
 		const adapter = createAdapterContext(SpinnerDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

@@ -9,6 +9,7 @@
 
 import { defineComponent } from '../../base'
 import { TTabs } from '@soldy/core'
+import type { ITabsProps, TTabsEvents } from '@soldy/core'
 
 import { TabsContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
@@ -22,7 +23,7 @@ import {
 } from '../../plugins'
 
 export const TabsDescriptor = () =>
-	defineComponent({
+	defineComponent<ITabsProps, TTabsEvents>()({
 		ctor: TTabs,
 
 		extends: ControlDescriptor(),

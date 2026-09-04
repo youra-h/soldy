@@ -9,6 +9,7 @@
 
 import { defineComponent } from '../../base'
 import { TCollapse } from '@soldy/core'
+import type { ICollapseProps, TCollapseEvents } from '@soldy/core'
 import { CollapseContribution } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 import {
@@ -18,7 +19,7 @@ import {
 } from '../../plugins'
 
 export const CollapseDescriptor = () =>
-	defineComponent({
+	defineComponent<ICollapseProps, TCollapseEvents>()({
 		ctor: TCollapse,
 
 		extends: ControlDescriptor(),

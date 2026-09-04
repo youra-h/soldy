@@ -9,14 +9,13 @@ import { TCollapseItemCollectionFacade } from '@soldy/core'
 import type { ICollapseItemProps, ICollapseItem } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import BaseCollapseItem from './base.component'
-import type { TBaseComponentProps } from '../../../types'
+import BaseCollapseItem, { type CollapseItemProps } from './base.component'
 
 export default {
 	name: '_CollapseItem',
 	inheritAttrs: false,
 	extends: BaseCollapseItem,
-	setup(props: TBaseComponentProps<ICollapseItemProps, ICollapseItem>, { emit }: any) {
+	setup(props: CollapseItemProps, { emit }: any) {
 		const adapter = createAdapterContext(CollapseItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

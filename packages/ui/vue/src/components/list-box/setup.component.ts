@@ -8,14 +8,13 @@ import {
 } from '@soldy/setup'
 import { TListBoxCollectionFacade } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../adapter'
-import BaseListBox from './base.component'
-import type { TBaseComponentProps } from '../../types'
+import BaseListBox, { type ListBoxProps } from './base.component'
 import { type IListBoxProps, type IListBoxComponentProps, type IListBox } from '@soldy/core'
 
 export default {
 	name: '_ListBox',
 	extends: BaseListBox,
-	setup(props: TBaseComponentProps<IListBoxProps, IListBox>, { emit }: any) {
+	setup(props: ListBoxProps, { emit }: any) {
 		const adapter = createAdapterContext(ListBoxDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

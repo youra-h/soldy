@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../../base'
 import { TTabItem } from '@soldy/core'
+import type { ITabItemProps, TTabItemEvents } from '@soldy/core'
 import { TabItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const TabItemDescriptor = () =>
-	defineComponent({
+	defineComponent<ITabItemProps, TTabItemEvents>()({
 		ctor: TTabItem,
 
 		extends: ValueControlDescriptor(),

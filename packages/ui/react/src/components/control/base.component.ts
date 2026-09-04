@@ -3,6 +3,6 @@ import type { ControlDescriptor } from '@soldy/setup'
 import type { EventProps, UseProps } from '../../types'
 
 /** События слоя Control (core + плагины), выведены из дескриптора автоматически. */
-export type TControlEventProps = EventProps<typeof ControlDescriptor>
+export type ControlEventProps = EventProps<typeof ControlDescriptor>
 
-export type ControlProps = UseProps<typeof ControlDescriptor, IControl, TControlEventProps>
+export type ControlProps = UseProps<typeof ControlDescriptor, IControl, ControlEventProps>

@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../../base'
 import { TCollapseItem } from '@soldy/core'
+import type { ICollapseItemProps, TCollapseItemEvents } from '@soldy/core'
 import { CollapseItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const CollapseItemDescriptor = () =>
-	defineComponent({
+	defineComponent<ICollapseItemProps, TCollapseItemEvents>()({
 		ctor: TCollapseItem,
 
 		extends: ValueControlDescriptor(),

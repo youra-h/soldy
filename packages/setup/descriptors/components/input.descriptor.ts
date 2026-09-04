@@ -7,12 +7,13 @@
 
 import { defineComponent } from '../base'
 import { TInput } from '@soldy/core'
+import type { IInputProps, TInputEvents } from '@soldy/core'
 import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const InputDescriptor = () =>
-	defineComponent({
+	defineComponent<IInputProps, TInputEvents>()({
 		ctor: TInput,
 
 		extends: InputControlDescriptor(),

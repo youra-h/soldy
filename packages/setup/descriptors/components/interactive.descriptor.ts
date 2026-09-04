@@ -7,11 +7,12 @@
 
 import { defineComponent } from '../base'
 import { TInteractive } from '@soldy/core'
+import type { IInteractiveProps, TInteractiveEvents } from '@soldy/core'
 import { InteractiveContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const InteractiveDescriptor = () =>
-	defineComponent({
+	defineComponent<IInteractiveProps, TInteractiveEvents>()({
 		ctor: TInteractive,
 
 		extends: ComponentViewDescriptor(),
