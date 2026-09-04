@@ -94,6 +94,24 @@ describe('дескрипторы компонентов (наследовани�
 		).toBe(true)
 	})
 
+	it('ButtonDescriptor.getProps/getEvents агрегируют собственные и плагинные объявления', () => {
+		const d = ButtonDescriptor()
+
+		// Собственные props (без плагинов — у Element/Ready их нет)
+		const props = d.getProps().map((p) => p.name.name)
+		for (const expected of ['view', 'text', 'disabled', 'tag', 'classes']) {
+			expect(props).toContain(expected)
+		}
+
+		// Плагинные события попадают в getEvents с namespace
+		const events = d.getEvents().map((e) => e.getName())
+		expect(events).toContain('element:ready')
+		expect(events).toContain('element:removed')
+		// Собственные события тоже присутствуют
+		expect(events).toContain('ready')
+		expect(events).toContain('show')
+	})
+
 	it('ComponentViewDescriptor содержит Element/Ready, DragAndDropDescriptor — нет', () => {
 		const cv = ComponentViewDescriptor()
 		const cvBundle = cv.createBundle(new TComponentView())

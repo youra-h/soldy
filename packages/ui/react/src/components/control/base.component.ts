@@ -1,17 +1,8 @@
-/**
- * Control — слой disabled/focused.
- */
-
 import type { IControl } from '@soldy/core'
-import type { ControlDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
-import type { TReactComponentProps } from '../../types'
-import type { ReactEventProps } from '../../adapter'
+import type { ControlDescriptor } from '@soldy/setup'
+import type { EventProps, UseProps } from '../../types'
 
 /** События слоя Control (core + плагины), выведены из дескриптора автоматически. */
-export type TControlEventProps = ReactEventProps<DescriptorAllEvents<typeof ControlDescriptor>>
+export type TControlEventProps = EventProps<typeof ControlDescriptor>
 
-export type ControlProps = TReactComponentProps<
-	DescriptorProps<typeof ControlDescriptor>,
-	IControl
-> &
-	TControlEventProps
+export type ControlProps = UseProps<typeof ControlDescriptor, IControl, TControlEventProps>

@@ -8,7 +8,7 @@
  */
 
 import { TPluginBundle } from '@soldy/plugins'
-import { TAccessor, type IPropDeclaration } from '@soldy/accessor'
+import { TAccessor, type IPropDeclaration, type TName } from '@soldy/accessor'
 import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { normalizeContribution } from './compile-contribution'
 
@@ -48,6 +48,14 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 		props,
 		events,
 		plugins,
+
+		getProps(): IPropDeclaration[] {
+			return [...props, ...plugins.flatMap((p) => p.props ?? [])]
+		},
+
+		getEvents(): TName[] {
+			return [...events, ...plugins.flatMap((p) => p.events ?? [])]
+		},
 
 		createBundle(instance: any) {
 			if (plugins.length === 0) {

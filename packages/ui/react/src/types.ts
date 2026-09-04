@@ -2,9 +2,11 @@
  * Общие типы для React-адаптера @soldy/ui-react.
  */
 
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 import type { IEntity } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
+import type { IComponentDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
+import type { ReactEventProps } from './adapter/common/naming.types'
 
 /**
  * Базовые props React-компонента: core-props + служебные поля.
@@ -21,3 +23,22 @@ export type TReactComponentProps<
 	plugins?: IPluginBundle
 	children?: ReactNode
 }
+
+/** Событийные пропсы компонента из дескриптора (core + плагины): ReactEventProps<DescriptorAllEvents<...>>. */
+export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
+	ReactEventProps<DescriptorAllEvents<TDescriptorFn>>
+
+/** Props headless-компонента: core props + события + служебные поля. */
+export type UseProps<
+	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
+	TInstance extends IEntity = IEntity,
+	TEvents extends object = EventProps<TDescriptorFn>,
+> = TReactComponentProps<DescriptorProps<TDescriptorFn>, TInstance> & TEvents
+
+/** Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с core props. */
+export type UseDomProps<
+	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
+	TInstance extends IEntity = IEntity,
+	TEvents extends object = EventProps<TDescriptorFn>,
+> = UseProps<TDescriptorFn, TInstance, TEvents> &
+	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorProps<TDescriptorFn>>

@@ -9,18 +9,9 @@ import type { PropType } from 'vue'
 import type { IComponentDescriptor } from '@soldy/setup'
 import { createInspector } from '../common'
 
-/**
- * Приводит агностичный type из ядра к формату Vue (PropType)
- */
 function resolveVueType(rawType: any): PropType<any> | undefined {
 	if (!rawType) return undefined
-
-	// Если тип был задефайнен через наш defineType<T>(Object / Array)
-	if (typeof rawType === 'object' && rawType.ctor) {
-		return rawType.ctor as PropType<any>
-	}
-
-	// Если передали обычный JS-конструктор (Boolean, String, Object)
+	if (typeof rawType === 'object' && rawType.ctor) return rawType.ctor as PropType<any>
 	return rawType as PropType<any>
 }
 

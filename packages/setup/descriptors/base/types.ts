@@ -50,10 +50,15 @@ export interface IComponentDescriptor<
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
 > {
 	ctor: any
-	/** Статические объявления для useProps/useEmits (без instances) */
+	/** Own component props (excluding plugin props). */
 	props: IPropDeclaration[]
+	/** Own component events (excluding plugin events). */
 	events: TName[]
 	plugins: IPluginDefinition[]
+	/** All props: own + all plugin props (flat). */
+	getProps(): IPropDeclaration[]
+	/** All events: own + all plugin events (flat). */
+	getEvents(): TName[]
 
 	createBundle(instance: any): IPluginBundle | null
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */

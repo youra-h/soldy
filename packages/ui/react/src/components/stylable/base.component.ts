@@ -1,17 +1,8 @@
-/**
- * Stylable — слой size/variant.
- */
-
 import type { IStylable } from '@soldy/core'
-import type { StylableDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
-import type { TReactComponentProps } from '../../types'
-import type { ReactEventProps } from '../../adapter'
+import type { StylableDescriptor } from '@soldy/setup'
+import type { EventProps, UseProps } from '../../types'
 
 /** События слоя Stylable (core + плагины), выведены из дескриптора автоматически. */
-export type TStylableEventProps = ReactEventProps<DescriptorAllEvents<typeof StylableDescriptor>>
+export type TStylableEventProps = EventProps<typeof StylableDescriptor>
 
-export type StylableProps = TReactComponentProps<
-	DescriptorProps<typeof StylableDescriptor>,
-	IStylable
-> &
-	TStylableEventProps
+export type StylableProps = UseProps<typeof StylableDescriptor, IStylable, TStylableEventProps>
