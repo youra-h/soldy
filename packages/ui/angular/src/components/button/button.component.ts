@@ -3,27 +3,21 @@ import {
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
 	ElementRef,
-	EventEmitter,
-	Input,
-	OnInit,
-	OnChanges,
 	AfterViewInit,
-	OnDestroy,
-	SimpleChanges,
 	ViewChild,
-	inject,
 } from '@angular/core'
 import { NgClass } from '@angular/common'
 import type { IButton } from '@soldy/core'
 import type { TAngularBinding } from '../../adapter'
+import { TAngularComponentBase } from '../../adapter'
 import { ButtonInputNames, ButtonOutputNames } from './base.component'
 import { setupButton } from './setup.component'
 
 /**
- * ButtonComponent — слой TButton.
+ * TButtonComponent — слой TButton.
  *
- * inputs/outputs генерируются из ButtonDescriptor.
- * EventEmitter'ы создаются динамически в конструкторе.
+ * inputs/outputs — статические константы из generated/button.metadata.ts.
+ * Разметка вынесена в button.component.html (templateUrl).
  *
  * Selector: <soldy-button>
  */
@@ -34,105 +28,28 @@ import { setupButton } from './setup.component'
 	outputs: ButtonOutputNames as unknown as string[],
 	imports: [NgClass],
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	template: `
-		@if (state['rendered']) {
-			@if (isNativeButton) {
-				<button
-					#buttonEl
-					[ngClass]="state['classes']"
-					[style.display]="state['visible'] === false ? 'none' : null"
-					[disabled]="state['disabled']"
-				>
-					<span class="s-button__text">
-						<ng-content>{{ state['text'] }}</ng-content>
-					</span>
-				</button>
-			} @else {
-				<div
-					#buttonEl
-					[ngClass]="state['classes']"
-					[style.display]="state['visible'] === false ? 'none' : null"
-					[attr.aria-disabled]="state['disabled'] || null"
-				>
-					<span class="s-button__text">
-						<ng-content>{{ state['text'] }}</ng-content>
-					</span>
-				</div>
-			}
-		}
-	`,
+	templateUrl: './button.component.html',
 })
-export class ButtonComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
-	@Input() ctrl?: IButton
-
+export class TButtonComponent extends TAngularComponentBase<IButton> implements AfterViewInit {
 	@ViewChild('buttonEl', { read: ElementRef }) buttonElRef?: ElementRef
 
-	private _binding?: TAngularBinding<IButton>
-	private _eventsCleanup?: () => void
-	private readonly _cdr = inject(ChangeDetectorRef)
-
 	constructor() {
-		for (const name of ButtonOutputNames) {
-			;(this as any)[name] = new EventEmitter()
-		}
+		super(ButtonInputNames, ButtonOutputNames)
 	}
 
-	get state(): Record<string, any> {
-		return this._binding?.state ?? {}
+	protected createBinding(
+		ctrl: IButton | undefined,
+		inputs: Record<string, any>,
+		cdr: ChangeDetectorRef,
+	): TAngularBinding<IButton> {
+		return setupButton(ctrl, inputs, cdr)
 	}
 
 	get isNativeButton(): boolean {
 		return this.state['tag'] === 'button'
 	}
 
-	ngOnInit(): void {
-		this._binding = setupButton(
-			this.ctrl,
-			this._collectInputs(),
-			this._cdr,
-		)
-		this._eventsCleanup = this._binding.syncEvents(this._collectOutputs())
-	}
-
-	ngOnChanges(changes: SimpleChanges): void {
-		if (!this._binding) return
-
-		const inputs: Record<string, any> = {}
-
-		for (const key of Object.keys(changes)) {
-			inputs[key] = changes[key].currentValue
-		}
-
-		this._binding.syncInputs(inputs)
-	}
-
 	ngAfterViewInit(): void {
-		this._binding?.bindElement(this.buttonElRef?.nativeElement ?? null)
-	}
-
-	ngOnDestroy(): void {
-		this._eventsCleanup?.()
-		this._binding?.destroy()
-	}
-
-	private _collectInputs(): Record<string, any> {
-		const inputs: Record<string, any> = {}
-
-		for (const name of ButtonInputNames) {
-			const value = (this as any)[name]
-			if (value !== undefined) inputs[name] = value
-		}
-
-		return inputs
-	}
-
-	private _collectOutputs(): Record<string, EventEmitter<any>> {
-		const outputs: Record<string, EventEmitter<any>> = {}
-
-		for (const name of ButtonOutputNames) {
-			outputs[name] = (this as any)[name]
-		}
-
-		return outputs
+		this.bindElement(this.buttonElRef?.nativeElement ?? null)
 	}
 }

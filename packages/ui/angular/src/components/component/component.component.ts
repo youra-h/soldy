@@ -2,25 +2,17 @@ import {
 	Component,
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
-	EventEmitter,
-	Input,
-	OnInit,
-	OnChanges,
-	OnDestroy,
-	SimpleChanges,
-	inject,
 } from '@angular/core'
 import type { IComponent } from '@soldy/core'
 import type { TAngularBinding } from '../../adapter'
+import { TAngularComponentBase } from '../../adapter'
 import { ComponentInputNames, ComponentOutputNames } from './base.component'
 import { setupComponent } from './setup.component'
 
 /**
- * ComponentComponent — headless-слой TComponent.
+ * TComponentComponent — headless-слой TComponent.
  *
- * inputs/outputs генерируются из ComponentDescriptor через useInputs / useOutputs.
- * EventEmitter'ы создаются динамически в конструкторе — Angular находит их по именам
- * из массива outputs в @Component.
+ * inputs/outputs — статические константы из generated/component.metadata.ts.
  *
  * Selector: <soldy-component>
  */
@@ -32,67 +24,16 @@ import { setupComponent } from './setup.component'
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class ComponentComponent implements OnInit, OnChanges, OnDestroy {
-	@Input() ctrl?: IComponent
-
-	private _binding?: TAngularBinding<IComponent>
-	private _eventsCleanup?: () => void
-	private readonly _cdr = inject(ChangeDetectorRef)
-
+export class TComponentComponent extends TAngularComponentBase<IComponent> {
 	constructor() {
-		for (const name of ComponentOutputNames) {
-			;(this as any)[name] = new EventEmitter()
-		}
+		super(ComponentInputNames, ComponentOutputNames)
 	}
 
-	get state(): Record<string, any> {
-		return this._binding?.state ?? {}
-	}
-
-	ngOnInit(): void {
-		this._binding = setupComponent(
-			this.ctrl,
-			this._collectInputs(),
-			this._cdr,
-		)
-		this._eventsCleanup = this._binding.syncEvents(this._collectOutputs())
-	}
-
-	ngOnChanges(changes: SimpleChanges): void {
-		if (!this._binding) return
-
-		const inputs: Record<string, any> = {}
-
-		for (const key of Object.keys(changes)) {
-			inputs[key] = changes[key].currentValue
-		}
-
-		this._binding.syncInputs(inputs)
-	}
-
-	ngOnDestroy(): void {
-		this._eventsCleanup?.()
-		this._binding?.destroy()
-	}
-
-	private _collectInputs(): Record<string, any> {
-		const inputs: Record<string, any> = {}
-
-		for (const name of ComponentInputNames) {
-			const value = (this as any)[name]
-			if (value !== undefined) inputs[name] = value
-		}
-
-		return inputs
-	}
-
-	private _collectOutputs(): Record<string, EventEmitter<any>> {
-		const outputs: Record<string, EventEmitter<any>> = {}
-
-		for (const name of ComponentOutputNames) {
-			outputs[name] = (this as any)[name]
-		}
-
-		return outputs
+	protected createBinding(
+		ctrl: IComponent | undefined,
+		inputs: Record<string, any>,
+		cdr: ChangeDetectorRef,
+	): TAngularBinding<IComponent> {
+		return setupComponent(ctrl, inputs, cdr)
 	}
 }

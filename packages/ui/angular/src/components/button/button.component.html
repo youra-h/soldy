@@ -1,0 +1,25 @@
+@if (state['rendered']) {
+	@if (isNativeButton) {
+		<button
+			#buttonEl
+			[ngClass]="state['classes']"
+			[style.display]="state['visible'] === false ? 'none' : null"
+			[disabled]="state['disabled']"
+		>
+			<span class="s-button__text">
+				<ng-content>{{ state['text'] }}</ng-content>
+			</span>
+		</button>
+	} @else {
+		<div
+			#buttonEl
+			[ngClass]="state['classes']"
+			[style.display]="state['visible'] === false ? 'none' : null"
+			[attr.aria-disabled]="state['disabled'] || null"
+		>
+			<span class="s-button__text">
+				<ng-content>{{ state['text'] }}</ng-content>
+			</span>
+		</div>
+	}
+}
