@@ -20,6 +20,7 @@
 
 import {
 	ChangeDetectorRef,
+	Directive,
 	EventEmitter,
 	Input,
 	OnChanges,
@@ -31,6 +32,7 @@ import {
 import type { IEntity } from '@soldy/core'
 import type { TAngularBinding } from './useAdapter'
 
+@Directive({ standalone: true })
 export abstract class TAngularComponentBase<TInstance extends IEntity>
 	implements OnInit, OnChanges, OnDestroy
 {

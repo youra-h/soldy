@@ -19,7 +19,8 @@
       "@soldy/core": ["../../core/src"],
       "@soldy/icons": ["../../icons/src"],
       "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/setup": ["../../setup"]
+      "@soldy/setup": ["../../setup"],
+      "@soldy/ui-angular": ["./src"]
     }
   },
   "angularCompilerOptions": {
