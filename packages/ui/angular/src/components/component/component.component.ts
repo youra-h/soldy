@@ -3,6 +3,7 @@ import {
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
 	EventEmitter,
+	Input,
 	OnInit,
 	OnChanges,
 	OnDestroy,
@@ -32,6 +33,8 @@ import { setupComponent } from './setup.component'
 	template: `<ng-content></ng-content>`,
 })
 export class ComponentComponent implements OnInit, OnChanges, OnDestroy {
+	@Input() ctrl?: IComponent
+
 	private _binding?: TAngularBinding<IComponent>
 	private _eventsCleanup?: () => void
 	private readonly _cdr = inject(ChangeDetectorRef)
@@ -48,7 +51,7 @@ export class ComponentComponent implements OnInit, OnChanges, OnDestroy {
 
 	ngOnInit(): void {
 		this._binding = setupComponent(
-			(this as any).ctrl,
+			this.ctrl,
 			this._collectInputs(),
 			this._cdr,
 		)

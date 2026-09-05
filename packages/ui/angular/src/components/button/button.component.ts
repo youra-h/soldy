@@ -4,6 +4,7 @@ import {
 	ChangeDetectorRef,
 	ElementRef,
 	EventEmitter,
+	Input,
 	OnInit,
 	OnChanges,
 	AfterViewInit,
@@ -62,6 +63,8 @@ import { setupButton } from './setup.component'
 	`,
 })
 export class ButtonComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+	@Input() ctrl?: IButton
+
 	@ViewChild('buttonEl', { read: ElementRef }) buttonElRef?: ElementRef
 
 	private _binding?: TAngularBinding<IButton>
@@ -84,7 +87,7 @@ export class ButtonComponent implements OnInit, OnChanges, AfterViewInit, OnDest
 
 	ngOnInit(): void {
 		this._binding = setupButton(
-			(this as any).ctrl,
+			this.ctrl,
 			this._collectInputs(),
 			this._cdr,
 		)

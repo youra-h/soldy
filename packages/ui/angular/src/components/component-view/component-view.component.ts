@@ -5,6 +5,7 @@ import {
 	ElementRef,
 	EventEmitter,
 	HostBinding,
+	Input,
 	OnInit,
 	OnChanges,
 	AfterViewInit,
@@ -34,6 +35,8 @@ import { setupComponentView } from './setup.component'
 	template: `<ng-content></ng-content>`,
 })
 export class ComponentViewComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+	@Input() ctrl?: IComponentView
+
 	// ─── Host bindings ────────────────────────────────────────────────────────
 	@HostBinding('class') get hostClass(): string {
 		return (this.state['classes'] as string[] | undefined)?.join(' ') ?? ''
@@ -61,7 +64,7 @@ export class ComponentViewComponent implements OnInit, OnChanges, AfterViewInit,
 
 	ngOnInit(): void {
 		this._binding = setupComponentView(
-			(this as any).ctrl,
+			this.ctrl,
 			this._collectInputs(),
 			this._cdr,
 		)
