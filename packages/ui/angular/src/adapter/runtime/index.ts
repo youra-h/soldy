@@ -1,0 +1,4 @@
+export { useAdapter } from './useAdapter'
+export type { TAngularBinding } from './useAdapter'
+export { bindOutput, bindInput, buildInitialState } from './useSyncProps'
+export { bindEvents } from './useSyncEvents'
