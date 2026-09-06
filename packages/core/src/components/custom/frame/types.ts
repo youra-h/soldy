@@ -1,14 +1,14 @@
 import type {
-	IComponent,
-	IComponentProps,
-	TComponentEvents,
-	TComponentStates,
-} from '../../base/component'
+	IComponentView,
+	IComponentViewProps,
+	TComponentViewEvents,
+	TComponentViewStates,
+} from '../../base/component-view'
 import type { IStateUnit } from '../../../common'
 
 export type TFramePosition = 'fixed' | 'absolute'
 
-export interface IFrameProps extends IComponentProps {
+export interface IFrameProps extends IComponentViewProps {
 	/** Позиция по оси X (px) */
 	x?: number
 	/** Позиция по оси Y (px) */
@@ -17,22 +17,20 @@ export interface IFrameProps extends IComponentProps {
 	width?: number | string
 	/** Высота (px или CSS-значение) */
 	height?: number | string
-	/** Видимость */
-	visible?: boolean
 	/** CSS-позиционирование: fixed (viewport) или absolute (родитель) */
 	position?: TFramePosition
 	/** CSS-селектор для Teleport (по умолчанию body) */
 	target?: string
 }
 
-export type TFrameStates = TComponentStates & {
+export type TFrameStates = TComponentViewStates & {
 	x: IStateUnit<number>
 	y: IStateUnit<number>
 	width: IStateUnit<number | string>
 	height: IStateUnit<number | string>
 }
 
-export type TFrameEvents = TComponentEvents & {
+export type TFrameEvents = TComponentViewEvents & {
 	/** change:x */
 	'change:x': (value: number) => void
 	/** change:y */
@@ -49,7 +47,7 @@ export type TFrameEvents = TComponentEvents & {
 	'change:target': (value: string) => void
 }
 
-export interface IFrame extends IComponent<IFrameProps, TFrameEvents> {
+export interface IFrame extends IComponentView<IFrameProps, TFrameEvents, TFrameStates> {
 	/** Позиция по оси X */
 	x: number
 	/** Позиция по оси Y */

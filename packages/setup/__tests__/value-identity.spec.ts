@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TComponent, TSpinner, TCollectionEngine, TBatchExtension } from '@soldy/core'
+import { TComponentView, TSpinner, TCollectionEngine, TBatchExtension } from '@soldy/core'
 import { SpinnerDescriptor } from '../descriptors'
 import { createAdapterContext } from '../adapter'
 
@@ -66,7 +66,7 @@ describe('Составные props меняют идентичность при 
 
 describe('События эмитятся только при реальном изменении', () => {
 	it('повторный show() на видимом компоненте молчит', () => {
-		const component = new TComponent({ visible: true })
+		const component = new TComponentView({ visible: true })
 		const seen: string[] = []
 
 		component.events.on('show:before', () => seen.push('show:before'))
@@ -79,7 +79,7 @@ describe('События эмитятся только при реальном �
 	})
 
 	it('show() после hide() эмитит полную последовательность', () => {
-		const component = new TComponent({ visible: true })
+		const component = new TComponentView({ visible: true })
 
 		component.hide()
 

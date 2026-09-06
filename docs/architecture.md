@@ -15,19 +15,43 @@ Defines **headless (framework-agnostic)** component models with:
 - Property tracking without UI binding
 
 ### Base Component Hierarchy
+
+Граница «невизуальное / визуальное» проходит между `TComponent` и
+`TComponentView`. Всё, что связано с отображением — включая `rendered`,
+`visible`, `present` и `show()`/`hide()` — живёт в `TComponentView`.
+
 ```
-TEntity (base, property tracking)
-├── TComponent (rendered, visible, events)
-│   ├── TComponentView (tag, classes)
-│   │   ├── TControl (disabled, focused)
-│   │   │   ├── TInputControl (value tracking)
-│   │   │   │   ├── TCheckBox
-│   │   │   │   └── TSwitch
-│   │   │   └── TValueControl (generic value)
-│   │   ├── TTextable (text, size, variant)
-│   │   │   └── TButton (view)
-│   │   └── Other UI mixins
+TEntity (uid, getProps, assign, toJSON)
+├── TComponent (events, states) — НЕВИЗУАЛЬНАЯ база
+│   ├── TDragAndDrop                        — провайдер контекста, ничего не рендерит
+│   ├── TCollectionComponent / TCollectionItemComponent — фасады коллекций
+│   └── TComponentView (rendered/visible/present, show/hide, tag, classes, ready)
+│       ├── TFrame (x, y, width, height, position, zIndex)
+│       ├── TIcon, TSkeleton
+│       └── TStylable (size, variant)
+│           ├── TSpinner
+│           └── TControl (disabled, focused)
+│               ├── TInputControl (value tracking)
+│               │   ├── TCheckBox
+│               │   └── TSwitch
+│               ├── TValueControl (generic value)
+│               ├── TTextable (text)
+│               │   └── TButton (view)
+│               └── TTabs, TCollapse, TListBox
 ```
+
+**Почему так.** Одно время `rendered`/`visible`/`present` были спущены в
+`TComponent` — ради `TFrame`, который нуждался в `visible`, но наследовал
+`TComponent`. Обоснование в `FrameDescriptor` («ComponentViewDescriptor
+приносит size/variant») было ошибочным: `size`/`variant` объявлены ниже, в
+`StylableContribution`. В результате невизуальные компоненты (`TDragAndDrop`,
+фасады коллекций) получали свойства отображения, которые им не нужны.
+
+Правильное решение — поднять `TFrame` до `TComponentView`: он и так рендерит
+элемент, биндит его через `TElementPlugin`, а `class="s-frame"` и тег `<div>`
+были захардкожены в шаблоне вместо наследуемых `classes`/`tag`. Заодно
+`FrameDescriptor` перестал дублировать `ElementPluginDescriptor` и
+`ReadyPluginDescriptor`.
 
 ### Key Files
 - [base/component/component.class.ts](packages/core/src/components/base/component/component.class.ts) - Base IComponent interface

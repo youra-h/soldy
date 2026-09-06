@@ -6,8 +6,15 @@ export default { ...SetupFrame }
 
 <template>
 	<teleport :to="target">
-		<div ref="rootElement" v-show="visible" v-if="rendered" :style="layout_styles" class="s-frame">
+		<component
+			ref="rootElement"
+			:is="tag"
+			v-if="rendered"
+			v-show="visible"
+			:class="classes"
+			:style="layout_styles"
+		>
 			<slot />
-		</div>
+		</component>
 	</teleport>
 </template>

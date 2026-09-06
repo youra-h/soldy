@@ -1,4 +1,4 @@
-import { TComponent } from '../../base/component'
+import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
 import type { TValuePayload } from '../../../common'
@@ -19,11 +19,13 @@ import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } 
  * frame.hide() // скрывается
  */
 export default class TFrame
-	extends TComponent<IFrameProps, TFrameEvents, TFrameStates>
+	extends TComponentView<IFrameProps, TFrameEvents, TFrameStates>
 	implements IFrame
 {
+	static baseClass = 's-frame'
+
 	static defaultValues: Partial<IFrameProps> = {
-		...TComponent.defaultValues,
+		...TComponentView.defaultValues,
 		x: 0,
 		y: 0,
 		width: 100,
