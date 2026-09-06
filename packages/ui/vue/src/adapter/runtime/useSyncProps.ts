@@ -8,35 +8,6 @@ export interface ISyncOptions {
 	onOutput?: (prop: IAccessorProp, value: any) => void
 }
 
-/**
- * Плагины и коллекции мутируют значения на месте и эмитят `change:*`, поэтому
- * accessor вернёт ту же ссылку и Vue не увидит изменения. Клонируем array-like
- * и plain-объекты, чтобы ссылка гарантированно поменялась.
- *
- * `__v_skip` / `render` — защита от клонирования Vue-компонентов: `tag` может
- * быть компонентом (см. useIconImport → markRaw(defineComponent(...))).
- */
-function cloneValue(value: any): any {
-	if (value == null) return value
-
-	const isArrayLike =
-		typeof value === 'object' &&
-		typeof value.length === 'number' &&
-		typeof value[Symbol.iterator] === 'function'
-
-	if (isArrayLike) return Array.from(value)
-
-	const isPlainObject =
-		typeof value === 'object' &&
-		value.constructor === Object &&
-		!('__v_skip' in value) &&
-		!('render' in value)
-
-	if (isPlainObject) return { ...value }
-
-	return value
-}
-
 export function useSyncProps(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
@@ -65,9 +36,12 @@ export function useSyncProps(
 
 			for (const rawTrigger of rawTriggers) {
 				const handler = () => {
+					// Свежесть значения — ответственность ядра: составные props
+					// отдают снимок через valueOf() (см. TClasses, драйвер коллекции)
+					// либо заменяются целиком (layout-плагины). Адаптер не угадывает.
 					const value = accessor.getValue(prop)
 
-					propRef.value = cloneValue(value)
+					propRef.value = value
 					options.onOutput?.(prop, value)
 				}
 

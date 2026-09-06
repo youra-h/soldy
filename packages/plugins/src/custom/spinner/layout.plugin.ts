@@ -17,12 +17,20 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 		if (!spinner) return
 
 		spinner.events.on('change:borderWidth', (value) => {
-			this._styles['--spinner-border-width'] = toCssValue(value)
-			this.events.emit('change:styles', { ...this._styles })
+			this._patch('--spinner-border-width', toCssValue(value))
 		})
 	}
 
 	get styles(): Record<string, string | number> {
 		return this._styles
+	}
+
+	/**
+	 * Заменяет объект стилей целиком, а не мутирует на месте: геттер отдаёт
+	 * ссылку наружу, и без смены идентичности UI не увидит изменения.
+	 */
+	private _patch(key: string, value: string | number): void {
+		this._styles = { ...this._styles, [key]: value }
+		this.events.emit('change:styles', this._styles)
 	}
 }

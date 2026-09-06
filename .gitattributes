@@ -1,0 +1,26 @@
+# Единый LF и в репозитории, и в рабочей копии — согласовано с .editorconfig
+# (end_of_line = lf).
+#
+# Зачем: кодогенератор Angular (src/codegen/generate.ts) пишет файлы с LF, а на
+# Windows core.autocrlf=true ожидает в рабочей копии CRLF. Из-за этого
+# src/generated/* после каждого `npm run generate` числились изменёнными, хотя
+# содержимое не менялось.
+* text=auto eol=lf
+
+# Бинарные форматы не нормализовать. Сейчас таких файлов в репозитории нет,
+# но они появятся вместе с сайтом документации.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.avif  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.pdf   binary
+*.mp4   binary
+*.webm  binary

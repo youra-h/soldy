@@ -98,13 +98,15 @@ export default class TComponent<
 	}
 
 	show(): void {
+		// Проверка до эмитов — иначе show() на уже видимом компоненте выдаёт
+		// show:before без изменения состояния (hide() симметрично проверяет первым).
+		if (this.visible) return
+
 		if (!this.beforeShow()) return
 
 		const e = new TActionEvent()
 		;(this.events as TEvented<TComponentEvents>).emit('show:before', e)
 		if (e.defaultPrevented) return
-
-		if (this.visible) return
 		;(this._states.visible as IVisibilityState).show()
 		;(this.events as TEvented<TComponentEvents>).emit('show')
 

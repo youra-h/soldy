@@ -17,16 +17,23 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 		if (!icon) return
 
 		icon.events.on('change:width', (value) => {
-			this._styles['width'] = value != null ? toCssValue(value) : ''
-			;(this.events as any).emit('change:styles', { ...this._styles })
+			this._patch('width', value != null ? toCssValue(value) : '')
 		})
 		icon.events.on('change:height', (value) => {
-			this._styles['height'] = value != null ? toCssValue(value) : ''
-			;(this.events as any).emit('change:styles', { ...this._styles })
+			this._patch('height', value != null ? toCssValue(value) : '')
 		})
 	}
 
 	get styles(): Record<string, string | number> {
 		return this._styles
+	}
+
+	/**
+	 * Заменяет объект стилей целиком, а не мутирует на месте: геттер отдаёт
+	 * ссылку наружу, и без смены идентичности UI не увидит изменения.
+	 */
+	private _patch(key: string, value: string | number): void {
+		this._styles = { ...this._styles, [key]: value }
+		;(this.events as any).emit('change:styles', this._styles)
 	}
 }

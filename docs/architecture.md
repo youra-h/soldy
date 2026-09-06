@@ -239,6 +239,25 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 Дедуплицировать можно **только проброс событий**. Синхронизацию состояния
 (`bindOutput`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
 
+### Контракт границы: значение, а не ручка на живое состояние
+
+Адаптер узнаёт об изменении по смене идентичности. Поэтому составные props
+(объекты, массивы) обязаны пересекать границу как снимок:
+
+- через `valueOf()` — `TClasses.valueOf()` и `TCollectionStorageDriver.valueOf()`;
+  `accessor.getValue` вызывает его сам (`val?.valueOf?.() ?? val`);
+- либо заменой объекта целиком — layout-плагины (`this._styles = {...}`).
+
+Раньше адаптеры компенсировали протечку клонированием (`cloneValue`) с
+эвристиками про `Symbol.iterator`, `constructor === Object` и охранниками
+`__v_skip`/`render` под Vue. Клонирование удалено: знание о том, что значение
+означает, есть только у ядра, и снимок должен делаться там. Проверяется
+`packages/setup/__tests__/value-identity.spec.ts`.
+
+Смежный инвариант: `change:*` эмитится только при реальном изменении. Отсюда же
+исправление асимметрии `show()`/`hide()` — `show()` эмитил `show:before` до
+собственной проверки, что и вынуждало React ставить guard от бесконечного цикла.
+
 ### Почему `resolveDefaultExtensions` стал дефолтом
 
 `TPluginsBindingExtension` требует `TElementPlugin` и бросает исключение, если

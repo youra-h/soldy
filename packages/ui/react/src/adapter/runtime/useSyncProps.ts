@@ -26,28 +26,6 @@ export interface ISyncOptions {
 type TState = Record<string, any>
 type TAction = { name: string; value: any }
 
-/**
- * Клонирует array-like и plain-объекты, чтобы React гарантированно
- * увидел новую ссылку при in-place мутациях (аналог клонирования в Vue).
- */
-function cloneValue(value: any): any {
-	if (value == null) return value
-
-	const isArrayLike =
-		typeof value === 'object' &&
-		typeof value.length === 'number' &&
-		typeof value[Symbol.iterator] === 'function'
-
-	if (isArrayLike) return Array.from(value)
-
-	const isPlainObj =
-		typeof value === 'object' && value !== null && value.constructor === Object
-
-	if (isPlainObj) return { ...value }
-
-	return value
-}
-
 function buildState(accessor: IAccessor, inspector: TDescriptorInspector): TState {
 	const state: TState = {}
 
@@ -91,7 +69,10 @@ export function useSyncProps(
 
 			for (const rawTrigger of rawTriggers) {
 				const handler = () => {
-					const value = cloneValue(accessor.getValue(prop))
+					// Свежесть значения — ответственность ядра: составные props
+					// отдают снимок через valueOf() (см. TClasses, драйвер коллекции)
+					// либо заменяются целиком (layout-плагины). Адаптер не угадывает.
+					const value = accessor.getValue(prop)
 
 					dispatch({ name: exportName, value })
 					options.onOutput?.(prop, value)
