@@ -25,7 +25,7 @@ import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps.svelte'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TSvelteBinding<TInstance = any> = {
+export type TBinding<TInstance = any> = {
 	readonly ctrl: TInstance
 	readonly plugins: any
 	readonly state: Record<string, any>
@@ -67,7 +67,7 @@ function computeForwardProps(
 export function useAdapter<TInstance = any>(
 	adapter: IAdapterContext,
 	getProps: () => Record<string, any>,
-): TSvelteBinding<TInstance> {
+): TBinding<TInstance> {
 	const inspector = createInspector(adapter.accessor)
 
 	// 1. Реактивность: Core ↔ Svelte

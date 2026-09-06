@@ -1,7 +1,7 @@
 # Soldy UI Component Adapter Architecture Overview
 
 ## Project Structure
-Multi-package monorepo with framework adapters for Vue, React, Angular, Solid, Svelte.
+Multi-package monorepo with framework adapters for Vue, React, Angular, Svelte, Solid и Web Components.
 Core business logic is **framework-agnostic** in `packages/core/src`.
 
 ---
@@ -557,9 +557,64 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - Коллекции не портированы; elevator, как и в React, не может отдать значение
   императивно — контекст в Solid выставляется только через `<Provider>` в JSX.
 
-## Layer 8d: Web Components
+## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-- **webc**: пустая папка, даже без `package.json` (не участник workspace)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+
+Единственный таргет без фреймворка — и потому самый показательный тест
+архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
+
+- `adapter/common/` — `WebcNaming` (`prop` = общий `underscorePropNaming`,
+  `event` = имя как в ядре: двоеточия в CustomEvent легальны, так же как во Vue),
+  `createInspector`, `attributes` (карта «атрибут → проп» + коэрция).
+- `adapter/runtime/` — `useAdapter`, `useSyncProps`, `useSyncEvents`,
+  `TSoldyElement` (базовый класс), `defineProps`, `defineElement`.
+
+### Чем Web Components проще Angular
+
+`observedAttributes` — статический геттер, вычисляемый в рантайме при
+регистрации класса, а не декоратор, который анализирует компилятор. Дескриптор
+доступен на уровне модуля, поэтому **кодогенерация не нужна**:
+
+```ts
+static get observedAttributes() { return useAttributes(ButtonDescriptor()) }
+```
+
+### Чем сложнее всех остальных
+
+**Реактивности нет вообще.** У четырёх других адаптеров был примитив (`ref`,
+`useState`, `signal`, `$state`, `createStore`), превращавший «состояние
+изменилось» в «перерисуй». Здесь его нет: `useSyncProps` держит обычный объект
+и зовёт колбэк, а `TSoldyElement` коалесцирует перерисовку в микротаске —
+одно изменение props в ядре часто даёт несколько триггеров. Сам `render()`
+императивный, и это самая объёмная часть компонента.
+
+**Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
+для JS) — оба кормят `bindInput`. Атрибут приводится к типу из contribution;
+для Boolean действует HTML-семантика: значимо наличие атрибута, поэтому
+`disabled="false"` это `true`, а снять флаг можно только его удалением.
+
+### Решения по DOM
+
+**Light DOM с внутренним элементом.** Классы из ядра остаются обычными
+глобальными BEM-классами, поэтому тема работает без изменений — в отличие от
+Shadow DOM, куда её пришлось бы вносить через `adoptedStyleSheets`, ломая
+контракт «UI отдаёт классы, тема отдаёт CSS».
+
+Внутри хоста рендерится настоящий `<button>` — сохраняются клавиатура, фокус и
+участие в форме, которых у кастомного элемента самого по себе нет.
+
+Плата: `<slot>` недоступен, поэтому пользовательское содержимое снимается с
+хоста в `connectedCallback` и переносится в корень вручную.
+
+### Известные ограничения
+
+- Смена `tag` пересоздаёт внутренний элемент: имя тега поменять нельзя.
+- `ctrl` имеет смысл присваивать только до вставки в DOM — adapter-context
+  создаётся один раз, как и во всех остальных адаптерах.
+- Элеватор не написан: коллекции не портированы, а плодить мёртвый код
+  (как вышло с React/Svelte/Solid) незачем. Для WC понадобится context protocol
+  через всплывающее событие-запрос.
 
 ---
 
@@ -709,6 +764,7 @@ Framework-agnostic dependency injection:
 | @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming |
 | @soldy/ui-svelte | Button, ComponentView, useAdapter, TSvelteElevator, SvelteNaming |
 | @soldy/ui-solid | Button, ComponentView, useAdapter, TSolidElevator, SolidNaming |
+| @soldy/ui-webc | `<soldy-button>`, `<soldy-component-view>`, TSoldyElement, useAdapter, WebcNaming |
 
 
 ---

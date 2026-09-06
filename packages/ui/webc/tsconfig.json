@@ -1,0 +1,14 @@
+{
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"paths": {
+			"@soldy/accessor": ["../../accessor"],
+			"@soldy/core": ["../../core/src"],
+			"@soldy/icons": ["../../icons/src"],
+			"@soldy/plugins": ["../../plugins/src"],
+			"@soldy/setup": ["../../setup"]
+		}
+	},
+	"include": ["env.d.ts", "src/**/*", "demo/**/*", "__tests__/**/*"]
+}

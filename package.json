@@ -28,7 +28,9 @@
     "test:svelte": "npm run test --workspace=@soldy/ui-svelte",
     "test:solid": "npm run test --workspace=@soldy/ui-solid",
     "lint": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev:webc": "npm run dev --workspace=@soldy/ui-webc",
+    "test:webc": "npm run test --workspace=@soldy/ui-webc"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",

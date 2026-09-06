@@ -14,6 +14,7 @@ npm run dev:react    # React demo
 npm run dev:angular  # Angular demo (ng serve; predev прогоняет codegen)
 npm run dev:svelte   # Svelte demo (Vite)
 npm run dev:solid    # Solid demo (Vite)
+npm run dev:webc     # Web Components demo (Vite, без фреймворка)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor

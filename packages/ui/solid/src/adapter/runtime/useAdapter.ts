@@ -24,7 +24,7 @@ import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TSolidBinding<TInstance = any> = {
+export type TBinding<TInstance = any> = {
 	readonly ctrl: TInstance
 	readonly plugins: any
 	readonly state: Record<string, any>
@@ -67,7 +67,7 @@ function computeForwardProps(
 export function useAdapter<TInstance = any>(
 	adapter: IAdapterContext,
 	props: Record<string, any>,
-): TSolidBinding<TInstance> {
+): TBinding<TInstance> {
 	const inspector = createInspector(adapter.accessor)
 
 	// 1. Реактивность: Core ↔ Solid
