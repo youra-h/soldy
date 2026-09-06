@@ -1,4 +1,3 @@
 // @soldy/ui-angular
-export * from './types'
 export * from './adapter'
 export * from './components'
