@@ -10,7 +10,6 @@ import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { IControl, IControlProps } from '@soldy/core'
 import { useAdapter } from '../../adapter'
-import { resolveDefaultExtensions } from '../../adapter'
 import type { ControlProps } from './base.component'
 
 export function useSetupControl(props: ControlProps) {
@@ -18,13 +17,7 @@ export function useSetupControl(props: ControlProps) {
 	const adapterRef = useRef<IAdapterContext | null>(null)
 
 	if (!adapterRef.current) {
-		const descriptor = ControlDescriptor()
-
-		adapterRef.current = createAdapterContext(
-			descriptor,
-			{ ctrl: props.ctrl, props },
-			{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-		)
+		adapterRef.current = createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props })
 	}
 
 	return useAdapter<IControlProps, IControl>(adapterRef.current, props)

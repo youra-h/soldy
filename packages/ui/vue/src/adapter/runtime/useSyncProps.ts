@@ -9,107 +9,102 @@ export interface ISyncOptions {
 }
 
 /**
- * Фабрика реактивности: связывает Core и Vue.
+ * Плагины и коллекции мутируют значения на месте и эмитят `change:*`, поэтому
+ * accessor вернёт ту же ссылку и Vue не увидит изменения. Клонируем array-like
+ * и plain-объекты, чтобы ссылка гарантированно поменялась.
  *
- * Принимает accessor + inspector (всего 2 параметра),
- * возвращает { refs, bindOutput, bindInput, cleanup }.
- *
- * - bindOutput(): создаёт refs с начальными значениями и подписывается на триггеры
- * - bindInput(props): вешает watchers на внешние props
- * - cleanup(): снимает все watchers (вызывается автоматически на onUnmounted)
+ * `__v_skip` / `render` — защита от клонирования Vue-компонентов: `tag` может
+ * быть компонентом (см. useIconImport → markRaw(defineComponent(...))).
  */
+function cloneValue(value: any): any {
+	if (value == null) return value
+
+	const isArrayLike =
+		typeof value === 'object' &&
+		typeof value.length === 'number' &&
+		typeof value[Symbol.iterator] === 'function'
+
+	if (isArrayLike) return Array.from(value)
+
+	const isPlainObject =
+		typeof value === 'object' &&
+		value.constructor === Object &&
+		!('__v_skip' in value) &&
+		!('render' in value)
+
+	if (isPlainObject) return { ...value }
+
+	return value
+}
+
 export function useSyncProps(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
 	options: ISyncOptions = {},
 ) {
 	const refs: Record<string, Ref<any>> = {}
-	const cleanupFns: (() => void)[] = []
+	const cleanupFns: Array<() => void> = []
 
 	// 1. Core → Vue (Output): создать refs, подписаться на триггеры
-	function bindOutput() {
+	function bindOutput(): () => void {
+		const offs: Array<() => void> = []
+
 		for (const prop of accessor.getProps(true) as IAccessorProp[]) {
 			const rawTriggers = inspector.getRawTriggers(prop)
 
-			// Пропускаем свойства без триггеров — pass-through (ctrl, plugins)
+			// Свойства без триггеров — pass-through (ctrl)
 			if (rawTriggers.length === 0) continue
 
-			const formattedPropName = inspector.getExportPropName(prop)
-			const initialValue = accessor.getValue(prop)
+			const propRef = ref(accessor.getValue(prop))
 
-			const propRef = ref(initialValue)
-
-			refs[formattedPropName] = propRef
+			refs[inspector.getExportPropName(prop)] = propRef
 
 			const eventSource = accessor.getEventSource(prop)
 
-			if (eventSource) {
-				for (const rawTrigger of rawTriggers) {
-					eventSource.on(rawTrigger, () => {
-						const val = accessor.getValue(prop)
+			if (!eventSource) continue
 
-						// Плагины и коллекции мутируют значения in-place (объект
-						// _styles, driver-прокси items/selected и т.д.) и эмитят
-						// change:*. accessor.getValue() возвращает ссылку на тот же
-						// объект — если присвоить ту же ссылку в ref.value, Vue
-						// считает oldValue === newValue и НЕ триггерит ререндер.
-						// Поэтому клонируем plain-объекты и array-like значения
-						// (не Vue-компоненты).
-						const isArrayLike =
-							val != null &&
-							typeof val === 'object' &&
-							typeof val.length === 'number' &&
-							typeof val[Symbol.iterator] === 'function'
+			for (const rawTrigger of rawTriggers) {
+				const handler = () => {
+					const value = accessor.getValue(prop)
 
-						const isPlainObj =
-							typeof val === 'object' &&
-							val !== null &&
-							val.constructor === Object &&
-							!('__v_skip' in val) &&
-							!('render' in val)
-
-						propRef.value = isArrayLike
-							? Array.from(val)
-							: isPlainObj
-								? { ...val }
-								: val
-
-						options.onOutput?.(prop, val)
-					})
+					propRef.value = cloneValue(value)
+					options.onOutput?.(prop, value)
 				}
+
+				eventSource.on(rawTrigger, handler)
+				offs.push(() => eventSource.off(rawTrigger, handler))
 			}
 		}
+
+		cleanupFns.push(...offs)
+
+		return () => offs.forEach((off) => off())
 	}
 
 	// 2. Vue → Core (Input): watch внешних props
-	function bindInput(props: Record<string, any>) {
+	function bindInput(props: Record<string, any>): void {
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const formattedPropName = inspector.getExportPropName(prop)
 
 			const stopWatch = watch(
 				() => props[formattedPropName] ?? props[prop.name.name],
 				(newVal) => {
-					if (newVal !== undefined) {
-						const valueToSet = options.onInput ? options.onInput(prop, newVal) : newVal
+					if (newVal === undefined) return
 
-						accessor.setValue(prop, valueToSet)
-					}
+					accessor.setValue(prop, options.onInput ? options.onInput(prop, newVal) : newVal)
 				},
 			)
+
 			cleanupFns.push(stopWatch)
 		}
 	}
 
-	function cleanup() {
+	function cleanup(): void {
 		cleanupFns.forEach((fn) => fn())
+		cleanupFns.length = 0
 	}
 
 	onUnmounted(cleanup)
 
-	return {
-		refs,
-		bindOutput,
-		bindInput,
-		cleanup,
-	}
+	return { refs, bindOutput, bindInput, cleanup }
 }

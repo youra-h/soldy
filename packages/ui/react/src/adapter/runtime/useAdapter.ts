@@ -22,7 +22,7 @@ import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TReactBinding<TInstance = any> = {
+export type TBinding<TInstance = any> = {
 	ctrl: TInstance
 	plugins: any
 	ref: (el: Element | null) => void
@@ -63,7 +63,7 @@ function computeForwardProps(
 export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
 	adapter: IAdapterContext,
 	props: TProps,
-): TReactBinding<TInstance> {
+): TBinding<TInstance> {
 	const inspector = useMemo(() => createInspector(adapter.accessor), [adapter])
 
 	// 1. Реактивность: Core ↔ React (output + input)

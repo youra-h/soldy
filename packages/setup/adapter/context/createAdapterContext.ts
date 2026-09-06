@@ -15,7 +15,7 @@ import type {
 	IAdapterContextConfig,
 	IAdapterContextOptions,
 } from './types'
-import { TPluginsBindingExtension } from '../extensions'
+import { resolveDefaultExtensions } from '../extensions'
 import type { IComponentDescriptor } from '@soldy/setup'
 
 export function createAdapterContext(
@@ -57,8 +57,10 @@ export function createAdapterContext(
 		},
 	}
 
-	// Применяем стартовый набор расширений
-	const defaultExtensions = config.defaultExtensions ?? [TPluginsBindingExtension]
+	// Применяем стартовый набор расширений. По умолчанию — только те, что
+	// применимы к дескриптору: TPluginsBindingExtension требует TElementPlugin
+	// и бросает исключение, если его нет (headless-слои).
+	const defaultExtensions = config.defaultExtensions ?? resolveDefaultExtensions(descriptor)
 
 	for (const Ext of defaultExtensions) {
 		;(context as any).use(Ext)

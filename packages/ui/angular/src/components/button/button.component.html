@@ -1,25 +1,32 @@
-@if (state['rendered']) {
-	@if (isNativeButton) {
+@if (state()['rendered']) {
+	@if (isNativeButton()) {
 		<button
 			#buttonEl
-			[ngClass]="state['classes']"
-			[style.display]="state['visible'] === false ? 'none' : null"
-			[disabled]="state['disabled']"
+			[ngClass]="state()['classes']"
+			[style.display]="state()['visible'] === false ? 'none' : null"
+			[disabled]="state()['disabled']"
 		>
-			<span class="s-button__text">
-				<ng-content>{{ state['text'] }}</ng-content>
-			</span>
+			<ng-container [ngTemplateOutlet]="content" />
 		</button>
 	} @else {
 		<div
 			#buttonEl
-			[ngClass]="state['classes']"
-			[style.display]="state['visible'] === false ? 'none' : null"
-			[attr.aria-disabled]="state['disabled'] || null"
+			[ngClass]="state()['classes']"
+			[style.display]="state()['visible'] === false ? 'none' : null"
+			[attr.aria-disabled]="state()['disabled'] || null"
 		>
-			<span class="s-button__text">
-				<ng-content>{{ state['text'] }}</ng-content>
-			</span>
+			<ng-container [ngTemplateOutlet]="content" />
 		</div>
 	}
 }
+
+<!--
+	<ng-content> объявлен ровно один раз: Angular проецирует содержимое в слот
+	при создании компонента, поэтому два слота во взаимоисключающих ветках
+	привели бы к потере содержимого при смене tag.
+-->
+<ng-template #content>
+	<span class="s-button__text">
+		<ng-content>{{ state()['text'] }}</ng-content>
+	</span>
+</ng-template>

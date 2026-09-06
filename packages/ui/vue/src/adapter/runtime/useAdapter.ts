@@ -35,18 +35,21 @@ export type TUnwrapRefs<T> = {
  * - rootElement: ссылка на DOM-узел
  * - refs: динамические пропсы компонента
  */
-export type TVueBinding<TProps, TInstance> = {
+export type TBinding<TProps, TInstance> = {
 	ctrl: TInstance
 	plugins: any
 	rootElement?: Ref<Element | null>
 } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
-export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
+export function useAdapter<
+	TProps extends Record<string, any> = Record<string, any>,
+	TInstance = any,
+>(
 	adapter: IAdapterContext,
 	props: TProps,
 	emit?: (event: string, ...args: any[]) => void,
-): TVueBinding<TProps, TInstance> {
+): TBinding<TProps, TInstance> {
 	const inspector = createInspector(adapter.accessor)
 
 	// 1. Реактивность
@@ -59,7 +62,7 @@ export function useAdapter<TProps extends Record<string, any> = Record<string, a
 	bindInput(props)
 
 	// 2. Эмиты
-	useSyncEvents(adapter.accessor, inspector, emit)
+	const unbindEvents = useSyncEvents(adapter.accessor, inspector, emit)
 
 	// 3. DOM-биндинг через экстеншн плагинов
 	const pluginsExt = adapter.get(TPluginsBindingExtension)
@@ -69,8 +72,11 @@ export function useAdapter<TProps extends Record<string, any> = Record<string, a
 		watch(rootElement, (el) => pluginsExt.bindElement(el ?? null), { flush: 'post' })
 	}
 
-	// 4. Очистка (destroy эмитит 'destroy', все экстеншны отписываются сами)
+	// 4. Очистка. Отписка обязательна: при внешнем `ctrl`, переживающем компонент,
+	// adapter.destroy() не трогает instance.events — хендлеры копились бы с каждым
+	// монтированием. Подписки из useSyncProps снимает его собственный onUnmounted.
 	onUnmounted(() => {
+		unbindEvents()
 		adapter.destroy()
 	})
 
@@ -79,5 +85,5 @@ export function useAdapter<TProps extends Record<string, any> = Record<string, a
 		plugins: adapter.bundle,
 		...(rootElement ? { rootElement } : {}),
 		...refs,
-	} as unknown as TVueBinding<TProps, TInstance>
+	} as unknown as TBinding<TProps, TInstance>
 }

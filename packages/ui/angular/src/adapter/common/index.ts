@@ -1,5 +1,4 @@
 export { createInspector } from './createInspector'
 export { AngularNaming } from './naming'
-export { resolveDefaultExtensions } from './resolveDefaultExtensions'
 export { useInputs } from './useInputs'
 export { useOutputs } from './useOutputs'

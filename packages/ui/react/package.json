@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@soldy/accessor": "*",
@@ -18,6 +19,7 @@
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
     "@soldy/setup": "*",
+    "@soldy/theme-oren": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

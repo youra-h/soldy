@@ -1,6 +1,2 @@
-export * from './useEventState'
 export * from './useIconImport'
-export * from './useInheritProps'
-export * from './useInstance'
 export * from './useSplitAttrs'
-export * from './useSyncProps'

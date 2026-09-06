@@ -1,4 +1,3 @@
-import { BaseComponentView } from '../component-view'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { StylableDescriptor } from '@soldy/setup'

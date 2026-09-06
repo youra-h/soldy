@@ -1,5 +1,5 @@
 export { useAdapter } from './useAdapter'
-export type { TAngularBinding } from './useAdapter'
+export type { TBinding } from './useAdapter'
 export { bindOutput, bindInput, buildInitialState } from './useSyncProps'
 export { bindEvents } from './useSyncEvents'
-export { TAngularComponentBase } from './angular-component.base'
+export { TComponentBase } from './component.base'

@@ -1,4 +1,3 @@
-import { BaseStylable } from '../stylable'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { SpinnerDescriptor } from '@soldy/setup'

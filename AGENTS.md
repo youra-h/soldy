@@ -11,14 +11,23 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 ```bash
 npm run dev:vue      # Vue demo (Vite)
 npm run dev:react    # React demo
+npm run dev:angular  # Angular demo (ng serve; predev прогоняет codegen)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
-npm run test:plugins
 npm run test:vue
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier
+
+# Тема отдаёт dist/index.css, который подключает сборка Angular (dist в .gitignore)
+npm run build --workspace=@soldy/theme-oren
+
+# Angular: перегенерировать статические inputs/outputs после правки дескриптора
+npm run generate --workspace=@soldy/ui-angular
 ```
+
+CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх пакетов, проверку дрейфа
+`packages/ui/angular/src/generated` и сборки. Линт пока не блокирует.
 
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 3, Vite 6.
 - npm workspaces: `packages/*` and `packages/ui/*`.
@@ -29,7 +38,7 @@ npm run format       # Prettier
 |---|---|
 | `packages/core` | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
 | `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`). |
-| `packages/setup` | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`. |
+| `packages/setup` | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`. |
 | `packages/plugins` | Runtime behavior extenders installed into `TPluginBundle`. |
 | `packages/ui/*` | Framework adapters — the **only** place framework imports are allowed. |
 
@@ -64,6 +73,41 @@ npm run format       # Prettier
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`.
 
 - **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`), calls `useAdapter` on each and merges `{ ...refs, ...refsCollection }`. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+
+## Что общее, а что специфично для фреймворка
+
+`packages/setup/common/` — поведение, одинаковое во всех адаптерах. Прежде чем
+писать что-то в `packages/ui/*/adapter/common/`, проверь, не место ли этому здесь:
+
+- `defaultPropNaming` — имя пропа одинаково везде (`ns_name`); адаптер реализует
+  только `event`, потому что различаются именно события (`element:ready` во Vue,
+  `onElementReady` в React, `elementReady` в Angular).
+- `createInspectorFactory(naming)` — адаптер связывает со своей стратегией один раз.
+- `collectEventBindings(accessor, inspector)` — дедуплицированный список подписок
+  для проброса событий. **Дедупликация обязательна**: один raw-триггер объявлен у
+  нескольких пропов (`present` в `ComponentContribution` повторяет триггеры
+  `rendered` и `visible`), иначе потребитель получает два эмита на одно изменение.
+  Дедуплицировать можно только проброс событий — синхронизацию состояния нельзя,
+  `present` обязан пересчитываться на обоих триггерах.
+- `resolveDefaultExtensions` (в `adapter/extensions/`) — уже применяется по
+  умолчанию внутри `createAdapterContext`, передавать его вручную не нужно.
+
+**Правило:** починил баг в одном адаптере — проверь остальные два. Исторически
+исправления уезжали в React/Angular и не возвращались во Vue.
+
+## Angular-специфика
+
+- Angular AOT требует статические массивы в `@Component({ inputs, outputs })`,
+  поэтому имена генерируются в `src/generated/*.metadata.ts` из `manifest.ts`
+  каждого компонента. Файлы закоммичены; после правки дескриптора нужен
+  `npm run generate` (CI проверяет дрейф).
+- Состояние — сигнал (`state()` в шаблонах), а не поле + `markForCheck()`:
+  `markForCheck` не планирует проверку и работал только благодаря Zone.js.
+- Корень компонента живёт внутри `@if`, поэтому DOM-биндинг делается через
+  `bindElementFrom(viewChild(...))` — обычный `@ViewChild` читается один раз в
+  `ngAfterViewInit` и после пересоздания узла указывает на мёртвый элемент.
+- `<ng-content>` объявляется ровно один раз и подставляется через
+  `ngTemplateOutlet`: два слота во взаимоисключающих ветках теряют содержимое.
 
 ## Pitfalls
 

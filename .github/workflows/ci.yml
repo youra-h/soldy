@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    name: Тесты, типы, сборка
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Тема отдаёт dist/index.css, который подключает сборка Angular.
+      # dist в .gitignore, поэтому собираем до всего остального.
+      - name: Сборка темы
+        run: npm run build --workspace=@soldy/theme-oren
+
+      - name: Тесты
+        run: |
+          npm run test:core
+          npm run test:setup
+          npm run test:accessor
+          npm run test:vue
+
+      - name: Типы — Vue
+        run: npm run build:types --workspace=@soldy/ui-vue
+
+      - name: Типы — React
+        run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
+
+      # Сгенерированные метаданные закоммичены: Angular AOT требует статические
+      # массивы inputs/outputs. Если дескриптор изменили, а generate не запускали,
+      # компонент молча разъедется с дескриптором.
+      - name: Angular — дрейф сгенерированных метаданных
+        run: |
+          npm run generate --workspace=@soldy/ui-angular
+          git diff --exit-code packages/ui/angular/src/generated
+
+      - name: Сборка Angular
+        run: npm run build --workspace=@soldy/ui-angular
+
+  lint:
+    name: Линт (пока не блокирует)
+    runs-on: ubuntu-latest
+    # ~720 ошибок унаследовано, из них ~600 — no-explicit-any в слое адаптеров.
+    # Задача видна в PR, но не блокирует, пока не принято решение по правилам.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx eslint .

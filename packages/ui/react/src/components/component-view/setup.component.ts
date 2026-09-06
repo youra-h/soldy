@@ -7,20 +7,13 @@ import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import { useAdapter } from '../../adapter'
-import { resolveDefaultExtensions } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
 export function useSetupComponentView(props: ComponentViewProps) {
 	const adapterRef = useRef<IAdapterContext | null>(null)
 
 	if (!adapterRef.current) {
-		const descriptor = ComponentViewDescriptor()
-
-		adapterRef.current = createAdapterContext(
-			descriptor,
-			{ ctrl: props.ctrl, props },
-			{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-		)
+		adapterRef.current = createAdapterContext(ComponentViewDescriptor(), { ctrl: props.ctrl, props })
 	}
 
 	return useAdapter<IComponentViewProps, IComponentView>(adapterRef.current, props)

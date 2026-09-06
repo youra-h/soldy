@@ -1,21 +1,13 @@
-import type { ChangeDetectorRef } from '@angular/core'
 import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
 import type { IButton, IButtonProps } from '@soldy/core'
-import { useAdapter, resolveDefaultExtensions } from '../../adapter'
-import type { TAngularBinding } from '../../adapter'
+import { useAdapter } from '../../adapter'
+import type { TBinding } from '../../adapter'
 
 export function setupButton(
 	ctrl: IButton | undefined,
 	props: Partial<IButtonProps>,
-	cdr: ChangeDetectorRef,
-): TAngularBinding<IButton> {
-	const descriptor = ButtonDescriptor()
+): TBinding<IButton> {
+	const adapter = createAdapterContext(ButtonDescriptor(), { ctrl, props })
 
-	const adapter = createAdapterContext(
-		descriptor,
-		{ ctrl, props },
-		{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-	)
-
-	return useAdapter<IButton>(adapter, cdr)
+	return useAdapter<IButton>(adapter)
 }

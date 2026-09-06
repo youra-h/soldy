@@ -1,5 +1,4 @@
 import type { TEmits, TProps, UseProps } from '../../types'
-import { BaseComponent } from '../component'
 import { useEmits, useProps } from '../../adapter'
 import { ComponentViewDescriptor } from '@soldy/setup'
 import type { IComponentView } from '@soldy/core'

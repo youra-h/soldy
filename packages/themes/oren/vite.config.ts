@@ -13,7 +13,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     lib: {
-      entry: path.resolve(__dirname, 'src/index.scss'),
+      entry: path.resolve(__dirname, 'src/index.ts'),
       formats: ['es'],
     },
     rollupOptions: {

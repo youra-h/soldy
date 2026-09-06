@@ -1,4 +1,3 @@
-import { BaseTextable } from '../textable'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { ButtonDescriptor } from '@soldy/setup'

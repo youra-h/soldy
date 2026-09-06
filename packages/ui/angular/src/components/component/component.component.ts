@@ -1,11 +1,7 @@
-import {
-	Component,
-	ChangeDetectionStrategy,
-	ChangeDetectorRef,
-} from '@angular/core'
+import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IComponent } from '@soldy/core'
-import type { TAngularBinding } from '../../adapter'
-import { TAngularComponentBase } from '../../adapter'
+import type { TBinding } from '../../adapter'
+import { TComponentBase } from '../../adapter'
 import { ComponentInputNames, ComponentOutputNames } from './base.component'
 import { setupComponent } from './setup.component'
 
@@ -24,7 +20,7 @@ import { setupComponent } from './setup.component'
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class TComponentComponent extends TAngularComponentBase<IComponent> {
+export class TComponentComponent extends TComponentBase<IComponent> {
 	constructor() {
 		super(ComponentInputNames, ComponentOutputNames)
 	}
@@ -32,8 +28,7 @@ export class TComponentComponent extends TAngularComponentBase<IComponent> {
 	protected createBinding(
 		ctrl: IComponent | undefined,
 		inputs: Record<string, any>,
-		cdr: ChangeDetectorRef,
-	): TAngularBinding<IComponent> {
-		return setupComponent(ctrl, inputs, cdr)
+	): TBinding<IComponent> {
+		return setupComponent(ctrl, inputs)
 	}
 }

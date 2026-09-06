@@ -1,21 +1,13 @@
-import type { ChangeDetectorRef } from '@angular/core'
 import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
 import type { IStylable, IStylableProps } from '@soldy/core'
-import { useAdapter, resolveDefaultExtensions } from '../../adapter'
-import type { TAngularBinding } from '../../adapter'
+import { useAdapter } from '../../adapter'
+import type { TBinding } from '../../adapter'
 
 export function setupStylable(
 	ctrl: IStylable | undefined,
 	props: Partial<IStylableProps>,
-	cdr: ChangeDetectorRef,
-): TAngularBinding<IStylable> {
-	const descriptor = StylableDescriptor()
+): TBinding<IStylable> {
+	const adapter = createAdapterContext(StylableDescriptor(), { ctrl, props })
 
-	const adapter = createAdapterContext(
-		descriptor,
-		{ ctrl, props },
-		{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-	)
-
-	return useAdapter<IStylable>(adapter, cdr)
+	return useAdapter<IStylable>(adapter)
 }

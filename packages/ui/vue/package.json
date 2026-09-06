@@ -20,6 +20,7 @@
     "@soldy/core": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
+    "@soldy/setup": "*",
     "vue": "^3.5.32"
   },
   "devDependencies": {

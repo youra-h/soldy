@@ -16,6 +16,6 @@
 		"@soldy/setup": "*"
 	},
 	"scripts": {
-		"test": "vitest run"
+		"test": "vitest run --passWithNoTests"
 	}
 }

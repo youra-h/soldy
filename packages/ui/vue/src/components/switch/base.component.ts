@@ -1,4 +1,3 @@
-import { BaseInputControl } from '../input-control'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { SwitchDescriptor } from '@soldy/setup'

@@ -1,12 +1,14 @@
 /**
- * useSyncEvents — проброс событий из Core в Angular EventEmitter'ы.
+ * bindEvents — проброс событий из Core в Angular EventEmitter'ы.
  *
- * - Триггеры props (change:visible → changeVisible EventEmitter)
- * - Явные события (element:ready → elementReady EventEmitter)
+ * Список подписок дедуплицирован (см. collectEventBindings): один raw-триггер
+ * объявлен у нескольких пропов, без дедупликации `changeVisible` эмитился бы
+ * дважды на одно изменение.
  */
 
 import type { EventEmitter } from '@angular/core'
-import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/accessor'
+import type { IAccessor, TDescriptorInspector } from '@soldy/accessor'
+import { collectEventBindings } from '@soldy/setup'
 
 export function bindEvents(
 	accessor: IAccessor,
@@ -15,43 +17,15 @@ export function bindEvents(
 ): () => void {
 	const offs: Array<() => void> = []
 
-	// 1. Триггеры props
-	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
-		const eventSource = accessor.getEventSource(prop)
-
-		if (!eventSource) continue
-
-		const exportTriggers = inspector.getExportTriggers(prop)
-		const rawTriggers = inspector.getRawTriggers(prop)
-
-		for (let i = 0; i < rawTriggers.length; i++) {
-			const outputName = exportTriggers[i]
-			const emitter = outputs[outputName]
-
-			if (!emitter) continue
-
-			const handler = (...args: any[]) => emitter.emit(args[0])
-
-			eventSource.on(rawTriggers[i], handler)
-			offs.push(() => eventSource.off(rawTriggers[i], handler))
-		}
-	}
-
-	// 2. Явные события
-	for (const evt of accessor.getEvents()) {
-		const eventSource = accessor.getEventSource(evt)
-
-		if (!eventSource) continue
-
-		const outputName = inspector.getExportEventName(evt.name)
-		const emitter = outputs[outputName]
+	for (const { source, rawName, exportName } of collectEventBindings(accessor, inspector)) {
+		const emitter = outputs[exportName]
 
 		if (!emitter) continue
 
 		const handler = (...args: any[]) => emitter.emit(args[0])
 
-		eventSource.on(evt.name.name, handler)
-		offs.push(() => eventSource.off(evt.name.name, handler))
+		source.on(rawName, handler)
+		offs.push(() => source.off(rawName, handler))
 	}
 
 	return () => offs.forEach((off) => off())

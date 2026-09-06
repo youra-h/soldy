@@ -213,6 +213,42 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 
 ---
 
+---
+
+## Layer 5b: Общий слой адаптеров (`packages/setup/common`)
+
+Поведение, которое обязано совпадать во всех фреймворках. Адаптер реализует
+только то, что действительно различается — стратегию именования **событий**.
+
+| Экспорт | Назначение |
+|---|---|
+| `defaultPropNaming(name)` | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
+| `createInspectorFactory(naming)` | Адаптер связывает инспектор со своей стратегией один раз. |
+| `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий. |
+| `resolveDefaultExtensions(descriptor)` | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`. |
+
+### Почему `collectEventBindings` дедуплицирует
+
+Один raw-триггер объявлен у нескольких пропов. `present` в `ComponentContribution` —
+производное от `rendered && visible`, поэтому его `triggers` это
+`['change:rendered', 'change:visible']`, т.е. те же события, что у самих
+`rendered` и `visible`. Наивный обход `getProps(true)` вешал две подписки на
+`change:rendered` и потребитель получал **два эмита на одно изменение** (во всех
+трёх адаптерах).
+
+Дедуплицировать можно **только проброс событий**. Синхронизацию состояния
+(`bindOutput`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
+
+### Почему `resolveDefaultExtensions` стал дефолтом
+
+`TPluginsBindingExtension` требует `TElementPlugin` и бросает исключение, если
+его нет. Раньше он подключался безусловно, поэтому headless-дескрипторы
+(`DragAndDropDescriptor` наследует `ComponentDescriptor`, а не `ComponentViewDescriptor`)
+приходилось обходить вручную через `{ defaultExtensions: [] }`. Теперь
+`createAdapterContext` сам выбирает применимый набор.
+
+---
+
 ## Layer 6: Vue Adapter (`packages/ui/vue/src`)
 
 ### ✅ COMPLETE IMPLEMENTATION
@@ -225,9 +261,20 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 - `useAdapter<TProps, TInstance>()` - Main hook (syncs props, events, DOM)
   - Returns TVueBinding with `ctrl`, `plugins`, `rootElement`, props refs
   - Subscribed to all events, syncs DOM via ref watchers
-  - Calls adapter.destroy() on unmount
-- `useSyncProps()` - Two-way prop binding
-- `useSyncEvents()` - Event forwarding
+  - На `onUnmounted`: снимает подписки событий, затем `adapter.destroy()`
+- `useSyncProps()` - Two-way prop binding; `bindOutput()` возвращает функцию отписки
+- `useSyncEvents()` - Проброс событий + `update:<prop>` для `v-model`; возвращает
+  функцию отписки
+
+**Отписка обязательна.** `adapter.destroy()` работает только с собственным
+`TEvented` адаптера и не трогает `instance.events`. При внешнем `ctrl`,
+переживающем компонент (документированный сценарий), хендлеры копились бы с
+каждым монтированием. React/Angular отписывались изначально, Vue — нет.
+
+**`v-model`.** `useEmits` объявляет `update:<prop>` для каждого записываемого
+свойства, `useSyncEvents` их эмитит (значение перечитывается через accessor —
+у производных триггеров полезная нагрузка может не совпадать со свойством).
+Раньше объявления существовали, но никогда не эмитились.
 
 #### Elevator (`adapter/elevator/`)
 - `TVueElevator<T>` - Wraps Vue provide/inject
@@ -237,11 +284,14 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 - `VueNaming` - Vue naming strategy (camelCase props, dash-case events)
 
 #### Composables (`composables/`)
-- `useComponentSetup()` - Automated setup() generator
-- `useSyncProps()`, `useSyncEvents()` - Prop/event sync
-- `useBundle()`, `useInstance()` - Plugin bundle & instance injection
-- `useInjectCollectionItem()`, `useProvideCollection()` - Collection patterns
-- `useEventState()`, `useIconImport()` - Helpers
+Осталось два — остальные (`useComponentSetup`, `useInstance`, `useInheritProps`,
+`useEventState`, `composables/useSyncProps`) удалены как мёртвый код поколения
+до адаптера. `composables/useSyncProps` вдобавок коллидировал по имени с
+`adapter/runtime/useSyncProps`, и наружу экспортировался именно мёртвый.
+
+- `useIconImport()` — импорт SVG из `@soldy/icons` в `markRaw(defineComponent(...))`
+- `useSplitAttrs()` — разделение `useAttrs()` на `{class, style}` и остальное
+  (для составных компонентов с `inheritAttrs: false`)
 
 #### Components (`components/`)
 **22+ Framework Components** (one per core component):
@@ -297,7 +347,7 @@ BaseComponent (Entity props)
 ### ✅ IMPLEMENTED (mirrors Vue `adapter/` architecture)
 
 **Structure (1:1 with Vue adapter, 3-module component split):**
-- `adapter/common/` — `createInspector` (TDescriptorInspector + `ReactNaming`), `ReactNaming`, `resolveDefaultExtensions` (`[TPluginsBindingExtension]` only when descriptor has `TElementPlugin`, else `[]`), `naming.types.ts` (type-level mirror of `ReactNaming` for auto-derived event props)
+- `adapter/common/` — `createInspector` (через `createInspectorFactory(ReactNaming)`), `ReactNaming` (`prop` = общий `defaultPropNaming`), `naming.types.ts` (type-level mirror of `ReactNaming.event` for auto-derived event props). `resolveDefaultExtensions` переехал в `@soldy/setup` и применяется по умолчанию
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - `naming.types.ts` = PURE React naming transformers (`ReactEventName`, `ReactEventProps<T>`) mirroring `ReactNaming.event`. `plugins.types.ts` УДАЛЁН (per-plugin `TElementEventProps` и др. больше не нужны — всё покрывает `DescriptorAllEvents`). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `ReactEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
 - `adapter/runtime/` — `useAdapter(adapter, props)` (main hook — takes a READY adapter, аналог `useAdapter`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
@@ -312,7 +362,8 @@ BaseComponent (Entity props)
 - DOM binding goes directly through `adapter.bundle.get(TElementPlugin).element` (not `TPluginsBindingExtension`) so it survives `adapter.destroy()` on StrictMode remount
 - `useSyncProps` returns `{ state, bindOutput, bindInput, cleanup }` (mirrors Vue): `bindOutput()` = Core → React (subscribes to triggers, returns unsubscribe), `bindInput(props)` = React → Core (syncs props with `getValue === value` guard). `useAdapter` wires them via `useEffect(() => bindOutput(), [adapter, inspector])` + `useEffect(() => bindInput(props), [props, adapter, inspector])`
 - `useSyncEvents`: `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); reads latest `props` via `propsRef`
-- React naming quirk (same as Vue): protected `present` prop has triggers `change:rendered`+`change:visible`, so `onChangeVisible` fires TWICE per visible change
+- ~~React naming quirk: `onChangeVisible` fires TWICE~~ — исправлено дедупликацией в `collectEventBindings` (Layer 5b), одинаково во всех трёх адаптерах
+- `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
 ### Theming (`@soldy/theme-oren`) — foundation REMOVED
 - `packages/foundation` deleted. Themes live in `packages/themes/*` (workspace glob `packages/themes/*` added to root).
@@ -330,7 +381,7 @@ BaseComponent (Entity props)
 - Core instance logging via `instance.events.use()` middleware (catches ALL instance events, no enumeration)
 
 ### React package config
-- `package.json` deps: `@soldy/accessor`, `@soldy/setup` added (Vue package.json is missing `@soldy/setup` by mistake)
+- `package.json` deps: `@soldy/accessor`, `@soldy/setup`, `@soldy/theme-oren`
 - `tsconfig.json` paths + `vite.config.ts` aliases for `@soldy/accessor`, `@soldy/setup` added
 
 ### ⚠️ React pitfall: infinite loop via `visible` setter
@@ -339,14 +390,65 @@ BaseComponent (Entity props)
 
 ---
 
-## Layer 8: Angular & Svelte/Solid Adapters
+## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### Current State
-- **Angular**: Empty barrel export
-- **Svelte**: Only index.ts (empty)
-- **Solid**: Only index.ts (empty)
+### ✅ IMPLEMENTED (ComponentView + Button, как в React)
 
-No implementation started.
+**Структура** зеркалит Vue/React: `adapter/{common,runtime,elevator}` + `components/*`.
+
+- `adapter/common/` — `AngularNaming` (события → camelCase без `on`-префикса,
+  т.к. имя `@Output` обязано быть валидным TS-идентификатором), `createInspector`,
+  `useInputs`/`useOutputs` (**только для кодогенератора**).
+- `adapter/runtime/` — `useAdapter(adapter)` → `TAngularBinding`,
+  `buildInitialState`/`bindOutput`/`bindInput`, `bindEvents`,
+  `TAngularComponentBase` (общий жизненный цикл).
+- `codegen/` — `collect-manifests` + `generate` → `src/generated/*.metadata.ts`.
+
+### Почему Angular нужен кодогенератор
+
+Angular AOT статически анализирует декоратор: `inputs`/`outputs` обязаны быть
+литеральными массивами на этапе компиляции. Имена же живут в рантайм-дескрипторах
+(`@soldy/setup`), поэтому вычислить их внутри декоратора нельзя — в отличие от Vue,
+где `props: useProps(ButtonDescriptor())` вычисляется при инициализации модуля.
+Имена считаются заранее и сериализуются в `as const`-массивы.
+
+`manifest.ts` каждого компонента объявляет `name` + фабрику `descriptor`;
+`generate` прогоняет их через `useInputs`/`useOutputs`. Файлы закоммичены,
+`prebuild`/`predev` их обновляют, CI проверяет дрейф.
+
+### Реактивность
+
+Состояние — `signal<Record<string, any>>`, шаблон читает `state()['x']`.
+Раньше было поле + `cdr.markForCheck()`: `markForCheck` помечает путь грязным,
+но не планирует проверку, поэтому работало только под Zone.js и молча ломалось
+бы под `provideZonelessChangeDetection`. Сигнал уведомляет шаблон сам.
+
+### DOM-биндинг
+
+`bindElementFrom(viewChild('el', { read: ElementRef }))` — сигнальный запрос
+переустанавливает связь при пересоздании узла (переключение `rendered`, смена
+`tag` между веткой `<button>` и `<div>`). Обычный `@ViewChild` + `ngAfterViewInit`
+читается один раз и после пересоздания указывает на мёртвый элемент.
+
+`TComponentViewComponent` — исключение: его корень это хост-элемент, который
+живёт всё время, поэтому биндинг разовый в `ngAfterViewInit`.
+
+### Известные ограничения
+
+- `tag` схлопывается до двух веток: `<button>` либо `<div>`. Произвольный тег
+  (`a`, `span`) отрендерится как `<div>` — Angular не умеет менять имя тега.
+- Нет именованных слотов (во Vue у Button есть `leading`/`trailing`).
+- Нет двусторонней привязки: `[(text)]` требует аутпут `textChange`, а стратегия
+  именования даёт `changeText`.
+- Elevator (`TAngularElevator`) реализован, но никуда не подключён и передаёт
+  значение через приватное поле, а не через DI — понадобится доработка, когда
+  дойдёт до коллекций.
+
+## Layer 8b: Svelte / Solid
+
+- **Svelte**: только `index.ts` (пустой)
+- **Solid**: только `index.ts` (пустой)
+- **webc**: пустая папка, даже без `package.json` (не участник workspace)
 
 ---
 
@@ -465,12 +567,11 @@ Framework-agnostic dependency injection:
 - [ ] All 20+ component implementations (only `component-view`, `button` done)
 - [ ] Collection support (owner/item registration over the elevator)
 
-### Angular (Not Started)
-- [ ] Dependency injection adapter
-- [ ] Component decorator integration
-- [ ] Lifecycle hooks (ngOnInit, ngOnDestroy)
-- [ ] Change detection synchronization
-- [ ] All component implementations
+### Angular
+- Адаптер, кодогенерация метаданных, сигналы, жизненный цикл, DOM-биндинг — done
+- [ ] Все компоненты, кроме `component-view` и `button`
+- [ ] Коллекции (elevator реализован, но не подключён и не использует DI)
+- [ ] Именованные слоты, двусторонняя привязка, произвольный `tag`
 
 ### Svelte (Not Started)
 - [ ] Store integration
@@ -490,11 +591,11 @@ Framework-agnostic dependency injection:
 |---------|-------------|
 | @soldy/core | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit |
 | @soldy/accessor | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor |
-| @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin |
+| @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin, defaultPropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions |
 | @soldy/plugins | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin |
-| @soldy/ui-vue | Vue components (Button, CheckBox, etc.), useAdapter, useProps, useEmits |
+| @soldy/ui-vue | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |
 | @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
-| @soldy/ui-angular | Empty (export {}) |
+| @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming |
 | @soldy/ui-svelte | Empty |
 | @soldy/ui-solid | Empty |
 

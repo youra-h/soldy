@@ -1,4 +1,3 @@
-import { BaseControl } from '../control'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { CollapseDescriptor, CollapseCollectionDescriptor } from '@soldy/setup'

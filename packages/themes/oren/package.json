@@ -5,11 +5,16 @@
   "type": "module",
   "main": "./dist/index.css",
   "style": "./dist/index.css",
+  "types": "./index.d.ts",
   "exports": {
-    ".": "./dist/index.css"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./dist/index.css"
+    }
   },
   "files": [
-    "dist"
+    "dist",
+    "index.d.ts"
   ],
   "scripts": {
     "build": "vite build",

@@ -21,8 +21,11 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	const className = [classes.join(' '), userClassName].filter(Boolean).join(' ')
 	const style = visible ? userStyle : { ...(userStyle ?? {}), display: 'none' }
 
+	// restProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
+	// потребителем ref, попав в restProps, перекрыл бы ref адаптера и тихо
+	// сломал бы привязку к TElementPlugin (не было бы element:ready).
 	return (
-		<Tag ref={ref} className={className} style={style} {...restProps}>
+		<Tag {...restProps} ref={ref} className={className} style={style}>
 			{props.children}
 		</Tag>
 	)

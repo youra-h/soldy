@@ -1,21 +1,13 @@
-import type { ChangeDetectorRef } from '@angular/core'
 import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
-import { useAdapter, resolveDefaultExtensions } from '../../adapter'
-import type { TAngularBinding } from '../../adapter'
+import { useAdapter } from '../../adapter'
+import type { TBinding } from '../../adapter'
 
 export function setupComponentView(
 	ctrl: IComponentView | undefined,
 	props: Partial<IComponentViewProps>,
-	cdr: ChangeDetectorRef,
-): TAngularBinding<IComponentView> {
-	const descriptor = ComponentViewDescriptor()
+): TBinding<IComponentView> {
+	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl, props })
 
-	const adapter = createAdapterContext(
-		descriptor,
-		{ ctrl, props },
-		{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-	)
-
-	return useAdapter<IComponentView>(adapter, cdr)
+	return useAdapter<IComponentView>(adapter)
 }

@@ -7,20 +7,13 @@ import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
 import type { ITextable, ITextableProps } from '@soldy/core'
 import { useAdapter } from '../../adapter'
-import { resolveDefaultExtensions } from '../../adapter'
 import type { TextableProps } from './base.component'
 
 export function useSetupTextable(props: TextableProps) {
 	const adapterRef = useRef<IAdapterContext | null>(null)
 
 	if (!adapterRef.current) {
-		const descriptor = TextableDescriptor()
-
-		adapterRef.current = createAdapterContext(
-			descriptor,
-			{ ctrl: props.ctrl, props },
-			{ defaultExtensions: resolveDefaultExtensions(descriptor) },
-		)
+		adapterRef.current = createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props })
 	}
 
 	return useAdapter<ITextableProps, ITextable>(adapterRef.current, props)

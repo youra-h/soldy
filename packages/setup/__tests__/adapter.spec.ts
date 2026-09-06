@@ -106,14 +106,16 @@ describe('createAdapterContext', () => {
 		expect(ctx.get(TPluginsBindingExtension)).toBeInstanceOf(TPluginsBindingExtension)
 	})
 
-	it('бросает ошибку, если бандл не содержит TElementPlugin', () => {
-		expect(() => createAdapterContext(DragAndDropDescriptor(), {})).toThrow(
-			'TElementPlugin is not available in the context bundle.',
-		)
+	it('не подключает TPluginsBindingExtension, если нет TElementPlugin', () => {
+		// DragAndDrop наследует ComponentDescriptor (headless), плагина элемента нет.
+		// Расширение требует его и бросило бы исключение — поэтому не подключается.
+		const ctx = createAdapterContext(DragAndDropDescriptor(), {})
+
+		expect(ctx.get(TPluginsBindingExtension)).toBeUndefined()
 	})
 
 	it('позволяет переопределить стартовый набор расширений', () => {
-		const ctx = createAdapterContext(DragAndDropDescriptor(), {}, { defaultExtensions: [] })
+		const ctx = createAdapterContext(ButtonDescriptor(), {}, { defaultExtensions: [] })
 
 		expect(ctx.get(TPluginsBindingExtension)).toBeUndefined()
 	})

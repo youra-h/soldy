@@ -1,15 +1,14 @@
 import {
 	Component,
 	ChangeDetectionStrategy,
-	ChangeDetectorRef,
 	ElementRef,
 	AfterViewInit,
 	HostBinding,
 	inject,
 } from '@angular/core'
 import type { IComponentView } from '@soldy/core'
-import type { TAngularBinding } from '../../adapter'
-import { TAngularComponentBase } from '../../adapter'
+import type { TBinding } from '../../adapter'
+import { TComponentBase } from '../../adapter'
 import { ComponentViewInputNames, ComponentViewOutputNames } from './base.component'
 import { setupComponentView } from './setup.component'
 
@@ -18,6 +17,9 @@ import { setupComponentView } from './setup.component'
  *
  * inputs/outputs — статические константы из generated/component-view.metadata.ts.
  * Классы и видимость применяются к хост-элементу через @HostBinding.
+ *
+ * Хост существует всё время жизни компонента, поэтому DOM-биндинг разовый —
+ * в отличие от Button, где корень живёт внутри @if и пересоздаётся.
  *
  * Selector: <soldy-component-view>
  */
@@ -30,16 +32,17 @@ import { setupComponentView } from './setup.component'
 	template: `<ng-content></ng-content>`,
 })
 export class TComponentViewComponent
-	extends TAngularComponentBase<IComponentView>
+	extends TComponentBase<IComponentView>
 	implements AfterViewInit
 {
-	// ─── Host bindings ────────────────────────────────────────────────────────
 	@HostBinding('class') get hostClass(): string {
-		return (this.state['classes'] as string[] | undefined)?.join(' ') ?? ''
+		return (this.state()['classes'] as string[] | undefined)?.join(' ') ?? ''
 	}
 
 	@HostBinding('style.display') get hostDisplay(): string | null {
-		return this.state['rendered'] === false || this.state['visible'] === false ? 'none' : null
+		const state = this.state()
+
+		return state['rendered'] === false || state['visible'] === false ? 'none' : null
 	}
 
 	private readonly _elementRef = inject(ElementRef)
@@ -51,9 +54,8 @@ export class TComponentViewComponent
 	protected createBinding(
 		ctrl: IComponentView | undefined,
 		inputs: Record<string, any>,
-		cdr: ChangeDetectorRef,
-	): TAngularBinding<IComponentView> {
-		return setupComponentView(ctrl, inputs, cdr)
+	): TBinding<IComponentView> {
+		return setupComponentView(ctrl, inputs)
 	}
 
 	ngAfterViewInit(): void {

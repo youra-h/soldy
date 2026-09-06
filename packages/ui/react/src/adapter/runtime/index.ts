@@ -1,5 +1,5 @@
 export { useAdapter } from './useAdapter'
 export { useSyncProps } from './useSyncProps'
 export { useSyncEvents } from './useSyncEvents'
-export type { TReactBinding } from './useAdapter'
+export type { TBinding } from './useAdapter'
 export type { ISyncOptions } from './useSyncProps'

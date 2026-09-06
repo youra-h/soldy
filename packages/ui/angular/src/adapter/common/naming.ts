@@ -1,14 +1,15 @@
 /**
  * Angular-стратегия именования props и событий.
  *
- * - props:  `icon-styles:styles` → `iconStyles_styles` (совпадает с Vue / React)
- * - events: `element:ready`     → `elementReady` (camelCase, без префикса `on`)
+ * - props:  `styles` @ ns `icon-styles` → `iconStyles_styles` (общее правило)
+ * - events: `element:ready`             → `elementReady`
  *
- * Angular-специфика: @Output-свойства не используют `on`-префикс, а имя
- * с двоеточием невалидно для идентификаторов TypeScript.
+ * Angular-специфика: имена @Output должны быть валидными TS-идентификаторами,
+ * поэтому двоеточия схлопываются в camelCase, а `on`-префикс не добавляется.
  */
 
 import type { INamingStrategy } from '@soldy/accessor'
+import { defaultPropNaming } from '@soldy/setup'
 
 function toCamelCase(input: string): string {
 	return input
@@ -19,13 +20,7 @@ function toCamelCase(input: string): string {
 }
 
 export const AngularNaming: INamingStrategy = {
-	prop: (name) => {
-		if (!name.namespace) return name.name
-
-		const ns = name.namespace.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
-
-		return `${ns}_${name.name}`
-	},
+	prop: defaultPropNaming,
 
 	event: (name) => {
 		const base = name.namespace ? `${name.namespace}:${name.name}` : name.name

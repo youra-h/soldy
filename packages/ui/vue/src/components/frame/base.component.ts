@@ -1,4 +1,3 @@
-import { BaseComponent } from '../component'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { FrameDescriptor } from '@soldy/setup'

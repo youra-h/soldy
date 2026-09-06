@@ -1,4 +1,3 @@
-import { ComponentView } from '../component-view'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { IconDescriptor } from '@soldy/setup'

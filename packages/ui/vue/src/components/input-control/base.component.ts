@@ -1,4 +1,3 @@
-import { BaseValueControl } from '../value-control'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { InputControlDescriptor } from '@soldy/setup'

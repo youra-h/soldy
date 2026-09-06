@@ -1,16 +1,16 @@
 /**
- * TAngularComponentBase — абстрактный базовый класс Angular-компонента soldy.
+ * TComponentBase — абстрактный базовый класс Angular-компонента soldy.
  *
  * Выносит общий жизненный цикл, чтобы убрать дублирование между компонентами:
  *
  * - constructor: создаёт EventEmitter'ы для всех имён из outputNames
- * - state getter: текущее состояние из TAngularBinding
+ * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
  * - ngOnInit: создаёт binding (createBinding) и подписывает outputs
  * - ngOnChanges: пробрасывает изменённые inputs в Core (syncInputs)
  * - ngOnDestroy: очищает подписки и adapter.destroy()
  *
  * Подкласс обязан реализовать:
- * - createBinding(ctrl, inputs, cdr): создаёт TAngularBinding через setup-функцию
+ * - createBinding(ctrl, inputs): создаёт TBinding через setup-функцию
  * - super(inputNames, outputNames) в конструкторе: имена инпутов/аутпутов
  *
  * inputNames и outputNames передаются через конструктор (а не getter), т.к.
@@ -19,21 +19,24 @@
  */
 
 import {
-	ChangeDetectorRef,
 	Directive,
+	ElementRef,
 	EventEmitter,
 	Input,
 	OnChanges,
 	OnDestroy,
 	OnInit,
 	SimpleChanges,
-	inject,
+	computed,
+	effect,
+	signal,
+	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy/core'
-import type { TAngularBinding } from './useAdapter'
+import type { TBinding } from './useAdapter'
 
 @Directive({ standalone: true })
-export abstract class TAngularComponentBase<TInstance extends IEntity>
+export abstract class TComponentBase<TInstance extends IEntity>
 	implements OnInit, OnChanges, OnDestroy
 {
 	/** Готовый core-инстанс (если не передан, создаётся из ctor дескриптора). */
@@ -42,14 +45,15 @@ export abstract class TAngularComponentBase<TInstance extends IEntity>
 	protected abstract createBinding(
 		ctrl: TInstance | undefined,
 		inputs: Record<string, any>,
-		cdr: ChangeDetectorRef,
-	): TAngularBinding<TInstance>
+	): TBinding<TInstance>
 
 	private readonly _inputNames: readonly string[]
 	private readonly _outputNames: readonly string[]
-	private _binding?: TAngularBinding<TInstance>
+	private readonly _binding = signal<TBinding<TInstance> | undefined>(undefined)
 	private _eventsCleanup?: () => void
-	private readonly _cdr = inject(ChangeDetectorRef)
+
+	/** Состояние Core. Сигнал, т.к. binding появляется только в ngOnInit. */
+	readonly state = computed<Record<string, any>>(() => this._binding()?.state() ?? {})
 
 	constructor(inputNames: readonly string[], outputNames: readonly string[]) {
 		this._inputNames = inputNames
@@ -60,17 +64,17 @@ export abstract class TAngularComponentBase<TInstance extends IEntity>
 		}
 	}
 
-	get state(): Record<string, any> {
-		return this._binding?.state ?? {}
-	}
-
 	ngOnInit(): void {
-		this._binding = this.createBinding(this.ctrl, this.collectInputs(), this._cdr)
-		this._eventsCleanup = this._binding.syncEvents(this._collectOutputs())
+		const binding = this.createBinding(this.ctrl, this.collectInputs())
+
+		this._eventsCleanup = binding.syncEvents(this._collectOutputs())
+		this._binding.set(binding)
 	}
 
 	ngOnChanges(changes: SimpleChanges): void {
-		if (!this._binding) return
+		const binding = this._binding()
+
+		if (!binding) return
 
 		const inputs: Record<string, any> = {}
 
@@ -78,12 +82,12 @@ export abstract class TAngularComponentBase<TInstance extends IEntity>
 			inputs[key] = changes[key].currentValue
 		}
 
-		this._binding.syncInputs(inputs)
+		binding.syncInputs(inputs)
 	}
 
 	ngOnDestroy(): void {
 		this._eventsCleanup?.()
-		this._binding?.destroy()
+		this._binding()?.destroy()
 	}
 
 	protected collectInputs(): Record<string, any> {
@@ -97,9 +101,29 @@ export abstract class TAngularComponentBase<TInstance extends IEntity>
 		return inputs
 	}
 
-	/** Привязывает DOM-элемент к TElementPlugin (для DOM-компонентов, AfterViewInit). */
+	/** Разовая привязка — для компонентов, чей корень существует всегда (хост). */
 	protected bindElement(el: HTMLElement | null): void {
-		this._binding?.bindElement(el)
+		this._binding()?.bindElement(el)
+	}
+
+	/**
+	 * Связывает DOM-элемент с TElementPlugin и переустанавливает связь, когда
+	 * элемент пересоздаётся — при переключении `rendered` или смене `tag`
+	 * Angular уничтожает старую ноду и создаёт новую.
+	 *
+	 * Принимает сигнальный viewChild(), а не ElementRef: обычный @ViewChild
+	 * читается один раз в ngAfterViewInit и после пересоздания указывает
+	 * на мёртвый узел. Вызывать из конструктора подкласса (нужен injection context).
+	 */
+	protected bindElementFrom(element: Signal<ElementRef | undefined>): void {
+		effect(() => {
+			const binding = this._binding()
+			const ref = element()
+
+			if (!binding) return
+
+			binding.bindElement(ref?.nativeElement ?? null)
+		})
 	}
 
 	private _collectOutputs(): Record<string, EventEmitter<any>> {

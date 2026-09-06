@@ -1,15 +1,14 @@
 import {
 	Component,
 	ChangeDetectionStrategy,
-	ChangeDetectorRef,
 	ElementRef,
-	AfterViewInit,
-	ViewChild,
+	computed,
+	viewChild,
 } from '@angular/core'
-import { NgClass } from '@angular/common'
+import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { IButton } from '@soldy/core'
-import type { TAngularBinding } from '../../adapter'
-import { TAngularComponentBase } from '../../adapter'
+import type { TBinding } from '../../adapter'
+import { TComponentBase } from '../../adapter'
 import { ButtonInputNames, ButtonOutputNames } from './base.component'
 import { setupButton } from './setup.component'
 
@@ -26,30 +25,29 @@ import { setupButton } from './setup.component'
 	standalone: true,
 	inputs: ButtonInputNames as unknown as string[],
 	outputs: ButtonOutputNames as unknown as string[],
-	imports: [NgClass],
+	imports: [NgClass, NgTemplateOutlet],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './button.component.html',
 })
-export class TButtonComponent extends TAngularComponentBase<IButton> implements AfterViewInit {
-	@ViewChild('buttonEl', { read: ElementRef }) buttonElRef?: ElementRef
+export class TButtonComponent extends TComponentBase<IButton> {
+	/**
+	 * Сигнальный запрос, а не @ViewChild: корень живёт внутри @if и меняет
+	 * ветку вместе с `tag`, поэтому ссылка обязана переустанавливаться.
+	 */
+	private readonly _buttonEl = viewChild('buttonEl', { read: ElementRef })
+
+	readonly isNativeButton = computed(() => this.state()['tag'] === 'button')
 
 	constructor() {
 		super(ButtonInputNames, ButtonOutputNames)
+
+		this.bindElementFrom(this._buttonEl)
 	}
 
 	protected createBinding(
 		ctrl: IButton | undefined,
 		inputs: Record<string, any>,
-		cdr: ChangeDetectorRef,
-	): TAngularBinding<IButton> {
-		return setupButton(ctrl, inputs, cdr)
-	}
-
-	get isNativeButton(): boolean {
-		return this.state['tag'] === 'button'
-	}
-
-	ngAfterViewInit(): void {
-		this.bindElement(this.buttonElRef?.nativeElement ?? null)
+	): TBinding<IButton> {
+		return setupButton(ctrl, inputs)
 	}
 }

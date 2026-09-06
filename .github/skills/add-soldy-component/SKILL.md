@@ -173,23 +173,107 @@ export { <Name> } from './<Name>'
 
 React type helpers live in `packages/ui/react/src/types.ts`: `TReactComponentProps`, `EventProps`, `UseProps`, `UseDomProps`.
 
-### 6. Register barrel exports
+### 6. Angular adapter — `packages/ui/angular/src/components/<name>/`
+
+Четыре файла. Отличие от Vue/React: имена inputs/outputs **генерируются заранее**,
+т.к. Angular AOT требует литеральные массивы в декораторе.
+
+- `manifest.ts` — вход кодогенератора:
+
+```ts
+import { <Name>Descriptor } from '@soldy/setup'
+
+export const name = '<name>'
+export const descriptor = <Name>Descriptor
+```
+
+- Запусти `npm run generate --workspace=@soldy/ui-angular` → появится
+  `src/generated/<name>.metadata.ts` с `<Name>Inputs` / `<Name>Outputs`.
+  **Файл коммитится**, CI проверяет, что он не разъехался с дескриптором.
+
+- `base.component.ts` — только переэкспорт сгенерированных имён:
+
+```ts
+export {
+  <Name>Inputs as <Name>InputNames,
+  <Name>Outputs as <Name>OutputNames,
+} from '../../generated/<name>.metadata'
+```
+
+- `setup.component.ts`:
+
+```ts
+import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
+import type { I<Name>, I<Name>Props } from '@soldy/core'
+import { useAdapter } from '../../adapter'
+import type { TAngularBinding } from '../../adapter'
+
+export function setup<Name>(
+  ctrl: I<Name> | undefined,
+  props: Partial<I<Name>Props>,
+): TAngularBinding<I<Name>> {
+  const adapter = createAdapterContext(<Name>Descriptor(), { ctrl, props })
+
+  return useAdapter<I<Name>>(adapter)
+}
+```
+
+- `<name>.component.ts` — оболочка. Наследует `TAngularComponentBase`, состояние
+  читается как `state()` (сигнал):
+
+```ts
+@Component({
+  selector: 'soldy-<name>',
+  standalone: true,
+  inputs: <Name>InputNames as unknown as string[],
+  outputs: <Name>OutputNames as unknown as string[],
+  imports: [NgClass, NgTemplateOutlet],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './<name>.component.html',
+})
+export class T<Name>Component extends TAngularComponentBase<I<Name>> {
+  private readonly _el = viewChild('rootEl', { read: ElementRef })
+
+  constructor() {
+    super(<Name>InputNames, <Name>OutputNames)
+    this.bindElementFrom(this._el)   // не @ViewChild: узел пересоздаётся
+  }
+
+  protected createBinding(ctrl, inputs) {
+    return setup<Name>(ctrl, inputs)
+  }
+}
+```
+
+Правила разметки:
+- корень помечается `#rootEl` и живёт внутри `@if (state()['rendered'])`;
+- `<ng-content>` объявляется **ровно один раз** внутри `<ng-template #content>`
+  и подставляется через `[ngTemplateOutlet]="content"` — два слота во
+  взаимоисключающих ветках теряют содержимое при переключении;
+- если корень — хост-элемент и всегда существует (как у `component-view`),
+  используй `bindElement()` в `ngAfterViewInit` вместо `bindElementFrom`.
+
+### 7. Register barrel exports
 
 - `packages/core/src/components/custom/index.ts`
 - `packages/setup/contributions/components/index.ts`
 - `packages/setup/descriptors/components/index.ts`
 - `packages/ui/vue/src/components/index.ts`
 - `packages/ui/react/src/components/index.ts` (if a React adapter was added)
+- `packages/ui/angular/src/components/index.ts` (if an Angular adapter was added)
 
-### 7. Validate
+### 8. Validate
 
 ```bash
 npm run test:core
 npm run test:setup
-npm run lint
 # type checks
-npx tsc -p packages/ui/react/tsconfig.json --noEmit
 npm run build:types --workspace=@soldy/ui-vue
+npx tsc -p packages/ui/react/tsconfig.json --noEmit
+# Angular: метаданные не должны разъехаться с дескриптором
+npm run generate --workspace=@soldy/ui-angular
+git diff --exit-code packages/ui/angular/src/generated
+npm run build --workspace=@soldy/ui-angular
 ```
 
 Confirm no framework imports leaked into the framework-agnostic packages.
@@ -203,6 +287,18 @@ Button is the canonical minimal component. Copy its shape:
 - `packages/setup/descriptors/components/button.descriptor.ts`
 - Vue: `packages/ui/vue/src/components/button/{base.component.ts,setup.component.ts,Button.vue,index.ts}`
 - React: `packages/ui/react/src/components/button/{base.component.ts,setup.component.ts,Button.tsx,index.ts}`
+- Angular: `packages/ui/angular/src/components/button/{manifest.ts,base.component.ts,setup.component.ts,button.component.ts,button.component.html,index.ts}`
+
+## Общий слой — не дублируй
+
+`packages/setup/common/` содержит поведение, одинаковое для всех адаптеров:
+`defaultPropNaming`, `createInspectorFactory(naming)`, `collectEventBindings`.
+Плюс `resolveDefaultExtensions` в `adapter/extensions/` (уже применяется по
+умолчанию в `createAdapterContext` — вручную передавать не нужно).
+
+Адаптер реализует **только** стратегию именования событий. Если пишешь что-то в
+`packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в общем слое.
+Починил баг в одном адаптере — проверь остальные два.
 
 ## Collection components (Vue only for now)
 
