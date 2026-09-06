@@ -5,6 +5,7 @@
  * naming для событий и способ доставки значений во view-слой фреймворка.
  */
 
-export { defaultPropNaming } from './naming'
+export { underscorePropNaming, callbackEventNaming } from './naming'
+export type { TCallbackEventName, TCallbackEventProps } from './naming.types'
 export { createInspectorFactory, type TCreateInspector } from './createInspector'
 export { collectEventBindings, type IEventBinding } from './collectEventBindings'

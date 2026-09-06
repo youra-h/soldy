@@ -5,8 +5,12 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import type { IEntity } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IComponentDescriptor, DescriptorProps, DescriptorAllEvents } from '@soldy/setup'
-import type { ReactEventProps } from './adapter/common/naming.types'
+import type {
+	IComponentDescriptor,
+	DescriptorProps,
+	DescriptorAllEvents,
+	TCallbackEventProps,
+} from '@soldy/setup'
 
 /**
  * Базовые props React-компонента: core-props + служебные поля.
@@ -24,9 +28,9 @@ export type TReactComponentProps<
 	children?: ReactNode
 }
 
-/** Событийные пропсы компонента из дескриптора (core + плагины): ReactEventProps<DescriptorAllEvents<...>>. */
+/** Событийные пропсы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
-	ReactEventProps<DescriptorAllEvents<TDescriptorFn>>
+	TCallbackEventProps<DescriptorAllEvents<TDescriptorFn>>
 
 /** Props headless-компонента: core props + события + служебные поля. */
 export type UseProps<

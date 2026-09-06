@@ -6,10 +6,10 @@
  */
 
 import type { INamingStrategy } from '@soldy/accessor'
-import { defaultPropNaming } from '@soldy/setup'
+import { underscorePropNaming } from '@soldy/setup'
 
 export const VueNaming: INamingStrategy = {
-	prop: defaultPropNaming,
+	prop: underscorePropNaming,
 
 	event: (name) => (name.namespace ? `${name.namespace}:${name.name}` : name.name),
 }

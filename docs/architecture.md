@@ -246,7 +246,7 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 
 | Экспорт | Назначение |
 |---|---|
-| `defaultPropNaming(name)` | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
+| `underscorePropNaming(name)` | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
 | `createInspectorFactory(naming)` | Адаптер связывает инспектор со своей стратегией один раз. |
 | `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий. |
 | `resolveDefaultExtensions(descriptor)` | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`. |
@@ -390,9 +390,9 @@ BaseComponent (Entity props)
 ### ✅ IMPLEMENTED (mirrors Vue `adapter/` architecture)
 
 **Structure (1:1 with Vue adapter, 3-module component split):**
-- `adapter/common/` — `createInspector` (через `createInspectorFactory(ReactNaming)`), `ReactNaming` (`prop` = общий `defaultPropNaming`), `naming.types.ts` (type-level mirror of `ReactNaming.event` for auto-derived event props). `resolveDefaultExtensions` переехал в `@soldy/setup` и применяется по умолчанию
+- `adapter/common/` — `createInspector` (через `createInspectorFactory(ReactNaming)`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`. `resolveDefaultExtensions` переехал в `@soldy/setup` и применяется по умолчанию
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
-  - `naming.types.ts` = PURE React naming transformers (`ReactEventName`, `ReactEventProps<T>`) mirroring `ReactNaming.event`. `plugins.types.ts` УДАЛЁН (per-plugin `TElementEventProps` и др. больше не нужны — всё покрывает `DescriptorAllEvents`). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `ReactEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
+  - тип-зеркало `TCallbackEventProps` живёт в `@soldy/setup/common` (им же пользуется Svelte). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `TCallbackEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
 - `adapter/runtime/` — `useAdapter(adapter, props)` (main hook — takes a READY adapter, аналог `useAdapter`), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
 - `adapter/elevator/` — `TReactElevator` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook, calls `createAdapterContext` directly) + view (`*.tsx`)
@@ -487,9 +487,44 @@ Angular AOT статически анализирует декоратор: `inp
   значение через приватное поле, а не через DI — понадобится доработка, когда
   дойдёт до коллекций.
 
-## Layer 8b: Svelte / Solid
+## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-- **Svelte**: только `index.ts` (пустой)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+
+Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
+колбэк-пропы:
+
+- `adapter/common/` — `SvelteNaming` (`prop` = `underscorePropNaming`, `event` =
+  `callbackEventNaming` — обе стратегии общие с React), `createInspector`.
+- `adapter/runtime/` — `useAdapter.svelte.ts`, `useSyncProps.svelte.ts`,
+  `useSyncEvents.ts`. Расширение `.svelte.ts` обязательно там, где используются
+  руны (`$state`, `$effect`, `$derived`).
+- `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
+  (ограничение то же, что у Vue: только во время инициализации компонента).
+
+### Svelte-специфика
+
+- **Состояние** — `$state`-объект. Глубокая реактивность прокси покрывает и
+  скалярные props, и составные, поэтому отдельного механизма уведомления не нужно.
+- **props передаются геттером** (`() => props`): в Svelte 5 захват `$props()`
+  в переменную рвёт реактивность, читать нужно лениво. Компилятор ловит это
+  предупреждением `state_referenced_locally`.
+- **DOM-биндинг — attachment** (`{@attach binding.attachElement}`), прямой аналог
+  callback-ref из React: вызывается при появлении узла и умеет вернуть cleanup,
+  поэтому пересоздание элемента при смене `tag` обрабатывается само.
+- **Слоты — сниппеты**: `children` рендерится через `{@render children?.()}`,
+  именованные области layout'а передаются сниппет-пропами.
+- **Атрибуты идут одним объектом**: у `<svelte:element>` тип атрибутов обобщённый,
+  поэтому `disabled` нельзя поставить отдельным атрибутом — он уходит через спред.
+
+### Известные ограничения
+
+- `tag` поддерживается только строковый: `<svelte:element>` не принимает
+  компонент. Объектные теги (как в Vue) потребуют отдельной ветки.
+- Коллекции не портированы (elevator готов, но не подключён).
+
+## Layer 8c: Solid / Web Components
+
 - **Solid**: только `index.ts` (пустой)
 - **webc**: пустая папка, даже без `package.json` (не участник workspace)
 
@@ -634,12 +669,12 @@ Framework-agnostic dependency injection:
 |---------|-------------|
 | @soldy/core | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit |
 | @soldy/accessor | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor |
-| @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin, defaultPropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions |
+| @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin, underscorePropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions |
 | @soldy/plugins | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin |
 | @soldy/ui-vue | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |
 | @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
 | @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming |
-| @soldy/ui-svelte | Empty |
+| @soldy/ui-svelte | Button, ComponentView, useAdapter, TSvelteElevator, SvelteNaming |
 | @soldy/ui-solid | Empty |
 
 

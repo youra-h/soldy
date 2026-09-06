@@ -15,9 +15,12 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
+    "@soldy/setup": "*",
+    "@soldy/theme-oren": "*",
     "svelte": "^5.0.0"
   },
   "devDependencies": {

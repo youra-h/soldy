@@ -1,3 +1,6 @@
+import '@soldy/theme-oren'
+import './demo.css'
+
 import { mount } from 'svelte'
 import App from './App.svelte'
 

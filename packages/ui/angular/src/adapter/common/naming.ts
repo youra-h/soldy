@@ -9,7 +9,7 @@
  */
 
 import type { INamingStrategy } from '@soldy/accessor'
-import { defaultPropNaming } from '@soldy/setup'
+import { underscorePropNaming } from '@soldy/setup'
 
 function toCamelCase(input: string): string {
 	return input
@@ -20,7 +20,7 @@ function toCamelCase(input: string): string {
 }
 
 export const AngularNaming: INamingStrategy = {
-	prop: defaultPropNaming,
+	prop: underscorePropNaming,
 
 	event: (name) => {
 		const base = name.namespace ? `${name.namespace}:${name.name}` : name.name

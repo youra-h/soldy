@@ -12,6 +12,7 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 npm run dev:vue      # Vue demo (Vite)
 npm run dev:react    # React demo
 npm run dev:angular  # Angular demo (ng serve; predev прогоняет codegen)
+npm run dev:svelte   # Svelte demo (Vite)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
@@ -79,7 +80,7 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 `packages/setup/common/` — поведение, одинаковое во всех адаптерах. Прежде чем
 писать что-то в `packages/ui/*/adapter/common/`, проверь, не место ли этому здесь:
 
-- `defaultPropNaming` — имя пропа одинаково везде (`ns_name`); адаптер реализует
+- `underscorePropNaming` — имя пропа одинаково везде (`ns_name`); адаптер реализует
   только `event`, потому что различаются именно события (`element:ready` во Vue,
   `onElementReady` в React, `elementReady` в Angular).
 - `createInspectorFactory(naming)` — адаптер связывает со своей стратегией один раз.
