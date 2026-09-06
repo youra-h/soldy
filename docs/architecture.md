@@ -523,9 +523,42 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   компонент. Объектные теги (как в Vue) потребуют отдельной ветки.
 - Коллекции не портированы (elevator готов, но не подключён).
 
-## Layer 8c: Solid / Web Components
+## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-- **Solid**: только `index.ts` (пустой)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button)
+
+Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами:
+
+- `adapter/common/` — `SolidNaming` целиком собран из общих стратегий
+  (`prop: underscorePropNaming`, `event: callbackEventNaming` — **третий**
+  потребитель после React и Svelte), `createInspector`.
+- `adapter/runtime/` — `useAdapter`, `useSyncProps`, `useSyncEvents`.
+- `adapter/elevator/` — `TSolidElevator` через `createContext`/`useContext`.
+
+### Solid-специфика
+
+- **Состояние — `createStore`, а не сигнал.** Store даёт реактивность на уровне
+  отдельных свойств, поэтому изменение одного пропа не перерисовывает всё, что
+  читает остальные. Запись — merge-формой `setState({ [name]: value })`:
+  путевая форма `setState(name, value)` трактовала бы значение-функцию как updater.
+- **props не деструктурируются** — это объект геттеров. Разделение через
+  `splitProps`, чтение напрямую. Поэтому `useSyncEvents` не нуждается в
+  обёртке вроде `propsRef` из React: колбэк читается в момент события.
+- **Жизненный цикл — `onCleanup`**, подписки снимаются при уничтожении
+  реактивного владельца.
+- **DOM-биндинг — callback-ref** (`ref={binding.ref}`), как в React.
+- **Динамический тег** — `<Dynamic component={tag}>` из `solid-js/web`.
+- **children резолвятся через `children()`** — прямое чтение `props.children`
+  в нескольких местах создавало бы узлы заново.
+
+### Известные ограничения
+
+- `tag` поддерживается только строковый.
+- Коллекции не портированы; elevator, как и в React, не может отдать значение
+  императивно — контекст в Solid выставляется только через `<Provider>` в JSX.
+
+## Layer 8d: Web Components
+
 - **webc**: пустая папка, даже без `package.json` (не участник workspace)
 
 ---
@@ -675,7 +708,7 @@ Framework-agnostic dependency injection:
 | @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
 | @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming |
 | @soldy/ui-svelte | Button, ComponentView, useAdapter, TSvelteElevator, SvelteNaming |
-| @soldy/ui-solid | Empty |
+| @soldy/ui-solid | Button, ComponentView, useAdapter, TSolidElevator, SolidNaming |
 
 
 ---

@@ -14,9 +14,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons": "*",
     "@soldy/plugins": "*",
+    "@soldy/setup": "*",
+    "@soldy/theme-oren": "*",
     "solid-js": "^1.9.0"
   },
   "devDependencies": {

@@ -13,6 +13,7 @@ npm run dev:vue      # Vue demo (Vite)
 npm run dev:react    # React demo
 npm run dev:angular  # Angular demo (ng serve; predev прогоняет codegen)
 npm run dev:svelte   # Svelte demo (Vite)
+npm run dev:solid    # Solid demo (Vite)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
@@ -80,9 +81,12 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 `packages/setup/common/` — поведение, одинаковое во всех адаптерах. Прежде чем
 писать что-то в `packages/ui/*/adapter/common/`, проверь, не место ли этому здесь:
 
-- `underscorePropNaming` — имя пропа одинаково везде (`ns_name`); адаптер реализует
-  только `event`, потому что различаются именно события (`element:ready` во Vue,
-  `onElementReady` в React, `elementReady` в Angular).
+- `underscorePropNaming` — имя пропа одинаково везде (`ns_name`).
+- `callbackEventNaming` — `element:ready` → `onElementReady`; общая стратегия
+  для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
+  `TCallbackEventProps`. Своё именование событий остаётся только у Vue
+  (`element:ready`) и Angular (`elementReady`) — по одному потребителю на каждое,
+  поэтому они живут в своих адаптерах.
 - `createInspectorFactory(naming)` — адаптер связывает со своей стратегией один раз.
 - `collectEventBindings(accessor, inspector)` — дедуплицированный список подписок
   для проброса событий. **Дедупликация обязательна**: один raw-триггер объявлен у

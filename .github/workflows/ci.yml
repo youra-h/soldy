@@ -31,6 +31,7 @@ jobs:
           npm run test:accessor
           npm run test:vue
           npm run test:svelte
+          npm run test:solid
 
       - name: Типы — Vue
         run: npm run build:types --workspace=@soldy/ui-vue
@@ -40,6 +41,9 @@ jobs:
 
       - name: Типы — Svelte
         run: npm run check --workspace=@soldy/ui-svelte
+
+      - name: Типы — Solid
+        run: npx tsc --noEmit -p packages/ui/solid/tsconfig.json
 
       # Сгенерированные метаданные закоммичены: Angular AOT требует статические
       # массивы inputs/outputs. Если дескриптор изменили, а generate не запускали,

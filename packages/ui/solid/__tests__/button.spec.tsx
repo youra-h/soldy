@@ -1,0 +1,150 @@
+import { describe, it, expect, afterEach } from 'vitest'
+import { render } from 'solid-js/web'
+import { TButton } from '@soldy/core'
+import { Button } from '@soldy/ui-solid'
+
+const disposers: Array<() => void> = []
+
+function mount(props: Record<string, any> = {}): HTMLElement {
+	const target = document.createElement('div')
+	document.body.appendChild(target)
+
+	disposers.push(render(() => <Button {...props} />, target))
+
+	return target
+}
+
+afterEach(() => {
+	while (disposers.length) disposers.pop()!()
+	document.body.innerHTML = ''
+})
+
+describe('Button · декларативные props', () => {
+	it('по умолчанию рендерит <button> с базовыми классами', () => {
+		const el = mount().firstElementChild as HTMLElement
+
+		expect(el.tagName.toLowerCase()).toBe('button')
+		expect(el.className).toContain('s-button')
+		expect(el.className).toContain('s-button--a-filled')
+	})
+
+	it('отображает text и применяет классы size/variant/view', () => {
+		const el = mount({ text: 'Hello', variant: 'accent', size: 'xl', view: 'plain' })
+			.firstElementChild as HTMLElement
+
+		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Hello')
+		expect(el.className).toContain('s-button--size-xl')
+		expect(el.className).toContain('s-button--accent')
+		expect(el.className).toContain('s-button--a-plain')
+	})
+
+	it('меняет корневой тег через prop tag', () => {
+		const el = mount({ tag: 'a' }).firstElementChild as HTMLElement
+
+		expect(el.tagName.toLowerCase()).toBe('a')
+	})
+
+	it('disabled: атрибут на <button>, aria-disabled на других тегах', () => {
+		const btn = mount({ disabled: true }).firstElementChild as HTMLElement
+		expect(btn.hasAttribute('disabled')).toBe(true)
+
+		const link = mount({ tag: 'a', disabled: true }).firstElementChild as HTMLElement
+		expect(link.getAttribute('aria-disabled')).toBe('true')
+		expect(link.hasAttribute('disabled')).toBe(false)
+	})
+
+	it('rendered=false убирает элемент, visible=false прячет', () => {
+		expect(mount({ rendered: false }).firstElementChild).toBeNull()
+
+		const hidden = mount({ visible: false }).firstElementChild as HTMLElement
+		expect(hidden.style.display).toBe('none')
+	})
+})
+
+describe('Button · внешний ctrl', () => {
+	it('отражает состояние переданного инстанса', () => {
+		const ctrl = new TButton({ text: 'FromCtrl', variant: 'accent', view: 'outlined' })
+		const el = mount({ ctrl }).firstElementChild as HTMLElement
+
+		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('FromCtrl')
+		expect(el.className).toContain('s-button--accent')
+		expect(el.className).toContain('s-button--a-outlined')
+	})
+
+	it('мутации инстанса обновляют DOM', () => {
+		const ctrl = new TButton({ text: 'X' })
+		const root = mount({ ctrl })
+
+		ctrl.text = 'Y'
+		ctrl.variant = 'accent'
+
+		const el = root.firstElementChild as HTMLElement
+		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Y')
+		expect(el.className).toContain('s-button--accent')
+	})
+
+	it('смена tag через инстанс меняет корневой элемент', () => {
+		const ctrl = new TButton()
+		const root = mount({ ctrl })
+
+		expect((root.firstElementChild as HTMLElement).tagName.toLowerCase()).toBe('button')
+
+		ctrl.tag = 'span'
+
+		expect((root.firstElementChild as HTMLElement).tagName.toLowerCase()).toBe('span')
+	})
+})
+
+describe('Button · события через колбэк-пропы', () => {
+	it('onChangeView отдаёт значение', () => {
+		const ctrl = new TButton({ view: 'filled' })
+		const seen: string[] = []
+
+		mount({ ctrl, onChangeView: (v: string) => seen.push(v) })
+
+		ctrl.view = 'plain'
+
+		expect(seen).toEqual(['plain'])
+	})
+
+	it('onChangeVisible не дублируется (дедупликация триггеров)', () => {
+		const ctrl = new TButton()
+		const seen: boolean[] = []
+
+		mount({ ctrl, onChangeVisible: (v: boolean) => seen.push(v) })
+
+		ctrl.hide()
+
+		expect(seen).toHaveLength(1)
+	})
+
+	it('onElementReady приходит с DOM-узлом (callback-ref сработал)', async () => {
+		const ctrl = new TButton()
+		let element: unknown = null
+
+		mount({ ctrl, onElementReady: (el: unknown) => (element = el) })
+
+		// TElementPlugin эмитит ready через requestAnimationFrame
+		await new Promise((resolve) => setTimeout(resolve, 30))
+
+		expect(element).toBeInstanceOf(HTMLElement)
+	})
+})
+
+describe('Button · очистка', () => {
+	it('снимает подписки с внешнего ctrl при размонтировании', () => {
+		const ctrl = new TButton()
+		const count = () => (ctrl.events as any)._items._items.get('change:text')?.size ?? 0
+
+		const target = document.createElement('div')
+		document.body.appendChild(target)
+
+		const dispose = render(() => <Button ctrl={ctrl} />, target)
+
+		expect(count()).toBeGreaterThan(0)
+
+		dispose()
+
+		expect(count()).toBe(0)
+	})
+})
