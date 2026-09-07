@@ -14,9 +14,16 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:aria-selected="selected"
 		v-bind="containerAttrs"
 	>
+		<!--
+			Связка «заголовок ↔ панель» приходит из item-адаптера расширения
+			`content`: `aria-controls` заголовка и `id` панели — один и тот же
+			идентификатор, поэтому считаются в одном месте.
+
+			`aria-selected` с обёртки убран: у неё нет роли, и для скринридера
+			он ничего не значил.
+		-->
 		<Button
 			class="s-collapse-item__header"
 			:view="view"
@@ -24,7 +31,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 			:size="size"
 			:variant="variant"
 			@click="context.adapters.selection.toggle()"
-			v-bind="controlAttrs"
+			v-bind="{ ...header_aria, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading-icon">
@@ -56,7 +63,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		</Button>
 
 		<div class="s-collapse-item__body">
-			<div class="s-collapse-item__content">
+			<div class="s-collapse-item__content" v-bind="content_aria">
 				<slot />
 			</div>
 		</div>

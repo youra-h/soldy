@@ -1,4 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
+import { defineType } from '../../defineType'
+import type { ITabsItem } from '@soldy/core'
 
 /**
  * Слоты Tabs.
@@ -21,6 +23,18 @@ export const TabsContribution = (): IContribution => ({
 		default: { description: 'Табы — элементы коллекции' },
 		trailing: { description: 'После списка табов' },
 		content: { description: 'Панели табов — компоненты TabsContent' },
+		item: {
+			scope: { item: defineType<ITabsItem>(Object) },
+			description: 'Содержимое таба при работе через проп items',
+		},
+		'item-leading': {
+			scope: { item: defineType<ITabsItem>(Object) },
+			description: 'Перед содержимым таба',
+		},
+		'item-trailing': {
+			scope: { item: defineType<ITabsItem>(Object) },
+			description: 'После содержимого таба',
+		},
 	},
 	props: {
 		orientation: { type: String, triggers: ['change:orientation'] },

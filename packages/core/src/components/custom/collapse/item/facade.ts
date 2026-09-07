@@ -1,5 +1,6 @@
 import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
+import type { TAriaAttributes } from '../../../../common'
 import type { TCollapseCollectionExtensions } from '../collection/types'
 import type { ICollapseItem } from './types'
 import type { TCollapseView } from '../types'
@@ -41,5 +42,24 @@ export class TCollapseItemCollectionFacade extends TCollectionItemComponent<
 
 	get view(): TCollapseView {
 		return this._context?.adapters.collapse.view!
+	}
+
+	/**
+	 * Сторона заголовка в связке: `id`, ссылка на панель и состояние раскрытия.
+	 *
+	 * `aria-expanded` здесь, а не в ядре: раскрытость — это выбранность
+	 * элемента в коллекции, а сам элемент о своём членстве не знает.
+	 */
+	get header_aria(): TAriaAttributes {
+		const aria = this._context?.adapters.content.headerAria
+
+		if (!aria) return {}
+
+		return { ...aria, 'aria-expanded': this.selected ? 'true' : 'false' }
+	}
+
+	/** Сторона панели: роль, `id` и ссылка на заголовок. */
+	get content_aria(): TAriaAttributes {
+		return this._context?.adapters.content.contentAria ?? {}
 	}
 }

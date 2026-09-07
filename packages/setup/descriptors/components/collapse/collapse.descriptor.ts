@@ -10,7 +10,7 @@
 import { defineComponent } from '../../base'
 import { TCollapse } from '@soldy/core'
 import type { ICollapseProps, TCollapseEvents } from '@soldy/core'
-import { CollapseContribution } from '../../../contributions'
+import { CollapseContribution, type TCollapseSlots } from '../../../contributions'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -19,7 +19,7 @@ import {
 } from '../../plugins'
 
 export const CollapseDescriptor = () =>
-	defineComponent<ICollapseProps, TCollapseEvents>()({
+	defineComponent<ICollapseProps, TCollapseEvents, TCollapseSlots>()({
 		ctor: TCollapse,
 
 		extends: ControlDescriptor(),

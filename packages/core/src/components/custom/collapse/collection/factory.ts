@@ -1,5 +1,5 @@
 import { TCollapseCollection } from './types'
-import { TCollapseExtension } from './extensions'
+import { TCollapseExtension, TCollapseContentExtension } from './extensions'
 import {
 	TCollectionEngine,
 	TPlainExtension,
@@ -25,5 +25,6 @@ export const CollapseFactory = (instance: ICollapse): TCollapseCollection =>
 			batch: new TBatchExtension<ICollapseItem>(),
 			selection: new TSelectionExtension<ICollapseItem>(),
 			collapse: new TCollapseExtension({ owner: instance }),
+			content: new TCollapseContentExtension<ICollapseItem>(),
 		},
 	})

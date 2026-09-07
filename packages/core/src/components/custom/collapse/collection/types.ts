@@ -14,7 +14,7 @@ import type {
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 } from '../../../base/collection'
-import { TCollapseExtension } from './extensions'
+import { TCollapseExtension, TCollapseContentExtension } from './extensions'
 import type { ICollapse } from '../types'
 import type { ICollapseItem } from '../item/types'
 import type { ICollapseItemProps } from '../item/types'
@@ -28,6 +28,7 @@ export type TCollapseCollectionExtensions = {
 	batch: TBatchExtension<ICollapseItem>
 	selection: TSelectionExtension<ICollapseItem>
 	collapse: TCollapseExtension<ICollapse, ICollapseItem>
+	content: TCollapseContentExtension<ICollapseItem>
 }
 
 export type TCollapseCollection = TCollectionEngine<ICollapseItem, TCollapseCollectionExtensions>

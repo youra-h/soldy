@@ -12,17 +12,21 @@ export default { ...SetupTabs, components: { TabsItem } }
 				<slot name="leading"></slot>
 			</div>
 			<slot>
+				<!--
+					Слоты элементов статические и получают сам элемент через scope:
+					динамические имена (`item:${value}:leading`) резолвит только Vue,
+					в остальных пяти адаптерах они недостижимы. Адресация конкретного
+					элемента — условием внутри слота по `item.value`.
+				-->
 				<TabsItem v-for="item in items" :key="item.uid" :ctrl="item">
 					<template #leading>
-						<slot :name="`item:${item.value}:leading`" :item="item" />
+						<slot name="item-leading" :item="item" />
 					</template>
 					<template #default>
-						<slot :name="`item:${item.value}`" :item="item">
-							<slot name="item" :item="item" />
-						</slot>
+						<slot name="item" :item="item" />
 					</template>
 					<template #trailing>
-						<slot :name="`item:${item.value}:trailing`" :item="item" />
+						<slot name="item-trailing" :item="item" />
 					</template>
 				</TabsItem>
 			</slot>

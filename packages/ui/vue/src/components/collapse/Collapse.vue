@@ -8,19 +8,25 @@ export default { ...SetupCollapse, components: { CollapseItem } }
 <template>
 	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" :dir="dir ?? undefined">
 		<slot>
+			<!--
+				Слоты элементов статические и получают элемент через scope —
+				динамические имена резолвит только Vue (см. Tabs.vue).
+
+				`item-content` — содержимое раскрывающейся панели. Отдельного
+				компонента `Collapse.Content` нет: панель лежит внутри элемента и
+				отдельно от него не существует, поэтому она остаётся слотом.
+			-->
 			<CollapseItem v-for="item in items" :key="item.uid" :ctrl="item">
 				<template #leading>
-					<slot :name="`item:${item.value}:leading`" :item="item" />
+					<slot name="item-leading" :item="item" />
 				</template>
 				<template #header>
-					<slot :name="`item:${item.value}:header`" :item="item">
-						<slot name="item" :item="item" />
-					</slot>
+					<slot name="item" :item="item" />
 				</template>
 				<template #trailing>
-					<slot :name="`item:${item.value}:trailing`" :item="item" />
+					<slot name="item-trailing" :item="item" />
 				</template>
-				<slot :name="`panel:${item.value}`" />
+				<slot name="item-content" :item="item" />
 			</CollapseItem>
 		</slot>
 	</div>

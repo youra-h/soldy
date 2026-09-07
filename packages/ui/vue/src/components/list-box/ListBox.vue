@@ -17,17 +17,19 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 	>
 		<slot name="header" />
 		<slot>
+			<!--
+				Слоты элементов статические и получают элемент через scope —
+				динамические имена резолвит только Vue (см. Tabs.vue).
+			-->
 			<ListBoxItem v-for="item in items" :key="item.uid" :ctrl="item">
 				<template #leading>
-					<slot :name="`item:${item.value}:leading`" :item="item" />
+					<slot name="item-leading" :item="item" />
 				</template>
 				<template #default>
-					<slot :name="`item:${item.value}`" :item="item">
-						<slot name="item" :item="item" />
-					</slot>
+					<slot name="item" :item="item" />
 				</template>
 				<template #trailing>
-					<slot :name="`item:${item.value}:trailing`" :item="item" />
+					<slot name="item-trailing" :item="item" />
 				</template>
 			</ListBoxItem>
 		</slot>

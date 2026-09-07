@@ -23,5 +23,12 @@ export const CollapseCollectionItemContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:view'],
 		},
+		/**
+		 * Связка «заголовок ↔ панель»: обе стороны считает item-адаптер
+		 * расширения `content`. В ядре их нет — о существовании панели знает
+		 * коллекция, а не элемент.
+		 */
+		header_aria: { type: Object, protected: true, triggers: ['change:selected'] },
+		content_aria: { type: Object, protected: true, triggers: ['change:selected'] },
 	},
 })
