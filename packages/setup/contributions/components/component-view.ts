@@ -1,6 +1,17 @@
 import type { IContribution } from '@soldy/accessor'
 
+/**
+ * Слот по умолчанию есть у любого визуального слоя, поэтому объявлен здесь и
+ * наследуется всеми потомками. Button его переопределяет, добавляя scope.
+ */
+export type TComponentViewSlots = {
+	default: {}
+}
+
 export const ComponentViewContribution = (): IContribution => ({
+	slots: {
+		default: { description: 'Содержимое компонента' },
+	},
 	props: {
 		rendered: { type: Boolean, triggers: ['change:rendered'] },
 		visible: { type: Boolean, triggers: ['change:visible'] },

@@ -30,5 +30,16 @@
 		{/each}
 	</div>
 
-	<div class="demo-info">Demonstrating different views with children</div>
+	<h3 class="demo-title">Slots</h3>
+
+	<div class="demo-section-content">
+		<Button {size} {variant} {disabled} text="Both">
+			{#snippet leading()}<span>◀</span>{/snippet}
+			{#snippet trailing()}<span>▶</span>{/snippet}
+		</Button>
+		<Button {size} {variant} {disabled} text="Scoped">
+			{#snippet children(scope)}<b>{scope.text}!</b>{/snippet}
+		</Button>
+	</div>
+	<div class="demo-info">Слоты leading / default (со scope text) / trailing</div>
 </div>

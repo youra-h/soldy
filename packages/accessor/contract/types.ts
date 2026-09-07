@@ -53,10 +53,48 @@ export interface IPropDeclaration {
 	set?: (instance: any, value: any) => void
 }
 
-/** Contribution: словарь props (имя → декларация) + events (raw строки). */
+/**
+ * Декларация одного слота. Ключ словаря slots — имя слота.
+ *
+ * Слоты — третья категория контракта рядом с props и events. До их объявления
+ * они существовали только как разметка в шаблонах, поэтому «одна структура во
+ * всех фреймворках» ничем не гарантировалась и не проверялась.
+ *
+ * Синтаксис у каждого фреймворка свой (`<template #leading>`, `{#snippet}`,
+ * проп с JSX, `<ng-template>`, атрибут `slot`) — общими остаются имена, состав
+ * и scope. Именно это и есть контракт.
+ */
+export interface ISlotDefinition {
+	/**
+	 * Данные, которые компонент передаёт ВНУТРЬ слота (scoped slot):
+	 * `v-slot="{ text }"`, `{#snippet children(scope)}`, `let-text`.
+	 *
+	 * **Это не тип содержимого и не ограничение на него.** В слот можно
+	 * положить что угодно — текст, иконку, таблицу; компонент от этого не
+	 * перестаёт быть собой. Ограничений на содержимое контракт сейчас не
+	 * выражает вовсе; если такой случай появится (слот, где посторонняя
+	 * разметка ломает поведение), поле для этого добавляется сюда отдельно.
+	 *
+	 * Значения — те же брендированные типы, что и у props (`defineType<T>`):
+	 * в рантайме нужен лишь состав ключей, тип живёт на уровне типов.
+	 */
+	scope?: Record<string, any>
+	/** Одна строка для документации и генерации. */
+	description?: string
+}
+
+/** Нормализованная декларация слота: имя вынесено из ключа словаря. */
+export interface ISlotDeclaration {
+	name: string
+	scope?: Record<string, any>
+	description?: string
+}
+
+/** Contribution: словарь props (имя → декларация) + events (raw строки) + slots. */
 export interface IContribution {
 	props?: Record<string, IPropDefinition>
 	events?: string[]
+	slots?: Record<string, ISlotDefinition>
 }
 
 /**

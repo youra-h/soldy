@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core'
-import { TButtonComponent } from '@soldy/ui-angular'
+import { SlotDirective, TButtonComponent } from '@soldy/ui-angular'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
+/**
+ * SlotDirective импортирует ПОТРЕБИТЕЛЬ: `<ng-template slot="...">` пишется
+ * здесь, а директивы в Angular применяются там, где объявлены.
+ */
 @Component({
 	selector: 'demo-button-slots',
 	standalone: true,
-	imports: [TButtonComponent],
+	imports: [TButtonComponent, SlotDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		<div class="demo-container">
@@ -49,7 +53,25 @@ import type { TComponentSize, TComponentVariant } from '@soldy/core'
 				</div>
 			</div>
 
-			<div class="demo-info">Demonstrating different views with children</div>
+			<h3 class="demo-title">Slots</h3>
+
+			<div class="demo-section-content">
+				<soldy-button [size]="size" [variant]="variant" [disabled]="disabled" text="Both">
+					<span slot="leading">◀</span>
+					<span slot="trailing">▶</span>
+				</soldy-button>
+
+				<soldy-button [size]="size" [variant]="variant" [disabled]="disabled" text="Scoped">
+					<ng-template slot="default" let-text>
+						<b>{{ text }}!</b>
+					</ng-template>
+				</soldy-button>
+			</div>
+
+			<div class="demo-info">
+				Слоты leading / default (scope text) / trailing. Простые проецируются по
+				атрибуту slot, scoped — через ng-template.
+			</div>
 		</div>
 	`,
 })

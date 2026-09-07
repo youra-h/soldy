@@ -19,16 +19,49 @@
  *   tag      → пересоздание корня (имя тега элемента поменять нельзя)
  *   classes  → className
  *   visible  → display
+ *
+ * Слоты распределяются по атрибуту `slot` — это нативная HTML-семантика, а
+ * не выдумка soldy. Shadow DOM для этого не используется: тема раскладывается
+ * глобальными BEM-классами и через теневую границу не проходит, поэтому свет
+ * переносится вручную в точки, объявленные шаблоном.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
+import { DEFAULT_SLOT, type IComponentDescriptor } from '@soldy/setup'
 import { buildAttributeMap, coerceAttribute, type IAttributeBinding } from '../common'
-import type { ITemplate, ITemplateContext } from '../template'
+import type { ITemplate, ITemplateContext, TSlotTargets } from '../template'
 import type { TBinding } from './useAdapter'
 import type { TWebcState } from './useSyncProps'
 
 /** Кэш карт атрибутов по дескриптору — строить её на каждый элемент незачем. */
 const ATTRIBUTE_MAPS = new WeakMap<IComponentDescriptor, Map<string, IAttributeBinding>>()
+
+/**
+ * Раскладывает свет по слотам и вынимает его из хоста.
+ *
+ * Признак — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
+ * атрибутов не имеют и всегда попадают в слот по умолчанию, поэтому
+ * `<soldy-button>Текст</soldy-button>` работает как раньше.
+ */
+function groupBySlot(nodes: readonly ChildNode[]): Map<string, ChildNode[]> {
+	const groups = new Map<string, ChildNode[]>()
+
+	for (const node of nodes) {
+		const name =
+			node instanceof Element ? (node.getAttribute('slot') ?? DEFAULT_SLOT) : DEFAULT_SLOT
+
+		const group = groups.get(name)
+
+		if (group) {
+			group.push(node)
+		} else {
+			groups.set(name, [node])
+		}
+
+		node.remove()
+	}
+
+	return groups
+}
 
 function attributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeBinding> {
 	let map = ATTRIBUTE_MAPS.get(descriptor)
@@ -58,7 +91,8 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 
 	/** Значения, выставленные до подключения к DOM. */
 	private readonly _pending: Record<string, unknown> = {}
-	private _light: ChildNode[] = []
+	/** Свет, сгруппированный по имени слота. */
+	private _light = new Map<string, ChildNode[]>()
 	private _root: HTMLElement | null = null
 	private _content: HTMLElement | null = null
 	private readonly _dirty = new Set<string>()
@@ -87,8 +121,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		this._connected = true
 
 		// Снимаем свет ДО первой отрисовки: дальше он живёт внутри корня
-		this._light = Array.from(this.childNodes)
-		this._light.forEach((node) => node.remove())
+		this._light = groupBySlot(Array.from(this.childNodes))
 
 		this.binding = this.setup(this._pending, (name, value) => this._onUpdate(name, value))
 		this.binding.syncProps(this._pending)
@@ -176,7 +209,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 			root,
 			content: this._content!,
 			state,
-			hasLight: this._light.length > 0,
+			hasSlot: (name) => (this._light.get(name)?.length ?? 0) > 0,
 		}
 
 		for (const binding of this.template.bindings) {
@@ -193,24 +226,49 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		if (this._root && this._root.tagName.toLowerCase() === tag) return false
 
 		const root = document.createElement(tag)
-		const content = this.template.create(root)
+		const targets = this.template.create(root)
 
 		this._root?.remove()
 		this._root = root
-		this._content = content
-		this.appendChild(root)
 
-		this._light.forEach((node) => content.appendChild(node))
+		// Слот по умолчанию объявлен у любого визуального слоя, но шаблон вправе
+		// не иметь других: тогда содержимое просто ляжет в корень.
+		const fallback = targets[DEFAULT_SLOT]
+
+		this._content = fallback?.mode === 'append' ? fallback.node : root
+
+		this.appendChild(root)
+		this._distribute(targets)
 		this.binding?.bindElement(root)
 
 		return true
+	}
+
+	/** Раскладывает свет по точкам, объявленным шаблоном. */
+	private _distribute(targets: TSlotTargets): void {
+		for (const [name, nodes] of this._light) {
+			const target = targets[name]
+
+			for (const node of nodes) {
+				if (!target) {
+					// Слот не объявлен шаблоном — содержимое не теряем, кладём в корень
+					this._root!.appendChild(node)
+				} else if (target.mode === 'append') {
+					target.node.appendChild(node)
+				} else {
+					target.node.parentNode?.insertBefore(node, target.node)
+				}
+			}
+		}
 	}
 
 	private _detachRoot(): void {
 		if (!this._root) return
 
 		// Содержимое забираем себе, иначе оно уйдёт из DOM вместе с корнем
-		this._light.forEach((node) => node.remove())
+		for (const nodes of this._light.values()) {
+			nodes.forEach((node) => node.remove())
+		}
 
 		this._root.remove()
 		this._root = null

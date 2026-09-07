@@ -15,14 +15,29 @@
 
 import type { TWebcState } from '../runtime/useSyncProps'
 
+/**
+ * Куда попадает содержимое слота.
+ *
+ * Два режима, потому что слоты соседствуют в одном родителе: `default` у Button
+ * лежит ВНУТРИ `.s-button__text`, а `leading` — ПЕРЕД этим узлом. Режим `before`
+ * позволяет обойтись без узлов-обёрток, которых нет в остальных пяти адаптерах:
+ * лишний `<span>` вокруг иконки сломал бы селекторы темы.
+ */
+export type TSlotTarget =
+	| { mode: 'append'; node: HTMLElement }
+	| { mode: 'before'; node: Node }
+
+/** Точки распределения света: имя слота → куда класть содержимое. */
+export type TSlotTargets = Record<string, TSlotTarget>
+
 export interface ITemplateContext {
 	/** Корневой элемент внутри хоста */
 	root: HTMLElement
-	/** Узел, в который перенесено пользовательское содержимое */
+	/** Узел слота по умолчанию — там же, куда перенесён свет без атрибута slot */
 	content: HTMLElement
 	state: TWebcState
-	/** Пользователь задал содержимое внутри тега */
-	hasLight: boolean
+	/** Задано ли пользователем содержимое именованного слота */
+	hasSlot(name: string): boolean
 }
 
 export interface ITemplateBinding {
@@ -36,11 +51,11 @@ export interface ITemplate {
 	tag(state: TWebcState): string
 
 	/**
-	 * Строит внутреннюю структуру корня.
-	 * Возвращает узел, в который базовый класс положит пользовательское
-	 * содержимое (для простых компонентов — сам корень).
+	 * Строит внутреннюю структуру корня и возвращает точки распределения света.
+	 * Ключи обязаны совпадать с именами слотов из дескриптора — это проверяет
+	 * conformance-тест.
 	 */
-	create(root: HTMLElement): HTMLElement
+	create(root: HTMLElement): TSlotTargets
 
 	bindings: readonly ITemplateBinding[]
 }

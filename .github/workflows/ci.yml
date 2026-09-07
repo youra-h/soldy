@@ -30,6 +30,7 @@ jobs:
           npm run test:setup
           npm run test:accessor
           npm run test:vue
+          npm run test:react
           npm run test:svelte
           npm run test:solid
           npm run test:webc

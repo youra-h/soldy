@@ -11,7 +11,7 @@ import type { ITemplate } from '../../adapter'
 export const componentViewTemplate: ITemplate = {
 	tag: (state) => String(state.tag ?? 'div'),
 
-	create: (root) => root,
+	create: (root) => ({ default: { mode: 'append', node: root } }),
 
 	bindings: [],
 }

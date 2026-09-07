@@ -1,8 +1,10 @@
 /**
  * Шаблон Button.
  *
- * Внутри корня — span для текста; в него же переносится пользовательское
- * содержимое. Текст из props показывается только когда содержимое не задано.
+ * Слоты контракта: `leading`, `default`, `trailing`. Внутри корня создаётся
+ * только span для текста — `leading` кладётся перед ним, `trailing`
+ * дописывается в корень (то есть после него). Узлов-обёрток нет: в остальных
+ * пяти адаптерах их тоже нет, а лишний span сломал бы селекторы темы.
  */
 
 import { ariaBinding, bind, type ITemplate } from '../../adapter'
@@ -16,7 +18,11 @@ export const buttonTemplate: ITemplate = {
 		text.className = 's-button__text'
 		root.appendChild(text)
 
-		return text
+		return {
+			leading: { mode: 'before', node: text },
+			default: { mode: 'append', node: text },
+			trailing: { mode: 'append', node: root },
+		}
 	},
 
 	bindings: [
@@ -33,8 +39,9 @@ export const buttonTemplate: ITemplate = {
 
 		ariaBinding,
 
-		bind('text', ({ content, state, hasLight }) => {
-			if (hasLight) return
+		bind('text', ({ content, state, hasSlot }) => {
+			// Содержимое слота по умолчанию переопределяет проп text
+			if (hasSlot('default')) return
 
 			content.textContent = String(state.text ?? '')
 		}),

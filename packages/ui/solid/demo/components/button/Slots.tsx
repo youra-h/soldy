@@ -42,7 +42,23 @@ export default function ButtonSlotsDemo(props: Props): JSX.Element {
 				</For>
 			</div>
 
-			<div class="demo-info">Demonstrating different views with children</div>
+			<h3 class="demo-title">Slots</h3>
+
+			<div class="demo-section-content">
+				<Button
+					size={props.size}
+					variant={props.variant}
+					disabled={props.disabled}
+					text="Both"
+					leading={<span>◀</span>}
+					trailing={<span>▶</span>}
+				/>
+				<Button size={props.size} variant={props.variant} disabled={props.disabled} text="Scoped">
+					{(scope: { text: string }) => <b>{scope.text}!</b>}
+				</Button>
+			</div>
+
+			<div class="demo-info">Слоты leading / default (scope { '{ text }' }) / trailing</div>
 		</div>
 	)
 }

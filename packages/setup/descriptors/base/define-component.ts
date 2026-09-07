@@ -8,7 +8,12 @@
  */
 
 import { TPluginBundle } from '@soldy/plugins'
-import { TAccessor, type IPropDeclaration, type TName } from '@soldy/accessor'
+import {
+	TAccessor,
+	type IPropDeclaration,
+	type ISlotDeclaration,
+	type TName,
+} from '@soldy/accessor'
 import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
 import { normalizeContribution } from './compile-contribution'
 
@@ -23,6 +28,18 @@ function createPluginCollector() {
 			return [...map.values()]
 		},
 	}
+}
+
+/** Слоты наследника перекрывают одноимённые родительские, порядок сохраняется. */
+function mergeSlots(
+	parent: readonly ISlotDeclaration[],
+	own: readonly ISlotDeclaration[],
+): ISlotDeclaration[] {
+	const map = new Map<string, ISlotDeclaration>()
+
+	for (const slot of [...parent, ...own]) map.set(slot.name, slot)
+
+	return [...map.values()]
 }
 
 function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescriptor {
@@ -42,11 +59,16 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 
 	const events = [...(parent?.events ?? []), ...own.events]
 
+	// Слоты наследуются с перекрытием по имени: наследник вправе уточнить scope
+	// (например, ListBoxItem добавляет `selected` к слоту, объявленному выше).
+	const slots: ISlotDeclaration[] = mergeSlots(parent?.slots ?? [], own.slots)
+
 	return {
 		ctor: options.ctor ?? parent?.ctor ?? Object,
 
 		props,
 		events,
+		slots,
 		plugins,
 
 		getProps(): IPropDeclaration[] {
@@ -55,6 +77,10 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 
 		getEvents(): TName[] {
 			return [...events, ...plugins.flatMap((p) => p.events ?? [])]
+		},
+
+		getSlots(): ISlotDeclaration[] {
+			return [...slots]
 		},
 
 		createBundle(instance: any) {
@@ -116,18 +142,29 @@ export function defineComponent<
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
 >(
 	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
-): IComponentDescriptor<Record<string, unknown>, {}, readonly [...TParentPlugins, ...TPlugins]>
+): IComponentDescriptor<
+	Record<string, unknown>,
+	{},
+	readonly [...TParentPlugins, ...TPlugins],
+	{}
+>
 
 /**
- * Curried-форма: явные TProps/TEvents на первом вызове, кортеж плагинов
+ * Curried-форма: явные TProps/TEvents/TSlots на первом вызове, кортеж плагинов
  * выводится на втором. Используется типизированными дескрипторами.
+ *
+ * TSlots с дефолтом `{}` — дескрипторы без слотов не переписываются.
  */
-export function defineComponent<TProps extends object, TEvents extends object>(): <
+export function defineComponent<
+	TProps extends object,
+	TEvents extends object,
+	TSlots extends object = {},
+>(): <
 	const TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
 >(
 	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
-) => IComponentDescriptor<TProps, TEvents, readonly [...TParentPlugins, ...TPlugins]>
+) => IComponentDescriptor<TProps, TEvents, readonly [...TParentPlugins, ...TPlugins], TSlots>
 
 export function defineComponent(...args: any[]): any {
 	if (args.length > 0) return buildDescriptor(args[0])

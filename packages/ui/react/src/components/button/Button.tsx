@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { toAriaProps } from '../../adapter'
+import { renderSlot, toAriaProps } from '../../adapter'
 import { useSetupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -7,8 +7,11 @@ import type { ButtonProps } from './base.component'
  * Button — рендерит кнопку с текстом из Core.
  *
  * - `tag` по умолчанию `button` (из TButton.defaultValues)
- * - `children` переопределяет `text`
  * - disabled → `disabled` у нативного button, иначе `aria-disabled`
+ *
+ * Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
+ * адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
+ * `trailing`.
  */
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
@@ -36,7 +39,11 @@ export function Button(props: ButtonProps): ReactElement | null {
 			{...(isNativeButton ? { disabled: disabled as boolean } : {})}
 			{...toAriaProps(aria)}
 		>
-			<span className="s-button__text">{props.children ?? text}</span>
+			{renderSlot(props.leading)}
+			<span className="s-button__text">
+				{renderSlot(props.children, { text: text as string }) ?? text}
+			</span>
+			{renderSlot(props.trailing)}
 		</Tag>
 	)
 }

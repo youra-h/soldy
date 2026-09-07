@@ -27,12 +27,15 @@ import {
 	OnDestroy,
 	OnInit,
 	SimpleChanges,
+	TemplateRef,
 	computed,
+	contentChildren,
 	effect,
 	signal,
 	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy/core'
+import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
 
 @Directive({ standalone: true })
@@ -54,6 +57,19 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 	/** Состояние Core. Сигнал, т.к. binding появляется только в ngOnInit. */
 	readonly state = computed<Record<string, any>>(() => this._binding()?.state() ?? {})
+
+	/** Объявленные потребителем `<ng-template slot="...">`. */
+	private readonly _slots = contentChildren(SlotDirective)
+
+	/**
+	 * Шаблон scoped-слота по имени из контракта.
+	 *
+	 * Сигнальный запрос, а не @ContentChildren: результат читается прямо из
+	 * шаблона, и обычный запрос не уведомил бы об изменении.
+	 */
+	protected slot(name: string): TemplateRef<unknown> | null {
+		return this._slots().find((slot) => slot.name === name)?.template ?? null
+	}
 
 	constructor(inputNames: readonly string[], outputNames: readonly string[]) {
 		this._inputNames = inputNames

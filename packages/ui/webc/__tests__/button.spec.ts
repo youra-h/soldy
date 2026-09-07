@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { TButton } from '@soldy/core'
+import { ButtonDescriptor } from '@soldy/setup'
+import { buttonTemplate } from '../src/components/button/button.template'
 import '@soldy/ui-webc'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
@@ -249,5 +251,53 @@ describe('<soldy-button> · aria из ядра', () => {
 		// tabindex ушёл из набора — значит должен исчезнуть и из DOM
 		expect(root(el).hasAttribute('tabindex')).toBe(false)
 		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+	})
+})
+
+describe('<soldy-button> · слоты', () => {
+	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
+		const targets = buttonTemplate.create(document.createElement('button'))
+
+		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
+		expect(Object.keys(targets).sort()).toEqual(
+			ButtonDescriptor()
+				.getSlots()
+				.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('содержимое без атрибута slot попадает в слот по умолчанию', () => {
+		const el = mount('<soldy-button text="ignored"><b>Custom</b></soldy-button>')
+
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Custom')
+	})
+
+	it('slot="leading" ставится перед текстом, slot="trailing" — после', () => {
+		const el = mount(
+			'<soldy-button text="Mid"><i slot="leading">L</i><i slot="trailing">T</i></soldy-button>',
+		)
+
+		const children = Array.from(root(el).children).map((node) => node.textContent)
+
+		// Порядок в DOM важнее наличия: иконка «до» обязана быть до текста
+		expect(children).toEqual(['L', 'Mid', 'T'])
+	})
+
+	it('именованные слоты не подавляют текст из props', () => {
+		const el = mount('<soldy-button text="Hello"><i slot="leading">L</i></soldy-button>')
+
+		// Только содержимое слота default переопределяет text
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Hello')
+	})
+
+	it('содержимое переживает пересоздание корня при смене tag', async () => {
+		const el = mount('<soldy-button><i slot="leading">L</i>Text</soldy-button>') as any
+
+		el.tag = 'a'
+		await flush()
+
+		expect(root(el).tagName.toLowerCase()).toBe('a')
+		expect(Array.from(root(el).children).map((n) => n.textContent)).toEqual(['L', 'Text'])
 	})
 })

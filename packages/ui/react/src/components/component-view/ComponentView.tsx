@@ -1,4 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
+import { renderSlot } from '../../adapter'
 import { useSetupComponentView } from './setup.component'
 import type { ComponentViewProps } from './base.component'
 
@@ -26,7 +27,7 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	// сломал бы привязку к TElementPlugin (не было бы element:ready).
 	return (
 		<Tag {...restProps} ref={ref} className={className} style={style}>
-			{props.children}
+			{renderSlot(props.children)}
 		</Tag>
 	)
 }

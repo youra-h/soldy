@@ -8,11 +8,11 @@
 import { defineComponent } from '../base'
 import { TButton } from '@soldy/core'
 import type { IButtonProps, TButtonEvents } from '@soldy/core'
-import { ButtonContribution } from '../../contributions'
+import { ButtonContribution, type TButtonSlots } from '../../contributions'
 import { TextableDescriptor } from './textable.descriptor'
 
 export const ButtonDescriptor = () =>
-	defineComponent<IButtonProps, TButtonEvents>()({
+	defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
 		ctor: TButton,
 
 		extends: TextableDescriptor(),

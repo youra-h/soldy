@@ -10,6 +10,7 @@ export type {
 	DescriptorProps,
 	DescriptorEvents,
 	DescriptorPlugins,
+	DescriptorSlots,
 	DescriptorAllEvents,
 	NamespacedEvents,
 	TPluginEventsFrom,

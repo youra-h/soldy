@@ -44,7 +44,23 @@ export default function ButtonSlotsDemo({ size, variant, disabled }: ButtonSlots
 				</div>
 			</div>
 
-			<div className="demo-info">Demonstrating different views with children</div>
+			<h3 className="demo-title">Slots</h3>
+
+			<div className="demo-section-content">
+				<Button
+					size={size}
+					variant={variant}
+					disabled={disabled}
+					text="Both"
+					leading={<span>◀</span>}
+					trailing={<span>▶</span>}
+				/>
+				<Button size={size} variant={variant} disabled={disabled} text="Scoped">
+					{(scope) => <b>{scope.text}!</b>}
+				</Button>
+			</div>
+
+			<div className="demo-info">Слоты leading / default (scope { '{ text }' }) / trailing</div>
 		</div>
 	)
 }

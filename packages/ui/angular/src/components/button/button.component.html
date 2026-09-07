@@ -22,12 +22,31 @@
 }
 
 <!--
-	<ng-content> объявлен ровно один раз: Angular проецирует содержимое в слот
-	при создании компонента, поэтому два слота во взаимоисключающих ветках
-	привели бы к потере содержимого при смене tag.
+	Слоты контракта: leading, default (scope { text }), trailing.
+
+	Каждый <ng-content> объявлен ровно один раз и вне @if: Angular проецирует
+	содержимое при создании компонента, поэтому слот во взаимоисключающей ветке
+	терял бы содержимое при смене tag.
+
+	Простые слоты проецируются по атрибуту `slot` — это нативная HTML-семантика.
+	Слот default дополнительно принимает <ng-template slot="default" let-text>:
+	<ng-content> не умеет передавать данные внутрь, а scoped-слот обязан. Обе
+	формы не конфликтуют: ng-template тоже считается спроецированным
+	содержимым, поэтому fallback-текст в <ng-content> не отрисуется.
 -->
 <ng-template #content>
+	<ng-content select="[slot=leading]" />
+
 	<span class="s-button__text">
 		<ng-content>{{ state()['text'] }}</ng-content>
+
+		@if (slot('default'); as defaultSlot) {
+			<ng-container
+				[ngTemplateOutlet]="defaultSlot"
+				[ngTemplateOutletContext]="{ $implicit: state()['text'], text: state()['text'] }"
+			/>
+		}
 	</span>
+
+	<ng-content select="[slot=trailing]" />
 </ng-template>

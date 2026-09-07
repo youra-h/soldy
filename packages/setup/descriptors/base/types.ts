@@ -3,7 +3,13 @@
  * Работают через TAccessor: Unit = { instance, props, events }.
  */
 
-import type { IContribution, IPropDeclaration, TAccessor, TName } from '@soldy/accessor'
+import type {
+	IContribution,
+	IPropDeclaration,
+	ISlotDeclaration,
+	TAccessor,
+	TName,
+} from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 
 /** Определение плагина в составе дескриптора. */
@@ -29,8 +35,8 @@ export interface IComponentDefinitionOptions<
 > {
 	/** Конструктор core-компонента */
 	ctor?: any
-	/** Родительский дескриптор (наследование props, events, plugins) */
-	extends?: IComponentDescriptor<any, any, TParentPlugins>
+	/** Родительский дескриптор (наследование props, events, slots, plugins) */
+	extends?: IComponentDescriptor<any, any, TParentPlugins, any>
 	/** Собственная контрибуция компонента */
 	contribution?: IContribution
 	/** Плагины (каждый — результат definePlugin) */
@@ -48,17 +54,22 @@ export interface IComponentDescriptor<
 	TProps extends object = Record<string, unknown>,
 	TEvents extends object = {},
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
+	TSlots extends object = {},
 > {
 	ctor: any
 	/** Own component props (excluding plugin props). */
 	props: IPropDeclaration[]
 	/** Own component events (excluding plugin events). */
 	events: TName[]
+	/** Слоты: свои + унаследованные. Плагины слотов не имеют. */
+	slots: ISlotDeclaration[]
 	plugins: IPluginDefinition[]
 	/** All props: own + all plugin props (flat). */
 	getProps(): IPropDeclaration[]
 	/** All events: own + all plugin events (flat). */
 	getEvents(): TName[]
+	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
+	getSlots(): ISlotDeclaration[]
 
 	createBundle(instance: any): IPluginBundle | null
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
@@ -74,15 +85,19 @@ export type TDescriptorInstance<T> = T extends (...args: any[]) => infer R ? R :
 
 /** Props компонента из дескриптора: DescriptorProps<typeof ButtonDescriptor> → IButtonProps */
 export type DescriptorProps<T> =
-	TDescriptorInstance<T> extends IComponentDescriptor<infer P, any, any> ? P : never
+	TDescriptorInstance<T> extends IComponentDescriptor<infer P, any, any, any> ? P : never
 
 /** Собственные события компонента (БЕЗ плагинных): DescriptorEvents<typeof ButtonDescriptor> → TButtonEvents */
 export type DescriptorEvents<T> =
-	TDescriptorInstance<T> extends IComponentDescriptor<any, infer E, any> ? E : never
+	TDescriptorInstance<T> extends IComponentDescriptor<any, infer E, any, any> ? E : never
 
 /** Список плагинов дескриптора (tuple): DescriptorPlugins<typeof ButtonDescriptor> → readonly [ElementDef, ReadyDef] */
 export type DescriptorPlugins<T> =
-	TDescriptorInstance<T> extends IComponentDescriptor<any, any, infer P> ? P : readonly []
+	TDescriptorInstance<T> extends IComponentDescriptor<any, any, infer P, any> ? P : readonly []
+
+/** Слоты дескриптора: DescriptorSlots<typeof ButtonDescriptor> → TButtonSlots */
+export type DescriptorSlots<T> =
+	TDescriptorInstance<T> extends IComponentDescriptor<any, any, any, infer S> ? S : {}
 
 /* -------------------------------------------------------------------------- */
 /* Framework-agnostic composition helpers                                      */

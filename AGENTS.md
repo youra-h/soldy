@@ -214,6 +214,70 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 `packages/plugins/src/base/events.ts`) и подмешивается в contribution каждого
 плагина **явно**. Не добавляйте его автоматически внутри `definePlugin`.
 
+## Слоты — третья категория контракта
+
+Рядом с `props` и `events` в `IContribution` есть `slots`. До их объявления
+слоты жили только в разметке Vue-шаблонов, и «одна структура во всех
+фреймворках» ничем не гарантировалась.
+
+```ts
+export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
+
+export const ButtonContribution = (): IContribution => ({
+	slots: {
+		leading: { description: 'Перед текстом' },
+		default: { scope: { text: defineType<string>(String) } },
+		trailing: { description: 'После текста' },
+	},
+})
+```
+
+Тип-зеркало лежит рядом с contribution и меняется синхронно с ней — как
+`TCallbackEventProps` для событий. Живёт в `setup`, **не в core**: у ядра
+понятия слота нет, оно ничего не рендерит.
+
+**`scope` — это данные внутрь слота, а не тип содержимого.**
+`default: { text: string }` читается как «слот получает переменную `text`», а не
+«в слот кладётся строка». Содержимое любого слота произвольно: текст, иконка,
+таблица — компонент от этого не перестаёт быть собой. Ограничений на содержимое
+контракт сейчас не выражает; если появится слот, где посторонняя разметка ломает
+поведение, поле для этого добавляется в `ISlotDefinition` отдельно. Сторожит
+`describe('слот не ограничивает содержимое')` в vue/react-тестах.
+
+**Универсального компонента `<Slot name>` не будет.** В Svelte 5 `children` —
+непрозрачная snippet-функция, сканировать до отрисовки нечего; перенос DOM
+после монтирования ломается на `{#if}`/`{#each}`. И `<Slot>` с обычным
+содержимым принципиально не умеет scoped-слоты: данные внутрь можно передать
+только функции. Одинаковы имена, состав и scope — не синтаксис.
+
+| Адаптер | Спеллинг | scope |
+|---|---|---|
+| Vue | `<template #leading>` | `v-slot="{ text }"` |
+| Svelte 5 | `{#snippet leading()}` | параметр сниппета |
+| React | `leading={<Icon/>}` | `{({ text }) => …}` |
+| Solid | `leading={<Icon/>}` | `{({ text }) => …}` |
+| Angular | `<span slot="leading">` | `<ng-template slot let-text>` |
+| WebC | `<span slot="leading">` | ✗ нет механизма |
+
+Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
+(`resolveSlotName` из `@soldy/setup/common`). Остальные имена одинаковы везде.
+
+Особенности, о которые легко споткнуться:
+
+- **Angular**: `<ng-content>` объявляется один раз и **вне `@if`** — иначе
+  содержимое теряется при смене ветки. `SlotDirective` импортирует потребитель,
+  а не компонент soldy.
+- **WebC**: Shadow DOM не используется (тема — глобальные BEM-классы), свет
+  распределяется вручную по атрибуту `slot`. Шаблон объявляет точки в
+  `create()`; режим `before` нужен, чтобы обойтись без узлов-обёрток, которых
+  нет в остальных адаптерах.
+- **Solid**: `renderSlot` отличает функцию слота от ленивого мемо по арности
+  (`content.length > 0`) — `JSX.Element` тоже бывает функцией, но без аргументов.
+
+Расхождение разметки и контракта ловят conformance-тесты:
+`packages/ui/vue/__tests__/slots.spec.ts` разбирает `.vue`-файл,
+`packages/ui/webc/__tests__/button.spec.ts` сверяет ключи `template.create()`.
+
 ## DOM-события и доступность
 
 Ядру DOM недоступен, но из этого не следует, что всё связанное с DOM обязано

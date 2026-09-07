@@ -11,8 +11,8 @@ import {
 
 describe('normalizeContribution', () => {
 	it('возвращает пустой результат для undefined и пустого contribution', () => {
-		expect(normalizeContribution()).toEqual({ props: [], events: [] })
-		expect(normalizeContribution({})).toEqual({ props: [], events: [] })
+		expect(normalizeContribution()).toEqual({ props: [], events: [], slots: [] })
+		expect(normalizeContribution({})).toEqual({ props: [], events: [], slots: [] })
 	})
 
 	it('нормализует props: TName, type, protected, triggers, get/set', () => {

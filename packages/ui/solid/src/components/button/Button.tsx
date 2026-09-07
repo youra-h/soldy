@@ -1,5 +1,6 @@
 import { Show, children, createMemo, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
+import { renderSlot } from '../../adapter'
 import { setupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -14,7 +15,10 @@ export function Button(props: ButtonProps): JSX.Element {
 	const binding = setupButton(props)
 	const state = binding.state
 
-	const resolved = children(() => props.children)
+	// Слоты контракта: leading, default (scope { text }), trailing
+	const leading = children(() => renderSlot(props.leading))
+	const resolved = children(() => renderSlot(props.children, { text: state.text as string }))
+	const trailing = children(() => renderSlot(props.trailing))
 
 	const attrs = createMemo(() => {
 		const rest = binding.forwardProps()
@@ -34,11 +38,13 @@ export function Button(props: ButtonProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic component={state.tag as string} {...attrs()} ref={binding.ref}>
+				{leading()}
 				<span class="s-button__text">
 					<Show when={resolved()} fallback={state.text}>
 						{resolved()}
 					</Show>
 				</span>
+				{trailing()}
 			</Dynamic>
 		</Show>
 	)

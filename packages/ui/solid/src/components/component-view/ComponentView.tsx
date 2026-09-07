@@ -1,5 +1,6 @@
 import { Show, children, createMemo, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
+import { renderSlot } from '../../adapter'
 import { setupComponentView } from './setup.component'
 import type { ComponentViewProps } from './base.component'
 
@@ -15,7 +16,7 @@ export function ComponentView(props: ComponentViewProps): JSX.Element {
 
 	// children() резолвит содержимое один раз: прямое чтение props.children
 	// в нескольких местах создавало бы узлы заново.
-	const resolved = children(() => props.children)
+	const resolved = children(() => renderSlot(props.children))
 
 	const attrs = createMemo(() => {
 		const rest = binding.forwardProps()
