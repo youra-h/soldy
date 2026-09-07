@@ -19,6 +19,7 @@ export default defineConfig({
 		environmentOptions: {
 			jsdom: { pretendToBeVisual: true },
 		},
+		setupFiles: ['./__tests__/setup.ts'],
 		include: ['__tests__/**/*.spec.ts'],
 	},
 })

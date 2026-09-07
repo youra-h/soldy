@@ -23,5 +23,11 @@ export const TabsCollectionItemContribution = (): IContribution => ({
 			get: (instance) => instance.closable,
 			triggers: ['change:closable'],
 		},
+		/**
+		 * Сторона таба в связке с панелью: `id` и `aria-controls`. Приходит из
+		 * item-адаптера расширения `content`, а не из TTabItem: о существовании
+		 * панели знает коллекция, не элемент.
+		 */
+		tab_aria: { type: Object, protected: true, triggers: ['change:active'] },
 	},
 })

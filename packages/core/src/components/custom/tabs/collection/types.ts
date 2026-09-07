@@ -13,7 +13,7 @@ import type {
 	IBatchCollectionProps,
 	IActivationCollectionItemProps,
 } from '../../../base/collection'
-import { TTabsExtension } from './extensions'
+import { TTabsExtension, TTabsContentExtension } from './extensions'
 import type { ITabs } from '../types'
 import type { ITabItem } from '../tab-item/types'
 import type { ITabItemProps } from '../tab-item/types'
@@ -27,6 +27,7 @@ export type TTabsCollectionExtensions = {
 	batch: TBatchExtension<ITabItem>
 	activation: TActivationExtension<ITabItem>
 	tabs: TTabsExtension<ITabs, ITabItem>
+	content: TTabsContentExtension<ITabItem>
 }
 
 export type TTabsCollection = TCollectionEngine<ITabItem, TTabsCollectionExtensions>

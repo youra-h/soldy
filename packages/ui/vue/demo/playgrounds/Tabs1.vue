@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { TTabs, TTabsCollection, TabsFactory } from '@soldy/core'
 import type { ITabItem } from '@soldy/core'
-import { Tabs, TabItem, DragAndDrop } from '@soldy/ui-vue'
+import { Tabs, TabItem, TabsContent, DragAndDrop } from '@soldy/ui-vue'
 
 // --- Вариант 1: через instance (программный) ---
 
@@ -44,9 +44,11 @@ setTimeout(() => {
 				<TabItem text="Tab 1" value="t1" />
 				<TabItem text="Tab 2" value="t2" active />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
-				<template #panel:t1><p>Content 1</p></template>
-				<template #panel:t2><p>Content 2</p></template>
-				<template #panel:t3><p>Content 3</p></template>
+				<template #content>
+					<TabsContent value="t1"><p>Content 1</p></TabsContent>
+					<TabsContent value="t2"><p>Content 2</p></TabsContent>
+					<TabsContent value="t3"><p>Content 3</p></TabsContent>
+				</template>
 			</Tabs>
 		</div>
 
@@ -57,9 +59,11 @@ setTimeout(() => {
 					<TabItem text="Tab 1" value="t1" active />
 					<TabItem text="Tab 2" value="t2" />
 					<TabItem text="Tab 3" value="t3" />
-					<template #panel:t1><p>Content 1</p></template>
-					<template #panel:t2><p>Content 2</p></template>
-					<template #panel:t3><p>Content 3</p></template>
+					<template #content>
+						<TabsContent value="t1"><p>Content 1</p></TabsContent>
+						<TabsContent value="t2"><p>Content 2</p></TabsContent>
+						<TabsContent value="t3"><p>Content 3</p></TabsContent>
+					</template>
 				</Tabs>
 			</DragAndDrop>
 		</section>
@@ -67,9 +71,11 @@ setTimeout(() => {
 		<section>
 			<h2>Вариант 1: программный (через instance)</h2>
 			<Tabs :ctrl="tabs" @engine:create="onEngineCreate">
-				<template #panel:tab1><p>Содержимое Tab 1</p></template>
-				<template #panel:tab2><p>Содержимое Tab 2</p></template>
-				<template #panel:tab3><p>Содержимое Tab 3</p></template>
+				<template #content>
+					<TabsContent value="tab1"><p>Содержимое Tab 1</p></TabsContent>
+					<TabsContent value="tab2"><p>Содержимое Tab 2</p></TabsContent>
+					<TabsContent value="tab3"><p>Содержимое Tab 3</p></TabsContent>
+				</template>
 			</Tabs>
 		</section>
 
@@ -77,9 +83,11 @@ setTimeout(() => {
 			<h2>Вариант 2: prop items</h2>
 			<Tabs :items="tabItems" view="outline" variant="normal">
 				<template #leading>leading</template>
-				<template #panel:alpha><p>Содержимое Alpha</p></template>
-				<template #panel:beta><p>Содержимое Beta</p></template>
-				<template #panel:gamma><p>Содержимое Gamma</p></template>
+				<template #content>
+					<TabsContent value="alpha"><p>Содержимое Alpha</p></TabsContent>
+					<TabsContent value="beta"><p>Содержимое Beta</p></TabsContent>
+					<TabsContent value="gamma"><p>Содержимое Gamma</p></TabsContent>
+				</template>
 				<template #trailing>trailing</template>
 			</Tabs>
 		</section>
@@ -91,9 +99,11 @@ setTimeout(() => {
 				<TabItem text="Профиль" value="profile" />
 				<TabItem text="Настройки" value="settings" active />
 				<TabItem text="О проекте" value="about" />
-				<template #panel:profile><p>Содержимое Профиль</p></template>
-				<template #panel:settings><p>Содержимое Настройки</p></template>
-				<template #panel:about><p>Содержимое О проекте</p></template>
+				<template #content>
+					<TabsContent value="profile"><p>Содержимое Профиль</p></TabsContent>
+					<TabsContent value="settings"><p>Содержимое Настройки</p></TabsContent>
+					<TabsContent value="about"><p>Содержимое О проекте</p></TabsContent>
+				</template>
 				<template #trailing>trailing</template>
 			</Tabs>
 		</section>
@@ -104,9 +114,11 @@ setTimeout(() => {
 				<TabItem text="Профиль" value="profile" active />
 				<TabItem text="Настройки" value="settings" />
 				<TabItem text="О проекте" value="about" />
-				<template #panel:profile><p>Содержимое Профиль</p></template>
-				<template #panel:settings><p>Содержимое Настройки</p></template>
-				<template #panel:about><p>Содержимое О проекте</p></template>
+				<template #content>
+					<TabsContent value="profile"><p>Содержимое Профиль</p></TabsContent>
+					<TabsContent value="settings"><p>Содержимое Настройки</p></TabsContent>
+					<TabsContent value="about"><p>Содержимое О проекте</p></TabsContent>
+				</template>
 			</Tabs>
 		</section>
 
@@ -116,9 +128,11 @@ setTimeout(() => {
 				<TabItem text="Профиль" value="profile" active />
 				<TabItem text="Настройки" value="settings" />
 				<TabItem text="О проекте" value="about" />
-				<template #panel:profile><p>Содержимое Профиль</p></template>
-				<template #panel:settings><p>Содержимое Настройки</p></template>
-				<template #panel:about><p>Содержимое О проекте</p></template>
+				<template #content>
+					<TabsContent value="profile"><p>Содержимое Профиль</p></TabsContent>
+					<TabsContent value="settings"><p>Содержимое Настройки</p></TabsContent>
+					<TabsContent value="about"><p>Содержимое О проекте</p></TabsContent>
+				</template>
 			</Tabs>
 		</section>
 

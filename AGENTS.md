@@ -53,6 +53,129 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 - `I` prefix → interface (e.g. `IComponent`, `IExtension`).
 - Expose collection state through **facade getters** (`TCollectionComponent` / `TCollectionItemComponent` subclasses) — do not intersect separate input/output interfaces.
 
+### Префикс — только в глобальном пространстве имён
+
+| Где | Пример | Почему |
+|---|---|---|
+| CSS-класс | `s-button` | каскад глобален, `.button` столкнётся с приложением |
+| Тег Custom Element | `soldy-button` | реестр элементов глобален, дефис обязателен по спеке |
+| Селектор Angular | `soldy-button` | шаблонное пространство имён глобально |
+| **Экспорт компонента** | `Button`, `TabItem` | **без префикса** — namespace уже дал npm-скоуп |
+
+`SButton`/`STabs` не вводим: `import { Button } from '@soldy/ui-vue'` уже
+однозначен, префикс дублировал бы то, что делает импорт.
+
+### Часть или слот
+
+**Часть становится отдельным компонентом, только если у неё есть собственная
+идентичность — сущность в ядре, собственное состояние или `id` для ARIA-связки.
+Если у неё только позиция — это слот.**
+
+Критерий выведен из модели soldy, а не заимствован. Ark-таксономия
+(`Root`/`Trigger`/`Indicator`/`Label`/`Positioner`) кодирует чужую модель: там
+нет слотов и табы не коллекция. В soldy `TTabs` — `TCollectionComponent`,
+`TTabItem` — `TCollectionItemComponent`, поэтому часть называется `Item`, а не
+`Trigger`; иначе публичное API разъедется с ядром.
+
+Прогон: `TabItem` — часть (элемент коллекции), `TabsContent` — часть (нужен
+`id` для `aria-controls`), список табов — слот (только позиция), у `Button` и
+`CheckBox` частей нет вовсе.
+
+**Имена частей плоские**: `TabItem`, `TabsContent`. Точечной витрины
+(`Tabs.Item`) нет — пробовали и убрали: единственными её потребителями оказались
+её же тесты, а во Vue она работала только в SFC. Понадобится под публичный
+релиз — вернём тогда.
+
+## Коллекции: слои и расширения (критично)
+
+Самая частая ошибка в этом коде — смешать слои. Она уже приводила к переписыванию.
+
+### Три слоя, и они не пересекаются
+
+| Слой | Отвечает за | Пример |
+|---|---|---|
+| **Класс ядра** | собственные props и events | `TTabItem` — `value`, `text`, `closable` |
+| **Фасад коллекции** | членство в коллекции | `TTabItemCollectionFacade` — `active`, `order`, `tab_aria` |
+| **Расширение** | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок |
+
+**Класс ядра не знает о коллекции.** Ни движка, ни `bindEngine`, ни активности.
+Если классу «нужен доступ к коллекции» — значит логика не в том слое.
+
+```ts
+// ❌ так нельзя
+class TTabsContent extends TComponentView {
+	bindEngine(engine) { ... }        // ядро полезло в коллекцию
+	get active() { return this._collection... }
+}
+
+// ✅ класс ядра — только свои props
+class TTabsContent extends TComponentView {
+	get value() { ... }
+}
+// ✅ членство в коллекции — фасад
+class TTabsContentCollectionFacade extends TCollectionItemComponent {
+	get active() { return this._context?.adapters.activation.active ?? false }
+}
+```
+
+### Когда заводить своё расширение
+
+Стандартный набор лежит в `core/components/base/collection/engine/extension/`
+(`plain`, `batch`, `activation`, `order`, `unique`, `meta`, `factory`).
+**Своё расширение заводится, когда конкретной коллекции нужна функциональность
+сверх стандартной.** Не для того, чтобы что-то куда-то положить.
+
+Каждое — своя папка в `<component>/collection/extensions/<name>/`, внутри пара:
+
+- **расширение коллекции** (`TBaseOwnerItemExtension`) — уровень всей коллекции;
+  `readonly name` попадёт в `extensions` и станет ключом адаптера;
+- **item-адаптер** (`TBaseItemExtension`) в подпапке `item/` — знает свой
+  элемент (`_item`) и родительское расширение (`_parent`).
+
+```
+tabs/collection/extensions/
+  tabs/        закрытие вкладок, hasEnabledTabs
+    tabs.extension.ts
+    item/tab-item.extension.ts     closable = item ?? parent
+  content/     связка «таб ↔ панель»
+    content.extension.ts
+    item/content-item.extension.ts tabAria и panelAria
+```
+
+Расширение подключается в `collection/factory.ts` и объявляется в
+`collection/types.ts`.
+
+### Логику, которой нужен элемент, кладите в item-адаптер
+
+У адаптера есть `_item` — поэтому всё, что вычисляется от элемента, считается
+там, и **обе стороны парной связки считаются в одном месте**:
+
+```ts
+// content-item.extension.ts — id панели и aria-controls таба это одно и то же
+private get _panelId() { return `s-tabpanel-${this._item.uid}` }
+
+get tabAria()   { return { id: this._tabId, 'aria-controls': this._panelId } }
+get panelAria() { return { role: 'tabpanel', id: this._panelId, 'aria-labelledby': this._tabId } }
+```
+
+Разнеси эти два геттера по разным файлам — однажды разойдутся. Фасады только
+читают: `tab_aria` → `adapters.content.tabAria`, `content_aria` →
+`adapters.content.panelAria`.
+
+### Имена props фасада префиксуются
+
+`tab_closable`, `tab_aria`, `content_aria`. Причина: в шаблоне значения двух
+adapter-контекстов (собственного и коллекционного) сливаются в один объект, и
+одноимённые затирают друг друга. У панели уже есть унаследованный `aria` — она
+и вынудила префикс.
+
+### ARIA: что знает элемент, а что коллекция
+
+`TTabItem.aria` — только `role: 'tab'`: это единственное, что таб знает о себе.
+`id` и `aria-controls` предполагают существование панели, а о ней знает
+коллекция — поэтому они приходят из item-адаптера. `aria-selected` — тоже
+коллекция: активность вычисляет `TActivationExtension` на лету.
+
 ## Project-specific patterns
 
 - **Contributions** are arrow-function factories returning an `IContribution` dictionary:

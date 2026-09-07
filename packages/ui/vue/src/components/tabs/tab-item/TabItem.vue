@@ -14,17 +14,24 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:aria-selected="active"
 		v-bind="containerAttrs"
 	>
+		<!--
+			Вся ARIA таба — на элементе, который и есть таб. Раньше
+			`aria-selected` стоял на внешней обёртке без роли, а `role="tab"` —
+			здесь: для скринридера таб не был выбран никогда.
+
+			Два источника, и это не случайность: `aria` — то, что таб знает о
+			себе (role), `tab_aria` и `aria-selected` — то, что знает о нём
+			коллекция (связка с панелью и активность).
+		-->
 		<Button
 			:disabled="disabled"
 			view="none"
 			:size="size"
 			:variant="variant"
 			@click="context.adapters.activation.active = true"
-			role="tab"
-			v-bind="controlAttrs"
+			v-bind="{ ...aria, ...tab_aria, 'aria-selected': String(active), ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading" />

@@ -1,5 +1,5 @@
 import { TTabsCollection } from './types'
-import { TTabsExtension } from './extensions/tabs.extension'
+import { TTabsExtension, TTabsContentExtension } from './extensions'
 import {
 	TCollectionEngine,
 	TPlainExtension,
@@ -25,5 +25,6 @@ export const TabsFactory = (instance: ITabs): TTabsCollection =>
 			batch: new TBatchExtension<ITabItem>(),
 			activation: new TActivationExtension<ITabItem>(),
 			tabs: new TTabsExtension({ owner: instance }),
+			content: new TTabsContentExtension<ITabItem>(),
 		},
 	})

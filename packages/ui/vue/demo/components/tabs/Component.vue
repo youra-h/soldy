@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Tabs, TabItem, emitsTabs } from '@soldy/ui-vue';
+import { Tabs, TabItem, TabsContent, emitsTabs } from '@soldy/ui-vue';
 import PanelDemo from '../../common/PanelDemo.vue';
 import { useEventLogger } from '../../common/useEventLogger';
 import type { EventLogEntry } from '../../common/EventLog.vue';
@@ -77,9 +77,11 @@ const applyAll = computed(() => props.tabApplyTarget === 'all');
                 :disabled="applyAll ? tabDisabled : false"
                 :closable="applyAll ? tabClosable : undefined"
             />
-            <template #panel:tab1><p>Content for Tab 1</p></template>
-            <template #panel:tab2><p>Content for Tab 2</p></template>
-            <template #panel:tab3><p>Content for Tab 3</p></template>
+            <template #content>
+            	<TabsContent value="tab1"><p>Content for Tab 1</p></TabsContent>
+            	<TabsContent value="tab2"><p>Content for Tab 2</p></TabsContent>
+            	<TabsContent value="tab3"><p>Content for Tab 3</p></TabsContent>
+            </template>
         </Tabs>
     </PanelDemo>
 </template>

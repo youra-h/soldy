@@ -13,6 +13,7 @@ import {
 	DragAndDrop,
 	Tabs,
 	TabItem,
+	TabsContent,
 	Collapse,
 	CollapseItem,
 	ListBox,
@@ -142,12 +143,14 @@ const listBoxItems = ref([
 					<TabItem text="Files" value="files" />
 					<TabItem text="Settings" value="settings" />
 
-					<template #panel:overview><p>Overview content</p></template>
-					<template #panel:details><p>Details content</p></template>
-					<template #panel:analytics><p>Analytics content</p></template>
-					<template #panel:history><p>History content</p></template>
-					<template #panel:files><p>Files content</p></template>
-					<template #panel:settings><p>Settings content</p></template>
+					<template #content>
+						<TabsContent value="overview"><p>Overview content</p></TabsContent>
+						<TabsContent value="details"><p>Details content</p></TabsContent>
+						<TabsContent value="analytics"><p>Analytics content</p></TabsContent>
+						<TabsContent value="history"><p>History content</p></TabsContent>
+						<TabsContent value="files"><p>Files content</p></TabsContent>
+						<TabsContent value="settings"><p>Settings content</p></TabsContent>
+					</template>
 				</Tabs>
 			</DragAndDrop>
 		</section>
@@ -157,12 +160,14 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Instance (:ctrl)</h3>
 			<DragAndDrop>
 				<Tabs :ctrl="tabs" @engine:create="onTabsEngineCreate">
-					<template #panel:dashboard><p>Dashboard content</p></template>
-					<template #panel:reports><p>Reports content</p></template>
-					<template #panel:users><p>Users content</p></template>
-					<template #panel:logs><p>Logs content</p></template>
-					<template #panel:storage><p>Storage content</p></template>
-					<template #panel:config><p>Config content</p></template>
+					<template #content>
+						<TabsContent value="dashboard"><p>Dashboard content</p></TabsContent>
+						<TabsContent value="reports"><p>Reports content</p></TabsContent>
+						<TabsContent value="users"><p>Users content</p></TabsContent>
+						<TabsContent value="logs"><p>Logs content</p></TabsContent>
+						<TabsContent value="storage"><p>Storage content</p></TabsContent>
+						<TabsContent value="config"><p>Config content</p></TabsContent>
+					</template>
 				</Tabs>
 			</DragAndDrop>
 		</section>
@@ -172,11 +177,13 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Items prop (:items)</h3>
 			<DragAndDrop>
 				<Tabs :items="tabItems" view="outline">
-					<template #panel:profile><p>Profile content</p></template>
-					<template #panel:notifications><p>Notifications content</p></template>
-					<template #panel:security><p>Security content</p></template>
-					<template #panel:billing><p>Billing content</p></template>
-					<template #panel:api-keys><p>API Keys content</p></template>
+					<template #content>
+						<TabsContent value="profile"><p>Profile content</p></TabsContent>
+						<TabsContent value="notifications"><p>Notifications content</p></TabsContent>
+						<TabsContent value="security"><p>Security content</p></TabsContent>
+						<TabsContent value="billing"><p>Billing content</p></TabsContent>
+						<TabsContent value="api-keys"><p>API Keys content</p></TabsContent>
+					</template>
 				</Tabs>
 			</DragAndDrop>
 		</section>
@@ -212,11 +219,13 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
 			<DragAndDrop>
 				<Collapse :ctrl="collapse" @engine:create="onCollapseEngineCreate">
-					<template #panel:getting-started><p>Getting Started content</p></template>
-					<template #panel:installation><p>Installation content</p></template>
-					<template #panel:configuration><p>Configuration content</p></template>
-					<template #panel:deployment><p>Deployment content</p></template>
-					<template #panel:troubleshooting><p>Troubleshooting content</p></template>
+					<template #content>
+						<TabsContent value="getting-started"><p>Getting Started content</p></TabsContent>
+						<TabsContent value="installation"><p>Installation content</p></TabsContent>
+						<TabsContent value="configuration"><p>Configuration content</p></TabsContent>
+						<TabsContent value="deployment"><p>Deployment content</p></TabsContent>
+						<TabsContent value="troubleshooting"><p>Troubleshooting content</p></TabsContent>
+					</template>
 				</Collapse>
 			</DragAndDrop>
 		</section>
@@ -226,11 +235,13 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Collapse — Items prop (:items)</h3>
 			<DragAndDrop>
 				<Collapse :items="collapseItems" mode="multiple" view="outlined">
-					<template #panel:overview><p>Overview content</p></template>
-					<template #panel:quick-start><p>Quick Start content</p></template>
-					<template #panel:api-reference><p>API Reference content</p></template>
-					<template #panel:examples><p>Examples content</p></template>
-					<template #panel:faq><p>FAQ content</p></template>
+					<template #content>
+						<TabsContent value="overview"><p>Overview content</p></TabsContent>
+						<TabsContent value="quick-start"><p>Quick Start content</p></TabsContent>
+						<TabsContent value="api-reference"><p>API Reference content</p></TabsContent>
+						<TabsContent value="examples"><p>Examples content</p></TabsContent>
+						<TabsContent value="faq"><p>FAQ content</p></TabsContent>
+					</template>
 				</Collapse>
 			</DragAndDrop>
 		</section>

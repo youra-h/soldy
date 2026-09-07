@@ -1,4 +1,13 @@
-export * from './types'
-export { TTabsExtension } from './tabs.extension'
-export type { ITabItemExtension } from './item'
-export { TTabItemExtension } from './item'
+/**
+ * Внутренние расширения коллекции табов.
+ *
+ * Каждое лежит в своей папке и расширяет стандартный набор из
+ * `core/components/base/collection`: `tabs` добавляет закрытие вкладок и
+ * `hasEnabledTabs`, `content` — связку «таб ↔ панель».
+ *
+ * Внутри каждого — пара «расширение коллекции + item-адаптер». Адаптер знает
+ * свой элемент, поэтому логика, которой нужен доступ к табу, живёт там.
+ */
+
+export * from './tabs'
+export * from './content'

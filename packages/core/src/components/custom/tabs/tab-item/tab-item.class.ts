@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../common'
+import type { TValuePayload, TAriaAttributes } from '../../../../common'
 import type { ITabItem, ITabItemProps, TTabItemEvents, TTabItemStates } from './types'
 
 /**
@@ -88,6 +88,21 @@ export default class TTabItem<
 		if (this._states.closable.rawValue === value || this.disabled) return
 
 		this._states.closable.value = value
+	}
+
+	/**
+	 * Только то, что таб знает о себе сам: он — таб.
+	 *
+	 * Связки здесь нет намеренно. `id` и `aria-controls` предполагают панель,
+	 * а о её существовании знает коллекция, не элемент; их отдаёт item-адаптер
+	 * расширения `content` через фасад (`tab_aria`). `aria-selected` — тоже
+	 * не отсюда: активность вычисляет `TActivationExtension` на лету.
+	 */
+	override get aria(): TAriaAttributes {
+		return {
+			...super.aria,
+			role: 'tab',
+		}
 	}
 
 	override getProps(): TProps {

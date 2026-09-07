@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TTabs } from '@soldy/core'
 import type { TTabsCollection } from '@soldy/core'
-import { Tabs, TabItem } from '@soldy/ui-vue'
+import { Tabs, TabItem, TabsContent } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
@@ -37,9 +37,11 @@ function onEngineCreate(engine: TTabsCollection) {
 					<TabItem text="Tab 1" value="t1" active />
 					<TabItem text="Tab 2" value="t2" />
 					<TabItem text="Tab 3" value="t3" />
-					<template #panel:t1><p>Content 1</p></template>
-					<template #panel:t2><p>Content 2</p></template>
-					<template #panel:t3><p>Content 3</p></template>
+					<template #content>
+						<TabsContent value="t1"><p>Content 1</p></TabsContent>
+						<TabsContent value="t2"><p>Content 2</p></TabsContent>
+						<TabsContent value="t3"><p>Content 3</p></TabsContent>
+					</template>
 				</Tabs>
 			</div>
 		</div>
@@ -57,9 +59,11 @@ function onEngineCreate(engine: TTabsCollection) {
 				<template #trailing>
 					<span class="tabs-slots-demo__badge">trailing</span>
 				</template>
-				<template #panel:t1><p>Content 1</p></template>
-				<template #panel:t2><p>Content 2</p></template>
-				<template #panel:t3><p>Content 3</p></template>
+				<template #content>
+					<TabsContent value="t1"><p>Content 1</p></TabsContent>
+					<TabsContent value="t2"><p>Content 2</p></TabsContent>
+					<TabsContent value="t3"><p>Content 3</p></TabsContent>
+				</template>
 			</Tabs>
 		</div>
 
@@ -70,9 +74,11 @@ function onEngineCreate(engine: TTabsCollection) {
 				<TabItem text="Tab 1" value="t1" active />
 				<TabItem text="Tab 2" value="t2" />
 				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
-				<template #panel:t1><p>Content 1</p></template>
-				<template #panel:t2><p>Content 2</p></template>
-				<template #panel:t3><p>Content 3</p></template>
+				<template #content>
+					<TabsContent value="t1"><p>Content 1</p></TabsContent>
+					<TabsContent value="t2"><p>Content 2</p></TabsContent>
+					<TabsContent value="t3"><p>Content 3</p></TabsContent>
+				</template>
 			</Tabs>
 		</div>
 
@@ -95,9 +101,11 @@ function onEngineCreate(engine: TTabsCollection) {
 				<template #item:profile:leading>
 					<span>📋</span>
 				</template>
-				<template #panel:users><p>Users panel</p></template>
-				<template #panel:settings><p>Settings panel</p></template>
-				<template #panel:profile><p>Profile panel</p></template>
+				<template #content>
+					<TabsContent value="users"><p>Users panel</p></TabsContent>
+					<TabsContent value="settings"><p>Settings panel</p></TabsContent>
+					<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+				</template>
 			</Tabs>
 		</div>
 
@@ -140,9 +148,11 @@ function onEngineCreate(engine: TTabsCollection) {
 						<TabItem text="Tab 1" value="t1" active />
 						<TabItem text="Tab 2" value="t2" />
 						<TabItem text="Tab 3" value="t3" />
-						<template #panel:t1><p>Content 1</p></template>
-						<template #panel:t2><p>Content 2</p></template>
-						<template #panel:t3><p>Content 3</p></template>
+						<template #content>
+							<TabsContent value="t1"><p>Content 1</p></TabsContent>
+							<TabsContent value="t2"><p>Content 2</p></TabsContent>
+							<TabsContent value="t3"><p>Content 3</p></TabsContent>
+						</template>
 					</Tabs>
 				</div>
 				<div class="tabs-slots-demo__col">
@@ -157,9 +167,11 @@ function onEngineCreate(engine: TTabsCollection) {
 						<TabItem text="Tab 1" value="t1" active />
 						<TabItem text="Tab 2" value="t2" />
 						<TabItem text="Tab 3" value="t3" />
-						<template #panel:t1><p>Content 1</p></template>
-						<template #panel:t2><p>Content 2</p></template>
-						<template #panel:t3><p>Content 3</p></template>
+						<template #content>
+							<TabsContent value="t1"><p>Content 1</p></TabsContent>
+							<TabsContent value="t2"><p>Content 2</p></TabsContent>
+							<TabsContent value="t3"><p>Content 3</p></TabsContent>
+						</template>
 					</Tabs>
 				</div>
 			</div>
@@ -182,9 +194,11 @@ function onEngineCreate(engine: TTabsCollection) {
 					<template #item:profile:trailing>
 						<span class="tabs-slots-demo__badge">new</span>
 					</template>
-					<template #panel:users><p>Users panel</p></template>
-					<template #panel:settings><p>Settings panel</p></template>
-					<template #panel:profile><p>Profile panel</p></template>
+					<template #content>
+						<TabsContent value="users"><p>Users panel</p></TabsContent>
+						<TabsContent value="settings"><p>Settings panel</p></TabsContent>
+						<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+					</template>
 				</Tabs>
 			</div>
 
@@ -204,9 +218,11 @@ function onEngineCreate(engine: TTabsCollection) {
 							<span>{{ item.text }}</span>
 						</div>
 					</template>
-					<template #panel:users><p>Users panel</p></template>
-					<template #panel:settings><p>Settings panel</p></template>
-					<template #panel:profile><p>Profile panel</p></template>
+					<template #content>
+						<TabsContent value="users"><p>Users panel</p></TabsContent>
+						<TabsContent value="settings"><p>Settings panel</p></TabsContent>
+						<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+					</template>
 				</Tabs>
 			</div>
 		</div>

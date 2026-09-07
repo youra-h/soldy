@@ -30,8 +30,6 @@ export default { ...SetupTabs, components: { TabItem } }
 				<slot name="trailing"></slot>
 			</div>
 		</div>
-		<div v-if="activeItem && $slots[`panel:${activeItem?.value}`]" class="s-tabs__panel">
-			<slot :name="`panel:${activeItem?.value}`" />
-		</div>
+		<slot name="content" />
 	</div>
 </template>
