@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TDragPlugin } from '@soldy/plugins'
+import { TDragPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин drag-and-drop для перетаскивания элементов коллекции.
@@ -7,4 +7,6 @@ import { TDragPlugin } from '@soldy/plugins'
 export const DragPluginDescriptor = () =>
 	definePlugin({
 		ctor: TDragPlugin,
+		namespace: 'drag',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

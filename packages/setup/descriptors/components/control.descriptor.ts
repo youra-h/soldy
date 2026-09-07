@@ -9,6 +9,7 @@ import { defineComponent } from '../base'
 import { TControl } from '@soldy/core'
 import type { IControlProps, TControlEvents } from '@soldy/core'
 import { ControlContribution } from '../../contributions'
+import { ActionPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const ControlDescriptor = () =>
@@ -18,4 +19,6 @@ export const ControlDescriptor = () =>
 		extends: StylableDescriptor(),
 
 		contribution: ControlContribution(),
+
+		plugins: [ActionPluginDescriptor()],
 	})

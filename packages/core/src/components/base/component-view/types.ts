@@ -1,4 +1,4 @@
-import type { TClasses } from './../../../common'
+import type { TAriaAttributes, TClasses } from './../../../common'
 import type { IStateUnit, IVisibilityState, TActionEvent } from '../../../common'
 import type { IComponent, IComponentProps, TComponentEvents, TComponentStates } from '../component'
 
@@ -69,6 +69,8 @@ export interface IComponentView<
 	tag: string | object
 	/** CSS-классы (включая baseClass и динамические) */
 	readonly classes: TClasses
+	/** Атрибуты доступности, вычисленные из состояния */
+	readonly aria: TAriaAttributes
 	/** Компонент смонтирован в DOM и готов (устанавливается плагин-слоем) */
 	ready: boolean
 }

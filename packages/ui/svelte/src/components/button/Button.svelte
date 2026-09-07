@@ -19,9 +19,10 @@
 		return {
 			...rest,
 			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
-			...(isNativeButton
-				? { disabled: state.disabled }
-				: { 'aria-disabled': state.disabled || undefined }),
+			...(isNativeButton ? { disabled: state.disabled } : {}),
+			// aria вычисляет ядро: role, tabindex, aria-disabled.
+			// null в значении Svelte понимает как «атрибут не ставить».
+			...(state.aria as Record<string, string | null>),
 		}
 	})
 </script>

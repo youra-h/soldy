@@ -1,4 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
+import { toAriaProps } from '../../adapter'
 import { useSetupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -12,7 +13,7 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, disabled, text } = state
+	const { rendered, visible, tag, classes, disabled, text, aria } = state
 
 	if (!rendered) return null
 
@@ -32,9 +33,8 @@ export function Button(props: ButtonProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
-			{...(isNativeButton
-				? { disabled: disabled as boolean }
-				: { 'aria-disabled': disabled as boolean })}
+			{...(isNativeButton ? { disabled: disabled as boolean } : {})}
+			{...toAriaProps(aria)}
 		>
 			<span className="s-button__text">{props.children ?? text}</span>
 		</Tag>

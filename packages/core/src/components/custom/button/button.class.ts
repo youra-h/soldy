@@ -8,6 +8,8 @@ import type {
 } from './types'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common/event/evented'
+import { NATIVE_BUTTON_TAGS } from '../../../common'
+import type { TAriaAttributes } from '../../../common'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
 	static override baseClass = 's-button'
@@ -50,6 +52,24 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		if (value && this._view !== value) {
 			this._applyView(value, this._view)
 			;(this.events as TEvented<TButtonEvents>).emit('change:view', value)
+		}
+	}
+
+	/**
+	 * На нативной `<button>` роль и фокусируемость уже есть, добавлять их
+	 * нельзя. На любом другом теге кнопка без `role`/`tabindex` для
+	 * скринридера не кнопка, а с клавиатуры недостижима — тогда и `press`
+	 * из TActionPlugin по Enter/Space никогда не сработает.
+	 */
+	override get aria(): TAriaAttributes {
+		const tag = typeof this.tag === 'string' ? this.tag.toLowerCase() : ''
+
+		if (NATIVE_BUTTON_TAGS.has(tag)) return super.aria
+
+		return {
+			...super.aria,
+			role: 'button',
+			tabindex: this.disabled ? null : '0',
 		}
 	}
 

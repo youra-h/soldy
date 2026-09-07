@@ -11,6 +11,12 @@ export interface IPluginContext {
 export type TPluginEvents = {
 	install: (ctx: IPluginContext, options?: any) => void
 	destroy: (ctx: IPluginContext, options?: any) => void
+	/**
+	 * Плагин создан и доступен снаружи. Эмитится adapter-слоем — не в install,
+	 * потому что на момент установки подписчиков ещё нет: bundle собирается
+	 * раньше, чем фреймворк привязывает обработчики событий.
+	 */
+	create: (plugin: IPlugin<any, any>) => void
 }
 
 /**
@@ -22,6 +28,8 @@ export interface IPlugin<
 > {
 	readonly events: TEvented<TEvents>
 	install(ctx: IPluginContext, options?: any): void
+	/** Объявить плагин доступным снаружи. Вызывается adapter-слоем. */
+	created(): void
 	destroy(): void
 }
 

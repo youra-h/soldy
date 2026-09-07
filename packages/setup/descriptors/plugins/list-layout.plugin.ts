@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TListLayoutPlugin } from '@soldy/plugins'
+import { TListLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин управления высотой контейнера списка (maxRows).
@@ -7,4 +7,6 @@ import { TListLayoutPlugin } from '@soldy/plugins'
 export const ListLayoutPluginDescriptor = () =>
 	definePlugin({
 		ctor: TListLayoutPlugin,
+		namespace: 'layout',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

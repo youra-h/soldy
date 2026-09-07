@@ -153,12 +153,38 @@ Organized by inheritance:
 - Gets installed into `TPluginBundle`
 
 ### Base Classes
-- **TBasePlugin**: Provides events, install/destroy lifecycle
+- **TBasePlugin**: Provides events, install/destroy/created lifecycle
   - Namespace is declared in the plugin descriptor (`definePlugin({ namespace })`), not on the class
   - Can add props/events via contribution
 
+### Доступ к плагинам снаружи
+
+Каждый плагин отдаёт событие `create` с самим собой. Список базовых событий
+плагина объявлен **в слое плагинов** — `PLUGIN_EVENTS` в
+[base/events.ts](packages/plugins/src/base/events.ts) — и подмешивается в
+contribution каждого плагина явно:
+
+```ts
+export const ElementContribution = (): IContribution => ({
+	events: [...PLUGIN_EVENTS, 'ready', 'removed'],
+})
+```
+
+Так плагин остаётся единственным источником истины о собственных событиях.
+Автоматическая подстановка внутри `definePlugin` (слой setup) была бы магией в
+чужом слое, которой нельзя управлять из места объявления.
+
+`install` и `destroy` наружу не выходят — это внутренняя механика bundle.
+`create` эмитится не в `install`, а из `createBundle` и с задержкой на
+микрозадачу: на момент установки подписчиков ещё нет, bundle собирается раньше,
+чем фреймворк привязывает обработчики. См. Layer 5b.
+
 ### Plugin Examples
 - `TElementPlugin` - Stores DOM element reference, emits 'ready'
+- `TActionPlugin` (`custom/action/`, namespace `action`, на `ControlDescriptor`) - взаимодействие
+  с пользователем: `press` (нормализованная активация: клик или Enter/Space, с гейтом по
+  `disabled`), сырой `click`, `focus`/`blur` и двусторонняя связь `focused` с DOM-фокусом.
+  Элемент берёт у `TElementPlugin` через `ctx.get(...)` — композиция, а не наследование
 - `TInstancePlugin` - Stores component instance
 - `TCollectionPlugin` - Collection/add/remove operations
 - `TDragAndDropPlugin` - DnD handler
@@ -289,6 +315,76 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 (`DragAndDropDescriptor` наследует `ComponentDescriptor`, а не `ComponentViewDescriptor`)
 приходилось обходить вручную через `{ defaultExtensions: [] }`. Теперь
 `createAdapterContext` сам выбирает применимый набор.
+
+### Доступ к плагинам с обеих сторон (`createBundle`)
+
+В soldy компонентом управляют двумя способами, и они обязаны быть равнозначны:
+декларативно (шаблон) и императивно (инстанс). Для props и событий ядра это
+выполняется само; для плагинов — нет, потому что bundle создаёт адаптер, а не
+ядро, и с инстанса до него нет пути.
+
+Эмит живёт в `createBundle`
+([define-component.ts](packages/setup/descriptors/base/define-component.ts)) —
+там же, где плагины и создаются:
+
+1. `bundle:create` на `instance.events` — единственной шине, видимой обеим
+   сторонам. Объявлено в `EntityContribution` рядом с `ctrl`: обе половины
+   связки адаптера с инстансом.
+2. `create` на каждом плагине bundle (через `plugin.created()`).
+
+Порядок именно такой: обработчик `bundle:create` должен успеть подписаться на
+плагинный `create`.
+
+```ts
+// сторона инстанса — ни одного упоминания шаблона
+btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h))
+
+// сторона шаблона
+<Button :ctrl="btn" @bundle:create="onBundleCreate" />
+<Button @action:create="$event.events.on('press', onPress)" />
+```
+
+Почему событие, а не свойство `btn.plugins`: до монтирования bundle не
+существует, и неизвестно, появится ли. Событие говорит об этом честно, свойство
+врало бы `null`.
+
+Почему в `createBundle`, а не отдельным шагом в каждом адаптере: параллельный
+механизм пришлось бы помнить и вызывать вручную в шести (а дальше — в семи)
+местах. Здесь он срабатывает сам, потому что стоит там, где плагины рождаются.
+
+Почему микрозадача, как у `engine:create`: адаптер подписывается на события уже
+после того, как получил bundle из `createAdapterContext`, поэтому синхронный
+эмит уходит в пустоту. Проверено — при синхронном эмите падают 8 тестов в
+setup/vue/svelte/solid.
+
+Проверяется `packages/setup/__tests__/plugins-access.spec.ts` и
+`packages/ui/vue/__tests__/action.spec.ts`.
+
+### `aria` — доступность как значение, а не как DOM-операция
+
+Ядру DOM недоступен, но `aria` — не операция, а значение, вычисленное из
+состояния. Поэтому оно живёт в ядре по образцу `classes`:
+
+```ts
+// TControl
+override get aria(): TAriaAttributes {
+	return { ...super.aria, 'aria-disabled': ... }
+}
+```
+
+`protected: true` в `ControlContribution`, триггеры — `change:disabled` и
+`change:tag`. Каждое чтение отдаёт новый объект (контракт границы). `null`
+означает «атрибут не ставить».
+
+Плагин на эту роль не годится: он пишет атрибуты после монтирования, и в
+серверной разметке их не окажется. Кроме `aria-*` набор несёт `role` и
+`tabindex` — без них ARIA-паттерн не работает: `<div role="button">` без
+`tabindex` нельзя сфокусировать, а значит и активировать с клавиатуры.
+
+Раскладка по адаптерам: `v-bind="aria"` (Vue), спред объекта (Svelte, Solid),
+`toAriaProps(aria)` (React — он ждёт `tabIndex`, а не `tabindex`), `ariaBinding`
+(Web Components), директива `[ariaAttrs]` (Angular — единственный, где нет
+спреда атрибутов).
 
 ---
 

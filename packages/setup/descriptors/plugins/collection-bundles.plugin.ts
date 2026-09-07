@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TCollectionBundlesPlugin } from '@soldy/plugins'
+import { TCollectionBundlesPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин-реестр bundles элементов коллекции.
@@ -8,4 +8,6 @@ import { TCollectionBundlesPlugin } from '@soldy/plugins'
 export const CollectionBundlesPluginDescriptor = () =>
 	definePlugin({
 		ctor: TCollectionBundlesPlugin,
+		namespace: 'bundles',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

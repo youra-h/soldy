@@ -5,6 +5,7 @@
 			[ngClass]="state()['classes']"
 			[style.display]="state()['visible'] === false ? 'none' : null"
 			[disabled]="state()['disabled']"
+			[ariaAttrs]="state()['aria']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</button>
@@ -13,7 +14,7 @@
 			#buttonEl
 			[ngClass]="state()['classes']"
 			[style.display]="state()['visible'] === false ? 'none' : null"
-			[attr.aria-disabled]="state()['disabled'] || null"
+			[ariaAttrs]="state()['aria']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</div>

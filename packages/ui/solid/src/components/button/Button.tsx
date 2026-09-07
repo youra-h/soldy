@@ -24,9 +24,10 @@ export function Button(props: ButtonProps): JSX.Element {
 			...rest,
 			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
 			style: { ...(rest.style as object), display: state.visible ? undefined : 'none' },
-			...(isNativeButton
-				? { disabled: state.disabled }
-				: { 'aria-disabled': state.disabled || undefined }),
+			...(isNativeButton ? { disabled: state.disabled } : {}),
+			// aria вычисляет ядро: role, tabindex, aria-disabled.
+			// null в значении Solid понимает как «атрибут не ставить».
+			...(state.aria as Record<string, string | null>),
 		}
 	})
 

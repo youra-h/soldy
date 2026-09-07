@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TTabsViewPlugin } from '@soldy/plugins'
+import { TTabsViewPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин отрисовки индикатора активного таба (line/outline).
@@ -7,4 +7,6 @@ import { TTabsViewPlugin } from '@soldy/plugins'
 export const TabsViewPluginDescriptor = () =>
 	definePlugin({
 		ctor: TTabsViewPlugin,
+		namespace: 'view',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

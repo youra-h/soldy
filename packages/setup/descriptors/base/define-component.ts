@@ -68,6 +68,25 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
 
+			// Плагины появились — объявляем их наружу. `bundle:create` идёт на
+			// шину инстанса: это единственный канал, видимый и шаблону, и тому,
+			// у кого на руках только ctrl. Свойством (`btn.plugins`) выразить
+			// нельзя — до монтирования bundle не существует.
+			//
+			// Отложено на микрозадачу по той же причине, что и `engine:create`
+			// в engine.class.ts: адаптер подписывается на события уже после
+			// того, как получил bundle, и синхронный эмит ушёл бы в пустоту.
+			//
+			// Сначала bundle, потом плагины: иначе обработчик `bundle:create`
+			// не успел бы подписаться на плагинный `create`.
+			Promise.resolve().then(() => {
+				instance?.events?.emit('bundle:create', bundle)
+
+				for (const plugin of plugins) {
+					bundle.get(plugin.ctor)?.created()
+				}
+			})
+
 			return bundle
 		},
 

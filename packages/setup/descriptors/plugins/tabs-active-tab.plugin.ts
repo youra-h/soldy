@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TTabsActiveTabPlugin } from '@soldy/plugins'
+import { TTabsActiveTabPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин вычисления позиции/размера активного таба.
@@ -7,4 +7,6 @@ import { TTabsActiveTabPlugin } from '@soldy/plugins'
 export const TabsActiveTabPluginDescriptor = () =>
 	definePlugin({
 		ctor: TTabsActiveTabPlugin,
+		namespace: 'activeTab',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

@@ -7,7 +7,7 @@ import type {
 	TComponentViewStates,
 } from './types'
 import { TClasses, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
-import type { IVisibilityState, TValuePayload } from '../../../common'
+import type { IVisibilityState, TValuePayload, TAriaAttributes } from '../../../common'
 import { TEvented } from '../../../common'
 
 /**
@@ -158,6 +158,17 @@ export default class TComponentView<
 
 	get classes(): TClasses {
 		return this._classes
+	}
+
+	/**
+	 * Атрибуты доступности. База пуста: у самого по себе визуального слоя
+	 * никакой семантики нет. Наследники дополняют через `...super.aria`.
+	 *
+	 * Каждое чтение возвращает новый объект — значение, а не ссылку на
+	 * внутреннее состояние (контракт границы core → ui).
+	 */
+	get aria(): TAriaAttributes {
+		return {}
 	}
 
 	get tag(): string | object {

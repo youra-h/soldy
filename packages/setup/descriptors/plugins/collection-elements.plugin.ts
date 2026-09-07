@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TCollectionElements } from '@soldy/plugins'
+import { TCollectionElements, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин доступа к DOM-элементам элементов коллекции.
@@ -8,4 +8,6 @@ import { TCollectionElements } from '@soldy/plugins'
 export const CollectionElementsPluginDescriptor = () =>
 	definePlugin({
 		ctor: TCollectionElements,
+		namespace: 'elements',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

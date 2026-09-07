@@ -1,5 +1,5 @@
-import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload } from '../../../common'
+import { TStateUnit, TEvented, NATIVE_DISABLED_TAGS } from '../../../common'
+import type { TValuePayload, TAriaAttributes } from '../../../common'
 import type { IComponentOptions } from '../component'
 import { TStylable } from '../stylable'
 import type { IControlProps, TControlEvents, TControlStates } from './types'
@@ -60,6 +60,21 @@ export default class TControl<
 	set focused(value: boolean) {
 		if (this._states.focused.value !== value) {
 			this._states.focused.value = value
+		}
+	}
+
+	/**
+	 * У тегов с собственным `disabled` состояние передаётся этим атрибутом,
+	 * и `aria-disabled` рядом с ним был бы дублем. У остальных — наоборот,
+	 * `aria-disabled` единственный способ сообщить об этом скринридеру.
+	 */
+	override get aria(): TAriaAttributes {
+		const nativeDisabled =
+			typeof this.tag === 'string' && NATIVE_DISABLED_TAGS.has(this.tag.toLowerCase())
+
+		return {
+			...super.aria,
+			'aria-disabled': this.disabled && !nativeDisabled ? 'true' : null,
 		}
 	}
 

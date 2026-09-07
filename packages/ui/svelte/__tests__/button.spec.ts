@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import { TButton } from '@soldy/core'
+import { TActionPlugin } from '@soldy/plugins'
 import { Button } from '@soldy/ui-svelte'
 
 let target: HTMLElement
@@ -170,5 +171,37 @@ describe('Button · очистка', () => {
 		flushSync()
 
 		expect(count()).toBe(0)
+	})
+})
+
+describe('Button · aria и доступ к плагинам', () => {
+	it('на нативной кнопке лишних атрибутов нет', () => {
+		const el = render({ disabled: true }).firstElementChild as HTMLElement
+
+		expect(el.hasAttribute('disabled')).toBe(true)
+		expect(el.hasAttribute('role')).toBe(false)
+		expect(el.hasAttribute('tabindex')).toBe(false)
+	})
+
+	it('на не-нативном теге появляются role, tabindex и aria-disabled', () => {
+		const el = render({ tag: 'div' }).firstElementChild as HTMLElement
+
+		expect(el.getAttribute('role')).toBe('button')
+		expect(el.getAttribute('tabindex')).toBe('0')
+	})
+
+	it('onBundleCreate отдаёт bundle, onActionCreate — сам плагин', async () => {
+		const seen: any[] = []
+
+		render({
+			onBundleCreate: (b: unknown) => seen.push(['bundle', b]),
+			onActionCreate: (p: unknown) => seen.push(['action', p]),
+		})
+
+		// createBundle откладывает эмит на микрозадачу — см. define-component.ts
+		await Promise.resolve()
+
+		expect(seen.map(([kind]) => kind)).toEqual(['bundle', 'action'])
+		expect(seen[1][1]).toBeInstanceOf(TActionPlugin)
 	})
 })

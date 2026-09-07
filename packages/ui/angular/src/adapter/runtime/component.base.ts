@@ -68,6 +68,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		const binding = this.createBinding(this.ctrl, this.collectInputs())
 
 		this._eventsCleanup = binding.syncEvents(this._collectOutputs())
+
 		this._binding.set(binding)
 	}
 

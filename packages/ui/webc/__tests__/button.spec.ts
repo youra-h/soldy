@@ -219,3 +219,35 @@ describe('<soldy-button> · очистка', () => {
 		expect(count()).toBe(0)
 	})
 })
+
+describe('<soldy-button> · aria из ядра', () => {
+	it('на нативной кнопке лишних атрибутов нет', () => {
+		const el = mount('<soldy-button disabled></soldy-button>')
+
+		expect(root(el).hasAttribute('disabled')).toBe(true)
+		expect(root(el).hasAttribute('role')).toBe(false)
+		expect(root(el).hasAttribute('tabindex')).toBe(false)
+		expect(root(el).hasAttribute('aria-disabled')).toBe(false)
+	})
+
+	it('на не-нативном теге появляются role и aria-disabled', () => {
+		const el = mount('<soldy-button tag="div" disabled></soldy-button>')
+
+		expect(root(el).getAttribute('role')).toBe('button')
+		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+		expect(root(el).hasAttribute('tabindex')).toBe(false)
+	})
+
+	it('снимает атрибуты, когда набор перестал их содержать', async () => {
+		const el = mount('<soldy-button tag="div"></soldy-button>') as any
+
+		expect(root(el).getAttribute('tabindex')).toBe('0')
+
+		el.disabled = true
+		await flush()
+
+		// tabindex ушёл из набора — значит должен исчезнуть и из DOM
+		expect(root(el).hasAttribute('tabindex')).toBe(false)
+		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+	})
+})

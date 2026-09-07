@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { TButton } from '@soldy/core'
+import { TElementPlugin } from '@soldy/plugins'
 import { Button } from '@soldy/ui-vue'
 
 /**
@@ -199,5 +200,82 @@ describe('Button · события видимости и готовности', 
 		await nextTick()
 
 		expect(wrapper.emitted('ready')).toBeTruthy()
+	})
+})
+
+/** createBundle откладывает эмит на микрозадачу — см. define-component.ts */
+const created = () => Promise.resolve()
+
+describe('Button · доступ к плагинам', () => {
+	it('@bundle:create отдаёт bundle в шаблон', async () => {
+		const seen: any[] = []
+
+		mount(Button, { props: { 'onBundle:create': (b: unknown) => seen.push(b) } })
+
+		await created()
+
+		expect(seen).toHaveLength(1)
+		expect(seen[0].get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+	})
+
+	it('@element:create отдаёт сам плагин, минуя bundle', async () => {
+		const seen: any[] = []
+
+		mount(Button, { props: { 'onElement:create': (p: unknown) => seen.push(p) } })
+
+		await created()
+
+		expect(seen).toHaveLength(1)
+		expect(seen[0]).toBeInstanceOf(TElementPlugin)
+	})
+
+	it('плагин из create — тот же, что связан с DOM-узлом компонента', async () => {
+		let plugin: any = null
+
+		const wrapper = mount(Button, {
+			props: { 'onElement:create': (p: unknown) => (plugin = p) },
+		})
+
+		await nextTick()
+
+		// Доказательство, что это рабочий плагин, а не отдельный экземпляр
+		expect(plugin.element).toBe(wrapper.element)
+	})
+})
+
+describe('Button · aria из ядра', () => {
+	it('на нативной кнопке лишних атрибутов нет', () => {
+		const wrapper = mount(Button, { props: { disabled: true } })
+
+		expect(wrapper.attributes('disabled')).toBeDefined()
+		expect(wrapper.attributes('role')).toBeUndefined()
+		expect(wrapper.attributes('tabindex')).toBeUndefined()
+		expect(wrapper.attributes('aria-disabled')).toBeUndefined()
+	})
+
+	it('на не-нативном теге появляются role, tabindex и aria-disabled', () => {
+		const wrapper = mount(Button, { props: { tag: 'div', disabled: true } })
+
+		expect(wrapper.attributes('role')).toBe('button')
+		expect(wrapper.attributes('aria-disabled')).toBe('true')
+		// disabled выключает элемент из порядка обхода
+		expect(wrapper.attributes('tabindex')).toBeUndefined()
+	})
+
+	it('без disabled не-нативная кнопка фокусируема', () => {
+		const wrapper = mount(Button, { props: { tag: 'div' } })
+
+		expect(wrapper.attributes('tabindex')).toBe('0')
+	})
+
+	it('атрибуты пересчитываются при смене tag', async () => {
+		const wrapper = mount(Button, { props: { tag: 'div' } })
+
+		expect(wrapper.attributes('role')).toBe('button')
+
+		await wrapper.setProps({ tag: 'button' })
+
+		expect(wrapper.attributes('role')).toBeUndefined()
+		expect(wrapper.attributes('tabindex')).toBeUndefined()
 	})
 })

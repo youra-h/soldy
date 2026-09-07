@@ -1,3 +1,4 @@
+export { ActionContribution } from './action'
 export { ElementContribution } from './element'
 export * from './icon'
 export * from './spinner'

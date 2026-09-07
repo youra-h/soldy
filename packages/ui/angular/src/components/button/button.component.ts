@@ -8,7 +8,7 @@ import {
 import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { IButton } from '@soldy/core'
 import type { TBinding } from '../../adapter'
-import { TComponentBase } from '../../adapter'
+import { AriaDirective, TComponentBase } from '../../adapter'
 import { ButtonInputNames, ButtonOutputNames } from './base.component'
 import { setupButton } from './setup.component'
 
@@ -25,7 +25,7 @@ import { setupButton } from './setup.component'
 	standalone: true,
 	inputs: ButtonInputNames as unknown as string[],
 	outputs: ButtonOutputNames as unknown as string[],
-	imports: [NgClass, NgTemplateOutlet],
+	imports: [NgClass, NgTemplateOutlet, AriaDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './button.component.html',
 })

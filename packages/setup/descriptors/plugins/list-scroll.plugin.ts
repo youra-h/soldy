@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TListScrollPlugin } from '@soldy/plugins'
+import { TListScrollPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин автоматической прокрутки списка к выделенному элементу.
@@ -7,4 +7,6 @@ import { TListScrollPlugin } from '@soldy/plugins'
 export const ListScrollPluginDescriptor = () =>
 	definePlugin({
 		ctor: TListScrollPlugin,
+		namespace: 'scroll',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})

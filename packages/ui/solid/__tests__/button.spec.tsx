@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render } from 'solid-js/web'
 import { TButton } from '@soldy/core'
+import { TActionPlugin } from '@soldy/plugins'
 import { Button } from '@soldy/ui-solid'
 
 const disposers: Array<() => void> = []
@@ -146,5 +147,37 @@ describe('Button · очистка', () => {
 		dispose()
 
 		expect(count()).toBe(0)
+	})
+})
+
+describe('Button · aria и доступ к плагинам', () => {
+	it('на нативной кнопке лишних атрибутов нет', () => {
+		const el = mount({ disabled: true }).firstElementChild as HTMLElement
+
+		expect(el.hasAttribute('disabled')).toBe(true)
+		expect(el.hasAttribute('role')).toBe(false)
+		expect(el.hasAttribute('tabindex')).toBe(false)
+	})
+
+	it('на не-нативном теге появляются role и tabindex', () => {
+		const el = mount({ tag: 'div' }).firstElementChild as HTMLElement
+
+		expect(el.getAttribute('role')).toBe('button')
+		expect(el.getAttribute('tabindex')).toBe('0')
+	})
+
+	it('onBundleCreate отдаёт bundle, onActionCreate — сам плагин', async () => {
+		const seen: any[] = []
+
+		mount({
+			onBundleCreate: (b: unknown) => seen.push(['bundle', b]),
+			onActionCreate: (p: unknown) => seen.push(['action', p]),
+		})
+
+		// createBundle откладывает эмит на микрозадачу — см. define-component.ts
+		await Promise.resolve()
+
+		expect(seen.map(([kind]) => kind)).toEqual(['bundle', 'action'])
+		expect(seen[1][1]).toBeInstanceOf(TActionPlugin)
 	})
 })

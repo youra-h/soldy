@@ -1,3 +1,4 @@
+export * from './aria'
 export * from './classes'
 export * from './state-unit'
 export * from './states'

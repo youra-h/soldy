@@ -1,5 +1,5 @@
 import { definePlugin } from '../base'
-import { TTabsLayoutPlugin } from '@soldy/plugins'
+import { TTabsLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
  * Плагин отслеживания изменения размеров табов (ResizeObserver).
@@ -7,4 +7,6 @@ import { TTabsLayoutPlugin } from '@soldy/plugins'
 export const TabsLayoutPluginDescriptor = () =>
 	definePlugin({
 		ctor: TTabsLayoutPlugin,
+		namespace: 'layout',
+		contribution: { events: [...PLUGIN_EVENTS] },
 	})
