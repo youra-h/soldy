@@ -5,18 +5,18 @@
   "projects": {
     "demo": {
       "projectType": "application",
-      "root": "demo",
-      "sourceRoot": "demo",
+      "root": "_demo",
+      "sourceRoot": "_demo",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
             "outputPath": "dist/demo",
-            "index": "demo/index.html",
-            "browser": "demo/main.ts",
+            "index": "_demo/index.html",
+            "browser": "_demo/main.ts",
             "tsConfig": "tsconfig.app.json",
             "polyfills": ["zone.js"],
-            "styles": ["../../themes/oren/dist/index.css", "demo/styles.css"]
+            "styles": ["../../themes/oren/dist/index.css", "_demo/styles.css"]
           },
           "configurations": {
             "production": {

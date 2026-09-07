@@ -4,6 +4,6 @@
     "outDir": "./dist/out-tsc",
     "types": []
   },
-  "files": ["demo/main.ts"],
-  "include": ["demo/**/*.d.ts"]
+  "files": ["_demo/main.ts"],
+  "include": ["_demo/**/*.d.ts"]
 }

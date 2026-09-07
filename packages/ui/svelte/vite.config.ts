@@ -4,7 +4,7 @@ import path from 'node:path'
 
 export default defineConfig({
   plugins: [svelte()],
-  root: 'demo',
+  root: '_demo',
   resolve: {
     alias: {
       '@soldy/theme-oren': path.resolve(__dirname, '../../themes/oren/dist/index.css'),

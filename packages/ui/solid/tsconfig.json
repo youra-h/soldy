@@ -11,5 +11,5 @@
       "@soldy/setup": ["../../setup"]
     }
   },
-  "include": ["env.d.ts", "src/**/*", "demo/**/*"]
+  "include": ["env.d.ts", "src/**/*", "_demo/**/*"]
 }
