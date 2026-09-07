@@ -1,8 +1,8 @@
 import type {
 	IListItemExtension,
 	TListItemEventsExtension,
-} from '../../../../list/collection/extensions/item/types'
-import type { TListBoxView } from '../../../types'
+} from '../../../../../list/collection/extensions/list/item/types'
+import type { TListBoxView } from '../../../../types'
 
 export type TListBoxItemEventsExtension = TListItemEventsExtension & {
 	'change:view': (value: TListBoxView) => void

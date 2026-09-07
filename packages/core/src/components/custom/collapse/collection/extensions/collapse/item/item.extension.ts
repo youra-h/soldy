@@ -1,8 +1,8 @@
-import { TBaseItemExtension } from '../../../../../base/collection'
+import { TBaseItemExtension } from '../../../../../../base/collection'
 import type { ICollapseItemExtension, TCollapseItemEventsExtension } from './types'
-import type { ICollapseItem } from '../../../item/types'
+import type { ICollapseItem } from '../../../../item/types'
 import type { ICollapseExtension } from '../types'
-import type { TCollapseView } from '../../../types'
+import type { TCollapseView } from '../../../../types'
 /**
  * TCollapseItemExtension — stateless-делегат элемента collapse.
  *

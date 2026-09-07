@@ -1,10 +1,10 @@
-import type { IExtension, IExtensionContext, IItemExtensionCtor } from '../../../../base/collection'
-import { TBaseOwnerItemExtension } from '../../../../base/collection'
-import type { IListItem } from '../../item/types'
-import type { IList } from '../../types'
+import type { IExtension, IExtensionContext, IItemExtensionCtor } from '../../../../../base/collection'
+import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import type { IListItem } from '../../../item/types'
+import type { IList } from '../../../types'
 import type { TListExtensionEvents, IListExtensionOptions, IListExtension } from './types'
 import { TListItemExtension, type IListItemExtension } from './item'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../common'
+import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TListExtension — расширение коллекции для управления элементами списка.

@@ -1,5 +1,5 @@
 import { TListBoxCollection } from './types'
-import { TListBoxExtension } from './extensions/list-box.extension'
+import { TListBoxExtension } from './extensions'
 import {
 	TCollectionEngine,
 	TPlainExtension,

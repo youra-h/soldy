@@ -1,5 +1,5 @@
-import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../base/collection'
-import type { TCollapseView } from '../../../types'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
+import type { TCollapseView } from '../../../../types'
 
 export type TCollapseItemEventsExtension = TBaseItemEventsExtension & {
 	'change:view': (value: TCollapseView) => void

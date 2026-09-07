@@ -1,12 +1,12 @@
-import type { IList } from '../../types'
+import type { IList } from '../../../types'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionItems,
-} from '../../../../base/collection'
+} from '../../../../../base/collection'
 import type { TListExtension } from './list.extension'
 import type { IListItemExtension } from './item'
-import type { IListItem } from '../../item/types'
+import type { IListItem } from '../../../item/types'
 
 /**
  * Контракт расширения list.

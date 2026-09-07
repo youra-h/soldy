@@ -19,7 +19,7 @@ import type {
 	IOrderItemExtension,
 } from '../../../base/collection'
 import { TListExtension } from './extensions'
-import type { IListItemExtension } from './extensions/item/types'
+import type { IListItemExtension } from './extensions/list/item/types'
 import type { IList } from '../types'
 import type { IListItem } from '../item/types'
 import type { IListItemProps } from '../item/types'

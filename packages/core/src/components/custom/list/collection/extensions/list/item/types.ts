@@ -1,4 +1,4 @@
-import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../base/collection'
+import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
 
 export type TListItemEventsExtension = TBaseItemEventsExtension & {
 	'change:wordWrap': (value: boolean) => void

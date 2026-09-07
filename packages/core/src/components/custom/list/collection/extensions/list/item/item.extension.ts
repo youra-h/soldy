@@ -1,6 +1,6 @@
-import { TBaseItemExtension } from '../../../../../base/collection'
+import { TBaseItemExtension } from '../../../../../../base/collection'
 import type { IListItemExtension, TListItemEventsExtension } from './types'
-import type { IListItem } from '../../../item/types'
+import type { IListItem } from '../../../../item/types'
 import type { IListExtension } from '../types'
 
 /**

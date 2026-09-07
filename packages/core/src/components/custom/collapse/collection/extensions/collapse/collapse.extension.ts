@@ -1,15 +1,15 @@
-import type { IExtension, IExtensionContext } from '../../../../base/collection'
-import type { TCollapseView } from '../../types'
-import { TBaseOwnerItemExtension } from '../../../../base/collection'
-import type { ICollapseItem } from '../../item/types'
-import type { ICollapse } from '../../types'
+import type { IExtension, IExtensionContext } from '../../../../../base/collection'
+import type { TCollapseView } from '../../../types'
+import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import type { ICollapseItem } from '../../../item/types'
+import type { ICollapse } from '../../../types'
 import type {
 	TCollapseExtensionEvents,
 	ICollapseExtensionOptions,
 	ICollapseExtension,
 } from './types'
 import { TCollapseItemExtension, type ICollapseItemExtension } from './item'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../common'
+import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TCollapseExtension — расширение коллекции для управления элементами collapse.

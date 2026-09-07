@@ -1,5 +1,5 @@
 import { TListCollection } from './types'
-import { TListExtension } from './extensions/list.extension'
+import { TListExtension } from './extensions'
 import {
 	TCollectionEngine,
 	TPlainExtension,

@@ -1,4 +1,10 @@
-export * from './types'
-export { TListExtension } from './list.extension'
-export type { IListItemExtension } from './item'
-export { TListItemExtension } from './item'
+/**
+ * Внутренние расширения коллекции.
+ *
+ * Каждое лежит в своей папке и расширяет стандартный набор из
+ * `core/components/base/collection`. Внутри — пара «расширение коллекции +
+ * item-адаптер»: адаптер знает свой элемент, поэтому логика, которой нужен
+ * доступ к элементу, живёт там.
+ */
+
+export * from './list'

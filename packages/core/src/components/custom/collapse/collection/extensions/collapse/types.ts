@@ -1,13 +1,13 @@
-import type { ICollapse } from '../../types'
-import type { TCollapseView } from '../../types'
+import type { ICollapse } from '../../../types'
+import type { TCollapseView } from '../../../types'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionItems,
-} from '../../../../base/collection'
+} from '../../../../../base/collection'
 import type { TCollapseExtension } from './collapse.extension'
 import type { ICollapseItemExtension } from './item'
-import type { ICollapseItem } from '../../item/types'
+import type { ICollapseItem } from '../../../item/types'
 
 /**
  * Контракт расширения collapse.

@@ -1,5 +1,5 @@
 import { TCollapseCollection } from './types'
-import { TCollapseExtension } from './extensions/collapse.extension'
+import { TCollapseExtension } from './extensions'
 import {
 	TCollectionEngine,
 	TPlainExtension,
