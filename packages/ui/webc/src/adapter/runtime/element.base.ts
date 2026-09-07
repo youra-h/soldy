@@ -1,21 +1,29 @@
 /**
  * TSoldyElement — базовый класс кастомного элемента soldy.
  *
- * Аналог TComponentBase из Angular: выносит общий жизненный цикл, чтобы
- * компонент занимался только разметкой.
+ * Аналог TComponentBase из Angular: держит весь общий жизненный цикл, чтобы
+ * компонент состоял только из дескриптора, setup-слоя и ссылки на шаблон.
  *
- * - connectedCallback: снимает light-DOM содержимое, создаёт binding, рендерит
+ * - connectedCallback: снимает light-DOM содержимое, создаёт binding, рисует
  * - attributeChangedCallback: приводит атрибут к типу и пишет в Core
  * - disconnectedCallback: снимает подписки и уничтожает adapter-context
- * - перерисовка коалесцируется в микротаске: одно изменение props в ядре
- *   часто вызывает несколько триггеров, и без этого рендер шёл бы на каждый
  *
- * Подкласс обязан реализовать `setup()` и `render()`, а также объявить
- * `static observedAttributes` (см. useAttributes) и `descriptor`.
+ * Обновления точечные. `useSyncProps` сообщает, какой именно проп изменился;
+ * имена копятся в `_dirty`, а на флаше применяются только те привязки, которые
+ * за эти пропы отвечают. Сам флаш откладывается в микротаску, потому что одно
+ * изменение в ядре часто даёт несколько триггеров.
+ *
+ * Структурные props база применяет сама — они одинаковы у всех визуальных
+ * компонентов soldy:
+ *   rendered → корень существует или удалён
+ *   tag      → пересоздание корня (имя тега элемента поменять нельзя)
+ *   classes  → className
+ *   visible  → display
  */
 
 import type { IComponentDescriptor } from '@soldy/setup'
 import { buildAttributeMap, coerceAttribute, type IAttributeBinding } from '../common'
+import type { ITemplate, ITemplateContext } from '../template'
 import type { TBinding } from './useAdapter'
 import type { TWebcState } from './useSyncProps'
 
@@ -36,14 +44,11 @@ function attributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeB
 export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 	protected binding?: TBinding<TInstance>
 
-	/** Значения, выставленные до подключения к DOM. */
-	private readonly _pending: Record<string, unknown> = {}
-	private _light: ChildNode[] = []
-	private _renderQueued = false
-	private _connected = false
-
 	/** Дескриптор компонента — нужен для карты атрибутов. */
 	protected abstract get descriptor(): IComponentDescriptor
+
+	/** Шаблон компонента: структура корня и привязки. */
+	protected abstract get template(): ITemplate
 
 	/** Создаёт binding через setup-слой компонента. */
 	protected abstract setup(
@@ -51,8 +56,14 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		onUpdate: (name: string, value: unknown) => void,
 	): TBinding<TInstance>
 
-	/** Полная перерисовка содержимого элемента. */
-	protected abstract render(): void
+	/** Значения, выставленные до подключения к DOM. */
+	private readonly _pending: Record<string, unknown> = {}
+	private _light: ChildNode[] = []
+	private _root: HTMLElement | null = null
+	private _content: HTMLElement | null = null
+	private readonly _dirty = new Set<string>()
+	private _flushQueued = false
+	private _connected = false
 
 	get state(): TWebcState {
 		return this.binding?.state ?? {}
@@ -70,24 +81,19 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		this._pending.ctrl = value
 	}
 
-	/** Содержимое, написанное пользователем внутри тега; подкласс переносит его в корень. */
-	protected get light(): ChildNode[] {
-		return this._light
-	}
-
 	connectedCallback(): void {
 		if (this._connected) return
 
 		this._connected = true
 
-		// Снимаем свет ДО первого рендера — дальше им распоряжается подкласс.
+		// Снимаем свет ДО первой отрисовки: дальше он живёт внутри корня
 		this._light = Array.from(this.childNodes)
 		this._light.forEach((node) => node.remove())
 
 		this.binding = this.setup(this._pending, (name, value) => this._onUpdate(name, value))
 		this.binding.syncProps(this._pending)
 
-		this.render()
+		this._flush(true)
 	}
 
 	disconnectedCallback(): void {
@@ -97,21 +103,18 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 	}
 
 	attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
-		const binding = attributeMap(this.descriptor).get(name)
+		const attribute = attributeMap(this.descriptor).get(name)
 
-		if (!binding) return
+		if (!attribute) return
 
-		const next = coerceAttribute(value, binding)
+		const next = coerceAttribute(value, attribute)
 
 		if (next === undefined) return
 
-		this._write(binding.prop, next)
+		this._write(attribute.prop, next)
 	}
 
-	/**
-	 * Установка значения из JS: `el.text = 'x'`.
-	 * До подключения складывается в буфер, после — уходит прямо в Core.
-	 */
+	/** Установка значения из JS: `el.text = 'x'`. */
 	protected setProp(name: string, value: unknown): void {
 		this._write(name, value)
 	}
@@ -130,18 +133,88 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 
 	private _onUpdate(name: string, value: unknown): void {
 		this._pending[name] = value
-		this._queueRender()
+		this._dirty.add(name)
+		this._queueFlush()
 	}
 
-	private _queueRender(): void {
-		if (this._renderQueued || !this._connected) return
+	private _queueFlush(): void {
+		if (this._flushQueued || !this._connected) return
 
-		this._renderQueued = true
+		this._flushQueued = true
 
 		queueMicrotask(() => {
-			this._renderQueued = false
+			this._flushQueued = false
 
-			if (this._connected) this.render()
+			if (this._connected) this._flush()
 		})
+	}
+
+	private _flush(full = false): void {
+		const state = this.state
+
+		if (!state.rendered) {
+			this._detachRoot()
+			this._dirty.clear()
+
+			return
+		}
+
+		// Пересоздание корня равносильно полной отрисовке: новый DOM пуст
+		const recreated = this._ensureRoot(this.template.tag(state))
+		const root = this._root!
+		const applyAll = full || recreated
+
+		if (applyAll || this._dirty.has('classes')) {
+			root.className = ((state.classes as string[]) ?? []).join(' ')
+		}
+
+		if (applyAll || this._dirty.has('visible')) {
+			root.style.display = state.visible === false ? 'none' : ''
+		}
+
+		const context: ITemplateContext = {
+			root,
+			content: this._content!,
+			state,
+			hasLight: this._light.length > 0,
+		}
+
+		for (const binding of this.template.bindings) {
+			if (applyAll || binding.props.some((prop) => this._dirty.has(prop))) {
+				binding.apply(context)
+			}
+		}
+
+		this._dirty.clear()
+	}
+
+	/** Создаёт корень нужного тега. Возвращает true, если он был пересоздан. */
+	private _ensureRoot(tag: string): boolean {
+		if (this._root && this._root.tagName.toLowerCase() === tag) return false
+
+		const root = document.createElement(tag)
+		const content = this.template.create(root)
+
+		this._root?.remove()
+		this._root = root
+		this._content = content
+		this.appendChild(root)
+
+		this._light.forEach((node) => content.appendChild(node))
+		this.binding?.bindElement(root)
+
+		return true
+	}
+
+	private _detachRoot(): void {
+		if (!this._root) return
+
+		// Содержимое забираем себе, иначе оно уйдёт из DOM вместе с корнем
+		this._light.forEach((node) => node.remove())
+
+		this._root.remove()
+		this._root = null
+		this._content = null
+		this.binding?.bindElement(null)
 	}
 }

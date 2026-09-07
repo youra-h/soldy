@@ -97,6 +97,49 @@ describe('<soldy-button> · свойства из JS', () => {
 	})
 })
 
+describe('<soldy-button> · точечные обновления', () => {
+	/**
+	 * Проверка через побочный маркер: если база переписывает className, чужой
+	 * класс исчезнет. Значит его выживание доказывает, что привязка className
+	 * не применялась.
+	 */
+	it('смена text не переписывает className', async () => {
+		const el = mount('<soldy-button text="A"></soldy-button>') as any
+
+		root(el).classList.add('marker')
+
+		el.text = 'B'
+		await flush()
+
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('B')
+		expect(root(el).classList.contains('marker')).toBe(true)
+	})
+
+	it('смена variant переписывает className', async () => {
+		const el = mount('<soldy-button></soldy-button>') as any
+
+		root(el).classList.add('marker')
+
+		el.variant = 'accent'
+		await flush()
+
+		expect(root(el).className).toContain('s-button--accent')
+		expect(root(el).classList.contains('marker')).toBe(false)
+	})
+
+	it('пересоздание корня применяет все привязки заново', async () => {
+		const el = mount('<soldy-button text="Hi" disabled></soldy-button>') as any
+
+		el.tag = 'a'
+		await flush()
+
+		// Новый корень пуст, поэтому текст и disabled должны примениться целиком
+		expect(root(el).tagName.toLowerCase()).toBe('a')
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Hi')
+		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+	})
+})
+
 describe('<soldy-button> · внешний ctrl', () => {
 	it('отражает состояние инстанса и реагирует на его мутации', async () => {
 		const ctrl = new TButton({ text: 'FromCtrl', variant: 'accent' })
