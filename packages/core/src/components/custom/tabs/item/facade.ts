@@ -1,6 +1,5 @@
 import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
-import type { TAriaAttributes } from '../../../../common'
 import type { TTabsCollectionExtensions } from '../collection/types'
 import type { ITabsItem } from './types'
 
@@ -43,17 +42,5 @@ export class TTabsItemCollectionFacade extends TCollectionItemComponent<
 
 	get closable(): boolean {
 		return this._context?.adapters.tabs.closable ?? false
-	}
-
-	/**
-	 * Сторона таба в связке: `id` и ссылка на панель.
-	 *
-	 * Не в `TTabsItem.aria`, потому что `aria-controls` предполагает панель, а о
-	 * её существовании знает коллекция, не элемент. Считает адаптер `content` —
-	 * тот же, что отдаёт встречную половину панели, поэтому идентификаторы
-	 * разойтись не могут.
-	 */
-	get tab_aria(): TAriaAttributes {
-		return this._context?.adapters.content.tabAria ?? {}
 	}
 }

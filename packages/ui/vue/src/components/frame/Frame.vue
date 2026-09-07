@@ -14,6 +14,7 @@ export default { ...SetupFrame }
 			:class="classes"
 			:dir="dir ?? undefined"
 			:style="layout_styles"
+			v-bind="aria"
 		>
 			<slot />
 		</component>

@@ -1,5 +1,5 @@
 import { TStateUnit, TEvented } from '../../../common'
-import type { TComponentVariant, TValuePayload } from '../../../common'
+import type { TComponentVariant, TValuePayload, TAriaAttributes } from '../../../common'
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions } from '../../base/component'
 import type {
@@ -62,6 +62,20 @@ export default class TSkeleton
 		})
 
 		this._classes.add(`--${this._states.variant.value}`)
+
+		// Пока показана заглушка, область помечена `aria-busy`: скринридер
+		// знает, что содержимое ещё меняется, и не зачитывает промежуточное.
+		//
+		// Сама заглушка скрывается через `aria-hidden` в разметке, а не здесь:
+		// она отдельный элемент внутри, а этот набор — про корень. Скрывать
+		// корень нельзя, в нём лежит слот с настоящим содержимым.
+		this.events.on('change:present', () => this._syncBusyAria())
+
+		this._syncBusyAria()
+	}
+
+	protected _syncBusyAria(): void {
+		this._aria.add('aria-busy', this.present ? 'true' : null)
 	}
 
 	get variant(): TComponentVariant {

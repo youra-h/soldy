@@ -10,17 +10,14 @@ import type {
 /**
  * TCollapseContentItemExtension — stateless-делегат связки «заголовок ↔ панель».
  *
- * Обе стороны считаются здесь, потому что адаптер знает свой элемент.
- * `aria-controls` заголовка и `id` панели — один и тот же идентификатор:
- * разнеси их по разным местам, и они однажды разойдутся.
+ * Идентификаторы не считает: формула живёт в родительском расширении, чтобы
+ * быть в одном месте. `aria-controls` заголовка и `id` панели — один и тот же
+ * идентификатор, разнеси их, и они однажды разойдутся.
  *
- * Отдельного компонента у панели Collapse нет — она лежит внутри элемента и
- * отдельно от него не существует. Поэтому оба набора атрибутов потребляет один
- * и тот же шаблон элемента, в отличие от Tabs, где панель — самостоятельный
- * компонент рядом со списком.
- *
- * Раскрытость берётся у соседнего адаптера `selection`: у Collapse раскрытая
- * панель — это выбранный элемент.
+ * Сторону заголовка родитель проставляет прямо в `aria` элемента; сторона
+ * панели отдаётся отсюда пропом. Асимметрия не случайна: отдельного компонента
+ * у панели Collapse нет — она лежит внутри элемента и отдельно от него не
+ * существует, поэтому своего набора у неё тоже нет.
  */
 export class TCollapseContentItemExtension<
 		TItem extends ICollapseItem = ICollapseItem,
@@ -29,28 +26,18 @@ export class TCollapseContentItemExtension<
 	extends TBaseItemExtension<TItem, TParent, TCollapseContentItemEventsExtension>
 	implements ICollapseContentItemExtension<TItem>
 {
-	/** id элемента-заголовка. */
-	private get _headerId(): string {
-		return `s-collapse-header-${this._item.uid}`
-	}
-
-	/** id раскрывающейся панели. */
-	private get _contentId(): string {
-		return `s-collapse-content-${this._item.uid}`
-	}
-
 	get headerAria(): TAriaAttributes {
 		return {
-			id: this._headerId,
-			'aria-controls': this._contentId,
+			id: this._parent.headerId(this._item),
+			'aria-controls': this._parent.contentId(this._item),
 		}
 	}
 
 	get contentAria(): TAriaAttributes {
 		return {
 			role: 'region',
-			id: this._contentId,
-			'aria-labelledby': this._headerId,
+			id: this._parent.contentId(this._item),
+			'aria-labelledby': this._parent.headerId(this._item),
 		}
 	}
 }

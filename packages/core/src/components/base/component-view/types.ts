@@ -1,4 +1,4 @@
-import type { TAriaAttributes, TClasses } from './../../../common'
+import type { TAriaAttributes, TAria, TClasses } from './../../../common'
 import type { IStateUnit, IVisibilityState, TActionEvent } from '../../../common'
 import type { IComponent, IComponentProps, TComponentEvents, TComponentStates } from '../component'
 
@@ -47,6 +47,8 @@ export type TComponentViewEvents = TComponentEvents & {
 	'change:direction': (value: TDirection) => void
 	/** change:classes (без baseClass) */
 	'change:classes': (value: string[]) => void
+	/** change:aria — набор атрибутов доступности изменился */
+	'change:aria': (value: TAriaAttributes) => void
 	/** ready — срабатывает когда компонент монтируется/демонтируется из DOM */
 	ready: (value: boolean) => void
 }
@@ -92,8 +94,8 @@ export interface IComponentView<
 	readonly dir: 'ltr' | 'rtl' | null
 	/** CSS-классы (включая baseClass и динамические) */
 	readonly classes: TClasses
-	/** Атрибуты доступности, вычисленные из состояния */
-	readonly aria: TAriaAttributes
+	/** Атрибуты доступности — живой набор, как `classes` */
+	readonly aria: TAria
 	/** Компонент смонтирован в DOM и готов (устанавливается плагин-слоем) */
 	ready: boolean
 }

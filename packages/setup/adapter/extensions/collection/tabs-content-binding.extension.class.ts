@@ -7,14 +7,24 @@
  *
  * Панель не регистрируется в коллекции: её нет в `items`. Она находит уже
  * существующий таб по совпадению `value` и берёт его `TItemContext` — тот же
- * контекст, с которым работает `TTabsItemCollectionFacade`. Дальше активность и
- * ARIA-связка читаются через обычные item-адаптеры.
+ * контекст, с которым работает `TTabsItemCollectionFacade`.
+ *
+ * Здесь же проставляется ARIA-связка — в оба набора сразу. Это единственное
+ * место, где известно, что панель вообще существует: `Tabs` можно
+ * использовать и без `Tabs.Content`, отрисовывая содержимое самому. Раньше
+ * таб получал `aria-controls` всегда, и без панели ссылка вела в никуда —
+ * для скринридера это сломанная связь, а не её отсутствие. Симметрично при
+ * размонтировании панели атрибуты с таба снимаются.
+ *
+ * Сами значения считает item-адаптер `content`: формула идентификаторов
+ * должна быть в одном месте, иначе половинки однажды разойдутся.
  *
  * Перерешение нужно в двух случаях: панель смонтировалась раньше своего таба
  * (тогда ждём `item:added`) и у панели сменилось `value`.
  */
 
 import { TItemContextRegistry } from '@soldy/core'
+import type { TAria, TAriaAttributes } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
@@ -34,6 +44,20 @@ function findByValue(engine: any, value: unknown): any {
 	return undefined
 }
 
+/** Кладёт набор в `aria`; `null` внутри означает «не ставить». */
+function applyAria(aria: TAria, attributes: TAriaAttributes): void {
+	for (const [name, value] of Object.entries(attributes)) {
+		aria.add(name, value)
+	}
+}
+
+/** Снимает ровно то, что было положено — ключи берутся из того же набора. */
+function clearAria(aria: TAria, attributes: TAriaAttributes): void {
+	for (const name of Object.keys(attributes)) {
+		aria.remove(name)
+	}
+}
+
 export class TTabsContentBindingExtension {
 	constructor(context: IAdapterContext, options: ITabsContentBindingOptions) {
 		const { content, elevator } = options
@@ -44,10 +68,39 @@ export class TTabsContentBindingExtension {
 		const facade = context.instance as any
 		const registry = new TItemContextRegistry(engine.getCore())
 
+		/**
+		 * Таб, с которым связаны сейчас, и что именно проставлено панели.
+		 * Набор сохраняется целиком, чтобы снимать ровно свои ключи:
+		 * перечислять их здесь заново значило бы держать формулу связки в двух
+		 * местах.
+		 */
+		let boundItem: any
+		let boundPanelAria: TAriaAttributes | undefined
+
+		const unbind = (): void => {
+			if (boundPanelAria) clearAria(content.aria, boundPanelAria)
+
+			boundItem = undefined
+			boundPanelAria = undefined
+		}
+
 		const resolve = (): void => {
 			const item = findByValue(engine, content.value)
 
-			if (item) facade.setContext(registry.get(item))
+			if (item === boundItem) return
+
+			unbind()
+
+			if (!item) return
+
+			const itemContext = registry.get(item)
+
+			facade.setContext(itemContext)
+
+			boundItem = item
+			boundPanelAria = (itemContext.adapters.content as any).panelAria as TAriaAttributes
+
+			applyAria(content.aria, boundPanelAria)
 		}
 
 		resolve()
@@ -59,6 +112,8 @@ export class TTabsContentBindingExtension {
 		context.events.on('destroy', () => {
 			engine.driver.events.off('item:added', resolve)
 			content.events.off('change:value', resolve)
+
+			unbind()
 		})
 	}
 }

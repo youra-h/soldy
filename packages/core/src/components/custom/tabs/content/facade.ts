@@ -1,6 +1,5 @@
 import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
-import type { TAriaAttributes } from '../../../../common'
 import type { TTabsCollectionExtensions } from '../collection/types'
 import type { ITabsItem } from '../item/types'
 
@@ -35,16 +34,5 @@ export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	/** Связанный таб. */
 	get item(): ITabsItem | undefined {
 		return this._context?.owner
-	}
-
-	/**
-	 * Сторона панели в связке: роль, `id` и ссылка на таб.
-	 *
-	 * Имя с префиксом — как `tab_closable` у элемента: у самой панели есть
-	 * унаследованный от `TComponentView` собственный `aria`, и одноимённые
-	 * значения из двух контекстов затёрли бы друг друга в шаблоне.
-	 */
-	get content_aria(): TAriaAttributes {
-		return this._context?.adapters.content.panelAria ?? {}
 	}
 }

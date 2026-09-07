@@ -32,6 +32,25 @@ export const ComponentViewContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:classes'],
 		},
+		/**
+		 * Как `classes`: protected-проп, который ядро держит объектом, а шаблон
+		 * раскладывает спредом (`v-bind="aria"`). Адаптер читает снимок через
+		 * `valueOf()`.
+		 *
+		 * Объявлен здесь, а не в Control, потому что ARIA нужна и
+		 * неинтерактивным слоям: Icon скрывается через `aria-hidden`, Spinner
+		 * объявляет себя как `status`.
+		 *
+		 * Триггер один. Раньше их приходилось перечислять объединением по всей
+		 * цепочке наследования (`change:disabled`, `change:tag`, …), потому что
+		 * набор вычислялся на лету и знать, что он устарел, было неоткуда.
+		 * Теперь набор сам сообщает об изменении.
+		 */
+		aria: {
+			type: Object,
+			protected: true,
+			triggers: ['change:aria'],
+		},
 	},
 	events: ['show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after', 'ready'],
 })

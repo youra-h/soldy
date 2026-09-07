@@ -8,7 +8,7 @@
 import { defineComponent } from '../base'
 import { TSpinner } from '@soldy/core'
 import type { ISpinnerProps, TSpinnerEvents } from '@soldy/core'
-import { SpinnerLayoutPluginDescriptor } from '../plugins'
+import { SpinnerLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { SpinnerContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
@@ -20,5 +20,7 @@ export const SpinnerDescriptor = () =>
 
 		contribution: SpinnerContribution(),
 
-		plugins: [SpinnerLayoutPluginDescriptor()],
+		// Спиннер объявляет себя как `role="status"`; без имени и содержимого
+		// эта живая область молчит, поэтому имя ему нужно.
+		plugins: [SpinnerLayoutPluginDescriptor(), AriaPluginDescriptor()],
 	})

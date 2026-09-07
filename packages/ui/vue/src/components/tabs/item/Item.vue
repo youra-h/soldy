@@ -14,6 +14,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
+		:data-selected="String(active)"
 		v-bind="containerAttrs"
 	>
 		<!--
@@ -21,9 +22,14 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			`aria-selected` стоял на внешней обёртке без роли, а `role="tab"` —
 			здесь: для скринридера таб не был выбран никогда.
 
-			Два источника, и это не случайность: `aria` — то, что таб знает о
-			себе (role), `tab_aria` и `aria-selected` — то, что знает о нём
-			коллекция (связка с панелью и активность).
+			Набор один. В него пишут ядро (`role`), расширение коллекции
+			(`aria-selected`) и проводка панели (`id`, `aria-controls`) — но
+			шаблону об этом знать незачем. `controlAttrs` рядом — это сквозные
+			атрибуты Vue, чужая сущность.
+
+			`data-selected` на обёртке — то же состояние для CSS: тема красит
+			активный таб по нему. ARIA — для скринридера, `data-*` — для стилей;
+			смешивать нельзя, иначе правка ARIA ломает вид.
 		-->
 		<Button
 			:disabled="disabled"
@@ -31,7 +37,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			:size="size"
 			:variant="variant"
 			@click="context.adapters.activation.active = true"
-			v-bind="{ ...aria, ...tab_aria, 'aria-selected': String(active), ...controlAttrs }"
+			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading" />
@@ -43,11 +49,18 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
+				<!--
+					Имя кнопки закрытия приходит из ядра вместе с текстом таба
+					(«Close Настройки»). Без него у кнопки нет имени вообще, а с
+					одним лишь «Close» все кнопки набора неразличимы в списке
+					элементов скринридера.
+				-->
 				<Button
 					:rendered="!!tab_closable"
 					class="s-tabs-item__close"
 					@click.stop="context?.adapters?.tabs?.close()"
 					view="plain"
+					v-bind="closeAria"
 				>
 					<slot name="close-icon">
 						<Icon :tag="closeIconTag" :size="size" />

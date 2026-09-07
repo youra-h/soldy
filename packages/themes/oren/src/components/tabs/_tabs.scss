@@ -195,7 +195,7 @@
 					transition: opacity 0.2s ease;
 				}
 
-				&[aria-selected='true']::before {
+				&[data-selected='true']::before {
 					@apply opacity-0;
 				}
 			}
@@ -320,7 +320,7 @@
 		}
 	}
 
-	&[aria-selected='true'] {
+	&[data-selected='true'] {
 		> * {
 			@apply opacity-100;
 		}

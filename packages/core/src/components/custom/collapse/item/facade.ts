@@ -45,20 +45,12 @@ export class TCollapseItemCollectionFacade extends TCollectionItemComponent<
 	}
 
 	/**
-	 * Сторона заголовка в связке: `id`, ссылка на панель и состояние раскрытия.
+	 * Сторона панели: роль, `id` и ссылка на заголовок.
 	 *
-	 * `aria-expanded` здесь, а не в ядре: раскрытость — это выбранность
-	 * элемента в коллекции, а сам элемент о своём членстве не знает.
+	 * Осталась пропом, в отличие от стороны заголовка: та пишется прямо в
+	 * `aria` элемента, а у панели Collapse своего компонента нет — она лежит
+	 * внутри элемента, и набора, в который можно писать, у неё не существует.
 	 */
-	get header_aria(): TAriaAttributes {
-		const aria = this._context?.adapters.content.headerAria
-
-		if (!aria) return {}
-
-		return { ...aria, 'aria-expanded': this.selected ? 'true' : 'false' }
-	}
-
-	/** Сторона панели: роль, `id` и ссылка на заголовок. */
 	get content_aria(): TAriaAttributes {
 		return this._context?.adapters.content.contentAria ?? {}
 	}

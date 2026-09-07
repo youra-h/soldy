@@ -21,20 +21,14 @@ export const TabsContentContribution = (): IContribution => ({
  * Коллекционные props панели (выводятся фасадом TTabsContentCollectionFacade).
  *
  * Отделены от собственных ровно как у элемента (`TabsCollectionItemContribution`):
- * активность и ARIA-связка — свойства членства в коллекции, а не панели.
+ * активность — свойство членства в коллекции, а не панели.
+ *
+ * ARIA-связки здесь нет: `role`, `id` и `aria-labelledby` пишет прямо в
+ * `aria` панели `TTabsContentBindingExtension` — то единственное место, где
+ * известно, что панель и таб нашли друг друга.
  */
 export const TabsCollectionContentContribution = (): IContribution => ({
 	props: {
 		active: { type: Boolean, protected: true, triggers: ['change:active'] },
-		/**
-		 * `role`, `id`, `aria-labelledby`. Здесь, а не в собственной
-		 * contribution: id связки берётся у связанного таба, то есть это знание
-		 * коллекции.
-		 */
-		content_aria: {
-			type: Object,
-			protected: true,
-			triggers: ['change:active'],
-		},
 	},
 })

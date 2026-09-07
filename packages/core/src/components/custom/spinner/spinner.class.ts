@@ -1,6 +1,7 @@
 import { TStylable } from '../../base/stylable'
 import type { IComponentOptions } from '../../base/component'
 import { type TEvented } from '../../../common'
+import type { TAriaAttributes } from '../../../common'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
@@ -24,6 +25,15 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 		const ctor = new.target as typeof TSpinner
 
 		this._borderWidth = props.borderWidth ?? ctor.defaultValues.borderWidth!
+
+		// `role="status"` — вежливая живая область: `aria-live="polite"` и
+		// `aria-atomic="true"` в ней уже подразумеваются, дублировать не надо.
+		//
+		// Имени по умолчанию нет намеренно: строка вроде «Загрузка» — язык
+		// интерфейса, а его библиотека не знает. Без имени и без содержимого
+		// спиннер молчит, и это верно: рядом с видимым «Сохраняем…» второе
+		// объявление было бы дублем. Имя даёт TAriaPlugin.
+		this._aria.add('role', 'status')
 	}
 
 	get borderWidth(): number | 'auto' {

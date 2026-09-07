@@ -13,6 +13,7 @@ export default { ...SetupIcon }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="layout_styles"
+		v-bind="aria"
 	>
 	</component>
 </template>

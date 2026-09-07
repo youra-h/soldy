@@ -1,4 +1,8 @@
-import type { IExtension, IExtensionContext } from '../../../../../base/collection'
+import type {
+	IExtension,
+	IExtensionContext,
+	IActivationExtension,
+} from '../../../../../base/collection'
 import {
 	TBaseOwnerItemExtension,
 	TItemContextRegistry,
@@ -90,6 +94,40 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
 		// (TTabsItemExtension резолвит closable из item ?? owner).
 		this.events.relay(this._owner.events, ['change:closable'])
+
+		// `aria-selected` пишется сюда, а не в TActivationExtension: то
+		// расширение общее для всех коллекций, а «выбранность» выражается
+		// по-разному — у таба это `aria-selected`, у заголовка Collapse
+		// `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
+		const activation = ctx.extensions.activation as IActivationExtension<TItem> | undefined
+
+		if (activation) {
+			activation.events.on('change:activation', () => this._syncSelectedAria())
+
+			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
+			ctx.driver.events.on('item:removed', () => this._syncSelectedAria())
+
+			this._syncSelectedAria()
+		}
+	}
+
+	/**
+	 * Проставляет `aria-selected` каждому табу.
+	 *
+	 * У неактивных стоит `"false"`, а не отсутствует: в паттерне вкладок
+	 * скринридер объявляет «1 из 5, не выбрана», и для этого атрибут должен
+	 * быть на всех табах набора.
+	 */
+	private _syncSelectedAria(): void {
+		const activation = this._ctx.extensions.activation as
+			| IActivationExtension<TItem>
+			| undefined
+
+		if (!activation) return
+
+		this._ctx.driver.forEach((item) => {
+			item.aria.add('aria-selected', activation.isActive(item) ? 'true' : 'false')
+		})
 	}
 
 	/**

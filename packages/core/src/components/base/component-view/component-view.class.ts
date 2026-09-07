@@ -7,8 +7,8 @@ import type {
 	TComponentViewStates,
 	TDirection,
 } from './types'
-import { TClasses, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
-import type { IVisibilityState, TValuePayload, TAriaAttributes } from '../../../common'
+import { TClasses, TAria, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
+import type { IVisibilityState, TValuePayload } from '../../../common'
 import { TEvented } from '../../../common'
 
 /**
@@ -44,6 +44,7 @@ export default class TComponentView<
 	protected _tag: string | object
 	protected _direction: TDirection
 	protected _classes: TClasses
+	protected _aria: TAria
 	protected _ready: boolean = false
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -87,6 +88,12 @@ export default class TComponentView<
 				'change:classes',
 				this._classes.toArray(),
 			),
+		)
+
+		this._aria = new TAria()
+
+		this._aria.events.on('change', () =>
+			(this.events as TEvented<TComponentViewEvents>).emit('change:aria', this._aria.toObject()),
 		)
 	}
 
@@ -166,14 +173,18 @@ export default class TComponentView<
 	}
 
 	/**
-	 * Атрибуты доступности. База пуста: у самого по себе визуального слоя
-	 * никакой семантики нет. Наследники дополняют через `...super.aria`.
+	 * Набор атрибутов доступности — живой объект, как `classes`.
 	 *
-	 * Каждое чтение возвращает новый объект — значение, а не ссылку на
-	 * внутреннее состояние (контракт границы core → ui).
+	 * Пуст у самого по себе визуального слоя: семантики у него нет. Пишут в
+	 * него все, кому есть что сказать об этом элементе, — наследники (роль),
+	 * плагины (`TAriaPlugin` — имя), расширения коллекции (связки и
+	 * состояние). Разметка биндит один набор: `v-bind="aria"`.
+	 *
+	 * За границу core → ui уходит снимок: адаптер читает проп через
+	 * `valueOf()`, а не держит ссылку на этот объект.
 	 */
-	get aria(): TAriaAttributes {
-		return {}
+	get aria(): TAria {
+		return this._aria
 	}
 
 	get tag(): string | object {

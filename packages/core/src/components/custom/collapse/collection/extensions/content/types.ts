@@ -9,12 +9,17 @@ import type { ICollapseContentItemExtension } from './item'
 /**
  * Контракт расширения панелей Collapse.
  *
- * Собственного состояния нет: вся работа — в item-адаптере, который знает
- * элемент и потому может посчитать связку. Расширение нужно, чтобы этот
- * адаптер появился в контексте элемента.
+ * Держит формулу идентификаторов связки и проставляет сторону заголовка в
+ * `aria` элемента. Item-адаптер нужен, чтобы отдать сторону панели: своего
+ * компонента, а значит и своего набора, у неё нет.
  */
 export interface ICollapseContentExtension<TItem extends ICollapseItem = ICollapseItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, ICollapseContentItemExtension<TItem>> {}
+	extends IExtension<TItem>, IExtensionItems<TItem, ICollapseContentItemExtension<TItem>> {
+	/** `id` элемента-заголовка. */
+	headerId(item: TItem): string
+	/** `id` раскрывающейся панели. */
+	contentId(item: TItem): string
+}
 
 export type ICollapseContentExtensionOptions<TItem extends ICollapseItem = ICollapseItem> =
 	IBaseOwnerItemExtensionOptions<TItem, ICollapseContentItemExtension<TItem>>

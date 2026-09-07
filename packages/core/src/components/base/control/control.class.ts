@@ -1,5 +1,5 @@
 import { TStateUnit, TEvented, NATIVE_DISABLED_TAGS } from '../../../common'
-import type { TValuePayload, TAriaAttributes } from '../../../common'
+import type { TValuePayload } from '../../../common'
 import type { IComponentOptions } from '../component'
 import { TStylable } from '../stylable'
 import type { IControlProps, TControlEvents, TControlStates } from './types'
@@ -43,6 +43,11 @@ export default class TControl<
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
 			;(this.events as TEvented<TControlEvents>).emit('change:focused', payload.newValue)
 		})
+
+		this.events.on('change:disabled', () => this._syncDisabledAria())
+		this.events.on('change:tag', () => this._syncDisabledAria())
+
+		this._syncDisabledAria()
 	}
 
 	get disabled(): boolean {
@@ -67,15 +72,16 @@ export default class TControl<
 	 * У тегов с собственным `disabled` состояние передаётся этим атрибутом,
 	 * и `aria-disabled` рядом с ним был бы дублем. У остальных — наоборот,
 	 * `aria-disabled` единственный способ сообщить об этом скринридеру.
+	 *
+	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
+	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
+	 * набор — такие правила приходится проводить явно.
 	 */
-	override get aria(): TAriaAttributes {
+	protected _syncDisabledAria(): void {
 		const nativeDisabled =
 			typeof this.tag === 'string' && NATIVE_DISABLED_TAGS.has(this.tag.toLowerCase())
 
-		return {
-			...super.aria,
-			'aria-disabled': this.disabled && !nativeDisabled ? 'true' : null,
-		}
+		this._aria.add('aria-disabled', this.disabled && !nativeDisabled ? 'true' : null)
 	}
 
 	getProps(): TProps {

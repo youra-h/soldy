@@ -1,3 +1,4 @@
+export { AriaPluginDescriptor } from './aria.plugin'
 export { ActionPluginDescriptor } from './action.plugin'
 export { ElementPluginDescriptor } from './element.plugin'
 export { ReadyPluginDescriptor } from './ready.plugin'

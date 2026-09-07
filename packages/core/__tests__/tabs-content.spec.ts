@@ -53,7 +53,10 @@ function createTabs(values: string[]) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor, tabFacadeFor }
+	/** Контекст item-адаптеров таба с таким значением. */
+	const contextFor = (value: string) => registry.get(find(value)!) as any
+
+	return { owner, collection, items, facadeFor, tabFacadeFor, contextFor }
 }
 
 describe('TTabsContent — собственные props', () => {
@@ -123,34 +126,44 @@ describe('фасад панели — активность', () => {
 })
 
 describe('связка ARIA таб ↔ панель', () => {
-	it('обе стороны считает один item-адаптер и потому они сходятся', () => {
-		const { facadeFor, tabFacadeFor } = createTabs(['a', 'b'])
-		const panel = facadeFor('a')
-		const tab = tabFacadeFor('a')
+	/** Сторона панели — её читает проводка, когда панель нашла свой таб. */
+	const panelAriaFor = (ctx: ReturnType<typeof createTabs>, value: string) =>
+		(ctx.contextFor(value).adapters.content as any).panelAria
 
-		expect(tab.tab_aria['aria-controls']).toBe(panel.content_aria.id)
-		expect(panel.content_aria['aria-labelledby']).toBe(tab.tab_aria.id)
-	})
-
-	it('таб сам по себе о панели не знает', () => {
+	it('таб получает свою сторону связки при добавлении в коллекцию', () => {
+		// Не при появлении панели: так связка попадает в первую же отрисовку,
+		// в том числе серверную
 		const { items } = createTabs(['a'])
 
-		// role — знание о себе, связка — знание коллекции
-		expect(items[0].aria.role).toBe('tab')
-		expect(items[0].aria.id).toBeUndefined()
-		expect(items[0].aria['aria-controls']).toBeUndefined()
+		expect(items[0].aria.get('id')).toBe(`s-tab-${items[0].uid}`)
+		expect(items[0].aria.get('aria-controls')).toBe(`s-tabpanel-${items[0].uid}`)
+	})
+
+	it('половинки сходятся: aria-controls таба — это id панели', () => {
+		const ctx = createTabs(['a', 'b'])
+		const panel = panelAriaFor(ctx, 'a')
+
+		expect(ctx.items[0].aria.get('aria-controls')).toBe(panel.id)
+		expect(panel['aria-labelledby']).toBe(ctx.items[0].aria.get('id'))
+	})
+
+	it('формула идентификаторов одна на обе стороны', () => {
+		// Разнеси её по двум местам — и половинки однажды разойдутся
+		const ctx = createTabs(['a'])
+		const content = ctx.collection.engine.extensions.content as any
+
+		expect(content.tabId(ctx.items[0])).toBe(ctx.items[0].aria.get('id'))
+		expect(content.panelId(ctx.items[0])).toBe(panelAriaFor(ctx, 'a').id)
 	})
 
 	it('роль панели приходит со стороны связки', () => {
-		expect(createTabs(['a']).facadeFor('a').content_aria.role).toBe('tabpanel')
+		expect(panelAriaFor(createTabs(['a']), 'a').role).toBe('tabpanel')
 	})
 
 	it('id панели берётся от связанного таба, а не от самой панели', () => {
-		const { items, facadeFor } = createTabs(['a'])
-		const panel = facadeFor('a')
+		const ctx = createTabs(['a'])
 
-		expect(panel.content_aria.id).toContain(String(items[0].uid))
-		expect(panel.content_aria.id).not.toContain(String(panel.uid))
+		expect(panelAriaFor(ctx, 'a').id).toContain(String(ctx.items[0].uid))
 	})
 
 	it('id уникальны между двумя группами табов на одной странице', () => {
@@ -158,16 +171,43 @@ describe('связка ARIA таб ↔ панель', () => {
 		const second = createTabs(['a'])
 
 		// Значение одинаковое, но uid разные — коллизии нет
-		expect(first.tabFacadeFor('a').tab_aria.id).not.toBe(
-			second.tabFacadeFor('a').tab_aria.id,
-		)
+		expect(first.items[0].aria.get('id')).not.toBe(second.items[0].aria.get('id'))
 	})
 
-	it('без контекста связки нет вовсе', () => {
-		const panel = new TTabsContentCollectionFacade()
-		const tab = new TTabsItemCollectionFacade()
+	it('без контекста у фасада панели связки нет', () => {
+		expect(new TTabsContentCollectionFacade().active).toBe(false)
+	})
+})
 
-		expect(panel.content_aria).toEqual({})
-		expect(tab.tab_aria).toEqual({})
+describe('aria-selected на табах', () => {
+	it('стоит на всех табах набора, а не только на активном', () => {
+		// Скринридер объявляет «1 из 2, не выбрана» — для этого атрибут
+		// должен быть и у невыбранных
+		const { collection, items } = createTabs(['a', 'b'])
+
+		collection.engine.extensions.activation.activate(items[0])
+
+		expect(items[0].aria.get('aria-selected')).toBe('true')
+		expect(items[1].aria.get('aria-selected')).toBe('false')
+	})
+
+	it('следует за переключением активного таба', () => {
+		const { collection, items } = createTabs(['a', 'b'])
+		const activation = collection.engine.extensions.activation
+
+		activation.activate(items[0])
+		activation.activate(items[1])
+
+		expect(items[0].aria.get('aria-selected')).toBe('false')
+		expect(items[1].aria.get('aria-selected')).toBe('true')
+	})
+
+	it('появляется у таба, добавленного позже', () => {
+		const { collection, items } = createTabs(['a'])
+		const added = new TTabsItem({ value: 'b', text: 'b' })
+
+		collection.items = [...items, added] as ITabsItem[]
+
+		expect(added.aria.get('aria-selected')).toBe('false')
 	})
 })

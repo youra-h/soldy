@@ -13,7 +13,7 @@
 import { defineComponent } from '../base'
 import { TFrame } from '@soldy/core'
 import type { IFrameProps, TFrameEvents } from '@soldy/core'
-import { FrameLayoutPluginDescriptor } from '../plugins'
+import { FrameLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { FrameContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
@@ -25,5 +25,5 @@ export const FrameDescriptor = () =>
 
 		contribution: FrameContribution(),
 
-		plugins: [FrameLayoutPluginDescriptor()],
+		plugins: [FrameLayoutPluginDescriptor(), AriaPluginDescriptor()],
 	})

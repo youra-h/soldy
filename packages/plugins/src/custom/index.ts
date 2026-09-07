@@ -1,5 +1,6 @@
 export * from './action'
 export * from './collection'
+export * from './component-view'
 export * from './drag-and-drop'
 export * from './element'
 export * from './frame'

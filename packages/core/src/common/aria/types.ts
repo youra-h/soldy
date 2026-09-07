@@ -17,6 +17,11 @@
  */
 export type TAriaAttributes = Record<string, string | null>
 
+export type TAriaEvents = {
+	/** change — набор атрибутов изменился */
+	change: () => void
+}
+
 /**
  * Теги, у которых есть собственный атрибут `disabled`. На них состояние
  * передаётся им, а не `aria-disabled` — дублировать оба неверно.

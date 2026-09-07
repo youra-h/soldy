@@ -23,9 +23,12 @@ export default class TTabsItem<
 		text: '',
 		value: '',
 		closable: undefined,
+		closeLabel: 'Close',
 		variant: 'normal',
 		tag: 'button',
 	}
+
+	protected _closeLabel!: string
 
 	constructor(
 		props: Partial<TProps> = {},
@@ -37,6 +40,8 @@ export default class TTabsItem<
 
 		// Type assertion: TProps extends ITabsItemProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabsItemProps>
+
+		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel!
 
 		// Инициализация state-объектов
 		this._states.text =
@@ -60,6 +65,14 @@ export default class TTabsItem<
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
+
+		// Только то, что таб знает о себе сам: он — таб.
+		//
+		// Связки здесь нет намеренно. `id` и `aria-controls` предполагают
+		// панель, а о её существовании знает коллекция, не элемент; их пишет
+		// в этот же набор item-адаптер расширения `content`. `aria-selected`
+		// — тоже не отсюда: активность вычисляет TActivationExtension.
+		this._aria.add('role', 'tab')
 
 		this.events.on('change:disabled', () => {
 			// Если таб стал disabled, убираем возможность закрывать его
@@ -98,11 +111,37 @@ export default class TTabsItem<
 	 * расширения `content` через фасад (`tab_aria`). `aria-selected` — тоже
 	 * не отсюда: активность вычисляет `TActivationExtension` на лету.
 	 */
-	override get aria(): TAriaAttributes {
-		return {
-			...super.aria,
-			role: 'tab',
-		}
+	/**
+	 * Слово для кнопки закрытия. Дефолт английский, как и остальные
+	 * идентификаторы в библиотеке: язык интерфейса ядру неизвестен, а
+	 * промолчать нельзя — кнопка останется без имени.
+	 */
+	get closeLabel(): string {
+		return this._closeLabel
+	}
+
+	set closeLabel(value: string) {
+		if (this._closeLabel === value) return
+
+		this._closeLabel = value
+		;(this.events as TEvented<TTabsItemEvents>).emit('change:closeLabel', value)
+	}
+
+	/**
+	 * Имя кнопки закрытия — вместе с текстом таба: «Close Настройки».
+	 *
+	 * Без текста все кнопки закрытия в наборе называются одинаково, и по
+	 * списку элементов скринридера («Close, кнопка» пять раз подряд) выбрать
+	 * нужную невозможно. Это и есть та накопленная практика, ради которой
+	 * имя вообще считается здесь, а не пишется в шаблоне.
+	 *
+	 * Отдельный набор, а не часть `aria`: `aria` описывает сам таб, а это —
+	 * вложенная в него кнопка. Один элемент — один набор.
+	 */
+	get closeAria(): TAriaAttributes {
+		const text = this.text.trim()
+
+		return { 'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel }
 	}
 
 	override getProps(): TProps {
@@ -110,6 +149,7 @@ export default class TTabsItem<
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
+			closeLabel: this._closeLabel,
 		} as TProps
 	}
 }

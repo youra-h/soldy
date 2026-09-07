@@ -7,43 +7,33 @@ import type { ITabsContentItemExtension, TTabsContentItemEventsExtension } from 
 /**
  * TTabsContentItemExtension — stateless-делегат связки «таб ↔ панель».
  *
- * Обе стороны считаются здесь, потому что адаптер знает свой элемент.
- * `aria-controls` таба и `id` панели — один и тот же идентификатор: разнеси
- * их по разным местам, и они однажды разойдутся.
+ * Идентификаторы не считает: формула живёт в родительском расширении, чтобы
+ * быть в одном месте. `aria-controls` таба и `id` панели — один и тот же
+ * идентификатор, разнеси их, и они однажды разойдутся. Панель своего
+ * идентификатора не изобретает — берёт его у связанного таба.
  *
- * Основа идентификаторов — `uid` таба: он уникален в рамках сессии, поэтому
- * две группы табов на странице не столкнутся, даже если значения совпадают.
- * Панель своего идентификатора не изобретает — берёт его у связанного таба.
+ * Сторону таба родитель проставляет сам при добавлении элемента; здесь она
+ * остаётся доступной для чтения — так проще проверить, что половинки сошлись.
  */
 export class TTabsContentItemExtension<
-		TItem extends ITabsItem = ITabsItem,
-		TParent extends ITabsContentExtension<TItem> = ITabsContentExtension<TItem>,
-	>
+	TItem extends ITabsItem = ITabsItem,
+	TParent extends ITabsContentExtension<TItem> = ITabsContentExtension<TItem>,
+>
 	extends TBaseItemExtension<TItem, TParent, TTabsContentItemEventsExtension>
 	implements ITabsContentItemExtension<TItem>
 {
-	/** id элемента с `role="tab"`. */
-	private get _tabId(): string {
-		return `s-tab-${this._item.uid}`
-	}
-
-	/** id элемента с `role="tabpanel"`. */
-	private get _panelId(): string {
-		return `s-tabpanel-${this._item.uid}`
-	}
-
 	get tabAria(): TAriaAttributes {
 		return {
-			id: this._tabId,
-			'aria-controls': this._panelId,
+			id: this._parent.tabId(this._item),
+			'aria-controls': this._parent.panelId(this._item),
 		}
 	}
 
 	get panelAria(): TAriaAttributes {
 		return {
 			role: 'tabpanel',
-			id: this._panelId,
-			'aria-labelledby': this._tabId,
+			id: this._parent.panelId(this._item),
+			'aria-labelledby': this._parent.tabId(this._item),
 		}
 	}
 }

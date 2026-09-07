@@ -9,7 +9,7 @@ import { defineComponent } from '../base'
 import { TControl } from '@soldy/core'
 import type { IControlProps, TControlEvents } from '@soldy/core'
 import { ControlContribution } from '../../contributions'
-import { ActionPluginDescriptor } from '../plugins'
+import { ActionPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const ControlDescriptor = () =>
@@ -20,5 +20,7 @@ export const ControlDescriptor = () =>
 
 		contribution: ControlContribution(),
 
-		plugins: [ActionPluginDescriptor()],
+		// Доступное имя — обязательное свойство любого интерактивного элемента,
+		// а не опция: без него кнопка без текста для скринридера безымянна.
+		plugins: [ActionPluginDescriptor(), AriaPluginDescriptor()],
 	})

@@ -9,7 +9,7 @@ import type {
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common/event/evented'
 import { NATIVE_BUTTON_TAGS } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
+
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
 	static override baseClass = 's-button'
@@ -32,6 +32,11 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		const ctor = new.target as typeof TButton
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
+
+		this.events.on('change:tag', () => this._syncButtonAria())
+		this.events.on('change:disabled', () => this._syncButtonAria())
+
+		this._syncButtonAria()
 	}
 
 	get view(): TButtonView {
@@ -61,16 +66,18 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 	 * скринридера не кнопка, а с клавиатуры недостижима — тогда и `press`
 	 * из TActionPlugin по Enter/Space никогда не сработает.
 	 */
-	override get aria(): TAriaAttributes {
+	protected _syncButtonAria(): void {
 		const tag = typeof this.tag === 'string' ? this.tag.toLowerCase() : ''
 
-		if (NATIVE_BUTTON_TAGS.has(tag)) return super.aria
+		if (NATIVE_BUTTON_TAGS.has(tag)) {
+			this._aria.remove('role')
+			this._aria.remove('tabindex')
 
-		return {
-			...super.aria,
-			role: 'button',
-			tabindex: this.disabled ? null : '0',
+			return
 		}
+
+		this._aria.add('role', 'button')
+		this._aria.add('tabindex', this.disabled ? null : '0')
 	}
 
 	getProps(): IButtonProps {

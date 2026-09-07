@@ -19,7 +19,7 @@ export default { ...SetupTabsContent }
 		v-show="visible"
 		:class="classes"
 		:dir="dir ?? undefined"
-		v-bind="content_aria"
+		v-bind="aria"
 	>
 		<slot />
 	</component>

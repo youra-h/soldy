@@ -25,7 +25,7 @@
 		@apply shrink-0;
 	}
 
-	&[aria-selected='true'] &__arrow {
+	&[data-selected='true'] &__arrow {
 		@apply rotate-90;
 	}
 
@@ -34,7 +34,7 @@
 		transition: grid-template-rows 300ms ease;
 	}
 
-	&[aria-selected='true'] > &__body {
+	&[data-selected='true'] > &__body {
 		@apply grid-rows-[1fr];
 	}
 
@@ -43,7 +43,7 @@
 		transition: padding 300ms ease;
 	}
 
-	&[aria-selected='true'] &__content {
+	&[data-selected='true'] &__content {
 		@apply py-2;
 	}
 }

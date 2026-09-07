@@ -24,11 +24,10 @@ export const CollapseCollectionItemContribution = (): IContribution => ({
 			triggers: ['change:view'],
 		},
 		/**
-		 * Связка «заголовок ↔ панель»: обе стороны считает item-адаптер
-		 * расширения `content`. В ядре их нет — о существовании панели знает
-		 * коллекция, а не элемент.
+		 * Сторона панели в связке «заголовок ↔ панель». Сторона заголовка
+		 * пишется прямо в `aria` элемента расширением `content`; панели писать
+		 * некуда — своего компонента, а значит и набора, у неё нет.
 		 */
-		header_aria: { type: Object, protected: true, triggers: ['change:selected'] },
 		content_aria: { type: Object, protected: true, triggers: ['change:selected'] },
 	},
 })

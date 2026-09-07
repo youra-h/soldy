@@ -2,7 +2,7 @@ import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
 import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload, TComponentSize } from '../../../common'
+import type { TValuePayload, TComponentSize, TAriaAttributes } from '../../../common'
 
 export default class TIcon
 	extends TComponentView<IIconProps, TIconEvents, TIconStates>
@@ -45,6 +45,14 @@ export default class TIcon
 
 		this._width = props.width
 		this._height = props.height
+
+		// Иконка декоративна: она стоит рядом с текстом и дублирует его —
+		// «стрелка Развернуть» вместо «Развернуть».
+		//
+		// Обратный случай решает TAriaPlugin: получив имя, он снимает этот
+		// атрибут и ставит `role="img"` (роль передана ему в IconDescriptor).
+		// Ядро о плагинах не знает, поэтому условия «есть ли имя» тут нет.
+		this._aria.add('aria-hidden', 'true')
 	}
 
 	get width(): string | number | undefined {

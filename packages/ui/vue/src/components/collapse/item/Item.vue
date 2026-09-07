@@ -14,6 +14,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
+		:data-selected="String(selected)"
 		v-bind="containerAttrs"
 	>
 		<!--
@@ -22,7 +23,10 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 			идентификатор, поэтому считаются в одном месте.
 
 			`aria-selected` с обёртки убран: у неё нет роли, и для скринридера
-			он ничего не значил.
+			он ничего не значил. Но тема раскрывала панель селектором
+			`.s-collapse-item[aria-selected='true']`, поэтому обёртка отдаёт то
+			же состояние как `data-selected`: ARIA — для скринридера, `data-*` —
+			для CSS. Иначе ARIA нельзя починить, не сломав вид.
 		-->
 		<Button
 			class="s-collapse-item__header"
@@ -31,7 +35,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 			:size="size"
 			:variant="variant"
 			@click="context.adapters.selection.toggle()"
-			v-bind="{ ...header_aria, ...controlAttrs }"
+			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading-icon">
