@@ -28,6 +28,7 @@ export function Button(props: ButtonProps): JSX.Element {
 			...rest,
 			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
 			style: { ...(rest.style as object), display: state.visible ? undefined : 'none' },
+			dir: (state.dir as 'ltr' | 'rtl' | null) ?? undefined,
 			...(isNativeButton ? { disabled: state.disabled } : {}),
 			// aria вычисляет ядро: role, tabindex, aria-disabled.
 			// null в значении Solid понимает как «атрибут не ставить».

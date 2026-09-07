@@ -5,6 +5,7 @@ import type {
 	IComponentViewProps,
 	TComponentViewEvents,
 	TComponentViewStates,
+	TDirection,
 } from './types'
 import { TClasses, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
 import type { IVisibilityState, TValuePayload, TAriaAttributes } from '../../../common'
@@ -37,9 +38,11 @@ export default class TComponentView<
 		rendered: true,
 		visible: true,
 		tag: 'div',
+		direction: 'inherit',
 	}
 
 	protected _tag: string | object
+	protected _direction: TDirection
 	protected _classes: TClasses
 	protected _ready: boolean = false
 
@@ -74,6 +77,8 @@ export default class TComponentView<
 		})
 
 		this._tag = props.tag ?? ctor.defaultValues.tag!
+
+		this._direction = props.direction ?? (ctor.defaultValues.direction as TDirection)
 
 		this._classes = new TClasses(ctor.baseClass)
 
@@ -181,6 +186,25 @@ export default class TComponentView<
 		;(this.events as TEvented<TComponentViewEvents>).emit('change:tag', value)
 	}
 
+	get direction(): TDirection {
+		return this._direction
+	}
+	set direction(value: TDirection) {
+		if (this._direction === value) return
+
+		this._direction = value
+		;(this.events as TEvented<TComponentViewEvents>).emit('change:direction', value)
+	}
+
+	/**
+	 * Значение атрибута `dir` для разметки. `'inherit'` → `null`: атрибут не
+	 * ставится, направление берётся от предка. Перевод сентинела в DOM-значение
+	 * живёт здесь, а не в шести адаптерах.
+	 */
+	get dir(): 'ltr' | 'rtl' | null {
+		return this._direction === 'inherit' ? null : this._direction
+	}
+
 	get ready(): boolean {
 		return this._ready
 	}
@@ -197,6 +221,7 @@ export default class TComponentView<
 			rendered: this.rendered,
 			visible: this.visible,
 			tag: this._tag,
+			direction: this._direction,
 		} as TProps
 	}
 }

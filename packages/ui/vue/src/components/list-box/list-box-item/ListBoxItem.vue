@@ -11,6 +11,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
+		:dir="dir ?? undefined"
 		:style="{ order: order }"
 		:data-word-wrap="list_wordWrap"
 		v-bind="containerAttrs"

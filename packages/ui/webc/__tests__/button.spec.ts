@@ -63,6 +63,18 @@ describe('<soldy-button> · атрибуты', () => {
 
 		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Custom')
 	})
+
+	it('direction ставит атрибут dir на корень', () => {
+		const el = mount('<soldy-button direction="rtl"></soldy-button>')
+
+		expect(root(el).getAttribute('dir')).toBe('rtl')
+	})
+
+	it('без direction атрибут dir не выставляется (наследуется)', () => {
+		const el = mount('<soldy-button></soldy-button>')
+
+		expect(root(el).hasAttribute('dir')).toBe(false)
+	})
 })
 
 describe('<soldy-button> · свойства из JS', () => {
@@ -96,6 +108,20 @@ describe('<soldy-button> · свойства из JS', () => {
 		el.rendered = false
 		await flush()
 		expect(el.firstElementChild).toBeNull()
+	})
+
+	it('смена direction обновляет и снимает атрибут dir', async () => {
+		const el = mount('<soldy-button></soldy-button>') as any
+
+		el.direction = 'rtl'
+		await flush()
+		expect(root(el).getAttribute('dir')).toBe('rtl')
+
+		// возврат в 'inherit' снимает атрибут (в отличие от undefined это
+		// конкретное значение, которое доходит до ядра)
+		el.direction = 'inherit'
+		await flush()
+		expect(root(el).hasAttribute('dir')).toBe(false)
 	})
 })
 

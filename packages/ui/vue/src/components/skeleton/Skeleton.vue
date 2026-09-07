@@ -5,7 +5,7 @@ export default { ...SetupSkeleton }
 </script>
 
 <template>
-	<component ref="rootElement" :is="tag" :class="classes" :style="layout_styles">
+	<component ref="rootElement" :is="tag" :class="classes" :dir="dir ?? undefined" :style="layout_styles">
 		<div class="s-skeleton__placeholder" v-if="present" />
 		<slot />
 	</component>

@@ -12,7 +12,7 @@ import type { ComponentViewProps } from './base.component'
 export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupComponentView(props)
 
-	const { rendered, visible, tag, classes } = state
+	const { rendered, visible, tag, classes, dir } = state
 
 	if (!rendered) return null
 
@@ -26,7 +26,13 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	// потребителем ref, попав в restProps, перекрыл бы ref адаптера и тихо
 	// сломал бы привязку к TElementPlugin (не было бы element:ready).
 	return (
-		<Tag {...restProps} ref={ref} className={className} style={style}>
+		<Tag
+			{...restProps}
+			ref={ref}
+			className={className}
+			style={style}
+			dir={(dir as 'ltr' | 'rtl' | null) ?? undefined}
+		>
 			{renderSlot(props.children)}
 		</Tag>
 	)

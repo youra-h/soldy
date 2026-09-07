@@ -4,6 +4,7 @@
 			#buttonEl
 			[ngClass]="state()['classes']"
 			[style.display]="state()['visible'] === false ? 'none' : null"
+			[attr.dir]="state()['dir'] ?? null"
 			[disabled]="state()['disabled']"
 			[ariaAttrs]="state()['aria']"
 		>
@@ -14,6 +15,7 @@
 			#buttonEl
 			[ngClass]="state()['classes']"
 			[style.display]="state()['visible'] === false ? 'none' : null"
+			[attr.dir]="state()['dir'] ?? null"
 			[ariaAttrs]="state()['aria']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />

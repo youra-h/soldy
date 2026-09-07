@@ -86,6 +86,47 @@ describe('TComponentView', () => {
 		expect(classesHandler).toHaveBeenCalled()
 	})
 
+	it('direction: по умолчанию inherit, сеттер эмитит change:direction', () => {
+		const p = new TComponentView()
+		expect(p.direction).toBe('inherit')
+		expect(p.getProps()).toHaveProperty('direction', 'inherit')
+
+		const handler = vi.fn()
+		p.events.on('change:direction', handler)
+
+		p.direction = 'rtl'
+		expect(p.direction).toBe('rtl')
+		expect(handler).toHaveBeenCalledWith('rtl')
+
+		// повторная установка того же значения не эмитит
+		p.direction = 'rtl'
+		expect(handler).toHaveBeenCalledTimes(1)
+
+		// возврат в исходное состояние — обычная установка значения
+		p.direction = 'inherit'
+		expect(handler).toHaveBeenLastCalledWith('inherit')
+	})
+
+	it('dir: вычисляется из direction, inherit → null (атрибут не ставится)', () => {
+		const p = new TComponentView()
+		expect(p.dir).toBeNull()
+
+		p.direction = 'rtl'
+		expect(p.dir).toBe('rtl')
+
+		p.direction = 'ltr'
+		expect(p.dir).toBe('ltr')
+
+		p.direction = 'inherit'
+		expect(p.dir).toBeNull()
+	})
+
+	it('direction: принимается через props и сериализуется', () => {
+		const p = new TComponentView({ direction: 'rtl' })
+		expect(p.direction).toBe('rtl')
+		expect((p.getProps() as IComponentViewProps).direction).toBe('rtl')
+	})
+
 	it('toJSON сериализует getProps()', () => {
 		const p = new TComponentView({ tag: 'span' })
 		expect(p.toJSON()).toEqual(p.getProps())

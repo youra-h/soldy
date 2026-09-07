@@ -503,6 +503,28 @@ override get aria(): TAriaAttributes {
 (Web Components), директива `[ariaAttrs]` (Angular — единственный, где нет
 спреда атрибутов).
 
+### `direction` / `dir` — тот же приём для направления письма
+
+`TComponentView` несёт writable-проп `direction: 'ltr' | 'rtl' | 'inherit'`
+(дефолт `'inherit'`) и вычисляемый `get dir(): 'ltr' | 'rtl' | null` рядом с
+`classes`/`aria`: ядро отдаёт готовое к разметке значение, адаптер только
+биндит его на корень каждого визуального компонента (`:dir="dir ?? undefined"`
+во Vue — vue-tsc типизирует `dir` у intrinsic-элементов как `string | undefined`
+и не принимает `null`; спред/`?? undefined` в React/Svelte/Solid; `setAttribute`
+в webc; `[attr.dir]` в Angular). `protected: true` в `ComponentViewContribution`,
+триггер — `change:direction`.
+
+Во Vue привязка добавлена во все 15 визуальных компонентов (всё, кроме
+headless `DragAndDrop`); остальные адаптеры пока покрывают `ComponentView` и
+`Button` — механика отрабатывается во Vue, потом переносится.
+
+Почему `'inherit'` — явное значение, а не `undefined`: writable-проп обязан
+уметь вернуться в исходное состояние, а слой синхронизации во всех адаптерах
+трактует `undefined` как «не трогать» (`bindInput`: `if (value === undefined)
+continue`). С `undefined` компонент, которому один раз задали `direction`, уже
+нельзя было бы отпустить обратно на наследование. Перевод `'inherit' → null`
+живёт в `get dir()`, поэтому сентинел не протекает в шесть шаблонов.
+
 ---
 
 ## Layer 6: Vue Adapter (`packages/ui/vue/src`)

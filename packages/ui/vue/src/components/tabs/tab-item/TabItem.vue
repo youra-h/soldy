@@ -12,6 +12,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
+		:dir="dir ?? undefined"
 		:style="{ order: order }"
 		:aria-selected="active"
 		v-bind="containerAttrs"

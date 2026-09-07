@@ -62,6 +62,17 @@ describe('Button · inline props (декларативные свойства)',
 		expect(link.element.tagName.toLowerCase()).toBe('a')
 	})
 
+	it('direction прокидывается в атрибут dir, inherit — не ставится', async () => {
+		const wrapper = mount(Button, { props: { direction: 'rtl' } })
+		expect(wrapper.attributes('dir')).toBe('rtl')
+
+		const plain = mount(Button)
+		expect(plain.attributes('dir')).toBeUndefined()
+
+		await wrapper.setProps({ direction: 'inherit' })
+		expect(wrapper.attributes('dir')).toBeUndefined()
+	})
+
 	it('disabled: атрибут disabled на <button>, aria-disabled на других тегах', () => {
 		const btn = mount(Button, { props: { disabled: true } })
 		expect(btn.attributes('disabled')).toBeDefined()

@@ -11,6 +11,7 @@ export default { ...SetupCheckBox }
         v-if="rendered"
         v-show="visible"
         :class="classes"
+        :dir="dir ?? undefined"
         v-bind="containerAttrs"
     >
         <input

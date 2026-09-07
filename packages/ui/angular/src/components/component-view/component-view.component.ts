@@ -45,6 +45,11 @@ export class TComponentViewComponent
 		return state['rendered'] === false || state['visible'] === false ? 'none' : null
 	}
 
+	/** dir вычисляет ядро: null для 'inherit' убирает атрибут (наследование). */
+	@HostBinding('attr.dir') get hostDir(): string | null {
+		return (this.state()['dir'] as 'ltr' | 'rtl' | null) ?? null
+	}
+
 	private readonly _elementRef = inject(ElementRef)
 
 	constructor() {

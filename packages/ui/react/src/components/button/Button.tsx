@@ -16,7 +16,7 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, disabled, text, aria } = state
+	const { rendered, visible, tag, classes, disabled, text, aria, dir } = state
 
 	if (!rendered) return null
 
@@ -36,6 +36,7 @@ export function Button(props: ButtonProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
+			dir={(dir as 'ltr' | 'rtl' | null) ?? undefined}
 			{...(isNativeButton ? { disabled: disabled as boolean } : {})}
 			{...toAriaProps(aria)}
 		>

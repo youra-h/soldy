@@ -17,8 +17,9 @@
  * компонентов soldy:
  *   rendered → корень существует или удалён
  *   tag      → пересоздание корня (имя тега элемента поменять нельзя)
- *   classes  → className
- *   visible  → display
+ *   classes → className
+ *   visible → display
+ *   dir     → атрибут dir (null для 'inherit' снимает — направление наследуется)
  *
  * Слоты распределяются по атрибуту `slot` — это нативная HTML-семантика, а
  * не выдумка soldy. Shadow DOM для этого не используется: тема раскладывается
@@ -203,6 +204,16 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 
 		if (applyAll || this._dirty.has('visible')) {
 			root.style.display = state.visible === false ? 'none' : ''
+		}
+
+		// dir — структурный проп визуального слоя (как classes/visible). Ядро
+		// уже перевело 'inherit' в null: null снимает атрибут, направление
+		// наследуется от предка.
+		if (applyAll || this._dirty.has('dir')) {
+			const dir = state.dir as 'ltr' | 'rtl' | null
+
+			if (dir) root.setAttribute('dir', dir)
+			else root.removeAttribute('dir')
 		}
 
 		const context: ITemplateContext = {

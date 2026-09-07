@@ -11,6 +11,7 @@ export default { ...SetupButton }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
+		:dir="dir ?? undefined"
 		:disabled="tag === 'button' ? disabled : undefined"
 		v-bind="aria"
 	>
