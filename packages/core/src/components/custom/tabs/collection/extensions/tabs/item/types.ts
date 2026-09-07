@@ -1,6 +1,6 @@
 import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
 
-export type TTabItemEventsExtension = TBaseItemEventsExtension & {
+export type TTabsItemEventsExtension = TBaseItemEventsExtension & {
 	'change:closable': (value: boolean) => void
 }
 
@@ -8,9 +8,9 @@ export type TTabItemEventsExtension = TBaseItemEventsExtension & {
  * Контракт item-адаптера таба.
  * Предоставляет геттер closable — резолвится из элемента ?? родительского расширения.
  */
-export interface ITabItemExtension<TItem extends object = any> extends IItemExtension<
+export interface ITabsItemExtension<TItem extends object = any> extends IItemExtension<
 	TItem,
-	TTabItemEventsExtension
+	TTabsItemEventsExtension
 > {
 	/** Может ли таб быть закрыт. */
 	readonly closable: boolean

@@ -1,5 +1,5 @@
 import type { IListBoxItemExtension } from './types'
-import type { IListBoxItem } from '../../../list-box-item/types'
+import type { IListBoxItem } from '../../../item/types'
 import type { IListBoxExtension } from '../types'
 import type { TListBoxView } from '../../../types'
 import { TListItemExtension } from '../../../../list'

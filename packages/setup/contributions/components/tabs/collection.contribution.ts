@@ -11,7 +11,7 @@ export const TabsCollectionContribution = (): IContribution => ({
 })
 
 /**
- * Item-level пропсы элемента Tabs (выводятся фасадом TTabItemCollectionFacade).
+ * Item-level пропсы элемента Tabs (выводятся фасадом TTabsItemCollectionFacade).
  */
 export const TabsCollectionItemContribution = (): IContribution => ({
 	props: {
@@ -25,7 +25,7 @@ export const TabsCollectionItemContribution = (): IContribution => ({
 		},
 		/**
 		 * Сторона таба в связке с панелью: `id` и `aria-controls`. Приходит из
-		 * item-адаптера расширения `content`, а не из TTabItem: о существовании
+		 * item-адаптера расширения `content`, а не из TTabsItem: о существовании
 		 * панели знает коллекция, не элемент.
 		 */
 		tab_aria: { type: Object, protected: true, triggers: ['change:active'] },

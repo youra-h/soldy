@@ -7,7 +7,7 @@ import type {
 import type { TCollapseView } from '../types'
 import { CollapseFactory } from './factory'
 import type { TCollapseCollection, TCollapseCollectionExtensions } from './types'
-import type { ICollapseItem } from '../collapse-item/types'
+import type { ICollapseItem } from '../item/types'
 import type { ICollapse } from '../types'
 
 /**

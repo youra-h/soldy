@@ -14,21 +14,21 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
 	TTabs,
-	TTabItem,
+	TTabsItem,
 	TTabsContent,
 	TTabsContentCollectionFacade,
-	TTabItemCollectionFacade,
+	TTabsItemCollectionFacade,
 	TTabsCollectionFacade,
 	TItemContextRegistry,
 } from '@soldy/core'
-import type { ITabItem } from '@soldy/core'
+import type { ITabsItem } from '@soldy/core'
 
 function createTabs(values: string[]) {
 	const owner = new TTabs()
 	const collection = new TTabsCollectionFacade({}, { owner })
-	const items = values.map((value) => new TTabItem({ value, text: value }))
+	const items = values.map((value) => new TTabsItem({ value, text: value }))
 
-	collection.items = items as ITabItem[]
+	collection.items = items as ITabsItem[]
 
 	const registry = new TItemContextRegistry(collection.engine.getCore())
 	const find = (value: string) => items.find((candidate) => candidate.value === value)
@@ -45,7 +45,7 @@ function createTabs(values: string[]) {
 
 	/** Фасад самого таба — вторая сторона связки. */
 	const tabFacadeFor = (value: string) => {
-		const facade = new TTabItemCollectionFacade()
+		const facade = new TTabsItemCollectionFacade()
 		const item = find(value)
 
 		if (item) facade.setContext(registry.get(item) as any)
@@ -165,7 +165,7 @@ describe('связка ARIA таб ↔ панель', () => {
 
 	it('без контекста связки нет вовсе', () => {
 		const panel = new TTabsContentCollectionFacade()
-		const tab = new TTabItemCollectionFacade()
+		const tab = new TTabsItemCollectionFacade()
 
 		expect(panel.content_aria).toEqual({})
 		expect(tab.tab_aria).toEqual({})

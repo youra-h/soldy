@@ -1,2 +1,2 @@
 export type { ICollapseItemExtension } from './types'
-export { TCollapseItemExtension } from './collapse-item.extension'
+export { TCollapseItemExtension } from './item.extension'

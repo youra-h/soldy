@@ -3,7 +3,7 @@ import type { IExtension } from '../../../../base/collection'
 import type { IListExtension, IListExtensionOptions, TListExtensionEvents } from '../../../list'
 import type { TListBoxExtension } from './list-box.extension'
 import type { IListBoxItemExtension } from './item'
-import type { IListBoxItem } from '../../list-box-item/types'
+import type { IListBoxItem } from '../../item/types'
 
 /**
  * Контракт расширения listBox.

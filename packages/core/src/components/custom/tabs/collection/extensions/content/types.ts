@@ -3,7 +3,7 @@ import type {
 	IExtension,
 	IExtensionItems,
 } from '../../../../../base/collection'
-import type { ITabItem } from '../../../tab-item/types'
+import type { ITabsItem } from '../../../item/types'
 import type { ITabsContentItemExtension } from './item'
 
 /**
@@ -13,10 +13,10 @@ import type { ITabsContentItemExtension } from './item'
  * знает таб и потому может посчитать связку. Расширение нужно, чтобы этот
  * адаптер вообще появился в контексте элемента.
  */
-export interface ITabsContentExtension<TItem extends ITabItem = ITabItem>
+export interface ITabsContentExtension<TItem extends ITabsItem = ITabsItem>
 	extends IExtension<TItem>, IExtensionItems<TItem, ITabsContentItemExtension<TItem>> {}
 
-export type ITabsContentExtensionOptions<TItem extends ITabItem = ITabItem> =
+export type ITabsContentExtensionOptions<TItem extends ITabsItem = ITabsItem> =
 	IBaseOwnerItemExtensionOptions<TItem, ITabsContentItemExtension<TItem>>
 
 export type TTabsContentExtensionEvents = Record<string, never>

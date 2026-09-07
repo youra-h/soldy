@@ -1,5 +1,5 @@
 <script lang="ts">
-import { CollapseItem } from './collapse-item'
+import { CollapseItem } from './item'
 import SetupCollapse from './setup.component'
 
 export default { ...SetupCollapse, components: { CollapseItem } }

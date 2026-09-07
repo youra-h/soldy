@@ -1,6 +1,6 @@
 import type { IList, IListComponentProps, TListEvents, TListStates } from '../list/types'
 import type { IListBoxCollectionProps } from './collection/types'
-import type { IListBoxItem, IListBoxItemProps } from './list-box-item/types'
+import type { IListBoxItem, IListBoxItemProps } from './item/types'
 
 export type TListBoxView = 'plain' | 'outlined' | 'filled'
 

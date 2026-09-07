@@ -110,9 +110,9 @@ watch(
 	<PanelDemo info="Instance-based demo">
 		<Tabs :ctrl="instance" @engine:create="onEngineCreate" v-bind="handlers">
 			<template #content>
-				<TabsContent value="tab1"><p>Content for Tab 1</p></TabsContent>
-				<TabsContent value="tab2"><p>Content for Tab 2</p></TabsContent>
-				<TabsContent value="tab3"><p>Content for Tab 3</p></TabsContent>
+				<Tabs.Content value="tab1"><p>Content for Tab 1</p></Tabs.Content>
+				<Tabs.Content value="tab2"><p>Content for Tab 2</p></Tabs.Content>
+				<Tabs.Content value="tab3"><p>Content for Tab 3</p></Tabs.Content>
 			</template>
 		</Tabs>
 	</PanelDemo>

@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
 	TTabs,
-	TTabItem,
+	TTabsItem,
 	TTabsExtension,
-	TTabItemExtension,
+	TTabsItemExtension,
 	TItemContextRegistry,
 	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 } from '@soldy/core'
-import type { ITabItem, ITabs } from '@soldy/core'
+import type { ITabsItem, ITabs } from '@soldy/core'
 
 // ============================================================================
 // Pure TTabs
@@ -100,22 +100,22 @@ describe('TTabs (чистый класс)', () => {
 })
 
 // ============================================================================
-// Pure TTabItem
+// Pure TTabsItem
 // ============================================================================
 
-describe('TTabItem (чистый класс)', () => {
+describe('TTabsItem (чистый класс)', () => {
 	it('создаётся с дефолтными значениями', () => {
-		const tab = new TTabItem()
+		const tab = new TTabsItem()
 
 		expect(tab.text).toBe('')
 		expect(tab.value).toBe('')
 		expect(tab.closable).toBeUndefined()
-		expect(tab.classes.toArray()).toContain('s-tab-item')
+		expect(tab.classes.toArray()).toContain('s-tabs-item')
 		expect(tab.tag).toBe('button')
 	})
 
 	it('принимает props через конструктор', () => {
-		const tab = new TTabItem({ text: 'Tab 1', value: 'tab-1', closable: true })
+		const tab = new TTabsItem({ text: 'Tab 1', value: 'tab-1', closable: true })
 
 		expect(tab.text).toBe('Tab 1')
 		expect(tab.value).toBe('tab-1')
@@ -123,7 +123,7 @@ describe('TTabItem (чистый класс)', () => {
 	})
 
 	it('эмитит change:text при изменении текста', () => {
-		const tab = new TTabItem({ text: 'initial' })
+		const tab = new TTabsItem({ text: 'initial' })
 		const onChange = vi.fn()
 
 		tab.events.on('change:text', onChange)
@@ -133,7 +133,7 @@ describe('TTabItem (чистый класс)', () => {
 	})
 
 	it('closable меняется через state и отражается в getProps', () => {
-		const tab = new TTabItem()
+		const tab = new TTabsItem()
 
 		tab.closable = true
 
@@ -146,7 +146,7 @@ describe('TTabItem (чистый класс)', () => {
 	})
 
 	it('событие change:text эмитится с правильным payload', () => {
-		const tab = new TTabItem({ text: 'a' })
+		const tab = new TTabsItem({ text: 'a' })
 		const onChange = vi.fn()
 
 		tab.events.on('change:text', onChange)
@@ -156,7 +156,7 @@ describe('TTabItem (чистый класс)', () => {
 	})
 
 	it('disabled таб не может быть closable', () => {
-		const tab = new TTabItem({ closable: true })
+		const tab = new TTabsItem({ closable: true })
 
 		expect(tab.closable).toBe(true)
 
@@ -166,13 +166,13 @@ describe('TTabItem (чистый класс)', () => {
 	})
 
 	it('класс --closable добавляется/убирается', () => {
-		const tab = new TTabItem()
+		const tab = new TTabsItem()
 
 		expect(tab.classes.toArray()).not.toContain('--closable')
 
 		tab.closable = true
 
-		expect(tab.classes.toArray()).toContain('s-tab-item--closable')
+		expect(tab.classes.toArray()).toContain('s-tabs-item--closable')
 	})
 })
 
@@ -181,9 +181,9 @@ describe('TTabItem (чистый класс)', () => {
 // ============================================================================
 
 type TabsExtensions = {
-	plain: TPlainExtension<ITabItem>
-	activation: TActivationExtension<ITabItem>
-	tabs: TTabsExtension<ITabs, ITabItem>
+	plain: TPlainExtension<ITabsItem>
+	activation: TActivationExtension<ITabsItem>
+	tabs: TTabsExtension<ITabs, ITabsItem>
 }
 
 function createTabsCollection(tabs?: TTabs) {
@@ -191,18 +191,18 @@ function createTabsCollection(tabs?: TTabs) {
 
 	return {
 		owner,
-		collection: new TCollectionEngine<ITabItem, TabsExtensions>({
+		collection: new TCollectionEngine<ITabsItem, TabsExtensions>({
 			extensions: {
-				plain: new TPlainExtension<ITabItem>(),
-				activation: new TActivationExtension<ITabItem>(),
+				plain: new TPlainExtension<ITabsItem>(),
+				activation: new TActivationExtension<ITabsItem>(),
 				tabs: new TTabsExtension({ owner }),
 			},
-		}) as unknown as TCollectionEngine<ITabItem, TabsExtensions>,
+		}) as unknown as TCollectionEngine<ITabsItem, TabsExtensions>,
 	}
 }
 
-function createTab(text: string, value?: string): TTabItem {
-	return new TTabItem({ text, value: value ?? text.toLowerCase().replace(/\s+/g, '-') })
+function createTab(text: string, value?: string): TTabsItem {
+	return new TTabsItem({ text, value: value ?? text.toLowerCase().replace(/\s+/g, '-') })
 }
 
 describe('Коллекция табов с TTabsExtension + TActivationExtension', () => {
@@ -382,9 +382,9 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		expect(typeof result).toBe('boolean')
 	})
 
-	// --- TTabItemExtension.closable через контекст ---
+	// --- TTabsItemExtension.closable через контекст ---
 
-	it('TTabItemExtension.closable через контекст: резолв item > parent', () => {
+	it('TTabsItemExtension.closable через контекст: резолв item > parent', () => {
 		const tabs = new TTabs({ closable: true })
 		const { collection } = createTabsCollection(tabs)
 
@@ -488,9 +488,9 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		expect(collection.extensions.activation.isActive(tab)).toBe(true)
 	})
 
-	// --- TTabItemExtension.close() через контекст ---
+	// --- TTabsItemExtension.close() через контекст ---
 
-	it('TTabItemExtension.close() удаляет таб и эмитит item:close', () => {
+	it('TTabsItemExtension.close() удаляет таб и эмитит item:close', () => {
 		const tabs = new TTabs({ closable: true })
 		const { collection } = createTabsCollection(tabs)
 
@@ -515,7 +515,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		expect(collection.driver.includes(tab2)).toBe(true)
 	})
 
-	it('TTabItemExtension.close() не удаляет не-closable таб', () => {
+	it('TTabsItemExtension.close() не удаляет не-closable таб', () => {
 		const tabs = new TTabs({ closable: false })
 		const { collection } = createTabsCollection(tabs)
 

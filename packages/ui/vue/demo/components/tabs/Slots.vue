@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TTabs } from '@soldy/core'
 import type { TTabsCollection } from '@soldy/core'
-import { Tabs, TabItem, TabsContent } from '@soldy/ui-vue'
+import { Tabs } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
@@ -34,13 +34,13 @@ function onEngineCreate(engine: TTabsCollection) {
 
 			<div class="tabs-slots-demo__group">
 				<Tabs :view="view" :size="size" :variant="variant">
-					<TabItem text="Tab 1" value="t1" active />
-					<TabItem text="Tab 2" value="t2" />
-					<TabItem text="Tab 3" value="t3" />
+					<Tabs.Item text="Tab 1" value="t1" active />
+					<Tabs.Item text="Tab 2" value="t2" />
+					<Tabs.Item text="Tab 3" value="t3" />
 					<template #content>
-						<TabsContent value="t1"><p>Content 1</p></TabsContent>
-						<TabsContent value="t2"><p>Content 2</p></TabsContent>
-						<TabsContent value="t3"><p>Content 3</p></TabsContent>
+						<Tabs.Content value="t1"><p>Content 1</p></Tabs.Content>
+						<Tabs.Content value="t2"><p>Content 2</p></Tabs.Content>
+						<Tabs.Content value="t3"><p>Content 3</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</div>
@@ -53,16 +53,16 @@ function onEngineCreate(engine: TTabsCollection) {
 				<template #leading>
 					<span class="tabs-slots-demo__badge">leading</span>
 				</template>
-				<TabItem text="Tab 1" value="t1" active />
-				<TabItem text="Tab 2" value="t2" @click="console.log('click')" class="qwe" />
-				<TabItem text="Tab 3" value="t3" />
+				<Tabs.Item text="Tab 1" value="t1" active />
+				<Tabs.Item text="Tab 2" value="t2" @click="console.log('click')" class="qwe" />
+				<Tabs.Item text="Tab 3" value="t3" />
 				<template #trailing>
 					<span class="tabs-slots-demo__badge">trailing</span>
 				</template>
 				<template #content>
-					<TabsContent value="t1"><p>Content 1</p></TabsContent>
-					<TabsContent value="t2"><p>Content 2</p></TabsContent>
-					<TabsContent value="t3"><p>Content 3</p></TabsContent>
+					<Tabs.Content value="t1"><p>Content 1</p></Tabs.Content>
+					<Tabs.Content value="t2"><p>Content 2</p></Tabs.Content>
+					<Tabs.Content value="t3"><p>Content 3</p></Tabs.Content>
 				</template>
 			</Tabs>
 		</div>
@@ -71,13 +71,13 @@ function onEngineCreate(engine: TTabsCollection) {
 		<div class="tabs-slots-demo__section">
 			<h4 class="tabs-slots-demo__subtitle">Closable tabs</h4>
 			<Tabs view="contained" :size="size" :variant="variant" :closable="true">
-				<TabItem text="Tab 1" value="t1" active />
-				<TabItem text="Tab 2" value="t2" />
-				<TabItem text="Tab 3 (not closable)" value="t3" :closable="false" />
+				<Tabs.Item text="Tab 1" value="t1" active />
+				<Tabs.Item text="Tab 2" value="t2" />
+				<Tabs.Item text="Tab 3 (not closable)" value="t3" :closable="false" />
 				<template #content>
-					<TabsContent value="t1"><p>Content 1</p></TabsContent>
-					<TabsContent value="t2"><p>Content 2</p></TabsContent>
-					<TabsContent value="t3"><p>Content 3</p></TabsContent>
+					<Tabs.Content value="t1"><p>Content 1</p></Tabs.Content>
+					<Tabs.Content value="t2"><p>Content 2</p></Tabs.Content>
+					<Tabs.Content value="t3"><p>Content 3</p></Tabs.Content>
 				</template>
 			</Tabs>
 		</div>
@@ -102,9 +102,9 @@ function onEngineCreate(engine: TTabsCollection) {
 					<span>📋</span>
 				</template>
 				<template #content>
-					<TabsContent value="users"><p>Users panel</p></TabsContent>
-					<TabsContent value="settings"><p>Settings panel</p></TabsContent>
-					<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+					<Tabs.Content value="users"><p>Users panel</p></Tabs.Content>
+					<Tabs.Content value="settings"><p>Settings panel</p></Tabs.Content>
+					<Tabs.Content value="profile"><p>Profile panel</p></Tabs.Content>
 				</template>
 			</Tabs>
 		</div>
@@ -115,25 +115,25 @@ function onEngineCreate(engine: TTabsCollection) {
 			<div class="tabs-slots-demo__group">
 				<span class="tabs-slots-demo__label">center</span>
 				<Tabs view="line" alignment="center" :size="size" :variant="variant">
-					<TabItem text="Tab 1" value="t1" active />
-					<TabItem text="Tab 2" value="t2" />
-					<TabItem text="Tab 3" value="t3" />
+					<Tabs.Item text="Tab 1" value="t1" active />
+					<Tabs.Item text="Tab 2" value="t2" />
+					<Tabs.Item text="Tab 3" value="t3" />
 				</Tabs>
 			</div>
 			<div class="tabs-slots-demo__group">
 				<span class="tabs-slots-demo__label">end</span>
 				<Tabs view="line" alignment="end" :size="size" :variant="variant">
-					<TabItem text="Tab 1" value="t1" active />
-					<TabItem text="Tab 2" value="t2" />
-					<TabItem text="Tab 3" value="t3" />
+					<Tabs.Item text="Tab 1" value="t1" active />
+					<Tabs.Item text="Tab 2" value="t2" />
+					<Tabs.Item text="Tab 3" value="t3" />
 				</Tabs>
 			</div>
 			<div class="tabs-slots-demo__group">
 				<span class="tabs-slots-demo__label">stretch</span>
 				<Tabs view="line" alignment="stretch" :size="size" :variant="variant">
-					<TabItem text="Tab 1" value="t1" active />
-					<TabItem text="Tab 2" value="t2" />
-					<TabItem text="Tab 3" value="t3" />
+					<Tabs.Item text="Tab 1" value="t1" active />
+					<Tabs.Item text="Tab 2" value="t2" />
+					<Tabs.Item text="Tab 3" value="t3" />
 				</Tabs>
 			</div>
 		</div>
@@ -145,13 +145,13 @@ function onEngineCreate(engine: TTabsCollection) {
 				<div class="tabs-slots-demo__col">
 					<span class="tabs-slots-demo__label">position: start</span>
 					<Tabs view="contained" orientation="vertical" :size="size" :variant="variant">
-						<TabItem text="Tab 1" value="t1" active />
-						<TabItem text="Tab 2" value="t2" />
-						<TabItem text="Tab 3" value="t3" />
+						<Tabs.Item text="Tab 1" value="t1" active />
+						<Tabs.Item text="Tab 2" value="t2" />
+						<Tabs.Item text="Tab 3" value="t3" />
 						<template #content>
-							<TabsContent value="t1"><p>Content 1</p></TabsContent>
-							<TabsContent value="t2"><p>Content 2</p></TabsContent>
-							<TabsContent value="t3"><p>Content 3</p></TabsContent>
+							<Tabs.Content value="t1"><p>Content 1</p></Tabs.Content>
+							<Tabs.Content value="t2"><p>Content 2</p></Tabs.Content>
+							<Tabs.Content value="t3"><p>Content 3</p></Tabs.Content>
 						</template>
 					</Tabs>
 				</div>
@@ -164,13 +164,13 @@ function onEngineCreate(engine: TTabsCollection) {
 						:size="size"
 						:variant="variant"
 					>
-						<TabItem text="Tab 1" value="t1" active />
-						<TabItem text="Tab 2" value="t2" />
-						<TabItem text="Tab 3" value="t3" />
+						<Tabs.Item text="Tab 1" value="t1" active />
+						<Tabs.Item text="Tab 2" value="t2" />
+						<Tabs.Item text="Tab 3" value="t3" />
 						<template #content>
-							<TabsContent value="t1"><p>Content 1</p></TabsContent>
-							<TabsContent value="t2"><p>Content 2</p></TabsContent>
-							<TabsContent value="t3"><p>Content 3</p></TabsContent>
+							<Tabs.Content value="t1"><p>Content 1</p></Tabs.Content>
+							<Tabs.Content value="t2"><p>Content 2</p></Tabs.Content>
+							<Tabs.Content value="t3"><p>Content 3</p></Tabs.Content>
 						</template>
 					</Tabs>
 				</div>
@@ -195,9 +195,9 @@ function onEngineCreate(engine: TTabsCollection) {
 						<span class="tabs-slots-demo__badge">new</span>
 					</template>
 					<template #content>
-						<TabsContent value="users"><p>Users panel</p></TabsContent>
-						<TabsContent value="settings"><p>Settings panel</p></TabsContent>
-						<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+						<Tabs.Content value="users"><p>Users panel</p></Tabs.Content>
+						<Tabs.Content value="settings"><p>Settings panel</p></Tabs.Content>
+						<Tabs.Content value="profile"><p>Profile panel</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</div>
@@ -219,9 +219,9 @@ function onEngineCreate(engine: TTabsCollection) {
 						</div>
 					</template>
 					<template #content>
-						<TabsContent value="users"><p>Users panel</p></TabsContent>
-						<TabsContent value="settings"><p>Settings panel</p></TabsContent>
-						<TabsContent value="profile"><p>Profile panel</p></TabsContent>
+						<Tabs.Content value="users"><p>Users panel</p></Tabs.Content>
+						<Tabs.Content value="settings"><p>Settings panel</p></Tabs.Content>
+						<Tabs.Content value="profile"><p>Profile panel</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</div>

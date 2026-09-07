@@ -1,21 +1,21 @@
 /**
- * Дескриптор TabItem.
+ * Дескриптор TabsItem.
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
  * и добавляет tag, text, closable + коллекционный плагин (active, order).
  */
 
 import { defineComponent } from '../../base'
-import { TTabItem } from '@soldy/core'
-import type { ITabItemProps, TTabItemEvents } from '@soldy/core'
-import { TabItemContribution } from '../../../contributions'
+import { TTabsItem } from '@soldy/core'
+import type { ITabsItemProps, TTabsItemEvents } from '@soldy/core'
+import { TabsItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
-export const TabItemDescriptor = () =>
-	defineComponent<ITabItemProps, TTabItemEvents>()({
-		ctor: TTabItem,
+export const TabsItemDescriptor = () =>
+	defineComponent<ITabsItemProps, TTabsItemEvents>()({
+		ctor: TTabsItem,
 
 		extends: ValueControlDescriptor(),
 
-		contribution: TabItemContribution(),
+		contribution: TabsItemContribution(),
 	})

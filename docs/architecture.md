@@ -391,7 +391,7 @@ setup/vue/svelte/solid.
 
 ### Нейминг компонентов: часть или слот
 
-Публичное имя компонента не префиксуется (`Button`, `Tabs`, `TabItem`):
+Публичное имя компонента не префиксуется (`Button`, `Tabs`, `TabsItem`):
 пространство имён уже даёт npm-скоуп. Префикс `s-`/`soldy-` стоит ровно там,
 где пространство имён глобальное и другого способа нет — CSS-классы, теги
 Custom Elements, селекторы Angular. `SButton` в стиле PrimeVue дублировал бы
@@ -410,7 +410,7 @@ soldy слоты есть, поэтому позиционные части из
 способа делать одно и то же.
 
 Второе расхождение важнее: у Ark табы не коллекция, поэтому у них `Trigger`. В
-soldy `TTabs` наследует `TCollectionComponent`, `TTabItem` —
+soldy `TTabs` наследует `TCollectionComponent`, `TTabsItem` —
 `TCollectionItemComponent`, есть `engine.driver`, `extensions.selection`,
 `engine:create` и реестр `TCollectionBundlesPlugin` по `uid`. Здесь часть — это
 `Item`; `Trigger` создал бы вечное расхождение публичного API и ядра.
@@ -420,7 +420,7 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabItem` —
 | Часть | Идентичность | Решение |
 |---|---|---|
 | `Tabs` | `TTabs`, движок коллекции | компонент |
-| `TabItem` | элемент коллекции, `uid`, `active` | компонент |
+| `TabsItem` | элемент коллекции, `uid`, `active` | компонент |
 | `TabsContent` | `id` для `aria-controls`, выбор по `value` | компонент |
 | список табов | только позиция | слот |
 | `CheckBox.Control` / `Indicator` / `Label` | только позиция | слоты |
@@ -430,14 +430,30 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabItem` —
 `TCollectionItemComponent` / `TComponentView`, проводка идёт через
 существующий элеватор и `TCollectionBundlesPlugin`.
 
-#### Имена частей плоские
+#### Точка — основная форма записи
 
-`TabItem`, `TabsContent` — обычные экспорты, без точечной витрины. Витрина
-(`Tabs.Item` через `Object.assign`) была введена и убрана: единственными её
-потребителями оказались её же тесты, ни одно демо её не использовало, а во Vue
-она работала только в SFC — в строковом `template` рантайм-компилятор искал
-`Tabs.Item` как имя в реестре и молча рендерил пустоту. Понадобится под
-публичный релиз — вернём тогда.
+`withParts` ([common/withParts.ts](packages/setup/common/withParts.ts)) вешает
+части на владельца:
+
+```ts
+export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsContent })
+```
+
+Плоские имена приходится держать согласованными вручную, и один раз это уже
+разъехалось: владелец `Tabs`, а элемент назывался `TabItem` — единственное
+число против множественного. `Tabs.Item` / `Tabs.Content` согласованы по
+построению, потому что префиксом служит сам владелец.
+
+Плоские экспорты остаются: они нужны в Angular и Web Components, где компонент
+адресуется строкой (`<soldy-tabs-item>`), и как запасной путь импорта.
+Владелец мутируется намеренно: копия разъехалась бы по идентичности с тем, что
+экспортирует файл компонента.
+
+**Ограничение Vue.** Точка резолвится только компилятором SFC, который видит
+импорт как биндинг области видимости. Рантайм-компилятор (строковый `template`
++ `components: {}`) ищет `Tabs.Item` как имя в реестре, не находит и рендерит
+пустоту — молча. Проверяется в `packages/ui/vue/__tests__/parts.spec.ts`,
+включая сам факт ограничения.
 
 ### Коллекции: три слоя и расширения
 
@@ -445,15 +461,15 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabItem` —
 
 | Слой | Отвечает за | Пример |
 |---|---|---|
-| Класс ядра | собственные props и events | `TTabItem` — `value`, `text`, `closable` |
-| Фасад коллекции | членство в коллекции | `TTabItemCollectionFacade` — `active`, `order`, `tab_aria` |
+| Класс ядра | собственные props и events | `TTabsItem` — `value`, `text`, `closable` |
+| Фасад коллекции | членство в коллекции | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
 | Расширение | функциональность сверх стандартной коллекции | `TTabsExtension` — закрытие вкладок |
 
 **Класс ядра о коллекции не знает.** Ни движка, ни `bindEngine`, ни активности.
 Если классу «нужен доступ к коллекции» — логика оказалась не в том слое.
 `TTabsContent` держит только `value`; активность и ARIA-связку держит
 `TTabsContentCollectionFacade`, ровно как `active`/`order` у элемента держит
-`TTabItemCollectionFacade`.
+`TTabsItemCollectionFacade`.
 
 #### Когда заводить расширение
 
@@ -471,10 +487,10 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabItem` —
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/tab-item.extension.ts       closable = item ?? parent
+    item/item.extension.ts           closable = item ?? parent
   content/     связка «таб ↔ панель»
     content.extension.ts
-    item/content-item.extension.ts   tabAria и panelAria
+    item/item.extension.ts           tabAria и panelAria
 ```
 
 #### Логика, которой нужен элемент, живёт в item-адаптере
@@ -499,7 +515,7 @@ Props фасада префиксуются (`tab_closable`, `tab_aria`, `conten
 
 #### ARIA: что знает элемент, а что коллекция
 
-`TTabItem.aria` — только `role: 'tab'`, единственное, что таб знает о себе.
+`TTabsItem.aria` — только `role: 'tab'`, единственное, что таб знает о себе.
 `id` и `aria-controls` предполагают существование панели, о которой знает
 коллекция; `aria-selected` — тоже коллекция, активность вычисляет
 `TActivationExtension` на лету. Поэтому в шаблоне таба два источника, и это не
@@ -725,7 +741,7 @@ BaseComponent (Entity props)
 ├── BaseStylable
 ├── BaseIcon
 ├── BaseSpinner
-├── BaseTabs / BaseTabItem
+├── BaseTabs / BaseTabsItem
 ├── BaseListBox / BaseListBoxItem
 ├── BaseList / BaseListItem
 ├── BaseCollection / BaseCollectionItem

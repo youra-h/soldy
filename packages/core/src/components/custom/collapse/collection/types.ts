@@ -16,8 +16,8 @@ import type {
 } from '../../../base/collection'
 import { TCollapseExtension } from './extensions'
 import type { ICollapse } from '../types'
-import type { ICollapseItem } from '../collapse-item/types'
-import type { ICollapseItemProps } from '../collapse-item/types'
+import type { ICollapseItem } from '../item/types'
+import type { ICollapseItemProps } from '../item/types'
 
 export type TCollapseCollectionExtensions = {
 	factory: TFactoryExtension<ICollapseItem>

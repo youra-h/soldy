@@ -5,7 +5,7 @@ import type { TListCollectionFacadeOptions } from '../../list/collection/types'
 import { ListBoxFactory } from './factory'
 import type { TListBoxCollection, TListBoxCollectionExtensions } from './types'
 import type { IListBox } from '../types'
-import type { IListBoxItem } from '../list-box-item/types'
+import type { IListBoxItem } from '../item/types'
 
 /**
  * Фасад коллекции listBox.

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ListBoxItem } from './list-box-item'
+import { ListBoxItem } from './item'
 import SetupListBox from './setup.component'
 
 export default { ...SetupListBox, components: { ListBoxItem } }

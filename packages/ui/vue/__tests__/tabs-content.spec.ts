@@ -79,7 +79,7 @@ describe('aria-selected — исправленный баг', () => {
 		expect(tabs[1].attributes('aria-selected')).toBe('false')
 
 		// На обёртке его быть не должно
-		expect(wrapper.find('.s-tab-item').attributes('aria-selected')).toBeUndefined()
+		expect(wrapper.find('.s-tabs-item').attributes('aria-selected')).toBeUndefined()
 	})
 
 	it('следует за переключением таба', async () => {

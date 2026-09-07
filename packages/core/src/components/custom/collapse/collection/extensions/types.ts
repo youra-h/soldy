@@ -7,7 +7,7 @@ import type {
 } from '../../../../base/collection'
 import type { TCollapseExtension } from './collapse.extension'
 import type { ICollapseItemExtension } from './item'
-import type { ICollapseItem } from '../../collapse-item/types'
+import type { ICollapseItem } from '../../item/types'
 
 /**
  * Контракт расширения collapse.

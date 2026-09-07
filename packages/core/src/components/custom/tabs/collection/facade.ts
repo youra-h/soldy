@@ -2,7 +2,7 @@ import { TCollectionComponent } from '../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../base/collection'
 import { TabsFactory } from './factory'
 import type { TTabsCollection, TTabsCollectionExtensions } from './types'
-import type { ITabItem } from '../tab-item/types'
+import type { ITabsItem } from '../item/types'
 import type { ITabs } from '../types'
 
 /**
@@ -12,11 +12,11 @@ import type { ITabs } from '../types'
  * как обычные свойства компонента. Используется как `ctor` в `TabsCollectionDescriptor`.
  */
 export class TTabsCollectionFacade extends TCollectionComponent<
-	ITabItem,
+	ITabsItem,
 	TTabsCollectionExtensions
 > {
 	constructor(
-		props: TCollectionFacadeProps<ITabItem> = {},
+		props: TCollectionFacadeProps<ITabsItem> = {},
 		options: TCollectionFacadeOptions<TTabsCollection, ITabs> = {},
 	) {
 		super({}, { engine: options.engine ?? TabsFactory(options.owner!) })
@@ -44,7 +44,7 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 		this.events.relay(this.extensions.tabs.events, ['item:close', 'change:closable'])
 	}
 
-	get items(): ReadonlyArray<ITabItem> {
+	get items(): ReadonlyArray<ITabsItem> {
 		return this.extensions.batch.items
 	}
 
@@ -52,15 +52,15 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 		this.extensions.batch.update(value)
 	}
 
-	get trackBy(): ((item: ITabItem) => any) | undefined {
+	get trackBy(): ((item: ITabsItem) => any) | undefined {
 		return this.extensions.batch.trackBy
 	}
 
-	set trackBy(fn: ((item: ITabItem) => any) | undefined) {
+	set trackBy(fn: ((item: ITabsItem) => any) | undefined) {
 		this.extensions.batch.trackBy = fn
 	}
 
-	get activeItem(): ITabItem | undefined {
+	get activeItem(): ITabsItem | undefined {
 		return this.extensions.activation.activeItem
 	}
 
@@ -68,11 +68,11 @@ export class TTabsCollectionFacade extends TCollectionComponent<
 		return this.extensions.tabs.closable
 	}
 
-	activate(item: ITabItem): void {
+	activate(item: ITabsItem): void {
 		this.extensions.activation.activate(item)
 	}
 
-	closeTab(item: ITabItem): void {
+	closeTab(item: ITabsItem): void {
 		this.extensions.tabs.closeTab(item)
 	}
 }

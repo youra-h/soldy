@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { TListBox } from '@soldy/core'
-import { ListBox, ListBoxItem, Button } from '@soldy/ui-vue'
+import { ListBox, Button } from '@soldy/ui-vue'
 
 // --- Данные ---
 
@@ -253,7 +253,7 @@ function loadData() {
 				/>
 
 				<ListBox mode="multiple" :max-rows="6" @change:selected="handleSelected1">
-					<ListBoxItem
+					<ListBox.Item
 						v-for="city in filteredCities1"
 						:key="city.id"
 						:text="city.text"

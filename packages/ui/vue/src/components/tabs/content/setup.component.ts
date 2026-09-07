@@ -1,7 +1,7 @@
 import { toRaw } from 'vue'
 import {
 	createAdapterContext,
-	TTabsContentExtension,
+	TTabsContentBindingExtension,
 	TabsContentDescriptor,
 	TabsCollectionContentDescriptor,
 } from '@soldy/setup'
@@ -11,7 +11,7 @@ import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import BaseTabsContent, { type TabsContentProps } from './base.component'
 
 /**
- * Два контекста, как у TabItem: собственный (props панели) и коллекционный
+ * Два контекста, как у TabsItem: собственный (props панели) и коллекционный
  * (активность и ARIA-связка через фасад). Разделение слоёв — не формальность:
  * панель сама по себе о коллекции ничего не знает.
  */
@@ -28,7 +28,7 @@ export default {
 			TabsCollectionContentDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },
-		).use(TTabsContentExtension, {
+		).use(TTabsContentBindingExtension, {
 			content: adapter.instance,
 			elevator: VueElevatorFactory,
 		})

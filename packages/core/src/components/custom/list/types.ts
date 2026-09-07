@@ -2,7 +2,7 @@ import type { IControl, IControlProps, TControlEvents, TControlStates } from '..
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TScrollBehavior } from '../../../common'
 import type { IListCollectionProps } from './collection/types'
-import type { IListItem, IListItemProps } from './list-item/types'
+import type { IListItem, IListItemProps } from './item/types'
 
 export type TListEvents = TControlEvents &
 	TCollectionStorageDriverEvents<IListItem> & {

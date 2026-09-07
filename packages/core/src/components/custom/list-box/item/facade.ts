@@ -1,5 +1,5 @@
 import type { TItemContext } from '../../../base/collection'
-import { TListItemCollectionFacade } from '../../list/list-item/facade'
+import { TListItemCollectionFacade } from '../../list/item/facade'
 import type { TListBoxCollectionExtensions } from '../collection/types'
 import type { IListBoxItem } from './types'
 import type { TListBoxView } from '../types'

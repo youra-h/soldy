@@ -2,7 +2,7 @@ import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
 import type { TAriaAttributes } from '../../../../common'
 import type { TTabsCollectionExtensions } from '../collection/types'
-import type { ITabItem } from './types'
+import type { ITabsItem } from './types'
 
 /**
  * Фасад элемента таба.
@@ -11,11 +11,11 @@ import type { ITabItem } from './types'
  * (`active`, `order`, `tabs_closable`) как обычные свойства компонента.
  * Используется как `ctor` в `TabsCollectionItemDescriptor`.
  */
-export class TTabItemCollectionFacade extends TCollectionItemComponent<
-	ITabItem,
+export class TTabsItemCollectionFacade extends TCollectionItemComponent<
+	ITabsItem,
 	TTabsCollectionExtensions
 > {
-	override setContext(context: TItemContext<ITabItem, TTabsCollectionExtensions>): void {
+	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
@@ -48,7 +48,7 @@ export class TTabItemCollectionFacade extends TCollectionItemComponent<
 	/**
 	 * Сторона таба в связке: `id` и ссылка на панель.
 	 *
-	 * Не в `TTabItem.aria`, потому что `aria-controls` предполагает панель, а о
+	 * Не в `TTabsItem.aria`, потому что `aria-controls` предполагает панель, а о
 	 * её существовании знает коллекция, не элемент. Считает адаптер `content` —
 	 * тот же, что отдаёт встречную половину панели, поэтому идентификаторы
 	 * разойтись не могут.

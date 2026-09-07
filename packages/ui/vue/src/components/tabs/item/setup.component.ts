@@ -2,21 +2,21 @@ import { toRaw } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionItemExtension,
-	TabItemDescriptor,
+	TabsItemDescriptor,
 	TabsCollectionItemDescriptor,
 } from '@soldy/setup'
-import { TTabItemCollectionFacade } from '@soldy/core'
-import type { ITabItemProps, ITabItem } from '@soldy/core'
+import { TTabsItemCollectionFacade } from '@soldy/core'
+import type { ITabsItemProps, ITabsItem } from '@soldy/core'
 import { useAdapter, VueElevatorFactory } from '../../../adapter'
 import { useIconImport, useSplitAttrs } from '../../../composables'
-import BaseTabItem, { type TabItemProps } from './base.component'
+import BaseTabsItem, { type TabsItemProps } from './base.component'
 
 export default {
-	name: '_TabItem',
+	name: '_TabsItem',
 	inheritAttrs: false,
-	extends: BaseTabItem,
-	setup(props: TabItemProps, { emit }: any) {
-		const adapter = createAdapterContext(TabItemDescriptor(), {
+	extends: BaseTabsItem,
+	setup(props: TabsItemProps, { emit }: any) {
+		const adapter = createAdapterContext(TabsItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
 		})
@@ -30,12 +30,12 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<Record<string, any>, TTabItemCollectionFacade>(
+		const itemBinding = useAdapter<Record<string, any>, TTabsItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,
 		)
-		const ownerBinding = useAdapter<ITabItemProps, ITabItem>(adapter, props, emit)
+		const ownerBinding = useAdapter<ITabsItemProps, ITabsItem>(adapter, props, emit)
 
 		return {
 			...itemBinding,

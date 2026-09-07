@@ -10,21 +10,21 @@ import {
 	TUniqueExtension,
 	TMetaExtension,
 } from './../../../base'
-import TTabItem from './../tab-item/tab-item.class'
-import type { ITabItem } from './../tab-item/types'
+import TTabsItem from './../item/item.class'
+import type { ITabsItem } from './../item/types'
 import type { ITabs } from './../types'
 
 export const TabsFactory = (instance: ITabs): TTabsCollection =>
 	new TCollectionEngine({
 		extensions: {
-			factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
-			unique: new TUniqueExtension<ITabItem>(),
-			meta: new TMetaExtension<ITabItem>(),
-			order: new TOrderExtension<ITabItem>(),
-			plain: new TPlainExtension<ITabItem>(),
-			batch: new TBatchExtension<ITabItem>(),
-			activation: new TActivationExtension<ITabItem>(),
+			factory: new TFactoryExtension<ITabsItem>({ itemCtor: TTabsItem }),
+			unique: new TUniqueExtension<ITabsItem>(),
+			meta: new TMetaExtension<ITabsItem>(),
+			order: new TOrderExtension<ITabsItem>(),
+			plain: new TPlainExtension<ITabsItem>(),
+			batch: new TBatchExtension<ITabsItem>(),
+			activation: new TActivationExtension<ITabsItem>(),
 			tabs: new TTabsExtension({ owner: instance }),
-			content: new TTabsContentExtension<ITabItem>(),
+			content: new TTabsContentExtension<ITabsItem>(),
 		},
 	})

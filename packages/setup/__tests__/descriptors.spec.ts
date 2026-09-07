@@ -12,7 +12,7 @@ import {
 	TListBoxCollectionFacade,
 	TListBoxItemCollectionFacade,
 	TTabsCollectionFacade,
-	TTabItemCollectionFacade,
+	TTabsItemCollectionFacade,
 	TCollapseCollectionFacade,
 	TCollapseItemCollectionFacade,
 } from '@soldy/core'
@@ -231,7 +231,7 @@ describe('дескрипторы коллекций (фасады)', () => {
 	it('TabsCollectionItemDescriptor объявляет active/order/tab_closable', () => {
 		const d = TabsCollectionItemDescriptor()
 
-		expect(d.ctor).toBe(TTabItemCollectionFacade)
+		expect(d.ctor).toBe(TTabsItemCollectionFacade)
 
 		const names = propNames(d)
 		expect(names).toContain('active')

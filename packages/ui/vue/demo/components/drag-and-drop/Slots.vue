@@ -9,16 +9,7 @@ import type {
 	TComponentVariant,
 	TTabsOrientation,
 } from '@soldy/core'
-import {
-	DragAndDrop,
-	Tabs,
-	TabItem,
-	TabsContent,
-	Collapse,
-	CollapseItem,
-	ListBox,
-	ListBoxItem,
-} from '@soldy/ui-vue'
+import { DragAndDrop, Tabs, Collapse, ListBox } from '@soldy/ui-vue'
 
 type Props = {
 	orientation: TTabsOrientation
@@ -131,25 +122,25 @@ const listBoxItems = ref([
 			вертикальной ориентации.
 		</p>
 
-		<!-- Вариант 1: декларативный (TabItem в слоте) -->
+		<!-- Вариант 1: декларативный (TabsItem в слоте) -->
 		<section class="drag-slots-demo__section">
-			<h3 class="drag-slots-demo__title">Declarative (TabItem slots)</h3>
+			<h3 class="drag-slots-demo__title">Declarative (TabsItem slots)</h3>
 			<DragAndDrop>
 				<Tabs :orientation="orientation" :size="size" :variant="variant" view="line">
-					<TabItem text="Overview" value="overview" active />
-					<TabItem text="Details" value="details" />
-					<TabItem text="Analytics" value="analytics" />
-					<TabItem text="History" value="history" />
-					<TabItem text="Files" value="files" />
-					<TabItem text="Settings" value="settings" />
+					<Tabs.Item text="Overview" value="overview" active />
+					<Tabs.Item text="Details" value="details" />
+					<Tabs.Item text="Analytics" value="analytics" />
+					<Tabs.Item text="History" value="history" />
+					<Tabs.Item text="Files" value="files" />
+					<Tabs.Item text="Settings" value="settings" />
 
 					<template #content>
-						<TabsContent value="overview"><p>Overview content</p></TabsContent>
-						<TabsContent value="details"><p>Details content</p></TabsContent>
-						<TabsContent value="analytics"><p>Analytics content</p></TabsContent>
-						<TabsContent value="history"><p>History content</p></TabsContent>
-						<TabsContent value="files"><p>Files content</p></TabsContent>
-						<TabsContent value="settings"><p>Settings content</p></TabsContent>
+						<Tabs.Content value="overview"><p>Overview content</p></Tabs.Content>
+						<Tabs.Content value="details"><p>Details content</p></Tabs.Content>
+						<Tabs.Content value="analytics"><p>Analytics content</p></Tabs.Content>
+						<Tabs.Content value="history"><p>History content</p></Tabs.Content>
+						<Tabs.Content value="files"><p>Files content</p></Tabs.Content>
+						<Tabs.Content value="settings"><p>Settings content</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</DragAndDrop>
@@ -161,12 +152,12 @@ const listBoxItems = ref([
 			<DragAndDrop>
 				<Tabs :ctrl="tabs" @engine:create="onTabsEngineCreate">
 					<template #content>
-						<TabsContent value="dashboard"><p>Dashboard content</p></TabsContent>
-						<TabsContent value="reports"><p>Reports content</p></TabsContent>
-						<TabsContent value="users"><p>Users content</p></TabsContent>
-						<TabsContent value="logs"><p>Logs content</p></TabsContent>
-						<TabsContent value="storage"><p>Storage content</p></TabsContent>
-						<TabsContent value="config"><p>Config content</p></TabsContent>
+						<Tabs.Content value="dashboard"><p>Dashboard content</p></Tabs.Content>
+						<Tabs.Content value="reports"><p>Reports content</p></Tabs.Content>
+						<Tabs.Content value="users"><p>Users content</p></Tabs.Content>
+						<Tabs.Content value="logs"><p>Logs content</p></Tabs.Content>
+						<Tabs.Content value="storage"><p>Storage content</p></Tabs.Content>
+						<Tabs.Content value="config"><p>Config content</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</DragAndDrop>
@@ -178,11 +169,11 @@ const listBoxItems = ref([
 			<DragAndDrop>
 				<Tabs :items="tabItems" view="outline">
 					<template #content>
-						<TabsContent value="profile"><p>Profile content</p></TabsContent>
-						<TabsContent value="notifications"><p>Notifications content</p></TabsContent>
-						<TabsContent value="security"><p>Security content</p></TabsContent>
-						<TabsContent value="billing"><p>Billing content</p></TabsContent>
-						<TabsContent value="api-keys"><p>API Keys content</p></TabsContent>
+						<Tabs.Content value="profile"><p>Profile content</p></Tabs.Content>
+						<Tabs.Content value="notifications"><p>Notifications content</p></Tabs.Content>
+						<Tabs.Content value="security"><p>Security content</p></Tabs.Content>
+						<Tabs.Content value="billing"><p>Billing content</p></Tabs.Content>
+						<Tabs.Content value="api-keys"><p>API Keys content</p></Tabs.Content>
 					</template>
 				</Tabs>
 			</DragAndDrop>
@@ -195,21 +186,21 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Collapse — Declarative (CollapseItem slots)</h3>
 			<DragAndDrop>
 				<Collapse mode="multiple" view="plain">
-					<CollapseItem text="Introduction" value="intro" :selected="true">
+					<Collapse.Item text="Introduction" value="intro" :selected="true">
 						<p>Introduction content</p>
-					</CollapseItem>
-					<CollapseItem text="Setup" value="setup">
+					</Collapse.Item>
+					<Collapse.Item text="Setup" value="setup">
 						<p>Setup content</p>
-					</CollapseItem>
-					<CollapseItem text="Usage" value="usage">
+					</Collapse.Item>
+					<Collapse.Item text="Usage" value="usage">
 						<p>Usage content</p>
-					</CollapseItem>
-					<CollapseItem text="Advanced" value="advanced">
+					</Collapse.Item>
+					<Collapse.Item text="Advanced" value="advanced">
 						<p>Advanced content</p>
-					</CollapseItem>
-					<CollapseItem text="Migration" value="migration">
+					</Collapse.Item>
+					<Collapse.Item text="Migration" value="migration">
 						<p>Migration content</p>
-					</CollapseItem>
+					</Collapse.Item>
 				</Collapse>
 			</DragAndDrop>
 		</section>
@@ -219,13 +210,11 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Collapse — Instance (:ctrl)</h3>
 			<DragAndDrop>
 				<Collapse :ctrl="collapse" @engine:create="onCollapseEngineCreate">
-					<template #content>
-						<TabsContent value="getting-started"><p>Getting Started content</p></TabsContent>
-						<TabsContent value="installation"><p>Installation content</p></TabsContent>
-						<TabsContent value="configuration"><p>Configuration content</p></TabsContent>
-						<TabsContent value="deployment"><p>Deployment content</p></TabsContent>
-						<TabsContent value="troubleshooting"><p>Troubleshooting content</p></TabsContent>
-					</template>
+						<template #panel:getting-started><p>Getting Started content</p></template>
+						<template #panel:installation><p>Installation content</p></template>
+						<template #panel:configuration><p>Configuration content</p></template>
+						<template #panel:deployment><p>Deployment content</p></template>
+						<template #panel:troubleshooting><p>Troubleshooting content</p></template>
 				</Collapse>
 			</DragAndDrop>
 		</section>
@@ -235,13 +224,11 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">Collapse — Items prop (:items)</h3>
 			<DragAndDrop>
 				<Collapse :items="collapseItems" mode="multiple" view="outlined">
-					<template #content>
-						<TabsContent value="overview"><p>Overview content</p></TabsContent>
-						<TabsContent value="quick-start"><p>Quick Start content</p></TabsContent>
-						<TabsContent value="api-reference"><p>API Reference content</p></TabsContent>
-						<TabsContent value="examples"><p>Examples content</p></TabsContent>
-						<TabsContent value="faq"><p>FAQ content</p></TabsContent>
-					</template>
+						<template #panel:overview><p>Overview content</p></template>
+						<template #panel:quick-start><p>Quick Start content</p></template>
+						<template #panel:api-reference><p>API Reference content</p></template>
+						<template #panel:examples><p>Examples content</p></template>
+						<template #panel:faq><p>FAQ content</p></template>
 				</Collapse>
 			</DragAndDrop>
 		</section>
@@ -253,10 +240,10 @@ const listBoxItems = ref([
 			<h3 class="drag-slots-demo__title">ListBox — Declarative (ListBoxItem slots)</h3>
 			<DragAndDrop>
 				<ListBox mode="multiple" view="plain">
-					<ListBoxItem text="Item 1" value="i1" :selected="true" />
-					<ListBoxItem text="Item 2" value="i2" />
-					<ListBoxItem text="Item 3" value="i3" />
-					<ListBoxItem text="Item 4" value="i4" />
+					<ListBox.Item text="Item 1" value="i1" :selected="true" />
+					<ListBox.Item text="Item 2" value="i2" />
+					<ListBox.Item text="Item 3" value="i3" />
+					<ListBox.Item text="Item 4" value="i4" />
 				</ListBox>
 			</DragAndDrop>
 		</section>

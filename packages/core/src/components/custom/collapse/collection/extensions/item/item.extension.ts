@@ -1,6 +1,6 @@
 import { TBaseItemExtension } from '../../../../../base/collection'
 import type { ICollapseItemExtension, TCollapseItemEventsExtension } from './types'
-import type { ICollapseItem } from '../../../collapse-item/types'
+import type { ICollapseItem } from '../../../item/types'
 import type { ICollapseExtension } from '../types'
 import type { TCollapseView } from '../../../types'
 /**

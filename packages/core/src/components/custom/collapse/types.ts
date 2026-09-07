@@ -1,7 +1,7 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { ICollapseCollectionProps } from './collection/types'
-import type { ICollapseItem, ICollapseItemProps } from './collapse-item/types'
+import type { ICollapseItem, ICollapseItemProps } from './item/types'
 
 export type TCollapseView = 'plain' | 'outlined' | 'filled'
 

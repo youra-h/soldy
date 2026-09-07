@@ -8,14 +8,14 @@ import type { IStateUnit, TValuePayload } from '../../../../common'
 import type { IComponentOptions } from '../../../base/component'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
-export type TTabItemEvents<TTab = any> = TValueControlEvents<string | number> & {
+export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
 }
 
-export interface ITabItemProps
+export interface ITabsItemProps
 	extends IValueControlProps<string | number>,
 		ITabsCollectionItemProps {
 	/** Текст таба */
@@ -24,15 +24,15 @@ export interface ITabItemProps
 	closable?: boolean
 }
 
-export type TTabItemStates = TValueControlStates<string | number> & {
+export type TTabsItemStates = TValueControlStates<string | number> & {
 	text: IStateUnit<string>
 	closable: IStateUnit<boolean | undefined>
 }
 
-export interface ITabItem<
-	TProps extends ITabItemProps = ITabItemProps,
-	TEvents extends TTabItemEvents<any> = TTabItemEvents,
-	TStates extends TTabItemStates = TTabItemStates,
+export interface ITabsItem<
+	TProps extends ITabsItemProps = ITabsItemProps,
+	TEvents extends TTabsItemEvents<any> = TTabsItemEvents,
+	TStates extends TTabsItemStates = TTabsItemStates,
 > extends IValueControl<string | number, TProps, TEvents, TStates> {
 	/** Текст таба */
 	text: string
@@ -40,4 +40,4 @@ export interface ITabItem<
 	closable?: boolean | undefined
 }
 
-export type TTabItemOptions = IComponentOptions<TTabItemStates>
+export type TTabsItemOptions = IComponentOptions<TTabsItemStates>

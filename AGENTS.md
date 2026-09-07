@@ -60,7 +60,7 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 | CSS-класс | `s-button` | каскад глобален, `.button` столкнётся с приложением |
 | Тег Custom Element | `soldy-button` | реестр элементов глобален, дефис обязателен по спеке |
 | Селектор Angular | `soldy-button` | шаблонное пространство имён глобально |
-| **Экспорт компонента** | `Button`, `TabItem` | **без префикса** — namespace уже дал npm-скоуп |
+| **Экспорт компонента** | `Button`, `TabsItem` | **без префикса** — namespace уже дал npm-скоуп |
 
 `SButton`/`STabs` не вводим: `import { Button } from '@soldy/ui-vue'` уже
 однозначен, префикс дублировал бы то, что делает импорт.
@@ -74,17 +74,32 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 Критерий выведен из модели soldy, а не заимствован. Ark-таксономия
 (`Root`/`Trigger`/`Indicator`/`Label`/`Positioner`) кодирует чужую модель: там
 нет слотов и табы не коллекция. В soldy `TTabs` — `TCollectionComponent`,
-`TTabItem` — `TCollectionItemComponent`, поэтому часть называется `Item`, а не
+`TTabsItem` — `TCollectionItemComponent`, поэтому часть называется `Item`, а не
 `Trigger`; иначе публичное API разъедется с ядром.
 
-Прогон: `TabItem` — часть (элемент коллекции), `TabsContent` — часть (нужен
+Прогон: `TabsItem` — часть (элемент коллекции), `TabsContent` — часть (нужен
 `id` для `aria-controls`), список табов — слот (только позиция), у `Button` и
 `CheckBox` частей нет вовсе.
 
-**Имена частей плоские**: `TabItem`, `TabsContent`. Точечной витрины
-(`Tabs.Item`) нет — пробовали и убрали: единственными её потребителями оказались
-её же тесты, а во Vue она работала только в SFC. Понадобится под публичный
-релиз — вернём тогда.
+### Составные компоненты: точка — основная форма
+
+`withParts` из `@soldy/setup` вешает части на владельца:
+
+```ts
+export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsContent })
+```
+
+Точка решает согласованность имён: `Tabs` + `TabsItem` + `TabsContent` надо
+держать в согласии вручную (и один раз уже разъехалось до `TabItem`), а
+`Tabs.Item` / `Tabs.Content` согласованы по построению — префиксом служит сам
+владелец. Плоские имена продолжают экспортироваться: они нужны там, где точки
+нет (Angular, Web Components), и как запасной путь импорта.
+
+**Ограничение Vue, о которое легко споткнуться:** точка резолвится только
+компилятором SFC (`<script setup>`, импорт как биндинг). В строковом
+`template` с регистрацией через `components: {}` рантайм-компилятор ищет
+`Tabs.Item` как имя в реестре, не находит и молча рендерит пустоту. Сторожит
+`packages/ui/vue/__tests__/parts.spec.ts`.
 
 ## Коллекции: слои и расширения (критично)
 
@@ -94,8 +109,8 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 
 | Слой | Отвечает за | Пример |
 |---|---|---|
-| **Класс ядра** | собственные props и events | `TTabItem` — `value`, `text`, `closable` |
-| **Фасад коллекции** | членство в коллекции | `TTabItemCollectionFacade` — `active`, `order`, `tab_aria` |
+| **Класс ядра** | собственные props и events | `TTabsItem` — `value`, `text`, `closable` |
+| **Фасад коллекции** | членство в коллекции | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
 | **Расширение** | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок |
 
 **Класс ядра не знает о коллекции.** Ни движка, ни `bindEngine`, ни активности.
@@ -136,10 +151,10 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/tab-item.extension.ts     closable = item ?? parent
+    item/item.extension.ts         closable = item ?? parent
   content/     связка «таб ↔ панель»
     content.extension.ts
-    item/content-item.extension.ts tabAria и panelAria
+    item/item.extension.ts         tabAria и panelAria
 ```
 
 Расширение подключается в `collection/factory.ts` и объявляется в
@@ -151,7 +166,7 @@ tabs/collection/extensions/
 там, и **обе стороны парной связки считаются в одном месте**:
 
 ```ts
-// content-item.extension.ts — id панели и aria-controls таба это одно и то же
+// content/item/item.extension.ts — id панели и aria-controls таба это одно и то же
 private get _panelId() { return `s-tabpanel-${this._item.uid}` }
 
 get tabAria()   { return { id: this._tabId, 'aria-controls': this._panelId } }
@@ -171,7 +186,7 @@ adapter-контекстов (собственного и коллекционн
 
 ### ARIA: что знает элемент, а что коллекция
 
-`TTabItem.aria` — только `role: 'tab'`: это единственное, что таб знает о себе.
+`TTabsItem.aria` — только `role: 'tab'`: это единственное, что таб знает о себе.
 `id` и `aria-controls` предполагают существование панели, а о ней знает
 коллекция — поэтому они приходят из item-адаптера. `aria-selected` — тоже
 коллекция: активность вычисляет `TActivationExtension` на лету.
@@ -196,7 +211,7 @@ adapter-контекстов (собственного и коллекционн
 
 - **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).
 
-- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`.
+- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`.
 
 - **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`), calls `useAdapter` on each and merges `{ ...refs, ...refsCollection }`. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 

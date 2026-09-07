@@ -1,23 +1,23 @@
 import { TBaseItemExtension } from '../../../../../../base/collection'
-import type { ITabItemExtension, TTabItemEventsExtension } from './types'
-import type { ITabItem } from '../../../../tab-item/types'
+import type { ITabsItemExtension, TTabsItemEventsExtension } from './types'
+import type { ITabsItem } from '../../../../item/types'
 import type { ITabsExtension } from '../types'
 
 /**
- * TTabItemExtension — stateless-делегат элемента таба.
+ * TTabsItemExtension — stateless-делегат элемента таба.
  *
  * Предоставляет closable, резолвя его из элемента (приоритет) или
  * родительского расширения (fallback на TTabs.closable).
  *
- * @template TItem   — тип элемента (ITabItem или наследник)
+ * @template TItem   — тип элемента (ITabsItem или наследник)
  * @template TParent — тип родительского расширения (ITabsExtension или наследник)
  */
-export class TTabItemExtension<
-	TItem extends ITabItem = ITabItem,
+export class TTabsItemExtension<
+	TItem extends ITabsItem = ITabsItem,
 	TParent extends ITabsExtension<TItem> = ITabsExtension<TItem>,
 >
-	extends TBaseItemExtension<TItem, TParent, TTabItemEventsExtension>
-	implements ITabItemExtension<TItem>
+	extends TBaseItemExtension<TItem, TParent, TTabsItemEventsExtension>
+	implements ITabsItemExtension<TItem>
 {
 	constructor(item: TItem, parent: TParent) {
 		super(item, parent)

@@ -10,8 +10,8 @@ import {
 	TUniqueExtension,
 	TMetaExtension,
 } from './../../../base'
-import TCollapseItem from './../collapse-item/collapse-item.class'
-import type { ICollapseItem } from './../collapse-item/types'
+import TCollapseItem from './../item/item.class'
+import type { ICollapseItem } from './../item/types'
 import type { ICollapse } from './../types'
 
 export const CollapseFactory = (instance: ICollapse): TCollapseCollection =>

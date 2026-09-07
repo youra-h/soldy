@@ -1,7 +1,7 @@
 import type { IExtension, IExtensionContext } from '../../../../base/collection'
 import type { TCollapseView } from '../../types'
 import { TBaseOwnerItemExtension } from '../../../../base/collection'
-import type { ICollapseItem } from '../../collapse-item/types'
+import type { ICollapseItem } from '../../item/types'
 import type { ICollapse } from '../../types'
 import type {
 	TCollapseExtensionEvents,

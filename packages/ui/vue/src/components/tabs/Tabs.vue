@@ -1,8 +1,8 @@
 <script lang="ts">
-import { TabItem } from './tab-item'
+import { TabsItem } from './item'
 import SetupTabs from './setup.component'
 
-export default { ...SetupTabs, components: { TabItem } }
+export default { ...SetupTabs, components: { TabsItem } }
 </script>
 
 <template>
@@ -12,7 +12,7 @@ export default { ...SetupTabs, components: { TabItem } }
 				<slot name="leading"></slot>
 			</div>
 			<slot>
-				<TabItem v-for="item in items" :key="item.uid" :ctrl="item">
+				<TabsItem v-for="item in items" :key="item.uid" :ctrl="item">
 					<template #leading>
 						<slot :name="`item:${item.value}:leading`" :item="item" />
 					</template>
@@ -24,7 +24,7 @@ export default { ...SetupTabs, components: { TabItem } }
 					<template #trailing>
 						<slot :name="`item:${item.value}:trailing`" :item="item" />
 					</template>
-				</TabItem>
+				</TabsItem>
 			</slot>
 			<div class="s-tabs__list--trailing" v-if="$slots.trailing">
 				<slot name="trailing"></slot>

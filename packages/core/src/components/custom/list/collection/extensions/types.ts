@@ -6,7 +6,7 @@ import type {
 } from '../../../../base/collection'
 import type { TListExtension } from './list.extension'
 import type { IListItemExtension } from './item'
-import type { IListItem } from '../../list-item/types'
+import type { IListItem } from '../../item/types'
 
 /**
  * Контракт расширения list.

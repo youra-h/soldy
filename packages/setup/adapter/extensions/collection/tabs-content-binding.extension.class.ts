@@ -1,9 +1,13 @@
 /**
- * TTabsContentExtension — связывает панель с её табом.
+ * TTabsContentBindingExtension — связывает панель с её табом.
+ *
+ * Живёт в adapter-слое и не имеет отношения к одноимённому по смыслу
+ * TTabsContentExtension из ядра: то — расширение коллекции, раздающее
+ * item-адаптеры; это — проводка, находящая нужный таб по значению.
  *
  * Панель не регистрируется в коллекции: её нет в `items`. Она находит уже
  * существующий таб по совпадению `value` и берёт его `TItemContext` — тот же
- * контекст, с которым работает `TTabItemCollectionFacade`. Дальше активность и
+ * контекст, с которым работает `TTabsItemCollectionFacade`. Дальше активность и
  * ARIA-связка читаются через обычные item-адаптеры.
  *
  * Перерешение нужно в двух случаях: панель смонтировалась раньше своего таба
@@ -15,7 +19,7 @@ import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 
-export interface ITabsContentExtensionOptions {
+export interface ITabsContentBindingOptions {
 	/** Инстанс панели (TTabsContent) — источник `value`. */
 	content: any
 	elevator: TElevatorFactory
@@ -30,8 +34,8 @@ function findByValue(engine: any, value: unknown): any {
 	return undefined
 }
 
-export class TTabsContentExtension {
-	constructor(context: IAdapterContext, options: ITabsContentExtensionOptions) {
+export class TTabsContentBindingExtension {
+	constructor(context: IAdapterContext, options: ITabsContentBindingOptions) {
 		const { content, elevator } = options
 		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
 

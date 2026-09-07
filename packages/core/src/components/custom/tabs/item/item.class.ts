@@ -2,23 +2,23 @@ import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload, TAriaAttributes } from '../../../../common'
-import type { ITabItem, ITabItemProps, TTabItemEvents, TTabItemStates } from './types'
+import type { ITabsItem, ITabsItemProps, TTabsItemEvents, TTabsItemStates } from './types'
 
 /**
  * Кастомная логика элемента таба (без коллекционной части).
  * Наследуется от TValueControl, где value — это ключ таба.
- * Generic TProps позволяет передавать расширенные Props (например, ITabItemProps с active).
+ * Generic TProps позволяет передавать расширенные Props (например, ITabsItemProps с active).
  */
-export default class TTabItem<
-	TProps extends ITabItemProps = ITabItemProps,
-	TEvents extends TTabItemEvents<any> = TTabItemEvents,
+export default class TTabsItem<
+	TProps extends ITabsItemProps = ITabsItemProps,
+	TEvents extends TTabsItemEvents<any> = TTabsItemEvents,
 >
-	extends TValueControl<string | number, TProps, TEvents, TTabItemStates>
-	implements ITabItem<TProps, TEvents>
+	extends TValueControl<string | number, TProps, TEvents, TTabsItemStates>
+	implements ITabsItem<TProps, TEvents>
 {
-	static override baseClass = 's-tab-item'
+	static override baseClass = 's-tabs-item'
 
-	static defaultValues: Partial<ITabItemProps> = {
+	static defaultValues: Partial<ITabsItemProps> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -29,14 +29,14 @@ export default class TTabItem<
 
 	constructor(
 		props: Partial<TProps> = {},
-		options: IComponentOptions<TTabItemStates> = {},
+		options: IComponentOptions<TTabsItemStates> = {},
 	) {
 		super(props, options)
 
-		const ctor = new.target as typeof TTabItem
+		const ctor = new.target as typeof TTabsItem
 
-		// Type assertion: TProps extends ITabItemProps, поэтому props содержит text и closable
-		const customProps = props as Partial<ITabItemProps>
+		// Type assertion: TProps extends ITabsItemProps, поэтому props содержит text и closable
+		const customProps = props as Partial<ITabsItemProps>
 
 		// Инициализация state-объектов
 		this._states.text =
@@ -51,12 +51,12 @@ export default class TTabItem<
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TTabItemEvents>).emit('change:text', payload)
+			;(this.events as TEvented<TTabsItemEvents>).emit('change:text', payload)
 		})
 
 		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
 			this._classes.toggle(`--closable`, !!payload.newValue)
-			;(this.events as TEvented<TTabItemEvents>).emit('change:closable', payload.newValue)
+			;(this.events as TEvented<TTabsItemEvents>).emit('change:closable', payload.newValue)
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)

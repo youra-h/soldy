@@ -1,3 +1,3 @@
 export { ListContribution } from './list'
-export { ListItemContribution } from './list-item'
+export { ListItemContribution } from './item'
 export * from './collection.contribution'

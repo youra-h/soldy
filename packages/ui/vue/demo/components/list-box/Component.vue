@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ListBox, ListBoxItem, emitsListBox } from '@soldy/ui-vue'
+import { ListBox, emitsListBox } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
@@ -56,20 +56,20 @@ const applyAll = computed(() => props.itemApplyTarget === 'all')
 			:word-wrap="wordWrap"
 			v-bind="handlers"
 		>
-			<ListBoxItem
+			<ListBox.Item
 				text="Item 1 Item 1Item 1Item 1Item 1Item 1Item 1Item Item 1 Item 1 Item 1"
 				value="item1"
 				:disabled="itemDisabled"
 				:word-wrap="itemWordWrap"
 				:selected="true"
 			/>
-			<ListBoxItem
+			<ListBox.Item
 				text="Item 2"
 				value="item2"
 				:disabled="applyAll ? itemDisabled : false"
 				:word-wrap="applyAll ? itemWordWrap : undefined"
 			/>
-			<ListBoxItem
+			<ListBox.Item
 				text="Item 3"
 				value="item3"
 				:disabled="applyAll ? itemDisabled : false"

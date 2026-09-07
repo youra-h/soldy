@@ -5,7 +5,7 @@ import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from
 /**
  * TFactoryExtension — фабрика элементов коллекции.
  *
- * Принимает конструктор элемента (например, `TTabItem`) и подписывается на
+ * Принимает конструктор элемента (например, `TTabsItem`) и подписывается на
  * driver-событие `item:add:before`. Если в коллекцию добавляется сырое значение
  * (обычный объект с props, а не инстанс `itemCtor`), оно подменяется на
  * `new itemCtor(source)`.
@@ -15,15 +15,15 @@ import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from
  *
  * @example
  * ```ts
- * const col = new TCollectionEngine<ITabItem>({
+ * const col = new TCollectionEngine<ITabsItem>({
  *     extensions: {
- *         factory: new TFactoryExtension<ITabItem>({ itemCtor: TTabItem }),
- *         batch: new TBatchExtension<ITabItem>(),
+ *         factory: new TFactoryExtension<ITabsItem>({ itemCtor: TTabsItem }),
+ *         batch: new TBatchExtension<ITabsItem>(),
  *     },
  * })
  *
  * col.extensions.batch.update([{ text: 'Tab 1', value: 'tab1' }])
- * // в driver лежат инстансы TTabItem
+ * // в driver лежат инстансы TTabsItem
  * ```
  */
 export class TFactoryExtension<TItem extends object>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TListBox } from '@soldy/core'
 import type { TListBoxCollection } from '@soldy/core'
-import { ListBox, ListBoxItem } from '@soldy/ui-vue'
+import { ListBox } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
@@ -35,9 +35,9 @@ function onEngineCreate(engine: TListBoxCollection) {
 			<h4 class="list-box-slots-demo__subtitle">{{ view }}</h4>
 
 			<ListBox :view="view" :size="size" :variant="variant" mode="single">
-				<ListBoxItem text="Item 1" value="i1" :selected="true" />
-				<ListBoxItem text="Item 2" value="i2" />
-				<ListBoxItem text="Item 3" value="i3" />
+				<ListBox.Item text="Item 1" value="i1" :selected="true" />
+				<ListBox.Item text="Item 2" value="i2" />
+				<ListBox.Item text="Item 3" value="i3" />
 			</ListBox>
 		</div>
 
@@ -45,9 +45,9 @@ function onEngineCreate(engine: TListBoxCollection) {
 		<div class="list-box-slots-demo__section">
 			<h4 class="list-box-slots-demo__subtitle">mode: multiple</h4>
 			<ListBox view="outlined" :size="size" :variant="variant" mode="multiple">
-				<ListBoxItem text="Multiple — several selected" value="i1" :selected="true" />
-				<ListBoxItem text="Item 2" value="i2" :selected="true" />
-				<ListBoxItem text="Item 3" value="i3" />
+				<ListBox.Item text="Multiple — several selected" value="i1" :selected="true" />
+				<ListBox.Item text="Item 2" value="i2" :selected="true" />
+				<ListBox.Item text="Item 3" value="i3" />
 			</ListBox>
 		</div>
 
@@ -74,16 +74,16 @@ function onEngineCreate(engine: TListBoxCollection) {
 		<div class="list-box-slots-demo__section">
 			<h4 class="list-box-slots-demo__subtitle">Custom leading/trailing slots</h4>
 			<ListBox view="outlined" :size="size" :variant="variant" mode="multiple">
-				<ListBoxItem text="With icon leading" value="i1">
+				<ListBox.Item text="With icon leading" value="i1">
 					<template #leading>
 						<span class="list-box-slots-demo__badge">⭐</span>
 					</template>
-				</ListBoxItem>
-				<ListBoxItem text="With icon trailing" value="i2">
+				</ListBox.Item>
+				<ListBox.Item text="With icon trailing" value="i2">
 					<template #trailing>
 						<span class="list-box-slots-demo__badge">3</span>
 					</template>
-				</ListBoxItem>
+				</ListBox.Item>
 			</ListBox>
 		</div>
 

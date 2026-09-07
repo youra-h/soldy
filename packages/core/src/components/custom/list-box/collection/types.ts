@@ -6,8 +6,8 @@ import type {
 } from '../../list/collection/types'
 import { TListBoxExtension } from './extensions'
 import type { IListBox } from '../types'
-import type { IListBoxItem } from '../list-box-item/types'
-import type { IListBoxItemProps } from '../list-box-item/types'
+import type { IListBoxItem } from '../item/types'
+import type { IListBoxItemProps } from '../item/types'
 
 export type TListBoxCollectionExtensions = TListBaseCollectionExtensions<IListBoxItem> & {
 	list: TListBoxExtension<IListBox, IListBoxItem>

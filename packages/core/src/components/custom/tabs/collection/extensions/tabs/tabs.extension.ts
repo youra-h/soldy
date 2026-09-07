@@ -4,7 +4,7 @@ import {
 	TItemContextRegistry,
 	TRemoveCommand,
 } from '../../../../../base/collection'
-import type { ITabItem } from '../../../tab-item/types'
+import type { ITabsItem } from '../../../item/types'
 import type { ITabs } from '../../../types'
 import type {
 	TTabsExtensionEvents,
@@ -12,7 +12,7 @@ import type {
 	TTabsExtensions,
 	ITabsExtension,
 } from './types'
-import { TTabItemExtension, type ITabItemExtension } from './item'
+import { TTabsItemExtension, type ITabsItemExtension } from './item'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -23,10 +23,10 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  * а также подписывается на изменения владельца для синхронизации.
  *
  * @template TOwner — тип владельца (TTabs или наследник)
- * @template TItem  — тип элемента таба (ITabItem или наследник)
+ * @template TItem  — тип элемента таба (ITabsItem или наследник)
  */
-export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem = ITabItem>
-	extends TBaseOwnerItemExtension<TItem, ITabItemExtension<TItem>, TTabsExtensionEvents>
+export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsItem = ITabsItem>
+	extends TBaseOwnerItemExtension<TItem, ITabsItemExtension<TItem>, TTabsExtensionEvents>
 	implements IExtension<TItem>, ITabsExtension<TItem>
 {
 	readonly name = 'tabs' as const
@@ -42,7 +42,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
 
 	constructor(options: ITabsExtensionOptions<TOwner, TItem>) {
-		super(TTabItemExtension, options)
+		super(TTabsItemExtension, options)
 
 		this._owner = options.owner
 	}
@@ -88,7 +88,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 		})
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTabItemExtension резолвит closable из item ?? owner).
+		// (TTabsItemExtension резолвит closable из item ?? owner).
 		this.events.relay(this._owner.events, ['change:closable'])
 	}
 
@@ -110,7 +110,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabItem
 	 * @param item
 	 * @returns true, если элемент был удалён, иначе false
 	 */
-	closeTab(item: ITabItem): boolean {
+	closeTab(item: ITabsItem): boolean {
 		const { tabs } = this._itemRegistry.get(item as TItem).adapters
 
 		if (!tabs.closable) return false

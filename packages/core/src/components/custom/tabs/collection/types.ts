@@ -15,28 +15,28 @@ import type {
 } from '../../../base/collection'
 import { TTabsExtension, TTabsContentExtension } from './extensions'
 import type { ITabs } from '../types'
-import type { ITabItem } from '../tab-item/types'
-import type { ITabItemProps } from '../tab-item/types'
+import type { ITabsItem } from '../item/types'
+import type { ITabsItemProps } from '../item/types'
 
 export type TTabsCollectionExtensions = {
-	factory: TFactoryExtension<ITabItem>
-	unique: TUniqueExtension<ITabItem>
-	meta: TMetaExtension<ITabItem>
-	order: TOrderExtension<ITabItem>
-	plain: TPlainExtension<ITabItem>
-	batch: TBatchExtension<ITabItem>
-	activation: TActivationExtension<ITabItem>
-	tabs: TTabsExtension<ITabs, ITabItem>
-	content: TTabsContentExtension<ITabItem>
+	factory: TFactoryExtension<ITabsItem>
+	unique: TUniqueExtension<ITabsItem>
+	meta: TMetaExtension<ITabsItem>
+	order: TOrderExtension<ITabsItem>
+	plain: TPlainExtension<ITabsItem>
+	batch: TBatchExtension<ITabsItem>
+	activation: TActivationExtension<ITabsItem>
+	tabs: TTabsExtension<ITabs, ITabsItem>
+	content: TTabsContentExtension<ITabsItem>
 }
 
-export type TTabsCollection = TCollectionEngine<ITabItem, TTabsCollectionExtensions>
+export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtensions>
 
 /**
  * Owner-level props коллекции Tabs.
  * Объединяет pass-through engine + batch (items, trackBy).
  */
-export interface ITabsCollectionProps<TItemProps = ITabItemProps, TItem = ITabItem>
+export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabsItem>
 	extends ICollectionProps<TTabsCollection>, IBatchCollectionProps<TItemProps, TItem> {}
 
 /**

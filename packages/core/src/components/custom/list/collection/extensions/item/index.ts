@@ -1,2 +1,2 @@
 export type { IListItemExtension } from './types'
-export { TListItemExtension } from './list-item.extension'
+export { TListItemExtension } from './item.extension'

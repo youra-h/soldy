@@ -1,5 +1,5 @@
 export { TabsContribution, type TTabsSlots } from './tabs'
-export { TabItemContribution } from './tab-item'
+export { TabsItemContribution } from './item'
 export {
 	TabsContentContribution,
 	TabsCollectionContentContribution,

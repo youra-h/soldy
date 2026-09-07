@@ -10,7 +10,7 @@ import type {
 import { ListFactory } from './factory'
 import type { TListCollectionExtensions, TListCollectionFacadeOptions } from './types'
 import type { IList } from '../types'
-import type { IListItem } from '../list-item/types'
+import type { IListItem } from '../item/types'
 
 /**
  * Фасад коллекции list.

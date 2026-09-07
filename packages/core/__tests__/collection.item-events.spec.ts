@@ -7,10 +7,10 @@ import {
 	TOrderExtension,
 	TItemContextRegistry,
 	TTabs,
-	TTabItem,
+	TTabsItem,
 	TTabsExtension,
 } from '@soldy/core'
-import type { ITabItem, ITabs } from '@soldy/core'
+import type { ITabsItem, ITabs } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
@@ -86,16 +86,16 @@ describe('Item-адаптеры: проброс событий из расшир
 	it('tabs: change:closable элемента пробрасывается в адаптер', () => {
 		const tabs = new TTabs({ closable: true })
 		const col = new TCollectionEngine<
-			ITabItem,
-			{ plain: TPlainExtension<ITabItem>; tabs: TTabsExtension<ITabs, ITabItem> }
+			ITabsItem,
+			{ plain: TPlainExtension<ITabsItem>; tabs: TTabsExtension<ITabs, ITabsItem> }
 		>({
 			extensions: {
-				plain: new TPlainExtension<ITabItem>(),
+				plain: new TPlainExtension<ITabsItem>(),
 				tabs: new TTabsExtension({ owner: tabs }),
 			},
 		})
 		const registry = new TItemContextRegistry(col.getCore())
-		const tab = new TTabItem({ text: 'Tab', value: 'tab' })
+		const tab = new TTabsItem({ text: 'Tab', value: 'tab' })
 
 		col.extensions.plain.insert(tab)
 

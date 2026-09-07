@@ -15,7 +15,7 @@
 		}
 
 		// Цвет текста при hover и у активного таба
-		.s-tab-item {
+		.s-tabs-item {
 			> * {
 				&:hover:not([disabled]) {
 					@apply #{'text-s-' + $color + '-' + $text};
@@ -38,7 +38,7 @@
 		@apply #{'bg-s-' + $color + '-' + $container-bg};
 	}
 
-	.s-tab-item {
+	.s-tabs-item {
 		> * {
 			&:hover:not([disabled]) {
 				@apply #{'text-s-' + $color + '-' + $text};
@@ -67,7 +67,7 @@
 		}
 	}
 
-	.s-tab-item {
+	.s-tabs-item {
 		@apply #{'border-s-' + $color + '-' + $border};
 
 		// @apply border-b-transparent;

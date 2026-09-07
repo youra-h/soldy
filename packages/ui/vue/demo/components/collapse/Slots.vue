@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { TCollapse } from '@soldy/core'
 import type { TCollapseCollection } from '@soldy/core'
-import { Collapse, CollapseItem } from '@soldy/ui-vue'
+import { Collapse } from '@soldy/ui-vue'
 import type { TComponentSize, TComponentVariant } from '@soldy/core'
 
 type Props = {
@@ -33,15 +33,15 @@ function onEngineCreate(engine: TCollapseCollection) {
 			<h4 class="collapse-slots-demo__subtitle">{{ view }}</h4>
 
 			<Collapse :view="view" :size="size" :variant="variant" mode="multiple">
-				<CollapseItem text="Section 1" value="s1" :selected="true">
+				<Collapse.Item text="Section 1" value="s1" :selected="true">
 					<p>Content for section 1 — {{ view }} view</p>
-				</CollapseItem>
-				<CollapseItem text="Section 2" value="s2">
+				</Collapse.Item>
+				<Collapse.Item text="Section 2" value="s2">
 					<p>Content for section 2</p>
-				</CollapseItem>
-				<CollapseItem text="Section 3" value="s3">
+				</Collapse.Item>
+				<Collapse.Item text="Section 3" value="s3">
 					<p>Content for section 3</p>
-				</CollapseItem>
+				</Collapse.Item>
 			</Collapse>
 		</div>
 
@@ -49,15 +49,15 @@ function onEngineCreate(engine: TCollapseCollection) {
 		<div class="collapse-slots-demo__section">
 			<h4 class="collapse-slots-demo__subtitle">mode: single</h4>
 			<Collapse view="outlined" :size="size" :variant="variant" mode="single">
-				<CollapseItem text="Single mode — only one open" value="s1" :selected="true">
+				<Collapse.Item text="Single mode — only one open" value="s1" :selected="true">
 					<p>Only one section can be open at a time</p>
-				</CollapseItem>
-				<CollapseItem text="Section 2" value="s2">
+				</Collapse.Item>
+				<Collapse.Item text="Section 2" value="s2">
 					<p>Opening this will close Section 1</p>
-				</CollapseItem>
-				<CollapseItem text="Section 3" value="s3">
+				</Collapse.Item>
+				<Collapse.Item text="Section 3" value="s3">
 					<p>Section 3 content</p>
-				</CollapseItem>
+				</Collapse.Item>
 			</Collapse>
 		</div>
 
@@ -67,12 +67,12 @@ function onEngineCreate(engine: TCollapseCollection) {
 			<div class="collapse-slots-demo__group">
 				<span class="collapse-slots-demo__label">start (default: end)</span>
 				<Collapse view="plain" :size="size" :variant="variant" mode="multiple">
-					<CollapseItem text="Arrow start" value="s1" arrow-placement="start">
+					<Collapse.Item text="Arrow start" value="s1" arrow-placement="start">
 						<p>Arrow is on the left</p>
-					</CollapseItem>
-					<CollapseItem text="Arrow end" value="s2" arrow-placement="end">
+					</Collapse.Item>
+					<Collapse.Item text="Arrow end" value="s2" arrow-placement="end">
 						<p>Arrow is on the right</p>
-					</CollapseItem>
+					</Collapse.Item>
 				</Collapse>
 			</div>
 		</div>
@@ -98,18 +98,18 @@ function onEngineCreate(engine: TCollapseCollection) {
 		<div class="collapse-slots-demo__section">
 			<h4 class="collapse-slots-demo__subtitle">Custom leading/trailing slots</h4>
 			<Collapse view="outlined" :size="size" :variant="variant" mode="multiple">
-				<CollapseItem text="With icon leading" value="s1">
+				<Collapse.Item text="With icon leading" value="s1">
 					<template #leading>
 						<span class="collapse-slots-demo__badge">⭐</span>
 					</template>
 					<p>Custom slot leading the text</p>
-				</CollapseItem>
-				<CollapseItem text="With icon trailing" value="s2">
+				</Collapse.Item>
+				<Collapse.Item text="With icon trailing" value="s2">
 					<template #trailing>
 						<span class="collapse-slots-demo__badge">3</span>
 					</template>
 					<p>Custom slot trailing the text</p>
-				</CollapseItem>
+				</Collapse.Item>
 			</Collapse>
 		</div>
 

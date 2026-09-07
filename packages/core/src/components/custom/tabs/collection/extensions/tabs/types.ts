@@ -5,15 +5,15 @@ import type {
 	IExtensionItems,
 } from '../../../../../base/collection'
 import type { TTabsExtension } from './tabs.extension'
-import type { ITabItemExtension } from './item'
-import type { ITabItem } from '../../../tab-item/types'
+import type { ITabsItemExtension } from './item'
+import type { ITabsItem } from '../../../item/types'
 
 /**
  * Контракт расширения табов.
- * Используется как тип TParent в TTabItemExtension для типизированного доступа к _parent.
+ * Используется как тип TParent в TTabsItemExtension для типизированного доступа к _parent.
  */
-export interface ITabsExtension<TItem extends ITabItem = ITabItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, ITabItemExtension<TItem>> {
+export interface ITabsExtension<TItem extends ITabsItem = ITabsItem>
+	extends IExtension<TItem>, IExtensionItems<TItem, ITabsItemExtension<TItem>> {
 	/** Глобальный closable с инстанса TTabs. */
 	readonly closable: boolean
 
@@ -29,8 +29,8 @@ export interface ITabsExtension<TItem extends ITabItem = ITabItem>
  */
 export interface ITabsExtensionOptions<
 	TOwner extends ITabs = ITabs,
-	TItem extends ITabItem = ITabItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, ITabItemExtension<TItem>> {
+	TItem extends ITabsItem = ITabsItem,
+> extends IBaseOwnerItemExtensionOptions<TItem, ITabsItemExtension<TItem>> {
 	/** Ссылка на инстанс компонента TTabs. */
 	owner: TOwner
 }
@@ -39,11 +39,11 @@ export interface ITabsExtensionOptions<
  * События расширения TTabsExtension.
  */
 export type TTabsExtensionEvents = {
-	'item:close': (item: ITabItem) => void
+	'item:close': (item: ITabsItem) => void
 	'change:closable': (value: boolean) => void
 }
 
-export type TTabsExtensions<TItem extends ITabItem> = {
+export type TTabsExtensions<TItem extends ITabsItem> = {
 	tabs: TTabsExtension<any, TItem>
 	[key: string]: IExtension<TItem>
 }

@@ -1,6 +1,6 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type { IExtension } from '../../../../../base/collection'
-import type { ITabItem } from '../../../tab-item/types'
+import type { ITabsItem } from '../../../item/types'
 import { TTabsContentItemExtension, type ITabsContentItemExtension } from './item'
 import type {
 	ITabsContentExtension,
@@ -20,7 +20,7 @@ import type {
  * берёт его контекст — дальше `adapters.content.panelAria` отдаёт атрибуты.
  * Сам таб через `adapters.content.tabAria` получает встречную половину.
  */
-export class TTabsContentExtension<TItem extends ITabItem = ITabItem>
+export class TTabsContentExtension<TItem extends ITabsItem = ITabsItem>
 	extends TBaseOwnerItemExtension<
 		TItem,
 		ITabsContentItemExtension<TItem>,

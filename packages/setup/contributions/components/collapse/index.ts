@@ -1,3 +1,3 @@
 export { CollapseContribution } from './collapse'
-export { CollapseItemContribution } from './collapse-item'
+export { CollapseItemContribution } from './item'
 export * from './collection.contribution'

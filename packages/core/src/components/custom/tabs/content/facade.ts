@@ -2,7 +2,7 @@ import { TCollectionItemComponent } from '../../../base/collection'
 import type { TItemContext } from '../../../base/collection'
 import type { TAriaAttributes } from '../../../../common'
 import type { TTabsCollectionExtensions } from '../collection/types'
-import type { ITabItem } from '../tab-item/types'
+import type { ITabsItem } from '../item/types'
 
 /**
  * Фасад панели таба.
@@ -12,14 +12,14 @@ import type { ITabItem } from '../tab-item/types'
  * свойства членства в коллекции, а не самой панели.
  *
  * Ничего не вычисляет сам: активность берёт у адаптера `activation`, атрибуты
- * — у адаптера `content`. Ровно как `TTabItemCollectionFacade` берёт `closable`
+ * — у адаптера `content`. Ровно как `TTabsItemCollectionFacade` берёт `closable`
  * у адаптера `tabs`.
  */
 export class TTabsContentCollectionFacade extends TCollectionItemComponent<
-	ITabItem,
+	ITabsItem,
 	TTabsCollectionExtensions
 > {
-	override setContext(context: TItemContext<ITabItem, TTabsCollectionExtensions>): void {
+	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
@@ -33,7 +33,7 @@ export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	}
 
 	/** Связанный таб. */
-	get item(): ITabItem | undefined {
+	get item(): ITabsItem | undefined {
 		return this._context?.owner
 	}
 

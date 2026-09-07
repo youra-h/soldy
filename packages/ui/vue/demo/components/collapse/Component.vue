@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Collapse, CollapseItem, emitsCollapse } from '@soldy/ui-vue'
+import { Collapse, emitsCollapse } from '@soldy/ui-vue'
 import PanelDemo from '../../common/PanelDemo.vue'
 import { useEventLogger } from '../../common/useEventLogger'
 import type { EventLogEntry } from '../../common/EventLog.vue'
@@ -51,7 +51,7 @@ const applyAll = computed(() => props.itemApplyTarget === 'all')
 			:mode="mode"
 			v-bind="handlers"
 		>
-			<CollapseItem
+			<Collapse.Item
 				text="Section 1"
 				value="sec1"
 				:disabled="itemDisabled"
@@ -60,8 +60,8 @@ const applyAll = computed(() => props.itemApplyTarget === 'all')
 			>
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
 				incididunt ut labore et dolore magna aliqua.
-			</CollapseItem>
-			<CollapseItem
+			</Collapse.Item>
+			<Collapse.Item
 				text="Section 2"
 				value="sec2"
 				:disabled="applyAll ? itemDisabled : false"
@@ -69,8 +69,8 @@ const applyAll = computed(() => props.itemApplyTarget === 'all')
 			>
 				lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
 				incididunt ut labore et dolore magna aliqua.
-			</CollapseItem>
-			<CollapseItem
+			</Collapse.Item>
+			<Collapse.Item
 				text="Section 3"
 				value="sec3"
 				:disabled="applyAll ? itemDisabled : false"
@@ -80,7 +80,7 @@ const applyAll = computed(() => props.itemApplyTarget === 'all')
 				incididunt ut labore et dolore magna aliqua.
 				lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
 				incididunt ut labore et dolore magna aliqua.
-			</CollapseItem>
+			</Collapse.Item>
 		</Collapse>
 	</PanelDemo>
 </template>

@@ -10,8 +10,8 @@ import {
 	TUniqueExtension,
 	TMetaExtension,
 } from './../../../base'
-import TListBoxItem from './../list-box-item/list-box-item.class'
-import type { IListBoxItem } from './../list-box-item/types'
+import TListBoxItem from './../item/item.class'
+import type { IListBoxItem } from './../item/types'
 import type { IListBox } from './../types'
 
 export const ListBoxFactory = (instance: IListBox): TListBoxCollection =>

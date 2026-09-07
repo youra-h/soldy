@@ -1,9 +1,9 @@
 <script lang="ts">
 import { Icon } from '../../icon'
 import { Button } from '../../button'
-import SetupTabItem from './setup.component'
+import SetupTabsItem from './setup.component'
 
-export default { ...SetupTabItem, components: { Icon, Button } }
+export default { ...SetupTabsItem, components: { Icon, Button } }
 </script>
 
 <template>
@@ -45,7 +45,7 @@ export default { ...SetupTabItem, components: { Icon, Button } }
 				<slot name="trailing" />
 				<Button
 					:rendered="!!tab_closable"
-					class="s-tab-item__close"
+					class="s-tabs-item__close"
 					@click.stop="context?.adapters?.tabs?.close()"
 					view="plain"
 				>

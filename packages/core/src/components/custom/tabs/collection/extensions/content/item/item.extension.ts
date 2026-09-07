@@ -1,6 +1,6 @@
 import { TBaseItemExtension } from '../../../../../../base/collection'
 import type { TAriaAttributes } from '../../../../../../../common'
-import type { ITabItem } from '../../../../tab-item/types'
+import type { ITabsItem } from '../../../../item/types'
 import type { ITabsContentExtension } from '../types'
 import type { ITabsContentItemExtension, TTabsContentItemEventsExtension } from './types'
 
@@ -16,7 +16,7 @@ import type { ITabsContentItemExtension, TTabsContentItemEventsExtension } from 
  * Панель своего идентификатора не изобретает — берёт его у связанного таба.
  */
 export class TTabsContentItemExtension<
-		TItem extends ITabItem = ITabItem,
+		TItem extends ITabsItem = ITabsItem,
 		TParent extends ITabsContentExtension<TItem> = ITabsContentExtension<TItem>,
 	>
 	extends TBaseItemExtension<TItem, TParent, TTabsContentItemEventsExtension>

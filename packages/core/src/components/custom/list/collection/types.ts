@@ -21,8 +21,8 @@ import type {
 import { TListExtension } from './extensions'
 import type { IListItemExtension } from './extensions/item/types'
 import type { IList } from '../types'
-import type { IListItem } from '../list-item/types'
-import type { IListItemProps } from '../list-item/types'
+import type { IListItem } from '../item/types'
+import type { IListItemProps } from '../item/types'
 
 /**
  * Базовый набор расширений коллекции List (общий для List и ListBox).
