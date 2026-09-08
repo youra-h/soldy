@@ -5,6 +5,9 @@
 	$this: &;
 	@apply inline-flex items-center;
 	@apply relative;
+	// Минимум против схлопывания: `inline-flex` сжимается по содержимому, и в
+	// узком контейнере поле уходило в полосу. У `.s-list-box` то же самое.
+	@apply min-w-40;
 
 	@apply rounded-md border;
 	@apply bg-s-component-surface;
