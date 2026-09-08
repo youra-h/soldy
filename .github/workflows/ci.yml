@@ -34,9 +34,19 @@ jobs:
           npm run test:svelte
           npm run test:solid
           npm run test:webc
+          npm run test:theme
+          npm run test:playground
 
       - name: Типы — Vue
         run: npm run build:types --workspace=@soldy/ui-vue
+
+      # Стенд — единственное место, где компоненты рисуются всеми пропами разом
+      # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
+      # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.
+      - name: Типы — Playground
+        run: |
+          npx tsc --noEmit -p packages/playground/shared/tsconfig.json
+          npx vue-tsc --noEmit -p packages/playground/vue/tsconfig.json
 
       - name: Типы — React
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
@@ -58,8 +68,16 @@ jobs:
           npm run generate --workspace=@soldy/ui-angular
           git diff --exit-code packages/ui/angular/src/generated
 
-      - name: Сборка Angular
-        run: npm run build --workspace=@soldy/ui-angular
+      # Сборки Angular здесь нет намеренно: `ng build` собирал демо-приложение
+      # (`angular.json` → `_demo/index.html`), а `_demo` лежал в .gitignore и в
+      # CI не попадал никогда — шаг не мог работать. Демо удалены, им на смену
+      # пришёл packages/playground; когда Angular дорастёт до своего стенда,
+      # сборка вернётся сюда уже настоящей.
+
+      - name: Сборка стенда Vue
+        run: |
+          npm run build --workspace=@soldy/theme-oren
+          npm run build --workspace=@soldy/playground-vue
 
   lint:
     name: Линт (пока не блокирует)

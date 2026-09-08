@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/ui-webc",
+  "name": "@soldy/playground-shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,14 +8,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@soldy/accessor": "*",
     "@soldy/core": "*",
-    "@soldy/icons-material": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*",
-    "@soldy/theme-oren": "*"
+    "@soldy/setup": "*"
   }
 }

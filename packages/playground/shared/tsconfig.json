@@ -1,15 +1,14 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
+    "types": ["node"],
+    "noEmit": true,
     "paths": {
       "@soldy/accessor": ["../../accessor"],
       "@soldy/core": ["../../core/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
       "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/setup": ["../../setup"]
+      "@soldy/setup": ["../../setup/index.ts"]
     }
   },
-  "include": ["env.d.ts", "src/**/*"]
+  "include": ["src/**/*", "__tests__/**/*"]
 }

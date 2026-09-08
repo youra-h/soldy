@@ -8,11 +8,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:lib": "vite build -c vite.lib.config.ts",
+    "build": "vite build -c vite.lib.config.ts",
     "build:types": "vue-tsc -p tsconfig.lib.json",
-    "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {

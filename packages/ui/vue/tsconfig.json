@@ -10,5 +10,5 @@
       "@soldy/plugins": ["../../plugins/src"]
     }
   },
-  "include": ["src/**/*", "_demo/**/*", "env.d.ts"]
+  "include": ["src/**/*", "__tests__/**/*", "env.d.ts"]
 }

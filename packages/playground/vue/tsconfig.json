@@ -1,0 +1,21 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "noEmit": true,
+    // Загрузчик конфигов Vite требует расширение в импорте плагина
+    // (`./src/vite-open-in-editor.ts`), TypeScript без этого флага его
+    // запрещает. Безопасно: пакет ничего не эмитит.
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@soldy/accessor": ["../../accessor"],
+      "@soldy/core": ["../../core/src"],
+      "@soldy/icons-material": ["../../icons/material/src"],
+      "@soldy/plugins": ["../../plugins/src"],
+      "@soldy/setup": ["../../setup/index.ts"],
+      "@soldy/ui-vue": ["../../ui/vue/src/index.ts"],
+      "@soldy/playground-shared": ["../shared/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "__tests__/**/*", "env.d.ts", "vite.config.ts", "vitest.config.ts"]
+}

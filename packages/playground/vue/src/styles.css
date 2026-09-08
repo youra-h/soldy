@@ -1,0 +1,308 @@
+/**
+ * Оформление стенда.
+ *
+ * Цвета берутся из токенов темы (`--s-*`), а не пишутся значениями. Следствие
+ * важнее экономии: переключил тёмную схему — перекрасился и сам стенд, без
+ * единой строчки про dark. Заодно это проверка, что токенов хватает на обычный
+ * интерфейс, а не только на кнопки.
+ *
+ * Tailwind здесь не поднимается намеренно: он настроен внутри пакета темы и
+ * разметку приложений не сканирует, а второй конвейер дал бы два preflight.
+ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--s-component-text);
+	background: var(--s-neutral-50);
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* ─── Каркас ─────────────────────────────────────────────── */
+
+.pg {
+	display: grid;
+	grid-template-rows: auto 1fr;
+	grid-template-columns: 260px 1fr;
+	grid-template-areas:
+		'header header'
+		'sidebar main';
+	height: 100vh;
+}
+
+.pg__header {
+	grid-area: header;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 10px 20px;
+	border-bottom: 1px solid var(--s-neutral-200);
+	background: var(--s-component-surface);
+}
+
+.pg__brand {
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	margin-right: auto;
+}
+
+.pg__brand span {
+	color: var(--s-neutral-500);
+	font-weight: 400;
+}
+
+.pg__control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	white-space: nowrap;
+}
+
+.pg__control-label {
+	color: var(--s-neutral-500);
+	font-size: 12px;
+}
+
+.pg__sidebar {
+	grid-area: sidebar;
+	overflow-y: auto;
+	padding: 12px;
+	border-right: 1px solid var(--s-neutral-200);
+	background: var(--s-neutral-50);
+}
+
+.pg__sidebar-title {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--s-neutral-500);
+	margin: 12px 8px 6px;
+}
+
+.pg__main {
+	grid-area: main;
+	overflow-y: auto;
+	padding: 24px 28px 64px;
+}
+
+/* ─── Заголовок страницы ─────────────────────────────────── */
+
+.pg__page-title {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 600;
+}
+
+.pg__page-lead {
+	margin: 4px 0 24px;
+	color: var(--s-neutral-500);
+}
+
+/* ─── Витрина ────────────────────────────────────────────── */
+
+.pg-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 16px;
+}
+
+.pg-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	border: 1px solid var(--s-neutral-200);
+	border-radius: 8px;
+	background: var(--s-component-surface);
+	transition:
+		border-color 150ms,
+		transform 150ms;
+}
+
+.pg-cell:hover {
+	border-color: var(--s-accent-400);
+	transform: translateY(-1px);
+}
+
+.pg-cell--wide {
+	grid-column: span 2;
+}
+
+.pg-cell__title {
+	font-weight: 600;
+}
+
+.pg-cell__note {
+	color: var(--s-neutral-500);
+	font-size: 12px;
+	min-height: 2.5em;
+}
+
+.pg-cell__stage {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	min-height: 84px;
+	padding: 12px;
+	border-radius: 6px;
+	background: var(--s-neutral-100);
+}
+
+/* ─── Строка свойства ────────────────────────────────────── */
+
+.pg-prop {
+	padding: 18px 0;
+	border-top: 1px solid var(--s-neutral-200);
+}
+
+.pg-prop__head {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.pg-prop__name {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-weight: 600;
+}
+
+.pg-prop__type {
+	font-size: 11px;
+	color: var(--s-neutral-500);
+	padding: 1px 6px;
+	border: 1px solid var(--s-neutral-300);
+	border-radius: 999px;
+}
+
+.pg-prop__control {
+	margin-left: auto;
+	min-width: 220px;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.pg-prop__note {
+	margin: 4px 0 14px;
+	font-size: 12px;
+	color: var(--s-neutral-500);
+}
+
+.pg-prop__columns {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+
+.pg-col {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--s-neutral-200);
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.pg-col__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--s-neutral-500);
+	background: var(--s-neutral-100);
+	border-bottom: 1px solid var(--s-neutral-200);
+}
+
+.pg-col__actions {
+	margin-left: auto;
+	display: flex;
+	gap: 4px;
+}
+
+.pg-col__stage {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 18px 12px;
+	min-height: 78px;
+	background: var(--s-component-surface);
+}
+
+.pg-col__foot {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-top: 1px solid var(--s-neutral-200);
+	background: var(--s-neutral-100);
+}
+
+.pg-col__status {
+	font-size: 12px;
+	color: var(--s-neutral-500);
+}
+
+/* ─── Код ────────────────────────────────────────────────── */
+
+.pg-code {
+	margin: 0;
+	padding: 12px;
+	overflow-x: auto;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--s-component-text);
+	background: var(--s-neutral-100);
+	border-top: 1px solid var(--s-neutral-200);
+}
+
+/* ─── Мелочи ─────────────────────────────────────────────── */
+
+.pg-readonly {
+	display: grid;
+	grid-template-columns: 160px 1fr;
+	gap: 4px 12px;
+	padding: 14px;
+	margin-top: 8px;
+	border: 1px dashed var(--s-neutral-300);
+	border-radius: 8px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 12px;
+}
+
+.pg-readonly__key {
+	color: var(--s-neutral-500);
+}
+
+.pg-readonly__value {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pg-empty {
+	padding: 40px;
+	text-align: center;
+	color: var(--s-neutral-500);
+}
