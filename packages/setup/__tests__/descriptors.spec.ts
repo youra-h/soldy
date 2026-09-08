@@ -15,11 +15,19 @@ import {
 	TTabsItemCollectionFacade,
 	TCollapseCollectionFacade,
 	TCollapseItemCollectionFacade,
+	TSelect,
+	TSelectItem,
+	TSelectCollectionFacade,
+	TSelectItemCollectionFacade,
 } from '@soldy/core'
 import {
 	TElementPlugin,
 	TReadyPlugin,
 	TDragPlugin,
+	TDismissPlugin,
+	TCollectionBundlesPlugin,
+	TListKeyboardPlugin,
+	TListItemPlugin,
 } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
@@ -37,6 +45,10 @@ import {
 	CollapseDescriptor,
 	CollapseCollectionDescriptor,
 	CollapseCollectionItemDescriptor,
+	SelectDescriptor,
+	SelectItemDescriptor,
+	SelectCollectionDescriptor,
+	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
 
 const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
@@ -259,5 +271,97 @@ describe('дескрипторы коллекций (фасады)', () => {
 		expect(names).toContain('selected')
 		expect(names).toContain('order')
 		expect(names).toContain('view')
+	})
+})
+
+describe('Select', () => {
+	it('SelectDescriptor наследует InputControl и добавляет состояние панели', () => {
+		const d = SelectDescriptor()
+
+		expect(d.ctor).toBe(TSelect)
+
+		const names = propNames(d)
+
+		// От InputControl вниз по цепочке
+		expect(names).toContain('value')
+		expect(names).toContain('name')
+		expect(names).toContain('readonly')
+		expect(names).toContain('required')
+		expect(names).toContain('disabled')
+
+		// Своё
+		expect(names).toContain('open')
+		expect(names).toContain('placeholder')
+		expect(names).toContain('closeOnSelect')
+		expect(names).toContain('clearable')
+	})
+
+	it('multiple отдельным пропом не заводится — это mode коллекции', () => {
+		// Два имени для одного состояния однажды разошлись бы
+		expect(propNames(SelectDescriptor())).not.toContain('multiple')
+		expect(propNames(SelectCollectionDescriptor())).toContain('mode')
+	})
+
+	it('подключает слой оверлея и реестры коллекции', () => {
+		const ctors = SelectDescriptor().plugins.map((p) => p.ctor)
+
+		expect(ctors).toContain(TDismissPlugin)
+		expect(ctors).toContain(TCollectionBundlesPlugin)
+	})
+
+	it('клавиатуру списка не подключает — у combobox своя модель фокуса', () => {
+		// Фокус не уходит с поля, поэтому keydown ловит поле, а не список
+		expect(SelectDescriptor().plugins.map((p) => p.ctor)).not.toContain(TListKeyboardPlugin)
+	})
+
+	it('SelectItemDescriptor даёт подсветку через плагин элемента списка', () => {
+		const d = SelectItemDescriptor()
+
+		expect(d.ctor).toBe(TSelectItem)
+		expect(d.plugins.map((p) => p.ctor)).toContain(TListItemPlugin)
+		expect(propNames(d)).toContain('text')
+	})
+
+	it('SelectCollectionDescriptor отдаёт текст выбранного и ARIA списка', () => {
+		const d = SelectCollectionDescriptor()
+
+		expect(d.ctor).toBe(TSelectCollectionFacade)
+
+		const names = propNames(d)
+
+		expect(names).toContain('items')
+		expect(names).toContain('valueText')
+		expect(names).toContain('list_aria')
+	})
+
+	it('SelectCollectionItemDescriptor объявляет только членство в коллекции', () => {
+		const d = SelectCollectionItemDescriptor()
+
+		expect(d.ctor).toBe(TSelectItemCollectionFacade)
+
+		const names = propNames(d)
+
+		expect(names).toContain('selected')
+		expect(names).toContain('order')
+		// Собственные пропсы опции приходят из SelectItemDescriptor
+		expect(names).not.toContain('text')
+	})
+
+	it('accessor собирается — значит одноимённых пропсов нет', () => {
+		// TAccessor бросает на дубль имени; собрать его — единственный способ
+		// поймать столкновение между компонентом, коллекцией и плагинами
+		const owner = new TSelect()
+		const descriptor = SelectDescriptor()
+
+		expect(() =>
+			descriptor.createAccessor(owner, descriptor.createBundle(owner)),
+		).not.toThrow()
+
+		const item = new TSelectItem()
+		const itemDescriptor = SelectItemDescriptor()
+
+		expect(() =>
+			itemDescriptor.createAccessor(item, itemDescriptor.createBundle(item)),
+		).not.toThrow()
 	})
 })

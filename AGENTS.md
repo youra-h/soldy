@@ -47,6 +47,35 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 
 **Rule:** `core`, `accessor`, `setup`, and `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, or `PropType`. Framework-specific code belongs only in `packages/ui/*`.
 
+### В адаптере не должно быть логики (критично)
+
+Обратное правило к предыдущему, и нарушают его чаще. `packages/ui/*` — это
+**проводка**: два адаптерных контекста, ссылка на DOM-узел, раскладка набора
+атрибутов в разметке. Всё остальное — поведение, и ему место ниже.
+
+Признак нарушения простой: если написанное придётся повторить в пяти других
+адаптерах — оно написано не там. Поменяешь в одном, забудешь в остальных.
+
+Так делать нельзя:
+
+```ts
+// packages/ui/vue/.../setup.component.ts
+watch(() => instance.open, (open) => { dismiss.enabled = open })
+dismiss.events.on('dismiss', () => { instance.open = false })
+```
+
+Связка «открыто ⇄ слушаем нажатия мимо» одинакова для Select, Menu и Popover
+во всех шести адаптерах — значит живёт в `TDismissPlugin`, который сам следит
+за свойством владельца.
+
+Куда класть поведение: **плагин** (работа с DOM и жизненный цикл),
+**расширение коллекции** (то, что требует владельца и списка сразу),
+**расширение адаптера** (`setup/adapter/extensions/` — проводка, общая для
+всех фреймворков), **событие или триггер** (если нужно просто сообщить).
+
+Допустимо в адаптере: `ref` на DOM-узел, `provide`/`inject` элеватора,
+`v-bind` набора, регистрация дочерних компонентов.
+
 ## Naming conventions
 
 - `T` prefix → type alias (e.g. `TCollectionEngine<TItem, TExtensions>`).
@@ -67,19 +96,32 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 
 ### Часть или слот
 
-**Часть становится отдельным компонентом, только если у неё есть собственная
-идентичность — сущность в ядре, собственное состояние или `id` для ARIA-связки.
-Если у неё только позиция — это слот.**
+**Часть становится отдельным компонентом, только если её адресует потребитель
+— размещает в разметке или задаёт ей пропсы. Если у неё только позиция, это
+слот или просто разметка внутри шаблона.**
+
+Раньше критерий был сформулирован как «есть сущность в ядре, собственное
+состояние **или `id` для ARIA-связки**». Формулировка не выдержала практики:
+`id` есть и у панели Collapse, и у списка Select, но компонентами мы их не
+сделали — и правильно. `id` — условие необходимое, не достаточное.
+
+| Часть | `id` есть | Адресует потребитель | Решение |
+|---|---|---|---|
+| `Tabs.Content` | да | да — `<Tabs.Content value="a">` | компонент |
+| панель Collapse | да | нет — только содержимое в слот | слот + проп `content_aria` |
+| список Select | да | нет — он всегда один и внутри | разметка + проп `list_aria` |
+| список табов | нет | нет | слот |
+
+Следствие для ARIA: у части-компонента есть экземпляр, значит есть и набор
+`aria`, в который пишут ядро, плагины и расширения. У разметки экземпляра нет,
+поэтому её атрибуты отдаются пропом (`content_aria`, `list_aria`). Это не
+исключение из правила «пишем в набор», а его граница.
 
 Критерий выведен из модели soldy, а не заимствован. Ark-таксономия
 (`Root`/`Trigger`/`Indicator`/`Label`/`Positioner`) кодирует чужую модель: там
 нет слотов и табы не коллекция. В soldy `TTabs` — `TCollectionComponent`,
 `TTabsItem` — `TCollectionItemComponent`, поэтому часть называется `Item`, а не
 `Trigger`; иначе публичное API разъедется с ядром.
-
-Прогон: `TabsItem` — часть (элемент коллекции), `TabsContent` — часть (нужен
-`id` для `aria-controls`), список табов — слот (только позиция), у `Button` и
-`CheckBox` частей нет вовсе.
 
 ### Составные компоненты: точка — основная форма
 
@@ -258,6 +300,78 @@ Collapse `aria-expanded`. Атрибут знает паттерн, а не ме
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`.
 
 - **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`), calls `useAdapter` on each and merges `{ ...refs, ...refsCollection }`. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+
+## Граница переиспользования между похожими компонентами (критично)
+
+ListBox, список Select, будущие Menu и Popover выглядят одинаково. Соблазн
+собрать один из другого — `Select = Input + Frame + ListBox` — очень силён, и
+он неверен.
+
+**Списки одинаковы на вид и различны по семантике:**
+
+| | ListBox | список Select | Menu |
+|---|---|---|---|
+| роль контейнера | `listbox` | `listbox` | `menu` |
+| роль элемента | `option` | `option` | `menuitem` |
+| где DOM-фокус | на контейнере | **на поле, не в списке** | на элементе |
+| навигация | roving tabindex | `aria-activedescendant` | roving tabindex |
+| элемент | выбирается | выбирается | выполняет действие |
+| `aria-selected` | есть | есть | нет |
+
+Проверка на конкретном коде: `ListBox.vue` держит `tabindex="0"` на корне, а
+`TListKeyboardPlugin` слушает `keydown` там же — ListBox спроектирован как
+самостоятельный фокусируемый виджет. В combobox фокус не имеет права уходить с
+поля. Вложить готовый ListBox внутрь Select значит снимать ему `tabindex`,
+глушить его клавиатурный плагин и перенаправлять подсветку наружу. Это не
+переиспользование, а борьба, и она добавляет ListBox режимы ради чужого
+компонента — после чего его тесты начинают охранять два поведения сразу.
+
+**Делим по слоям, а не по компонентам:**
+
+| Слой | Общий? | Где |
+|---|---|---|
+| оверлей: якорь, позиционирование, z-index, закрытие | **общий** | `TFrame` + `TAnchorPlugin` + `TDismissPlugin` |
+| поведение списка: подсветка, скролл к элементу, высота | **общий** | `TListItemPlugin`, `TListScrollPlugin`, `TListLayoutPlugin` |
+| визуальная строка элемента | **общий** | `Button` внутри элемента + SCSS |
+| движок коллекции, `selection`, `order`, `meta` | **общий** | `base/collection` |
+| контейнер списка и его ARIA | **свой** | у каждого компонента |
+| модель фокуса и клавиатура | **своя** | у каждого компонента |
+
+**Критерий: общее — то, что не зависит от роли и модели фокуса.**
+
+Дублирования разметки при этом почти нет, и оно уже решено: `ListBoxItem`,
+`TabsItem`, `CollapseItem` и `SelectItem` рисуют строку одним и тем же
+`Button`. Общая визуальная единица вынесена, различается только контейнер — то,
+что и обязано различаться.
+
+Отдельного `DropDown` не заводим: когда у Frame есть якорь, дропдаун — это
+оверлей плюс произвольное содержимое, а не компонент со своим списком.
+
+## Слой оверлея
+
+Всё, что открывается поверх страницы, собирается из трёх кусков:
+
+- **`TFrame`** — телепорт, `rendered`/`visible`, стек z-index.
+- **`TAnchorPlugin`** (namespace `anchor`) — привязка к чужому элементу:
+  `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`. Считает координаты
+  и пишет их во Frame (`x`/`y`/`width`); раскладывает их `TFrameLayoutPlugin`.
+  Разделение не формальное: раскладка отвечает за собственные пропсы Frame,
+  привязка — за слежение за посторонним элементом.
+- **`TDismissPlugin`** (namespace `dismiss`) — «нажали мимо». Сам следит за
+  открытостью владельца (`property`, по умолчанию `open`) и закрывает его.
+
+Две вещи, которые легко забыть:
+
+**Открытость — это `visible`, а не `rendered`.** Опции регистрируются в
+коллекции при монтировании и выбывают при размонтировании. Спрячь панель через
+`v-if` — и закрытие вычистит коллекцию, а вместе с ней выбор и значение поля.
+`v-show` ставит `display: none`, чего достаточно и чтобы убрать панель из
+дерева доступности.
+
+**Панель помечается владельцем.** Она телепортирована, то есть лежит вне
+поддерева владельца, и простой `contains()` счёл бы нажатие внутри неё
+нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<uid>"` —
+чистый DOM, одинаково во всех шести адаптерах.
 
 ## Что общее, а что специфично для фреймворка
 
@@ -498,10 +612,37 @@ this._syncDisabledAria()   // начальное состояние — рука
 | ядро компонента | что он такое по своей природе | `role="tab"`, `role="status"`, `aria-disabled` |
 | `TAriaPlugin` | как его зовут | `aria-label`, `aria-labelledby`, `aria-describedby` |
 | расширение коллекции | что о нём знает коллекция | `aria-selected`, связка `id` / `aria-controls` |
+| плагин поведения | то, что меняется от взаимодействия | `aria-activedescendant` из `TSelectKeyboardPlugin` |
 | проводка (adapter) | то, что известно только при связывании | сторона панели у `Tabs.Content` |
 
 Правило: **пишет тот, кто знает факт**. Ссылка на панель не может стоять в
 `TTabsItem` — о существовании панели знает коллекция, не элемент.
+
+**Граница набора:** писать можно только туда, где есть экземпляр. У разметки
+без компонента набора нет, и её атрибуты отдаются пропом — `content_aria` у
+панели Collapse, `list_aria` у списка Select. Это не лазейка: см. «Часть или
+слот».
+
+### Готовые паттерны
+
+Если для виджета есть паттерн WAI-ARIA APG — следуем ему, расхождения
+объясняем в комментарии.
+
+- **Tabs** — Tabs pattern: `tablist`/`tab`/`tabpanel`, связка
+  `aria-controls` ↔ `aria-labelledby`, `aria-selected` на всех табах набора.
+- **Collapse** — Accordion: `aria-expanded` на заголовке, `role="region"` у
+  панели.
+- **Select** — Combobox, вариант select-only: `role="combobox"` на поле,
+  `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` на список и
+  `aria-activedescendant` на подсвеченную опцию. **DOM-фокус никогда не
+  уходит с поля** — отсюда и `keydown` на поле, а не на списке, и подсветка
+  через `aria-activedescendant`, а не через настоящий фокус.
+
+`aria-selected="false"` ставится и на невыбранных элементах: скринридер
+объявляет «2 из 7, не выбрана», и без атрибута этого не скажет.
+
+Disabled-элементы пропускаются при навигации с клавиатуры: подсветить то, что
+нельзя выбрать, значит завести пользователя в тупик.
 
 ### Доступное имя — плагин, а не свойство базы
 
@@ -591,6 +732,18 @@ ARIA — контракт со скринридером, `data-*` — контр
 - `vue-tsc` requires exported, named types for portability. Use `ReadonlyArray<T>` instead of intersection types like `ReadonlyArray<T> & ICollectionStorageDriver<T>` when a type may leak into inferred types.
 - `packages/setup/descriptors/base/compile-contribution.ts` exports `normalizeContribution` (not `compileContribution`) — check imports in specs that reference it.
 - Tailwind `@apply` directives in `.vue` `<style>` blocks may produce CSS-parser warnings — pre-existing, not a code error.
+- Корень шаблона `Frame` — `<teleport>`, и Vue считает корневым узлом именно
+  его. Автоматический перенос атрибутов уходит в телепорт и до элемента не
+  доезжает: ни `class`, ни `data-*`, ни события. Поэтому у Frame
+  `inheritAttrs: false` и ручной `v-bind="$attrs"` на настоящем узле. Та же
+  ловушка ждёт любой компонент, обёрнутый в `<teleport>`.
+- Проп без `triggers` адаптер считает pass-through и наружу не отдаёт
+  (`useSyncProps.bindOutput` пропускает такие). Даже у постоянного значения
+  должен быть хотя бы один триггер — для плагинов подходит `create`.
+- `TElementPlugin` эмитит `ready` через `requestAnimationFrame`. В тестах
+  ждите кадр, а не `nextTick`.
+- В `packages/setup` нет своего vitest-конфига, окружение по умолчанию —
+  `node`. Тестам с DOM нужна первая строка `// @vitest-environment jsdom`.
 
 ## Docs
 

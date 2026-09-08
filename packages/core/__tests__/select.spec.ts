@@ -1,0 +1,367 @@
+/**
+ * Select — поле выбора из списка.
+ *
+ * Наследует `TInputControl`, поэтому `value`/`name`/`readonly`/`required`
+ * приходят готовыми. Своё — состояние панели. Коллекция живёт в параллельном
+ * фасаде, как у Tabs: наследование от контрола ей не мешает.
+ *
+ * Главное здесь — что `value` и выбор в коллекции это одно и то же, а не два
+ * состояния, которые надо не забыть согласовать.
+ */
+
+import { describe, it, expect, vi } from 'vitest'
+import {
+	TSelect,
+	TSelectItem,
+	TSelectCollectionFacade,
+	TSelectItemCollectionFacade,
+	TItemContextRegistry,
+} from '@soldy/core'
+import type { ISelectItem } from '@soldy/core'
+
+function createSelect(values: string[], props: Record<string, unknown> = {}) {
+	const owner = new TSelect(props as any)
+	const collection = new TSelectCollectionFacade({}, { owner })
+	const items = values.map((value) => new TSelectItem({ value, text: value.toUpperCase() }))
+
+	collection.items = items as ISelectItem[]
+
+	const registry = new TItemContextRegistry(collection.engine.getCore())
+
+	/** Фасад опции — через него разметка выбирает элемент. */
+	const facadeFor = (index: number) => {
+		const facade = new TSelectItemCollectionFacade()
+
+		facade.setContext(registry.get(items[index]) as any)
+
+		return facade
+	}
+
+	return { owner, collection, items, facadeFor, select: collection.engine.extensions.select }
+}
+
+describe('TSelect — собственные props', () => {
+	it('о коллекции ничего не знает', () => {
+		const select = new TSelect()
+
+		// Ни опций, ни выбора: это ответственность фасада
+		expect('items' in select).toBe(false)
+		expect('selected' in select).toBe(false)
+	})
+
+	it('объявляет себя как combobox', () => {
+		const select = new TSelect()
+
+		expect(select.aria.get('role')).toBe('combobox')
+		expect(select.aria.get('aria-haspopup')).toBe('listbox')
+		expect(select.aria.get('aria-expanded')).toBe('false')
+	})
+
+	it('aria-expanded следует за панелью', () => {
+		const select = new TSelect()
+
+		select.open = true
+
+		expect(select.aria.get('aria-expanded')).toBe('true')
+	})
+
+	it('open эмитит change:open и парное событие', () => {
+		const select = new TSelect()
+		const seen: string[] = []
+
+		select.events.on('open', () => seen.push('open'))
+		select.events.on('close', () => seen.push('close'))
+		select.events.on('change:open', (value) => seen.push(`change:${value}`))
+
+		select.toggleOpen()
+		select.toggleOpen()
+
+		expect(seen).toEqual(['change:true', 'open', 'change:false', 'close'])
+	})
+
+	it('повтор того же значения событий не даёт', () => {
+		const select = new TSelect({ open: true })
+		const handler = vi.fn()
+
+		select.events.on('change:open', handler)
+		select.open = true
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+})
+
+describe('когда панель открывать нельзя', () => {
+	it('disabled не даёт открыть', () => {
+		const select = new TSelect({ disabled: true })
+
+		select.open = true
+
+		expect(select.open).toBe(false)
+	})
+
+	it('readonly не даёт открыть: выбор из списка — единственный способ сменить значение', () => {
+		const select = new TSelect({ readonly: true })
+
+		select.open = true
+
+		expect(select.open).toBe(false)
+	})
+
+	it('запрет закрывает уже открытую панель', () => {
+		// Иначе open, выставленный до disabled, остался бы висеть
+		const select = new TSelect({ open: true })
+
+		expect(select.open).toBe(true)
+
+		select.disabled = true
+
+		expect(select.open).toBe(false)
+	})
+
+	it('disabled убирает поле из порядка обхода', () => {
+		const select = new TSelect()
+
+		expect(select.aria.get('tabindex')).toBe('0')
+
+		select.disabled = true
+
+		expect(select.aria.has('tabindex')).toBe(false)
+	})
+})
+
+describe('clearAria — имя кнопки очистки', () => {
+	it('собирается с именем поля, чтобы кнопки были различимы', () => {
+		// На форме с пятью полями пять одинаковых «Clear, кнопка» в списке
+		// элементов скринридера выбрать нельзя
+		expect(new TSelect({ name: 'Город' }).clearAria['aria-label']).toBe('Clear Город')
+	})
+
+	it('без имени поля остаётся одно слово', () => {
+		expect(new TSelect().clearAria['aria-label']).toBe('Clear')
+	})
+
+	it('слово переопределяется — язык интерфейса решает потребитель', () => {
+		const select = new TSelect({ name: 'Город', clearLabel: 'Очистить' })
+
+		expect(select.clearAria['aria-label']).toBe('Очистить Город')
+	})
+
+	it('отдельный набор: это имя соседней кнопки, а не самого поля', () => {
+		expect(new TSelect({ name: 'Город' }).aria.has('aria-label')).toBe(false)
+	})
+})
+
+describe('TSelectItem', () => {
+	it('объявляет себя как option', () => {
+		expect(new TSelectItem().aria.get('role')).toBe('option')
+	})
+
+	it('связки с полем в ядре нет — о ней знает коллекция', () => {
+		const item = new TSelectItem({ value: 'a', text: 'A' })
+
+		expect(item.aria.has('id')).toBe(false)
+		expect(item.aria.has('aria-selected')).toBe(false)
+	})
+})
+
+describe('value и выбор — одно и то же', () => {
+	it('выбор опции пишет value', () => {
+		const { owner, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(1).choose()
+
+		expect(owner.value).toBe('b')
+	})
+
+	it('value выбирает опцию', () => {
+		const { owner, collection, items } = createSelect(['a', 'b'])
+
+		owner.value = 'b'
+
+		expect(collection.selected).toEqual([items[1]])
+	})
+
+	it('value, заданный до появления опций, применяется при их добавлении', () => {
+		const owner = new TSelect({ value: 'b' })
+		const collection = new TSelectCollectionFacade({}, { owner })
+
+		collection.items = [
+			new TSelectItem({ value: 'a', text: 'A' }),
+			new TSelectItem({ value: 'b', text: 'B' }),
+		] as ISelectItem[]
+
+		expect(collection.selected).toHaveLength(1)
+		expect(collection.selected[0].value).toBe('b')
+	})
+
+	it('в multiple value — массив', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b', 'c'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(2).choose()
+
+		expect(owner.value).toEqual(['a', 'c'])
+	})
+
+	it('в multiple повторный выбор снимает', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(0).choose()
+
+		expect(owner.value).toEqual([])
+	})
+
+	it('в single выбор заменяет прежний', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		expect(owner.value).toBe('b')
+		expect(collection.selected).toHaveLength(1)
+	})
+
+	it('disabled-опция не выбирается', () => {
+		const { owner, items, facadeFor } = createSelect(['a', 'b'])
+
+		items[1].disabled = true
+		facadeFor(1).choose()
+
+		expect(owner.value).toBeUndefined()
+	})
+
+	it('clear снимает выбор и обнуляет value', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+		collection.clear()
+
+		expect(collection.selected).toEqual([])
+		expect(owner.value).toBeUndefined()
+	})
+
+	it('синхронизация не зацикливается', () => {
+		// Выбор пишет value, value выбирает — без флага это был бы вечный круг
+		const { owner, facadeFor } = createSelect(['a', 'b'])
+		const handler = vi.fn()
+
+		owner.events.on('change:value', handler)
+		facadeFor(0).choose()
+
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+})
+
+describe('панель после выбора', () => {
+	it('closeOnSelect закрывает', () => {
+		const { owner, facadeFor } = createSelect(['a'], { open: true })
+
+		facadeFor(0).choose()
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('без closeOnSelect остаётся открытой — так нужно для multiple', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], {
+			open: true,
+			closeOnSelect: false,
+		})
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		expect(owner.open).toBe(true)
+	})
+})
+
+describe('связка ARIA поле ↔ список ↔ опция', () => {
+	it('поле ссылается на список', () => {
+		const { owner, select } = createSelect(['a'])
+
+		expect(owner.aria.get('aria-controls')).toBe(select.listId)
+	})
+
+	it('опция получает id при добавлении в коллекцию', () => {
+		const { items, select } = createSelect(['a'])
+
+		expect(items[0].aria.get('id')).toBe(select.optionId(items[0]))
+	})
+
+	it('формула идентификаторов одна на обе стороны', () => {
+		// Разнеси её по двум местам — и половинки однажды разойдутся
+		const { items, facadeFor, select } = createSelect(['a'])
+
+		expect(facadeFor(0).context.adapters.select.optionId).toBe(select.optionId(items[0]))
+	})
+
+	it('id уникальны между двумя Select на странице', () => {
+		const first = createSelect(['a'])
+		const second = createSelect(['a'])
+
+		expect(first.owner.aria.get('aria-controls')).not.toBe(
+			second.owner.aria.get('aria-controls'),
+		)
+		expect(first.items[0].aria.get('id')).not.toBe(second.items[0].aria.get('id'))
+	})
+
+	it('aria-selected стоит на всех опциях, а не только на выбранной', () => {
+		// Скринридер объявляет «2 из 3, не выбрана» — для этого нужен атрибут
+		const { items, facadeFor } = createSelect(['a', 'b', 'c'])
+
+		facadeFor(1).choose()
+
+		expect(items[0].aria.get('aria-selected')).toBe('false')
+		expect(items[1].aria.get('aria-selected')).toBe('true')
+		expect(items[2].aria.get('aria-selected')).toBe('false')
+	})
+
+	it('список объявлен как listbox', () => {
+		expect(createSelect(['a']).collection.list_aria.role).toBe('listbox')
+	})
+
+	it('aria-multiselectable появляется только в multiple', () => {
+		const { collection } = createSelect(['a'])
+
+		expect(collection.list_aria['aria-multiselectable']).toBeNull()
+
+		collection.mode = 'multiple'
+
+		expect(collection.list_aria['aria-multiselectable']).toBe('true')
+	})
+})
+
+describe('valueText — что показывает поле', () => {
+	it('пуст, пока ничего не выбрано', () => {
+		expect(createSelect(['a']).collection.valueText).toBe('')
+	})
+
+	it('текст выбранной опции, а не её значение', () => {
+		const { collection, facadeFor } = createSelect(['a'])
+
+		facadeFor(0).choose()
+
+		expect(collection.valueText).toBe('A')
+	})
+
+	it('в multiple перечисляет выбранные', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b', 'c'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(2).choose()
+
+		expect(collection.valueText).toBe('A, C')
+	})
+
+	it('следует за текстом опции', () => {
+		const { collection, items, facadeFor } = createSelect(['a'])
+
+		facadeFor(0).choose()
+		items[0].text = 'Другое'
+
+		expect(collection.valueText).toBe('Другое')
+	})
+})

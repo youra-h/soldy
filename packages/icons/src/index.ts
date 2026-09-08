@@ -1,3 +1,4 @@
+export { default as arrowDown } from './arrow_down.svg?raw'
 export { default as arrowRight } from './arrow_right.svg?raw'
 export { default as check } from './check.svg?raw'
 export { default as checkIndeterminate } from './check_indeterminate.svg?raw'

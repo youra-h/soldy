@@ -1,3 +1,6 @@
+export { SelectKeyboardContribution } from './select'
+export { DismissContribution } from './dismiss'
+export type { TDismissPluginProps } from './dismiss'
 export { AriaContribution } from './aria'
 export type { TAriaPluginProps } from './aria'
 export { ActionContribution } from './action'

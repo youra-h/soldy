@@ -1,0 +1,68 @@
+// Select — поле выбора из списка.
+//
+// Поле — обычный `Input`, поэтому его собственных стилей здесь нет: они
+// приходят из `_input.scss`. Тут только то, что добавляет Select.
+//
+// Состояние читается из `data-*`, не из ARIA: ARIA — контракт со скринридером,
+// и его надо иметь возможность править, не ломая вид.
+.s-select {
+	@apply relative w-full;
+
+	&__field {
+		@apply w-full;
+
+		input {
+			@apply cursor-pointer select-none;
+		}
+	}
+
+	&__clear {
+		@apply shrink-0;
+	}
+
+	// Стрелка смотрит вниз, а при открытой панели разворачивается вверх —
+	// тот же приём, что у стрелки Collapse
+	&__arrow {
+		@apply shrink-0 transition-transform duration-200;
+	}
+
+	&[data-open='true'] &__arrow {
+		@apply rotate-180;
+	}
+
+	&--disabled {
+		@apply opacity-50 pointer-events-none;
+	}
+}
+
+// Панель телепортируется в body, поэтому вложенным селектором её не достать
+.s-select__panel {
+	@apply overflow-hidden rounded-md;
+	@apply bg-s-neutral-50 border border-s-neutral-200 shadow-md;
+}
+
+.s-select__list {
+	@apply flex flex-col overflow-y-auto;
+}
+
+.s-select-item {
+	@apply cursor-pointer;
+
+	> * {
+		@apply w-full justify-start py-2;
+	}
+
+	// Подсветка и выбор — разные состояния: первая живёт, пока открыта
+	// панель, второе попадает в значение поля
+	&[data-highlighted='true'] > * {
+		@apply bg-s-neutral-100;
+	}
+
+	&[data-selected='true'] > * {
+		@apply bg-s-neutral-200 font-medium;
+	}
+
+	&[aria-disabled='true'] {
+		@apply opacity-50 pointer-events-none;
+	}
+}
