@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TTabsItemCollectionFacade } from '@soldy/core'
 import type { ITabsItemProps, ITabsItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../../adapter'
+import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
 import BaseTabsItem, { type TabsItemProps } from './base.component'
 
 export default {
@@ -40,7 +40,7 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
-			closeIconTag: useIconImport('close'),
+			closeIconTag: useIcon('close'),
 			...useSplitAttrs(),
 		}
 	},

@@ -6,7 +6,7 @@ export default defineConfig({
 		alias: {
 			'@soldy/accessor': path.resolve(__dirname, '../../accessor'),
 			'@soldy/core': path.resolve(__dirname, '../../core/src'),
-			'@soldy/icons': path.resolve(__dirname, '../../icons/src'),
+			'@soldy/icons-material': path.resolve(__dirname, '../../icons/material/src'),
 			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
 			'@soldy/setup': path.resolve(__dirname, '../../setup'),
 			'@soldy/ui-webc': path.resolve(__dirname, 'src/index.ts'),

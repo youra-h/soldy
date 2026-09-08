@@ -12,3 +12,4 @@ export { collectEventBindings, type IEventBinding } from './collectEventBindings
 export { DEFAULT_SLOT, resolveSlotName, isScopedSlot, slotNames } from './slots'
 export type { TSlotProps, TSlotFunctions } from './slots.types'
 export { withParts } from './withParts'
+export * from './icons'

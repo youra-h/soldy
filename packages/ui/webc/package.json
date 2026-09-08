@@ -16,7 +16,7 @@
   "dependencies": {
     "@soldy/accessor": "*",
     "@soldy/core": "*",
-    "@soldy/icons": "*",
+    "@soldy/icons-material": "*",
     "@soldy/plugins": "*",
     "@soldy/setup": "*",
     "@soldy/theme-oren": "*"

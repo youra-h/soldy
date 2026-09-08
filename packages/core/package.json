@@ -9,8 +9,5 @@
   },
   "scripts": {
     "test": "vitest run"
-  },
-  "dependencies": {
-    "@soldy/icons": "*"
   }
 }

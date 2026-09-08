@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TCollapseItemCollectionFacade } from '@soldy/core'
 import type { ICollapseItemProps, ICollapseItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../../adapter'
+import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
 import BaseCollapseItem, { type CollapseItemProps } from './base.component'
 
 export default {
@@ -40,7 +40,7 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
-			arrowIconTag: useIconImport('arrowRight'),
+			arrowIconTag: useIcon('arrowRight'),
 			...useSplitAttrs(),
 		}
 	},

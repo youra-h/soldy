@@ -83,7 +83,9 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 		this._owner?.aria.add('aria-activedescendant', id)
 
-		if (uid != null) this._optionElement(uid)?.scrollIntoView({ block: 'nearest' })
+		// `scrollIntoView` есть не везде: его нет в jsdom и он бессмыслен для
+		// узла вне документа. Прокрутка — удобство, а не часть контракта.
+		if (uid != null) this._optionElement(uid)?.scrollIntoView?.({ block: 'nearest' })
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {

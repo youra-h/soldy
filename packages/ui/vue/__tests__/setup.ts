@@ -1,3 +1,6 @@
+import { setIcons } from '@soldy/setup'
+import * as material from '@soldy/icons-material'
+
 /**
  * Заглушки браузерных API, которых нет в jsdom.
  *
@@ -15,3 +18,10 @@ if (!('ResizeObserver' in globalThis)) {
 
 	;(globalThis as any).ResizeObserver = ResizeObserverStub
 }
+
+/**
+ * Пакет иконок подключается приложением — как тема. Тесты играют роль
+ * приложения, иначе компоненты рисуют заглушки и сыплют предупреждениями.
+ */
+
+setIcons(material)

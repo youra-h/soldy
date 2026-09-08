@@ -4,7 +4,7 @@
     "paths": {
       "@soldy/accessor": ["../../accessor"],
       "@soldy/core": ["../../core/src"],
-      "@soldy/icons": ["../../icons/src"],
+      "@soldy/icons-material": ["../../icons/material/src"],
       "@soldy/plugins": ["../../plugins/src"],
       "@soldy/setup": ["../../setup"]
     }

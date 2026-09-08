@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import type { ISelectComponentProps, ISelect, TSelectCollectionFacade } from '@soldy/core'
 import type { TDismissPluginProps } from '@soldy/setup'
-import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../adapter'
+import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../adapter'
 import BaseSelect, { type SelectProps } from './base.component'
 
 /**
@@ -59,8 +59,8 @@ export default {
 			/** Методы коллекции рефами не пробрасываются — отдаём инстанс. */
 			collection: collectionAdapter.instance,
 			fieldElement: ref<HTMLElement | null>(null),
-			clearIconTag: useIconImport('close'),
-			arrowIconTag: useIconImport('arrowDown'),
+			clearIconTag: useIcon('close'),
+			arrowIconTag: useIcon('arrowDown'),
 			...useSplitAttrs(),
 		}
 	},

@@ -70,7 +70,6 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 		const node = document.createElement('div')
 
 		node.id = `s-select-option-${item.uid}`
-		node.scrollIntoView = () => {}
 		root.appendChild(node)
 
 		const bundle = new TPluginBundle(item)

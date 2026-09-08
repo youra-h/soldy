@@ -276,6 +276,55 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 | `createInspectorFactory(naming)` | Адаптер связывает инспектор со своей стратегией один раз. |
 | `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий. |
 | `resolveDefaultExtensions(descriptor)` | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`. |
+| `setIcons` / `getIcon` / `ICON_ROLES` | Реестр и контракт пакетов иконок. |
+
+### Пакеты иконок — контракт, а не мешок SVG
+
+Иконки устроены как темы: библиотека объявляет, что ей нужно, а пакет это
+реализует. Контракт — закрытый список ролей `ICON_ROLES`
+(`check`, `checkIndeterminate`, `close`, `arrowDown`, `arrowRight`); пакет
+обязан закрыть их все, это проверяет conformance-тест.
+
+Иконка приходит **данными**, не разметкой:
+
+```ts
+export type TIconSource = {
+	viewBox: string   // система координат
+	body: string      // содержимое <svg>, без самого тега
+}
+```
+
+`body` без корневого `<svg>` — потому что корень строит адаптер: только так он
+может задать размер, `aria-hidden` и классы.
+
+Формат выбран под два ограничения, оба вскрылись на разборе прежнего решения:
+
+**Никакой магии сборщика.** `@soldy/icons` экспортировал
+`import './close.svg?raw'` — синтаксис Vite. Внутри монорепы это работало,
+потому что всё крутится на Vite и иконки использует один адаптер; опубликуй
+пакет — и потребитель на webpack, rspack или в Node получил бы ошибку
+разрешения модуля. Теперь пакет — обычный JS-модуль с данными.
+
+**Никакого рантайм-компилятора.** `useIconImport` делал
+`defineComponent({ template: svg })`, а `template` требует компилятор шаблонов
+— из-за чего в конфиге Vue стоял алиас `vue/dist/vue.esm-bundler.js`. То есть
+иконки навязывали полный билд Vue каждому приложению и ломались при CSP без
+`unsafe-eval`. Теперь адаптер строит разметку через `h()`.
+
+Подключает пакет **приложение**, как тему — библиотека не тянет его в
+зависимости:
+
+```ts
+setIcons(material)
+setIcons({ close: myCloseIcon })   // точечно, поверх
+```
+
+Незарегистрированная роль даёт пустую заглушку и одно предупреждение в консоль.
+Исключение бросать нельзя: из-за одной иконки упало бы всё приложение.
+
+Пакет (`packages/icons/material/`): SVG в `src/*.svg` правятся глазами,
+`src/index.ts` генерируется и коммитится — как метаданные Angular. Генератор
+снимает `fill="#…"`, иначе иконка не наследует `currentColor`.
 
 ### Почему `collectEventBindings` дедуплицирует
 
@@ -947,7 +996,10 @@ ListBox режимы ради чужого компонента, после че
 #### Common Utilities (`adapter/common/`)
 - `createInspector()` - Unified TDescriptorInspector factory
 - `VueNaming` - Vue naming strategy (camelCase props, dash-case events)
-- `useIconImport()` — импорт SVG из `@soldy/icons` в `markRaw(defineComponent(...))`
+- `useIcon(role)` — компонент иконки по роли из реестра. Строит разметку через
+  `h('svg', { viewBox, innerHTML })`, а не `template`: последнее требовало бы
+  рантайм-компилятор Vue. Роль резолвится на отрисовке, поэтому `setIcons()`
+  может быть вызван позже создания компонента
 - `useSplitAttrs()` — разделение `useAttrs()` на `{class, style}` и остальное
   (для составных компонентов с `inheritAttrs: false`)
 
