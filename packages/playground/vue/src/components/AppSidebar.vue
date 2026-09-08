@@ -40,7 +40,7 @@ function onSelected(id: string, selected: unknown): void {
 		</RouterLink>
 
 		<div class="pg__sidebar-title">Компоненты</div>
-		<ListBox mode="single" auto-width>
+		<ListBox mode="single" class="pg__menu">
 			<ListBox.Item
 				v-for="entry in showcase"
 				:key="entry.id"
@@ -52,7 +52,7 @@ function onSelected(id: string, selected: unknown): void {
 		</ListBox>
 
 		<div class="pg__sidebar-title">Слои</div>
-		<ListBox mode="single" auto-width>
+		<ListBox mode="single" class="pg__menu">
 			<ListBox.Item
 				v-for="entry in layers"
 				:key="entry.id"

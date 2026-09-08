@@ -69,9 +69,17 @@ const instanceBind = computed(() => ({
 
 <template>
 	<section class="pg-prop">
+		<!--
+			Имя и контрол стоят рядом и прижаты влево. Обе колонки фиксированной
+			ширины, ряд не растягивается: иначе на широком экране `margin-left:
+			auto` уводил контрол к правому краю, и чтобы понять, что именно ты
+			крутишь, приходилось водить глазами через всю страницу.
+
+			Фиксированная ширина второй колонки выстраивает switch, select и
+			input в одну вертикаль, а не по содержимому.
+		-->
 		<div class="pg-prop__head">
 			<span class="pg-prop__name">{{ control.name }}</span>
-			<span class="pg-prop__type">{{ control.kind }}</span>
 			<div class="pg-prop__control">
 				<PropControl :control="control" v-model="value" />
 			</div>

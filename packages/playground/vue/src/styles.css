@@ -88,6 +88,13 @@ a {
 	background: var(--s-neutral-50);
 }
 
+/* Меню занимает панель целиком: у темы `.s-list-box` есть max-width, а
+   проп `auto-width` жал бы список по содержимому */
+.pg__menu {
+	width: 100%;
+	max-width: none;
+}
+
 .pg__sidebar-title {
 	font-size: 11px;
 	text-transform: uppercase;
@@ -174,34 +181,40 @@ a {
 	border-top: 1px solid var(--s-neutral-200);
 }
 
+/**
+ * Имя свойства и его редактор стоят рядом.
+ *
+ * Обе колонки фиксированы, а ряд не растягивается на всю ширину: иначе на
+ * широком экране редактор уезжал к правому краю и терял связь с именем.
+ * Фиксированная ширина второй колонки выстраивает switch, select и input в одну
+ * вертикаль по всей странице.
+ */
 .pg-prop__head {
-	display: flex;
-	align-items: center;
+	display: grid;
+	grid-template-columns: 125px 220px;
 	gap: 16px;
+	align-items: center;
+	min-height: 32px;
 }
 
 .pg-prop__name {
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-weight: 600;
-}
-
-.pg-prop__type {
-	font-size: 11px;
-	color: var(--s-neutral-500);
-	padding: 1px 6px;
-	border: 1px solid var(--s-neutral-300);
-	border-radius: 999px;
+	overflow-wrap: anywhere;
 }
 
 .pg-prop__control {
-	margin-left: auto;
-	min-width: 220px;
 	display: flex;
-	justify-content: flex-end;
+	align-items: center;
+}
+
+/* Поля тянутся на всю колонку, переключатель остаётся своего размера */
+.pg-prop__control :is(.s-input, .s-select) {
+	width: 100%;
 }
 
 .pg-prop__note {
-	margin: 4px 0 14px;
+	margin: 6px 0 14px;
 	font-size: 12px;
 	color: var(--s-neutral-500);
 }
