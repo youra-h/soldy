@@ -7,8 +7,7 @@ import {
 } from '@soldy/setup'
 import { TTabsItemCollectionFacade } from '@soldy/core'
 import type { ITabsItemProps, ITabsItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory } from '../../../adapter'
-import { useIconImport, useSplitAttrs } from '../../../composables'
+import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../../adapter'
 import BaseTabsItem, { type TabsItemProps } from './base.component'
 
 export default {

@@ -947,16 +947,22 @@ ListBox режимы ради чужого компонента, после че
 #### Common Utilities (`adapter/common/`)
 - `createInspector()` - Unified TDescriptorInspector factory
 - `VueNaming` - Vue naming strategy (camelCase props, dash-case events)
-
-#### Composables (`composables/`)
-Осталось два — остальные (`useComponentSetup`, `useInstance`, `useInheritProps`,
-`useEventState`, `composables/useSyncProps`) удалены как мёртвый код поколения
-до адаптера. `composables/useSyncProps` вдобавок коллидировал по имени с
-`adapter/runtime/useSyncProps`, и наружу экспортировался именно мёртвый.
-
 - `useIconImport()` — импорт SVG из `@soldy/icons` в `markRaw(defineComponent(...))`
 - `useSplitAttrs()` — разделение `useAttrs()` на `{class, style}` и остальное
   (для составных компонентов с `inheritAttrs: false`)
+
+Папки `composables/` больше нет: два оставшихся хелпера переехали сюда, к
+остальному общему коду адаптера. Прочие (`useComponentSetup`, `useInstance`,
+`useInheritProps`, `useEventState`, `composables/useSyncProps`) были удалены
+раньше как мёртвый код поколения до адаптера; последний вдобавок коллидировал
+по имени с `adapter/runtime/useSyncProps`, и наружу экспортировался именно
+мёртвый.
+
+Оба хелпера остаются Vue-специфичными: `useIconImport` строит компонент через
+`defineComponent`/`markRaw`, `useSplitAttrs` — через `useAttrs`/`computed`.
+Переиспользовать их в других адаптерах напрямую нельзя; общей была бы только
+выжимка (поиск SVG по имени и правило разделения атрибутов), и её место —
+`packages/setup/common/`, куда фреймворки не импортируются.
 
 #### Components (`components/`)
 **22+ Framework Components** (one per core component):
@@ -980,7 +986,7 @@ ListBox режимы ради чужого компонента, после че
 - [adapter/static/useEmits.ts](packages/ui/vue/src/adapter/static/useEmits.ts) - Vue emits factory
 - [adapter/runtime/useAdapter.ts](packages/ui/vue/src/adapter/runtime/useAdapter.ts) - Main hook
 - [components/button/](packages/ui/vue/src/components/button/) - Button component example
-- [composables/useComponentSetup.ts](packages/ui/vue/src/composables/useComponentSetup.ts) - Setup helper
+- [adapter/common/useSplitAttrs.ts](packages/ui/vue/src/adapter/common/useSplitAttrs.ts) - Разделение сквозных атрибутов
 
 ### Component Hierarchy (Vue)
 ```

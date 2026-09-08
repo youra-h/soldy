@@ -1,8 +1,7 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, CheckBoxDescriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useIconImport, useSplitAttrs } from '../../adapter'
 import BaseCheckBox, { type CheckBoxProps } from './base.component'
-import { useIconImport, useSplitAttrs } from '../../composables'
 import { type ICheckBoxProps, type ICheckBox } from '@soldy/core'
 
 export default {

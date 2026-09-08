@@ -1,8 +1,7 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, SwitchDescriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useSplitAttrs } from '../../adapter'
 import BaseSwitch, { type SwitchProps } from './base.component'
-import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import { type ISwitchProps, type ISwitch } from '@soldy/core'
 
 export default {

@@ -7,8 +7,7 @@ import {
 } from '@soldy/setup'
 import { TCollapseItemCollectionFacade } from '@soldy/core'
 import type { ICollapseItemProps, ICollapseItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory } from '../../../adapter'
-import { useIconImport, useSplitAttrs } from '../../../composables'
+import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../../adapter'
 import BaseCollapseItem, { type CollapseItemProps } from './base.component'
 
 export default {

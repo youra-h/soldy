@@ -1,8 +1,7 @@
 import { toRaw } from 'vue'
 import { createAdapterContext, InputDescriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useSplitAttrs } from '../../adapter'
 import BaseInput, { type InputProps } from './base.component'
-import { useSplitAttrs } from '../../composables/useSplitAttrs'
 import { type IInputProps, type IInput } from '@soldy/core'
 
 export default {

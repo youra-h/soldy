@@ -7,8 +7,7 @@ import {
 } from '@soldy/setup'
 import type { ISelectComponentProps, ISelect, TSelectCollectionFacade } from '@soldy/core'
 import type { TDismissPluginProps } from '@soldy/setup'
-import { useAdapter, VueElevatorFactory } from '../../adapter'
-import { useIconImport, useSplitAttrs } from '../../composables'
+import { useAdapter, VueElevatorFactory, useIconImport, useSplitAttrs } from '../../adapter'
 import BaseSelect, { type SelectProps } from './base.component'
 
 /**

@@ -7,8 +7,7 @@ import {
 } from '@soldy/setup'
 import { TListBoxItemCollectionFacade } from '@soldy/core'
 import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory } from '../../../adapter'
-import { useSplitAttrs } from '../../../composables'
+import { useAdapter, VueElevatorFactory, useSplitAttrs } from '../../../adapter'
 import BaseListBoxItem, { type ListBoxItemProps } from './base.component'
 
 export default {
