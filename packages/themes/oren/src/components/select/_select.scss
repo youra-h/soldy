@@ -21,9 +21,12 @@
 	}
 
 	// Стрелка смотрит вниз, а при открытой панели разворачивается вверх —
-	// тот же приём, что у стрелки Collapse
+	// тот же приём, что у стрелки Collapse.
+	//
+	// Класс на обёртке слота, а не на самой иконке: подменишь иконку через
+	// `#arrow-icon` — поворот всё равно работает.
 	&__arrow {
-		@apply shrink-0 transition-transform duration-200;
+		@apply inline-flex shrink-0 transition-transform duration-200;
 	}
 
 	&[data-open='true'] &__arrow {

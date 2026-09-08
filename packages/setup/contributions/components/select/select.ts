@@ -14,7 +14,10 @@ import type { ISelectItem } from '@soldy/core'
  */
 export type TSelectSlots = {
 	field: {}
+	leading: {}
 	clear: {}
+	'arrow-icon': {}
+	trailing: {}
 	default: {}
 	empty: {}
 }
@@ -22,7 +25,16 @@ export type TSelectSlots = {
 export const SelectContribution = (): IContribution => ({
 	slots: {
 		field: { description: 'Содержимое поля вместо текста выбранного' },
+		/**
+		 * `leading` и `trailing` — проброс одноимённых слотов Input: у него
+		 * они уже есть, и заводить своё было бы вторым способом делать то же
+		 * самое. `trailing` идёт после кнопки очистки и стрелки, то есть
+		 * дополняет их, а не заменяет.
+		 */
+		leading: { description: 'Перед полем' },
 		clear: { description: 'Кнопка очистки значения' },
+		'arrow-icon': { description: 'Стрелка состояния панели' },
+		trailing: { description: 'После стрелки' },
 		default: { description: 'Опции — элементы коллекции' },
 		empty: { description: 'Когда опций нет' },
 		item: {

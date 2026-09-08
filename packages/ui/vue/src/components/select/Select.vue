@@ -49,6 +49,11 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 				readonly
 				v-bind="{ ...aria, ...controlAttrs }"
 			>
+				<!-- Слоты Input пробрасываются наружу как есть -->
+				<template #leading>
+					<slot name="leading" />
+				</template>
+
 				<template #trailing>
 					<slot name="clear" :clear="collection.clear">
 						<Button
@@ -68,8 +73,19 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 						Стрелка декоративна: состояние панели уже сказано через
 						`aria-expanded` на поле, второй раз объявлять его не надо.
 						Icon скрыт от скринридера по умолчанию.
+
+						Класс на обёртке, а не на иконке: тема разворачивает
+						стрелку селектором `.s-select[data-open] .s-select__arrow`.
+						Поставь его на `Icon` — и подменённая через слот иконка
+						перестала бы поворачиваться, причём молча.
 					-->
-					<Icon class="s-select__arrow" :tag="arrowIconTag" :size="size" />
+					<span class="s-select__arrow">
+						<slot name="arrow-icon">
+							<Icon :tag="arrowIconTag" :size="size" />
+						</slot>
+					</span>
+
+					<slot name="trailing" />
 				</template>
 			</Input>
 		</slot>

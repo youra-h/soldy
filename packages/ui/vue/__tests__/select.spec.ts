@@ -237,3 +237,54 @@ describe('id поля', () => {
 		wrapper.unmount()
 	})
 })
+
+describe('слоты поля', () => {
+	const withSlots = (slots: Record<string, string>) =>
+		mount(Select, { props: { name: 'Город' }, slots, attachTo: document.body })
+
+	it('leading и trailing пробрасываются в Input', () => {
+		// Свои слоты Select не заводит: у Input они уже есть, и второй способ
+		// делать то же самое разошёлся бы с первым
+		const wrapper = withSlots({
+			leading: '<i class="probe-leading" />',
+			trailing: '<i class="probe-trailing" />',
+		})
+
+		expect(wrapper.find('.s-input__leading .probe-leading').exists()).toBe(true)
+		expect(wrapper.find('.s-input__trailing .probe-trailing').exists()).toBe(true)
+
+		wrapper.unmount()
+	})
+
+	it('стрелка заменяется через arrow-icon', () => {
+		const wrapper = withSlots({ 'arrow-icon': '<i class="probe-arrow" />' })
+
+		expect(wrapper.find('.probe-arrow').exists()).toBe(true)
+
+		wrapper.unmount()
+	})
+
+	it('подменённая стрелка остаётся внутри носителя состояния', () => {
+		// Класс на обёртке, а не на иконке: иначе поворот при открытии
+		// молча перестал бы работать для пользовательской иконки
+		const wrapper = withSlots({ 'arrow-icon': '<i class="probe-arrow" />' })
+
+		expect(wrapper.find('.s-select__arrow .probe-arrow').exists()).toBe(true)
+
+		wrapper.unmount()
+	})
+
+	it('trailing дополняет кнопку очистки и стрелку, а не заменяет их', () => {
+		const wrapper = mount(Select, {
+			props: { name: 'Город', clearable: true },
+			slots: { trailing: '<i class="probe-trailing" />' },
+			attachTo: document.body,
+		})
+
+		expect(wrapper.find('.s-select__clear').exists()).toBe(true)
+		expect(wrapper.find('.s-select__arrow').exists()).toBe(true)
+		expect(wrapper.find('.probe-trailing').exists()).toBe(true)
+
+		wrapper.unmount()
+	})
+})
