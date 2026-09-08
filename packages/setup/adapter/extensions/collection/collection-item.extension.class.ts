@@ -1,7 +1,7 @@
 /**
  * TCollectionItemExtension — единая точка входа для настройки элемента коллекции.
  *
- * Режим фасада: facade + itemDescriptor (Tabs/Collapse/...).
+ * Режим фасада: facade + itemDescriptor (Tabs/Accordion/...).
  * Выполняется регистрация элемента в родительской коллекции.
  */
 

@@ -6,15 +6,15 @@ import {
 	TList,
 	TListBox,
 	TTabs,
-	TCollapse,
+	TAccordion,
 	TListCollectionFacade,
 	TListItemCollectionFacade,
 	TListBoxCollectionFacade,
 	TListBoxItemCollectionFacade,
 	TTabsCollectionFacade,
 	TTabsItemCollectionFacade,
-	TCollapseCollectionFacade,
-	TCollapseItemCollectionFacade,
+	TAccordionCollectionFacade,
+	TAccordionItemCollectionFacade,
 	TSelect,
 	TSelectItem,
 	TSelectCollectionFacade,
@@ -42,9 +42,9 @@ import {
 	TabsDescriptor,
 	TabsCollectionDescriptor,
 	TabsCollectionItemDescriptor,
-	CollapseDescriptor,
-	CollapseCollectionDescriptor,
-	CollapseCollectionItemDescriptor,
+	AccordionDescriptor,
+	AccordionCollectionDescriptor,
+	AccordionCollectionItemDescriptor,
 	SelectDescriptor,
 	SelectItemDescriptor,
 	SelectCollectionDescriptor,
@@ -54,8 +54,7 @@ import {
 const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
 	d.props.map((p) => p.name.name)
 
-const eventNames = (d: { events: Array<{ name: string }> }) =>
-	d.events.map((e) => e.name)
+const eventNames = (d: { events: Array<{ name: string }> }) => d.events.map((e) => e.name)
 
 describe('дескрипторы компонентов (наследование)', () => {
 	it('ButtonDescriptor наследует цепочку Entity → Component → ComponentView → Stylable → Control → Textable', () => {
@@ -66,10 +65,15 @@ describe('дескрипторы компонентов (наследовани�
 		const names = propNames(d)
 		for (const expected of [
 			'ctrl', // Entity
-			'rendered', 'visible', 'present', // Component
-			'tag', 'classes', // ComponentView
-			'size', 'variant', // Stylable
-			'disabled', 'focused', // Control
+			'rendered',
+			'visible',
+			'present', // Component
+			'tag',
+			'classes', // ComponentView
+			'size',
+			'variant', // Stylable
+			'disabled',
+			'focused', // Control
 			'text', // Textable
 			'view', // Button
 		]) {
@@ -101,9 +105,7 @@ describe('дескрипторы компонентов (наследовани�
 		expect(viewProp.instance).toBe(instance)
 
 		// Плагины дают события с namespace
-		expect(
-			accessor.getEvents().some((e) => e.name.getName() === 'element:ready'),
-		).toBe(true)
+		expect(accessor.getEvents().some((e) => e.name.getName() === 'element:ready')).toBe(true)
 	})
 
 	it('ButtonDescriptor.getProps/getEvents агрегируют собственные и плагинные объявления', () => {
@@ -139,7 +141,14 @@ describe('дескрипторы компонентов (наследовани�
 		expect(d.ctor).toBe(TList)
 
 		const names = propNames(d)
-		for (const expected of ['maxRows', 'autoWidth', 'wordWrap', 'scrollBehavior', 'size', 'variant']) {
+		for (const expected of [
+			'maxRows',
+			'autoWidth',
+			'wordWrap',
+			'scrollBehavior',
+			'size',
+			'variant',
+		]) {
 			expect(names).toContain(expected)
 		}
 	})
@@ -167,13 +176,13 @@ describe('дескрипторы компонентов (наследовани�
 		expect(d.plugins.some((p) => p.ctor === TDragPlugin)).toBe(true)
 	})
 
-	it('CollapseDescriptor наследует Control и добавляет view', () => {
-		const d = CollapseDescriptor()
-		expect(d.ctor).toBe(TCollapse)
+	it('AccordionDescriptor наследует Control и добавляет view', () => {
+		const d = AccordionDescriptor()
+		expect(d.ctor).toBe(TAccordion)
 
 		const names = propNames(d)
 		expect(names).toContain('disabled') // Control
-		expect(names).toContain('view') // Collapse
+		expect(names).toContain('view') // Accordion
 	})
 })
 
@@ -251,10 +260,10 @@ describe('дескрипторы коллекций (фасады)', () => {
 		expect(names).toContain('tab_closable')
 	})
 
-	it('CollapseCollectionDescriptor наследует Collection и добавляет mode/selected', () => {
-		const d = CollapseCollectionDescriptor()
+	it('AccordionCollectionDescriptor наследует Collection и добавляет mode/selected', () => {
+		const d = AccordionCollectionDescriptor()
 
-		expect(d.ctor).toBe(TCollapseCollectionFacade)
+		expect(d.ctor).toBe(TAccordionCollectionFacade)
 
 		const names = propNames(d)
 		expect(names).toContain('items')
@@ -262,10 +271,10 @@ describe('дескрипторы коллекций (фасады)', () => {
 		expect(names).toContain('selected')
 	})
 
-	it('CollapseCollectionItemDescriptor объявляет selected/order/view', () => {
-		const d = CollapseCollectionItemDescriptor()
+	it('AccordionCollectionItemDescriptor объявляет selected/order/view', () => {
+		const d = AccordionCollectionItemDescriptor()
 
-		expect(d.ctor).toBe(TCollapseItemCollectionFacade)
+		expect(d.ctor).toBe(TAccordionItemCollectionFacade)
 
 		const names = propNames(d)
 		expect(names).toContain('selected')
@@ -353,9 +362,7 @@ describe('Select', () => {
 		const owner = new TSelect()
 		const descriptor = SelectDescriptor()
 
-		expect(() =>
-			descriptor.createAccessor(owner, descriptor.createBundle(owner)),
-		).not.toThrow()
+		expect(() => descriptor.createAccessor(owner, descriptor.createBundle(owner))).not.toThrow()
 
 		const item = new TSelectItem()
 		const itemDescriptor = SelectItemDescriptor()

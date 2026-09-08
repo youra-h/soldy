@@ -19,7 +19,7 @@ export const SelectCollectionContribution = (): IContribution => ({
 		/**
 		 * `role`, `id` и множественность списка. Проп, а не набор `aria`: у
 		 * списка нет своего компонента — это разметка внутри шаблона Select,
-		 * писать некуда. Та же асимметрия, что у панели Collapse.
+		 * писать некуда. Та же асимметрия, что у панели Accordion.
 		 */
 		list_aria: { type: Object, protected: true, triggers: ['change:mode'] },
 	},

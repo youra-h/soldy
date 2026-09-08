@@ -1,6 +1,6 @@
 # Collection Components Reference
 
-How collection-based components (Tabs, Collapse, List, ListBox) differ from plain components.
+How collection-based components (Tabs, Accordion, List, ListBox) differ from plain components.
 
 ## Anatomy
 

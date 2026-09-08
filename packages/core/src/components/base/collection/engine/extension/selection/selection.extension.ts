@@ -105,7 +105,7 @@ export class TSelectionExtension<TItem extends object = any>
 	/**
 	 * Зеркалит выбор в `data-selected` элементов — контракт с темой.
 	 *
-	 * Здесь, а не в расширении каждого компонента: `data-selected` у Collapse,
+	 * Здесь, а не в расширении каждого компонента: `data-selected` у Accordion,
 	 * ListBox и Select один и тот же, различается только ARIA (`aria-selected`
 	 * у опции, `aria-expanded` у секции) — она и остаётся за расширением
 	 * компонента. Раньше это делали шаблоны, и при портировании на остальные

@@ -37,7 +37,7 @@ TEntity (uid, getProps, assign, toJSON)
 │               ├── TValueControl (generic value)
 │               ├── TTextable (text)
 │               │   └── TButton (view)
-│               └── TTabs, TCollapse, TListBox
+│               └── TTabs, TAccordion, TListBox
 ```
 
 **Почему так.** Одно время `rendered`/`visible`/`present` были спущены в
@@ -57,7 +57,7 @@ TEntity (uid, getProps, assign, toJSON)
 - [base/component/component.class.ts](packages/core/src/components/base/component/component.class.ts) - Base IComponent interface
 - [base/control/control.class.ts](packages/core/src/components/base/control/control.class.ts) - Interactive controls
 - [custom/button/button.class.ts](packages/core/src/components/custom/button/button.class.ts) - Button implementation
-- Custom components: Tree, Tabs, ListBox, Icon, Spinner, Collapse, List, Input, etc.
+- Custom components: Tree, Tabs, ListBox, Icon, Spinner, Accordion, List, Input, etc.
 
 ### Key Exports
 - `IComponent<TProps, TEvents, TStates>` - Component contract
@@ -125,7 +125,7 @@ Returns `IComponentDescriptor` with:
 - [base/define-plugin.ts](packages/setup/descriptors/base/define-plugin.ts) - definePlugin factory
 - [base/compile-contribution.ts](packages/setup/descriptors/base/compile-contribution.ts) - Contribution merger
 - [components/button.descriptor.ts](packages/setup/descriptors/components/button.descriptor.ts) - Button example
-- Descriptor files for: Control, ValueControl, TextInput, CheckBox, Switch, Tabs, ListBox, Tree, Collapse, Icon, Spinner, Skeleton, Input, Frame, DragAndDrop
+- Descriptor files for: Control, ValueControl, TextInput, CheckBox, Switch, Tabs, ListBox, Tree, Accordion, Icon, Spinner, Skeleton, Input, Frame, DragAndDrop
 
 ### Key Exports
 - `IComponentDescriptor<TProps, TEvents, TPlugins>` - Metadata contract (phantom: props + события + TUPLE плагинов; `TProps extends object`, `TEvents extends object`, `TPlugins extends readonly IPluginDefinition[]`)
@@ -139,7 +139,7 @@ Organized by inheritance:
 - **Base**: Component, Entity, ComponentView, Control, Interactive
 - **ValueControl**: InputControl, CheckBox, Switch
 - **TextableControl**: Button
-- **Collections**: Collection, CollectionItem, Tabs, ListBox, List, Tree, Collapse
+- **Collections**: Collection, CollectionItem, Tabs, ListBox, List, Tree, Accordion
 - **Standalone**: Icon, Spinner, Skeleton, DragAndDrop, Frame, Input
 
 ---
@@ -541,7 +541,7 @@ Custom Elements, селекторы Angular. `SButton` в стиле PrimeVue д
 
 Формулировка уточнена практикой. Сначала критерий звучал как «сущность в ядре,
 собственное состояние **или `id` для ARIA-связки»** — и не выдержал двух
-случаев подряд: `id` есть и у панели Collapse, и у списка Select, но
+случаев подряд: `id` есть и у панели Accordion, и у списка Select, но
 компонентами мы их не сделали. `id` оказался условием необходимым, но не
 достаточным: он появляется у всего, на что кто-то ссылается, а компонентом
 вещь делает то, что её размещают снаружи.
@@ -566,7 +566,7 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabsItem` —
 | `TabsItem` | да — размещает и задаёт `value`/`text` | компонент |
 | `TabsContent` | да — `<Tabs.Content value="a">` | компонент |
 | `SelectItem` | да | компонент |
-| панель Collapse | нет — только содержимое в слот | слот + проп `content_aria` |
+| панель Accordion | нет — только содержимое в слот | слот + проп `content_aria` |
 | список Select | нет — он всегда один и внутри | разметка + проп `list_aria` |
 | список табов | нет | слот |
 | `CheckBox.Control` / `Indicator` / `Label` | нет | слоты |
@@ -609,23 +609,23 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 ### Нейминг коллекций и их частей
 
 Владелец во множественном числе, если элементов много (`Tabs`), в единственном
-— если коллекция сама по себе одна сущность (`ListBox`, `Collapse`). Часть
+— если коллекция сама по себе одна сущность (`ListBox`, `Accordion`). Часть
 всегда `Item`, независимо от числа владельца.
 
 | Коллекция | Части | Почему так |
 |---|---|---|
 | `Tabs` | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value` |
-| `Collapse` | `Collapse.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
+| `Accordion` | `Accordion.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
 | `ListBox` | `ListBox.Item` | панели нет вовсе: выбор ничего не раскрывает |
 
 **Набор частей выводится из критерия, а не копируется между коллекциями.**
-Панель есть и у Tabs, и у Collapse, но частью стала только у Tabs: у Collapse
+Панель есть и у Tabs, и у Accordion, но частью стала только у Tabs: у Accordion
 она не имеет собственной идентичности — не существует отдельно от элемента и
 не может быть сопоставлена другому. Одинаковый набор частей у всех коллекций
 был бы признаком того, что критерий не применяли.
 
 ARIA-связка при этом нужна обеим. У Tabs её потребляют два разных компонента
-(`Tabs.Item` и `Tabs.Content`), у Collapse — один шаблон элемента, где рядом
+(`Tabs.Item` и `Tabs.Content`), у Accordion — один шаблон элемента, где рядом
 лежат заголовок и панель. Считает её в обоих случаях item-адаптер расширения
 `content`, фасад отдаёт готовые наборы (`tab_aria` / `header_aria` +
 `content_aria`).
@@ -639,7 +639,7 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 <slot name="item-leading" :item="item" />
 <slot name="item" :item="item" />
 <slot name="item-trailing" :item="item" />
-<slot name="item-content" :item="item" />   <!-- Collapse: панель -->
+<slot name="item-content" :item="item" />   <!-- Accordion: панель -->
 ```
 
 Динамических имён (`item:${item.value}:leading`, `panel:${value}`) быть не
@@ -677,11 +677,11 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 ```
 TCollectionComponent
 └── TBatchCollectionFacade          batch      → Tabs
-    └── TSelectionCollectionFacade  + selection → Collapse, Select, List → ListBox
+    └── TSelectionCollectionFacade  + selection → Accordion, Select, List → ListBox
 
 TCollectionItemComponent
 └── TOrderItemFacade                order      → Tabs.Item
-    └── TSelectionItemFacade        + selected → Collapse/List/Select.Item
+    └── TSelectionItemFacade        + selected → Accordion/List/Select.Item
 ```
 
 У табов активность, а не выбор, поэтому базы выборки они не наследуют. Базы
@@ -752,13 +752,13 @@ Type 'TEventContext<TListBoxItemEventsExtension, "change:view" | "destroy" | "ch
 
 | Фасад | `mode` | `selected` |
 |---|---|---|
-| `TCollapseCollectionFacade` | только getter | только getter |
+| `TAccordionCollectionFacade` | только getter | только getter |
 | `TListCollectionFacade` | get + set | get + set |
 | `TSelectCollectionFacade` | get + set | только getter |
 
 Contributions при этом объявляют `mode` записываемым пропом. Итог:
-`<Collapse mode="multiple">` молча не работал — вторая раскрытая секция
-закрывала первую. Причём харнесс `Collapse.test.vue` использует
+`<Accordion mode="multiple">` молча не работал — вторая раскрытая секция
+закрывала первую. Причём харнесс `Accordion.test.vue` использует
 `mode="multiple"` и всё это время проверял поведение, которого не было.
 
 Отсюда `setup/__tests__/facade-props.spec.ts`: у каждого объявленного
@@ -817,7 +817,7 @@ adapter-контекстов сливаются в один объект, и о�
 
 Почему не в `TActivationExtension`: оно общее для всех коллекций, а
 «выбранность» выражается по-разному — у таба `aria-selected`, у заголовка
-Collapse `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
+Accordion `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
 
 Сторона панели (`role="tabpanel"`, `id`, `aria-labelledby`) пишется
 `TTabsContentBindingExtension` в adapter-слое: это единственное место, где
@@ -959,7 +959,7 @@ protected _syncDisabledAria(): void {
 
 **Граница набора.** Писать можно только туда, где есть экземпляр. У разметки
 без компонента набора не существует, и её атрибуты отдаются пропом:
-`content_aria` у панели Collapse, `list_aria` у списка Select. См. критерий
+`content_aria` у панели Accordion, `list_aria` у списка Select. См. критерий
 «часть или слот» — это его прямое следствие, а не исключение.
 
 ### `dataset` — тот же механизм для контракта с темой
@@ -973,7 +973,7 @@ protected _syncDisabledAria(): void {
 ```
 
 Работало по случайности: Vue сам приводит `false` к `"false"`, а `undefined`
-выбрасывает. Вне Vue эти атрибуты не эмитил никто — при портировании Collapse,
+выбрасывает. Вне Vue эти атрибуты не эмитил никто — при портировании Accordion,
 ListBox, Tabs и Select копий стало бы сорок.
 
 Поэтому общая механика набора вынесена в **`TAttributes`** (карта, `null`
@@ -1027,7 +1027,7 @@ ListBox, Tabs и Select копий стало бы сорок.
 | Компонент | Паттерн | Ключевое |
 |---|---|---|
 | Tabs | Tabs | `tablist`/`tab`/`tabpanel`, связка `aria-controls` ↔ `aria-labelledby` |
-| Collapse | Accordion | `aria-expanded` на заголовке, `role="region"` у панели |
+| Accordion | Accordion | `aria-expanded` на заголовке, `role="region"` у панели; до переименования компонент назывался `Collapse` — имя не совпадало с паттерном |
 | Select | Combobox (select-only) | `role="combobox"`, `aria-activedescendant`, фокус не уходит с поля |
 
 Два правила, общих для всех трёх. `aria-selected="false"` ставится и на
@@ -1064,8 +1064,8 @@ ListBox, Tabs и Select копий стало бы сорок.
 
 ARIA — контракт со скринридером, `data-*` — с темой. Повод для правила —
 реальная регрессия: `aria-selected` перенесли с обёртки на элемент с ролью, а
-тема раскрывала панель Collapse селектором
-`.s-collapse-item[aria-selected='true']`. Доступность починили — панели
+тема раскрывала панель Accordion селектором
+`.s-accordion-item[aria-selected='true']`. Доступность починили — панели
 перестали открываться, и ни один тест не заметил, потому что все проверяли
 ARIA. Обёртка теперь отдаёт то же состояние как `data-selected`.
 
@@ -1134,7 +1134,7 @@ ListBox режимы ради чужого компонента, после че
 Критерий: **общее — то, что не зависит от роли и модели фокуса.**
 
 Дублирования разметки при этом почти нет, и оно решено давно: `ListBoxItem`,
-`TabsItem`, `CollapseItem` и `SelectItem` рисуют строку одним и тем же
+`TabsItem`, `AccordionItem` и `SelectItem` рисуют строку одним и тем же
 `Button`. Общая визуальная единица вынесена; различается контейнер — то, что и
 обязано различаться.
 
@@ -1641,7 +1641,7 @@ Key files:
 - `packages/setup/adapter/extensions/collection/collection-props.extension.class.ts` — TCollectionPropsExtension (применяет owner-props)
 - `packages/setup/adapter/extensions/collection/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → activate(TDragPlugin, collection из TCollectionFactoryExtension))
 - `packages/setup/adapter/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (фасад: TItemContext через TCollectionItemContextExtension + регистрация через COLLECTION_ELEVATOR + meta через TCollectionItemMetaExtension). descriptor опционален.
-- `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor, TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsViewPluginDescriptor, DragPluginDescriptor (wired into TabsDescriptor / CollapseDescriptor)
+- `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor, TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsViewPluginDescriptor, DragPluginDescriptor (wired into TabsDescriptor / AccordionDescriptor)
 
 ---
 
@@ -1727,20 +1727,20 @@ Framework-agnostic dependency injection:
 
 ---
 
-## Collapse ↔ Tabs parity (post collection-refactor)
+## Accordion ↔ Tabs parity (post collection-refactor)
 
-Collapse is now a 1:1 mirror of Tabs. Only differences: component props (`view` vs orientation/alignment/position/view/closable) and the state extension (`selection` → `selected` vs `activation` → `active`).
+Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view` vs orientation/alignment/position/view/closable) and the state extension (`selection` → `selected` vs `activation` → `active`).
 
-- Core: `packages/core/src/components/custom/collapse/` — `TCollapse` (view only), `TCollapseItem` (text + arrowPlacement), `collection/` with `CollapseFactory` + `TCollapseExtension`/`TCollapseItemExtension` (item adapter exposes `view`, namespaced prop `collapse_view`).
-- Custom item classes removed (`TCollapseItemCustom`, `CollapseItemCustomDescriptor`, `CollapseItemCustomContribution`, `BaseCollapseItemCustom`) — single `TCollapseItem` remains, same in UI.
-- Selection default mode is `'single'` (TSelectionExtension default); old Collapse default `'multiple'` is set explicitly by callers (e.g. demos pass `mode="multiple"`).
-- Vue: `Collapse.vue` renders `CollapseItem` by `items`; `CollapseItem.vue` toggles via `context.adapters.selection.toggle()`, button view via `collapse_view`, aria via `selected`.
+- Core: `packages/core/src/components/custom/accordion/` — `TAccordion` (view only), `TAccordionItem` (text + arrowPlacement), `collection/` with `AccordionFactory` + `TAccordionExtension`/`TAccordionItemExtension` (item adapter exposes `view`, namespaced prop `accordion_view`).
+- Custom item classes removed (`TAccordionItemCustom`, `AccordionItemCustomDescriptor`, `AccordionItemCustomContribution`, `BaseAccordionItemCustom`) — single `TAccordionItem` remains, same in UI.
+- Selection default mode is `'single'` (TSelectionExtension default); old Accordion default `'multiple'` is set explicitly by callers (e.g. demos pass `mode="multiple"`).
+- Vue: `Accordion.vue` renders `AccordionItem` by `items`; `AccordionItem.vue` toggles via `context.adapters.selection.toggle()`, button view via `accordion_view`, aria via `selected`.
 
 ---
 
 ## List / ListBox parity (post collection-refactor)
 
-List is headless (no visual part), ListBox extends it. Both mirror Tabs/Collapse:
+List is headless (no visual part), ListBox extends it. Both mirror Tabs/Accordion:
 - Core: `TList` (maxRows/autoWidth/wordWrap/scrollBehavior, no collection), `TListItem` (text + wordWrap). `TListBox extends TList` (+ view), `TListBoxItem extends TListItem` (view comes from extension).
 - Collections: `ListFactory`/`ListBoxFactory`. Extensions **inherit, not duplicate**: `TListExtension` (selection + wordWrap propagation, `protected _owner`, `TOwner extends IList<any,any,any>`, `name: string`) ← `TListBoxExtension` (adds `view` + `change:view` relay). Item adapters: `TListItemExtension` (wordWrap) ← `TListBoxItemExtension` (adds `view`). Item adapters expose `list_wordWrap` / `list_view` (namespace `list`).
 - `TList`/`IList` are generic in props (`TProps extends IListComponentProps`) so `TListBox` can pass `IListBoxProps`. `defaultValues` typed `Partial<IListComponentProps>` to avoid static-side `engine` type conflict between `TListCollection` and `TListBoxCollection`.

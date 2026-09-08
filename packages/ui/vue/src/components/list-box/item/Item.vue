@@ -19,7 +19,7 @@ export default { ...SetupListBoxItem, components: { Button } }
 			`dataset` биндится дважды, и это не описка. Тема читает
 			`data-word-wrap` с обёртки, а `data-selected` / `data-highlighted`
 			— с `.s-button`: у ListBox состояние размазано по двум элементам,
-			в отличие от Select и Collapse, где всё на обёртке.
+			в отличие от Select и Accordion, где всё на обёртке.
 
 			Разложить набор в обе точки дешевле, чем переносить состояние: у
 			`.s-button` подсветка и выбор раскрашены по вариантам, а у элемента

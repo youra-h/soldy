@@ -14,15 +14,15 @@ export type TSelectionFacadeProps<TItem = any, TItemProps = any> = TCollectionFa
 /**
  * Фасад коллекции с расширением `selection`: режим выбора и выбранное.
  *
- * Подключают Collapse, List (и через него ListBox) и Select. У Tabs выбора
+ * Подключают Accordion, List (и через него ListBox) и Select. У Tabs выбора
  * нет — там активация, и он наследует только `TBatchCollectionFacade`. Это и
  * есть правило иерархии: фасады повторяют **состав расширений**, а не
  * таксономию компонентов, и сужение дженерика делает нарушение ошибкой
  * компиляции.
  *
  * До этой базы три фасада писали одно и то же по-разному, и это успело стать
- * настоящей ошибкой: у Collapse не было сеттера `mode`, хотя contribution
- * объявляет проп записываемым, — `<Collapse mode="multiple">` молча
+ * настоящей ошибкой: у Accordion не было сеттера `mode`, хотя contribution
+ * объявляет проп записываемым, — `<Accordion mode="multiple">` молча
  * игнорировался, и вторая раскрытая секция закрывала первую.
  */
 export abstract class TSelectionCollectionFacade<

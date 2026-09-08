@@ -97,7 +97,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 		// `aria-selected` пишется сюда, а не в TActivationExtension: то
 		// расширение общее для всех коллекций, а «выбранность» выражается
-		// по-разному — у таба это `aria-selected`, у заголовка Collapse
+		// по-разному — у таба это `aria-selected`, у заголовка Accordion
 		// `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
 		const activation = ctx.extensions.activation as IActivationExtension<TItem> | undefined
 

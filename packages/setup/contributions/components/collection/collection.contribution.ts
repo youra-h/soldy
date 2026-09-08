@@ -2,7 +2,7 @@ import type { IContribution } from '@soldy/accessor'
 
 /**
  * Общие коллекционные props/events владельца коллекции.
- * Переиспользуется в Tabs, Collapse (и далее List, ListBox, ...).
+ * Переиспользуется в Tabs, Accordion (и далее List, ListBox, ...).
  */
 export const CollectionContribution = (): IContribution => ({
 	props: {

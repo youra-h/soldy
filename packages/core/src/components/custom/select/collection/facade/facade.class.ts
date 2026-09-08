@@ -43,7 +43,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	 *
 	 * Проп, а не набор: список — это разметка внутри шаблона Select, своего
 	 * компонента у него нет, значит нет и `aria`, в который можно писать. Та
-	 * же асимметрия, что у панели Collapse.
+	 * же асимметрия, что у панели Accordion.
 	 */
 	get list_aria(): Record<string, string | null> {
 		return {

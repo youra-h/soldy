@@ -2,8 +2,8 @@
  * Фасад обязан уметь то, что объявил его contribution.
  *
  * Повод — настоящая ошибка, найденная при разборе фасадов: contribution
- * Collapse объявляет `mode` записываемым пропом (без `protected`), а у
- * `TCollapseCollectionFacade` сеттера не было. `<Collapse mode="multiple">`
+ * Accordion объявляет `mode` записываемым пропом (без `protected`), а у
+ * `TAccordionCollectionFacade` сеттера не было. `<Accordion mode="multiple">`
  * молча не срабатывал — вторая раскрытая секция закрывала первую, и
  * собственный тестовый харнесс проекта всё это время проверял не то, что
  * думал. У опции Select ровно то же было с `selected`.
@@ -19,8 +19,8 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-	CollapseCollectionDescriptor,
-	CollapseCollectionItemDescriptor,
+	AccordionCollectionDescriptor,
+	AccordionCollectionItemDescriptor,
 	ListCollectionDescriptor,
 	ListCollectionItemDescriptor,
 	ListBoxCollectionDescriptor,
@@ -47,8 +47,8 @@ function hasSetter(ctor: any, name: string): boolean {
 }
 
 const descriptors: Array<[string, () => any]> = [
-	['Collapse', CollapseCollectionDescriptor],
-	['Collapse.Item', CollapseCollectionItemDescriptor],
+	['Accordion', AccordionCollectionDescriptor],
+	['Accordion.Item', AccordionCollectionItemDescriptor],
 	['List', ListCollectionDescriptor],
 	['List.Item', ListCollectionItemDescriptor],
 	['ListBox', ListBoxCollectionDescriptor],

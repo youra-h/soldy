@@ -11,12 +11,12 @@ export type TSelectionItemAdapters<TItem extends object> = TOrderItemAdapters<TI
 /**
  * Фасад элемента, который можно выбрать: `selected` плюс порядок из базы.
  *
- * Подключают элементы Collapse, List (и через него ListBox) и Select. У таба
+ * Подключают элементы Accordion, List (и через него ListBox) и Select. У таба
  * не выбор, а активация, поэтому он наследует только `TOrderItemFacade`.
  *
  * Сеттер здесь есть, и это исправление: у опции Select его не было, хотя
  * contribution объявляет `selected` записываемым пропом, — присваивание
- * падало с `TypeError`. У Collapse и List сеттер был. Одно свойство в трёх
+ * падало с `TypeError`. У Accordion и List сеттер был. Одно свойство в трёх
  * копиях успело дать три разных API.
  */
 export abstract class TSelectionItemFacade<

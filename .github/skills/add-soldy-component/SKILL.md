@@ -302,4 +302,4 @@ Button is the canonical minimal component. Copy its shape:
 
 ## Collection components (Vue only for now)
 
-Collection-based components (tabs, collapse, list, list-box) are currently wired **only for Vue** — React has no collection adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`, the collection facades (`TTabsCollectionFacade` / `TTabItemCollectionFacade`), and the two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle). Details: [Collection components reference](./references/collection-component.md).
+Collection-based components (tabs, accordion, list, list-box) are currently wired **only for Vue** — React has no collection adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`, the collection facades (`TTabsCollectionFacade` / `TTabItemCollectionFacade`), and the two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle). Details: [Collection components reference](./references/collection-component.md).

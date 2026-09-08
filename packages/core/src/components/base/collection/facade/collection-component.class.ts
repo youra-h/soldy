@@ -12,7 +12,7 @@ import type { ICollectionComponentOptions } from './types'
  * можно собрать обычным `defineComponent` — без `defineCollection`.
  *
  * Дженерик над `TItem` и набором расширений `TExtensions`, поэтому подходит для любой
- * коллекции (tabs, collapse, list, list-box, tree, ...) с любым набором расширений.
+ * коллекции (tabs, accordion, list, list-box, tree, ...) с любым набором расширений.
  */
 export abstract class TCollectionComponent<
 	TItem extends object,

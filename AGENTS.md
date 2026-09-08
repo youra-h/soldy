@@ -103,13 +103,13 @@ dismiss.events.on('dismiss', () => { instance.open = false })
 
 Раньше критерий был сформулирован как «есть сущность в ядре, собственное
 состояние **или `id` для ARIA-связки**». Формулировка не выдержала практики:
-`id` есть и у панели Collapse, и у списка Select, но компонентами мы их не
+`id` есть и у панели Accordion, и у списка Select, но компонентами мы их не
 сделали — и правильно. `id` — условие необходимое, не достаточное.
 
 | Часть | `id` есть | Адресует потребитель | Решение |
 |---|---|---|---|
 | `Tabs.Content` | да | да — `<Tabs.Content value="a">` | компонент |
-| панель Collapse | да | нет — только содержимое в слот | слот + проп `content_aria` |
+| панель Accordion | да | нет — только содержимое в слот | слот + проп `content_aria` |
 | список Select | да | нет — он всегда один и внутри | разметка + проп `list_aria` |
 | список табов | нет | нет | слот |
 
@@ -148,22 +148,22 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 
 **Владелец во множественном числе, если элементов много** (`Tabs`), в
 единственном — если коллекция сама по себе одна сущность (`ListBox`,
-`Collapse`). Часть всегда `Item`, независимо от числа владельца.
+`Accordion`). Часть всегда `Item`, независимо от числа владельца.
 
 | Коллекция | Части | Почему так |
 |---|---|---|
 | `Tabs` | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value` |
-| `Collapse` | `Collapse.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
+| `Accordion` | `Accordion.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
 | `ListBox` | `ListBox.Item` | панели нет вовсе: выбор ничего не раскрывает |
 
 **Набор частей выводится из критерия, а не копируется между коллекциями.**
-Панель есть у Tabs и Collapse, но частью стала только у Tabs — потому что у
-Collapse она не имеет собственной идентичности. У ListBox панели нет вообще.
+Панель есть у Tabs и Accordion, но частью стала только у Tabs — потому что у
+Accordion она не имеет собственной идентичности. У ListBox панели нет вообще.
 Одинаковый набор частей у всех коллекций — признак того, что критерий не
 применяли.
 
 Плоские имена: `<Owner><Part>` — `TabsItem`, `TabsContent`, `ListBoxItem`,
-`CollapseItem`. В Angular и Web Components — `soldy-tabs-item`.
+`AccordionItem`. В Angular и Web Components — `soldy-tabs-item`.
 
 ### Слоты элементов: статические имена со scope
 
@@ -174,7 +174,7 @@ Collapse она не имеет собственной идентичности.
 <slot name="item-leading" :item="item" />
 <slot name="item" :item="item" />
 <slot name="item-trailing" :item="item" />
-<slot name="item-content" :item="item" />   <!-- Collapse: панель -->
+<slot name="item-content" :item="item" />   <!-- Accordion: панель -->
 ```
 
 Динамических имён (`item:${item.value}:leading`, `panel:${value}`) быть не
@@ -226,11 +226,11 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 ```
 TCollectionComponent
 └── TBatchCollectionFacade          batch      → Tabs
-    └── TSelectionCollectionFacade  + selection → Collapse, Select, List → ListBox
+    └── TSelectionCollectionFacade  + selection → Accordion, Select, List → ListBox
 
 TCollectionItemComponent
 └── TOrderItemFacade                order      → Tabs.Item
-    └── TSelectionItemFacade        + selected → Collapse/List/Select.Item
+    └── TSelectionItemFacade        + selected → Accordion/List/Select.Item
 ```
 
 У табов активность, а не выбор — поэтому они наследуют только `batch` и
@@ -245,10 +245,10 @@ TCollectionItemComponent
 ломает цепочку List → ListBox.
 
 **Чем это уже окупилось.** До баз одно свойство писалось в трёх фасадах по
-отдельности, и три копии дали три разных API: у Collapse не было сеттера
+отдельности, и три копии дали три разных API: у Accordion не было сеттера
 `mode`, у опции Select — сеттера `selected`, хотя contributions объявляют оба
-записываемыми. `<Collapse mode="multiple">` молча не работал — вторая
-раскрытая секция закрывала первую, и харнесс `Collapse.test.vue`, который
+записываемыми. `<Accordion mode="multiple">` молча не работал — вторая
+раскрытая секция закрывала первую, и харнесс `Accordion.test.vue`, который
 использует `mode="multiple"`, всё это время проверял не то.
 
 Сторожит `setup/__tests__/facade-props.spec.ts`: у каждого объявленного
@@ -372,7 +372,7 @@ adapter-контекстов (собственного и коллекционн
 
 Почему не в `TActivationExtension`: оно общее для всех коллекций, а
 «выбранность» выражается по-разному — у таба `aria-selected`, у заголовка
-Collapse `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
+Accordion `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
 
 Подробности — в разделе «Доступность (a11y)».
 
@@ -439,7 +439,7 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 **Критерий: общее — то, что не зависит от роли и модели фокуса.**
 
 Дублирования разметки при этом почти нет, и оно уже решено: `ListBoxItem`,
-`TabsItem`, `CollapseItem` и `SelectItem` рисуют строку одним и тем же
+`TabsItem`, `AccordionItem` и `SelectItem` рисуют строку одним и тем же
 `Button`. Общая визуальная единица вынесена, различается только контейнер — то,
 что и обязано различаться.
 
@@ -806,7 +806,7 @@ this._syncDisabledAria()   // начальное состояние — рука
 
 **Граница набора:** писать можно только туда, где есть экземпляр. У разметки
 без компонента набора нет, и её атрибуты отдаются пропом — `content_aria` у
-панели Collapse, `list_aria` у списка Select. Это не лазейка: см. «Часть или
+панели Accordion, `list_aria` у списка Select. Это не лазейка: см. «Часть или
 слот».
 
 ### Парный набор: `dataset` для темы (критично)
@@ -859,8 +859,12 @@ this._syncDisabledAria()   // начальное состояние — рука
 
 - **Tabs** — Tabs pattern: `tablist`/`tab`/`tabpanel`, связка
   `aria-controls` ↔ `aria-labelledby`, `aria-selected` на всех табах набора.
-- **Collapse** — Accordion: `aria-expanded` на заголовке, `role="region"` у
-  панели.
+- **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
+  `role="region"` у панели. Компонент назывался `Collapse` и переименован ровно
+  ради этого совпадения: «collapse» — поведение одной секции, а набор секций с
+  одной или несколькими раскрытыми у APG называется Accordion. **Имя компонента
+  должно совпадать с паттерном, который он реализует** — иначе найти реализацию
+  по документации APG невозможно.
 - **Select** — Combobox, вариант select-only: `role="combobox"` на поле,
   `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` на список и
   `aria-activedescendant` на подсвеченную опцию. **DOM-фокус никогда не
@@ -909,8 +913,8 @@ ARIA — контракт со скринридером, `data-*` — контр
 разделены, доступность нельзя править, не ломая вид.
 
 Повод — реальная регрессия: `aria-selected` перенесли с обёртки на элемент с
-ролью (правильно), а тема раскрывала панель Collapse селектором
-`.s-collapse-item[aria-selected='true']`. ARIA починили — панели перестали
+ролью (правильно), а тема раскрывала панель Accordion селектором
+`.s-accordion-item[aria-selected='true']`. ARIA починили — панели перестали
 открываться, и ни один тест не заметил, потому что все они проверяли ARIA.
 
 Обёртка отдаёт состояние как `data-selected`, тема смотрит на него.

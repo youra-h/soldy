@@ -15,8 +15,8 @@ import {
 	TabsContent,
 	ListBox,
 	ListBoxItem,
-	Collapse,
-	CollapseItem,
+	Accordion,
+	AccordionItem,
 } from '@soldy/ui-vue'
 import Harness from './Parts.test.vue'
 
@@ -30,8 +30,8 @@ describe('точка и плоское имя — один компонент', 
 		expect(ListBox.Item).toBe(ListBoxItem)
 	})
 
-	it('Collapse.Item === CollapseItem', () => {
-		expect(Collapse.Item).toBe(CollapseItem)
+	it('Accordion.Item === AccordionItem', () => {
+		expect(Accordion.Item).toBe(AccordionItem)
 	})
 })
 

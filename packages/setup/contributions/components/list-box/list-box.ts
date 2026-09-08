@@ -7,9 +7,9 @@ import type { IListBoxItem } from '@soldy/core'
  *
  * Панели у списка нет: выбор элемента не раскрывает содержимое, поэтому части
  * `Content` здесь не существует — в отличие от Tabs и от слота `item-content`
- * у Collapse.
+ * у Accordion.
  *
- * Слоты элементов статические и получают элемент через scope (см. Collapse).
+ * Слоты элементов статические и получают элемент через scope (см. Accordion).
  */
 export type TListBoxSlots = {
 	default: {}

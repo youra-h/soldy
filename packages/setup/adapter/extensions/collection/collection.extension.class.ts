@@ -1,7 +1,7 @@
 /**
  * TCollectionExtension — единая точка входа для настройки коллекции.
  *
- * Режим фасада: context.instance владеет `engine` (Tabs/Collapse/...).
+ * Режим фасада: context.instance владеет `engine` (Tabs/Accordion/...).
  *
  * Выполняется: привязка коллекции к реестру bundles,
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов

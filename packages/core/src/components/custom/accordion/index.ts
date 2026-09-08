@@ -1,0 +1,6 @@
+export * from './item/types'
+export { default as TAccordionItem } from './item/item.class'
+export { TAccordionItemCollectionFacade } from './item/facade'
+export * from './types'
+export { TAccordion } from './accordion.class'
+export * from './collection'

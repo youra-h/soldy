@@ -3,8 +3,8 @@
  *
  * Повод для теста — реальная регрессия. `aria-selected` перенесли с обёртки на
  * элемент с ролью (правильно с точки зрения доступности), а тема раскрывала
- * панель Collapse и красила активный таб селекторами
- * `.s-collapse-item[aria-selected='true']` / `.s-tabs-item[data-selected]`.
+ * панель Accordion и красила активный таб селекторами
+ * `.s-accordion-item[aria-selected='true']` / `.s-tabs-item[data-selected]`.
  * ARIA починили — вид сломался, и ни один тест этого не заметил, потому что
  * все они проверяли ARIA.
  *
@@ -21,14 +21,14 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import CollapseHarness from './Collapse.test.vue'
+import AccordionHarness from './Accordion.test.vue'
 import TabsHarness from './TabsContent.test.vue'
 import SelectHarness from './Select.test.vue'
 
-describe('Collapse: обёртка несёт data-selected для темы', () => {
+describe('Accordion: обёртка несёт data-selected для темы', () => {
 	it('раскрытый элемент помечен data-selected="true", свёрнутый — "false"', () => {
-		const items = mount(CollapseHarness, { attachTo: document.body }).findAll(
-			'.s-collapse-item',
+		const items = mount(AccordionHarness, { attachTo: document.body }).findAll(
+			'.s-accordion-item',
 		)
 
 		expect(items[0].attributes('data-selected')).toBe('true')
@@ -36,16 +36,16 @@ describe('Collapse: обёртка несёт data-selected для темы', ()
 	})
 
 	it('следует за раскрытием по клику', async () => {
-		const wrapper = mount(CollapseHarness, { attachTo: document.body })
+		const wrapper = mount(AccordionHarness, { attachTo: document.body })
 
-		await wrapper.findAll('.s-collapse-item__header')[1].trigger('click')
+		await wrapper.findAll('.s-accordion-item__header')[1].trigger('click')
 		await nextTick()
 
-		expect(wrapper.findAll('.s-collapse-item')[1].attributes('data-selected')).toBe('true')
+		expect(wrapper.findAll('.s-accordion-item')[1].attributes('data-selected')).toBe('true')
 	})
 
 	it('на обёртке нет aria-selected — у неё нет роли', () => {
-		const item = mount(CollapseHarness, { attachTo: document.body }).find('.s-collapse-item')
+		const item = mount(AccordionHarness, { attachTo: document.body }).find('.s-accordion-item')
 
 		expect(item.attributes('aria-selected')).toBeUndefined()
 	})

@@ -1,6 +1,0 @@
-export * from './item/types'
-export { default as TCollapseItem } from './item/item.class'
-export { TCollapseItemCollectionFacade } from './item/facade'
-export * from './types'
-export { TCollapse } from './collapse.class'
-export * from './collection'
