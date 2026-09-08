@@ -1,4 +1,3 @@
-
 export * from './item/types'
 export { default as TTabsItem } from './item/item.class'
 export { TTabsItemCollectionFacade } from './item/facade'

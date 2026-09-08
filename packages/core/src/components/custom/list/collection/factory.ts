@@ -9,6 +9,7 @@ import {
 	TOrderExtension,
 	TUniqueExtension,
 	TMetaExtension,
+	TValueSelectionExtension,
 } from './../../../base'
 import TListItem from './../item/item.class'
 import type { IListItem } from './../item/types'
@@ -24,6 +25,9 @@ export const ListFactory = (instance: IList): TListCollection =>
 			plain: new TPlainExtension<IListItem>(),
 			batch: new TBatchExtension<IListItem>(),
 			selection: new TSelectionExtension<IListItem>(),
+			// Связь `value` ↔ выбор. Объявлено после `selection`: расширение
+			// читает его на установке
+			value: new TValueSelectionExtension({ owner: instance }),
 			list: new TListExtension({ owner: instance }),
 		},
 	})

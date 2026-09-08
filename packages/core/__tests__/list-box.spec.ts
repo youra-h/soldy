@@ -93,3 +93,83 @@ describe('wordWrap: значение элемента поверх значен�
 		expect(facadeFor(0).wordWrap).toBe(false)
 	})
 })
+
+/**
+ * `value` списка — проекция выбора, а не второе состояние.
+ *
+ * До этого выбор отдавался наружу только как `selected: TItem[]` — внутренней
+ * моделью коллекции. Потребитель на вопрос «что выбрано» получал объекты и
+ * должен был сам приводить их к значениям; в стенде это привело к тому, что
+ * меню полезло управлять выбором поэлементно.
+ *
+ * Связь держит `TValueSelectionExtension` — то же расширение, что у Select:
+ * оно и было там написано, пока Select оставался единственным списком со
+ * значением.
+ */
+describe('value ↔ выбор', () => {
+	it('значение выбирает элемент', () => {
+		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+
+		owner.value = 'b'
+
+		expect(collection.selected).toEqual([items[1]])
+	})
+
+	it('выбор элемента пишет значение', () => {
+		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+
+		collection.engine.extensions.selection.select(items[2])
+
+		expect(owner.value).toBe('c')
+	})
+
+	it('в multiple значение — массив', () => {
+		const { owner, collection, items } = createListBox(['a', 'b', 'c'])
+
+		collection.mode = 'multiple'
+		collection.engine.extensions.selection.select(items[0])
+		collection.engine.extensions.selection.select(items[2])
+
+		expect(owner.value).toEqual(['a', 'c'])
+	})
+
+	it('снятие выбора обнуляет значение', () => {
+		const { owner, collection, items } = createListBox(['a', 'b'])
+
+		owner.value = 'a'
+		collection.engine.extensions.selection.resetSelection()
+
+		expect(owner.value).toBeUndefined()
+	})
+
+	/**
+	 * Значение приходит пропом сразу, а элементы регистрируются при
+	 * монтировании — то есть позже. Без повторного прохода на `item:added`
+	 * заданное значение молча терялось бы.
+	 */
+	it('значение, заданное до появления элементов, применяется при их добавлении', () => {
+		const owner = new TListBox({ value: 'b' } as any)
+		const collection = new TListBoxCollectionFacade({}, { owner })
+
+		expect(owner.value).toBe('b')
+
+		collection.items = [
+			new TListBoxItem({ value: 'a', text: 'a' }),
+			new TListBoxItem({ value: 'b', text: 'b' }),
+		] as IListBoxItem[]
+
+		expect(collection.selected.map((item) => item.value)).toEqual(['b'])
+	})
+
+	/** Синхронизация в обе стороны — самое место для бесконечного цикла. */
+	it('не зацикливается', () => {
+		const { owner, collection, items } = createListBox(['a', 'b'])
+		let changes = 0
+
+		owner.events.on('change:value', () => changes++)
+		collection.engine.extensions.selection.select(items[1])
+
+		expect(owner.value).toBe('b')
+		expect(changes).toBeLessThan(5)
+	})
+})

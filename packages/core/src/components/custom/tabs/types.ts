@@ -56,8 +56,7 @@ export interface ITabsComponentProps extends IControlProps {
 
 /** Полный набор пропсов Tabs: компонент + коллекция (items, engine, trackBy). */
 export interface ITabsProps
-	extends ITabsComponentProps,
-		ITabsCollectionProps<ITabsItemProps, ITabsItem> {}
+	extends ITabsComponentProps, ITabsCollectionProps<ITabsItemProps, ITabsItem> {}
 
 export type TTabsStates = TControlStates
 

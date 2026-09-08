@@ -10,8 +10,10 @@ export type TTabsContentItemEventsExtension = TBaseItemEventsExtension
  * `id` панели — это один и тот же идентификатор, и считаться он обязан в
  * одном месте.
  */
-export interface ITabsContentItemExtension<TItem extends object = any>
-	extends IItemExtension<TItem, TTabsContentItemEventsExtension> {
+export interface ITabsContentItemExtension<TItem extends object = any> extends IItemExtension<
+	TItem,
+	TTabsContentItemEventsExtension
+> {
 	/** Атрибуты стороны таба: `id` и ссылка на панель. */
 	readonly tabAria: TAriaAttributes
 	/** Атрибуты стороны панели: роль, `id` и ссылка на таб. */

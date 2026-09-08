@@ -4,7 +4,8 @@ import type { ISwitch, ISwitchProps, TSwitchEvents } from './types'
 
 export default class TSwitch
 	extends TInputControl<boolean | undefined, ISwitchProps, TSwitchEvents>
-	implements ISwitch {
+	implements ISwitch
+{
 	static override baseClass = 's-switch'
 
 	static defaultValues: Partial<ISwitchProps> = {

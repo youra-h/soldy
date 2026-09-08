@@ -16,8 +16,7 @@ export type TListItemEvents = TValueControlEvents<string | number> & {
 }
 
 export interface IListItemProps
-	extends IValueControlProps<string | number>,
-		IListCollectionItemProps {
+	extends IValueControlProps<string | number>, IListCollectionItemProps {
 	/** Текст элемента */
 	text?: string
 	/** Перенос текста (undefined = наследовать от TList) */
@@ -40,4 +39,3 @@ export interface IListItem<
 }
 
 export type TListItemOptions = IComponentOptions<TListItemStates>
-

@@ -9,6 +9,7 @@ import {
 	TOrderExtension,
 	TUniqueExtension,
 	TMetaExtension,
+	TValueSelectionExtension,
 } from './../../../base'
 import TListBoxItem from './../item/item.class'
 import type { IListBoxItem } from './../item/types'
@@ -24,6 +25,9 @@ export const ListBoxFactory = (instance: IListBox): TListBoxCollection =>
 			plain: new TPlainExtension<IListBoxItem>(),
 			batch: new TBatchExtension<IListBoxItem>(),
 			selection: new TSelectionExtension<IListBoxItem>(),
+			// Связь `value` ↔ выбор. Без неё проп `value` у ListBox был бы
+			// объявлен, но мёртв
+			value: new TValueSelectionExtension({ owner: instance }),
 			list: new TListBoxExtension({ owner: instance }),
 		},
 	})

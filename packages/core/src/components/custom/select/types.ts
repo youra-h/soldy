@@ -55,8 +55,7 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue> 
 
 /** Полный набор props: собственные + коллекционные. */
 export interface ISelectProps
-	extends ISelectComponentProps,
-		ISelectCollectionProps<ISelectItemProps, ISelectItem> {}
+	extends ISelectComponentProps, ISelectCollectionProps<ISelectItemProps, ISelectItem> {}
 
 export type TSelectStates = TInputControlStates<TSelectValue>
 

@@ -16,7 +16,9 @@ export class TCollectionEngine<
 > {
 	public readonly driver: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions
-	public readonly events = new TEvented<TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>>()
+	public readonly events = new TEvented<
+		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
+	>()
 
 	constructor(
 		options: {

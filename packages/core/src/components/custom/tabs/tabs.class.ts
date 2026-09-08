@@ -35,10 +35,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	protected _view!: TTabsView
 	protected _closable!: boolean
 
-	constructor(
-		props: Partial<ITabsProps> = {},
-		options: IComponentOptions<TTabsStates> = {},
-	) {
+	constructor(props: Partial<ITabsProps> = {}, options: IComponentOptions<TTabsStates> = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTabs

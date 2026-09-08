@@ -8,30 +8,31 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
 import type { ISelect, TSelectValue } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
-import type {
-	ISelectExtension,
-	ISelectExtensionOptions,
-	TSelectExtensionEvents,
-} from './types'
+import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents } from './types'
 
 /**
  * TSelectExtension — всё, что Select знает благодаря коллекции.
  *
- * Три обязанности, и все три требуют одновременно владельца и список,
- * поэтому живут вместе:
+ * Две обязанности, и обе требуют одновременно владельца и список, поэтому
+ * живут вместе:
  *
- * 1. **`value` и выбор — одно и то же.** Значение отдельно от выбора не
- *    хранится: в одну сторону выбор пишет `value`, в другую `value` выбирает
- *    опции. Флаг `_syncing` разрывает круг.
- * 2. **ARIA-связка.** Формула идентификаторов одна на обе половинки: на
+ * 1. **ARIA-связка.** Формула идентификаторов одна на обе половинки: на
  *    `aria-controls` поля и `id` списка, на `aria-activedescendant` и `id`
  *    опции. Разнеси её, и они однажды разойдутся.
- * 3. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у List.
+ * 2. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у List.
+ *
+ * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
+ * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
+ * единственным списком со значением; теперь `value` есть и у `TList`, и
+ * оставить копию значило бы завести две реализации одной мысли.
+ *
+ * Текст поля (`valueText`) при этом остаётся здесь — он не про синхронизацию,
+ * а про то, что показывать вместо `placeholder`.
  */
 export class TSelectExtension<
-		TOwner extends ISelect = ISelect,
-		TItem extends ISelectItem = ISelectItem,
-	>
+	TOwner extends ISelect = ISelect,
+	TItem extends ISelectItem = ISelectItem,
+>
 	extends TBaseOwnerItemExtension<TItem, ISelectItemExtension<TItem>, TSelectExtensionEvents>
 	implements IExtension<TItem>, ISelectExtension<TItem>
 {
@@ -39,7 +40,6 @@ export class TSelectExtension<
 
 	private readonly _owner: TOwner
 	private _valueText = ''
-	private _syncing = false
 
 	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
 		super(TSelectItemExtension as any, options)
@@ -104,13 +104,6 @@ export class TSelectExtension<
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
 			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
 		}
-
-		// `value`, заданный до появления опций, применяется при их добавлении
-		this._owner.events.on('change:value', () => this._applyValueToSelection())
-
-		// Только value → выбор. Обратное направление здесь запускать нельзя:
-		// на старте выбор пуст, и он затёр бы `value`, заданный пропом.
-		this._applyValueToSelection()
 	}
 
 	/**
@@ -156,74 +149,15 @@ export class TSelectExtension<
 
 		// Текст опции виден в поле, пока она выбрана
 		item.events.on('change:text', () => this._syncValueText())
-
-		// Опция могла приехать позже, чем выставили value
-		this._applyValueToSelection()
 	}
 
 	/**
-	 * Выбор → `value` и текст поля.
+	 * Выбор изменился — обновляем то, что зависит от него: разметку для
+	 * скринридера и текст поля. Само `value` пишет `TValueSelectionExtension`.
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
 		this._syncValueText()
-
-		if (this._syncing) return
-
-		const selection = this._selection
-
-		if (!selection) return
-
-		const selected = selection.selected
-
-		this._syncing = true
-
-		try {
-			this._owner.value = selection.multiple
-				? selected.map((item) => item.value)
-				: (selected[0]?.value ?? undefined)
-		} finally {
-			this._syncing = false
-		}
-	}
-
-	/**
-	 * `value` → выбор.
-	 *
-	 * Значения, которым не нашлось опции, молча игнорируются: список мог ещё
-	 * не приехать, и повторный проход случится на `item:added`.
-	 */
-	private _applyValueToSelection(): void {
-		if (this._syncing) return
-
-		const selection = this._selection
-
-		if (!selection || !this._ctx) return
-
-		const wanted = this._toKeys(this._owner.value)
-
-		this._syncing = true
-
-		try {
-			selection.resetSelection()
-
-			for (const key of wanted) {
-				const item = this._ctx.driver.find((candidate) => candidate.value === key)
-
-				if (item) selection.select(item)
-			}
-		} finally {
-			this._syncing = false
-		}
-
-		this._syncSelectedAria()
-		this._syncValueText()
-	}
-
-	private _toKeys(value: TSelectValue): (string | number)[] {
-		if (value === undefined || value === '') return []
-
-		return Array.isArray(value) ? value : [value]
 	}
 
 	/**

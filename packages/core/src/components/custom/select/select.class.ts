@@ -2,13 +2,7 @@ import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { TAriaAttributes } from '../../../common'
-import type {
-	ISelect,
-	ISelectProps,
-	TSelectEvents,
-	TSelectStates,
-	TSelectValue,
-} from './types'
+import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue } from './types'
 
 /**
  * Поле выбора из списка (`Select`).
@@ -26,10 +20,10 @@ import type {
  * опций знает она, не поле.
  */
 export class TSelect<
-		TProps extends ISelectProps = ISelectProps,
-		TEvents extends TSelectEvents = TSelectEvents,
-		TStates extends TSelectStates = TSelectStates,
-	>
+	TProps extends ISelectProps = ISelectProps,
+	TEvents extends TSelectEvents = TSelectEvents,
+	TStates extends TSelectStates = TSelectStates,
+>
 	extends TInputControl<TSelectValue, TProps, TEvents, TStates>
 	implements ISelect<TProps, TEvents, TStates>
 {

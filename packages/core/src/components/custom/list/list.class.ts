@@ -1,26 +1,48 @@
-import { TControl } from '../../base/control'
+import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { TScrollBehavior } from '../../../common'
-import type { IList, IListComponentProps, IListProps, TListEvents, TListStates } from './types'
+import type {
+	IList,
+	IListComponentProps,
+	IListProps,
+	TListEvents,
+	TListStates,
+	TListValue,
+} from './types'
 
 /**
  * Компонент списка (TList).
- * Headless-модель: владеет только раскладкой (maxRows, autoWidth, wordWrap, scrollBehavior).
- * Коллекция создаётся отдельно через ListFactory или через TCollectionExtension в adapter-слое.
+ *
+ * Владеет раскладкой (maxRows, autoWidth, wordWrap, scrollBehavior) и
+ * **значением** — тем, что выбрано.
+ *
+ * Наследует `TValueControl`, а не `TControl`, и это не расширение ради удобства:
+ * выбор у списка был всегда, просто отдавался наружу списком объектов
+ * (`selected: TItem[]`) — то есть внутренней моделью коллекции. Потребителю
+ * нужен ответ на вопрос «что выбрано», а это значения. `role="listbox"` по ARIA
+ * — форменный виджет, нативный аналог `<select multiple>` имеет имя и значение.
+ *
+ * `value` — не второе состояние рядом с выбором, а его проекция: связь в обе
+ * стороны держит `TValueSelectionExtension` в коллекции. `TInputControl` не
+ * берём намеренно: `readonly`/`required`/`id` — свойства полей ввода, списку
+ * они ни к чему.
+ *
+ * Коллекция создаётся отдельно через ListFactory или через TCollectionExtension
+ * в adapter-слое.
  */
 export class TList<
 	TProps extends IListComponentProps = IListProps,
 	TEvents extends TListEvents = TListEvents,
 	TStates extends TListStates = TListStates,
 >
-	extends TControl<TProps, TEvents, TStates>
+	extends TValueControl<TListValue, TProps, TEvents, TStates>
 	implements IList<TProps, TEvents, TStates>
 {
 	static override baseClass = 's-list'
 
 	static defaultValues: Partial<IListComponentProps> = {
-		...TControl.defaultValues,
+		...TValueControl.defaultValues,
 		maxRows: 0,
 		autoWidth: false,
 		wordWrap: false,

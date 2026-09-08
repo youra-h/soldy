@@ -7,6 +7,7 @@ import {
 	TMetaExtension,
 	TBatchExtension,
 	TSelectionExtension,
+	TValueSelectionExtension,
 } from '../../../base/collection'
 import type {
 	ICollectionProps,
@@ -30,6 +31,8 @@ export type TSelectCollectionExtensions = {
 	plain: TPlainExtension<ISelectItem>
 	batch: TBatchExtension<ISelectItem>
 	selection: TSelectionExtension<ISelectItem>
+	/** Связь `value` поля с выбором коллекции — то же расширение, что у List. */
+	value: TValueSelectionExtension<any, ISelectItem>
 	select: TSelectExtension<ISelect, ISelectItem>
 }
 
@@ -43,7 +46,8 @@ export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollection
  * однажды разошлись бы.
  */
 export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = ISelectItem>
-	extends ICollectionProps<TSelectCollection>,
+	extends
+		ICollectionProps<TSelectCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,
 		ISelectionCollectionProps {}
 

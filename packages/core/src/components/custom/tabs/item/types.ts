@@ -18,8 +18,7 @@ export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> &
 }
 
 export interface ITabsItemProps
-	extends IValueControlProps<string | number>,
-		ITabsCollectionItemProps {
+	extends IValueControlProps<string | number>, ITabsCollectionItemProps {
 	/** Текст таба */
 	text?: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */

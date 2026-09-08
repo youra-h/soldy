@@ -101,7 +101,10 @@ export default class TComponentView<
 		this._aria = new TAria()
 
 		this._aria.events.on('change', () =>
-			(this.events as TEvented<TComponentViewEvents>).emit('change:aria', this._aria.toObject()),
+			(this.events as TEvented<TComponentViewEvents>).emit(
+				'change:aria',
+				this._aria.toObject(),
+			),
 		)
 
 		this._dataset = new TDataset()

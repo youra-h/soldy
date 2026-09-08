@@ -1,2 +1,2 @@
-export type { IStorage } from './types';
-export { TArrayStorage } from './array-storage';
+export type { IStorage } from './types'
+export { TArrayStorage } from './array-storage'

@@ -22,10 +22,10 @@ import type {
  * то есть у неё есть собственная идентичность (см. критерий в AGENTS.md).
  */
 export class TTabsContent<
-		TProps extends ITabsContentProps = ITabsContentProps,
-		TEvents extends TTabsContentEvents = TTabsContentEvents,
-		TStates extends TTabsContentStates = TTabsContentStates,
-	>
+	TProps extends ITabsContentProps = ITabsContentProps,
+	TEvents extends TTabsContentEvents = TTabsContentEvents,
+	TStates extends TTabsContentStates = TTabsContentStates,
+>
 	extends TComponentView<TProps, TEvents, TStates>
 	implements ITabsContent<TProps, TEvents, TStates>
 {

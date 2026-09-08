@@ -10,8 +10,9 @@ export type TSelectItemEventsExtension = TBaseItemEventsExtension
  * расширения. Нужен, чтобы разметка могла спросить у опции её `id` — тот же,
  * на который ссылается `aria-activedescendant` поля.
  */
-export interface ISelectItemExtension<TItem extends ISelectItem = ISelectItem>
-	extends IItemExtension<TItem, TSelectItemEventsExtension> {
+export interface ISelectItemExtension<
+	TItem extends ISelectItem = ISelectItem,
+> extends IItemExtension<TItem, TSelectItemEventsExtension> {
 	/** `id` этой опции. */
 	readonly optionId: string
 	/** Выбрать опцию с учётом режима и `closeOnSelect` владельца. */

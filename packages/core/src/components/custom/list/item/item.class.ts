@@ -29,10 +29,7 @@ export default class TListItem<
 
 	protected _wordWrap: boolean | undefined
 
-	constructor(
-		props: Partial<TProps> = {},
-		options: IComponentOptions<TListItemStates> = {},
-	) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TListItemStates> = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TListItem
@@ -80,4 +77,3 @@ export default class TListItem<
 		} as TProps
 	}
 }
-

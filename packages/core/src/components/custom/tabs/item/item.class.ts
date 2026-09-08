@@ -30,10 +30,7 @@ export default class TTabsItem<
 
 	protected _closeLabel!: string
 
-	constructor(
-		props: Partial<TProps> = {},
-		options: IComponentOptions<TTabsItemStates> = {},
-	) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TTabsItemStates> = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTabsItem

@@ -2,12 +2,7 @@ import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
-import type {
-	ISelectItem,
-	ISelectItemProps,
-	TSelectItemEvents,
-	TSelectItemStates,
-} from './types'
+import type { ISelectItem, ISelectItemProps, TSelectItemEvents, TSelectItemStates } from './types'
 
 /**
  * Опция списка (`Select.Item`).
@@ -21,9 +16,9 @@ import type {
  * плагины подсветки и стили.
  */
 export default class TSelectItem<
-		TProps extends ISelectItemProps = ISelectItemProps,
-		TEvents extends TSelectItemEvents = TSelectItemEvents,
-	>
+	TProps extends ISelectItemProps = ISelectItemProps,
+	TEvents extends TSelectItemEvents = TSelectItemEvents,
+>
 	extends TValueControl<string | number, TProps, TEvents, TSelectItemStates>
 	implements ISelectItem<TProps, TEvents>
 {

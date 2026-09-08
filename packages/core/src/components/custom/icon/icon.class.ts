@@ -19,10 +19,7 @@ export default class TIcon
 	protected _width: string | number | undefined
 	protected _height: string | number | undefined
 
-	constructor(
-		props: Partial<IIconProps> = {},
-		options: IComponentOptions<TIconStates> = {},
-	) {
+	constructor(props: Partial<IIconProps> = {}, options: IComponentOptions<TIconStates> = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TIcon

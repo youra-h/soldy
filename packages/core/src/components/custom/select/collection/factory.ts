@@ -7,6 +7,7 @@ import {
 	TMetaExtension,
 	TBatchExtension,
 	TSelectionExtension,
+	TValueSelectionExtension,
 } from '../../../base/collection'
 import TSelectItem from '../item/item.class'
 import type { ISelectItem } from '../item/types'
@@ -34,6 +35,10 @@ export const SelectFactory = (instance: ISelect): TSelectCollection =>
 			plain: new TPlainExtension<ISelectItem>(),
 			batch: new TBatchExtension<ISelectItem>(),
 			selection: new TSelectionExtension<ISelectItem>(),
+			// Связь `value` ↔ выбор — то же расширение, что у List. Раньше это
+			// было написано внутри `TSelectExtension`, пока Select оставался
+			// единственным списком со значением
+			value: new TValueSelectionExtension({ owner: instance }),
 			select: new TSelectExtension({ owner: instance }),
 		},
 	})

@@ -14,8 +14,7 @@ export type TSelectItemEvents = TValueControlEvents<string | number> & {
 }
 
 export interface ISelectItemProps
-	extends IValueControlProps<string | number>,
-		ISelectCollectionItemProps {
+	extends IValueControlProps<string | number>, ISelectCollectionItemProps {
 	/** Текст опции — то, что видно в списке и попадает в поле после выбора */
 	text?: string
 }

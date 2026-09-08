@@ -12,9 +12,9 @@ import type { ISelectItemExtension, TSelectItemEventsExtension } from './types'
  * состояние поля, а адаптер знает только свой элемент.
  */
 export class TSelectItemExtension<
-		TItem extends ISelectItem = ISelectItem,
-		TParent extends ISelectExtension<TItem> = ISelectExtension<TItem>,
-	>
+	TItem extends ISelectItem = ISelectItem,
+	TParent extends ISelectExtension<TItem> = ISelectExtension<TItem>,
+>
 	extends TBaseItemExtension<TItem, TParent, TSelectItemEventsExtension>
 	implements ISelectItemExtension<TItem>
 {
