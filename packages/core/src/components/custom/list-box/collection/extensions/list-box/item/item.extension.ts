@@ -1,4 +1,4 @@
-import type { IListBoxItemExtension } from './types'
+import type { IListBoxItemExtension, TListBoxItemEventsExtension } from './types'
 import type { IListBoxItem } from '../../../../item/types'
 import type { IListBoxExtension } from '../types'
 import type { TListBoxView } from '../../../../types'
@@ -16,7 +16,7 @@ export class TListBoxItemExtension<
 	TItem extends IListBoxItem = IListBoxItem,
 	TParent extends IListBoxExtension<TItem> = IListBoxExtension<TItem>,
 >
-	extends TListItemExtension<TItem, TParent>
+	extends TListItemExtension<TItem, TParent, TListBoxItemEventsExtension>
 	implements IListBoxItemExtension<TItem>
 {
 	constructor(item: TItem, parent: TParent) {

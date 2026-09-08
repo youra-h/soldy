@@ -697,11 +697,55 @@ TCollectionItemComponent
 
 Побочно ушли приведения: `this.extensions.batch as unknown as TBatchExtension<TItem>`
 в фасадах List и Select и `adapters as unknown as TListAdapters` в item-фасаде
-— проверка в этих местах была просто выключена. Осталось одно, помеченное:
-`change:view` у ListBox не попадает в тип эмиттера, потому что набор событий
-вшит в `IListItemExtension` и наследником не расширяется. Параметризовать
-`TEvents` пробовали — тип эмиттера инвариантен, и требование расходится вверх
-по `IListExtension`; это отдельная задача.
+— проверка в этих местах была просто выключена.
+
+#### Карта событий item-адаптера инвариантна
+
+Последнее приведение (`adapters.list.events as any` в фасаде элемента ListBox)
+оказалось не мелочью, а симптомом: **наследник, добавивший своё событие, не
+подходил под контракт родителя**. Ниже разбор, потому что то же самое ждёт
+каждую следующую коллекцию.
+
+`TListBoxItemEventsExtension` — надмножество `TListItemEventsExtension`, и
+интуиция говорит, что «более широкий» эмиттер должен подходить туда, где ждут
+узкий. Не подходит ни в одну сторону, потому что в `TEvented<TEvents>` карта
+стоит сразу в двух позициях:
+
+```ts
+type TEventContext<TEvents, K extends keyof TEvents = keyof TEvents> = {
+    event: K                        // выход → ковариантно
+    args: Parameters<TEvents[K]>
+}
+on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void    // вход → контравариантно
+```
+
+TypeScript помечает такой параметр **инвариантным**, и отношения «шире/уже»
+между `TEvented<A>` и `TEvented<B>` не существует вовсе. Компилятор это и
+печатал, докопавшись до `use`:
+
+```
+Type 'TEventContext<TListBoxItemEventsExtension, "change:view" | "destroy" | "change:wordWrap">'
+  is not assignable to type 'TEventContext<TListItemEventsExtension, "destroy" | "change:wordWrap">'
+```
+
+**Что оказалось решением.** Не «параметризовать всё подряд» — базовые
+контракты (`IItemExtension`, `IItemExtensionCtor`, `IExtensionItems`) уже были
+параметризованы. Ломались **констрейнты**, подставлявшие узкий набор по
+умолчанию: `TItemExt extends IListItemExtension<TItem>` требовал ровно
+`TListItemEventsExtension`.
+
+Правило: **в констрейнтах `<…, any>`, в инстанцировании — точный набор.**
+Констрейнт отвечает на вопрос «есть ли у тебя эмиттер», а не «ровно ли такой»;
+сверять там карту не нужно и вредно, потому что инвариантность запрещает любое
+расхождение. Точность остаётся там, где от неё есть польза, — в самом
+`extends TListItemExtension<TItem, TParent, TListBoxItemEventsExtension>`.
+
+Правок вышло семь: `IItemExtensionCtor`, `IExtensionItems`,
+`IBaseOwnerItemExtensionOptions`, `TBaseOwnerItemExtension` в базе плюс
+`IListItemExtension`, `IListExtension`/`IListExtensionOptions`,
+`TListItemExtension` и `TListExtension` на уровне компонента. После этого
+`as any` снялся, а опечатка в имени события снова ловится — вплоть до
+подсказки «Did you mean "change:view"?».
 
 **Что нашлось при разборе.** Одно свойство писалось в трёх фасадах по
 отдельности, и три копии дали три разных API:

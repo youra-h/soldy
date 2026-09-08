@@ -14,10 +14,11 @@ import type { IListExtension } from '../types'
  */
 export class TListItemExtension<
 	TItem extends IListItem = IListItem,
-	TParent extends IListExtension<TItem> = IListExtension<TItem>,
+	TParent extends IListExtension<TItem, any> = IListExtension<TItem>,
+	TEvents extends TListItemEventsExtension = TListItemEventsExtension,
 >
-	extends TBaseItemExtension<TItem, TParent, TListItemEventsExtension>
-	implements IListItemExtension<TItem>
+	extends TBaseItemExtension<TItem, TParent, TEvents>
+	implements IListItemExtension<TItem, TEvents>
 {
 	constructor(item: TItem, parent: TParent) {
 		super(item, parent)

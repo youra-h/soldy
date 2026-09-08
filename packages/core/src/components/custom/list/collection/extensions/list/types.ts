@@ -14,7 +14,9 @@ import type { IListItem } from '../../../item/types'
  */
 export interface IListExtension<
 	TItem extends IListItem = IListItem,
-	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+	// `any` в констрейнте намеренно: карта событий инвариантна, и требовать
+	// здесь точный набор значило бы запретить наследнику её расширить
+	TItemExt extends IListItemExtension<TItem, any> = IListItemExtension<TItem>,
 >
 	extends IExtension<TItem>, IExtensionItems<TItem, TItemExt> {
 	/** Глобальный wordWrap с инстанса TList. */
@@ -28,7 +30,7 @@ export interface IListExtension<
 export interface IListExtensionOptions<
 	TOwner extends IList<any, any, any> = IList<any, any, any>,
 	TItem extends IListItem = IListItem,
-	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+	TItemExt extends IListItemExtension<TItem, any> = IListItemExtension<TItem>,
 > extends IBaseOwnerItemExtensionOptions<TItem, TItemExt> {
 	/** Ссылка на инстанс компонента TList. */
 	owner: TOwner

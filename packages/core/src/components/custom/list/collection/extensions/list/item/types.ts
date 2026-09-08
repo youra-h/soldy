@@ -8,16 +8,14 @@ export type TListItemEventsExtension = TBaseItemEventsExtension & {
  * Контракт item-адаптера list.
  * Предоставляет геттер wordWrap — резолвится из элемента ?? родительского расширения.
  *
- * Набор событий вшит и наследником не расширяется, поэтому `change:view`
- * у ListBox в тип не попадает и его фасад релеит событие через приведение.
- * Параметризовать `TEvents` пробовали: тип эмиттера инвариантен (middleware
- * принимает карту событий в обе стороны), и требование расходится вверх по
- * `IListExtension` и дальше. Задача отдельная, к фасадам отношения не имеет.
+ * `TEvents` параметризован, чтобы наследник мог добавить своё событие: у
+ * ListBox это `change:view`. Про то, почему без этого наследник перестаёт
+ * подходить под контракт родителя, — в `IItemExtension`.
  */
-export interface IListItemExtension<TItem extends object = any> extends IItemExtension<
-	TItem,
-	TListItemEventsExtension
-> {
+export interface IListItemExtension<
+	TItem extends object = any,
+	TEvents extends TListItemEventsExtension = TListItemEventsExtension,
+> extends IItemExtension<TItem, TEvents> {
 	/** Перенос текста (элемент ?? родительский TList). */
 	readonly wordWrap: boolean
 }

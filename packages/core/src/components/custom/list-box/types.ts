@@ -17,8 +17,7 @@ export interface IListBoxComponentProps extends IListComponentProps {
 
 /** Полный набор пропсов ListBox: наследует List (компонентные) + view + коллекция (engine, items, mode). */
 export interface IListBoxProps
-	extends IListBoxComponentProps,
-		IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {}
+	extends IListBoxComponentProps, IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {}
 
 export type TListBoxStates = TListStates
 
@@ -26,4 +25,3 @@ export interface IListBox extends IList<IListBoxProps, TListBoxEvents, TListBoxS
 	/** Внешний вид компонента */
 	view: TListBoxView
 }
-

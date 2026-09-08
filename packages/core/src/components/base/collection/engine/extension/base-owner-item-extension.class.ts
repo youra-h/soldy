@@ -16,7 +16,9 @@ import { TBaseExtension } from './base-extension.class'
  */
 export abstract class TBaseOwnerItemExtension<
 	TItem extends object,
-	TItemExt extends IItemExtension<TItem>,
+	// `any` в констрейнте — карта событий item-адаптера инвариантна, точный
+	// набор здесь запретил бы наследнику её расширить (см. `IItemExtension`)
+	TItemExt extends IItemExtension<TItem, any>,
 	TEvents extends Record<string, (...args: any) => any>,
 >
 	extends TBaseExtension<TItem, TEvents>

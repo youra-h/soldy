@@ -294,6 +294,50 @@ tabs/collection/extensions/
 Расширение подключается в `collection/factory.ts` и объявляется в
 `collection/types.ts`.
 
+### События item-адаптера: `any` в констрейнте, точный набор в инстанцировании (критично)
+
+Наследник, добавляющий своё событие, **перестаёт подходить под контракт
+родителя**, если где-то по цепочке констрейнт требует точную карту событий.
+Так было у ListBox с `change:view`, и лечилось это приведением `events as any`
+— то есть отключением проверки ровно там, где она нужна.
+
+Причина не в логике, а в дисперсии. В `TEvented<TEvents>` карта стоит
+одновременно в выходе и во входе:
+
+```ts
+type TEventContext<TEvents, K extends keyof TEvents = keyof TEvents> = {
+    event: K                       // выход — ковариантно
+    args: Parameters<TEvents[K]>
+}
+on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void   // вход — контравариантно
+```
+
+Значит `TEvents` **инвариантен**: `TEvented<A>` и `TEvented<B>` несовместимы
+в обе стороны, даже когда `B` — надмножество `A`. Отношения «шире/уже» между
+эмиттерами не существует.
+
+Отсюда правило на всю цепочку расширений:
+
+```ts
+// ✅ констрейнт — это «у тебя должен быть эмиттер», а не «ровно такой»
+TItemExt extends IListItemExtension<TItem, any> = IListItemExtension<TItem>
+
+// ✅ инстанцирование — точное, здесь проверка и работает
+class TListBoxItemExtension extends TListItemExtension<TItem, TParent, TListBoxItemEventsExtension>
+```
+
+Затронуты `IItemExtension`, `IItemExtensionCtor`, `IExtensionItems`,
+`IBaseOwnerItemExtensionOptions`, `TBaseOwnerItemExtension` и то же самое на
+уровне компонента (`IListItemExtension`, `IListExtension`, `TListExtension`).
+**Заводишь новую коллекцию — держи тот же приём**, иначе первый же наследник,
+добавивший событие, упрётся в то же и получит очередной `as any`.
+
+Проверяется двумя слоями: `vue-tsc` в CI ходит по исходникам ядра транзитивно
+(сузь констрейнт обратно — сборка падает; опечатка в имени события тоже), а
+`core/__tests__/list-box.spec.ts` проверяет, что событие действительно доходит.
+Одного типа мало: приведение к `any` глушит проверку молча, и до этих тестов
+так и было — на ListBox не было ни одного теста.
+
 ### Логику, которой нужен элемент, кладите в item-адаптер
 
 У адаптера есть `_item` — поэтому всё, что вычисляется от элемента, считается

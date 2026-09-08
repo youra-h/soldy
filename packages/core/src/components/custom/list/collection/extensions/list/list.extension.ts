@@ -24,7 +24,9 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
 export class TListExtension<
 	TOwner extends IList<any, any, any> = IList<any, any, any>,
 	TItem extends IListItem = IListItem,
-	TItemExt extends IListItemExtension<TItem> = IListItemExtension<TItem>,
+	// `any` в констрейнте: карта событий item-адаптера инвариантна, и точный
+	// набор здесь запретил бы ListBox добавить свой `change:view`
+	TItemExt extends IListItemExtension<TItem, any> = IListItemExtension<TItem>,
 >
 	extends TBaseOwnerItemExtension<TItem, TItemExt, TListExtensionEvents>
 	implements IExtension<TItem>, IListExtension<TItem, TItemExt>

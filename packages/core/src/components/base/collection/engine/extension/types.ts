@@ -31,7 +31,7 @@ export interface IExtension<
  */
 export interface IBaseOwnerItemExtensionOptions<
 	TItem extends object,
-	TItemExt extends IItemExtension<TItem>,
+	TItemExt extends IItemExtension<TItem, any>,
 > {
 	/** Пользовательский конструктор item-адаптера (если не указан — используется дефолтный). */
 	itemCtor?: IItemExtensionCtor<TItem, any, TItemExt>
@@ -46,6 +46,19 @@ export type TBaseItemEventsExtension = {
 /**
  * Базовый контракт item-адаптера.
  * Конкретные адаптеры (активации, порядка, выборки) расширяют этот интерфейс.
+ *
+ * `TEvents` протаскивается наследниками до конца цепочки — иначе наследник,
+ * добавивший своё событие, перестаёт подходить под контракт родителя. Причина
+ * не в логике, а в дисперсии: в `TEvented<TEvents>` карта событий стоит и в
+ * выходе (`event: keyof TEvents` в контексте middleware), и во входе
+ * (`on(event, handler: TEvents[K])`), поэтому TypeScript считает параметр
+ * инвариантным. Два эмиттера с разными картами несовместимы **в обе стороны**,
+ * даже когда одна карта — надмножество другой.
+ *
+ * Отсюда правило для всей цепочки: **в констрейнтах пишем `<…, any>`, в
+ * инстанцировании — точный набор.** Констрейнт — это граница «у тебя должен
+ * быть эмиттер», а не «ровно такой эмиттер»; сверять карту там не нужно и
+ * вредно, потому что инвариантность запрещает любое расхождение.
  */
 export interface IItemExtension<
 	TItem extends object = any,
@@ -70,7 +83,7 @@ export interface IItemExtension<
 export interface IItemExtensionCtor<
 	TItem extends object = any,
 	TParent = any,
-	TItemExt extends IItemExtension<TItem> = IItemExtension<TItem>,
+	TItemExt extends IItemExtension<TItem, any> = IItemExtension<TItem>,
 > {
 	new (owner: TItem, parent: TParent): TItemExt
 }
@@ -84,7 +97,7 @@ export interface IItemExtensionCtor<
  */
 export interface IExtensionItems<
 	TItem extends object = any,
-	TItemExt extends IItemExtension<TItem> = IItemExtension<TItem>,
+	TItemExt extends IItemExtension<TItem, any> = IItemExtension<TItem>,
 > {
 	/**
 	 * Создать item-адаптер для указанного элемента.

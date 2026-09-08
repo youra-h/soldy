@@ -19,10 +19,7 @@ export class TListBoxItemCollectionFacade extends TListItemCollectionFacade<
 
 		if (!this._context) return
 
-		// `change:view` не попадает в тип эмиттера: набор событий вшит в
-		// `IListItemExtension` и наследником не расширяется — см. комментарий
-		// там же. Приведение только здесь; `view` ниже уже типизирован.
-		this.events.relay(this._listBoxAdapters.list.events as any, ['change:view'])
+		this.events.relay(this._listBoxAdapters.list.events, ['change:view'])
 	}
 
 	get view(): TListBoxView {
