@@ -1,9 +1,7 @@
-import type { TCollectionEngine } from '@soldy/core'
-import { TBasePlugin } from '../../../base'
+import type { IListItem, TCollectionEngine } from '@soldy/core'
 import type { IPluginContext } from '../../../base'
-import { TElementPlugin } from '../../element'
-import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import { TListItemPlugin } from '../../list/item'
+import { TCollectionElements } from '../../collection'
+import { TListNavigationPlugin } from '../../list/navigation'
 import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from './types'
 
 /** Минимум, который плагину нужен от поля. */
@@ -14,43 +12,33 @@ interface ISelectOwner {
 	events: { on(name: string, handler: (...args: any[]) => void): unknown }
 }
 
-/** Минимум, который плагину нужен от опции. */
-interface ISelectOption {
-	uid: string | number
+/** Опция глазами плагина: у неё, в отличие от элемента списка, есть текст. */
+interface ISelectOption extends IListItem {
 	text: string
-	disabled: boolean
-	rendered: boolean
-	visible: boolean
 }
 
-const NAVIGATION = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End'])
+const OPENS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '])
 
 /**
  * TSelectKeyboardPlugin — клавиатура поля выбора по паттерну APG Combobox
  * (вариант select-only).
  *
+ * Общая механика — подписка на `keydown`, привязка к коллекции, учёт
+ * подсветки, циклический сдвиг — в `TListNavigationPlugin`. Здесь только то,
+ * чем combobox отличается от самостоятельного списка.
+ *
  * Ключевое свойство паттерна: **DOM-фокус никогда не уходит с поля**. Поэтому
  * `keydown` слушается на корне Select, а не на списке, и панель может быть
  * телепортирована куда угодно — на навигацию это не влияет. Подсветку для
- * скринридера передаёт `aria-activedescendant` на поле, а визуально её ведёт
- * `TListItemPlugin` каждой опции.
+ * скринридера передаёт `aria-activedescendant` на поле.
  *
- * Отличие от `TListKeyboardPlugin`, который делает похожее для ListBox: там
- * список — самостоятельный виджет, он сам в порядке обхода и сам держит фокус.
- * Здесь фокус чужой, добавляются открытие/закрытие, `Home`/`End`, `Escape`,
- * набор по буквам и пропуск недоступных опций. Общий базовый плагин имеет
- * смысл выделить, когда обе реализации устоятся, — не раньше.
- *
- * Disabled-опции пропускаются при навигации: подсветить то, что нельзя
- * выбрать, значит завести пользователя в тупик.
+ * Отличия от `TListKeyboardPlugin`: открытие и закрытие панели, `Home`/`End`,
+ * `Escape`, `Tab`, набор по буквам, пропуск недоступных опций и прокрутка к
+ * подсвеченной опции.
  */
-export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPluginEvents> {
-	private _element: HTMLElement | null = null
+export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboardPluginEvents> {
 	private _owner: ISelectOwner | null = null
-	private _bundles: TCollectionBundlesPlugin | null = null
 	private _elements: TCollectionElements | null = null
-	private _collection: TCollectionEngine<any, any> | null = null
-	private _highlighted: string | number | null = null
 	private _typeahead = ''
 	private _typeaheadAt = 0
 	private _typeaheadTimeout = 500
@@ -60,59 +48,45 @@ export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPlugi
 
 		this._typeaheadTimeout = options?.typeaheadTimeout ?? this._typeaheadTimeout
 		this._owner = ctx.getInstance<ISelectOwner>() ?? null
-		this._bundles = ctx.get(TCollectionBundlesPlugin) ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
 
-		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
-			this._element = element
-			element.addEventListener('keydown', this._onKeyDown)
-		})
-
-		ctx.get(TElementPlugin)?.events.on('removed', () => {
-			this._element?.removeEventListener('keydown', this._onKeyDown)
-			this._element = null
-		})
-
-		this._bundles?.events.on('engine:bound', (collection) => {
-			this._collection = collection
-		})
-
 		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
-		this._owner?.events.on('close', () => this._clearHighlight())
+		this._owner?.events.on('close', () => this.clearHighlight())
 		this._owner?.events.on('open', () => this._highlightSelected())
 	}
 
 	override destroy(): void {
-		this._element?.removeEventListener('keydown', this._onKeyDown)
-
-		this._element = null
 		this._owner = null
-		this._bundles = null
 		this._elements = null
-		this._collection = null
 
 		super.destroy()
 	}
 
-	/** Опция, на которой стоит подсветка. */
-	get highlightedUid(): string | number | null {
-		return this._highlighted
+	/**
+	 * Недоступные опции пропускаются: подсветить то, что нельзя выбрать,
+	 * значит завести пользователя в тупик.
+	 */
+	protected override items(): IListItem[] {
+		return super.items().filter((item) => !item.disabled && item.rendered && item.visible)
 	}
 
-	/** Опции, доступные для навигации: видимые и не отключённые. */
-	private _options(): ISelectOption[] {
-		const all = (this._collection?.driver ?? []) as ISelectOption[]
+	/**
+	 * Подсветка появляется на открытии, а не при появлении коллекции: пока
+	 * панель закрыта, навигировать нечего. Этим Select отличается от ListBox,
+	 * который синхронизирует позицию с выбором сразу.
+	 */
+	protected override onCollectionBound(_collection: TCollectionEngine<any, any>): void {}
 
-		return [...all].filter((item) => !item.disabled && item.rendered && item.visible)
+	/** Подсветка для скринридера плюс прокрутка к опции. */
+	protected override onHighlightChanged(uid: string | number | null): void {
+		const id = uid == null ? null : (this._optionElement(uid)?.id ?? null)
+
+		this._owner?.aria.add('aria-activedescendant', id)
+
+		if (uid != null) this._optionElement(uid)?.scrollIntoView({ block: 'nearest' })
 	}
 
-	private _indexOf(uid: string | number | null): number {
-		if (uid == null) return -1
-
-		return this._options().findIndex((item) => item.uid === uid)
-	}
-
-	private readonly _onKeyDown = (e: KeyboardEvent): void => {
+	protected override onKeyDown(e: KeyboardEvent): void {
 		const owner = this._owner
 
 		if (!owner) return
@@ -133,16 +107,14 @@ export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPlugi
 	private _handleClosed(e: KeyboardEvent, owner: ISelectOwner): void {
 		if (!owner.openable) return
 
-		const opens = NAVIGATION.has(e.key) || e.key === 'Enter' || e.key === ' '
-
-		if (opens) {
+		if (OPENS.has(e.key)) {
 			e.preventDefault()
 			owner.open = true
 
 			if (e.key === 'ArrowUp' || e.key === 'End') {
-				this._highlightEdge('last')
+				this.highlightEdge('last')
 			} else if (e.key === 'ArrowDown' || e.key === 'Home') {
-				this._highlightEdge('first')
+				this.highlightEdge('first')
 			}
 
 			return
@@ -163,25 +135,25 @@ export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPlugi
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault()
-				this._move(1)
+				this.move(1)
 
 				return
 
 			case 'ArrowUp':
 				e.preventDefault()
-				this._move(-1)
+				this.move(-1)
 
 				return
 
 			case 'Home':
 				e.preventDefault()
-				this._highlightEdge('first')
+				this.highlightEdge('first')
 
 				return
 
 			case 'End':
 				e.preventDefault()
-				this._highlightEdge('last')
+				this.highlightEdge('last')
 
 				return
 
@@ -215,59 +187,27 @@ export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPlugi
 		return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
 	}
 
-	/**
-	 * Навигация зациклена: с последней опции `↓` уводит на первую. Так принято
-	 * в выпадающих списках и так делают Ark и Radix.
-	 */
-	private _move(step: number): void {
-		const options = this._options()
-
-		if (options.length === 0) return
-
-		const current = this._indexOf(this._highlighted)
-
-		if (current === -1) {
-			this._highlight(options[step > 0 ? 0 : options.length - 1].uid)
-
-			return
-		}
-
-		const next = (current + step + options.length) % options.length
-
-		this._highlight(options[next].uid)
-	}
-
-	private _highlightEdge(edge: 'first' | 'last'): void {
-		const options = this._options()
-
-		if (options.length === 0) return
-
-		this._highlight(options[edge === 'first' ? 0 : options.length - 1].uid)
-	}
-
 	/** При открытии подсветка встаёт на выбранное — иначе на первую опцию. */
 	private _highlightSelected(): void {
 		const selected = this._collection?.extensions?.selection?.selected?.[0] as
-			| ISelectOption
+			| IListItem
 			| undefined
 
-		if (selected && this._indexOf(selected.uid) !== -1) {
-			this._highlight(selected.uid)
+		if (selected && this.indexOf(selected.uid) !== -1) {
+			this.highlight(selected.uid)
 
 			return
 		}
 
-		this._highlightEdge('first')
+		this.highlightEdge('first')
 	}
 
 	private _chooseHighlighted(): void {
-		if (this._highlighted == null) return
+		if (this._highlightedUid == null) return
 
-		const item = this._options().find((option) => option.uid === this._highlighted)
+		const item = this.itemByUid(this._highlightedUid)
 
-		if (!item) return
-
-		this._collection?.extensions?.select?.chooseItem(item)
+		if (item) this._collection?.extensions?.select?.chooseItem(item)
 	}
 
 	/** Ищет опцию, чей текст начинается с накопленного буфера. */
@@ -279,65 +219,14 @@ export class TSelectKeyboardPlugin extends TBasePlugin<any, TSelectKeyboardPlugi
 		this._typeaheadAt = now
 
 		const needle = this._typeahead.toLowerCase()
-		const match = this._options().find((item) => item.text.toLowerCase().startsWith(needle))
+		const match = (this.items() as ISelectOption[]).find((item) =>
+			item.text.toLowerCase().startsWith(needle),
+		)
 
-		if (match) this._highlight(match.uid)
-	}
-
-	private _itemPlugin(uid: string | number): TListItemPlugin | undefined {
-		return this._bundles?.getByUid(uid)?.get(TListItemPlugin)
-	}
-
-	private _highlight(uid: string | number): void {
-		if (this._highlighted === uid) return
-
-		if (this._highlighted != null) {
-			const previous = this._itemPlugin(this._highlighted)
-
-			if (previous) previous.highlighted = false
-		}
-
-		this._highlighted = uid
-
-		const plugin = this._itemPlugin(uid)
-
-		if (plugin) plugin.highlighted = true
-
-		this._syncActiveDescendant()
-		this._scrollIntoView(uid)
-
-		this.events.emit('change:highlight', uid)
-	}
-
-	private _clearHighlight(): void {
-		if (this._highlighted == null) return
-
-		const plugin = this._itemPlugin(this._highlighted)
-
-		if (plugin) plugin.highlighted = false
-
-		this._highlighted = null
-		this._typeahead = ''
-
-		this._syncActiveDescendant()
-		this.events.emit('change:highlight', null)
-	}
-
-	/**
-	 * Подсветка для скринридера. Указывает на `id` опции — тот самый, что
-	 * проставляет `TSelectExtension`; формула одна на обе стороны.
-	 */
-	private _syncActiveDescendant(): void {
-		const id = this._highlighted == null ? null : this._optionElement(this._highlighted)?.id
-
-		this._owner?.aria.add('aria-activedescendant', id ?? null)
+		if (match) this.highlight(match.uid)
 	}
 
 	private _optionElement(uid: string | number): HTMLElement | null {
 		return this._elements?.getElementByUid(uid) ?? null
-	}
-
-	private _scrollIntoView(uid: string | number): void {
-		this._optionElement(uid)?.scrollIntoView({ block: 'nearest' })
 	}
 }

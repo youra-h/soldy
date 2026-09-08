@@ -16,6 +16,7 @@ import {
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
 	TItemContextRegistry,
+	TInput,
 } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 
@@ -363,5 +364,54 @@ describe('valueText — что показывает поле', () => {
 		items[0].text = 'Другое'
 
 		expect(collection.valueText).toBe('Другое')
+	})
+})
+
+describe('id элемента формы', () => {
+	/**
+	 * Живёт в `TInputControl`, а не в Select: на поле ссылаются `<label for>`,
+	 * `aria-labelledby` и `aria-describedby` у текста ошибки — это нужно любому
+	 * форменному контролу.
+	 */
+	it('пустой проп означает «сгенерируй сам» — берётся uid', () => {
+		const select = new TSelect()
+
+		expect(select.id).toBe(String(select.uid))
+	})
+
+	it('заданный снаружи побеждает', () => {
+		expect(new TSelect({ id: 'city' }).id).toBe('city')
+	})
+
+	it('меняется через instance и сообщает об этом', () => {
+		const select = new TSelect()
+		const seen: string[] = []
+
+		select.events.on('change:id', (value) => seen.push(value))
+		select.id = 'city'
+
+		expect(select.id).toBe('city')
+		expect(seen).toEqual(['city'])
+	})
+
+	it('снятие возвращает к uid', () => {
+		const select = new TSelect({ id: 'city' })
+
+		select.id = ''
+
+		expect(select.id).toBe(String(select.uid))
+	})
+
+	it('getProps отдаёт заданное значение, а не производное', () => {
+		// Иначе assign() перенёс бы чужой uid на другой экземпляр
+		const select = new TSelect()
+
+		expect(select.getProps().id).toBe('')
+	})
+
+	it('есть у всех форменных контролов, не только у Select', () => {
+		const input = new TInput()
+
+		expect(input.id).toBe(String(input.uid))
 	})
 })

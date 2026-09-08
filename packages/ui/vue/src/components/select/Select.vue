@@ -41,6 +41,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 				:value="valueText"
 				:name="name"
 				:placeholder="placeholder"
+				:id="id"
 				:disabled="disabled"
 				:required="required"
 				:size="size"

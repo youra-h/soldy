@@ -18,7 +18,7 @@ export default { ...SetupInput }
 		</div>
 		<input
 			type="text"
-			:id="ctrl.uid.toString()"
+			:id="id"
 			:value="value"
 			:name="name"
 			:disabled="disabled"

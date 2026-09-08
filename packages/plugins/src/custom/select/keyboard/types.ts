@@ -1,4 +1,4 @@
-import type { TPluginEvents } from '../../../base'
+import type { TListNavigationPluginEvents } from '../../list/navigation'
 
 export interface ISelectKeyboardPluginOptions {
 	/**
@@ -11,7 +11,4 @@ export interface ISelectKeyboardPluginOptions {
 	typeaheadTimeout?: number
 }
 
-export type TSelectKeyboardPluginEvents = TPluginEvents & {
-	/** Подсветка переехала на другую опцию (или снялась). */
-	'change:highlight': (uid: string | number | null) => void
-}
+export type TSelectKeyboardPluginEvents = TListNavigationPluginEvents

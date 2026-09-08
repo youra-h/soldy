@@ -221,3 +221,19 @@ describe('панель как телепортированный Frame', () => {
 		expect(isOpen()).toBe(false)
 	})
 })
+
+describe('id поля', () => {
+	it('по умолчанию непустой — ядро берёт uid', () => {
+		expect(render().find('input').attributes('id')).toBeTruthy()
+	})
+
+	it('заданный снаружи доходит до внутреннего input', async () => {
+		// Он нужен потребителю для <label for> и aria-labelledby, поэтому
+		// должен быть предсказуемым, а не производным от внутреннего uid
+		const wrapper = mount(Harness, { props: { id: 'city' }, attachTo: document.body })
+
+		expect(wrapper.find('input').attributes('id')).toBe('city')
+
+		wrapper.unmount()
+	})
+})

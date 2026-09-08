@@ -1,11 +1,5 @@
-import type { IListItem } from '@soldy/core'
+import type { TListNavigationPluginEvents } from '../navigation'
 
-export type THighlightPayload = {
-	item: IListItem | null
-	prevItem: IListItem | null
-	nextItem: IListItem | null
-}
+export type { THighlightPayload } from '../navigation'
 
-export type TListKeyboardPluginEvents = {
-	'change:highlight': (payload: THighlightPayload) => void
-}
+export type TListKeyboardPluginEvents = TListNavigationPluginEvents

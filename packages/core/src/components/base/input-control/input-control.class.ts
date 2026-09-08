@@ -21,10 +21,12 @@ export default class TInputControl<
 		...TValueControl.defaultValues,
 		readonly: false,
 		required: false,
+		id: '',
 	}
 
 	protected _readonly!: boolean
 	protected _required!: boolean
+	protected _id!: string
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -35,6 +37,30 @@ export default class TInputControl<
 		// this._readonly = props.readonly ?? (ctor.defaultValues.readonly as boolean)
 		this._applyReadonly(props.readonly ?? (ctor.defaultValues.readonly as boolean))
 		this._applyRequired(props.required ?? (ctor.defaultValues.required as boolean))
+
+		this._id = props.id ?? (ctor.defaultValues.id as string)
+	}
+
+	/**
+	 * `id` элемента формы.
+	 *
+	 * Пустой проп означает «сгенерируй сам» — берётся `uid`, уникальный в
+	 * рамках сессии. Задавать его снаружи нужно там, где на поле ссылаются:
+	 * `<label for>`, `aria-labelledby`, `aria-describedby` у текста ошибки.
+	 *
+	 * Геттер всегда возвращает непустую строку, а `getProps()` отдаёт
+	 * заданное значение как есть: иначе `assign()` перенёс бы чужой `uid` на
+	 * другой экземпляр.
+	 */
+	get id(): string {
+		return this._id || String(this.uid)
+	}
+
+	set id(value: string) {
+		if (this._id === value) return
+
+		this._id = value
+		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:id', this.id)
 	}
 
 	get readonly(): boolean {
@@ -76,6 +102,7 @@ export default class TInputControl<
 			...super.getProps(),
 			readonly: this._readonly,
 			required: this._required,
+			id: this._id,
 		} as TProps
 	}
 }

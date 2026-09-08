@@ -16,7 +16,7 @@ export default { ...SetupCheckBox }
     >
         <input
             type="checkbox"
-            :id="ctrl.uid.toString()"
+            :id="id"
             :checked="value"
             :name="name"
             :disabled="disabled"
