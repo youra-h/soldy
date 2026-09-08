@@ -22,6 +22,7 @@
     "test:accessor": "npm run test --workspace=@soldy/accessor",
     "test:setup": "npm run test --workspace=@soldy/setup",
     "test:core": "npm run test --workspace=@soldy/core",
+    "test:theme": "npm run test --workspace=@soldy/theme-oren",
     "test:plugins": "npm run test --workspace=@soldy/plugins",
     "test:vue": "npm run test --workspace=@soldy/ui-vue",
     "test:react": "npm run test --workspace=@soldy/ui-react",

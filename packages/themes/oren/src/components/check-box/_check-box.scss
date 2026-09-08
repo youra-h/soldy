@@ -29,7 +29,7 @@
     &__container {
         @apply flex items-center justify-center;
         @apply w-full h-full rounded-md border;
-        @apply bg-white;
+        @apply bg-s-component-surface;
         @apply transition-colors duration-150;
     }
 

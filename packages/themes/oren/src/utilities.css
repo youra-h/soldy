@@ -14,3 +14,17 @@
 @utility opacity-s-component-disabled {
 	opacity: 0.35;
 }
+
+/* Фоны из семантических токенов. Нужны потому, что Tailwind умеет делать
+ * утилиту из шкалы (bg-s-neutral-200), но не из отдельного токена. */
+@utility bg-s-component-surface {
+	background-color: var(--s-component-surface);
+}
+
+@utility bg-s-component-knob {
+	background-color: var(--s-component-knob);
+}
+
+@utility bg-s-component-veil {
+	background-color: var(--s-component-veil);
+}

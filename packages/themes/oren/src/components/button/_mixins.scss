@@ -1,5 +1,11 @@
 // Базовый миксин: hover + focus + active фон
-// TODO: dark mode — добавить блоки [data-theme="dark"] & с $hover-bg - 200 / $active-bg - 200
+//
+// Про тёмную схему: блоков `[data-theme=dark] &` со ступенью «−100» здесь
+// нет и не нужно. Номер ступени означает расстояние от поверхности, а не
+// светлоту, и в tokens-dark.css шкала инвертирована по ролям — поэтому
+// `$hover-bg + 100` в обеих схемах означает одно и то же «отойти дальше
+// от поверхности». Развернуть это в per-компонентные блоки значило бы
+// размазать одну мысль по пяти файлам.
 @mixin button-state-bg($color, $hover-bg, $active-bg) {
 	&:hover:not([disabled]),
 	// &:focus:not([disabled]),
@@ -49,13 +55,14 @@
 	$brd-hover: $border + 100;
 
 	@apply #{'text-s-' + $color + '-' + $text};
-	@apply #{'border-s-' + $color + '-' + $border};
+	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+	border-color: var(--s-#{$color}-#{$border});
 
 	@include button-state-bg($color, $hover-bg, $active-bg);
 
 	&:hover:not([disabled]),
 	&:focus:not([disabled]),
 	&:focus-visible:not([disabled]) {
-		@apply #{'border-s-' + $color + '-' + $brd-hover};
+		border-color: var(--s-#{$color}-#{$brd-hover});
 	}
 }

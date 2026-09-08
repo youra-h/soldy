@@ -1,3 +1,6 @@
 @import 'tailwindcss';
 @import './tokens.css';
+/* Строго после tokens.css: у `:root` и `[data-theme='oren-dark']`
+ * одинаковая специфичность, побеждает тот, кто ниже. */
+@import './tokens-dark.css';
 @import './utilities.css';

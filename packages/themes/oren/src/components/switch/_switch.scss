@@ -45,7 +45,7 @@
 		&--thumb {
 			@apply relative;
 			@apply flex items-center justify-center;
-			@apply bg-white;
+			@apply bg-s-component-knob;
 			@apply rounded-full shadow-md;
 			@apply absolute top-0.5 left-0.5;
 			@apply transition-transform duration-200;

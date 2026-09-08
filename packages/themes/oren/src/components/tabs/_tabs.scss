@@ -185,13 +185,17 @@
 				@apply bg-transparent;
 				@apply border-b-0;
 
-				// Затемнение для неактивных табов
+				// Затемнение для неактивных табов.
+				//
+				// Вуаль — семантический токен, а не ступень шкалы: утопить
+				// элемент значит увести его ЗА поверхность, а за поверхностью
+				// ступеней нет. В тёмной схеме это чистый чёрный.
 				&::before {
 					content: '';
 					@apply absolute inset-0;
 					@apply pointer-events-none;
 					@apply opacity-10;
-					@apply bg-neutral-400;
+					@apply bg-s-component-veil;
 					transition: opacity 0.2s ease;
 				}
 

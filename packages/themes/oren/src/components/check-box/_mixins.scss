@@ -5,7 +5,8 @@
 	$bg-disabled: 50,
 ) {
 	#{$this}__container {
-		@apply #{'border-s-' + $color + '-' + $border};
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--s-#{$color}-#{$border});
 
 		$svg-fill: $border + 100;
 
@@ -15,15 +16,11 @@
 	}
 
 	input {
+		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 		$border-hover: $border + 100;
-		// TODO: dark mode
-		// $border-hover-dark: $border - 100;
-		// [data-theme="dark"] &:hover:not(:disabled) + #{$this}__container {
-		//     @apply #{'border-s-' + $color + '-' + $border-hover-dark};
-		// }
 
 		&:hover:not(:disabled) + #{$this}__container {
-			@apply #{'border-s-' + $color + '-' + $border-hover};
+			border-color: var(--s-#{$color}-#{$border-hover});
 		}
 
 		&:disabled + #{$this}__container {

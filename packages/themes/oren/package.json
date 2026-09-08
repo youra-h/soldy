@@ -18,7 +18,8 @@
   ],
   "scripts": {
     "build": "vite build",
-    "watch": "vite build --watch"
+    "watch": "vite build --watch",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

@@ -19,6 +19,7 @@ npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
 npm run test:vue
+npm run test:theme   # Vitest — инварианты токенов темы oren
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier
 
@@ -413,6 +414,26 @@ setIcons({ close: myCloseIcon })   // точечно, поверх набора
 Третье — это то, что Ark UI называет `Indicator`. Отдельным компонентом его не
 заводим: потребитель его не адресует, значит по критерию «часть или слот» это
 разметка со слотом внутри.
+
+## Темы: у пакета темы свои инструкции
+
+Библиотека выпускает BEM-классы и `data-*`, тема отдаёт под них CSS. Дальше
+этой границы правил на уровне проекта нет: палитра, цветовые схемы, препроцессор
+и сборка — **внутреннее дело пакета темы**, и у двух тем они могут не совпадать
+ни в чём.
+
+Поэтому перед правкой стилей читай `AGENTS.md` того пакета, который правишь:
+
+- `packages/themes/oren/AGENTS.md` — шкалы и роли ступеней, семантические
+  токены, светлая и тёмная схемы, ловушки Tailwind, чем стережётся.
+
+Переносить оттуда правила на другую тему нельзя: в `oren` номер ступени
+означает роль (расстояние от поверхности), а не светлоту, — но это решение
+`oren`, а не контракт soldy.
+
+Что общее и живёт здесь: тема стилизуется по `data-*` и **никогда** по `aria-*`
+(см. «Доступность (a11y)»), а состояние в разметку отдаёт обёртка компонента,
+не тема.
 
 ## Слой оверлея
 
@@ -815,6 +836,8 @@ ARIA — контракт со скринридером, `data-*` — контр
 ## Docs
 
 - `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins/accessor, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
+- `packages/themes/oren/AGENTS.md` — инструкции пакета темы: шкалы, схемы,
+  токены. Читать перед правкой стилей; на другие темы не распространяется.
 - `packages/ui/vue/_demo/README.md` — Vue playground structure and usage.
   Папки `_demo/` во всех адаптерах лежат на диске, но **вне репозитория**
   (`.gitignore`): это временные примеры, на смену которым придёт общий

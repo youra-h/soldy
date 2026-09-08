@@ -41,7 +41,9 @@
 // Панель телепортируется в body, поэтому вложенным селектором её не достать
 .s-select__panel {
 	@apply overflow-hidden rounded-md;
-	@apply bg-s-neutral-50 border border-s-neutral-200 shadow-md;
+	@apply bg-s-neutral-50 border shadow-md;
+	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+	border-color: var(--s-neutral-200);
 }
 
 .s-select__list {

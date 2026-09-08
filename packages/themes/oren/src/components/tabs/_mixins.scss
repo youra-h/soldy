@@ -8,7 +8,8 @@
 
 	// Цвет разделительной линии и индикатора
 	.s-tabs__list {
-		@apply #{'border-s-' + $color + '-' + $border};
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--s-#{$color}-#{$border});
 
 		&::after {
 			@apply #{'bg-s-' + $color + '-' + $indicator};
@@ -47,7 +48,7 @@
 
 		&[data-selected='true'] {
 			> * {
-				@apply bg-white shadow-sm;
+				@apply bg-s-component-surface shadow-sm;
 				@apply #{'text-s-' + $color + '-' + $text};
 			}
 		}
@@ -68,7 +69,7 @@
 	}
 
 	.s-tabs-item {
-		@apply #{'border-s-' + $color + '-' + $border};
+		border-color: var(--s-#{$color}-#{$border});
 
 		// @apply border-b-transparent;
 		> * {
