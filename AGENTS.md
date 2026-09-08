@@ -213,6 +213,60 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 }
 ```
 
+### Иерархия фасадов повторяет состав расширений (критично)
+
+Фасады появились потому, что коллекции на классическом наследовании перестали
+масштабироваться. База у них тоже наследование — и не повторяет ту ошибку
+ровно по одной причине: **наследуется проекция, а не поведение**. Фасад
+ничего не делает сам, он выставляет наружу то, что уже умеет расширение.
+
+Отсюда правило: **наследуй базу, соответствующую расширению, а не похожему
+компоненту.**
+
+```
+TCollectionComponent
+└── TBatchCollectionFacade          batch      → Tabs
+    └── TSelectionCollectionFacade  + selection → Collapse, Select, List → ListBox
+
+TCollectionItemComponent
+└── TOrderItemFacade                order      → Tabs.Item
+    └── TSelectionItemFacade        + selected → Collapse/List/Select.Item
+```
+
+У табов активность, а не выбор — поэтому они наследуют только `batch` и
+`order`. Базы под активацию нет: реализация одна, и заводить её под
+единственного потребителя значило бы подстраиваться под неизвестное
+требование. Появится второй — подъём стоит пятнадцать строк.
+
+Правило держится не на честном слове: дженерик базы сужен до расширения,
+которое она потребляет (`TExtensions extends { selection: TSelectionExtension<any> }`),
+поэтому наследование без расширения — ошибка компиляции. Тип элемента у
+расширения при этом `any`: расширения инвариантны по элементу, и `TItem` там
+ломает цепочку List → ListBox.
+
+**Чем это уже окупилось.** До баз одно свойство писалось в трёх фасадах по
+отдельности, и три копии дали три разных API: у Collapse не было сеттера
+`mode`, у опции Select — сеттера `selected`, хотя contributions объявляют оба
+записываемыми. `<Collapse mode="multiple">` молча не работал — вторая
+раскрытая секция закрывала первую, и харнесс `Collapse.test.vue`, который
+использует `mode="multiple"`, всё это время проверял не то.
+
+Сторожит `setup/__tests__/facade-props.spec.ts`: у каждого объявленного
+записываемого пропа обязан быть сеттер в цепочке прототипов фасада.
+
+### Расположение фасадов
+
+Каждый — своя папка с баррелем, как у расширений:
+
+```
+<component>/collection/facade/{facade.class.ts, index.ts}
+<component>/item/facade/{facade.class.ts, index.ts}
+```
+
+Базы — в `base/collection/facade/<расширение>/`, файл повторяет имя папки:
+`batch/batch.facade.ts`, `selection/selection.facade.ts`,
+`selection/item/selection-item.facade.ts`.
+
 ### Когда заводить своё расширение
 
 Стандартный набор лежит в `core/components/base/collection/engine/extension/`

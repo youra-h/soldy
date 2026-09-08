@@ -1,7 +1,7 @@
-import { TCollectionItemComponent } from '../../../base/collection'
-import type { TItemContext } from '../../../base/collection'
-import type { TTabsCollectionExtensions } from '../collection/types'
-import type { ITabsItem } from '../item/types'
+import { TCollectionItemComponent } from '../../../../base/collection'
+import type { TItemContext } from '../../../../base/collection'
+import type { TTabsCollectionExtensions } from '../../collection/types'
+import type { ITabsItem } from '../../item/types'
 
 /**
  * Фасад панели таба.

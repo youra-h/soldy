@@ -1,9 +1,5 @@
 import type { IComponentOptions } from '../../component'
-import type {
-	TCollectionEngine,
-	IExtension,
-	TCollectionEngineItemSource,
-} from '../engine'
+import type { TCollectionEngine, IExtension, TCollectionEngineItemSource } from '../engine'
 
 /**
  * Опции конструктора фасада владельца коллекции.
