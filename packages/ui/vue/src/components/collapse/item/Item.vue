@@ -14,8 +14,7 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:data-selected="String(selected)"
-		v-bind="containerAttrs"
+		v-bind="{ ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Связка «заголовок ↔ панель» приходит из item-адаптера расширения
@@ -27,6 +26,10 @@ export default { ...SetupCollapseItem, components: { Icon, Button } }
 			`.s-collapse-item[aria-selected='true']`, поэтому обёртка отдаёт то
 			же состояние как `data-selected`: ARIA — для скринридера, `data-*` —
 			для CSS. Иначе ARIA нельзя починить, не сломав вид.
+
+			Оба набора приходят готовыми из ядра — `dataset` на обёртку,
+			`aria` на заголовок. В шаблоне не осталось ни одного вычисления
+			состояния: иначе его пришлось бы повторить в пяти других адаптерах.
 		-->
 		<Button
 			class="s-collapse-item__header"

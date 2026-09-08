@@ -10,8 +10,10 @@ export interface IFactoryExtensionOptions<TItem extends object = any> {
 }
 
 /** Контракт расширения фабрики элементов. */
-export interface IFactoryExtension<TItem extends object = any>
-	extends IExtension<TItem, TFactoryEvents> {
+export interface IFactoryExtension<TItem extends object = any> extends IExtension<
+	TItem,
+	TFactoryEvents
+> {
 	/** Создать инстанс элемента из сырого источника. */
 	create(source: any): TItem
 

@@ -10,12 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import {
-	TSelect,
-	TSelectItem,
-	TSelectCollectionFacade,
-	TItemContextRegistry,
-} from '@soldy/core'
+import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
 	TSelectKeyboardPlugin,
@@ -215,6 +210,34 @@ describe('открытая панель — навигация', () => {
 
 		expect(itemPlugins.get(items[0].uid)!.highlighted).toBe(false)
 		expect(itemPlugins.get(items[1].uid)!.highlighted).toBe(true)
+	})
+
+	/**
+	 * Тема красит подсвеченную опцию по `data-highlighted`, и приведение к
+	 * строке делает плагин, а не разметка. Раньше это было в шаблонах, и два
+	 * компонента успели разойтись: ListBox отдавал значение сырым, Select — как
+	 * `String(!!value)`.
+	 */
+	it('подсветка уезжает в data-highlighted опции', async () => {
+		const { press, items } = await setup(['Москва', 'Тверь'])
+
+		expect(items.map((item) => item.dataset.get('highlighted'))).toEqual(['false', 'false'])
+
+		press('ArrowDown')
+		press('ArrowDown')
+
+		expect(items[0].dataset.get('highlighted')).toBe('false')
+		expect(items[1].dataset.get('highlighted')).toBe('true')
+	})
+
+	/** ARIA и `data-*` — разные контракты, набор у каждого свой. */
+	it('подсветка не попадает в набор ARIA опции', async () => {
+		const { press, items } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown')
+
+		expect(items[0].aria.has('data-highlighted')).toBe(false)
+		expect(items[0].aria.has('aria-highlighted')).toBe(false)
 	})
 })
 

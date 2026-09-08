@@ -1,4 +1,8 @@
-import type { IExtension, IExtensionContext, IItemExtensionCtor } from '../../../../../base/collection'
+import type {
+	IExtension,
+	IExtensionContext,
+	IItemExtensionCtor,
+} from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type { IListItem } from '../../../item/types'
 import type { IList } from '../../../types'
@@ -62,7 +66,12 @@ export class TListExtension<
 			e.item.disabled = this._owner.disabled
 			e.item.size = this._owner.size
 			e.item.variant = this._owner.variant
+			this._syncDataset()
 		})
+
+		ctx.driver.events.on('change:items', () => this._syncDataset())
+		this._owner.events.on('change:wordWrap', () => this._syncDataset())
+		this._syncDataset()
 
 		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:disabled', (value: boolean) => {
@@ -86,5 +95,20 @@ export class TListExtension<
 		// Глобальный wordWrap: пробрасываем change:wordWrap в item-адаптеры
 		// (TListItemExtension резолвит wordWrap из item ?? owner).
 		this.events.relay(this._owner.events, ['change:wordWrap'])
+	}
+
+	/**
+	 * Отдаёт теме разрешённый перенос текста: значение элемента поверх
+	 * значения списка.
+	 *
+	 * Разрешение живёт здесь, а не в шаблоне: `:data-word-wrap="list_wordWrap"`
+	 * повторил бы это правило в каждом из шести адаптеров. И не в
+	 * item-расширении, хотя логика та же, — те создаются лениво, только когда
+	 * адаптер запросит контекст элемента, а атрибут нужен с первой отрисовки.
+	 */
+	private _syncDataset(): void {
+		this._ctx?.driver.forEach((item) => {
+			item.dataset?.add('word-wrap', item.wordWrap ?? this._owner.wordWrap)
+		})
 	}
 }

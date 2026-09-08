@@ -9,8 +9,10 @@ export type TSelectionItemEventsExtension = TBaseItemEventsExtension & {
  * Контракт item-адаптера выборки.
  * Предоставляет геттер/сеттер selected и метод toggle.
  */
-export interface ISelectionItemExtension<TItem extends object = any>
-	extends IItemExtension<TItem, TSelectionItemEventsExtension> {
+export interface ISelectionItemExtension<TItem extends object = any> extends IItemExtension<
+	TItem,
+	TSelectionItemEventsExtension
+> {
 	/** Выбран ли элемент. При установке вызывает select/deselect на родителе. */
 	selected: boolean
 

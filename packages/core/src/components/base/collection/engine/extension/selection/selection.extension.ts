@@ -4,6 +4,7 @@ import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 import type { TMetaExtension } from '../meta'
+import type { TDataset } from '../../../../../../common'
 
 /**
  * TSelectionExtension — расширение для управления выборкой элементов.
@@ -63,6 +64,11 @@ export class TSelectionExtension<TItem extends object = any>
 	install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		this.events.on('change:selection', () => this._syncDataset())
+		ctx.driver.events.on('item:added', () => this._syncDataset())
+		ctx.driver.events.on('change:items', () => this._syncDataset())
+		this._syncDataset()
+
 		ctx.driver.events.on('item:removed', (item: TItem) => {
 			if (this._selected.has(item)) {
 				this._selected.delete(item)
@@ -94,6 +100,32 @@ export class TSelectionExtension<TItem extends object = any>
 				this.select(item)
 			})
 		}
+	}
+
+	/**
+	 * Зеркалит выбор в `data-selected` элементов — контракт с темой.
+	 *
+	 * Здесь, а не в расширении каждого компонента: `data-selected` у Collapse,
+	 * ListBox и Select один и тот же, различается только ARIA (`aria-selected`
+	 * у опции, `aria-expanded` у секции) — она и остаётся за расширением
+	 * компонента. Раньше это делали шаблоны, и при портировании на остальные
+	 * пять адаптеров копий стало бы пятнадцать.
+	 *
+	 * Здесь, а не в item-расширении, потому что item-расширения создаются
+	 * лениво — только когда адаптер запросит контекст элемента. Атрибут же
+	 * обязан стоять с первой отрисовки, включая серверную.
+	 *
+	 * Атрибут проставляется **всем** элементам, а не только выбранным: тема
+	 * смотрит `[data-selected='true']`, и «не выбран» надо отличать от
+	 * «состояние неприменимо».
+	 *
+	 * Движок коллекции визуального слоя не касается, поэтому проверка, а не
+	 * приведение типа: элементом коллекции может быть и не компонент.
+	 */
+	private _syncDataset(): void {
+		this._ctx?.driver.forEach((item: TItem) => {
+			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isSelected(item))
+		})
 	}
 
 	select(item: TItem): void {

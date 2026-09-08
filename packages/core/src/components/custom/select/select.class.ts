@@ -167,6 +167,9 @@ export class TSelect<
 		this._open = value
 		this._classes.toggle('--open', value)
 		this._aria.add('aria-expanded', value ? 'true' : 'false')
+		// То же состояние для темы: она разворачивает стрелку по `data-open`.
+		// ARIA и `data-*` пишутся рядом — так их не рассинхронизировать.
+		this._dataset.add('open', value)
 	}
 
 	protected _applyClearable(value: boolean): void {

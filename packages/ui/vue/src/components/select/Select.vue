@@ -20,9 +20,8 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 		v-show="visible"
 		:class="classes"
 		:dir="dir ?? undefined"
-		:data-open="String(open)"
 		@click="ctrl.toggleOpen()"
-		v-bind="containerAttrs"
+		v-bind="{ ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Поле — готовый `Input`, а не свой `<input>`: у него уже есть слоты

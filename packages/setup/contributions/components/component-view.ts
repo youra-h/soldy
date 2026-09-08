@@ -51,6 +51,18 @@ export const ComponentViewContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:aria'],
 		},
+		/**
+		 * Парный к `aria` набор — `data-*` для темы.
+		 *
+		 * Имя `dataset`, а не `data`: во Vue `data` — опция компонента, и проп
+		 * с таким именем читался бы в шаблоне двусмысленно. `dataset` вдобавок
+		 * ровно то, как этот набор называет сам DOM.
+		 */
+		dataset: {
+			type: Object,
+			protected: true,
+			triggers: ['change:dataset'],
+		},
 	},
 	events: ['show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after', 'ready'],
 })

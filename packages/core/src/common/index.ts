@@ -1,4 +1,6 @@
+export * from './attributes'
 export * from './aria'
+export * from './dataset'
 export * from './classes'
 export * from './state-unit'
 export * from './states'

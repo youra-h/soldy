@@ -11,9 +11,10 @@ export default { ...SetupSelectItem, components: { Button } }
 		`aria-selected` от расширения коллекции. Один набор, шаблону не нужно
 		знать, кто в него писал.
 
-		`data-selected` и `data-highlighted` — то же состояние для темы. ARIA
-		для скринридера, `data-*` для стилей; смешивать нельзя, иначе правка
-		доступности ломает вид.
+		`dataset` — то же состояние для темы (`data-selected`,
+		`data-highlighted`), тоже готовым набором: выбор пишет расширение
+		выборки, подсветку — `TListItemPlugin`. ARIA для скринридера, `data-*`
+		для стилей; смешивать нельзя, иначе правка доступности ломает вид.
 
 		Выбранность и подсветка — разные вещи: подсветка живёт, только пока
 		панель открыта, и в значение не попадает.
@@ -25,10 +26,8 @@ export default { ...SetupSelectItem, components: { Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:data-selected="String(selected)"
-		:data-highlighted="String(!!listItem_highlighted)"
 		@click="context.adapters.select.choose()"
-		v-bind="{ ...aria, ...containerAttrs }"
+		v-bind="{ ...aria, ...dataset, ...containerAttrs }"
 	>
 		<Button
 			tag="span"

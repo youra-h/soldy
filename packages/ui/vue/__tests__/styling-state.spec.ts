@@ -12,13 +12,18 @@
  * темой. Пока они не разделены, доступность нельзя править, не ломая вид.
  * Тест держит границу с двух сторон: состояние на обёртке есть, а ARIA на
  * ней нет.
+ *
+ * Оба набора теперь приходят из ядра готовыми (`aria` и `dataset`), и шаблон
+ * не вычисляет состояние сам. Поэтому эти проверки заодно стерегут проводку:
+ * убери запись в ядре — и атрибут исчезнет из разметки.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import CollapseHarness from './Collapse.test.vue'
 import TabsHarness from './TabsContent.test.vue'
+import SelectHarness from './Select.test.vue'
 
 describe('Collapse: обёртка несёт data-selected для темы', () => {
 	it('раскрытый элемент помечен data-selected="true", свёрнутый — "false"', () => {
@@ -59,5 +64,40 @@ describe('Tabs: обёртка несёт data-selected для темы', () => 
 
 		expect(wrapper.find('.s-tabs-item').attributes('aria-selected')).toBeUndefined()
 		expect(wrapper.find('[role="tab"]').attributes('aria-selected')).toBeDefined()
+	})
+})
+
+describe('Select: корень несёт data-open для темы', () => {
+	let wrapper: ReturnType<typeof mount> | null = null
+
+	afterEach(() => {
+		wrapper?.unmount()
+		wrapper = null
+		document.body.innerHTML = ''
+	})
+
+	it('следует за открытием панели', async () => {
+		wrapper = mount(SelectHarness, { attachTo: document.body })
+
+		const root = () => wrapper!.find('.s-select')
+
+		expect(root().attributes('data-open')).toBe('false')
+
+		await root().trigger('click')
+		await nextTick()
+
+		expect(root().attributes('data-open')).toBe('true')
+	})
+
+	/**
+	 * Состояние панели объявлено скринридеру через `aria-expanded` на поле —
+	 * там, где у него есть роль `combobox`. На корне ARIA быть не должно: он
+	 * несёт только контракт с темой.
+	 */
+	it('на корне нет aria-expanded — он на поле с role="combobox"', async () => {
+		wrapper = mount(SelectHarness, { attachTo: document.body })
+
+		expect(wrapper.find('.s-select').attributes('aria-expanded')).toBeUndefined()
+		expect(wrapper.find('[role="combobox"]').attributes('aria-expanded')).toBe('false')
 	})
 })

@@ -3,6 +3,7 @@ import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 import type { TMetaExtension } from '../meta'
+import type { TDataset } from '../../../../../../common'
 
 /**
  * TActivationExtension — расширение для управления активным элементом коллекции.
@@ -33,6 +34,11 @@ export class TActivationExtension<TItem extends object = any>
 
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
+
+		this.events.on('change:activation', () => this._syncDataset())
+		ctx.driver.events.on('item:added', () => this._syncDataset())
+		ctx.driver.events.on('change:items', () => this._syncDataset())
+		this._syncDataset()
 
 		ctx.driver.events.on('item:removed', (item: TItem) => {
 			if (this._activeItem === item) {
@@ -117,6 +123,22 @@ export class TActivationExtension<TItem extends object = any>
 	 */
 	isActive(item: TItem): boolean {
 		return this._activeItem === item
+	}
+
+	/**
+	 * Зеркалит активность в `data-selected` элементов — как это делает
+	 * `TSelectionExtension` для выбора.
+	 *
+	 * Имя атрибута то же, хотя состояние называется иначе, и это осознанно:
+	 * `data-*` — контракт с темой, а тема красит «выделенный элемент»
+	 * одинаково, будь он активным табом, раскрытой секцией или выбранной
+	 * опцией. Расходится только ARIA, и она остаётся за расширением
+	 * конкретного компонента.
+	 */
+	private _syncDataset(): void {
+		this._ctx?.driver.forEach((item: TItem) => {
+			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isActive(item))
+		})
 	}
 
 	/**

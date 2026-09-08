@@ -1,4 +1,10 @@
-import type { TAriaAttributes, TAria, TClasses } from './../../../common'
+import type {
+	TAriaAttributes,
+	TAria,
+	TDatasetAttributes,
+	TDataset,
+	TClasses,
+} from './../../../common'
 import type { IStateUnit, IVisibilityState, TActionEvent } from '../../../common'
 import type { IComponent, IComponentProps, TComponentEvents, TComponentStates } from '../component'
 
@@ -49,6 +55,8 @@ export type TComponentViewEvents = TComponentEvents & {
 	'change:classes': (value: string[]) => void
 	/** change:aria — набор атрибутов доступности изменился */
 	'change:aria': (value: TAriaAttributes) => void
+	/** change:dataset — набор `data-*` изменился */
+	'change:dataset': (value: TDatasetAttributes) => void
 	/** ready — срабатывает когда компонент монтируется/демонтируется из DOM */
 	ready: (value: boolean) => void
 }
@@ -96,6 +104,8 @@ export interface IComponentView<
 	readonly classes: TClasses
 	/** Атрибуты доступности — живой набор, как `classes` */
 	readonly aria: TAria
+	/** `data-*` для темы — такой же живой набор, но другой контракт */
+	readonly dataset: TDataset
 	/** Компонент смонтирован в DOM и готов (устанавливается плагин-слоем) */
 	ready: boolean
 }

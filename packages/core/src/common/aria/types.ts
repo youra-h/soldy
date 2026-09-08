@@ -1,9 +1,7 @@
+import type { TAttributesMap } from '../attributes'
+
 /**
  * Набор атрибутов доступности, вычисленный ядром.
- *
- * `null` означает «атрибут не ставить»: адаптеры раскладывают набор спредом
- * (`v-bind="aria"`, `{...aria}`), а там нужен способ убрать атрибут, а не
- * поставить его в пустую строку.
  *
  * Почему это делает ядро, хотя DOM ему недоступен. Здесь нет ни одной
  * DOM-операции — только значение, вычисленное из состояния. Ровно так же
@@ -15,12 +13,9 @@
  * ARIA-паттерн не работает: `<div role="button">` без `tabindex` нельзя
  * сфокусировать, а значит и активировать с клавиатуры.
  */
-export type TAriaAttributes = Record<string, string | null>
+export type TAriaAttributes = TAttributesMap
 
-export type TAriaEvents = {
-	/** change — набор атрибутов изменился */
-	change: () => void
-}
+export type { TAttributesEvents as TAriaEvents } from '../attributes'
 
 /**
  * Теги, у которых есть собственный атрибут `disabled`. На них состояние

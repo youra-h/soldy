@@ -13,9 +13,21 @@ export default { ...SetupListBoxItem, components: { Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:data-word-wrap="list_wordWrap"
-		v-bind="containerAttrs"
+		v-bind="{ ...dataset, ...containerAttrs }"
 	>
+		<!--
+			`dataset` биндится дважды, и это не описка. Тема читает
+			`data-word-wrap` с обёртки, а `data-selected` / `data-highlighted`
+			— с `.s-button`: у ListBox состояние размазано по двум элементам,
+			в отличие от Select и Collapse, где всё на обёртке.
+
+			Разложить набор в обе точки дешевле, чем переносить состояние: у
+			`.s-button` подсветка и выбор раскрашены по вариантам, а у элемента
+			списка своих таких правил нет. Приводить разметку к одному носителю
+			— часть задачи про доступность ListBox, там же, где ему добавят
+			`role="option"`; сейчас `aria-selected` всё ещё захардкожен здесь,
+			а не приходит набором.
+		-->
 		<Button
 			:tag="tag"
 			:view="view"
@@ -23,10 +35,8 @@ export default { ...SetupListBoxItem, components: { Button } }
 			:size="size"
 			:variant="variant"
 			:aria-selected="String(selected)"
-			:data-selected="String(selected)"
-			:data-highlighted="listItem_highlighted"
 			@click="context.adapters.selection.toggle()"
-			v-bind="controlAttrs"
+			v-bind="{ ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading" />

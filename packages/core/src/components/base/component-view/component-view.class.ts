@@ -7,7 +7,14 @@ import type {
 	TComponentViewStates,
 	TDirection,
 } from './types'
-import { TClasses, TAria, TStateUnit, TVisibilityState, TActionEvent } from '../../../common'
+import {
+	TClasses,
+	TAria,
+	TDataset,
+	TStateUnit,
+	TVisibilityState,
+	TActionEvent,
+} from '../../../common'
 import type { IVisibilityState, TValuePayload } from '../../../common'
 import { TEvented } from '../../../common'
 
@@ -45,6 +52,7 @@ export default class TComponentView<
 	protected _direction: TDirection
 	protected _classes: TClasses
 	protected _aria: TAria
+	protected _dataset: TDataset
 	protected _ready: boolean = false
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -94,6 +102,15 @@ export default class TComponentView<
 
 		this._aria.events.on('change', () =>
 			(this.events as TEvented<TComponentViewEvents>).emit('change:aria', this._aria.toObject()),
+		)
+
+		this._dataset = new TDataset()
+
+		this._dataset.events.on('change', () =>
+			(this.events as TEvented<TComponentViewEvents>).emit(
+				'change:dataset',
+				this._dataset.toObject(),
+			),
 		)
 	}
 
@@ -185,6 +202,22 @@ export default class TComponentView<
 	 */
 	get aria(): TAria {
 		return this._aria
+	}
+
+	/**
+	 * Набор `data-*` — то же самое, но для темы.
+	 *
+	 * Отдельный от `aria` намеренно: ARIA — контракт со скринридером, `data-*`
+	 * — с CSS, и связать их значило бы чинить доступность ценой поломки вида.
+	 * Пишутся оба обычно рядом, в одном месте (`aria.add('aria-selected', …)` и
+	 * `dataset.add('selected', …)`), а вот биндятся часто к разным элементам:
+	 * роль живёт там, где её ждёт скринридер, а класс — там, где его ждёт тема.
+	 *
+	 * Приведение к строке делает сам набор — ради того, чтобы
+	 * `String(selected)` не повторялся в шаблоне каждого адаптера.
+	 */
+	get dataset(): TDataset {
+		return this._dataset
 	}
 
 	get tag(): string | object {

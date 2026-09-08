@@ -14,8 +14,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		:data-selected="String(active)"
-		v-bind="containerAttrs"
+		v-bind="{ ...dataset, ...containerAttrs }"
 	>
 		<!--
 			Вся ARIA таба — на элементе, который и есть таб. Раньше
@@ -27,9 +26,13 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			шаблону об этом знать незачем. `controlAttrs` рядом — это сквозные
 			атрибуты Vue, чужая сущность.
 
-			`data-selected` на обёртке — то же состояние для CSS: тема красит
-			активный таб по нему. ARIA — для скринридера, `data-*` — для стилей;
-			смешивать нельзя, иначе правка ARIA ломает вид.
+			`dataset` на обёртке — то же состояние для CSS: тема красит активный
+			таб по `data-selected`. ARIA — для скринридера, `data-*` — для
+			стилей; смешивать нельзя, иначе правка ARIA ломает вид.
+
+			Имя `selected` при состоянии `active` — не описка: `data-*` описывает
+			вид, а «выделенный элемент» тема красит одинаково у таба, секции и
+			опции. Пишет его расширение активации, шаблон ничего не вычисляет.
 		-->
 		<Button
 			:disabled="disabled"
