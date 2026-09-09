@@ -17,14 +17,11 @@ import {
 	TSelect,
 	TSelectItem,
 	TSelectCollectionFacade,
-	TListBox,
-	TListBoxItem,
-	TListCollectionFacade,
 	TTabs,
 	TTabsItem,
 	TTabsCollectionFacade,
 } from '../src'
-import type { ISelectItem, IListItem, ITabsItem } from '@soldy/core'
+import type { ISelectItem, ITabsItem } from '@soldy/core'
 
 describe('TDataset · сам набор', () => {
 	it('подставляет префикс data-', () => {
@@ -168,29 +165,8 @@ describe('Активность → data-selected', () => {
 	})
 })
 
-describe('Перенос текста → data-word-wrap', () => {
-	const createList = (ownerWordWrap: boolean, itemWordWrap?: boolean) => {
-		const collection = new TListCollectionFacade(
-			{},
-			{ owner: new TListBox({ wordWrap: ownerWordWrap }) },
-		)
-		const item = new TListBoxItem({ value: 'a', text: 'A', wordWrap: itemWordWrap })
-
-		collection.items = [item] as IListItem[]
-
-		return item
-	}
-
-	it('берётся со списка, когда у элемента не задан', () => {
-		expect(createList(true).dataset.get('word-wrap')).toBe('true')
-	})
-
-	/**
-	 * Разрешение «значение элемента поверх значения списка» живёт в расширении
-	 * — там же, где вычисляется. Шаблон биндил уже разрешённое значение и тем
-	 * самым повторил бы это правило в каждом адаптере.
-	 */
-	it('значение элемента перекрывает значение списка', () => {
-		expect(createList(true, false).dataset.get('word-wrap')).toBe('false')
-	})
-})
+/**
+ * `data-word-wrap` проверяется не здесь, а в `setup/__tests__/list-layout.spec.ts`:
+ * атрибут ставит `TListLayoutPlugin`, которому принадлежит и списочный
+ * `wordWrap`. Ядро о нём больше не знает.
+ */

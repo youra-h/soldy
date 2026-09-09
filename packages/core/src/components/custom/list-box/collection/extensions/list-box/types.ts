@@ -1,39 +1,45 @@
 import type { IListBox, TListBoxView } from '../../../types'
-import type { IExtension } from '../../../../../base/collection'
-import type { IListExtension, IListExtensionOptions, TListExtensionEvents } from '../../../../list'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtension,
+	IExtensionItems,
+} from '../../../../../base/collection'
 import type { TListBoxExtension } from './list-box.extension'
 import type { IListBoxItemExtension } from './item'
 import type { IListBoxItem } from '../../../item/types'
 
 /**
- * Контракт расширения listBox.
- * Наследует IListExtension (wordWrap) и добавляет view.
+ * Контракт расширения списка.
+ *
+ * Используется как тип `TParent` в `TListBoxItemExtension` — через него
+ * item-адаптер типизированно достаёт `view` владельца.
  */
 export interface IListBoxExtension<
 	TItem extends IListBoxItem = IListBoxItem,
-> extends IListExtension<TItem, IListBoxItemExtension<TItem>> {
-	/** Внешний вид с инстанса TListBox. */
+	// `any` в констрейнте намеренно: карта событий инвариантна, и требовать
+	// здесь точный набор значило бы запретить наследнику её расширить
+	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
+>
+	extends IExtension<TItem>, IExtensionItems<TItem, TItemExt> {
+	/** Внешний вид со списка. */
 	readonly view: TListBoxView
 }
 
-/**
- * Опции конструктора TListBoxExtension.
- * Наследует IListExtensionOptions (owner) с типизацией IListBoxItemExtension.
- */
+/** Опции конструктора: ссылка на инстанс списка. */
 export interface IListBoxExtensionOptions<
 	TOwner extends IListBox = IListBox,
 	TItem extends IListBoxItem = IListBoxItem,
-> extends IListExtensionOptions<TOwner, TItem, IListBoxItemExtension<TItem>> {}
+	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
+> extends IBaseOwnerItemExtensionOptions<TItem, TItemExt> {
+	/** Ссылка на инстанс компонента списка. */
+	owner: TOwner
+}
 
-/**
- * События расширения TListBoxExtension.
- * Наследует TListExtensionEvents (change:wordWrap) и добавляет change:view.
- */
-export type TListBoxExtensionEvents = TListExtensionEvents & {
+export type TListBoxExtensionEvents = {
 	'change:view': (value: TListBoxView) => void
 }
 
 export type TListBoxExtensions<TItem extends IListBoxItem> = {
-	listBox: TListBoxExtension<any, TItem>
+	list: TListBoxExtension<any, TItem>
 	[key: string]: IExtension<TItem>
 }

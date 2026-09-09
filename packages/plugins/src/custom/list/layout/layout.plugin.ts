@@ -1,130 +1,93 @@
-import type { IList, TCollectionEngine } from '@soldy/core'
-import { frameDebounce } from '@soldy/core'
+import type { TScrollBehavior } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
-import { TElementPlugin } from '../../element'
-import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import type { TListLayoutPluginEvents } from './types'
+import type { TListLayoutPluginEvents, TListLayoutPluginOptions } from './types'
 
 /**
- * TListLayoutPlugin — управляет высотой контейнера List/ListBox в зависимости от maxRows.
+ * TListLayoutPlugin — свойства раскладки списка. **Только свойства.**
  *
- * Вычисляет высоту как сумму высот первых N DOM-элементов + (N - 1) * gap,
- * где N = maxRows (или все элементы, если maxRows === 0).
+ * Плагин владеет `maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior`: хранит
+ * значение, отдаёт его и сообщает о смене событием. Ни DOM, ни коллекции, ни
+ * наблюдателей здесь нет — за каждое следствие отвечает свой плагин, который
+ * это свойство читает:
+ *
+ * | Свойство | Кто применяет |
+ * |---|---|
+ * | `maxRows` | `TListHeightPlugin` — высота контейнера элементов |
+ * | `wordWrap` | `TListWordWrapPlugin` — `data-word-wrap` на элементах |
+ * | `autoWidth` | `TListAutoWidthPlugin` — класс `--auto-width` |
+ * | `scrollBehavior` | `TListScrollPlugin` — как прокручивать к элементу |
+ *
+ * Так свойство и его следствие разделены: подключить раскладку можно без
+ * поведения (Select берёт не всё), а поведение читается по одному файлу вместо
+ * четырёх смешанных в одном.
+ *
+ * Пропы объявлены в contribution с `flatProps`, поэтому наружу выглядят
+ * обычными пропами компонента (`maxRows`, а не `layout_maxRows`). Так они
+ * достаются любому компоненту, подключившему плагин, без общего предка: ListBox
+ * — список сам по себе, Select — поле с панелью, наследоваться друг от друга
+ * они не могут (Select растёт от `TInputControl`), а раскладка нужна обоим.
  */
 export class TListLayoutPlugin extends TBasePlugin<any, TListLayoutPluginEvents> {
-	private _element: HTMLElement | null = null
-	private _list: IList | null = null
-	private _collectionElements: TCollectionElements | null = null
-	private _collection: TCollectionEngine<any, any> | null = null
-	private _rootObserver: ResizeObserver | null = null
-	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
-	private readonly _scheduleUpdate: () => void
+	private _maxRows = 0
+	private _wordWrap = false
+	private _autoWidth = false
+	private _scrollBehavior: TScrollBehavior = 'smooth'
 
-	constructor() {
-		super()
-		this._scheduleUpdate = frameDebounce(() => this._updateHeight())
+	override install(ctx: IPluginContext, options?: TListLayoutPluginOptions): void {
+		super.install(ctx, options)
+
+		this._maxRows = options?.maxRows ?? this._maxRows
+		this._wordWrap = options?.wordWrap ?? this._wordWrap
+		this._autoWidth = options?.autoWidth ?? this._autoWidth
+		this._scrollBehavior = options?.scrollBehavior ?? this._scrollBehavior
 	}
 
-	override install(ctx: IPluginContext): void {
-		super.install(ctx)
-
-		this._list = ctx.getInstance<IList>()
-		this._collectionElements = ctx.get(TCollectionElements) ?? null
-
-		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
-			this._element = element
-			this._rootObserver = new ResizeObserver(() => this._scheduleUpdate())
-			this._rootObserver.observe(element)
-			this._scheduleUpdate()
-		})
-
-		ctx.get(TElementPlugin)?.events.on('removed', () => {
-			this._rootObserver?.disconnect()
-			this._rootObserver = null
-			this._element = null
-		})
-
-		this._list?.events.on('change:maxRows', () => this._scheduleUpdate())
-
-		const bundles = ctx.get(TCollectionBundlesPlugin)
-
-		bundles?.events.on('engine:bound', (collection) => {
-			this._collection = collection
-
-			collection.driver.events.on('change:items', () => this._scheduleUpdate())
-			collection.driver.events.on('item:removed', () => this._scheduleUpdate())
-		})
-
-		bundles?.events.on('bundle:registered', ({ uid, bundle }) => {
-			const elementPlugin = bundle.get(TElementPlugin)
-
-			elementPlugin?.events.on('ready', (element) => {
-				this._itemObservers.get(uid)?.disconnect()
-
-				const observer = new ResizeObserver(() => this._scheduleUpdate())
-				observer.observe(element)
-
-				this._itemObservers.set(uid, observer)
-				this._scheduleUpdate()
-			})
-
-			elementPlugin?.events.on('removed', () => {
-				this._itemObservers.get(uid)?.disconnect()
-				this._itemObservers.delete(uid)
-				this._scheduleUpdate()
-			})
-		})
-
-		bundles?.events.on('bundle:unregistered', ({ uid }) => {
-			this._itemObservers.get(uid)?.disconnect()
-			this._itemObservers.delete(uid)
-			this._scheduleUpdate()
-		})
+	/** Сколько строк показывать до появления прокрутки. `0` — все. */
+	get maxRows(): number {
+		return this._maxRows
 	}
 
-	override destroy(): void {
-		this._rootObserver?.disconnect()
-		this._rootObserver = null
+	set maxRows(value: number) {
+		if (this._maxRows === value) return
 
-		for (const observer of this._itemObservers.values()) {
-			observer.disconnect()
-		}
-		this._itemObservers.clear()
-
-		this._element = null
-		this._list = null
-		this._collectionElements = null
-		this._collection = null
-
-		super.destroy()
+		this._maxRows = value
+		this.events.emit('change:maxRows', value)
 	}
 
-	/**
-	 * Обновляет высоту контейнера списка в зависимости от maxRows и размеров элементов.
-	 */
-	private _updateHeight(): void {
-		if (!this._element || !this._list) return
+	/** Переносить длинный текст элемента вместо обрезки многоточием. */
+	get wordWrap(): boolean {
+		return this._wordWrap
+	}
 
-		const elements = this._collectionElements?.getAll() ?? []
-		const maxRows = this._list.maxRows
-		const visibleCount = maxRows === 0 ? elements.length : Math.min(maxRows, elements.length)
+	set wordWrap(value: boolean) {
+		if (this._wordWrap === value) return
 
-		const gap = parseFloat(getComputedStyle(this._element).rowGap) || 0
+		this._wordWrap = value
+		this.events.emit('change:wordWrap', value)
+	}
 
-		let totalHeight = 0
-		const limit = Math.min(visibleCount, elements.length)
+	/** Ширина по содержимому вместо фиксированной. */
+	get autoWidth(): boolean {
+		return this._autoWidth
+	}
 
-		for (let i = 0; i < limit; i++) {
-			totalHeight += elements[i].offsetHeight
-		}
+	set autoWidth(value: boolean) {
+		if (this._autoWidth === value) return
 
-		if (limit > 1) {
-			totalHeight += (limit - 1) * gap
-		}
+		this._autoWidth = value
+		this.events.emit('change:autoWidth', value)
+	}
 
-		this._element.style.maxHeight = `${totalHeight}px`
-		this._element.style.overflowY =
-			visibleCount === 0 || visibleCount >= elements.length ? 'hidden' : 'auto'
+	/** Как прокручивать к элементу при навигации. */
+	get scrollBehavior(): TScrollBehavior {
+		return this._scrollBehavior
+	}
+
+	set scrollBehavior(value: TScrollBehavior) {
+		if (this._scrollBehavior === value) return
+
+		this._scrollBehavior = value
+		this.events.emit('change:scrollBehavior', value)
 	}
 }

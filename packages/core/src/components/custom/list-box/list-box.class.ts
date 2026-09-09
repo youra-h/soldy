@@ -1,21 +1,42 @@
-import { TList } from '../list'
-import type { IListComponentProps } from '../list/types'
+import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
-import type { IListBoxProps, TListBoxView, TListBoxEvents, TListBoxStates, IListBox } from './types'
+import type {
+	IListBoxProps,
+	TListBoxView,
+	TListBoxEvents,
+	TListBoxStates,
+	IListBox,
+	TListBoxValue,
+} from './types'
 
 /**
- * Компонент ListBox (TListBox).
- * Наследует TList (maxRows, autoWidth, wordWrap, scrollBehavior) и добавляет view.
+ * Компонент ListBox — список с выбором.
+ *
+ * Раньше между ним и `TValueControl` стоял `TList`. Слоя не стало: наследник у
+ * него был ровно один, а «общее для всех списков» оказалось не в базовом
+ * компоненте, а в плагинах — ими пользуется и Select, который от списка не
+ * наследуется вовсе.
+ *
+ * `TValueControl`, а не `TControl`: выбор у списка был всегда, но отдавался
+ * наружу списком объектов — внутренней моделью коллекции. Потребителю нужен
+ * ответ в значениях, и он же уходит в форму. Связь `value` ↔ выбор держит
+ * `TValueSelectionExtension`.
+ *
+ * **Чего здесь нет намеренно:** `maxRows`, `wordWrap`, `autoWidth`,
+ * `scrollBehavior`. Это свойства раскладки, и они живут в
+ * `TListLayoutPlugin` — том самом, который их и обрабатывает. Так их получает
+ * любой компонент, подключивший плагин, без общего предка: Select ровно так и
+ * делает.
  */
 export class TListBox
-	extends TList<IListBoxProps, TListBoxEvents, TListBoxStates>
+	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents, TListBoxStates>
 	implements IListBox
 {
 	static override baseClass = 's-list-box'
 
-	static defaultValues: Partial<IListComponentProps & { view?: TListBoxView }> = {
-		...TList.defaultValues,
+	static defaultValues: Partial<IListBoxProps> = {
+		...TValueControl.defaultValues,
 		view: 'plain',
 	}
 
@@ -37,13 +58,13 @@ export class TListBox
 	}
 
 	set view(value: TListBoxView) {
-		if (this._view !== value) {
-			this._applyView(value, this._view)
-			;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
-		}
+		if (this._view === value) return
+
+		this._applyView(value, this._view)
+		;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
 	}
 
-	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView) {
+	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView): void {
 		this._classes.swapClass({
 			oldClass: `--${oldValue}`,
 			newClass: `--${newValue}`,

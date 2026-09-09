@@ -16,6 +16,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	ListLayoutPluginDescriptor,
+	ListHeightPluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 } from '../../plugins'
 
@@ -31,9 +32,12 @@ export const SelectDescriptor = () =>
 			// Коллекция: реестр bundles + доступ к DOM-элементам опций
 			CollectionBundlesPluginDescriptor(),
 			CollectionElementsPluginDescriptor(),
-			// Ограничение высоты списка по maxRows — тот же плагин, что у List:
-			// он про раскладку, а не про семантику списка
+			// Свойства раскладки — те же, что у ListBox: они про раскладку, а не
+			// про семантику списка. Но применяет Select только высоту: правила
+			// `--auto-width` и `data-word-wrap` тема даёт лишь для `.s-list-box`,
+			// и вешать их обработчики сюда значило бы писать в DOM впустую
 			ListLayoutPluginDescriptor(),
+			ListHeightPluginDescriptor(),
 			// Закрытие по нажатию мимо. Общий слой оверлея, им же потом
 			// воспользуются Menu и Popover
 			DismissPluginDescriptor(),

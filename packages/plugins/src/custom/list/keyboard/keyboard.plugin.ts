@@ -1,5 +1,4 @@
-import type { IList, IListItem, TCollectionEngine } from '@soldy/core'
-import type { IPluginContext } from '../../../base'
+import type { IControl, TCollectionEngine } from '@soldy/core'
 import { TListNavigationPlugin } from '../navigation'
 import type { TListKeyboardPluginEvents } from './types'
 
@@ -15,31 +14,17 @@ import type { TListKeyboardPluginEvents } from './types'
  * selection-расширение коллекции.
  */
 export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPluginEvents> {
-	private _list: IList | null = null
-
-	override install(ctx: IPluginContext): void {
-		super.install(ctx)
-
-		this._list = ctx.getInstance<IList>()
-	}
-
-	override destroy(): void {
-		this._list = null
-
-		super.destroy()
-	}
-
 	/**
 	 * Подсветка встаёт на выбранный элемент — и следует за ним, если выбор
 	 * поменяли снаружи. Позиция запоминается без визуальной отметки: список
 	 * ещё не в навигации.
 	 */
 	protected override onCollectionBound(collection: TCollectionEngine<any, any>): void {
-		const selected = collection.extensions.selection.selected as IListItem[]
+		const selected = collection.extensions.selection.selected as IControl[]
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
 
-		collection.extensions.selection.events.on('change:selection', (items: IListItem[]) => {
+		collection.extensions.selection.events.on('change:selection', (items: IControl[]) => {
 			if (items.length > 0) this.trackHighlight(items[0].uid)
 		})
 	}

@@ -320,15 +320,15 @@ on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void   // вход �
 
 ```ts
 // ✅ констрейнт — это «у тебя должен быть эмиттер», а не «ровно такой»
-TItemExt extends IListItemExtension<TItem, any> = IListItemExtension<TItem>
+TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>
 
 // ✅ инстанцирование — точное, здесь проверка и работает
-class TListBoxItemExtension extends TListItemExtension<TItem, TParent, TListBoxItemEventsExtension>
+class TListBoxItemExtension extends TBaseItemExtension<TItem, TParent, TListBoxItemEventsExtension>
 ```
 
 Затронуты `IItemExtension`, `IItemExtensionCtor`, `IExtensionItems`,
 `IBaseOwnerItemExtensionOptions`, `TBaseOwnerItemExtension` и то же самое на
-уровне компонента (`IListItemExtension`, `IListExtension`, `TListExtension`).
+уровне компонента (`IListBoxItemExtension`, `IListBoxExtension`).
 **Заводишь новую коллекцию — держи тот же приём**, иначе первый же наследник,
 добавивший событие, упрётся в то же и получит очередной `as any`.
 
@@ -392,7 +392,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
   ```
 
-- **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListCollectionFacadeOptions` lives in `collection/types.ts`, while `facade.ts` holds only the `TListCollectionFacade` class.
+- **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
 - **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).
 
@@ -834,7 +834,7 @@ this._syncDisabledAria()   // начальное состояние — рука
 |---|---|
 | `TSelectionExtension` | `data-selected` — **всем** элементам коллекции |
 | `TActivationExtension` | `data-selected` — то же имя при состоянии `active` |
-| `TListExtension` | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
+| `TListLayoutPlugin` | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
 | `TListItemPlugin` | `data-highlighted` |
 | ядро компонента | своё состояние — `data-open` у `TSelect` |
 

@@ -1,4 +1,4 @@
-import type { IListItem } from '@soldy/core'
+import type { IControl } from '@soldy/core'
 
 /**
  * Куда переехала подсветка.
@@ -7,9 +7,9 @@ import type { IListItem } from '@soldy/core'
  * решает, куда прокручивать, не заглядывая в коллекцию.
  */
 export type THighlightPayload = {
-	item: IListItem | null
-	prevItem: IListItem | null
-	nextItem: IListItem | null
+	item: IControl | null
+	prevItem: IControl | null
+	nextItem: IControl | null
 }
 
 export type TListNavigationPluginEvents = {

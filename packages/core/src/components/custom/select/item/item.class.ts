@@ -10,10 +10,10 @@ import type { ISelectItem, ISelectItemProps, TSelectItemEvents, TSelectItemState
  * `value` — ключ опции, `text` — то, что видно. Разделение то же, что у
  * `TTabsItem`: `value` внутри, `text` на экране.
  *
- * `TListItem` намеренно не наследуем, хотя он тоже несёт `text`: вместе с ним
- * пришли бы `wordWrap` и связь с List, а Select к списку отношения не имеет —
- * они лишь похожи внешне. Общее у них не класс, а `Button` внутри строки,
- * плагины подсветки и стили.
+ * `TListBoxItem` намеренно не наследуем, хотя он тоже несёт `text`: вместе с
+ * ним пришёл бы `wordWrap` и связь со списком, а Select к нему отношения не
+ * имеет — они лишь похожи внешне. Общее у них не класс, а `Button` внутри
+ * строки, плагины подсветки и стили.
  */
 export default class TSelectItem<
 	TProps extends ISelectItemProps = ISelectItemProps,

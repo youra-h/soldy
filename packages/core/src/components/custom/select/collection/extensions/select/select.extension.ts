@@ -19,11 +19,11 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * 1. **ARIA-связка.** Формула идентификаторов одна на обе половинки: на
  *    `aria-controls` поля и `id` списка, на `aria-activedescendant` и `id`
  *    опции. Разнеси её, и они однажды разойдутся.
- * 2. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у List.
+ * 2. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у ListBox.
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
  * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
- * единственным списком со значением; теперь `value` есть и у `TList`, и
+ * единственным списком со значением; теперь `value` есть и у `TListBox`, и
  * оставить копию значило бы завести две реализации одной мысли.
  *
  * Текст поля (`valueText`) при этом остаётся здесь — он не про синхронизацию,

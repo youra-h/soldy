@@ -1,4 +1,4 @@
-import type { IListItem, TCollectionEngine } from '@soldy/core'
+import type { IControl, TCollectionEngine } from '@soldy/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
@@ -13,7 +13,7 @@ interface ISelectOwner {
 }
 
 /** Опция глазами плагина: у неё, в отличие от элемента списка, есть текст. */
-interface ISelectOption extends IListItem {
+interface ISelectOption extends IControl {
 	text: string
 }
 
@@ -66,7 +66,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * Недоступные опции пропускаются: подсветить то, что нельзя выбрать,
 	 * значит завести пользователя в тупик.
 	 */
-	protected override items(): IListItem[] {
+	protected override items(): IControl[] {
 		return super.items().filter((item) => !item.disabled && item.rendered && item.visible)
 	}
 
@@ -192,7 +192,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	/** При открытии подсветка встаёт на выбранное — иначе на первую опцию. */
 	private _highlightSelected(): void {
 		const selected = this._collection?.extensions?.selection?.selected?.[0] as
-			| IListItem
+			| IControl
 			| undefined
 
 		if (selected && this.indexOf(selected.uid) !== -1) {

@@ -1,22 +1,23 @@
 /**
  * Дескриптор ListBoxItem (TListBoxItem).
  *
- * Наследует ListItemDescriptor (text, wordWrap, selected, value, name, ...)
- * и добавляет плагин подсветки элемента (клавиатурная навигация).
+ * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
+ * variant, ...), добавляет `text`, `wordWrap` и плагин подсветки элемента
+ * (клавиатурная навигация).
  */
 
 import { defineComponent } from '../../base'
 import { TListBoxItem } from '@soldy/core'
 import type { IListBoxItemProps, TListBoxItemEvents } from '@soldy/core'
 import { ListBoxItemContribution } from '../../../contributions'
-import { ListItemDescriptor } from '../list'
+import { ValueControlDescriptor } from '../value-control.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
 export const ListBoxItemDescriptor = () =>
 	defineComponent<IListBoxItemProps, TListBoxItemEvents>()({
 		ctor: TListBoxItem,
 
-		extends: ListItemDescriptor(),
+		extends: ValueControlDescriptor(),
 
 		contribution: ListBoxItemContribution(),
 

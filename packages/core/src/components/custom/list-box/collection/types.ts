@@ -1,44 +1,71 @@
 import { TCollectionEngine } from '../../../base/collection'
 import type {
-	TListBaseCollectionExtensions,
-	IListCollectionProps,
-	IListCollectionItemProps,
-	TListAdapters,
-} from '../../list/collection/types'
+	ICollectionProps,
+	IBatchCollectionProps,
+	ISelectionCollectionItemProps,
+	ISelectionCollectionProps,
+	TCollectionFacadeOptions,
+	IExtension,
+	ISelectionItemExtension,
+	IOrderItemExtension,
+	TFactoryExtension,
+	TOrderExtension,
+	TPlainExtension,
+	TUniqueExtension,
+	TMetaExtension,
+	TBatchExtension,
+	TSelectionExtension,
+	TValueSelectionExtension,
+} from '../../../base/collection'
 import type { IListBoxItemExtension } from './extensions/list-box/item/types'
 import { TListBoxExtension } from './extensions'
 import type { IListBox } from '../types'
-import type { IListBoxItem } from '../item/types'
-import type { IListBoxItemProps } from '../item/types'
+import type { IListBoxItem, IListBoxItemProps } from '../item/types'
 
-export type TListBoxCollectionExtensions = TListBaseCollectionExtensions<IListBoxItem> & {
+export type TListBoxCollectionExtensions = {
+	factory: TFactoryExtension<IListBoxItem>
+	unique: TUniqueExtension<IListBoxItem>
+	meta: TMetaExtension<IListBoxItem>
+	order: TOrderExtension<IListBoxItem>
+	plain: TPlainExtension<IListBoxItem>
+	batch: TBatchExtension<IListBoxItem>
+	selection: TSelectionExtension<IListBoxItem>
+	/** Связь `value` списка с выбором коллекции — в обе стороны. */
+	value: TValueSelectionExtension<any, IListBoxItem>
 	list: TListBoxExtension<IListBox, IListBoxItem>
 }
 
 export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>
 
-/**
- * Owner-level props коллекции ListBox.
- * Наследует List и добавляет engine-тип ListBox.
- */
+/** Owner-level props коллекции: состав + режим выбора. */
 export interface IListBoxCollectionProps<
 	TItemProps = IListBoxItemProps,
 	TItem = IListBoxItem,
-> extends IListCollectionProps<TItemProps, TItem, TListBoxCollection> {}
+	TCollection = TListBoxCollection,
+>
+	extends ICollectionProps<TCollection>,
+		IBatchCollectionProps<TItemProps, TItem>,
+		ISelectionCollectionProps {}
+
+/** Item-level props элемента: выбранность. */
+export interface IListBoxCollectionItemProps extends ISelectionCollectionItemProps {}
+
+/** Опции конструктора фасада коллекции. */
+export type TListBoxCollectionFacadeOptions<
+	TItem extends IListBoxItem = IListBoxItem,
+	TExtensions extends Record<string, IExtension<any>> = TListBoxCollectionExtensions,
+> = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, IListBox> & {
+	/** Фабрика движка коллекции — переопределяется наследником. */
+	factory?: (owner: IListBox) => TCollectionEngine<TItem, TExtensions>
+}
 
 /**
- * Item-level props элемента ListBox.
- * Наследует item-пропсы List.
- */
-export interface IListBoxCollectionItemProps extends IListCollectionItemProps {}
-
-/**
- * Item-адаптеры коллекции ListBox — те же, что у List, но `list` знает `view`.
+ * Item-адаптеры коллекции: выбор, порядок и делегат списка.
  *
- * Раньше фасад элемента брал тип адаптеров от List и приводил всё к `any`.
- * Теперь типизировано всё, кроме одного релея `change:view`: набор событий
- * вшит в `IListItemExtension` и наследником не расширяется.
+ * Используется фасадом элемента для типизированного доступа к `adapters`.
  */
-export type TListBoxAdapters = TListAdapters<IListBoxItem> & {
-	list: IListBoxItemExtension<IListBoxItem>
+export type TListBoxAdapters<TItem extends IListBoxItem = IListBoxItem> = {
+	selection: ISelectionItemExtension<TItem>
+	order: IOrderItemExtension<TItem>
+	list: IListBoxItemExtension<TItem>
 }

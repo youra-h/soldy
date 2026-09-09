@@ -21,8 +21,6 @@ import { describe, it, expect } from 'vitest'
 import {
 	AccordionCollectionDescriptor,
 	AccordionCollectionItemDescriptor,
-	ListCollectionDescriptor,
-	ListCollectionItemDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
 	SelectCollectionDescriptor,
@@ -49,8 +47,6 @@ function hasSetter(ctor: any, name: string): boolean {
 const descriptors: Array<[string, () => any]> = [
 	['Accordion', AccordionCollectionDescriptor],
 	['Accordion.Item', AccordionCollectionItemDescriptor],
-	['List', ListCollectionDescriptor],
-	['List.Item', ListCollectionItemDescriptor],
 	['ListBox', ListBoxCollectionDescriptor],
 	['ListBox.Item', ListBoxCollectionItemDescriptor],
 	['Select', SelectCollectionDescriptor],

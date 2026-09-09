@@ -1,20 +1,23 @@
-import type { IList, IListItem, TCollectionEngine, TScrollBehavior } from '@soldy/core'
+import type { IControl, TCollectionEngine, TScrollBehavior } from '@soldy/core'
 import { frameDebounce } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { TListKeyboardPlugin } from '../keyboard'
+import { TListLayoutPlugin } from '../layout'
 import type { TListScrollPluginEvents } from './types'
 
 /**
  * TListScrollPlugin — автоматическая прокрутка контейнера к выделенному элементу.
  *
- * Поведение управляется `scrollBehavior` инстанса списка: none / instant / smooth.
+ * Поведение берётся из `scrollBehavior` соседнего `TListLayoutPlugin` —
+ * композиция плагинов, а не наследование: свойство объявляет тот плагин,
+ * который им и владеет, а этот его читает.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: HTMLElement | null = null
-	private _list: IList | null = null
+	private _layout: TListLayoutPlugin | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private readonly _scheduleScroll: (payload: {
 		uid: string | number
@@ -32,7 +35,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
-		this._list = ctx.getInstance<IList>()
+		this._layout = ctx.get(TListLayoutPlugin) ?? null
 		this._collectionElements = ctx.get(TCollectionElements) ?? null
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
@@ -60,20 +63,20 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 	override destroy(): void {
 		this._element = null
-		this._list = null
+		this._layout = null
 		this._collectionElements = null
 
 		super.destroy()
 	}
 
 	private _subscribeToCollection(collection: TCollectionEngine<any, any>): void {
-		const selected = collection.extensions.selection.selected as IListItem[]
+		const selected = collection.extensions.selection.selected as IControl[]
 
 		if (selected.length > 0) {
 			this._scrollToItem(selected[0].uid, 'center')
 		}
 
-		collection.extensions.selection.events.on('change:selection', (items: IListItem[]) => {
+		collection.extensions.selection.events.on('change:selection', (items: IControl[]) => {
 			if (items.length > 0) {
 				this._scheduleScroll({ uid: items[0].uid, mode: 'center' })
 			}
@@ -81,9 +84,9 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	private _scrollToItem(uid: string | number, mode: 'center' | 'nearest'): void {
-		if (!this._element || !this._list) return
+		if (!this._element) return
 
-		const behavior: TScrollBehavior = this._list.scrollBehavior
+		const behavior: TScrollBehavior = this._layout?.scrollBehavior ?? 'smooth'
 
 		if (behavior === 'none') return
 

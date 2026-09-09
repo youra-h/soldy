@@ -80,20 +80,6 @@ describe('view пробрасывается со списка на элемен�
 	})
 })
 
-describe('wordWrap: значение элемента поверх значения списка', () => {
-	it('без своего значения элемент берёт списочное', () => {
-		expect(createListBox(['a'], { wordWrap: true }).facadeFor(0).wordWrap).toBe(true)
-	})
-
-	it('своё значение элемента перекрывает списочное', () => {
-		const { items, facadeFor } = createListBox(['a'], { wordWrap: true })
-
-		items[0].wordWrap = false
-
-		expect(facadeFor(0).wordWrap).toBe(false)
-	})
-})
-
 /**
  * `value` списка — проекция выбора, а не второе состояние.
  *

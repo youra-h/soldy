@@ -747,6 +747,10 @@ Type 'TEventContext<TListBoxItemEventsExtension, "change:view" | "destroy" | "ch
 `as any` снялся, а опечатка в имени события снова ловится — вплоть до
 подсказки «Did you mean "change:view"?».
 
+> Имена `TList*` здесь исторические: слой `TList` позже слился с `TListBox`
+> (см. «ListBox (после слияния с `TList`)»). Правило про констрейнты от этого
+> не изменилось — оно и сейчас держит `change:view` у `TListBoxItemExtension`.
+
 **Что нашлось при разборе.** Одно свойство писалось в трёх фасадах по
 отдельности, и три копии дали три разных API:
 
@@ -991,7 +995,7 @@ ListBox, Tabs и Select копий стало бы сорок.
 вычисляемыми записями, а не карта.
 
 **Кто пишет:** `TSelectionExtension` — `data-selected` всем элементам,
-`TActivationExtension` — то же имя при состоянии `active`, `TListExtension` —
+`TActivationExtension` — то же имя при состоянии `active`, `TListLayoutPlugin` —
 уже разрешённый `data-word-wrap`, `TListItemPlugin` — `data-highlighted`, сам
 компонент — своё (`data-open` у `TSelect`, рядом со строкой `aria-expanded`).
 
@@ -1738,12 +1742,15 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 
 ---
 
-## List / ListBox parity (post collection-refactor)
+## ListBox (после слияния с `TList`)
 
-List is headless (no visual part), ListBox extends it. Both mirror Tabs/Accordion:
-- Core: `TList` (maxRows/autoWidth/wordWrap/scrollBehavior, no collection), `TListItem` (text + wordWrap). `TListBox extends TList` (+ view), `TListBoxItem extends TListItem` (view comes from extension).
-- Collections: `ListFactory`/`ListBoxFactory`. Extensions **inherit, not duplicate**: `TListExtension` (selection + wordWrap propagation, `protected _owner`, `TOwner extends IList<any,any,any>`, `name: string`) ← `TListBoxExtension` (adds `view` + `change:view` relay). Item adapters: `TListItemExtension` (wordWrap) ← `TListBoxItemExtension` (adds `view`). Item adapters expose `list_wordWrap` / `list_view` (namespace `list`).
-- `TList`/`IList` are generic in props (`TProps extends IListComponentProps`) so `TListBox` can pass `IListBoxProps`. `defaultValues` typed `Partial<IListComponentProps>` to avoid static-side `engine` type conflict between `TListCollection` and `TListBoxCollection`.
-- List plugins migrated to `packages/plugins/src/custom/list/`: `TListItemPlugin` (highlighted only — selection moved to selection extension), `TListLayoutPlugin`, `TListKeyboardPlugin`, `TListScrollPlugin`. **`TListItemAccumulationPlugin` removed** — `TCollectionBundlesPlugin.getByUid(uid)?.get(TListItemPlugin)` replaces per-uid plugin accumulation.
-- Plugin descriptors: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListLayout/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor wires: CollectionBundles + CollectionElements + Layout + Keyboard + Scroll + Drag.
-- Pitfall: `TList` constructor needs `const { props = {} as Partial<TProps> } = TComponentView.prepareOptions<TProps, TStates>(...)` — generic `TProps` + `{}` default otherwise types `props` as `{}`.
+`TList` был headless-моделью списка, от которой рос `TListBox`. Слоя больше нет:
+наследник у него был один, а второй потребитель раскладки — `TSelect` — растёт
+от `TInputControl` и наследоваться от списка не мог в принципе.
+- Core: `TListBox extends TValueControl` (+ `view`), `TListBoxItem extends TValueControl` (`text` + свой трёхзначный `wordWrap`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
+- Раскладка (`maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior`) — не у компонента, а у `TListLayoutPlugin`, подключённого с `flatProps`: пропы выходят наружу без префикса и потому неотличимы от собственных. Так их получают и ListBox, и Select — без общего предка.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (проброс `disabled`/`size`/`variant`/`view`) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (только `view`) ← `TBaseItemExtension`. Разрешение `wordWrap` из адаптера ушло: `data-word-wrap` элементам ставит плагин.
+- List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
+- Плагины: `TListItemPlugin` (только `highlighted`), `TListLayoutPlugin`, `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у соседнего layout — композиция, не наследование).
+- Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListLayout/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + Layout + Keyboard + Scroll + Drag.
+- `TListLayoutPlugin` ограничивает высоту **родителя элементов**, а не корня компонента: у Select корень — поле, а список лежит в телепортированной панели.

@@ -3,12 +3,9 @@ import {
 	TButton,
 	TComponentView,
 	TDragAndDrop,
-	TList,
 	TListBox,
 	TTabs,
 	TAccordion,
-	TListCollectionFacade,
-	TListItemCollectionFacade,
 	TListBoxCollectionFacade,
 	TListBoxItemCollectionFacade,
 	TTabsCollectionFacade,
@@ -27,16 +24,17 @@ import {
 	TDismissPlugin,
 	TCollectionBundlesPlugin,
 	TListKeyboardPlugin,
+	TListLayoutPlugin,
+	TListAutoWidthPlugin,
+	TListWordWrapPlugin,
+	TListHeightPlugin,
 	TListItemPlugin,
 } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
 	ComponentViewDescriptor,
 	DragAndDropDescriptor,
-	ListDescriptor,
 	ListBoxDescriptor,
-	ListCollectionDescriptor,
-	ListCollectionItemDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
 	TabsDescriptor,
@@ -136,32 +134,87 @@ describe('дескрипторы компонентов (наследовани�
 		expect(dd.createBundle(new TDragAndDrop())).toBeNull()
 	})
 
-	it('ListDescriptor наследует Control и добавляет maxRows', () => {
-		const d = ListDescriptor()
-		expect(d.ctor).toBe(TList)
-
-		const names = propNames(d)
-		for (const expected of [
-			'maxRows',
-			'autoWidth',
-			'wordWrap',
-			'scrollBehavior',
-			'size',
-			'variant',
-		]) {
-			expect(names).toContain(expected)
-		}
-	})
-
-	it('ListBoxDescriptor наследует List и добавляет view + Drag-плагин', () => {
+	it('ListBoxDescriptor наследует ValueControl и добавляет view + Drag-плагин', () => {
 		const d = ListBoxDescriptor()
 		expect(d.ctor).toBe(TListBox)
 
 		const names = propNames(d)
-		expect(names).toContain('maxRows') // List
+		expect(names).toContain('value') // ValueControl
+		expect(names).toContain('size') // Stylable
 		expect(names).toContain('view') // ListBox
 
 		expect(d.plugins.some((p) => p.ctor === TDragPlugin)).toBe(true)
+	})
+
+	/**
+	 * Раскладка приходит плагином, и это видно по тому, где лежат её пропы:
+	 * в `props` компонента их нет, а в `getProps()` — есть.
+	 *
+	 * Проверка неслучайная. `flatProps` снимает у плагина префикс, и снаружи
+	 * `maxRows` неотличим от собственного пропа ListBox; если он однажды
+	 * переползёт обратно в contribution компонента, `getProps()` этого не
+	 * покажет — а этот тест покажет.
+	 */
+	it('ListBoxDescriptor получает раскладку от плагина, а не объявляет сам', () => {
+		const d = ListBoxDescriptor()
+
+		const own = propNames(d)
+		const all = d.getProps().map((p) => p.name.getName())
+
+		for (const prop of ['maxRows', 'autoWidth', 'wordWrap', 'scrollBehavior']) {
+			expect(own).not.toContain(prop)
+			expect(all).toContain(prop)
+		}
+
+		expect(d.plugins.some((p) => p.ctor === TListLayoutPlugin)).toBe(true)
+	})
+
+	/**
+	 * Раскладка разложена на четыре плагина: свойства отдельно, каждое
+	 * следствие отдельно. Дескриптор — единственное место, где видно, что все
+	 * они подключены: юнит-тесты плагинов собирают их руками и молчаливую
+	 * потерю проводки не заметят.
+	 *
+	 * Порядок тоже проверяется: читатели берут значение через
+	 * `ctx.get(TListLayoutPlugin)` в `install`, а `use()` ставит плагины по
+	 * очереди — раскладка обязана идти раньше.
+	 */
+	it('ListBoxDescriptor подключает раскладку и всех её читателей, раскладку — первой', () => {
+		const ctors = ListBoxDescriptor().plugins.map((p) => p.ctor)
+		const layoutAt = ctors.indexOf(TListLayoutPlugin)
+
+		expect(layoutAt).toBeGreaterThanOrEqual(0)
+
+		for (const reader of [TListAutoWidthPlugin, TListWordWrapPlugin, TListHeightPlugin]) {
+			expect(ctors.indexOf(reader)).toBeGreaterThan(layoutAt)
+		}
+	})
+
+	/**
+	 * Select берёт свойства раскладки целиком, а применяет только высоту:
+	 * правила `--auto-width` и `data-word-wrap` тема даёт лишь для
+	 * `.s-list-box`, и остальные читатели писали бы в DOM впустую.
+	 */
+	it('SelectDescriptor подключает из раскладки только высоту', () => {
+		const ctors = SelectDescriptor().plugins.map((p) => p.ctor)
+
+		expect(ctors).toContain(TListLayoutPlugin)
+		expect(ctors).toContain(TListHeightPlugin)
+		expect(ctors).not.toContain(TListAutoWidthPlugin)
+		expect(ctors).not.toContain(TListWordWrapPlugin)
+	})
+
+	/**
+	 * События префикс сохраняют: `create` есть у каждого плагина, и без
+	 * namespace они схлопнулись бы в одно имя на компонент.
+	 */
+	it('события плагина раскладки остаются с префиксом', () => {
+		const events = ListBoxDescriptor()
+			.getEvents()
+			.map((e) => e.getName())
+
+		expect(events).toContain('layout:create')
+		expect(events).not.toContain('create')
 	})
 
 	it('TabsDescriptor наследует Control и добавляет orientation/view + Drag-плагин', () => {
@@ -187,49 +240,33 @@ describe('дескрипторы компонентов (наследовани�
 })
 
 describe('дескрипторы коллекций (фасады)', () => {
-	it('ListCollectionDescriptor наследует общий Collection (items, trackBy)', () => {
-		const d = ListCollectionDescriptor()
-
-		expect(d.ctor).toBe(TListCollectionFacade)
-
-		const names = propNames(d)
-		expect(names).toContain('items') // Collection
-		expect(names).toContain('trackBy') // Collection
-		expect(names).toContain('mode') // List
-		expect(names).toContain('selected') // List (protected)
-
-		expect(eventNames(d)).toContain('engine:create')
-	})
-
-	it('ListCollectionItemDescriptor объявляет item-пропсы (selected, order)', () => {
-		const d = ListCollectionItemDescriptor()
-
-		expect(d.ctor).toBe(TListItemCollectionFacade)
-
-		const names = propNames(d)
-		expect(names).toContain('selected')
-		expect(names).toContain('order')
-		expect(names).toContain('list_wordWrap')
-	})
-
-	it('ListBoxCollectionDescriptor наследует ListCollection', () => {
+	it('ListBoxCollectionDescriptor наследует общий Collection (items, trackBy)', () => {
 		const d = ListBoxCollectionDescriptor()
 
 		expect(d.ctor).toBe(TListBoxCollectionFacade)
 
 		const names = propNames(d)
 		expect(names).toContain('items') // Collection
-		expect(names).toContain('mode') // ListCollection
+		expect(names).toContain('trackBy') // Collection
+		expect(names).toContain('mode') // ListBoxCollection
+		expect(names).toContain('selected') // ListBoxCollection (protected)
+
+		expect(eventNames(d)).toContain('engine:create')
 	})
 
-	it('ListBoxCollectionItemDescriptor наследует ListCollectionItem и добавляет view', () => {
+	it('ListBoxCollectionItemDescriptor объявляет item-пропсы (selected, order, view)', () => {
 		const d = ListBoxCollectionItemDescriptor()
 
 		expect(d.ctor).toBe(TListBoxItemCollectionFacade)
 
 		const names = propNames(d)
-		expect(names).toContain('selected') // ListCollectionItem
-		expect(names).toContain('view') // ListBoxCollectionItem
+		expect(names).toContain('selected')
+		expect(names).toContain('order')
+		expect(names).toContain('view')
+
+		// `list_wordWrap` отсюда ушёл: разрешение «элемент поверх списка»
+		// делает TListLayoutPlugin, а не фасад
+		expect(names).not.toContain('list_wordWrap')
 
 		const view = d.props.find((p) => p.name.name === 'view')!
 		expect(view.protected).toBe(true)

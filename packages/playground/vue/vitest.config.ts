@@ -9,7 +9,13 @@ import path from 'node:path'
  */
 export default defineConfig({
 	plugins: [vue()],
-	test: { environment: 'jsdom' },
+	test: {
+		environment: 'jsdom',
+		environmentOptions: {
+			jsdom: { pretendToBeVisual: true },
+		},
+		setupFiles: ['./__tests__/setup.ts'],
+	},
 	resolve: {
 		alias: {
 			'@soldy/accessor': path.resolve(import.meta.dirname, '../../accessor'),

@@ -1,4 +1,4 @@
-import type { IListItem, TCollectionEngine } from '@soldy/core'
+import type { IControl, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -88,9 +88,14 @@ export abstract class TListNavigationPlugin<
 	 * По умолчанию все. Наследник сужает: у Select недоступные опции
 	 * пропускаются — подсветить то, что нельзя выбрать, значит завести
 	 * пользователя в тупик.
+	 *
+	 * Тип — `IControl`, а не элемент конкретного списка: навигации нужны только
+	 * `uid`, `disabled`, `rendered` и `visible`. Элементы ListBox и опции Select
+	 * общего предка ниже `IControl` не имеют, и раньше здесь стоял `IListItem`
+	 * от несуществующего теперь компонента `TList`.
 	 */
-	protected items(): IListItem[] {
-		return (this._collection?.driver ?? []) as IListItem[]
+	protected items(): IControl[] {
+		return (this._collection?.driver ?? []) as IControl[]
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -103,11 +108,11 @@ export abstract class TListNavigationPlugin<
 		return this.items().findIndex((item) => item.uid === uid)
 	}
 
-	protected itemAt(index: number): IListItem | null {
+	protected itemAt(index: number): IControl | null {
 		return this.items()[index] ?? null
 	}
 
-	protected itemByUid(uid: string | number): IListItem | null {
+	protected itemByUid(uid: string | number): IControl | null {
 		return this.items().find((item) => item.uid === uid) ?? null
 	}
 
@@ -197,9 +202,9 @@ export abstract class TListNavigationPlugin<
 	}
 
 	private emitHighlight(
-		item: IListItem | null,
-		prevItem: IListItem | null,
-		nextItem: IListItem | null,
+		item: IControl | null,
+		prevItem: IControl | null,
+		nextItem: IControl | null,
 	): void {
 		;(this.events as unknown as {
 			emit(name: 'change:highlight', payload: unknown): void

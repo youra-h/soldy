@@ -1,27 +1,52 @@
-import type { IList, IListComponentProps, TListEvents, TListStates } from '../list/types'
+import type {
+	IValueControl,
+	IValueControlProps,
+	TValueControlEvents,
+	TValueControlStates,
+} from '../../base/value-control'
+import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { IListBoxCollectionProps } from './collection/types'
 import type { IListBoxItem, IListBoxItemProps } from './item/types'
 
 export type TListBoxView = 'plain' | 'outlined' | 'filled'
 
-export type TListBoxEvents = TListEvents & {
-	/** change:view */
-	'change:view': (value: TListBoxView) => void
-}
+/**
+ * Значение списка — то, что выбрано, в виде значений элементов.
+ *
+ * Скаляр в режиме `single`, массив в `multiple`, `undefined` когда не выбрано
+ * ничего. Не отдельное состояние, а проекция выбора коллекции: связь в обе
+ * стороны держит `TValueSelectionExtension`.
+ */
+export type TListBoxValue = string | number | (string | number)[] | undefined
 
-/** Пропсы самого компонента ListBox (без коллекционной части). */
-export interface IListBoxComponentProps extends IListComponentProps {
+export type TListBoxEvents = TValueControlEvents<TListBoxValue> &
+	TCollectionStorageDriverEvents<IListBoxItem> & {
+		/** change:view */
+		'change:view': (value: TListBoxView) => void
+	}
+
+/**
+ * Пропсы самого компонента (без коллекционной части и без раскладки).
+ *
+ * `maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior` сюда не входят: их
+ * объявляет `TListLayoutPlugin` — там же, где они и обрабатываются.
+ */
+export interface IListBoxComponentProps extends IValueControlProps<TListBoxValue> {
 	/** Внешний вид компонента */
 	view?: TListBoxView
 }
 
-/** Полный набор пропсов ListBox: наследует List (компонентные) + view + коллекция (engine, items, mode). */
+/** Полный набор пропсов ListBox: компонентные + коллекция (engine, items, mode). */
 export interface IListBoxProps
 	extends IListBoxComponentProps, IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {}
 
-export type TListBoxStates = TListStates
+export type TListBoxStates = TValueControlStates<TListBoxValue>
 
-export interface IListBox extends IList<IListBoxProps, TListBoxEvents, TListBoxStates> {
+export interface IListBox<
+	TProps extends IListBoxComponentProps = IListBoxProps,
+	TEvents extends TListBoxEvents = TListBoxEvents,
+	TStates extends TListBoxStates = TListBoxStates,
+> extends IValueControl<TListBoxValue, TProps, TEvents, TStates> {
 	/** Внешний вид компонента */
 	view: TListBoxView
 }

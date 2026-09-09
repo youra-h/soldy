@@ -48,6 +48,18 @@ export interface IPluginConstructor<
  * Контейнер плагинов.
  */
 export interface IPluginBundle {
+	/**
+	 * Компонент, которому принадлежит набор.
+	 *
+	 * Тот же метод, что плагин внутри бандла видит как `ctx.getInstance()` —
+	 * контекст отдаёт именно его, связанным. Одно имя и одна сигнатура снаружи
+	 * и изнутри.
+	 *
+	 * Наружу нужен потому, что владельческий плагин получает от
+	 * `TCollectionBundlesPlugin` бандлы элементов, а дотянуться должен до самих
+	 * элементов — например, чтобы проставить им `data-*`.
+	 */
+	getInstance<T>(): T | null
 	use<P extends IPlugin<any, any>>(
 		PluginCtor: IPluginConstructor<any, any, P>,
 		options?: Record<string, any>,
