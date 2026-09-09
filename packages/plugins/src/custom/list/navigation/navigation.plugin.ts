@@ -29,7 +29,7 @@ export abstract class TListNavigationPlugin<
 > extends TBasePlugin<any, TEvents> {
 	protected _element: HTMLElement | null = null
 	protected _bundles: TCollectionBundlesPlugin | null = null
-	protected _collection: TCollectionEngine<any, any> | null = null
+	protected _engine: TCollectionEngine<any, any> | null = null
 	protected _highlightedUid: string | number | null = null
 
 	override install(ctx: IPluginContext, options?: unknown): void {
@@ -47,9 +47,9 @@ export abstract class TListNavigationPlugin<
 			this._element = null
 		})
 
-		this._bundles?.events.on('engine:bound', (collection) => {
-			this._collection = collection
-			this.onCollectionBound(collection)
+		this._bundles?.events.on('engine:bound', (engine) => {
+			this._engine = engine
+			this.onEngineBound(engine)
 		})
 	}
 
@@ -59,7 +59,7 @@ export abstract class TListNavigationPlugin<
 
 		this._element = null
 		this._bundles = null
-		this._collection = null
+		this._engine = null
 
 		super.destroy()
 	}
@@ -77,7 +77,7 @@ export abstract class TListNavigationPlugin<
 	protected abstract onKeyDown(event: KeyboardEvent): void
 
 	/** Коллекция появилась — можно синхронизировать начальное состояние. */
-	protected onCollectionBound(_collection: TCollectionEngine<any, any>): void {}
+	protected onEngineBound(_engine: TCollectionEngine<any, any>): void {}
 
 	/** Подсветка переехала. Здесь наследник обновляет ARIA, скроллит и т.п. */
 	protected onHighlightChanged(_uid: string | number | null): void {}
@@ -95,7 +95,7 @@ export abstract class TListNavigationPlugin<
 	 * от несуществующего теперь компонента `TList`.
 	 */
 	protected items(): IControl[] {
-		return (this._collection?.driver ?? []) as IControl[]
+		return (this._engine?.driver ?? []) as IControl[]
 	}
 
 	/* ---------------------------------------------------------------- */

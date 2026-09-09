@@ -65,9 +65,9 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
-		bundles?.events.on('engine:bound', (collection) => {
-			collection.driver.events.on('change:items', () => this._scheduleUpdate())
-			collection.driver.events.on('item:removed', () => this._scheduleUpdate())
+		bundles?.events.on('engine:bound', (engine) => {
+			engine.driver.events.on('change:items', () => this._scheduleUpdate())
+			engine.driver.events.on('item:removed', () => this._scheduleUpdate())
 		})
 
 		bundles?.events.on('bundle:registered', ({ uid, bundle }) => {

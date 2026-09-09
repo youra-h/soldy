@@ -78,7 +78,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * панель закрыта, навигировать нечего. Этим Select отличается от ListBox,
 	 * который синхронизирует позицию с выбором сразу.
 	 */
-	protected override onCollectionBound(_collection: TCollectionEngine<any, any>): void {}
+	protected override onEngineBound(_engine: TCollectionEngine<any, any>): void {}
 
 	/** Подсветка для скринридера плюс прокрутка к опции. */
 	protected override onHighlightChanged(uid: string | number | null): void {
@@ -214,7 +214,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 	/** При открытии подсветка встаёт на выбранное — иначе на первую опцию. */
 	private _highlightSelected(): void {
-		const selected = this._collection?.extensions?.selection?.selected?.[0] as
+		const selected = this._engine?.extensions?.selection?.selected?.[0] as
 			| IControl
 			| undefined
 
@@ -232,7 +232,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 		const item = this.itemByUid(this._highlightedUid)
 
-		if (item) this._collection?.extensions?.select?.chooseItem(item)
+		if (item) this._engine?.extensions?.select?.chooseItem(item)
 	}
 
 	/** Ищет опцию, чей текст начинается с накопленного буфера. */

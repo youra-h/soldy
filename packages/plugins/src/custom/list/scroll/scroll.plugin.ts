@@ -46,8 +46,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
-		bundles?.events.on('engine:bound', (collection) => {
-			this._subscribeToCollection(collection)
+		bundles?.events.on('engine:bound', (engine) => {
+			this._subscribeToEngine(engine)
 		})
 
 		const keyboardPlugin = ctx.get(TListKeyboardPlugin) ?? null
@@ -67,14 +67,14 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		super.destroy()
 	}
 
-	private _subscribeToCollection(collection: TCollectionEngine<any, any>): void {
-		const selected = collection.extensions.selection.selected as IControl[]
+	private _subscribeToEngine(engine: TCollectionEngine<any, any>): void {
+		const selected = engine.extensions.selection.selected as IControl[]
 
 		if (selected.length > 0) {
 			this._scrollToItem(selected[0].uid, 'center')
 		}
 
-		collection.extensions.selection.events.on('change:selection', (items: IControl[]) => {
+		engine.extensions.selection.events.on('change:selection', (items: IControl[]) => {
 			if (items.length > 0) {
 				this._scheduleScroll({ uid: items[0].uid, mode: 'center' })
 			}

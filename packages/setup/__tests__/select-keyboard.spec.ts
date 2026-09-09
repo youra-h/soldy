@@ -36,10 +36,10 @@ async function setup(
 	layoutProps: { scrollBehavior?: string } = {},
 ) {
 	const owner = new TSelect({ ...props, ...layoutProps } as any)
-	const collection = new TSelectCollectionFacade({}, { owner })
+	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
 
-	collection.items = items as ISelectItem[]
+	facade.items = items as ISelectItem[]
 
 	const root = document.createElement('div')
 
@@ -96,7 +96,7 @@ async function setup(
 		bundles.register(bundle, item)
 	}
 
-	bundles.bindEngine(collection.engine as any)
+	bundles.bindEngine(facade.engine as any)
 
 	rootElement.element = root
 	await nextFrame()
@@ -104,9 +104,9 @@ async function setup(
 	const press = (key: string, init: KeyboardEventInit = {}) =>
 		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
 
-	const registry = new TItemContextRegistry(collection.engine.getCore())
+	const registry = new TItemContextRegistry(facade.engine.getCore())
 
-	return { owner, collection, items, keyboard, press, itemPlugins, registry, root, scrolls }
+	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls }
 }
 
 afterEach(() => {

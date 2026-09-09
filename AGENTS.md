@@ -165,6 +165,34 @@ Accordion она не имеет собственной идентичности
 Плоские имена: `<Owner><Part>` — `TabsItem`, `TabsContent`, `ListBoxItem`,
 `AccordionItem`. В Angular и Web Components — `soldy-tabs-item`.
 
+### Переменная — `engine`, а не `collection` (критично)
+
+**Ни одна переменная, ни один параметр и ни одно поле не называется
+`collection`.** Держите `TCollectionEngine` — имя `engine`, поле `_engine`,
+событие `engine:bound`, метод `bindEngine`, хук `onEngineBound`.
+
+Причина не в краткости. «Коллекция» в этом проекте — не массив: это движок с
+драйвером и расширениями. Имя `collection` заставляет читателя думать про
+список элементов, тогда как в руках у него объект, у которого элементы —
+только одна из граней.
+
+```ts
+// ❌ читается как «массив элементов»
+bundles.events.on('engine:bound', (collection) => { this._collection = collection })
+
+// ✅
+bundles.events.on('engine:bound', (engine) => { this._engine = engine })
+```
+
+**Держите фасад — это `facade`, а не `engine`.** `TListBoxCollectionFacade` не
+движок, а именованный доступ к нему; назвать его `engine` — такая же подмена,
+от которой правило и защищает.
+
+**Имена классов, типов, папок и contribution `Collection` сохраняют**:
+`TCollectionEngine`, `TListBoxCollectionFacade`, `CollectionContribution`,
+`base/collection/`. Там слово стоит на месте — оно называет слой, а не
+конкретный объект в руках.
+
 ### Слоты элементов: статические имена со scope
 
 Владелец рендерит элементы сам, когда их задали пропом `items`. Слоты для их

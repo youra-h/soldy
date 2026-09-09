@@ -19,18 +19,18 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 	 * поменяли снаружи. Позиция запоминается без визуальной отметки: список
 	 * ещё не в навигации.
 	 */
-	protected override onCollectionBound(collection: TCollectionEngine<any, any>): void {
-		const selected = collection.extensions.selection.selected as IControl[]
+	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
+		const selected = engine.extensions.selection.selected as IControl[]
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
 
-		collection.extensions.selection.events.on('change:selection', (items: IControl[]) => {
+		engine.extensions.selection.events.on('change:selection', (items: IControl[]) => {
 			if (items.length > 0) this.trackHighlight(items[0].uid)
 		})
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {
-		if (!this._collection) return
+		if (!this._engine) return
 		if (this.items().length === 0) return
 
 		switch (e.key) {
@@ -60,6 +60,6 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 
 		const item = this.itemByUid(this._highlightedUid)
 
-		if (item) this._collection?.extensions.selection.toggle(item)
+		if (item) this._engine?.extensions.selection.toggle(item)
 	}
 }

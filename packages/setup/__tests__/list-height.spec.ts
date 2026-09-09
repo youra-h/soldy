@@ -50,13 +50,13 @@ afterEach(() => {
  */
 async function setup(rows: number, maxRows: number) {
 	const owner = new TListBox({ maxRows })
-	const collection = new TListBoxCollectionFacade({}, { owner })
+	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = Array.from(
 		{ length: rows },
 		(_, i) => new TListBoxItem({ value: `i${i}`, text: `Item ${i}` }),
 	)
 
-	collection.items = items as IListBoxItem[]
+	facade.items = items as IListBoxItem[]
 
 	const root = document.createElement('div')
 	const panel = document.createElement('div')
@@ -97,7 +97,7 @@ async function setup(rows: number, maxRows: number) {
 		;(bundle.get(TElementPlugin) as TElementPlugin).element = element
 	}
 
-	bundles.bindEngine(collection.engine as any)
+	bundles.bindEngine(facade.engine as any)
 
 	rootElement.element = root
 	await nextFrame()

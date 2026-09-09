@@ -28,10 +28,10 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 /** Собирает ListBox с коллекцией и клавиатурой без адаптера фреймворка. */
 async function setup(texts: string[]) {
 	const owner = new TListBox()
-	const collection = new TListBoxCollectionFacade({}, { owner })
+	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TListBoxItem({ value: text.toLowerCase(), text }))
 
-	collection.items = items as IListBoxItem[]
+	facade.items = items as IListBoxItem[]
 
 	const root = document.createElement('div')
 
@@ -64,7 +64,7 @@ async function setup(texts: string[]) {
 		bundles.register(bundle, item)
 	}
 
-	bundles.bindEngine(collection.engine as any)
+	bundles.bindEngine(facade.engine as any)
 
 	rootElement.element = root
 	await nextFrame()
@@ -72,7 +72,7 @@ async function setup(texts: string[]) {
 	const press = (key: string) =>
 		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
 
-	return { owner, collection, items, keyboard, press, itemPlugins }
+	return { owner, facade, items, keyboard, press, itemPlugins }
 }
 
 afterEach(() => {
@@ -132,39 +132,39 @@ describe('навигация', () => {
 
 describe('выбор', () => {
 	it('Enter переключает выбор подсвеченного', async () => {
-		const { collection, press, items } = await setup(['Один', 'Два'])
+		const { facade, press, items } = await setup(['Один', 'Два'])
 
 		press('ArrowDown')
 		press('Enter')
 
-		expect(collection.selected).toEqual([items[0]])
+		expect(facade.selected).toEqual([items[0]])
 	})
 
 	it('Space делает то же самое', async () => {
-		const { collection, press, items } = await setup(['Один', 'Два'])
+		const { facade, press, items } = await setup(['Один', 'Два'])
 
 		press('ArrowDown')
 		press(' ')
 
-		expect(collection.selected).toEqual([items[0]])
+		expect(facade.selected).toEqual([items[0]])
 	})
 
 	it('повторное нажатие снимает выбор', async () => {
-		const { collection, press } = await setup(['Один'])
+		const { facade, press } = await setup(['Один'])
 
 		press('ArrowDown')
 		press('Enter')
 		press('Enter')
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 	})
 
 	it('без подсветки Enter ничего не делает', async () => {
-		const { collection, press } = await setup(['Один'])
+		const { facade, press } = await setup(['Один'])
 
 		press('Enter')
 
-		expect(collection.selected).toEqual([])
+		expect(facade.selected).toEqual([])
 	})
 })
 
@@ -172,14 +172,14 @@ describe('подсветка следует за выбором', () => {
 	it('встаёт на выбранный элемент при появлении коллекции', async () => {
 		// Позиция запоминается без визуальной отметки: навигация ещё не началась
 		const owner = new TListBox()
-		const collection = new TListBoxCollectionFacade({}, { owner })
+		const facade = new TListBoxCollectionFacade({}, { owner })
 		const items = [
 			new TListBoxItem({ value: 'a', text: 'A' }),
 			new TListBoxItem({ value: 'b', text: 'B' }),
 		]
 
-		collection.items = items as IListBoxItem[]
-		collection.engine.extensions.selection.select(items[1] as IListBoxItem)
+		facade.items = items as IListBoxItem[]
+		facade.engine.extensions.selection.select(items[1] as IListBoxItem)
 
 		const bundles = new TCollectionBundlesPlugin()
 		const keyboard = new TListKeyboardPlugin()
@@ -190,15 +190,15 @@ describe('подсветка следует за выбором', () => {
 
 		bundles.install(ctx)
 		keyboard.install(ctx)
-		bundles.bindEngine(collection.engine as any)
+		bundles.bindEngine(facade.engine as any)
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 
 	it('переезжает, когда выбор меняют снаружи', async () => {
-		const { collection, keyboard, items } = await setup(['Один', 'Два'])
+		const { facade, keyboard, items } = await setup(['Один', 'Два'])
 
-		collection.engine.extensions.selection.select(items[1] as IListBoxItem)
+		facade.engine.extensions.selection.select(items[1] as IListBoxItem)
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
