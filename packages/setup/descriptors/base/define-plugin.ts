@@ -14,23 +14,10 @@ export function definePlugin<
 >(options: {
 	ctor: IPluginConstructor<any, any, any>
 	namespace?: N
-	/**
-	 * Пропы плагина — часть публичного API компонента, без префикса.
-	 *
-	 * Для плагинов, которые не добавляют поведение сбоку, а **дают компоненту
-	 * свойства**: `maxRows`, а не `layout_maxRows`. События префикс сохраняют.
-	 *
-	 * Всё-или-ничего на плагин, а не список имён: список пришлось бы держать
-	 * в согласии с contribution, и опечатка молча вернула бы префикс. Нужны и
-	 * плоские, и префиксные пропы — значит плагинов должно быть два.
-	 */
-	flatProps?: boolean
 	contribution?: IContribution
 	options?: Record<string, any>
 }): IPluginDefinition<N, TEvents> {
-	const { props, events } = normalizeContribution(options.contribution, options.namespace, {
-		flatProps: options.flatProps,
-	})
+	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
 	return {
 		ctor: options.ctor,

@@ -1,8 +1,7 @@
-import type { IControl, TCollectionEngine } from '@soldy/core'
+import type { IControl, IList, TCollectionEngine } from '@soldy/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
-import { TListLayoutPlugin } from '../../list/layout'
 import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from './types'
 
 /** Минимум, который плагину нужен от поля. */
@@ -40,7 +39,7 @@ const OPENS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '])
 export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboardPluginEvents> {
 	private _owner: ISelectOwner | null = null
 	private _elements: TCollectionElements | null = null
-	private _layout: TListLayoutPlugin | null = null
+	private _list: IList | null = null
 	private _typeahead = ''
 	private _typeaheadAt = 0
 	private _typeaheadTimeout = 500
@@ -51,7 +50,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		this._typeaheadTimeout = options?.typeaheadTimeout ?? this._typeaheadTimeout
 		this._owner = ctx.getInstance<ISelectOwner>() ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
-		this._layout = ctx.get(TListLayoutPlugin) ?? null
+		this._list = ctx.getInstance<IList>()
 
 		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
 		this._owner?.events.on('close', () => this.clearHighlight())
@@ -61,7 +60,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	override destroy(): void {
 		this._owner = null
 		this._elements = null
-		this._layout = null
+		this._list = null
 
 		super.destroy()
 	}
@@ -93,7 +92,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	/**
 	 * Прокрутка к подсвеченной опции с оглядкой на `scrollBehavior`.
 	 *
-	 * Свойство берётся у соседнего `TListLayoutPlugin` — так же, как его читает
+	 * Свойство читается у инстанса (`IList`) — так же, как его читает
 	 * `TListScrollPlugin` у ListBox. Сам плагин прокрутки Select не подключает:
 	 * тот ходит за выбором, а здесь прокрутка идёт за подсветкой, и это разные
 	 * события. Общим остаётся свойство, а не реализация.
@@ -102,7 +101,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * вне документа. Прокрутка — удобство, а не часть контракта.
 	 */
 	private _scrollTo(uid: string | number): void {
-		const behavior = this._layout?.scrollBehavior ?? 'smooth'
+		const behavior = this._list?.scrollBehavior ?? 'smooth'
 
 		if (behavior === 'none') return
 

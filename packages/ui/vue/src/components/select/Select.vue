@@ -113,7 +113,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 			position="fixed"
 			:anchor_anchor="rootElement"
 			anchor_placement="bottom-start"
-			:anchor_matchWidth="true"
+			:anchor_matchWidth="autoFitWidth"
 			class="s-select__panel"
 			v-bind="dismiss_ownerAttribute"
 		>

@@ -8,6 +8,7 @@ import {
 	FRAME_POSITIONS,
 	HTML_TAGS,
 	LIST_BOX_VIEWS,
+	LIST_CONTENT_FITS,
 	SCROLL_BEHAVIORS,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
@@ -53,6 +54,13 @@ const SHARED: Record<string, string> = {
 	readonly: 'Значение видно, но менять его нельзя',
 	required: 'Поле обязательно. Рисует маркер и попадает в валидацию формы',
 	id: 'Идентификатор поля. Пусто — берётся uid экземпляра',
+
+	// Списочный контракт `IList` — общий у ListBox и Select. Предка у них
+	// общего нет, но свойства одни и те же, значит и описание одно
+	maxRows: 'Сколько строк показывать до появления прокрутки. 0 — все',
+	contentFit:
+		'Что делать с не помещающимся текстом: обрезать, перенести или раздвинуть список',
+	scrollBehavior: 'Как прокручивать к элементу при навигации с клавиатуры',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -75,10 +83,6 @@ const OWN: Record<string, Record<string, string>> = {
 		clearLabel: 'Имя кнопки очистки для скринридера. Собирается с именем поля',
 	},
 	'list-box': {
-		maxRows: 'Сколько строк показывать до появления прокрутки',
-		autoWidth: 'Ширина по содержимому вместо фиксированной',
-		wordWrap: 'Переносить длинный текст элемента вместо обрезки',
-		scrollBehavior: 'Как прокручивать к элементу при навигации с клавиатуры',
 		view: 'Оформление списка',
 	},
 	tabs: {
@@ -127,10 +131,13 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		variant: COMPONENT_VARIANTS,
 		direction: DIRECTIONS,
 		tag: HTML_TAGS,
+		// Из списочного контракта — имена уникальны, разночтений быть не может
+		contentFit: LIST_CONTENT_FITS,
+		scrollBehavior: SCROLL_BEHAVIORS,
 	},
 	button: { view: BUTTON_VIEWS },
 	accordion: { view: ACCORDION_VIEWS },
-	'list-box': { view: LIST_BOX_VIEWS, scrollBehavior: SCROLL_BEHAVIORS },
+	'list-box': { view: LIST_BOX_VIEWS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,

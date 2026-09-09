@@ -290,47 +290,59 @@ describe('слоты поля', () => {
 })
 
 /**
- * Раскладка: свойства приходят от плагина, а следствия — от трёх других.
+ * Списочные свойства Select — та же тройка, что у ListBox.
  *
- * Ради этого Select и не наследуется от списка: `TInputControl` в предках уже
- * занят, а `maxRows` с `wordWrap` нужны обоим. Проверяется здесь, а не в
- * юнит-тестах плагинов, именно проводка целиком: проп в разметке без префикса
- * (`max-rows`, а не `layout-max-rows`) доезжает до DOM панели.
+ * Общего предка у них нет и быть не может: `TInputControl` в предках уже занят.
+ * Общий только контракт `IList`, реализация у каждого своя. Проверяется здесь
+ * проводка целиком: проп в разметке доезжает до DOM панели и опций.
  */
-describe('раскладка панели', () => {
-	it('пропы объявлены без префикса плагина', () => {
+describe('списочные свойства', () => {
+	it('объявлены как собственные пропы компонента', () => {
 		const declared = Object.keys(propsSelect)
 
-		for (const prop of ['maxRows', 'wordWrap', 'autoWidth', 'scrollBehavior']) {
+		for (const prop of ['maxRows', 'contentFit', 'scrollBehavior']) {
 			expect(declared).toContain(prop)
 		}
-
-		expect(declared).not.toContain('layout_maxRows')
 	})
 
 	/**
-	 * `wordWrap` разрешается плагином и приезжает атрибутом на опцию — шаблон
-	 * этого правила не знает и потому не повторяет его в шести адаптерах.
+	 * `contentFit` приезжает атрибутом на каждую опцию — шаблон этого правила
+	 * не знает и потому не повторяет его в шести адаптерах.
 	 */
-	it('wordWrap доезжает до data-word-wrap каждой опции', async () => {
-		render({ wordWrap: true })
+	it('contentFit доезжает до data-content-fit каждой опции', async () => {
+		render({ contentFit: 'wrap' })
 		await nextTick()
 		await nextFrame()
 
-		expect(options().map((el) => el.getAttribute('data-word-wrap'))).toEqual([
-			'true',
-			'true',
-			'true',
+		expect(options().map((el) => el.getAttribute('data-content-fit'))).toEqual([
+			'wrap',
+			'wrap',
+			'wrap',
 		])
 	})
 
-	it('без wordWrap атрибут стоит выключенным, а не отсутствует', async () => {
-		// «Выключено» надо отличать от «неприменимо»: тема смотрит [data-x='true']
+	it('по умолчанию опции обрезают текст', async () => {
 		render()
 		await nextTick()
 		await nextFrame()
 
-		expect(options()[0].getAttribute('data-word-wrap')).toBe('false')
+		expect(options()[0].getAttribute('data-content-fit')).toBe('truncate')
+	})
+
+	/**
+	 * `expand` снимает подгонку панели под ширину поля: ширину держит плагин
+	 * якоря, а не CSS, и выражение `contentFit !== 'expand'` вычисляет ядро.
+	 */
+	it('expand отвязывает ширину панели от поля', () => {
+		const autoFit = (contentFit?: string) =>
+			render(contentFit ? { contentFit } : {}).findComponent(Select).vm.autoFitWidth
+
+		expect(autoFit('expand')).toBe(false)
+
+		wrapper?.unmount()
+		document.body.innerHTML = ''
+
+		expect(autoFit()).toBe(true)
 	})
 
 	/**

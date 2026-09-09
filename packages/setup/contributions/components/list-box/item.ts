@@ -1,15 +1,23 @@
 import type { IContribution } from '@soldy/accessor'
+import { defineType } from '../../defineType'
+import type { TListItemContentFit } from '@soldy/core'
 
 /**
  * Собственные пропсы элемента списка.
  *
- * `wordWrap` здесь трёхзначен: `undefined` означает «взять у списка», и это не
- * то же самое, что `false`. Списочное значение лежит в `TListLayoutPlugin`, он
- * же и разрешает пару.
+ * `contentFit` здесь трёхзначен: `undefined` означает «как у списка», и это не
+ * то же самое, что `truncate`. Разрешение делает расширение коллекции, оно же
+ * пишет элементу `data-content-fit`.
+ *
+ * `expand` элементу недоступен — ширина у списка одна на всех, см.
+ * `TListItemContentFit`.
  */
 export const ListBoxItemContribution = (): IContribution => ({
 	props: {
 		text: { type: String, triggers: ['change:text'] },
-		wordWrap: { type: Boolean, triggers: ['change:wordWrap'] },
+		contentFit: {
+			type: defineType<TListItemContentFit>(String),
+			triggers: ['change:contentFit'],
+		},
 	},
 })

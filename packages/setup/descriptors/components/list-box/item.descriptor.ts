@@ -2,7 +2,7 @@
  * Дескриптор ListBoxItem (TListBoxItem).
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
- * variant, ...), добавляет `text`, `wordWrap` и плагин подсветки элемента
+ * variant, ...), добавляет `text`, `contentFit` и плагин подсветки элемента
  * (клавиатурная навигация).
  */
 

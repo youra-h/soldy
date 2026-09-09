@@ -42,46 +42,6 @@ function mergeSlots(
 	return [...map.values()]
 }
 
-/**
- * Два пропа с одним экспортным именем — тихая ошибка.
- *
- * `getProps()` отдаёт оба, а `useProps` собирает из них объект по имени, и
- * последний молча выигрывает. Пока у плагинов был обязательный namespace,
- * столкнуться могли только свои пропы; с `flatProps` плагин выходит в общее
- * пространство имён компонента, и проверка становится обязательной.
- *
- * Падаем на сборке дескриптора, а не на отрисовке: имя видно сразу, и правится
- * там же, где объявлено.
- */
-function assertNoPropCollisions(
-	own: IPropDeclaration[],
-	plugins: readonly IPluginDefinition[],
-): void {
-	const seen = new Map<string, string>()
-
-	const check = (prop: IPropDeclaration, source: string) => {
-		const key = prop.name.getName()
-		const previous = seen.get(key)
-
-		if (previous) {
-			throw new Error(
-				`Проп «${key}» объявлен дважды: ${previous} и ${source}. ` +
-					`У плагина с flatProps пропы попадают в общее пространство имён компонента.`,
-			)
-		}
-
-		seen.set(key, source)
-	}
-
-	for (const prop of own) check(prop, 'компонент')
-
-	for (const plugin of plugins) {
-		const source = `плагин ${plugin.ctor?.name ?? '?'}`
-
-		for (const prop of plugin.props ?? []) check(prop, source)
-	}
-}
-
 function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
 
@@ -102,8 +62,6 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 	// Слоты наследуются с перекрытием по имени: наследник вправе уточнить scope
 	// (например, ListBoxItem добавляет `selected` к слоту, объявленному выше).
 	const slots: ISlotDeclaration[] = mergeSlots(parent?.slots ?? [], own.slots)
-
-	assertNoPropCollisions(props, plugins)
 
 	return {
 		ctor: options.ctor ?? parent?.ctor ?? Object,

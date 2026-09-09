@@ -1,5 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
+import { LIST_PROPS } from '../list'
 import type { IListBoxItem } from '@soldy/core'
 
 /**
@@ -40,5 +41,7 @@ export const ListBoxContribution = (): IContribution => ({
 	},
 	props: {
 		view: { type: String, triggers: ['change:view'] },
+		// Общие с Select — объявлены один раз в `components/list.ts`
+		...LIST_PROPS,
 	},
 })

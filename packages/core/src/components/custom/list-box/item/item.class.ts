@@ -2,6 +2,7 @@ import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
 import { TStateUnit, TEvented } from '../../../../common'
 import type { TValuePayload } from '../../../../common'
+import type { TListItemContentFit } from '../../list'
 import type {
 	IListBoxItem,
 	IListBoxItemProps,
@@ -15,8 +16,9 @@ import type {
  * `TValueControl`, где `value` — ключ элемента: по нему коллекция и находит,
  * что выбрать, когда списку задали значение.
  *
- * `wordWrap` здесь трёхзначен: `undefined` означает «взять у списка», и это не
- * то же самое, что `false`. Разрешение делает item-адаптер коллекции.
+ * `contentFit` здесь трёхзначен: `undefined` означает «взять у списка», и это
+ * не то же самое, что `truncate`. Разрешение делает расширение коллекции — оно
+ * же пишет элементу `data-content-fit`.
  */
 export default class TListBoxItem<
 	TProps extends IListBoxItemProps = IListBoxItemProps,
@@ -31,12 +33,12 @@ export default class TListBoxItem<
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
-		wordWrap: undefined,
+		contentFit: undefined,
 		variant: 'normal',
 		tag: 'div',
 	}
 
-	protected _wordWrap: boolean | undefined
+	protected _contentFit: TListItemContentFit | undefined
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TListBoxItemStates> = {}) {
 		super(props, options)
@@ -48,7 +50,7 @@ export default class TListBoxItem<
 			options.states?.text ??
 			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
 
-		this._wordWrap = customProps.wordWrap ?? ctor.defaultValues.wordWrap
+		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
 			;(this.events as TEvented<TListBoxItemEvents>).emit('change:text', payload)
@@ -63,22 +65,22 @@ export default class TListBoxItem<
 		this._states.text.value = value
 	}
 
-	get wordWrap(): boolean | undefined {
-		return this._wordWrap
+	get contentFit(): TListItemContentFit | undefined {
+		return this._contentFit
 	}
 
-	set wordWrap(value: boolean | undefined) {
-		if (this._wordWrap === value) return
+	set contentFit(value: TListItemContentFit | undefined) {
+		if (this._contentFit === value) return
 
-		this._wordWrap = value
-		;(this.events as TEvented<TListBoxItemEvents>).emit('change:wordWrap', !!value)
+		this._contentFit = value
+		;(this.events as TEvented<TListBoxItemEvents>).emit('change:contentFit', value)
 	}
 
 	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			text: this.text,
-			wordWrap: this.wordWrap,
+			contentFit: this.contentFit,
 		} as TProps
 	}
 }

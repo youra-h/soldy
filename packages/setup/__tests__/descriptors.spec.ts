@@ -24,12 +24,8 @@ import {
 	TDismissPlugin,
 	TCollectionBundlesPlugin,
 	TListKeyboardPlugin,
-	TListLayoutPlugin,
-	TListAutoWidthPlugin,
-	TListWordWrapPlugin,
 	TListHeightPlugin,
 	TListItemPlugin,
-	TSelectKeyboardPlugin,
 } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
@@ -148,84 +144,35 @@ describe('дескрипторы компонентов (наследовани�
 	})
 
 	/**
-	 * Раскладка приходит плагином, и это видно по тому, где лежат её пропы:
-	 * в `props` компонента их нет, а в `getProps()` — есть.
+	 * Списочные свойства объявляет **компонент**, а не плагин, и лежат они в
+	 * `props`, а не только в `getProps()`.
 	 *
-	 * Проверка неслучайная. `flatProps` снимает у плагина префикс, и снаружи
-	 * `maxRows` неотличим от собственного пропа ListBox; если он однажды
-	 * переползёт обратно в contribution компонента, `getProps()` этого не
-	 * покажет — а этот тест покажет.
+	 * Проверка неслучайная. Один заход эти свойства уже пережили: они переехали
+	 * в `TListLayoutPlugin`, и ядро перестало быть самодостаточным —
+	 * `new TListBox({ maxRows: 5 })` молча не срабатывал. Тест ловит возврат к
+	 * той схеме: у плагина проп оказался бы только в `getProps()`.
 	 */
-	it('ListBoxDescriptor получает раскладку от плагина, а не объявляет сам', () => {
-		const d = ListBoxDescriptor()
+	it.each([
+		['ListBoxDescriptor', ListBoxDescriptor],
+		['SelectDescriptor', SelectDescriptor],
+	])('%s объявляет списочные свойства сам', (_name, factory) => {
+		const own = propNames(factory())
 
-		const own = propNames(d)
-		const all = d.getProps().map((p) => p.name.getName())
-
-		for (const prop of ['maxRows', 'autoWidth', 'wordWrap', 'scrollBehavior']) {
-			expect(own).not.toContain(prop)
-			expect(all).toContain(prop)
-		}
-
-		expect(d.plugins.some((p) => p.ctor === TListLayoutPlugin)).toBe(true)
-	})
-
-	/**
-	 * Раскладка разложена на четыре плагина: свойства отдельно, каждое
-	 * следствие отдельно. Дескриптор — единственное место, где видно, что все
-	 * они подключены: юнит-тесты плагинов собирают их руками и молчаливую
-	 * потерю проводки не заметят.
-	 *
-	 * Порядок тоже проверяется: читатели берут значение через
-	 * `ctx.get(TListLayoutPlugin)` в `install`, а `use()` ставит плагины по
-	 * очереди — раскладка обязана идти раньше.
-	 */
-	it('ListBoxDescriptor подключает раскладку и всех её читателей, раскладку — первой', () => {
-		const ctors = ListBoxDescriptor().plugins.map((p) => p.ctor)
-		const layoutAt = ctors.indexOf(TListLayoutPlugin)
-
-		expect(layoutAt).toBeGreaterThanOrEqual(0)
-
-		for (const reader of [TListAutoWidthPlugin, TListWordWrapPlugin, TListHeightPlugin]) {
-			expect(ctors.indexOf(reader)).toBeGreaterThan(layoutAt)
+		for (const prop of ['maxRows', 'contentFit', 'scrollBehavior']) {
+			expect(own).toContain(prop)
 		}
 	})
 
 	/**
-	 * Select берёт свойства раскладки целиком, а применяет три из четырёх.
-	 *
-	 * `autoWidth` не подключён намеренно: ширину панели держит
-	 * `anchor_matchWidth` — плагин на Frame, а не класс на корне Select. Панель
-	 * телепортирована, и селектором с корня до неё не дотянуться, так что
-	 * `TListAutoWidthPlugin` писал бы класс, который никто не читает.
-	 *
-	 * `scrollBehavior` применяет не `TListScrollPlugin`, а сама клавиатура
-	 * Select: у ListBox прокрутка идёт за выбором, здесь — за подсветкой.
+	 * Дескриптор — единственное место, где видно, что плагин высоты подключён:
+	 * его собственные тесты собирают плагин руками и молчаливую потерю проводки
+	 * не заметят.
 	 */
-	it('SelectDescriptor подключает из раскладки высоту и перенос, но не autoWidth', () => {
-		const ctors = SelectDescriptor().plugins.map((p) => p.ctor)
-		const layoutAt = ctors.indexOf(TListLayoutPlugin)
-
-		expect(layoutAt).toBeGreaterThanOrEqual(0)
-
-		for (const reader of [TListHeightPlugin, TListWordWrapPlugin, TSelectKeyboardPlugin]) {
-			expect(ctors.indexOf(reader)).toBeGreaterThan(layoutAt)
-		}
-
-		expect(ctors).not.toContain(TListAutoWidthPlugin)
-	})
-
-	/**
-	 * События префикс сохраняют: `create` есть у каждого плагина, и без
-	 * namespace они схлопнулись бы в одно имя на компонент.
-	 */
-	it('события плагина раскладки остаются с префиксом', () => {
-		const events = ListBoxDescriptor()
-			.getEvents()
-			.map((e) => e.getName())
-
-		expect(events).toContain('layout:create')
-		expect(events).not.toContain('create')
+	it.each([
+		['ListBoxDescriptor', ListBoxDescriptor],
+		['SelectDescriptor', SelectDescriptor],
+	])('%s подключает плагин высоты', (_name, factory) => {
+		expect(factory().plugins.map((p) => p.ctor)).toContain(TListHeightPlugin)
 	})
 
 	it('TabsDescriptor наследует Control и добавляет orientation/view + Drag-плагин', () => {
@@ -276,7 +223,7 @@ describe('дескрипторы коллекций (фасады)', () => {
 		expect(names).toContain('view')
 
 		// `list_wordWrap` отсюда ушёл: разрешение «элемент поверх списка»
-		// делает TListLayoutPlugin, а не фасад
+		// делает расширение коллекции, а не фасад
 		expect(names).not.toContain('list_wordWrap')
 
 		const view = d.props.find((p) => p.name.name === 'view')!

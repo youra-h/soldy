@@ -1,24 +1,35 @@
 import { frameDebounce } from '@soldy/core'
+import type { IList } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import { TListLayoutPlugin } from '../layout'
+
+/**
+ * Что плагину нужно от компонента: число строк и канал о его смене.
+ *
+ * Структурный тип, а не `IListBox`: тот же плагин стоит и на Select, у
+ * которого общего предка со списком нет — есть только общий контракт.
+ */
+interface IListHeightOwner extends Pick<IList, 'maxRows'> {
+	readonly events: { on(name: 'change:maxRows', handler: () => void): unknown }
+}
 
 /**
  * TListHeightPlugin — высота контейнера списка по `maxRows`.
  *
- * Единственный из четырёх, кому нужны измерения: он следит за размерами корня и
- * каждого элемента и пересчитывает предел. Ради этого здесь и живут
- * `ResizeObserver`ы — остальные свойства раскладки применяются без DOM, и
- * держать их рядом значило бы тянуть за ними всю эту машинерию.
+ * Единственное списочное свойство, которому нужен плагин. `contentFit` ядро
+ * применяет само (`data-*`), `scrollBehavior` только читают — а `maxRows`
+ * требует измерений: высоту строк без DOM не узнать. Ради этого здесь и живут
+ * `ResizeObserver`ы.
  *
- * Само `maxRows` объявляет и хранит `TListLayoutPlugin`; этот плагин его
- * читает и подписан на смену.
+ * Само свойство лежит на инстансе (`IList`), плагин его читает и подписан на
+ * `change:maxRows`. Так устроены и остальные плагины пакета: свойство —
+ * ядру, применение — плагину.
  */
 export class TListHeightPlugin extends TBasePlugin<any> {
 	private _element: HTMLElement | null = null
-	private _layout: TListLayoutPlugin | null = null
+	private _list: IListHeightOwner | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private _rootObserver: ResizeObserver | null = null
 	private readonly _itemObservers = new Map<string | number, ResizeObserver>()
@@ -32,10 +43,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
-		this._layout = ctx.get(TListLayoutPlugin) ?? null
+		this._list = ctx.getInstance<IListHeightOwner>()
 		this._collectionElements = ctx.get(TCollectionElements) ?? null
 
-		this._layout?.events.on('change:maxRows', () => this._scheduleUpdate())
+		this._list?.events.on('change:maxRows', () => this._scheduleUpdate())
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -82,7 +93,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		this._itemObservers.clear()
 
 		this._element = null
-		this._layout = null
+		this._list = null
 		this._collectionElements = null
 
 		super.destroy()
@@ -119,7 +130,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		if (!container) return
 
-		const maxRows = this._layout?.maxRows ?? 0
+		const maxRows = this._list?.maxRows ?? 0
 
 		// `0` — «предела нет»: плагин не пишет ничего и отдаёт потолок теме.
 		// Не то же самое, что «предел по содержимому»: инлайновый стиль перебил

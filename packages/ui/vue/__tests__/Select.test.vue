@@ -6,9 +6,9 @@ defineProps<{
 	mode?: 'single' | 'multiple'
 	clearable?: boolean
 	id?: string
-	/** Пропы раскладки: объявлены плагином, наружу — без префикса. */
+	/** Списочные свойства — общий с ListBox контракт `IList`. */
 	maxRows?: number
-	wordWrap?: boolean
+	contentFit?: 'truncate' | 'wrap' | 'expand'
 }>()
 </script>
 
@@ -18,7 +18,7 @@ defineProps<{
 		:clearable="clearable ?? false"
 		:id="id"
 		:max-rows="maxRows"
-		:word-wrap="wordWrap"
+		:content-fit="contentFit"
 		name="Город"
 	>
 		<Select.Item value="msk" text="Москва" />

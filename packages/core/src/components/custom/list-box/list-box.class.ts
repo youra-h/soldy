@@ -1,6 +1,9 @@
 import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
+import type { TScrollBehavior } from '../../../common'
+import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE } from '../list'
+import type { TListContentFit } from '../list'
 import type {
 	IListBoxProps,
 	TListBoxView,
@@ -14,20 +17,23 @@ import type {
  * Компонент ListBox — список с выбором.
  *
  * Раньше между ним и `TValueControl` стоял `TList`. Слоя не стало: наследник у
- * него был ровно один, а «общее для всех списков» оказалось не в базовом
- * компоненте, а в плагинах — ими пользуется и Select, который от списка не
- * наследуется вовсе.
+ * него был ровно один, а Select, которому те же свойства нужны не меньше, всё
+ * равно оставался в стороне — он растёт от `TInputControl`.
  *
  * `TValueControl`, а не `TControl`: выбор у списка был всегда, но отдавался
  * наружу списком объектов — внутренней моделью коллекции. Потребителю нужен
  * ответ в значениях, и он же уходит в форму. Связь `value` ↔ выбор держит
  * `TValueSelectionExtension`.
  *
- * **Чего здесь нет намеренно:** `maxRows`, `wordWrap`, `autoWidth`,
- * `scrollBehavior`. Это свойства раскладки, и они живут в
- * `TListLayoutPlugin` — том самом, который их и обрабатывает. Так их получает
- * любой компонент, подключивший плагин, без общего предка: Select ровно так и
- * делает.
+ * `maxRows`, `contentFit`, `scrollBehavior` объявлены контрактом `IList`
+ * (см. `custom/list/types.ts`) и реализованы здесь же — своей копией. Копия
+ * сознательная: общего предка у списка и поля выбора быть не может, а попытка
+ * отдать свойства плагину сделала ядро несамодостаточным. Расхождение копий
+ * стережёт `core/__tests__/list-contract.spec.ts`.
+ *
+ * Применять их ядру по силам не всё: `contentFit` уходит в `data-*`, что ядру
+ * доступно, а `maxRows` требует измерений — его применяет `TListHeightPlugin`,
+ * читая свойство отсюда. `scrollBehavior` отсюда только читают.
  */
 export class TListBox
 	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents, TListBoxStates>
@@ -37,10 +43,14 @@ export class TListBox
 
 	static defaultValues: Partial<IListBoxProps> = {
 		...TValueControl.defaultValues,
+		...LIST_DEFAULTS,
 		view: 'plain',
 	}
 
 	protected _view!: TListBoxView
+	protected _maxRows: number
+	protected _contentFit!: TListContentFit
+	protected _scrollBehavior: TScrollBehavior
 
 	constructor(
 		props: Partial<IListBoxProps> = {},
@@ -51,6 +61,11 @@ export class TListBox
 		const ctor = new.target as typeof TListBox
 
 		this._applyView(props.view ?? ctor.defaultValues.view!)
+
+		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows!
+		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
+
+		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit!)
 	}
 
 	get view(): TListBoxView {
@@ -64,6 +79,42 @@ export class TListBox
 		;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
 	}
 
+	/** Сколько строк показывать до появления прокрутки. `0` — все. */
+	get maxRows(): number {
+		return this._maxRows
+	}
+
+	set maxRows(value: number) {
+		if (this._maxRows === value) return
+
+		this._maxRows = value
+		;(this.events as TEvented<TListBoxEvents>).emit('change:maxRows', value)
+	}
+
+	/** Что делать с не помещающимся текстом. */
+	get contentFit(): TListContentFit {
+		return this._contentFit
+	}
+
+	set contentFit(value: TListContentFit) {
+		if (this._contentFit === value) return
+
+		this._applyContentFit(value)
+		;(this.events as TEvented<TListBoxEvents>).emit('change:contentFit', value)
+	}
+
+	/** Как прокручивать к элементу при навигации. */
+	get scrollBehavior(): TScrollBehavior {
+		return this._scrollBehavior
+	}
+
+	set scrollBehavior(value: TScrollBehavior) {
+		if (this._scrollBehavior === value) return
+
+		this._scrollBehavior = value
+		;(this.events as TEvented<TListBoxEvents>).emit('change:scrollBehavior', value)
+	}
+
 	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView): void {
 		this._classes.swapClass({
 			oldClass: `--${oldValue}`,
@@ -72,10 +123,23 @@ export class TListBox
 		this._view = newValue
 	}
 
+	/**
+	 * `data-content-fit`, а не класс: то же имя получает каждый элемент, и тема
+	 * читает одно свойство на двух уровнях — `expand` со списка (ширина
+	 * контейнера), `wrap` с элемента (перенос текста).
+	 */
+	protected _applyContentFit(value: TListContentFit): void {
+		this._contentFit = value
+		this._dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, value)
+	}
+
 	override getProps(): IListBoxProps {
 		return {
 			...super.getProps(),
 			view: this._view,
+			maxRows: this._maxRows,
+			contentFit: this._contentFit,
+			scrollBehavior: this._scrollBehavior,
 		} as IListBoxProps
 	}
 }

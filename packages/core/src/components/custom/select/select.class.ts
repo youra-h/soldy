@@ -1,7 +1,9 @@
 import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
+import type { TAriaAttributes, TScrollBehavior } from '../../../common'
+import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE } from '../list'
+import type { TListContentFit } from '../list'
 import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue } from './types'
 
 /**
@@ -18,6 +20,11 @@ import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue 
  * себя `combobox`, а DOM-фокус с него не уходит никогда. Подсветку опции
  * передаёт `aria-activedescendant`, который пишет расширение коллекции: имена
  * опций знает она, не поле.
+ *
+ * `maxRows`, `contentFit`, `scrollBehavior` — общий с ListBox контракт `IList`
+ * (см. `custom/list/types.ts`), реализованный здесь своей копией: общего предка
+ * у списка и поля выбора быть не может. Копии сверяет
+ * `core/__tests__/list-contract.spec.ts`.
  */
 export class TSelect<
 	TProps extends ISelectProps = ISelectProps,
@@ -31,6 +38,7 @@ export class TSelect<
 
 	static defaultValues: Partial<ISelectProps> = {
 		...TInputControl.defaultValues,
+		...LIST_DEFAULTS,
 		open: false,
 		placeholder: '',
 		closeOnSelect: true,
@@ -44,6 +52,9 @@ export class TSelect<
 	protected _closeOnSelect!: boolean
 	protected _clearable!: boolean
 	protected _clearLabel!: string
+	protected _maxRows!: number
+	protected _contentFit!: TListContentFit
+	protected _scrollBehavior!: TScrollBehavior
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -54,6 +65,11 @@ export class TSelect<
 		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder!
 		this._closeOnSelect = own.closeOnSelect ?? ctor.defaultValues.closeOnSelect!
 		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel!
+
+		this._maxRows = own.maxRows ?? ctor.defaultValues.maxRows!
+		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
+
+		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
@@ -141,6 +157,57 @@ export class TSelect<
 		;(this.events as TEvented<TSelectEvents>).emit('change:clearLabel', value)
 	}
 
+	/** Сколько строк показывать до появления прокрутки. `0` — все. */
+	get maxRows(): number {
+		return this._maxRows
+	}
+
+	set maxRows(value: number) {
+		if (this._maxRows === value) return
+
+		this._maxRows = value
+		;(this.events as TEvented<TSelectEvents>).emit('change:maxRows', value)
+	}
+
+	/** Что делать с не помещающимся текстом. */
+	get contentFit(): TListContentFit {
+		return this._contentFit
+	}
+
+	set contentFit(value: TListContentFit) {
+		if (this._contentFit === value) return
+
+		this._applyContentFit(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:contentFit', value)
+	}
+
+	/** Как прокручивать к опции при навигации. */
+	get scrollBehavior(): TScrollBehavior {
+		return this._scrollBehavior
+	}
+
+	set scrollBehavior(value: TScrollBehavior) {
+		if (this._scrollBehavior === value) return
+
+		this._scrollBehavior = value
+		;(this.events as TEvented<TSelectEvents>).emit('change:scrollBehavior', value)
+	}
+
+	/**
+	 * Подгонять ли ширину панели под ширину поля.
+	 *
+	 * Производное от `contentFit`, и вычисляется здесь по той же причине, что и
+	 * `clearAria`: панель телепортирована, ширину ей задаёт плагин якоря, и
+	 * шаблону остаётся только пробросить это в `anchor_matchWidth`. Оставь
+	 * выражение `contentFit !== 'expand'` в разметке — и оно повторится в
+	 * каждом из шести адаптеров.
+	 *
+	 * Списку такого свойства не нужно: у него ширину меняет сам `data-*`.
+	 */
+	get autoFitWidth(): boolean {
+		return this._contentFit !== 'expand'
+	}
+
 	/**
 	 * Имя кнопки очистки — вместе с именем поля: «Clear Город».
 	 *
@@ -172,6 +239,17 @@ export class TSelect<
 	}
 
 	/**
+	 * `data-content-fit` на поле — и то же имя на каждой опции.
+	 *
+	 * Со списка тема читает `expand`, с опции — `wrap`. Одно свойство, два
+	 * уровня; разрешение «опция поверх поля» делает расширение коллекции.
+	 */
+	protected _applyContentFit(value: TListContentFit): void {
+		this._contentFit = value
+		this._dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, value)
+	}
+
+	/**
 	 * Поле всегда в порядке обхода, но пока открывать нечего — панель
 	 * закрывается. Иначе `open`, выставленный до `disabled`, остался бы висеть.
 	 */
@@ -189,6 +267,9 @@ export class TSelect<
 			closeOnSelect: this._closeOnSelect,
 			clearable: this._clearable,
 			clearLabel: this._clearLabel,
+			maxRows: this._maxRows,
+			contentFit: this._contentFit,
+			scrollBehavior: this._scrollBehavior,
 		} as TProps
 	}
 }

@@ -1,23 +1,21 @@
-import type { IControl, TCollectionEngine, TScrollBehavior } from '@soldy/core'
+import type { IControl, IList, TCollectionEngine, TScrollBehavior } from '@soldy/core'
 import { frameDebounce } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { TListKeyboardPlugin } from '../keyboard'
-import { TListLayoutPlugin } from '../layout'
 import type { TListScrollPluginEvents } from './types'
 
 /**
  * TListScrollPlugin — автоматическая прокрутка контейнера к выделенному элементу.
  *
- * Поведение берётся из `scrollBehavior` соседнего `TListLayoutPlugin` —
- * композиция плагинов, а не наследование: свойство объявляет тот плагин,
- * который им и владеет, а этот его читает.
+ * Поведение берётся из `scrollBehavior` инстанса (`IList`): свойством владеет
+ * ядро, плагин его только применяет. Так устроены и остальные плагины пакета.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
 	private _element: HTMLElement | null = null
-	private _layout: TListLayoutPlugin | null = null
+	private _list: IList | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private readonly _scheduleScroll: (payload: {
 		uid: string | number
@@ -35,7 +33,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
-		this._layout = ctx.get(TListLayoutPlugin) ?? null
+		this._list = ctx.getInstance<IList>()
 		this._collectionElements = ctx.get(TCollectionElements) ?? null
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
@@ -63,7 +61,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 	override destroy(): void {
 		this._element = null
-		this._layout = null
+		this._list = null
 		this._collectionElements = null
 
 		super.destroy()
@@ -86,7 +84,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	private _scrollToItem(uid: string | number, mode: 'center' | 'nearest'): void {
 		if (!this._element) return
 
-		const behavior: TScrollBehavior = this._layout?.scrollBehavior ?? 'smooth'
+		const behavior: TScrollBehavior = this._list?.scrollBehavior ?? 'smooth'
 
 		if (behavior === 'none') return
 

@@ -5,6 +5,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
+import { LIST_CONTENT_FIT_ATTRIBUTE } from '../../../../list'
 import type { ISelect, TSelectValue } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
@@ -96,6 +97,10 @@ export class TSelectExtension<
 			})
 		})
 
+		this._owner.events.on('change:contentFit', () => {
+			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
+		})
+
 		const selection = this._selection
 
 		if (selection) {
@@ -145,10 +150,23 @@ export class TSelectExtension<
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 
+		this._applyContentFit(item)
+
 		item.aria.add('id', this.optionId(item))
 
 		// Текст опции виден в поле, пока она выбрана
 		item.events.on('change:text', () => this._syncValueText())
+	}
+
+	/**
+	 * `data-content-fit` опции.
+	 *
+	 * Здесь, а не в шаблоне: иначе правило пришлось бы повторить в каждом из
+	 * шести адаптеров. Своего значения у опции нет — в отличие от элемента
+	 * ListBox, она берёт значение поля целиком.
+	 */
+	private _applyContentFit(item: TItem): void {
+		item.dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, this._owner.contentFit)
 	}
 
 	/**

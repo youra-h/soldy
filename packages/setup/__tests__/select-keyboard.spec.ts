@@ -18,7 +18,6 @@ import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
 	TListItemPlugin,
-	TListLayoutPlugin,
 	TPluginBundle,
 } from '@soldy/plugins'
 
@@ -28,14 +27,15 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  * Собирает Select с коллекцией и клавиатурой вручную: без адаптера
  * фреймворка, чтобы проверять именно модель, а не проводку Vue.
  *
- * `layout` — раскладка рядом: клавиатура читает из неё `scrollBehavior`.
+ * `layoutProps` — списочные свойства поля: клавиатура читает `scrollBehavior`
+ * прямо у инстанса.
  */
 async function setup(
 	texts: string[],
 	props: Record<string, unknown> = {},
-	layoutOptions: { scrollBehavior?: string } = {},
+	layoutProps: { scrollBehavior?: string } = {},
 ) {
-	const owner = new TSelect(props as any)
+	const owner = new TSelect({ ...props, ...layoutProps } as any)
 	const collection = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
 
@@ -48,7 +48,6 @@ async function setup(
 	const rootElement = new TElementPlugin()
 	const bundles = new TCollectionBundlesPlugin()
 	const elements = new TCollectionElements()
-	const layout = new TListLayoutPlugin()
 	const keyboard = new TSelectKeyboardPlugin()
 
 	const ctx = {
@@ -57,7 +56,6 @@ async function setup(
 			if (ctor === TElementPlugin) return rootElement
 			if (ctor === TCollectionBundlesPlugin) return bundles
 			if (ctor === TCollectionElements) return elements
-			if (ctor === TListLayoutPlugin) return layout
 
 			return undefined
 		},
@@ -65,7 +63,6 @@ async function setup(
 
 	bundles.install(ctx)
 	elements.install(ctx)
-	layout.install(ctx, layoutOptions as any)
 	keyboard.install(ctx)
 
 	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
@@ -109,7 +106,7 @@ async function setup(
 
 	const registry = new TItemContextRegistry(collection.engine.getCore())
 
-	return { owner, collection, items, keyboard, press, itemPlugins, registry, root, layout, scrolls }
+	return { owner, collection, items, keyboard, press, itemPlugins, registry, root, scrolls }
 }
 
 afterEach(() => {
@@ -387,7 +384,7 @@ describe('набор по буквам', () => {
 })
 
 /**
- * `scrollBehavior` — свойство раскладки, а прокручивает опцию клавиатура.
+ * `scrollBehavior` — свойство поля, а прокручивает опцию клавиатура.
  *
  * У ListBox то же свойство читает `TListScrollPlugin`, и это не дублирование:
  * там прокрутка идёт за выбором, здесь — за подсветкой, которая живёт только
@@ -425,10 +422,10 @@ describe('прокрутка к подсвеченной опции', () => {
 	})
 
 	it('смена свойства на лету доходит до следующей прокрутки', async () => {
-		const { press, scrolls, layout } = await setup(['Москва', 'Тверь', 'Клин'])
+		const { press, scrolls, owner } = await setup(['Москва', 'Тверь', 'Клин'])
 
 		press('ArrowDown')
-		layout.scrollBehavior = 'none'
+		owner.scrollBehavior = 'none'
 		press('ArrowDown')
 
 		expect(scrolls).toHaveLength(1)

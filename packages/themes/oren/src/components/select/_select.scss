@@ -70,11 +70,11 @@
 		@apply w-full justify-start py-2;
 	}
 
-	// Перенос читается с самой опции: `data-word-wrap` ей ставит
-	// `TListWordWrapPlugin`, разрешая «значение опции поверх значения поля».
-	// Парного правила на `.s-select__list` нет намеренно — оно перекрывало бы
-	// опцию, отказавшуюся от переноса. То же устройство, что у `.s-list-box`.
-	&[data-word-wrap='true'] {
+	// Перенос читается с самой опции: `data-content-fit` ей ставит
+	// `TSelectExtension`. Своего значения у опции нет — она берёт значение поля
+	// целиком, в отличие от элемента ListBox. То же устройство, что у
+	// `.s-list-box-item`.
+	&[data-content-fit='wrap'] {
 		.s-button {
 			@apply min-h-fit;
 

@@ -19,8 +19,8 @@ export const ListBoxCollectionContribution = (): IContribution => ({
  * `TListBoxItemCollectionFacade`.
  *
  * `list_wordWrap` отсюда ушёл: разрешение «значение элемента поверх значения
- * списка» больше не проходит через фасад — `data-word-wrap` элементам ставит
- * `TListLayoutPlugin`, который списочным `wordWrap` и владеет.
+ * списка» больше не проходит через фасад — `data-content-fit` элементам ставит
+ * `TListBoxExtension`, у которого на руках и элемент, и владелец.
  */
 export const ListBoxCollectionItemContribution = (): IContribution => ({
 	props: {

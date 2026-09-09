@@ -1,5 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
+import { LIST_PROPS } from '../list'
 import type { ISelectItem } from '@soldy/core'
 
 /**
@@ -71,6 +72,20 @@ export const SelectContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:disabled', 'change:readonly'],
 		},
+		/**
+		 * Подгонять ли ширину панели под поле — производное от `contentFit`.
+		 *
+		 * Вычисляет ядро, шаблон только пробрасывает в `anchor_matchWidth`.
+		 * Оставь выражение `contentFit !== 'expand'` в разметке — и оно
+		 * повторится в каждом из шести адаптеров.
+		 */
+		autoFitWidth: {
+			type: Boolean,
+			protected: true,
+			triggers: ['change:contentFit'],
+		},
+		// Общие с ListBox — объявлены один раз в `components/list.ts`
+		...LIST_PROPS,
 	},
 	events: ['open', 'close'],
 })

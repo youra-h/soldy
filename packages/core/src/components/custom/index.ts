@@ -8,6 +8,8 @@ export * from './switch'
 export * from './input'
 export * from './tabs'
 export * from './accordion'
+// Только контракты: класса в этой папке нет — общее у ListBox и Select
+export * from './list'
 export * from './list-box'
 export * from './drag-and-drop'
 export * from './frame'

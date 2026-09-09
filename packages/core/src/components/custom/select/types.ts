@@ -6,6 +6,7 @@ import type {
 } from '../../base/input-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TAriaAttributes } from '../../../common'
+import type { IList, IListProps, TListEvents } from '../list'
 import type { ISelectCollectionProps } from './collection/types'
 import type { ISelectItem, ISelectItemProps } from './item/types'
 
@@ -22,7 +23,8 @@ import type { ISelectItem, ISelectItemProps } from './item/types'
 export type TSelectValue = string | number | (string | number)[] | undefined
 
 export type TSelectEvents = TInputControlEvents<TSelectValue> &
-	TCollectionStorageDriverEvents<ISelectItem> & {
+	TCollectionStorageDriverEvents<ISelectItem> &
+	TListEvents & {
 		/** change:open */
 		'change:open': (value: boolean) => void
 		/** open — панель открылась */
@@ -39,8 +41,13 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:clearLabel': (value: string) => void
 	}
 
-/** Собственные props Select — без коллекционной части. */
-export interface ISelectComponentProps extends IInputControlProps<TSelectValue> {
+/**
+ * Собственные props Select — без коллекционной части.
+ *
+ * Списочные свойства приходят из `IListProps` — общего контракта с ListBox.
+ * Общий там только контракт: предок у каждого свой.
+ */
+export interface ISelectComponentProps extends IInputControlProps<TSelectValue>, IListProps {
 	/** Открыта ли панель со списком */
 	open?: boolean
 	/** Текст поля, пока ничего не выбрано */
@@ -63,7 +70,7 @@ export interface ISelect<
 	TProps extends ISelectProps = ISelectProps,
 	TEvents extends TSelectEvents = TSelectEvents,
 	TStates extends TSelectStates = TSelectStates,
-> extends IInputControl<TSelectValue, TProps, TEvents> {
+> extends IInputControl<TSelectValue, TProps, TEvents>, IList {
 	/** Открыта ли панель со списком */
 	open: boolean
 	/** Текст поля, пока ничего не выбрано */
@@ -76,6 +83,8 @@ export interface ISelect<
 	clearLabel: string
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
+	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */
+	readonly autoFitWidth: boolean
 	/** Переключить панель. Ничего не делает, если открывать нельзя. */
 	toggleOpen(): void
 	/** Можно ли сейчас открыть панель */

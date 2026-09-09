@@ -5,6 +5,7 @@ import type {
 } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
+import { LIST_CONTENT_FIT_ATTRIBUTE } from '../../../../list'
 import type { IListBoxItem } from '../../../item/types'
 import type { IListBox, TListBoxView } from '../../../types'
 import type { TListBoxExtensionEvents, IListBoxExtensionOptions, IListBoxExtension } from './types'
@@ -63,6 +64,8 @@ export class TListBoxExtension<
 			e.item.disabled = this._owner.disabled
 			e.item.size = this._owner.size
 			e.item.variant = this._owner.variant
+
+			this._applyContentFit(e.item as TItem)
 		})
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
@@ -83,7 +86,22 @@ export class TListBoxExtension<
 			})
 		})
 
+		this._owner.events.on('change:contentFit', () => {
+			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
+		})
+
 		// Внешний вид доезжает до item-адаптеров
 		this.events.relay(this._owner.events, ['change:view'])
+	}
+
+	/**
+	 * `data-content-fit` элемента: своё значение поверх списочного.
+	 *
+	 * Разрешение живёт здесь, а не в шаблоне: `:data-content-fit="…"` повторил
+	 * бы это правило в каждом из шести адаптеров. `undefined` у элемента
+	 * означает «взять у списка» и не то же самое, что `truncate`.
+	 */
+	private _applyContentFit(item: TItem): void {
+		item.dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, item.contentFit ?? this._owner.contentFit)
 	}
 }

@@ -5,6 +5,7 @@ import type {
 	TValueControlStates,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
+import type { IList, IListProps, TListEvents } from '../list'
 import type { IListBoxCollectionProps } from './collection/types'
 import type { IListBoxItem, IListBoxItemProps } from './item/types'
 
@@ -20,18 +21,21 @@ export type TListBoxView = 'plain' | 'outlined' | 'filled'
 export type TListBoxValue = string | number | (string | number)[] | undefined
 
 export type TListBoxEvents = TValueControlEvents<TListBoxValue> &
-	TCollectionStorageDriverEvents<IListBoxItem> & {
+	TCollectionStorageDriverEvents<IListBoxItem> &
+	TListEvents & {
 		/** change:view */
 		'change:view': (value: TListBoxView) => void
 	}
 
 /**
- * Пропсы самого компонента (без коллекционной части и без раскладки).
+ * Пропсы самого компонента (без коллекционной части).
  *
- * `maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior` сюда не входят: их
- * объявляет `TListLayoutPlugin` — там же, где они и обрабатываются.
+ * Списочные свойства приходят из `IListProps` — общего контракта с Select.
+ * Общий там только контракт: реализация у каждого своя, потому что предок
+ * занят (`TValueControl` здесь, `TInputControl` там).
  */
-export interface IListBoxComponentProps extends IValueControlProps<TListBoxValue> {
+export interface IListBoxComponentProps
+	extends IValueControlProps<TListBoxValue>, IListProps {
 	/** Внешний вид компонента */
 	view?: TListBoxView
 }
@@ -46,7 +50,7 @@ export interface IListBox<
 	TProps extends IListBoxComponentProps = IListBoxProps,
 	TEvents extends TListBoxEvents = TListBoxEvents,
 	TStates extends TListBoxStates = TListBoxStates,
-> extends IValueControl<TListBoxValue, TProps, TEvents, TStates> {
+> extends IValueControl<TListBoxValue, TProps, TEvents, TStates>, IList {
 	/** Внешний вид компонента */
 	view: TListBoxView
 }
