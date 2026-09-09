@@ -120,3 +120,35 @@ describe('страница компонента', () => {
 		wrapper.unmount()
 	})
 })
+
+/**
+ * Переход между страницами — то, чего дымовая проверка выше не видит.
+ *
+ * Она монтирует `ComponentPage` заново на каждый идентификатор, а в браузере
+ * маршрут `/component/:id` обслуживает **один и тот же** экземпляр страницы:
+ * меняется только проп `id`. Строки пропов при этом переиспользуются, и всё,
+ * что строка успела завести в `setup`, остаётся от прежнего компонента.
+ *
+ * Так и вышло: правая колонка ListBox рисовала корень с классами Button —
+ * `ctrl` в ней оставался экземпляром `TButton`, а элементы приходили уже
+ * списочные.
+ */
+describe('переход между компонентами', () => {
+	it('правая колонка показывает новый компонент, а не прежний', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+
+		await nextTick()
+		await nextFrame()
+
+		await wrapper.setProps({ id: 'list-box' })
+		await nextTick()
+		await nextFrame()
+
+		const roots = wrapper.findAll('.pg-col__stage > *')
+
+		expect(roots.length).toBeGreaterThan(0)
+		expect(roots.every((root) => root.classes('s-list-box'))).toBe(true)
+
+		wrapper.unmount()
+	})
+})

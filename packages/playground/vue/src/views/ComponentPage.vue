@@ -53,9 +53,19 @@ const handlers = computed(() => (descriptor.value ? useEvents(descriptor.value) 
 			{{ entry.description }} · события идут в консоль браузера с пометкой источника
 		</p>
 
+		<!--
+			Ключ с идентификатором компонента, а не одно имя пропа.
+
+			Маршрут `/component/:id` обслуживает один экземпляр страницы: при
+			переходе меняется только `id`. Имена пропов у компонентов
+			пересекаются (`size`, `disabled`, `variant` есть почти у всех), и по
+			одному имени Vue считал строку той же самой — переиспользовал её со
+			всем, что она завела в `setup`. В правой колонке оставался `ctrl`
+			прежнего компонента: ListBox рисовался с корнем от Button.
+		-->
 		<PropRow
 			v-for="control in controls"
-			:key="control.name"
+			:key="`${entry.id}:${control.name}`"
 			:entry="entry"
 			:control="control"
 			:tag="handlers"
