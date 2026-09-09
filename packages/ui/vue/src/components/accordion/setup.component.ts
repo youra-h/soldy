@@ -7,7 +7,8 @@ import {
 	AccordionCollectionDescriptor,
 } from '@soldy/setup'
 import { TAccordionCollectionFacade } from '@soldy/core'
-import { useAdapter, VueElevatorFactory } from '../../adapter'
+import type { IAccordionCollectionProps } from '@soldy/core'
+import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
 import BaseAccordion, { type AccordionProps } from './base.component'
 import { type IAccordionProps, type IAccordionComponentProps, type IAccordion } from '@soldy/core'
 
@@ -33,7 +34,7 @@ export default {
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useAdapter<Record<string, any>, TAccordionCollectionFacade>(
+		const refsCollection = useCollectionAdapter<IAccordionCollectionProps, TAccordionCollectionFacade>(
 			collectionAdapter,
 			props,
 			emit,

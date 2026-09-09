@@ -5,9 +5,20 @@ import {
 	SelectDescriptor,
 	SelectCollectionDescriptor,
 } from '@soldy/setup'
-import type { ISelectComponentProps, ISelect, TSelectCollectionFacade } from '@soldy/core'
+import type {
+	ISelectComponentProps,
+	ISelect,
+	ISelectCollectionProps,
+	TSelectCollectionFacade,
+} from '@soldy/core'
 import type { TDismissPluginProps } from '@soldy/setup'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../adapter'
+import {
+	useAdapter,
+	useCollectionAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+} from '../../adapter'
 import BaseSelect, { type SelectProps } from './base.component'
 
 /**
@@ -45,17 +56,15 @@ export default {
 			{ bundle: adapter.bundle, defaultExtensions: [] },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useAdapter<Record<string, any>, TSelectCollectionFacade>(
+		const refsCollection = useCollectionAdapter<ISelectCollectionProps, TSelectCollectionFacade>(
 			collectionAdapter,
 			props,
 			emit,
 		)
 
 		return {
-			// Собственные — последними: иначе `ctrl` окажется фасадом коллекции,
-			// а шаблону нужен сам TSelect (его `uid` и `toggleOpen`)
-			...refsCollection,
 			...refs,
+			...refsCollection,
 			/** Методы коллекции рефами не пробрасываются — отдаём инстанс. */
 			collection: collectionAdapter.instance,
 			fieldElement: ref<HTMLElement | null>(null),
