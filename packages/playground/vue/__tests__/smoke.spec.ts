@@ -15,12 +15,13 @@ import { nextTick } from 'vue'
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { setIcons } from '@soldy/setup'
 import * as material from '@soldy/icons-material'
-import { COMPONENTS } from '@soldy/playground-shared'
+import { COMPONENTS, NON_EDITABLE } from '@soldy/playground-shared'
 import { AVAILABLE, SHOWCASE } from '../src/catalog'
 import { PREVIEW_COMPONENTS } from '../src/previews'
 import { router } from '../src/router'
 import OverviewPage from '../src/views/OverviewPage.vue'
 import ComponentPage from '../src/views/ComponentPage.vue'
+import PropControl from '../src/components/PropControl.vue'
 
 /**
  * Предупреждения Vue.
@@ -101,9 +102,12 @@ describe('страница компонента', () => {
 			await nextTick()
 			await nextFrame()
 
-			const editable = entry
-				.descriptor()
-				.props.filter((prop) => !prop.protected && prop.name.name !== 'ctrl')
+			// Оба дескриптора: коллекционные свойства (`mode`) объявлены на
+			// фасаде и показываются отдельной группой
+			const editable = [
+				...entry.descriptor().props,
+				...(entry.collectionDescriptor?.().props ?? []),
+			].filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
 
 			expect(wrapper.findAll('.pg-prop')).toHaveLength(editable.length)
 			expect(firstLines()).toEqual([])
@@ -148,6 +152,61 @@ describe('переход между компонентами', () => {
 
 		expect(roots.length).toBeGreaterThan(0)
 		expect(roots.every((root) => root.classes('s-list-box'))).toBe(true)
+
+		wrapper.unmount()
+	})
+})
+
+/**
+ * Коллекционные свойства — вторая группа на странице.
+ *
+ * `mode` объявлен на фасаде коллекции, а не на компоненте, и страница долго
+ * его не показывала: строки строились только из компонентного дескриптора.
+ * Проверка идёт до самой коллекции, а не до наличия строки: правая колонка
+ * пишет `mode` не в инстанс, а в фасад поверх движка из `engine:create`, и
+ * молчаливо не сработать там есть чему.
+ */
+describe('свойства коллекции', () => {
+	const modeRow = (wrapper: ReturnType<typeof mount>) =>
+		wrapper.findAll('.pg-prop').find((row) => row.find('.pg-prop__name').text() === 'mode')
+
+	it.each(['list-box', 'select', 'accordion'])('%s показывает строку mode', async (id) => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id } })
+
+		await nextTick()
+		await nextFrame()
+
+		expect(modeRow(wrapper)).toBeDefined()
+
+		wrapper.unmount()
+	})
+
+	it('переключение mode доходит до коллекции в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = modeRow(wrapper)!
+
+		// Значение шлём через сам контрол строки — так же, как это делает клик
+		// пользователя. Отрисовку Select проверяют его собственные тесты
+		row.findComponent(PropControl).vm.$emit('update:modelValue', 'multiple')
+		await nextTick()
+		await nextFrame()
+
+		// Наблюдаемое следствие `multiple` — два выбранных разом. У ListBox
+		// режим в DOM не выведен, и проверять его можно только поведением
+		for (const stage of row.findAll('.pg-col__stage')) {
+			const items = stage.findAll('.s-list-box-item .s-button')
+
+			await items[0].trigger('click')
+			await items[1].trigger('click')
+		}
+
+		await nextTick()
+
+		expect(row.findAll('.s-list-box-item[data-selected="true"]')).toHaveLength(4)
 
 		wrapper.unmount()
 	})

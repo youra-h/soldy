@@ -35,6 +35,17 @@ const preview = computed(() => PREVIEW_COMPONENTS[props.entry.id])
 const instance = shallowRef(createInstance())
 
 /**
+ * Фасад коллекции правой колонки.
+ *
+ * Коллекционные свойства (`mode`) живут не на инстансе компонента, а на фасаде,
+ * и стенду он в руки не даётся: превью создаёт его у себя внутри. Зато отдаёт
+ * наружу движок — событием `engine:create`. Поверх готового движка фасад
+ * строится штатным конструктором, и запись через него доходит до живого
+ * компонента: фасад не владеет состоянием, а именует доступ к движку.
+ */
+const facade = shallowRef<TInstance | null>(null)
+
+/**
  * `ctor` в дескрипторе объявлен как `any` — точнее его там не выразить: это
  * класс любого компонента ядра. Сужаем до «конструктор объекта со свойствами»,
  * чего для записи пропа достаточно.
@@ -45,10 +56,32 @@ function createInstance(): TInstance {
 	return new Ctor()
 }
 
-watch(value, (next) => {
+/** Движок пришёл — строим над ним фасад и досылаем то, что уже накрутили. */
+function bindEngine(engine: unknown): void {
+	const factory = props.entry.collectionDescriptor
+
+	if (!factory || facade.value) return
+
+	const Ctor = factory().ctor as new (props: object, options: object) => TInstance
+
+	facade.value = new Ctor({}, { engine })
+
+	// Досылаем только то, что уже накрутили до появления движка, и только своё.
+	// Слать всё подряд нельзя: `undefined` — это «проп не задан», а не значение,
+	// и запись его в ядро ломает вычисляемые свойства (`TSelect.clearAria`
+	// разбирает `name` как строку).
+	if (props.control.scope === 'collection' && value.value !== undefined) write(value.value)
+}
+
+/** Куда писать проп: коллекционный — в фасад, остальные — в инстанс. */
+function write(next: unknown): void {
+	const target = props.control.scope === 'collection' ? facade.value : instance.value
+
 	// Пустая строка означает «проп не задан», а не пустое значение
-	instance.value[props.control.name] = next === '' ? undefined : next
-})
+	if (target) target[props.control.name] = next === '' ? undefined : next
+}
+
+watch(value, write)
 
 onUnmounted(() => instance.value.destroy?.())
 
@@ -60,11 +93,22 @@ const propBind = computed(() => ({
 	key: props.iconVersion,
 }))
 
-const instanceBind = computed(() => ({
-	ctrl: instance.value,
-	...props.tag('instance'),
-	key: props.iconVersion,
-}))
+const instanceBind = computed(() => {
+	const tagged = props.tag('instance')
+	const logCreate = tagged['onEngine:create']
+
+	return {
+		ctrl: instance.value,
+		...tagged,
+		// Свой обработчик поверх журнального: тот пишет событие в консоль, этот
+		// забирает движок. Просто перезаписать нельзя — потеряется журнал
+		'onEngine:create': (engine: unknown, ...rest: unknown[]) => {
+			logCreate?.(engine, ...rest)
+			bindEngine(engine)
+		},
+		key: props.iconVersion,
+	}
+})
 </script>
 
 <template>

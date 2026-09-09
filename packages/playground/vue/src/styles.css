@@ -133,6 +133,29 @@ a {
 	color: var(--s-neutral-500);
 }
 
+/*
+ * Заголовок группы свойств: компонента или коллекции.
+ *
+ * Разделитель сверху, а не рамка вокруг: группы идут подряд, и линия читается
+ * как «дальше другое», не добавляя ещё одного уровня вложенности к строкам.
+ */
+.pg__group {
+	margin: 32px 0 12px;
+	padding-top: 16px;
+	border-top: 1px solid var(--s-neutral-200);
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--s-neutral-500);
+}
+
+.pg__group:first-of-type {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
 /* ─── Витрина ────────────────────────────────────────────── */
 
 .pg-grid {

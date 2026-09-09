@@ -13,11 +13,17 @@ import { describe, it, expect } from 'vitest'
 import { COMPONENTS } from '../src/registry'
 import { describeProp, optionsForProp, controlKind, NON_EDITABLE } from '../src/props'
 
-/** Пропы, которые стенд показывает как редактируемые. */
+/**
+ * Пропы, которые стенд показывает как редактируемые.
+ *
+ * Оба дескриптора, а не один: `mode` объявлен на фасаде коллекции, и пока
+ * проверка смотрела только компонентный, описания для него никто не требовал —
+ * а страница его и не показывала.
+ */
 function editableProps(entry: (typeof COMPONENTS)[number]) {
-	return entry
-		.descriptor()
-		.props.filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
+	const declarations = [...entry.descriptor().props, ...(entry.collectionDescriptor?.().props ?? [])]
+
+	return declarations.filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
 }
 
 describe('манифест покрывает контракт', () => {

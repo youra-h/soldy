@@ -10,6 +10,7 @@ import {
 	LIST_BOX_VIEWS,
 	LIST_CONTENT_FITS,
 	SCROLL_BEHAVIORS,
+	SELECTION_MODES,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
 	TABS_ALIGNMENTS,
@@ -54,6 +55,9 @@ const SHARED: Record<string, string> = {
 	readonly: 'Значение видно, но менять его нельзя',
 	required: 'Поле обязательно. Рисует маркер и попадает в валидацию формы',
 	id: 'Идентификатор поля. Пусто — берётся uid экземпляра',
+
+	// Коллекционный — одинаков у ListBox, Select и Accordion
+	mode: 'Режим выбора: ничего, один элемент или несколько',
 
 	// Списочный контракт `IList` — общий у ListBox и Select. Предка у них
 	// общего нет, но свойства одни и те же, значит и описание одно
@@ -134,6 +138,8 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		// Из списочного контракта — имена уникальны, разночтений быть не может
 		contentFit: LIST_CONTENT_FITS,
 		scrollBehavior: SCROLL_BEHAVIORS,
+		// Коллекционный: один и тот же режим выбора у всех коллекций
+		mode: SELECTION_MODES,
 	},
 	button: { view: BUTTON_VIEWS },
 	accordion: { view: ACCORDION_VIEWS },
@@ -153,7 +159,14 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
  * Стенд им и пользуется во второй колонке, поэтому в список редактируемых
  * пропов он не идёт.
  */
-export const NON_EDITABLE = new Set(['ctrl', 'plugins'])
+export const NON_EDITABLE = new Set([
+	'ctrl',
+	'plugins',
+	// Коллекционные: состав элементов задаёт само превью, а `trackBy` —
+	// функция. Контрола, которым осмысленно править то и другое, не бывает
+	'items',
+	'trackBy',
+])
 
 export function describeProp(componentId: string, prop: string): string | undefined {
 	return OWN[componentId]?.[prop] ?? SHARED[prop]
@@ -205,11 +218,13 @@ export function propControl(
 	componentId: string,
 	prop: IPropDeclaration,
 	defaults: Record<string, unknown> = {},
+	scope: TPropControl['scope'] = 'component',
 ): TPropControl {
 	const name = prop.name.name
 
 	return {
 		name,
+		scope,
 		kind: controlKind(componentId, prop),
 		options: optionsForProp(componentId, name),
 		description: describeProp(componentId, name) ?? '',
