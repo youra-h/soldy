@@ -18,6 +18,7 @@ import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
 	TListItemPlugin,
+	TListLayoutPlugin,
 	TPluginBundle,
 } from '@soldy/plugins'
 
@@ -26,8 +27,14 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 /**
  * Собирает Select с коллекцией и клавиатурой вручную: без адаптера
  * фреймворка, чтобы проверять именно модель, а не проводку Vue.
+ *
+ * `layout` — раскладка рядом: клавиатура читает из неё `scrollBehavior`.
  */
-async function setup(texts: string[], props: Record<string, unknown> = {}) {
+async function setup(
+	texts: string[],
+	props: Record<string, unknown> = {},
+	layoutOptions: { scrollBehavior?: string } = {},
+) {
 	const owner = new TSelect(props as any)
 	const collection = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
@@ -41,6 +48,7 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 	const rootElement = new TElementPlugin()
 	const bundles = new TCollectionBundlesPlugin()
 	const elements = new TCollectionElements()
+	const layout = new TListLayoutPlugin()
 	const keyboard = new TSelectKeyboardPlugin()
 
 	const ctx = {
@@ -49,6 +57,7 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 			if (ctor === TElementPlugin) return rootElement
 			if (ctor === TCollectionBundlesPlugin) return bundles
 			if (ctor === TCollectionElements) return elements
+			if (ctor === TListLayoutPlugin) return layout
 
 			return undefined
 		},
@@ -56,7 +65,11 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 
 	bundles.install(ctx)
 	elements.install(ctx)
+	layout.install(ctx, layoutOptions as any)
 	keyboard.install(ctx)
+
+	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
+	const scrolls: Array<Record<string, unknown> | undefined> = []
 
 	// Каждой опции — свой bundle с элементом и плагином подсветки
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
@@ -65,6 +78,9 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 		const node = document.createElement('div')
 
 		node.id = `s-select-option-${item.uid}`
+		node.scrollIntoView = (arg?: unknown) => {
+			scrolls.push(arg as Record<string, unknown> | undefined)
+		}
 		root.appendChild(node)
 
 		const bundle = new TPluginBundle(item)
@@ -93,7 +109,7 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 
 	const registry = new TItemContextRegistry(collection.engine.getCore())
 
-	return { owner, collection, items, keyboard, press, itemPlugins, registry, root }
+	return { owner, collection, items, keyboard, press, itemPlugins, registry, root, layout, scrolls }
 }
 
 afterEach(() => {
@@ -367,5 +383,54 @@ describe('набор по буквам', () => {
 		press('ф', { ctrlKey: true })
 
 		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+})
+
+/**
+ * `scrollBehavior` — свойство раскладки, а прокручивает опцию клавиатура.
+ *
+ * У ListBox то же свойство читает `TListScrollPlugin`, и это не дублирование:
+ * там прокрутка идёт за выбором, здесь — за подсветкой, которая живёт только
+ * пока панель открыта. Общим сделано свойство, а не реализация — иначе Select
+ * тащил бы плагин, половина которого ему не нужна.
+ */
+describe('прокрутка к подсвеченной опции', () => {
+	it('по умолчанию прокручивает плавно и по ближайшему краю', async () => {
+		const { press, scrolls } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown')
+
+		expect(scrolls).toEqual([{ block: 'nearest', behavior: 'smooth' }])
+	})
+
+	it('instant доезжает до вызова', async () => {
+		const { press, scrolls } = await setup(['Москва', 'Тверь'], {}, { scrollBehavior: 'instant' })
+
+		press('ArrowDown')
+
+		expect(scrolls).toEqual([{ block: 'nearest', behavior: 'instant' }])
+	})
+
+	it('none отменяет прокрутку, но не подсветку', async () => {
+		const { press, scrolls, keyboard, items } = await setup(
+			['Москва', 'Тверь'],
+			{},
+			{ scrollBehavior: 'none' },
+		)
+
+		press('ArrowDown')
+
+		expect(scrolls).toEqual([])
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+
+	it('смена свойства на лету доходит до следующей прокрутки', async () => {
+		const { press, scrolls, layout } = await setup(['Москва', 'Тверь', 'Клин'])
+
+		press('ArrowDown')
+		layout.scrollBehavior = 'none'
+		press('ArrowDown')
+
+		expect(scrolls).toHaveLength(1)
 	})
 })

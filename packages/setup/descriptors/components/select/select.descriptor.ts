@@ -17,6 +17,7 @@ import {
 	DismissPluginDescriptor,
 	ListLayoutPluginDescriptor,
 	ListHeightPluginDescriptor,
+	ListWordWrapPluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 } from '../../plugins'
 
@@ -33,11 +34,15 @@ export const SelectDescriptor = () =>
 			CollectionBundlesPluginDescriptor(),
 			CollectionElementsPluginDescriptor(),
 			// Свойства раскладки — те же, что у ListBox: они про раскладку, а не
-			// про семантику списка. Но применяет Select только высоту: правила
-			// `--auto-width` и `data-word-wrap` тема даёт лишь для `.s-list-box`,
-			// и вешать их обработчики сюда значило бы писать в DOM впустую
+			// про семантику списка.
+			//
+			// Применяет Select три из четырёх. `autoWidth` не подключён: ширину
+			// панели держит `anchor_matchWidth`, то есть плагин на Frame, а не
+			// класс на корне Select — панель телепортирована, и селектором с
+			// корня до неё не дотянуться
 			ListLayoutPluginDescriptor(),
 			ListHeightPluginDescriptor(),
+			ListWordWrapPluginDescriptor(),
 			// Закрытие по нажатию мимо. Общий слой оверлея, им же потом
 			// воспользуются Menu и Popover
 			DismissPluginDescriptor(),

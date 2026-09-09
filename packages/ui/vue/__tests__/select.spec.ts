@@ -15,7 +15,7 @@ import { nextTick } from 'vue'
  * плагины, которым нужен DOM-узел, включаются кадром позже. Ждём кадр.
  */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-import { Select, SelectItem } from '@soldy/ui-vue'
+import { Select, SelectItem, propsSelect } from '@soldy/ui-vue'
 import Harness from './Select.test.vue'
 
 /**
@@ -286,5 +286,66 @@ describe('слоты поля', () => {
 		expect(wrapper.find('.probe-trailing').exists()).toBe(true)
 
 		wrapper.unmount()
+	})
+})
+
+/**
+ * Раскладка: свойства приходят от плагина, а следствия — от трёх других.
+ *
+ * Ради этого Select и не наследуется от списка: `TInputControl` в предках уже
+ * занят, а `maxRows` с `wordWrap` нужны обоим. Проверяется здесь, а не в
+ * юнит-тестах плагинов, именно проводка целиком: проп в разметке без префикса
+ * (`max-rows`, а не `layout-max-rows`) доезжает до DOM панели.
+ */
+describe('раскладка панели', () => {
+	it('пропы объявлены без префикса плагина', () => {
+		const declared = Object.keys(propsSelect)
+
+		for (const prop of ['maxRows', 'wordWrap', 'autoWidth', 'scrollBehavior']) {
+			expect(declared).toContain(prop)
+		}
+
+		expect(declared).not.toContain('layout_maxRows')
+	})
+
+	/**
+	 * `wordWrap` разрешается плагином и приезжает атрибутом на опцию — шаблон
+	 * этого правила не знает и потому не повторяет его в шести адаптерах.
+	 */
+	it('wordWrap доезжает до data-word-wrap каждой опции', async () => {
+		render({ wordWrap: true })
+		await nextTick()
+		await nextFrame()
+
+		expect(options().map((el) => el.getAttribute('data-word-wrap'))).toEqual([
+			'true',
+			'true',
+			'true',
+		])
+	})
+
+	it('без wordWrap атрибут стоит выключенным, а не отсутствует', async () => {
+		// «Выключено» надо отличать от «неприменимо»: тема смотрит [data-x='true']
+		render()
+		await nextTick()
+		await nextFrame()
+
+		expect(options()[0].getAttribute('data-word-wrap')).toBe('false')
+	})
+
+	/**
+	 * `maxRows = 0` (по умолчанию) — предела нет, и плагин обязан ничего не
+	 * писать: потолок панели задаёт тема (`.s-select__list { max-h-64 }`), а
+	 * инлайновый стиль класс перебивает.
+	 */
+	it('без maxRows высота панели остаётся за темой', async () => {
+		render()
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+
+		const list = document.querySelector('.s-select__list') as HTMLElement
+
+		expect(list.style.maxHeight).toBe('')
 	})
 })

@@ -120,21 +120,15 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		if (!container) return
 
 		const maxRows = this._layout?.maxRows ?? 0
-		const visibleCount = maxRows === 0 ? elements.length : Math.min(maxRows, elements.length)
 
-		const gap = parseFloat(getComputedStyle(container).rowGap) || 0
+		// `0` — «предела нет»: плагин не пишет ничего и отдаёт потолок теме.
+		// Не то же самое, что «предел по содержимому»: инлайновый стиль перебил
+		// бы `.s-select__list { max-h-64 }` и заодно снял прокрутку.
+		//
+		// Список пуст или строки ещё не измерены — тот же случай: писать нечего.
+		const visibleCount = maxRows === 0 ? 0 : Math.min(maxRows, elements.length)
+		const totalHeight = this._measure(container, elements, visibleCount)
 
-		let totalHeight = 0
-
-		for (let i = 0; i < visibleCount; i++) {
-			totalHeight += elements[i].offsetHeight
-		}
-
-		if (visibleCount > 1) {
-			totalHeight += (visibleCount - 1) * gap
-		}
-
-		// Нечего ограничивать: список пуст или строки ещё не измерены
 		if (totalHeight === 0) {
 			container.style.maxHeight = ''
 			container.style.overflowY = ''
@@ -144,5 +138,20 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		container.style.maxHeight = `${totalHeight}px`
 		container.style.overflowY = visibleCount >= elements.length ? 'hidden' : 'auto'
+	}
+
+	/** Высота первых `count` строк вместе с промежутками между ними. */
+	private _measure(container: HTMLElement, elements: HTMLElement[], count: number): number {
+		if (count === 0) return 0
+
+		const gap = parseFloat(getComputedStyle(container).rowGap) || 0
+
+		let total = 0
+
+		for (let i = 0; i < count; i++) {
+			total += elements[i].offsetHeight
+		}
+
+		return total + (count - 1) * gap
 	}
 }

@@ -273,15 +273,20 @@ describe('TListHeightPlugin → высота контейнера элемент
 	})
 
 	/**
-	 * `undefined` из пропа доходил до `Math.min(undefined, n)` → `NaN` → `0px`,
-	 * и панель Select схлопывалась. Значение по умолчанию — `0`, «показывать
-	 * все».
+	 * `maxRows = 0` — «предела нет», и плагин обязан именно **ничего не
+	 * писать**, а не выставить предел по содержимому.
+	 *
+	 * Разница не теоретическая. У Select потолок панели задаёт тема
+	 * (`.s-select__list { max-h-64 }`), а инлайновый стиль класс перебивает.
+	 * Плагин, пишущий `max-height` в размер содержимого и `overflow: hidden`,
+	 * снимал теме потолок и заодно отключал прокрутку: список из сотни опций
+	 * разворачивался во весь экран.
 	 */
-	it('maxRows = 0 показывает все строки', async () => {
+	it('maxRows = 0 предела не ставит — потолок остаётся за темой', async () => {
 		const { panel } = await setup(3, 0)
 
-		expect(panel.style.maxHeight).toBe(`${3 * ROW_HEIGHT}px`)
-		expect(panel.style.overflowY).toBe('hidden')
+		expect(panel.style.maxHeight).toBe('')
+		expect(panel.style.overflowY).toBe('')
 	})
 
 	it('смена maxRows пересчитывает предел', async () => {

@@ -29,6 +29,7 @@ import {
 	TListWordWrapPlugin,
 	TListHeightPlugin,
 	TListItemPlugin,
+	TSelectKeyboardPlugin,
 } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
@@ -191,17 +192,27 @@ describe('дескрипторы компонентов (наследовани�
 	})
 
 	/**
-	 * Select берёт свойства раскладки целиком, а применяет только высоту:
-	 * правила `--auto-width` и `data-word-wrap` тема даёт лишь для
-	 * `.s-list-box`, и остальные читатели писали бы в DOM впустую.
+	 * Select берёт свойства раскладки целиком, а применяет три из четырёх.
+	 *
+	 * `autoWidth` не подключён намеренно: ширину панели держит
+	 * `anchor_matchWidth` — плагин на Frame, а не класс на корне Select. Панель
+	 * телепортирована, и селектором с корня до неё не дотянуться, так что
+	 * `TListAutoWidthPlugin` писал бы класс, который никто не читает.
+	 *
+	 * `scrollBehavior` применяет не `TListScrollPlugin`, а сама клавиатура
+	 * Select: у ListBox прокрутка идёт за выбором, здесь — за подсветкой.
 	 */
-	it('SelectDescriptor подключает из раскладки только высоту', () => {
+	it('SelectDescriptor подключает из раскладки высоту и перенос, но не autoWidth', () => {
 		const ctors = SelectDescriptor().plugins.map((p) => p.ctor)
+		const layoutAt = ctors.indexOf(TListLayoutPlugin)
 
-		expect(ctors).toContain(TListLayoutPlugin)
-		expect(ctors).toContain(TListHeightPlugin)
+		expect(layoutAt).toBeGreaterThanOrEqual(0)
+
+		for (const reader of [TListHeightPlugin, TListWordWrapPlugin, TSelectKeyboardPlugin]) {
+			expect(ctors.indexOf(reader)).toBeGreaterThan(layoutAt)
+		}
+
 		expect(ctors).not.toContain(TListAutoWidthPlugin)
-		expect(ctors).not.toContain(TListWordWrapPlugin)
 	})
 
 	/**
