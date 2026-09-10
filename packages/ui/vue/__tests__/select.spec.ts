@@ -148,6 +148,27 @@ describe('опции', () => {
 		expect(options()[0].getAttribute('data-selected')).toBe('true')
 		expect(options()[1].getAttribute('data-selected')).toBe('false')
 	})
+
+	/**
+	 * Фон hover/подсветки рисует `.s-button` через общий `button-state-bg`
+	 * темы, а не опция сама: миксин читает `data-highlighted`/`data-selected`
+	 * с самой кнопки, поэтому набор обязан доехать и туда, не только на
+	 * обёртку опции. Тот же приём, что у `ListBoxItem`.
+	 */
+	it('data-selected и вид кнопки доезжают до .s-button опции', async () => {
+		const wrapper = render()
+
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[0] as HTMLElement).click()
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+
+		const button = options()[0].querySelector('.s-button') as HTMLElement
+
+		expect(button.getAttribute('data-selected')).toBe('true')
+		expect(button.className).toContain('s-button--a-plain')
+	})
 })
 
 describe('кнопка очистки', () => {

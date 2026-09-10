@@ -44,10 +44,8 @@
 
 // Панель телепортируется в body, поэтому вложенным селектором её не достать
 .s-select__panel {
-	@apply overflow-hidden rounded-md;
-	@apply bg-s-neutral-50 border shadow-md;
-	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-neutral-200);
+	@apply overflow-hidden rounded-md box-border;
+	@apply bg-s-component-surface shadow-md;
 }
 
 // Потолок по умолчанию, а не единственный: он действует, пока `maxRows` равен
@@ -61,6 +59,10 @@
 .s-select__list {
 	@apply flex flex-col overflow-y-auto;
 	@apply max-h-64;
+	// Тот же внутренний отступ, что у `.s-list-box`, — по всем сторонам.
+	@apply px-1 py-1;
+	// Тот же промежуток между элементами, что у `.s-list-box`.
+	@apply gap-1;
 }
 
 .s-select-item {
@@ -68,6 +70,12 @@
 
 	> * {
 		@apply w-full justify-start py-2;
+	}
+
+	.s-button {
+		&__text {
+			@apply text-start min-w-0;
+		}
 	}
 
 	// Отметка выбранного — то же устройство, что у `.s-list-box-item`: обёртка
@@ -92,14 +100,14 @@
 		}
 	}
 
-	// Подсветка и выбор — разные состояния: первая живёт, пока открыта
-	// панель, второе попадает в значение поля
-	&[data-highlighted='true'] > * {
-		@apply bg-s-neutral-100;
-	}
-
-	&[data-selected='true'] > * {
-		@apply bg-s-neutral-200 font-medium;
+	// Фон hover/подсветки/выбора рисует `.s-button` сама, через общий
+	// `button-state-bg` (см. `button/_mixins.scss`) — опция передаёт ему
+	// `data-highlighted` / `data-selected` (см. `Item.vue`). Здесь остаётся
+	// только то, что миксин не даёт: начертание выбранной опции.
+	&[data-selected='true'] {
+		.s-button {
+			@apply font-medium;
+		}
 	}
 
 	&[aria-disabled='true'] {
