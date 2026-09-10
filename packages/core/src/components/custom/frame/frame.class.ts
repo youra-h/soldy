@@ -28,8 +28,9 @@ export default class TFrame
 		...TComponentView.defaultValues,
 		x: 0,
 		y: 0,
-		width: 100,
-		height: 100,
+		// Слой по умолчанию берёт размер по содержимому — число задаётся осознанно.
+		width: 'auto',
+		height: 'auto',
 		visible: false,
 		position: 'fixed',
 		target: 'body',
