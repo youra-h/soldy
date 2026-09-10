@@ -151,11 +151,20 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		container.style.overflowY = visibleCount >= elements.length ? 'hidden' : 'auto'
 	}
 
-	/** Высота первых `count` строк вместе с промежутками между ними. */
+	/**
+	 * Высота первых `count` строк вместе с промежутками между ними.
+	 *
+	 * `max-height` пишется в контейнер, а не в область строк, поэтому при
+	 * `box-sizing: border-box` в неё нужно добавить вертикальные паддинги и
+	 * рамки — иначе тема, добавившая отступы, теряет последнюю строку. При
+	 * `content-box` добавлять нечего, поэтому решаем по факту стиля, а не по
+	 * допущению про конкретную тему.
+	 */
 	private _measure(container: HTMLElement, elements: HTMLElement[], count: number): number {
 		if (count === 0) return 0
 
-		const gap = parseFloat(getComputedStyle(container).rowGap) || 0
+		const style = getComputedStyle(container)
+		const gap = parseFloat(style.rowGap) || 0
 
 		let total = 0
 
@@ -163,6 +172,16 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 			total += elements[i].offsetHeight
 		}
 
-		return total + (count - 1) * gap
+		total += (count - 1) * gap
+
+		if (style.boxSizing === 'border-box') {
+			total +=
+				(parseFloat(style.paddingTop) || 0) +
+				(parseFloat(style.paddingBottom) || 0) +
+				(parseFloat(style.borderTopWidth) || 0) +
+				(parseFloat(style.borderBottomWidth) || 0)
+		}
+
+		return total
 	}
 }
