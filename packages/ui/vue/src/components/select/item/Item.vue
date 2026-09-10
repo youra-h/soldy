@@ -13,6 +13,12 @@ import SetupSelectItem from './setup.component'
  * `TListItemPlugin`. ARIA для скринридера, `data-*` для стилей; смешивать
  * нельзя, иначе правка доступности ломает вид.
  *
+ * `dataset` биндится дважды — на обёртку и на `Button`: фон при hover/
+ * подсветке/выборе рисует общий `button-state-bg` темы, а он читает
+ * `data-highlighted` / `data-selected` с самой кнопки (`view="plain"`, не
+ * `"none"` — иначе миксин не применяется). То же устройство, что у
+ * `ListBoxItem`.
+ *
  * Выбранность и подсветка — разные вещи: подсветка живёт, только пока панель
  * открыта, и в значение не попадает.
  *
@@ -41,12 +47,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 	>
 		<Button
 			tag="span"
-			view="none"
+			view="plain"
 			:size="size"
 			:variant="variant"
 			:disabled="disabled"
 			tabindex="-1"
-			v-bind="controlAttrs"
+			v-bind="{ ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
 				<span v-if="indicator === 'start'" class="s-select-item__indicator" aria-hidden="true">

@@ -1,9 +1,18 @@
 
 .s-list-box {
 	@apply flex flex-col gap-1;
-	@apply rounded-md;
+	@apply rounded-md border box-border;
+	@apply bg-s-component-surface;
 	@apply min-w-40 max-w-80;
 	@apply text-s-component;
+	// Внутренний отступ от границы контейнера до первого/последнего элемента —
+	// то же значение стоит у `.s-select__list`, чтобы отступы совпадали.
+	@apply py-1;
+	// Прокрутка при `maxRows` меньше числа элементов — то же устройство, что у
+	// `.s-select__list`.
+	@apply overflow-y-auto;
+	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+	border-color: var(--s-neutral-400);
 
 	&:focus-visible {
 		&:not([aria-disabled='true']) {
@@ -24,7 +33,7 @@
 
 	.s-button {
 		&__text {
-			@apply text-left min-w-0;
+			@apply text-start min-w-0;
 		}
 	}
 
