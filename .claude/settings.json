@@ -1,0 +1,55 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(npm test)",
+			"Bash(npm run test:accessor)",
+			"Bash(npm run test:setup)",
+			"Bash(npm run test:core)",
+			"Bash(npm run test:theme)",
+			"Bash(npm run test:plugins)",
+			"Bash(npm run test:vue)",
+			"Bash(npm run test:react)",
+			"Bash(npm run test:angular)",
+			"Bash(npm run test:svelte)",
+			"Bash(npm run test:solid)",
+			"Bash(npm run test:webc)",
+			"Bash(npm run test:playground)",
+			"Bash(npx vitest run *)",
+			"Bash(npx tsc --noEmit *)",
+			"Bash(npx vue-tsc --noEmit *)",
+			"Bash(npx svelte-check *)",
+			"Bash(npx prettier --check *)",
+
+			"Bash(git fetch *)",
+			"Bash(git status *)",
+			"Bash(git log *)",
+			"Bash(git diff *)",
+			"Bash(git show *)",
+			"Bash(git branch *)",
+			"Bash(git remote *)",
+			"Bash(git rev-parse *)",
+			"Bash(git stash list)",
+			"Bash(git reflog *)",
+
+			"Bash(gh pr view *)",
+			"Bash(gh pr list *)",
+			"Bash(gh pr diff *)",
+			"Bash(gh pr checks *)",
+			"Bash(gh repo view *)",
+			"Bash(gh auth status)",
+			"Bash(gh run list *)",
+			"Bash(gh run view *)",
+
+			"Bash(ls *)",
+			"Bash(npm ls *)",
+			"Bash(node --version)",
+			"Bash(npm --version)",
+
+			"mcp__clickup__clickup_get_task",
+			"mcp__clickup__clickup_get_comments",
+			"mcp__clickup__clickup_list_by_status",
+			"mcp__clickup__clickup_add_comment",
+			"mcp__clickup__clickup_handoff"
+		]
+	}
+}

@@ -1,6 +1,7 @@
 ---
 name: developer
 description: Программист. Берёт задачу ClickUp в статусе IN PROGRESS — создаёт ветку, реализует план тимлида, пишет тесты, открывает PR.
+model: sonnet
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_handoff
 ---
 

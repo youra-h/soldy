@@ -1,6 +1,7 @@
 ---
 name: analyst
 description: Аналитик. Разбирает задачу ClickUp в статусе ANALYSIS — формулирует проблему, границы, риски и критерии приёмки. Код не пишет.
+model: opus
 tools: Read, Grep, Glob, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_handoff
 ---
 
