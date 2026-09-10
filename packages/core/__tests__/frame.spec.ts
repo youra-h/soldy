@@ -10,8 +10,8 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		expect(frame.x).toBe(0)
 		expect(frame.y).toBe(0)
-        expect(frame.width).toBe(100)
-        expect(frame.height).toBe(100)
+        expect(frame.width).toBe('auto')
+        expect(frame.height).toBe('auto')
 		expect(frame.visible).toBe(false)
 		expect(frame.zIndex).toBe(0)
 	})
@@ -170,10 +170,10 @@ describe('TFrame', () => {
 		frame.events.on('change:height' as any, (v: number | string) => heightValues.push(v))
 
 		frame.width = 500
-		frame.height = 'auto'
+		frame.height = 300
 
 		expect(widthValues).toEqual([500])
-		expect(heightValues).toEqual(['auto'])
+		expect(heightValues).toEqual([300])
 	})
 
 	it('change:zIndex эмитится при show()', () => {

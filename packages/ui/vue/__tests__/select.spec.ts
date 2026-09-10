@@ -393,4 +393,18 @@ describe('списочные свойства', () => {
 
 		expect(list.style.maxHeight).toBe('')
 	})
+
+	/**
+	 * Frame по умолчанию не навязывает панели пиксельную высоту — иначе список
+	 * с одной опцией открывался бы на высоту нескольких.
+	 */
+	it('панель не получает инлайновый height в пикселях', async () => {
+		render()
+		await nextTick()
+		await nextFrame()
+
+		const panelEl = document.querySelector('.s-select__panel') as HTMLElement
+
+		expect(panelEl.style.height).toBe('auto')
+	})
 })
