@@ -5,7 +5,7 @@ import { AnchorContribution } from '../../contributions'
 
 /**
  * Привязка Frame к чужому элементу: `anchor_anchor`, `anchor_placement`,
- * `anchor_matchWidth`.
+ * `anchor_matchWidth`, `anchor_offset`.
  *
  * Подключён к `FrameDescriptor`, то есть есть у каждого Frame. Без якоря
  * плагин ничего не делает и ни на что не подписан, поэтому диалогу по центру

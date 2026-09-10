@@ -276,6 +276,33 @@ describe('панель после выбора', () => {
 
 		expect(owner.open).toBe(true)
 	})
+
+	it('в multiple выбор не закрывает панель даже с closeOnSelect по умолчанию', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { open: true })
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		expect(owner.open).toBe(true)
+	})
+
+	it('в multiple повторный выбор той же опции тоже не закрывает', () => {
+		const { owner, collection, facadeFor } = createSelect(['a'], { open: true })
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(0).choose()
+
+		expect(owner.open).toBe(true)
+	})
+
+	it('в single выбор по-прежнему закрывает', () => {
+		const { owner, facadeFor } = createSelect(['a', 'b'], { open: true })
+
+		facadeFor(0).choose()
+
+		expect(owner.open).toBe(false)
+	})
 })
 
 describe('связка ARIA поле ↔ список ↔ опция', () => {

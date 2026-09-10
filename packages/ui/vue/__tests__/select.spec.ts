@@ -408,3 +408,21 @@ describe('списочные свойства', () => {
 		expect(panelEl.style.height).toBe('auto')
 	})
 })
+
+describe('отступ панели от поля', () => {
+	it('панель получает offset якоря — координата ниже нижнего края поля', async () => {
+		const wrapper = render()
+
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		await nextFrame()
+
+		const field = wrapper.find('.s-select').element as HTMLElement
+		const panelEl = document.querySelector('.s-select__panel') as HTMLElement
+
+		const fieldBottom = field.getBoundingClientRect().bottom
+		const panelTop = parseFloat(panelEl.style.top || '0')
+
+		expect(panelTop).toBeGreaterThanOrEqual(fieldBottom)
+	})
+})

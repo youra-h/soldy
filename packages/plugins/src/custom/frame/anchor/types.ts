@@ -14,6 +14,8 @@ export interface IAnchorPluginOptions {
 	placement?: TFramePlacement
 	/** Тянуть ширину панели по ширине якоря. */
 	matchWidth?: boolean
+	/** Отступ панели от якоря, px. По умолчанию `0`. */
+	offset?: number
 }
 
 export type TAnchorPluginEvents = TPluginEvents & {
@@ -23,4 +25,6 @@ export type TAnchorPluginEvents = TPluginEvents & {
 	'change:placement': (value: TFramePlacement) => void
 	/** change:matchWidth */
 	'change:matchWidth': (value: boolean) => void
+	/** change:offset */
+	'change:offset': (value: number) => void
 }

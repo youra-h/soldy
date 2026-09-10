@@ -26,6 +26,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _anchor: HTMLElement | null = null
 	private _placement: TFramePlacement = 'bottom-start'
 	private _matchWidth = false
+	private _offset = 0
 	private _cleanups: Array<() => void> = []
 
 	override install(ctx: IPluginContext, options?: IAnchorPluginOptions): void {
@@ -33,6 +34,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._placement = options?.placement ?? this._placement
 		this._matchWidth = options?.matchWidth ?? this._matchWidth
+		this._offset = options?.offset ?? this._offset
 		this._frame = ctx.getInstance<IFrame>() ?? null
 
 		// Размер панели нужен только для `*-end` и `top-*` без matchWidth
@@ -94,6 +96,18 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this.events.emit('change:matchWidth', value)
 	}
 
+	get offset(): number {
+		return this._offset
+	}
+
+	set offset(value: number) {
+		if (this._offset === value) return
+
+		this._offset = value
+		this._update()
+		this.events.emit('change:offset', value)
+	}
+
 	override destroy(): void {
 		this._unsubscribe()
 
@@ -125,8 +139,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			: rect.left
 
 		frame.y = this._placement.startsWith('top-')
-			? rect.top - this._panelSize().height
-			: rect.bottom
+			? rect.top - this._panelSize().height - this._offset
+			: rect.bottom + this._offset
 	}
 
 	/**
