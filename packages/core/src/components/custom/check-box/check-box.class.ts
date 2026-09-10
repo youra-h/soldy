@@ -97,16 +97,15 @@ export default class TCheckBox
 		}
 	}
 
-	/** Рендерится в `<input type="checkbox">` — `required` у него нативный. */
-	protected override _hasNativeRequired(): boolean {
-		return true
-	}
-
 	/**
+	 * Рендерится в `<input type="checkbox">` — `required` у него нативный,
+	 * дублировать в ARIA не нужно.
+	 *
 	 * HTML не знает `readonly` у чекбокса — браузер его молча игнорирует,
 	 * поэтому `aria-readonly` остаётся единственным способом сообщить о нём.
 	 */
-	protected override _hasNativeReadonly(): boolean {
-		return false
+	protected override _syncInputAccessibility(): void {
+		this._aria.add('aria-required', null)
+		this._aria.add('aria-readonly', this.readonly ? 'true' : null)
 	}
 }

@@ -286,11 +286,12 @@ export class TSelect<
 	}
 
 	/**
-	 * Собственный тег поля — `div`, у него нет нативного `required`.
-	 * `aria-required` при `required: true` ставится всегда.
+	 * Собственный тег поля — `div`, у него нет ни нативного `required`, ни
+	 * `readonly`. Оба ARIA-атрибута при включённом состоянии ставятся всегда.
 	 */
-	protected override _hasNativeRequired(): boolean {
-		return false
+	protected override _syncInputAccessibility(): void {
+		this._aria.add('aria-required', this.required ? 'true' : null)
+		this._aria.add('aria-readonly', this.readonly ? 'true' : null)
 	}
 
 	override getProps(): TProps {

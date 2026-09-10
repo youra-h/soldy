@@ -40,18 +40,11 @@ export default class TInputControl<
 
 		this._id = props.id ?? (ctor.defaultValues.id as string)
 
-		this.events.on('change:required', () => this._syncRequiredAria())
-		this.events.on('change:readonly', () => {
-			this._syncRequiredAria()
-			this._syncReadonlyAria()
-		})
-		this.events.on('change:tag', () => {
-			this._syncRequiredAria()
-			this._syncReadonlyAria()
-		})
+		this.events.on('change:required', () => this._syncInputAccessibility())
+		this.events.on('change:readonly', () => this._syncInputAccessibility())
+		this.events.on('change:tag', () => this._syncInputAccessibility())
 
-		this._syncRequiredAria()
-		this._syncReadonlyAria()
+		this._syncInputAccessibility()
 	}
 
 	/**
@@ -111,37 +104,16 @@ export default class TInputControl<
 	}
 
 	/**
-	 * Ставит `aria-required`, когда `required` включён и у элемента нет
-	 * собственного `required`, который сообщил бы о том же браузеру и
-	 * скринридеру сам. Про то, есть ли он — знает только конкретный
-	 * компонент: `TInputControl` ни во что конкретное не рендерится, поэтому
-	 * здесь решения нет, только сборка атрибута из `_hasNativeRequired()`.
-	 */
-	protected _syncRequiredAria(): void {
-		this._aria.add('aria-required', this._required && !this._hasNativeRequired() ? 'true' : null)
-	}
-
-	/** Симметрично `_syncRequiredAria()`, для `aria-readonly`. */
-	protected _syncReadonlyAria(): void {
-		this._aria.add('aria-readonly', this._readonly && !this._hasNativeReadonly() ? 'true' : null)
-	}
-
-	/**
-	 * Есть ли у реального DOM-элемента, в который рендерится компонент,
-	 * собственный атрибут `required`, работающий без `aria-required`.
+	 * Хук конкретного контрола.
 	 *
-	 * Базовый класс ни во что конкретное не рендерится, поэтому по умолчанию
-	 * нативности нет — переопределяет каждый наследник, который знает, во что
-	 * он рендерится на самом деле (`TInput`, `TSelect`, `TCheckBox`, `TSwitch`).
+	 * База знает только семантическое состояние — `required` и `readonly`.
+	 * Как оно выражается в ARIA (нужен ли `aria-required`/`aria-readonly`
+	 * рядом с нативным атрибутом тега или вместо него) — решает наследник,
+	 * который знает, во что он реально рендерится: `TInput`, `TSelect`,
+	 * `TCheckBox`, `TSwitch`. `TInputControl` ни во что конкретное не
+	 * рендерится, поэтому по умолчанию ничего не делает.
 	 */
-	protected _hasNativeRequired(): boolean {
-		return false
-	}
-
-	/** Симметрично `_hasNativeRequired()`, для `readonly`. */
-	protected _hasNativeReadonly(): boolean {
-		return false
-	}
+	protected _syncInputAccessibility(): void {}
 
 	getProps(): TProps {
 		return {
