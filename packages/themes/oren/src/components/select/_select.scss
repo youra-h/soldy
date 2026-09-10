@@ -45,9 +45,7 @@
 // Панель телепортируется в body, поэтому вложенным селектором её не достать
 .s-select__panel {
 	@apply overflow-hidden rounded-md box-border;
-	@apply bg-s-component-surface border shadow-md;
-	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-neutral-400);
+	@apply bg-s-component-surface shadow-md;
 }
 
 // Потолок по умолчанию, а не единственный: он действует, пока `maxRows` равен
@@ -61,8 +59,8 @@
 .s-select__list {
 	@apply flex flex-col overflow-y-auto;
 	@apply max-h-64;
-	// Тот же внутренний отступ, что у `.s-list-box`, — сверху и снизу поровну.
-	@apply py-1;
+	// Тот же внутренний отступ, что у `.s-list-box`, — по всем сторонам.
+	@apply px-1 py-1;
 }
 
 .s-select-item {
