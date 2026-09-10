@@ -12,7 +12,13 @@
 	// `.s-select__list`.
 	@apply overflow-y-auto;
 	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-neutral-400);
+	border-color: var(--s-neutral-300);
+
+	&:hover {
+		&:not([aria-disabled='true']) {
+			border-color: var(--s-neutral-400);
+		}
+	}
 
 	&:focus-visible {
 		&:not([aria-disabled='true']) {
