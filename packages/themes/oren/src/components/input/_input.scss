@@ -14,6 +14,10 @@
 	@apply text-s-component;
 	@apply transition-colors duration-150;
 
+	&:has(input:focus-visible:not(:disabled)) {
+		@apply outline-2 outline-offset-2 outline-s-component;
+	}
+
 	input {
 		@apply w-full;
 		@apply outline-none;
@@ -21,12 +25,6 @@
 
 		&::placeholder {
 			@apply text-s-component-placeholder;
-		}
-
-		&:focus-visible {
-			&:not(:disabled) {
-				@apply outline-2 outline-offset-2 outline-s-component;
-			}
 		}
 
 		&:disabled {

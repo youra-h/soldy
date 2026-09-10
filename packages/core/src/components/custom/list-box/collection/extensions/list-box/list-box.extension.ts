@@ -109,6 +109,11 @@ export class TListBoxExtension<
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 
+		// Roving tabindex (APG listbox): фокусируем контейнер, элементы — только
+		// стрелками (`TListKeyboardPlugin`), не Tab'ом. Без этого Tab перебирал бы
+		// элементы по одному — при тысяче опций так невозможно уйти со списка.
+		item.aria.add('tabindex', '-1')
+
 		this._applyContentFit(item)
 		this._applyIndicator(item)
 	}

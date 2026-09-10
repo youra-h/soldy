@@ -220,3 +220,25 @@ describe('indicator пробрасывается со списка на элем
 		expect(late.dataset.get('indicator')).toBe('end')
 	})
 })
+
+/**
+ * Roving tabindex (APG listbox): элементы фокусируются только стрелками
+ * (`TListKeyboardPlugin`), Tab не должен по ним переходить. Ставит родительское
+ * расширение, а не item-адаптер — атрибут обязан стоять с первой отрисовки.
+ */
+describe('tabindex у элементов', () => {
+	it('элементы, добавленные в коллекцию, получают tabindex="-1"', () => {
+		const { items } = createListBox(['a', 'b'])
+
+		expect(items.map((item) => item.aria.get('tabindex'))).toEqual(['-1', '-1'])
+	})
+
+	it('элемент, добавленный позже, тоже получает tabindex="-1"', () => {
+		const { collection, items } = createListBox(['a'])
+		const late = new TListBoxItem({ value: 'z', text: 'z' })
+
+		collection.items = [...items, late] as IListBoxItem[]
+
+		expect(late.aria.get('tabindex')).toBe('-1')
+	})
+})
