@@ -48,7 +48,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			:variant="variant"
 			:aria-selected="String(selected)"
 			@click="context.adapters.selection.toggle()"
-			v-bind="{ ...dataset, ...controlAttrs }"
+			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
 				<span
