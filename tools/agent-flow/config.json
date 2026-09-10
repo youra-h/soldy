@@ -1,0 +1,19 @@
+{
+    "_comment": "Статусы должны совпадать с ClickUp побуквенно. Задачи ищутся по spaceId, если он задан; иначе по listId.",
+
+    "teamId": "90122045601",
+    "spaceId": "901210134422",
+    "listId": "",
+    "ownerId": "308554787",
+
+    "statuses": {
+        "analysis": "analysis",
+        "planning": "planning",
+        "inProgress": "in progress",
+        "overview": "overview",
+        "approved": "approved",
+        "closed": "complete"
+    },
+
+    "commentChunkSize": 30000
+}
