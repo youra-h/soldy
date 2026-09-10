@@ -4,8 +4,8 @@ export const FrameContribution = (): IContribution => ({
 	props: {
 		x: { type: Number, triggers: ['change:x'] },
 		y: { type: Number, triggers: ['change:y'] },
-		width: { type: Number, triggers: ['change:width'] },
-		height: { type: Number, triggers: ['change:height'] },
+		width: { type: [Number, String], triggers: ['change:width'] },
+		height: { type: [Number, String], triggers: ['change:height'] },
 		position: { type: String, triggers: ['change:position'] },
 		target: { type: [Object, String], triggers: ['change:target'] },
 	},
