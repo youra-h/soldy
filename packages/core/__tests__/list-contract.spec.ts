@@ -28,6 +28,7 @@ const PROPERTIES = [
 	['maxRows', 'change:maxRows', 5],
 	['contentFit', 'change:contentFit', 'wrap'],
 	['scrollBehavior', 'change:scrollBehavior', 'instant'],
+	['indicator', 'change:indicator', 'start'],
 ] as const
 
 describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, create) => {
@@ -102,6 +103,25 @@ describe.each(IMPLEMENTATIONS)('%s отдаёт contentFit в data-*', (_name, c
 		instance.contentFit = 'expand'
 
 		expect(instance.dataset.get('content-fit')).toBe('expand')
+	})
+})
+
+/**
+ * `indicator` уезжает в тему тем же путём: на владельце он нужен, чтобы место
+ * под отметку резервировалось до первого выбора, а элементам тот же атрибут
+ * ставит расширение коллекции.
+ */
+describe.each(IMPLEMENTATIONS)('%s отдаёт indicator в data-*', (_name, create) => {
+	it('атрибут стоит сразу, а не после первой смены', () => {
+		expect(create().dataset.get('indicator')).toBe(LIST_DEFAULTS.indicator)
+	})
+
+	it('атрибут следует за свойством', () => {
+		const instance = create()
+
+		instance.indicator = 'end'
+
+		expect(instance.dataset.get('indicator')).toBe('end')
 	})
 })
 

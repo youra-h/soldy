@@ -1,4 +1,5 @@
 <script lang="ts">
+import { Icon } from '../../icon'
 import { Button } from '../../button'
 import SetupSelectItem from './setup.component'
 
@@ -18,8 +19,13 @@ import SetupSelectItem from './setup.component'
  * Пояснение в `<script>`, а не комментарием над корнем: в dev-режиме
  * компилятор SFC комментарии сохраняет, и такой комментарий сделал бы
  * компонент многокорневым — см. `Select.vue`.
+ *
+ * Отметка выбранного (`indicator`) рисуется внутри слотов кнопки: обёртка
+ * стоит, пока сторона задана, — она резервирует место, чтобы строка не прыгала
+ * при выборе; иконка внутри появляется только у выбранной опции. Обёртка
+ * `aria-hidden`: состояние скринридеру объявляет `aria-selected`.
  */
-export default { ...SetupSelectItem, components: { Button } }
+export default { ...SetupSelectItem, components: { Icon, Button } }
 </script>
 
 <template>
@@ -43,6 +49,11 @@ export default { ...SetupSelectItem, components: { Button } }
 			v-bind="controlAttrs"
 		>
 			<template #leading>
+				<span v-if="indicator === 'start'" class="s-select-item__indicator" aria-hidden="true">
+					<slot name="indicator-icon" :selected="selected">
+						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+					</slot>
+				</span>
 				<slot name="leading" />
 			</template>
 
@@ -52,6 +63,11 @@ export default { ...SetupSelectItem, components: { Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
+				<span v-if="indicator === 'end'" class="s-select-item__indicator" aria-hidden="true">
+					<slot name="indicator-icon" :selected="selected">
+						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+					</slot>
+				</span>
 			</template>
 		</Button>
 	</div>

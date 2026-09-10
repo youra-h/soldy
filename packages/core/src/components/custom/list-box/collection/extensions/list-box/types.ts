@@ -1,4 +1,5 @@
 import type { IListBox, TListBoxView } from '../../../types'
+import type { TListIndicator } from '../../../../list'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
@@ -23,6 +24,8 @@ export interface IListBoxExtension<
 	extends IExtension<TItem>, IExtensionItems<TItem, TItemExt> {
 	/** Внешний вид со списка. */
 	readonly view: TListBoxView
+	/** Где стоит отметка выбранного — свойство списка, не элемента. */
+	readonly indicator: TListIndicator
 }
 
 /** Опции конструктора: ссылка на инстанс списка. */
@@ -37,6 +40,7 @@ export interface IListBoxExtensionOptions<
 
 export type TListBoxExtensionEvents = {
 	'change:view': (value: TListBoxView) => void
+	'change:indicator': (value: TListIndicator) => void
 }
 
 export type TListBoxExtensions<TItem extends IListBoxItem> = {

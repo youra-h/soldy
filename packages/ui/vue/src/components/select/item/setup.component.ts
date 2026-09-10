@@ -6,7 +6,7 @@ import {
 	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
 import type { ISelectItemProps, ISelectItem, TSelectItemCollectionFacade } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useSplitAttrs } from '../../../adapter'
+import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
 import BaseSelectItem, { type SelectItemProps } from './base.component'
 
 /**
@@ -46,6 +46,7 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
+			indicatorIconTag: useIcon('check'),
 			...useSplitAttrs(),
 		}
 	},

@@ -3,6 +3,7 @@ import type {
 	IExtension,
 	IExtensionItems,
 } from '../../../../../base/collection'
+import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import type { ISelectItemExtension } from './item'
@@ -21,6 +22,8 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	optionId(item: TItem): string
 	/** Текст выбранного — то, что показывает поле. */
 	readonly valueText: string
+	/** Где стоит отметка выбранной опции — свойство поля, не опции. */
+	readonly indicator: TListIndicator
 	/**
 	 * Выбрать опцию с учётом режима и `closeOnSelect` владельца.
 	 * Возвращает `false`, если опция недоступна.

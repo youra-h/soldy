@@ -415,3 +415,41 @@ describe('id элемента формы', () => {
 		expect(input.id).toBe(String(input.uid))
 	})
 })
+
+/**
+ * `indicator` у Select устроен так же, как у ListBox: сторона одна на всё поле,
+ * опция читает её у него. Копия сознательная — общего предка у списка и поля
+ * быть не может, сверяет её `list-contract.spec.ts`.
+ */
+describe('indicator пробрасывается с поля на опцию', () => {
+	it('по умолчанию отметки нет', () => {
+		expect(createSelect(['a']).facadeFor(0).indicator).toBe('none')
+	})
+
+	it('опция берёт сторону у поля', () => {
+		expect(createSelect(['a'], { indicator: 'start' }).facadeFor(0).indicator).toBe('start')
+	})
+
+	it('смена стороны доходит до опции событием', () => {
+		const { owner, facadeFor } = createSelect(['a', 'b'])
+		const facade = facadeFor(0)
+		const seen: unknown[] = []
+
+		facade.events.on('change:indicator', (value: unknown) => seen.push(value))
+
+		owner.indicator = 'end'
+
+		expect(seen).toEqual(['end'])
+		expect(facade.indicator).toBe('end')
+	})
+
+	it('data-indicator стоит у опций сразу и переставляется при смене', () => {
+		const { owner, items } = createSelect(['a', 'b'], { indicator: 'start' })
+
+		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['start', 'start'])
+
+		owner.indicator = 'end'
+
+		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['end', 'end'])
+	})
+})

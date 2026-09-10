@@ -7,7 +7,7 @@ import {
 } from '@soldy/setup'
 import { TListBoxItemCollectionFacade } from '@soldy/core'
 import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useSplitAttrs } from '../../../adapter'
+import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
 import BaseListBoxItem, { type ListBoxItemProps } from './base.component'
 
 export default {
@@ -40,6 +40,7 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
+			indicatorIconTag: useIcon('check'),
 			...useSplitAttrs(),
 		}
 	},

@@ -2,8 +2,8 @@ import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { TScrollBehavior } from '../../../common'
-import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE } from '../list'
-import type { TListContentFit } from '../list'
+import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
+import type { TListContentFit, TListIndicator } from '../list'
 import type {
 	IListBoxProps,
 	TListBoxView,
@@ -25,7 +25,7 @@ import type {
  * ответ в значениях, и он же уходит в форму. Связь `value` ↔ выбор держит
  * `TValueSelectionExtension`.
  *
- * `maxRows`, `contentFit`, `scrollBehavior` объявлены контрактом `IList`
+ * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` объявлены контрактом `IList`
  * (см. `custom/list/types.ts`) и реализованы здесь же — своей копией. Копия
  * сознательная: общего предка у списка и поля выбора быть не может, а попытка
  * отдать свойства плагину сделала ядро несамодостаточным. Расхождение копий
@@ -51,6 +51,7 @@ export class TListBox
 	protected _maxRows: number
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior: TScrollBehavior
+	protected _indicator!: TListIndicator
 
 	constructor(
 		props: Partial<IListBoxProps> = {},
@@ -66,6 +67,7 @@ export class TListBox
 		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
 
 		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit!)
+		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator!)
 	}
 
 	get view(): TListBoxView {
@@ -115,6 +117,18 @@ export class TListBox
 		;(this.events as TEvented<TListBoxEvents>).emit('change:scrollBehavior', value)
 	}
 
+	/** Где показывать отметку выбранного элемента. */
+	get indicator(): TListIndicator {
+		return this._indicator
+	}
+
+	set indicator(value: TListIndicator) {
+		if (this._indicator === value) return
+
+		this._applyIndicator(value)
+		;(this.events as TEvented<TListBoxEvents>).emit('change:indicator', value)
+	}
+
 	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView): void {
 		this._classes.swapClass({
 			oldClass: `--${oldValue}`,
@@ -133,6 +147,16 @@ export class TListBox
 		this._dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, value)
 	}
 
+	/**
+	 * `data-indicator` на самом списке: место под отметку резервирует тема, и
+	 * знать сторону ей надо до того, как что-то выбрано. Тот же атрибут каждому
+	 * элементу ставит `TListBoxExtension`.
+	 */
+	protected _applyIndicator(value: TListIndicator): void {
+		this._indicator = value
+		this._dataset.add(LIST_INDICATOR_ATTRIBUTE, value)
+	}
+
 	override getProps(): IListBoxProps {
 		return {
 			...super.getProps(),
@@ -140,6 +164,7 @@ export class TListBox
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
+			indicator: this._indicator,
 		} as IListBoxProps
 	}
 }

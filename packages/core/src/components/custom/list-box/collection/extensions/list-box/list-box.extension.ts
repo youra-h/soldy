@@ -5,7 +5,8 @@ import type {
 } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
-import { LIST_CONTENT_FIT_ATTRIBUTE } from '../../../../list'
+import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
+import type { TListIndicator } from '../../../../list'
 import type { IListBoxItem } from '../../../item/types'
 import type { IListBox, TListBoxView } from '../../../types'
 import type { TListBoxExtensionEvents, IListBoxExtensionOptions, IListBoxExtension } from './types'
@@ -57,6 +58,11 @@ export class TListBoxExtension<
 		return this._owner.view
 	}
 
+	/** Сторона отметки выбранного — со списка. */
+	get indicator(): TListIndicator {
+		return this._owner.indicator
+	}
+
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
@@ -89,8 +95,12 @@ export class TListBoxExtension<
 			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
 		})
 
-		// Внешний вид доезжает до item-адаптеров
-		this.events.relay(this._owner.events, ['change:view'])
+		this._owner.events.on('change:indicator', () => {
+			ctx.driver.forEach((item) => this._applyIndicator(item as TItem))
+		})
+
+		// Внешний вид и сторона отметки доезжают до item-адаптеров
+		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
 	}
 
 	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
@@ -100,6 +110,17 @@ export class TListBoxExtension<
 		item.variant = this._owner.variant
 
 		this._applyContentFit(item)
+		this._applyIndicator(item)
+	}
+
+	/**
+	 * `data-indicator` элемента — значение списка целиком.
+	 *
+	 * Ставит родительское расширение, а не item-адаптер: адаптеры создаются
+	 * лениво, а атрибут обязан стоять с первой отрисовки, включая серверную.
+	 */
+	private _applyIndicator(item: TItem): void {
+		item.dataset.add(LIST_INDICATOR_ATTRIBUTE, this._owner.indicator)
 	}
 
 	/**

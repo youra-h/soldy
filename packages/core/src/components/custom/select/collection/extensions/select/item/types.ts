@@ -1,7 +1,10 @@
 import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
 import type { ISelectItem } from '../../../../item/types'
+import type { TListIndicator } from '../../../../../list'
 
-export type TSelectItemEventsExtension = TBaseItemEventsExtension
+export type TSelectItemEventsExtension = TBaseItemEventsExtension & {
+	'change:indicator': (value: TListIndicator) => void
+}
 
 /**
  * Контракт item-адаптера опции.
@@ -15,6 +18,8 @@ export interface ISelectItemExtension<
 > extends IItemExtension<TItem, TSelectItemEventsExtension> {
 	/** `id` этой опции. */
 	readonly optionId: string
+	/** Где стоит отметка выбранного — значение поля целиком. */
+	readonly indicator: TListIndicator
 	/** Выбрать опцию с учётом режима и `closeOnSelect` владельца. */
 	choose(): void
 }

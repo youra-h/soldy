@@ -1,6 +1,6 @@
 import type { IPropDefinition } from '@soldy/accessor'
 import { defineType } from '../defineType'
-import type { TListContentFit, TScrollBehavior } from '@soldy/core'
+import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
 
 /**
  * Списочные props — общие для ListBox и Select.
@@ -25,5 +25,9 @@ export const LIST_PROPS: Record<string, IPropDefinition> = {
 	scrollBehavior: {
 		type: defineType<TScrollBehavior>(String),
 		triggers: ['change:scrollBehavior'],
+	},
+	indicator: {
+		type: defineType<TListIndicator>(String),
+		triggers: ['change:indicator'],
 	},
 }

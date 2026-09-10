@@ -159,3 +159,64 @@ describe('value ↔ выбор', () => {
 		expect(changes).toBeLessThan(5)
 	})
 })
+
+/**
+ * `indicator` — отметка выбранного элемента.
+ *
+ * Свойство списка, не элемента: у элемента своей стороны нет, иначе отметки в
+ * одном списке разъехались бы. Вниз доезжает тем же путём, что `view`, а в
+ * тему — как `data-indicator` на каждом элементе.
+ */
+describe('indicator пробрасывается со списка на элемент', () => {
+	it('по умолчанию отметки нет', () => {
+		expect(createListBox(['a']).facadeFor(0).indicator).toBe('none')
+	})
+
+	it('элемент берёт сторону у владельца', () => {
+		expect(createListBox(['a'], { indicator: 'end' }).facadeFor(0).indicator).toBe('end')
+	})
+
+	it('смена стороны доходит до элемента событием', () => {
+		const { owner, facadeFor } = createListBox(['a', 'b'])
+		const facade = facadeFor(0)
+		const seen: unknown[] = []
+
+		facade.events.on('change:indicator', (value: unknown) => seen.push(value))
+
+		owner.indicator = 'start'
+
+		expect(seen).toEqual(['start'])
+		expect(facade.indicator).toBe('start')
+	})
+
+	/**
+	 * Атрибут ставит родительское расширение, а не item-адаптер: адаптеры
+	 * создаются лениво, а `data-indicator` обязан стоять с первой отрисовки —
+	 * включая серверную, где фасада может и не быть.
+	 */
+	it('data-indicator стоит у элементов сразу, без обращения к фасаду', () => {
+		const { items } = createListBox(['a', 'b'], { indicator: 'start' })
+
+		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['start', 'start'])
+	})
+
+	it('смена стороны переставляет data-indicator всем элементам', () => {
+		const { owner, items } = createListBox(['a', 'b', 'c'], { indicator: 'start' })
+
+		owner.indicator = 'end'
+
+		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['end', 'end', 'end'])
+	})
+
+	it('элемент, добавленный позже, получает текущую сторону', () => {
+		const { owner, collection, items } = createListBox(['a'], { indicator: 'start' })
+
+		owner.indicator = 'end'
+
+		const late = new TListBoxItem({ value: 'z', text: 'z' })
+
+		collection.items = [...items, late] as IListBoxItem[]
+
+		expect(late.dataset.get('indicator')).toBe('end')
+	})
+})

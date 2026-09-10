@@ -2,8 +2,8 @@ import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
 import type { TAriaAttributes, TScrollBehavior } from '../../../common'
-import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE } from '../list'
-import type { TListContentFit } from '../list'
+import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
+import type { TListContentFit, TListIndicator } from '../list'
 import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue } from './types'
 
 /**
@@ -21,7 +21,8 @@ import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue 
  * передаёт `aria-activedescendant`, который пишет расширение коллекции: имена
  * опций знает она, не поле.
  *
- * `maxRows`, `contentFit`, `scrollBehavior` — общий с ListBox контракт `IList`
+ * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` — общий с ListBox
+ * контракт `IList`
  * (см. `custom/list/types.ts`), реализованный здесь своей копией: общего предка
  * у списка и поля выбора быть не может. Копии сверяет
  * `core/__tests__/list-contract.spec.ts`.
@@ -55,6 +56,7 @@ export class TSelect<
 	protected _maxRows!: number
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior!: TScrollBehavior
+	protected _indicator!: TListIndicator
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -70,6 +72,7 @@ export class TSelect<
 		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
 
 		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit!)
+		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
@@ -193,6 +196,18 @@ export class TSelect<
 		;(this.events as TEvented<TSelectEvents>).emit('change:scrollBehavior', value)
 	}
 
+	/** Где показывать отметку выбранной опции. */
+	get indicator(): TListIndicator {
+		return this._indicator
+	}
+
+	set indicator(value: TListIndicator) {
+		if (this._indicator === value) return
+
+		this._applyIndicator(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:indicator', value)
+	}
+
 	/**
 	 * Подгонять ли ширину панели под ширину поля.
 	 *
@@ -250,6 +265,17 @@ export class TSelect<
 	}
 
 	/**
+	 * `data-indicator` на поле — и то же имя на каждой опции.
+	 *
+	 * На поле он нужен, чтобы тема резервировала место под отметку до первого
+	 * выбора; опциям тот же атрибут ставит `TSelectExtension`.
+	 */
+	protected _applyIndicator(value: TListIndicator): void {
+		this._indicator = value
+		this._dataset.add(LIST_INDICATOR_ATTRIBUTE, value)
+	}
+
+	/**
 	 * Поле всегда в порядке обхода, но пока открывать нечего — панель
 	 * закрывается. Иначе `open`, выставленный до `disabled`, остался бы висеть.
 	 */
@@ -270,6 +296,7 @@ export class TSelect<
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
+			indicator: this._indicator,
 		} as TProps
 	}
 }
