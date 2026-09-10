@@ -53,9 +53,23 @@ export class TValueSelectionExtension<
 		ctx.driver.events.on('item:added', () => this._valueToSelection())
 		ctx.driver.events.on('change:items', () => this._valueToSelection())
 
-		// Только эта сторона на старте. Обратная затёрла бы значение, заданное
-		// пропом: выбор в этот момент ещё пуст
-		this._valueToSelection()
+		// Направление на старте выбирается по тому, у кого есть что сказать.
+		//
+		// Раньше здесь безусловно шло `value` → выбор: коллекция в этот момент
+		// была пуста, и обратная сторона затёрла бы значение, заданное пропом.
+		// Пустой она быть перестала — движок можно собрать снаружи
+		// (`createEngine({ items: [{ _: { selected: true } }] })`) и передать
+		// компоненту уже с выбором. Безусловный сброс молча его терял.
+		if (this._hasValue() || !this._selection?.selected.length) {
+			this._valueToSelection()
+		} else {
+			this._selectionToValue()
+		}
+	}
+
+	/** Значение задано пропом — тогда главное оно, а не выбор коллекции. */
+	private _hasValue(): boolean {
+		return toKeys(this._owner.value).length > 0
 	}
 
 	private get _selection(): TSelectionExtension<TItem> | undefined {

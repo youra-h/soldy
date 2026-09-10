@@ -27,18 +27,20 @@ export default {
 			ListBoxCollectionDescriptor(),
 			{
 				props,
-				options: { owner: adapter.instance },
+				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
+				// не создаёт, лишь доложит недостающие расширения в неё же.
+				// Не дали — соберёт свою. Развилка в `resolveEngine`
+				options: { owner: adapter.instance, engine: toRaw(props.engine) },
 			},
 			{ bundle: adapter.bundle, defaultExtensions: [] },
 		)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<IListBoxCollectionProps, TListBoxCollectionFacade>(
-			collectionAdapter,
-			props,
-			emit,
-		)
+		const refsCollection = useCollectionAdapter<
+			IListBoxCollectionProps,
+			TListBoxCollectionFacade
+		>(collectionAdapter, props, emit)
 
 		return { ...refs, ...refsCollection }
 	},

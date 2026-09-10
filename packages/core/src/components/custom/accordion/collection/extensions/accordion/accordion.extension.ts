@@ -58,11 +58,12 @@ export class TAccordionExtension<
 		super.install(ctx)
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.driver.events.on('item:added', (e) => {
-			e.item.disabled = this._owner.disabled
-			e.item.size = this._owner.size
-			e.item.variant = this._owner.variant
-		})
+		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+
+		// Догон: расширение приходит в коллекцию, которую могли наполнить
+		// раньше — например, собрав её снаружи через `createEngine({ items })`.
+		// Тем элементам `item:added` уже не придёт
+		ctx.driver.forEach((item) => this._applyOwner(item as TItem))
 
 		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:disabled', (value: boolean) => {
@@ -86,5 +87,12 @@ export class TAccordionExtension<
 		// Внешний вид: пробрасываем change:view в item-адаптеры
 		// (TAccordionItemExtension резолвит view из owner).
 		this.events.relay(this._owner.events, ['change:view'])
+	}
+
+	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
+	private _applyOwner(item: TItem): void {
+		item.disabled = this._owner.disabled
+		item.size = this._owner.size
+		item.variant = this._owner.variant
 	}
 }

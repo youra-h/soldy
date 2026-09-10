@@ -166,6 +166,8 @@ export const NON_EDITABLE = new Set([
 	// функция. Контрола, которым осмысленно править то и другое, не бывает
 	'items',
 	'trackBy',
+	// Готовая коллекция снаружи — как `ctrl`, объект, а не значение
+	'engine',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

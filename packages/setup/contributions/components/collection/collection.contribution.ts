@@ -6,6 +6,14 @@ import type { IContribution } from '@soldy/accessor'
  */
 export const CollectionContribution = (): IContribution => ({
 	props: {
+		/**
+		 * Готовая коллекция снаружи — аналог `ctrl` у компонента.
+		 *
+		 * Без триггеров: это вход, а не наблюдаемое значение. Собирается
+		 * сборщиками ядра (`createEngine` и соседи); чего движку не хватает,
+		 * компонент доустановит при привязке.
+		 */
+		engine: { type: Object },
 		items: { type: Array, triggers: ['change:items'] },
 		trackBy: { type: Function, triggers: ['change:trackBy'] },
 	},

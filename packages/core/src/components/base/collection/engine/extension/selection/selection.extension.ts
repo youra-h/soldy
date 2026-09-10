@@ -88,16 +88,21 @@ export class TSelectionExtension<TItem extends object = any>
 		const meta = ctx.extensions.meta as TMetaExtension<TItem> | undefined
 
 		if (meta) {
-			meta.events.on('meta:applied', (item, m) => {
+			const applyMeta = (item: TItem, m: Record<string, unknown>) => {
 				if (!m.selected) return
 
 				this.select(item)
-			})
+			}
 
-			meta.events.on('meta:changed', (item, m) => {
-				if (!m.selected) return
+			meta.events.on('meta:applied', applyMeta)
+			meta.events.on('meta:changed', applyMeta)
 
-				this.select(item)
+			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
+			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
+			ctx.driver.forEach((item) => {
+				const remembered = meta.get?.(item)
+
+				if (remembered) applyMeta(item, remembered)
 			})
 		}
 	}

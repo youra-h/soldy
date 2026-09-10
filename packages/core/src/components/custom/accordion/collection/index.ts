@@ -1,4 +1,4 @@
 export * from './extensions'
-export * from './factory'
+export * from './create'
 export * from './types'
 export * from './facade'

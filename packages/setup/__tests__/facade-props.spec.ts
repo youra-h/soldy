@@ -55,10 +55,22 @@ const descriptors: Array<[string, () => any]> = [
 	['Tabs.Item', TabsCollectionItemDescriptor],
 ]
 
+/**
+ * Пропы, которые компонент **принимает**, а не хранит.
+ *
+ * `engine` — готовая коллекция снаружи, аналог `ctrl` у компонента: значение
+ * потребляется конструктором фасада и в свойство не превращается. Сеттера у
+ * него нет намеренно — подменить движок на лету значит пересобрать все
+ * привязки, а это отдельная задача, не свойство.
+ */
+const PASS_THROUGH = new Set(['engine'])
+
 describe('коллекционные фасады отвечают своему contribution', () => {
 	it.each(descriptors)('%s: у каждого записываемого пропа есть сеттер', (_name, factory) => {
 		const descriptor = factory()
-		const writable = descriptor.props.filter((prop: any) => !prop.protected)
+		const writable = descriptor.props.filter(
+			(prop: any) => !prop.protected && !PASS_THROUGH.has(prop.name.name),
+		)
 
 		const missing = writable
 			// Проп с собственным `get`/`set` в декларации живёт мимо класса

@@ -60,13 +60,12 @@ export class TListBoxExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.driver.events.on('item:added', (e) => {
-			e.item.disabled = this._owner.disabled
-			e.item.size = this._owner.size
-			e.item.variant = this._owner.variant
+		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
 
-			this._applyContentFit(e.item as TItem)
-		})
+		// Догон: расширение приходит в коллекцию, которую могли наполнить
+		// раньше — например, собрав её снаружи через `createEngine({ items })`.
+		// Тем элементам `item:added` уже не придёт
+		ctx.driver.forEach((item) => this._applyOwner(item as TItem))
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
 			ctx.driver.forEach((item) => {
@@ -92,6 +91,15 @@ export class TListBoxExtension<
 
 		// Внешний вид доезжает до item-адаптеров
 		this.events.relay(this._owner.events, ['change:view'])
+	}
+
+	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
+	private _applyOwner(item: TItem): void {
+		item.disabled = this._owner.disabled
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+
+		this._applyContentFit(item)
 	}
 
 	/**

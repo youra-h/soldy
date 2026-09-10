@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
+import { createEngineSelection } from '@soldy/core'
 import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
 import { PREVIEW_COMPONENTS } from '../previews'
 import { propSnippet, instanceSnippet } from '../snippet'
@@ -34,16 +35,51 @@ const preview = computed(() => PREVIEW_COMPONENTS[props.entry.id])
  */
 const instance = shallowRef(createInstance())
 
+const isCollectionRow = props.control.scope === 'collection'
+
 /**
- * Фасад коллекции правой колонки.
+ * Движок правой колонки — только для коллекционных строк, и строится сразу.
  *
- * Коллекционные свойства (`mode`) живут не на инстансе компонента, а на фасаде,
- * и стенду он в руки не даётся: превью создаёт его у себя внутри. Зато отдаёт
- * наружу движок — событием `engine:create`. Поверх готового движка фасад
- * строится штатным конструктором, и запись через него доходит до живого
- * компонента: фасад не владеет состоянием, а именует доступ к движку.
+ * Раньше стенд ждал его событием `engine:create`: превью создавало движок
+ * внутри себя, и до монтирования достать его было нечем. Теперь движок можно
+ * собрать снаружи и отдать пропом `:engine` — стенд строит его сам, ещё до
+ * первого рендера превью, тем же способом, каким это делает любой потребитель
+ * библиотеки.
+ *
+ * Уровня `createEngineSelection` достаточно: единственный редактируемый
+ * коллекционный проп на странице — `mode`, а он живёт на расширении
+ * `selection`. Остальное (`accordion`, `list`, `select`, `factory`...)
+ * недостающее компонент доустановит сам при привязке — и в компоненте пропом,
+ * и в компоненте инстансом, потому что оба получают один и тот же движок.
  */
-const facade = shallowRef<TInstance | null>(null)
+const engine = isCollectionRow ? createEngineSelection() : null
+
+/**
+ * Фасад коллекции правой колонки — тонкая обёртка над тем же движком.
+ *
+ * Строится сразу и с тем же владельцем, что получит настоящий компонент:
+ * `instance.value` — это и есть тот инстанс, который уйдёт ему пропом
+ * `:ctrl="instance"` и станет внутри `adapter.instance`. Один владелец на
+ * обе стороны — фасад дополняет движок владельческими расширениями сразу,
+ * своим же конструктором, а не ждёт, пока это сделает превью.
+ *
+ * Без `owner` было бы иначе: `TAccordionCollectionFacade` и соседи трогают
+ * владельческое расширение в собственном конструкторе (`this.extensions
+ * .accordion.events`), а `resolveEngine` довешивает его только при известном
+ * `owner`. Тот же общий владелец заодно не даёт сработать предупреждению
+ * «движок уже привязан к другому компоненту» — второго владельца тут нет,
+ * оба фасада ссылаются на один и тот же `instance.value`.
+ */
+const facade: TInstance | null = engine ? createFacade(engine) : null
+
+function createFacade(withEngine: unknown): TInstance {
+	const Ctor = props.entry.collectionDescriptor!().ctor as new (
+		props: object,
+		options: object,
+	) => TInstance
+
+	return new Ctor({}, { engine: withEngine, owner: instance.value })
+}
 
 /**
  * `ctor` в дескрипторе объявлен как `any` — точнее его там не выразить: это
@@ -56,26 +92,9 @@ function createInstance(): TInstance {
 	return new Ctor()
 }
 
-/** Движок пришёл — строим над ним фасад и досылаем то, что уже накрутили. */
-function bindEngine(engine: unknown): void {
-	const factory = props.entry.collectionDescriptor
-
-	if (!factory || facade.value) return
-
-	const Ctor = factory().ctor as new (props: object, options: object) => TInstance
-
-	facade.value = new Ctor({}, { engine })
-
-	// Досылаем только то, что уже накрутили до появления движка, и только своё.
-	// Слать всё подряд нельзя: `undefined` — это «проп не задан», а не значение,
-	// и запись его в ядро ломает вычисляемые свойства (`TSelect.clearAria`
-	// разбирает `name` как строку).
-	if (props.control.scope === 'collection' && value.value !== undefined) write(value.value)
-}
-
 /** Куда писать проп: коллекционный — в фасад, остальные — в инстанс. */
 function write(next: unknown): void {
-	const target = props.control.scope === 'collection' ? facade.value : instance.value
+	const target = isCollectionRow ? facade : instance.value
 
 	// Пустая строка означает «проп не задан», а не пустое значение
 	if (target) target[props.control.name] = next === '' ? undefined : next
@@ -93,22 +112,15 @@ const propBind = computed(() => ({
 	key: props.iconVersion,
 }))
 
-const instanceBind = computed(() => {
-	const tagged = props.tag('instance')
-	const logCreate = tagged['onEngine:create']
-
-	return {
-		ctrl: instance.value,
-		...tagged,
-		// Свой обработчик поверх журнального: тот пишет событие в консоль, этот
-		// забирает движок. Просто перезаписать нельзя — потеряется журнал
-		'onEngine:create': (engine: unknown, ...rest: unknown[]) => {
-			logCreate?.(engine, ...rest)
-			bindEngine(engine)
-		},
-		key: props.iconVersion,
-	}
-})
+const instanceBind = computed(() => ({
+	ctrl: instance.value,
+	// Отдаём собственный движок пропом — компонент допривяжет к нему свой
+	// `owner` сам, а `engine:create`, который он при этом эмитит, идёт в общий
+	// журнал событий как обычно, без отдельного перехвата
+	...(engine ? { engine } : {}),
+	...props.tag('instance'),
+	key: props.iconVersion,
+}))
 </script>
 
 <template>
@@ -150,7 +162,7 @@ const instanceBind = computed(() => {
 				</div>
 				<CodeView
 					:name="`${entry.label}-${control.name}-instance`"
-					:code="instanceSnippet(entry, control.name, value)"
+					:code="instanceSnippet(entry, control, value)"
 				/>
 			</div>
 		</div>

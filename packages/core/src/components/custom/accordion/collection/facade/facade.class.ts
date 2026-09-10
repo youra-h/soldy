@@ -1,7 +1,8 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import type { TAccordionView } from '../../types'
-import { AccordionFactory } from '../factory'
+import { AccordionFactory, ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from '../factory'
+import { resolveEngine } from '../../../../base/collection/create/internal'
 import type { TAccordionCollection, TAccordionCollectionExtensions } from '../types'
 import type { IAccordionItem } from '../../item/types'
 import type { IAccordion } from '../../types'
@@ -20,7 +21,18 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectionFacadeProps<IAccordionItem> = {},
 		options: TCollectionFacadeOptions<TAccordionCollection, IAccordion> = {},
 	) {
-		super({}, { engine: options.engine ?? AccordionFactory(options.owner!) })
+		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
+		// дополнит его до того, что нужно Accordion. Именно здесь, а не в теле:
+		// базы трогают расширения в своих конструкторах
+		super({}, {
+			engine: resolveEngine(
+				options,
+				ACCORDION_EXTENSIONS(),
+				ACCORDION_OWNER_EXTENSIONS,
+				'Accordion',
+				AccordionFactory,
+			) as TAccordionCollection,
+		})
 
 		this.events.relay(this.extensions.accordion.events, ['change:view'])
 

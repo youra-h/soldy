@@ -1,7 +1,12 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TSelectionFacadeProps } from '../../../../base/collection'
-import { SelectFactory } from '../factory'
-import type { TSelectCollectionExtensions, TSelectCollectionFacadeOptions } from '../types'
+import { SelectFactory, SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from '../factory'
+import { resolveEngine } from '../../../../base/collection/create/internal'
+import type {
+	TSelectCollection,
+	TSelectCollectionExtensions,
+	TSelectCollectionFacadeOptions,
+} from '../types'
 import type { ISelect } from '../../types'
 import type { ISelectItem } from '../../item/types'
 import type { TSelectExtension } from '../extensions'
@@ -20,7 +25,18 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectionFacadeProps<ISelectItem> = {},
 		options: TSelectCollectionFacadeOptions = {},
 	) {
-		super({}, { engine: options.engine ?? SelectFactory(options.owner as ISelect) })
+		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
+		// дополнит его до того, что нужно Select. Именно здесь, а не в теле:
+		// базы трогают расширения в своих конструкторах
+		super({}, {
+			engine: resolveEngine(
+				options,
+				SELECT_EXTENSIONS(),
+				SELECT_OWNER_EXTENSIONS,
+				'Select',
+				SelectFactory,
+			) as TSelectCollection,
+		})
 
 		this.events.relay(this._select.events, ['change:valueText'])
 

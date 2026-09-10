@@ -79,6 +79,11 @@ export class TSelectExtension<
 
 		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 
+		// Догон: расширение приходит в коллекцию, которую могли наполнить
+		// раньше — например, собрав её снаружи через `createEngine({ items })`.
+		// Тем опциям `item:added` уже не придёт
+		ctx.driver.forEach((item) => this._onItemAdded(item as TItem))
+
 		this._owner.events.on('change:disabled', (value: boolean) => {
 			ctx.driver.forEach((item) => {
 				item.disabled = value

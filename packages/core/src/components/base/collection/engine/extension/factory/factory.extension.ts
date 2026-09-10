@@ -55,6 +55,31 @@ export class TFactoryExtension<TItem extends object>
 
 			e.item = item
 		})
+
+		this._convertExisting(ctx, ctor)
+	}
+
+	/**
+	 * Догоняет то, что уже лежит в коллекции.
+	 *
+	 * Подписки мало: `item:add:before` срабатывает только на добавлении, а
+	 * расширение может прийти в уже наполненный движок. Так и происходит, когда
+	 * коллекцию собрали снаружи (`createEngine({ items })`) и передали
+	 * компоненту — без этого прохода в драйвере остались бы сырые объекты
+	 * вместо элементов, и дальше не работало бы ничего.
+	 *
+	 * Через `batch.update`, а не своей операцией над драйвером: там уже написан
+	 * правильный порядок вставки, и повторять его здесь значит завести вторую
+	 * реализацию того же.
+	 */
+	private _convertExisting(ctx: IExtensionContext<TItem>, ctor: new (source: any) => TItem): void {
+		const raw = [...ctx.driver].filter((item) => !(item instanceof ctor))
+
+		if (raw.length === 0) return
+
+		const batch = ctx.extensions.batch as { update?(items: TItem[]): void } | undefined
+
+		batch?.update?.([...ctx.driver])
 	}
 
 	create(source: any): TItem {
