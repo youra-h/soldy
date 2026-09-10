@@ -10,7 +10,7 @@
 // Имя класса здесь намеренно не написано целиком: сканер Tailwind читает
 // исходники вместе с комментариями и сгенерировал бы утилиту с этим же
 // дефектом.
-@mixin input-variant($color: 'neutral', $border: 400) {
+@mixin input-variant($color: 'neutral', $border: 300) {
 	$border-hover: $border + 100;
 
 	border-color: var(--s-#{$color}-#{$border});
