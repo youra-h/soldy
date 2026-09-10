@@ -1,7 +1,7 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
 import type { IComponentOptions } from '../component'
-import { TEvented } from '../../../common'
+import { TEvented, NATIVE_REQUIRED_TAGS, NATIVE_READONLY_TAGS } from '../../../common'
 
 /**
  * База для input-элементов (текстовые поля, checkbox, switch и т.д.).
@@ -39,6 +39,19 @@ export default class TInputControl<
 		this._applyRequired(props.required ?? (ctor.defaultValues.required as boolean))
 
 		this._id = props.id ?? (ctor.defaultValues.id as string)
+
+		this.events.on('change:required', () => this._syncRequiredAria())
+		this.events.on('change:readonly', () => {
+			this._syncRequiredAria()
+			this._syncReadonlyAria()
+		})
+		this.events.on('change:tag', () => {
+			this._syncRequiredAria()
+			this._syncReadonlyAria()
+		})
+
+		this._syncRequiredAria()
+		this._syncReadonlyAria()
 	}
 
 	/**
@@ -95,6 +108,36 @@ export default class TInputControl<
 
 		this._applyRequired(value)
 		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:required', value)
+	}
+
+	/**
+	 * У тегов с собственным `required` состояние передаётся этим атрибутом.
+	 * Исключение — поле, поставленное `readonly`: браузер такое поле не
+	 * валидирует, нативный `required` на нём бессмыслен, и без явного
+	 * `aria-required` состояние останется немым для скринридера.
+	 *
+	 * Зависит от `required`, `readonly` и `tag`, поэтому пересчитывается на
+	 * все три события.
+	 */
+	protected _syncRequiredAria(): void {
+		const nativeRequired =
+			!this._readonly &&
+			typeof this.tag === 'string' &&
+			NATIVE_REQUIRED_TAGS.has(this.tag.toLowerCase())
+
+		this._aria.add('aria-required', this._required && !nativeRequired ? 'true' : null)
+	}
+
+	/**
+	 * Симметрично `_syncRequiredAria()`: у тегов с собственным `readonly`
+	 * дублировать `aria-readonly` не нужно, у остальных это единственный
+	 * способ сообщить о состоянии.
+	 */
+	protected _syncReadonlyAria(): void {
+		const nativeReadonly =
+			typeof this.tag === 'string' && NATIVE_READONLY_TAGS.has(this.tag.toLowerCase())
+
+		this._aria.add('aria-readonly', this._readonly && !nativeReadonly ? 'true' : null)
 	}
 
 	getProps(): TProps {

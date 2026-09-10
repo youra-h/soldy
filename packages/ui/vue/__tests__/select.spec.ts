@@ -63,6 +63,18 @@ describe('поле', () => {
 		expect(field.attributes('aria-haspopup')).toBe('listbox')
 	})
 
+	it('required пробрасывается в aria-required на combobox', () => {
+		const field = render({ required: true }).find('input')
+
+		expect(field.attributes('aria-required')).toBe('true')
+	})
+
+	it('без required атрибута нет', () => {
+		const field = render().find('input')
+
+		expect(field.attributes('aria-required')).toBeUndefined()
+	})
+
 	it('пока закрыто, панель скрыта — но остаётся в документе', () => {
 		// Убери её через v-if — и закрытие вычистило бы опции из коллекции,
 		// а вместе с ними значение поля
