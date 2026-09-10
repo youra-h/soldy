@@ -16,6 +16,15 @@ export async function api(path, options = {}) {
 		throw new Error('CLICKUP_TOKEN не задан в окружении')
 	}
 
+	// Личный токен ClickUp всегда начинается с pk_. Если пришло что-то другое —
+	// это почти всегда неподставленный ${CLICKUP_TOKEN} или плейсхолдер из
+	// settings.local.json. Без этой проверки ошибка выглядит как невнятный 401.
+	if (!token.startsWith('pk_')) {
+		throw new Error(
+			`CLICKUP_TOKEN выглядит неправильно: "${token.slice(0, 20)}". Ожидается личный токен, начинающийся с pk_.`,
+		)
+	}
+
 	const response = await fetch(`${API}${path}`, {
 		...options,
 		headers: {

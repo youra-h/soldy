@@ -20,13 +20,20 @@ APPROVED    → скрипт merge-approved.mjs → мерж PR → CLOSED
 
 ## Настройка
 
-1. Токен ClickUp (Settings → Apps → API Token) в переменную окружения:
+1. Токен ClickUp (Settings → Apps → API Token) — в `.claude/settings.local.json`,
+   который лежит в gitignore:
 
-   ```powershell
-   setx CLICKUP_TOKEN "pk_..."
+   ```json
+   { "env": { "CLICKUP_TOKEN": "pk_..." } }
    ```
 
-   В `.mcp.json` он подставляется по имени, в репозиторий не попадает.
+   MCP-сервер наследует окружение Claude Code, поэтому в `.mcp.json` токен
+   упоминать не нужно. Подстановка `${CLICKUP_TOKEN}` там **не работает**:
+   серверу уходит literal-строка, и ClickUp отвечает 401.
+
+   Для запуска `merge-approved.mjs` из обычного терминала нужен ещё и
+   `setx CLICKUP_TOKEN "pk_..."` — `settings.local.json` виден только
+   Claude Code.
 
 2. Создать статусы в ClickUp **руками через UI** — публичного API для этого нет.
    Набор: `ANALYSIS`, `PLANNING`, `IN PROGRESS`, `OVERVIEW`, `APPROVED`,

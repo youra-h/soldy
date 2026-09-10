@@ -2,10 +2,7 @@
     "mcpServers": {
         "clickup": {
             "command": "node",
-            "args": ["tools/agent-flow/clickup-mcp.mjs"],
-            "env": {
-                "CLICKUP_TOKEN": "${CLICKUP_TOKEN}"
-            }
+            "args": ["tools/agent-flow/clickup-mcp.mjs"]
         }
     }
 }
