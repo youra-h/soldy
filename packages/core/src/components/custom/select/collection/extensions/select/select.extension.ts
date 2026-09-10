@@ -147,9 +147,12 @@ export class TSelectExtension<
 			selection.toggle(item)
 		} else {
 			selection.select(item)
-		}
 
-		if (this._owner.closeOnSelect) this._owner.open = false
+			// В multiple список не закрывается от выбора — иначе выбрать
+			// несколько опций подряд было бы невозможно. Закрывает клик по
+			// полю (toggleOpen на корне) или клик мимо (TDismissPlugin)
+			if (this._owner.closeOnSelect) this._owner.open = false
+		}
 
 		return true
 	}

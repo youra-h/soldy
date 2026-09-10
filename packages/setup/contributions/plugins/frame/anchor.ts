@@ -13,6 +13,7 @@ export type TAnchorPluginProps = {
 	anchor_anchor?: HTMLElement | null
 	anchor_placement?: TFramePlacement
 	anchor_matchWidth?: boolean
+	anchor_offset?: number
 }
 
 /**
@@ -45,6 +46,10 @@ export const AnchorContribution = (): IContribution => ({
 		matchWidth: {
 			type: Boolean,
 			triggers: ['change:matchWidth'],
+		},
+		offset: {
+			type: Number,
+			triggers: ['change:offset'],
 		},
 	},
 })

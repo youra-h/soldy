@@ -133,6 +133,30 @@ describe('привязка к якорю', () => {
 		expect(frame.y).toBe(20)
 	})
 
+	it('offset сдвигает панель вниз при bottom-*', () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const plugin = anchorFor(frame)
+
+		plugin.offset = 4
+		plugin.setAnchor(anchorAt({ left: 100, bottom: 250, right: 300, width: 200 }))
+
+		expect(frame.y).toBe(254)
+	})
+
+	it('offset сдвигает панель вверх при top-*', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.placement = 'top-start'
+		plugin.offset = 4
+		plugin.setAnchor(anchorAt({ left: 100, top: 250 }))
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		expect(frame.y).toBe(186)
+	})
+
 	it('смена placement пересчитывает координаты', async () => {
 		const frame = new TFrame({ position: 'fixed' })
 		const panel = panelOf(120, 60)

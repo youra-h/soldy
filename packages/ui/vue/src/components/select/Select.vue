@@ -119,6 +119,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 			:anchor_anchor="rootElement"
 			anchor_placement="bottom-start"
 			:anchor_matchWidth="autoFitWidth"
+			:anchor_offset="4"
 			class="s-select__panel"
 			v-bind="dismiss_ownerAttribute"
 		>
