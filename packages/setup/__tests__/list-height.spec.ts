@@ -48,7 +48,7 @@ afterEach(() => {
  * устроен Select, у которого корень это поле, а список лежит в
  * телепортированной панели.
  */
-async function setup(rows: number, maxRows: number) {
+async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
 	const owner = new TListBox({ maxRows })
 	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = Array.from(
@@ -60,6 +60,10 @@ async function setup(rows: number, maxRows: number) {
 
 	const root = document.createElement('div')
 	const panel = document.createElement('div')
+
+	if (panelStyle) {
+		Object.assign(panel.style, panelStyle)
+	}
 
 	document.body.append(root, panel)
 
@@ -148,5 +152,35 @@ describe('высота контейнера по maxRows', () => {
 		await nextFrame()
 
 		expect(panel.style.maxHeight).toBe(`${3 * ROW_HEIGHT}px`)
+	})
+
+	/**
+	 * `max-height` пишется в контейнер с `box-sizing: border-box` — тема
+	 * добавила вертикальные паддинги (`.s-list-box`/`.s-select__list`), и без
+	 * компенсации последняя строка обрезалась бы.
+	 */
+	it('border-box: паддинги и рамка контейнера входят в предел', async () => {
+		const { panel } = await setup(4, 2, {
+			boxSizing: 'border-box',
+			paddingTop: '4px',
+			paddingBottom: '4px',
+			borderTopWidth: '1px',
+			borderBottomWidth: '1px',
+			borderTopStyle: 'solid',
+			borderBottomStyle: 'solid',
+		})
+
+		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT + 4 + 4 + 1 + 1}px`)
+	})
+
+	it('border-box: строк меньше лимита — тот же запас, ничего не обрезано', async () => {
+		const { panel } = await setup(2, 5, {
+			boxSizing: 'border-box',
+			paddingTop: '4px',
+			paddingBottom: '4px',
+		})
+
+		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT + 4 + 4}px`)
+		expect(panel.style.overflowY).toBe('hidden')
 	})
 })
