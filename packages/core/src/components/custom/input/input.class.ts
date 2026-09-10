@@ -35,4 +35,23 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 		this._applyPlaceholder(value)
 		;(this.events as TEvented<TInputEvents>).emit('change:placeholder', value)
 	}
+
+	/**
+	 * На теге `input` `required` и `readonly` нативные — браузер сам сообщает
+	 * о них скринридеру, дублировать в ARIA не нужно.
+	 *
+	 * Исключение — `required` на `readonly`-поле: браузер такое поле не
+	 * валидирует, нативный `required` на нём бессмыслен, и без явного
+	 * `aria-required` состояние останется немым.
+	 */
+	protected override _syncInputAccessibility(): void {
+		const isNativeTag = typeof this.tag === 'string' && this.tag.toLowerCase() === 'input'
+
+		this._aria.add(
+			'aria-required',
+			this.required && (!isNativeTag || this.readonly) ? 'true' : null,
+		)
+
+		this._aria.add('aria-readonly', this.readonly && !isNativeTag ? 'true' : null)
+	}
 }

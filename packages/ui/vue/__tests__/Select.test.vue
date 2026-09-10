@@ -5,6 +5,7 @@ import { Select } from '@soldy/ui-vue'
 defineProps<{
 	mode?: 'single' | 'multiple'
 	clearable?: boolean
+	required?: boolean
 	id?: string
 	/** Списочные свойства — общий с ListBox контракт `IList`. */
 	maxRows?: number
@@ -17,6 +18,7 @@ defineProps<{
 	<Select
 		:mode="mode ?? 'single'"
 		:clearable="clearable ?? false"
+		:required="required ?? false"
 		:id="id"
 		:max-rows="maxRows"
 		:content-fit="contentFit"

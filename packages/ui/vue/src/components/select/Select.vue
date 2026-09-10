@@ -39,6 +39,11 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 			`readonly` постоянный — это select-only. Снять его и добавить
 			`aria-autocomplete="list"` будет достаточно, чтобы получить
 			фильтрацию.
+
+			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
+			не валидирует readonly-поле), поэтому `aria-required` в `aria`
+			ядро ставит явно — без него состояние осталось бы немым для
+			скринридера. См. `TInputControl._syncRequiredAria()`.
 		-->
 		<slot name="field" :text="valueText" :placeholder="placeholder">
 			<Input

@@ -285,6 +285,15 @@ export class TSelect<
 		if (!this.openable && this._open) this.open = false
 	}
 
+	/**
+	 * Собственный тег поля — `div`, у него нет ни нативного `required`, ни
+	 * `readonly`. Оба ARIA-атрибута при включённом состоянии ставятся всегда.
+	 */
+	protected override _syncInputAccessibility(): void {
+		this._aria.add('aria-required', this.required ? 'true' : null)
+		this._aria.add('aria-readonly', this.readonly ? 'true' : null)
+	}
+
 	override getProps(): TProps {
 		return {
 			...super.getProps(),

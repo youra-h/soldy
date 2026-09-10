@@ -39,6 +39,12 @@ export default class TInputControl<
 		this._applyRequired(props.required ?? (ctor.defaultValues.required as boolean))
 
 		this._id = props.id ?? (ctor.defaultValues.id as string)
+
+		this.events.on('change:required', () => this._syncInputAccessibility())
+		this.events.on('change:readonly', () => this._syncInputAccessibility())
+		this.events.on('change:tag', () => this._syncInputAccessibility())
+
+		this._syncInputAccessibility()
 	}
 
 	/**
@@ -96,6 +102,18 @@ export default class TInputControl<
 		this._applyRequired(value)
 		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:required', value)
 	}
+
+	/**
+	 * Хук конкретного контрола.
+	 *
+	 * База знает только семантическое состояние — `required` и `readonly`.
+	 * Как оно выражается в ARIA (нужен ли `aria-required`/`aria-readonly`
+	 * рядом с нативным атрибутом тега или вместо него) — решает наследник,
+	 * который знает, во что он реально рендерится: `TInput`, `TSelect`,
+	 * `TCheckBox`, `TSwitch`. `TInputControl` ни во что конкретное не
+	 * рендерится, поэтому по умолчанию ничего не делает.
+	 */
+	protected _syncInputAccessibility(): void {}
 
 	getProps(): TProps {
 		return {

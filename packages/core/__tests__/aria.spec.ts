@@ -7,7 +7,20 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TAria, TButton, TControl, TComponentView, TIcon, TSpinner, TSkeleton, TTabsItem } from '../src'
+import {
+	TAria,
+	TButton,
+	TControl,
+	TComponentView,
+	TIcon,
+	TSpinner,
+	TSkeleton,
+	TTabsItem,
+	TInput,
+	TSelect,
+	TCheckBox,
+	TSwitch,
+} from '../src'
 
 describe('TAria · сам набор', () => {
 	it('add ставит атрибут, get его отдаёт', () => {
@@ -98,6 +111,123 @@ describe('TControl.aria · aria-disabled', () => {
 		control.tag = 'button'
 
 		expect(control.aria.has('aria-disabled')).toBe(false)
+	})
+})
+
+describe('TInputControl.aria · aria-required', () => {
+	it('не ставится на нативном теге без readonly', () => {
+		const input = new TInput({ tag: 'input', required: true })
+
+		// Нативный required сообщает состояние сам
+		expect(input.aria.has('aria-required')).toBe(false)
+	})
+
+	it('ставится на нативном теге, если он readonly', () => {
+		// readonly гасит нативную валидацию — required остался бы немым
+		const input = new TInput({ tag: 'input', required: true, readonly: true })
+
+		expect(input.aria.get('aria-required')).toBe('true')
+	})
+
+	it('ставится там, где нативного required нет', () => {
+		expect(new TInput({ tag: 'div', required: true }).aria.get('aria-required')).toBe('true')
+	})
+
+	it('не ставится при required: false', () => {
+		const input = new TInput({ tag: 'div', required: false })
+
+		expect(input.aria.has('aria-required')).toBe(false)
+	})
+
+	it('переключается сеттером в рантайме', () => {
+		const input = new TInput({ tag: 'div' })
+
+		expect(input.aria.has('aria-required')).toBe(false)
+
+		input.required = true
+		expect(input.aria.get('aria-required')).toBe('true')
+
+		input.required = false
+		expect(input.aria.has('aria-required')).toBe(false)
+	})
+
+	it('пересчитывается при смене readonly', () => {
+		const input = new TInput({ tag: 'input', required: true })
+
+		expect(input.aria.has('aria-required')).toBe(false)
+
+		input.readonly = true
+		expect(input.aria.get('aria-required')).toBe('true')
+	})
+
+	it('пересчитывается при смене тега', () => {
+		const input = new TInput({ tag: 'div', required: true })
+
+		expect(input.aria.get('aria-required')).toBe('true')
+
+		input.tag = 'input'
+		expect(input.aria.has('aria-required')).toBe(false)
+	})
+
+	it('TSelect: собственный тег — div, required у него не нативный', () => {
+		// Select — не input и не select, поэтому aria-required ставится всегда
+		expect(new TSelect({ required: true }).aria.get('aria-required')).toBe('true')
+	})
+
+	it('TCheckBox: рендерится в input[type=checkbox] — required у него нативный', () => {
+		// Нативный required сообщает состояние сам, дублировать aria не нужно
+		expect(new TCheckBox({ required: true }).aria.has('aria-required')).toBe(false)
+	})
+
+	it('TSwitch: рендерится в input[type=checkbox] — required у него нативный', () => {
+		expect(new TSwitch({ required: true }).aria.has('aria-required')).toBe(false)
+	})
+})
+
+describe('TInputControl.aria · aria-readonly', () => {
+	it('не ставится на нативном теге', () => {
+		const input = new TInput({ tag: 'input', readonly: true })
+
+		expect(input.aria.has('aria-readonly')).toBe(false)
+	})
+
+	it('ставится там, где нативного readonly нет', () => {
+		expect(new TInput({ tag: 'div', readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+
+	it('не ставится при readonly: false', () => {
+		expect(new TInput({ tag: 'div', readonly: false }).aria.has('aria-readonly')).toBe(false)
+	})
+
+	it('переключается сеттером в рантайме', () => {
+		const input = new TInput({ tag: 'div' })
+
+		input.readonly = true
+		expect(input.aria.get('aria-readonly')).toBe('true')
+
+		input.readonly = false
+		expect(input.aria.has('aria-readonly')).toBe(false)
+	})
+
+	it('пересчитывается при смене тега', () => {
+		const input = new TInput({ tag: 'div', readonly: true })
+
+		expect(input.aria.get('aria-readonly')).toBe('true')
+
+		input.tag = 'input'
+		expect(input.aria.has('aria-readonly')).toBe(false)
+	})
+
+	it('TSelect: собственный тег — div, readonly у него не нативный', () => {
+		expect(new TSelect({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+
+	it('TCheckBox: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {
+		expect(new TCheckBox({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+
+	it('TSwitch: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {
+		expect(new TSwitch({ readonly: true }).aria.get('aria-readonly')).toBe('true')
 	})
 })
 
