@@ -63,18 +63,15 @@ export function requireConfig(field) {
 export async function tasksByStatus(status) {
 	const filter = `statuses%5B%5D=${encodeURIComponent(status)}&subtasks=true`
 
-	if (config.spaceId) {
-		const teamId = requireConfig('teamId')
-		const { tasks = [] } = await api(
-			`/team/${teamId}/task?space_ids%5B%5D=${config.spaceId}&${filter}`,
-		)
+	const { tasks = [] } = config.spaceId
+		? await api(
+				`/team/${requireConfig('teamId')}/task?space_ids%5B%5D=${config.spaceId}&${filter}`,
+			)
+		: await api(`/list/${requireConfig('listId')}/task?${filter}`)
 
-		return tasks
-	}
-
-	const { tasks = [] } = await api(`/list/${requireConfig('listId')}/task?${filter}`)
-
-	return tasks
+	// От старых к новым. Роль без явного ID берёт первую задачу из очереди, и без
+	// сортировки «первая» означала бы «как сегодня отдал ClickUp».
+	return tasks.sort((a, b) => Number(a.date_created) - Number(b.date_created))
 }
 
 export function setStatus(taskId, status) {
