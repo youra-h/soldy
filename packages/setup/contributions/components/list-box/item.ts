@@ -12,7 +12,36 @@ import type { TListItemContentFit } from '@soldy/core'
  * `expand` элементу недоступен — ширина у списка одна на всех, см.
  * `TListItemContentFit`.
  */
+/**
+ * Слоты элемента ListBox.
+ *
+ * `indicator-icon` — подмена отметки выбранного в одном месте; глобально она
+ * меняется пакетом иконок (`setIcons`). Обёртка вокруг слота остаётся за
+ * компонентом: она резервирует место и уносит отметку из дерева доступности.
+ */
+export type TListBoxItemSlots = {
+	leading: {}
+	default: { text: string; selected: boolean }
+	trailing: {}
+	'indicator-icon': { selected: boolean }
+}
+
 export const ListBoxItemContribution = (): IContribution => ({
+	slots: {
+		leading: { description: 'Перед текстом элемента' },
+		default: {
+			scope: {
+				text: defineType<string>(String),
+				selected: defineType<boolean>(Boolean),
+			},
+			description: 'Содержимое элемента. Задано — переопределяет проп text',
+		},
+		trailing: { description: 'После текста элемента' },
+		'indicator-icon': {
+			scope: { selected: defineType<boolean>(Boolean) },
+			description: 'Отметка выбранного элемента',
+		},
+	},
 	props: {
 		text: { type: String, triggers: ['change:text'] },
 		contentFit: {

@@ -9,6 +9,7 @@ import {
 	HTML_TAGS,
 	LIST_BOX_VIEWS,
 	LIST_CONTENT_FITS,
+	LIST_INDICATORS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
 	SKELETON_ANIMATIONS,
@@ -65,6 +66,7 @@ const SHARED: Record<string, string> = {
 	contentFit:
 		'Что делать с не помещающимся текстом: обрезать, перенести или раздвинуть список',
 	scrollBehavior: 'Как прокручивать к элементу при навигации с клавиатуры',
+	indicator: 'Где показывать отметку выбранного: нигде, в начале или в конце строки',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -138,6 +140,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		// Из списочного контракта — имена уникальны, разночтений быть не может
 		contentFit: LIST_CONTENT_FITS,
 		scrollBehavior: SCROLL_BEHAVIORS,
+		indicator: LIST_INDICATORS,
 		// Коллекционный: один и тот же режим выбора у всех коллекций
 		mode: SELECTION_MODES,
 	},

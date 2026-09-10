@@ -9,11 +9,16 @@ export type TSelectItemSlots = {
 	leading: {}
 	default: { text: string; selected: boolean }
 	trailing: {}
+	'indicator-icon': { selected: boolean }
 }
 
 export const SelectItemContribution = (): IContribution => ({
 	slots: {
 		leading: { description: 'Перед текстом опции' },
+		'indicator-icon': {
+			scope: { selected: Boolean },
+			description: 'Отметка выбранной опции',
+		},
 		default: {
 			scope: {
 				text: String,

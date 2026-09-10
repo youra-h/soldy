@@ -3,6 +3,7 @@ import type { IListBoxItemExtension, TListBoxItemEventsExtension } from './types
 import type { IListBoxItem } from '../../../../item/types'
 import type { IListBoxExtension } from '../types'
 import type { TListBoxView } from '../../../../types'
+import type { TListIndicator } from '../../../../../list'
 
 /**
  * TListBoxItemExtension — stateless-делегат элемента ListBox.
@@ -26,11 +27,16 @@ export class TListBoxItemExtension<
 	constructor(item: TItem, parent: TParent) {
 		super(item, parent)
 
-		this.events.relay(parent.events, ['change:view'])
+		this.events.relay(parent.events, ['change:view', 'change:indicator'])
 	}
 
 	/** Внешний вид элемента — берётся у владельца целиком. */
 	get view(): TListBoxView {
 		return this._parent.view
+	}
+
+	/** Сторона отметки — тоже целиком со списка: у элемента своей нет. */
+	get indicator(): TListIndicator {
+		return this._parent.indicator
 	}
 }

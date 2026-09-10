@@ -1,8 +1,20 @@
 <script lang="ts">
+import { Icon } from '../../icon'
 import { Button } from '../../button'
 import SetupListBoxItem from './setup.component'
 
-export default { ...SetupListBoxItem, components: { Button } }
+/**
+ * Обёртка отметки рисуется, пока `indicator` не `none` — и у невыбранных тоже:
+ * она резервирует место, иначе строка прыгала бы при выборе. Иконка внутри —
+ * только у выбранного.
+ *
+ * Сторона логическая (`start`/`end`), поэтому в RTL отметка сама оказывается с
+ * нужного края: `dir` стоит на корне элемента, а строка — flex.
+ *
+ * `aria-hidden`: отметка декоративна, состояние скринридеру объявляет
+ * `aria-selected`. Два источника одного факта дали бы двойное объявление.
+ */
+export default { ...SetupListBoxItem, components: { Icon, Button } }
 </script>
 
 <template>
@@ -39,6 +51,15 @@ export default { ...SetupListBoxItem, components: { Button } }
 			v-bind="{ ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
+				<span
+					v-if="indicator === 'start'"
+					class="s-list-box-item__indicator"
+					aria-hidden="true"
+				>
+					<slot name="indicator-icon" :selected="selected">
+						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+					</slot>
+				</span>
 				<slot name="leading" />
 			</template>
 
@@ -48,6 +69,11 @@ export default { ...SetupListBoxItem, components: { Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
+				<span v-if="indicator === 'end'" class="s-list-box-item__indicator" aria-hidden="true">
+					<slot name="indicator-icon" :selected="selected">
+						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+					</slot>
+				</span>
 			</template>
 		</Button>
 	</div>

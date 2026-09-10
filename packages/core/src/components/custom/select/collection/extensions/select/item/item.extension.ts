@@ -2,6 +2,7 @@ import { TBaseItemExtension } from '../../../../../../base/collection'
 import type { ISelectItem } from '../../../../item/types'
 import type { ISelectExtension } from '../types'
 import type { ISelectItemExtension, TSelectItemEventsExtension } from './types'
+import type { TListIndicator } from '../../../../../list'
 
 /**
  * TSelectItemExtension — stateless-делегат опции.
@@ -18,8 +19,19 @@ export class TSelectItemExtension<
 	extends TBaseItemExtension<TItem, TParent, TSelectItemEventsExtension>
 	implements ISelectItemExtension<TItem>
 {
+	constructor(item: TItem, parent: TParent) {
+		super(item, parent)
+
+		this.events.relay(parent.events, ['change:indicator'])
+	}
+
 	get optionId(): string {
 		return this._parent.optionId(this._item)
+	}
+
+	/** Сторона отметки — целиком с поля: у опции своей нет. */
+	get indicator(): TListIndicator {
+		return this._parent.indicator
 	}
 
 	choose(): void {

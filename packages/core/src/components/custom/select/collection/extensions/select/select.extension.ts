@@ -5,7 +5,8 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
-import { LIST_CONTENT_FIT_ATTRIBUTE } from '../../../../list'
+import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
+import type { TListIndicator } from '../../../../list'
 import type { ISelect, TSelectValue } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
@@ -70,6 +71,11 @@ export class TSelectExtension<
 		return this._valueText
 	}
 
+	/** Сторона отметки выбранного — с поля. Своей у опции нет. */
+	get indicator(): TListIndicator {
+		return this._owner.indicator
+	}
+
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
@@ -105,6 +111,13 @@ export class TSelectExtension<
 		this._owner.events.on('change:contentFit', () => {
 			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
 		})
+
+		this._owner.events.on('change:indicator', () => {
+			ctx.driver.forEach((item) => this._applyIndicator(item as TItem))
+		})
+
+		// Сторона отметки доезжает до item-адаптеров
+		this.events.relay(this._owner.events, ['change:indicator'])
 
 		const selection = this._selection
 
@@ -156,6 +169,7 @@ export class TSelectExtension<
 		item.variant = this._owner.variant
 
 		this._applyContentFit(item)
+		this._applyIndicator(item)
 
 		item.aria.add('id', this.optionId(item))
 
@@ -172,6 +186,16 @@ export class TSelectExtension<
 	 */
 	private _applyContentFit(item: TItem): void {
 		item.dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, this._owner.contentFit)
+	}
+
+	/**
+	 * `data-indicator` опции — значение поля целиком.
+	 *
+	 * Ставит родительское расширение, а не item-адаптер: адаптеры создаются
+	 * лениво, а атрибут обязан стоять с первой отрисовки, включая серверную.
+	 */
+	private _applyIndicator(item: TItem): void {
+		item.dataset.add(LIST_INDICATOR_ATTRIBUTE, this._owner.indicator)
 	}
 
 	/**

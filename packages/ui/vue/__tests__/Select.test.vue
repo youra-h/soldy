@@ -9,6 +9,7 @@ defineProps<{
 	/** Списочные свойства — общий с ListBox контракт `IList`. */
 	maxRows?: number
 	contentFit?: 'truncate' | 'wrap' | 'expand'
+	indicator?: 'none' | 'start' | 'end'
 }>()
 </script>
 
@@ -19,6 +20,7 @@ defineProps<{
 		:id="id"
 		:max-rows="maxRows"
 		:content-fit="contentFit"
+		:indicator="indicator"
 		name="Город"
 	>
 		<Select.Item value="msk" text="Москва" />

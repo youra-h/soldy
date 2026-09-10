@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from './../../defineType'
 import { TButtonView } from '@soldy/core'
+import type { TListIndicator } from '@soldy/core'
 
 /**
  * Коллекционные props/events владельца ListBox — то, что выводит фасад
@@ -30,6 +31,15 @@ export const ListBoxCollectionItemContribution = (): IContribution => ({
 			type: defineType<TButtonView>(String),
 			protected: true,
 			triggers: ['change:view'],
+		},
+		/**
+		 * Сторона отметки выбранного. Только на чтение, как `view`: значение
+		 * одно на весь список и меняется на его инстансе.
+		 */
+		indicator: {
+			type: defineType<TListIndicator>(String),
+			protected: true,
+			triggers: ['change:indicator'],
 		},
 	},
 })

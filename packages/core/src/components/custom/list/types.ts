@@ -50,6 +50,18 @@ export type TListContentFit = 'truncate' | 'wrap' | 'expand'
  */
 export type TListItemContentFit = Exclude<TListContentFit, 'expand'>
 
+/**
+ * Где стоит отметка выбранного элемента — и стоит ли вообще.
+ *
+ * Стороны логические, а не `left`/`right`: строка элемента — flex, `dir` уже
+ * стоит на его корне, поэтому в RTL `start` сам оказывается справа, и правила
+ * в теме под это не нужно.
+ *
+ * `none` вместо пары «булев + сторона»: два свойства дали бы состояние
+ * «индикатора нет, но сторона задана», которого не бывает.
+ */
+export type TListIndicator = 'none' | 'start' | 'end'
+
 /** События списочных свойств. */
 export type TListEvents = {
 	/** change:maxRows */
@@ -58,6 +70,8 @@ export type TListEvents = {
 	'change:contentFit': (value: TListContentFit) => void
 	/** change:scrollBehavior */
 	'change:scrollBehavior': (value: TScrollBehavior) => void
+	/** change:indicator */
+	'change:indicator': (value: TListIndicator) => void
 }
 
 /** Props списочных свойств. */
@@ -68,6 +82,8 @@ export interface IListProps {
 	contentFit?: TListContentFit
 	/** Как прокручивать к элементу при навигации */
 	scrollBehavior?: TScrollBehavior
+	/** Где показывать отметку выбранного элемента */
+	indicator?: TListIndicator
 }
 
 /**
@@ -83,6 +99,8 @@ export interface IList {
 	contentFit: TListContentFit
 	/** Как прокручивать к элементу при навигации */
 	scrollBehavior: TScrollBehavior
+	/** Где показывать отметку выбранного элемента */
+	indicator: TListIndicator
 }
 
 /** Значения по умолчанию — одни на обе реализации, чтобы копии не разошлись. */
@@ -90,6 +108,7 @@ export const LIST_DEFAULTS: Required<IListProps> = {
 	maxRows: 0,
 	contentFit: 'truncate',
 	scrollBehavior: 'smooth',
+	indicator: 'none',
 }
 
 /**
@@ -101,3 +120,12 @@ export const LIST_DEFAULTS: Required<IListProps> = {
  * то есть один раз, а не в каждом из шести адаптеров.
  */
 export const LIST_CONTENT_FIT_ATTRIBUTE = 'content-fit'
+
+/**
+ * Имя `data-*`, которым `indicator` уезжает в тему.
+ *
+ * Ставится и на список, и на каждый элемент: списку тема резервирует место под
+ * отметку, элементу — выравнивает её. Значение у элемента всегда списочное:
+ * своей стороны у элемента нет, иначе отметки в одном списке разъехались бы.
+ */
+export const LIST_INDICATOR_ATTRIBUTE = 'indicator'

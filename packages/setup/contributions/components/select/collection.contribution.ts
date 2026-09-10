@@ -1,4 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
+import { defineType } from './../../defineType'
+import type { TListIndicator } from '@soldy/core'
 
 /**
  * Коллекционные props владельца Select (выводятся `TSelectCollectionFacade`).
@@ -32,5 +34,14 @@ export const SelectCollectionItemContribution = (): IContribution => ({
 	props: {
 		selected: { type: Boolean, triggers: ['change:selected'] },
 		order: { type: Number, protected: true, triggers: ['change:order'] },
+		/**
+		 * Сторона отметки выбранного. Только на чтение: значение одно на весь
+		 * список и живёт на поле — как `view` у элемента ListBox.
+		 */
+		indicator: {
+			type: defineType<TListIndicator>(String),
+			protected: true,
+			triggers: ['change:indicator'],
+		},
 	},
 })

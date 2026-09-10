@@ -6,6 +6,7 @@ import type {
 	TAccordionArrowPlacement,
 	TListBoxView,
 	TListContentFit,
+	TListIndicator,
 	TSkeletonShape,
 	TSkeletonAnimation,
 	TTabsOrientation,
@@ -78,6 +79,9 @@ export const LIST_BOX_VIEWS = enumOf<TListBoxView>()(['plain', 'outlined', 'fill
 
 /** Общее для ListBox и Select: что делать с не помещающимся текстом. */
 export const LIST_CONTENT_FITS = enumOf<TListContentFit>()(['truncate', 'wrap', 'expand'])
+
+/** Общее для ListBox и Select: где стоит отметка выбранного — и стоит ли. */
+export const LIST_INDICATORS = enumOf<TListIndicator>()(['none', 'start', 'end'])
 
 export const SKELETON_SHAPES = enumOf<TSkeletonShape>()(['rect', 'rounded', 'circle'])
 

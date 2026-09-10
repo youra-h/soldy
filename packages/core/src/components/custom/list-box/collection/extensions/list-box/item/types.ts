@@ -1,8 +1,10 @@
 import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
 import type { TListBoxView } from '../../../../types'
+import type { TListIndicator } from '../../../../../list'
 
 export type TListBoxItemEventsExtension = TBaseItemEventsExtension & {
 	'change:view': (value: TListBoxView) => void
+	'change:indicator': (value: TListIndicator) => void
 }
 
 /**
@@ -21,4 +23,6 @@ export interface IListBoxItemExtension<
 > extends IItemExtension<TItem, TEvents> {
 	/** Внешний вид элемента — со списка. */
 	readonly view: TListBoxView
+	/** Где стоит отметка выбранного — значение списка целиком. */
+	readonly indicator: TListIndicator
 }
