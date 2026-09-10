@@ -19,6 +19,23 @@ const HASHTAGS = {
 	developer: '#DEV',
 }
 
+/**
+ * Размер задачи владелец задаёт тегом в ClickUp. Тег может меняться между
+ * этапами: крупный анализ, а следом простое планирование по готовой карте.
+ *
+ * Тега нет — значит normal. Если владелец повесил несколько, берём больший:
+ * недооценить масштаб дороже, чем переоценить.
+ */
+const SIZES = ['simple', 'normal', 'hard']
+
+function sizeOf(tags) {
+	const found = tags.filter((tag) => SIZES.includes(tag))
+
+	if (found.length === 0) return 'normal'
+
+	return found.reduce((a, b) => (SIZES.indexOf(a) > SIZES.indexOf(b) ? a : b))
+}
+
 /* ─────────────────────────── Формат ответов ─────────────────────────── */
 
 /**
@@ -26,14 +43,17 @@ const HASHTAGS = {
  * Возвращаем только их: контекст агента дороже полноты ответа.
  */
 function trimTask(task) {
+	const tags = (task.tags ?? []).map((tag) => tag.name.toLowerCase())
+
 	return {
 		id: task.id,
 		name: task.name,
 		status: task.status?.status ?? null,
+		size: sizeOf(tags),
 		url: task.url,
 		description: task.description || task.text_content || '',
 		assignees: (task.assignees ?? []).map((user) => user.username),
-		tags: (task.tags ?? []).map((tag) => tag.name),
+		tags,
 		parent: task.parent ?? null,
 	}
 }
@@ -71,7 +91,7 @@ function chunk(text, size) {
 const tools = {
 	clickup_get_task: {
 		description:
-			'Прочитать задачу ClickUp: название, описание, статус, исполнителей, теги. Возвращает урезанный набор полей.',
+			'Прочитать задачу ClickUp: название, описание, статус, размер (size), исполнителей, теги. Возвращает урезанный набор полей.',
 		schema: {
 			type: 'object',
 			properties: { task_id: { type: 'string', description: 'ID задачи ClickUp' } },
