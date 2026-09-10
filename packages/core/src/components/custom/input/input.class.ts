@@ -35,4 +35,23 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 		this._applyPlaceholder(value)
 		;(this.events as TEvented<TInputEvents>).emit('change:placeholder', value)
 	}
+
+	/**
+	 * На теге `input` `required` нативный — но только пока поле не `readonly`:
+	 * браузер не валидирует `readonly`-поле, и нативный `required` на нём
+	 * бессмыслен, `aria-required` тогда остаётся единственным способом
+	 * сообщить о состоянии.
+	 */
+	protected override _hasNativeRequired(): boolean {
+		return !this.readonly && this._isNativeTag()
+	}
+
+	/** На теге `input` `readonly` нативный вне зависимости от прочего состояния. */
+	protected override _hasNativeReadonly(): boolean {
+		return this._isNativeTag()
+	}
+
+	private _isNativeTag(): boolean {
+		return typeof this.tag === 'string' && this.tag.toLowerCase() === 'input'
+	}
 }

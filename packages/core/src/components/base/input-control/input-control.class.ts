@@ -1,7 +1,7 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
 import type { IComponentOptions } from '../component'
-import { TEvented, NATIVE_REQUIRED_TAGS, NATIVE_READONLY_TAGS } from '../../../common'
+import { TEvented } from '../../../common'
 
 /**
  * База для input-элементов (текстовые поля, checkbox, switch и т.д.).
@@ -111,33 +111,36 @@ export default class TInputControl<
 	}
 
 	/**
-	 * У тегов с собственным `required` состояние передаётся этим атрибутом.
-	 * Исключение — поле, поставленное `readonly`: браузер такое поле не
-	 * валидирует, нативный `required` на нём бессмыслен, и без явного
-	 * `aria-required` состояние останется немым для скринридера.
-	 *
-	 * Зависит от `required`, `readonly` и `tag`, поэтому пересчитывается на
-	 * все три события.
+	 * Ставит `aria-required`, когда `required` включён и у элемента нет
+	 * собственного `required`, который сообщил бы о том же браузеру и
+	 * скринридеру сам. Про то, есть ли он — знает только конкретный
+	 * компонент: `TInputControl` ни во что конкретное не рендерится, поэтому
+	 * здесь решения нет, только сборка атрибута из `_hasNativeRequired()`.
 	 */
 	protected _syncRequiredAria(): void {
-		const nativeRequired =
-			!this._readonly &&
-			typeof this.tag === 'string' &&
-			NATIVE_REQUIRED_TAGS.has(this.tag.toLowerCase())
+		this._aria.add('aria-required', this._required && !this._hasNativeRequired() ? 'true' : null)
+	}
 
-		this._aria.add('aria-required', this._required && !nativeRequired ? 'true' : null)
+	/** Симметрично `_syncRequiredAria()`, для `aria-readonly`. */
+	protected _syncReadonlyAria(): void {
+		this._aria.add('aria-readonly', this._readonly && !this._hasNativeReadonly() ? 'true' : null)
 	}
 
 	/**
-	 * Симметрично `_syncRequiredAria()`: у тегов с собственным `readonly`
-	 * дублировать `aria-readonly` не нужно, у остальных это единственный
-	 * способ сообщить о состоянии.
+	 * Есть ли у реального DOM-элемента, в который рендерится компонент,
+	 * собственный атрибут `required`, работающий без `aria-required`.
+	 *
+	 * Базовый класс ни во что конкретное не рендерится, поэтому по умолчанию
+	 * нативности нет — переопределяет каждый наследник, который знает, во что
+	 * он рендерится на самом деле (`TInput`, `TSelect`, `TCheckBox`, `TSwitch`).
 	 */
-	protected _syncReadonlyAria(): void {
-		const nativeReadonly =
-			typeof this.tag === 'string' && NATIVE_READONLY_TAGS.has(this.tag.toLowerCase())
+	protected _hasNativeRequired(): boolean {
+		return false
+	}
 
-		this._aria.add('aria-readonly', this._readonly && !nativeReadonly ? 'true' : null)
+	/** Симметрично `_hasNativeRequired()`, для `readonly`. */
+	protected _hasNativeReadonly(): boolean {
+		return false
 	}
 
 	getProps(): TProps {

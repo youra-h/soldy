@@ -169,18 +169,18 @@ describe('TInputControl.aria · aria-required', () => {
 		expect(input.aria.has('aria-required')).toBe(false)
 	})
 
-	it('TSelect: тег по умолчанию не нативный — атрибут ставится сам собой', () => {
-		// Select держит поле на readonly и не подставляет тег input,
-		// поэтому aria-required не гасится по правилу нативного тега
+	it('TSelect: собственный тег — div, required у него не нативный', () => {
+		// Select — не input и не select, поэтому aria-required ставится всегда
 		expect(new TSelect({ required: true }).aria.get('aria-required')).toBe('true')
 	})
 
-	it('TCheckBox не теряет атрибут в своей сборке _aria', () => {
-		expect(new TCheckBox({ required: true }).aria.get('aria-required')).toBe('true')
+	it('TCheckBox: рендерится в input[type=checkbox] — required у него нативный', () => {
+		// Нативный required сообщает состояние сам, дублировать aria не нужно
+		expect(new TCheckBox({ required: true }).aria.has('aria-required')).toBe(false)
 	})
 
-	it('TSwitch не теряет атрибут в своей сборке _aria', () => {
-		expect(new TSwitch({ required: true }).aria.get('aria-required')).toBe('true')
+	it('TSwitch: рендерится в input[type=checkbox] — required у него нативный', () => {
+		expect(new TSwitch({ required: true }).aria.has('aria-required')).toBe(false)
 	})
 })
 
@@ -218,8 +218,16 @@ describe('TInputControl.aria · aria-readonly', () => {
 		expect(input.aria.has('aria-readonly')).toBe(false)
 	})
 
-	it('TSelect: тег не нативный — атрибут не гасится правилом тега', () => {
+	it('TSelect: собственный тег — div, readonly у него не нативный', () => {
 		expect(new TSelect({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+
+	it('TCheckBox: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {
+		expect(new TCheckBox({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+
+	it('TSwitch: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {
+		expect(new TSwitch({ readonly: true }).aria.get('aria-readonly')).toBe('true')
 	})
 })
 

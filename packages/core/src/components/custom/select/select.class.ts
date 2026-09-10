@@ -285,6 +285,14 @@ export class TSelect<
 		if (!this.openable && this._open) this.open = false
 	}
 
+	/**
+	 * Собственный тег поля — `div`, у него нет нативного `required`.
+	 * `aria-required` при `required: true` ставится всегда.
+	 */
+	protected override _hasNativeRequired(): boolean {
+		return false
+	}
+
 	override getProps(): TProps {
 		return {
 			...super.getProps(),

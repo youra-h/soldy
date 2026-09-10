@@ -25,17 +25,3 @@ export const NATIVE_DISABLED_TAGS = new Set(['button', 'input', 'select', 'texta
 
 /** Теги, которые фокусируются и активируются сами, без role/tabindex. */
 export const NATIVE_BUTTON_TAGS = new Set(['button', 'input'])
-
-/**
- * Теги, у которых есть собственный атрибут `required`. На них состояние
- * передаётся этим атрибутом, а не `aria-required` — дублировать оба неверно.
- * `select` тоже валиден с нативным `required`, но у `TInputControl` он не
- * используется как тег напрямую (см. `TSelect`), поэтому включён на будущее.
- */
-export const NATIVE_REQUIRED_TAGS = new Set(['input', 'select', 'textarea'])
-
-/**
- * Теги, у которых есть собственный атрибут `readonly`. `select` в этот
- * список не входит: нативного `readonly` у него нет, браузер его игнорирует.
- */
-export const NATIVE_READONLY_TAGS = new Set(['input', 'textarea'])
