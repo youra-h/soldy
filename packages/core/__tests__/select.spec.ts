@@ -512,7 +512,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		expect([...collection.tags_engine!.driver].map((item) => item.text)).toEqual(['A', 'B'])
+		expect([...collection.tags_engine!.extensions.batch.items].map((item) => item.text)).toEqual(['A', 'B'])
 	})
 
 	it('снятие выбора убирает тег', () => {
@@ -522,7 +522,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		facadeFor(0).choose() // повторный выбор в multiple снимает
 
-		expect([...collection.tags_engine!.driver]).toHaveLength(0)
+		expect([...collection.tags_engine!.extensions.batch.items]).toHaveLength(0)
 	})
 
 	it('закрытие тега снимает выбор с опции по value', () => {
@@ -533,7 +533,7 @@ describe('теги в multiple', () => {
 		facadeFor(1).choose()
 
 		const engine = collection.tags_engine!
-		const tag = [...engine.driver][0]
+		const tag = [...engine.extensions.batch.items][0]
 
 		engine.extensions.tags.closeTag(tag)
 
@@ -547,7 +547,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		owner.disabled = true
 
-		const tag = [...collection.tags_engine!.driver][0]
+		const tag = [...collection.tags_engine!.extensions.batch.items][0]
 
 		expect(tag.closable).toBe(false)
 	})

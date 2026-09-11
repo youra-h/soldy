@@ -1,13 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TBatchExtension } from '@soldy/core'
+import { TCollectionEngine, TPlainExtension, TBatchExtension } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
 function createCollection() {
+	const plain = new TPlainExtension<Item>()
 	const batch = new TBatchExtension<Item>()
 
-	return new TCollectionEngine<Item, { batch: TBatchExtension<Item> }>({
-		extensions: { batch },
+	return new TCollectionEngine<
+		Item,
+		{ plain: TPlainExtension<Item>; batch: TBatchExtension<Item> }
+	>({
+		extensions: { plain, batch },
 	})
 }
 
@@ -21,9 +25,9 @@ describe('TBatchExtension', () => {
 
 		col.extensions.batch.set(items)
 
-		expect(col.driver.length).toBe(2)
+		expect(col.extensions.batch.items.length).toBe(2)
 		// порядок сохраняется (как в items)
-		expect([...col.driver]).toEqual(items)
+		expect([...col.extensions.batch.items]).toEqual(items)
 	})
 
 	it('set: эмитит items:added с массивом элементов', () => {
@@ -44,8 +48,8 @@ describe('TBatchExtension', () => {
 		const changeItems = vi.fn()
 		const added = vi.fn()
 
-		col.driver.events.on('change:items', changeItems)
-		col.driver.events.on('item:added', added)
+		col.extensions.plain.events.on('change:items', changeItems)
+		col.extensions.plain.events.on('item:added', added)
 
 		col.extensions.batch.set([
 			{ id: 1, name: 'a' },
@@ -65,7 +69,7 @@ describe('TBatchExtension', () => {
 		col.extensions.batch.set([a, b, c])
 		col.extensions.batch.remove([a, c])
 
-		expect([...col.driver]).toEqual([b])
+		expect([...col.extensions.batch.items]).toEqual([b])
 	})
 
 	it('remove: эмитит items:removed с массивом элементов', () => {
@@ -91,7 +95,7 @@ describe('TBatchExtension', () => {
 		col.extensions.batch.set([a, b])
 		col.extensions.batch.clear()
 
-		expect(col.driver.length).toBe(0)
+		expect(col.extensions.batch.items.length).toBe(0)
 	})
 
 	// --- patch ---
@@ -105,7 +109,7 @@ describe('TBatchExtension', () => {
 			{ id: 2, name: 'b' },
 		])
 
-		expect(col.driver.length).toBe(2)
+		expect(col.extensions.batch.items.length).toBe(2)
 	})
 
 	it('patch: обновляет существующий элемент на месте по trackBy', () => {
@@ -117,8 +121,8 @@ describe('TBatchExtension', () => {
 		col.extensions.batch.set([a])
 		col.extensions.batch.patch([{ id: 1, name: 'a-updated' }])
 
-		expect(col.driver.length).toBe(1)
-		expect(col.driver[0]).toBe(a)
+		expect(col.extensions.batch.items.length).toBe(1)
+		expect(col.extensions.batch.items[0]).toBe(a)
 		expect(a.name).toBe('a-updated')
 	})
 
@@ -134,8 +138,8 @@ describe('TBatchExtension', () => {
 
 		col.extensions.batch.patch([{ id: 2, name: 'b' }])
 
-		expect(col.driver.length).toBe(1)
-		expect(col.driver[0].id).toBe(2)
+		expect(col.extensions.batch.items.length).toBe(1)
+		expect(col.extensions.batch.items[0].id).toBe(2)
 	})
 
 	it('patch: комбинированно добавляет, обновляет и удаляет', () => {
@@ -152,9 +156,9 @@ describe('TBatchExtension', () => {
 			{ id: 3, name: 'c' },         // add
 		])
 
-		const byId = new Map([...col.driver].map((i) => [i.id, i.name]))
+		const byId = new Map([...col.extensions.batch.items].map((i) => [i.id, i.name]))
 
-		expect([...col.driver].map((i) => i.id).sort()).toEqual([1, 3])
+		expect([...col.extensions.batch.items].map((i) => i.id).sort()).toEqual([1, 3])
 		expect(byId.get(1)).toBe('a-updated')
 		expect(byId.get(3)).toBe('c')
 		expect(byId.has(2)).toBe(false)
@@ -166,7 +170,7 @@ describe('TBatchExtension', () => {
 
 		const changeItems = vi.fn()
 
-		col.driver.events.on('change:items', changeItems)
+		col.extensions.plain.events.on('change:items', changeItems)
 
 		col.extensions.batch.set([{ id: 1, name: 'a' }])
 		changeItems.mockClear()

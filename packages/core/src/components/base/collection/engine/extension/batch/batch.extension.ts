@@ -22,7 +22,7 @@ export class TBatchExtension<TItem extends object>
 		super.install(ctx)
 
 		// items живут в driver — relay позволяет batch.events реагировать на change:items
-		ctx.driver.events.relay(this.events, ['change:items'])
+		this.events.relay(ctx.driver.events, ['change:items'])
 	}
 
 	set trackBy(fn: ((item: TItem) => any) | undefined) {

@@ -139,19 +139,20 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const uid = collectionElements.getUidByElement(target)
 			if (uid === undefined) return
 
-			draggingIndex = engine.extensions.batch.items.findIndex((item: any) => item.uid === uid)
-			if (draggingIndex === -1) {
+			const index = engine.extensions.batch.items.findIndex((item: any) => item.uid === uid)
+			if (index === -1) {
 				draggingIndex = null
 				draggingUid = null
 				return
 			}
 
+			draggingIndex = index
 			draggingUid = uid
 			lastDragOverTarget = null
 
 			e.dataTransfer!.effectAllowed = 'move'
 
-			const item = engine.extensions.batch.items[draggingIndex]
+			const item = engine.extensions.batch.items[index]
 
 			if (item) {
 				item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
@@ -159,7 +160,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 				target.classList.add(TDragPlugin.DRAGGING_CLASS)
 			}
 
-			this.events.emit('drag:start', { index: draggingIndex, uid: uid as number })
+			this.events.emit('drag:start', { index, uid: uid as number })
 		}
 
 		const onDragEnd = (e: DragEvent) => {
