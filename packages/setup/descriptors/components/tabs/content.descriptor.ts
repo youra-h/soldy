@@ -15,6 +15,7 @@ import {
 	type TTabsContentSlots,
 } from '../../../contributions'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
+import { TabsContentWarnPluginDescriptor } from '../../plugins'
 
 export const TabsContentDescriptor = () =>
 	defineComponent<ITabsContentProps, TTabsContentEvents, TTabsContentSlots>()({
@@ -23,6 +24,8 @@ export const TabsContentDescriptor = () =>
 		extends: ComponentViewDescriptor(),
 
 		contribution: TabsContentContribution(),
+
+		plugins: [TabsContentWarnPluginDescriptor()],
 	})
 
 export const TabsCollectionContentDescriptor = () =>

@@ -77,6 +77,31 @@ dismiss.events.on('dismiss', () => { instance.open = false })
 Допустимо в адаптере: `ref` на DOM-узел, `provide`/`inject` элеватора,
 `v-bind` набора, регистрация дочерних компонентов.
 
+### `setup/adapter/extensions/` — тоже не место для операций над DOM
+
+Расширение адаптера — проводка, общая для всех фреймворков, но это не
+индульгенция на поведение. Правило «значение — в ядро, операция — в плагин»
+(см. «Доступность (a11y)», раздел «Прочее») действует и здесь: расширение
+адаптера **читает и связывает значения** (props, `aria`, элементы коллекции),
+но не читает DOM-узел и не решает, что с ним делать.
+
+Реальный случай: диагностика «`Tabs.Content` оказался внутри
+`[role="tablist"]`» сначала легла в `TTabsContentBindingExtension`
+(`setup/adapter/extensions/collection/`) — расширение само брало
+`TElementPlugin` из bundle и проверяло `el.closest('[role="tablist"]')`.
+Код не импортировал `vue`/`react`/итд, поэтому формально не нарушал главное
+правило границы — но `el.closest(...)` это операция над DOM, а не проводка,
+и ей место в плагине. Исправлено переносом в `TTabsContentWarnPlugin`
+(`packages/plugins/src/custom/tabs/content-warn/`), подключённый через
+`TabsContentDescriptor`.
+
+**Правило:** как только в коде `setup/adapter/extensions/` появляется
+`el.closest`, `el.querySelector`, `el.getAttribute`, обход `childNodes`,
+`console.warn`/`console.error` по результату такой проверки или любое другое
+чтение живого DOM-узла — это плагин, а не расширение адаптера. Расширению
+можно передать сам DOM-узел или значение, полученное от плагина, но не
+вычислять факты о нём самостоятельно.
+
 ## Naming conventions
 
 - `T` prefix → type alias (e.g. `TCollectionEngine<TItem, TExtensions>`).

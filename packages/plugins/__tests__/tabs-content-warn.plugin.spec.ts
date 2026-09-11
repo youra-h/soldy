@@ -1,60 +1,23 @@
 // @vitest-environment jsdom
 
 /**
- * TTabsContentBindingExtension — диагностика неверного слота.
+ * TTabsContentWarnPlugin — диагностика неверного слота.
  *
  * `Tabs.Content` обязан попадать в слот `content`, а не в `default` (тот
  * рендерится внутри `[role="tablist"]`). Перепутанный слот раньше был виден
- * только глазами; теперь связка предупреждает в консоль, найдя DOM-узел
+ * только глазами; теперь плагин предупреждает в консоль, найдя DOM-узел
  * панели внутри списка табов.
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { TElementPlugin } from '@soldy/plugins'
-import {
-	TTabsContentBindingExtension,
-	type TElevatorFactory,
-	type IAdapterContext,
-} from '@soldy/setup'
+import { TElementPlugin, TTabsContentWarnPlugin } from '../src'
+import type { IPluginContext } from '../src'
 
-/** Элеватор, отдающий заранее положенный (фиктивный) движок коллекции. */
-function elevatorFor(engine: unknown): TElevatorFactory {
-	return () => ({
-		down: () => {},
-		up: () => engine,
-	})
-}
-
-/** Достаточный для конструктора расширения движок: пустой driver и core. */
-function fakeEngine(): any {
-	const events = { on: vi.fn(), off: vi.fn() }
-	const driver = Object.assign([], { events })
-
+function contextFor(elementPlugin: TElementPlugin): IPluginContext {
 	return {
-		driver,
-		getCore: () => ({ extensions: {}, driver }),
-	}
-}
-
-function fakeContent(): any {
-	return {
-		value: 'a',
-		aria: { add: vi.fn(), remove: vi.fn() },
-		events: { on: vi.fn(), off: vi.fn() },
-	}
-}
-
-function fakeContext(elementPlugin: TElementPlugin): IAdapterContext {
-	return {
-		instance: {},
-		bundle: { get: (ctor: unknown) => (ctor === TElementPlugin ? elementPlugin : undefined) },
-		accessor: {},
-		descriptor: {} as any,
-		props: {},
-		events: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } as any,
-		use: vi.fn(),
-		get: vi.fn(),
-		destroy: vi.fn(),
+		get: ((ctor) =>
+			ctor === TElementPlugin ? elementPlugin : undefined) as IPluginContext['get'],
+		getInstance: () => null,
 	}
 }
 
@@ -63,7 +26,7 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-describe('TTabsContentBindingExtension — панель внутри [role="tablist"]', () => {
+describe('TTabsContentWarnPlugin — панель внутри [role="tablist"]', () => {
 	it('печатает предупреждение, когда узел уже готов', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 		const tablist = document.createElement('div')
@@ -77,10 +40,7 @@ describe('TTabsContentBindingExtension — панель внутри [role="tabl
 		tablist.appendChild(panel)
 		elementPlugin.element = panel
 
-		new TTabsContentBindingExtension(fakeContext(elementPlugin), {
-			content: fakeContent(),
-			elevator: elevatorFor(fakeEngine()),
-		})
+		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
 
 		expect(warn).toHaveBeenCalledTimes(1)
 		expect(warn.mock.calls[0][0]).toContain('[role="tablist"]')
@@ -94,10 +54,7 @@ describe('TTabsContentBindingExtension — панель внутри [role="tabl
 		document.body.appendChild(panel)
 		elementPlugin.element = panel
 
-		new TTabsContentBindingExtension(fakeContext(elementPlugin), {
-			content: fakeContent(),
-			elevator: elevatorFor(fakeEngine()),
-		})
+		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
 
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -111,10 +68,7 @@ describe('TTabsContentBindingExtension — панель внутри [role="tabl
 
 		const elementPlugin = new TElementPlugin()
 
-		new TTabsContentBindingExtension(fakeContext(elementPlugin), {
-			content: fakeContent(),
-			elevator: elevatorFor(fakeEngine()),
-		})
+		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
 
 		expect(warn).not.toHaveBeenCalled()
 
@@ -132,12 +86,16 @@ describe('TTabsContentBindingExtension — панель внутри [role="tabl
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 		const elementPlugin = new TElementPlugin()
 
-		expect(() =>
-			new TTabsContentBindingExtension(fakeContext(elementPlugin), {
-				content: fakeContent(),
-				elevator: elevatorFor(fakeEngine()),
-			}),
-		).not.toThrow()
+		expect(() => new TTabsContentWarnPlugin().install(contextFor(elementPlugin))).not.toThrow()
+
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	it('нет TElementPlugin в bundle — не бросает и не предупреждает', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		const ctx: IPluginContext = { get: () => undefined, getInstance: () => null }
+
+		expect(() => new TTabsContentWarnPlugin().install(ctx)).not.toThrow()
 
 		expect(warn).not.toHaveBeenCalled()
 	})

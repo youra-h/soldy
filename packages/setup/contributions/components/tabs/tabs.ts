@@ -10,9 +10,9 @@ import type { ITabsItem } from '@soldy/core'
  * Раньше панели уходили в динамический слот `panel:${value}`, который резолвил
  * только Vue; теперь это статический слот с компонентами `TabsContent`.
  *
- * Перепутанный слот теперь не немой: `TTabsContentBindingExtension`
- * (`packages/setup/adapter/extensions/collection`) обнаруживает панель внутри
- * `[role="tablist"]` и печатает предупреждение в консоль.
+ * Перепутанный слот теперь не немой: `TTabsContentWarnPlugin`
+ * (`packages/plugins/src/custom/tabs/content-warn`) обнаруживает панель
+ * внутри `[role="tablist"]` и печатает предупреждение в консоль.
  */
 export type TTabsSlots = {
 	leading: {}
