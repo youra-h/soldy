@@ -320,6 +320,37 @@ TCollectionItemComponent
 `batch/batch.facade.ts`, `selection/selection.facade.ts`,
 `selection/item/selection-item.facade.ts`.
 
+### К `driver` обращается только расширение коллекции (критично)
+
+`engine.driver` — хранилище движка, а не публичный список элементов. **Читать и
+слушать его имеют право только расширения коллекции**
+(`core/src/components/**/collection/extensions/**`,
+`core/src/components/base/collection/engine/extension/**`) — и делают это через
+`ctx.driver`, полученный в `install`, а не через ссылку на движок.
+
+Всем остальным — плагинам, расширениям адаптера, фасадам, коду `packages/ui/*`
+— driver недоступен. Они работают со стандартными расширениями:
+
+| Что нужно | Через что |
+|---|---|
+| список элементов, длина, поиск, индекс | `engine.extensions.batch.items` |
+| `item:added` / `item:removed` / `item:moved` / `reset` / `change:items` | `engine.extensions.plain.events` |
+| вставка, удаление, перемещение, обновление | `engine.extensions.plain` |
+| замена набора целиком | `engine.extensions.batch` |
+
+`plain` и `batch` есть у любой коллекции компонента — их ставит
+`baseExtensions()` (`base/collection/create/internal.ts`), поэтому проверять
+наличие не нужно.
+
+Причина та же, по которой driver сам является обёрткой над `storage`:
+`driver.execute` обходит расширения, а подписка на `driver.events` обходит
+relay и порядок, который расширения выстраивают. Каждое прямое обращение —
+второй путь к тем же данным, который потом расходится с первым и который никто
+не отслеживает. Один путь — `batch.items`.
+
+Сторожит `packages/setup/__tests__/driver-access.spec.ts`: `.driver` вне
+расширений ядра — падающий тест, а не замечание на ревью.
+
 ### Когда заводить своё расширение
 
 Стандартный набор лежит в `core/components/base/collection/engine/extension/`

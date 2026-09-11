@@ -11,7 +11,7 @@ import type { TBundlesEvents } from './types'
  * для каждого отдельного свойства.
  *
  * Накапливает ТОЛЬКО bundles: Map<uid, IPluginBundle>. Реестр синхронизируется с
- * жизненным циклом элементов коллекции через события driver (`item:removed`, `reset`).
+ * жизненным циклом элементов коллекции через события `plain` (`item:removed`, `reset`).
  * Порядок bundles всегда берётся из коллекции, поэтому `item:moved` не требует
  * дополнительной обработки.
  *
@@ -29,7 +29,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 		this._engine = engine
 
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
-		engine.driver.events.on('item:removed', (item) => {
+		engine.extensions.plain.events.on('item:removed', (item) => {
 			const uid = this._uid(item)
 
 			if (uid !== undefined) {
@@ -37,7 +37,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 			}
 		})
 
-		engine.driver.events.on('reset', () => {
+		engine.extensions.plain.events.on('reset', () => {
 			this._bundles.clear()
 		})
 
@@ -86,7 +86,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		const result: IPluginBundle[] = []
 
-		for (const item of this._engine.driver) {
+		for (const item of this._engine.extensions.batch.items) {
 			const bundle = this.getByItem(item)
 
 			if (bundle) result.push(bundle)
