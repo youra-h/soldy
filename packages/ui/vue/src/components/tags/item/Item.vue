@@ -12,8 +12,10 @@ import SetupTagsItem from './setup.component'
  * `listitem`, пока `mode === 'none'`, иначе `listbox`/`option`), шаблону об
  * этом знать незачем.
  *
- * `dataset` — на обёртке: тема красит выбранный тег по `data-selected`, его
- * ставит `TSelectionExtension` всем элементам коллекции, как у Tabs.
+ * `dataset` биндится дважды, как у `ListBox.Item`: тема красит выбранный тег
+ * по `data-selected` на `.s-button` (миксины Button реагируют на атрибут
+ * самого элемента), обёртка получает тот же набор для будущих контейнерных
+ * стилей. `TSelectionExtension` пишет его всем элементам коллекции.
  *
  * `view` на внутреннем Button — вид со набора целиком (`TTags.view`,
  * дефолт `'filled'`), как у ListBox. `direction` — своё направление письма
@@ -42,7 +44,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			:size="size"
 			:variant="variant"
 			@click="context.adapters.selection.toggle()"
-			v-bind="{ ...aria, ...controlAttrs }"
+			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading" />
