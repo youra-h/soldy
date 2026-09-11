@@ -3,6 +3,7 @@ import { Frame } from '../frame'
 import { Input } from '../input'
 import { Button } from '../button'
 import { Icon } from '../icon'
+import { Tags } from '../tags'
 import { SelectItem } from './item'
 import SetupSelect from './setup.component'
 
@@ -16,7 +17,7 @@ import SetupSelect from './setup.component'
  * переносить на него `class`/`style`, а в проде комментарии вырезаются — и
  * разметка ведёт себя иначе, чем в разработке.
  */
-export default { ...SetupSelect, components: { Frame, Input, Button, Icon, SelectItem } }
+export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags, SelectItem } }
 </script>
 
 <template>
@@ -36,31 +37,44 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 			(`role="combobox"`, `aria-expanded`, `aria-controls`,
 			`aria-activedescendant`) оказывается ровно там, где нужен.
 
-			`readonly` постоянный — это select-only. Снять его и добавить
-			`aria-autocomplete="list"` будет достаточно, чтобы получить
-			фильтрацию.
+			`readonly` вложенного `Input` — обычный `readonly` Select, которым
+			управляет `editable`. В select-only (`editable: false`, по
+			умолчанию) поле остаётся readonly; `editable: true` снимает его и
+			позволяет вводить текст — фильтрация и `aria-autocomplete="list"`
+			придут отдельной задачей.
 
 			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
 			не валидирует readonly-поле), поэтому `aria-required` в `aria`
 			ядро ставит явно — без него состояние осталось бы немым для
 			скринридера. См. `TInputControl._syncRequiredAria()`.
 		-->
-		<slot name="field" :text="valueText" :placeholder="placeholder">
+		<slot name="field" :text="text" :placeholder="placeholder">
 			<Input
 				class="s-select__field"
-				:value="valueText"
+				:value="text"
 				:name="name"
-				:placeholder="placeholder"
+				:placeholder="field_placeholder"
 				:id="id"
 				:disabled="disabled"
 				:required="required"
 				:size="size"
 				:variant="variant"
-				readonly
+				:readonly="readonly"
 				v-bind="{ ...aria, ...controlAttrs }"
 			>
 				<!-- Слоты Input пробрасываются наружу как есть -->
 				<template #leading>
+					<!--
+						Теги — второй компонент со своей коллекцией, не разметка: связка
+						«опция ⇄ тег» целиком в `TSelectTagsExtension`. Есть только в
+						`multiple` — в `single` `tags` пуст, и слот получает то же поле.
+					-->
+					<Tags
+						v-if="tags"
+						class="s-select__tags"
+						:ctrl="tags"
+						:engine="tags_engine ?? undefined"
+					/>
 					<slot name="leading" />
 				</template>
 

@@ -69,6 +69,19 @@ describe('поле', () => {
 		expect(field.attributes('aria-required')).toBe('true')
 	})
 
+	it('select-only: вложенный input readonly', () => {
+		const field = render().find('input')
+
+		expect(field.attributes('readonly')).toBeDefined()
+	})
+
+	it('editable: вложенный input не readonly и объявляет aria-autocomplete="none"', () => {
+		const field = render({ editable: true }).find('input')
+
+		expect(field.attributes('readonly')).toBeUndefined()
+		expect(field.attributes('aria-autocomplete')).toBe('none')
+	})
+
 	it('без required атрибута нет', () => {
 		const field = render().find('input')
 
@@ -200,6 +213,50 @@ describe('множественный выбор', () => {
 		await nextTick()
 
 		expect(panel()!.hasAttribute('aria-multiselectable')).toBe(false)
+	})
+
+	/**
+	 * Теги — второй компонент внутри поля (`TSelectTagsExtension`), а не
+	 * разметка: связка «опция ⇄ тег» иначе повторилась бы в шести адаптерах.
+	 */
+	it('выбор рисует тег в поле, а не текст', async () => {
+		const wrapper = render({ mode: 'multiple' })
+
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[0] as HTMLElement).click()
+		await nextTick()
+
+		expect(wrapper.find('input').element.value).toBe('')
+
+		const tags = document.querySelectorAll('.s-tags-item')
+
+		expect(tags).toHaveLength(1)
+		expect(tags[0].textContent).toContain('Москва')
+	})
+
+	it('закрытие тега снимает выбор с опции', async () => {
+		const wrapper = render({ mode: 'multiple' })
+
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[0] as HTMLElement).click()
+		await nextTick()
+		;(document.querySelector('.s-tags-item__close') as HTMLElement).click()
+		await nextTick()
+
+		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(0)
+
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+
+		expect(options()[0].getAttribute('aria-selected')).toBe('false')
+	})
+
+	it('в single тегов в поле нет', () => {
+		render()
+
+		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(0)
 	})
 })
 

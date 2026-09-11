@@ -28,8 +28,8 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * единственным списком со значением; теперь `value` есть и у `TListBox`, и
  * оставить копию значило бы завести две реализации одной мысли.
  *
- * Текст поля (`valueText`) при этом остаётся здесь — он не про синхронизацию,
- * а про то, что показывать вместо `placeholder`.
+ * Текст поля (`text`) при этом остаётся здесь — он не про синхронизацию, а
+ * про то, что показывать вместо `placeholder`.
  */
 export class TSelectExtension<
 	TOwner extends ISelect = ISelect,
@@ -41,7 +41,7 @@ export class TSelectExtension<
 	readonly name = 'select' as const
 
 	private readonly _owner: TOwner
-	private _valueText = ''
+	private _text = ''
 
 	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
 		super(TSelectItemExtension as any, options)
@@ -67,8 +67,8 @@ export class TSelectExtension<
 	}
 
 	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
-	get valueText(): string {
-		return this._valueText
+	get text(): string {
+		return this._text
 	}
 
 	/** Сторона отметки выбранного — с поля. Своей у опции нет. */
@@ -177,7 +177,7 @@ export class TSelectExtension<
 		item.aria.add('id', this.optionId(item))
 
 		// Текст опции виден в поле, пока она выбрана
-		item.events.on('change:text', () => this._syncValueText())
+		item.events.on('change:text', () => this._syncText())
 	}
 
 	/**
@@ -207,7 +207,7 @@ export class TSelectExtension<
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
-		this._syncValueText()
+		this._syncText()
 	}
 
 	/**
@@ -224,13 +224,13 @@ export class TSelectExtension<
 		})
 	}
 
-	private _syncValueText(): void {
+	private _syncText(): void {
 		const selected = this._selection?.selected ?? []
 		const text = selected.map((item) => item.text).join(', ')
 
-		if (this._valueText === text) return
+		if (this._text === text) return
 
-		this._valueText = text
-		this.events.emit('change:valueText', text)
+		this._text = text
+		this.events.emit('change:text', text)
 	}
 }

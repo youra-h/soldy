@@ -8,6 +8,7 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
 interface ISelectOwner {
 	open: boolean
 	openable: boolean
+	editable: boolean
 	aria: { add(name: string, value: string | null): unknown }
 	events: { on(name: string, handler: (...args: any[]) => void): unknown }
 }
@@ -128,11 +129,14 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	/**
 	 * Закрытая панель. Стрелки и активация открывают; `↑` при этом встаёт на
 	 * последнюю опцию — так пользователь попадает в конец списка одним нажатием.
+	 *
+	 * В `editable` `Home`/`End`/пробел и печатные символы не перехватываются:
+	 * они принадлежат тексту поля, а не навигации по списку.
 	 */
 	private _handleClosed(e: KeyboardEvent, owner: ISelectOwner): void {
 		if (!owner.openable) return
 
-		if (OPENS.has(e.key)) {
+		if (this._opensPanel(e, owner)) {
 			e.preventDefault()
 			owner.open = true
 
@@ -145,7 +149,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 			return
 		}
 
-		if (this._isPrintable(e)) {
+		if (!owner.editable && this._isPrintable(e)) {
 			e.preventDefault()
 			owner.open = true
 			this._typeaheadTo(e.key)
@@ -153,8 +157,23 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	}
 
 	/**
+	 * Какие клавиши открывают закрытую панель. В `editable` `Home`/`End`/
+	 * пробел исключены — они двигают курсор и печатают в тексте поля.
+	 */
+	private _opensPanel(e: KeyboardEvent, owner: ISelectOwner): boolean {
+		if (!OPENS.has(e.key)) return false
+		if (owner.editable && (e.key === 'Home' || e.key === 'End' || e.key === ' ')) return false
+
+		return true
+	}
+
+	/**
 	 * Открытая панель. `Tab` не перехватываем: он должен увести фокус дальше
 	 * по форме, панель при этом закрывается.
+	 *
+	 * В `editable` `Home`/`End` не двигают подсветку (они двигают курсор в
+	 * тексте), пробел не выбирает подсвеченное (он печатается), а печатные
+	 * символы не запускают набор по буквам — всё это принадлежит тексту поля.
 	 */
 	private _handleOpen(e: KeyboardEvent, owner: ISelectOwner): void {
 		switch (e.key) {
@@ -171,19 +190,27 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 				return
 
 			case 'Home':
+				if (owner.editable) break
 				e.preventDefault()
 				this.highlightEdge('first')
 
 				return
 
 			case 'End':
+				if (owner.editable) break
 				e.preventDefault()
 				this.highlightEdge('last')
 
 				return
 
 			case 'Enter':
+				e.preventDefault()
+				this._chooseHighlighted()
+
+				return
+
 			case ' ':
+				if (owner.editable) break
 				e.preventDefault()
 				this._chooseHighlighted()
 
@@ -201,7 +228,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 				return
 		}
 
-		if (this._isPrintable(e)) {
+		if (!owner.editable && this._isPrintable(e)) {
 			e.preventDefault()
 			this._typeaheadTo(e.key)
 		}

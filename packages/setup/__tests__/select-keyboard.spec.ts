@@ -157,12 +157,12 @@ describe('закрытая панель', () => {
 		expect(owner.open).toBe(false)
 	})
 
-	it('readonly не открывает: выбор — единственный способ сменить значение', async () => {
+	it('readonly открывает: он про ввод текста, а выбор из списка остаётся', async () => {
 		const { owner, press } = await setup(['Москва'], { readonly: true })
 
 		press('ArrowDown')
 
-		expect(owner.open).toBe(false)
+		expect(owner.open).toBe(true)
 	})
 })
 
@@ -429,5 +429,96 @@ describe('прокрутка к подсвеченной опции', () => {
 		press('ArrowDown')
 
 		expect(scrolls).toHaveLength(1)
+	})
+})
+
+/**
+ * `editable` — минимальная логика ввода: клавиатура не должна отбирать у
+ * текста поля клавиши, которые ему принадлежат. Стрелки, `Enter`, `Escape`,
+ * `Tab` — работают как в select-only, это и проверяет предыдущий набор
+ * describe-блоков без флага `editable`.
+ */
+describe('editable — печатные клавиши принадлежат тексту, не навигации', () => {
+	it('печатный символ не открывает панель и не запускает набор по буквам', async () => {
+		const { owner, keyboard, press } = await setup(['Москва', 'Тверь'], { editable: true })
+
+		press('т')
+
+		expect(owner.open).toBe(false)
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	it('пробел не открывает закрытую панель', async () => {
+		const { owner, press } = await setup(['Москва'], { editable: true })
+
+		press(' ')
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('Home/End не открывают закрытую панель', async () => {
+		const { owner, press } = await setup(['Москва'], { editable: true })
+
+		press('Home')
+		press('End')
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('стрелки и Enter по-прежнему открывают панель', async () => {
+		const { owner, press } = await setup(['Москва'], { editable: true })
+
+		press('ArrowDown')
+
+		expect(owner.open).toBe(true)
+	})
+
+	it('в открытой панели Home/End не двигают подсветку — курсор идёт по тексту', async () => {
+		const { keyboard, press, items } = await setup(['Москва', 'Тверь', 'Тула'], {
+			editable: true,
+		})
+
+		press('ArrowDown')
+		press('End')
+
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+
+	it('пробел в открытой панели не выбирает подсвеченное', async () => {
+		const { owner, press } = await setup(['Москва'], { editable: true })
+
+		press('ArrowDown')
+		press(' ')
+
+		expect(owner.value).toBeUndefined()
+		expect(owner.open).toBe(true)
+	})
+
+	it('Enter в открытой панели по-прежнему выбирает и закрывает', async () => {
+		const { owner, press, items } = await setup(['Москва'], { editable: true })
+
+		press('ArrowDown')
+		press('Enter')
+
+		expect(owner.value).toBe(items[0].value)
+		expect(owner.open).toBe(false)
+	})
+
+	it('печатный символ в открытой панели не запускает набор по буквам', async () => {
+		const { keyboard, press, items } = await setup(['Москва', 'Тверь'], { editable: true })
+
+		press('ArrowDown')
+		press('т')
+
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+
+	it('Escape и Tab закрывают как обычно', async () => {
+		const { owner, press } = await setup(['Москва'], { editable: true })
+
+		press('ArrowDown')
+		press('Escape')
+
+		expect(owner.open).toBe(false)
 	})
 })

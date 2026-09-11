@@ -4,7 +4,7 @@ import type { TExtensionSet, TOwnerExtensionSet } from '../../../base/collection
 import TSelectItem from '../item/item.class'
 import type { ISelectItem } from '../item/types'
 import type { ISelect } from '../types'
-import { TSelectExtension } from './extensions'
+import { TSelectExtension, TSelectTagsExtension } from './extensions'
 import type { TSelectCollection } from './types'
 
 /**
@@ -29,6 +29,7 @@ export const SELECT_OWNER_EXTENSIONS: TOwnerExtensionSet<ISelectItem, ISelect> =
 	// списком со значением
 	value: (owner) => new TValueSelectionExtension({ owner }) as never,
 	select: (owner) => new TSelectExtension({ owner }) as never,
+	tags: (owner) => new TSelectTagsExtension({ owner }) as never,
 }
 
 /**

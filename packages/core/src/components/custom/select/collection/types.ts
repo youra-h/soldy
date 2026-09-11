@@ -18,7 +18,7 @@ import type {
 	ISelectionItemExtension,
 	IOrderItemExtension,
 } from '../../../base/collection'
-import { TSelectExtension } from './extensions'
+import { TSelectExtension, TSelectTagsExtension } from './extensions'
 import type { ISelectItemExtension } from './extensions/select/item/types'
 import type { ISelect } from '../types'
 import type { ISelectItem, ISelectItemProps } from '../item/types'
@@ -34,6 +34,8 @@ export type TSelectCollectionExtensions = {
 	/** Связь `value` поля с выбором коллекции — то же расширение, что у List. */
 	value: TValueSelectionExtension<any, ISelectItem>
 	select: TSelectExtension<ISelect, ISelectItem>
+	/** Теги в поле при множественном выборе — `null`, пока режим не `multiple`. */
+	tags: TSelectTagsExtension<ISelect, ISelectItem>
 }
 
 export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollectionExtensions>

@@ -57,6 +57,7 @@ export const SelectContribution = (): IContribution => ({
 		closeOnSelect: { type: Boolean, triggers: ['change:closeOnSelect'] },
 		clearable: { type: Boolean, triggers: ['change:clearable'] },
 		clearLabel: { type: String, triggers: ['change:clearLabel'] },
+		editable: { type: Boolean, triggers: ['change:editable'] },
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.
@@ -66,11 +67,11 @@ export const SelectContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:clearLabel', 'change:name'],
 		},
-		/** Можно ли открыть панель: `disabled` и `readonly` запрещают. */
+		/** Можно ли открыть панель: запрещает только `disabled`. */
 		openable: {
 			type: Boolean,
 			protected: true,
-			triggers: ['change:disabled', 'change:readonly'],
+			triggers: ['change:disabled'],
 		},
 		/**
 		 * Подгонять ли ширину панели под поле — производное от `contentFit`.

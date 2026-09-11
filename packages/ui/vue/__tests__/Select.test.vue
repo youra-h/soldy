@@ -7,6 +7,7 @@ defineProps<{
 	clearable?: boolean
 	required?: boolean
 	id?: string
+	editable?: boolean
 	/** Списочные свойства — общий с ListBox контракт `IList`. */
 	maxRows?: number
 	contentFit?: 'truncate' | 'wrap' | 'expand'
@@ -20,6 +21,7 @@ defineProps<{
 		:clearable="clearable ?? false"
 		:required="required ?? false"
 		:id="id"
+		:editable="editable ?? false"
 		:max-rows="maxRows"
 		:content-fit="contentFit"
 		:indicator="indicator"

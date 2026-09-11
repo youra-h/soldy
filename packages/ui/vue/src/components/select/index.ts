@@ -7,4 +7,7 @@ export * from './base.component'
 export * from './item'
 
 /** Основная форма — `<Select.Item>`; плоский `SelectItem` работает так же. */
-export const Select = withParts(SelectComponent, { Item: SelectItem })
+export const Select: typeof SelectComponent & { Item: typeof SelectItem } = withParts(
+	SelectComponent,
+	{ Item: SelectItem },
+)

@@ -100,12 +100,14 @@ describe('когда панель открывать нельзя', () => {
 		expect(select.open).toBe(false)
 	})
 
-	it('readonly не даёт открыть: выбор из списка — единственный способ сменить значение', () => {
+	it('readonly открыть не мешает: он про ввод текста, а не про выбор из списка', () => {
+		// select-only (`editable: false`) — это и есть readonly=true,
+		// и панель для него единственный способ сменить значение
 		const select = new TSelect({ readonly: true })
 
 		select.open = true
 
-		expect(select.open).toBe(false)
+		expect(select.open).toBe(true)
 	})
 
 	it('запрет закрывает уже открытую панель', () => {
@@ -361,9 +363,9 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 	})
 })
 
-describe('valueText — что показывает поле', () => {
+describe('text — что показывает поле', () => {
 	it('пуст, пока ничего не выбрано', () => {
-		expect(createSelect(['a']).collection.valueText).toBe('')
+		expect(createSelect(['a']).collection.text).toBe('')
 	})
 
 	it('текст выбранной опции, а не её значение', () => {
@@ -371,17 +373,20 @@ describe('valueText — что показывает поле', () => {
 
 		facadeFor(0).choose()
 
-		expect(collection.valueText).toBe('A')
+		expect(collection.text).toBe('A')
 	})
 
-	it('в multiple перечисляет выбранные', () => {
+	it('в multiple пуст — текст выбранных рисуют теги, а не поле', () => {
+		// До тегов (см. describe('теги в multiple')) поле показывало список
+		// текстом («A, C»); теперь то же самое показывают теги в поле, и
+		// повторять текстом было бы дублем
 		const { collection, facadeFor } = createSelect(['a', 'b', 'c'])
 
 		collection.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
-		expect(collection.valueText).toBe('A, C')
+		expect(collection.text).toBe('')
 	})
 
 	it('следует за текстом опции', () => {
@@ -390,7 +395,7 @@ describe('valueText — что показывает поле', () => {
 		facadeFor(0).choose()
 		items[0].text = 'Другое'
 
-		expect(collection.valueText).toBe('Другое')
+		expect(collection.text).toBe('Другое')
 	})
 })
 
@@ -478,5 +483,238 @@ describe('indicator пробрасывается с поля на опцию', (
 		owner.indicator = 'end'
 
 		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['end', 'end'])
+	})
+})
+
+/**
+ * Теги в поле при множественном выборе — второй компонент со своей
+ * коллекцией (`TSelectTagsExtension`), а не разметка: связка «опция ⇄ тег»
+ * иначе повторилась бы в каждом из шести адаптеров.
+ */
+describe('теги в multiple', () => {
+	it('в single тегов нет', () => {
+		expect(createSelect(['a', 'b']).collection.tags).toBeNull()
+	})
+
+	it('появляются, как только режим переключён на multiple', () => {
+		const { collection } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+
+		expect(collection.tags).not.toBeNull()
+		expect(collection.tags_engine).not.toBeNull()
+	})
+
+	it('выбор опции даёт тег с её текстом', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		expect([...collection.tags_engine!.driver].map((item) => item.text)).toEqual(['A', 'B'])
+	})
+
+	it('снятие выбора убирает тег', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(0).choose() // повторный выбор в multiple снимает
+
+		expect([...collection.tags_engine!.driver]).toHaveLength(0)
+	})
+
+	it('закрытие тега снимает выбор с опции по value', () => {
+		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		const engine = collection.tags_engine!
+		const tag = [...engine.driver][0]
+
+		engine.extensions.tags.closeTag(tag)
+
+		expect(collection.selected).toEqual([items[1]])
+	})
+
+	it('disabled поля гасит closable тегов', () => {
+		const { owner, collection, facadeFor } = createSelect(['a'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		owner.disabled = true
+
+		const tag = [...collection.tags_engine!.driver][0]
+
+		expect(tag.closable).toBe(false)
+	})
+
+	it('text пуст, пока теги есть, — текст рисуют они', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		expect(collection.text).toBe('')
+	})
+})
+
+describe('editable — ввод текста в поле', () => {
+	it('по умолчанию выключен, select-only', () => {
+		const select = new TSelect()
+
+		expect(select.editable).toBe(false)
+	})
+
+	it('меняется через instance и сообщает об этом', () => {
+		const select = new TSelect()
+		const handler = vi.fn()
+
+		select.events.on('change:editable', handler)
+		select.editable = true
+
+		expect(select.editable).toBe(true)
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	it('повтор того же значения события не даёт', () => {
+		const select = new TSelect({ editable: true })
+		const handler = vi.fn()
+
+		select.events.on('change:editable', handler)
+		select.editable = true
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('ставит aria-autocomplete="none" — честный сигнал без обещания автодополнения', () => {
+		const select = new TSelect({ editable: true })
+
+		expect(select.aria.get('aria-autocomplete')).toBe('none')
+
+		select.editable = false
+
+		expect(select.aria.has('aria-autocomplete')).toBe(false)
+	})
+
+	describe('readonly — им управляет editable', () => {
+		it('select-only: editable=false → readonly=true', () => {
+			const select = new TSelect()
+
+			expect(select.readonly).toBe(true)
+		})
+
+		it('editable=true → readonly=false', () => {
+			const select = new TSelect({ editable: true })
+
+			expect(select.readonly).toBe(false)
+		})
+
+		it('в конструкторе editable сильнее пропа readonly', () => {
+			const select = new TSelect({ readonly: true, editable: true })
+
+			expect(select.readonly).toBe(false)
+		})
+
+		it('readonly=true, editable=false — readonly и так true', () => {
+			const select = new TSelect({ readonly: true })
+
+			expect(select.readonly).toBe(true)
+		})
+
+		it('в рантайме editable переставляет readonly', () => {
+			const select = new TSelect({ editable: true })
+
+			expect(select.readonly).toBe(false)
+
+			select.editable = false
+
+			expect(select.readonly).toBe(true)
+
+			select.editable = true
+
+			expect(select.readonly).toBe(false)
+		})
+
+		it('своей логики у readonly нет — присваивание работает как обычно', () => {
+			const select = new TSelect({ editable: true })
+
+			select.readonly = true
+
+			expect(select.readonly).toBe(true)
+			// editable не пересчитывается: он причина, а не следствие
+			expect(select.editable).toBe(true)
+		})
+
+		it('смена editable сообщает и о readonly', () => {
+			const select = new TSelect()
+			const handler = vi.fn()
+
+			select.events.on('change:readonly', handler)
+			select.editable = true
+
+			expect(handler).toHaveBeenCalledWith(false)
+		})
+	})
+
+	it('openable не зависит ни от editable, ни от readonly — только от disabled', () => {
+		const editable = new TSelect({ editable: true })
+		const selectOnly = new TSelect({ editable: false })
+
+		// select-only и есть readonly=true, а панель ему нужна
+		expect(selectOnly.readonly).toBe(true)
+		expect(selectOnly.openable).toBe(true)
+		expect(editable.openable).toBe(true)
+
+		editable.readonly = true
+
+		expect(editable.openable).toBe(true)
+
+		editable.disabled = true
+
+		expect(editable.openable).toBe(false)
+	})
+
+	describe('toggleOpen в editable только открывает', () => {
+		it('открывает закрытую панель как обычно', () => {
+			const select = new TSelect({ editable: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(true)
+		})
+
+		it('не закрывает уже открытую — клик по тексту не должен прятать панель', () => {
+			const select = new TSelect({ editable: true, open: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(true)
+		})
+
+		it('в select-only toggleOpen закрывает как раньше', () => {
+			const select = new TSelect({ open: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(false)
+		})
+
+		it('закрытие в editable остаётся доступно напрямую — Escape, выбор, клик мимо', () => {
+			const select = new TSelect({ editable: true, open: true })
+
+			select.open = false
+
+			expect(select.open).toBe(false)
+		})
+	})
+
+	it('getProps отдаёт editable', () => {
+		const select = new TSelect({ editable: true })
+
+		expect(select.getProps().editable).toBe(true)
 	})
 })

@@ -334,7 +334,7 @@ describe('Select', () => {
 		const names = propNames(d)
 
 		expect(names).toContain('items')
-		expect(names).toContain('valueText')
+		expect(names).toContain('text')
 		expect(names).toContain('list_aria')
 	})
 

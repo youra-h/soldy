@@ -45,6 +45,7 @@ export class TSelect<
 		closeOnSelect: true,
 		clearable: false,
 		clearLabel: 'Clear',
+		editable: false,
 		tag: 'div',
 	}
 
@@ -57,6 +58,7 @@ export class TSelect<
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior!: TScrollBehavior
 	protected _indicator!: TListIndicator
+	protected _editable!: boolean
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -75,7 +77,16 @@ export class TSelect<
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
+		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
+		// Тем же правилом, что и сеттер `editable`, только без события — и
+		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
+		this._applyReadonly(!this._editable)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
+
+		// `_applyEditable` выше поменял `readonly`, а `_syncInputAccessibility()`
+		// конструктор `TInputControl` вызвал ещё до него — пересчитываем
+		// `aria-readonly` заново.
+		this._syncInputAccessibility()
 
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью.
 		// `aria-controls` и `aria-activedescendant` — не отсюда: они ссылаются
@@ -84,7 +95,6 @@ export class TSelect<
 		this._aria.add('aria-haspopup', 'listbox')
 
 		this.events.on('change:disabled', () => this._syncOpenable())
-		this.events.on('change:readonly', () => this._syncOpenable())
 
 		this._syncOpenable()
 	}
@@ -92,11 +102,12 @@ export class TSelect<
 	/**
 	 * Можно ли сейчас открыть панель.
 	 *
-	 * `readonly` означает «значение менять нельзя», а выбор из списка — это
-	 * единственный способ его изменить, поэтому панель не открывается.
+	 * Раньше её запрещал ещё и `readonly`. Теперь `readonly` значит только
+	 * «в поле нельзя печатать», и ставит его `editable`; select-only — это
+	 * как раз `editable: false`, а ему панель и нужна. Остаётся `disabled`.
 	 */
 	get openable(): boolean {
-		return !this.disabled && !this.readonly
+		return !this.disabled
 	}
 
 	get open(): boolean {
@@ -112,7 +123,14 @@ export class TSelect<
 		;(this.events as TEvented<TSelectEvents>).emit(value ? 'open' : 'close')
 	}
 
+	/**
+	 * В `editable` открывает, но не закрывает: клик по тексту поля ставит
+	 * курсор, и это не повод спрятать панель. Закрытие остаётся за `Escape`,
+	 * выбором опции и нажатием мимо (`TDismissPlugin`).
+	 */
 	toggleOpen(): void {
+		if (this._editable && this._open) return
+
 		this.open = !this._open
 	}
 
@@ -158,6 +176,27 @@ export class TSelect<
 
 		this._clearLabel = value
 		;(this.events as TEvented<TSelectEvents>).emit('change:clearLabel', value)
+	}
+
+	/**
+	 * Можно ли вводить текст в поле. `false` — режим select-only (по
+	 * умолчанию): вложенный `Input` остаётся `readonly`, значение меняет
+	 * только выбор из списка.
+	 *
+	 * Включает и выключает `readonly` — он и есть «в поле нельзя печатать».
+	 * Сам `readonly` при этом обычный, своей логики у него нет.
+	 */
+	get editable(): boolean {
+		return this._editable
+	}
+
+	set editable(value: boolean) {
+		if (this._editable === value) return
+
+		this._applyEditable(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:editable', value)
+
+		this.readonly = !value
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
@@ -254,6 +293,18 @@ export class TSelect<
 	}
 
 	/**
+	 * `aria-autocomplete="none"`, не отсутствие атрибута: это честный сигнал
+	 * скринридеру, что поле принимает произвольный текст, но без
+	 * автодополнения. `list`/`both` появятся вместе с фильтрацией — раньше
+	 * это было бы обещанием, которого нет.
+	 */
+	protected _applyEditable(value: boolean): void {
+		this._editable = value
+		this._classes.toggle('--editable', value)
+		this._aria.add('aria-autocomplete', value ? 'none' : null)
+	}
+
+	/**
 	 * `data-content-fit` на поле — и то же имя на каждой опции.
 	 *
 	 * Со списка тема читает `expand`, с опции — `wrap`. Одно свойство, два
@@ -302,6 +353,7 @@ export class TSelect<
 			closeOnSelect: this._closeOnSelect,
 			clearable: this._clearable,
 			clearLabel: this._clearLabel,
+			editable: this._editable,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
