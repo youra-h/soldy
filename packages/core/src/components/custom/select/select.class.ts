@@ -80,6 +80,13 @@ export class TSelect<
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
 
+		// `readonly` перегружен `editable`, а тот ещё не был известен, когда
+		// конструктор `TInputControl` выше уже вызвал `_syncInputAccessibility()`
+		// с `_editable === undefined`. Пересчитываем `aria-readonly` заново —
+		// иначе `editable: true` в props дало бы неверный атрибут до первого
+		// изменения `readonly`/`required` в рантайме.
+		this._syncInputAccessibility()
+
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью.
 		// `aria-controls` и `aria-activedescendant` — не отсюда: они ссылаются
 		// на список и опцию, а это знание коллекции.
@@ -95,11 +102,15 @@ export class TSelect<
 	/**
 	 * Можно ли сейчас открыть панель.
 	 *
-	 * `readonly` означает «значение менять нельзя», а выбор из списка — это
-	 * единственный способ его изменить, поэтому панель не открывается.
+	 * Раньше `readonly` означал «значение менять нельзя», и выбор из списка —
+	 * единственный способ его изменить, поэтому панель не открывалась. Это
+	 * по-прежнему так, но `readonly` теперь перегружен `editable` (см. его
+	 * геттер ниже), поэтому здесь читается не он, а сырой `_readonly` — тот,
+	 * что реально пришёл в проп: полностью запертый Select (`readonly: true`)
+	 * не даёт открыть панель, даже когда `editable: true`.
 	 */
 	get openable(): boolean {
-		return !this.disabled && !this.readonly
+		return !this.disabled && !this._readonly
 	}
 
 	get open(): boolean {
@@ -175,10 +186,13 @@ export class TSelect<
 	 * умолчанию): вложенный `Input` остаётся `readonly`, значение меняет
 	 * только выбор из списка.
 	 *
-	 * Не путать с `readonly` из `TInputControl` — то запрещает менять
-	 * значение вовсе и глушит открытие панели (`openable`); Select в режиме
-	 * «только выбор» обязан оставаться изменяемым. Оба состояния сходятся в
-	 * `fieldReadonly`, который и решает, каким быть вложенному полю.
+	 * Авторитетен над `readonly` — см. его геттер ниже. Здесь же, при смене
+	 * `editable`, вручную эмитится `change:readonly`: значение, которое
+	 * отдаёт публичный геттер `readonly`, меняется вместе с `editable`, а
+	 * подписан на этот триггер и адаптер (проп `readonly` объявлен один раз в
+	 * `InputControlContribution`, второй раз с тем же именем задекларировать
+	 * нельзя — `TAccessor` бросает на дубликат), и внутренние синхронизации
+	 * (`_syncInputAccessibility`).
 	 */
 	get editable(): boolean {
 		return this._editable
@@ -189,16 +203,31 @@ export class TSelect<
 
 		this._applyEditable(value)
 		;(this.events as TEvented<TSelectEvents>).emit('change:editable', value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:readonly', this.readonly)
 	}
 
 	/**
-	 * `readonly` вложенного поля — в отличие от `readonly` самого Select, не
-	 * связан с `openable`. Производное свойство, а не проп в разметке: то же
-	 * выражение (`readonly || !editable`) иначе повторилось бы в шести
-	 * адаптерах, как и у `autoFitWidth`.
+	 * `readonly` вложенного поля. Перегружен: `editable` авторитетен и
+	 * отменяет сырой `_readonly` целиком — `editable: true` всегда даёт
+	 * `readonly === false`, `editable: false` всегда даёт `readonly === true`,
+	 * что бы ни было передано в проп `readonly`. Установка `readonly` на
+	 * `editable` не влияет: значение просто копится в `_readonly` и уходит в
+	 * `openable`, который проверяет его напрямую, минуя эту перегрузку.
+	 *
+	 * Раньше на этом месте был отдельный проп `fieldReadonly`
+	 * (`readonly || !editable`) — лишняя сущность ровно с той же целью: имя
+	 * `readonly` в API Select уже занято под то же самое, поэтому используем
+	 * его, а не заводим второе.
 	 */
-	get fieldReadonly(): boolean {
-		return this.readonly || !this._editable
+	override get readonly(): boolean {
+		return !this._editable
+	}
+
+	override set readonly(value: boolean) {
+		if (this._readonly === value) return
+
+		this._applyReadonly(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:readonly', this.readonly)
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */

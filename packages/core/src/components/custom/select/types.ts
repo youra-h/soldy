@@ -62,8 +62,7 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	clearLabel?: string
 	/**
 	 * Можно ли вводить текст в поле. `false` — select-only (по умолчанию).
-	 * Не проп `readonly` вложенного `Input` — тот считается из обоих сразу,
-	 * см. `fieldReadonly`.
+	 * Авторитетен над `readonly`: см. `TSelect.readonly`.
 	 */
 	editable?: boolean
 }
@@ -91,8 +90,6 @@ export interface ISelect<
 	clearLabel: string
 	/** Можно ли вводить текст в поле. `false` — select-only (по умолчанию) */
 	editable: boolean
-	/** `readonly` вложенного поля: `readonly || !editable` */
-	readonly fieldReadonly: boolean
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */

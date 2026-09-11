@@ -37,12 +37,12 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			(`role="combobox"`, `aria-expanded`, `aria-controls`,
 			`aria-activedescendant`) оказывается ровно там, где нужен.
 
-			`readonly` вложенного `Input` — это `fieldReadonly`, а не `readonly`
-			самого Select: он собран из `readonly` и `editable` сразу
-			(`readonly || !editable`), см. `TSelect.fieldReadonly`. В
-			select-only (`editable: false`, по умолчанию) поле остаётся
-			readonly; `editable: true` снимает его и позволяет вводить текст —
-			фильтрация и `aria-autocomplete="list"` придут отдельной задачей.
+			`readonly` вложенного `Input` — тот же `readonly`, что и у самого
+			Select, но перегруженный: `editable` авторитетен над сырым пропом
+			(см. `TSelect.readonly`). В select-only (`editable: false`, по
+			умолчанию) поле остаётся readonly; `editable: true` снимает его и
+			позволяет вводить текст — фильтрация и `aria-autocomplete="list"`
+			придут отдельной задачей.
 
 			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
 			не валидирует readonly-поле), поэтому `aria-required` в `aria`
@@ -60,7 +60,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 				:required="required"
 				:size="size"
 				:variant="variant"
-				:readonly="fieldReadonly"
+				:readonly="readonly"
 				v-bind="{ ...aria, ...controlAttrs }"
 			>
 				<!-- Слоты Input пробрасываются наружу как есть -->

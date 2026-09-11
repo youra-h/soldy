@@ -67,15 +67,6 @@ export const SelectContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:clearLabel', 'change:name'],
 		},
-		/**
-		 * `readonly` вложенного `Input` — считается из `readonly` и `editable`
-		 * сразу, поэтому производится ядром, а не выражением в разметке.
-		 */
-		fieldReadonly: {
-			type: Boolean,
-			protected: true,
-			triggers: ['change:editable', 'change:readonly'],
-		},
 		/** Можно ли открыть панель: `disabled` и `readonly` запрещают. */
 		openable: {
 			type: Boolean,
