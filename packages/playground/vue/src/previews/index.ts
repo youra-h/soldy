@@ -63,14 +63,20 @@ export const PREVIEWS: Record<string, TPreview> = {
 		),
 
 	tabs: (bind) =>
-		h(Tabs as Component, bind, () => [
-			...ITEMS.map((item) => h(Tabs.Item, { key: item.value, ...item })),
-			...ITEMS.map((item) =>
-				h(Tabs.Content, { key: `c-${item.value}`, value: item.value }, () =>
-					h('div', { style: 'padding:12px' }, `Панель «${item.text}»`),
+		h(Tabs as Component, bind, {
+			// Первый таб активен сразу — иначе ни одна панель не смонтируется
+			// (`rendered && active`), и стенд никогда не покажет содержимое
+			default: () =>
+				ITEMS.map((item, index) =>
+					h(Tabs.Item, { key: item.value, active: index === 0, ...item }),
 				),
-			),
-		]),
+			content: () =>
+				ITEMS.map((item) =>
+					h(Tabs.Content, { key: `c-${item.value}`, value: item.value }, () =>
+						h('div', { style: 'padding:12px' }, `Панель «${item.text}»`),
+					),
+				),
+		}),
 
 	tags: (bind) =>
 		h(Tags as Component, bind, () =>

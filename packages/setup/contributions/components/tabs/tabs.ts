@@ -9,6 +9,10 @@ import type { ITabsItem } from '@soldy/core'
  * внутрь `[role=tablist]`, и панель, попав туда, оказалась бы в списке табов.
  * Раньше панели уходили в динамический слот `panel:${value}`, который резолвил
  * только Vue; теперь это статический слот с компонентами `TabsContent`.
+ *
+ * Перепутанный слот теперь не немой: `TTabsContentBindingExtension`
+ * (`packages/setup/adapter/extensions/collection`) обнаруживает панель внутри
+ * `[role="tablist"]` и печатает предупреждение в консоль.
  */
 export type TTabsSlots = {
 	leading: {}
