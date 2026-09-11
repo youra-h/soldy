@@ -3,6 +3,7 @@ import { Frame } from '../frame'
 import { Input } from '../input'
 import { Button } from '../button'
 import { Icon } from '../icon'
+import { Tags } from '../tags'
 import { SelectItem } from './item'
 import SetupSelect from './setup.component'
 
@@ -16,7 +17,7 @@ import SetupSelect from './setup.component'
  * переносить на него `class`/`style`, а в проде комментарии вырезаются — и
  * разметка ведёт себя иначе, чем в разработке.
  */
-export default { ...SetupSelect, components: { Frame, Input, Button, Icon, SelectItem } }
+export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags, SelectItem } }
 </script>
 
 <template>
@@ -50,7 +51,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 				class="s-select__field"
 				:value="valueText"
 				:name="name"
-				:placeholder="placeholder"
+				:placeholder="field_placeholder"
 				:id="id"
 				:disabled="disabled"
 				:required="required"
@@ -61,6 +62,17 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Selec
 			>
 				<!-- Слоты Input пробрасываются наружу как есть -->
 				<template #leading>
+					<!--
+						Теги — второй компонент со своей коллекцией, не разметка: связка
+						«опция ⇄ тег» целиком в `TSelectTagsExtension`. Есть только в
+						`multiple` — в `single` `tags` пуст, и слот получает то же поле.
+					-->
+					<Tags
+						v-if="tags"
+						class="s-select__tags"
+						:ctrl="tags"
+						:engine="tags_engine ?? undefined"
+					/>
 					<slot name="leading" />
 				</template>
 

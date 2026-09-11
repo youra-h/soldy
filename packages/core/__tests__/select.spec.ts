@@ -374,14 +374,17 @@ describe('valueText — что показывает поле', () => {
 		expect(collection.valueText).toBe('A')
 	})
 
-	it('в multiple перечисляет выбранные', () => {
+	it('в multiple пуст — текст выбранных рисуют теги, а не поле', () => {
+		// До тегов (см. describe('теги в multiple')) поле показывало список
+		// текстом («A, C»); теперь то же самое показывают теги в поле, и
+		// повторять текстом было бы дублем
 		const { collection, facadeFor } = createSelect(['a', 'b', 'c'])
 
 		collection.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
-		expect(collection.valueText).toBe('A, C')
+		expect(collection.valueText).toBe('')
 	})
 
 	it('следует за текстом опции', () => {
@@ -478,5 +481,81 @@ describe('indicator пробрасывается с поля на опцию', (
 		owner.indicator = 'end'
 
 		expect(items.map((item) => item.dataset.get('indicator'))).toEqual(['end', 'end'])
+	})
+})
+
+/**
+ * Теги в поле при множественном выборе — второй компонент со своей
+ * коллекцией (`TSelectTagsExtension`), а не разметка: связка «опция ⇄ тег»
+ * иначе повторилась бы в каждом из шести адаптеров.
+ */
+describe('теги в multiple', () => {
+	it('в single тегов нет', () => {
+		expect(createSelect(['a', 'b']).collection.tags).toBeNull()
+	})
+
+	it('появляются, как только режим переключён на multiple', () => {
+		const { collection } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+
+		expect(collection.tags).not.toBeNull()
+		expect(collection.tags_engine).not.toBeNull()
+	})
+
+	it('выбор опции даёт тег с её текстом', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		expect([...collection.tags_engine!.driver].map((item) => item.text)).toEqual(['A', 'B'])
+	})
+
+	it('снятие выбора убирает тег', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(0).choose() // повторный выбор в multiple снимает
+
+		expect([...collection.tags_engine!.driver]).toHaveLength(0)
+	})
+
+	it('закрытие тега снимает выбор с опции по value', () => {
+		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		const engine = collection.tags_engine!
+		const tag = [...engine.driver][0]
+
+		engine.extensions.tags.closeTag(tag)
+
+		expect(collection.selected).toEqual([items[1]])
+	})
+
+	it('disabled поля гасит closable тегов', () => {
+		const { owner, collection, facadeFor } = createSelect(['a'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		owner.disabled = true
+
+		const tag = [...collection.tags_engine!.driver][0]
+
+		expect(tag.closable).toBe(false)
+	})
+
+	it('valueText пуст, пока теги есть, — текст рисуют они', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		expect(collection.valueText).toBe('')
 	})
 })

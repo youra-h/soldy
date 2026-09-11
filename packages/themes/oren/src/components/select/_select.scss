@@ -18,6 +18,21 @@
 		input {
 			@apply cursor-pointer select-none;
 		}
+
+		// Теги — второй компонент внутри `.s-input__leading`, а не разметка
+		// поля, и переносятся по строкам сами (`.s-tags` — `flex-wrap`).
+		// `.s-input` считает высоту фиксированной по размеру (`h-8` и т. п.) —
+		// пока тегов нет, это верно, а как только они переносятся на вторую
+		// строку, фиксированная высота обрезает перенос. `:has` включает рост
+		// высоты только когда теги реально есть, не трогая обычный Select.
+		&:has(.s-tags) {
+			@apply h-auto flex-wrap items-start py-1;
+		}
+
+		.s-input__leading:has(.s-tags) {
+			height: auto;
+			@apply flex-wrap items-start;
+		}
 	}
 
 	&__clear {
