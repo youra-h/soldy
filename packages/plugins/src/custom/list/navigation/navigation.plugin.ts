@@ -95,7 +95,7 @@ export abstract class TListNavigationPlugin<
 	 * от несуществующего теперь компонента `TList`.
 	 */
 	protected items(): IControl[] {
-		return (this._engine?.driver ?? []) as IControl[]
+		return (this._engine?.driver.projection ?? []) as IControl[]
 	}
 
 	/* ---------------------------------------------------------------- */

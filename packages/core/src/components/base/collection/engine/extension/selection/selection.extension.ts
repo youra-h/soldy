@@ -135,14 +135,17 @@ export class TSelectionExtension<TItem extends object = any>
 
 	select(item: TItem): void {
 		if (this._mode === 'none') return
-		if (!this._ctx.driver.includes(item)) return
+
+		const canonical = this._canonical(item)
+
+		if (!this._ctx.driver.includes(canonical)) return
 
 		if (!this.multiple) {
 			// снять выделение с предыдущего
 			this._selected.clear()
 		}
 
-		this._selected.add(item)
+		this._selected.add(canonical)
 
 		this._notifySelected()
 	}
@@ -150,9 +153,11 @@ export class TSelectionExtension<TItem extends object = any>
 	deselect(item: TItem): void {
 		if (this._mode === 'none') return
 
-		if (!this._selected.has(item)) return
+		const canonical = this._canonical(item)
 
-		this._selected.delete(item)
+		if (!this._selected.has(canonical)) return
+
+		this._selected.delete(canonical)
 
 		this._notifySelected()
 	}
@@ -160,10 +165,12 @@ export class TSelectionExtension<TItem extends object = any>
 	toggle(item: TItem): void {
 		if (this._mode === 'none') return
 
-		if (this._selected.has(item)) {
-			this.deselect(item)
+		const canonical = this._canonical(item)
+
+		if (this._selected.has(canonical)) {
+			this.deselect(canonical)
 		} else {
-			this.select(item)
+			this.select(canonical)
 		}
 	}
 
@@ -172,7 +179,19 @@ export class TSelectionExtension<TItem extends object = any>
 	}
 
 	isSelected(item: TItem): boolean {
-		return this._selected.has(item)
+		return this._selected.has(this._canonical(item))
+	}
+
+	/**
+	 * Разрешить элемент, пришедший снаружи (из UI), до исходного из storage.
+	 *
+	 * Проектор мог подменить представление (Proxy с другим текстом, например) —
+	 * ссылки на входе и в `_selected`/`driver` тогда разные, хотя элемент один
+	 * и тот же. Без канонизации `select(proxy)` не находил бы себя в driver и
+	 * молча ничего не делал.
+	 */
+	private _canonical(item: TItem): TItem {
+		return this._ctx?.driver.canonical(item) ?? item
 	}
 
 	get selectedCount(): number {

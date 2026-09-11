@@ -90,14 +90,24 @@ export class TActivationExtension<TItem extends object = any>
 	 * Предыдущий активный элемент деактивируется автоматически.
 	 */
 	activate(item: TItem): void {
-		if (this._activeItem === item) return
+		const canonical = this._canonical(item)
 
-		if (!this._ctx.driver.includes(item)) return
+		if (this._activeItem === canonical) return
 
-		this._activeItem = item
+		if (!this._ctx.driver.includes(canonical)) return
 
-		this.events.emit('item:activated', item)
-		this.events.emit('change:activation', item)
+		this._activeItem = canonical
+
+		this.events.emit('item:activated', canonical)
+		this.events.emit('change:activation', canonical)
+	}
+
+	/**
+	 * Разрешить элемент, пришедший снаружи (из UI), до исходного из storage.
+	 * См. тот же хелпер в `TSelectionExtension`.
+	 */
+	private _canonical(item: TItem): TItem {
+		return this._ctx?.driver.canonical(item) ?? item
 	}
 
 	/**

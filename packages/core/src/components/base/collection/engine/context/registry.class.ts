@@ -35,13 +35,19 @@ export class TItemContextRegistry<
 
 	/**
 	 * Получить (или создать и закешировать) контекст для элемента.
+	 *
+	 * Элемент канонизируется до исходного из storage: без этого проекция с
+	 * подменённым представлением (Proxy) завела бы второй контекст на ту же
+	 * опцию, и адаптеры продублировались бы.
 	 */
 	get(item: TItem): TItemContext<TItem, TExtensions> {
-		let context = this._contexts.get(item)
+		const canonical = this._driver.canonical(item)
+
+		let context = this._contexts.get(canonical)
 
 		if (!context) {
-			context = new TItemContext(item, this._extensions)
-			this._contexts.set(item, context)
+			context = new TItemContext(canonical, this._extensions)
+			this._contexts.set(canonical, context)
 		}
 
 		return context

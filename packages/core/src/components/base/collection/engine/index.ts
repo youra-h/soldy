@@ -27,6 +27,9 @@ export type {
 	ICollectionProps,
 	TCollectionEngineItemSource,
 	TReadonlyStorageDriverArray,
+	TProjector,
+	IProjectionContext,
+	IProjectorRegistry,
 } from './types'
 
 // Фасад

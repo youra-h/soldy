@@ -62,6 +62,35 @@ export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
 	}
 }
 
+/**
+ * Проектор: получает текущую проекцию и возвращает новую того же типа.
+ *
+ * Может сузить состав (фильтр), переставить (сортировка) или подменить
+ * представление элемента (Proxy-обёртка) — состав, порядок и представление
+ * равноправны, это забота конкретного проектора, а не слоя.
+ */
+export type TProjector<T> = (items: readonly T[], ctx: IProjectionContext<T>) => readonly T[]
+
+/**
+ * Контекст, который driver передаёт проектору при пересчёте.
+ *
+ * `link` нужен только тем проекторам, что подменяют ссылку (Proxy-обёртка).
+ * Проектор, работающий только с составом или порядком (фильтр, сортировка),
+ * его не зовёт — идентичность и так цела.
+ */
+export interface IProjectionContext<T> {
+	/** Сообщить, что `projected` представляет `source`. Не звать, если ссылки те же. */
+	link(projected: T, source: T): void
+}
+
+/** Реестр проекторов driver'а — один на коллекцию. */
+export interface IProjectorRegistry<T> {
+	/** Зарегистрировать проектор. Возвращает отписку. */
+	use(projector: TProjector<T>): () => void
+	/** Пометить текущую проекцию устаревшей — пересчёт лениво, на следующее чтение `projection`. */
+	invalidate(): void
+}
+
 export type TCollectionStorageDriverEvents<TItem> = {
 	/**
 	 * Вызывается ПЕРЕД добавлением элемента (до мутации хранилища).
@@ -93,6 +122,15 @@ export type TCollectionStorageDriverEvents<TItem> = {
 
 	/** Полный сброс или очистка коллекции */
 	reset: () => void
+
+	/**
+	 * Проекция пересчитана или помечена устаревшей. Без аргументов: то, что
+	 * рисует, перечитывает через `driver.projection`, а не получает payload.
+	 *
+	 * Не путать с `change:items` — на смену проекции `_selected` в
+	 * `TSelectionExtension` не чистится (там подписка именно на `change:items`).
+	 */
+	'change:projection': () => void
 }
 
 /**
@@ -107,6 +145,19 @@ export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
 
 	/** Пакетное выполнение команд */
 	batch(action: () => void): void
+
+	/** Реестр проекторов — общий слой middleware над сырым составом. */
+	readonly projectors: IProjectorRegistry<TItem>
+
+	/**
+	 * Результат цепочки проекторов. Кэшируется между инвалидациями — стабильная
+	 * ссылка на массив нужна аксессору, иначе UI перерисовывался бы на каждое
+	 * чтение. Пустой реестр отдаёт то же, что `valueOf()`.
+	 */
+	readonly projection: readonly TItem[]
+
+	/** Проецированный элемент → исходный из storage. Без подмены ссылки — тождество. */
+	canonical(item: TItem): TItem
 }
 
 // Описываем тип движка, исключающий мутирующие методы

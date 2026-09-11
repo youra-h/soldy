@@ -1,6 +1,11 @@
 import type { IStorage } from './storage'
 import type { ICommand, ICommandContext } from './commands'
-import type { TCollectionStorageDriverEvents } from './types'
+import type {
+	TCollectionStorageDriverEvents,
+	TProjector,
+	IProjectionContext,
+	IProjectorRegistry,
+} from './types'
 import { TEvented } from '@soldy/core'
 
 // Список мутирующих методов массива JS, которые категорически нельзя вызывать напрямую
@@ -23,10 +28,39 @@ export class TCollectionStorageDriver<T> {
 	private _isBatching = false // Флаг, указывающий, что в данный момент выполняется батч
 	private _pendingCommands: ICommand<T>[] = [] // Список команд, которые были выполнены во время батча и должны быть обработаны после его завершения
 
+	// Слой проекции: цепочка проекторов, ленивый кэш результата и карта
+	// «проецированный элемент → исходный», заполняемая проекторами через ctx.link().
+	private _projectors: TProjector<T>[] = []
+	private _projectionCache: readonly T[] | null = null
+	private _canonicalMap = new WeakMap<object, T>()
+
 	public readonly events = new TEvented<TCollectionStorageDriverEvents<T>>()
+
+	public readonly projectors: IProjectorRegistry<T>
 
 	constructor(storage: IStorage<T>) {
 		this._storage = storage
+
+		this.projectors = {
+			use: (projector: TProjector<T>) => {
+				this._projectors.push(projector)
+				this._invalidateProjection()
+
+				return () => {
+					const index = this._projectors.indexOf(projector)
+
+					if (index === -1) return
+
+					this._projectors.splice(index, 1)
+					this._invalidateProjection()
+				}
+			},
+			invalidate: () => this._invalidateProjection(),
+		}
+
+		// Состав изменился — проекция устарела. Один `change:items` на батч
+		// (см. execute/batch ниже) даёт ровно один `change:projection`.
+		this.events.on('change:items', () => this._invalidateProjection())
 
 		return new Proxy(this, {
 			get(target, prop, receiver) {
@@ -72,6 +106,84 @@ export class TCollectionStorageDriver<T> {
 	 */
 	public valueOf(): T[] {
 		return [...this._storage.items]
+	}
+
+	/**
+	 * Результат цепочки проекторов.
+	 *
+	 * Ленивый и кэшируемый: пересчёт происходит только на первое чтение после
+	 * инвалидации, а до тех пор отдаётся та же ссылка на массив — без этого
+	 * аксессор считал бы каждое чтение изменением состава.
+	 *
+	 * Пустой реестр не меняет поведение по смыслу: `_computeProjection` просто
+	 * отдаёт снимок сырого состава — то же, что `valueOf()`.
+	 */
+	public get projection(): readonly T[] {
+		if (this._projectionCache === null) {
+			this._projectionCache = this._computeProjection()
+		}
+
+		return this._projectionCache
+	}
+
+	/**
+	 * Проецированный элемент → исходный из storage.
+	 *
+	 * Без подмены ссылки (фильтр, сортировка) карта пуста, и метод — тождество.
+	 * С Proxy-обёрткой разрешает до объекта из storage транзитивно: см.
+	 * `_computeProjection`, где источник каждой связки сам уже разрешён через
+	 * строящуюся карту.
+	 */
+	public canonical(item: T): T {
+		if (item === null || typeof item !== 'object') return item
+
+		return this._canonicalMap.get(item as object) ?? item
+	}
+
+	/** Пересчитать проекцию по текущей цепочке проекторов и перестроить карту канонизации. */
+	private _computeProjection(): readonly T[] {
+		const canonicalMap = new WeakMap<object, T>()
+
+		if (this._projectors.length === 0) {
+			this._canonicalMap = canonicalMap
+
+			// Снимок, а не живая ссылка на storage.items: тот же контракт, что у
+			// valueOf() (см. «Контракт границы core → ui» в AGENTS.md). Между
+			// инвалидациями ссылку держит кэш `projection`; без копии здесь
+			// пересчёт после мутации storage (splice on place) отдавал бы ту же
+			// ссылку, и граница не увидела бы изменения по идентичности.
+			return [...this._storage.items]
+		}
+
+		const ctx: IProjectionContext<T> = {
+			link: (projected: T, source: T) => {
+				if (projected === null || typeof projected !== 'object') return
+
+				const resolvedSource =
+					source !== null && typeof source === 'object'
+						? (canonicalMap.get(source as object) ?? source)
+						: source
+
+				canonicalMap.set(projected as object, resolvedSource)
+			},
+		}
+
+		let result: readonly T[] = this._storage.items
+
+		for (const projector of this._projectors) {
+			result = projector(result, ctx)
+		}
+
+		this._canonicalMap = canonicalMap
+
+		return result
+	}
+
+	/** Пометить проекцию устаревшей и сообщить об этом — без пересчёта здесь же. */
+	private _invalidateProjection(): void {
+		this._projectionCache = null
+
+		this.events.emit('change:projection')
 	}
 
 	/**

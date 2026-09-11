@@ -3,6 +3,7 @@ import type {
 	IExtension,
 	IExtensionContext,
 	ISelectionExtension,
+	IFilterExtension,
 } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
@@ -82,6 +83,14 @@ export class TSelectExtension<
 		// Поле ссылается на список, а список существует всегда — в отличие от
 		// панели у Tabs, которой может и не быть
 		this._owner.aria.add('aria-controls', this.listId)
+
+		// Только Select знает, что в опции лежит текст и что фильтровать нужно
+		// по нему: `filter` — общее расширение, ему поле сравнения не зашито.
+		const filter = ctx.extensions.filter as IFilterExtension<TItem> | undefined
+
+		if (filter) {
+			filter.predicate = (item, query) => item.text.toLowerCase().includes(query.toLowerCase())
+		}
 
 		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 

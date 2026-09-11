@@ -61,6 +61,28 @@ export abstract class TBatchCollectionFacade<
 		if (props.trackBy) this.trackBy = props.trackBy
 	}
 
+	/**
+	 * Не переключено на `driver.projection` (план задачи «Фильтрация у Select»
+	 * это предполагал) — сделано и отменено в одном заходе.
+	 *
+	 * Причина: `<SelectItem v-for="item in items">` — это не только рендер, но
+	 * и точка регистрации элемента в коллекции (`TCollectionItemExtension` →
+	 * `plain.push()` на mount, `plain.remove()` на unmount через elevator —
+	 * `packages/setup/adapter/extensions/collection/collection.extension.class.ts`).
+	 * Стоило сузить `items` до проекции — Vue при сужении состава размонтирует
+	 * скрытые `SelectItem`, а их cleanup безусловно вызывает `plain.remove()` —
+	 * элемент по-настоящему удаляется из storage, хотя фильтр должен был лишь
+	 * спрятать его. Подтверждено тестом (driver.length падал до 0 при активном
+	 * фильтре в реальном Vue-рендере), см. отчёт разработчика в задаче.
+	 *
+	 * Сырой состав остаётся здесь. Слой проекции (`driver.projection`,
+	 * `driver.canonical`, расширение `filter`) реализован и протестирован на
+	 * уровне ядра — им может пользоваться код, не завязанный на mount/unmount
+	 * (например, `TListNavigationPlugin`). Показать в DOM только видимые опции
+	 * Select без потери элементов из storage — отдельная задача: она требует
+	 * менять `Select.vue` так, чтобы `v-for` шёл по сырому составу, а скрытие
+	 * шло через `v-show`/аналог на самой опции, не через исчезновение из списка.
+	 */
 	get items(): ReadonlyArray<TItem> {
 		return this.extensions.batch.items
 	}
