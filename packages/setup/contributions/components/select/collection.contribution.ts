@@ -18,7 +18,7 @@ export const SelectCollectionContribution = (): IContribution => ({
 		 * них знает коллекция. `change:tags` — текст обнуляется, как только
 		 * появляются теги, даже если сам выбор при этом не менялся.
 		 */
-		valueText: { type: String, protected: true, triggers: ['change:valueText', 'change:tags'] },
+		text: { type: String, protected: true, triggers: ['change:text', 'change:tags'] },
 		/**
 		 * `role`, `id` и множественность списка. Проп, а не набор `aria`: у
 		 * списка нет своего компонента — это разметка внутри шаблона Select,
@@ -37,7 +37,7 @@ export const SelectCollectionContribution = (): IContribution => ({
 		/**
 		 * Плейсхолдер поля с поправкой на теги: пока они есть, родной
 		 * `placeholder` инпута проступил бы сквозь них — его `value`
-		 * (`valueText`) в режиме тегов тоже пуст.
+		 * (`text`) в режиме тегов тоже пуст.
 		 */
 		field_placeholder: {
 			type: String,

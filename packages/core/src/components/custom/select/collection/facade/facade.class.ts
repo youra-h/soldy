@@ -39,7 +39,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 			) as TSelectCollection,
 		})
 
-		this.events.relay(this._select.events, ['change:valueText'])
+		this.events.relay(this._select.events, ['change:text'])
 		this.events.relay(this._tags.events, ['change:tags'])
 		this.events.relay(this._select.owner.events, ['change:placeholder'])
 
@@ -51,13 +51,14 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	 *
 	 * Проп фасада, а не поле ядра: текст складывается из опций, а о них знает
 	 * коллекция. У `TValueControl` своего `text` нет вовсе — `TTextable`
-	 * растёт из `TControl` соседней ветвью.
+	 * растёт из `TControl` соседней ветвью, поэтому имя здесь свободно и
+	 * коллизии с базой нет.
 	 *
 	 * В режиме тегов отдаёт пустую строку: текст выбранного рисуют теги в
 	 * поле, второй раз показывать его текстом было бы дублем.
 	 */
-	get valueText(): string {
-		return this._tags.tags ? '' : this._select.valueText
+	get text(): string {
+		return this._tags.tags ? '' : this._select.text
 	}
 
 	/**
@@ -76,7 +77,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	/**
 	 * Плейсхолдер поля с поправкой на теги: пока они есть, поле показывает их,
 	 * а не текст — родной `placeholder` инпута в этом случае проступил бы
-	 * сквозь них, потому что его `value` (то есть `valueText`) тоже пуст.
+	 * сквозь них, потому что его `value` (то есть `text`) тоже пуст.
 	 */
 	get field_placeholder(): string {
 		return this._tags.tags ? '' : this._select.owner.placeholder

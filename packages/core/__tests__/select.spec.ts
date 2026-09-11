@@ -361,9 +361,9 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 	})
 })
 
-describe('valueText — что показывает поле', () => {
+describe('text — что показывает поле', () => {
 	it('пуст, пока ничего не выбрано', () => {
-		expect(createSelect(['a']).collection.valueText).toBe('')
+		expect(createSelect(['a']).collection.text).toBe('')
 	})
 
 	it('текст выбранной опции, а не её значение', () => {
@@ -371,7 +371,7 @@ describe('valueText — что показывает поле', () => {
 
 		facadeFor(0).choose()
 
-		expect(collection.valueText).toBe('A')
+		expect(collection.text).toBe('A')
 	})
 
 	it('в multiple пуст — текст выбранных рисуют теги, а не поле', () => {
@@ -384,7 +384,7 @@ describe('valueText — что показывает поле', () => {
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
-		expect(collection.valueText).toBe('')
+		expect(collection.text).toBe('')
 	})
 
 	it('следует за текстом опции', () => {
@@ -393,7 +393,7 @@ describe('valueText — что показывает поле', () => {
 		facadeFor(0).choose()
 		items[0].text = 'Другое'
 
-		expect(collection.valueText).toBe('Другое')
+		expect(collection.text).toBe('Другое')
 	})
 })
 
@@ -550,12 +550,12 @@ describe('теги в multiple', () => {
 		expect(tag.closable).toBe(false)
 	})
 
-	it('valueText пуст, пока теги есть, — текст рисуют они', () => {
+	it('text пуст, пока теги есть, — текст рисуют они', () => {
 		const { collection, facadeFor } = createSelect(['a', 'b'])
 
 		collection.mode = 'multiple'
 		facadeFor(0).choose()
 
-		expect(collection.valueText).toBe('')
+		expect(collection.text).toBe('')
 	})
 })

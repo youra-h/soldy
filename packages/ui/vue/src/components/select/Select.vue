@@ -46,10 +46,10 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			ядро ставит явно — без него состояние осталось бы немым для
 			скринридера. См. `TInputControl._syncRequiredAria()`.
 		-->
-		<slot name="field" :text="valueText" :placeholder="placeholder">
+		<slot name="field" :text="text" :placeholder="placeholder">
 			<Input
 				class="s-select__field"
-				:value="valueText"
+				:value="text"
 				:name="name"
 				:placeholder="field_placeholder"
 				:id="id"
