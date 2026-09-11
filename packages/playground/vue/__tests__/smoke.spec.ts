@@ -137,6 +137,35 @@ describe('страница компонента', () => {
  * `ctrl` в ней оставался экземпляром `TButton`, а элементы приходили уже
  * списочные.
  */
+/**
+ * Регрессия слота `content`: `Tabs.Content`, положенный в превью не в тот
+ * слот, физически оказывается внутри `[role="tablist"]` — панель рядом с
+ * табами, а не рядом со списком. Проверяем DOM, а не консоль: страница уже
+ * ловит предупреждения Vue целиком, а эта проверка — про саму структуру.
+ */
+describe('превью tabs', () => {
+	it('панель не лежит внутри списка табов', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'tabs' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const stages = wrapper.findAll('.pg-col__stage')
+
+		expect(stages.length).toBeGreaterThan(0)
+
+		for (const stage of stages) {
+			const list = stage.find('.s-tabs__list')
+
+			expect(list.exists()).toBe(true)
+			expect(list.findAll('.s-tabs__panel')).toHaveLength(0)
+			expect(stage.findAll('.s-tabs__panel').length).toBeGreaterThan(0)
+		}
+
+		wrapper.unmount()
+	})
+})
+
 describe('переход между компонентами', () => {
 	it('правая колонка показывает новый компонент, а не прежний', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })

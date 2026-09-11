@@ -6,5 +6,11 @@
     "main": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts"
+    },
+    "dependencies": {
+        "@soldy/core": "*"
+    },
+    "scripts": {
+        "test": "vitest run"
     }
 }
