@@ -45,7 +45,7 @@ describe('уровни сборки', () => {
 		expect(engine.extensions.meta).toBeDefined()
 		expect(engine.extensions.activation).toBeUndefined()
 		expect(engine.extensions.selection).toBeUndefined()
-		expect(engine.driver.length).toBe(1)
+		expect(engine.extensions.batch.items.length).toBe(1)
 	})
 
 	it('поведенческий добавляет активацию или выбор', () => {
@@ -59,7 +59,7 @@ describe('уровни сборки', () => {
 
 		engine.extensions.batch.set([{ value: 'a' }, { value: 'b' }])
 
-		expect(engine.driver.length).toBe(2)
+		expect(engine.extensions.batch.items.length).toBe(2)
 	})
 })
 
@@ -94,14 +94,14 @@ describe('догон накопленного при привязке', () => {
 	it('сырые объекты становятся элементами', () => {
 		const engine = createEngine({ items: [{ value: 'a', text: 'A' }] })
 
-		expect(engine.driver[0]).not.toBeInstanceOf(TTabsItem)
+		expect(engine.extensions.batch.items[0]).not.toBeInstanceOf(TTabsItem)
 
 		const owner = new TTabs()
 
 		new TTabsCollectionFacade({}, { owner, engine: engine as never })
 
-		expect(engine.driver[0]).toBeInstanceOf(TTabsItem)
-		expect((engine.driver[0] as any).text).toBe('A')
+		expect(engine.extensions.batch.items[0]).toBeInstanceOf(TTabsItem)
+		expect((engine.extensions.batch.items[0] as any).text).toBe('A')
 	})
 
 	/**
@@ -127,8 +127,8 @@ describe('догон накопленного при привязке', () => {
 
 		new TTabsCollectionFacade({}, { owner, engine: engine as never })
 
-		expect((engine.driver[0] as any).size).toBe('lg')
-		expect((engine.driver[0] as any).variant).toBe('accent')
+		expect((engine.extensions.batch.items[0] as any).size).toBe('lg')
+		expect((engine.extensions.batch.items[0] as any).variant).toBe('accent')
 	})
 
 	it('_.selected доезжает до выбора у списочных', () => {

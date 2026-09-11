@@ -15,7 +15,7 @@ export class TPlainExtension<TItem extends object>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.driver.events.relay(this.events, [
+		this.events.relay(ctx.driver.events, [
 			'item:add:before',
 			'item:added',
 			'item:removed',

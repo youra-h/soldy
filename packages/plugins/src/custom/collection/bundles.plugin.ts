@@ -1,6 +1,6 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
-import type { TCollectionEngine } from '@soldy/core'
+import type { IControl, TCollectionEngine, TPlainExtension } from '@soldy/core'
 import type { TBundlesEvents } from './types'
 
 /**
@@ -28,8 +28,10 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		this._engine = engine
 
+		const plain = engine.extensions.plain as TPlainExtension<IControl>
+
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
-		engine.extensions.plain.events.on('item:removed', (item) => {
+		plain.events.on('item:removed', (item) => {
 			const uid = this._uid(item)
 
 			if (uid !== undefined) {
@@ -37,7 +39,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 			}
 		})
 
-		engine.extensions.plain.events.on('reset', () => {
+		plain.events.on('reset', () => {
 			this._bundles.clear()
 		})
 

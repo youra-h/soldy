@@ -1,7 +1,7 @@
 import { TComponent } from '../../component'
 import type { IComponentProps, TComponentEvents } from '../../component'
 import { TCollectionEngine } from './../engine'
-import type { ICollectionStorageDriver, IExtension } from './../engine'
+import type { IExtension, TPlainExtension } from './../engine'
 import type { ICollectionComponentOptions } from './types'
 
 /**
@@ -30,7 +30,10 @@ export abstract class TCollectionComponent<
 		this.engine = options.engine
 
 		// Системные события движка: item:*, change:items/count, reset.
-		this.events.relay(this.engine.driver.events, [
+		// `plain` есть у любой коллекции — его ставит baseExtensions().
+		const plain = this.engine.extensions.plain as unknown as TPlainExtension<TItem>
+
+		this.events.relay(plain.events, [
 			'item:add:before',
 			'item:added',
 			'item:removed',
@@ -43,10 +46,6 @@ export abstract class TCollectionComponent<
 
 		// Релеи событий движка (включая engine:create).
 		this.events.relay(this.engine.events, ['engine:create'])
-	}
-
-	get driver(): ICollectionStorageDriver<TItem> {
-		return this.engine.driver
 	}
 
 	get extensions(): TExtensions {

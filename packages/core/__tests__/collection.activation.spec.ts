@@ -1,17 +1,27 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TPlainExtension, TActivationExtension } from '@soldy/core'
+import {
+	TCollectionEngine,
+	TPlainExtension,
+	TBatchExtension,
+	TActivationExtension,
+} from '@soldy/core'
 
 type Item = { id: number; name: string }
 
 function createCollection() {
 	const plain = new TPlainExtension<Item>()
+	const batch = new TBatchExtension<Item>()
 	const activation = new TActivationExtension<Item>()
 
 	return new TCollectionEngine<
 		Item,
-		{ plain: TPlainExtension<Item>; activation: TActivationExtension<Item> }
+		{
+			plain: TPlainExtension<Item>
+			batch: TBatchExtension<Item>
+			activation: TActivationExtension<Item>
+		}
 	>({
-		extensions: { plain, activation },
+		extensions: { plain, batch, activation },
 	})
 }
 
@@ -222,8 +232,8 @@ describe('TActivationExtension', () => {
 		col.extensions.activation.activate(item)
 		col.extensions.activation.events.on('change:activation', handler)
 
-		// Явно эмитим reset на driver
-		col.driver.events.emit('reset')
+		// Явно вызываем reset через batch.clear() — легальный вход в тот же driver-эффект.
+		col.extensions.batch.clear()
 
 		expect(col.extensions.activation.activeItem).toBeUndefined()
 		expect(handler).toHaveBeenCalledWith(undefined)

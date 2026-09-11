@@ -43,6 +43,9 @@ jobs:
       - name: Типы — Vue
         run: npm run build:types --workspace=@soldy/ui-vue
 
+      - name: Типы — Plugins
+        run: npx tsc --noEmit -p packages/plugins/tsconfig.json
+
       # Стенд — единственное место, где компоненты рисуются всеми пропами разом
       # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
       # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.

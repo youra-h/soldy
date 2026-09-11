@@ -50,17 +50,18 @@ describe('Составные props меняют идентичность при 
 		})
 
 		// accessor.getValue делает ровно это: val?.valueOf?.() ?? val
-		const before = engine.driver.valueOf()
+		const driver = engine.getCore().driver
+		const before = driver.valueOf()
 
 		batch.set([{ id: 1 }])
 
-		const after = engine.driver.valueOf()
+		const after = driver.valueOf()
 
 		expect(before).toEqual([])
 		expect(after).toHaveLength(1)
 		expect(after).not.toBe(before)
 		// снимок отделён от самого драйвера
-		expect(engine.driver.valueOf()).not.toBe(engine.driver)
+		expect(driver.valueOf()).not.toBe(driver)
 	})
 })
 

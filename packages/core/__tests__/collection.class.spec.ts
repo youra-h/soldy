@@ -14,7 +14,7 @@ describe('TCollectionEngine', () => {
 		const col = new TCollectionEngine<Item>()
 
 		expect(col.extensions).toEqual({})
-		expect(col.driver.length).toBe(0)
+		expect(col.getCore().driver.length).toBe(0)
 	})
 
 	it('создаётся с расширениями', () => {
@@ -54,7 +54,7 @@ describe('TCollectionEngine', () => {
 		plain.insert(item)
 		activation.activate(item)
 
-		expect(col.driver.length).toBe(1)
+		expect(col.getCore().driver.length).toBe(1)
 		expect(activation.activeItem).toBe(item)
 	})
 
@@ -67,7 +67,7 @@ describe('TCollectionEngine', () => {
 
 		const changeItems = vi.fn()
 
-		col.driver.events.on('change:items', changeItems)
+		col.getCore().driver.events.on('change:items', changeItems)
 
 		col.batch(() => {
 			plain.insert({ id: 1, name: 'a' })
@@ -90,9 +90,9 @@ describe('TCollectionEngine', () => {
 
 		const order: string[] = []
 
-		col.driver.events.on('item:added', () => order.push('driver:added'))
-		col.driver.events.on('change:count', () => order.push('driver:count'))
-		col.driver.events.on('change:items', () => order.push('driver:items'))
+		col.getCore().driver.events.on('item:added', () => order.push('driver:added'))
+		col.getCore().driver.events.on('change:count', () => order.push('driver:count'))
+		col.getCore().driver.events.on('change:items', () => order.push('driver:items'))
 		activation.events.on('change:activation', () => order.push('activation:change'))
 
 		const item: Item = { id: 1, name: 'a' }
@@ -116,7 +116,7 @@ describe('TCollectionEngine', () => {
 			extensions: { plain },
 		})
 
-		expect(col.driver.length).toBe(0)
+		expect(col.getCore().driver.length).toBe(0)
 	})
 
 	// --- .use() — fluent-добавление расширений ---
@@ -125,7 +125,7 @@ describe('TCollectionEngine', () => {
 		const col = new TCollectionEngine<Item>()
 			.use(new TPlainExtension<Item>())
 
-		expect(col.driver.length).toBe(0)
+		expect(col.getCore().driver.length).toBe(0)
 		expect(col.extensions.plain).toBeDefined()
 	})
 
@@ -141,7 +141,7 @@ describe('TCollectionEngine', () => {
 		col.extensions.activation.activate(item)
 		col.extensions.selection.select(item)
 
-		expect(col.driver.length).toBe(1)
+		expect(col.getCore().driver.length).toBe(1)
 		expect(col.extensions.activation.isActive(item)).toBe(true)
 		expect(col.extensions.selection.isSelected(item)).toBe(true)
 	})
@@ -153,7 +153,7 @@ describe('TCollectionEngine', () => {
 		// plain готов к работе сразу после .use()
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.driver.length).toBe(1)
+		expect(col.getCore().driver.length).toBe(1)
 	})
 
 	it('use: возвращает this (тот же объект)', () => {
@@ -185,7 +185,7 @@ describe('TCollectionEngine', () => {
 
 		const added = vi.fn()
 
-		col.driver.events.on('item:added', added)
+		col.getCore().driver.events.on('item:added', added)
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
 		expect(added).toHaveBeenCalledOnce()

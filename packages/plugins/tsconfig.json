@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@soldy/core": ["../core/src"],
+      "@soldy/plugins": ["./src"]
+    }
+  },
+  "include": ["src/**/*"]
+}

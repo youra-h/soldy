@@ -12,7 +12,7 @@ import { join, resolve, relative } from 'node:path'
  * Сканируется весь исходный код пакетов (не только `src/*`: у `setup`,
  * например, исходники лежат прямо в `adapter/`, `descriptors/` и т.п.),
  * кроме `node_modules`, сборок и тестов — тесты ядра легально дергают
- * `col.driver`, потому что проверяют сам движок, а не обходят его.
+ * `col.getCore().driver`, потому что проверяют сам движок, а не обходят его.
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -32,9 +32,6 @@ const ALLOWED_PATTERNS = [
 	/[\\/]collection[\\/]extensions[\\/]/,
 	// Движок коллекции и его собственные расширения (base/collection/engine/**).
 	/[\\/]collection[\\/]engine[\\/]/,
-	// Базовый фасад владельца коллекции — граница между движком и публичным
-	// API фасадов (List/Select/Tabs/...), на неё опираются тесты ядра.
-	/[\\/]collection[\\/]facade[\\/]collection-component\.class\.ts$/,
 ]
 
 const DRIVER_ACCESS = /\.driver\b/

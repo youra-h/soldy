@@ -14,7 +14,7 @@ export class TCollectionEngine<
 	T extends object,
 	TExtensions extends Record<string, IExtension<T>> = Record<string, never>,
 > {
-	public readonly driver: ICollectionStorageDriver<T>
+	private readonly _driver: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions
 	public readonly events = new TEvented<
 		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
@@ -26,7 +26,7 @@ export class TCollectionEngine<
 			extensions?: TExtensions
 		} = {},
 	) {
-		this.driver = new TCollectionStorageDriver(
+		this._driver = new TCollectionStorageDriver(
 			options.storage ?? new TArrayStorage<T>(),
 		) as unknown as ICollectionStorageDriver<T>
 
@@ -78,21 +78,21 @@ export class TCollectionEngine<
 	 */
 	public getCore(): ICollectionEngineCore<T, TExtensions> {
 		return {
-			driver: this.driver,
+			driver: this._driver,
 			extensions: this.extensions,
 		}
 	}
 
 	private _createContext(): IExtensionContext<T> {
 		return {
-			driver: this.driver,
+			driver: this._driver,
 			extensions: this.extensions,
-			execute: (cmd: ICommand<T>) => this.driver.execute(cmd),
-			batch: (action: () => void) => this.driver.batch(action),
+			execute: (cmd: ICommand<T>) => this._driver.execute(cmd),
+			batch: (action: () => void) => this._driver.batch(action),
 		}
 	}
 
 	batch(action: () => void): void {
-		this.driver.batch(action)
+		this._driver.batch(action)
 	}
 }
