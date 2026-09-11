@@ -27,6 +27,8 @@ import {
 	SelectCollectionItemDescriptor,
 	TabsCollectionDescriptor,
 	TabsCollectionItemDescriptor,
+	TagsCollectionDescriptor,
+	TagsCollectionItemDescriptor,
 } from '../descriptors'
 
 /** Ищет сеттер по всей цепочке прототипов — свойство может прийти из базы. */
@@ -53,6 +55,8 @@ const descriptors: Array<[string, () => any]> = [
 	['Select.Item', SelectCollectionItemDescriptor],
 	['Tabs', TabsCollectionDescriptor],
 	['Tabs.Item', TabsCollectionItemDescriptor],
+	['Tags', TagsCollectionDescriptor],
+	['Tags.Item', TagsCollectionItemDescriptor],
 ]
 
 /**
