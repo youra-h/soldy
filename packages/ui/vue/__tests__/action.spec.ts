@@ -7,9 +7,9 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { TButton } from '@soldy/core'
+import { TButton, TInput } from '@soldy/core'
 import { TActionPlugin } from '@soldy/plugins'
-import { Button } from '@soldy/ui-vue'
+import { Button, Input } from '@soldy/ui-vue'
 
 /**
  * Плагин цепляет слушатели по `element:ready`, а TElementPlugin отдаёт его
@@ -103,6 +103,53 @@ describe('focused · связь с настоящим фокусом', () => {
 		;(wrapper.element as HTMLElement).focus()
 
 		expect(changes).toEqual([true])
+	})
+})
+
+describe('data-focus-visible · Input (баг: кольцо по клику)', () => {
+	/**
+	 * `<input>` матчит браузерный `:focus-visible` при любом фокусе, включая
+	 * клик — спека считает текстовое поле «ожидающим клавиатуру». Тема больше
+	 * не полагается на эту эвристику и красит только по `data-focus-visible`,
+	 * которую считает `TActionPlugin` через модальность последнего ввода.
+	 */
+	it('Tab (клавиатура) перед фокусом ставит data-focus-visible на корень', async () => {
+		const ctrl = new TInput()
+		const wrapper = mount(Input, { props: { ctrl }, attachTo: document.body })
+
+		await mounted()
+
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+		await wrapper.find('input').trigger('focusin')
+
+		expect(wrapper.attributes('data-focus-visible')).toBe('true')
+	})
+
+	it('клик мышью перед фокусом не ставит data-focus-visible', async () => {
+		const ctrl = new TInput()
+		const wrapper = mount(Input, { props: { ctrl }, attachTo: document.body })
+
+		await mounted()
+
+		document.dispatchEvent(new PointerEvent('pointerdown'))
+		await wrapper.find('input').trigger('focusin')
+
+		expect(wrapper.attributes('data-focus-visible')).toBeUndefined()
+	})
+
+	it('focusout снимает data-focus-visible', async () => {
+		const ctrl = new TInput()
+		const wrapper = mount(Input, { props: { ctrl }, attachTo: document.body })
+
+		await mounted()
+
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+		await wrapper.find('input').trigger('focusin')
+		expect(wrapper.attributes('data-focus-visible')).toBe('true')
+
+		await wrapper.find('input').trigger('focusout')
+
+		expect(wrapper.attributes('data-focus-visible')).toBeUndefined()
 	})
 })
 

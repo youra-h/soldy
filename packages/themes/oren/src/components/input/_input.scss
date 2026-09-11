@@ -14,7 +14,12 @@
 	@apply text-s-component;
 	@apply transition-colors duration-150;
 
-	&:has(input:focus-visible:not(:disabled)) {
+	// Браузер сам матчит :focus-visible на текстовом поле при любом фокусе,
+	// включая клик мышью — спека считает его «ожидающим клавиатуру». Поэтому
+	// модальность взаимодействия считает TActionPlugin и отдаёт data-атрибутом,
+	// а не CSS :focus-visible (см. AGENTS.md «CSS не стилизуется по aria-*» —
+	// тот же принцип: тема смотрит на data-*, а не полагается на эвристику браузера).
+	&[data-focus-visible='true'] {
 		@apply outline-2 outline-offset-2 outline-s-component;
 	}
 

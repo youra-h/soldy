@@ -3,6 +3,11 @@ import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
 import type { IControl } from '@soldy/core'
 import type { IActionPluginOptions, TActionPluginEvents } from './types'
+import {
+	acquireFocusModalityTracking,
+	releaseFocusModalityTracking,
+	wasLastInputKeyboard,
+} from './focus-modality'
 
 /** Теги, где браузер сам превращает Enter/Space в click. */
 const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
@@ -28,6 +33,13 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  * 3. Пробрасывает сырой `click`. Нужен той стороне, у которой на руках только
  *    инстанс: в шаблоне DOM-события и так доступны через fallthrough
  *    (`<Button @click="...">`), а через ctrl — только отсюда.
+ *
+ * 4. Пишет `data-focus-visible`. Браузер сам решает, матчить ли `:focus-visible`
+ *    на клик, и для текстовых полей (`<input>`, `<select>`) решает неверно —
+ *    спека считает их «ожидающими клавиатуру» и подсвечивает кольцом любой
+ *    фокус, включая мышь. Модальность взаимодействия здесь единственный
+ *    источник правды (см. `focus-modality.ts`), поэтому пишет её плагин, а
+ *    тема красит только по `data-*` — не по браузерному `:focus-visible`.
  */
 export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	private _element: HTMLElement | null = null
@@ -83,6 +95,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		element.addEventListener('focusin', this._onFocusIn)
 		element.addEventListener('focusout', this._onFocusOut)
 
+		acquireFocusModalityTracking(element.ownerDocument)
+
 		// Инстанс мог быть создан с focused: true до появления элемента
 		if (this._instance?.focused) this._onFocusedChange(true)
 	}
@@ -96,6 +110,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		element.removeEventListener('keydown', this._onKeyDown)
 		element.removeEventListener('focusin', this._onFocusIn)
 		element.removeEventListener('focusout', this._onFocusOut)
+
+		releaseFocusModalityTracking()
 
 		this._element = null
 	}
@@ -146,11 +162,13 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	private readonly _onFocusIn = (event: FocusEvent): void => {
 		this.events.emit('focus', event)
 		this._writeFocused(true)
+		this._instance?.dataset.add('focus-visible', wasLastInputKeyboard() ? true : null)
 	}
 
 	private readonly _onFocusOut = (event: FocusEvent): void => {
 		this.events.emit('blur', event)
 		this._writeFocused(false)
+		this._instance?.dataset.add('focus-visible', null)
 	}
 
 	/**
