@@ -40,7 +40,7 @@ export abstract class TCollectionBundlesAccess extends TBasePlugin<any> {
 
 	/** Элемент коллекции по порядковому индексу. */
 	protected getItemByIndex(index: number): unknown {
-		return this.bundles?.engine?.driver[index]
+		return this.bundles?.engine?.extensions.batch.items[index]
 	}
 
 	/** Все bundles в порядке элементов коллекции. */

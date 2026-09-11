@@ -2,7 +2,6 @@ import type { IExtension, IExtensionContext } from '../types'
 import type { TBatchEvents, IBatchExtension } from './types'
 import { TInsertCommand, TRemoveCommand, TClearCommand, TUpdateCommand } from '../../commands'
 import { TBaseExtension } from '../base-extension.class'
-import type { TReadonlyStorageDriverArray } from '../../types'
 
 /**
  * TBatchExtension — расширение для пакетных операций
@@ -34,9 +33,10 @@ export class TBatchExtension<TItem extends object>
 		this.events.emit('change:trackBy', fn)
 	}
 
-	get items(): TReadonlyStorageDriverArray<TItem> {
-		// Приведение типа, если driver реализует методы чтения ReadonlyArray
-		return this._ctx.driver as unknown as TReadonlyStorageDriverArray<TItem>
+	get items(): ReadonlyArray<TItem> {
+		// Тип сужен до ReadonlyArray: наружу отдаём только чтение, driver-методы
+		// (execute, events) через этот геттер недоступны — см. IBatchExtension.
+		return this._ctx.driver
 	}
 
 	set items(items: TItem[]) {

@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import type { TReadonlyStorageDriverArray, TCollectionEngineItemSource } from '../../types'
+import type { TCollectionEngineItemSource } from '../../types'
 
 /** Owner-level props коллекции от batch-расширения (input). Зеркало BatchExtensionContribution. */
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
@@ -22,7 +22,13 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 > {
 	trackBy?: (item: TItem) => any
 
-	get items(): TReadonlyStorageDriverArray<TItem>
+	/**
+	 * Элементы коллекции для чтения — единственный легитимный способ получить
+	 * список вне расширений коллекции. Тип сознательно `ReadonlyArray`, а не
+	 * `TReadonlyStorageDriverArray`: driver-методы (`execute`, `events`) сюда не
+	 * протаскиваются — иначе обёртка над driver была бы дырявой.
+	 */
+	get items(): ReadonlyArray<TItem>
 	set items(items: TItem[])
 
 	/**

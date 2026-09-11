@@ -48,10 +48,10 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 			engine.extensions.activation.events.on('item:activated', () => this._emitOffset())
 			engine.extensions.activation.events.on('item:deactivated', () => this._emitOffset())
 
-			engine.driver.events.on('item:removed', () =>
+			engine.extensions.plain.events.on('item:removed', () =>
 				requestAnimationFrame(() => this._emitOffset()),
 			)
-			engine.driver.events.on('item:moved', () =>
+			engine.extensions.plain.events.on('item:moved', () =>
 				requestAnimationFrame(() => this._emitOffset()),
 			)
 		})

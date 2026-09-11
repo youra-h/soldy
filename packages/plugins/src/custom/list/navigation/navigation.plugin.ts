@@ -1,4 +1,4 @@
-import type { IControl, TCollectionEngine } from '@soldy/core'
+import type { IControl, IBatchExtension, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -95,7 +95,9 @@ export abstract class TListNavigationPlugin<
 	 * от несуществующего теперь компонента `TList`.
 	 */
 	protected items(): IControl[] {
-		return (this._engine?.driver ?? []) as IControl[]
+		const batch = this._engine?.extensions.batch as IBatchExtension<IControl> | undefined
+
+		return (batch?.items ?? []) as IControl[]
 	}
 
 	/* ---------------------------------------------------------------- */

@@ -37,7 +37,7 @@ export interface ITabsContentBindingOptions {
 
 /** Таб, чьё значение совпало со значением панели. */
 function findByValue(engine: any, value: unknown): any {
-	for (const item of engine.driver) {
+	for (const item of engine.extensions.batch.items) {
 		if (item.value === value) return item
 	}
 
@@ -106,11 +106,11 @@ export class TTabsContentBindingExtension {
 		resolve()
 
 		// Панель могла смонтироваться раньше своего таба
-		engine.driver.events.on('item:added', resolve)
+		engine.extensions.plain.events.on('item:added', resolve)
 		content.events.on('change:value', resolve)
 
 		context.events.on('destroy', () => {
-			engine.driver.events.off('item:added', resolve)
+			engine.extensions.plain.events.off('item:added', resolve)
 			content.events.off('change:value', resolve)
 
 			unbind()
