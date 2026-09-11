@@ -169,6 +169,47 @@ describe('disabled сбрасывает closable', () => {
 	})
 })
 
+describe('view пробрасывается с Tags на тег', () => {
+	it('дефолт — filled, как у Button', () => {
+		const { facadeFor } = createTags(['a'])
+
+		expect(facadeFor(0).view).toBe('filled')
+	})
+
+	it('тег берёт вид владельца', () => {
+		const { facadeFor } = createTags(['a'], { view: 'outlined' })
+
+		expect(facadeFor(0).view).toBe('outlined')
+	})
+
+	/**
+	 * Тот самый релей (см. ListBox: `change:view` — единственное событие,
+	 * которое item-адаптер добавляет к карте родителя). Без него тег узнавал
+	 * бы о смене вида только при пересоздании.
+	 */
+	it('смена вида доходит до тега событием', () => {
+		const { owner, facadeFor } = createTags(['a', 'b'], { view: 'plain' })
+		const facade = facadeFor(0)
+		const seen: unknown[] = []
+
+		facade.events.on('change:view', (value: unknown) => seen.push(value))
+
+		owner.view = 'filled'
+
+		expect(seen).toEqual(['filled'])
+		expect(facade.view).toBe('filled')
+	})
+
+	it('вид доходит до всех тегов, а не только до первого', () => {
+		const { owner, facadeFor } = createTags(['a', 'b', 'c'], { view: 'plain' })
+		const facades = [facadeFor(0), facadeFor(1), facadeFor(2)]
+
+		owner.view = 'filled'
+
+		expect(facades.map((facade) => facade.view)).toEqual(['filled', 'filled', 'filled'])
+	})
+})
+
 describe('closeAria', () => {
 	it('содержит текст тега вместе с closeLabel', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })

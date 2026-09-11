@@ -98,6 +98,10 @@ const OWN: Record<string, Record<string, string>> = {
 		view: 'Оформление: линия, контейнер или папки',
 		closable: 'Показывать ли у вкладок кнопку закрытия',
 	},
+	tags: {
+		view: 'Оформление тегов — передаётся во внутренний Button каждого тега',
+		closable: 'Показывать ли у тегов кнопку закрытия',
+	},
 	accordion: {
 		view: 'Оформление секций',
 	},
@@ -153,6 +157,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		alignment: TABS_ALIGNMENTS,
 		position: TABS_POSITIONS,
 	},
+	tags: { view: BUTTON_VIEWS },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }

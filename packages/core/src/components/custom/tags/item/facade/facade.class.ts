@@ -2,13 +2,15 @@ import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
 import type { TTagsCollectionExtensions, TTagsAdapters } from '../../collection/types'
 import type { ITagsItem } from '../types'
+import type { TTagsView } from '../../types'
 
 /**
  * Фасад элемента Tags.
  *
- * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — только
- * `closable`: резолв «элемент ?? владелец» делает `TTagsItemExtension`, фасад
- * лишь читает готовый результат — как `closable` у `TTabsItemCollectionFacade`.
+ * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — `closable`
+ * (резолв «элемент ?? владелец» делает `TTagsItemExtension`, фасад лишь читает
+ * готовый результат — как `closable` у `TTabsItemCollectionFacade`) и `view`
+ * — целиком с набора, как `view` у `TListBoxItemCollectionFacade`.
  */
 export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 	ITagsItem,
@@ -19,11 +21,15 @@ export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 
 		if (!this._context) return
 
-		this.events.relay(this._tagsAdapters.tags.events, ['change:closable'])
+		this.events.relay(this._tagsAdapters.tags.events, ['change:closable', 'change:view'])
 	}
 
 	get closable(): boolean {
 		return this._context ? this._tagsAdapters.tags.closable : false
+	}
+
+	get view(): TTagsView {
+		return this._context ? this._tagsAdapters.tags.view : 'filled'
 	}
 
 	private get _tagsAdapters(): TTagsAdapters {

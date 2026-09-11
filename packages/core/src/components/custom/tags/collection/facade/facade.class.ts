@@ -5,13 +5,14 @@ import { resolveEngine } from '../../../../base/collection/create/internal'
 import type { TTagsCollectionExtensions, TTagsCollectionFacadeOptions } from '../types'
 import type { ITags } from '../../types'
 import type { ITagsItem } from '../../item/types'
+import type { TTagsView } from '../../types'
 
 /**
  * Фасад коллекции Tags.
  *
  * Наследует `TSelectionCollectionFacade`, как ListBox: состав и выбор из
- * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своего сверх базы
- * фасад не добавляет — в отличие от ListBox у Tags нет `view`.
+ * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своё сверх базы —
+ * `view`, как у ListBox: читает готовое значение у `tags`-расширения.
  */
 export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 	ITagsItem,
@@ -41,5 +42,9 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		})
 
 		this.applyProps(props)
+	}
+
+	get view(): TTagsView {
+		return this.extensions.tags.view
 	}
 }

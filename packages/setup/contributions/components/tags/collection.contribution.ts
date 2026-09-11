@@ -1,4 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
+import { defineType } from '../../defineType'
+import { TButtonView } from '@soldy/core'
 
 /**
  * Коллекционные props/events владельца Tags — то, что выводит фасад
@@ -26,6 +28,15 @@ export const TagsCollectionItemContribution = (): IContribution => ({
 			protected: true,
 			get: (instance) => instance.closable,
 			triggers: ['change:closable'],
+		},
+		/**
+		 * Внешний вид тега — со набора целиком, только на чтение (как `view` у
+		 * ListBox): меняется на инстансе Tags, а не на теге.
+		 */
+		view: {
+			type: defineType<TButtonView>(String),
+			protected: true,
+			triggers: ['change:view'],
 		},
 	},
 })

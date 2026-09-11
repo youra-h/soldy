@@ -14,6 +14,12 @@ import SetupTagsItem from './setup.component'
  *
  * `dataset` — на обёртке: тема красит выбранный тег по `data-selected`, его
  * ставит `TSelectionExtension` всем элементам коллекции, как у Tabs.
+ *
+ * `view` на внутреннем Button — вид со набора целиком (`TTags.view`,
+ * дефолт `'filled'`), как у ListBox. `direction` — своё направление письма
+ * тега; на обёртке уже стоит `dir`, но Button — интерактивный элемент со
+ * своим DOM-узлом, и для него направление передаётся явно, а не только через
+ * наследование `dir` от родителя.
  */
 export default { ...SetupTagsItem, components: { Icon, Button } }
 </script>
@@ -30,6 +36,8 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 	>
 		<Button
 			:tag="tag"
+			:view="view"
+			:direction="direction"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"

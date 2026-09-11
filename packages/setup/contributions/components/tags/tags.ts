@@ -34,5 +34,10 @@ export const TagsContribution = (): IContribution => ({
 	},
 	props: {
 		closable: { type: Boolean, triggers: ['change:closable'] },
+		/**
+		 * Внешний вид тегов — целиком уходит во внутренний `Button` каждого
+		 * тега, как `view` у `ListBox`.
+		 */
+		view: { type: String, triggers: ['change:view'] },
 	},
 })

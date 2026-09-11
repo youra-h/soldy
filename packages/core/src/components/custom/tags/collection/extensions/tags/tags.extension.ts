@@ -9,7 +9,7 @@ import {
 	TRemoveCommand,
 } from '../../../../../base/collection'
 import type { ITagsItem } from '../../../item/types'
-import type { ITags } from '../../../types'
+import type { ITags, TTagsView } from '../../../types'
 import type {
 	TTagsExtensionEvents,
 	ITagsExtensionOptions,
@@ -22,7 +22,7 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
 /**
  * TTagsExtension — то, что тег знает благодаря коллекции.
  *
- * Три обязанности:
+ * Четыре обязанности:
  *
  * 1. **Проброс** `disabled`/`size`/`variant` с владельца на теги — как у
  *    `TListBoxExtension`/`TTabsExtension`.
@@ -33,6 +33,9 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *    как только `selection.mode` перестаёт быть `none`. Пишет это
  *    расширение, а не элемент и не `TSelectionExtension`: тот общий для всех
  *    коллекций, а конкретная пара ролей — знание Tags.
+ * 4. **Вид** — `view` берётся у владельца целиком (как `view` у
+ *    `TListBoxExtension`) и доезжает до item-адаптера событием: элемент
+ *    своего вида не имеет, его `Button` рисуется видом набора.
  */
 export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsItem = ITagsItem>
 	extends TBaseOwnerItemExtension<TItem, ITagsItemExtension<TItem>, TTagsExtensionEvents>
@@ -52,6 +55,11 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	/** Глобальный closable с инстанса TTags. */
 	get closable(): boolean {
 		return this._owner.closable
+	}
+
+	/** Внешний вид со набора. */
+	get view(): TTagsView {
+		return this._owner.view
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {
@@ -88,8 +96,9 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		})
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTagsItemExtension резолвит closable из item ?? owner)
-		this.events.relay(this._owner.events, ['change:closable'])
+		// (TTagsItemExtension резолвит closable из item ?? owner). change:view —
+		// вид доезжает до Button каждого тега тем же путём, что у ListBox.
+		this.events.relay(this._owner.events, ['change:closable', 'change:view'])
 
 		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
 

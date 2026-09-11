@@ -1,7 +1,7 @@
 import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
-import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue } from './types'
+import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView } from './types'
 
 /**
  * Компонент Tags — коллекция тегов.
@@ -20,6 +20,11 @@ import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue } from './
  * («list»). Когда у коллекции включён выбор, роль меняется на `listbox`, а
  * элементам — на `option`; это знание коллекции, а не ядра, и пишет его
  * `TTagsExtension`.
+ *
+ * `view` — как у ListBox: значение целиком со набора, каждый тег отдаёт его
+ * своему внутреннему `Button` через `TTagsExtension`/`TTagsItemExtension`.
+ * Дефолт `'filled'` — вид `Button` по умолчанию, чтобы включение пропа не
+ * поменяло вид молча.
  */
 export class TTags
 	extends TValueControl<TTagsValue, ITagsProps, TTagsEvents, TTagsStates>
@@ -30,9 +35,11 @@ export class TTags
 	static defaultValues: Partial<ITagsProps> = {
 		...TValueControl.defaultValues,
 		closable: false,
+		view: 'filled',
 	}
 
 	protected _closable!: boolean
+	protected _view!: TTagsView
 
 	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions<TTagsStates> = {}) {
 		super(props, options)
@@ -40,6 +47,8 @@ export class TTags
 		const ctor = new.target as typeof TTags
 
 		this._closable = props.closable ?? ctor.defaultValues.closable!
+
+		this._applyView(props.view ?? ctor.defaultValues.view!)
 
 		this._aria.add('role', 'list')
 	}
@@ -55,10 +64,31 @@ export class TTags
 		;(this.events as TEvented<TTagsEvents>).emit('change:closable', value)
 	}
 
+	get view(): TTagsView {
+		return this._view
+	}
+
+	set view(value: TTagsView) {
+		if (this._view === value) return
+
+		this._applyView(value, this._view)
+		;(this.events as TEvented<TTagsEvents>).emit('change:view', value)
+	}
+
+	protected _applyView(newValue: TTagsView, oldValue?: TTagsView): void {
+		this._classes.swapClass({
+			oldClass: `--${oldValue}`,
+			newClass: `--${newValue}`,
+		})
+
+		this._view = newValue
+	}
+
 	override getProps(): ITagsProps {
 		return {
 			...super.getProps(),
 			closable: this._closable,
+			view: this._view,
 		} as ITagsProps
 	}
 }
