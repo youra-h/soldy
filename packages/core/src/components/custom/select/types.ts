@@ -39,6 +39,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:clearable': (value: boolean) => void
 		/** change:clearLabel */
 		'change:clearLabel': (value: string) => void
+		/** change:editable */
+		'change:editable': (value: boolean) => void
 	}
 
 /**
@@ -58,6 +60,12 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	clearable?: boolean
 	/** Слово для кнопки очистки; к нему добавляется имя поля */
 	clearLabel?: string
+	/**
+	 * Можно ли вводить текст в поле. `false` — select-only (по умолчанию).
+	 * Не проп `readonly` вложенного `Input` — тот считается из обоих сразу,
+	 * см. `fieldReadonly`.
+	 */
+	editable?: boolean
 }
 
 /** Полный набор props: собственные + коллекционные. */
@@ -81,6 +89,10 @@ export interface ISelect<
 	clearable: boolean
 	/** Слово для кнопки очистки */
 	clearLabel: string
+	/** Можно ли вводить текст в поле. `false` — select-only (по умолчанию) */
+	editable: boolean
+	/** `readonly` вложенного поля: `readonly || !editable` */
+	readonly fieldReadonly: boolean
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */

@@ -559,3 +559,135 @@ describe('теги в multiple', () => {
 		expect(collection.text).toBe('')
 	})
 })
+
+describe('editable — ввод текста в поле', () => {
+	it('по умолчанию выключен, select-only', () => {
+		const select = new TSelect()
+
+		expect(select.editable).toBe(false)
+	})
+
+	it('меняется через instance и сообщает об этом', () => {
+		const select = new TSelect()
+		const handler = vi.fn()
+
+		select.events.on('change:editable', handler)
+		select.editable = true
+
+		expect(select.editable).toBe(true)
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	it('повтор того же значения события не даёт', () => {
+		const select = new TSelect({ editable: true })
+		const handler = vi.fn()
+
+		select.events.on('change:editable', handler)
+		select.editable = true
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('ставит aria-autocomplete="none" — честный сигнал без обещания автодополнения', () => {
+		const select = new TSelect({ editable: true })
+
+		expect(select.aria.get('aria-autocomplete')).toBe('none')
+
+		select.editable = false
+
+		expect(select.aria.has('aria-autocomplete')).toBe(false)
+	})
+
+	describe('fieldReadonly — readonly вложенного Input, не самого Select', () => {
+		it('select-only: readonly=false, editable=false → поле readonly', () => {
+			const select = new TSelect()
+
+			expect(select.fieldReadonly).toBe(true)
+		})
+
+		it('editable: readonly=false, editable=true → поле изменяемо', () => {
+			const select = new TSelect({ editable: true })
+
+			expect(select.fieldReadonly).toBe(false)
+		})
+
+		it('readonly Select держит поле readonly даже в editable', () => {
+			const select = new TSelect({ readonly: true, editable: true })
+
+			expect(select.fieldReadonly).toBe(true)
+		})
+
+		it('readonly=true, editable=false → поле readonly', () => {
+			const select = new TSelect({ readonly: true })
+
+			expect(select.fieldReadonly).toBe(true)
+		})
+
+		it('следует за изменением editable и readonly в рантайме', () => {
+			const select = new TSelect({ editable: true })
+
+			expect(select.fieldReadonly).toBe(false)
+
+			select.readonly = true
+
+			expect(select.fieldReadonly).toBe(true)
+
+			select.readonly = false
+			select.editable = false
+
+			expect(select.fieldReadonly).toBe(true)
+		})
+	})
+
+	it('openable не зависит от editable', () => {
+		const editable = new TSelect({ editable: true })
+		const selectOnly = new TSelect({ editable: false })
+
+		expect(editable.openable).toBe(true)
+		expect(selectOnly.openable).toBe(true)
+
+		editable.readonly = true
+
+		expect(editable.openable).toBe(false)
+	})
+
+	describe('toggleOpen в editable только открывает', () => {
+		it('открывает закрытую панель как обычно', () => {
+			const select = new TSelect({ editable: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(true)
+		})
+
+		it('не закрывает уже открытую — клик по тексту не должен прятать панель', () => {
+			const select = new TSelect({ editable: true, open: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(true)
+		})
+
+		it('в select-only toggleOpen закрывает как раньше', () => {
+			const select = new TSelect({ open: true })
+
+			select.toggleOpen()
+
+			expect(select.open).toBe(false)
+		})
+
+		it('закрытие в editable остаётся доступно напрямую — Escape, выбор, клик мимо', () => {
+			const select = new TSelect({ editable: true, open: true })
+
+			select.open = false
+
+			expect(select.open).toBe(false)
+		})
+	})
+
+	it('getProps отдаёт editable', () => {
+		const select = new TSelect({ editable: true })
+
+		expect(select.getProps().editable).toBe(true)
+	})
+})

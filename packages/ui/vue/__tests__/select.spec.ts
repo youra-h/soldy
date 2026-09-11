@@ -69,6 +69,19 @@ describe('поле', () => {
 		expect(field.attributes('aria-required')).toBe('true')
 	})
 
+	it('select-only: вложенный input readonly', () => {
+		const field = render().find('input')
+
+		expect(field.attributes('readonly')).toBeDefined()
+	})
+
+	it('editable: вложенный input не readonly и объявляет aria-autocomplete="none"', () => {
+		const field = render({ editable: true }).find('input')
+
+		expect(field.attributes('readonly')).toBeUndefined()
+		expect(field.attributes('aria-autocomplete')).toBe('none')
+	})
+
 	it('без required атрибута нет', () => {
 		const field = render().find('input')
 

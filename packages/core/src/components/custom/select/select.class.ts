@@ -45,6 +45,7 @@ export class TSelect<
 		closeOnSelect: true,
 		clearable: false,
 		clearLabel: 'Clear',
+		editable: false,
 		tag: 'div',
 	}
 
@@ -57,6 +58,7 @@ export class TSelect<
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior!: TScrollBehavior
 	protected _indicator!: TListIndicator
+	protected _editable!: boolean
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -75,6 +77,7 @@ export class TSelect<
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
+		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
 
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью.
@@ -112,7 +115,14 @@ export class TSelect<
 		;(this.events as TEvented<TSelectEvents>).emit(value ? 'open' : 'close')
 	}
 
+	/**
+	 * В `editable` открывает, но не закрывает: клик по тексту поля ставит
+	 * курсор, и это не повод спрятать панель. Закрытие остаётся за `Escape`,
+	 * выбором опции и нажатием мимо (`TDismissPlugin`).
+	 */
 	toggleOpen(): void {
+		if (this._editable && this._open) return
+
 		this.open = !this._open
 	}
 
@@ -158,6 +168,37 @@ export class TSelect<
 
 		this._clearLabel = value
 		;(this.events as TEvented<TSelectEvents>).emit('change:clearLabel', value)
+	}
+
+	/**
+	 * Можно ли вводить текст в поле. `false` — режим select-only (по
+	 * умолчанию): вложенный `Input` остаётся `readonly`, значение меняет
+	 * только выбор из списка.
+	 *
+	 * Не путать с `readonly` из `TInputControl` — то запрещает менять
+	 * значение вовсе и глушит открытие панели (`openable`); Select в режиме
+	 * «только выбор» обязан оставаться изменяемым. Оба состояния сходятся в
+	 * `fieldReadonly`, который и решает, каким быть вложенному полю.
+	 */
+	get editable(): boolean {
+		return this._editable
+	}
+
+	set editable(value: boolean) {
+		if (this._editable === value) return
+
+		this._applyEditable(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:editable', value)
+	}
+
+	/**
+	 * `readonly` вложенного поля — в отличие от `readonly` самого Select, не
+	 * связан с `openable`. Производное свойство, а не проп в разметке: то же
+	 * выражение (`readonly || !editable`) иначе повторилось бы в шести
+	 * адаптерах, как и у `autoFitWidth`.
+	 */
+	get fieldReadonly(): boolean {
+		return this.readonly || !this._editable
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
@@ -254,6 +295,18 @@ export class TSelect<
 	}
 
 	/**
+	 * `aria-autocomplete="none"`, не отсутствие атрибута: это честный сигнал
+	 * скринридеру, что поле принимает произвольный текст, но без
+	 * автодополнения. `list`/`both` появятся вместе с фильтрацией — раньше
+	 * это было бы обещанием, которого нет.
+	 */
+	protected _applyEditable(value: boolean): void {
+		this._editable = value
+		this._classes.toggle('--editable', value)
+		this._aria.add('aria-autocomplete', value ? 'none' : null)
+	}
+
+	/**
 	 * `data-content-fit` на поле — и то же имя на каждой опции.
 	 *
 	 * Со списка тема читает `expand`, с опции — `wrap`. Одно свойство, два
@@ -302,6 +355,7 @@ export class TSelect<
 			closeOnSelect: this._closeOnSelect,
 			clearable: this._clearable,
 			clearLabel: this._clearLabel,
+			editable: this._editable,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,

@@ -57,6 +57,7 @@ export const SelectContribution = (): IContribution => ({
 		closeOnSelect: { type: Boolean, triggers: ['change:closeOnSelect'] },
 		clearable: { type: Boolean, triggers: ['change:clearable'] },
 		clearLabel: { type: String, triggers: ['change:clearLabel'] },
+		editable: { type: Boolean, triggers: ['change:editable'] },
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.
@@ -65,6 +66,15 @@ export const SelectContribution = (): IContribution => ({
 			type: Object,
 			protected: true,
 			triggers: ['change:clearLabel', 'change:name'],
+		},
+		/**
+		 * `readonly` вложенного `Input` — считается из `readonly` и `editable`
+		 * сразу, поэтому производится ядром, а не выражением в разметке.
+		 */
+		fieldReadonly: {
+			type: Boolean,
+			protected: true,
+			triggers: ['change:editable', 'change:readonly'],
 		},
 		/** Можно ли открыть панель: `disabled` и `readonly` запрещают. */
 		openable: {
