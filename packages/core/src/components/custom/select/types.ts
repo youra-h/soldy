@@ -22,6 +22,16 @@ import type { ISelectItem, ISelectItemProps } from './item/types'
  */
 export type TSelectValue = string | number | (string | number)[] | undefined
 
+/**
+ * Что делает ввод текста в поле `editable`.
+ *
+ * `none` — ничего, ввод просто отображается. `search` — совпадение по тексту
+ * подсвечивается в списке, тем же алгоритмом, что и набор с клавиатуры.
+ * `filter` пока ведёт себя как `search`: скрытие несовпавших опций —
+ * отдельная задача, здесь только состояние под неё.
+ */
+export type TSelectEditableMode = 'none' | 'search' | 'filter'
+
 export type TSelectEvents = TInputControlEvents<TSelectValue> &
 	TCollectionStorageDriverEvents<ISelectItem> &
 	TListEvents & {
@@ -41,6 +51,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:clearLabel': (value: string) => void
 		/** change:editable */
 		'change:editable': (value: boolean) => void
+		/** change:editableMode */
+		'change:editableMode': (value: TSelectEditableMode) => void
 	}
 
 /**
@@ -65,6 +77,11 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	 * Ставит `readonly`: `editable: true` снимает его, `false` — включает.
 	 */
 	editable?: boolean
+	/**
+	 * Что делает ввод текста при `editable: true`. Без него не действует.
+	 * По умолчанию `none`.
+	 */
+	editableMode?: TSelectEditableMode
 }
 
 /** Полный набор props: собственные + коллекционные. */
@@ -90,6 +107,8 @@ export interface ISelect<
 	clearLabel: string
 	/** Можно ли вводить текст в поле. `false` — select-only (по умолчанию) */
 	editable: boolean
+	/** Что делает ввод текста при `editable: true`. Без него не действует */
+	editableMode: TSelectEditableMode
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */

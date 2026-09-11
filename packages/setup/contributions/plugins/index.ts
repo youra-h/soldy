@@ -1,4 +1,4 @@
-export { SelectKeyboardContribution } from './select'
+export { SelectKeyboardContribution, SelectEditableContribution } from './select'
 export { DismissContribution } from './dismiss'
 export type { TDismissPluginProps } from './dismiss'
 export { AriaContribution } from './aria'

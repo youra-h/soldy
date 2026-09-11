@@ -1,7 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { LIST_PROPS } from '../list'
-import type { ISelectItem } from '@soldy/core'
+import type { ISelectItem, TSelectEditableMode } from '@soldy/core'
 
 /**
  * Слоты Select.
@@ -58,6 +58,10 @@ export const SelectContribution = (): IContribution => ({
 		clearable: { type: Boolean, triggers: ['change:clearable'] },
 		clearLabel: { type: String, triggers: ['change:clearLabel'] },
 		editable: { type: Boolean, triggers: ['change:editable'] },
+		editableMode: {
+			type: defineType<TSelectEditableMode>(String),
+			triggers: ['change:editableMode'],
+		},
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.

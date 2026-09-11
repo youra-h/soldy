@@ -16,6 +16,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	ListHeightPluginDescriptor,
+	SelectEditablePluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 } from '../../plugins'
 
@@ -39,5 +40,8 @@ export const SelectDescriptor = () =>
 			DismissPluginDescriptor(),
 			// Клавиатура APG Combobox: открытие, навигация, Escape, набор по буквам
 			SelectKeyboardPluginDescriptor(),
+			// Ввод текста при editable: search/filter подсвечивают совпадение
+			// через клавиатурный плагин выше — подключается после него
+			SelectEditablePluginDescriptor(),
 		],
 	})

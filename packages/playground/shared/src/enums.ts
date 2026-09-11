@@ -17,6 +17,7 @@ import type {
 	TDirection,
 	TScrollBehavior,
 	TSelectionMode,
+	TSelectEditableMode,
 } from '@soldy/core'
 
 /**
@@ -102,6 +103,9 @@ export const DIRECTIONS = enumOf<TDirection>()(['ltr', 'rtl', 'inherit'])
 export const SCROLL_BEHAVIORS = enumOf<TScrollBehavior>()(['none', 'instant', 'smooth'])
 
 export const SELECTION_MODES = enumOf<TSelectionMode>()(['none', 'single', 'multiple'])
+
+/** Что делает ввод текста в поле Select при `editable: true`. */
+export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])
 
 /** Теги, которыми осмысленно подменять корень компонента через `tag`. */
 export const HTML_TAGS = ['div', 'span', 'button', 'a', 'section', 'li'] as const

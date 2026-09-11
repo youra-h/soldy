@@ -52,8 +52,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	switch: (bind) => h(Switch, bind, { default: () => 'Включено' }),
 
+	// `editable: true` в дефолте, а не только на строке самого пропа — иначе
+	// строка `editableMode` показывала бы select без ввода вовсе: `editable`
+	// на ней не тронут и остаётся `false` от `defaultValues` ядра, ввод в
+	// поле невозможен, и подсветка по тексту ничем не отличалась бы от её
+	// отсутствия
 	select: (bind) =>
-		h(Select as Component, { placeholder: 'Выберите', ...bind }, () =>
+		h(Select as Component, { placeholder: 'Выберите', editable: true, ...bind }, () =>
 			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 		),
 
