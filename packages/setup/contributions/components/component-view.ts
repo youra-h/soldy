@@ -1,11 +1,12 @@
 import type { IContribution } from '@soldy/accessor'
+import type { TEmptySlotScope } from '../types'
 
 /**
  * Слот по умолчанию есть у любого визуального слоя, поэтому объявлен здесь и
  * наследуется всеми потомками. Button его переопределяет, добавляя scope.
  */
 export type TComponentViewSlots = {
-	default: {}
+	default: TEmptySlotScope
 }
 
 export const ComponentViewContribution = (): IContribution => ({

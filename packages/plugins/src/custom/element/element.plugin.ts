@@ -1,5 +1,4 @@
 import { TBasePlugin } from '../../base'
-import type { IPluginContext } from '../../base'
 import { TEvented } from '@soldy/core'
 import type { TElementServiceEvents } from './types'
 

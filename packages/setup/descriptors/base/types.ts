@@ -15,7 +15,9 @@ import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 /** Определение плагина в составе дескриптора. */
 export interface IPluginDefinition<
 	N extends string | undefined = string | undefined,
-	TEvents extends object = {},
+	// Вытаскивается через infer в TPluginEventsUnion — линтер сквозь infer не видит.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	TEvents extends object = object,
 > {
 	ctor: IPluginConstructor<any, any, any>
 	/** Нормализованные props из contribution */
@@ -51,10 +53,18 @@ export interface IComponentDefinitionOptions<
  * (DescriptorProps<typeof ButtonDescriptor> → IButtonProps).
  */
 export interface IComponentDescriptor<
+	/*
+	 * Все четыре параметра вытаскиваются через infer в DescriptorProps,
+	 * DescriptorEvents, DescriptorPlugins и DescriptorSlots ниже по файлу —
+	 * ради этого дескриптор и параметризован. В теле они не упоминаются, и
+	 * сквозь infer линтер их не видит.
+	 */
+	/* eslint-disable @typescript-eslint/no-unused-vars */
 	TProps extends object = Record<string, unknown>,
-	TEvents extends object = {},
+	TEvents extends object = object,
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
-	TSlots extends object = {},
+	TSlots extends object = object,
+	/* eslint-enable @typescript-eslint/no-unused-vars */
 > {
 	ctor: any
 	/** Own component props (excluding plugin props). */
@@ -97,7 +107,7 @@ export type DescriptorPlugins<T> =
 
 /** Слоты дескриптора: DescriptorSlots<typeof ButtonDescriptor> → TButtonSlots */
 export type DescriptorSlots<T> =
-	TDescriptorInstance<T> extends IComponentDescriptor<any, any, any, infer S> ? S : {}
+	TDescriptorInstance<T> extends IComponentDescriptor<any, any, any, infer S> ? S : object
 
 /* -------------------------------------------------------------------------- */
 /* Framework-agnostic composition helpers                                      */
@@ -120,9 +130,9 @@ export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extend
 				: NamespacedEvents<PE, N>
 			: Tail extends readonly IPluginDefinition[]
 				? TPluginEventsFrom<Tail>
-				: {}
-		: {}
-	: {}
+				: object
+		: object
+	: object
 
 /** Все события дескриптора (свои + плагинные, namespaced): DescriptorAllEvents<typeof ButtonDescriptor> → TButtonEvents & { 'element:ready': ... } */
 export type DescriptorAllEvents<T> = DescriptorEvents<T> & TPluginEventsFrom<DescriptorPlugins<T>>

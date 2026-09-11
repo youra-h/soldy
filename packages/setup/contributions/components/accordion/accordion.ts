@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import type { IAccordionItem } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты Accordion.
@@ -14,7 +15,7 @@ import type { IAccordionItem } from '@soldy/core'
  * Tabs, где панель — сосед списка, пишется отдельно и связывается по `value`.
  */
 export type TAccordionSlots = {
-	default: {}
+	default: TEmptySlotScope
 	item: { item: IAccordionItem }
 	'item-leading': { item: IAccordionItem }
 	'item-trailing': { item: IAccordionItem }

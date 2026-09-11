@@ -10,7 +10,7 @@ import { TTabsCollectionFacade } from '@soldy/core'
 import type { ITabsCollectionProps } from '@soldy/core'
 import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
 import BaseTabs, { type TabsProps } from './base.component'
-import { type ITabsProps, type ITabsComponentProps, type ITabs } from '@soldy/core'
+import { type ITabsComponentProps, type ITabs } from '@soldy/core'
 
 export default {
 	name: '_Tabs',

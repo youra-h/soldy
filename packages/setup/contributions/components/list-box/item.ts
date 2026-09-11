@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import type { TListItemContentFit } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Собственные пропсы элемента списка.
@@ -20,9 +21,9 @@ import type { TListItemContentFit } from '@soldy/core'
  * компонентом: она резервирует место и уносит отметку из дерева доступности.
  */
 export type TListBoxItemSlots = {
-	leading: {}
+	leading: TEmptySlotScope
 	default: { text: string; selected: boolean }
-	trailing: {}
+	trailing: TEmptySlotScope
 	'indicator-icon': { selected: boolean }
 }
 

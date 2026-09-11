@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import type { ITabsItem } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты Tabs.
@@ -11,10 +12,10 @@ import type { ITabsItem } from '@soldy/core'
  * только Vue; теперь это статический слот с компонентами `TabsContent`.
  */
 export type TTabsSlots = {
-	leading: {}
-	default: {}
-	trailing: {}
-	content: {}
+	leading: TEmptySlotScope
+	default: TEmptySlotScope
+	trailing: TEmptySlotScope
+	content: TEmptySlotScope
 }
 
 export const TabsContribution = (): IContribution => ({

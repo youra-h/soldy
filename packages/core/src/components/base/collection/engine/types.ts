@@ -7,6 +7,8 @@ import { TActionEvent } from '../../../../common/event/action-event'
  * Мета снимается с сырого источника в конструкторе — до любых `*:before`-хендлеров,
  * поэтому factory-подмена item не влияет на уже захваченный `_`.
  */
+// Параметр держит арность дженерика: наследники передают TItem явно.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export abstract class TItemEvent<TItem = any> extends TActionEvent {
 	public _: Record<string, any> = {}
 

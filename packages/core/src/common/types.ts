@@ -1,6 +1,6 @@
-export type TConstructor<T = {}> = new (...args: any[]) => T
+export type TConstructor<T = object> = new (...args: any[]) => T
 
-export type TAbstractConstructor<T = {}> = abstract new (...args: any[]) => T
+export type TAbstractConstructor<T = object> = abstract new (...args: any[]) => T
 
 export type TComponentVariant = 'normal' | 'accent' | 'positive' | 'negative' | 'caution'
 

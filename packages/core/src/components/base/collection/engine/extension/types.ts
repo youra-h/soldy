@@ -61,6 +61,8 @@ export type TBaseItemEventsExtension = {
  * вредно, потому что инвариантность запрещает любое расхождение.
  */
 export interface IItemExtension<
+	// Параметр держит арность дженерика: аргумент передают на вызовах.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TItem extends object = any,
 	TEvents extends Record<string, (...args: any) => any> = Record<string, (...args: any) => any>,
 > {

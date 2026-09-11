@@ -12,11 +12,11 @@
 
 import type { JSX } from 'solid-js'
 
-export type TSlotContent<TScope extends object = {}> =
+export type TSlotContent<TScope extends object = object> =
 	| JSX.Element
 	| ((scope: TScope) => JSX.Element)
 
-export function renderSlot<TScope extends object = {}>(
+export function renderSlot<TScope extends object = object>(
 	content: TSlotContent<TScope> | undefined,
 	scope?: TScope,
 ): JSX.Element {

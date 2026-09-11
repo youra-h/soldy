@@ -10,7 +10,7 @@ import { normalizeContribution } from './compile-contribution'
 
 export function definePlugin<
 	N extends string | undefined = undefined,
-	TEvents extends object = {},
+	TEvents extends object = object,
 >(options: {
 	ctor: IPluginConstructor<any, any, any>
 	namespace?: N

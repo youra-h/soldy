@@ -1,5 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../defineType'
+import type { TEmptySlotScope } from '../types'
 
 /**
  * Слоты Button. Тип-зеркало объявления `slots` ниже — меняются синхронно
@@ -14,9 +15,9 @@ import { defineType } from '../defineType'
  * не рендерит.
  */
 export type TButtonSlots = {
-	leading: {}
+	leading: TEmptySlotScope
 	default: { text: string }
-	trailing: {}
+	trailing: TEmptySlotScope
 }
 
 export const ButtonContribution = (): IContribution => ({

@@ -2,6 +2,7 @@ import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { LIST_PROPS } from '../list'
 import type { ISelectItem, TSelectEditableMode } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты Select.
@@ -14,13 +15,13 @@ import type { ISelectItem, TSelectEditableMode } from '@soldy/core'
  * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
  */
 export type TSelectSlots = {
-	field: {}
-	leading: {}
-	clear: {}
-	'arrow-icon': {}
-	trailing: {}
-	default: {}
-	empty: {}
+	field: TEmptySlotScope
+	leading: TEmptySlotScope
+	clear: TEmptySlotScope
+	'arrow-icon': TEmptySlotScope
+	trailing: TEmptySlotScope
+	default: TEmptySlotScope
+	empty: TEmptySlotScope
 }
 
 export const SelectContribution = (): IContribution => ({

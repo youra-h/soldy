@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
+import type { TPropControl } from '@soldy/playground-shared'
 import { COMPONENTS } from '@soldy/playground-shared'
 import { propSnippet, instanceSnippet } from '../src/snippet'
 
@@ -24,7 +24,11 @@ const control = (overrides: Partial<TPropControl>): TPropControl => ({
 
 describe('instanceSnippet', () => {
 	it('свойство компонента пишет в сам инстанс', () => {
-		const code = instanceSnippet(accordion, control({ name: 'view', scope: 'component' }), 'plain')
+		const code = instanceSnippet(
+			accordion,
+			control({ name: 'view', scope: 'component' }),
+			'plain',
+		)
 
 		expect(code).toContain('const instance = new TAccordion()')
 		expect(code).toContain("instance.view = 'plain'")
@@ -38,7 +42,11 @@ describe('instanceSnippet', () => {
 	 * механизм, каким сам стенд управляет правой колонкой (`PropRow.vue`).
 	 */
 	it('коллекционное свойство пишет в движок, а не в компонент', () => {
-		const code = instanceSnippet(accordion, control({ name: 'mode', scope: 'collection' }), 'multiple')
+		const code = instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			'multiple',
+		)
 
 		expect(code).toContain('const engine = createEngineSelection()')
 		expect(code).toContain("engine.extensions.selection.mode = 'multiple'")

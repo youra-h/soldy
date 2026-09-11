@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import type { ITagsItem } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты Tags.
@@ -10,7 +11,7 @@ import type { ITagsItem } from '@soldy/core'
  * через scope (см. ListBox).
  */
 export type TTagsSlots = {
-	default: {}
+	default: TEmptySlotScope
 	item: { item: ITagsItem }
 	'item-leading': { item: ITagsItem }
 	'item-trailing': { item: ITagsItem }

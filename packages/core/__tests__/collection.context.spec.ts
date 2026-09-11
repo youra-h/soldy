@@ -13,7 +13,6 @@ import type {
 	IItemExtension,
 	IExtensionItems,
 	IBaseOwnerItemExtensionOptions,
-	TExtractItemAdapters,
 } from '@soldy/core'
 
 // --- Пользовательское расширение для теста ---
@@ -41,7 +40,7 @@ class TCustomItemExtension implements ICustomItemExtension {
 }
 
 class TCustomExtension
-	extends TBaseOwnerItemExtension<Item, ICustomItemExtension, {}>
+	extends TBaseOwnerItemExtension<Item, ICustomItemExtension, object>
 	implements IExtension<Item>, IExtensionItems<Item, ICustomItemExtension>
 {
 	readonly name = 'customFeature'

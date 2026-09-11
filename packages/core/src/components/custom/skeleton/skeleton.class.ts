@@ -1,5 +1,5 @@
 import { TStateUnit, TEvented } from '../../../common'
-import type { TComponentVariant, TValuePayload, TAriaAttributes } from '../../../common'
+import type { TComponentVariant, TValuePayload } from '../../../common'
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions } from '../../base/component'
 import type {

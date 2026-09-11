@@ -1,4 +1,5 @@
 import type { IContribution } from '@soldy/accessor'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты опции — те же три, что у элементов остальных списков: перед текстом,
@@ -6,9 +7,9 @@ import type { IContribution } from '@soldy/accessor'
  * `Button`.
  */
 export type TSelectItemSlots = {
-	leading: {}
+	leading: TEmptySlotScope
 	default: { text: string; selected: boolean }
-	trailing: {}
+	trailing: TEmptySlotScope
 	'indicator-icon': { selected: boolean }
 }
 

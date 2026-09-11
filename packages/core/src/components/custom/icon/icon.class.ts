@@ -2,7 +2,7 @@ import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
 import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload, TComponentSize, TAriaAttributes } from '../../../common'
+import type { TValuePayload, TComponentSize } from '../../../common'
 
 export default class TIcon
 	extends TComponentView<IIconProps, TIconEvents, TIconStates>

@@ -10,7 +10,7 @@ import { TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxCollectionProps } from '@soldy/core'
 import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
 import BaseListBox, { type ListBoxProps } from './base.component'
-import { type IListBoxProps, type IListBoxComponentProps, type IListBox } from '@soldy/core'
+import { type IListBoxComponentProps, type IListBox } from '@soldy/core'
 
 export default {
 	name: '_ListBox',

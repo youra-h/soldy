@@ -144,9 +144,9 @@ export function defineComponent<
 	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
 ): IComponentDescriptor<
 	Record<string, unknown>,
-	{},
+	object,
 	readonly [...TParentPlugins, ...TPlugins],
-	{}
+	object
 >
 
 /**
@@ -158,7 +158,7 @@ export function defineComponent<
 export function defineComponent<
 	TProps extends object,
 	TEvents extends object,
-	TSlots extends object = {},
+	TSlots extends object = object,
 >(): <
 	const TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],

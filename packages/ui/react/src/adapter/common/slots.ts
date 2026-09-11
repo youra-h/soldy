@@ -11,9 +11,11 @@
 
 import type { ReactNode } from 'react'
 
-export type TSlotContent<TScope extends object = {}> = ReactNode | ((scope: TScope) => ReactNode)
+export type TSlotContent<TScope extends object = object> =
+	| ReactNode
+	| ((scope: TScope) => ReactNode)
 
-export function renderSlot<TScope extends object = {}>(
+export function renderSlot<TScope extends object = object>(
 	content: TSlotContent<TScope> | undefined,
 	scope?: TScope,
 ): ReactNode {

@@ -3,7 +3,6 @@ import {
 	TTabs,
 	TTabsItem,
 	TTabsExtension,
-	TTabsItemExtension,
 	TItemContextRegistry,
 	TCollectionEngine,
 	TPlainExtension,

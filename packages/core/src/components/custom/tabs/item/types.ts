@@ -8,6 +8,8 @@ import type { IStateUnit, TValuePayload, TAriaAttributes } from '../../../../com
 import type { IComponentOptions } from '../../../base/component'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
+// Параметр держит арность дженерика: аргумент передают на вызовах.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void

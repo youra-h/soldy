@@ -1,5 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты элемента Tags.
@@ -8,10 +9,10 @@ import { defineType } from '../../defineType'
  * из пакета иконок по роли `close` (см. `ICON_ROLES`).
  */
 export type TTagsItemSlots = {
-	leading: {}
+	leading: TEmptySlotScope
 	default: { text: string; selected: boolean }
-	trailing: {}
-	'close-icon': {}
+	trailing: TEmptySlotScope
+	'close-icon': TEmptySlotScope
 }
 
 export const TagsItemContribution = (): IContribution => ({

@@ -23,6 +23,8 @@ export type TPluginEvents = {
  * Плагин — независимая единица логики, устанавливаемая на компонент.
  */
 export interface IPlugin<
+	// Параметр держит арность дженерика: аргумент передают на вызовах.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TInstance = any,
 	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 > {

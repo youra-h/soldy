@@ -1,10 +1,11 @@
 import type { IContribution } from '@soldy/accessor'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Панель таба. Слот один — содержимое; частей у неё нет.
  */
 export type TTabsContentSlots = {
-	default: {}
+	default: TEmptySlotScope
 }
 
 /** Собственные props панели (выводятся классом TTabsContent). */

@@ -10,7 +10,7 @@ import { TAccordionCollectionFacade } from '@soldy/core'
 import type { IAccordionCollectionProps } from '@soldy/core'
 import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
 import BaseAccordion, { type AccordionProps } from './base.component'
-import { type IAccordionProps, type IAccordionComponentProps, type IAccordion } from '@soldy/core'
+import { type IAccordionComponentProps, type IAccordion } from '@soldy/core'
 
 export default {
 	name: '_Accordion',

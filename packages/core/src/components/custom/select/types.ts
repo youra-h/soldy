@@ -93,8 +93,11 @@ export type TSelectStates = TInputControlStates<TSelectValue>
 export interface ISelect<
 	TProps extends ISelectProps = ISelectProps,
 	TEvents extends TSelectEvents = TSelectEvents,
+	// Параметр держит арность дженерика, единую с базовым контролом.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TStates extends TSelectStates = TSelectStates,
-> extends IInputControl<TSelectValue, TProps, TEvents>, IList {
+>
+	extends IInputControl<TSelectValue, TProps, TEvents>, IList {
 	/** Открыта ли панель со списком */
 	open: boolean
 	/** Текст поля, пока ничего не выбрано */

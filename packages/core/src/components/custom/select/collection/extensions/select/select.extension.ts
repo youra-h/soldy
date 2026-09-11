@@ -7,7 +7,7 @@ import type {
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
-import type { ISelect, TSelectValue } from '../../../types'
+import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
 import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents } from './types'

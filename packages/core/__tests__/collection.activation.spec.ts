@@ -7,7 +7,10 @@ function createCollection() {
 	const plain = new TPlainExtension<Item>()
 	const activation = new TActivationExtension<Item>()
 
-	return new TCollectionEngine<Item, { plain: TPlainExtension<Item>; activation: TActivationExtension<Item> }>({
+	return new TCollectionEngine<
+		Item,
+		{ plain: TPlainExtension<Item>; activation: TActivationExtension<Item> }
+	>({
 		extensions: { plain, activation },
 	})
 }
@@ -177,7 +180,21 @@ describe('TActivationExtension', () => {
 
 		col.extensions.activation.deactivate(item)
 
-		expect(deactivated).toHaveBeenCalledWith(undefined)
+		expect(deactivated).toHaveBeenCalledWith(item)
+	})
+
+	it('передаёт деактивированный элемент и при reset', () => {
+		const col = createCollection()
+		const item: Item = { id: 1, name: 'a' }
+		const deactivated = vi.fn()
+
+		col.extensions.plain.insert(item)
+		col.extensions.activation.activate(item)
+		col.extensions.activation.events.on('item:deactivated', deactivated)
+
+		col.extensions.activation.reset()
+
+		expect(deactivated).toHaveBeenCalledWith(item)
 	})
 
 	// --- Авто-деактивация при удалении ---

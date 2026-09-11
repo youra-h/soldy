@@ -1,7 +1,7 @@
 // Общий тип props (универсальный, для базовых объектов)
 // Используется только там, где нужен "свободный словарь"
 // export type TEntityProps = Record<string, unknown>
-export type TEntityProps = {}
+export type TEntityProps = object
 
 // Интерфейс для объектов, поддерживающих присвоение свойств из другого объекта
 export interface IAssignable<T = TEntityProps> {

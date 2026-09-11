@@ -1,7 +1,6 @@
 import { TStylable } from '../../base/stylable'
 import type { IComponentOptions } from '../../base/component'
 import { type TEvented } from '../../../common'
-import type { TAriaAttributes } from '../../../common'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {

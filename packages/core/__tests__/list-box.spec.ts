@@ -120,7 +120,7 @@ describe('value ↔ выбор', () => {
 	})
 
 	it('снятие выбора обнуляет значение', () => {
-		const { owner, collection, items } = createListBox(['a', 'b'])
+		const { owner, collection } = createListBox(['a', 'b'])
 
 		owner.value = 'a'
 		collection.engine.extensions.selection.resetSelection()

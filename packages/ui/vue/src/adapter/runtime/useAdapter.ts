@@ -17,7 +17,9 @@ import { useSyncEvents } from './useSyncEvents'
  * исключая методы (функции).
  */
 export type TExtractControllerState<TInstance> = {
-	[K in keyof TInstance as TInstance[K] extends Function ? never : K]: TInstance[K]
+	[K in keyof TInstance as TInstance[K] extends (...args: never[]) => unknown
+		? never
+		: K]: TInstance[K]
 }
 
 /**

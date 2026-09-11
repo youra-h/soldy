@@ -26,7 +26,7 @@ export class TAccordionItemCollectionFacade extends TSelectionItemFacade<
 	}
 
 	get view(): TAccordionView {
-		return this._context?.adapters.accordion.view!
+		return this._context?.adapters.accordion.view ?? 'plain'
 	}
 
 	/**

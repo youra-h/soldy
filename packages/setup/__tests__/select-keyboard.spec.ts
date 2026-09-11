@@ -9,7 +9,7 @@
  * доступный выпадающий список отличается от недоступного.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -401,7 +401,11 @@ describe('прокрутка к подсвеченной опции', () => {
 	})
 
 	it('instant доезжает до вызова', async () => {
-		const { press, scrolls } = await setup(['Москва', 'Тверь'], {}, { scrollBehavior: 'instant' })
+		const { press, scrolls } = await setup(
+			['Москва', 'Тверь'],
+			{},
+			{ scrollBehavior: 'instant' },
+		)
 
 		press('ArrowDown')
 

@@ -9,7 +9,7 @@ import { TTagsCollectionFacade } from '@soldy/core'
 import type { ITagsCollectionProps } from '@soldy/core'
 import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
 import BaseTags, { type TagsProps } from './base.component'
-import { type ITagsProps, type ITagsComponentProps, type ITags } from '@soldy/core'
+import { type ITagsComponentProps, type ITags } from '@soldy/core'
 
 export default {
 	name: '_Tags',

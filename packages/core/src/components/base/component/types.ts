@@ -10,6 +10,9 @@ import { TEvented } from '../../../common'
  */
 export type TComponentEvents = Record<string, (...args: any) => any>
 
+// Корень иерархии пропсов: пустой намеренно — от него наследуются типы
+// пропсов всех компонентов, и собственных полей у него быть не должно.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface IComponentProps {}
 
 export type TComponentStates = Record<string, any>

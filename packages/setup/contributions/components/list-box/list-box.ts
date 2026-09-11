@@ -2,6 +2,7 @@ import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { LIST_PROPS } from '../list'
 import type { IListBoxItem } from '@soldy/core'
+import type { TEmptySlotScope } from '../../types'
 
 /**
  * Слоты ListBox.
@@ -13,9 +14,9 @@ import type { IListBoxItem } from '@soldy/core'
  * Слоты элементов статические и получают элемент через scope (см. Accordion).
  */
 export type TListBoxSlots = {
-	default: {}
-	header: {}
-	footer: {}
+	default: TEmptySlotScope
+	header: TEmptySlotScope
+	footer: TEmptySlotScope
 	item: { item: IListBoxItem }
 	'item-leading': { item: IListBoxItem }
 	'item-trailing': { item: IListBoxItem }

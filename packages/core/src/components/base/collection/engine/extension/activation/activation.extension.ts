@@ -72,7 +72,9 @@ export class TActivationExtension<TItem extends object = any>
 		}
 
 		ctx.driver.events.on('item:removed', (item: TItem) => {
-			this._activeItem === item && this.reset()
+			if (this._activeItem === item) {
+				this.reset()
+			}
 
 			const next = this.findActivatable(undefined, item)
 
@@ -107,7 +109,7 @@ export class TActivationExtension<TItem extends object = any>
 
 		this._activeItem = undefined
 
-		this.events.emit('item:deactivated', undefined)
+		this.events.emit('item:deactivated', item)
 		this.events.emit('change:activation', undefined)
 	}
 
@@ -155,7 +157,7 @@ export class TActivationExtension<TItem extends object = any>
 
 			this._activeItem = undefined
 
-			this.events.emit('item:deactivated', undefined)
+			this.events.emit('item:deactivated', prev)
 			this.events.emit('change:activation', undefined)
 		}
 	}

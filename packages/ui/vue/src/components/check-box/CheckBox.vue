@@ -2,47 +2,47 @@
 import { Icon } from '../icon'
 import SetupCheckBox from './setup.component'
 
-export default { ...SetupCheckBox }
+export default { ...SetupCheckBox, components: { Icon } }
 </script>
 
 <template>
-    <div
-        ref="rootElement"
-        v-if="rendered"
-        v-show="visible"
-        :class="classes"
-        :dir="dir ?? undefined"
-        v-bind="containerAttrs"
-    >
-        <input
-            type="checkbox"
-            :id="id"
-            :checked="value"
-            :name="name"
-            :disabled="disabled"
-            :required="required"
-            :aria-checked="ctrl.getAriaChecked()"
-            v-bind="controlAttrs"
-        />
-        <div class="s-check-box__container">
-            <!-- Слот для checked иконки -->
-            <slot
-                v-if="value && !indeterminate"
-                name="icon"
-                :value="value"
-                :indeterminate="indeterminate"
-            >
-                <Icon :tag="defaultIconTag" :size="size" />
-            </slot>
-            <!-- Слот для indeterminate иконки -->
-            <slot
-                v-else-if="indeterminate"
-                name="indeterminate-icon"
-                :value="value"
-                :indeterminate="indeterminate"
-            >
-                <Icon :tag="defaultIndeterminateIconTag" :size="size" />
-            </slot>
-        </div>
-    </div>
+	<div
+		ref="rootElement"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		:dir="dir ?? undefined"
+		v-bind="containerAttrs"
+	>
+		<input
+			type="checkbox"
+			:id="id"
+			:checked="value"
+			:name="name"
+			:disabled="disabled"
+			:required="required"
+			:aria-checked="ctrl.getAriaChecked()"
+			v-bind="controlAttrs"
+		/>
+		<div class="s-check-box__container">
+			<!-- Слот для checked иконки -->
+			<slot
+				v-if="value && !indeterminate"
+				name="icon"
+				:value="value"
+				:indeterminate="indeterminate"
+			>
+				<Icon :tag="defaultIconTag" :size="size" />
+			</slot>
+			<!-- Слот для indeterminate иконки -->
+			<slot
+				v-else-if="indeterminate"
+				name="indeterminate-icon"
+				:value="value"
+				:indeterminate="indeterminate"
+			>
+				<Icon :tag="defaultIndeterminateIconTag" :size="size" />
+			</slot>
+		</div>
+	</div>
 </template>
