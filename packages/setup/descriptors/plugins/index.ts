@@ -1,4 +1,5 @@
 export { SelectKeyboardPluginDescriptor } from './select-keyboard.plugin'
+export { SelectEditablePluginDescriptor } from './select-editable.plugin'
 export { AnchorPluginDescriptor } from './anchor.plugin'
 export { DismissPluginDescriptor } from './dismiss.plugin'
 export { AriaPluginDescriptor } from './aria.plugin'

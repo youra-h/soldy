@@ -13,3 +13,17 @@ export const SelectKeyboardContribution = (): IContribution => ({
 		highlightedUid: { protected: true, triggers: ['change:highlight'] },
 	},
 })
+
+/**
+ * Ввод текста в поле Select при `editable: true`.
+ *
+ * Наружу отдаётся только `query` — то, что сейчас набрано. Реакция
+ * (подсветка через `TSelectKeyboardPlugin`) видна снаружи уже через её
+ * собственный `highlightedUid`, повторять её здесь незачем.
+ */
+export const SelectEditableContribution = (): IContribution => ({
+	events: [...PLUGIN_EVENTS, 'change:query'],
+	props: {
+		query: { protected: true, triggers: ['change:query'] },
+	},
+})

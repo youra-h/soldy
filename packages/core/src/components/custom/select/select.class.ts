@@ -4,7 +4,14 @@ import { TEvented } from '../../../common'
 import type { TAriaAttributes, TScrollBehavior } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { TListContentFit, TListIndicator } from '../list'
-import type { ISelect, ISelectProps, TSelectEvents, TSelectStates, TSelectValue } from './types'
+import type {
+	ISelect,
+	ISelectProps,
+	TSelectEditableMode,
+	TSelectEvents,
+	TSelectStates,
+	TSelectValue,
+} from './types'
 
 /**
  * Поле выбора из списка (`Select`).
@@ -46,6 +53,7 @@ export class TSelect<
 		clearable: false,
 		clearLabel: 'Clear',
 		editable: false,
+		editableMode: 'none',
 		tag: 'div',
 	}
 
@@ -59,6 +67,7 @@ export class TSelect<
 	protected _scrollBehavior!: TScrollBehavior
 	protected _indicator!: TListIndicator
 	protected _editable!: boolean
+	protected _editableMode!: TSelectEditableMode
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -77,6 +86,10 @@ export class TSelect<
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
+		// `_editableMode` — до `_applyEditable`: он пересчитывает
+		// `aria-autocomplete` через `_syncAutocomplete()`, которому уже нужно
+		// готовое значение режима.
+		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
@@ -199,6 +212,25 @@ export class TSelect<
 		this.readonly = !value
 	}
 
+	/**
+	 * Что делает ввод текста при `editable: true`. Реакцию на сам ввод несёт
+	 * `TEditablePlugin` — здесь только состояние с тремя значениями и
+	 * `aria-autocomplete`, которое от него зависит.
+	 *
+	 * `filter` пока не фильтрует: скрытие несовпавших опций — отдельная
+	 * задача, а до неё `filter` ведёт себя как `search`.
+	 */
+	get editableMode(): TSelectEditableMode {
+		return this._editableMode
+	}
+
+	set editableMode(value: TSelectEditableMode) {
+		if (this._editableMode === value) return
+
+		this._applyEditableMode(value)
+		;(this.events as TEvented<TSelectEvents>).emit('change:editableMode', value)
+	}
+
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
 	get maxRows(): number {
 		return this._maxRows
@@ -292,16 +324,33 @@ export class TSelect<
 		this._classes.toggle('--clearable', value)
 	}
 
-	/**
-	 * `aria-autocomplete="none"`, не отсутствие атрибута: это честный сигнал
-	 * скринридеру, что поле принимает произвольный текст, но без
-	 * автодополнения. `list`/`both` появятся вместе с фильтрацией — раньше
-	 * это было бы обещанием, которого нет.
-	 */
 	protected _applyEditable(value: boolean): void {
 		this._editable = value
 		this._classes.toggle('--editable', value)
-		this._aria.add('aria-autocomplete', value ? 'none' : null)
+		this._syncAutocomplete()
+	}
+
+	protected _applyEditableMode(value: TSelectEditableMode): void {
+		this._editableMode = value
+		this._syncAutocomplete()
+	}
+
+	/**
+	 * `aria-autocomplete`. Не `editable` — атрибута нет вовсе: поле не
+	 * принимает текст, обещать автодополнение нечему. `editable` с режимом
+	 * `none` — `"none"`, честный сигнал, что текст принимается, но без
+	 * подсказок. `search`/`filter` — `"list"`: панель на вводе открывается и
+	 * совпадение объявляется через `aria-activedescendant`, то есть подсказка
+	 * скринридеру уже есть.
+	 */
+	protected _syncAutocomplete(): void {
+		if (!this._editable) {
+			this._aria.add('aria-autocomplete', null)
+
+			return
+		}
+
+		this._aria.add('aria-autocomplete', this._editableMode === 'none' ? 'none' : 'list')
 	}
 
 	/**
@@ -354,6 +403,7 @@ export class TSelect<
 			clearable: this._clearable,
 			clearLabel: this._clearLabel,
 			editable: this._editable,
+			editableMode: this._editableMode,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,

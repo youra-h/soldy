@@ -12,6 +12,7 @@ import {
 	LIST_INDICATORS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
+	SELECT_EDITABLE_MODES,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
 	TABS_ALIGNMENTS,
@@ -88,6 +89,8 @@ const OWN: Record<string, Record<string, string>> = {
 		clearable: 'Показывать кнопку очистки значения',
 		clearLabel: 'Имя кнопки очистки для скринридера. Собирается с именем поля',
 		editable: 'Можно ли вводить текст в поле. Выключено — режим select-only',
+		editableMode:
+			'Что делает ввод текста при editable: ничего, подсветка совпадения или фильтрация',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -152,6 +155,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	button: { view: BUTTON_VIEWS },
 	accordion: { view: ACCORDION_VIEWS },
 	'list-box': { view: LIST_BOX_VIEWS },
+	select: { editableMode: SELECT_EDITABLE_MODES },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,

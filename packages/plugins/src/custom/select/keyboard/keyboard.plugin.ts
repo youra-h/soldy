@@ -270,12 +270,34 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 			now - this._typeaheadAt > this._typeaheadTimeout ? char : this._typeahead + char
 		this._typeaheadAt = now
 
-		const needle = this._typeahead.toLowerCase()
+		this.highlightByText(this._typeahead)
+	}
+
+	/**
+	 * Подсветить первую опцию, чей текст начинается с `needle` — без учёта
+	 * регистра. Пустая строка снимает подсветку.
+	 *
+	 * Один алгоритм на два источника: набор с клавиатуры (`_typeaheadTo`) и
+	 * ввод в поле (`TEditablePlugin`) — оба лишь находят опцию, подсветка и
+	 * `aria-activedescendant` остаются здесь, в одной точке.
+	 */
+	highlightByText(needle: string): void {
+		if (!needle) {
+			this.clearHighlight()
+
+			return
+		}
+
+		const lower = needle.toLowerCase()
 		const match = (this.items() as ISelectOption[]).find((item) =>
-			item.text.toLowerCase().startsWith(needle),
+			item.text.toLowerCase().startsWith(lower),
 		)
 
-		if (match) this.highlight(match.uid)
+		if (match) {
+			this.highlight(match.uid)
+		} else {
+			this.clearHighlight()
+		}
 	}
 
 	private _optionElement(uid: string | number): HTMLElement | null {
