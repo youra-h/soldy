@@ -62,7 +62,7 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	clearLabel?: string
 	/**
 	 * Можно ли вводить текст в поле. `false` — select-only (по умолчанию).
-	 * Авторитетен над `readonly`: см. `TSelect.readonly`.
+	 * Ставит `readonly`: `editable: true` снимает его, `false` — включает.
 	 */
 	editable?: boolean
 }

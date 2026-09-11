@@ -78,13 +78,14 @@ export class TSelect<
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
+		// Тем же правилом, что и сеттер `editable`, только без события — и
+		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
+		this._applyReadonly(!this._editable)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
 
-		// `readonly` перегружен `editable`, а тот ещё не был известен, когда
-		// конструктор `TInputControl` выше уже вызвал `_syncInputAccessibility()`
-		// с `_editable === undefined`. Пересчитываем `aria-readonly` заново —
-		// иначе `editable: true` в props дало бы неверный атрибут до первого
-		// изменения `readonly`/`required` в рантайме.
+		// `_applyEditable` выше поменял `readonly`, а `_syncInputAccessibility()`
+		// конструктор `TInputControl` вызвал ещё до него — пересчитываем
+		// `aria-readonly` заново.
 		this._syncInputAccessibility()
 
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью.
@@ -94,7 +95,6 @@ export class TSelect<
 		this._aria.add('aria-haspopup', 'listbox')
 
 		this.events.on('change:disabled', () => this._syncOpenable())
-		this.events.on('change:readonly', () => this._syncOpenable())
 
 		this._syncOpenable()
 	}
@@ -102,15 +102,12 @@ export class TSelect<
 	/**
 	 * Можно ли сейчас открыть панель.
 	 *
-	 * Раньше `readonly` означал «значение менять нельзя», и выбор из списка —
-	 * единственный способ его изменить, поэтому панель не открывалась. Это
-	 * по-прежнему так, но `readonly` теперь перегружен `editable` (см. его
-	 * геттер ниже), поэтому здесь читается не он, а сырой `_readonly` — тот,
-	 * что реально пришёл в проп: полностью запертый Select (`readonly: true`)
-	 * не даёт открыть панель, даже когда `editable: true`.
+	 * Раньше её запрещал ещё и `readonly`. Теперь `readonly` значит только
+	 * «в поле нельзя печатать», и ставит его `editable`; select-only — это
+	 * как раз `editable: false`, а ему панель и нужна. Остаётся `disabled`.
 	 */
 	get openable(): boolean {
-		return !this.disabled && !this._readonly
+		return !this.disabled
 	}
 
 	get open(): boolean {
@@ -186,13 +183,8 @@ export class TSelect<
 	 * умолчанию): вложенный `Input` остаётся `readonly`, значение меняет
 	 * только выбор из списка.
 	 *
-	 * Авторитетен над `readonly` — см. его геттер ниже. Здесь же, при смене
-	 * `editable`, вручную эмитится `change:readonly`: значение, которое
-	 * отдаёт публичный геттер `readonly`, меняется вместе с `editable`, а
-	 * подписан на этот триггер и адаптер (проп `readonly` объявлен один раз в
-	 * `InputControlContribution`, второй раз с тем же именем задекларировать
-	 * нельзя — `TAccessor` бросает на дубликат), и внутренние синхронизации
-	 * (`_syncInputAccessibility`).
+	 * Включает и выключает `readonly` — он и есть «в поле нельзя печатать».
+	 * Сам `readonly` при этом обычный, своей логики у него нет.
 	 */
 	get editable(): boolean {
 		return this._editable
@@ -203,31 +195,8 @@ export class TSelect<
 
 		this._applyEditable(value)
 		;(this.events as TEvented<TSelectEvents>).emit('change:editable', value)
-		;(this.events as TEvented<TSelectEvents>).emit('change:readonly', this.readonly)
-	}
 
-	/**
-	 * `readonly` вложенного поля. Перегружен: `editable` авторитетен и
-	 * отменяет сырой `_readonly` целиком — `editable: true` всегда даёт
-	 * `readonly === false`, `editable: false` всегда даёт `readonly === true`,
-	 * что бы ни было передано в проп `readonly`. Установка `readonly` на
-	 * `editable` не влияет: значение просто копится в `_readonly` и уходит в
-	 * `openable`, который проверяет его напрямую, минуя эту перегрузку.
-	 *
-	 * Раньше на этом месте был отдельный проп `fieldReadonly`
-	 * (`readonly || !editable`) — лишняя сущность ровно с той же целью: имя
-	 * `readonly` в API Select уже занято под то же самое, поэтому используем
-	 * его, а не заводим второе.
-	 */
-	override get readonly(): boolean {
-		return !this._editable
-	}
-
-	override set readonly(value: boolean) {
-		if (this._readonly === value) return
-
-		this._applyReadonly(value)
-		;(this.events as TEvented<TSelectEvents>).emit('change:readonly', this.readonly)
+		this.readonly = !value
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */

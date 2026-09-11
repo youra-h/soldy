@@ -37,9 +37,8 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			(`role="combobox"`, `aria-expanded`, `aria-controls`,
 			`aria-activedescendant`) оказывается ровно там, где нужен.
 
-			`readonly` вложенного `Input` — тот же `readonly`, что и у самого
-			Select, но перегруженный: `editable` авторитетен над сырым пропом
-			(см. `TSelect.readonly`). В select-only (`editable: false`, по
+			`readonly` вложенного `Input` — обычный `readonly` Select, которым
+			управляет `editable`. В select-only (`editable: false`, по
 			умолчанию) поле остаётся readonly; `editable: true` снимает его и
 			позволяет вводить текст — фильтрация и `aria-autocomplete="list"`
 			придут отдельной задачей.

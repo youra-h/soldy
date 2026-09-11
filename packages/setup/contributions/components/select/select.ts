@@ -67,11 +67,11 @@ export const SelectContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:clearLabel', 'change:name'],
 		},
-		/** Можно ли открыть панель: `disabled` и `readonly` запрещают. */
+		/** Можно ли открыть панель: запрещает только `disabled`. */
 		openable: {
 			type: Boolean,
 			protected: true,
-			triggers: ['change:disabled', 'change:readonly'],
+			triggers: ['change:disabled'],
 		},
 		/**
 		 * Подгонять ли ширину панели под поле — производное от `contentFit`.

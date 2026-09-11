@@ -157,12 +157,12 @@ describe('закрытая панель', () => {
 		expect(owner.open).toBe(false)
 	})
 
-	it('readonly не открывает: выбор — единственный способ сменить значение', async () => {
+	it('readonly открывает: он про ввод текста, а выбор из списка остаётся', async () => {
 		const { owner, press } = await setup(['Москва'], { readonly: true })
 
 		press('ArrowDown')
 
-		expect(owner.open).toBe(false)
+		expect(owner.open).toBe(true)
 	})
 })
 

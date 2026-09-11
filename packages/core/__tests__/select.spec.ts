@@ -100,12 +100,14 @@ describe('когда панель открывать нельзя', () => {
 		expect(select.open).toBe(false)
 	})
 
-	it('readonly не даёт открыть: выбор из списка — единственный способ сменить значение', () => {
+	it('readonly открыть не мешает: он про ввод текста, а не про выбор из списка', () => {
+		// select-only (`editable: false`) — это и есть readonly=true,
+		// и панель для него единственный способ сменить значение
 		const select = new TSelect({ readonly: true })
 
 		select.open = true
 
-		expect(select.open).toBe(false)
+		expect(select.open).toBe(true)
 	})
 
 	it('запрет закрывает уже открытую панель', () => {
@@ -598,7 +600,7 @@ describe('editable — ввод текста в поле', () => {
 		expect(select.aria.has('aria-autocomplete')).toBe(false)
 	})
 
-	describe('readonly — перегружен editable', () => {
+	describe('readonly — им управляет editable', () => {
 		it('select-only: editable=false → readonly=true', () => {
 			const select = new TSelect()
 
@@ -611,33 +613,43 @@ describe('editable — ввод текста в поле', () => {
 			expect(select.readonly).toBe(false)
 		})
 
-		it('editable=true отменяет readonly=true, переданный в проп', () => {
+		it('в конструкторе editable сильнее пропа readonly', () => {
 			const select = new TSelect({ readonly: true, editable: true })
 
 			expect(select.readonly).toBe(false)
 		})
 
-		it('readonly=true, editable=false — readonly и так true, editable ничего не меняет', () => {
+		it('readonly=true, editable=false — readonly и так true', () => {
 			const select = new TSelect({ readonly: true })
 
 			expect(select.readonly).toBe(true)
 		})
 
-		it('следует за editable в рантайме, установка readonly напрямую его не отменяет', () => {
+		it('в рантайме editable переставляет readonly', () => {
 			const select = new TSelect({ editable: true })
-
-			expect(select.readonly).toBe(false)
-
-			select.readonly = true
 
 			expect(select.readonly).toBe(false)
 
 			select.editable = false
 
 			expect(select.readonly).toBe(true)
+
+			select.editable = true
+
+			expect(select.readonly).toBe(false)
 		})
 
-		it('меняется вместе с editable и сообщает об этом отдельным событием', () => {
+		it('своей логики у readonly нет — присваивание работает как обычно', () => {
+			const select = new TSelect({ editable: true })
+
+			select.readonly = true
+
+			expect(select.readonly).toBe(true)
+			// editable не пересчитывается: он причина, а не следствие
+			expect(select.editable).toBe(true)
+		})
+
+		it('смена editable сообщает и о readonly', () => {
 			const select = new TSelect()
 			const handler = vi.fn()
 
@@ -648,18 +660,22 @@ describe('editable — ввод текста в поле', () => {
 		})
 	})
 
-	it('openable не зависит от editable, а зависит от сырого readonly', () => {
+	it('openable не зависит ни от editable, ни от readonly — только от disabled', () => {
 		const editable = new TSelect({ editable: true })
 		const selectOnly = new TSelect({ editable: false })
 
-		expect(editable.openable).toBe(true)
+		// select-only и есть readonly=true, а панель ему нужна
+		expect(selectOnly.readonly).toBe(true)
 		expect(selectOnly.openable).toBe(true)
+		expect(editable.openable).toBe(true)
 
 		editable.readonly = true
 
+		expect(editable.openable).toBe(true)
+
+		editable.disabled = true
+
 		expect(editable.openable).toBe(false)
-		// `readonly` (перегруженный) остаётся false — его решает editable, не проп
-		expect(editable.readonly).toBe(false)
 	})
 
 	describe('toggleOpen в editable только открывает', () => {
