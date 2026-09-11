@@ -12,12 +12,27 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import * as prettier from 'prettier'
 import { collectManifests } from './collect-manifests'
 import { useInputs } from '../adapter/common/useInputs'
 import { useOutputs } from '../adapter/common/useOutputs'
 
 function toPascalCase(str: string): string {
 	return str.replace(/(^\w|-\w)/g, (g) => g.replace('-', '').toUpperCase())
+}
+
+/**
+ * Приводит вывод к тому же виду, что даёт `npm run format`.
+ *
+ * Иначе генератор и prettier — два писателя одних файлов с разным мнением о
+ * кавычках и переносах: формат-прогон по репозиторию переписывает generated,
+ * а CI сравнивает вывод generate с закоммиченным и падает на дрейфе, которого
+ * по сути нет.
+ */
+async function format(content: string, filePath: string): Promise<string> {
+	const config = await prettier.resolveConfig(filePath, { editorconfig: true })
+
+	return prettier.format(content, { ...config, filepath: filePath })
 }
 
 async function generate(): Promise<void> {
@@ -49,7 +64,7 @@ async function generate(): Promise<void> {
 
 		const filePath = path.join(generatedDir, `${name}.metadata.ts`)
 
-		fs.writeFileSync(filePath, content)
+		fs.writeFileSync(filePath, await format(content, filePath))
 		console.log(`✅  Generated ${filePath}`)
 	}
 
