@@ -14,8 +14,15 @@
 	@apply text-s-component;
 	@apply transition-colors duration-150;
 
+	// Кольцо есть всегда, меняется только его цвет. Если объявлять `outline-2`
+	// сразу в :has, то в базе `outline-color` — это `currentColor`, то есть
+	// цвет текста, и `transition-colors` гонит цвет от тёмного к акцентному:
+	// на глаз это заметный скачок. Прозрачный outline в базе даёт чистое
+	// проявление. Ширину и offset здесь не анимируем — на layout они не влияют.
+	@apply outline-2 outline-offset-2 outline-transparent;
+
 	&:has(input:focus-visible:not(:disabled)) {
-		@apply outline-2 outline-offset-2 outline-s-component;
+		@apply outline-s-component;
 	}
 
 	input {
