@@ -13,6 +13,7 @@ import {
 	Spinner,
 	Switch,
 	Tabs,
+	Tags,
 } from '@soldy/ui-vue'
 
 /**
@@ -70,6 +71,11 @@ export const PREVIEWS: Record<string, TPreview> = {
 				),
 			),
 		]),
+
+	tags: (bind) =>
+		h(Tags as Component, bind, () =>
+			ITEMS.map((item) => h(Tags.Item, { key: item.value, ...item })),
+		),
 
 	accordion: (bind) =>
 		h(Accordion as Component, bind, () =>

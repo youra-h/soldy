@@ -11,5 +11,6 @@ export * from './accordion'
 // Только контракты: класса в этой папке нет — общее у ListBox и Select
 export * from './list'
 export * from './list-box'
+export * from './tags'
 export * from './drag-and-drop'
 export * from './frame'

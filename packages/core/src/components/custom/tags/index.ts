@@ -1,0 +1,6 @@
+export * from './item/types'
+export { default as TTagsItem } from './item/item.class'
+export { TTagsItemCollectionFacade } from './item/facade'
+export * from './types'
+export { TTags } from './tags.class'
+export * from './collection'

@@ -21,6 +21,8 @@ import {
 	SwitchDescriptor,
 	TabsDescriptor,
 	TabsCollectionDescriptor,
+	TagsDescriptor,
+	TagsCollectionDescriptor,
 	TextableDescriptor,
 	ValueControlDescriptor,
 } from '@soldy/setup'
@@ -97,6 +99,15 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 2,
 		description: 'Вкладки: список табов и панели, связанные по значению',
+	},
+	{
+		id: 'tags',
+		label: 'Tags',
+		descriptor: TagsDescriptor,
+		collectionDescriptor: TagsCollectionDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Набор тегов: закрытие по кнопке, необязательный выбор',
 	},
 	{
 		id: 'accordion',
