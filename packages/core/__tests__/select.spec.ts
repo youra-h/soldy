@@ -529,6 +529,23 @@ describe('теги в multiple', () => {
 		expect(collection.tags!.size).toBe('sm')
 	})
 
+	/**
+	 * Плейсхолдер гаснет по наличию тегов, а не по наличию инстанса `TTags`:
+	 * инстанс появляется вместе с режимом `multiple` и живёт всё время, поэтому
+	 * проверка по нему гасила подсказку у пустого поля.
+	 */
+	it('плейсхолдер гаснет только когда тег реально появился', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'], { placeholder: 'Выберите' })
+
+		collection.mode = 'multiple'
+
+		expect(collection.field_placeholder).toBe('Выберите')
+
+		facadeFor(0).choose()
+
+		expect(collection.field_placeholder).toBe('')
+	})
+
 	it('выбор опции даёт тег с её текстом', () => {
 		const { collection, facadeFor } = createSelect(['a', 'b'])
 

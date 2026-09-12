@@ -60,6 +60,18 @@ export class TSelectTagsExtension<
 		return this._engine
 	}
 
+	/**
+	 * Есть ли в поле хоть один тег.
+	 *
+	 * Не то же, что наличие инстанса `tags`: инстанс живёт всё время, пока
+	 * режим `multiple`, даже когда не выбрано ничего. Спрашивать состав у
+	 * коллекции — дело владельца коллекции, то есть этого расширения; фасаду
+	 * Select для его вопросов достаточно ответа `да/нет`.
+	 */
+	get hasTags(): boolean {
+		return (this._engine?.extensions.batch.items.length ?? 0) > 0
+	}
+
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 

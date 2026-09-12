@@ -80,7 +80,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	 * сквозь них, потому что его `value` (то есть `text`) тоже пуст.
 	 */
 	get field_placeholder(): string {
-		return this._tags.tags ? '' : this._select.owner.placeholder
+		return this._tags.hasTags ? '' : this._select.owner.placeholder
 	}
 
 	/**
