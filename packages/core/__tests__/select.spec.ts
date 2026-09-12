@@ -505,6 +505,30 @@ describe('теги в multiple', () => {
 		expect(collection.tags_engine).not.toBeNull()
 	})
 
+	it('размер тегов на шаг меньше размера Select', () => {
+		const { owner, collection } = createSelect(['a', 'b'], { size: 'lg' })
+
+		collection.mode = 'multiple'
+
+		expect(collection.tags!.size).toBe('normal')
+
+		owner.size = 'xl'
+
+		expect(collection.tags!.size).toBe('lg')
+	})
+
+	it('на минимальном размере шкалы теги остаются на минимуме', () => {
+		const { owner, collection } = createSelect(['a', 'b'], { size: 'sm' })
+
+		collection.mode = 'multiple'
+
+		expect(collection.tags!.size).toBe('sm')
+
+		owner.size = 'sm'
+
+		expect(collection.tags!.size).toBe('sm')
+	})
+
 	it('выбор опции даёт тег с её текстом', () => {
 		const { collection, facadeFor } = createSelect(['a', 'b'])
 
