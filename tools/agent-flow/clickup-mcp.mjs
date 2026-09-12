@@ -201,6 +201,78 @@ const tools = {
 			return (await tasksByStatus(status)).map(trimTask)
 		},
 	},
+
+	clickup_create_task: {
+		description:
+			'Завести отдельную задачу на проблему, найденную попутно и не входящую в текущую. Новая задача ложится владельцу в OVERVIEW — в очередь ролей она сама не попадёт. Не заменяет отчёт: упомяни созданную задачу в своём комментарии.',
+		schema: {
+			type: 'object',
+			properties: {
+				source_task_id: {
+					type: 'string',
+					description: 'ID задачи, в которой ты нашёл проблему. Определяет список и даёт ссылку на источник.',
+				},
+				role: {
+					type: 'string',
+					enum: ['techlead', 'developer'],
+					description: 'Твоя роль. Заводить задачи могут только тимлид и программист.',
+				},
+				name: {
+					type: 'string',
+					description: 'Заголовок: что именно не так. Одна строка, без «нужно доработать».',
+				},
+				description: {
+					type: 'string',
+					description:
+						'Суть проблемы, где она живёт (пути к файлам) и почему не решается здесь. Владелец будет читать это без твоего контекста.',
+				},
+				size: {
+					type: 'string',
+					enum: SIZES,
+					description: 'Необязательно. Твоя оценка; владелец может её изменить.',
+				},
+			},
+			required: ['source_task_id', 'role', 'name', 'description'],
+		},
+		async run({ source_task_id, role, name, description, size }) {
+			if (!['techlead', 'developer'].includes(role)) {
+				throw new Error(`Роль "${role}" не может заводить задачи. Ожидается: techlead, developer.`)
+			}
+
+			if (size && !SIZES.includes(size)) {
+				throw new Error(`Неизвестный размер "${size}". Ожидается: ${SIZES.join(', ')}`)
+			}
+
+			const source = await api(`/task/${source_task_id}`)
+			// Списка в конфиге может не быть — работа идёт по Space. Берём тот же
+			// список, где живёт исходная задача: побочная находка относится к тому
+			// же проекту, и разносить их по разным спискам незачем.
+			const listId = source.list?.id ?? config.listId
+
+			if (!listId) {
+				throw new Error(`Не удалось определить список задачи ${source_task_id}`)
+			}
+
+			const owner = Number(requireConfig('ownerId'))
+			const origin = `\n\n---\n_Выделено из [${source.name}](${source.url}) на этапе ${HASHTAGS[role]}._`
+
+			const created = await api(`/list/${listId}/task`, {
+				method: 'POST',
+				body: JSON.stringify({
+					name,
+					description: description + origin,
+					// OVERVIEW, а не первый статус потока: задача должна дождаться
+					// решения владельца, а не уехать в очередь ролей сама собой.
+					status: config.statuses.overview,
+					assignees: [owner],
+					tags: size ? [size] : [],
+					notify_all: false,
+				}),
+			})
+
+			return { id: created.id, url: created.url, status: config.statuses.overview }
+		},
+	},
 }
 
 /* ─────────────────────────── MCP / JSON-RPC ─────────────────────────── */
