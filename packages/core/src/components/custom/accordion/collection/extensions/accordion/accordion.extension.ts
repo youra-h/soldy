@@ -63,23 +63,23 @@ export class TAccordionExtension<
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.forEach((item) => this._applyOwner(item as TItem))
+		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
 		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})

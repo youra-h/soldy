@@ -27,12 +27,12 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * `view`. Слой исчез вместе с компонентом `TList`: наследник у него был один.
  */
 export class TListBoxExtension<
-		TOwner extends IListBox = IListBox,
-		TItem extends IListBoxItem = IListBoxItem,
-		// `any` в констрейнте: карта событий item-адаптера инвариантна, и точный
-		// набор здесь запретил бы наследнику её расширить
-		TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
-	>
+	TOwner extends IListBox = IListBox,
+	TItem extends IListBoxItem = IListBoxItem,
+	// `any` в констрейнте: карта событий item-адаптера инвариантна, и точный
+	// набор здесь запретил бы наследнику её расширить
+	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
+>
 	extends TBaseOwnerItemExtension<TItem, TItemExt, TListBoxExtensionEvents>
 	implements IExtension<TItem>, IListBoxExtension<TItem, TItemExt>
 {
@@ -71,32 +71,32 @@ export class TListBoxExtension<
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.forEach((item) => this._applyOwner(item as TItem))
+		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:contentFit', () => {
-			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
+			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
 
 		this._owner.events.on('change:indicator', () => {
-			ctx.driver.forEach((item) => this._applyIndicator(item as TItem))
+			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
 		// Внешний вид и сторона отметки доезжают до item-адаптеров

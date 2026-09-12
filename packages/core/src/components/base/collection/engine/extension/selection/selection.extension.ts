@@ -99,7 +99,7 @@ export class TSelectionExtension<TItem extends object = any>
 
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
 			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				const remembered = meta.get?.(item)
 
 				if (remembered) applyMeta(item, remembered)
@@ -128,14 +128,14 @@ export class TSelectionExtension<TItem extends object = any>
 	 * приведение типа: элементом коллекции может быть и не компонент.
 	 */
 	private _syncDataset(): void {
-		this._ctx?.driver.forEach((item: TItem) => {
+		this._ctx?.driver.valueOf().forEach((item: TItem) => {
 			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isSelected(item))
 		})
 	}
 
 	select(item: TItem): void {
 		if (this._mode === 'none') return
-		if (!this._ctx.driver.includes(item)) return
+		if (!this._ctx.driver.valueOf().includes(item)) return
 
 		if (!this.multiple) {
 			// снять выделение с предыдущего

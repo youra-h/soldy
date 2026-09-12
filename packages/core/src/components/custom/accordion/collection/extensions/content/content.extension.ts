@@ -50,7 +50,7 @@ export class TAccordionContentExtension<TItem extends IAccordionItem = IAccordio
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.driver.forEach((item) => this._linkHeader(item))
+		ctx.driver.valueOf().forEach((item) => this._linkHeader(item))
 		ctx.driver.events.on('item:added', (e) => this._linkHeader(e.item as TItem))
 
 		// `aria-expanded` — раскрытость, то есть выбранность элемента в
@@ -77,7 +77,7 @@ export class TAccordionContentExtension<TItem extends IAccordionItem = IAccordio
 
 		if (!selection) return
 
-		ctx.driver.forEach((item) => {
+		ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-expanded', selection.isSelected(item) ? 'true' : 'false')
 		})
 	}

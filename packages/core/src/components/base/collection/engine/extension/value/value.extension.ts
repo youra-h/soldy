@@ -114,7 +114,7 @@ export class TValueSelectionExtension<
 			selection.resetSelection()
 
 			for (const key of wanted) {
-				const item = this._ctx.driver.find((candidate) => candidate.value === key)
+				const item = this._ctx.driver.valueOf().find((candidate) => candidate.value === key)
 
 				if (item) selection.select(item)
 			}

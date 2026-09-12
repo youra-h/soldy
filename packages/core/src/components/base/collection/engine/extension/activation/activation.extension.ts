@@ -64,7 +64,7 @@ export class TActivationExtension<TItem extends object = any>
 
 			// Догон: расширение могло прийти в уже наполненную коллекцию, и свои
 			// `meta:applied` оно тогда пропустило. Снимок помнит `meta`
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				const remembered = meta.get?.(item)
 
 				if (remembered) applyMeta(item, remembered)
@@ -92,7 +92,7 @@ export class TActivationExtension<TItem extends object = any>
 	activate(item: TItem): void {
 		if (this._activeItem === item) return
 
-		if (!this._ctx.driver.includes(item)) return
+		if (!this._ctx.driver.valueOf().includes(item)) return
 
 		this._activeItem = item
 
@@ -143,7 +143,7 @@ export class TActivationExtension<TItem extends object = any>
 	 * конкретного компонента.
 	 */
 	private _syncDataset(): void {
-		this._ctx?.driver.forEach((item: TItem) => {
+		this._ctx?.driver.valueOf().forEach((item: TItem) => {
 			;(item as { dataset?: TDataset }).dataset?.add('selected', this.isActive(item))
 		})
 	}
@@ -171,17 +171,17 @@ export class TActivationExtension<TItem extends object = any>
 	 */
 	findActivatable(predicate?: (item: TItem) => boolean, fromItem?: TItem): TItem | undefined {
 		const check = predicate ?? (() => true)
-		const fromIndex = fromItem !== undefined ? this._ctx.driver.indexOf(fromItem) : -1
+		const fromIndex = fromItem !== undefined ? this._ctx.driver.valueOf().indexOf(fromItem) : -1
 
 		// Сначала вперёд: fromIndex+1, fromIndex+2, ...
-		for (let i = fromIndex + 1; i < this._ctx.driver.length; i++) {
-			const item = this._ctx.driver[i]
+		for (let i = fromIndex + 1; i < this._ctx.driver.valueOf().length; i++) {
+			const item = this._ctx.driver.valueOf()[i]
 			if (item && check(item)) return item
 		}
 
 		// Затем назад: fromIndex-1, fromIndex-2, ...
 		for (let i = fromIndex - 1; i >= 0; i--) {
-			const item = this._ctx.driver[i]
+			const item = this._ctx.driver.valueOf()[i]
 			if (item && check(item)) return item
 		}
 

@@ -45,6 +45,7 @@ export abstract class TBatchCollectionFacade<
 			'items:added',
 			'items:removed',
 			'change:trackBy',
+			'change:shown',
 		])
 	}
 
@@ -67,6 +68,16 @@ export abstract class TBatchCollectionFacade<
 
 	set items(value: any) {
 		this.extensions.batch.update(value)
+	}
+
+	/**
+	 * Что показано пользователю. Отсюда рисует адаптер.
+	 *
+	 * `items` рядом остаётся составом хранилища: скрытые отбором элементы
+	 * никуда не делись, и код, который пишет в коллекцию, должен видеть их.
+	 */
+	get shown(): ReadonlyArray<TItem> {
+		return this.extensions.batch.shown
 	}
 
 	get trackBy(): ((item: TItem) => any) | undefined {

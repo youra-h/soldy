@@ -15,6 +15,14 @@ export const CollectionContribution = (): IContribution => ({
 		 */
 		engine: { type: Object },
 		items: { type: Array, triggers: ['change:items'] },
+		/**
+		 * Что показано пользователю — состав после отбора.
+		 *
+		 * Отдельно от `items`, а не вместо: `items` остаётся реальным составом
+		 * хранилища. Про фильтры здесь не знает никто — расширение помечает
+		 * выборку устаревшей, коллекция шлёт `change:shown`.
+		 */
+		shown: { type: Array, protected: true, triggers: ['change:shown'] },
 		trackBy: { type: Function, triggers: ['change:trackBy'] },
 	},
 	events: [
@@ -28,5 +36,6 @@ export const CollectionContribution = (): IContribution => ({
 		'reset',
 		'items:added',
 		'items:removed',
+		'change:shown',
 	],
 })

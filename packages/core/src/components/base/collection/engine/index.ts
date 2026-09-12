@@ -1,19 +1,21 @@
 // Типы
 export type { TCollectionStorageDriverEvents, TCollectionEngineEvents } from './types'
-export { TInsertEvent, TUpdateEvent, TItemEvent } from './types'
+export { TInsertEvent, TUpdateEvent, TItemEvent, TQueryEvent } from './types'
 
 // Хранилище
 export type { IStorage } from './storage'
 export { TArrayStorage } from './storage'
 
 // Команды
-export type { ICommand, ICommandContext } from './commands'
+export type { ICommand, ICommandContext, IQueryCommand } from './commands'
 export {
 	TInsertCommand,
 	TRemoveCommand,
 	TUpdateCommand,
 	TMoveCommand,
 	TClearCommand,
+	TPatchCommand,
+	TQueryCommand,
 } from './commands'
 
 // Расширения
@@ -26,7 +28,6 @@ export type {
 	ICollectionEngineCore,
 	ICollectionProps,
 	TCollectionEngineItemSource,
-	TReadonlyStorageDriverArray,
 } from './types'
 
 // Фасад

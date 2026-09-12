@@ -72,14 +72,17 @@ export class TFactoryExtension<TItem extends object>
 	 * правильный порядок вставки, и повторять его здесь значит завести вторую
 	 * реализацию того же.
 	 */
-	private _convertExisting(ctx: IExtensionContext<TItem>, ctor: new (source: any) => TItem): void {
-		const raw = [...ctx.driver].filter((item) => !(item instanceof ctor))
+	private _convertExisting(
+		ctx: IExtensionContext<TItem>,
+		ctor: new (source: any) => TItem,
+	): void {
+		const raw = ctx.driver.valueOf().filter((item) => !(item instanceof ctor))
 
 		if (raw.length === 0) return
 
 		const batch = ctx.extensions.batch as { update?(items: TItem[]): void } | undefined
 
-		batch?.update?.([...ctx.driver])
+		batch?.update?.(ctx.driver.valueOf())
 	}
 
 	create(source: any): TItem {

@@ -39,6 +39,6 @@ export class TOrderExtension<TItem extends object = any>
 	 * Возвращает актуальный индекс элемента в коллекции.
 	 */
 	getItemOrder(item: TItem): number {
-		return this._ctx.driver.indexOf(item)
+		return this._ctx.driver.valueOf().indexOf(item)
 	}
 }

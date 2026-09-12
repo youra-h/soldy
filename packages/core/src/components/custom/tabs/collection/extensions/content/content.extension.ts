@@ -57,7 +57,7 @@ export class TTabsContentExtension<TItem extends ITabsItem = ITabsItem>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.driver.forEach((item) => this._linkTab(item))
+		ctx.driver.valueOf().forEach((item) => this._linkTab(item))
 		ctx.driver.events.on('item:added', (e) => this._linkTab(e.item as TItem))
 	}
 

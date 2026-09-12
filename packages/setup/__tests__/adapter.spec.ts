@@ -199,6 +199,70 @@ describe('расширения коллекций', () => {
 		expect(engine.extensions.plain.remove).toHaveBeenCalledWith(item)
 	})
 
+	it('элемент из данных не удаляется при размонтировании', () => {
+		const { factory, store } = createElevatorFactory()
+
+		const item = { uid: 'a' }
+
+		// элемент уже в коллекции — пришёл из `items`, разметка им не владеет
+		const engine = {
+			extensions: {
+				batch: { items: [item] },
+				plain: { push: vi.fn(), remove: vi.fn() },
+			},
+		}
+
+		const ctx = createAdapterContext(
+			defineComponent({ ctor: class {} }),
+			{ ctrl: { engine } },
+			{ defaultExtensions: [] },
+		)
+
+		ctx.use(TCollectionExtension, { elevator: factory })
+
+		const register = store.get(COLLECTION_ENGINE_ELEVATOR)
+		const cleanup = register(item, {})
+
+		// повторно добавлять нечего
+		expect(engine.extensions.plain.push).not.toHaveBeenCalled()
+
+		cleanup()
+
+		// и удалять тоже: фильтр сузил выдачу, ушла страница таблицы —
+		// данные при этом на месте
+		expect(engine.extensions.plain.remove).not.toHaveBeenCalled()
+	})
+
+	it('элемент из разметки удаляется при размонтировании', () => {
+		const { factory, store } = createElevatorFactory()
+
+		// коллекция пуста — элемент создаёт сама разметка
+		const engine = {
+			extensions: {
+				batch: { items: [] },
+				plain: { push: vi.fn(), remove: vi.fn() },
+			},
+		}
+
+		const ctx = createAdapterContext(
+			defineComponent({ ctor: class {} }),
+			{ ctrl: { engine } },
+			{ defaultExtensions: [] },
+		)
+
+		ctx.use(TCollectionExtension, { elevator: factory })
+
+		const item = { uid: 'b' }
+		const register = store.get(COLLECTION_ENGINE_ELEVATOR)
+		const cleanup = register(item, {})
+
+		expect(engine.extensions.plain.push).toHaveBeenCalledWith(item)
+
+		cleanup()
+
+		expect(engine.extensions.plain.remove).toHaveBeenCalledWith(item)
+	})
+
 	it('TCollectionExtension бросает ошибку без engine у instance', () => {
 		const { factory } = createElevatorFactory()
 

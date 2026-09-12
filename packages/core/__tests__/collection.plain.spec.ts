@@ -20,7 +20,7 @@ describe('TPlainExtension', () => {
 
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.extensions.plain.length).toBe(1)
+		expect(col.getCore().driver.valueOf().length).toBe(1)
 		expect(added).toHaveBeenCalledTimes(1)
 		expect(added.mock.calls[0][0].item).toEqual({ id: 1, name: 'a' })
 	})
@@ -31,7 +31,7 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 		col.extensions.plain.insert({ id: 2, name: 'b' })
 
-		expect(col.extensions.plain.getAll()).toEqual([
+		expect(col.getCore().driver.valueOf()).toEqual([
 			{ id: 2, name: 'b' },
 			{ id: 1, name: 'a' },
 		])
@@ -43,7 +43,7 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' }, 0)
 		col.extensions.plain.insert({ id: 2, name: 'b' }, 1)
 
-		expect(col.extensions.plain.getAll()).toEqual([
+		expect(col.getCore().driver.valueOf()).toEqual([
 			{ id: 1, name: 'a' },
 			{ id: 2, name: 'b' },
 		])
@@ -58,7 +58,7 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.events.on('item:removed', removed)
 		col.extensions.plain.remove(item)
 
-		expect(col.extensions.plain.length).toBe(0)
+		expect(col.getCore().driver.valueOf().length).toBe(0)
 		expect(removed).toHaveBeenCalledWith(item)
 	})
 
@@ -89,7 +89,7 @@ describe('TPlainExtension', () => {
 
 		col.extensions.plain.move(a, 1)
 
-		expect(col.extensions.plain.getAll()).toEqual([b, a])
+		expect(col.getCore().driver.valueOf()).toEqual([b, a])
 	})
 
 	it('getAll: возвращает все элементы', () => {
@@ -98,33 +98,9 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 		col.extensions.plain.insert({ id: 2, name: 'b' })
 
-		expect(col.extensions.plain.getAll()).toEqual([
+		expect(col.getCore().driver.valueOf()).toEqual([
 			{ id: 2, name: 'b' },
 			{ id: 1, name: 'a' },
-		])
-	})
-
-	it('find: находит элемент по предикату', () => {
-		const col = createCollection()
-
-		col.extensions.plain.insert({ id: 1, name: 'a' })
-		col.extensions.plain.insert({ id: 2, name: 'b' })
-
-		expect(col.extensions.plain.find((item) => item.id === 2)).toEqual({ id: 2, name: 'b' })
-		expect(col.extensions.plain.find((item) => item.id === 99)).toBeUndefined()
-	})
-
-	it('filter: фильтрует элементы', () => {
-		const col = createCollection()
-
-		col.extensions.plain.insert({ id: 1, name: 'a' })
-		col.extensions.plain.insert({ id: 2, name: 'b' })
-		col.extensions.plain.insert({ id: 3, name: 'c' })
-
-		// insert по умолчанию в index 0 → порядок: [c, b, a]
-		expect(col.extensions.plain.filter((item) => item.id > 1)).toEqual([
-			{ id: 3, name: 'c' },
-			{ id: 2, name: 'b' },
 		])
 	})
 
@@ -140,9 +116,9 @@ describe('TPlainExtension', () => {
 	it('length: возвращает количество элементов', () => {
 		const col = createCollection()
 
-		expect(col.extensions.plain.length).toBe(0)
+		expect(col.getCore().driver.valueOf().length).toBe(0)
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.extensions.plain.length).toBe(1)
+		expect(col.getCore().driver.valueOf().length).toBe(1)
 	})
 })

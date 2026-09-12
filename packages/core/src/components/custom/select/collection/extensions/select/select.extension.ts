@@ -88,32 +88,32 @@ export class TSelectExtension<
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем опциям `item:added` уже не придёт
-		ctx.driver.forEach((item) => this._onItemAdded(item as TItem))
+		ctx.driver.valueOf().forEach((item) => this._onItemAdded(item as TItem))
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:contentFit', () => {
-			ctx.driver.forEach((item) => this._applyContentFit(item as TItem))
+			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
 
 		this._owner.events.on('change:indicator', () => {
-			ctx.driver.forEach((item) => this._applyIndicator(item as TItem))
+			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
 		// Сторона отметки доезжает до item-адаптеров
@@ -219,7 +219,7 @@ export class TSelectExtension<
 
 		if (!selection || !this._ctx) return
 
-		this._ctx.driver.forEach((item) => {
+		this._ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
 		})
 	}

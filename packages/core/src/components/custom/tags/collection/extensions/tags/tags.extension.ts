@@ -75,22 +75,22 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.forEach((item) => this._applyOwner(item))
+		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})
@@ -135,7 +135,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 		this._owner.aria.add('role', selection.mode === 'none' ? 'list' : 'listbox')
 
-		this._ctx.driver.forEach((item) => this._applyItemRole(item, selection))
+		this._ctx.driver.valueOf().forEach((item) => this._applyItemRole(item, selection))
 	}
 
 	private _applyItemRole(item: TItem, selection: ISelectionExtension<TItem>): void {
@@ -160,7 +160,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 		if (!selection || selection.mode === 'none') return
 
-		this._ctx.driver.forEach((item) => {
+		this._ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
 		})
 	}

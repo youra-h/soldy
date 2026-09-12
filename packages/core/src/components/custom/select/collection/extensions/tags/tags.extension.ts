@@ -159,7 +159,7 @@ export class TSelectTagsExtension<
 
 		if (!selection || !this._ctx) return
 
-		const item = this._ctx.driver.find((candidate) => candidate.value === tag.value)
+		const item = this._ctx.driver.valueOf().find((candidate) => candidate.value === tag.value)
 
 		if (item) selection.deselect(item)
 	}

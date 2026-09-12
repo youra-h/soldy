@@ -76,11 +76,52 @@ describe('TRemoveCommand', () => {
 		const item: Item = { id: 1, name: 'a' }
 
 		storage.insert(item, 0)
-		storage.remove(item)
-		new TRemoveCommand(item).emitEvents(createContext(storage, events))
+
+		const command = new TRemoveCommand(item)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
 
 		expect(removed).toHaveBeenCalledWith(item)
 		expect(count).toHaveBeenCalledWith(0)
+	})
+
+	it('молчит, если удалять было нечего', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const removed = vi.fn()
+
+		events.on('item:removed', removed)
+
+		const item: Item = { id: 1, name: 'a' }
+		const ctx = createContext(storage, events)
+		const command = new TRemoveCommand(item)
+
+		// элемента в хранилище нет — уведомлять не о чем
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(removed).not.toHaveBeenCalled()
+	})
+
+	it('повторное удаление не шлёт item:removed дважды', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const removed = vi.fn()
+
+		const item: Item = { id: 1, name: 'a' }
+		const ctx = createContext(storage, events)
+
+		storage.insert(item, 0)
+		events.on('item:removed', removed)
+
+		for (const command of [new TRemoveCommand(item), new TRemoveCommand(item)]) {
+			command.apply(ctx)
+			command.emitEvents(ctx)
+		}
+
+		expect(removed).toHaveBeenCalledTimes(1)
 	})
 })
 

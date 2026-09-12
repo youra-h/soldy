@@ -36,15 +36,46 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 3, Vite 6.
 - npm workspaces: `packages/*` and `packages/ui/*`.
 
+## Никаких костылей (критично)
+
+Костыль — это решение, которое **обходит** проблему вместо того, чтобы её
+убрать. Оно дешевле в моменте и всегда дороже потом: за ним никто не следит, а
+следующий человек читает его как норму. Запрет распространяется и на код, и на
+тесты, и на конфиги.
+
+Чего делать нельзя:
+
+- **Ветвление в общем методе ради частного случая.** Если операция ведёт себя
+  иначе — это отдельный метод, а не флаг или `if` внутри. Чтение и запись
+  состава коллекции поэтому разведены: `driver.execute()` меняет хранилище и
+  шлёт `change:items`, `driver.query()` возвращает выборку и не шлёт ничего.
+  Один метод с режимом внутри был бы ровно таким костылём.
+- **Приведение типа, чтобы заткнуть несоответствие.** `as any`,
+  `as unknown as X` и `!` вместо проверки прячут ошибку, а не чинят её. Если
+  типы не сходятся — неверен контракт, править надо его.
+- **Второй путь к тем же данным.** Свой кэш «чтобы не дёргать расширение»,
+  дубль геттера, копия состояния рядом с источником. Два пути неизбежно
+  расходятся, и расхождение всплывает не там, где сделано.
+- **Временное исключение без срока.** Allow-путь в стороже, отключённый тест,
+  `eslint-disable` — только вместе с заведённой задачей на снятие, и
+  комментарий должен говорить «временно, до <задача>», а не объяснять, почему
+  так правильно.
+- **Документация авансом.** Не описывать в этом файле правило, гарантии
+  которого ещё нет в коде: запись и сторож появляются одним коммитом.
+
+Если правильное решение выходит за рамки задачи — **не делать половину молча**.
+Сказать, что упёрлись, и получить решение: сузить задачу или расширить. Тихо
+поставленный костыль хуже и невыполненной задачи, и прямого отказа.
+
 ## Layer boundaries (critical)
 
-| Package | Responsibility |
-|---|---|
-| `packages/core` | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`). |
-| `packages/setup` | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`. |
-| `packages/plugins` | Runtime behavior extenders installed into `TPluginBundle`. |
-| `packages/ui/*` | Framework adapters — the **only** place framework imports are allowed. |
+| Package             | Responsibility                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
+| `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`).                                                            |
+| `packages/setup`    | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`.                                                 |
+| `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
+| `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
 
 **Rule:** `core`, `accessor`, `setup`, and `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, or `PropType`. Framework-specific code belongs only in `packages/ui/*`.
 
@@ -61,8 +92,15 @@ CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх па�
 
 ```ts
 // packages/ui/vue/.../setup.component.ts
-watch(() => instance.open, (open) => { dismiss.enabled = open })
-dismiss.events.on('dismiss', () => { instance.open = false })
+watch(
+    () => instance.open,
+    (open) => {
+        dismiss.enabled = open
+    },
+)
+dismiss.events.on('dismiss', () => {
+    instance.open = false
+})
 ```
 
 Связка «открыто ⇄ слушаем нажатия мимо» одинакова для Select, Menu и Popover
@@ -110,12 +148,12 @@ dismiss.events.on('dismiss', () => { instance.open = false })
 
 ### Префикс — только в глобальном пространстве имён
 
-| Где | Пример | Почему |
-|---|---|---|
-| CSS-класс | `s-button` | каскад глобален, `.button` столкнётся с приложением |
-| Тег Custom Element | `soldy-button` | реестр элементов глобален, дефис обязателен по спеке |
-| Селектор Angular | `soldy-button` | шаблонное пространство имён глобально |
-| **Экспорт компонента** | `Button`, `TabsItem` | **без префикса** — namespace уже дал npm-скоуп |
+| Где                    | Пример               | Почему                                               |
+| ---------------------- | -------------------- | ---------------------------------------------------- |
+| CSS-класс              | `s-button`           | каскад глобален, `.button` столкнётся с приложением  |
+| Тег Custom Element     | `soldy-button`       | реестр элементов глобален, дефис обязателен по спеке |
+| Селектор Angular       | `soldy-button`       | шаблонное пространство имён глобально                |
+| **Экспорт компонента** | `Button`, `TabsItem` | **без префикса** — namespace уже дал npm-скоуп       |
 
 `SButton`/`STabs` не вводим: `import { Button } from '@soldy/ui-vue'` уже
 однозначен, префикс дублировал бы то, что делает импорт.
@@ -131,12 +169,12 @@ dismiss.events.on('dismiss', () => { instance.open = false })
 `id` есть и у панели Accordion, и у списка Select, но компонентами мы их не
 сделали — и правильно. `id` — условие необходимое, не достаточное.
 
-| Часть | `id` есть | Адресует потребитель | Решение |
-|---|---|---|---|
-| `Tabs.Content` | да | да — `<Tabs.Content value="a">` | компонент |
-| панель Accordion | да | нет — только содержимое в слот | слот + проп `content_aria` |
-| список Select | да | нет — он всегда один и внутри | разметка + проп `list_aria` |
-| список табов | нет | нет | слот |
+| Часть            | `id` есть | Адресует потребитель            | Решение                     |
+| ---------------- | --------- | ------------------------------- | --------------------------- |
+| `Tabs.Content`   | да        | да — `<Tabs.Content value="a">` | компонент                   |
+| панель Accordion | да        | нет — только содержимое в слот  | слот + проп `content_aria`  |
+| список Select    | да        | нет — он всегда один и внутри   | разметка + проп `list_aria` |
+| список табов     | нет       | нет                             | слот                        |
 
 Следствие для ARIA: у части-компонента есть экземпляр, значит есть и набор
 `aria`, в который пишут ядро, плагины и расширения. У разметки экземпляра нет,
@@ -175,11 +213,11 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 единственном — если коллекция сама по себе одна сущность (`ListBox`,
 `Accordion`). Часть всегда `Item`, независимо от числа владельца.
 
-| Коллекция | Части | Почему так |
-|---|---|---|
-| `Tabs` | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value` |
-| `Accordion` | `Accordion.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
-| `ListBox` | `ListBox.Item` | панели нет вовсе: выбор ничего не раскрывает |
+| Коллекция   | Части                       | Почему так                                                           |
+| ----------- | --------------------------- | -------------------------------------------------------------------- |
+| `Tabs`      | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value`      |
+| `Accordion` | `Accordion.Item`            | панель внутри элемента, отдельно не существует → слот `item-content` |
+| `ListBox`   | `ListBox.Item`              | панели нет вовсе: выбор ничего не раскрывает                         |
 
 **Набор частей выводится из критерия, а не копируется между коллекциями.**
 Панель есть у Tabs и Accordion, но частью стала только у Tabs — потому что у
@@ -203,10 +241,14 @@ Accordion она не имеет собственной идентичности
 
 ```ts
 // ❌ читается как «массив элементов»
-bundles.events.on('engine:bound', (collection) => { this._collection = collection })
+bundles.events.on('engine:bound', (collection) => {
+    this._collection = collection
+})
 
 // ✅
-bundles.events.on('engine:bound', (engine) => { this._engine = engine })
+bundles.events.on('engine:bound', (engine) => {
+    this._engine = engine
+})
 ```
 
 **Держите фасад — это `facade`, а не `engine`.** `TListBoxCollectionFacade` не
@@ -227,7 +269,8 @@ bundles.events.on('engine:bound', (engine) => { this._engine = engine })
 <slot name="item-leading" :item="item" />
 <slot name="item" :item="item" />
 <slot name="item-trailing" :item="item" />
-<slot name="item-content" :item="item" />   <!-- Accordion: панель -->
+<slot name="item-content" :item="item" />
+<!-- Accordion: панель -->
 ```
 
 Динамических имён (`item:${item.value}:leading`, `panel:${value}`) быть не
@@ -240,11 +283,11 @@ bundles.events.on('engine:bound', (engine) => { this._engine = engine })
 
 ### Три слоя, и они не пересекаются
 
-| Слой | Отвечает за | Пример |
-|---|---|---|
-| **Класс ядра** | собственные props и events | `TTabsItem` — `value`, `text`, `closable` |
-| **Фасад коллекции** | членство в коллекции | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
-| **Расширение** | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок |
+| Слой                | Отвечает за                                   | Пример                                                      |
+| ------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| **Класс ядра**      | собственные props и events                    | `TTabsItem` — `value`, `text`, `closable`                   |
+| **Фасад коллекции** | членство в коллекции                          | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
+| **Расширение**      | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок                         |
 
 **Класс ядра не знает о коллекции.** Ни движка, ни `bindEngine`, ни активности.
 Если классу «нужен доступ к коллекции» — значит логика не в том слое.
@@ -331,12 +374,12 @@ TCollectionItemComponent
 Всем остальным — плагинам, расширениям адаптера, фасадам, коду `packages/ui/*`
 — driver недоступен. Они работают со стандартными расширениями:
 
-| Что нужно | Через что |
-|---|---|
-| список элементов, длина, поиск, индекс | `engine.extensions.batch.items` |
+| Что нужно                                                               | Через что                        |
+| ----------------------------------------------------------------------- | -------------------------------- |
+| список элементов, длина, поиск, индекс                                  | `engine.extensions.batch.items`  |
 | `item:added` / `item:removed` / `item:moved` / `reset` / `change:items` | `engine.extensions.plain.events` |
-| вставка, удаление, перемещение, обновление | `engine.extensions.plain` |
-| замена набора целиком | `engine.extensions.batch` |
+| вставка, удаление, перемещение, обновление                              | `engine.extensions.plain`        |
+| замена набора целиком                                                   | `engine.extensions.batch`        |
 
 `plain` и `batch` есть у любой коллекции компонента — их ставит
 `baseExtensions()` (`base/collection/create/internal.ts`), поэтому проверять
@@ -463,18 +506,21 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 ## Project-specific patterns
 
 - **Contributions** are arrow-function factories returning an `IContribution` dictionary:
-  ```ts
-  export const ButtonContribution = (): IContribution => ({
-    props: { view: { type: String, triggers: ['change:view'] } },
-    events: ['click'],
-  })
-  ```
-  `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
+
+    ```ts
+    export const ButtonContribution = (): IContribution => ({
+        props: { view: { type: String, triggers: ['change:view'] } },
+        events: ['click'],
+    })
+    ```
+
+    `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
 
 - **Descriptors** are arrow-function factories too. Call them when used as `extends` / options (do not pass the function reference):
-  ```ts
-  export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
-  ```
+
+    ```ts
+    export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
+    ```
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
@@ -492,14 +538,14 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 
 **Списки одинаковы на вид и различны по семантике:**
 
-| | ListBox | список Select | Menu |
-|---|---|---|---|
-| роль контейнера | `listbox` | `listbox` | `menu` |
-| роль элемента | `option` | `option` | `menuitem` |
-| где DOM-фокус | на контейнере | **на поле, не в списке** | на элементе |
-| навигация | roving tabindex | `aria-activedescendant` | roving tabindex |
-| элемент | выбирается | выбирается | выполняет действие |
-| `aria-selected` | есть | есть | нет |
+|                 | ListBox         | список Select            | Menu               |
+| --------------- | --------------- | ------------------------ | ------------------ |
+| роль контейнера | `listbox`       | `listbox`                | `menu`             |
+| роль элемента   | `option`        | `option`                 | `menuitem`         |
+| где DOM-фокус   | на контейнере   | **на поле, не в списке** | на элементе        |
+| навигация       | roving tabindex | `aria-activedescendant`  | roving tabindex    |
+| элемент         | выбирается      | выбирается               | выполняет действие |
+| `aria-selected` | есть            | есть                     | нет                |
 
 Проверка на конкретном коде: `ListBox.vue` держит `tabindex="0"` на корне, а
 `TListKeyboardPlugin` слушает `keydown` там же — ListBox спроектирован как
@@ -511,14 +557,14 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 
 **Делим по слоям, а не по компонентам:**
 
-| Слой | Общий? | Где |
-|---|---|---|
-| оверлей: якорь, позиционирование, z-index, закрытие | **общий** | `TFrame` + `TAnchorPlugin` + `TDismissPlugin` |
+| Слой                                                   | Общий?    | Где                                                         |
+| ------------------------------------------------------ | --------- | ----------------------------------------------------------- |
+| оверлей: якорь, позиционирование, z-index, закрытие    | **общий** | `TFrame` + `TAnchorPlugin` + `TDismissPlugin`               |
 | поведение списка: подсветка, скролл к элементу, высота | **общий** | `TListItemPlugin`, `TListScrollPlugin`, `TListLayoutPlugin` |
-| визуальная строка элемента | **общий** | `Button` внутри элемента + SCSS |
-| движок коллекции, `selection`, `order`, `meta` | **общий** | `base/collection` |
-| контейнер списка и его ARIA | **свой** | у каждого компонента |
-| модель фокуса и клавиатура | **своя** | у каждого компонента |
+| визуальная строка элемента                             | **общий** | `Button` внутри элемента + SCSS                             |
+| движок коллекции, `selection`, `order`, `meta`         | **общий** | `base/collection`                                           |
+| контейнер списка и его ARIA                            | **свой**  | у каждого компонента                                        |
+| модель фокуса и клавиатура                             | **своя**  | у каждого компонента                                        |
 
 **Критерий: общее — то, что не зависит от роли и модели фокуса.**
 
@@ -544,8 +590,8 @@ conformance-тест сразу покажет, какие пакеты её е�
 
 ```ts
 export const close: TIconSource = {
-	viewBox: '0 -960 960 960',
-	body: '<path d="M480-424 284-228q…"/>',
+    viewBox: '0 -960 960 960',
+    body: '<path d="M480-424 284-228q…"/>',
 }
 ```
 
@@ -570,7 +616,7 @@ import { setIcons } from '@soldy/setup'
 import * as material from '@soldy/icons-material'
 
 setIcons(material)
-setIcons({ close: myCloseIcon })   // точечно, поверх набора
+setIcons({ close: myCloseIcon }) // точечно, поверх набора
 ```
 
 Без вызова компоненты рисуют пустую заглушку и один раз печатают, какой роли
@@ -587,11 +633,11 @@ setIcons({ close: myCloseIcon })   // точечно, поверх набора
 
 **Иконка в компоненте — три независимые вещи.** Не путайте их:
 
-| Что | Чем решается |
-|---|---|
-| откуда берётся иконка по умолчанию | пакет (`setIcons`) |
-| как заменить её в одном месте | слот (`#close-icon`, `#clear`) |
-| как до неё доходит состояние | обёртка с `data-*` вокруг слота |
+| Что                                | Чем решается                    |
+| ---------------------------------- | ------------------------------- |
+| откуда берётся иконка по умолчанию | пакет (`setIcons`)              |
+| как заменить её в одном месте      | слот (`#close-icon`, `#clear`)  |
+| как до неё доходит состояние       | обёртка с `data-*` вокруг слота |
 
 Третье — это то, что Ark UI называет `Indicator`. Отдельным компонентом его не
 заводим: потребитель его не адресует, значит по критерию «часть или слот» это
@@ -790,11 +836,11 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
 export const ButtonContribution = (): IContribution => ({
-	slots: {
-		leading: { description: 'Перед текстом' },
-		default: { scope: { text: defineType<string>(String) } },
-		trailing: { description: 'После текста' },
-	},
+    slots: {
+        leading: { description: 'Перед текстом' },
+        default: { scope: { text: defineType<string>(String) } },
+        trailing: { description: 'После текста' },
+    },
 })
 ```
 
@@ -816,14 +862,14 @@ export const ButtonContribution = (): IContribution => ({
 содержимым принципиально не умеет scoped-слоты: данные внутрь можно передать
 только функции. Одинаковы имена, состав и scope — не синтаксис.
 
-| Адаптер | Спеллинг | scope |
-|---|---|---|
-| Vue | `<template #leading>` | `v-slot="{ text }"` |
-| Svelte 5 | `{#snippet leading()}` | параметр сниппета |
-| React | `leading={<Icon/>}` | `{({ text }) => …}` |
-| Solid | `leading={<Icon/>}` | `{({ text }) => …}` |
-| Angular | `<span slot="leading">` | `<ng-template slot let-text>` |
-| WebC | `<span slot="leading">` | ✗ нет механизма |
+| Адаптер  | Спеллинг                | scope                         |
+| -------- | ----------------------- | ----------------------------- |
+| Vue      | `<template #leading>`   | `v-slot="{ text }"`           |
+| Svelte 5 | `{#snippet leading()}`  | параметр сниппета             |
+| React    | `leading={<Icon/>}`     | `{({ text }) => …}`           |
+| Solid    | `leading={<Icon/>}`     | `{({ text }) => …}`           |
+| Angular  | `<span slot="leading">` | `<ng-template slot let-text>` |
+| WebC     | `<span slot="leading">` | ✗ нет механизма               |
 
 Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
 (`resolveSlotName` из `@soldy/setup/common`). Остальные имена одинаковы везде.
@@ -869,7 +915,7 @@ APG, следуем ему, а расхождения объясняем в ко
 ```ts
 this.events.on('change:disabled', () => this._syncDisabledAria())
 this.events.on('change:tag', () => this._syncDisabledAria())
-this._syncDisabledAria()   // начальное состояние — руками
+this._syncDisabledAria() // начальное состояние — руками
 ```
 
 Забыть подписку легче, чем забыть геттер. Взамен у пропа `aria` **один**
@@ -877,13 +923,13 @@ this._syncDisabledAria()   // начальное состояние — рука
 
 ### Кто что пишет
 
-| Источник | Что пишет | Пример |
-|---|---|---|
-| ядро компонента | что он такое по своей природе | `role="tab"`, `role="status"`, `aria-disabled` |
-| `TAriaPlugin` | как его зовут | `aria-label`, `aria-labelledby`, `aria-describedby` |
-| расширение коллекции | что о нём знает коллекция | `aria-selected`, связка `id` / `aria-controls` |
-| плагин поведения | то, что меняется от взаимодействия | `aria-activedescendant` из `TSelectKeyboardPlugin` |
-| проводка (adapter) | то, что известно только при связывании | сторона панели у `Tabs.Content` |
+| Источник             | Что пишет                              | Пример                                              |
+| -------------------- | -------------------------------------- | --------------------------------------------------- |
+| ядро компонента      | что он такое по своей природе          | `role="tab"`, `role="status"`, `aria-disabled`      |
+| `TAriaPlugin`        | как его зовут                          | `aria-label`, `aria-labelledby`, `aria-describedby` |
+| расширение коллекции | что о нём знает коллекция              | `aria-selected`, связка `id` / `aria-controls`      |
+| плагин поведения     | то, что меняется от взаимодействия     | `aria-activedescendant` из `TSelectKeyboardPlugin`  |
+| проводка (adapter)   | то, что известно только при связывании | сторона панели у `Tabs.Content`                     |
 
 Правило: **пишет тот, кто знает факт**. Ссылка на панель не может стоять в
 `TTabsItem` — о существовании панели знает коллекция, не элемент.
@@ -914,13 +960,13 @@ this._syncDisabledAria()   // начальное состояние — рука
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник | Что пишет |
-|---|---|
-| `TSelectionExtension` | `data-selected` — **всем** элементам коллекции |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active` |
-| `TListLayoutPlugin` | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
-| `TListItemPlugin` | `data-highlighted` |
-| ядро компонента | своё состояние — `data-open` у `TSelect` |
+| Источник               | Что пишет                                                  |
+| ---------------------- | ---------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции             |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`         |
+| `TListLayoutPlugin`    | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
+| `TListItemPlugin`      | `data-highlighted`                                         |
+| ядро компонента        | своё состояние — `data-open` у `TSelect`                   |
 
 Два правила, которые легко нарушить:
 

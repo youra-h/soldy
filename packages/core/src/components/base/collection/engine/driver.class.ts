@@ -1,24 +1,9 @@
 import type { IStorage } from './storage'
-import type { ICommand, ICommandContext } from './commands'
+import type { ICommand, ICommandContext, IQueryCommand } from './commands'
 import type { TCollectionStorageDriverEvents } from './types'
 import { TEvented } from '@soldy/core'
 
-// Список мутирующих методов массива JS, которые категорически нельзя вызывать напрямую
-const MUTATING_ARRAY_METHODS = new Set([
-	'push',
-	'pop',
-	'shift',
-	'unshift',
-	'splice',
-	'sort',
-	'reverse',
-	'fill',
-	'copyWithin',
-])
-
 export class TCollectionStorageDriver<T> {
-	[index: number]: T
-
 	private _storage: IStorage<T> // Хранилище элементов коллекции
 	private _isBatching = false // Флаг, указывающий, что в данный момент выполняется батч
 	private _pendingCommands: ICommand<T>[] = [] // Список команд, которые были выполнены во время батча и должны быть обработаны после его завершения
@@ -27,48 +12,19 @@ export class TCollectionStorageDriver<T> {
 
 	constructor(storage: IStorage<T>) {
 		this._storage = storage
-
-		return new Proxy(this, {
-			get(target, prop, receiver) {
-				// 1. Если свойство или метод существует прямо в TCollectionStorageDriver (execute, batch, events, _storage) — возвращаем его
-				if (prop in target) {
-					return Reflect.get(target, prop, receiver)
-				}
-
-				// 2. Блокировка мутирующих методов массива
-				if (typeof prop === 'string' && MUTATING_ARRAY_METHODS.has(prop)) {
-					throw new Error(
-						`[TCollectionStorageDriver] Array mutation method "${prop}()" is forbidden on driver. ` +
-							`Use commands via driver.execute() or extension methods (e.g. extension.insert()) instead.`,
-					)
-				}
-
-				// 3. Чтение по числовому индексу (driver[0], driver[1]...)
-				if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-					return target._storage.items[Number(prop)]
-				}
-
-				// 4. Безопасные методы чтения и свойства массива storage.items (length, find, filter, map, includes, Symbol.iterator и т.д.)
-				const items = target._storage.items
-				const value = Reflect.get(items, prop)
-
-				// Если метод массива (например, items.find, items.filter, items.slice)
-				if (typeof value === 'function') {
-					return value.bind(items)
-				}
-
-				return value
-			},
-		}) as unknown as TCollectionStorageDriver<T>
 	}
 
 	/**
-	 * Снимок состава коллекции для UI.
+	 * Снимок сырого состава хранилища.
 	 *
-	 * `accessor.getValue()` вызывает `valueOf()` — та же конвенция, что у TClasses.
-	 * Без явной реализации Proxy отдаёт `Object.prototype.valueOf`, возвращающий
-	 * сам драйвер: идентичность не меняется, и фреймворк не видит изменения состава.
-	 * Драйвер при этом остаётся драйвером — методы чтения никуда не деваются.
+	 * Единственное чтение, которое драйвер отдаёт без команды — и это
+	 * осознанно: тем, кто пишет в хранилище (расширения), нужен состав как он
+	 * есть, без выборки. Всё, что показывается наружу, идёт через
+	 * `query()` — там подписчик может его подменить.
+	 *
+	 * Копия, а не живая ссылка на `storage.items`: иначе состав менялся бы под
+	 * тем, кто его уже получил. Заодно это конвенция `accessor.getValue()`,
+	 * которая зовёт `valueOf()`.
 	 */
 	public valueOf(): T[] {
 		return [...this._storage.items]
@@ -91,6 +47,34 @@ export class TCollectionStorageDriver<T> {
 		} else {
 			this._pendingCommands.push(command)
 		}
+	}
+
+	/**
+	 * Выполняет читающую команду и возвращает выборку.
+	 *
+	 * Отдельно от `execute`, а не режимом внутри него: запись уведомляет об
+	 * изменении состава, чтение — нет. Батчинг тоже ни при чём — откладывать
+	 * нечего, результат нужен сразу.
+	 *
+	 * @param command Читающая команда
+	 */
+	public query(command: IQueryCommand<T>): readonly T[] {
+		const ctx: ICommandContext<T> = { storage: this._storage, events: this.events }
+
+		command.apply(ctx)
+
+		return command.result
+	}
+
+	/**
+	 * Пометить прежнюю выборку недействительной.
+	 *
+	 * Драйвер не знает, кто и по какому правилу отбирает — он лишь передаёт
+	 * дальше, что спрашивать надо заново. Отдельно от `change:items`: состав
+	 * хранилища не менялся, и путать эти два факта нельзя.
+	 */
+	public invalidateQuery(): void {
+		this.events.emit('items:query:invalidated')
 	}
 
 	/**

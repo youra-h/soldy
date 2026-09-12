@@ -45,7 +45,7 @@ export class TPlainExtension<TItem extends object>
 	 * @param item
 	 */
 	push(item: Partial<TItem>): TItem {
-		return this.insert(item, this._ctx.driver.length)
+		return this.insert(item, this._ctx.driver.valueOf().length)
 	}
 
 	remove(item: TItem): void {
@@ -60,23 +60,7 @@ export class TPlainExtension<TItem extends object>
 		this._ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
 	}
 
-	getAll(): TItem[] {
-		return [...this._ctx.driver]
-	}
-
-	find(predicate: (item: TItem) => boolean): TItem | undefined {
-		return this._ctx.driver.find(predicate)
-	}
-
-	filter(predicate: (item: TItem) => boolean): TItem[] {
-		return this._ctx.driver.filter(predicate)
-	}
-
 	get(index: number): TItem | undefined {
-		return this._ctx.driver[index]
-	}
-
-	get length(): number {
-		return this._ctx.driver.length
+		return this._ctx.driver.valueOf()[index]
 	}
 }

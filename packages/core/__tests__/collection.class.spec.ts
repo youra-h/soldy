@@ -14,7 +14,7 @@ describe('TCollectionEngine', () => {
 		const col = new TCollectionEngine<Item>()
 
 		expect(col.extensions).toEqual({})
-		expect(col.getCore().driver.length).toBe(0)
+		expect(col.getCore().driver.valueOf().length).toBe(0)
 	})
 
 	it('создаётся с расширениями', () => {
@@ -35,17 +35,20 @@ describe('TCollectionEngine', () => {
 		})
 
 		// plain должен иметь доступ к driver через _ctx
-		expect(plain.length).toBe(0)
+		expect(plain.get(0)).toBeUndefined()
 	})
 
 	it('расширения могут взаимодействовать через driver', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
-		const col = new TCollectionEngine<Item, {
-			plain: TPlainExtension<Item>
-			activation: TActivationExtension<Item>
-		}>({
+		const col = new TCollectionEngine<
+			Item,
+			{
+				plain: TPlainExtension<Item>
+				activation: TActivationExtension<Item>
+			}
+		>({
 			extensions: { plain, activation },
 		})
 
@@ -54,7 +57,7 @@ describe('TCollectionEngine', () => {
 		plain.insert(item)
 		activation.activate(item)
 
-		expect(col.getCore().driver.length).toBe(1)
+		expect(col.getCore().driver.valueOf().length).toBe(1)
 		expect(activation.activeItem).toBe(item)
 	})
 
@@ -81,10 +84,13 @@ describe('TCollectionEngine', () => {
 		const plain = new TPlainExtension<Item>()
 		const activation = new TActivationExtension<Item>()
 
-		const col = new TCollectionEngine<Item, {
-			plain: TPlainExtension<Item>
-			activation: TActivationExtension<Item>
-		}>({
+		const col = new TCollectionEngine<
+			Item,
+			{
+				plain: TPlainExtension<Item>
+				activation: TActivationExtension<Item>
+			}
+		>({
 			extensions: { plain, activation },
 		})
 
@@ -100,12 +106,7 @@ describe('TCollectionEngine', () => {
 		plain.insert(item)
 		activation.activate(item)
 
-		expect(order).toEqual([
-			'driver:added',
-			'driver:count',
-			'driver:items',
-			'activation:change',
-		])
+		expect(order).toEqual(['driver:added', 'driver:count', 'driver:items', 'activation:change'])
 	})
 
 	it('можно использовать с кастомным storage', () => {
@@ -116,16 +117,15 @@ describe('TCollectionEngine', () => {
 			extensions: { plain },
 		})
 
-		expect(col.getCore().driver.length).toBe(0)
+		expect(col.getCore().driver.valueOf().length).toBe(0)
 	})
 
 	// --- .use() — fluent-добавление расширений ---
 
 	it('use: добавляет расширение после создания', () => {
-		const col = new TCollectionEngine<Item>()
-			.use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
 
-		expect(col.getCore().driver.length).toBe(0)
+		expect(col.getCore().driver.valueOf().length).toBe(0)
 		expect(col.extensions.plain).toBeDefined()
 	})
 
@@ -141,19 +141,18 @@ describe('TCollectionEngine', () => {
 		col.extensions.activation.activate(item)
 		col.extensions.selection.select(item)
 
-		expect(col.getCore().driver.length).toBe(1)
+		expect(col.getCore().driver.valueOf().length).toBe(1)
 		expect(col.extensions.activation.isActive(item)).toBe(true)
 		expect(col.extensions.selection.isSelected(item)).toBe(true)
 	})
 
 	it('use: install вызывается при добавлении', () => {
-		const col = new TCollectionEngine<Item>()
-			.use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
 
 		// plain готов к работе сразу после .use()
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
-		expect(col.getCore().driver.length).toBe(1)
+		expect(col.getCore().driver.valueOf().length).toBe(1)
 	})
 
 	it('use: возвращает this (тот же объект)', () => {
@@ -180,8 +179,7 @@ describe('TCollectionEngine', () => {
 	})
 
 	it('use: события работают после добавления через .use()', () => {
-		const col = new TCollectionEngine<Item>()
-			.use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
 
 		const added = vi.fn()
 

@@ -12,81 +12,37 @@ describe('TCollectionStorageDriver', () => {
 		return new TCollectionStorageDriver<Item>(storage)
 	}
 
-	// --- ReadonlyArray ---
+	// --- снимок состава ---
 
-	it('доступ по индексу (readonly)', () => {
+	it('valueOf: отдаёт состав хранилища', () => {
 		const driver = createEngine([{ id: 1 }, { id: 2 }])
 
-		expect(driver[0]).toEqual({ id: 1 })
-		expect(driver[1]).toEqual({ id: 2 })
+		expect(driver.valueOf()).toEqual([{ id: 1 }, { id: 2 }])
 	})
 
-	it('length', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }])
-
-		expect(driver.length).toBe(2)
-	})
-
-	it('итерация (spread)', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }])
-
-		expect([...driver]).toEqual([{ id: 1 }, { id: 2 }])
-	})
-
-	it('forEach', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }])
-		const ids: number[] = []
-
-		driver.forEach((item) => ids.push(item.id))
-
-		expect(ids).toEqual([1, 2])
-	})
-
-	it('find', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }])
-
-		expect(driver.find((item) => item.id === 2)).toEqual({ id: 2 })
-	})
-
-	it('filter', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }, { id: 3 }])
-
-		expect(driver.filter((item) => item.id > 1)).toEqual([{ id: 2 }, { id: 3 }])
-	})
-
-	it('includes', () => {
-		const item: Item = { id: 1 }
-		const driver = createEngine([item])
-
-		expect(driver.includes(item)).toBe(true)
-		expect(driver.includes({ id: 2 })).toBe(false)
-	})
-
-	it('indexOf', () => {
-		const a: Item = { id: 1 }
-		const b: Item = { id: 2 }
-		const driver = createEngine([a, b])
-
-		expect(driver.indexOf(a)).toBe(0)
-		expect(driver.indexOf(b)).toBe(1)
-	})
-
-	// --- Мутирующие методы запрещены ---
-
-	it('блокирует push', () => {
-		const driver = createEngine()
-
-		expect(() => (driver as any).push({ id: 1 })).toThrow(
-			'Array mutation method "push()" is forbidden',
-		)
-	})
-
-	it('блокирует splice', () => {
+	it('valueOf: копия, а не живая ссылка на storage', () => {
 		const driver = createEngine([{ id: 1 }])
 
-		expect(() => (driver as any).splice(0, 1)).toThrow(
-			'Array mutation method "splice()" is forbidden',
-		)
+		const snapshot = driver.valueOf()
+
+		driver.execute(new TInsertCommand({ id: 2 }, 1))
+
+		// снимок, взятый раньше, не догоняет хранилище
+		expect(snapshot).toHaveLength(1)
+		expect(driver.valueOf()).toHaveLength(2)
+	})
+
+	// Драйвер больше не Proxy над массивом: «дай хранилище» и «дай список»
+	// должны писаться по-разному, иначе обходить правила слишком легко.
+	it('массивом не притворяется: ни чтений, ни мутирующих методов', () => {
+		const driver = createEngine([{ id: 1 }]) as any
+
+		expect(driver.length).toBeUndefined()
+		expect(driver[0]).toBeUndefined()
+		expect(driver.forEach).toBeUndefined()
+		expect(driver.find).toBeUndefined()
+		expect(driver.push).toBeUndefined()
+		expect(driver.splice).toBeUndefined()
 	})
 
 	// --- execute + события ---
@@ -103,7 +59,7 @@ describe('TCollectionStorageDriver', () => {
 
 		driver.execute(new TInsertCommand(item, 0))
 
-		expect(driver.length).toBe(1)
+		expect(driver.valueOf().length).toBe(1)
 		expect(added).toHaveBeenCalledTimes(1)
 		expect(added.mock.calls[0][0].item).toBe(item)
 		expect(count).toHaveBeenCalledWith(1)

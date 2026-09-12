@@ -52,10 +52,22 @@ export class TCollectionExtension {
 		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
 
 		itemElevator.down((instance: any, bundle: any) => {
-			// Добавляем элемент в конец коллекции (эмитится item:added).
+			// Кто создал элемент, тот им и владеет.
+			//
+			// Элемент, пришедший из данных (`items`), уже лежит в коллекции — его
+			// состав определяют они, а разметка только рисует. Размонтирование
+			// такого элемента ничего не значит: список сузился фильтром, ушла
+			// страница таблицы, закрылась панель — данные при этом на месте.
+			//
+			// Элемент, объявленный в разметке, до этого момента коллекции не
+			// принадлежал. Для него источник состава — шаблон, и исчезновение из
+			// шаблона действительно означает удаление.
+			const items = engine?.extensions?.batch?.items
+			const owned = !items?.includes(instance)
+
 			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
 			// elevator по мере монтирования, поэтому добавляем их последовательно.
-			engine?.extensions?.plain?.push(instance)
+			if (owned) engine?.extensions?.plain?.push(instance)
 
 			// Регистрируем bundle элемента (ключ — uid элемента).
 			bundles?.register(bundle, instance)
@@ -63,7 +75,7 @@ export class TCollectionExtension {
 			return () => {
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
-				engine?.extensions?.plain?.remove(instance)
+				if (owned) engine?.extensions?.plain?.remove(instance)
 			}
 		})
 	}

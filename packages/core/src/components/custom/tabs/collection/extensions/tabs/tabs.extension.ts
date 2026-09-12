@@ -71,23 +71,23 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.forEach((item) => this._applyOwner(item))
+		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
 		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.disabled = value
 			})
 		})
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
 			})
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.forEach((item) => {
+			ctx.driver.valueOf().forEach((item) => {
 				item.variant = payload.newValue
 			})
 		})
@@ -133,7 +133,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 		if (!activation) return
 
-		this._ctx.driver.forEach((item) => {
+		this._ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-selected', activation.isActive(item) ? 'true' : 'false')
 		})
 	}
@@ -147,7 +147,9 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 * @returns true, если есть хотя бы один такой элемент, иначе false
 	 */
 	hasEnabledTabs(): boolean {
-		return this._ctx.driver.some((item) => !item.disabled && item.visible && item.rendered)
+		return this._ctx.driver
+			.valueOf()
+			.some((item) => !item.disabled && item.visible && item.rendered)
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import type { ICommand } from './commands'
+import type { ICommand, IQueryCommand } from './commands'
 import { TEvented } from '@soldy/core'
 import { TActionEvent } from '../../../../common/event/action-event'
 
@@ -62,6 +62,24 @@ export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
 	}
 }
 
+/**
+ * Событие чтения состава — точка внедрения для расширений.
+ *
+ * Команда чтения (`TQueryCommand`) кладёт сюда снимок сырого storage и эмитит
+ * `items:query:before`. Подписчик волен подменить `items`: сузить состав
+ * (фильтр), переставить (сортировка) или отдать обёртки над элементами. Тот же
+ * приём, что у `item:add:before` в `TFactoryExtension`, только правится не
+ * элемент, а список.
+ *
+ * В storage при этом не меняется ничего: запись идёт командами напрямую в
+ * хранилище и выборок не видит.
+ */
+export class TQueryEvent<TItem> extends TActionEvent {
+	constructor(public items: readonly TItem[]) {
+		super()
+	}
+}
+
 export type TCollectionStorageDriverEvents<TItem> = {
 	/**
 	 * Вызывается ПЕРЕД добавлением элемента (до мутации хранилища).
@@ -93,13 +111,35 @@ export type TCollectionStorageDriverEvents<TItem> = {
 
 	/** Полный сброс или очистка коллекции */
 	reset: () => void
+
+	/**
+	 * Состав прочитан, но ещё не отдан — подписчик может подменить `e.items`.
+	 * Это чтение: storage событие не трогает.
+	 */
+	'items:query:before': (e: TQueryEvent<TItem>) => void
+
+	/**
+	 * Прежняя выборка устарела — условия отбора изменились.
+	 *
+	 * Состав хранилища при этом не менялся, поэтому `change:items` здесь не
+	 * подходит. Подаёт его тот, кто меняет условия (например `filter`), через
+	 * `driver.invalidateQuery()`; слушателю достаточно перечитать выборку.
+	 */
+	'items:query:invalidated': () => void
 }
 
 /**
- * ICollectionStorageDriver предоставляет ТОЛЬКО доступ для чтения к элементам коллекции
- * через интерфейс ReadonlyArray<T> + методы выполнения команд и батчинга.
+ * Хранилище движка: команды записи, читающие команды и снимок сырого состава.
+ *
+ * Массивом не притворяется намеренно. Раньше драйвер был Proxy над
+ * `storage.items`, и «дай хранилище» с «дай список» писались одинаково —
+ * отсюда и брались обходы правил. Нужен состав как он есть — `valueOf()`,
+ * нужна выборка — `query()`.
  */
-export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
+export interface ICollectionStorageDriver<TItem> {
+	/** Снимок сырого состава хранилища — копия, не живая ссылка. */
+	valueOf(): TItem[]
+
 	readonly events: TEvented<TCollectionStorageDriverEvents<TItem>>
 
 	/** Единственный легитимный способ изменить состояние через StorageDriver */
@@ -107,10 +147,20 @@ export interface ICollectionStorageDriver<TItem> extends ReadonlyArray<TItem> {
 
 	/** Пакетное выполнение команд */
 	batch(action: () => void): void
-}
 
-// Описываем тип движка, исключающий мутирующие методы
-export type TReadonlyStorageDriverArray<T> = ReadonlyArray<T> & ICollectionStorageDriver<T>
+	/**
+	 * Выполнить читающую команду и вернуть выборку.
+	 *
+	 * Отдельный метод, а не режим `execute`: чтение и запись — разные операции.
+	 * `execute` после команды шлёт `change:items`, а чтение состав не меняет;
+	 * сводить их в один метод пришлось бы ветвлением внутри — тем самым
+	 * костылём, которого здесь быть не должно.
+	 */
+	query(command: IQueryCommand<TItem>): readonly TItem[]
+
+	/** Сообщить, что условия отбора изменились и прежняя выборка недействительна. */
+	invalidateQuery(): void
+}
 
 export interface ICollectionEngineCore<TItem, TExtensions extends Record<string, any>> {
 	readonly driver: ICollectionStorageDriver<TItem>

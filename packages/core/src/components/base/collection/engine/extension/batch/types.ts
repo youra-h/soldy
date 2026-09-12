@@ -14,6 +14,12 @@ export type TBatchEvents<TItem> = {
 	'items:removed': (items: TItem[]) => void
 	'change:trackBy': (fn?: (item: TItem) => any) => void
 	'change:items': (items: TItem[]) => void
+
+	/**
+	 * Показанное изменилось — из-за состава или из-за условий отбора.
+	 * Без аргументов: читателю нужно перечитать `shown`.
+	 */
+	'change:shown': () => void
 }
 
 export interface IBatchExtension<TItem extends object = any> extends IExtension<
@@ -23,13 +29,24 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 	trackBy?: (item: TItem) => any
 
 	/**
-	 * Элементы коллекции для чтения — единственный легитимный способ получить
-	 * список вне расширений коллекции. Тип сознательно `ReadonlyArray`, а не
-	 * `TReadonlyStorageDriverArray`: driver-методы (`execute`, `events`) сюда не
-	 * протаскиваются — иначе обёртка над driver была бы дырявой.
+	 * Состав хранилища — реальные данные. Отбор сюда не вмешивается.
 	 */
 	get items(): ReadonlyArray<TItem>
 	set items(items: TItem[])
+
+	/**
+	 * Что показано пользователю — выборка после отбора (`items:query:before`).
+	 * Отсюда читает всё, что рисует.
+	 */
+	get shown(): ReadonlyArray<TItem>
+
+	/** Количество элементов в хранилище. Показано — `shown.length`. */
+	get length(): number
+
+	/**
+	 * Найти элемент в хранилище. Среди показанных — `shown.find()`.
+	 */
+	find(predicate: (item: TItem) => boolean): TItem | undefined
 
 	/**
 	 * Добавить элементы в коллекцию.

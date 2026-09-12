@@ -17,3 +17,17 @@ export interface ICommand<TItem> {
 	apply(ctx: ICommandContext<TItem>): void
 	emitEvents(ctx: ICommandContext<TItem>): void
 }
+
+/**
+ * Команда чтения состава.
+ *
+ * Отдельный контракт, а не `ICommand`: у чтения есть результат и нет
+ * уведомлений — storage оно не меняет, поэтому и `emitEvents` ему не нужен.
+ * Выполняется через `driver.query()`, а не `driver.execute()`.
+ */
+export interface IQueryCommand<TItem> {
+	apply(ctx: ICommandContext<TItem>): void
+
+	/** Результат выборки. Доступен после `apply`. */
+	get result(): readonly TItem[]
+}
