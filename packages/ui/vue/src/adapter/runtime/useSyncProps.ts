@@ -1,4 +1,4 @@
-import { ref, watch, onUnmounted, type Ref } from 'vue'
+import { getCurrentInstance, ref, watch, onUnmounted, type Ref } from 'vue'
 import type { IAccessor, TDescriptorInspector, IAccessorProp } from '@soldy/accessor'
 
 export interface ISyncOptions {
@@ -6,6 +6,11 @@ export interface ISyncOptions {
 	onInput?: (prop: IAccessorProp, value: any) => any
 	/** Коллбэк при обновлении значения из Core во Vue */
 	onOutput?: (prop: IAccessorProp, value: any) => void
+}
+
+/** `some-prop` → `someProp`: в разметке проп могли написать через дефис. */
+function camelize(name: string): string {
+	return name.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
 }
 
 export function useSyncProps(
@@ -55,19 +60,46 @@ export function useSyncProps(
 		return () => offs.forEach((off) => off())
 	}
 
+	/**
+	 * Имена, под которыми проп реально написан в разметке.
+	 *
+	 * `vnode.props` — то, что автор передал, без подставленных Vue значений по
+	 * умолчанию. Разница видна только при внешнем `ctrl`: сам компонент строит
+	 * инстанс из props и стартовые значения уже получил, а чужому инстансу
+	 * стартовые значения не доезжали вовсе — `watch` без `immediate` молчит,
+	 * пока проп не сменится. Отсюда и `<Select :ctrl="x" placeholder="…">` без
+	 * плейсхолдера.
+	 *
+	 * Подставленные Vue значения по умолчанию писать нельзя: у пропа ядра
+	 * `default` берётся из `defaultValues`, и отсутствующий в разметке
+	 * `editable` пришёл бы как `false` — то есть монтирование затирало бы
+	 * состояние чужого инстанса своими умолчаниями. Ровно то, ради чего этот
+	 * инстанс и передают.
+	 */
+	function passedNames(): Set<string> {
+		const raw = getCurrentInstance()?.vnode.props ?? {}
+
+		return new Set(Object.keys(raw).map((name) => camelize(name)))
+	}
+
 	// 2. Vue → Core (Input): watch внешних props
 	function bindInput(props: Record<string, any>): void {
+		const passed = passedNames()
+
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const formattedPropName = inspector.getExportPropName(prop)
+			const read = () => props[formattedPropName] ?? props[prop.name.name]
 
-			const stopWatch = watch(
-				() => props[formattedPropName] ?? props[prop.name.name],
-				(newVal) => {
-					if (newVal === undefined) return
+			const write = (newVal: any) => {
+				if (newVal === undefined) return
 
-					accessor.setValue(prop, options.onInput ? options.onInput(prop, newVal) : newVal)
-				},
-			)
+				accessor.setValue(prop, options.onInput ? options.onInput(prop, newVal) : newVal)
+			}
+
+			// Стартовое значение — только для написанного в разметке
+			if (passed.has(formattedPropName) || passed.has(prop.name.name)) write(read())
+
+			const stopWatch = watch(read, write)
 
 			cleanupFns.push(stopWatch)
 		}
