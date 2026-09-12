@@ -40,7 +40,11 @@
 .s-list-box-item {
 	@apply min-h-fit;
 
+	// .s-button даёт cursor-pointer по умолчанию — элемент списка не кнопка
+	// действия, глушим курсор здесь же, как у .s-select-item.
 	.s-button {
+		@apply cursor-default;
+
 		&__text {
 			@apply text-start min-w-0;
 		}

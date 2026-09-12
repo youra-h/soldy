@@ -15,9 +15,10 @@
 	&__field {
 		@apply w-full;
 
-		input {
-			@apply cursor-pointer select-none;
-		}
+		// Своего курсора у поля нет: это обычный Input, курсор редактирования
+		// текста браузер ставит сам — и в editable, и в readonly (editable = false),
+		// в обоих можно выделить текст мышью. cursor-default появляется только
+		// когда поле disabled — это уже даёт _input.scss.
 
 		// Теги — второй компонент внутри `.s-input__leading`, а не разметка
 		// поля, и переносятся по строкам сами (`.s-tags` — `flex-wrap`).
@@ -90,13 +91,15 @@
 }
 
 .s-select-item {
-	@apply cursor-pointer;
-
 	> * {
 		@apply w-full justify-start py-2;
 	}
 
+	// .s-button даёт cursor-pointer по умолчанию (см. _button.scss) — опция
+	// списка не кнопка-действие, глушим курсор здесь же.
 	.s-button {
+		@apply cursor-default;
+
 		&__text {
 			@apply text-start min-w-0;
 		}
