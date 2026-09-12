@@ -27,12 +27,12 @@ export default defineConfig({
 		browser: {
 			enabled: true,
 			headless: true,
-			// `channel: 'chrome'` — системный браузер вместо того, который
-			// Playwright возит с собой: его загрузчик рвётся на 30-секундном
-			// лимите (архив 205 МБ), а Chrome на машине уже стоит и обновляется
-			// сам. Для проверки раскладки разницы нет, движок тот же Blink.
-			// Уберёшь — Playwright потребует `playwright install chromium`.
-			provider: playwright({ launchOptions: { channel: 'chrome' } }),
+			// Браузер — тот, что Playwright возит с собой, закреплённый ревизией
+			// в package-lock, а не системный Chrome (`channel: 'chrome'`): тот у
+			// каждого своей версии и обновляется сам, и расхождение между машинами
+			// выглядело бы плавающим тестом. Перед первым прогоном нужен
+			// `npx playwright install chromium`; CI делает это сам и кэширует.
+			provider: playwright(),
 			instances: [{ browser: 'chromium' }],
 		},
 	},

@@ -27,6 +27,23 @@ jobs:
       - name: Сборка темы
         run: npm run build --workspace=@soldy/theme-oren
 
+      # Браузер для test:layout закреплён ревизией Playwright из package-lock,
+      # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
+      # новую ревизию. Системные библиотеки в кэш не попадают — ставим всегда.
+      - name: Кэш браузеров Playwright
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Установка Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      - name: Системные зависимости Chromium
+        run: npx playwright install-deps chromium
+
       - name: Тесты
         run: |
           npm run test:core
@@ -39,6 +56,7 @@ jobs:
           npm run test:webc
           npm run test:theme
           npm run test:playground
+          npm run test:layout
 
       - name: Типы — Vue
         run: npm run build:types --workspace=@soldy/ui-vue

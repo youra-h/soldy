@@ -20,6 +20,7 @@ npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
 npm run test:vue
 npm run test:theme   # Vitest — инварианты токенов темы oren
+npm run test:layout  # раскладка стенда Vue в настоящем Chromium (сам собирает тему)
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier
 
@@ -32,6 +33,29 @@ npm run generate --workspace=@soldy/ui-angular
 
 CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх пакетов, проверку дрейфа
 `packages/ui/angular/src/generated` и сборки. Линт пока не блокирует.
+
+### Браузерный прогон (`test:layout`)
+
+jsdom не считает раскладку (`getBoundingClientRect()` там всегда нули), поэтому
+всё, что зависит от flex, ширин и переносов, проверяется в
+`packages/playground/vue/browser/*.spec.ts` через `@vitest/browser` +
+Playwright (конфиг `vitest.browser.config.ts`).
+
+- Браузер — **Chromium, который ставит Playwright**, закреплённый ревизией из
+  `package-lock.json`. Системный Chrome (`channel: 'chrome'`) не использовать:
+  у каждого своя версия, расхождения выглядят как плавающие тесты.
+- Перед первым прогоном на машине: `npx playwright install chromium`. Ставится
+  в `%LOCALAPPDATA%\ms-playwright` (Windows) или `~/.cache/ms-playwright`.
+  После апгрейда Playwright ревизия меняется — установить заново.
+- Если загрузчик Playwright падает (`Download failure`, соединение с
+  `cdn.playwright.dev` висит без данных), это его сетевой стек, а не сеть:
+  скачать архивы curl-ом по URL из лога и распаковать в
+  `ms-playwright/chromium-<rev>/chrome-win64/` и
+  `ms-playwright/chromium_headless_shell-<rev>/chrome-headless-shell-win64/`,
+  положив рядом пустой файл `INSTALLATION_COMPLETE`. Нужны **оба**: headless
+  идёт через headless-shell.
+- CI ставит Chromium сам: кэш `~/.cache/ms-playwright` по `package-lock.json`,
+  `playwright install chromium` при промахе, `install-deps` всегда.
 
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 3, Vite 6.
 - npm workspaces: `packages/*` and `packages/ui/*`.
