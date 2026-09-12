@@ -5,7 +5,8 @@ import path from 'node:path'
 /**
  * Тесты стенда — дымовые: он существует ради того, чтобы дёргать компоненты, и
  * молча сломавшаяся страница обесценивает его целиком. Тему сюда не тянем: она
- * отдаёт CSS, а в jsdom стилей всё равно нет.
+ * отдаёт CSS, а в jsdom стилей всё равно нет — то, что нужно проверять по
+ * раскладке, живёт в `vitest.browser.config.ts`.
  */
 export default defineConfig({
 	plugins: [vue()],
@@ -15,6 +16,10 @@ export default defineConfig({
 			jsdom: { pretendToBeVisual: true },
 		},
 		setupFiles: ['./__tests__/setup.ts'],
+		// Явный список, а не умолчание: рядом лежит браузерный прогон
+		// (`browser/`), и в jsdom его тестам делать нечего — там нет раскладки,
+		// ради которой они написаны.
+		include: ['__tests__/**/*.spec.ts'],
 	},
 	resolve: {
 		alias: {
