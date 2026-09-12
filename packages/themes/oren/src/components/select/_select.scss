@@ -15,8 +15,14 @@
 	&__field {
 		@apply w-full;
 
-		input {
-			@apply cursor-pointer select-none;
+		// Курсор у поля зависит от режима, и режим уже виден в DOM: Select.vue
+		// отдаёт вложенному Input :readonly="readonly", а readonly переставляет
+		// editable — значит select-only ловится через input:read-only, без нового
+		// data-атрибута. В editable правил нет: браузер сам даёт курсор текста и
+		// выделение. Редактировать нечего — значит и курсора редактирования быть
+		// не должно. Обычный Input с readonly сюда не попадает, у него свои правила.
+		input:read-only {
+			@apply cursor-default select-none;
 		}
 
 		// Теги — второй компонент внутри `.s-input__leading`, а не разметка
@@ -90,13 +96,15 @@
 }
 
 .s-select-item {
-	@apply cursor-pointer;
-
 	> * {
 		@apply w-full justify-start py-2;
 	}
 
+	// .s-button даёт cursor-pointer по умолчанию (см. _button.scss) — опция
+	// списка не кнопка-действие, глушим курсор здесь же.
 	.s-button {
+		@apply cursor-default;
+
 		&__text {
 			@apply text-start min-w-0;
 		}
