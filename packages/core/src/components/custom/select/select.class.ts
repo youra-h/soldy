@@ -54,6 +54,7 @@ export class TSelect<
 		clearLabel: 'Clear',
 		editable: false,
 		editableMode: 'none',
+		inputValue: '',
 		tag: 'div',
 	}
 
@@ -68,6 +69,7 @@ export class TSelect<
 	protected _indicator!: TListIndicator
 	protected _editable!: boolean
 	protected _editableMode!: TSelectEditableMode
+	protected _inputValue!: string
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -91,6 +93,7 @@ export class TSelect<
 		// готовое значение режима.
 		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
+		this._inputValue = own.inputValue ?? ctor.defaultValues.inputValue!
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
 		this._applyReadonly(!this._editable)
@@ -229,6 +232,26 @@ export class TSelect<
 
 		this._applyEditableMode(value)
 		;(this.events as TEvented<TSelectEvents>).emit('change:editableMode', value)
+	}
+
+	/**
+	 * То, что показывает поле — набранное или текст выбранного.
+	 *
+	 * Значение ядра, а не DOM: плагин пишет сюда по `input`,
+	 * `TSelectExtension` читает и пишет обратно (сброс до `text`, запрос в
+	 * `filter.query`). Класс о коллекции и фильтре ничего не знает — это ровно
+	 * то разделение, которое держит правило «собственные props, о коллекции
+	 * не знает».
+	 */
+	get inputValue(): string {
+		return this._inputValue
+	}
+
+	set inputValue(value: string) {
+		if (this._inputValue === value) return
+
+		this._inputValue = value
+		;(this.events as TEvented<TSelectEvents>).emit('change:inputValue', value)
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
@@ -404,6 +427,7 @@ export class TSelect<
 			clearLabel: this._clearLabel,
 			editable: this._editable,
 			editableMode: this._editableMode,
+			inputValue: this._inputValue,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,

@@ -791,3 +791,72 @@ describe('editableMode — что делает ввод текста', () => {
 		})
 	})
 })
+
+describe('inputValue — то, что показывает поле', () => {
+	it('по умолчанию пустая строка', () => {
+		expect(new TSelect().inputValue).toBe('')
+	})
+
+	it('в select-only совпадает с text после выбора', () => {
+		const { owner, facadeFor } = createSelect(['a'])
+
+		facadeFor(0).choose()
+
+		expect(owner.inputValue).toBe('A')
+	})
+
+	it('после clear() возвращается к пустой строке вместе с text', () => {
+		const { owner, collection, facadeFor } = createSelect(['a'])
+
+		facadeFor(0).choose()
+		collection.clear()
+
+		expect(collection.text).toBe('')
+		expect(owner.inputValue).toBe('')
+	})
+
+	it('filter.query пишется только в режиме filter', () => {
+		const { owner, select } = createSelect(['a'], { editable: true, editableMode: 'search' })
+		const filter = (select as any)._ctx.extensions.filter
+
+		owner.inputValue = 'a'
+
+		expect(filter.query).toBe('')
+	})
+
+	it('в режиме filter набранное уходит в filter.query', () => {
+		const { owner, select } = createSelect(['a'], { editable: true, editableMode: 'filter' })
+		const filter = (select as any)._ctx.extensions.filter
+
+		owner.inputValue = 'a'
+
+		expect(filter.query).toBe('a')
+	})
+
+	it('close сбрасывает поле к тексту выбранного', () => {
+		const { owner, facadeFor } = createSelect(['a'], {
+			editable: true,
+			editableMode: 'filter',
+			open: true,
+		})
+
+		facadeFor(0).choose()
+		owner.open = true
+		owner.inputValue = 'что-то набранное'
+		owner.open = false
+
+		expect(owner.inputValue).toBe('A')
+	})
+
+	it('смена editableMode с filter снимает запрос фильтра', () => {
+		const { owner, select } = createSelect(['a'], { editable: true, editableMode: 'filter' })
+		const filter = (select as any)._ctx.extensions.filter
+
+		owner.inputValue = 'a'
+		expect(filter.query).toBe('a')
+
+		owner.editableMode = 'search'
+
+		expect(filter.query).toBe('')
+	})
+})

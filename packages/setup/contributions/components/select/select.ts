@@ -14,8 +14,10 @@ import type { TEmptySlotScope } from '../../types'
  * `empty` показывается вместо списка, когда опций нет: пустой `listbox` для
  * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
  */
+export type TSelectFieldSlotScope = { text: string; inputValue: string }
+
 export type TSelectSlots = {
-	field: TEmptySlotScope
+	field: TSelectFieldSlotScope
 	leading: TEmptySlotScope
 	clear: TEmptySlotScope
 	'arrow-icon': TEmptySlotScope
@@ -26,7 +28,10 @@ export type TSelectSlots = {
 
 export const SelectContribution = (): IContribution => ({
 	slots: {
-		field: { description: 'Содержимое поля вместо текста выбранного' },
+		field: {
+			scope: { text: defineType<string>(String), inputValue: defineType<string>(String) },
+			description: 'Содержимое поля вместо текста выбранного',
+		},
 		/**
 		 * `leading` и `trailing` — проброс одноимённых слотов Input: у него
 		 * они уже есть, и заводить своё было бы вторым способом делать то же
@@ -63,6 +68,7 @@ export const SelectContribution = (): IContribution => ({
 			type: defineType<TSelectEditableMode>(String),
 			triggers: ['change:editableMode'],
 		},
+		inputValue: { type: String, triggers: ['change:inputValue'] },
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.

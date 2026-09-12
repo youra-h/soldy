@@ -2,6 +2,7 @@ import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type {
 	IExtension,
 	IExtensionContext,
+	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
@@ -86,7 +87,7 @@ export class TSelectExtension<
 		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
 		// умеет сравнивать с любыми полями, а какое из них показывается
 		// пользователю, знает только компонент.
-		const filter = ctx.extensions.filter as { fields?: (keyof TItem)[] } | undefined
+		const filter = ctx.extensions.filter as IFilterExtension<TItem> | undefined
 
 		if (filter) filter.fields = ['text' as keyof TItem]
 
@@ -125,6 +126,29 @@ export class TSelectExtension<
 
 		// Сторона отметки доезжает до item-адаптеров
 		this.events.relay(this._owner.events, ['change:indicator'])
+
+		// Ввод поля — запрос фильтра, но только в режиме `filter`: `search` и
+		// `none` остаются подсветкой без скрытия (см. `TEditablePlugin`).
+		this._owner.events.on('change:inputValue', (value: string) => {
+			if (this._owner.editableMode === 'filter') {
+				if (filter) filter.query = value
+			} else {
+				filter?.clear()
+			}
+		})
+
+		this._owner.events.on('change:editableMode', () => {
+			if (this._owner.editableMode !== 'filter') filter?.clear()
+		})
+
+		// Закрытие панели — поле возвращается к тексту выбранного
+		this._owner.events.on('close', () => this._resetInputValue())
+
+		// Переключение в multiple/обратно меняет, кто рисует текст — поле или
+		// теги; подопревший inputValue нужно пересчитать сразу же
+		const tags = ctx.extensions.tags as { events: { on(name: string, handler: () => void): unknown } } | undefined
+
+		tags?.events.on('change:tags', () => this._resetInputValue())
 
 		const selection = this._selection
 
@@ -235,9 +259,24 @@ export class TSelectExtension<
 		const selected = this._selection?.selected ?? []
 		const text = selected.map((item) => item.text).join(', ')
 
-		if (this._text === text) return
+		if (this._text !== text) {
+			this._text = text
+			this.events.emit('change:text', text)
+		}
 
-		this._text = text
-		this.events.emit('change:text', text)
+		this._resetInputValue()
+	}
+
+	/**
+	 * Возвращает поле к тексту выбранного. Срабатывает на выбор опции, очистку
+	 * и закрытие панели — во всех трёх набранное перестаёт быть актуальным.
+	 *
+	 * В `multiple` текст выбранного рисуют теги (`TSelectTagsExtension`), а
+	 * поле остаётся пустым — та же поправка, что у `text` фасада.
+	 */
+	private _resetInputValue(): void {
+		const tags = this._ctx?.extensions.tags as { tags?: unknown } | undefined
+
+		this._owner.inputValue = tags?.tags ? '' : this._text
 	}
 }

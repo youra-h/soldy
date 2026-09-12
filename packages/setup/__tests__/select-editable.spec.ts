@@ -167,43 +167,53 @@ describe('ввод игнорируется', () => {
 	})
 })
 
-describe('query — плагин помнит набранное', () => {
-	it('обновляется по вводу и сообщает об этом', async () => {
-		const { editable, type } = await setup(['Москва'])
+describe('ввод — плагин пишет в owner.inputValue, не в DOM', () => {
+	it('обновляет owner.inputValue и сообщает об этом', async () => {
+		const { owner, type } = await setup(['Москва'])
 		const handler = vi.fn()
 
-		editable.events.on('change:query', handler)
+		owner.events.on('change:inputValue', handler)
 		type('мо')
 
-		expect(editable.query).toBe('мо')
+		expect(owner.inputValue).toBe('мо')
 		expect(handler).toHaveBeenCalledWith('мо')
+	})
+
+	it('плагин не пишет в input.value напрямую — это делает реактивный биндинг', async () => {
+		const { owner, input, type } = await setup(['Москва'])
+
+		type('мо')
+
+		// Плагин меняет только owner.inputValue; в тесте нет Vue-реактивности,
+		// поэтому DOM-значение остаётся тем, что туда положил сам `type()`.
+		expect(input.value).toBe('мо')
+		expect(owner.inputValue).toBe('мо')
 	})
 })
 
 describe('закрытие панели', () => {
-	it('сбрасывает набранное и возвращает в поле текст выбранного', async () => {
-		const { owner, items, input, type } = await setup(['Москва', 'Тверь'])
+	it('сбрасывает owner.inputValue к тексту выбранного', async () => {
+		const { owner, items, type } = await setup(['Москва', 'Тверь'])
 
 		owner.value = items[0].value
 		owner.open = true
 
 		type('те')
-		expect(input.value).toBe('те')
+		expect(owner.inputValue).toBe('те')
 
 		owner.open = false
 
-		expect(input.value).toBe(items[0].text)
+		expect(owner.inputValue).toBe(items[0].text)
 	})
 
-	it('без выбора — поле возвращается к пустой строке', async () => {
-		const { owner, editable, input, type } = await setup(['Москва'])
+	it('без выбора — owner.inputValue возвращается к пустой строке', async () => {
+		const { owner, type } = await setup(['Москва'])
 
 		owner.open = true
 		type('мо')
 
 		owner.open = false
 
-		expect(input.value).toBe('')
-		expect(editable.query).toBe('')
+		expect(owner.inputValue).toBe('')
 	})
 })

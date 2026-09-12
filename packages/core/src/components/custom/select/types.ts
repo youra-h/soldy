@@ -53,6 +53,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:editable': (value: boolean) => void
 		/** change:editableMode */
 		'change:editableMode': (value: TSelectEditableMode) => void
+		/** change:inputValue */
+		'change:inputValue': (value: string) => void
 	}
 
 /**
@@ -82,6 +84,11 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	 * По умолчанию `none`.
 	 */
 	editableMode?: TSelectEditableMode
+	/**
+	 * То, что показывает поле. В select-only всегда равно `text` выбранного;
+	 * в `editable` расходится с ним, пока пользователь печатает.
+	 */
+	inputValue?: string
 }
 
 /** Полный набор props: собственные + коллекционные. */
@@ -112,6 +119,8 @@ export interface ISelect<
 	editable: boolean
 	/** Что делает ввод текста при `editable: true`. Без него не действует */
 	editableMode: TSelectEditableMode
+	/** То, что показывает поле — набранное или текст выбранного */
+	inputValue: string
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */

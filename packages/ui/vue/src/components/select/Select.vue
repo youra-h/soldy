@@ -40,18 +40,22 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			`readonly` вложенного `Input` — обычный `readonly` Select, которым
 			управляет `editable`. В select-only (`editable: false`, по
 			умолчанию) поле остаётся readonly; `editable: true` снимает его и
-			позволяет вводить текст — фильтрация и `aria-autocomplete="list"`
-			придут отдельной задачей.
+			позволяет вводить текст.
+
+			Значение поля — `inputValue`, не `text`: в select-only они всегда
+			совпадают (`TSelectExtension` держит равенство), а в `editable`
+			расходятся, пока пользователь печатает. Биндинг безусловный —
+			`editable ? inputValue : text` пришлось бы повторить в каждом адаптере.
 
 			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
 			не валидирует readonly-поле), поэтому `aria-required` в `aria`
 			ядро ставит явно — без него состояние осталось бы немым для
 			скринридера. См. `TInputControl._syncRequiredAria()`.
 		-->
-		<slot name="field" :text="text" :placeholder="placeholder">
+		<slot name="field" :text="text" :inputValue="inputValue">
 			<Input
 				class="s-select__field"
-				:value="text"
+				:value="inputValue"
 				:name="name"
 				:placeholder="field_placeholder"
 				:id="id"

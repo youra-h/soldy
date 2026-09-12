@@ -140,3 +140,53 @@ describe('Select под отбором', () => {
 		expect(selected.map((item: any) => item.value)).toEqual(['a'])
 	})
 })
+
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+
+describe('ввод в поле фильтрует опции', () => {
+	async function renderEditableSelect(props: Record<string, unknown> = {}) {
+		const engine = await renderSelect({ editable: true, editableMode: 'filter', ...props })
+
+		// `TEditablePlugin` слушает `input` на узле, который находит только
+		// после `ready` — тот приходит через `requestAnimationFrame`.
+		await nextFrame()
+
+		return engine
+	}
+
+	const typeInto = async (value: string) => {
+		const input = wrapper!.find('input')
+
+		await input.setValue(value)
+	}
+
+	it('ввод в поле сокращает shown и отрисованные опции', async () => {
+		await renderEditableSelect()
+
+		expect(options().length).toBe(4)
+
+		await typeInto('тре')
+
+		expect(texts()).toEqual(['Третий'])
+	})
+
+	it('слот empty показывается при нуле совпадений', async () => {
+		await renderEditableSelect()
+
+		await typeInto('ничего такого нет')
+
+		expect(options().length).toBe(0)
+	})
+
+	it('закрытие панели возвращает в поле текст выбранного', async () => {
+		await renderEditableSelect({ value: 'b' })
+
+		await typeInto('тре')
+		expect(texts()).toEqual(['Третий'])
+
+		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await nextTick()
+
+		expect(wrapper!.find('input').element.value).toBe('Второй')
+	})
+})
