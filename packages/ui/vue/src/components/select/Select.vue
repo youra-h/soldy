@@ -142,8 +142,14 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 					<!--
 						Слоты опций статические и получают элемент через scope —
 						динамические имена резолвит только Vue (см. Tabs.vue).
+
+						`shown`, а не `items`: это то, что осталось после отбора.
+						Скрытая опция размонтируется, но из коллекции не исчезает —
+						составом владеют данные, а не разметка (см. `owned` в
+						`TCollectionExtension`). Снятие фильтра возвращает её на место
+						вместе с выбором.
 					-->
-					<SelectItem v-for="item in items" :key="item.uid" :ctrl="item">
+					<SelectItem v-for="item in shown" :key="item.uid" :ctrl="item">
 						<template #leading>
 							<slot name="item-leading" :item="item" />
 						</template>
@@ -156,7 +162,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 					</SelectItem>
 				</slot>
 
-				<slot v-if="items.length === 0" name="empty" />
+				<slot v-if="shown.length === 0" name="empty" />
 			</div>
 		</Frame>
 	</div>

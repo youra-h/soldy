@@ -1,4 +1,4 @@
-import { TValueSelectionExtension } from '../../../base/collection'
+import { TValueSelectionExtension, TFilterExtension } from '../../../base/collection'
 import { selectionExtensions, assembleEngine } from '../../../base/collection/create/internal'
 import type { TExtensionSet, TOwnerExtensionSet } from '../../../base/collection/create/internal'
 import TSelectItem from '../item/item.class'
@@ -17,9 +17,15 @@ import type { TSelectCollection } from './types'
  * `activation` нет: у списка выбора нет «активного» элемента отдельно от
  * выбранного. Подсветку при навигации с клавиатуры ведёт `TListItemPlugin`,
  * а не коллекция — она визуальна и живёт только пока панель открыта.
+ *
+ * `filter` — здесь, а не в `baseExtensions()`: не каждой коллекции нужен отбор,
+ * а лишнее расширение — это лишние подписки на каждом Tabs и Accordion. По
+ * какому полю сравнивать, ставит `TSelectExtension`: сам `filter` про `text`
+ * ничего не знает.
  */
 export const SELECT_EXTENSIONS = (): TExtensionSet<ISelectItem> => ({
 	...selectionExtensions<ISelectItem>(TSelectItem as unknown as new (source: any) => ISelectItem),
+	filter: () => new TFilterExtension<ISelectItem>(),
 })
 
 /** То, чему нужен инстанс компонента. */

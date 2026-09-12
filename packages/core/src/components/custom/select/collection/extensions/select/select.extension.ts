@@ -83,6 +83,13 @@ export class TSelectExtension<
 		// панели у Tabs, которой может и не быть
 		this._owner.aria.add('aria-controls', this.listId)
 
+		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
+		// умеет сравнивать с любыми полями, а какое из них показывается
+		// пользователю, знает только компонент.
+		const filter = ctx.extensions.filter as { fields?: (keyof TItem)[] } | undefined
+
+		if (filter) filter.fields = ['text' as keyof TItem]
+
 		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить

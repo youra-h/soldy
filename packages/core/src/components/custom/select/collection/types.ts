@@ -8,6 +8,7 @@ import {
 	TBatchExtension,
 	TSelectionExtension,
 	TValueSelectionExtension,
+	TFilterExtension,
 } from '../../../base/collection'
 import type {
 	ICollectionProps,
@@ -30,6 +31,8 @@ export type TSelectCollectionExtensions = {
 	order: TOrderExtension<ISelectItem>
 	plain: TPlainExtension<ISelectItem>
 	batch: TBatchExtension<ISelectItem>
+	/** Отбор опций по тексту — сужает `shown`, хранилище не трогает. */
+	filter: TFilterExtension<ISelectItem>
 	selection: TSelectionExtension<ISelectItem>
 	/** Связь `value` поля с выбором коллекции — то же расширение, что у List. */
 	value: TValueSelectionExtension<any, ISelectItem>

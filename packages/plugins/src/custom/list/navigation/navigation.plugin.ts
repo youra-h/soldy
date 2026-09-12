@@ -85,9 +85,9 @@ export abstract class TListNavigationPlugin<
 	/**
 	 * Элементы, по которым идёт навигация.
 	 *
-	 * По умолчанию все. Наследник сужает: у Select недоступные опции
-	 * пропускаются — подсветить то, что нельзя выбрать, значит завести
-	 * пользователя в тупик.
+	 * `shown`, а не `items`: ходить стрелками по тому, чего не видно, нельзя.
+	 * Наследник сужает дальше: у Select недоступные опции пропускаются —
+	 * подсветить то, что нельзя выбрать, значит завести пользователя в тупик.
 	 *
 	 * Тип — `IControl`, а не элемент конкретного списка: навигации нужны только
 	 * `uid`, `disabled`, `rendered` и `visible`. Элементы ListBox и опции Select
@@ -97,7 +97,7 @@ export abstract class TListNavigationPlugin<
 	protected items(): IControl[] {
 		const batch = this._engine?.extensions.batch as IBatchExtension<IControl> | undefined
 
-		return (batch?.items ?? []) as IControl[]
+		return (batch?.shown ?? []) as IControl[]
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -208,9 +208,11 @@ export abstract class TListNavigationPlugin<
 		prevItem: IControl | null,
 		nextItem: IControl | null,
 	): void {
-		;(this.events as unknown as {
-			emit(name: 'change:highlight', payload: unknown): void
-		}).emit('change:highlight', { item, prevItem, nextItem })
+		;(
+			this.events as unknown as {
+				emit(name: 'change:highlight', payload: unknown): void
+			}
+		).emit('change:highlight', { item, prevItem, nextItem })
 	}
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
