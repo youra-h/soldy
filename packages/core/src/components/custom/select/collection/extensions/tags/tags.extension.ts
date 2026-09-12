@@ -7,6 +7,7 @@ import type {
 } from '../../../../../base/collection'
 import { TTags, createEngineTags } from '../../../../tags'
 import type { ITags, TTagsCollection, ITagsItem } from '../../../../tags'
+import { shiftSize } from '../../../../../../common'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
@@ -73,8 +74,10 @@ export class TSelectTagsExtension<
 			if (this._tags) this._tags.disabled = value
 		})
 
+		// Тег в полном размере владельца распирает поле по высоте — держим
+		// теги на шаг мельче Select, здесь и в стартовом размере ниже.
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			if (this._tags) this._tags.size = payload.newValue
+			if (this._tags) this._tags.size = shiftSize(payload.newValue, -1)
 		})
 
 		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
@@ -105,7 +108,7 @@ export class TSelectTagsExtension<
 		const tags = new TTags({
 			closable: true,
 			disabled: this._owner.disabled,
-			size: this._owner.size,
+			size: shiftSize(this._owner.size, -1),
 			variant: this._owner.variant,
 		})
 
