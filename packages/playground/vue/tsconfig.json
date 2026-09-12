@@ -17,5 +17,13 @@
       "@soldy/playground-shared": ["../shared/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "__tests__/**/*", "env.d.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*",
+    "__tests__/**/*",
+    "browser/**/*",
+    "env.d.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.browser.config.ts"
+  ]
 }
