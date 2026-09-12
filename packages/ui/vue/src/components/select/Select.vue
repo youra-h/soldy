@@ -40,8 +40,9 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			`readonly` вложенного `Input` — обычный `readonly` Select, которым
 			управляет `editable`. В select-only (`editable: false`, по
 			умолчанию) поле остаётся readonly; `editable: true` снимает его и
-			позволяет вводить текст — фильтрация и `aria-autocomplete="list"`
-			придут отдельной задачей.
+			позволяет вводить текст. Что делает ввод, решает `editableMode`, и
+			решает целиком в `TEditablePlugin`: разметка про подсветку и отбор
+			не знает ничего, поэтому во всех адаптерах они одинаковы.
 
 			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
 			не валидирует readonly-поле), поэтому `aria-required` в `aria`

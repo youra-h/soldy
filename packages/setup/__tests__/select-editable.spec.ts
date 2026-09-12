@@ -3,10 +3,12 @@
 /**
  * Ввод текста в поле Select при `editable: true` — `TEditablePlugin`.
  *
- * Три состояния задаёт `editableMode` (ядро), реакцию на ввод — этот плагин:
- * переносит подсветку через `TSelectKeyboardPlugin.highlightByText`, тот же
- * алгоритм, что и у набора по буквам с клавиатуры. `filter` фильтрацию пока
- * не делает — отдельная задача, здесь он ведёт себя как `search`.
+ * Три состояния задаёт `editableMode` (ядро), реакцию на ввод — этот плагин,
+ * по функции на режим: `search` переносит подсветку через
+ * `TSelectKeyboardPlugin.highlightByText` (тот же алгоритм, что и у набора по
+ * буквам с клавиатуры), `filter` отдаёт набранное в `filter.query` коллекции.
+ * Слушателя `input` плагин держит только пока вводу есть на что влиять —
+ * `editable: true` и режим не `none`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -134,21 +136,73 @@ describe('ввод подсвечивает совпадение', () => {
 
 		expect(keyboard.highlightedUid).toBeNull()
 	})
+})
 
-	it('filter пока ведёт себя как search', async () => {
-		const { owner, keyboard, items, type } = await setup(['Москва', 'Тверь'], {
+describe('ввод фильтрует список', () => {
+	it('режим filter отдаёт набранное коллекции и сужает выдачу', async () => {
+		const { owner, facade, type } = await setup(['Москва', 'Тверь', 'Тула'], {
 			editableMode: 'filter',
 		})
 
-		type('т')
+		type('ту')
 
 		expect(owner.open).toBe(true)
+		expect(facade.engine.extensions.filter.query).toBe('ту')
+		expect(facade.shown.map((item) => item.text)).toEqual(['Тула'])
+		// хранилище фильтр не трогает
+		expect(facade.items.length).toBe(3)
+	})
+
+	it('пустое поле снимает отбор', async () => {
+		const { facade, type } = await setup(['Москва', 'Тверь'], { editableMode: 'filter' })
+
+		type('тв')
+		expect(facade.shown.length).toBe(1)
+
+		type('')
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(2)
+	})
+
+	it('подсветка идёт за сузившимся списком, а не за набранным текстом', async () => {
+		const { keyboard, items, type } = await setup(['Москва', 'Тверь', 'Тула'], {
+			editableMode: 'filter',
+		})
+
+		// панель открылась на вводе — подсветка встала на первую из оставшихся
+		type('т')
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
+
+		// «Тверь» ушла из выдачи — подсветка не может остаться на скрытой опции
+		type('ту')
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+		// не осталось ничего — подсветки нет вовсе
+		type('тучто-то')
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	it('отбор по подстроке, а не по началу текста — это не подсветка набранным', async () => {
+		const { facade, type } = await setup(['Москва', 'Тверь'], { editableMode: 'filter' })
+
+		type('верь')
+
+		expect(facade.shown.map((item) => item.text)).toEqual(['Тверь'])
+	})
+
+	it('search не фильтрует — список остаётся целым', async () => {
+		const { facade, type } = await setup(['Москва', 'Тверь'])
+
+		type('тв')
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(2)
 	})
 })
 
-describe('ввод игнорируется', () => {
-	it('editable: false', async () => {
+describe('слушатель ввода — только пока он нужен', () => {
+	it('editable: false — ввод не слушается', async () => {
 		const { owner, keyboard, type } = await setup(['Москва'], { editable: false })
 
 		type('м')
@@ -157,13 +211,49 @@ describe('ввод игнорируется', () => {
 		expect(keyboard.highlightedUid).toBeNull()
 	})
 
-	it('editableMode: none', async () => {
+	it('editableMode: none — ввод не слушается', async () => {
 		const { owner, keyboard, type } = await setup(['Москва'], { editableMode: 'none' })
 
 		type('м')
 
 		expect(owner.open).toBe(false)
 		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	it('editable выключили на ходу — плагин отписался', async () => {
+		const { owner, keyboard, editable, type } = await setup(['Москва', 'Тверь'])
+
+		type('т')
+		expect(keyboard.highlightedUid).not.toBeNull()
+
+		owner.open = false
+		owner.editable = false
+		type('мо')
+
+		expect(editable.query).toBe('')
+	})
+
+	it('editable включили на ходу — плагин подписался', async () => {
+		const { owner, keyboard, items, type } = await setup(['Москва', 'Тверь'], {
+			editable: false,
+		})
+
+		type('т')
+		expect(keyboard.highlightedUid).toBeNull()
+
+		owner.editable = true
+		type('т')
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+	})
+
+	it('режим сменили на none — плагин отписался', async () => {
+		const { owner, editable, type } = await setup(['Москва'])
+
+		owner.editableMode = 'none'
+		type('мо')
+
+		expect(editable.query).toBe('')
 	})
 })
 
@@ -193,6 +283,21 @@ describe('закрытие панели', () => {
 		owner.open = false
 
 		expect(input.value).toBe(items[0].text)
+	})
+
+	it('снимает отбор', async () => {
+		const { owner, facade, type } = await setup(['Москва', 'Тверь'], {
+			editableMode: 'filter',
+		})
+
+		owner.open = true
+		type('тв')
+		expect(facade.shown.length).toBe(1)
+
+		owner.open = false
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(2)
 	})
 
 	it('без выбора — поле возвращается к пустой строке', async () => {

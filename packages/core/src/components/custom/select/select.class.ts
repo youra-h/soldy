@@ -217,8 +217,9 @@ export class TSelect<
 	 * `TEditablePlugin` — здесь только состояние с тремя значениями и
 	 * `aria-autocomplete`, которое от него зависит.
 	 *
-	 * `filter` пока не фильтрует: скрытие несовпавших опций — отдельная
-	 * задача, а до неё `filter` ведёт себя как `search`.
+	 * `search` — совпадение подсвечивается, список остаётся целым; `filter` —
+	 * несовпавшие опции скрываются (`filter.query` коллекции); `none` — ввод
+	 * не делает ничего, плагин в этом режиме даже не слушает поле.
 	 */
 	get editableMode(): TSelectEditableMode {
 		return this._editableMode

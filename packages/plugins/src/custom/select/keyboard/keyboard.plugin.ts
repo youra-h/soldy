@@ -1,22 +1,15 @@
-import type { IControl, IList, TCollectionEngine } from '@soldy/core'
+import type {
+	IBatchExtension,
+	IControl,
+	IList,
+	ISelect,
+	ISelectItem,
+	TCollectionEngine,
+} from '@soldy/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from './types'
-
-/** Минимум, который плагину нужен от поля. */
-interface ISelectOwner {
-	open: boolean
-	openable: boolean
-	editable: boolean
-	aria: { add(name: string, value: string | null): unknown }
-	events: { on(name: string, handler: (...args: any[]) => void): unknown }
-}
-
-/** Опция глазами плагина: у неё, в отличие от элемента списка, есть текст. */
-interface ISelectOption extends IControl {
-	text: string
-}
 
 const OPENS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '])
 
@@ -38,7 +31,7 @@ const OPENS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '])
  * подсвеченной опции.
  */
 export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboardPluginEvents> {
-	private _owner: ISelectOwner | null = null
+	private _owner: ISelect | null = null
 	private _elements: TCollectionElements | null = null
 	private _list: IList | null = null
 	private _typeahead = ''
@@ -49,7 +42,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		super.install(ctx, options)
 
 		this._typeaheadTimeout = options?.typeaheadTimeout ?? this._typeaheadTimeout
-		this._owner = ctx.getInstance<ISelectOwner>() ?? null
+		this._owner = ctx.getInstance<ISelect>() ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
 		this._list = ctx.getInstance<IList>()
 
@@ -78,8 +71,34 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * Подсветка появляется на открытии, а не при появлении коллекции: пока
 	 * панель закрыта, навигировать нечего. Этим Select отличается от ListBox,
 	 * который синхронизирует позицию с выбором сразу.
+	 *
+	 * От коллекции нужно другое — `change:shown`. Выдача сужается под отбором
+	 * (`filter.query`), откуда бы он ни пришёл — из ввода в поле или из кода,
+	 * — и подсветка может остаться на опции, которой на экране больше нет.
+	 * Тогда `Enter` выбрал бы скрытое, а `aria-activedescendant` указывал бы
+	 * в пустоту, поэтому подсветка переезжает на первую из оставшихся.
+	 *
+	 * Чинит это сам плагин, а не тот, кто поменял отбор: подсветка — его
+	 * состояние, и знать о ней отбору незачем.
 	 */
-	protected override onEngineBound(_engine: TCollectionEngine<any, any>): void {}
+	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
+		const batch = engine.extensions.batch as IBatchExtension<IControl>
+
+		batch.events.on('change:shown', () => {
+			// Подсветки нет — ставить её на смене выдачи незачем: панель может
+			// быть и закрыта
+			if (this._highlightedUid == null) return
+			if (this.indexOf(this._highlightedUid) !== -1) return
+
+			const first = this.items()[0]
+
+			if (first) {
+				this.highlight(first.uid)
+			} else {
+				this.clearHighlight()
+			}
+		})
+	}
 
 	/** Подсветка для скринридера плюс прокрутка к опции. */
 	protected override onHighlightChanged(uid: string | number | null): void {
@@ -133,7 +152,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * В `editable` `Home`/`End`/пробел и печатные символы не перехватываются:
 	 * они принадлежат тексту поля, а не навигации по списку.
 	 */
-	private _handleClosed(e: KeyboardEvent, owner: ISelectOwner): void {
+	private _handleClosed(e: KeyboardEvent, owner: ISelect): void {
 		if (!owner.openable) return
 
 		if (this._opensPanel(e, owner)) {
@@ -160,7 +179,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * Какие клавиши открывают закрытую панель. В `editable` `Home`/`End`/
 	 * пробел исключены — они двигают курсор и печатают в тексте поля.
 	 */
-	private _opensPanel(e: KeyboardEvent, owner: ISelectOwner): boolean {
+	private _opensPanel(e: KeyboardEvent, owner: ISelect): boolean {
 		if (!OPENS.has(e.key)) return false
 		if (owner.editable && (e.key === 'Home' || e.key === 'End' || e.key === ' ')) return false
 
@@ -175,7 +194,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * тексте), пробел не выбирает подсвеченное (он печатается), а печатные
 	 * символы не запускают набор по буквам — всё это принадлежит тексту поля.
 	 */
-	private _handleOpen(e: KeyboardEvent, owner: ISelectOwner): void {
+	private _handleOpen(e: KeyboardEvent, owner: ISelect): void {
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault()
@@ -278,8 +297,9 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	 * регистра. Пустая строка снимает подсветку.
 	 *
 	 * Один алгоритм на два источника: набор с клавиатуры (`_typeaheadTo`) и
-	 * ввод в поле (`TEditablePlugin`) — оба лишь находят опцию, подсветка и
-	 * `aria-activedescendant` остаются здесь, в одной точке.
+	 * ввод в поле в режиме `search` (`TEditablePlugin`) — оба лишь находят
+	 * опцию, подсветка и `aria-activedescendant` остаются здесь, в одной
+	 * точке.
 	 */
 	highlightByText(needle: string): void {
 		if (!needle) {
@@ -289,7 +309,7 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		}
 
 		const lower = needle.toLowerCase()
-		const match = (this.items() as ISelectOption[]).find((item) =>
+		const match = (this.items() as ISelectItem[]).find((item) =>
 			item.text.toLowerCase().startsWith(lower),
 		)
 

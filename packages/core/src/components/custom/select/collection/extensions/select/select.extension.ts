@@ -1,7 +1,9 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type {
+	IBatchExtension,
 	IExtension,
 	IExtensionContext,
+	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
@@ -42,6 +44,7 @@ export class TSelectExtension<
 
 	private readonly _owner: TOwner
 	private _text = ''
+	private _batch: IBatchExtension<TItem> | null = null
 
 	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
 		super(TSelectItemExtension as any, options)
@@ -86,9 +89,18 @@ export class TSelectExtension<
 		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
 		// умеет сравнивать с любыми полями, а какое из них показывается
 		// пользователю, знает только компонент.
-		const filter = ctx.extensions.filter as { fields?: (keyof TItem)[] } | undefined
+		const filter = ctx.extensions.filter as IFilterExtension<TItem> | undefined
 
 		if (filter) filter.fields = ['text' as keyof TItem]
+
+		// Отбор доезжает до опции её собственным `visible`, а не через `shown` в
+		// разметке: список `shown` рисуется только там, где опции пришли пропом
+		// `items`. Объявленные разметкой (`<Select.Item>` детьми) — это чужой
+		// слот, и перебрать его коллекция не может; зато у каждой опции есть
+		// `visible`, который все шесть адаптеров уже уважают. Отсюда и правило:
+		// показана ровно та опция, что осталась в выдаче.
+		this._batch = ctx.extensions.batch as IBatchExtension<TItem>
+		this._batch.events.on('change:shown', () => this._syncShown())
 
 		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 
@@ -228,6 +240,26 @@ export class TSelectExtension<
 
 		this._ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
+		})
+	}
+
+	/**
+	 * Показать то, что осталось в выдаче, и спрятать остальное.
+	 *
+	 * Пишет `visible` самой опции, поэтому работает одинаково и когда опции
+	 * пришли пропом, и когда их объявили разметкой. Обратная сторона: свой
+	 * `visible`, выставленный снаружи, отбор перетирает — состав показанного
+	 * при включённом отборе принадлежит ему.
+	 */
+	private _syncShown(): void {
+		if (!this._ctx || !this._batch) return
+
+		const shown = new Set<unknown>(this._batch.shown)
+
+		this._ctx.driver.valueOf().forEach((item) => {
+			const visible = shown.has(item)
+
+			if (item.visible !== visible) item.visible = visible
 		})
 	}
 
