@@ -3,8 +3,6 @@ import {
 	TCollectionStorageDriver,
 	TInsertCommand,
 	TRemoveCommand,
-	TMoveCommand,
-	TUpdateCommand,
 	TArrayStorage,
 } from '@soldy/core'
 
@@ -93,46 +91,6 @@ describe('TCollectionStorageDriver', () => {
 		driver.execute(new TRemoveCommand<Item>({ id: 1 }))
 
 		expect(items).not.toHaveBeenCalled()
-	})
-
-	it('execute: эмитит change:order после change:items, если команда меняет порядок', () => {
-		const driver = createEngine()
-		const order: string[] = []
-
-		driver.events.on('change:items', () => order.push('change:items'))
-		driver.events.on('change:order', () => order.push('change:order'))
-
-		driver.execute(new TInsertCommand({ id: 1 }, 0))
-
-		expect(order).toEqual(['change:items', 'change:order'])
-	})
-
-	it('execute: не эмитит change:order, если команда меняет только свойства элемента', () => {
-		const driver = createEngine([{ id: 1 }])
-		const changeItems = vi.fn()
-		const changeOrder = vi.fn()
-
-		driver.events.on('change:items', changeItems)
-		driver.events.on('change:order', changeOrder)
-
-		driver.execute(new TUpdateCommand<Item>(driver.valueOf()[0], { id: 2 }))
-
-		expect(changeItems).toHaveBeenCalledTimes(1)
-		expect(changeOrder).not.toHaveBeenCalled()
-	})
-
-	it('execute: move на тот же индекс не эмитит ни change:items, ни change:order', () => {
-		const driver = createEngine([{ id: 1 }, { id: 2 }])
-		const changeItems = vi.fn()
-		const changeOrder = vi.fn()
-
-		driver.events.on('change:items', changeItems)
-		driver.events.on('change:order', changeOrder)
-
-		driver.execute(new TMoveCommand<Item>(driver.valueOf()[0], 0))
-
-		expect(changeItems).not.toHaveBeenCalled()
-		expect(changeOrder).not.toHaveBeenCalled()
 	})
 
 	// --- batch ---

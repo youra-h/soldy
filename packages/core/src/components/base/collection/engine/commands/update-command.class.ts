@@ -19,11 +19,6 @@ export class TUpdateCommand<TItem> implements ICommand<TItem> {
 		return !this._event.defaultPrevented
 	}
 
-	/** Обновление меняет свойства элемента, но не его место в последовательности. */
-	get orderChanged(): boolean {
-		return false
-	}
-
 	apply(ctx: ICommandContext<TItem>): void {
 		ctx.events.emit('item:update:before', this._event)
 

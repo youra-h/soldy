@@ -16,10 +16,6 @@ export class TMoveCommand<TItem> implements ICommand<TItem> {
 		return this._resolvedOldIndex !== -1
 	}
 
-	get orderChanged(): boolean {
-		return this.changed
-	}
-
 	apply(ctx: ICommandContext<TItem>): void {
 		const oldIdx = this.oldIndex ?? ctx.storage.items.indexOf(this.item)
 

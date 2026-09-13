@@ -32,10 +32,6 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 		return this._commands.some((command) => command.changed)
 	}
 
-	get orderChanged(): boolean {
-		return this._commands.some((command) => command.orderChanged)
-	}
-
 	apply(ctx: ICommandContext<TItem>): void {
 		const trackBy = this._trackBy
 

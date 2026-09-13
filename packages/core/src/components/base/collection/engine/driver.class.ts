@@ -46,10 +46,6 @@ export class TCollectionStorageDriver<T> {
 
 			if (command.changed) {
 				this.events.emit('change:items', this._storage.items)
-
-				if (command.orderChanged) {
-					this.events.emit('change:order')
-				}
 			}
 		} else {
 			this._pendingCommands.push(command)
@@ -107,10 +103,6 @@ export class TCollectionStorageDriver<T> {
 
 				if (commandsToEmit.some((cmd) => cmd.changed)) {
 					this.events.emit('change:items', this._storage.items)
-
-					if (commandsToEmit.some((cmd) => cmd.orderChanged)) {
-						this.events.emit('change:order')
-					}
 				}
 			}
 		}

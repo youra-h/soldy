@@ -78,38 +78,6 @@ describe('TOrderExtension', () => {
 		expect(handler).toHaveBeenCalledOnce()
 	})
 
-	it('не эмитит change:order при обновлении существующего элемента', () => {
-		const col = createCollection()
-		const a: Item = { id: 1, name: 'a' }
-		const handler = vi.fn()
-
-		col.extensions.plain.insert(a)
-
-		col.extensions.order.events.on('change:order', handler)
-		col.extensions.plain.update(a, { name: 'a2' })
-
-		expect(handler).not.toHaveBeenCalled()
-	})
-
-	it('эмитит change:order один раз при batch из update и move', () => {
-		const col = createCollection()
-		const a: Item = { id: 1, name: 'a' }
-		const b: Item = { id: 2, name: 'b' }
-		const handler = vi.fn()
-
-		col.extensions.plain.insert(a)
-		col.extensions.plain.insert(b)
-
-		col.extensions.order.events.on('change:order', handler)
-
-		col.batch(() => {
-			col.extensions.plain.update(b, { name: 'b2' })
-			col.extensions.plain.move(a, 0)
-		})
-
-		expect(handler).toHaveBeenCalledOnce()
-	})
-
 	it('order обновляется после перемещения', () => {
 		const col = createCollection()
 		const a: Item = { id: 1, name: 'a' }

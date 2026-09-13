@@ -106,15 +106,6 @@ export type TCollectionStorageDriverEvents<TItem> = {
 	/** Системные изменения массива элементов */
 	'change:items': (items: readonly TItem[]) => void
 
-	/**
-	 * Последовательность элементов сменилась — вставка, удаление, перемещение
-	 * или очистка. Эмитится сразу после `change:items`, если хотя бы одна из
-	 * выполненных команд подняла флаг `orderChanged` (на весь `batch` — один
-	 * раз). Обновление свойств элемента (`change:items` без смены порядка)
-	 * этого события не даёт.
-	 */
-	'change:order': () => void
-
 	/** Изменение количества элементов */
 	'change:count': (count: number) => void
 
