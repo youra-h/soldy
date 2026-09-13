@@ -15,6 +15,10 @@ export class TUpdateCommand<TItem> implements ICommand<TItem> {
 		this._event = new TUpdateEvent<TItem>(this.item, this.changes)
 	}
 
+	get changed(): boolean {
+		return !this._event.defaultPrevented
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		ctx.events.emit('item:update:before', this._event)
 

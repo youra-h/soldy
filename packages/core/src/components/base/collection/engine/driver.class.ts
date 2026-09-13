@@ -43,7 +43,10 @@ export class TCollectionStorageDriver<T> {
 
 		if (!this._isBatching) {
 			command.emitEvents(ctx)
-			this.events.emit('change:items', this._storage.items)
+
+			if (command.changed) {
+				this.events.emit('change:items', this._storage.items)
+			}
 		} else {
 			this._pendingCommands.push(command)
 		}
@@ -98,7 +101,9 @@ export class TCollectionStorageDriver<T> {
 					cmd.emitEvents({ storage: this._storage, events: this.events }),
 				)
 
-				this.events.emit('change:items', this._storage.items)
+				if (commandsToEmit.some((cmd) => cmd.changed)) {
+					this.events.emit('change:items', this._storage.items)
+				}
 			}
 		}
 	}

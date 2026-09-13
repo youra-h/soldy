@@ -12,6 +12,10 @@ export class TMoveCommand<TItem> implements ICommand<TItem> {
 		public oldIndex?: number,
 	) {}
 
+	get changed(): boolean {
+		return this._resolvedOldIndex !== -1
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		const oldIdx = this.oldIndex ?? ctx.storage.items.indexOf(this.item)
 

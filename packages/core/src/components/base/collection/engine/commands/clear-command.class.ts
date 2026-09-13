@@ -6,12 +6,18 @@ import type { ICommand, ICommandContext } from './types'
 export class TClearCommand<TItem> implements ICommand<TItem> {
 	private _removedItems: TItem[] = []
 
+	get changed(): boolean {
+		return this._removedItems.length > 0
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		this._removedItems = [...ctx.storage.items]
 		ctx.storage.clear()
 	}
 
 	emitEvents(ctx: ICommandContext<TItem>): void {
+		if (!this.changed) return
+
 		this._removedItems.forEach((item) => ctx.events.emit('item:removed', item))
 
 		ctx.events.emit('change:count', ctx.storage.items.length)

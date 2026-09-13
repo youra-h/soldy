@@ -17,6 +17,10 @@ export class TRemoveCommand<TItem> implements ICommand<TItem> {
 
 	constructor(public item: TItem) {}
 
+	get changed(): boolean {
+		return this._removed
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		this._removed = ctx.storage.items.includes(this.item)
 
