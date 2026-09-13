@@ -37,6 +37,30 @@ function sizeOf(tags) {
 }
 
 /**
+ * Занятость задачи — тоже тег: `on` — роль уже работает, `off` — свободна.
+ * Нужна, чтобы параллельно запущенные роли не брали одну задачу.
+ *
+ * Тега нет вовсе — задача свободна: `on` ставит только `clickup_take`.
+ *
+ * Это не настоящая блокировка: «проверить тег» и «поставить тег» — два запроса,
+ * и две роли, стартовавшие в одну секунду, могут взять задачу обе.
+ */
+const BUSY = 'on'
+const FREE = 'off'
+
+const tagPath = (taskId, tag) => `/task/${taskId}/tag/${encodeURIComponent(tag)}`
+
+/** Переставить тег занятости. Удаляем только то, что висит: не шлём лишних запросов. */
+async function setBusy(taskId, tags, busy) {
+	const [add, remove] = busy ? [BUSY, FREE] : [FREE, BUSY]
+
+	if (!tags.includes(add)) await api(tagPath(taskId, add), { method: 'POST' })
+	if (tags.includes(remove)) await api(tagPath(taskId, remove), { method: 'DELETE' })
+}
+
+const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
+
+/**
  * Куда роль может отправить задачу по итогам этапа: исход → ключ `config.statuses`.
  *
  * Владельцу (OVERVIEW) задачу возвращают только аналитик и тимлид. Программист
@@ -56,13 +80,14 @@ const TRANSITIONS = {
  * Возвращаем только их: контекст агента дороже полноты ответа.
  */
 function trimTask(task) {
-	const tags = (task.tags ?? []).map((tag) => tag.name.toLowerCase())
+	const tags = tagsOf(task)
 
 	return {
 		id: task.id,
 		name: task.name,
 		status: task.status?.status ?? null,
 		size: sizeOf(tags),
+		busy: tags.includes(BUSY),
 		url: task.url,
 		description: task.description || task.text_content || '',
 		assignees: (task.assignees ?? []).map((user) => user.username),
@@ -174,9 +199,43 @@ const tools = {
 		},
 	},
 
+	clickup_take: {
+		description:
+			'Взять задачу в работу: ставит тег `on`. Вызывай ПЕРВЫМ, до чтения задачи. Если задача уже в работе у другой роли — вернёт ошибку: тогда остановись и ничего не делай. Освобождает задачу `clickup_handoff`.',
+		schema: {
+			type: 'object',
+			properties: {
+				task_id: { type: 'string' },
+				role: {
+					type: 'string',
+					enum: Object.keys(TRANSITIONS),
+					description: 'Твоя роль.',
+				},
+			},
+			required: ['task_id', 'role'],
+		},
+		async run({ task_id, role }) {
+			if (!TRANSITIONS[role]) {
+				throw new Error(`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`)
+			}
+
+			const tags = tagsOf(await api(`/task/${task_id}`))
+
+			if (tags.includes(BUSY)) {
+				throw new Error(
+					`Задача ${task_id} уже в работе (тег "${BUSY}"). Не бери её: остановись и сообщи об этом.`,
+				)
+			}
+
+			await setBusy(task_id, tags, true)
+
+			return { taken: task_id, tag: BUSY }
+		},
+	},
+
 	clickup_handoff: {
 		description:
-			'Завершить свой этап и перевести задачу в следующий статус. Куда именно — задаёт `outcome`, допустимые исходы зависят от роли. Вызывай последним, ПОСЛЕ того как оставил комментарий.',
+			'Завершить свой этап и перевести задачу в следующий статус. Куда именно — задаёт `outcome`, допустимые исходы зависят от роли. Снимает с задачи тег `on` — она освобождается для следующей роли. Вызывай последним, ПОСЛЕ того как оставил комментарий.',
 		schema: {
 			type: 'object',
 			properties: {
@@ -220,13 +279,18 @@ const tools = {
 				body: JSON.stringify({ status, assignees: { add: [owner] } }),
 			})
 
-			return { status, assigned_to: owner }
+			// Освобождаем после смены статуса: иначе задача на мгновение окажется
+			// свободной в старом статусе, и её подхватит ещё одна роль того же этапа.
+			// Упадёт здесь — повторный handoff безопасен: статус тот же, теги дойдут.
+			await setBusy(task_id, tagsOf(await api(`/task/${task_id}`)), false)
+
+			return { status, assigned_to: owner, tag: FREE }
 		},
 	},
 
 	clickup_list_by_status: {
 		description:
-			'Найти задачи списка в заданном статусе. Нужен диспетчеру и для ручной проверки очереди.',
+			'Найти задачи списка в заданном статусе. Нужен диспетчеру и для ручной проверки очереди. У каждой задачи поле `busy`: true — задача уже в работе у роли (тег `on`), брать её нельзя.',
 		schema: {
 			type: 'object',
 			properties: {
@@ -307,7 +371,7 @@ const tools = {
 					// решения владельца, а не уехать в очередь ролей сама собой.
 					status: config.statuses.overview,
 					assignees: [owner],
-					tags: size ? [size] : [],
+					tags: size ? [size, FREE] : [FREE],
 					notify_all: false,
 				}),
 			})
