@@ -1,14 +1,22 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TBatchExtension, TPlainExtension } from '@soldy/core'
+import { TCollectionEngine, TBatchExtension, TPlainExtension, TOrderExtension } from '@soldy/core'
 
 type Item = { id: number; name: string }
 
 function createCollection() {
 	const col = new TCollectionEngine<
 		Item,
-		{ batch: TBatchExtension<Item>; plain: TPlainExtension<Item> }
+		{
+			batch: TBatchExtension<Item>
+			plain: TPlainExtension<Item>
+			order: TOrderExtension<Item>
+		}
 	>({
-		extensions: { batch: new TBatchExtension<Item>(), plain: new TPlainExtension<Item>() },
+		extensions: {
+			batch: new TBatchExtension<Item>(),
+			plain: new TPlainExtension<Item>(),
+			order: new TOrderExtension<Item>(),
+		},
 	})
 
 	col.extensions.batch.trackBy = (item) => item.id
@@ -95,6 +103,39 @@ describe('TPatchCommand — базовое поведение', () => {
 		expect(updated).toHaveBeenCalledTimes(1)
 		expect(added).toHaveBeenCalledTimes(1)
 		expect(removed).toHaveBeenCalledTimes(2)
+	})
+
+	it('патч, который только обновляет элементы, не шлёт change:order', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(seed())
+
+		const changeOrder = vi.fn()
+
+		col.extensions.order.events.on('change:order', changeOrder)
+		col.extensions.batch.patch([
+			{ id: 1, name: 'alpha-2' },
+			{ id: 2, name: 'beta-2' },
+			{ id: 3, name: 'gamma-2' },
+		])
+
+		expect(changeOrder).not.toHaveBeenCalled()
+	})
+
+	it('патч со вставкой и удалением шлёт change:order один раз', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(seed())
+
+		const changeOrder = vi.fn()
+
+		col.extensions.order.events.on('change:order', changeOrder)
+		col.extensions.batch.patch([
+			{ id: 2, name: 'beta-2' },
+			{ id: 4, name: 'delta' },
+		])
+
+		expect(changeOrder).toHaveBeenCalledTimes(1)
 	})
 
 	it('без trackBy бросает ошибку', () => {

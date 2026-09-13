@@ -26,6 +26,8 @@ export class TInsertCommand<TItem> implements ICommand<TItem> {
 	}
 
 	emitEvents(ctx: ICommandContext<TItem>): void {
+		if (this._event.defaultPrevented) return
+
 		ctx.events.emit('item:added', this._event)
 		ctx.events.emit('change:count', ctx.storage.items.length)
 	}
