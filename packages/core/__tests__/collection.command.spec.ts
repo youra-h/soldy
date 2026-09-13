@@ -51,6 +51,31 @@ describe('TInsertCommand', () => {
 		expect(added.mock.calls[0][0].item).toBe(item)
 		expect(count).toHaveBeenCalledWith(1)
 	})
+
+	it('changed: true после apply', () => {
+		const storage = new TArrayStorage<Item>()
+		const item: Item = { id: 1, name: 'a' }
+		const command = new TInsertCommand(item, 0)
+
+		command.apply(createContext(storage))
+
+		expect(command.changed).toBe(true)
+	})
+
+	it('changed: false если item:add:before отменил вставку', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+
+		events.on('item:add:before', (event) => event.preventDefault())
+
+		const item: Item = { id: 1, name: 'a' }
+		const command = new TInsertCommand(item, 0)
+
+		command.apply(createContext(storage, events))
+
+		expect(command.changed).toBe(false)
+		expect(storage.items).toEqual([])
+	})
 })
 
 describe('TRemoveCommand', () => {
@@ -123,6 +148,21 @@ describe('TRemoveCommand', () => {
 
 		expect(removed).toHaveBeenCalledTimes(1)
 	})
+
+	it('changed: true при реальном удалении, false если удалять было нечего', () => {
+		const storage = new TArrayStorage<Item>()
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const removed = new TRemoveCommand(item)
+		removed.apply(createContext(storage))
+		expect(removed.changed).toBe(true)
+
+		const noop = new TRemoveCommand(item)
+		noop.apply(createContext(storage))
+		expect(noop.changed).toBe(false)
+	})
 })
 
 describe('TUpdateCommand', () => {
@@ -153,6 +193,35 @@ describe('TUpdateCommand', () => {
 		const event = updated.mock.calls[0][0]
 		expect(event.item).toBe(item)
 		expect(event.changes).toEqual({ name: 'b' })
+	})
+
+	it('changed: true после apply', () => {
+		const storage = new TArrayStorage<Item>()
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const command = new TUpdateCommand(item, { name: 'b' })
+		command.apply(createContext(storage))
+
+		expect(command.changed).toBe(true)
+	})
+
+	it('changed: false если item:update:before отменил обновление', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+
+		events.on('item:update:before', (event) => event.preventDefault())
+
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const command = new TUpdateCommand(item, { name: 'b' })
+		command.apply(createContext(storage, events))
+
+		expect(command.changed).toBe(false)
+		expect(item.name).toBe('a')
 	})
 })
 
@@ -224,6 +293,23 @@ describe('TMoveCommand', () => {
 
 		expect(moved).toHaveBeenCalledWith(a, 0, 1)
 	})
+
+	it('changed: false при перемещении на ту же позицию, true при реальном перемещении', () => {
+		const storage = new TArrayStorage<Item>()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		storage.insert(a, 0)
+		storage.insert(b, 1)
+
+		const noop = new TMoveCommand(a, 0, 0)
+		noop.apply(createContext(storage))
+		expect(noop.changed).toBe(false)
+
+		const moved = new TMoveCommand(a, 1, 0)
+		moved.apply(createContext(storage))
+		expect(moved.changed).toBe(true)
+	})
 })
 
 describe('TClearCommand', () => {
@@ -263,5 +349,42 @@ describe('TClearCommand', () => {
 		expect(removed).toHaveBeenCalledTimes(2)
 		expect(count).toHaveBeenCalledWith(0)
 		expect(reset).toHaveBeenCalledOnce()
+	})
+
+	it('changed: false для пустой коллекции, true если было что удалять', () => {
+		const emptyStorage = new TArrayStorage<Item>()
+		const emptyCommand = new TClearCommand<Item>()
+
+		emptyCommand.apply(createContext(emptyStorage))
+		expect(emptyCommand.changed).toBe(false)
+
+		const storage = new TArrayStorage<Item>()
+		storage.insert({ id: 1, name: 'a' }, 0)
+
+		const command = new TClearCommand<Item>()
+		command.apply(createContext(storage))
+		expect(command.changed).toBe(true)
+	})
+
+	it('emitEvents: молчит на пустой коллекции', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const removed = vi.fn()
+		const count = vi.fn()
+		const reset = vi.fn()
+
+		events.on('item:removed', removed)
+		events.on('change:count', count)
+		events.on('reset', reset)
+
+		const ctx = createContext(storage, events)
+		const cmd = new TClearCommand<Item>()
+
+		cmd.apply(ctx)
+		cmd.emitEvents(ctx)
+
+		expect(removed).not.toHaveBeenCalled()
+		expect(count).not.toHaveBeenCalled()
+		expect(reset).not.toHaveBeenCalled()
 	})
 })

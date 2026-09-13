@@ -28,6 +28,10 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 		private _trackBy: (item: TItem) => any,
 	) {}
 
+	get changed(): boolean {
+		return this._commands.some((command) => command.changed)
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		const trackBy = this._trackBy
 

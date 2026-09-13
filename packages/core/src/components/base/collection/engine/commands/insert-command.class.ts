@@ -11,6 +11,10 @@ export class TInsertCommand<TItem> implements ICommand<TItem> {
 		this._event = new TInsertEvent<TItem>(this.item)
 	}
 
+	get changed(): boolean {
+		return !this._event.defaultPrevented
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		ctx.events.emit('item:add:before', this._event)
 

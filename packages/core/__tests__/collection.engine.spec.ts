@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionStorageDriver, TInsertCommand, TArrayStorage } from '@soldy/core'
+import {
+	TCollectionStorageDriver,
+	TInsertCommand,
+	TRemoveCommand,
+	TArrayStorage,
+} from '@soldy/core'
 
 type Item = { id: number }
 
@@ -76,6 +81,18 @@ describe('TCollectionStorageDriver', () => {
 		expect(items).toHaveBeenCalledWith([{ id: 1 }])
 	})
 
+	it('execute: не эмитит change:items, если команда не изменила состав', () => {
+		const driver = createEngine()
+		const items = vi.fn()
+
+		driver.events.on('change:items', items)
+
+		// удалять нечего — состав не менялся
+		driver.execute(new TRemoveCommand<Item>({ id: 1 }))
+
+		expect(items).not.toHaveBeenCalled()
+	})
+
 	// --- batch ---
 
 	it('batch: откладывает события до конца пакета', () => {
@@ -112,6 +129,34 @@ describe('TCollectionStorageDriver', () => {
 			driver.batch(() => {
 				driver.execute(new TInsertCommand({ id: 2 }, 1))
 			})
+		})
+
+		expect(changeItems).toHaveBeenCalledTimes(1)
+	})
+
+	it('batch: молчит, если все отложенные команды — no-op', () => {
+		const driver = createEngine()
+		const changeItems = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+
+		driver.batch(() => {
+			driver.execute(new TRemoveCommand<Item>({ id: 1 }))
+			driver.execute(new TRemoveCommand<Item>({ id: 2 }))
+		})
+
+		expect(changeItems).not.toHaveBeenCalled()
+	})
+
+	it('batch: одно change:items, если среди отложенных есть хотя бы одна изменившая команда', () => {
+		const driver = createEngine()
+		const changeItems = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+
+		driver.batch(() => {
+			driver.execute(new TRemoveCommand<Item>({ id: 1 })) // no-op
+			driver.execute(new TInsertCommand({ id: 2 }, 0)) // изменяет состав
 		})
 
 		expect(changeItems).toHaveBeenCalledTimes(1)

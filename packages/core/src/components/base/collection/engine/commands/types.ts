@@ -16,6 +16,15 @@ export interface ICommandContext<TItem> {
 export interface ICommand<TItem> {
 	apply(ctx: ICommandContext<TItem>): void
 	emitEvents(ctx: ICommandContext<TItem>): void
+
+	/**
+	 * Изменила ли команда состав хранилища. Достоверно только после `apply`.
+	 *
+	 * Читается драйвером одинаково для всех команд — чтобы решить, слать ли
+	 * `change:items`. Не про уведомления конкретной команды (это `emitEvents`),
+	 * а про факт мутации `storage`.
+	 */
+	get changed(): boolean
 }
 
 /**
