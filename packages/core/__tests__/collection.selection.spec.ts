@@ -147,7 +147,7 @@ describe('TSelectionExtension', () => {
 
 	// --- mode ---
 
-	it('mode: переключение с multiple на single оставляет один выбранный', () => {
+	it('mode: переключение с multiple на single снимает выбор целиком', () => {
 		const col = createCollection()
 
 		col.extensions.selection.mode = 'multiple'
@@ -161,10 +161,10 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.select(b)
 		col.extensions.selection.mode = 'single'
 
-		expect(col.extensions.selection.selectedCount).toBe(1)
+		expect(col.extensions.selection.selectedCount).toBe(0)
 	})
 
-	it('mode: переключение с multiple на single при урезании шлёт change:selection один раз с mode уже single', () => {
+	it('mode: сброс при multiple -> single шлёт change:selection один раз с mode уже single', () => {
 		const col = createCollection()
 
 		col.extensions.selection.mode = 'multiple'
@@ -185,7 +185,7 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.mode = 'single'
 
 		expect(handler).toHaveBeenCalledTimes(1)
-		expect(handler).toHaveBeenCalledWith([a])
+		expect(handler).toHaveBeenCalledWith([])
 	})
 
 	it('mode: переключение с multiple на single не шлёт change:selection, если выбрано 0 элементов', () => {
@@ -199,7 +199,7 @@ describe('TSelectionExtension', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('mode: переключение с multiple на single не шлёт change:selection, если выбран 1 элемент', () => {
+	it('mode: переключение с multiple на single при одном выбранном тоже снимает выбор', () => {
 		const col = createCollection()
 		const item: Item = { id: 1, name: 'a' }
 		const handler = vi.fn()
@@ -210,10 +210,25 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.events.on('change:selection', handler)
 		col.extensions.selection.mode = 'single'
 
+		expect(col.extensions.selection.selectedCount).toBe(0)
+		expect(handler).toHaveBeenCalledWith([])
+	})
+
+	it('mode: переключение с single на multiple выбор не трогает', () => {
+		const col = createCollection()
+		const item: Item = { id: 1, name: 'a' }
+		const handler = vi.fn()
+
+		col.extensions.plain.insert(item)
+		col.extensions.selection.select(item)
+		col.extensions.selection.events.on('change:selection', handler)
+		col.extensions.selection.mode = 'multiple'
+
+		expect(col.extensions.selection.selected).toEqual([item])
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('mode: при урезании отброшенные элементы получают data-selected=false', () => {
+	it('mode: при сбросе элементы получают data-selected=false', () => {
 		const col = createCollection()
 
 		col.extensions.selection.mode = 'multiple'

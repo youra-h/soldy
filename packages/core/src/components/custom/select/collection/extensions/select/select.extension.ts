@@ -158,24 +158,7 @@ export class TSelectExtension<
 			selection.events.on('change:selection', () => this._onSelectionChanged())
 
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
-			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
-
-			// Смена режима `multiple` -> `single` на лету обязана сбросить выбор:
-			// движок (`TSelectionExtension.mode`) в этом случае намеренно оставляет
-			// первый выбранный элемент — это поведение общее с ListBox и
-			// Accordion, где такой перенос уместен. У Select своя семантика:
-			// набор из нескольких тегов не должен молча схлопываться в один
-			// выбранный пункт, это выглядело бы как случайный выбор за
-			// пользователя. `single` -> `multiple`, наоборот, ничего не меняет —
-			// прежний выбор остаётся.
-			let wasMultiple = selection.multiple
-
-			selection.events.on('change:mode', () => {
-				if (wasMultiple && !selection.multiple) selection.resetSelection()
-
-				wasMultiple = selection.multiple
-			})
-		}
+			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())		}
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
 		// живёт всё время, пока `multiple`, даже без единого тега. `tags` в

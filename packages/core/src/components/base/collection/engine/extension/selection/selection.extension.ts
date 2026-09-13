@@ -36,16 +36,7 @@ export class TSelectionExtension<TItem extends object = any>
 	set mode(value: TSelectionMode) {
 		if (this._mode === value) return
 
-		let truncated = false
-
-		if (value === 'single' && this._selected.size > 1) {
-			// оставить выбранным только первый
-			const first = this._selected.values().next().value as TItem
-
-			this._selected.clear()
-			this._selected.add(first)
-			truncated = true
-		}
+		const wasMultiple = this._mode === 'multiple'
 
 		if (value === 'none') {
 			// полностью очистить выбор
@@ -54,7 +45,11 @@ export class TSelectionExtension<TItem extends object = any>
 
 		this._mode = value
 
-		if (truncated) this._notifySelected()
+		// `multiple` -> `single` снимает выбор целиком, а не урезает до одного:
+		// оставить какой-то из выбранных значило бы выбрать за пользователя.
+		// Сброс после смены режима — `change:selection` видит уже `single`.
+		// `single` -> `multiple` выбор не трогает
+		if (value === 'single' && wasMultiple) this.resetSelection()
 
 		this.events.emit('change:mode', value)
 	}
