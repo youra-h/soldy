@@ -27,9 +27,12 @@ import type { TEditablePluginEvents } from './types'
  * — операция над ним, по одной функции на режим:
  *
  * - `search` — {@link _highlight}: подсвечивает первую опцию, чей текст
- *   начинается с набранного, тем же алгоритмом, что и набор по буквам с
- *   клавиатуры (`TSelectKeyboardPlugin.highlightByText`). Список остаётся
- *   целым, ничего не скрывается.
+ *   содержит набранное в любом месте, без учёта регистра — тем же методом,
+ *   что и набор по буквам с клавиатуры (`TSelectKeyboardPlugin.highlightByText`),
+ *   но со сравнением по вхождению, а не по началу строки: набор по буквам
+ *   ищет один печатный символ за раз на закрытом списке (WAI-ARIA), а здесь
+ *   вводят произвольный фрагмент текста. Список остаётся целым, ничего не
+ *   скрывается.
  * - `filter` — {@link _filter}: отдаёт набранное в `filter.query` коллекции.
  *   Отбор уже умеет `TFilterExtension` — сузить выдачу, не трогая хранилище;
  *   плагину остаётся передать текст. Отсюда и одна строка вместо второго
@@ -197,7 +200,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		if (!value) return
 
 		this._open()
-		this._keyboard?.highlightByText(value)
+		this._keyboard?.highlightByText(value, 'includes')
 	}
 
 	/**

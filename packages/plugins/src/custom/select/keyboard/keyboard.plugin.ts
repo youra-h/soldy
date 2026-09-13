@@ -211,15 +211,20 @@ export class TSelectKeyboardPlugin
 	}
 
 	/**
-	 * Подсветить первую опцию, чей текст начинается с `needle` — без учёта
+	 * Подсветить первую опцию, чей текст совпал с `needle` — без учёта
 	 * регистра. Пустая строка снимает подсветку.
 	 *
-	 * Один алгоритм на два источника: набор с клавиатуры (`typeaheadTo`) и
-	 * ввод в поле в режиме `search` (`TEditablePlugin`) — оба лишь находят
-	 * опцию, подсветка и `aria-activedescendant` остаются здесь, в одной
-	 * точке.
+	 * Один метод на два источника, у каждого свой способ сравнения:
+	 *
+	 * - `startsWith` (по умолчанию) — набор с клавиатуры (`typeaheadTo`), как
+	 *   того требует WAI-ARIA для закрытого списка;
+	 * - `includes` — ввод в поле в режиме `search` (`TEditablePlugin`): там
+	 *   ищут подстроку в любом месте текста, как в режиме `filter`.
+	 *
+	 * Подсветка и `aria-activedescendant` в обоих случаях остаются здесь, в
+	 * одной точке.
 	 */
-	highlightByText(needle: string): void {
+	highlightByText(needle: string, mode: 'startsWith' | 'includes' = 'startsWith'): void {
 		if (!needle) {
 			this.clearHighlight()
 
@@ -227,9 +232,11 @@ export class TSelectKeyboardPlugin
 		}
 
 		const lower = needle.toLowerCase()
-		const match = (this.items() as ISelectItem[]).find((item) =>
-			item.text.toLowerCase().startsWith(lower),
-		)
+		const match = (this.items() as ISelectItem[]).find((item) => {
+			const text = item.text.toLowerCase()
+
+			return mode === 'includes' ? text.includes(lower) : text.startsWith(lower)
+		})
 
 		if (match) {
 			this.highlight(match.uid)
