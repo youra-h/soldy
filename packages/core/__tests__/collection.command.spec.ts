@@ -76,6 +76,27 @@ describe('TInsertCommand', () => {
 		expect(command.changed).toBe(false)
 		expect(storage.items).toEqual([])
 	})
+
+	it('emitEvents: молчит, если item:add:before отменил вставку', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const added = vi.fn()
+		const count = vi.fn()
+
+		events.on('item:add:before', (event) => event.preventDefault())
+		events.on('item:added', added)
+		events.on('change:count', count)
+
+		const item: Item = { id: 1, name: 'a' }
+		const command = new TInsertCommand(item, 0)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(added).not.toHaveBeenCalled()
+		expect(count).not.toHaveBeenCalled()
+	})
 })
 
 describe('TRemoveCommand', () => {
@@ -222,6 +243,27 @@ describe('TUpdateCommand', () => {
 
 		expect(command.changed).toBe(false)
 		expect(item.name).toBe('a')
+	})
+
+	it('emitEvents: молчит, если item:update:before отменил обновление', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const updated = vi.fn()
+
+		events.on('item:update:before', (event) => event.preventDefault())
+		events.on('item:updated', updated)
+
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const command = new TUpdateCommand(item, { name: 'b' })
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(updated).not.toHaveBeenCalled()
 	})
 })
 

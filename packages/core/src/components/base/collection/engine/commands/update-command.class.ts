@@ -31,6 +31,8 @@ export class TUpdateCommand<TItem> implements ICommand<TItem> {
 	}
 
 	emitEvents(ctx: ICommandContext<TItem>): void {
+		if (this._event.defaultPrevented) return
+
 		ctx.events.emit('item:updated', this._event)
 	}
 }
