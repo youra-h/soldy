@@ -160,6 +160,14 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	 *
 	 * Пустая строка сюда доходит и снимает отбор: в отличие от подсветки,
 	 * «ничего не набрано» — это состояние, а не отсутствие события.
+	 *
+	 * Подсветку `filter` не расставляет по вводу, как `search`: набранное
+	 * сужает выдачу, а не ищет конкретную опцию. Но у неё нет и своей
+	 * клавиатурной подсказки, поэтому при первом открытии панель встаёт на
+	 * выбранное или на первую из отфильтрованных сама, тем же методом, что и
+	 * стрелка вниз (`TSelectKeyboardPlugin.highlightSelected`). Дальше, пока
+	 * панель уже открыта, подсветка следит за сузившейся выдачей сама
+	 * (`onEngineBound` в `TSelectKeyboardPlugin`).
 	 */
 	private _filter(value: string): void {
 		const filter = this._filterExtension
@@ -168,7 +176,13 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 		filter.query = value
 
-		if (value) this._open()
+		if (!value) return
+
+		const wasOpen = Boolean(this._owner?.open)
+
+		this._open()
+
+		if (!wasOpen) this._keyboard?.highlightSelected()
 	}
 
 	private _open(): void {

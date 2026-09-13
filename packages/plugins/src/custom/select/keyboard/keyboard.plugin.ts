@@ -48,7 +48,6 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
 		this._owner?.events.on('close', () => this.clearHighlight())
-		this._owner?.events.on('open', () => this._highlightSelected())
 	}
 
 	override destroy(): void {
@@ -68,15 +67,14 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	}
 
 	/**
-	 * Подсветка появляется на открытии, а не при появлении коллекции: пока
-	 * панель закрыта, навигировать нечего. Этим Select отличается от ListBox,
-	 * который синхронизирует позицию с выбором сразу.
-	 *
-	 * От коллекции нужно другое — `change:shown`. Выдача сужается под отбором
+	 * Подсветка сама по открытию не появляется — только по клавиатуре (см.
+	 * `highlightSelected`, вызываемый из `_handleClosed`/`_handleOpen`). Но
+	 * раз подсветка может быть выставлена, а выдача — сузиться под отбором
 	 * (`filter.query`), откуда бы он ни пришёл — из ввода в поле или из кода,
-	 * — и подсветка может остаться на опции, которой на экране больше нет.
-	 * Тогда `Enter` выбрал бы скрытое, а `aria-activedescendant` указывал бы
-	 * в пустоту, поэтому подсветка переезжает на первую из оставшихся.
+	 * — нужно следить, чтобы она не осталась на опции, которой на экране
+	 * больше нет. Тогда `Enter` выбрал бы скрытое, а `aria-activedescendant`
+	 * указывал бы в пустоту, поэтому подсветка переезжает на первую из
+	 * оставшихся.
 	 *
 	 * Чинит это сам плагин, а не тот, кто поменял отбор: подсветка — его
 	 * состояние, и знать о ней отбору незачем.
@@ -146,8 +144,14 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 	}
 
 	/**
-	 * Закрытая панель. Стрелки и активация открывают; `↑` при этом встаёт на
-	 * последнюю опцию — так пользователь попадает в конец списка одним нажатием.
+	 * Закрытая панель. Стрелки и активация открывают; `↑`/`End` при этом
+	 * встают на последнюю опцию — так пользователь попадает в конец списка
+	 * одним нажатием. `Home` встаёт на первую. `ArrowDown`, `Enter` и пробел
+	 * ведут себя одинаково: подсветка встаёт на выбранную опцию, а если
+	 * выбора нет — на первую.
+	 *
+	 * Открытие кликом (или программное) подсветку не ставит вовсе — это
+	 * поведение только клавиатуры.
 	 *
 	 * В `editable` `Home`/`End`/пробел и печатные символы не перехватываются:
 	 * они принадлежат тексту поля, а не навигации по списку.
@@ -161,8 +165,10 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 			if (e.key === 'ArrowUp' || e.key === 'End') {
 				this.highlightEdge('last')
-			} else if (e.key === 'ArrowDown' || e.key === 'Home') {
+			} else if (e.key === 'Home') {
 				this.highlightEdge('first')
+			} else {
+				this.highlightSelected()
 			}
 
 			return
@@ -198,7 +204,12 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault()
-				this.move(1)
+
+				if (this._highlightedUid == null) {
+					this.highlightSelected()
+				} else {
+					this.move(1)
+				}
 
 				return
 
@@ -258,8 +269,16 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
 	}
 
-	/** При открытии подсветка встаёт на выбранное — иначе на первую опцию. */
-	private _highlightSelected(): void {
+	/**
+	 * Подсветка встаёт на выбранную опцию — иначе на первую.
+	 *
+	 * Публичный метод: сам плагин зовёт его из клавиатурных обработчиков
+	 * открытия и навигации, а `TEditablePlugin` — при первом открытии панели
+	 * набором фильтра (`editableMode: 'filter'`), где своей клавиатурной
+	 * подсказки нет. Клик и любое другое открытие без явного участника
+	 * подсветку не ставят.
+	 */
+	highlightSelected(): void {
 		const selected = this._engine?.extensions?.selection?.selected?.[0] as
 			| IControl
 			| undefined
