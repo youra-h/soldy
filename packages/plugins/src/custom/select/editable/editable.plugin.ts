@@ -52,7 +52,11 @@ import type { TEditablePluginEvents } from './types'
  *   слушать `close` напрямую было бы циклом: клавиатура сама зависит от
  *   `TSelectKeyboardPlugin`);
  * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели
- *   (`data-owner`) — переход внутрь панели ничего не меняет.
+ *   (`data-owner`) — переход внутрь панели ничего не меняет;
+ * - смена `editable`/`editableMode` — режим сменился, значит набранное и
+ *   отбор относились к прежнему режиму и больше не актуальны. Никакой
+ *   умной логики (что оставить, а что сбросить) для этого редкого перехода
+ *   нет намеренно: сбрасывается всё, как при обычном возврате поля.
  *
  * `change:selection` сюда не входит: текст выбранного (`single`) и очистку
  * поля (`multiple`) на смену выбора пишет сама `TSelectExtension` —
@@ -120,8 +124,12 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		this._owner?.events.on('change:editable', () => {
 			this._syncListener()
 			this._syncFocusListener()
+			this._returnField()
 		})
-		this._owner?.events.on('change:editableMode', () => this._syncListener())
+		this._owner?.events.on('change:editableMode', () => {
+			this._syncListener()
+			this._returnField()
+		})
 
 		// Escape на уже закрытой панели — вторая половина двойного Escape
 		this._keyboard?.events.on('escape', () => this._returnField())

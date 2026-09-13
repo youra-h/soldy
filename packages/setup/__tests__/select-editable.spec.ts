@@ -240,10 +240,13 @@ describe('слушатель ввода — только пока он нуже�
 		expect(editable.query).toBe('т')
 
 		owner.editable = false
+		// смена editable сама возвращает поле и сбрасывает набранное
+		expect(editable.query).toBe('')
+
 		type('мо')
 
 		// слушатель снят — новый ввод до query не доходит
-		expect(editable.query).toBe('т')
+		expect(editable.query).toBe('')
 	})
 
 	it('editable включили на ходу — плагин подписался', async () => {
@@ -389,6 +392,56 @@ describe('уход фокуса', () => {
 		blurTo(root)
 
 		expect(input.value).toBe('мо')
+	})
+})
+
+/**
+ * Смена `editable`/`editableMode` на лету — набранное и отбор относились к
+ * прежнему режиму, поэтому сбрасываются целиком через `_returnField`, как и
+ * при обычном возврате поля.
+ */
+describe('смена editable/editableMode на лету', () => {
+	it('filter -> search сбрасывает отбор и показывает все опции', async () => {
+		const { owner, facade, type } = await setup(['Москва', 'Тверь', 'Тула'], {
+			editableMode: 'filter',
+		})
+
+		type('ту')
+		expect(facade.shown.length).toBe(1)
+
+		owner.editableMode = 'search'
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(3)
+	})
+
+	it('filter -> none сбрасывает отбор', async () => {
+		const { owner, facade, type } = await setup(['Москва', 'Тверь'], {
+			editableMode: 'filter',
+		})
+
+		type('тв')
+		expect(facade.shown.length).toBe(1)
+
+		owner.editableMode = 'none'
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(2)
+	})
+
+	it('editable выключили — набранное сброшено, поле возвращено к выбранному', async () => {
+		const { owner, items, editable, type } = await setup(['Москва', 'Тверь'], {
+			editableMode: 'filter',
+		})
+
+		owner.value = items[0].value
+		type('тв')
+		expect(editable.query).toBe('тв')
+
+		owner.editable = false
+
+		expect(editable.query).toBe('')
+		expect(owner.field.value).toBe(items[0].text)
 	})
 })
 
