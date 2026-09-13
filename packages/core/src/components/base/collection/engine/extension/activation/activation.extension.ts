@@ -40,8 +40,8 @@ export class TActivationExtension<TItem extends object = any>
 		ctx.driver.events.on('change:items', () => this._syncDataset())
 		this._syncDataset()
 
-		ctx.driver.events.on('item:removed', (item: TItem) => {
-			if (this._activeItem === item) {
+		ctx.driver.events.on('item:removed', (e) => {
+			if (this._activeItem === e.item) {
 				this.reset()
 			}
 		})
@@ -71,12 +71,12 @@ export class TActivationExtension<TItem extends object = any>
 			})
 		}
 
-		ctx.driver.events.on('item:removed', (item: TItem) => {
-			if (this._activeItem === item) {
+		ctx.driver.events.on('item:removed', (e) => {
+			if (this._activeItem === e.item) {
 				this.reset()
 			}
 
-			const next = this.findActivatable(undefined, item)
+			const next = this.findActivatable(undefined, e.item)
 
 			if (next) {
 				this.activate(next)

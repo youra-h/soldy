@@ -36,9 +36,9 @@ export class TUniqueExtension<TItem extends object = any>
 			}
 		})
 
-		ctx.driver.events.on('item:removed', (item) => {
-			if ('uid' in item) {
-				this._known.delete((item as any).uid)
+		ctx.driver.events.on('item:removed', (e) => {
+			if ('uid' in e.item) {
+				this._known.delete((e.item as any).uid)
 			}
 		})
 

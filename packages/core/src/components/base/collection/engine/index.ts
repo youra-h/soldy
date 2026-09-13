@@ -1,6 +1,14 @@
 // Типы
 export type { TCollectionStorageDriverEvents, TCollectionEngineEvents } from './types'
-export { TInsertEvent, TUpdateEvent, TItemEvent, TQueryEvent } from './types'
+export {
+	TInsertEvent,
+	TUpdateEvent,
+	TRemoveEvent,
+	TMoveEvent,
+	TClearEvent,
+	TItemEvent,
+	TQueryEvent,
+} from './types'
 
 // Хранилище
 export type { IStorage } from './storage'

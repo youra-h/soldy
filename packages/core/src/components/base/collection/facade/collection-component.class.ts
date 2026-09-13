@@ -36,9 +36,13 @@ export abstract class TCollectionComponent<
 		this.events.relay(plain.events, [
 			'item:add:before',
 			'item:added',
+			'item:remove:before',
 			'item:removed',
+			'item:update:before',
 			'item:updated',
+			'item:move:before',
 			'item:moved',
+			'items:clear:before',
 			'change:items',
 			'change:count',
 			'reset',

@@ -63,6 +63,54 @@ export class TUpdateEvent<TItem> extends TItemEvent<TItem> {
 }
 
 /**
+ * Событие удаления элемента. Отменяемо: `preventDefault()` до мутации
+ * хранилища оставляет элемент на месте, ровно как у вставки/обновления.
+ */
+export class TRemoveEvent<TItem> extends TItemEvent<TItem> {
+	constructor(public readonly item: TItem) {
+		super()
+
+		this.captureMeta(this.item)
+	}
+}
+
+/**
+ * Событие перемещения элемента. `oldIndex` — вычисленная позиция на момент
+ * события, только для чтения. `newIndex` можно подменить в хендлере — тем же
+ * приёмом, что подмена `item` у вставки.
+ */
+export class TMoveEvent<TItem> extends TItemEvent<TItem> {
+	constructor(
+		public readonly item: TItem,
+		public readonly oldIndex: number,
+		private _newIndex: number,
+	) {
+		super()
+
+		this.captureMeta(this.item)
+	}
+
+	get newIndex(): number {
+		return this._newIndex
+	}
+
+	set newIndex(value: number) {
+		this._newIndex = value
+	}
+}
+
+/**
+ * Событие полной очистки коллекции. `items` — снимок состава на момент
+ * вызова, один хук на всю операцию, а не по хуку на элемент: отмена части
+ * элементов оставила бы коллекцию непустой, что противоречит смыслу `reset`.
+ */
+export class TClearEvent<TItem> extends TActionEvent {
+	constructor(public readonly items: readonly TItem[]) {
+		super()
+	}
+}
+
+/**
  * Событие чтения состава — точка внедрения для расширений.
  *
  * Команда чтения (`TQueryCommand`) кладёт сюда снимок сырого storage и эмитит
@@ -91,8 +139,14 @@ export type TCollectionStorageDriverEvents<TItem> = {
 	/** Вызывается при добавлении одного элемента */
 	'item:added': (e: TInsertEvent<TItem>) => void
 
+	/**
+	 * Вызывается ПЕРЕД удалением элемента (до мутации хранилища).
+	 * Вызвать `e.preventDefault()` — отменить удаление.
+	 */
+	'item:remove:before': (e: TRemoveEvent<TItem>) => void
+
 	/** Вызывается при удалении одного элемента */
-	'item:removed': (item: TItem) => void
+	'item:removed': (e: TRemoveEvent<TItem>) => void
 
 	/** Вызывается ПЕРЕД изменением элемента (до мутации). Можно подменить `e.item`/`e.changes` или `preventDefault()`. */
 	'item:update:before': (e: TUpdateEvent<TItem>) => void
@@ -100,14 +154,27 @@ export type TCollectionStorageDriverEvents<TItem> = {
 	/** Вызывается при изменении одного элемента */
 	'item:updated': (e: TUpdateEvent<TItem>) => void
 
+	/**
+	 * Вызывается ПЕРЕД перемещением элемента (до мутации хранилища).
+	 * Можно подменить `e.newIndex` или вызвать `e.preventDefault()`.
+	 */
+	'item:move:before': (e: TMoveEvent<TItem>) => void
+
 	/** Вызывается при перемещении элемента */
-	'item:moved': (item: TItem, oldIndex: number, newIndex: number) => void
+	'item:moved': (e: TMoveEvent<TItem>) => void
 
 	/** Системные изменения массива элементов */
 	'change:items': (items: readonly TItem[]) => void
 
 	/** Изменение количества элементов */
 	'change:count': (count: number) => void
+
+	/**
+	 * Вызывается ПЕРЕД полной очисткой коллекции (до мутации хранилища).
+	 * Один хук на всю операцию — `e.items` снимок состава, `e.preventDefault()`
+	 * отменяет очистку целиком.
+	 */
+	'items:clear:before': (e: TClearEvent<TItem>) => void
 
 	/** Полный сброс или очистка коллекции */
 	reset: () => void

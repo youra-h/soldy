@@ -59,7 +59,8 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.remove(item)
 
 		expect(col.getCore().driver.valueOf().length).toBe(0)
-		expect(removed).toHaveBeenCalledWith(item)
+		expect(removed).toHaveBeenCalledTimes(1)
+		expect(removed.mock.calls[0][0].item).toBe(item)
 	})
 
 	it('update: обновляет элемент и эмитит события', () => {
@@ -120,5 +121,38 @@ describe('TPlainExtension', () => {
 		col.extensions.plain.insert({ id: 1, name: 'a' })
 
 		expect(col.getCore().driver.valueOf().length).toBe(1)
+	})
+})
+
+describe('TPlainExtension — before-хуки доходят через relay', () => {
+	it('item:remove:before доступен через plain.events и может отменить удаление', () => {
+		const col = createCollection()
+		const item: Item = { id: 1, name: 'a' }
+
+		col.extensions.plain.insert(item)
+		col.extensions.plain.events.on('item:remove:before', (e) => e.preventDefault())
+
+		col.extensions.plain.remove(item)
+
+		expect(col.getCore().driver.valueOf()).toEqual([item])
+	})
+
+	it('item:move:before доступен через plain.events и может подменить newIndex', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+
+		col.extensions.plain.insert(a, 0)
+		col.extensions.plain.insert(b, 1)
+		col.extensions.plain.insert(c, 2)
+
+		col.extensions.plain.events.on('item:move:before', (e) => {
+			e.newIndex = 2
+		})
+
+		col.extensions.plain.move(a, 1)
+
+		expect(col.getCore().driver.valueOf()).toEqual([b, c, a])
 	})
 })

@@ -138,6 +138,30 @@ describe('TPatchCommand — базовое поведение', () => {
 		expect(changeOrder).toHaveBeenCalledTimes(1)
 	})
 
+	it('удаление внутри патча отменяется через item:remove:before', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(seed())
+
+		col.getCore().driver.events.on('item:remove:before', (e) => {
+			if (e.item.id === 3) e.preventDefault()
+		})
+
+		// без id 3 во входном наборе — patch попытается его удалить
+		col.extensions.batch.patch([
+			{ id: 1, name: 'alpha' },
+			{ id: 2, name: 'beta' },
+		])
+
+		expect(
+			col
+				.getCore()
+				.driver.valueOf()
+				.map((i) => i.id)
+				.sort(),
+		).toEqual([1, 2, 3])
+	})
+
 	it('без trackBy бросает ошибку', () => {
 		const col = createCollection()
 
