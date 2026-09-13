@@ -22,7 +22,7 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 				компонента `Accordion.Content` нет: панель лежит внутри элемента и
 				отдельно от него не существует, поэтому она остаётся слотом.
 			-->
-			<AccordionItem v-for="item in items" :key="item.uid" :ctrl="item">
+			<AccordionItem v-for="item in shown" :key="item.uid" :ctrl="item">
 				<template #leading>
 					<slot name="item-leading" :item="item" />
 				</template>

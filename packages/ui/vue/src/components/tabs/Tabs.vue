@@ -18,7 +18,7 @@ export default { ...SetupTabs, components: { TabsItem } }
 					в остальных пяти адаптерах они недостижимы. Адресация конкретного
 					элемента — условием внутри слота по `item.value`.
 				-->
-				<TabsItem v-for="item in items" :key="item.uid" :ctrl="item">
+				<TabsItem v-for="item in shown" :key="item.uid" :ctrl="item">
 					<template #leading>
 						<slot name="item-leading" :item="item" />
 					</template>
