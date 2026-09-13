@@ -22,8 +22,9 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * живут вместе:
  *
  * 1. **ARIA-связка.** Формула идентификаторов одна на обе половинки: на
- *    `aria-controls` поля и `id` списка, на `aria-activedescendant` и `id`
- *    опции. Разнеси её, и они однажды разойдутся.
+ *    `aria-controls` в `owner.field.aria` и `id` списка, на
+ *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
+ *    разойдутся.
  * 2. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у ListBox.
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
@@ -31,14 +32,15 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * единственным списком со значением; теперь `value` есть и у `TListBox`, и
  * оставить копию значило бы завести две реализации одной мысли.
  *
- * Текст поля (`text`) при этом остаётся здесь — он не про синхронизацию, а
- * про то, что показывать вместо `placeholder`. Тот же текст пишется и в
- * `owner.field.value` — экземпляр `TInput`, которым в шаблоне показывается
- * поле (в любом режиме, не только `editable`): в `single` это текст
- * выбранного, в `multiple` всегда пусто — там значение в тегах.
- * `owner.field.placeholder` следует тому же правилу, что раньше жило в
- * `field_placeholder` фасада: пока в поле есть хоть один тег, плейсхолдер
- * пуст — иначе он проступил бы сквозь них.
+ * Текст выбранного (`text`) при этом считается здесь — он не про
+ * синхронизацию, а про то, что показывать вместо `placeholder`. Он пишется в
+ * `owner.field.value` (экземпляр `TInput`, которым в шаблоне показывается
+ * поле, в любом режиме, не только `editable`): в `single` это текст
+ * выбранного, в `multiple` всегда пусто — там значение в тегах. Наружу `text`
+ * отдаётся только ради возврата поля в `TEditablePlugin`, чтобы формула не
+ * копировалась. `owner.field.placeholder` следует тому же
+ * правилу, что раньше жило в `field_placeholder` фасада: пока в поле есть хоть
+ * один тег, плейсхолдер пуст — иначе он проступил бы сквозь них.
  */
 export class TSelectExtension<
 	TOwner extends ISelect = ISelect,
@@ -76,7 +78,11 @@ export class TSelectExtension<
 		return `s-select-option-${item.uid}`
 	}
 
-	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
+	/**
+	 * Текст выбранного — единственное место его формулы. Не то же, что
+	 * `owner.field.value`: во время набора поле уже переписано вводом, а
+	 * `TEditablePlugin` возвращает в него именно этот текст.
+	 */
 	get text(): string {
 		return this._text
 	}
@@ -90,8 +96,9 @@ export class TSelectExtension<
 		super.install(ctx)
 
 		// Поле ссылается на список, а список существует всегда — в отличие от
-		// панели у Tabs, которой может и не быть
-		this._owner.aria.add('aria-controls', this.listId)
+		// панели у Tabs, которой может и не быть. Пишем в `field.aria`, а не в
+		// `owner.aria`: связку со списком объявляет ARIA поля, а не корня Select.
+		this._owner.field.aria.add('aria-controls', this.listId)
 
 		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
 		// умеет сравнивать с любыми полями, а какое из них показывается
@@ -217,8 +224,14 @@ export class TSelectExtension<
 
 		item.aria.add('id', this.optionId(item))
 
-		// Текст опции виден в поле, пока она выбрана
-		item.events.on('change:text', () => this._syncText())
+		// Текст опции виден в поле, пока она выбрана — переименование выбранной
+		// опции обязано дойти и до текста, и до `owner.field.value`, который его
+		// показывает: раньше здесь пересчитывался только текст, и `field.value`
+		// у уже выбранной опции не замечал переименования.
+		item.events.on('change:text', () => {
+			this._syncText()
+			this._syncFieldValue()
+		})
 	}
 
 	/**
@@ -310,9 +323,6 @@ export class TSelectExtension<
 		const selected = this._selection?.selected ?? []
 		const text = selected.map((item) => item.text).join(', ')
 
-		if (this._text === text) return
-
 		this._text = text
-		this.events.emit('change:text', text)
 	}
 }

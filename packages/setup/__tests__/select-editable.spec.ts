@@ -123,7 +123,9 @@ describe('ввод подсвечивает совпадение', () => {
 
 		expect(owner.open).toBe(true)
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
-		expect(owner.aria.get('aria-activedescendant')).toBe(`s-select-option-${items[1].uid}`)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(
+			`s-select-option-${items[1].uid}`,
+		)
 	})
 
 	it('следует за дальнейшим вводом', async () => {

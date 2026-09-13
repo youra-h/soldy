@@ -8,14 +8,15 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { nextTick, h } from 'vue'
 
 /**
  * `TElementPlugin` отдаёт элемент через `requestAnimationFrame`, поэтому
  * плагины, которым нужен DOM-узел, включаются кадром позже. Ждём кадр.
  */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-import { Select, SelectItem, propsSelect } from '@soldy/ui-vue'
+import { Select, SelectItem, Input, propsSelect } from '@soldy/ui-vue'
+import type { IInput } from '@soldy/core'
 import Harness from './Select.test.vue'
 
 /**
@@ -395,6 +396,36 @@ describe('слоты поля', () => {
 		expect(wrapper.find('.s-select__clear').exists()).toBe(true)
 		expect(wrapper.find('.s-select__arrow').exists()).toBe(true)
 		expect(wrapper.find('.probe-trailing').exists()).toBe(true)
+
+		wrapper.unmount()
+	})
+
+	it('переопределённый field получает экземпляр TInput с role combobox в aria', () => {
+		let received: IInput | null = null
+
+		const wrapper = mount(Select, {
+			props: { name: 'Город' },
+			slots: {
+				field: (scope: { field: IInput }) => {
+					received = scope.field
+					return h('div', { class: 'probe-field' })
+				},
+			},
+			attachTo: document.body,
+		})
+
+		expect(received).not.toBeNull()
+		expect(received!.aria.get('role')).toBe('combobox')
+
+		wrapper.unmount()
+	})
+})
+
+describe('Input вне Select', () => {
+	it('required на readonly-поле объявляет aria-required, браузер такое поле не валидирует', () => {
+		const wrapper = mount(Input, { props: { required: true, readonly: true } })
+
+		expect(wrapper.find('input').attributes('aria-required')).toBe('true')
 
 		wrapper.unmount()
 	})

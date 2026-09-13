@@ -25,7 +25,7 @@ export default { ...SetupInput }
 			:readonly="readonly"
 			:required="required"
 			:placeholder="placeholder"
-			v-bind="controlAttrs"
+			v-bind="{ ...aria, ...controlAttrs }"
 		/>
 		<div v-if="$slots.trailing" class="s-input__trailing">
 			<slot name="trailing" :ctrl="ctrl"> </slot>

@@ -1,7 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { LIST_PROPS } from '../list'
-import type { ISelectItem, TSelectEditableMode } from '@soldy/core'
+import type { IInput, ISelectItem, TSelectEditableMode } from '@soldy/core'
 import type { TEmptySlotScope } from '../../types'
 
 /**
@@ -14,15 +14,15 @@ import type { TEmptySlotScope } from '../../types'
  * `empty` показывается вместо списка, когда опций нет: пустой `listbox` для
  * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
  *
- * `field` отдаёт `text` (выбранное) и `placeholder` (сырой, без поправки на
- * теги) — тем же значениям, что видит проп `Select`, а не тому, что реально
- * стоит во вложенном `Input`: тот владеет собственным экземпляром `field` и
- * его `value`/`placeholder` подстроены под теги отдельно (см.
- * `TSelectExtension`). Кастомный слот собирает разметку сам и в подстройке
- * под теги не нуждается.
+ * `field` отдаёт сам `field` — экземпляр `TInput`, единственный держатель
+ * текста, плейсхолдера и ARIA поля (тем же приёмом, что `:ctrl="field"` у
+ * встроенной разметки, см. `TSelect.field`, `TSelectExtension`). Второго пути
+ * к тем же данным больше нет: раньше слот отдавал `text`/`placeholder`
+ * отдельными пропами, а они дублировали то, что уже есть у `field`, и
+ * `placeholder` при этом расходился с ним — не учитывал теги.
  */
 export type TSelectSlots = {
-	field: { text: string; placeholder: string }
+	field: { field: IInput }
 	leading: TEmptySlotScope
 	clear: TEmptySlotScope
 	'arrow-icon': TEmptySlotScope
@@ -34,8 +34,8 @@ export type TSelectSlots = {
 export const SelectContribution = (): IContribution => ({
 	slots: {
 		field: {
-			scope: { text: defineType<string>(String), placeholder: defineType<string>(String) },
-			description: 'Содержимое поля вместо текста выбранного',
+			scope: { field: defineType<IInput>(Object) },
+			description: 'Содержимое поля вместо встроенного Input',
 		},
 		/**
 		 * `leading` и `trailing` — проброс одноимённых слотов Input: у него

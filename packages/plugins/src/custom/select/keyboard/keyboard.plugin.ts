@@ -115,7 +115,7 @@ export class TSelectKeyboardPlugin
 	protected override onHighlightChanged(uid: string | number | null): void {
 		const id = uid == null ? null : (this._optionElement(uid)?.id ?? null)
 
-		this._owner?.aria.add('aria-activedescendant', id)
+		this._owner?.field.aria.add('aria-activedescendant', id)
 
 		if (uid != null) this._scrollTo(uid)
 	}

@@ -20,7 +20,7 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	readonly listId: string
 	/** `id` элемента с `role="option"`. */
 	optionId(item: TItem): string
-	/** Текст выбранного — то, что показывает поле. */
+	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
 	readonly text: string
 	/** Где стоит отметка выбранной опции — свойство поля, не опции. */
 	readonly indicator: TListIndicator
@@ -40,7 +40,4 @@ export interface ISelectExtensionOptions<
 	owner: TOwner
 }
 
-export type TSelectExtensionEvents = {
-	/** change:text — сменился текст выбранного */
-	'change:text': (value: string) => void
-}
+export type TSelectExtensionEvents = Record<string, never>
