@@ -18,6 +18,7 @@ import {
 	ListHeightPluginDescriptor,
 	SelectEditablePluginDescriptor,
 	SelectKeyboardPluginDescriptor,
+	SelectPointerPluginDescriptor,
 } from '../../plugins'
 
 export const SelectDescriptor = () =>
@@ -38,6 +39,8 @@ export const SelectDescriptor = () =>
 			// Закрытие по нажатию мимо. Общий слой оверлея, им же потом
 			// воспользуются Menu и Popover
 			DismissPluginDescriptor(),
+			// Клик по полю: тумблер в select-only, только стрелка в editable
+			SelectPointerPluginDescriptor(),
 			// Клавиатура APG Combobox: открытие, навигация, Escape, набор по буквам
 			SelectKeyboardPluginDescriptor(),
 			// Ввод текста при editable: search/filter подсвечивают совпадение

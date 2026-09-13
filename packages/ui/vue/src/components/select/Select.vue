@@ -7,16 +7,6 @@ import { Tags } from '../tags'
 import { SelectItem } from './item'
 import SetupSelect from './setup.component'
 
-/**
- * Клик по всему полю, а не только по `<input>`: иначе нажатие на стрелку справа
- * ничего не делало бы. Кнопка очистки внутри останавливает всплытие.
- *
- * Пояснение здесь, а не комментарием над корневым `<div>`, и это не вкусовщина:
- * компилятор SFC сохраняет комментарии в dev-режиме, поэтому комментарий перед
- * корнем делает компонент **многокорневым**. Последствия: Vue перестаёт
- * переносить на него `class`/`style`, а в проде комментарии вырезаются — и
- * разметка ведёт себя иначе, чем в разработке.
- */
 export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags, SelectItem } }
 </script>
 
@@ -27,7 +17,6 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 		v-show="visible"
 		:class="classes"
 		:dir="dir ?? undefined"
-		@click="ctrl.toggleOpen()"
 		v-bind="{ ...dataset, ...containerAttrs }"
 	>
 		<!--

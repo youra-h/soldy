@@ -27,3 +27,14 @@ export const SelectEditableContribution = (): IContribution => ({
 		query: { protected: true, triggers: ['change:query'] },
 	},
 })
+
+/**
+ * Клик по полю Select.
+ *
+ * Ничего не отдаёт наружу: и открытость (`open`), и режим (`editable`) уже
+ * читаются как пропы владельца. Контрибуция нужна лишь для того, чтобы
+ * `create` попал в события, как и у любого плагина.
+ */
+export const SelectPointerContribution = (): IContribution => ({
+	events: [...PLUGIN_EVENTS],
+})

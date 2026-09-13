@@ -608,7 +608,7 @@ describe('editable — ввод текста в поле', () => {
 	})
 
 	it('ставит aria-autocomplete="none" — честный сигнал без обещания автодополнения', () => {
-		const select = new TSelect({ editable: true })
+		const select = new TSelect({ editable: true, editableMode: 'none' })
 
 		expect(select.aria.get('aria-autocomplete')).toBe('none')
 
@@ -695,8 +695,8 @@ describe('editable — ввод текста в поле', () => {
 		expect(editable.openable).toBe(false)
 	})
 
-	describe('toggleOpen в editable только открывает', () => {
-		it('открывает закрытую панель как обычно', () => {
+	describe('toggleOpen — простой тумблер, режим ядру не важен', () => {
+		it('открывает закрытую панель', () => {
 			const select = new TSelect({ editable: true })
 
 			select.toggleOpen()
@@ -704,15 +704,15 @@ describe('editable — ввод текста в поле', () => {
 			expect(select.open).toBe(true)
 		})
 
-		it('не закрывает уже открытую — клик по тексту не должен прятать панель', () => {
+		it('закрывает открытую панель — так же, как в select-only', () => {
 			const select = new TSelect({ editable: true, open: true })
 
 			select.toggleOpen()
 
-			expect(select.open).toBe(true)
+			expect(select.open).toBe(false)
 		})
 
-		it('в select-only toggleOpen закрывает как раньше', () => {
+		it('в select-only toggleOpen работает так же', () => {
 			const select = new TSelect({ open: true })
 
 			select.toggleOpen()
@@ -737,14 +737,14 @@ describe('editable — ввод текста в поле', () => {
 })
 
 describe('editableMode — что делает ввод текста', () => {
-	it('по умолчанию none', () => {
+	it('по умолчанию search', () => {
 		const select = new TSelect()
 
-		expect(select.editableMode).toBe('none')
+		expect(select.editableMode).toBe('search')
 	})
 
 	it('меняется через instance и сообщает об этом ровно раз', () => {
-		const select = new TSelect({ editable: true })
+		const select = new TSelect({ editable: true, editableMode: 'none' })
 		const handler = vi.fn()
 
 		select.events.on('change:editableMode', handler)
@@ -788,7 +788,7 @@ describe('editableMode — что делает ввод текста', () => {
 		})
 
 		it('смена editableMode в рантайме пересчитывает атрибут', () => {
-			const select = new TSelect({ editable: true })
+			const select = new TSelect({ editable: true, editableMode: 'none' })
 
 			expect(select.aria.get('aria-autocomplete')).toBe('none')
 

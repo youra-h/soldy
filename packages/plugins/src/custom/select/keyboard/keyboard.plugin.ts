@@ -9,31 +9,35 @@ import type {
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
+import type { TListEdge } from '../../list/navigation'
+import { TEditableKeyboardStrategy, TSelectOnlyKeyboardStrategy } from './strategies'
+import type { ISelectKeyboardHost, ISelectKeyboardStrategy } from './strategies'
 import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from './types'
 
-const OPENS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '])
-
 /**
- * TSelectKeyboardPlugin — клавиатура поля выбора по паттерну APG Combobox
- * (вариант select-only).
+ * TSelectKeyboardPlugin — клавиатура поля выбора по паттерну APG Combobox.
  *
  * Общая механика — подписка на `keydown`, привязка к коллекции, учёт
- * подсветки, циклический сдвиг — в `TListNavigationPlugin`. Здесь только то,
- * чем combobox отличается от самостоятельного списка.
+ * подсветки, циклический сдвиг — в `TListNavigationPlugin`. Что делают
+ * конкретные клавиши, решает выбранная стратегия (`strategies/`):
+ * `TSelectOnlyKeyboardStrategy` и `TEditableKeyboardStrategy` — обе поверх
+ * общей части `TSelectKeyboardStrategy`. Плагин сам не проверяет
+ * `owner.editable` нигде — режим выражен подпиской на `change:editable`,
+ * которая переключает стратегию, а не веткой внутри обработчика.
  *
  * Ключевое свойство паттерна: **DOM-фокус никогда не уходит с поля**. Поэтому
  * `keydown` слушается на корне Select, а не на списке, и панель может быть
  * телепортирована куда угодно — на навигацию это не влияет. Подсветку для
  * скринридера передаёт `aria-activedescendant` на поле.
- *
- * Отличия от `TListKeyboardPlugin`: открытие и закрытие панели, `Home`/`End`,
- * `Escape`, `Tab`, набор по буквам, пропуск недоступных опций и прокрутка к
- * подсвеченной опции.
  */
-export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboardPluginEvents> {
+export class TSelectKeyboardPlugin
+	extends TListNavigationPlugin<TSelectKeyboardPluginEvents>
+	implements ISelectKeyboardHost
+{
 	private _owner: ISelect | null = null
 	private _elements: TCollectionElements | null = null
 	private _list: IList | null = null
+	private _strategy: ISelectKeyboardStrategy = new TSelectOnlyKeyboardStrategy()
 	private _typeahead = ''
 	private _typeaheadAt = 0
 	private _typeaheadTimeout = 500
@@ -45,6 +49,9 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		this._owner = ctx.getInstance<ISelect>() ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
 		this._list = ctx.getInstance<IList>()
+
+		this._syncStrategy()
+		this._owner?.events.on('change:editable', () => this._syncStrategy())
 
 		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
 		this._owner?.events.on('close', () => this.clearHighlight())
@@ -58,6 +65,13 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		super.destroy()
 	}
 
+	/** Стратегия по режиму `editable` — выбор класса, а не проверка внутри. */
+	private _syncStrategy(): void {
+		this._strategy = this._owner?.editable
+			? new TEditableKeyboardStrategy()
+			: new TSelectOnlyKeyboardStrategy()
+	}
+
 	/**
 	 * Недоступные опции пропускаются: подсветить то, что нельзя выбрать,
 	 * значит завести пользователя в тупик.
@@ -68,13 +82,12 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 
 	/**
 	 * Подсветка сама по открытию не появляется — только по клавиатуре (см.
-	 * `highlightSelected`, вызываемый из `_handleClosed`/`_handleOpen`). Но
-	 * раз подсветка может быть выставлена, а выдача — сузиться под отбором
-	 * (`filter.query`), откуда бы он ни пришёл — из ввода в поле или из кода,
-	 * — нужно следить, чтобы она не осталась на опции, которой на экране
-	 * больше нет. Тогда `Enter` выбрал бы скрытое, а `aria-activedescendant`
-	 * указывал бы в пустоту, поэтому подсветка переезжает на первую из
-	 * оставшихся.
+	 * `highlightSelected`, вызываемый из стратегий). Но раз подсветка может
+	 * быть выставлена, а выдача — сузиться под отбором (`filter.query`),
+	 * откуда бы он ни пришёл — из ввода в поле или из кода, — нужно следить,
+	 * чтобы она не осталась на опции, которой на экране больше нет. Тогда
+	 * `Enter` выбрал бы скрытое, а `aria-activedescendant` указывал бы в
+	 * пустоту, поэтому подсветка переезжает на первую из оставшихся.
 	 *
 	 * Чинит это сам плагин, а не тот, кто поменял отбор: подсветка — его
 	 * состояние, и знать о ней отбору незачем.
@@ -135,148 +148,53 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		if (!owner) return
 
 		if (owner.open) {
-			this._handleOpen(e, owner)
-
-			return
-		}
-
-		this._handleClosed(e, owner)
-	}
-
-	/**
-	 * Закрытая панель. Стрелки и активация открывают; `↑`/`End` при этом
-	 * встают на последнюю опцию — так пользователь попадает в конец списка
-	 * одним нажатием. `Home` встаёт на первую. `ArrowDown`, `Enter` и пробел
-	 * ведут себя одинаково: подсветка встаёт на выбранную опцию, а если
-	 * выбора нет — на первую.
-	 *
-	 * Открытие кликом (или программное) подсветку не ставит вовсе — это
-	 * поведение только клавиатуры.
-	 *
-	 * В `editable` `Home`/`End`/пробел и печатные символы не перехватываются:
-	 * они принадлежат тексту поля, а не навигации по списку.
-	 */
-	private _handleClosed(e: KeyboardEvent, owner: ISelect): void {
-		if (!owner.openable) return
-
-		if (this._opensPanel(e, owner)) {
-			e.preventDefault()
-			owner.open = true
-
-			if (e.key === 'ArrowUp' || e.key === 'End') {
-				this.highlightEdge('last')
-			} else if (e.key === 'Home') {
-				this.highlightEdge('first')
-			} else {
-				this.highlightSelected()
-			}
-
-			return
-		}
-
-		if (!owner.editable && this._isPrintable(e)) {
-			e.preventDefault()
-			owner.open = true
-			this._typeaheadTo(e.key)
+			this._strategy.handleOpen(e, owner, this)
+		} else {
+			this._strategy.handleClosed(e, owner, this)
 		}
 	}
 
-	/**
-	 * Какие клавиши открывают закрытую панель. В `editable` `Home`/`End`/
-	 * пробел исключены — они двигают курсор и печатают в тексте поля.
-	 */
-	private _opensPanel(e: KeyboardEvent, owner: ISelect): boolean {
-		if (!OPENS.has(e.key)) return false
-		if (owner.editable && (e.key === 'Home' || e.key === 'End' || e.key === ' ')) return false
+	/* ---------------------------------------------------------------- */
+	/* ISelectKeyboardHost — публичный контракт для стратегий              */
+	/* ---------------------------------------------------------------- */
 
-		return true
+	navigate(step: number): void {
+		this.move(step)
 	}
 
-	/**
-	 * Открытая панель. `Tab` не перехватываем: он должен увести фокус дальше
-	 * по форме, панель при этом закрывается.
-	 *
-	 * В `editable` `Home`/`End` не двигают подсветку (они двигают курсор в
-	 * тексте), пробел не выбирает подсвеченное (он печатается), а печатные
-	 * символы не запускают набор по буквам — всё это принадлежит тексту поля.
-	 */
-	private _handleOpen(e: KeyboardEvent, owner: ISelect): void {
-		switch (e.key) {
-			case 'ArrowDown':
-				e.preventDefault()
-
-				if (this._highlightedUid == null) {
-					this.highlightSelected()
-				} else {
-					this.move(1)
-				}
-
-				return
-
-			case 'ArrowUp':
-				e.preventDefault()
-				this.move(-1)
-
-				return
-
-			case 'Home':
-				if (owner.editable) break
-				e.preventDefault()
-				this.highlightEdge('first')
-
-				return
-
-			case 'End':
-				if (owner.editable) break
-				e.preventDefault()
-				this.highlightEdge('last')
-
-				return
-
-			case 'Enter':
-				e.preventDefault()
-				this._chooseHighlighted()
-
-				return
-
-			case ' ':
-				if (owner.editable) break
-				e.preventDefault()
-				this._chooseHighlighted()
-
-				return
-
-			case 'Escape':
-				e.preventDefault()
-				owner.open = false
-
-				return
-
-			case 'Tab':
-				owner.open = false
-
-				return
-		}
-
-		if (!owner.editable && this._isPrintable(e)) {
-			e.preventDefault()
-			this._typeaheadTo(e.key)
-		}
+	jumpTo(edge: TListEdge): void {
+		this.highlightEdge(edge)
 	}
 
-	/** Печатный символ, а не сочетание с модификатором. */
-	private _isPrintable(e: KeyboardEvent): boolean {
-		return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
+	chooseHighlighted(): void {
+		if (this._highlightedUid == null) return
+
+		const item = this.itemByUid(this._highlightedUid)
+
+		if (item) this._engine?.extensions?.select?.chooseItem(item)
+	}
+
+	typeaheadTo(char: string): void {
+		const now = Date.now()
+
+		this._typeahead =
+			now - this._typeaheadAt > this._typeaheadTimeout ? char : this._typeahead + char
+		this._typeaheadAt = now
+
+		this.highlightByText(this._typeahead)
+	}
+
+	emitClosedEscape(): void {
+		;(this.events as unknown as { emit(name: 'escape'): void }).emit('escape')
 	}
 
 	/**
 	 * Подсветка встаёт на выбранную опцию — иначе на первую.
 	 *
-	 * Публичный метод: сам плагин зовёт его из клавиатурных обработчиков
-	 * открытия и навигации, а `TEditablePlugin` — при первом открытии панели
-	 * набором фильтра (`editableMode: 'filter'`), где своей клавиатурной
-	 * подсказки нет. Клик и любое другое открытие без явного участника
-	 * подсветку не ставят.
+	 * Публичный метод: стратегии зовут его из закрытия и навигации, а
+	 * `TEditablePlugin` — при первом открытии панели набором фильтра
+	 * (`editableMode: 'filter'`), где своей клавиатурной подсказки нет. Клик и
+	 * любое другое открытие без явного участника подсветку не ставят.
 	 */
 	highlightSelected(): void {
 		const selected = this._engine?.extensions?.selection?.selected?.[0] as
@@ -292,30 +210,11 @@ export class TSelectKeyboardPlugin extends TListNavigationPlugin<TSelectKeyboard
 		this.highlightEdge('first')
 	}
 
-	private _chooseHighlighted(): void {
-		if (this._highlightedUid == null) return
-
-		const item = this.itemByUid(this._highlightedUid)
-
-		if (item) this._engine?.extensions?.select?.chooseItem(item)
-	}
-
-	/** Ищет опцию, чей текст начинается с накопленного буфера. */
-	private _typeaheadTo(char: string): void {
-		const now = Date.now()
-
-		this._typeahead =
-			now - this._typeaheadAt > this._typeaheadTimeout ? char : this._typeahead + char
-		this._typeaheadAt = now
-
-		this.highlightByText(this._typeahead)
-	}
-
 	/**
 	 * Подсветить первую опцию, чей текст начинается с `needle` — без учёта
 	 * регистра. Пустая строка снимает подсветку.
 	 *
-	 * Один алгоритм на два источника: набор с клавиатуры (`_typeaheadTo`) и
+	 * Один алгоритм на два источника: набор с клавиатуры (`typeaheadTo`) и
 	 * ввод в поле в режиме `search` (`TEditablePlugin`) — оба лишь находят
 	 * опцию, подсветка и `aria-activedescendant` остаются здесь, в одной
 	 * точке.

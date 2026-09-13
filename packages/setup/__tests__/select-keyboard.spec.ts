@@ -9,7 +9,7 @@
  * доступный выпадающий список отличается от недоступного.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -324,6 +324,69 @@ describe('открытая панель — выбор и закрытие', () 
 
 		expect(keyboard.highlightedUid).toBeNull()
 		expect(owner.aria.has('aria-activedescendant')).toBe(false)
+	})
+})
+
+/**
+ * Alt+↓/Alt+↑ — жесты APG, общие для обоих режимов `editable`: живут в базовой
+ * стратегии (`TSelectKeyboardStrategy`), а не добавляются отдельно в каждую.
+ */
+describe('Alt — жесты APG', () => {
+	it('Alt+ArrowDown открывает закрытую панель без подсветки', async () => {
+		const { owner, keyboard, press } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown', { altKey: true })
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	it('Alt+ArrowUp на открытой панели выбирает подсвеченное и закрывает', async () => {
+		const { owner, press, items } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown')
+		press('ArrowDown')
+		press('ArrowUp', { altKey: true })
+
+		expect(owner.value).toBe(items[1].value)
+		expect(owner.open).toBe(false)
+	})
+
+	it('в editable тот же жест работает так же', async () => {
+		const { owner, keyboard, press } = await setup(['Москва', 'Тверь'], { editable: true })
+
+		press('ArrowDown', { altKey: true })
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+})
+
+/**
+ * `Escape` на уже закрытой панели ничего не открывает и не выбирает — в
+ * `editable` он сообщает плагину клавиатуры событием `escape`, которое ловит
+ * `TEditablePlugin` (двойной Escape и возврат текста, см. `select-editable.spec.ts`).
+ * В select-only событие не летит вовсе — стратегия его не добавляет.
+ */
+describe('Escape на закрытой панели', () => {
+	it('editable — эмитит escape', async () => {
+		const { keyboard, press } = await setup(['Москва'], { editable: true })
+		const handler = vi.fn()
+
+		keyboard.events.on('escape', handler)
+		press('Escape')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('select-only — событие не эмитится', async () => {
+		const { keyboard, press } = await setup(['Москва'])
+		const handler = vi.fn()
+
+		keyboard.events.on('escape', handler)
+		press('Escape')
+
+		expect(handler).not.toHaveBeenCalled()
 	})
 })
 

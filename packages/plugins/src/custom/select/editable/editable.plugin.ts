@@ -2,6 +2,7 @@ import type {
 	ISelect,
 	IFilterExtension,
 	ISelectExtension,
+	ISelectionExtension,
 	ISelectItem,
 	TCollectionEngine,
 } from '@soldy/core'
@@ -40,24 +41,40 @@ import type { TEditablePluginEvents } from './types'
  * `TInputPlugin` (`el.querySelector('input')`) — разметку и адаптеры трогать
  * не пришлось.
  *
- * На закрытии панели набранное сбрасывается и отбор снимается. Текст
- * выбранного (`engine.extensions.select.text`) плагин возвращает в поле
+ * **Возврат поля** — одна точка (`_returnField`), а не несколько мест,
+ * которые могли бы разойтись. Закрытие панели её не вызывает (владелец
+ * закрывает панель кликом по стрелке, оставляя набранное как есть); точку
+ * вызывают три повода:
+ *
+ * - второй `Escape` на уже закрытой панели (первый только закрывает —
+ *   событие `escape` шлёт клавиатурная стратегия `TEditableKeyboardStrategy`,
+ *   слушать `close` напрямую было бы циклом: клавиатура сама зависит от
+ *   `TSelectKeyboardPlugin`);
+ * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели
+ *   (`data-owner`) — переход внутрь панели ничего не меняет;
+ * - `change:selection` — выбор сменился, и это относится и к самому вводу:
+ *   `single` показывает текст выбранного, `multiple` всегда пуст, потому что
+ *   значение там в тегах, а не в поле, и это верно для обоих режимов ввода.
+ *
+ * Текст выбранного (`engine.extensions.select.text`) плагин возвращает в поле
  * прямой записью в DOM, и это место — самое слабое здесь: значением
  * `<input>` на самом деле владеет вложенный `Input`, его `TInputPlugin`
  * пишет набранное в свой контрол, поэтому ближайший рендер Input вернёт
  * набранное обратно. Реактивным `:value="text"` не обойтись по встречной
  * причине: если текст выбранного не менялся, перерисовки не будет вовсе.
- * Чинится это не здесь, а тем, кто владеет полем, — и до решения владельца
- * оставлено как было.
+ * Чинится это не здесь (заведено отдельной задачей).
  */
 export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	private _owner: ISelect | null = null
+	private _root: HTMLElement | null = null
 	private _keyboard: TSelectKeyboardPlugin | null = null
 	private _engine: TCollectionEngine<any, any> | null = null
 	private _input: HTMLInputElement | null = null
 	private _listening = false
+	private _focusListening = false
 	private _query = ''
 	private readonly _onInput = this._handleInput.bind(this)
+	private readonly _onFocusOut = this._handleFocusOut.bind(this)
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -72,29 +89,46 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 			if (!el) return
 
+			this._root = el
 			this._input = el.querySelector<HTMLInputElement>('input')
 			this._syncListener()
+			this._syncFocusListener()
 		})
 
 		elementPlugin?.events.on('removed', () => {
 			this._unlisten()
+			this._unlistenFocus()
+			this._root = null
 			this._input = null
 		})
 
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
 			this._engine = engine
+
+			// Не про сам ввод, а про то, что поле показывает: вне `editable`
+			// текстом поля управляет разметка (`text` фасада), плагину сюда
+			// вмешиваться незачем
+			this._selectionExtension?.events.on('change:selection', () => {
+				if (this._owner?.editable) this._returnField()
+			})
 		})
 
 		// Оба свойства решают одно: слушать ввод или нет
-		this._owner?.events.on('change:editable', () => this._syncListener())
+		this._owner?.events.on('change:editable', () => {
+			this._syncListener()
+			this._syncFocusListener()
+		})
 		this._owner?.events.on('change:editableMode', () => this._syncListener())
 
-		this._owner?.events.on('close', () => this._reset())
+		// Escape на уже закрытой панели — вторая половина двойного Escape
+		this._keyboard?.events.on('escape', () => this._returnField())
 	}
 
 	override destroy(): void {
 		this._unlisten()
+		this._unlistenFocus()
 
+		this._root = null
 		this._input = null
 		this._owner = null
 		this._keyboard = null
@@ -199,18 +233,81 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	/**
-	 * Панель закрылась — набранное сбрасывается, отбор снимается, поле
-	 * возвращает текст выбранного.
+	 * Слушаем `focusout`, только пока поле принимает ввод — независимо от
+	 * `editableMode`: в select-only фокус на панель не переключается вовсе
+	 * (панель не фокусируемая часть), поэтому там слушать нечего.
 	 */
-	private _reset(): void {
+	private _syncFocusListener(): void {
+		if (this._owner?.editable) {
+			this._listenFocus()
+		} else {
+			this._unlistenFocus()
+		}
+	}
+
+	private _listenFocus(): void {
+		if (this._focusListening || !this._input) return
+
+		this._input.addEventListener('focusout', this._onFocusOut)
+		this._focusListening = true
+	}
+
+	private _unlistenFocus(): void {
+		if (!this._focusListening) return
+
+		this._input?.removeEventListener('focusout', this._onFocusOut)
+		this._focusListening = false
+	}
+
+	/**
+	 * Фокус ушёл — но не в панель: она телепортирована и лежит вне поддерева
+	 * поля, поэтому одного `contains()` мало, вторая граница — `data-owner`
+	 * (тот же приём, что у `TDismissPlugin`).
+	 */
+	private _handleFocusOut(event: FocusEvent): void {
+		if (this._isInside(event.relatedTarget)) return
+
+		this._returnField()
+	}
+
+	private _isInside(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) return false
+		if (this._root?.contains(target)) return true
+
+		const owner = this._owner
+
+		return !!owner && !!target.closest(`[data-owner="${owner.uid}"]`)
+	}
+
+	/**
+	 * Единая точка возврата поля: снимает набранное и отбор, пишет текст
+	 * возврата. Вызывают второй `Escape` на закрытой панели, уход фокуса и
+	 * смена выбора — см. JSDoc класса.
+	 */
+	private _returnField(): void {
 		this._setQuery('')
 		this._filterExtension?.clear()
 
-		if (this._input) this._input.value = this._selectedText()
+		if (this._input) this._input.value = this._fieldText()
 	}
 
 	private get _filterExtension(): IFilterExtension<ISelectItem> | undefined {
 		return this._engine?.extensions?.filter as IFilterExtension<ISelectItem> | undefined
+	}
+
+	private get _selectionExtension(): ISelectionExtension<ISelectItem> | undefined {
+		return this._engine?.extensions?.selection as ISelectionExtension<ISelectItem> | undefined
+	}
+
+	/**
+	 * Текст, который встаёт в поле при возврате. `multiple` всегда пуст —
+	 * значение там показывают теги, а не текст поля; `single` — текст
+	 * выбранного, пусто, если ничего не выбрано.
+	 */
+	private _fieldText(): string {
+		if (this._selectionExtension?.multiple) return ''
+
+		return this._selectedText()
 	}
 
 	private _selectedText(): string {

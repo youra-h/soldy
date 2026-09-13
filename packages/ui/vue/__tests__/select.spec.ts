@@ -75,10 +75,21 @@ describe('поле', () => {
 		expect(field.attributes('readonly')).toBeDefined()
 	})
 
-	it('editable: вложенный input не readonly и объявляет aria-autocomplete="none"', () => {
+	it('editable: вложенный input не readonly', () => {
 		const field = render({ editable: true }).find('input')
 
 		expect(field.attributes('readonly')).toBeUndefined()
+	})
+
+	it('editable по умолчанию в режиме search — aria-autocomplete="list"', () => {
+		const field = render({ editable: true }).find('input')
+
+		expect(field.attributes('aria-autocomplete')).toBe('list')
+	})
+
+	it('editableMode: none объявляет aria-autocomplete="none"', () => {
+		const field = render({ editable: true, editableMode: 'none' }).find('input')
+
 		expect(field.attributes('aria-autocomplete')).toBe('none')
 	})
 
@@ -100,6 +111,7 @@ describe('поле', () => {
 	it('клик открывает панель', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		await nextTick()
@@ -111,6 +123,7 @@ describe('поле', () => {
 	it('ссылается на список — и список этот id носит', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -122,6 +135,7 @@ describe('опции', () => {
 	it('попадают в коллекцию через элеватор и получают роль', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -131,6 +145,7 @@ describe('опции', () => {
 	it('aria-selected стоит на всех, а не только на выбранной', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -140,6 +155,7 @@ describe('опции', () => {
 	it('клик по опции выбирает её и закрывает панель', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		;(options()[1] as HTMLElement).click()
@@ -152,6 +168,7 @@ describe('опции', () => {
 	it('состояние для темы идёт через data-*, а не через aria', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		;(options()[0] as HTMLElement).click()
@@ -171,6 +188,7 @@ describe('опции', () => {
 	it('data-selected и вид кнопки доезжают до .s-button опции', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		;(options()[0] as HTMLElement).click()
@@ -200,6 +218,7 @@ describe('множественный выбор', () => {
 	it('список помечен как multiselectable', async () => {
 		const wrapper = render({ mode: 'multiple' })
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -209,6 +228,7 @@ describe('множественный выбор', () => {
 	it('в одиночном режиме пометки нет', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -222,6 +242,7 @@ describe('множественный выбор', () => {
 	it('выбор рисует тег в поле, а не текст', async () => {
 		const wrapper = render({ mode: 'multiple' })
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		;(options()[0] as HTMLElement).click()
@@ -238,6 +259,7 @@ describe('множественный выбор', () => {
 	it('закрытие тега снимает выбор с опции', async () => {
 		const wrapper = render({ mode: 'multiple' })
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		;(options()[0] as HTMLElement).click()
@@ -267,6 +289,7 @@ describe('панель как телепортированный Frame', () => {
 		// владельца, по которой dismiss отличает нажатие внутрь панели
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
@@ -281,11 +304,10 @@ describe('панель как телепортированный Frame', () => {
 		// её метка владельца и есть вторая граница
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('.s-select').trigger('click')
 		await nextTick()
 		await nextTick()
-
-		await nextFrame()
 
 		const option = document.querySelector('[role="option"]')!
 
@@ -298,11 +320,10 @@ describe('панель как телепортированный Frame', () => {
 	it('нажатие мимо закрывает', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('.s-select').trigger('click')
 		await nextTick()
 		await nextTick()
-
-		await nextFrame()
 
 		document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 		await nextTick()
@@ -470,6 +491,7 @@ describe('отступ панели от поля', () => {
 	it('панель получает offset якоря — координата ниже нижнего края поля', async () => {
 		const wrapper = render()
 
+		await nextFrame()
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 		await nextFrame()

@@ -25,6 +25,9 @@ import AccordionHarness from './Accordion.test.vue'
 import TabsHarness from './TabsContent.test.vue'
 import SelectHarness from './Select.test.vue'
 
+/** `TElementPlugin` отдаёт узел через `requestAnimationFrame` — ждём кадр. */
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+
 describe('Accordion: обёртка несёт data-selected для темы', () => {
 	it('раскрытый элемент помечен data-selected="true", свёрнутый — "false"', () => {
 		const items = mount(AccordionHarness, { attachTo: document.body }).findAll(
@@ -83,6 +86,7 @@ describe('Select: корень несёт data-open для темы', () => {
 
 		expect(root().attributes('data-open')).toBe('false')
 
+		await nextFrame()
 		await root().trigger('click')
 		await nextTick()
 

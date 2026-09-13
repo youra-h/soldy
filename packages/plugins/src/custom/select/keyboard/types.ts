@@ -11,4 +11,11 @@ export interface ISelectKeyboardPluginOptions {
 	typeaheadTimeout?: number
 }
 
-export type TSelectKeyboardPluginEvents = TListNavigationPluginEvents
+export type TSelectKeyboardPluginEvents = TListNavigationPluginEvents & {
+	/**
+	 * `Escape` нажат на уже закрытой панели — только в `editable`. Сам плагин
+	 * ничего не делает: слушает `TEditablePlugin` (двойной Escape и возврат
+	 * текста).
+	 */
+	escape: () => void
+}

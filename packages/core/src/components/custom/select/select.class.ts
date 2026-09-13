@@ -53,7 +53,7 @@ export class TSelect<
 		clearable: false,
 		clearLabel: 'Clear',
 		editable: false,
-		editableMode: 'none',
+		editableMode: 'search',
 		tag: 'div',
 	}
 
@@ -137,13 +137,14 @@ export class TSelect<
 	}
 
 	/**
-	 * В `editable` открывает, но не закрывает: клик по тексту поля ставит
-	 * курсор, и это не повод спрятать панель. Закрытие остаётся за `Escape`,
-	 * выбором опции и нажатием мимо (`TDismissPlugin`).
+	 * Простой тумблер. Кто и когда его зовёт — решает не ядро: в select-only
+	 * это клик по всему полю, в `editable` — только клик по стрелке
+	 * (`TSelectPointerPlugin`), а клик по тексту поля там вообще не доходит
+	 * до `toggleOpen`, потому что ставит курсор, а не открывает панель.
+	 * Закрытие сверх тумблера остаётся за `Escape` и нажатием мимо
+	 * (`TDismissPlugin`).
 	 */
 	toggleOpen(): void {
-		if (this._editable && this._open) return
-
 		this.open = !this._open
 	}
 

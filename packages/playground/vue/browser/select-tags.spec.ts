@@ -50,6 +50,7 @@ const Harness = {
 }
 
 const input = () => document.querySelector('.s-select__field input') as HTMLInputElement
+const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
 const tags = () => [...document.querySelectorAll('.s-tags-item')]
 const options = () => [...document.querySelectorAll('[role="option"]')] as HTMLElement[]
 
@@ -77,12 +78,13 @@ const expectInputInTagRow = () => {
 }
 
 /**
- * Клик по полю — тумблер (`ctrl.toggleOpen()` на корне Select), поэтому кликать
- * перед каждым выбором нельзя: второй клик закроет панель. Открыта она или нет,
+ * В `editable` клик по тексту поля не открывает панель — только клик по
+ * стрелке (`TSelectPointerPlugin`), и он же тумблер, поэтому кликать перед
+ * каждым выбором нельзя: второй клик закроет панель. Открыта она или нет,
  * спрашиваем у самого поля — оно объявляет это через `aria-expanded`.
  */
 const ensureOpen = async () => {
-	if (input().getAttribute('aria-expanded') !== 'true') await userEvent.click(input())
+	if (input().getAttribute('aria-expanded') !== 'true') await userEvent.click(arrow())
 }
 
 /** Добавляет `count` тегов к уже выбранным — выбором опций, как это делает человек. */

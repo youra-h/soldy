@@ -96,7 +96,17 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 		input.dispatchEvent(new Event('input', { bubbles: true }))
 	}
 
-	return { owner, facade, items, keyboard, editable, input, root, type }
+	const press = (key: string, init: KeyboardEventInit = {}) =>
+		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
+
+	/** Фокус ушёл с поля — на произвольный узел или, если не задан, вникуда. */
+	const blurTo = (target?: Element) => {
+		input.dispatchEvent(
+			new FocusEvent('focusout', { bubbles: true, relatedTarget: target ?? null }),
+		)
+	}
+
+	return { owner, facade, items, keyboard, editable, input, root, type, press, blurTo }
 }
 
 afterEach(() => {
@@ -225,12 +235,13 @@ describe('слушатель ввода — только пока он нуже�
 
 		type('т')
 		expect(keyboard.highlightedUid).not.toBeNull()
+		expect(editable.query).toBe('т')
 
-		owner.open = false
 		owner.editable = false
 		type('мо')
 
-		expect(editable.query).toBe('')
+		// слушатель снят — новый ввод до query не доходит
+		expect(editable.query).toBe('т')
 	})
 
 	it('editable включили на ходу — плагин подписался', async () => {
@@ -270,23 +281,44 @@ describe('query — плагин помнит набранное', () => {
 	})
 })
 
-describe('закрытие панели', () => {
-	it('сбрасывает набранное и возвращает в поле текст выбранного', async () => {
-		const { owner, items, input, type } = await setup(['Москва', 'Тверь'])
+/**
+ * Закрытие панели саму по себе поле не трогает — набранное остаётся, а
+ * закрыть панель можно и без намерения что-то вернуть (клик по стрелке).
+ * Возврат поля — двойной `Escape`: первый только закрывает, второй (уже на
+ * закрытой панели) снимает набранное и отбор, пишет текст возврата.
+ */
+describe('двойной Escape', () => {
+	it('первый закрывает панель и не трогает набранное, второй возвращает текст выбранного', async () => {
+		const { owner, items, input, type, press } = await setup(['Москва', 'Тверь'])
 
 		owner.value = items[0].value
 		owner.open = true
-
 		type('те')
 		expect(input.value).toBe('те')
 
-		owner.open = false
+		press('Escape')
+		expect(owner.open).toBe(false)
+		expect(input.value).toBe('те')
 
+		press('Escape')
 		expect(input.value).toBe(items[0].text)
 	})
 
-	it('снимает отбор', async () => {
-		const { owner, facade, type } = await setup(['Москва', 'Тверь'], {
+	it('без выбора — второй Escape очищает поле', async () => {
+		const { owner, input, type, press } = await setup(['Москва'])
+
+		owner.open = true
+		type('мо')
+
+		press('Escape')
+		expect(input.value).toBe('мо')
+
+		press('Escape')
+		expect(input.value).toBe('')
+	})
+
+	it('снимает отбор вторым Escape, не первым', async () => {
+		const { owner, facade, type, press } = await setup(['Москва', 'Тверь'], {
 			editableMode: 'filter',
 		})
 
@@ -294,21 +326,94 @@ describe('закрытие панели', () => {
 		type('тв')
 		expect(facade.shown.length).toBe(1)
 
-		owner.open = false
+		press('Escape')
+		expect(facade.engine.extensions.filter.query).toBe('тв')
+		expect(facade.shown.length).toBe(1)
 
+		press('Escape')
 		expect(facade.engine.extensions.filter.query).toBe('')
 		expect(facade.shown.length).toBe(2)
 	})
 
-	it('без выбора — поле возвращается к пустой строке', async () => {
-		const { owner, editable, input, type } = await setup(['Москва'])
+	it('закрытие кликом по стрелке (программное open=false) оставляет набранное', async () => {
+		const { owner, input, type } = await setup(['Москва'])
 
 		owner.open = true
 		type('мо')
 
 		owner.open = false
 
-		expect(input.value).toBe('')
-		expect(editable.query).toBe('')
+		expect(input.value).toBe('мо')
+	})
+})
+
+/**
+ * `focusout` — вторая точка входа в тот же возврат: фокус ушёл совсем, а не
+ * переключился на телепортированную панель (`data-owner`).
+ */
+describe('уход фокуса', () => {
+	it('фокус ушёл вникуда — поле возвращается к тексту выбранного', async () => {
+		const { owner, items, input, type, blurTo } = await setup(['Москва', 'Тверь'])
+
+		owner.value = items[0].value
+		type('те')
+
+		blurTo()
+
+		expect(input.value).toBe(items[0].text)
+	})
+
+	it('переход в панель (data-owner) поле не трогает', async () => {
+		const { owner, input, type, blurTo } = await setup(['Москва'])
+
+		type('мо')
+
+		const panel = document.createElement('div')
+
+		panel.setAttribute('data-owner', String(owner.uid))
+		document.body.appendChild(panel)
+
+		blurTo(panel)
+
+		expect(input.value).toBe('мо')
+	})
+
+	it('переход внутрь корня поле не трогает', async () => {
+		const { root, input, type, blurTo } = await setup(['Москва'])
+
+		type('мо')
+		blurTo(root)
+
+		expect(input.value).toBe('мо')
+	})
+})
+
+/**
+ * Выбор изменился — то же возвратное поведение: `single` показывает
+ * выбранное сразу, `multiple` остаётся пустым после каждого выбора,
+ * независимо от `editableMode`.
+ */
+describe('смена выбора', () => {
+	it('single — поле показывает выбранное сразу, не дожидаясь закрытия', async () => {
+		const { owner, items, input } = await setup(['Москва', 'Тверь'])
+
+		owner.value = items[1].value
+
+		expect(input.value).toBe(items[1].text)
+	})
+
+	it('multiple — поле пустеет после каждого выбора, в search и в filter', async () => {
+		for (const editableMode of ['search', 'filter'] as const) {
+			const { facade, items, input, type } = await setup(['Москва', 'Тверь'], {
+				editableMode,
+			})
+
+			facade.mode = 'multiple'
+			type('мо')
+
+			facade.engine.extensions.select.chooseItem(items[0])
+
+			expect(input.value).toBe('')
+		}
 	})
 })
