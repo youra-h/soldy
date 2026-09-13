@@ -11,6 +11,7 @@ import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../.
 import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
+import type { TSelectTagsExtension } from '../tags'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
 import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents } from './types'
 
@@ -31,7 +32,13 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * оставить копию значило бы завести две реализации одной мысли.
  *
  * Текст поля (`text`) при этом остаётся здесь — он не про синхронизацию, а
- * про то, что показывать вместо `placeholder`.
+ * про то, что показывать вместо `placeholder`. Тот же текст пишется и в
+ * `owner.field.value` — экземпляр `TInput`, которым в шаблоне показывается
+ * поле (в любом режиме, не только `editable`): в `single` это текст
+ * выбранного, в `multiple` всегда пусто — там значение в тегах.
+ * `owner.field.placeholder` следует тому же правилу, что раньше жило в
+ * `field_placeholder` фасада: пока в поле есть хоть один тег, плейсхолдер
+ * пуст — иначе он проступил бы сквозь них.
  */
 export class TSelectExtension<
 	TOwner extends ISelect = ISelect,
@@ -146,6 +153,17 @@ export class TSelectExtension<
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
 			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
 		}
+
+		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
+		// живёт всё время, пока `multiple`, даже без единого тега. `tags` в
+		// `SELECT_OWNER_EXTENSIONS` установлен раньше `select` специально ради
+		// этого — `ctx.extensions.tags` здесь уже существует, и его подписка
+		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
+		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
+		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
+
+		this._syncFieldPlaceholder()
+		this._syncFieldValue()
 	}
 
 	/**
@@ -183,6 +201,10 @@ export class TSelectExtension<
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
 		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
+	}
+
+	private get _tags(): TSelectTagsExtension<ISelect, TItem> | undefined {
+		return this._ctx?.extensions.tags as TSelectTagsExtension<ISelect, TItem> | undefined
 	}
 
 	private _onItemAdded(item: TItem): void {
@@ -227,6 +249,27 @@ export class TSelectExtension<
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
 		this._syncText()
+		this._syncFieldValue()
+		this._syncFieldPlaceholder()
+	}
+
+	/**
+	 * Текст в `owner.field` — в любом режиме, не только `editable`: в
+	 * select-only поле тоже показывает выбранное, только не даёт его
+	 * редактировать. `multiple` всегда пуст — значение там в тегах, а не в
+	 * поле.
+	 */
+	private _syncFieldValue(): void {
+		this._owner.field.value = this._selection?.multiple ? '' : this._text
+	}
+
+	/**
+	 * Плейсхолдер `owner.field` — пуст, пока в поле есть хоть один тег: родной
+	 * плейсхолдер иначе проступил бы сквозь них, потому что `field.value` в
+	 * этом случае тоже пуст.
+	 */
+	private _syncFieldPlaceholder(): void {
+		this._owner.field.placeholder = this._tags?.hasTags ? '' : this._owner.placeholder
 	}
 
 	/**

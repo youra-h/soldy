@@ -195,13 +195,13 @@ describe('ввод в поле под отбором', () => {
 	/**
 	 * Двойной Escape: первый закрывает панель и набранное не трогает — второй,
 	 * уже на закрытой панели, возвращает поле (снимает отбор, пишет текст
-	 * выбранного). Про сам текст в `<input>` здесь не проверяется, и это не
-	 * упущение: значением `<input>` владеет вложенный `Input`, его `TInputPlugin`
-	 * пишет набранное в собственный контрол, и ближайший рендер Input перетирает
-	 * то, что `TEditablePlugin` положил в DOM напрямую — известная дыра, не
-	 * закрытая этой задачей.
+	 * выбранного в `owner.field.value`). Поле — отдельный экземпляр `TInput`
+	 * (`field`), которым владеет Select и который вложенный `Input` получает
+	 * через `:ctrl`, поэтому запись реально меняет значение и `<input>`
+	 * перерисовывается сам — раньше на этом месте была прямая запись в DOM,
+	 * которую перетирал ближайший рендер `Input`.
 	 */
-	it('первый Escape закрывает панель и не трогает отбор, второй — снимает', async () => {
+	it('первый Escape закрывает панель и не трогает отбор, второй — снимает и возвращает текст', async () => {
 		const engine = await renderSelect({
 			editable: true,
 			editableMode: 'filter',
@@ -217,6 +217,7 @@ describe('ввод в поле под отбором', () => {
 
 		expect(engine.extensions.filter.query).toBe('тре')
 		expect(texts()).toEqual(['Третий'])
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('тре')
 
 		await wrapper!.trigger('keydown', { key: 'Escape' })
 		await nextTick()
@@ -225,6 +226,73 @@ describe('ввод в поле под отбором', () => {
 		expect(texts()).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый'])
 		// выбор фильтр не трогал
 		expect(engine.extensions.selection.selectedCount).toBe(1)
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Первый')
+	})
+
+	/**
+	 * Баг из ленты задачи: `single`, набранный текст ни с чем не совпадает,
+	 * двойной Escape возвращает поле пустым, но следующий рендер (стрелка вниз
+	 * открывает панель) возвращал набранное обратно — второй копией владел
+	 * вложенный `Input`. Теперь копия одна (`field`), и лишнему рендеру
+	 * неоткуда взять старый текст.
+	 */
+	it('несовпавший текст, Esc, Esc, ↓ — поле остаётся пустым', async () => {
+		await renderSelect({ editable: true })
+
+		await nextFrame()
+		await type('несуществующий текст')
+
+		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await nextTick()
+		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await nextTick()
+
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
+
+		await wrapper!.trigger('keydown', { key: 'ArrowDown' })
+		await nextTick()
+
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
+	})
+
+	/**
+	 * Баг из ленты задачи: `multiple`, выбор по Enter добавляет тег, но текст
+	 * («Пер») оставался в поле и после перерисовки (открылась панель, появился
+	 * тег) — снова две копии значения. `TSelectExtension` чистит поле на
+	 * `change:selection` сама, независимо от `editableMode`.
+	 */
+	it('multiple: Enter добавляет тег и очищает поле, включая перерисовку', async () => {
+		await renderSelect({ editable: true, mode: 'multiple' })
+
+		await nextFrame()
+		await type('Пер')
+		await nextTick()
+
+		await wrapper!.trigger('keydown', { key: 'Enter' })
+		await nextTick()
+		await nextTick()
+
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
+		expect(wrapper!.findAll('.s-tags-item').length).toBe(1)
+	})
+
+	/**
+	 * `single`: набрали текст заново поверх уже выбранной опции и нажали
+	 * Enter на той же, подсвеченной, опции — выбор фактически не меняется, но
+	 * поле обязано вернуться к тексту выбранного, а не остаться с набранным.
+	 */
+	it('single: Enter на уже выбранной опции возвращает её текст в поле', async () => {
+		const engine = await renderSelect({ editable: true, value: 'c' })
+
+		await nextFrame()
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Третий')
+
+		await type('Тре')
+		await wrapper!.trigger('keydown', { key: 'Enter' })
+		await nextTick()
+
+		expect(engine.extensions.selection.selectedCount).toBe(1)
+		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Третий')
 	})
 })
 

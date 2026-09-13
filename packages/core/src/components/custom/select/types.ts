@@ -7,6 +7,7 @@ import type {
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TAriaAttributes } from '../../../common'
 import type { IList, IListProps, TListEvents } from '../list'
+import type { IInput } from '../input'
 import type { ISelectCollectionProps } from './collection/types'
 import type { ISelectItem, ISelectItemProps } from './item/types'
 
@@ -120,4 +121,10 @@ export interface ISelect<
 	toggleOpen(): void
 	/** Можно ли сейчас открыть панель */
 	readonly openable: boolean
+	/**
+	 * Поле ввода — экземпляр `TInput`, единственный владелец текста и
+	 * плейсхолдера, которые видит пользователь. Не меняется за время жизни
+	 * Select, событий `change:` у геттера нет.
+	 */
+	readonly field: IInput
 }

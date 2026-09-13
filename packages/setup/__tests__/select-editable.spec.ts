@@ -301,7 +301,9 @@ describe('двойной Escape', () => {
 		expect(input.value).toBe('те')
 
 		press('Escape')
-		expect(input.value).toBe(items[0].text)
+		// Возврат пишет `owner.field.value`, а не DOM напрямую — значением
+		// `<input>` в реальном рендере владеет вложенный `Input`
+		expect(owner.field.value).toBe(items[0].text)
 	})
 
 	it('без выбора — второй Escape очищает поле', async () => {
@@ -314,7 +316,7 @@ describe('двойной Escape', () => {
 		expect(input.value).toBe('мо')
 
 		press('Escape')
-		expect(input.value).toBe('')
+		expect(owner.field.value).toBe('')
 	})
 
 	it('снимает отбор вторым Escape, не первым', async () => {
@@ -353,14 +355,14 @@ describe('двойной Escape', () => {
  */
 describe('уход фокуса', () => {
 	it('фокус ушёл вникуда — поле возвращается к тексту выбранного', async () => {
-		const { owner, items, input, type, blurTo } = await setup(['Москва', 'Тверь'])
+		const { owner, items, type, blurTo } = await setup(['Москва', 'Тверь'])
 
 		owner.value = items[0].value
 		type('те')
 
 		blurTo()
 
-		expect(input.value).toBe(items[0].text)
+		expect(owner.field.value).toBe(items[0].text)
 	})
 
 	it('переход в панель (data-owner) поле не трогает', async () => {
@@ -389,22 +391,24 @@ describe('уход фокуса', () => {
 })
 
 /**
- * Выбор изменился — то же возвратное поведение: `single` показывает
- * выбранное сразу, `multiple` остаётся пустым после каждого выбора,
- * независимо от `editableMode`.
+ * Выбор изменился — текст поля пишет сама `TSelectExtension` (`owner.field`),
+ * не этот плагин: `single` показывает выбранное сразу, `multiple` остаётся
+ * пустым после каждого выбора, независимо от `editableMode`. Плагину
+ * остаётся сбросить то, что относится только к вводу — набранное и отбор
+ * (последний тест ниже).
  */
 describe('смена выбора', () => {
 	it('single — поле показывает выбранное сразу, не дожидаясь закрытия', async () => {
-		const { owner, items, input } = await setup(['Москва', 'Тверь'])
+		const { owner, items } = await setup(['Москва', 'Тверь'])
 
 		owner.value = items[1].value
 
-		expect(input.value).toBe(items[1].text)
+		expect(owner.field.value).toBe(items[1].text)
 	})
 
 	it('multiple — поле пустеет после каждого выбора, в search и в filter', async () => {
 		for (const editableMode of ['search', 'filter'] as const) {
-			const { facade, items, input, type } = await setup(['Москва', 'Тверь'], {
+			const { owner, facade, items, type } = await setup(['Москва', 'Тверь'], {
 				editableMode,
 			})
 
@@ -413,7 +417,21 @@ describe('смена выбора', () => {
 
 			facade.engine.extensions.select.chooseItem(items[0])
 
-			expect(input.value).toBe('')
+			expect(owner.field.value).toBe('')
 		}
+	})
+
+	it('сбрасывает набранное и отбор, текст поля уже написан расширением', async () => {
+		const { owner, facade, items, type } = await setup(['Москва', 'Тверь'], {
+			editableMode: 'filter',
+		})
+
+		type('мо')
+		expect(facade.engine.extensions.filter.query).toBe('мо')
+
+		facade.engine.extensions.select.chooseItem(items[0])
+
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(owner.field.value).toBe(items[0].text)
 	})
 })

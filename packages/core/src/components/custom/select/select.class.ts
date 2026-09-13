@@ -1,9 +1,12 @@
 import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import { TEvented } from '../../../common'
-import type { TAriaAttributes, TScrollBehavior } from '../../../common'
+import type { TAriaAttributes, TScrollBehavior, TValuePayload } from '../../../common'
+import type { TComponentSize, TComponentVariant } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { TListContentFit, TListIndicator } from '../list'
+import { TInput } from '../input'
+import type { IInput } from '../input'
 import type {
 	ISelect,
 	ISelectProps,
@@ -33,6 +36,14 @@ import type {
  * (см. `custom/list/types.ts`), реализованный здесь своей копией: общего предка
  * у списка и поля выбора быть не может. Копии сверяет
  * `core/__tests__/list-contract.spec.ts`.
+ *
+ * `value`/`name`/`readonly`/`required` от `TInputControl` — про сам Select
+ * (`div[role=combobox]`), не про то, что пользователь видит внутри поля. Тем,
+ * что видно — текстом и плейсхолдером, — владеет отдельный инстанс `TInput`
+ * (`field`): Select создаёт его один раз и синхронизирует с ним общие
+ * свойства (`disabled`, `size`, `variant`, `readonly`, `required`, `name`,
+ * `id`). Второго значения поля рядом с этим не заводим — единственный
+ * держатель текста это и есть `field`.
  */
 export class TSelect<
 	TProps extends ISelectProps = ISelectProps,
@@ -68,6 +79,7 @@ export class TSelect<
 	protected _indicator!: TListIndicator
 	protected _editable!: boolean
 	protected _editableMode!: TSelectEditableMode
+	protected readonly _field: IInput
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
 		super(props, options)
@@ -110,6 +122,44 @@ export class TSelect<
 		this.events.on('change:disabled', () => this._syncOpenable())
 
 		this._syncOpenable()
+
+		// Поле — экземпляр `TInput`, которым владеет Select, а не второе
+		// значение рядом со своим `value`. Шаблон передаёт его целиком через
+		// `ctrl` (`<Input :ctrl="field">`), как `tags` передаётся в `<Tags>`.
+		// Пишут в него: `TInputPlugin` — набранное, `TSelectExtension` —
+		// текст выбранного, `TEditablePlugin` — возврат текста. Двух копий
+		// значения поля с этим больше нет.
+		this._field = new TInput({
+			disabled: this.disabled,
+			size: this.size,
+			variant: this.variant,
+			readonly: this.readonly,
+			required: this.required,
+			name: this.name,
+			id: this.id,
+		})
+
+		this.events.on('change:disabled', (value: boolean) => (this._field.disabled = value))
+		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+			this._field.size = payload.newValue
+		})
+		this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
+			this._field.variant = payload.newValue
+		})
+		this.events.on('change:readonly', (value: boolean) => (this._field.readonly = value))
+		this.events.on('change:required', (value: boolean) => (this._field.required = value))
+		this.events.on('change:name', (value: string) => (this._field.name = value))
+		this.events.on('change:id', (value: string) => (this._field.id = value))
+	}
+
+	/**
+	 * Поле ввода — экземпляр `TInput`, единственный владелец текста и
+	 * плейсхолдера, которые видит пользователь. Не меняется за время жизни
+	 * Select, поэтому `change:`-события у геттера нет: инстанс один и тот же,
+	 * меняется только его собственное состояние.
+	 */
+	get field(): IInput {
+		return this._field
 	}
 
 	/**

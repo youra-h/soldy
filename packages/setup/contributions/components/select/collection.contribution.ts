@@ -34,22 +34,6 @@ export const SelectCollectionContribution = (): IContribution => ({
 		tags: { type: Object, protected: true, triggers: ['change:tags'] },
 		/** Коллекция тегов — то, что `<Tags :engine="...">` берёт готовым. */
 		tags_engine: { type: Object, protected: true, triggers: ['change:tags'] },
-		/**
-		 * Плейсхолдер поля с поправкой на теги: пока они есть, родной
-		 * `placeholder` инпута проступил бы сквозь них — его `value`
-		 * (`text`) в режиме тегов тоже пуст.
-		 *
-		 * `change:selection` в триггерах — про состав тегов. `change:tags`
-		 * сообщает только о появлении и исчезновении самого инстанса, то есть о
-		 * смене режима; выбор опции его не поднимает, и подсказка не гасла бы
-		 * под уже выбранными тегами. `change:text` тут не годится: в `multiple`
-		 * текст поля всегда пуст, и событие не возникает вовсе.
-		 */
-		field_placeholder: {
-			type: String,
-			protected: true,
-			triggers: ['change:tags', 'change:selection', 'change:placeholder'],
-		},
 	},
 })
 

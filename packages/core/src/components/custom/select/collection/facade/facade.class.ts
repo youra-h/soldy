@@ -41,7 +41,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 
 		this.events.relay(this._select.events, ['change:text'])
 		this.events.relay(this._tags.events, ['change:tags'])
-		this.events.relay(this._select.owner.events, ['change:placeholder'])
 
 		this.applyProps(props)
 	}
@@ -72,15 +71,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	/** Коллекция инстанса тегов — то, что `<Tags :engine="...">` берёт готовым. */
 	get tags_engine(): TTagsCollection | null {
 		return this._tags.engine
-	}
-
-	/**
-	 * Плейсхолдер поля с поправкой на теги: пока они есть, поле показывает их,
-	 * а не текст — родной `placeholder` инпута в этом случае проступил бы
-	 * сквозь них, потому что его `value` (то есть `text`) тоже пуст.
-	 */
-	get field_placeholder(): string {
-		return this._tags.hasTags ? '' : this._select.owner.placeholder
 	}
 
 	/**

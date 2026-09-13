@@ -26,6 +26,14 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			(`role="combobox"`, `aria-expanded`, `aria-controls`,
 			`aria-activedescendant`) оказывается ровно там, где нужен.
 
+			`:ctrl="field"`, а не набор пропов: текст и плейсхолдер, которые
+			видит пользователь, принадлежат отдельному экземпляру `TInput`
+			(`field`), которым владеет Select (см. `TSelect.field`,
+			`TSelectExtension`). Рядом `:value` не ставить ни в каком виде —
+			тогда снова завелись бы две копии значения поля. `disabled`,
+			`size`, `variant`, `readonly`, `required`, `name`, `id` тоже несёт
+			инстанс: Select синхронизирует их с ним сам.
+
 			`readonly` вложенного `Input` — обычный `readonly` Select, которым
 			управляет `editable`. В select-only (`editable: false`, по
 			умолчанию) поле остаётся readonly; `editable: true` снимает его и
@@ -41,15 +49,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 		<slot name="field" :text="text" :placeholder="placeholder">
 			<Input
 				class="s-select__field"
-				:value="text"
-				:name="name"
-				:placeholder="field_placeholder"
-				:id="id"
-				:disabled="disabled"
-				:required="required"
-				:size="size"
-				:variant="variant"
-				:readonly="readonly"
+				:ctrl="field"
 				v-bind="{ ...aria, ...controlAttrs }"
 			>
 				<!-- Слоты Input пробрасываются наружу как есть -->

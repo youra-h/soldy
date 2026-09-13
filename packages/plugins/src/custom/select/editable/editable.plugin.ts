@@ -41,28 +41,30 @@ import type { TEditablePluginEvents } from './types'
  * `TInputPlugin` (`el.querySelector('input')`) — разметку и адаптеры трогать
  * не пришлось.
  *
- * **Возврат поля** — одна точка (`_returnField`), а не несколько мест,
- * которые могли бы разойтись. Закрытие панели её не вызывает (владелец
- * закрывает панель кликом по стрелке, оставляя набранное как есть); точку
- * вызывают три повода:
+ * **Возврат поля** — одна точка (`_returnField`), которая пишет
+ * `owner.field.value` — экземпляр `TInput`, которым владеет Select (не
+ * `<input>` напрямую: DOM больше нигде здесь не трогается). Закрытие панели
+ * её не вызывает (владелец закрывает панель кликом по стрелке, оставляя
+ * набранное как есть); точку вызывают два повода:
  *
  * - второй `Escape` на уже закрытой панели (первый только закрывает —
  *   событие `escape` шлёт клавиатурная стратегия `TEditableKeyboardStrategy`,
  *   слушать `close` напрямую было бы циклом: клавиатура сама зависит от
  *   `TSelectKeyboardPlugin`);
  * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели
- *   (`data-owner`) — переход внутрь панели ничего не меняет;
- * - `change:selection` — выбор сменился, и это относится и к самому вводу:
- *   `single` показывает текст выбранного, `multiple` всегда пуст, потому что
- *   значение там в тегах, а не в поле, и это верно для обоих режимов ввода.
+ *   (`data-owner`) — переход внутрь панели ничего не меняет.
  *
- * Текст выбранного (`engine.extensions.select.text`) плагин возвращает в поле
- * прямой записью в DOM, и это место — самое слабое здесь: значением
- * `<input>` на самом деле владеет вложенный `Input`, его `TInputPlugin`
- * пишет набранное в свой контрол, поэтому ближайший рендер Input вернёт
- * набранное обратно. Реактивным `:value="text"` не обойтись по встречной
- * причине: если текст выбранного не менялся, перерисовки не будет вовсе.
- * Чинится это не здесь (заведено отдельной задачей).
+ * `change:selection` сюда не входит: текст выбранного (`single`) и очистку
+ * поля (`multiple`) на смену выбора пишет сама `TSelectExtension` —
+ * `owner.field.value` меняется реактивно, и вложенный `Input` перерисуется
+ * сам. Этому плагину на смену выбора остаётся сбросить то, что относится
+ * только к вводу: набранное (`query`) и отбор (`filter`) — иначе после
+ * выбора в `multiple` панель осталась бы сужена прежним запросом.
+ *
+ * Реакция на сам ввод (`_handleInput`) слушает DOM-событие `input`
+ * вложенного `<input>`, а не `change:value` у `field`: `_returnField` тоже
+ * пишет в `field.value`, и слушай плагин это событие, собственная запись
+ * возврата запустила бы повторный поиск и открыла панель.
  */
 export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	private _owner: ISelect | null = null
@@ -105,11 +107,12 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
 			this._engine = engine
 
-			// Не про сам ввод, а про то, что поле показывает: вне `editable`
-			// текстом поля управляет разметка (`text` фасада), плагину сюда
-			// вмешиваться незачем
+			// Текст поля на смену выбора пишет `TSelectExtension` сама
+			// (`owner.field.value`). Плагину остаётся то, что относится
+			// только к вводу: набранное и отбор — иначе выбор в `multiple`
+			// оставил бы панель суженной прежним запросом.
 			this._selectionExtension?.events.on('change:selection', () => {
-				if (this._owner?.editable) this._returnField()
+				if (this._owner?.editable) this._resetQuery()
 			})
 		})
 
@@ -281,14 +284,19 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 	/**
 	 * Единая точка возврата поля: снимает набранное и отбор, пишет текст
-	 * возврата. Вызывают второй `Escape` на закрытой панели, уход фокуса и
-	 * смена выбора — см. JSDoc класса.
+	 * возврата в `owner.field.value`. Вызывают второй `Escape` на закрытой
+	 * панели и уход фокуса — см. JSDoc класса.
 	 */
 	private _returnField(): void {
+		this._resetQuery()
+
+		if (this._owner) this._owner.field.value = this._fieldText()
+	}
+
+	/** Сбросить только набранное и отбор, не трогая текст поля. */
+	private _resetQuery(): void {
 		this._setQuery('')
 		this._filterExtension?.clear()
-
-		if (this._input) this._input.value = this._fieldText()
 	}
 
 	private get _filterExtension(): IFilterExtension<ISelectItem> | undefined {

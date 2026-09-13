@@ -13,9 +13,16 @@ import type { TEmptySlotScope } from '../../types'
  *
  * `empty` показывается вместо списка, когда опций нет: пустой `listbox` для
  * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
+ *
+ * `field` отдаёт `text` (выбранное) и `placeholder` (сырой, без поправки на
+ * теги) — тем же значениям, что видит проп `Select`, а не тому, что реально
+ * стоит во вложенном `Input`: тот владеет собственным экземпляром `field` и
+ * его `value`/`placeholder` подстроены под теги отдельно (см.
+ * `TSelectExtension`). Кастомный слот собирает разметку сам и в подстройке
+ * под теги не нуждается.
  */
 export type TSelectSlots = {
-	field: TEmptySlotScope
+	field: { text: string; placeholder: string }
 	leading: TEmptySlotScope
 	clear: TEmptySlotScope
 	'arrow-icon': TEmptySlotScope
@@ -26,7 +33,10 @@ export type TSelectSlots = {
 
 export const SelectContribution = (): IContribution => ({
 	slots: {
-		field: { description: 'Содержимое поля вместо текста выбранного' },
+		field: {
+			scope: { text: defineType<string>(String), placeholder: defineType<string>(String) },
+			description: 'Содержимое поля вместо текста выбранного',
+		},
 		/**
 		 * `leading` и `trailing` — проброс одноимённых слотов Input: у него
 		 * они уже есть, и заводить своё было бы вторым способом делать то же

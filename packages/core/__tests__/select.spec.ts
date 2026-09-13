@@ -399,6 +399,62 @@ describe('text — что показывает поле', () => {
 	})
 })
 
+/**
+ * `field` — единственный держатель текста и плейсхолдера поля: экземпляр
+ * `TInput`, которым владеет Select. Второй копии значения рядом с этим не
+ * заводим (см. AGENTS.md, раздел про Select) — писать в `<input>` напрямую
+ * не пришлось.
+ */
+describe('field — экземпляр TInput, которым владеет Select', () => {
+	it('существует и не меняется за время жизни Select', () => {
+		const select = new TSelect()
+
+		expect(select.field).toBeInstanceOf(TInput)
+		expect(select.field).toBe(select.field)
+	})
+
+	it('получает disabled/size/readonly от Select при создании', () => {
+		const select = new TSelect({ disabled: true, size: 'lg', editable: true })
+
+		expect(select.field.disabled).toBe(true)
+		expect(select.field.size).toBe('lg')
+		expect(select.field.readonly).toBe(false)
+	})
+
+	it('следует за сменой disabled/size/readonly', () => {
+		const select = new TSelect()
+
+		select.disabled = true
+		expect(select.field.disabled).toBe(true)
+
+		select.size = 'lg'
+		expect(select.field.size).toBe('lg')
+
+		select.editable = true
+		expect(select.field.readonly).toBe(false)
+	})
+
+	it('value следует за выбором в single', () => {
+		const { owner, facadeFor } = createSelect(['a', 'b'])
+
+		expect(owner.field.value).toBe('')
+
+		facadeFor(0).choose()
+
+		expect(owner.field.value).toBe('A')
+	})
+
+	it('value в multiple всегда пуст', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		expect(owner.field.value).toBe('')
+	})
+})
+
 describe('id элемента формы', () => {
 	/**
 	 * Живёт в `TInputControl`, а не в Select: на поле ссылаются `<label for>`,
@@ -511,15 +567,15 @@ describe('теги в multiple', () => {
 	 * проверка по нему гасила подсказку у пустого поля.
 	 */
 	it('плейсхолдер гаснет только когда тег реально появился', () => {
-		const { collection, facadeFor } = createSelect(['a', 'b'], { placeholder: 'Выберите' })
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { placeholder: 'Выберите' })
 
 		collection.mode = 'multiple'
 
-		expect(collection.field_placeholder).toBe('Выберите')
+		expect(owner.field.placeholder).toBe('Выберите')
 
 		facadeFor(0).choose()
 
-		expect(collection.field_placeholder).toBe('')
+		expect(owner.field.placeholder).toBe('')
 	})
 
 	it('выбор опции даёт тег с её текстом', () => {
