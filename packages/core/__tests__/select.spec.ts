@@ -865,6 +865,53 @@ describe('editableMode — что делает ввод текста', () => {
 	})
 })
 
+/**
+ * Смена режима выбора на лету. Движок (`TSelectionExtension.mode`) сам
+ * оставляет первый выбранный элемент при переходе в `single` — это уместно
+ * для ListBox и Accordion, но не для Select: несколько тегов не должны молча
+ * схлопнуться в один выбранный пункт. Поэтому `TSelectExtension` досбрасывает
+ * выбор целиком.
+ */
+describe('смена mode на лету', () => {
+	it('multiple -> single при двух выбранных сбрасывает выбор целиком', () => {
+		const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		collection.mode = 'single'
+
+		expect(collection.selected).toEqual([])
+		expect(owner.value).toBeUndefined()
+		expect(owner.field.value).toBe('')
+		items.forEach((item) => expect(item.aria.get('aria-selected')).toBe('false'))
+	})
+
+	it('multiple -> single при одном выбранном тоже сбрасывает', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		collection.mode = 'single'
+
+		expect(collection.selected).toEqual([])
+		expect(owner.value).toBeUndefined()
+	})
+
+	it('single -> multiple выбор оставляет', () => {
+		const { collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+
+		collection.mode = 'multiple'
+
+		expect(collection.selected).toHaveLength(1)
+		expect(collection.selected[0].value).toBe('a')
+	})
+})
+
 describe('removeOnBackspace — удаление тегов по Backspace', () => {
 	it('по умолчанию выключено', () => {
 		const select = new TSelect()
