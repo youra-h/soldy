@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { COMPONENTS } from '../src/registry'
-import { describeProp, optionsForProp, controlKind, NON_EDITABLE } from '../src/props'
+import { describeProp, optionsForProp, controlKind, NON_EDITABLE, PRESETS } from '../src/props'
 
 /**
  * Пропы, которые стенд показывает как редактируемые.
@@ -53,6 +53,46 @@ describe('манифест покрывает контракт', () => {
 			expect(broken).toEqual([])
 		},
 	)
+})
+
+/**
+ * Пресеты строк ссылаются на пропы по имени, как и описания. Переименуй
+ * `removeOnBackspace` или `mode` в компоненте — и строка молча перестала бы
+ * выставлять то, без чего её проп не виден: ошибки нет, переключатель есть,
+ * эффекта нет.
+ */
+describe('пресеты строк', () => {
+	it.each(Object.entries(PRESETS))('%s: пресеты ссылаются на настоящие пропы', (id, rows) => {
+		const entry = COMPONENTS.find((candidate) => candidate.id === id)
+
+		expect(entry, `нет компонента «${id}»`).toBeDefined()
+
+		const props = new Map(editableProps(entry!).map((prop) => [prop.name.name, prop]))
+		const broken: string[] = []
+
+		for (const [row, preset] of Object.entries(rows)) {
+			if (!props.has(row)) broken.push(`строка ${row}`)
+
+			for (const [name, value] of Object.entries(preset)) {
+				const prop = props.get(name)
+
+				if (!prop) {
+					broken.push(`${row} → ${name}`)
+					continue
+				}
+
+				// Значение перечислимого пропа — из его же списка, иначе пресет
+				// выставил бы то, чего компонент не знает
+				const options = optionsForProp(id, name)
+
+				if (options && !options.includes(value as string)) {
+					broken.push(`${row} → ${name}=${String(value)}`)
+				}
+			}
+		}
+
+		expect(broken).toEqual([])
+	})
 })
 
 describe('реестр', () => {

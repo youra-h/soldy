@@ -170,6 +170,28 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 }
 
 /**
+ * Что ещё выставить превью на строке пропа, чтобы сам проп было видно.
+ *
+ * Строка правит одно свойство, остальные остаются по умолчанию. Большинству
+ * пропов этого хватает, но не тем, что работают только в сочетании:
+ * `removeOnBackspace` без `editable` и `multiple` не делает ничего, и строка
+ * показала бы переключатель, который ни на что не влияет.
+ *
+ * Пресет — только для своей строки. Глобальный дефолт превью (как `editable`
+ * у Select) перевёл бы в `multiple` и все соседние строки, а `closeOnSelect`
+ * в одиночном выборе и во множественном выглядит по-разному.
+ */
+export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = {
+	select: {
+		removeOnBackspace: { editable: true, mode: 'multiple' },
+	},
+}
+
+export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
+	return PRESETS[componentId]?.[prop] ?? {}
+}
+
+/**
  * `ctrl` — не свойство компонента, а способ отдать ему готовый экземпляр ядра.
  * Стенд им и пользуется во второй колонке, поэтому в список редактируемых
  * пропов он не идёт.
@@ -246,5 +268,6 @@ export function propControl(
 		options: optionsForProp(componentId, name),
 		description: describeProp(componentId, name) ?? '',
 		default: defaults[name],
+		preset: presetForProp(componentId, name),
 	}
 }

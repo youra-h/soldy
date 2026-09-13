@@ -68,3 +68,35 @@ describe('propSnippet', () => {
 		expect(code).toContain(':mode="\'multiple\'"')
 	})
 })
+
+/**
+ * Пресет строки — соседние пропы, без которых её проп не виден. Превью их
+ * получает, и код обязан тоже: иначе вставленный пример не повторит стенд.
+ */
+describe('пресет строки', () => {
+	const select = COMPONENTS.find((entry) => entry.id === 'select')!
+	const preset = { editable: true, mode: 'multiple' }
+
+	it('propSnippet пишет пресет рядом с самим пропом', () => {
+		const code = propSnippet(select, 'removeOnBackspace', true, preset)
+
+		expect(code).toContain(
+			'<Select :editable="true" :mode="\'multiple\'" :removeOnBackspace="true" />',
+		)
+	})
+
+	it('instanceSnippet пишет пресет разметкой рядом с ctrl', () => {
+		const code = instanceSnippet(
+			select,
+			control({ name: 'removeOnBackspace', scope: 'component', preset }),
+			true,
+		)
+
+		expect(code).toContain('instance.removeOnBackspace = true')
+		expect(code).toContain('<Select :editable="true" :mode="\'multiple\'" :ctrl="instance" />')
+	})
+
+	it('без пресета разметка прежняя', () => {
+		expect(propSnippet(select, 'open', true)).toContain('<Select :open="true" />')
+	})
+})

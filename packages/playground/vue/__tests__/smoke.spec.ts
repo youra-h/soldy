@@ -240,3 +240,47 @@ describe('свойства коллекции', () => {
 		wrapper.unmount()
 	})
 })
+
+/**
+ * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`.
+ *
+ * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
+ * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
+ * есть чему не сработать. Признаки — теги (есть только в `multiple`) и
+ * снятый `readonly` у поля (снимает только `editable`).
+ */
+describe('пресет строки', () => {
+	const rowOf = (wrapper: ReturnType<typeof mount>, name: string) =>
+		wrapper.findAll('.pg-prop').find((row) => row.find('.pg-prop__name').text() === name)!
+
+	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const stages = rowOf(wrapper, 'removeOnBackspace').findAll('.pg-col__stage')
+
+		expect(stages).toHaveLength(2)
+
+		for (const stage of stages) {
+			expect(stage.find('.s-select__tags').exists()).toBe(true)
+			expect(stage.find('.s-select__field input').attributes('readonly')).toBeUndefined()
+		}
+
+		wrapper.unmount()
+	})
+
+	it('соседние строки пресет не получают', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
+
+		await nextTick()
+		await nextFrame()
+
+		for (const stage of rowOf(wrapper, 'closeOnSelect').findAll('.pg-col__stage')) {
+			expect(stage.find('.s-select__tags').exists()).toBe(false)
+		}
+
+		wrapper.unmount()
+	})
+})
