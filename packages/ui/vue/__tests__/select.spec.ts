@@ -88,10 +88,10 @@ describe('поле', () => {
 		expect(field.attributes('aria-autocomplete')).toBe('list')
 	})
 
-	it('editableMode: none объявляет aria-autocomplete="none"', () => {
+	it('editableMode: none тоже объявляет aria-autocomplete="list"', () => {
 		const field = render({ editable: true, editableMode: 'none' }).find('input')
 
-		expect(field.attributes('aria-autocomplete')).toBe('none')
+		expect(field.attributes('aria-autocomplete')).toBe('list')
 	})
 
 	it('без required атрибута нет', () => {
