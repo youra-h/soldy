@@ -18,8 +18,13 @@ export default { ...SetupTags, components: { TagsItem } }
 			<!--
 				Слоты элементов статические и получают элемент через scope —
 				динамические имена резолвит только Vue (см. ListBox/Tabs).
+
+				`shown`, а не `items`: это то, что осталось после отбора.
+				Скрытый элемент размонтируется, но из коллекции не исчезает —
+				составом владеют данные, а не разметка (см. `owned` в
+				`TCollectionExtension`). Снятие фильтра возвращает его на место.
 			-->
-			<TagsItem v-for="item in items" :key="item.uid" :ctrl="item">
+			<TagsItem v-for="item in shown" :key="item.uid" :ctrl="item">
 				<template #leading>
 					<slot name="item-leading" :item="item" />
 				</template>

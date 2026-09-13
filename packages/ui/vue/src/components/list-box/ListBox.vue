@@ -21,7 +21,7 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 				Слоты элементов статические и получают элемент через scope —
 				динамические имена резолвит только Vue (см. Tabs.vue).
 			-->
-			<ListBoxItem v-for="item in items" :key="item.uid" :ctrl="item">
+			<ListBoxItem v-for="item in shown" :key="item.uid" :ctrl="item">
 				<template #leading>
 					<slot name="item-leading" :item="item" />
 				</template>
