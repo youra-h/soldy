@@ -663,10 +663,10 @@ describe('editable — ввод текста в поле', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('ставит aria-autocomplete="none" — честный сигнал без обещания автодополнения', () => {
+	it('ставит aria-autocomplete="list" — режим на атрибут не влияет', () => {
 		const select = new TSelect({ editable: true, editableMode: 'none' })
 
-		expect(select.field.aria.get('aria-autocomplete')).toBe('none')
+		expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 
 		select.editable = false
 
@@ -818,17 +818,17 @@ describe('editableMode — что делает ввод текста', () => {
 		expect(select.getProps().editableMode).toBe('filter')
 	})
 
-	describe('aria-autocomplete — по паре editable × editableMode', () => {
+	describe('aria-autocomplete — по editable, режим не влияет', () => {
 		it('editable: false — атрибута нет, независимо от режима', () => {
 			const select = new TSelect({ editable: false, editableMode: 'search' })
 
 			expect(select.field.aria.has('aria-autocomplete')).toBe(false)
 		})
 
-		it('editable: true, editableMode: none — "none"', () => {
+		it('editable: true, editableMode: none — "list"', () => {
 			const select = new TSelect({ editable: true, editableMode: 'none' })
 
-			expect(select.field.aria.get('aria-autocomplete')).toBe('none')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 
 		it('editable: true, editableMode: search — "list"', () => {
@@ -843,10 +843,10 @@ describe('editableMode — что делает ввод текста', () => {
 			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 
-		it('смена editableMode в рантайме пересчитывает атрибут', () => {
+		it('смена editableMode в рантайме не меняет атрибут — он всегда "list"', () => {
 			const select = new TSelect({ editable: true, editableMode: 'none' })
 
-			expect(select.field.aria.get('aria-autocomplete')).toBe('none')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 
 			select.editableMode = 'search'
 

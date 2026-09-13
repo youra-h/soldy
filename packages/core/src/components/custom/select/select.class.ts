@@ -127,9 +127,9 @@ export class TSelect<
 		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
 
 		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
-		// `_editableMode` — до `_applyEditable`: он пересчитывает
-		// `aria-autocomplete` через `_syncAutocomplete()`, которому уже нужно
-		// готовое значение режима.
+		// `_editableMode` — до `_applyEditable`: тот вызывает
+		// `_syncAutocomplete()`, и на момент вызова режим должен быть уже
+		// установлен (сам `aria-autocomplete` от режима не зависит).
 		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
 		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace!
@@ -276,12 +276,13 @@ export class TSelect<
 
 	/**
 	 * Что делает ввод текста при `editable: true`. Реакцию на сам ввод несёт
-	 * `TEditablePlugin` — здесь только состояние с тремя значениями и
-	 * `aria-autocomplete`, которое от него зависит.
+	 * `TEditablePlugin` — здесь только состояние с тремя значениями. На
+	 * `aria-autocomplete` режим не влияет: при `editable` он всегда `"list"`.
 	 *
 	 * `search` — совпадение подсвечивается, список остаётся целым; `filter` —
 	 * несовпавшие опции скрываются (`filter.query` коллекции); `none` — ввод
-	 * не делает ничего, плагин в этом режиме даже не слушает поле.
+	 * не делает ничего сам, но приложение может слушать значение поля и
+	 * подменять список (например, серверный поиск).
 	 */
 	get editableMode(): TSelectEditableMode {
 		return this._editableMode
@@ -420,11 +421,11 @@ export class TSelect<
 
 	/**
 	 * `aria-autocomplete`. Не `editable` — атрибута нет вовсе: поле не
-	 * принимает текст, обещать автодополнение нечему. `editable` с режимом
-	 * `none` — `"none"`, честный сигнал, что текст принимается, но без
-	 * подсказок. `search`/`filter` — `"list"`: панель на вводе открывается и
-	 * совпадение объявляется через `aria-activedescendant`, то есть подсказка
-	 * скринридеру уже есть.
+	 * принимает текст, обещать автодополнение нечему. `editable` — всегда
+	 * `"list"`, независимо от режима: даже при `none` список зависит от
+	 * набранного текста (это делает само приложение, встроенный поиск
+	 * выключен), и панель на вводе открывается, совпадение объявляется через
+	 * `aria-activedescendant`.
 	 */
 	protected _syncAutocomplete(): void {
 		if (!this._editable) {
@@ -433,7 +434,7 @@ export class TSelect<
 			return
 		}
 
-		this._field.aria.add('aria-autocomplete', this._editableMode === 'none' ? 'none' : 'list')
+		this._field.aria.add('aria-autocomplete', 'list')
 	}
 
 	/**
