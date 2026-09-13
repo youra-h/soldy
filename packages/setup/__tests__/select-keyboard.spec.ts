@@ -469,6 +469,21 @@ describe('набор по буквам', () => {
 
 		expect(keyboard.highlightedUid).toBe(items[0].uid)
 	})
+
+	/**
+	 * Набор по буквам ищет только начало текста (WAI-ARIA), в отличие от
+	 * ввода в поле `editable` в режиме `search` — там ищут подстроку в любом
+	 * месте (см. `select-editable.spec.ts`).
+	 */
+	it('подстрока не с начала текста не находится', async () => {
+		const { keyboard, press } = await setup(['Первый', 'Второй', 'Третий'])
+
+		press('ArrowDown')
+		press('о')
+		press('р')
+
+		expect(keyboard.highlightedUid).toBeNull()
+	})
 })
 
 /**

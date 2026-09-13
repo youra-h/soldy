@@ -5,10 +5,12 @@
  *
  * Три состояния задаёт `editableMode` (ядро), реакцию на ввод — этот плагин,
  * по функции на режим: `search` переносит подсветку через
- * `TSelectKeyboardPlugin.highlightByText` (тот же алгоритм, что и у набора по
- * буквам с клавиатуры), `filter` отдаёт набранное в `filter.query` коллекции.
- * Слушателя `input` плагин держит только пока вводу есть на что влиять —
- * `editable: true` и режим не `none`.
+ * `TSelectKeyboardPlugin.highlightByText` — тем же методом, что и у набора по
+ * буквам с клавиатуры, но со сравнением по вхождению подстроки без учёта
+ * регистра, а не по началу строки (см. `select-keyboard.spec.ts` — там набор
+ * по буквам ищет только начало), `filter` отдаёт набранное в `filter.query`
+ * коллекции. Слушателя `input` плагин держит только пока вводу есть на что
+ * влиять — `editable: true` и режим не `none`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -147,6 +149,16 @@ describe('ввод подсвечивает совпадение', () => {
 		type('тzzz')
 
 		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	it('ищет по подстроке в любом месте текста, без учёта регистра', async () => {
+		const { keyboard, items, type } = await setup(['Первый', 'Второй', 'Третий'])
+
+		type('ОР')
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+
+		type('вт')
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 })
 
