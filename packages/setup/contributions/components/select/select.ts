@@ -73,6 +73,7 @@ export const SelectContribution = (): IContribution => ({
 			type: defineType<TSelectEditableMode>(String),
 			triggers: ['change:editableMode'],
 		},
+		removeOnBackspace: { type: Boolean, triggers: ['change:removeOnBackspace'] },
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.

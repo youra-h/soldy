@@ -91,6 +91,8 @@ const OWN: Record<string, Record<string, string>> = {
 		editable: 'Можно ли вводить текст в поле. Выключено — режим select-only',
 		editableMode:
 			'Что делает ввод текста при editable: ничего, подсветка совпадения или фильтрация',
+		removeOnBackspace:
+			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -165,6 +167,28 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	tags: { view: BUTTON_VIEWS },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
+}
+
+/**
+ * Что ещё выставить превью на строке пропа, чтобы сам проп было видно.
+ *
+ * Строка правит одно свойство, остальные остаются по умолчанию. Большинству
+ * пропов этого хватает, но не тем, что работают только в сочетании:
+ * `removeOnBackspace` без `editable` и `multiple` не делает ничего, и строка
+ * показала бы переключатель, который ни на что не влияет.
+ *
+ * Пресет — только для своей строки. Глобальный дефолт превью (как `editable`
+ * у Select) перевёл бы в `multiple` и все соседние строки, а `closeOnSelect`
+ * в одиночном выборе и во множественном выглядит по-разному.
+ */
+export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = {
+	select: {
+		removeOnBackspace: { editable: true, mode: 'multiple' },
+	},
+}
+
+export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
+	return PRESETS[componentId]?.[prop] ?? {}
 }
 
 /**
@@ -244,5 +268,6 @@ export function propControl(
 		options: optionsForProp(componentId, name),
 		description: describeProp(componentId, name) ?? '',
 		default: defaults[name],
+		preset: presetForProp(componentId, name),
 	}
 }

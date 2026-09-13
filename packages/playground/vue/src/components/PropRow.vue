@@ -104,7 +104,9 @@ watch(value, write)
 
 onUnmounted(() => instance.value.destroy?.())
 
+// Пресет первым: собственное значение строки его перекрывает, а не наоборот
 const propBind = computed(() => ({
+	...props.control.preset,
 	...(value.value === undefined || value.value === ''
 		? {}
 		: { [props.control.name]: value.value }),
@@ -113,6 +115,10 @@ const propBind = computed(() => ({
 }))
 
 const instanceBind = computed(() => ({
+	// Пресет разметкой, рядом с `ctrl`: адаптер пишет написанные пропы и в
+	// инстанс, и в фасад коллекции (`useSyncProps.passedNames`), а `mode`
+	// у компонентной строки иначе записать некуда — своего движка у неё нет
+	...props.control.preset,
 	ctrl: instance.value,
 	// Отдаём собственный движок пропом — компонент допривяжет к нему свой
 	// `owner` сам, а `engine:create`, который он при этом эмитит, идёт в общий
@@ -151,7 +157,7 @@ const instanceBind = computed(() => ({
 				</div>
 				<CodeView
 					:name="`${entry.label}-${control.name}`"
-					:code="propSnippet(entry, control.name, value)"
+					:code="propSnippet(entry, control.name, value, control.preset)"
 				/>
 			</div>
 

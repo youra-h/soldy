@@ -12,6 +12,11 @@ export type TPropControl = {
 	/** Значение по умолчанию из `ctor.defaultValues`. */
 	default?: unknown
 	/**
+	 * Соседние пропы, без которых этот не виден (`removeOnBackspace` требует
+	 * `editable` и `multiple`). Превью строки получает их вместе с самим пропом.
+	 */
+	preset?: Record<string, unknown>
+	/**
 	 * Кому проп принадлежит.
 	 *
 	 * Пропом его задают одинаково — Vue-компонент склеивает оба набора. А вот

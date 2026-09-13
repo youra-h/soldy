@@ -864,3 +864,30 @@ describe('editableMode — что делает ввод текста', () => {
 		})
 	})
 })
+
+describe('removeOnBackspace — удаление тегов по Backspace', () => {
+	it('по умолчанию выключено', () => {
+		const select = new TSelect()
+
+		expect(select.removeOnBackspace).toBe(false)
+	})
+
+	it('меняется через instance и сообщает об этом ровно раз', () => {
+		const select = new TSelect()
+		const handler = vi.fn()
+
+		select.events.on('change:removeOnBackspace', handler)
+		select.removeOnBackspace = true
+		select.removeOnBackspace = true
+
+		expect(select.removeOnBackspace).toBe(true)
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	it('getProps отдаёт removeOnBackspace', () => {
+		const select = new TSelect({ removeOnBackspace: true })
+
+		expect(select.getProps().removeOnBackspace).toBe(true)
+	})
+})

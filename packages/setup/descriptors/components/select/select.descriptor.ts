@@ -16,6 +16,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	ListHeightPluginDescriptor,
+	SelectBackspacePluginDescriptor,
 	SelectEditablePluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 	SelectPointerPluginDescriptor,
@@ -46,5 +47,8 @@ export const SelectDescriptor = () =>
 			// Ввод текста при editable: search/filter подсвечивают совпадение
 			// через клавиатурный плагин выше — подключается после него
 			SelectEditablePluginDescriptor(),
+			// Удаление тегов по Backspace в пустом поле — editable + multiple,
+			// включается свойством removeOnBackspace
+			SelectBackspacePluginDescriptor(),
 		],
 	})

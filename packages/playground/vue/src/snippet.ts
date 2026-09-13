@@ -5,17 +5,24 @@ import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
  *
  * Импорт один и настоящий — код можно вставить в проект и он заработает. Ради
  * этого же в сниппете нет ничего от стенда: ни реактивных обёрток, ни хелперов.
+ *
+ * `preset` — соседние пропы, без которых этот не виден (см. `presetForProp`).
+ * Превью строки их получает, значит и код обязан: без них вставленный пример
+ * показал бы переключатель, который ни на что не влияет.
  */
-export function propSnippet(entry: TComponentEntry, prop: string, value: unknown): string {
-	const literal = toTemplateValue(value)
-
+export function propSnippet(
+	entry: TComponentEntry,
+	prop: string,
+	value: unknown,
+	preset: Record<string, unknown> = {},
+): string {
 	return [
 		'<script setup lang="ts">',
 		`import { ${entry.label} } from '@soldy/ui-vue'`,
 		'</script>',
 		'',
 		'<template>',
-		`\t<${entry.label} ${literal === null ? prop : `:${prop}="${literal}"`} />`,
+		`\t<${entry.label}${presetAttrs(preset)} ${attr(prop, value)} />`,
 		'</template>',
 	].join('\n')
 }
@@ -34,11 +41,16 @@ export function propSnippet(entry: TComponentEntry, prop: string, value: unknown
  */
 export function instanceSnippet(entry: TComponentEntry, control: TPropControl, value: unknown): string {
 	return control.scope === 'collection'
-		? collectionInstanceSnippet(entry, control.name, value)
-		: componentInstanceSnippet(entry, control.name, value)
+		? collectionInstanceSnippet(entry, control.name, value, control.preset)
+		: componentInstanceSnippet(entry, control.name, value, control.preset)
 }
 
-function componentInstanceSnippet(entry: TComponentEntry, prop: string, value: unknown): string {
+function componentInstanceSnippet(
+	entry: TComponentEntry,
+	prop: string,
+	value: unknown,
+	preset?: Record<string, unknown>,
+): string {
 	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
 	const literal = toTemplateValue(value) ?? 'true'
 
@@ -53,7 +65,7 @@ function componentInstanceSnippet(entry: TComponentEntry, prop: string, value: u
 		'</script>',
 		'',
 		'<template>',
-		`\t<${entry.label} :ctrl="instance" />`,
+		`\t<${entry.label}${presetAttrs(preset)} :ctrl="instance" />`,
 		'</template>',
 	].join('\n')
 }
@@ -68,7 +80,12 @@ function componentInstanceSnippet(entry: TComponentEntry, prop: string, value: u
  * `PropRow.vue` для собственного фасада стенда — появись когда-нибудь другой
  * коллекционный проп вне `selection`, оба места придётся поправить вместе.
  */
-function collectionInstanceSnippet(entry: TComponentEntry, prop: string, value: unknown): string {
+function collectionInstanceSnippet(
+	entry: TComponentEntry,
+	prop: string,
+	value: unknown,
+	preset?: Record<string, unknown>,
+): string {
 	const literal = toTemplateValue(value) ?? 'true'
 
 	return [
@@ -82,9 +99,27 @@ function collectionInstanceSnippet(entry: TComponentEntry, prop: string, value: 
 		'</script>',
 		'',
 		'<template>',
-		`\t<${entry.label} :engine="engine" />`,
+		`\t<${entry.label}${presetAttrs(preset)} :engine="engine" />`,
 		'</template>',
 	].join('\n')
+}
+
+/**
+ * Пропы пресета разметкой, каждый с ведущим пробелом. Во второй колонке тоже
+ * разметкой, а не записью в инстанс: так их передаёт и сам стенд, а `mode`
+ * у компонентной строки в инстанс и не записать — он живёт на коллекции.
+ */
+function presetAttrs(preset: Record<string, unknown> = {}): string {
+	return Object.entries(preset)
+		.map(([name, value]) => ` ${attr(name, value)}`)
+		.join('')
+}
+
+/** Один проп в шаблоне: без значения — голым именем, иначе через `:`. */
+function attr(name: string, value: unknown): string {
+	const literal = toTemplateValue(value)
+
+	return literal === null ? name : `:${name}="${literal}"`
 }
 
 /** Значение так, как его пишут в шаблоне. `null` — проп без значения. */

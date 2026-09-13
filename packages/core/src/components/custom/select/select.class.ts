@@ -65,6 +65,7 @@ export class TSelect<
 		clearLabel: 'Clear',
 		editable: false,
 		editableMode: 'search',
+		removeOnBackspace: false,
 		tag: 'div',
 	}
 
@@ -79,6 +80,7 @@ export class TSelect<
 	protected _indicator!: TListIndicator
 	protected _editable!: boolean
 	protected _editableMode!: TSelectEditableMode
+	protected _removeOnBackspace!: boolean
 	protected readonly _field: IInput
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -103,6 +105,7 @@ export class TSelect<
 		// готовое значение режима.
 		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
+		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace!
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
 		this._applyReadonly(!this._editable)
@@ -283,6 +286,23 @@ export class TSelect<
 		;(this.events as TEvented<TSelectEvents>).emit('change:editableMode', value)
 	}
 
+	/**
+	 * Удалять ли выбранные теги по `Backspace` в пустом поле. По умолчанию
+	 * `false` — реакцию на клавишу несёт отдельный плагин
+	 * (`TSelectBackspacePlugin`), который слушает и это свойство, и `editable`,
+	 * и режим выбора коллекции; здесь только хранится значение.
+	 */
+	get removeOnBackspace(): boolean {
+		return this._removeOnBackspace
+	}
+
+	set removeOnBackspace(value: boolean) {
+		if (this._removeOnBackspace === value) return
+
+		this._removeOnBackspace = value
+		;(this.events as TEvented<TSelectEvents>).emit('change:removeOnBackspace', value)
+	}
+
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
 	get maxRows(): number {
 		return this._maxRows
@@ -456,6 +476,7 @@ export class TSelect<
 			clearLabel: this._clearLabel,
 			editable: this._editable,
 			editableMode: this._editableMode,
+			removeOnBackspace: this._removeOnBackspace,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,
