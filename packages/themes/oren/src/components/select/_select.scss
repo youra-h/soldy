@@ -168,9 +168,6 @@
 	// `data-highlighted` / `data-selected` (см. `Item.vue`). Здесь остаётся
 	// только то, что миксин не даёт: начертание выбранной опции.
 	&[data-selected='true'] {
-		.s-button {
-			@apply font-medium;
-		}
 	}
 
 	&[aria-disabled='true'] {
