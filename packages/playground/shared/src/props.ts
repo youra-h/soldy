@@ -91,6 +91,8 @@ const OWN: Record<string, Record<string, string>> = {
 		editable: 'Можно ли вводить текст в поле. Выключено — режим select-only',
 		editableMode:
 			'Что делает ввод текста при editable: ничего, подсветка совпадения или фильтрация',
+		removeOnBackspace:
+			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 	},
 	'list-box': {
 		view: 'Оформление списка',

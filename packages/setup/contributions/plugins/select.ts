@@ -38,3 +38,14 @@ export const SelectEditableContribution = (): IContribution => ({
 export const SelectPointerContribution = (): IContribution => ({
 	events: [...PLUGIN_EVENTS],
 })
+
+/**
+ * Удаление тегов по `Backspace` в пустом поле Select.
+ *
+ * Ничего не отдаёт наружу: включает ли механизм состояние, целиком читается
+ * через `owner.removeOnBackspace`. Контрибуция нужна лишь для того, чтобы
+ * `create` попал в события, как и у любого плагина.
+ */
+export const SelectBackspaceContribution = (): IContribution => ({
+	events: [...PLUGIN_EVENTS],
+})

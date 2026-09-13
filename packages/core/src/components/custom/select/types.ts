@@ -54,6 +54,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:editable': (value: boolean) => void
 		/** change:editableMode */
 		'change:editableMode': (value: TSelectEditableMode) => void
+		/** change:removeOnBackspace */
+		'change:removeOnBackspace': (value: boolean) => void
 	}
 
 /**
@@ -83,6 +85,13 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	 * По умолчанию `none`.
 	 */
 	editableMode?: TSelectEditableMode
+	/**
+	 * Удалять ли выбранные теги по `Backspace` в пустом поле. Действует
+	 * только вместе с `editable: true` и множественным выбором; по умолчанию
+	 * выключено. Первое нажатие в пустом поле лишь взводит механизм, второе и
+	 * каждое следующее подряд удаляет последний тег.
+	 */
+	removeOnBackspace?: boolean
 }
 
 /** Полный набор props: собственные + коллекционные. */
@@ -113,6 +122,11 @@ export interface ISelect<
 	editable: boolean
 	/** Что делает ввод текста при `editable: true`. Без него не действует */
 	editableMode: TSelectEditableMode
+	/**
+	 * Удалять ли выбранные теги по `Backspace` в пустом поле. Действует
+	 * только вместе с `editable` и множественным выбором; по умолчанию `false`.
+	 */
+	removeOnBackspace: boolean
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */

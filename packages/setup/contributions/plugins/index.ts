@@ -2,6 +2,7 @@ export {
 	SelectKeyboardContribution,
 	SelectEditableContribution,
 	SelectPointerContribution,
+	SelectBackspaceContribution,
 } from './select'
 export { DismissContribution } from './dismiss'
 export type { TDismissPluginProps } from './dismiss'
