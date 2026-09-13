@@ -402,6 +402,7 @@ TCollectionItemComponent
 | ----------------------------------------------------------------------- | -------------------------------- |
 | список элементов, длина, поиск, индекс                                  | `engine.extensions.batch.items`  |
 | `item:added` / `item:removed` / `item:moved` / `reset` / `change:items` | `engine.extensions.plain.events` |
+| `item:add:before` / `item:update:before` / `item:remove:before` / `item:move:before` / `items:clear:before` | `engine.extensions.plain.events` |
 | вставка, удаление, перемещение, обновление                              | `engine.extensions.plain`        |
 | замена набора целиком                                                   | `engine.extensions.batch`        |
 
@@ -417,6 +418,33 @@ relay и порядок, который расширения выстраива�
 
 Сторожит `packages/setup/__tests__/driver-access.spec.ts`: `.driver` вне
 расширений ядра — падающий тест, а не замечание на ревью.
+
+### Изменить или отменить операцию коллекции — подписка на `*:before`, а не правка движка
+
+Вставка, обновление, удаление, перемещение и очистка несут перед мутацией
+хранилища объект события (`TInsertEvent`, `TUpdateEvent`, `TRemoveEvent`,
+`TMoveEvent`, `TClearEvent`) и шлют `item:add:before` / `item:update:before` /
+`item:remove:before` / `item:move:before` / `items:clear:before`. Подписчик
+может подменить данные (`e.item`, `e.changes`, `e.newIndex`) или отменить
+операцию целиком через `e.preventDefault()` — после этого хранилище не
+меняется и after-событие (`item:added`, `item:updated`, `item:removed`,
+`item:moved`) не шлётся вовсе.
+
+Это и есть штатный способ повлиять на операцию коллекции. Не подключайтесь к
+`driver` напрямую и не правьте команды движка ради частного случая — нужный
+хук уже есть у всех пяти операций записи, и он доступен снаружи через
+`engine.extensions.plain.events` (см. таблицу выше).
+
+`items:clear:before` — один хук на всю очистку, а не по хуку на элемент:
+отменить удаление части элементов оставило бы коллекцию непустой, а `clear`
+по смыслу значит «коллекция пуста». `TMoveEvent.oldIndex` доступен только для
+чтения — вычислен до хука; если хук привёл `newIndex` к значению `oldIndex`,
+перемещение становится no-op без мутации и без `item:moved`.
+
+Сторожит `packages/core/__tests__/collection.command.spec.ts` (`preventDefault`
+гасит команду целиком, включая `change:items`/`change:count`) и
+`collection-before-hooks-relay.spec.ts` (хуки доходят через `plain.events` и
+фасад коллекции).
 
 ### Движок не знает о конкретных расширениях (критично)
 

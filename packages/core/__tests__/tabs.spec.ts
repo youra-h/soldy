@@ -362,7 +362,8 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		collection.extensions.tabs.closeTab(tab)
 
-		expect(onRemoved).toHaveBeenCalledWith(tab)
+		expect(onRemoved).toHaveBeenCalledTimes(1)
+		expect(onRemoved.mock.calls[0][0].item).toBe(tab)
 	})
 
 	// --- hasEnabledTabs ---

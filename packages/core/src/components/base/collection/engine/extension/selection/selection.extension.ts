@@ -70,9 +70,9 @@ export class TSelectionExtension<TItem extends object = any>
 		ctx.driver.events.on('change:items', () => this._syncDataset())
 		this._syncDataset()
 
-		ctx.driver.events.on('item:removed', (item: TItem) => {
-			if (this._selected.has(item)) {
-				this._selected.delete(item)
+		ctx.driver.events.on('item:removed', (e) => {
+			if (this._selected.has(e.item)) {
+				this._selected.delete(e.item)
 			}
 		})
 

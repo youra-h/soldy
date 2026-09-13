@@ -7,6 +7,7 @@ import {
 	TMoveCommand,
 	TClearCommand,
 	TEvented,
+	TCollectionStorageDriver,
 } from '@soldy/core'
 import type { TCollectionStorageDriverEvents, ICommandContext } from '@soldy/core'
 
@@ -129,7 +130,8 @@ describe('TRemoveCommand', () => {
 		command.apply(ctx)
 		command.emitEvents(ctx)
 
-		expect(removed).toHaveBeenCalledWith(item)
+		expect(removed).toHaveBeenCalledTimes(1)
+		expect(removed.mock.calls[0][0].item).toBe(item)
 		expect(count).toHaveBeenCalledWith(0)
 	})
 
@@ -183,6 +185,61 @@ describe('TRemoveCommand', () => {
 		const noop = new TRemoveCommand(item)
 		noop.apply(createContext(storage))
 		expect(noop.changed).toBe(false)
+	})
+
+	it('apply: item:remove:before отменяет удаление', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+
+		events.on('item:remove:before', (event) => event.preventDefault())
+
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const command = new TRemoveCommand(item)
+		command.apply(createContext(storage, events))
+
+		expect(command.changed).toBe(false)
+		expect(storage.items).toEqual([item])
+	})
+
+	it('emitEvents: молчит, если item:remove:before отменил удаление', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const removed = vi.fn()
+		const count = vi.fn()
+
+		events.on('item:remove:before', (event) => event.preventDefault())
+		events.on('item:removed', removed)
+		events.on('change:count', count)
+
+		const item: Item = { id: 1, name: 'a' }
+
+		storage.insert(item, 0)
+
+		const command = new TRemoveCommand(item)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(removed).not.toHaveBeenCalled()
+		expect(count).not.toHaveBeenCalled()
+	})
+
+	it('item:remove:before не приходит при удалении отсутствующего элемента', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const before = vi.fn()
+
+		events.on('item:remove:before', before)
+
+		const item: Item = { id: 1, name: 'a' }
+
+		new TRemoveCommand(item).apply(createContext(storage, events))
+
+		expect(before).not.toHaveBeenCalled()
 	})
 })
 
@@ -333,7 +390,11 @@ describe('TMoveCommand', () => {
 		cmd.apply(ctx)
 		cmd.emitEvents(ctx)
 
-		expect(moved).toHaveBeenCalledWith(a, 0, 1)
+		expect(moved).toHaveBeenCalledTimes(1)
+		const event = moved.mock.calls[0][0]
+		expect(event.item).toBe(a)
+		expect(event.oldIndex).toBe(0)
+		expect(event.newIndex).toBe(1)
 	})
 
 	it('changed: false при перемещении на ту же позицию, true при реальном перемещении', () => {
@@ -351,6 +412,83 @@ describe('TMoveCommand', () => {
 		const moved = new TMoveCommand(a, 1, 0)
 		moved.apply(createContext(storage))
 		expect(moved.changed).toBe(true)
+	})
+
+	it('item:move:before может подменить newIndex', () => {
+		const storage = new TArrayStorage<Item>()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+
+		storage.insert(a, 0)
+		storage.insert(b, 1)
+		storage.insert(c, 2)
+
+		const events = createEvents()
+
+		events.on('item:move:before', (event) => {
+			event.newIndex = 2
+		})
+
+		const command = new TMoveCommand(a, 1, 0)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(storage.items).toEqual([b, c, a])
+	})
+
+	it('item:move:before отменяет перемещение', () => {
+		const storage = new TArrayStorage<Item>()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		storage.insert(a, 0)
+		storage.insert(b, 1)
+
+		const events = createEvents()
+		const moved = vi.fn()
+
+		events.on('item:move:before', (event) => event.preventDefault())
+		events.on('item:moved', moved)
+
+		const command = new TMoveCommand(a, 1, 0)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(command.changed).toBe(false)
+		expect(storage.items).toEqual([a, b])
+		expect(moved).not.toHaveBeenCalled()
+	})
+
+	it('item:move:before, приведший newIndex к oldIndex — no-op без мутации и события', () => {
+		const storage = new TArrayStorage<Item>()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		storage.insert(a, 0)
+		storage.insert(b, 1)
+
+		const events = createEvents()
+		const moved = vi.fn()
+
+		events.on('item:move:before', (event) => {
+			event.newIndex = event.oldIndex
+		})
+		events.on('item:moved', moved)
+
+		const command = new TMoveCommand(a, 1, 0)
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(command.changed).toBe(false)
+		expect(storage.items).toEqual([a, b])
+		expect(moved).not.toHaveBeenCalled()
 	})
 })
 
@@ -428,5 +566,130 @@ describe('TClearCommand', () => {
 		expect(removed).not.toHaveBeenCalled()
 		expect(count).not.toHaveBeenCalled()
 		expect(reset).not.toHaveBeenCalled()
+	})
+
+	it('items:clear:before отменяет очистку целиком', () => {
+		const storage = new TArrayStorage<Item>()
+		const events = createEvents()
+		const removed = vi.fn()
+		const count = vi.fn()
+		const reset = vi.fn()
+
+		events.on('items:clear:before', (event) => event.preventDefault())
+		events.on('item:removed', removed)
+		events.on('change:count', count)
+		events.on('reset', reset)
+
+		storage.insert({ id: 1, name: 'a' }, 0)
+		storage.insert({ id: 2, name: 'b' }, 1)
+
+		const command = new TClearCommand<Item>()
+		const ctx = createContext(storage, events)
+
+		command.apply(ctx)
+		command.emitEvents(ctx)
+
+		expect(command.changed).toBe(false)
+		expect(storage.items.length).toBe(2)
+		expect(removed).not.toHaveBeenCalled()
+		expect(count).not.toHaveBeenCalled()
+		expect(reset).not.toHaveBeenCalled()
+	})
+})
+
+describe('driver.execute — preventDefault в before-хуке гасит команду целиком', () => {
+	function createDriver() {
+		return new TCollectionStorageDriver<Item>(new TArrayStorage<Item>())
+	}
+
+	it('insert: ни change:items, ни change:count не приходят', () => {
+		const driver = createDriver()
+		const changeItems = vi.fn()
+		const changeCount = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+		driver.events.on('change:count', changeCount)
+		driver.events.on('item:add:before', (e) => e.preventDefault())
+
+		driver.execute(new TInsertCommand<Item>({ id: 1, name: 'a' }, 0))
+
+		expect(driver.valueOf()).toEqual([])
+		expect(changeItems).not.toHaveBeenCalled()
+		expect(changeCount).not.toHaveBeenCalled()
+	})
+
+	it('update: change:items не приходит', () => {
+		const driver = createDriver()
+		const item: Item = { id: 1, name: 'a' }
+
+		driver.execute(new TInsertCommand<Item>(item, 0))
+
+		const changeItems = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+		driver.events.on('item:update:before', (e) => e.preventDefault())
+
+		driver.execute(new TUpdateCommand(item, { name: 'b' }))
+
+		expect(item.name).toBe('a')
+		expect(changeItems).not.toHaveBeenCalled()
+	})
+
+	it('remove: ни change:items, ни change:count не приходят', () => {
+		const driver = createDriver()
+		const item: Item = { id: 1, name: 'a' }
+
+		driver.execute(new TInsertCommand<Item>(item, 0))
+
+		const changeItems = vi.fn()
+		const changeCount = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+		driver.events.on('change:count', changeCount)
+		driver.events.on('item:remove:before', (e) => e.preventDefault())
+
+		driver.execute(new TRemoveCommand(item))
+
+		expect(driver.valueOf()).toEqual([item])
+		expect(changeItems).not.toHaveBeenCalled()
+		expect(changeCount).not.toHaveBeenCalled()
+	})
+
+	it('move: change:items не приходит', () => {
+		const driver = createDriver()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		driver.execute(new TInsertCommand<Item>(a, 0))
+		driver.execute(new TInsertCommand<Item>(b, 1))
+
+		const changeItems = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+		driver.events.on('item:move:before', (e) => e.preventDefault())
+
+		driver.execute(new TMoveCommand(a, 1, 0))
+
+		expect(driver.valueOf()).toEqual([a, b])
+		expect(changeItems).not.toHaveBeenCalled()
+	})
+
+	it('clear: ни change:items, ни change:count не приходят', () => {
+		const driver = createDriver()
+
+		driver.execute(new TInsertCommand<Item>({ id: 1, name: 'a' }, 0))
+
+		const changeItems = vi.fn()
+		const changeCount = vi.fn()
+
+		driver.events.on('change:items', changeItems)
+		driver.events.on('change:count', changeCount)
+		driver.events.on('items:clear:before', (e) => e.preventDefault())
+
+		driver.execute(new TClearCommand<Item>())
+
+		expect(driver.valueOf().length).toBe(1)
+		expect(changeItems).not.toHaveBeenCalled()
+		expect(changeCount).not.toHaveBeenCalled()
 	})
 })

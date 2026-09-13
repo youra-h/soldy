@@ -30,7 +30,7 @@ export class TItemContextRegistry<
 		this._extensions = collectionCore.extensions
 		this._driver = collectionCore.driver
 
-		this._driver.events.on('item:removed', (item) => this.destroy(item))
+		this._driver.events.on('item:removed', (e) => this.destroy(e.item))
 	}
 
 	/**
