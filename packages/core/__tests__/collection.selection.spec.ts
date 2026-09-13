@@ -164,6 +164,74 @@ describe('TSelectionExtension', () => {
 		expect(col.extensions.selection.selectedCount).toBe(1)
 	})
 
+	it('mode: переключение с multiple на single при урезании шлёт change:selection один раз с mode уже single', () => {
+		const col = createCollection()
+
+		col.extensions.selection.mode = 'multiple'
+
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+
+		col.extensions.plain.insert(a)
+		col.extensions.plain.insert(b)
+		col.extensions.selection.select(a)
+		col.extensions.selection.select(b)
+
+		const handler = vi.fn(() => {
+			expect(col.extensions.selection.mode).toBe('single')
+		})
+
+		col.extensions.selection.events.on('change:selection', handler)
+		col.extensions.selection.mode = 'single'
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith([a])
+	})
+
+	it('mode: переключение с multiple на single не шлёт change:selection, если выбрано 0 элементов', () => {
+		const col = createCollection()
+		const handler = vi.fn()
+
+		col.extensions.selection.mode = 'multiple'
+		col.extensions.selection.events.on('change:selection', handler)
+		col.extensions.selection.mode = 'single'
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('mode: переключение с multiple на single не шлёт change:selection, если выбран 1 элемент', () => {
+		const col = createCollection()
+		const item: Item = { id: 1, name: 'a' }
+		const handler = vi.fn()
+
+		col.extensions.selection.mode = 'multiple'
+		col.extensions.plain.insert(item)
+		col.extensions.selection.select(item)
+		col.extensions.selection.events.on('change:selection', handler)
+		col.extensions.selection.mode = 'single'
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('mode: при урезании отброшенные элементы получают data-selected=false', () => {
+		const col = createCollection()
+
+		col.extensions.selection.mode = 'multiple'
+
+		const dataset = { add: vi.fn() }
+		const a: Item & { dataset: typeof dataset } = { id: 1, name: 'a', dataset }
+		const b: Item & { dataset: typeof dataset } = { id: 2, name: 'b', dataset }
+
+		col.extensions.plain.insert(a)
+		col.extensions.plain.insert(b)
+		col.extensions.selection.select(a)
+		col.extensions.selection.select(b)
+		dataset.add.mockClear()
+		col.extensions.selection.mode = 'single'
+
+		expect(dataset.add).toHaveBeenCalledWith('selected', false)
+	})
+
 	it('mode: переключение на none очищает выбор', () => {
 		const col = createCollection()
 		const item: Item = { id: 1, name: 'a' }

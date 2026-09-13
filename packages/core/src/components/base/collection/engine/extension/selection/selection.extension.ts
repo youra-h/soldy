@@ -36,12 +36,15 @@ export class TSelectionExtension<TItem extends object = any>
 	set mode(value: TSelectionMode) {
 		if (this._mode === value) return
 
+		let truncated = false
+
 		if (value === 'single' && this._selected.size > 1) {
 			// оставить выбранным только первый
 			const first = this._selected.values().next().value as TItem
 
 			this._selected.clear()
 			this._selected.add(first)
+			truncated = true
 		}
 
 		if (value === 'none') {
@@ -50,6 +53,9 @@ export class TSelectionExtension<TItem extends object = any>
 		}
 
 		this._mode = value
+
+		if (truncated) this._notifySelected()
+
 		this.events.emit('change:mode', value)
 	}
 
