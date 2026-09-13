@@ -7,9 +7,13 @@ import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
 /**
  * TOrderExtension — расширение-наблюдатель за порядком элементов в коллекции.
  *
- * Не мутирует данные, только слушает события driver и оповещает подписчиков
- * об изменении порядка. Используется для DnD-сортировки и других сценариев,
- * где важен порядок элементов.
+ * Не мутирует данные, только слушает `change:items` драйвера и оповещает
+ * подписчиков об изменении порядка (`change:order`). Драйвер шлёт
+ * `change:items` один раз на команду (или один раз на весь `batch`) при
+ * любом изменении состава/порядка — этого достаточно, отдельно на
+ * `item:moved` подписываться не нужно (иначе `change:order` эмитится
+ * дважды на одно перемещение). Используется для DnD-сортировки и других
+ * сценариев, где важен порядок элементов.
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
@@ -27,10 +31,6 @@ export class TOrderExtension<TItem extends object = any>
 		super.install(ctx)
 
 		ctx.driver.events.on('change:items', () => {
-			this.events.emit('change:order')
-		})
-
-		ctx.driver.events.on('item:moved', () => {
 			this.events.emit('change:order')
 		})
 	}
