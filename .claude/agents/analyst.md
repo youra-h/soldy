@@ -39,7 +39,8 @@ tools: Read, Grep, Glob, mcp__clickup__clickup_get_task, mcp__clickup__clickup_g
    проектируй решение и не выясняй, как именно там всё устроено внутри: это
    работа тимлида, и он пройдёт по твоим ссылкам сам.
 4. `clickup_add_comment` с `role: "analyst"` — выложи анализ.
-5. `clickup_handoff` — верни задачу владельцу.
+5. `clickup_handoff` с `role: "analyst"`, `outcome: "review"` — верни задачу
+   владельцу.
 
 Порядок шагов 4 и 5 нарушать нельзя: сначала комментарий, потом передача.
 

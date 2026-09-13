@@ -36,6 +36,19 @@ function sizeOf(tags) {
 	return found.reduce((a, b) => (SIZES.indexOf(a) > SIZES.indexOf(b) ? a : b))
 }
 
+/**
+ * Куда роль может отправить задачу по итогам этапа: исход → ключ `config.statuses`.
+ *
+ * Владельцу (OVERVIEW) задачу возвращают только аналитик и тимлид. Программист
+ * с вопросами идёт к тимлиду: тот решает, правка это плана, новая задача или
+ * вопрос владельцу.
+ */
+const TRANSITIONS = {
+	analyst: { review: 'overview' },
+	techlead: { ready: 'inProgress', questions: 'overview', done: 'approved' },
+	developer: { done: 'approved', questions: 'planning' },
+}
+
 /* ─────────────────────────── Формат ответов ─────────────────────────── */
 
 /**
@@ -163,24 +176,51 @@ const tools = {
 
 	clickup_handoff: {
 		description:
-			'Завершить свой этап: перевести задачу в OVERVIEW и назначить на владельца. Вызывай последним, ПОСЛЕ того как оставил комментарий.',
+			'Завершить свой этап и перевести задачу в следующий статус. Куда именно — задаёт `outcome`, допустимые исходы зависят от роли. Вызывай последним, ПОСЛЕ того как оставил комментарий.',
 		schema: {
 			type: 'object',
-			properties: { task_id: { type: 'string' } },
-			required: ['task_id'],
+			properties: {
+				task_id: { type: 'string' },
+				role: {
+					type: 'string',
+					enum: Object.keys(TRANSITIONS),
+					description: 'Твоя роль. Определяет, какие исходы разрешены.',
+				},
+				outcome: {
+					type: 'string',
+					enum: [...new Set(Object.values(TRANSITIONS).flatMap(Object.keys))],
+					description:
+						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). developer: done (сделано, вопросов нет → APPROVED), questions (нужна доработка тимлидом → PLANNING).',
+				},
+			},
+			required: ['task_id', 'role', 'outcome'],
 		},
-		async run({ task_id }) {
+		async run({ task_id, role, outcome }) {
+			const allowed = TRANSITIONS[role]
+
+			if (!allowed) {
+				throw new Error(`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`)
+			}
+
+			// Переходы проверяем здесь, а не в промпте: задача, отправленная не
+			// в тот статус, выпадает из потока незаметно для всех.
+			const key = allowed[outcome]
+
+			if (!key) {
+				throw new Error(
+					`Роль "${role}" не может завершить этап исходом "${outcome}". Ожидается: ${Object.keys(allowed).join(', ')}`,
+				)
+			}
+
+			const status = config.statuses[key]
 			const owner = Number(requireConfig('ownerId'))
 
 			await api(`/task/${task_id}`, {
 				method: 'PUT',
-				body: JSON.stringify({
-					status: config.statuses.overview,
-					assignees: { add: [owner] },
-				}),
+				body: JSON.stringify({ status, assignees: { add: [owner] } }),
 			})
 
-			return { status: config.statuses.overview, assigned_to: owner }
+			return { status, assigned_to: owner }
 		},
 	},
 
@@ -214,8 +254,8 @@ const tools = {
 				},
 				role: {
 					type: 'string',
-					enum: ['techlead', 'developer'],
-					description: 'Твоя роль. Заводить задачи могут только тимлид и программист.',
+					enum: ['techlead'],
+					description: 'Твоя роль. Заводить задачи может только тимлид.',
 				},
 				name: {
 					type: 'string',
@@ -235,8 +275,10 @@ const tools = {
 			required: ['source_task_id', 'role', 'name', 'description'],
 		},
 		async run({ source_task_id, role, name, description, size }) {
-			if (!['techlead', 'developer'].includes(role)) {
-				throw new Error(`Роль "${role}" не может заводить задачи. Ожидается: techlead, developer.`)
+			// Программист находки не заводит, а отдаёт тимлиду через PLANNING:
+			// новая это задача или часть текущей — решает тимлид.
+			if (role !== 'techlead') {
+				throw new Error(`Роль "${role}" не может заводить задачи. Опиши находку в комментарии и верни задачу в PLANNING.`)
 			}
 
 			if (size && !SIZES.includes(size)) {
