@@ -132,12 +132,32 @@ describe('закрытая панель', () => {
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 
-	it('Enter открывает', async () => {
-		const { owner, press } = await setup(['Москва'])
+	it('Enter открывает и встаёт на первую опцию — как стрелка вниз', async () => {
+		const { owner, keyboard, press, items } = await setup(['Москва'])
 
 		press('Enter')
 
 		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+
+	it('пробел открывает и встаёт на первую опцию — как стрелка вниз', async () => {
+		const { owner, keyboard, press, items } = await setup(['Москва'])
+
+		press(' ')
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+	})
+
+	it('стрелка вниз с выбранной опцией встаёт на неё, а не на первую', async () => {
+		const { owner, keyboard, press, items } = await setup(['Москва', 'Тверь'])
+
+		owner.value = items[1].value
+		press('ArrowDown')
+
+		expect(owner.open).toBe(true)
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 
 	it('печатный символ открывает и ищет опцию', async () => {
@@ -296,13 +316,14 @@ describe('открытая панель — выбор и закрытие', () 
 		expect(keyboard.highlightedUid).toBeNull()
 	})
 
-	it('открытие встаёт на уже выбранное', async () => {
+	it('открытие без клавиатуры (клик, программно) подсветку не ставит', async () => {
 		const { owner, keyboard, items } = await setup(['Москва', 'Тверь'])
 
 		owner.value = items[1].value
 		owner.open = true
 
-		expect(keyboard.highlightedUid).toBe(items[1].uid)
+		expect(keyboard.highlightedUid).toBeNull()
+		expect(owner.aria.has('aria-activedescendant')).toBe(false)
 	})
 })
 
