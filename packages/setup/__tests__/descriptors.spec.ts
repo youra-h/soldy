@@ -326,7 +326,7 @@ describe('Select', () => {
 		expect(propNames(d)).toContain('text')
 	})
 
-	it('SelectCollectionDescriptor отдаёт текст выбранного и ARIA списка', () => {
+	it('SelectCollectionDescriptor отдаёт ARIA списка', () => {
 		const d = SelectCollectionDescriptor()
 
 		expect(d.ctor).toBe(TSelectCollectionFacade)
@@ -334,7 +334,6 @@ describe('Select', () => {
 		const names = propNames(d)
 
 		expect(names).toContain('items')
-		expect(names).toContain('text')
 		expect(names).toContain('list_aria')
 	})
 

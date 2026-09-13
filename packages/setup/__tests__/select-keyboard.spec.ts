@@ -323,7 +323,7 @@ describe('открытая панель — выбор и закрытие', () 
 		owner.open = true
 
 		expect(keyboard.highlightedUid).toBeNull()
-		expect(owner.aria.has('aria-activedescendant')).toBe(false)
+		expect(owner.field.aria.has('aria-activedescendant')).toBe(false)
 	})
 })
 
@@ -396,7 +396,9 @@ describe('aria-activedescendant', () => {
 
 		press('ArrowDown')
 
-		expect(owner.aria.get('aria-activedescendant')).toBe(`s-select-option-${items[0].uid}`)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(
+			`s-select-option-${items[0].uid}`,
+		)
 	})
 
 	it('следует за навигацией', async () => {
@@ -405,7 +407,9 @@ describe('aria-activedescendant', () => {
 		press('ArrowDown')
 		press('ArrowDown')
 
-		expect(owner.aria.get('aria-activedescendant')).toBe(`s-select-option-${items[1].uid}`)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(
+			`s-select-option-${items[1].uid}`,
+		)
 	})
 
 	it('снимается при закрытии', async () => {
@@ -414,7 +418,7 @@ describe('aria-activedescendant', () => {
 		press('ArrowDown')
 		owner.open = false
 
-		expect(owner.aria.has('aria-activedescendant')).toBe(false)
+		expect(owner.field.aria.has('aria-activedescendant')).toBe(false)
 	})
 
 	it('ссылается на тот же id, что стоит на опции', async () => {
@@ -423,7 +427,7 @@ describe('aria-activedescendant', () => {
 
 		press('ArrowDown')
 
-		expect(owner.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
 	})
 })
 

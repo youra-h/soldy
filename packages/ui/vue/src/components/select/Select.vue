@@ -21,18 +21,20 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 	>
 		<!--
 			Поле — готовый `Input`, а не свой `<input>`: у него уже есть слоты
-			`leading`/`trailing` под иконки и стили. Сквозные атрибуты Input
-			кладёт на внутренний `<input>`, поэтому весь набор ARIA
+			`leading`/`trailing` под иконки и стили. Весь набор ARIA комбобокса
 			(`role="combobox"`, `aria-expanded`, `aria-controls`,
-			`aria-activedescendant`) оказывается ровно там, где нужен.
+			`aria-activedescendant`, `aria-autocomplete`) живёт в `field.aria`
+			(см. `TSelect`, `TSelectExtension`, `TSelectKeyboardPlugin`) и
+			выводится самим `Input.vue` на его внутренний `<input>` — здесь его
+			пробрасывать не нужно.
 
-			`:ctrl="field"`, а не набор пропов: текст и плейсхолдер, которые
-			видит пользователь, принадлежат отдельному экземпляру `TInput`
-			(`field`), которым владеет Select (см. `TSelect.field`,
-			`TSelectExtension`). Рядом `:value` не ставить ни в каком виде —
-			тогда снова завелись бы две копии значения поля. `disabled`,
-			`size`, `variant`, `readonly`, `required`, `name`, `id` тоже несёт
-			инстанс: Select синхронизирует их с ним сам.
+			`:ctrl="field"`, а не набор пропов: текст, плейсхолдер и ARIA,
+			которые видит пользователь, принадлежат отдельному экземпляру
+			`TInput` (`field`), которым владеет Select (см. `TSelect.field`,
+			`TSelectExtension`). Рядом `:value`/`:placeholder`/`aria` не
+			ставить ни в каком виде — тогда снова завелись бы вторые копии.
+			`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`
+			тоже несёт инстанс: Select синхронизирует их с ним сам.
 
 			`readonly` вложенного `Input` — обычный `readonly` Select, которым
 			управляет `editable`. В select-only (`editable: false`, по
@@ -42,16 +44,12 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			не знает ничего, поэтому во всех адаптерах они одинаковы.
 
 			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
-			не валидирует readonly-поле), поэтому `aria-required` в `aria`
-			ядро ставит явно — без него состояние осталось бы немым для
-			скринридера. См. `TInputControl._syncRequiredAria()`.
+			не валидирует readonly-поле), поэтому `aria-required` в `field.aria`
+			`TInput` ставит явно — без него состояние осталось бы немым для
+			скринридера (см. `TInput._syncInputAccessibility()`).
 		-->
-		<slot name="field" :text="text" :placeholder="placeholder">
-			<Input
-				class="s-select__field"
-				:ctrl="field"
-				v-bind="{ ...aria, ...controlAttrs }"
-			>
+		<slot name="field" :field="field">
+			<Input class="s-select__field" :ctrl="field" v-bind="controlAttrs">
 				<!-- Слоты Input пробрасываются наружу как есть -->
 				<template #leading>
 					<!--

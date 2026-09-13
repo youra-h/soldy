@@ -169,9 +169,13 @@ describe('TInputControl.aria · aria-required', () => {
 		expect(input.aria.has('aria-required')).toBe(false)
 	})
 
-	it('TSelect: собственный тег — div, required у него не нативный', () => {
-		// Select — не input и не select, поэтому aria-required ставится всегда
-		expect(new TSelect({ required: true }).aria.get('aria-required')).toBe('true')
+	it('TSelect: aria-required у комбобокса — на field, не на самом Select', () => {
+		// Паттерн combobox описывает нативный `<input>` поля, а не корневой
+		// `div` Select — туда же `TInput.field` ставит и required, и readonly
+		const select = new TSelect({ required: true })
+
+		expect(select.field.aria.get('aria-required')).toBe('true')
+		expect(select.aria.has('aria-required')).toBe(false)
 	})
 
 	it('TCheckBox: рендерится в input[type=checkbox] — required у него нативный', () => {
@@ -218,8 +222,11 @@ describe('TInputControl.aria · aria-readonly', () => {
 		expect(input.aria.has('aria-readonly')).toBe(false)
 	})
 
-	it('TSelect: собственный тег — div, readonly у него не нативный', () => {
-		expect(new TSelect({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	it('TSelect: aria-readonly у комбобокса — на field, не на самом Select', () => {
+		const select = new TSelect({ readonly: true })
+
+		expect(select.field.aria.get('aria-readonly')).toBe('true')
+		expect(select.aria.has('aria-readonly')).toBe(false)
 	})
 
 	it('TCheckBox: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {

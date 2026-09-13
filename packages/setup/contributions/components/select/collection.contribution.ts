@@ -13,13 +13,6 @@ export const SelectCollectionContribution = (): IContribution => ({
 		mode: { type: String, triggers: ['change:mode'] },
 		selected: { type: Array, protected: true, triggers: ['change:selection'] },
 		/**
-		 * Текст выбранного — то, что поле показывает вместо `placeholder`.
-		 * Здесь, а не в собственной contribution: складывается из опций, а о
-		 * них знает коллекция. `change:tags` — текст обнуляется, как только
-		 * появляются теги, даже если сам выбор при этом не менялся.
-		 */
-		text: { type: String, protected: true, triggers: ['change:text', 'change:tags'] },
-		/**
 		 * `role`, `id` и множественность списка. Проп, а не набор `aria`: у
 		 * списка нет своего компонента — это разметка внутри шаблона Select,
 		 * писать некуда. Та же асимметрия, что у панели Accordion.

@@ -1,7 +1,6 @@
 import type {
 	ISelect,
 	IFilterExtension,
-	ISelectExtension,
 	ISelectionExtension,
 	ISelectItem,
 	TCollectionEngine,
@@ -318,9 +317,17 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		return this._selectedText()
 	}
 
+	/**
+	 * Текст выбранного — тем же приёмом, что и `TSelectExtension._syncText()`
+	 * в ядре: у `ISelectExtension` больше нет публичного `text` (был вторым
+	 * путём к тому же значению, что и `owner.field.value`), поэтому здесь
+	 * считаем его напрямую из выбора. Совпадения с `owner.field.value` при
+	 * этом нет — во время набора `field.value` уже переписан вводом, а этот
+	 * метод восстанавливает исходный текст выбранного.
+	 */
 	private _selectedText(): string {
-		const select = this._engine?.extensions?.select as ISelectExtension | undefined
+		const selected = this._selectionExtension?.selected ?? []
 
-		return select?.text ?? ''
+		return selected.map((item) => item.text).join(', ')
 	}
 }

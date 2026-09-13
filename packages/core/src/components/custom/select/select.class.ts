@@ -27,9 +27,13 @@ import type {
  * `TSelectCollectionFacade` и `TSelectExtension` — так же, как у Tabs.
  *
  * Паттерн доступности — APG Combobox, вариант select-only: поле объявляет
- * себя `combobox`, а DOM-фокус с него не уходит никогда. Подсветку опции
- * передаёт `aria-activedescendant`, который пишет расширение коллекции: имена
- * опций знает она, не поле.
+ * себя `combobox`, а DOM-фокус с него не уходит никогда. `role`,
+ * `aria-haspopup`, `aria-expanded` и `aria-autocomplete` пишутся в
+ * `field.aria`, а не в собственный `aria` Select: паттерн описывает элемент,
+ * на котором держится фокус, — нативный `<input>`, а не корневой `div`.
+ * `aria-controls` (список) и `aria-activedescendant` (подсветка) пишут туда
+ * же расширение коллекции и клавиатурный плагин — имена и `id` списка/опции
+ * знают они, не поле.
  *
  * `maxRows`, `contentFit`, `scrollBehavior`, `indicator` — общий с ListBox
  * контракт `IList`
@@ -37,13 +41,13 @@ import type {
  * у списка и поля выбора быть не может. Копии сверяет
  * `core/__tests__/list-contract.spec.ts`.
  *
- * `value`/`name`/`readonly`/`required` от `TInputControl` — про сам Select
- * (`div[role=combobox]`), не про то, что пользователь видит внутри поля. Тем,
- * что видно — текстом и плейсхолдером, — владеет отдельный инстанс `TInput`
- * (`field`): Select создаёт его один раз и синхронизирует с ним общие
- * свойства (`disabled`, `size`, `variant`, `readonly`, `required`, `name`,
- * `id`). Второго значения поля рядом с этим не заводим — единственный
- * держатель текста это и есть `field`.
+ * `value`/`name`/`readonly`/`required` от `TInputControl` — служебное
+ * состояние самого Select, не то, что пользователь видит внутри поля и что
+ * объявляет скринридеру. Этим владеет отдельный инстанс `TInput` (`field`):
+ * Select создаёт его один раз и синхронизирует с ним общие свойства
+ * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`).
+ * Второго значения поля рядом с этим не заводим — единственный держатель
+ * текста, плейсхолдера и ARIA поля это и есть `field`.
  */
 export class TSelect<
 	TProps extends ISelectProps = ISelectProps,
@@ -89,6 +93,29 @@ export class TSelect<
 		const ctor = new.target as typeof TSelect
 		const own = props as Partial<ISelectProps>
 
+		// Поле — экземпляр `TInput`, которым владеет Select, а не второе
+		// значение рядом со своим `value`. Шаблон передаёт его целиком через
+		// `ctrl` (`<Input :ctrl="field">`), как `tags` передаётся в `<Tags>`.
+		// Пишут в него: `TInputPlugin` — набранное, `TSelectExtension` —
+		// текст выбранного, `TEditablePlugin` — возврат текста. Двух копий
+		// значения поля с этим больше нет.
+		//
+		// Создаётся сразу после `super()`, а не в конце конструктора: ниже
+		// `_applyEditable`/`_applyOpen` уже пишут ARIA комбобокса в
+		// `field.aria`, и на момент этих вызовов поле обязано существовать.
+		// Начальный `readonly` не берём из `this.readonly` — `_applyEditable`
+		// его ещё не пересчитал, а `_applyReadonly` события не шлёт, поэтому
+		// эквивалент выключателя editable читаем явно из пропов.
+		this._field = new TInput({
+			disabled: this.disabled,
+			size: this.size,
+			variant: this.variant,
+			readonly: !(own.editable ?? ctor.defaultValues.editable!),
+			required: this.required,
+			name: this.name,
+			id: this.id,
+		})
+
 		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder!
 		this._closeOnSelect = own.closeOnSelect ?? ctor.defaultValues.closeOnSelect!
 		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel!
@@ -111,36 +138,17 @@ export class TSelect<
 		this._applyReadonly(!this._editable)
 		this._applyOpen(own.open ?? ctor.defaultValues.open!)
 
-		// `_applyEditable` выше поменял `readonly`, а `_syncInputAccessibility()`
-		// конструктор `TInputControl` вызвал ещё до него — пересчитываем
-		// `aria-readonly` заново.
-		this._syncInputAccessibility()
-
-		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью.
-		// `aria-controls` и `aria-activedescendant` — не отсюда: они ссылаются
-		// на список и опцию, а это знание коллекции.
-		this._aria.add('role', 'combobox')
-		this._aria.add('aria-haspopup', 'listbox')
+		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью — оба
+		// в `field.aria`: паттерн combobox описывает нативный `<input>`, а не
+		// корневой `div` Select. `aria-controls` и `aria-activedescendant` —
+		// не отсюда: они ссылаются на список и опцию, а это знание коллекции
+		// и клавиатурного плагина.
+		this._field.aria.add('role', 'combobox')
+		this._field.aria.add('aria-haspopup', 'listbox')
 
 		this.events.on('change:disabled', () => this._syncOpenable())
 
 		this._syncOpenable()
-
-		// Поле — экземпляр `TInput`, которым владеет Select, а не второе
-		// значение рядом со своим `value`. Шаблон передаёт его целиком через
-		// `ctrl` (`<Input :ctrl="field">`), как `tags` передаётся в `<Tags>`.
-		// Пишут в него: `TInputPlugin` — набранное, `TSelectExtension` —
-		// текст выбранного, `TEditablePlugin` — возврат текста. Двух копий
-		// значения поля с этим больше нет.
-		this._field = new TInput({
-			disabled: this.disabled,
-			size: this.size,
-			variant: this.variant,
-			readonly: this.readonly,
-			required: this.required,
-			name: this.name,
-			id: this.id,
-		})
 
 		this.events.on('change:disabled', (value: boolean) => (this._field.disabled = value))
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
@@ -385,9 +393,12 @@ export class TSelect<
 	protected _applyOpen(value: boolean): void {
 		this._open = value
 		this._classes.toggle('--open', value)
-		this._aria.add('aria-expanded', value ? 'true' : 'false')
-		// То же состояние для темы: она разворачивает стрелку по `data-open`.
-		// ARIA и `data-*` пишутся рядом — так их не рассинхронизировать.
+		// `aria-expanded` — в `field.aria`: паттерн combobox описывает нативный
+		// `<input>`, а не корневой `div`.
+		this._field.aria.add('aria-expanded', value ? 'true' : 'false')
+		// То же состояние для темы: она разворачивает стрелку по `data-open`
+		// на корне Select. ARIA поля и `data-*` корня живут на разных
+		// элементах — тема ждёт `data-open` там, где ищет стрелку.
 		this._dataset.add('open', value)
 	}
 
@@ -417,12 +428,12 @@ export class TSelect<
 	 */
 	protected _syncAutocomplete(): void {
 		if (!this._editable) {
-			this._aria.add('aria-autocomplete', null)
+			this._field.aria.add('aria-autocomplete', null)
 
 			return
 		}
 
-		this._aria.add('aria-autocomplete', this._editableMode === 'none' ? 'none' : 'list')
+		this._field.aria.add('aria-autocomplete', this._editableMode === 'none' ? 'none' : 'list')
 	}
 
 	/**
@@ -448,22 +459,14 @@ export class TSelect<
 	}
 
 	/**
-	 * Поле всегда в порядке обхода, но пока открывать нечего — панель
-	 * закрывается. Иначе `open`, выставленный до `disabled`, остался бы висеть.
+	 * Пока открывать нечего — панель закрывается. Иначе `open`, выставленный
+	 * до `disabled`, остался бы висеть.
+	 *
+	 * `tabindex` здесь больше не ставится: фокус держит нативный `<input>`
+	 * поля, он и так в порядке обхода, а `disabled` на нём выводит браузер сам.
 	 */
 	protected _syncOpenable(): void {
-		this._aria.add('tabindex', this.disabled ? null : '0')
-
 		if (!this.openable && this._open) this.open = false
-	}
-
-	/**
-	 * Собственный тег поля — `div`, у него нет ни нативного `required`, ни
-	 * `readonly`. Оба ARIA-атрибута при включённом состоянии ставятся всегда.
-	 */
-	protected override _syncInputAccessibility(): void {
-		this._aria.add('aria-required', this.required ? 'true' : null)
-		this._aria.add('aria-readonly', this.readonly ? 'true' : null)
 	}
 
 	override getProps(): TProps {

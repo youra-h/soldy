@@ -50,20 +50,27 @@ describe('TSelect — собственные props', () => {
 		expect('selected' in select).toBe(false)
 	})
 
-	it('объявляет себя как combobox', () => {
+	it('объявляет себя как combobox — на поле, не на себе', () => {
 		const select = new TSelect()
 
-		expect(select.aria.get('role')).toBe('combobox')
-		expect(select.aria.get('aria-haspopup')).toBe('listbox')
-		expect(select.aria.get('aria-expanded')).toBe('false')
+		expect(select.field.aria.get('role')).toBe('combobox')
+		expect(select.field.aria.get('aria-haspopup')).toBe('listbox')
+		expect(select.field.aria.get('aria-expanded')).toBe('false')
 	})
 
-	it('aria-expanded следует за панелью', () => {
+	it('в собственном aria Select нет role и aria-expanded — паттерн описывает поле', () => {
+		const select = new TSelect()
+
+		expect(select.aria.has('role')).toBe(false)
+		expect(select.aria.has('aria-expanded')).toBe(false)
+	})
+
+	it('aria-expanded на поле следует за панелью', () => {
 		const select = new TSelect()
 
 		select.open = true
 
-		expect(select.aria.get('aria-expanded')).toBe('true')
+		expect(select.field.aria.get('aria-expanded')).toBe('true')
 	})
 
 	it('open эмитит change:open и парное событие', () => {
@@ -121,15 +128,6 @@ describe('когда панель открывать нельзя', () => {
 		expect(select.open).toBe(false)
 	})
 
-	it('disabled убирает поле из порядка обхода', () => {
-		const select = new TSelect()
-
-		expect(select.aria.get('tabindex')).toBe('0')
-
-		select.disabled = true
-
-		expect(select.aria.has('tabindex')).toBe(false)
-	})
 })
 
 describe('clearAria — имя кнопки очистки', () => {
@@ -311,7 +309,7 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 	it('поле ссылается на список', () => {
 		const { owner, select } = createSelect(['a'])
 
-		expect(owner.aria.get('aria-controls')).toBe(select.listId)
+		expect(owner.field.aria.get('aria-controls')).toBe(select.listId)
 	})
 
 	it('опция получает id при добавлении в коллекцию', () => {
@@ -331,8 +329,8 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 		const first = createSelect(['a'])
 		const second = createSelect(['a'])
 
-		expect(first.owner.aria.get('aria-controls')).not.toBe(
-			second.owner.aria.get('aria-controls'),
+		expect(first.owner.field.aria.get('aria-controls')).not.toBe(
+			second.owner.field.aria.get('aria-controls'),
 		)
 		expect(first.items[0].aria.get('id')).not.toBe(second.items[0].aria.get('id'))
 	})
@@ -365,37 +363,39 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 
 describe('text — что показывает поле', () => {
 	it('пуст, пока ничего не выбрано', () => {
-		expect(createSelect(['a']).collection.text).toBe('')
+		expect(createSelect(['a']).owner.field.value).toBe('')
 	})
 
 	it('текст выбранной опции, а не её значение', () => {
-		const { collection, facadeFor } = createSelect(['a'])
+		const { owner, facadeFor } = createSelect(['a'])
 
 		facadeFor(0).choose()
 
-		expect(collection.text).toBe('A')
+		expect(owner.field.value).toBe('A')
 	})
 
 	it('в multiple пуст — текст выбранных рисуют теги, а не поле', () => {
 		// До тегов (см. describe('теги в multiple')) поле показывало список
 		// текстом («A, C»); теперь то же самое показывают теги в поле, и
 		// повторять текстом было бы дублем
-		const { collection, facadeFor } = createSelect(['a', 'b', 'c'])
+		const { owner, collection, facadeFor } = createSelect(['a', 'b', 'c'])
 
 		collection.mode = 'multiple'
 		facadeFor(0).choose()
 		facadeFor(2).choose()
 
-		expect(collection.text).toBe('')
+		expect(owner.field.value).toBe('')
 	})
 
-	it('следует за текстом опции', () => {
-		const { collection, items, facadeFor } = createSelect(['a'])
+	it('переименовали выбранную опцию — field.value обновился', () => {
+		// Раньше `_onItemAdded` пересчитывал только текст, а `field.value` у
+		// уже выбранной опции переименование не замечал
+		const { owner, items, facadeFor } = createSelect(['a'])
 
 		facadeFor(0).choose()
 		items[0].text = 'Другое'
 
-		expect(collection.text).toBe('Другое')
+		expect(owner.field.value).toBe('Другое')
 	})
 })
 
@@ -625,13 +625,13 @@ describe('теги в multiple', () => {
 		expect(tag.closable).toBe(false)
 	})
 
-	it('text пуст, пока теги есть, — текст рисуют они', () => {
-		const { collection, facadeFor } = createSelect(['a', 'b'])
+	it('field.value пуст, пока теги есть, — текст рисуют они', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
 
 		collection.mode = 'multiple'
 		facadeFor(0).choose()
 
-		expect(collection.text).toBe('')
+		expect(owner.field.value).toBe('')
 	})
 })
 
@@ -666,11 +666,11 @@ describe('editable — ввод текста в поле', () => {
 	it('ставит aria-autocomplete="none" — честный сигнал без обещания автодополнения', () => {
 		const select = new TSelect({ editable: true, editableMode: 'none' })
 
-		expect(select.aria.get('aria-autocomplete')).toBe('none')
+		expect(select.field.aria.get('aria-autocomplete')).toBe('none')
 
 		select.editable = false
 
-		expect(select.aria.has('aria-autocomplete')).toBe(false)
+		expect(select.field.aria.has('aria-autocomplete')).toBe(false)
 	})
 
 	describe('readonly — им управляет editable', () => {
@@ -822,45 +822,45 @@ describe('editableMode — что делает ввод текста', () => {
 		it('editable: false — атрибута нет, независимо от режима', () => {
 			const select = new TSelect({ editable: false, editableMode: 'search' })
 
-			expect(select.aria.has('aria-autocomplete')).toBe(false)
+			expect(select.field.aria.has('aria-autocomplete')).toBe(false)
 		})
 
 		it('editable: true, editableMode: none — "none"', () => {
 			const select = new TSelect({ editable: true, editableMode: 'none' })
 
-			expect(select.aria.get('aria-autocomplete')).toBe('none')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('none')
 		})
 
 		it('editable: true, editableMode: search — "list"', () => {
 			const select = new TSelect({ editable: true, editableMode: 'search' })
 
-			expect(select.aria.get('aria-autocomplete')).toBe('list')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 
 		it('editable: true, editableMode: filter — "list"', () => {
 			const select = new TSelect({ editable: true, editableMode: 'filter' })
 
-			expect(select.aria.get('aria-autocomplete')).toBe('list')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 
 		it('смена editableMode в рантайме пересчитывает атрибут', () => {
 			const select = new TSelect({ editable: true, editableMode: 'none' })
 
-			expect(select.aria.get('aria-autocomplete')).toBe('none')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('none')
 
 			select.editableMode = 'search'
 
-			expect(select.aria.get('aria-autocomplete')).toBe('list')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 
 		it('смена editable в рантайме тоже пересчитывает атрибут — режим уже search', () => {
 			const select = new TSelect({ editableMode: 'search' })
 
-			expect(select.aria.has('aria-autocomplete')).toBe(false)
+			expect(select.field.aria.has('aria-autocomplete')).toBe(false)
 
 			select.editable = true
 
-			expect(select.aria.get('aria-autocomplete')).toBe('list')
+			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
 	})
 })

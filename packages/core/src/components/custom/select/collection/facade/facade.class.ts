@@ -15,8 +15,8 @@ import type { ITags, TTagsCollection } from '../../../tags'
 /**
  * Фасад коллекции Select.
  *
- * Состав, режим и выбранное — из базы. Своё — два вычисленных набора для
- * разметки: текст выбранного и ARIA списка.
+ * Состав, режим и выбранное — из базы. Своё — вычисленный набор для
+ * разметки: ARIA списка.
  */
 export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	ISelectItem,
@@ -39,25 +39,9 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 			) as TSelectCollection,
 		})
 
-		this.events.relay(this._select.events, ['change:text'])
 		this.events.relay(this._tags.events, ['change:tags'])
 
 		this.applyProps(props)
-	}
-
-	/**
-	 * Текст выбранного — то, что поле показывает вместо `placeholder`.
-	 *
-	 * Проп фасада, а не поле ядра: текст складывается из опций, а о них знает
-	 * коллекция. У `TValueControl` своего `text` нет вовсе — `TTextable`
-	 * растёт из `TControl` соседней ветвью, поэтому имя здесь свободно и
-	 * коллизии с базой нет.
-	 *
-	 * В режиме тегов отдаёт пустую строку: текст выбранного рисуют теги в
-	 * поле, второй раз показывать его текстом было бы дублем.
-	 */
-	get text(): string {
-		return this._tags.tags ? '' : this._select.text
 	}
 
 	/**
