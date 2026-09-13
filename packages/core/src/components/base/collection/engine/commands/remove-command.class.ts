@@ -21,6 +21,10 @@ export class TRemoveCommand<TItem> implements ICommand<TItem> {
 		return this._removed
 	}
 
+	get orderChanged(): boolean {
+		return this.changed
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		this._removed = ctx.storage.items.includes(this.item)
 

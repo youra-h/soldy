@@ -10,6 +10,10 @@ export class TClearCommand<TItem> implements ICommand<TItem> {
 		return this._removedItems.length > 0
 	}
 
+	get orderChanged(): boolean {
+		return this.changed
+	}
+
 	apply(ctx: ICommandContext<TItem>): void {
 		this._removedItems = [...ctx.storage.items]
 		ctx.storage.clear()
