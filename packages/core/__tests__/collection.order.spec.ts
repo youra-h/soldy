@@ -54,10 +54,28 @@ describe('TOrderExtension', () => {
 		col.extensions.order.events.on('change:order', handler)
 		col.extensions.plain.move(a, 0)
 
-		// TOrderExtension подписан и на change:items, и на item:moved — при
-		// реальном перемещении срабатывают оба, поэтому здесь два вызова.
-		// Известная отдельная проблема, не в рамках этой задачи: 869f196na.
-		expect(handler).toHaveBeenCalled()
+		expect(handler).toHaveBeenCalledOnce()
+	})
+
+	it('эмитит change:order один раз при batch с несколькими перемещениями', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+		const handler = vi.fn()
+
+		col.extensions.plain.insert(a)
+		col.extensions.plain.insert(b)
+		col.extensions.plain.insert(c)
+
+		col.extensions.order.events.on('change:order', handler)
+
+		col.batch(() => {
+			col.extensions.plain.move(a, 2)
+			col.extensions.plain.move(b, 0)
+		})
+
+		expect(handler).toHaveBeenCalledOnce()
 	})
 
 	it('order обновляется после перемещения', () => {

@@ -64,7 +64,7 @@ describe('Item-адаптеры: проброс событий из расшир
 		// вставка второго элемента → change:items → change:order
 		col.extensions.plain.insert({ id: 2, name: 'b' })
 
-		expect(handler).toHaveBeenCalled()
+		expect(handler).toHaveBeenCalledOnce()
 	})
 
 	it('selection: change:selection → change:selected', () => {
