@@ -8,21 +8,9 @@
  * Дублирующиеся имена props/events выбрасывают ошибку при создании.
  */
 
-import type { IEventSource } from '@soldy/core'
+import { isEventSource, type IEventSource } from '@soldy/core'
 import type { IAccessor } from './accessor.interface'
 import type { IAccessorProp, IAccessorEvent, IAccessorUnit } from './contract'
-
-/** Эмиттер или `TEvented`: то, на что адаптер подписывается через `on`/`off`. */
-function isEventSource(value: unknown): value is IEventSource {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'on' in value &&
-		typeof value.on === 'function' &&
-		'off' in value &&
-		typeof value.off === 'function'
-	)
-}
 
 export class TAccessor implements IAccessor {
 	private readonly _props: IAccessorProp[] = []

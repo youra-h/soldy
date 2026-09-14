@@ -3,7 +3,6 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { toCssValue } from '../../../utils/toCssValue'
 import type { TFrameLayoutPluginEvents } from './types'
-import { TEvented } from '@soldy/core'
 
 /**
  * Раскладка Frame: превращает собственные пропсы в объект стилей.
@@ -47,12 +46,13 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 
 	private _bindFrame(frame: IFrame): void {
 		const update = () => this._update()
-		;(frame as any).events.on('change:x', update)
-		;(frame as any).events.on('change:y', update)
-		;(frame as any).events.on('change:width', update)
-		;(frame as any).events.on('change:height', update)
-		;(frame as any).events.on('change:zIndex', update)
-		;(frame as any).events.on('change:position', update)
+
+		frame.events.on('change:x', update)
+		frame.events.on('change:y', update)
+		frame.events.on('change:width', update)
+		frame.events.on('change:height', update)
+		frame.events.on('change:zIndex', update)
+		frame.events.on('change:position', update)
 
 		this._update()
 	}
@@ -74,6 +74,6 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 		styles['z-index'] = frame.zIndex
 
 		this._styles = styles
-		;(this.events as TEvented<TFrameLayoutPluginEvents>).emit('change:styles', this._styles)
+		this.events.emit('change:styles', this._styles)
 	}
 }

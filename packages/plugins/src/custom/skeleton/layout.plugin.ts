@@ -25,7 +25,9 @@ export class TSkeletonLayoutPlugin extends TBasePlugin<any, TSkeletonLayoutPlugi
 	private _bindDimension(skeleton: ISkeleton, prop: 'width' | 'height'): void {
 		this._styles = { ...this._styles, [prop]: toCssValue(skeleton[prop]) }
 
-		skeleton.events.on(`change:${prop}` as any, (value: number | string) => {
+		const event = prop === 'width' ? 'change:width' : 'change:height'
+
+		skeleton.events.on(event, (value) => {
 			this._patch(prop, toCssValue(value || 'auto'))
 		})
 	}
@@ -40,6 +42,6 @@ export class TSkeletonLayoutPlugin extends TBasePlugin<any, TSkeletonLayoutPlugi
 	 */
 	private _patch(key: string, value: string | number): void {
 		this._styles = { ...this._styles, [key]: value }
-		;(this.events as any).emit('change:styles', this._styles)
+		this.events.emit('change:styles', this._styles)
 	}
 }

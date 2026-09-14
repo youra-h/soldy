@@ -7,7 +7,7 @@ export abstract class TBasePlugin<
 > implements IPlugin<TInstance, TEvents> {
 	readonly events: TEvented<TEvents> = new TEvented<TEvents>()
 
-	install(ctx: IPluginContext, options?: any): void {
+	install(ctx: IPluginContext, options?: unknown): void {
 		;(this.events as unknown as TEvented<TPluginEvents>).emit('install', ctx, options)
 	}
 

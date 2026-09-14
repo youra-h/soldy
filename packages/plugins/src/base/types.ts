@@ -9,8 +9,8 @@ export interface IPluginContext {
 }
 
 export type TPluginEvents = {
-	install: (ctx: IPluginContext, options?: any) => void
-	destroy: (ctx: IPluginContext, options?: any) => void
+	install: (ctx: IPluginContext, options?: unknown) => void
+	destroy: (ctx: IPluginContext, options?: unknown) => void
 	/**
 	 * Плагин создан и доступен снаружи. Эмитится adapter-слоем — не в install,
 	 * потому что на момент установки подписчиков ещё нет: bundle собирается
@@ -29,7 +29,7 @@ export interface IPlugin<
 	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
 > {
 	readonly events: TEvented<TEvents>
-	install(ctx: IPluginContext, options?: any): void
+	install(ctx: IPluginContext, options?: unknown): void
 	/** Объявить плагин доступным снаружи. Вызывается adapter-слоем. */
 	created(): void
 	destroy(): void
@@ -64,7 +64,7 @@ export interface IPluginBundle {
 	getInstance<T>(): T | null
 	use<P extends IPlugin<any, any>>(
 		PluginCtor: IPluginConstructor<any, any, P>,
-		options?: Record<string, any>,
+		options?: object,
 	): this
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void

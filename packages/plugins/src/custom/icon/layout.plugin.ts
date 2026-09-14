@@ -34,6 +34,6 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 	 */
 	private _patch(key: string, value: string | number): void {
 		this._styles = { ...this._styles, [key]: value }
-		;(this.events as any).emit('change:styles', this._styles)
+		this.events.emit('change:styles', this._styles)
 	}
 }

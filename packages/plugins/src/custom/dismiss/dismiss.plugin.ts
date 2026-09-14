@@ -1,3 +1,4 @@
+import { isEventSource } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
@@ -24,7 +25,7 @@ import type { IDismissPluginOptions, TDismissPluginEvents } from './types'
 export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	private _element: HTMLElement | null = null
 	private _owner: string | null = null
-	private _instance: Record<string, any> | null = null
+	private _instance: object | null = null
 	private _property: string | null = 'open'
 	private _enabled = false
 	private _listening = false
@@ -32,11 +33,11 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	override install(ctx: IPluginContext, options?: IDismissPluginOptions): void {
 		super.install(ctx, options)
 
-		const instance = ctx.getInstance<Record<string, any>>()
+		const instance = ctx.getInstance<object>()
 
 		if (instance) {
 			this._instance = instance
-			this._owner = String(instance.uid)
+			this._owner = String(Reflect.get(instance, 'uid'))
 		}
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
@@ -67,15 +68,19 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		if (!instance || !property || !(property in instance)) return
 
-		instance.events?.on(event, () => {
-			this.enabled = !!instance[property]
-		})
+		const events: unknown = Reflect.get(instance, 'events')
+
+		if (isEventSource(events)) {
+			events.on(event, () => {
+				this.enabled = !!Reflect.get(instance, property)
+			})
+		}
 
 		this.events.on('dismiss', () => {
-			instance[property] = false
+			Reflect.set(instance, property, false)
 		})
 
-		this.enabled = !!instance[property]
+		this.enabled = !!Reflect.get(instance, property)
 	}
 
 	/** Следит ли плагин за нажатиями. Владелец включает его на открытии. */

@@ -12,6 +12,18 @@ export interface IEventEmitter extends IEventSource {
 	remove(event?: string): void
 }
 
+/** Источник событий: объект с `on`/`off` — эмиттер, `TEvented` или совместимый. */
+export function isEventSource(value: unknown): value is IEventSource {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'on' in value &&
+		typeof value.on === 'function' &&
+		'off' in value &&
+		typeof value.off === 'function'
+	)
+}
+
 /**
  * Обобщённый эмиттер, где Events — словарь событий и их сигнатур.
  * @example

@@ -3,7 +3,7 @@ import type { IPlugin, IPluginBundle, IPluginConstructor } from './types'
 export class TPluginBundle implements IPluginBundle {
 	private _plugins = new Map<IPluginConstructor<any, any, any>, IPlugin<any, any>>()
 
-	constructor(private readonly _instance: any) {}
+	constructor(private readonly _instance: object) {}
 
 	/** Компонент, которому принадлежит набор. */
 	getInstance<T>(): T | null {
@@ -12,7 +12,7 @@ export class TPluginBundle implements IPluginBundle {
 
 	use<P extends IPlugin<any, any>>(
 		PluginCtor: IPluginConstructor<any, any, P>,
-		options?: Record<string, any>,
+		options?: object,
 	): this {
 		const plugin = new PluginCtor()
 		this._plugins.set(PluginCtor, plugin)

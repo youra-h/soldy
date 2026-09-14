@@ -1,4 +1,4 @@
-import type { TCollectionEngine } from '@soldy/core'
+import type { IComponentView, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'
@@ -129,6 +129,10 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		this._bundles?.events.on('bundle:registered', onBundleRegistered)
 
+		// Элементы перетаскиваемой коллекции — компоненты: у них есть uid и classes.
+		// Состав читается при каждом событии: между ними коллекция могла измениться.
+		const collectionItems = (): ReadonlyArray<IComponentView> => engine.extensions.batch.items
+
 		const onDragStart = (e: DragEvent) => {
 			const target = (e.target as HTMLElement).closest(
 				'[draggable="true"]',
@@ -139,7 +143,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const uid = collectionElements.getUidByElement(target)
 			if (uid === undefined) return
 
-			const index = engine.extensions.batch.items.findIndex((item: any) => item.uid === uid)
+			const index = collectionItems().findIndex((item) => item.uid === uid)
 			if (index === -1) {
 				draggingIndex = null
 				draggingUid = null
@@ -152,7 +156,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 			e.dataTransfer!.effectAllowed = 'move'
 
-			const item = engine.extensions.batch.items[index]
+			const item = collectionItems()[index]
 
 			if (item) {
 				item.classes.add(TDragPlugin.DRAGGING_CLASS, false)
@@ -165,7 +169,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		const onDragEnd = (e: DragEvent) => {
 			if (draggingUid !== null) {
-				const item = engine.extensions.batch.items.find((i: any) => i.uid === draggingUid)
+				const item = collectionItems().find((i) => i.uid === draggingUid)
 
 				if (item) {
 					item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
@@ -202,12 +206,10 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			const targetUid = collectionElements.getUidByElement(target)
 			if (targetUid === undefined) return
 
-			const targetIndex = engine.extensions.batch.items.findIndex(
-				(item: any) => item.uid === targetUid,
-			)
+			const targetIndex = collectionItems().findIndex((item) => item.uid === targetUid)
 			if (targetIndex === -1 || targetIndex === draggingIndex) return
 
-			const draggingItem = engine.extensions.batch.items[draggingIndex]
+			const draggingItem = collectionItems()[draggingIndex]
 			engine.extensions.plain.move(draggingItem, targetIndex, draggingIndex)
 			draggingIndex = targetIndex
 		}
@@ -222,7 +224,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			element.removeEventListener('dragover', onDragOver)
 			this._bundles?.events.off('bundle:registered', onBundleRegistered)
 
-			engine.extensions.batch.items.forEach((item: any) => {
+			collectionItems().forEach((item) => {
 				item.classes.remove(TDragPlugin.DRAGGING_CLASS, false)
 			})
 
