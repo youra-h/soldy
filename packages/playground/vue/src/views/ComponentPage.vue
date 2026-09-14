@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IComponentDescriptor } from '@soldy/setup'
 import { computed } from 'vue'
 import { NON_EDITABLE, propControl } from '@soldy/playground-shared'
 import { findAvailable } from '../catalog'
@@ -39,7 +40,7 @@ const collectionDescriptor = computed(() => entry.value?.collectionDescriptor?.(
  * искать в нём глазами дольше, чем прочитать список.
  */
 function controlsOf(
-	source: { props: readonly any[] } | undefined,
+	source: Pick<IComponentDescriptor, 'props'> | undefined,
 	scope: 'component' | 'collection',
 ) {
 	const current = entry.value

@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -14,7 +14,7 @@ import { type ITagsComponentProps, type ITags } from '@soldy/core'
 export default {
 	name: '_Tags',
 	extends: BaseTags,
-	setup(props: TagsProps, { emit }: any) {
+	setup(props: TagsProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(TagsDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

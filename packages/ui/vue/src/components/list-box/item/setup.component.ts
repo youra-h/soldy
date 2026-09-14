@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionItemExtension,
@@ -14,7 +14,7 @@ export default {
 	name: '_ListBoxItem',
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
-	setup(props: ListBoxItemProps, { emit }: any) {
+	setup(props: ListBoxItemProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(ListBoxItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
@@ -29,7 +29,7 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<Record<string, any>, TListBoxItemCollectionFacade>(
+		const itemBinding = useAdapter<ListBoxItemProps, TListBoxItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,

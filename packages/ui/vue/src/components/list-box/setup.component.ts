@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -15,7 +15,7 @@ import { type IListBoxComponentProps, type IListBox } from '@soldy/core'
 export default {
 	name: '_ListBox',
 	extends: BaseListBox,
-	setup(props: ListBoxProps, { emit }: any) {
+	setup(props: ListBoxProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(ListBoxDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

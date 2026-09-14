@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionItemExtension,
@@ -20,7 +20,7 @@ export default {
 	name: '_SelectItem',
 	inheritAttrs: false,
 	extends: BaseSelectItem,
-	setup(props: SelectItemProps, { emit }: any) {
+	setup(props: SelectItemProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(SelectItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
@@ -35,7 +35,7 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<Record<string, any>, TSelectItemCollectionFacade>(
+		const itemBinding = useAdapter<SelectItemProps, TSelectItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,

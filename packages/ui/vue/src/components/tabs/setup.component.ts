@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -15,7 +15,7 @@ import { type ITabsComponentProps, type ITabs } from '@soldy/core'
 export default {
 	name: '_Tabs',
 	extends: BaseTabs,
-	setup(props: TabsProps, { emit }: any) {
+	setup(props: TabsProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(TabsDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

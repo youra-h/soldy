@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -38,7 +38,7 @@ export default {
 	name: '_Select',
 	inheritAttrs: false,
 	extends: BaseSelect,
-	setup(props: SelectProps, { emit }: any) {
+	setup(props: SelectProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(SelectDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

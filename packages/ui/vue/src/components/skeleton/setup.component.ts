@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import { createAdapterContext, SkeletonDescriptor } from '@soldy/setup'
 import { useAdapter } from '../../adapter'
 import BaseSkeleton, { type SkeletonProps } from './base.component'
@@ -7,7 +7,7 @@ import { type ISkeletonProps, type ISkeleton } from '@soldy/core'
 export default {
 	name: '_Skeleton',
 	extends: BaseSkeleton,
-	setup(props: SkeletonProps, { emit }: any) {
+	setup(props: SkeletonProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(SkeletonDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

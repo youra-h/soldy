@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import { createAdapterContext, InputDescriptor } from '@soldy/setup'
 import { useAdapter, useSplitAttrs } from '../../adapter'
 import BaseInput, { type InputProps } from './base.component'
@@ -8,7 +8,7 @@ export default {
 	name: '_Input',
 	inheritAttrs: false,
 	extends: BaseInput,
-	setup(props: InputProps, { emit }: any) {
+	setup(props: InputProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(InputDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

@@ -3,7 +3,7 @@ import type { IEntity } from '@soldy/core'
 import type { IComponentDescriptor, DescriptorAllProps } from '@soldy/setup'
 
 export type TEmits = readonly string[]
-export type TProps = Readonly<Record<string, any>>
+export type TProps = Readonly<Record<string, unknown>>
 
 export type TBaseComponentProps<TCoreProps, TInstance extends IEntity = IEntity> = TCoreProps & {
 	/**

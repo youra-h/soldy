@@ -1,4 +1,5 @@
 import type { IAdapterContext } from '@soldy/setup'
+import type { IPluginBundle } from '@soldy/plugins'
 import { useAdapter, type TExtractControllerState, type TUnwrapRefs } from './useAdapter'
 
 /**
@@ -12,7 +13,7 @@ import { useAdapter, type TExtractControllerState, type TUnwrapRefs } from './us
  * пересечение в плоский тип, и `items` из объявленного пропа перестаёт
  * совмещаться с `items` фасада — шаблон видит union, у которого нет `uid`.
  */
-export type TCollectionBinding<TProps, TInstance> = { plugins: any } & TUnwrapRefs<TProps> &
+export type TCollectionBinding<TProps, TInstance> = { plugins: IPluginBundle | null } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
 /**
@@ -41,10 +42,10 @@ export type TCollectionBinding<TProps, TInstance> = { plugins: any } & TUnwrapRe
  * изменился: убрать лишние ключи в источнике надёжнее, чем помнить про порядок
  * в каждом новом коллекционном компоненте.
  */
-export function useCollectionAdapter<TProps extends object, TInstance = any>(
-	adapter: IAdapterContext,
-	props: Record<string, any>,
-	emit?: (event: string, ...args: any[]) => void,
+export function useCollectionAdapter<TProps extends object, TInstance extends object = object>(
+	adapter: IAdapterContext<TInstance>,
+	props: object,
+	emit?: (event: string, ...args: unknown[]) => void,
 ): TCollectionBinding<TProps, TInstance> {
 	// Через rest-деструктуризацию: перечислять остающиеся ключи нельзя — это
 	// рефы фасада, и у каждой коллекции они свои

@@ -11,8 +11,12 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { nextTick, type Component } from 'vue'
 import { ListBox, Tabs, Accordion, Tags } from '@soldy/ui-vue'
+import type { TCollectionEngine } from '@soldy/core'
+
+/** Движок, который коллекция отдаёт через `engine:create`: элементы с `value`. */
+type TEngine = TCollectionEngine<{ readonly value: unknown }, any>
 
 let wrapper: ReturnType<typeof mount> | null = null
 
@@ -28,22 +32,25 @@ const ITEMS = [
 ]
 
 /** Сужает `shown` движка до элементов с чётным индексом — без расширения фильтра. */
-function narrowShown(engine: any) {
+function narrowShown(engine: TEngine) {
 	const driver = engine.getCore().driver
 
-	driver.events.on('items:query:before', (e: any) => {
-		e.items = e.items.filter((item: any) => item.value !== 'b')
+	driver.events.on('items:query:before', (e) => {
+		e.items = e.items.filter((item) => item.value !== 'b')
 	})
 	driver.invalidateQuery()
 }
 
-async function renderWith(component: any, extraProps: Record<string, unknown> = {}) {
-	let engine: any
+async function renderWith(
+	component: Component,
+	extraProps: Record<string, unknown> = {},
+): Promise<TEngine> {
+	let engine: TEngine | undefined
 
 	wrapper = mount(component, {
 		props: {
 			items: ITEMS,
-			'onEngine:create': (value: any) => {
+			'onEngine:create': (value: TEngine) => {
 				engine = value
 			},
 			...extraProps,
@@ -53,6 +60,8 @@ async function renderWith(component: any, extraProps: Record<string, unknown> = 
 
 	await nextTick()
 	await nextTick()
+
+	if (!engine) throw new Error('engine:create не пришёл')
 
 	return engine
 }

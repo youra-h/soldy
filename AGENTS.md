@@ -655,10 +655,8 @@ this._sink.emit('change:value', payload)
 
 `any` стережёт локальное правило `soldy/no-explicit-any`
 (`tools/eslint/rules/no-explicit-any.ts`, тест позиций —
-`npm run test:eslint`). В CI сборку роняет `npm run lint:ci` — пакеты, где
-ошибок уже нет; пакет попадает в этот список вместе с коммитом, который его
-вычистил. Остальное CI показывает отчётом. Правило заменяет
-`@typescript-eslint/no-explicit-any`:
+`npm run test:eslint`). В CI сборку роняет `npm run lint:ci` по всему
+репозиторию. Правило заменяет `@typescript-eslint/no-explicit-any`:
 встроенное правило не отличает стирание инвариантности (разделы выше) от
 спрятанного типа, а его `ignoreRestArgs` не видит `(...args: any)` без `[]`.
 Постоянный `eslint-disable` с объяснением вместо правила запрещён («Временное
@@ -679,6 +677,12 @@ this._sink.emit('change:value', payload)
 
 Остальное — ошибка: `Record<string, any>`, `Partial<any>`, `(item: T) => any`,
 `value: any`. Указывайте тип или `unknown`.
+
+Состояние адаптеров (`state` у `useAdapter` в React, Solid, Svelte, Angular и
+webc) типизируется по инстансу: `TInstanceState<TInstance>` из `@soldy/setup`
+— его свойства после `valueOf()`. Объект собирается по дескриптору в рантайме,
+поэтому граница с типом одна, `toInstanceState`, и приведений в разметке
+компонентов нет. Тип инстанса несёт дескриптор (`IAdapterContext<TInstance>`).
 
 ### Логику, которой нужен элемент, кладите в item-адаптер
 

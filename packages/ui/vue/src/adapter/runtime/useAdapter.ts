@@ -8,6 +8,7 @@
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { type IAdapterContext, TPluginsBindingExtension } from '@soldy/setup'
+import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
@@ -39,7 +40,7 @@ export type TUnwrapRefs<T> = {
  */
 export type TBinding<TProps, TInstance> = {
 	ctrl: TInstance
-	plugins: any
+	plugins: IPluginBundle | null
 	rootElement?: Ref<Element | null>
 } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
@@ -50,7 +51,7 @@ export function useAdapter<
 >(
 	adapter: IAdapterContext<TInstance>,
 	props: TProps,
-	emit?: (event: string, ...args: any[]) => void,
+	emit?: (event: string, ...args: unknown[]) => void,
 ): TBinding<TProps, TInstance> {
 	const inspector = createInspector(adapter.accessor)
 

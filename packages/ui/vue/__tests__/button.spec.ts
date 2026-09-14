@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { TButton } from '@soldy/core'
-import { TElementPlugin } from '@soldy/plugins'
+import { TElementPlugin, TPluginBundle } from '@soldy/plugins'
 import { Button } from '@soldy/ui-vue'
 
 /**
@@ -219,18 +219,20 @@ const created = () => Promise.resolve()
 
 describe('Button · доступ к плагинам', () => {
 	it('@bundle:create отдаёт bundle в шаблон', async () => {
-		const seen: any[] = []
+		const seen: unknown[] = []
 
 		mount(Button, { props: { 'onBundle:create': (b: unknown) => seen.push(b) } })
 
 		await created()
 
+		const [bundle] = seen
+
 		expect(seen).toHaveLength(1)
-		expect(seen[0].get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+		expect(bundle instanceof TPluginBundle && bundle.get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
 	})
 
 	it('@element:create отдаёт сам плагин, минуя bundle', async () => {
-		const seen: any[] = []
+		const seen: unknown[] = []
 
 		mount(Button, { props: { 'onElement:create': (p: unknown) => seen.push(p) } })
 
@@ -241,16 +243,18 @@ describe('Button · доступ к плагинам', () => {
 	})
 
 	it('плагин из create — тот же, что связан с DOM-узлом компонента', async () => {
-		let plugin: any = null
+		const received: { plugin?: unknown } = {}
 
 		const wrapper = mount(Button, {
-			props: { 'onElement:create': (p: unknown) => (plugin = p) },
+			props: { 'onElement:create': (p: unknown) => (received.plugin = p) },
 		})
 
 		await nextTick()
 
+		const { plugin } = received
+
 		// Доказательство, что это рабочий плагин, а не отдельный экземпляр
-		expect(plugin.element).toBe(wrapper.element)
+		expect(plugin instanceof TElementPlugin && plugin.element).toBe(wrapper.element)
 	})
 })
 

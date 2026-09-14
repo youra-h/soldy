@@ -18,7 +18,7 @@ if (!('ResizeObserver' in globalThis)) {
 		disconnect(): void {}
 	}
 
-	;(globalThis as any).ResizeObserver = ResizeObserverStub
+	globalThis.ResizeObserver = ResizeObserverStub
 }
 
 /** Пакет иконок подключает приложение — в тестах эту роль играет setup. */

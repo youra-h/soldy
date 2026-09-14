@@ -20,14 +20,14 @@ import { collectEventBindings } from '@soldy/setup'
 export function useSyncEvents(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-	emit?: (event: string, ...args: any[]) => void,
+	emit?: (event: string, ...args: unknown[]) => void,
 ): () => void {
 	if (!emit) return () => {}
 
 	const offs: Array<() => void> = []
 
 	for (const { source, rawName, exportName } of collectEventBindings(accessor, inspector)) {
-		const handler = (...args: any[]) => emit(exportName, ...args)
+		const handler = (...args: unknown[]) => emit(exportName, ...args)
 
 		source.on(rawName, handler)
 		offs.push(() => source.off(rawName, handler))

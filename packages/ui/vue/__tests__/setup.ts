@@ -16,7 +16,7 @@ if (!('ResizeObserver' in globalThis)) {
 		disconnect(): void {}
 	}
 
-	;(globalThis as any).ResizeObserver = ResizeObserverStub
+	globalThis.ResizeObserver = ResizeObserverStub
 }
 
 /**

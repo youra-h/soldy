@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -15,7 +15,7 @@ import { type IAccordionComponentProps, type IAccordion } from '@soldy/core'
 export default {
 	name: '_Accordion',
 	extends: BaseAccordion,
-	setup(props: AccordionProps, { emit }: any) {
+	setup(props: AccordionProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(AccordionDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,

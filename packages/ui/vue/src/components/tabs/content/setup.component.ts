@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TTabsContentBindingExtension,
@@ -18,7 +18,7 @@ import BaseTabsContent, { type TabsContentProps } from './base.component'
 export default {
 	name: '_TabsContent',
 	extends: BaseTabsContent,
-	setup(props: TabsContentProps, { emit }: any) {
+	setup(props: TabsContentProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(TabsContentDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
@@ -33,7 +33,7 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const collectionBinding = useAdapter<Record<string, any>, TTabsContentCollectionFacade>(
+		const collectionBinding = useAdapter<TabsContentProps, TTabsContentCollectionFacade>(
 			contentAdapter,
 			props,
 			emit,

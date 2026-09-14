@@ -12,6 +12,10 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick } from 'vue'
 import { Select } from '@soldy/ui-vue'
+import type { TCollectionEngine } from '@soldy/core'
+
+/** Движок, который коллекция отдаёт через `engine:create`: элементы с `value`. */
+type TEngine = TCollectionEngine<{ readonly value: unknown }, any>
 
 /** `TElementPlugin` отдаёт узел через `requestAnimationFrame` — ждём кадр. */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -35,13 +39,13 @@ const ITEMS = [
 const options = () => document.querySelectorAll('[role="option"]')
 const texts = () => [...options()].map((el) => el.textContent?.trim())
 
-async function renderSelect(props: Record<string, unknown> = {}) {
-	let engine: any
+async function renderSelect(props: Record<string, unknown> = {}): Promise<TEngine> {
+	let engine: TEngine | undefined
 
 	wrapper = mount(Select, {
 		props: {
 			items: ITEMS,
-			'onEngine:create': (value: any) => {
+			'onEngine:create': (value: TEngine) => {
 				engine = value
 			},
 			...props,
@@ -51,6 +55,8 @@ async function renderSelect(props: Record<string, unknown> = {}) {
 
 	await nextTick()
 	await nextTick()
+
+	if (!engine) throw new Error('engine:create не пришёл')
 
 	return engine
 }
@@ -136,11 +142,11 @@ describe('Select под отбором', () => {
 		engine.extensions.filter.clear()
 		await nextTick()
 
-		const selected = engine.extensions.batch.items.filter((item: any) =>
+		const selected = engine.extensions.batch.items.filter((item: { readonly value: unknown }) =>
 			engine.extensions.selection.isSelected(item),
 		)
 
-		expect(selected.map((item: any) => item.value)).toEqual(['a'])
+		expect(selected.map((item: { readonly value: unknown }) => item.value)).toEqual(['a'])
 	})
 })
 
@@ -313,12 +319,12 @@ describe('опции из разметки под отбором', () => {
 			.filter((el) => (el as HTMLElement).style.display !== 'none')
 			.map((el) => el.textContent?.trim())
 
-	async function renderWithSlot(props: Record<string, unknown> = {}) {
-		let engine: any
+	async function renderWithSlot(props: Record<string, unknown> = {}): Promise<TEngine> {
+		let engine: TEngine | undefined
 
 		wrapper = mount(Select, {
 			props: {
-				'onEngine:create': (value: any) => {
+				'onEngine:create': (value: TEngine) => {
 					engine = value
 				},
 				...props,
@@ -331,6 +337,8 @@ describe('опции из разметки под отбором', () => {
 
 		await nextTick()
 		await nextTick()
+
+		if (!engine) throw new Error('engine:create не пришёл')
 
 		return engine
 	}

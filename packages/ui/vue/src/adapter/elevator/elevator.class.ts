@@ -15,6 +15,6 @@ export class TVueElevator<T = any> extends TElevator<T> {
     }
 
     up(): T | undefined {
-        return inject<T>(this._key, undefined as any)
+        return inject<T | undefined>(this._key, undefined)
     }
 }

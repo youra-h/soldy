@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { TButton } from '@soldy/core'
-import { TActionPlugin } from '@soldy/plugins'
+import { TActionPlugin, TPluginBundle } from '@soldy/plugins'
 import { Button } from '@soldy/ui-vue'
 
 /**
@@ -111,7 +111,11 @@ describe('доступ к плагину', () => {
 		const press = vi.fn()
 
 		const wrapper = mount(Button, {
-			props: { 'onAction:create': (plugin: any) => plugin.events.on('press', press) },
+			props: {
+				'onAction:create': (plugin: unknown) => {
+					if (plugin instanceof TActionPlugin) plugin.events.on('press', press)
+				},
+			},
 		})
 
 		await mounted()
@@ -124,8 +128,8 @@ describe('доступ к плагину', () => {
 		const ctrl = new TButton()
 		const press = vi.fn()
 
-		ctrl.events.on('bundle:create', (bundle: any) => {
-			bundle.get(TActionPlugin).events.on('press', press)
+		ctrl.events.on('bundle:create', (bundle: unknown) => {
+			if (bundle instanceof TPluginBundle) bundle.get(TActionPlugin)?.events.on('press', press)
 		})
 
 		const wrapper = mount(Button, { props: { ctrl } })

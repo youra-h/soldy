@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, type SetupContext } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionItemExtension,
@@ -14,7 +14,7 @@ export default {
 	name: '_AccordionItem',
 	inheritAttrs: false,
 	extends: BaseAccordionItem,
-	setup(props: AccordionItemProps, { emit }: any) {
+	setup(props: AccordionItemProps, { emit }: SetupContext) {
 		const adapter = createAdapterContext(AccordionItemDescriptor(), {
 			ctrl: toRaw(props.ctrl),
 			props,
@@ -29,7 +29,7 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<Record<string, any>, TAccordionItemCollectionFacade>(
+		const itemBinding = useAdapter<AccordionItemProps, TAccordionItemCollectionFacade>(
 			itemAdapter,
 			props,
 			emit,
