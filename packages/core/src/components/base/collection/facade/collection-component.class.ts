@@ -13,10 +13,16 @@ import type { ICollectionComponentOptions } from './types'
  *
  * Дженерик над `TItem` и набором расширений `TExtensions`, поэтому подходит для любой
  * коллекции (tabs, accordion, list, list-box, tree, ...) с любым набором расширений.
+ *
+ * Набор сужен до `{ plain }`: системные события фасад берёт из `plain`, а его
+ * ставит `baseExtensions()` любой коллекции. Без сужения широкий
+ * `Record<string, IExtension>` про `plain` ничего не знал, и здесь стояло
+ * приведение. Тип элемента у расширения `any` по той же причине, что у
+ * `batch` в `TBatchCollectionFacade`: расширения инвариантны по элементу.
  */
 export abstract class TCollectionComponent<
 	TItem extends object,
-	TExtensions extends Record<string, IExtension<TItem>>,
+	TExtensions extends { plain: TPlainExtension<any> } & Record<string, IExtension<any>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TComponent<IComponentProps, TEvents> {
 	public readonly engine: TCollectionEngine<TItem, TExtensions>
@@ -30,10 +36,7 @@ export abstract class TCollectionComponent<
 		this.engine = options.engine
 
 		// Системные события движка: item:*, change:items/count, reset.
-		// `plain` есть у любой коллекции — его ставит baseExtensions().
-		const plain = this.engine.extensions.plain as unknown as TPlainExtension<TItem>
-
-		this.events.relay(plain.events, [
+		this.events.relay(this.extensions.plain.events, [
 			'item:add:before',
 			'item:added',
 			'item:remove:before',

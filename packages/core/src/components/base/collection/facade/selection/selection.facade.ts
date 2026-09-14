@@ -1,7 +1,13 @@
 import { TBatchCollectionFacade } from '../batch'
 import type { ICollectionComponentOptions, TCollectionFacadeProps } from '../types'
 import type { IComponentProps, TComponentEvents } from '../../../component'
-import type { IExtension, TBatchExtension, TSelectionExtension, TSelectionMode } from '../../engine'
+import type {
+	IExtension,
+	TBatchExtension,
+	TPlainExtension,
+	TSelectionExtension,
+	TSelectionMode,
+} from '../../engine'
 
 /** Входные props коллекции с выбором: состав плюс режим. */
 export type TSelectionFacadeProps<TItem = any, TItemProps = any> = TCollectionFacadeProps<
@@ -28,6 +34,7 @@ export type TSelectionFacadeProps<TItem = any, TItemProps = any> = TCollectionFa
 export abstract class TSelectionCollectionFacade<
 	TItem extends object,
 	TExtensions extends {
+		plain: TPlainExtension<any>
 		batch: TBatchExtension<any>
 		selection: TSelectionExtension<any>
 	} & Record<string, IExtension<any>>,

@@ -27,14 +27,12 @@ import * as ts from 'typescript'
  * `T` — это второй синтаксис приведения. Директивы ts-ignore/ts-nocheck не
  * бывают узлом AST (это комментарии), поэтому их ищем в сыром тексте файла.
  *
- * Allow-список — 15 поштучных строк, у каждой в комментарии — задача на
+ * Allow-список — 8 поштучных строк, у каждой в комментарии — задача на
  * снятие (см. AGENTS.md, «Временное исключение без срока»):
  * - 869f1qfv6 (4) — `_context?.adapters as unknown as TXxxAdapters` в фасадах
  *   item-адаптеров коллекций: тип контекста неполон.
  * - 869f1qfy5 (4) — конкретный item-адаптер приводится к генерику
  *   `IItemExtensionCtor` в конструкторах расширений коллекций.
- * - 869f1qg0v (7) — движок коллекции (контекст элемента,
- *   `unique.extension.ts`, `collection-component.class.ts`).
  *
  * Новых строк в списке быть не должно.
  */
@@ -64,15 +62,6 @@ const ALLOW_LIST = new Set<string>([
 	'packages/core/src/components/custom/select/collection/extensions/select/select.extension.ts:59',
 	'packages/core/src/components/custom/tabs/collection/extensions/content/content.extension.ts:39',
 	'packages/core/src/components/custom/list-box/collection/extensions/list-box/list-box.extension.ts:49',
-
-	// 869f1qg0v — движок коллекции.
-	'packages/core/src/components/base/collection/engine/context/item.class.ts:38',
-	'packages/core/src/components/base/collection/engine/context/item.class.ts:40',
-	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:35',
-	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:41',
-	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:51',
-	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:58',
-	'packages/core/src/components/base/collection/facade/collection-component.class.ts:34',
 ])
 
 function collectSourceFiles(dir: string): string[] {

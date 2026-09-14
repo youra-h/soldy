@@ -1,6 +1,13 @@
 import type { IExtension, IExtensionItems, IItemExtension } from '../extension'
 import type { TExtractItemAdapters } from './types'
 
+/** Умеет ли расширение создавать item-адаптеры (`IExtensionItems`). */
+function hasItems<TItem extends object>(
+	ext: IExtension<TItem>,
+): ext is IExtension<TItem> & IExtensionItems<TItem> {
+	return 'createItem' in ext && typeof ext.createItem === 'function'
+}
+
 /**
  * Контекст элемента коллекции — динамический доступ к адаптерам расширений через Proxy.
  *
@@ -33,11 +40,8 @@ export class TItemContext<
 
 				const ext = extensions[prop]
 
-				if (
-					ext &&
-					typeof (ext as unknown as IExtensionItems<TItem>).createItem === 'function'
-				) {
-					const adapter = (ext as unknown as IExtensionItems<TItem>).createItem(owner)
+				if (ext && hasItems(ext)) {
+					const adapter = ext.createItem(owner)
 
 					this._cache.set(prop, adapter)
 

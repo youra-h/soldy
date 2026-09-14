@@ -2,7 +2,7 @@ import { TCollectionComponent } from '../collection-component.class'
 import type { ICollectionComponentOptions, TCollectionFacadeProps } from '../types'
 import type { IComponentProps, TComponentEvents } from '../../../component'
 import type { IExtension, TCollectionEngineItemSource } from '../../engine'
-import type { TBatchExtension } from '../../engine'
+import type { TBatchExtension, TPlainExtension } from '../../engine'
 
 /**
  * Фасад коллекции, у которой есть расширение `batch`: состав и `trackBy`.
@@ -29,10 +29,15 @@ import type { TBatchExtension } from '../../engine'
  * когда `TItem` — наследник, и цепочка фасадов переставала собираться.
  * Требование «расширение должно быть» от этого не слабеет — теряется только
  * сверка типа элемента, которой и раньше не было.
+ *
+ * `plain` в констрейнте — требование базы `TCollectionComponent`.
  */
 export abstract class TBatchCollectionFacade<
 	TItem extends object,
-	TExtensions extends { batch: TBatchExtension<any> } & Record<string, IExtension<any>>,
+	TExtensions extends {
+		plain: TPlainExtension<any>
+		batch: TBatchExtension<any>
+	} & Record<string, IExtension<any>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TCollectionComponent<TItem, TExtensions, TEvents> {
 	constructor(
