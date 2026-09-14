@@ -29,7 +29,7 @@ export interface IPluginDefinition<
 	/** Нормализованные events из contribution */
 	events: TName[]
 	/** Опции, передаваемые в plugin.install(ctx, options) */
-	options?: Record<string, any>
+	options?: object
 	/** Namespace плагина (проброшен из definePlugin для вывода типов в адаптерах). */
 	namespace?: N
 }

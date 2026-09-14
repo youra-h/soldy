@@ -14,11 +14,12 @@
  * обоих триггерах.
  */
 
+import type { IEventSource } from '@soldy/core'
 import type { IAccessor, TDescriptorInspector } from '@soldy/accessor'
 
 export interface IEventBinding {
 	/** Источник событий: instance.events компонента или плагина. */
-	source: any
+	source: IEventSource
 	/** Имя события для подписки на источник. */
 	rawName: string
 	/** Имя события для проброса наружу (по naming-стратегии фреймворка). */
@@ -30,9 +31,9 @@ export function collectEventBindings(
 	inspector: TDescriptorInspector,
 ): IEventBinding[] {
 	const bindings: IEventBinding[] = []
-	const seen = new Map<any, Set<string>>()
+	const seen = new Map<IEventSource, Set<string>>()
 
-	function add(source: any, rawName: string, exportName: string): void {
+	function add(source: IEventSource, rawName: string, exportName: string): void {
 		let names = seen.get(source)
 
 		if (!names) {

@@ -30,7 +30,7 @@ export class TPluginPropsExtension {
 		if (!bundle) return
 
 		for (const definition of context.descriptor.plugins) {
-			const plugin = bundle.get(definition.ctor) as Record<string, any> | undefined
+			const plugin = bundle.get(definition.ctor)
 
 			if (!plugin) continue
 
@@ -51,7 +51,7 @@ export class TPluginPropsExtension {
 					continue
 				}
 
-				plugin[prop.name.name] = value
+				Reflect.set(plugin, prop.name.name, value)
 			}
 		}
 	}

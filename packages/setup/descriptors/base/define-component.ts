@@ -18,7 +18,7 @@ import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefiniti
 import { normalizeContribution } from './compile-contribution'
 
 function createPluginCollector() {
-	const map = new Map<any, IPluginDefinition>()
+	const map = new Map<IPluginDefinition['ctor'], IPluginDefinition>()
 
 	return {
 		add(plugins: readonly IPluginDefinition[]): void {
@@ -166,8 +166,10 @@ export function defineComponent<
 	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
 ) => IComponentDescriptor<TProps, TEvents, readonly [...TParentPlugins, ...TPlugins], TSlots>
 
-export function defineComponent(...args: any[]): any {
-	if (args.length > 0) return buildDescriptor(args[0])
+export function defineComponent(
+	options?: IComponentDefinitionOptions,
+): IComponentDescriptor | ((options: IComponentDefinitionOptions) => IComponentDescriptor) {
+	if (options) return buildDescriptor(options)
 
-	return (options: IComponentDefinitionOptions) => buildDescriptor(options)
+	return (curried: IComponentDefinitionOptions) => buildDescriptor(curried)
 }

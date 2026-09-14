@@ -23,7 +23,7 @@ export function resolveSlotName(name: string, defaultName: string): string {
 }
 
 /** Есть ли у слота scope, то есть передаются ли внутрь данные. */
-export function isScopedSlot(scope: Record<string, any> | undefined): boolean {
+export function isScopedSlot(scope: Record<string, unknown> | undefined): boolean {
 	return !!scope && Object.keys(scope).length > 0
 }
 

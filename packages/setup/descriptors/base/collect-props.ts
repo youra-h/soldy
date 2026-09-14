@@ -11,9 +11,9 @@ import type { IPropDeclaration } from '@soldy/accessor'
  */
 export function collectDeclaredProps(
 	decls: IPropDeclaration[],
-	props: Readonly<Record<string, any>>,
-): Record<string, any> {
-	const result: Record<string, any> = {}
+	props: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+	const result: Record<string, unknown> = {}
 
 	for (const decl of decls) {
 		if (decl.protected) continue
@@ -31,7 +31,7 @@ export function collectDeclaredProps(
 /** Item-level пропсы коллекции (active, selected, ...). */
 export function collectItemProps(
 	itemProps: IPropDeclaration[],
-	props: Readonly<Record<string, any>>,
-): Record<string, any> {
+	props: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
 	return collectDeclaredProps(itemProps, props)
 }

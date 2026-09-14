@@ -16,7 +16,7 @@ export function definePlugin<
 	ctor: IPluginConstructor<any, any, any>
 	namespace?: N
 	contribution?: IContribution
-	options?: Record<string, any>
+	options?: object
 }): IPluginDefinition<N, TEvents, TProps> {
 	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
