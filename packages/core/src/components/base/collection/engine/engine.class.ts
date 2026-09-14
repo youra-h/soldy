@@ -20,17 +20,10 @@ export class TCollectionEngine<
 		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
 	>()
 
-	constructor(
-		options: {
-			storage?: IStorage<T>
-			extensions?: TExtensions
-		} = {},
-	) {
-		this._driver = new TCollectionStorageDriver(
-			options.storage ?? new TArrayStorage<T>(),
-		) as unknown as ICollectionStorageDriver<T>
+	constructor(options: { storage?: IStorage<T>; extensions: TExtensions }) {
+		this._driver = new TCollectionStorageDriver(options.storage ?? new TArrayStorage<T>())
 
-		this.extensions = (options.extensions ?? {}) as TExtensions
+		this.extensions = options.extensions
 
 		const ctx = this._createContext()
 
@@ -53,7 +46,7 @@ export class TCollectionEngine<
 	 *
 	 * @example
 	 * ```ts
-	 * const col = new TCollectionEngine<Item>()
+	 * const col = new TCollectionEngine<Item>({ extensions: {} })
 	 *   .use(new TPlainExtension())
 	 *   .use(new TActivationExtension())
 	 *

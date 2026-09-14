@@ -11,7 +11,7 @@ type Item = { id: number; name: string }
 
 describe('TCollectionEngine', () => {
 	it('создаётся без расширений', () => {
-		const col = new TCollectionEngine<Item>()
+		const col = new TCollectionEngine<Item>({ extensions: {} })
 
 		expect(col.extensions).toEqual({})
 		expect(col.getCore().driver.valueOf().length).toBe(0)
@@ -123,14 +123,14 @@ describe('TCollectionEngine', () => {
 	// --- .use() — fluent-добавление расширений ---
 
 	it('use: добавляет расширение после создания', () => {
-		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
 
 		expect(col.getCore().driver.valueOf().length).toBe(0)
 		expect(col.extensions.plain).toBeDefined()
 	})
 
 	it('use: цепочка добавляет несколько расширений с сохранением типов', () => {
-		const col = new TCollectionEngine<Item>()
+		const col = new TCollectionEngine<Item>({ extensions: {} })
 			.use(new TPlainExtension<Item>())
 			.use(new TActivationExtension<Item>())
 			.use(new TSelectionExtension<Item>())
@@ -147,7 +147,7 @@ describe('TCollectionEngine', () => {
 	})
 
 	it('use: install вызывается при добавлении', () => {
-		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
 
 		// plain готов к работе сразу после .use()
 		col.extensions.plain.insert({ id: 1, name: 'a' })
@@ -156,7 +156,7 @@ describe('TCollectionEngine', () => {
 	})
 
 	it('use: возвращает this (тот же объект)', () => {
-		const col = new TCollectionEngine<Item>()
+		const col = new TCollectionEngine<Item>({ extensions: {} })
 
 		const result = col.use(new TPlainExtension<Item>())
 
@@ -179,7 +179,7 @@ describe('TCollectionEngine', () => {
 	})
 
 	it('use: события работают после добавления через .use()', () => {
-		const col = new TCollectionEngine<Item>().use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
 
 		const added = vi.fn()
 
@@ -190,7 +190,7 @@ describe('TCollectionEngine', () => {
 	})
 
 	it('use: TItemContextRegistry работает с .use() расширениями', () => {
-		const col = new TCollectionEngine<Item>()
+		const col = new TCollectionEngine<Item>({ extensions: {} })
 			.use(new TPlainExtension<Item>())
 			.use(new TActivationExtension<Item>())
 

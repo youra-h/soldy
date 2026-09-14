@@ -1,9 +1,9 @@
 import type { IStorage } from './storage'
 import type { ICommand, ICommandContext, IQueryCommand } from './commands'
-import type { TCollectionStorageDriverEvents } from './types'
+import type { ICollectionStorageDriver, TCollectionStorageDriverEvents } from './types'
 import { TEvented } from '@soldy/core'
 
-export class TCollectionStorageDriver<T> {
+export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> {
 	private _storage: IStorage<T> // Хранилище элементов коллекции
 	private _isBatching = false // Флаг, указывающий, что в данный момент выполняется батч
 	private _pendingCommands: ICommand<T>[] = [] // Список команд, которые были выполнены во время батча и должны быть обработаны после его завершения
