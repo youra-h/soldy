@@ -1,4 +1,5 @@
 import type { IExtension, IExtensionContext } from '../types'
+import type { TCollectionEngineItemSource } from '../../types'
 import type { TBatchEvents, IBatchExtension } from './types'
 import {
 	TInsertCommand,
@@ -18,9 +19,9 @@ export class TBatchExtension<TItem extends object>
 {
 	readonly name = 'batch' as const
 
-	private _trackBy?: (item: TItem) => any
+	private _trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
 
-	get trackBy(): ((item: TItem) => any) | undefined {
+	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined {
 		return this._trackBy
 	}
 
@@ -37,7 +38,7 @@ export class TBatchExtension<TItem extends object>
 		ctx.driver.events.on('items:query:invalidated', () => this.events.emit('change:shown'))
 	}
 
-	set trackBy(fn: ((item: TItem) => any) | undefined) {
+	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined) {
 		if (this._trackBy === fn) return
 
 		this._trackBy = fn
@@ -62,7 +63,7 @@ export class TBatchExtension<TItem extends object>
 	 * Скрытый отбором элемент здесь находится: он существует, просто не
 	 * показан. Нужен поиск среди показанного — `shown.find()`.
 	 */
-	set items(items: TItem[]) {
+	set items(items: TCollectionEngineItemSource<TItem>[]) {
 		this.update(items)
 	}
 
@@ -96,20 +97,22 @@ export class TBatchExtension<TItem extends object>
 		return this.items.find(predicate)
 	}
 
-	set(items: TItem[]): void {
+	set(items: TCollectionEngineItemSource<TItem>[]): void {
 		if (!items.length) return
 
 		this._ctx.batch(() => {
 			items.forEach((item) => {
 				// Добавляем в конец, чтобы сохранить порядок items.
-				this._ctx.execute(new TInsertCommand(item, this._ctx.driver.valueOf().length))
+				this._ctx.execute(
+					new TInsertCommand<TItem>(item, this._ctx.driver.valueOf().length),
+				)
 			})
 		})
 
 		this.events.emit('items:added', items)
 	}
 
-	update(items: TItem[]): void {
+	update(items: TCollectionEngineItemSource<TItem>[]): void {
 		if (this._trackBy) {
 			this.patch(items)
 		} else {
@@ -118,7 +121,7 @@ export class TBatchExtension<TItem extends object>
 		}
 	}
 
-	patch(items: TItem[]): void {
+	patch(items: TCollectionEngineItemSource<TItem>[]): void {
 		if (!items.length) return
 
 		const trackBy = this._trackBy
@@ -128,7 +131,7 @@ export class TBatchExtension<TItem extends object>
 		}
 
 		// Сверка живёт в команде: ей нужен сырой storage, а не выборка из `items`.
-		this._ctx.execute(new TPatchCommand(items, trackBy))
+		this._ctx.execute(new TPatchCommand<TItem>(items, trackBy))
 
 		this.events.emit('items:added', items)
 	}

@@ -50,10 +50,7 @@ export class TFactoryExtension<TItem extends object>
 		ctx.driver.events.on('item:add:before', (e) => {
 			if (e.item instanceof ctor) return
 
-			const source = e.item as any
-			const item = new ctor(source)
-
-			e.item = item
+			e.item = new ctor(e.item)
 		})
 
 		this._convertExisting(ctx, ctor)

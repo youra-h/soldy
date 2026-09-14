@@ -1,4 +1,5 @@
 import type { ICommand, ICommandContext } from './types'
+import type { TCollectionEngineItemSource } from '../types'
 import { TInsertCommand } from './insert-command.class'
 import { TRemoveCommand } from './remove-command.class'
 import { TUpdateCommand } from './update-command.class'
@@ -24,8 +25,8 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 	private _commands: ICommand<TItem>[] = []
 
 	constructor(
-		private _items: TItem[],
-		private _trackBy: (item: TItem) => any,
+		private _items: TCollectionEngineItemSource<TItem>[],
+		private _trackBy: (item: TCollectionEngineItemSource<TItem> | TItem) => any,
 	) {}
 
 	get changed(): boolean {

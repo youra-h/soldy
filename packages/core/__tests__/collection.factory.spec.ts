@@ -62,20 +62,15 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 		expect([...col.extensions.batch.items].map((i) => i.text).sort()).toEqual(['a', 'b'])
 	})
 
-	it('update + trackBy: двумерный массив превращается в массив инстансов', () => {
+	it('patch: неполный источник с meta `_` превращается в инстанс без приведения типов', () => {
 		const { col } = createCollection()
-		col.extensions.batch.trackBy = (item) =>
-			item instanceof TTestItem ? item.id : (item as any)[0]
+		col.extensions.batch.trackBy = (item) => item.id
 
-		col.extensions.batch.update([
-			[1, 'a'],
-			[2, 'b'],
-		] as unknown as ITestItem[])
+		col.extensions.batch.patch([{ id: 1, _: { note: 'x' } }])
 
-		expect(col.extensions.batch.items.length).toBe(2)
-		expect([...col.extensions.batch.items].every((i) => i instanceof TTestItem)).toBe(true)
-		expect([...col.extensions.batch.items].map((i) => i.id).sort()).toEqual([1, 2])
-		expect([...col.extensions.batch.items].map((i) => i.text).sort()).toEqual(['a', 'b'])
+		expect(col.extensions.batch.items.length).toBe(1)
+		expect(col.extensions.batch.items[0]).toBeInstanceOf(TTestItem)
+		expect(col.extensions.batch.items[0].id).toBe(1)
 	})
 
 	it('update + trackBy: обновляет существующий инстанс и добавляет новый', () => {
