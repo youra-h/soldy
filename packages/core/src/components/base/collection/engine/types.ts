@@ -10,7 +10,7 @@ import { TActionEvent } from '../../../../common/event/action-event'
 // Параметр держит арность дженерика: наследники передают TItem явно.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export abstract class TItemEvent<TItem = any> extends TActionEvent {
-	public _: Record<string, any> = {}
+	public _: Record<string, unknown> = {}
 
 	protected captureMeta(source: unknown): void {
 		if (typeof source === 'object' && source !== null && '_' in source) {

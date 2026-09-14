@@ -22,6 +22,9 @@ type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 /**
  * Описание правила проброса одного события из источника.
  *
+ * Объединение по событиям источника: у правила с `from: 'item:added'` хук
+ * `then` имеет тип обработчика именно `item:added`.
+ *
  * @template TSource - события источника
  * @template TTarget - события цели (текущего эмиттера)
  */
@@ -29,34 +32,37 @@ export type TRelayRule<
 	TSource extends Record<string, (...args: any) => any>,
 	TTarget extends Record<string, (...args: any) => any>,
 > = {
-	/** Имя события в источнике */
-	from: keyof TSource & string
-	/**
-	 * Имя события в цели. Если не указано — используется то же имя, что и `from`.
-	 * Используется для переименования событий при проброске.
-	 *
-	 * @example
-	 * // Пробросить item:added как tab:added
-	 * { from: 'item:added', as: 'tab:added' }
-	 */
-	as?: keyof TTarget & string
-	/**
-	 * Хук, вызываемый **до** проброса события в цель.
-	 * Удобен для подписки на события нового элемента сразу в момент его добавления —
-	 * до того, как внешний код узнает о событии.
-	 *
-	 * @example
-	 * {
-	 *   from: 'item:added',
-	 *   then: ({ item }) => {
-	 *     item.events.on('change:disabled', (value) => {
-	 *       this.events.emit('item:disabled', item, value)
-	 *     })
-	 *   }
-	 * }
-	 */
-	then?: (...args: any[]) => void
-}
+	[TFrom in keyof TSource & string]: {
+		/** Имя события в источнике */
+		from: TFrom
+		/**
+		 * Имя события в цели. Если не указано — используется то же имя, что и `from`.
+		 * Используется для переименования событий при проброске.
+		 *
+		 * @example
+		 * // Пробросить item:added как tab:added
+		 * { from: 'item:added', as: 'tab:added' }
+		 */
+		as?: keyof TTarget & string
+		/**
+		 * Хук, вызываемый **до** проброса события в цель. Тип — обработчик
+		 * события `from`: аргументы те же.
+		 * Удобен для подписки на события нового элемента сразу в момент его добавления —
+		 * до того, как внешний код узнает о событии.
+		 *
+		 * @example
+		 * {
+		 *   from: 'item:added',
+		 *   then: ({ item }) => {
+		 *     item.events.on('change:disabled', (value) => {
+		 *       this.events.emit('item:disabled', item, value)
+		 *     })
+		 *   }
+		 * }
+		 */
+		then?: TSource[TFrom]
+	}
+}[keyof TSource & string]
 
 export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _items: TEventEmitter<TEvents> = new TEventEmitter()
@@ -124,16 +130,16 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * Внутренний метод для оповещения всех перехватчиков.
 	 * Выполняется за O(N) без рекурсии и лишних замыканий.
 	 */
-	private _notifyMiddlewares(
+	private _notifyMiddlewares<K extends keyof TEvents>(
 		type: TEventContext['type'],
-		event: keyof TEvents,
-		args: any[],
+		event: K,
+		args: Parameters<TEvents[K]>,
 	): void {
 		if (this._middlewares.length === 0) return
 
-		const ctx: TEventContext<TEvents> = {
+		const ctx: TEventContext<TEvents, K> = {
 			event,
-			args: args as Parameters<TEvents[keyof TEvents]>,
+			args,
 			type,
 			timestamp: Date.now(),
 		}
@@ -295,7 +301,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 				from,
 				as: target = from,
 				then: hook,
-			}: TRelayRule<TSource, TEvents> = typeof rule === 'string' ? { from: rule } : rule
+			} = typeof rule === 'string' ? { from: rule, as: undefined, then: undefined } : rule
 
 			const handler = (...args: unknown[]): void => {
 				hook?.(...args)

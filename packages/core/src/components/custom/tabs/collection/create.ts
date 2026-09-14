@@ -3,6 +3,7 @@ import type { TCreateEngineOptions } from '../../../base'
 import { TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from './factory'
 import type { TTabsCollection } from './types'
 import type { ITabs } from '../types'
+import type { ITabsItem } from '../item/types'
 
 /**
  * Коллекция Tabs целиком — со всем, включая владельческое.
@@ -13,7 +14,7 @@ import type { ITabs } from '../types'
  * `<Tabs>` доустановит сам.
  */
 export function createEngineTabs(
-	options: TCreateEngineOptions & { owner: ITabs },
+	options: TCreateEngineOptions<ITabsItem> & { owner: ITabs },
 ): TTabsCollection {
 	return createComponentEngine(
 		'createEngineTabs',

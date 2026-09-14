@@ -39,7 +39,7 @@ export default class TComponent<
 	static create<T extends TComponent>(
 		this: new (...args: any[]) => T,
 		props?: Partial<T extends TComponent<infer P> ? P : IComponentProps>,
-		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : any>,
+		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : TComponentStates>,
 	): T {
 		return new this(props ?? {}, options ?? {})
 	}

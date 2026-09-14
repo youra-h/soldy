@@ -10,12 +10,12 @@ class TTestItem implements ITestItem {
 	id: number
 	text: string
 
-	constructor(source: ITestItem | [number, string]) {
+	constructor(source: Partial<ITestItem> | [number, string]) {
 		if (Array.isArray(source)) {
 			;[this.id, this.text] = source
 		} else {
-			this.id = source.id
-			this.text = source.text
+			this.id = source.id ?? 0
+			this.text = source.text ?? ''
 		}
 	}
 }

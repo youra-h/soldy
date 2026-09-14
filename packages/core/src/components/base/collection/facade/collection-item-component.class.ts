@@ -1,7 +1,7 @@
 import { TComponent } from '../../component'
 import type { IComponentProps, TComponentEvents } from '../../component'
 import { TItemContext } from './../engine'
-import type { IExtension } from './../engine'
+import type { IExtension, TExtractItemAdapters } from './../engine'
 
 /**
  * Фасад элемента коллекции.
@@ -25,13 +25,11 @@ export abstract class TCollectionItemComponent<
 		this._context = context
 	}
 
-	// Возвращаем `any`, чтобы не просачивать не-портируемые типы (TExtractItemAdapters)
-	// в inferred-тип setup() Vue-компонента (vue-tsc требует переносимые именованные типы).
-	get context(): any {
+	get context(): TItemContext<TItem, TExtensions> | undefined {
 		return this._context
 	}
 
-	get adapters(): any {
+	get adapters(): TExtractItemAdapters<TExtensions> | undefined {
 		return this._context?.adapters
 	}
 }

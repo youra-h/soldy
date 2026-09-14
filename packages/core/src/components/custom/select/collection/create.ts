@@ -3,6 +3,7 @@ import type { TCreateEngineOptions } from '../../../base'
 import { SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from './factory'
 import type { TSelectCollection } from './types'
 import type { ISelect } from '../types'
+import type { ISelectItem } from '../item/types'
 
 /**
  * Коллекция Select целиком — со всем, включая владельческое.
@@ -12,7 +13,7 @@ import type { ISelect } from '../types'
  * или `createEngineSelection`: недостающее `<Select>` доустановит сам.
  */
 export function createEngineSelect(
-	options: TCreateEngineOptions & { owner: ISelect },
+	options: TCreateEngineOptions<ISelectItem> & { owner: ISelect },
 ): TSelectCollection {
 	return createComponentEngine(
 		'createEngineSelect',

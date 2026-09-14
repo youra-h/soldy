@@ -15,7 +15,7 @@ export type TComponentEvents = Record<string, (...args: any) => any>
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface IComponentProps {}
 
-export type TComponentStates = Record<string, any>
+export type TComponentStates = Record<string, unknown>
 
 export interface IComponent<
 	TProps extends IComponentProps = IComponentProps,

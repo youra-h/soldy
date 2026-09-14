@@ -35,7 +35,7 @@ export class TFactoryExtension<TItem extends object>
 {
 	readonly name = 'factory' as const
 
-	private readonly _itemCtor?: new (source: any) => TItem
+	private readonly _itemCtor?: new (source: Partial<TItem>) => TItem
 
 	constructor(options: IFactoryExtensionOptions<TItem>) {
 		super()
@@ -74,7 +74,7 @@ export class TFactoryExtension<TItem extends object>
 	 */
 	private _convertExisting(
 		ctx: IExtensionContext<TItem>,
-		ctor: new (source: any) => TItem,
+		ctor: new (source: Partial<TItem>) => TItem,
 	): void {
 		const raw = ctx.driver.valueOf().filter((item) => !(item instanceof ctor))
 
@@ -85,7 +85,7 @@ export class TFactoryExtension<TItem extends object>
 		batch?.update?.(ctx.driver.valueOf())
 	}
 
-	create(source: any): TItem {
+	create(source: Partial<TItem>): TItem {
 		const ctor = this._itemCtor
 
 		if (!ctor) {

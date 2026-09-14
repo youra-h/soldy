@@ -3,6 +3,7 @@ import type { TCreateEngineOptions } from '../../../base'
 import { LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from './factory'
 import type { TListBoxCollection } from './types'
 import type { IListBox } from '../types'
+import type { IListBoxItem } from '../item/types'
 
 /**
  * Коллекция ListBox целиком — со всем, включая владельческое.
@@ -12,7 +13,7 @@ import type { IListBox } from '../types'
  * или `createEngineSelection`: недостающее `<ListBox>` доустановит сам.
  */
 export function createEngineListBox(
-	options: TCreateEngineOptions & { owner: IListBox },
+	options: TCreateEngineOptions<IListBoxItem> & { owner: IListBox },
 ): TListBoxCollection {
 	return createComponentEngine(
 		'createEngineListBox',

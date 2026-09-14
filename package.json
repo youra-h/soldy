@@ -26,6 +26,7 @@
     "test:angular": "npm run test --workspace=@soldy/ui-angular",
     "test:svelte": "npm run test --workspace=@soldy/ui-svelte",
     "test:solid": "npm run test --workspace=@soldy/ui-solid",
+    "test:eslint": "vitest run --root tools/eslint",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
     "test:webc": "npm run test --workspace=@soldy/ui-webc",

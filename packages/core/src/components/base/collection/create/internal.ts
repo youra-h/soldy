@@ -9,7 +9,7 @@ import {
 	TActivationExtension,
 	TSelectionExtension,
 } from '../engine'
-import type { IExtension } from '../engine'
+import type { IExtension, TCollectionEngineItemSource } from '../engine'
 
 /**
  * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy/core`.
@@ -60,8 +60,8 @@ export type TOwnerExtensionSet<TItem extends object, TOwner> = Record<
  * который её меньше всего готов потерять. Наружу тип уходит отдельной строкой
  * в `index.ts`, не утаскивая за собой всё остальное отсюда.
  */
-export type TCreateEngineOptions = {
-	items?: readonly any[]
+export type TCreateEngineOptions<TItem extends object = object> = {
+	items?: readonly (TCollectionEngineItemSource<TItem> | TItem)[]
 }
 
 /**
@@ -74,7 +74,7 @@ export type TCreateEngineOptions = {
  * есть. `itemCtor` поэтому передаётся только на компонентном уровне.
  */
 export function baseExtensions<TItem extends object>(
-	itemCtor?: new (source: any) => TItem,
+	itemCtor?: new (source: Partial<TItem>) => TItem,
 ): TBaseExtensionSet<TItem> {
 	const set: TBaseExtensionSet<TItem> = {
 		unique: () => new TUniqueExtension<TItem>(),
@@ -91,14 +91,14 @@ export function baseExtensions<TItem extends object>(
 
 /** Базовый набор плюс активный элемент — модель Tabs. */
 export function activationExtensions<TItem extends object>(
-	itemCtor?: new (source: any) => TItem,
+	itemCtor?: new (source: Partial<TItem>) => TItem,
 ): TBaseExtensionSet<TItem> {
 	return { ...baseExtensions<TItem>(itemCtor), activation: () => new TActivationExtension<TItem>() }
 }
 
 /** Базовый набор плюс выбор — модель ListBox, Select и Accordion. */
 export function selectionExtensions<TItem extends object>(
-	itemCtor?: new (source: any) => TItem,
+	itemCtor?: new (source: Partial<TItem>) => TItem,
 ): TBaseExtensionSet<TItem> {
 	return { ...baseExtensions<TItem>(itemCtor), selection: () => new TSelectionExtension<TItem>() }
 }
@@ -113,7 +113,7 @@ export function selectionExtensions<TItem extends object>(
  */
 export function assembleEngine<TItem extends object>(
 	set: TBaseExtensionSet<TItem>,
-	items?: readonly any[],
+	items?: readonly (TCollectionEngineItemSource<TItem> | TItem)[],
 ): TCollectionEngine<TItem, any> {
 	const batch = set.batch()
 	const extensions: Record<string, IExtension<TItem>> = { batch }
@@ -145,7 +145,7 @@ export function createComponentEngine<TItem extends object, TOwner>(
 	label: string,
 	set: TBaseExtensionSet<TItem>,
 	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
-	options: TCreateEngineOptions & { owner: TOwner },
+	options: TCreateEngineOptions<TItem> & { owner: TOwner },
 ) {
 	if (!options?.owner) {
 		throw new Error(`${label}: нужен owner — инстанс компонента, которому принадлежит коллекция`)

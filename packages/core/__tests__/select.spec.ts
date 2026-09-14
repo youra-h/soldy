@@ -322,7 +322,7 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 		// Разнеси её по двум местам — и половинки однажды разойдутся
 		const { items, facadeFor, select } = createSelect(['a'])
 
-		expect(facadeFor(0).context.adapters.select.optionId).toBe(select.optionId(items[0]))
+		expect(facadeFor(0).context?.adapters.select.optionId).toBe(select.optionId(items[0]))
 	})
 
 	it('id уникальны между двумя Select на странице', () => {

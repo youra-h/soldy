@@ -2,6 +2,7 @@ import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
 import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import soldy from './tools/eslint/plugin'
 
 export default defineConfigWithVueTs(
 	{
@@ -51,6 +52,19 @@ export default defineConfigWithVueTs(
 					destructuredArrayIgnorePattern: '^_',
 				},
 			],
+		},
+	},
+
+	// `any` в ядре пропускается только там, где он стирает инвариантность, а не
+	// прячет тип. Встроенное правило этих позиций не различает (см. AGENTS.md,
+	// «`any`: где он честный»).
+	{
+		name: 'soldy/no-explicit-any',
+		files: ['packages/core/**/*.ts'],
+		plugins: { soldy },
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'soldy/no-explicit-any': 'error',
 		},
 	},
 

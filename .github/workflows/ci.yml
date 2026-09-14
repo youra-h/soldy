@@ -47,6 +47,7 @@ jobs:
       - name: Тесты
         run: |
           npm run test:core
+          npm run test:eslint
           npm run test:setup
           npm run test:accessor
           npm run test:vue

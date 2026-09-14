@@ -3,6 +3,7 @@ import type { TCreateEngineOptions } from '../../../base'
 import { TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from './factory'
 import type { TTagsCollection } from './types'
 import type { ITags } from '../types'
+import type { ITagsItem } from '../item/types'
 
 /**
  * Коллекция Tags целиком — со всем, включая владельческое.
@@ -12,7 +13,7 @@ import type { ITags } from '../types'
  * `createEngineSelection`: недостающее `<Tags>` доустановит сам.
  */
 export function createEngineTags(
-	options: TCreateEngineOptions & { owner: ITags },
+	options: TCreateEngineOptions<ITagsItem> & { owner: ITags },
 ): TTagsCollection {
 	return createComponentEngine(
 		'createEngineTags',

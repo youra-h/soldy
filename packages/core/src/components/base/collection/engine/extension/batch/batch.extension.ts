@@ -19,9 +19,9 @@ export class TBatchExtension<TItem extends object>
 {
 	readonly name = 'batch' as const
 
-	private _trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
+	private _trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 
-	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined {
+	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined {
 		return this._trackBy
 	}
 
@@ -38,7 +38,7 @@ export class TBatchExtension<TItem extends object>
 		ctx.driver.events.on('items:query:invalidated', () => this.events.emit('change:shown'))
 	}
 
-	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined) {
+	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined) {
 		if (this._trackBy === fn) return
 
 		this._trackBy = fn

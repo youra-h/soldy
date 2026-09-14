@@ -6,14 +6,14 @@ export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
 	/** Данные для наполнения коллекции: сырые props (+ meta `_`) или готовые инстансы. */
 	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]
 	/** Функция идентификации элемента для патчинга (принимает источник или инстанс). */
-	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
+	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 }
 
 export type TBatchEvents<TItem> = {
 	/** Уходит вход — источники (сырые props + meta `_`) или готовые инстансы, не то, что легло в хранилище. */
 	'items:added': (items: TCollectionEngineItemSource<TItem>[]) => void
 	'items:removed': (items: TItem[]) => void
-	'change:trackBy': (fn?: (item: TCollectionEngineItemSource<TItem> | TItem) => any) => void
+	'change:trackBy': (fn?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown) => void
 	'change:items': (items: TItem[]) => void
 
 	/**
@@ -28,7 +28,7 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 	TBatchEvents<TItem>
 > {
 	/** Принимает источник (сырые props + meta `_`) или готовый инстанс. */
-	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
+	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 
 	/**
 	 * Состав хранилища — реальные данные. Отбор сюда не вмешивается.

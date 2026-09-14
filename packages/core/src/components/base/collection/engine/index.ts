@@ -43,3 +43,4 @@ export { TCollectionEngine } from './engine.class'
 
 // Контекст
 export { TItemContext, TItemContextRegistry } from './context'
+export type { TExtractItemAdapters } from './context'

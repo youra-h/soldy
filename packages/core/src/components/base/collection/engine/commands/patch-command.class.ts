@@ -26,7 +26,7 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 
 	constructor(
 		private _items: TCollectionEngineItemSource<TItem>[],
-		private _trackBy: (item: TCollectionEngineItemSource<TItem> | TItem) => any,
+		private _trackBy: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown,
 	) {}
 
 	get changed(): boolean {

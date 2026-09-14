@@ -71,7 +71,7 @@ export abstract class TBatchCollectionFacade<
 		return this.extensions.batch.items
 	}
 
-	set items(value: any) {
+	set items(value: (TCollectionEngineItemSource<TItem> | TItem)[]) {
 		this.extensions.batch.update(value)
 	}
 
@@ -85,11 +85,11 @@ export abstract class TBatchCollectionFacade<
 		return this.extensions.batch.shown
 	}
 
-	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined {
+	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined {
 		return this.extensions.batch.trackBy
 	}
 
-	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined) {
+	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined) {
 		this.extensions.batch.trackBy = fn
 	}
 }

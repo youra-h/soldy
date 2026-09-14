@@ -45,7 +45,7 @@ export type {
  * Годится куда угодно — компонент доустановит своё при привязке.
  */
 export function createEngine<TItem extends object = object>(
-	options: TCreateEngineOptions = {},
+	options: TCreateEngineOptions<TItem> = {},
 ): TCollectionEngine<TItem, TBaseCollectionExtensions<TItem>> {
 	// `assembleEngine` наполняет движок динамически, по строковому ключу — за
 	// этим циклом компилятор точную карту расширений не видит. Приведение
@@ -61,7 +61,7 @@ export function createEngine<TItem extends object = object>(
 
 /** Коллекция с активным элементом — модель Tabs. */
 export function createEngineActivation<TItem extends object = object>(
-	options: TCreateEngineOptions = {},
+	options: TCreateEngineOptions<TItem> = {},
 ): TCollectionEngine<TItem, TActivationCollectionExtensions<TItem>> {
 	return assembleEngine(activationExtensions<TItem>(), options.items) as TCollectionEngine<
 		TItem,
@@ -71,7 +71,7 @@ export function createEngineActivation<TItem extends object = object>(
 
 /** Коллекция с выбором — модель ListBox, Select и Accordion. */
 export function createEngineSelection<TItem extends object = object>(
-	options: TCreateEngineOptions = {},
+	options: TCreateEngineOptions<TItem> = {},
 ): TCollectionEngine<TItem, TSelectionCollectionExtensions<TItem>> {
 	return assembleEngine(selectionExtensions<TItem>(), options.items) as TCollectionEngine<
 		TItem,
