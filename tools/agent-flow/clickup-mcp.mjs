@@ -16,6 +16,7 @@ const log = (...args) => process.stderr.write(`[clickup-mcp] ${args.join(' ')}\n
 const HASHTAGS = {
 	analyst: '#ANALYSIS',
 	techlead: '#PLANNING',
+	designer: '#DESIGN',
 	developer: '#DEV',
 }
 
@@ -64,12 +65,17 @@ const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
  * Куда роль может отправить задачу по итогам этапа: исход → ключ `config.statuses`.
  *
  * Владельцу (OVERVIEW) задачу возвращают только аналитик и тимлид. Программист
- * с вопросами идёт к тимлиду: тот решает, правка это плана, новая задача или
- * вопрос владельцу.
+ * и дизайнер с вопросами идут к тимлиду: тот решает, правка это плана, новая
+ * задача или вопрос владельцу.
+ *
+ * Дизайнер — редкая роль для крупных задач, в DESIGN задачу отправляет тимлид
+ * или владелец. Исходы у него те же, что у программиста: `done` — правились
+ * только тема и иконки, `questions` — нужен код, дальше планирует тимлид.
  */
 const TRANSITIONS = {
 	analyst: { review: 'overview' },
-	techlead: { ready: 'inProgress', questions: 'overview', done: 'approved' },
+	techlead: { ready: 'inProgress', design: 'design', questions: 'overview', done: 'approved' },
+	designer: { done: 'approved', questions: 'planning' },
 	developer: { done: 'approved', questions: 'planning' },
 }
 
@@ -165,7 +171,7 @@ const tools = {
 				task_id: { type: 'string' },
 				role: {
 					type: 'string',
-					enum: ['analyst', 'techlead', 'developer'],
+					enum: Object.keys(HASHTAGS),
 					description: 'Твоя роль. Определяет хештег этапа.',
 				},
 				text: { type: 'string', description: 'Markdown-текст комментария, без хештега' },
@@ -249,7 +255,7 @@ const tools = {
 					type: 'string',
 					enum: [...new Set(Object.values(TRANSITIONS).flatMap(Object.keys))],
 					description:
-						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). developer: done (сделано, вопросов нет → APPROVED), questions (нужна доработка тимлидом → PLANNING).',
+						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), design (нужен дизайн → DESIGN), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). designer: done (правились только тема и иконки, PR открыт → APPROVED), questions (нужен код или решение тимлида → PLANNING). developer: done (сделано, вопросов нет → APPROVED), questions (нужна доработка тимлидом → PLANNING).',
 				},
 			},
 			required: ['task_id', 'role', 'outcome'],
@@ -296,7 +302,7 @@ const tools = {
 			properties: {
 				status: {
 					type: 'string',
-					description: 'Например: ANALYSIS, PLANNING, IN PROGRESS',
+					description: 'Например: ANALYSIS, PLANNING, DESIGN, IN PROGRESS',
 				},
 			},
 			required: ['status'],

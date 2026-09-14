@@ -9,6 +9,7 @@
     "statuses": {
         "analysis": "analysis",
         "planning": "planning",
+        "design": "design",
         "inProgress": "in progress",
         "overview": "overview",
         "approved": "approved",
