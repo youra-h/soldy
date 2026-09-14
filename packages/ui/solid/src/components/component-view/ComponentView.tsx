@@ -1,4 +1,4 @@
-import { Show, children, createMemo, type JSX } from 'solid-js'
+import { Show, children, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { renderSlot } from '../../adapter'
 import { setupComponentView } from './setup.component'
@@ -18,21 +18,22 @@ export function ComponentView(props: ComponentViewProps): JSX.Element {
 	// в нескольких местах создавало бы узлы заново.
 	const resolved = children(() => renderSlot(props.children))
 
-	const attrs = createMemo(() => {
-		const rest = binding.forwardProps()
-
-		return {
-			...rest,
-			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
-			style: { ...(rest.style as object), display: state.visible ? undefined : 'none' },
-			// dir вычисляет ядро: null для 'inherit' — Solid трактует как «атрибут не ставить»
-			dir: state.dir ?? undefined,
-		}
-	})
-
 	return (
 		<Show when={state.rendered}>
-			<Dynamic component={state.tag as string} {...attrs()} ref={binding.ref}>
+			<Dynamic
+				component={state.tag as string}
+				{...binding.forwardProps()}
+				class={[state.classes?.join(' '), binding.forwardProps().class]
+					.filter(Boolean)
+					.join(' ')}
+				style={{
+					...(binding.forwardProps().style as object),
+					display: state.visible ? undefined : 'none',
+				}}
+				// dir вычисляет ядро: null для 'inherit' — Solid трактует как «атрибут не ставить»
+				dir={state.dir ?? undefined}
+				ref={binding.ref}
+			>
 				{resolved()}
 			</Dynamic>
 		</Show>

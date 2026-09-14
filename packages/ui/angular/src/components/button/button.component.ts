@@ -1,10 +1,4 @@
-import {
-	Component,
-	ChangeDetectionStrategy,
-	ElementRef,
-	computed,
-	viewChild,
-} from '@angular/core'
+import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { IButton } from '@soldy/core'
 import type { TBinding } from '../../adapter'
@@ -16,7 +10,9 @@ import { setupButton } from './setup.component'
  * TButtonComponent — слой TButton.
  *
  * inputs/outputs — статические константы из generated/button.metadata.ts.
- * Разметка вынесена в button.component.html (templateUrl).
+ * Разметка вынесена в button.component.html (templateUrl). Корень (`#root`)
+ * живёт внутри `@if`/`@else` и меняет ветку вместе с `tag` — привязку к
+ * TElementPlugin по умолчанию берёт на себя TComponentBase.
  *
  * Selector: <soldy-button>
  */
@@ -30,18 +26,8 @@ import { setupButton } from './setup.component'
 	templateUrl: './button.component.html',
 })
 export class TButtonComponent extends TComponentBase<IButton> {
-	/**
-	 * Сигнальный запрос, а не @ViewChild: корень живёт внутри @if и меняет
-	 * ветку вместе с `tag`, поэтому ссылка обязана переустанавливаться.
-	 */
-	private readonly _buttonEl = viewChild('buttonEl', { read: ElementRef })
-
-	readonly isNativeButton = computed(() => this.state()['tag'] === 'button')
-
 	constructor() {
 		super(ButtonInputNames, ButtonOutputNames)
-
-		this.bindElementFrom(this._buttonEl)
 	}
 
 	protected createBinding(

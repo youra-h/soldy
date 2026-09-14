@@ -199,10 +199,10 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 (`eslint.config.ts`): запрещает импорт `'vue'` и `createAdapterContext` из
 `@soldy/setup` в `packages/ui/vue/src/components/**`.
 
-Известные нарушения, которые ещё не разобраны: Solid (`createMemo`), Svelte
-(`$derived.by`) в Button и ComponentView, Angular (`computed`,
-`ngAfterViewInit` в Button и ComponentView) — задача 869f1q0t4. Новых не
-добавлять.
+Тот же контроль для Solid, Svelte и Angular, у которых такого eslint-блока
+нет: `packages/setup/__tests__/framework-mechanisms-components.spec.ts`
+сканирует `packages/ui/{solid,svelte,angular}/src/components/**` на имена из
+таблицы выше.
 
 ### `setup/adapter/extensions/` — тоже не место для операций над DOM
 
