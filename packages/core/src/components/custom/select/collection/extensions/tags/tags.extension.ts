@@ -1,6 +1,5 @@
 import { TBaseExtension } from '../../../../../base/collection'
 import type {
-	IBatchExtension,
 	IExtension,
 	IExtensionContext,
 	ISelectionExtension,
@@ -149,7 +148,7 @@ export class TSelectTagsExtension<
 
 		if (!selection || !engine) return
 
-		const batch = engine.extensions.batch as IBatchExtension<ITagsItem>
+		const batch = engine.extensions.batch
 		const source = selection.selected.map((item) => ({ value: item.value, text: item.text }))
 
 		if (source.length === 0) {
@@ -160,9 +159,9 @@ export class TSelectTagsExtension<
 
 		// Сырые `{ value, text }`, не `ITagsItem`: `TFactoryExtension` в тегах
 		// коллекции превращает их в инстансы `TTagsItem` при вставке — тот же
-		// приём, что у `:items` в шаблоне. Тип `patch()` этого не выражает.
+		// приём, что у `:items` в шаблоне.
 		batch.trackBy = (item) => item.value
-		batch.patch(source as unknown as ITagsItem[])
+		batch.patch(source)
 	}
 
 	/** Закрытие тега → снять выбор с опции по совпадению `value`. */

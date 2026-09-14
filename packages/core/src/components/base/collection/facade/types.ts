@@ -21,7 +21,7 @@ export interface ICollectionComponentOptions<
  */
 export type TCollectionFacadeProps<TItem = any, TItemProps = any> = {
 	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]
-	trackBy?: (item: TItem) => any
+	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
 }
 
 /**

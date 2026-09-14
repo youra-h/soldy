@@ -5,14 +5,15 @@ import type { TCollectionEngineItemSource } from '../../types'
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
 	/** Данные для наполнения коллекции: сырые props (+ meta `_`) или готовые инстансы. */
 	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]
-	/** Функция идентификации элемента для патчинга (принимает инстанс). */
-	trackBy?: (item: TItem) => any
+	/** Функция идентификации элемента для патчинга (принимает источник или инстанс). */
+	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
 }
 
 export type TBatchEvents<TItem> = {
-	'items:added': (items: TItem[]) => void
+	/** Уходит вход — источники (сырые props + meta `_`) или готовые инстансы, не то, что легло в хранилище. */
+	'items:added': (items: TCollectionEngineItemSource<TItem>[]) => void
 	'items:removed': (items: TItem[]) => void
-	'change:trackBy': (fn?: (item: TItem) => any) => void
+	'change:trackBy': (fn?: (item: TCollectionEngineItemSource<TItem> | TItem) => any) => void
 	'change:items': (items: TItem[]) => void
 
 	/**
@@ -26,13 +27,14 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 	TItem,
 	TBatchEvents<TItem>
 > {
-	trackBy?: (item: TItem) => any
+	/** Принимает источник (сырые props + meta `_`) или готовый инстанс. */
+	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => any
 
 	/**
 	 * Состав хранилища — реальные данные. Отбор сюда не вмешивается.
 	 */
 	get items(): ReadonlyArray<TItem>
-	set items(items: TItem[])
+	set items(items: TCollectionEngineItemSource<TItem>[])
 
 	/**
 	 * Что показано пользователю — выборка после отбора (`items:query:before`).
@@ -50,15 +52,15 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 
 	/**
 	 * Добавить элементы в коллекцию.
-	 * @param items — элементы для добавления.
+	 * @param items — источники (сырые props + meta `_`) или готовые инстансы.
 	 */
-	set(items: TItem[]): void
+	set(items: TCollectionEngineItemSource<TItem>[]): void
 
 	/**
 	 * Обновить элементы в коллекции.
-	 * @param items — элементы для обновления.
+	 * @param items — источники (сырые props + meta `_`) или готовые инстансы.
 	 */
-	update(items: TItem[]): void
+	update(items: TCollectionEngineItemSource<TItem>[]): void
 
 	/**
 	 * Удалить элементы из коллекции.
@@ -68,9 +70,9 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 
 	/**
 	 * Патчить элементы в коллекцию.
-	 * @param items — элементы для патчинга.
+	 * @param items — источники (сырые props + meta `_`) или готовые инстансы.
 	 */
-	patch(items: TItem[]): void
+	patch(items: TCollectionEngineItemSource<TItem>[]): void
 
 	/**
 	 * Очистить коллекцию.

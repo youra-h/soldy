@@ -1,7 +1,7 @@
 import { TCollectionComponent } from '../collection-component.class'
 import type { ICollectionComponentOptions, TCollectionFacadeProps } from '../types'
 import type { IComponentProps, TComponentEvents } from '../../../component'
-import type { IExtension } from '../../engine'
+import type { IExtension, TCollectionEngineItemSource } from '../../engine'
 import type { TBatchExtension } from '../../engine'
 
 /**
@@ -80,11 +80,11 @@ export abstract class TBatchCollectionFacade<
 		return this.extensions.batch.shown
 	}
 
-	get trackBy(): ((item: TItem) => any) | undefined {
+	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined {
 		return this.extensions.batch.trackBy
 	}
 
-	set trackBy(fn: ((item: TItem) => any) | undefined) {
+	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => any) | undefined) {
 		this.extensions.batch.trackBy = fn
 	}
 }
