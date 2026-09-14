@@ -1,5 +1,23 @@
 import { TEventEmitter } from './event-emitter'
+import type { IEventEmitter } from './event-emitter'
 import type { TEventContext, TEventMiddleware } from './middleware'
+
+/**
+ * Вид эмиттера, через который работает тело {@link TEvented.relay}.
+ *
+ * Правила проброса называют события строками, и связь «аргументы события
+ * источника подходят событию цели» TypeScript на дженерик-картах не выражает:
+ * `on` ждёт обработчик ровно `TSource[K]`, `emit` — аргументы ровно
+ * `Parameters<TEvents[K]>`, и построить такие значения внутри дженерик-метода
+ * нельзя. Поэтому relay соединяет эмиттеры по их нетипизированному контракту —
+ * тому же `IEventEmitter`, который объявляет `TEventEmitter`.
+ *
+ * `TEvented<T>` присваивается в этот вид структурно, без приведения, как
+ * `TEventEmitter<T>` удовлетворяет `implements IEventEmitter`. Проброс идёт
+ * через настоящие `on`/`off`/`emit`, поэтому глушение и middleware цели
+ * работают как при прямом вызове.
+ */
+type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 
 /**
  * Описание правила проброса одного события из источника.
@@ -12,7 +30,7 @@ export type TRelayRule<
 	TTarget extends Record<string, (...args: any) => any>,
 > = {
 	/** Имя события в источнике */
-	from: keyof TSource
+	from: keyof TSource & string
 	/**
 	 * Имя события в цели. Если не указано — используется то же имя, что и `from`.
 	 * Используется для переименования событий при проброске.
@@ -21,7 +39,7 @@ export type TRelayRule<
 	 * // Пробросить item:added как tab:added
 	 * { from: 'item:added', as: 'tab:added' }
 	 */
-	as?: keyof TTarget
+	as?: keyof TTarget & string
 	/**
 	 * Хук, вызываемый **до** проброса события в цель.
 	 * Удобен для подписки на события нового элемента сразу в момент его добавления —
@@ -49,14 +67,15 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _middlewares: TEventMiddleware<TEvents>[] = []
 
 	/**
-	 * Список исходящих подписок, созданных через {@link relay}.
-	 * Нужен для того, чтобы {@link dispose} мог отписаться от всех источников.
+	 * Отписки от источников, на которые подписался {@link relay}.
+	 * Нужны для того, чтобы {@link destroy} мог отписаться от всех источников.
 	 */
-	private _relays: {
-		source: TEvented<any>
-		event: any
-		handler: (...args: any[]) => void
-	}[] = []
+	private _relays: (() => void)[] = []
+
+	/** Этот же эмиттер без карты событий — для тела {@link relay}, см. `TRelayChannel`. */
+	private get _channel(): TRelayChannel {
+		return this
+	}
 
 	/**
 	 * Счётчик глушения событий.
@@ -264,35 +283,27 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	relay<TSource extends Record<string, (...args: any) => any>>(
 		source: TEvented<TSource>,
-		rules: (keyof TSource | TRelayRule<TSource, TEvents>)[],
+		rules: ((keyof TSource & string) | TRelayRule<TSource, TEvents>)[],
 	): void {
-		// Внутри relay используем неограниченные типы — безопасность обеспечивается
-		// на уровне TRelayRule и сигнатуры метода, а не внутри реализации.
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const src = source as TEvented<any>
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const tgt = this as TEvented<any>
+		// Сигнатура сверяет `from` с картой источника и `as` с картой цели. Тело
+		// работает с эмиттерами как с каналами без карты событий — см. TRelayChannel.
+		const src = source._channel
+		const tgt = this._channel
 
 		for (const rule of rules) {
-			if (typeof rule === 'string' || typeof rule === 'symbol') {
-				const event = rule as any
-				const handler = (...args: any[]) => tgt.emit(event, ...args)
+			const {
+				from,
+				as: target = from,
+				then: hook,
+			}: TRelayRule<TSource, TEvents> = typeof rule === 'string' ? { from: rule } : rule
 
-				src.on(event, handler)
-				this._relays.push({ source: src, event, handler })
-			} else {
-				const { from, as: targetEvent, then: hook } = rule as TRelayRule<TSource, TEvents>
-
-				const target = targetEvent ?? from
-
-				const handler = (...args: any[]) => {
-					hook?.(...args)
-					tgt.emit(target as any, ...args)
-				}
-
-				src.on(from as any, handler)
-				this._relays.push({ source: src, event: from as any, handler })
+			const handler = (...args: unknown[]): void => {
+				hook?.(...args)
+				tgt.emit(target, ...args)
 			}
+
+			src.on(from, handler)
+			this._relays.push(() => src.off(from, handler))
 		}
 	}
 
@@ -301,8 +312,8 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * снимает middleware и удаляет входящие подписки.
 	 */
 	destroy(): void {
-		for (const { source, event, handler } of this._relays) {
-			source.off(event, handler)
+		for (const unsubscribe of this._relays) {
+			unsubscribe()
 		}
 
 		this._relays = []

@@ -27,7 +27,7 @@ import * as ts from 'typescript'
  * `T` — это второй синтаксис приведения. Директивы ts-ignore/ts-nocheck не
  * бывают узлом AST (это комментарии), поэтому их ищем в сыром тексте файла.
  *
- * Allow-список — 21 поштучная строка, у каждой в комментарии — задача на
+ * Allow-список — 15 поштучных строк, у каждой в комментарии — задача на
  * снятие (см. AGENTS.md, «Временное исключение без срока»):
  * - 869f1qfv6 (4) — `_context?.adapters as unknown as TXxxAdapters` в фасадах
  *   item-адаптеров коллекций: тип контекста неполон.
@@ -35,8 +35,6 @@ import * as ts from 'typescript'
  *   `IItemExtensionCtor` в конструкторах расширений коллекций.
  * - 869f1qg0v (7) — движок коллекции (контекст элемента,
  *   `unique.extension.ts`, `collection-component.class.ts`).
- * - 869f1qg4t (6) — `TEvented.relay()`: пробрасывает произвольные события
- *   между несвязанными картами по конструкции метода.
  *
  * Новых строк в списке быть не должно.
  */
@@ -75,15 +73,6 @@ const ALLOW_LIST = new Set<string>([
 	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:51',
 	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:58',
 	'packages/core/src/components/base/collection/facade/collection-component.class.ts:34',
-
-	// 869f1qg4t — TEvented.relay(): пробрасывает произвольные события между
-	// несвязанными картами по конструкции метода.
-	'packages/core/src/common/event/evented.ts:272',
-	'packages/core/src/common/event/evented.ts:274',
-	'packages/core/src/common/event/evented.ts:278',
-	'packages/core/src/common/event/evented.ts:290',
-	'packages/core/src/common/event/evented.ts:293',
-	'packages/core/src/common/event/evented.ts:294',
 ])
 
 function collectSourceFiles(dir: string): string[] {
