@@ -83,6 +83,78 @@ describe('TComponentView.aria', () => {
 	})
 })
 
+describe('TComponentView.attrs', () => {
+	it('пуст: у визуального слоя самого по себе нативных атрибутов нет', () => {
+		expect(new TComponentView().attrs.toObject()).toEqual({})
+	})
+
+	it('изменение набора порождает change:attrs — единственный триггер пропа', () => {
+		const view = new TComponentView()
+		const seen: unknown[] = []
+
+		view.events.on('change:attrs', (value) => seen.push(value))
+		view.attrs.add('disabled', 'disabled')
+
+		expect(seen).toEqual([{ disabled: 'disabled' }])
+	})
+})
+
+describe('TControl.attrs · disabled', () => {
+	it('button: нативный disabled, без aria-disabled рядом', () => {
+		const control = new TControl({ tag: 'button', disabled: true })
+
+		expect(control.attrs.get('disabled')).toBe('disabled')
+		expect(control.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('fieldset: тоже нативный тег — тот же нативный атрибут', () => {
+		const control = new TControl({ tag: 'fieldset', disabled: true })
+
+		expect(control.attrs.get('disabled')).toBe('disabled')
+		expect(control.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('div: aria-disabled, без нативного disabled — тега с ним нет', () => {
+		const control = new TControl({ tag: 'div', disabled: true })
+
+		expect(control.attrs.has('disabled')).toBe(false)
+		expect(control.aria.get('aria-disabled')).toBe('true')
+	})
+
+	it('смена тега переносит атрибут между наборами', () => {
+		const control = new TControl({ tag: 'button', disabled: true })
+
+		expect(control.attrs.get('disabled')).toBe('disabled')
+
+		control.tag = 'div'
+
+		expect(control.attrs.has('disabled')).toBe(false)
+		expect(control.aria.get('aria-disabled')).toBe('true')
+
+		control.tag = 'fieldset'
+
+		expect(control.attrs.get('disabled')).toBe('disabled')
+		expect(control.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('change:attrs эмитится только при настоящем изменении', () => {
+		const control = new TControl({ tag: 'button', disabled: true })
+		let count = 0
+
+		control.events.on('change:attrs', () => count++)
+
+		// Присвоение того же значения не меняет ни disabled, ни tag
+		control.disabled = true
+		control.tag = 'button'
+
+		expect(count).toBe(0)
+
+		control.disabled = false
+
+		expect(count).toBe(1)
+	})
+})
+
 describe('TControl.aria · aria-disabled', () => {
 	it('не ставится на теге с собственным disabled', () => {
 		const control = new TControl({ tag: 'button', disabled: true })

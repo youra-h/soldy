@@ -23,7 +23,7 @@
 		{...binding.forwardProps}
 		class={[state.classes?.join(' '), binding.forwardProps.class].filter(Boolean).join(' ')}
 		dir={state.dir ?? undefined}
-		{...state.tag === 'button' ? { disabled: state.disabled } : {}}
+		{...state.attrs}
 		{...state.aria}
 		{@attach binding.attachElement}
 		style:display={state.visible ? null : 'none'}

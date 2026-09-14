@@ -64,6 +64,16 @@ export const ComponentViewContribution = (): IContribution => ({
 			protected: true,
 			triggers: ['change:dataset'],
 		},
+		/**
+		 * Третий набор рядом с `aria`/`dataset` — нативные атрибуты, зависящие
+		 * от тега корня (`disabled` у кнопки/поля). Пуст у неинтерактивных
+		 * слоёв: пишет в него `TControl`.
+		 */
+		attrs: {
+			type: Object,
+			protected: true,
+			triggers: ['change:attrs'],
+		},
 	},
 	events: ['show', 'hide', 'show:before', 'show:after', 'hide:before', 'hide:after', 'ready'],
 })

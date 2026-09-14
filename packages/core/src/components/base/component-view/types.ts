@@ -3,6 +3,8 @@ import type {
 	TAria,
 	TDatasetAttributes,
 	TDataset,
+	TAttributesMap,
+	TAttributes,
 	TClasses,
 } from './../../../common'
 import type { IStateUnit, IVisibilityState, TActionEvent } from '../../../common'
@@ -57,6 +59,8 @@ export type TComponentViewEvents = TComponentEvents & {
 	'change:aria': (value: TAriaAttributes) => void
 	/** change:dataset — набор `data-*` изменился */
 	'change:dataset': (value: TDatasetAttributes) => void
+	/** change:attrs — набор нативных атрибутов изменился */
+	'change:attrs': (value: TAttributesMap) => void
 	/** ready — срабатывает когда компонент монтируется/демонтируется из DOM */
 	ready: (value: boolean) => void
 }
@@ -106,6 +110,11 @@ export interface IComponentView<
 	readonly aria: TAria
 	/** `data-*` для темы — такой же живой набор, но другой контракт */
 	readonly dataset: TDataset
+	/**
+	 * Нативные атрибуты, зависящие от тега корня (`disabled` у кнопки/поля) —
+	 * третий набор рядом с `aria`/`dataset`
+	 */
+	readonly attrs: TAttributes
 	/** Компонент смонтирован в DOM и готов (устанавливается плагин-слоем) */
 	ready: boolean
 }

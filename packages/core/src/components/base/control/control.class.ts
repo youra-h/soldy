@@ -44,10 +44,10 @@ export default class TControl<
 			this._sink.emit('change:focused', payload.newValue)
 		})
 
-		this.events.on('change:disabled', () => this._syncDisabledAria())
-		this.events.on('change:tag', () => this._syncDisabledAria())
+		this.events.on('change:disabled', () => this._syncDisabled())
+		this.events.on('change:tag', () => this._syncDisabled())
 
-		this._syncDisabledAria()
+		this._syncDisabled()
 	}
 
 	/**
@@ -77,18 +77,29 @@ export default class TControl<
 	}
 
 	/**
-	 * У тегов с собственным `disabled` состояние передаётся этим атрибутом,
-	 * и `aria-disabled` рядом с ним был бы дублем. У остальных — наоборот,
-	 * `aria-disabled` единственный способ сообщить об этом скринридеру.
+	 * У тегов с собственным `disabled` (`NATIVE_DISABLED_TAGS`) состояние
+	 * передаётся нативным атрибутом — он и блокирует фокус, и исключает
+	 * элемент из отправки формы, чего `aria-disabled` не умеет. У остальных
+	 * тегов `aria-disabled` — единственный способ сообщить об этом
+	 * скринридеру, а дублировать его нативным атрибутом было бы неверно: тега
+	 * с таким атрибутом нет.
+	 *
+	 * Одна функция пишет обе половины, потому что решение об одной неотделимо
+	 * от решения о другой — это один и тот же факт «есть ли у тега нативный
+	 * `disabled`», просто в двух разных наборах.
 	 *
 	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
 	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
 	 * набор — такие правила приходится проводить явно.
 	 */
-	protected _syncDisabledAria(): void {
+	protected _syncDisabled(): void {
 		const nativeDisabled =
 			typeof this.tag === 'string' && NATIVE_DISABLED_TAGS.has(this.tag.toLowerCase())
 
+		// Непустая строка: '' React не поставит атрибут вовсе, а 'false' в DOM
+		// всё равно блокирует элемент — value здесь не имеет значения, только
+		// присутствие атрибута.
+		this._attrs.add('disabled', this.disabled && nativeDisabled ? 'disabled' : null)
 		this._aria.add('aria-disabled', this.disabled && !nativeDisabled ? 'true' : null)
 	}
 

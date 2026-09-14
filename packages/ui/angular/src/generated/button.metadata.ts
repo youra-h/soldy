@@ -40,6 +40,7 @@ export const ButtonOutputs = [
 	'changeClasses',
 	'changeAria',
 	'changeDataset',
+	'changeAttrs',
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',

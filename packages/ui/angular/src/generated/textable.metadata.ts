@@ -39,6 +39,7 @@ export const TextableOutputs = [
 	'changeClasses',
 	'changeAria',
 	'changeDataset',
+	'changeAttrs',
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',

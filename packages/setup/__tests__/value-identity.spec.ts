@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { required } from './helpers'
-import { TComponentView, TSpinner, TCollectionEngine, TBatchExtension } from '@soldy/core'
-import { SpinnerDescriptor } from '../descriptors'
+import { TComponentView, TSpinner, TButton, TCollectionEngine, TBatchExtension } from '@soldy/core'
+import { SpinnerDescriptor, ButtonDescriptor } from '../descriptors'
 import { createAdapterContext, type IAdapterContext } from '../adapter'
 
 /**
@@ -43,6 +43,21 @@ describe('Составные props меняют идентичность при 
 
 		expect(after).not.toBe(before)
 		expect(JSON.stringify(after)).not.toBe(JSON.stringify(before))
+	})
+
+	it('attrs: набор нативных атрибутов отдаёт снимок, а не ссылку', () => {
+		const button = new TButton({ tag: 'button' })
+		const ctx = createAdapterContext(ButtonDescriptor(), { ctrl: button })
+
+		const before = read(ctx, 'attrs')
+
+		button.disabled = true
+
+		const after = read(ctx, 'attrs')
+
+		expect(before).toEqual({})
+		expect(after).toEqual({ disabled: 'disabled' })
+		expect(after).not.toBe(before)
 	})
 
 	it('items: драйвер коллекции отдаёт свежий массив через valueOf()', () => {

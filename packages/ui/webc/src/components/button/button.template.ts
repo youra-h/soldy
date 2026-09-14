@@ -8,7 +8,15 @@
  */
 
 import type { IButton } from '@soldy/core'
-import { ariaBinding, bind, type ITemplate } from '../../adapter'
+import { ariaBinding, bind, createAttributesBinding, type ITemplate } from '../../adapter'
+
+/**
+ * Нативный `disabled` там, где он есть у тега (`NATIVE_DISABLED_TAGS`) — ядро
+ * уже решило, есть ли он, и в каком наборе: `attrs` для нативного атрибута,
+ * `aria` для `aria-disabled` на остальных тегах. Шаблону остаётся разложить
+ * оба набора той же механикой, что и `ariaBinding`.
+ */
+const attrsBinding = createAttributesBinding<Pick<IButton, 'attrs'>>('attrs')
 
 export const buttonTemplate: ITemplate<IButton> = {
 	tag: (state) => String(state.tag ?? 'button'),
@@ -27,17 +35,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 	},
 
 	bindings: [
-		/**
-		 * Только нативный атрибут disabled — он даёт и блокировку фокуса,
-		 * и неучастие в форме, чего aria-disabled не умеет. Всё остальное
-		 * (aria-disabled, role, tabindex) вычисляет ядро и ставит ariaBinding.
-		 */
-		bind(['disabled', 'tag'], ({ root, state }) => {
-			const isNativeButton = root.tagName.toLowerCase() === 'button'
-
-			root.toggleAttribute('disabled', isNativeButton && Boolean(state.disabled))
-		}),
-
+		attrsBinding,
 		ariaBinding,
 
 		bind('text', ({ content, state, hasSlot }) => {

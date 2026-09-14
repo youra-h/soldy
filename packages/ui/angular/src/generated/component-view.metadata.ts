@@ -20,4 +20,5 @@ export const ComponentViewOutputs = [
 	'changeClasses',
 	'changeAria',
 	'changeDataset',
+	'changeAttrs',
 ] as const
