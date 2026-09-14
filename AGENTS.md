@@ -653,9 +653,12 @@ this._sink.emit('change:value', payload)
 
 ### `any`: где он честный
 
-`any` в `packages/core` стережёт локальное правило `soldy/no-explicit-any`
+`any` стережёт локальное правило `soldy/no-explicit-any`
 (`tools/eslint/rules/no-explicit-any.ts`, тест позиций —
-`npm run test:eslint`). Оно заменяет `@typescript-eslint/no-explicit-any`:
+`npm run test:eslint`). В CI сборку роняет `npm run lint:ci` — пакеты, где
+ошибок уже нет; пакет попадает в этот список вместе с коммитом, который его
+вычистил. Остальное CI показывает отчётом. Правило заменяет
+`@typescript-eslint/no-explicit-any`:
 встроенное правило не отличает стирание инвариантности (разделы выше) от
 спрятанного типа, а его `ignoreRestArgs` не видит `(...args: any)` без `[]`.
 Постоянный `eslint-disable` с объяснением вместо правила запрещён («Временное

@@ -55,12 +55,12 @@ export default defineConfigWithVueTs(
 		},
 	},
 
-	// `any` в ядре пропускается только там, где он стирает инвариантность, а не
-	// прячет тип. Встроенное правило этих позиций не различает (см. AGENTS.md,
+	// `any` пропускается только там, где он стирает инвариантность, а не прячет
+	// тип. Встроенное правило этих позиций не различает (см. AGENTS.md,
 	// «`any`: где он честный»).
 	{
 		name: 'soldy/no-explicit-any',
-		files: ['packages/core/**/*.ts'],
+		files: ['**/*.{ts,mts,tsx,vue}'],
 		plugins: { soldy },
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off',
