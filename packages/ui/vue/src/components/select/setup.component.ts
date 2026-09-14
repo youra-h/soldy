@@ -71,11 +71,11 @@ export default {
 			...refs,
 			...refsCollection,
 			/** Методы коллекции рефами не пробрасываются — отдаём инстанс. */
-			collection: collectionAdapter.instance,
+			facade: collectionAdapter.instance,
 			/**
 			 * Экземпляр `TInput`, которым владеет Select. Не проп (не меняется
 			 * за время жизни компонента), поэтому отдаём инстансом, как
-			 * `collection` — `<Input :ctrl="field">` берёт его целиком.
+			 * `facade` — `<Input :ctrl="field">` берёт его целиком.
 			 */
 			field: adapter.instance.field,
 			fieldElement: ref<HTMLElement | null>(null),

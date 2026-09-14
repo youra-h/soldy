@@ -67,14 +67,14 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 				</template>
 
 				<template #trailing>
-					<slot name="clear" :clear="collection.clear">
+					<slot name="clear" :clear="facade.clear">
 						<Button
 							v-if="clearable"
 							class="s-select__clear"
 							view="plain"
 							:size="size"
 							:disabled="disabled"
-							@click.stop="collection.clear()"
+							@click.stop="facade.clear()"
 							v-bind="clearAria"
 						>
 							<Icon :tag="clearIconTag" :size="size" />

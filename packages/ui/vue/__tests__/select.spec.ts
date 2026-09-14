@@ -213,6 +213,23 @@ describe('кнопка очистки', () => {
 
 		expect(clear.attributes('aria-label')).toBe('Clear Город')
 	})
+
+	it('клик сбрасывает выбранное значение', async () => {
+		const wrapper = render({ clearable: true })
+
+		await nextFrame()
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[1] as HTMLElement).click()
+		await nextTick()
+
+		expect(wrapper.find('input').element.value).toBe('Тверь')
+
+		await wrapper.find('.s-select__clear').trigger('click')
+		await nextTick()
+
+		expect(wrapper.find('input').element.value).toBe('')
+	})
 })
 
 describe('множественный выбор', () => {
