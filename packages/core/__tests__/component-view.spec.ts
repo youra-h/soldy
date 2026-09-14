@@ -143,7 +143,7 @@ describe('TComponentView', () => {
 		{
 			constructor({ initial }: { initial: boolean }) {
 				super({ initial })
-				this.events.on('change', (payload: any) => {
+				this.events.on('change', (payload) => {
 					if (payload.newValue) {
 						log.push('state:value=true')
 					}
