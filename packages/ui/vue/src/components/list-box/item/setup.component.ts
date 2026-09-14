@@ -1,13 +1,18 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionItemExtension,
 	ListBoxItemDescriptor,
 	ListBoxCollectionItemDescriptor,
 } from '@soldy/setup'
 import { TListBoxItemCollectionFacade } from '@soldy/core'
 import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseListBoxItem, { type ListBoxItemProps } from './base.component'
 
 export default {
@@ -15,12 +20,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseListBoxItem,
 	setup(props: ListBoxItemProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(ListBoxItemDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(ListBoxItemDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const itemAdapter = createAdapterContext(
+		const itemAdapter = createVueAdapterContext(
 			ListBoxCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },

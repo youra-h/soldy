@@ -1,0 +1,55 @@
+import { toRaw } from 'vue'
+import {
+	createAdapterContext,
+	type IAdapterContext,
+	type IComponentDescriptor,
+	type TAnyExtensionCtor,
+} from '@soldy/setup'
+import type { IPluginBundle } from '@soldy/plugins'
+
+/** Зеркало `IAdapterContextOptions<TInstance>` из `@soldy/setup` — тот тип не экспортирован. */
+export interface IVueAdapterContextOptions<TInstance extends object> {
+	ctrl?: TInstance
+	props?: object
+	options?: object
+}
+
+/** Зеркало `IAdapterContextConfig` из `@soldy/setup` — тот тип тоже не экспортирован. */
+export interface IVueAdapterContextConfig {
+	bundle?: IPluginBundle | null
+	defaultExtensions?: Array<TAnyExtensionCtor>
+}
+
+/** Снимает Vue-прокси со значений верхнего уровня объекта, не заглядывая внутрь. */
+function stripTopLevelProxies<T extends object>(value: T): T {
+	return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, toRaw(v)])) as T
+}
+
+/**
+ * Обёртка над `createAdapterContext` из `@soldy/setup`, единственное место,
+ * где Vue-компонентам нужен `toRaw`. Снимает прокси с `ctrl` и со значений
+ * верхнего уровня `options` (в частности, `engine` коллекционного контекста)
+ * перед тем, как отдать их ядру, которое `vue` не импортирует и о прокси не
+ * знает. Имя `engine` обёртке знать не нужно: `toRaw` на значении без прокси
+ * ничего не меняет.
+ *
+ * Цепочка `.use(...)` остаётся на месте вызова, как и раньше — набора
+ * расширений по умолчанию обёртка не собирает (см. AGENTS.md, «Vue collection
+ * setup»).
+ */
+export function createVueAdapterContext<TInstance extends object>(
+	descriptor: IComponentDescriptor<any, any, any, any, TInstance>,
+	options: IVueAdapterContextOptions<TInstance>,
+	config?: IVueAdapterContextConfig,
+): IAdapterContext<TInstance> {
+	return createAdapterContext(
+		descriptor,
+		{
+			...options,
+			ctrl: options.ctrl !== undefined ? toRaw(options.ctrl) : undefined,
+			options:
+				options.options !== undefined ? stripTopLevelProxies(options.options) : undefined,
+		},
+		config,
+	)
+}

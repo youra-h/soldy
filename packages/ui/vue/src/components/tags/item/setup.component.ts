@@ -1,13 +1,18 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionItemExtension,
 	TagsItemDescriptor,
 	TagsCollectionItemDescriptor,
 } from '@soldy/setup'
 import { TTagsItemCollectionFacade } from '@soldy/core'
 import type { ITagsItemProps, ITagsItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseTagsItem, { type TagsItemProps } from './base.component'
 
 export default {
@@ -15,12 +20,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTagsItem,
 	setup(props: TagsItemProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(TagsItemDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(TagsItemDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const itemAdapter = createAdapterContext(
+		const itemAdapter = createVueAdapterContext(
 			TagsCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },

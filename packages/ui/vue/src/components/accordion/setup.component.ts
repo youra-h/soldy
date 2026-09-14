@@ -1,6 +1,4 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
 	AccordionDescriptor,
@@ -8,7 +6,13 @@ import {
 } from '@soldy/setup'
 import { TAccordionCollectionFacade } from '@soldy/core'
 import type { IAccordionCollectionProps } from '@soldy/core'
-import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
+import {
+	useAdapter,
+	useCollectionAdapter,
+	VueElevatorFactory,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseAccordion, { type AccordionProps } from './base.component'
 import { type IAccordionComponentProps, type IAccordion } from '@soldy/core'
 
@@ -16,21 +20,21 @@ export default {
 	name: '_Accordion',
 	extends: BaseAccordion,
 	setup(props: AccordionProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(AccordionDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(AccordionDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
 		const refs = useAdapter<IAccordionComponentProps, IAccordion>(adapter, props, emit)
 
-		const collectionAdapter = createAdapterContext(
+		const collectionAdapter = createVueAdapterContext(
 			AccordionCollectionDescriptor(),
 			{
 				props,
 				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
 				// не создаёт, лишь доложит недостающие расширения в неё же.
 				// Не дали — соберёт свою. Развилка в `resolveEngine`
-				options: { owner: adapter.instance, engine: toRaw(props.engine) },
+				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle, defaultExtensions: [] },
 		)

@@ -1,6 +1,4 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
 	ListBoxDescriptor,
@@ -8,7 +6,13 @@ import {
 } from '@soldy/setup'
 import { TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxCollectionProps } from '@soldy/core'
-import { useAdapter, useCollectionAdapter, VueElevatorFactory } from '../../adapter'
+import {
+	useAdapter,
+	useCollectionAdapter,
+	VueElevatorFactory,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseListBox, { type ListBoxProps } from './base.component'
 import { type IListBoxComponentProps, type IListBox } from '@soldy/core'
 
@@ -16,21 +20,21 @@ export default {
 	name: '_ListBox',
 	extends: BaseListBox,
 	setup(props: ListBoxProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(ListBoxDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(ListBoxDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
 		const refs = useAdapter<IListBoxComponentProps, IListBox>(adapter, props, emit)
 
-		const collectionAdapter = createAdapterContext(
+		const collectionAdapter = createVueAdapterContext(
 			ListBoxCollectionDescriptor(),
 			{
 				props,
 				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
 				// не создаёт, лишь доложит недостающие расширения в неё же.
 				// Не дали — соберёт свою. Развилка в `resolveEngine`
-				options: { owner: adapter.instance, engine: toRaw(props.engine) },
+				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle, defaultExtensions: [] },
 		)

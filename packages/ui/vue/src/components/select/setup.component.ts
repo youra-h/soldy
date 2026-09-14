@@ -1,10 +1,4 @@
-import { toRaw, type SetupContext } from 'vue'
-import {
-	createAdapterContext,
-	TCollectionExtension,
-	SelectDescriptor,
-	SelectCollectionDescriptor,
-} from '@soldy/setup'
+import { TCollectionExtension, SelectDescriptor, SelectCollectionDescriptor } from '@soldy/setup'
 import type {
 	ISelectComponentProps,
 	ISelect,
@@ -18,6 +12,8 @@ import {
 	VueElevatorFactory,
 	useIcon,
 	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
 } from '../../adapter'
 import BaseSelect, { type SelectProps } from './base.component'
 
@@ -39,8 +35,8 @@ export default {
 	inheritAttrs: false,
 	extends: BaseSelect,
 	setup(props: SelectProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(SelectDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(SelectDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
@@ -50,14 +46,14 @@ export default {
 			emit,
 		)
 
-		const collectionAdapter = createAdapterContext(
+		const collectionAdapter = createVueAdapterContext(
 			SelectCollectionDescriptor(),
 			{
 				props,
 				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
 				// не создаёт, лишь доложит недостающие расширения в неё же.
 				// Не дали — соберёт свою. Развилка в `resolveEngine`
-				options: { owner: adapter.instance, engine: toRaw(props.engine) },
+				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle, defaultExtensions: [] },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })

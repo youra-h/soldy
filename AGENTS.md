@@ -193,10 +193,16 @@ dismiss.events.on('dismiss', () => {
    программист возвращает задачу тимлиду, тимлид выносит владельцу
    предложение новой механики адаптера. Решать молча нельзя.
 
-Известные нарушения, которые ещё не разобраны: Vue — задача 869f1pwb0;
-Solid (`createMemo`), Svelte (`$derived.by`) в Button и ComponentView, Angular
-(`computed`, `ngAfterViewInit` в Button и ComponentView) — задача 869f1q0t4.
-Новых не добавлять.
+Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не сами: контекст создают
+через `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), она
+и вызывает `toRaw`. Сторож — блок eslint `soldy/vue-components-no-framework`
+(`eslint.config.ts`): запрещает импорт `'vue'` и `createAdapterContext` из
+`@soldy/setup` в `packages/ui/vue/src/components/**`.
+
+Известные нарушения, которые ещё не разобраны: Solid (`createMemo`), Svelte
+(`$derived.by`) в Button и ComponentView, Angular (`computed`,
+`ngAfterViewInit` в Button и ComponentView) — задача 869f1q0t4. Новых не
+добавлять.
 
 ### `setup/adapter/extensions/` — тоже не место для операций над DOM
 
@@ -747,7 +753,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). The facade context's `options` carries `{ owner: adapter.instance, engine: toRaw(props.engine) }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` strips `ctrl` and `rootElement` from its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` strips `ctrl` and `rootElement` from its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Граница переиспользования между похожими компонентами (критично)
 

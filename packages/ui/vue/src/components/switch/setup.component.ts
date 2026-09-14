@@ -1,6 +1,10 @@
-import { toRaw, type SetupContext } from 'vue'
-import { createAdapterContext, SwitchDescriptor } from '@soldy/setup'
-import { useAdapter, useSplitAttrs } from '../../adapter'
+import { SwitchDescriptor } from '@soldy/setup'
+import {
+	useAdapter,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
 import BaseSwitch, { type SwitchProps } from './base.component'
 import { type ISwitchProps, type ISwitch } from '@soldy/core'
 
@@ -9,8 +13,8 @@ export default {
 	inheritAttrs: false,
 	extends: BaseSwitch,
 	setup(props: SwitchProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(SwitchDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(SwitchDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 

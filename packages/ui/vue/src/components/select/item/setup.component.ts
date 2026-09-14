@@ -1,12 +1,17 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionItemExtension,
 	SelectItemDescriptor,
 	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
 import type { ISelectItemProps, ISelectItem, TSelectItemCollectionFacade } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseSelectItem, { type SelectItemProps } from './base.component'
 
 /**
@@ -21,12 +26,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseSelectItem,
 	setup(props: SelectItemProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(SelectItemDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(SelectItemDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const itemAdapter = createAdapterContext(
+		const itemAdapter = createVueAdapterContext(
 			SelectCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },
