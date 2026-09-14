@@ -8,7 +8,7 @@
 
 import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/accessor'
 
-export type TWebcState = Record<string, any>
+export type TWebcState = Record<string, unknown>
 
 function buildInitialState(accessor: IAccessor, inspector: TDescriptorInspector): TWebcState {
 	const state: TWebcState = {}
@@ -63,10 +63,10 @@ export function useSyncProps(
 	}
 
 	/** Элемент → Core: запись входных значений (атрибуты и свойства). */
-	function bindInput(props: Record<string, any>): void {
+	function bindInput(props: object): void {
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const exportName = inspector.getExportPropName(prop)
-			const value = props[exportName] ?? props[prop.name.name]
+			const value: unknown = Reflect.get(props, exportName) ?? Reflect.get(props, prop.name.name)
 
 			if (value === undefined) continue
 

@@ -9,7 +9,7 @@
 
 import { ButtonDescriptor } from '@soldy/setup'
 import type { IComponentDescriptor } from '@soldy/setup'
-import type { IButton } from '@soldy/core'
+import type { IButton, IButtonProps } from '@soldy/core'
 import { TSoldyElement, defineProps, defineElement, useAttributes } from '../../adapter'
 import type { ITemplate, TBinding } from '../../adapter'
 import { buttonTemplate } from './button.template'
@@ -26,7 +26,7 @@ export class TButtonElement extends TSoldyElement<IButton> {
 		return DESCRIPTOR
 	}
 
-	protected get template(): ITemplate {
+	protected get template(): ITemplate<IButton> {
 		return buttonTemplate
 	}
 
@@ -41,3 +41,12 @@ export class TButtonElement extends TSoldyElement<IButton> {
 
 defineProps(TButtonElement, DESCRIPTOR)
 defineElement('soldy-button', TButtonElement)
+
+/** `<soldy-button>` из JS: класс элемента плюс props дескриптора, которые вешает defineProps. */
+export type TButtonElementProps = TButtonElement & Omit<IButtonProps, keyof HTMLElement>
+
+declare global {
+	interface HTMLElementTagNameMap {
+		'soldy-button': TButtonElementProps
+	}
+}

@@ -7,9 +7,10 @@
  * пяти адаптерах их тоже нет, а лишний span сломал бы селекторы темы.
  */
 
+import type { IButton } from '@soldy/core'
 import { ariaBinding, bind, type ITemplate } from '../../adapter'
 
-export const buttonTemplate: ITemplate = {
+export const buttonTemplate: ITemplate<IButton> = {
 	tag: (state) => String(state.tag ?? 'button'),
 
 	create: (root) => {

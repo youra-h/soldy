@@ -21,7 +21,7 @@ export function useSyncEvents(
 	const offs: Array<() => void> = []
 
 	for (const { source, rawName, exportName } of collectEventBindings(accessor, inspector)) {
-		const handler = (...args: any[]) => {
+		const handler = (...args: unknown[]) => {
 			host.dispatchEvent(
 				new CustomEvent(exportName, {
 					detail: args.length > 1 ? args : args[0],

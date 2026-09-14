@@ -6,9 +6,10 @@
  * их применяет базовый класс, поэтому привязок здесь ноль.
  */
 
+import type { IComponentView } from '@soldy/core'
 import type { ITemplate } from '../../adapter'
 
-export const componentViewTemplate: ITemplate = {
+export const componentViewTemplate: ITemplate<IComponentView> = {
 	tag: (state) => String(state.tag ?? 'div'),
 
 	create: (root) => ({ default: { mode: 'append', node: root } }),

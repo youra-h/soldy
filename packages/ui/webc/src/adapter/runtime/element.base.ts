@@ -27,11 +27,11 @@
  * переносится вручную в точки, объявленные шаблоном.
  */
 
-import { DEFAULT_SLOT, type IComponentDescriptor } from '@soldy/setup'
-import { buildAttributeMap, coerceAttribute, type IAttributeBinding } from '../common'
+import type { IComponentView } from '@soldy/core'
+import { DEFAULT_SLOT, type IComponentDescriptor, type TInstanceState } from '@soldy/setup'
+import { buildAttributeMap, coerceAttribute, createInspector, type IAttributeBinding } from '../common'
 import type { ITemplate, ITemplateContext, TSlotTargets } from '../template'
 import type { TBinding } from './useAdapter'
-import type { TWebcState } from './useSyncProps'
 
 /** Кэш карт атрибутов по дескриптору — строить её на каждый элемент незачем. */
 const ATTRIBUTE_MAPS = new WeakMap<IComponentDescriptor, Map<string, IAttributeBinding>>()
@@ -75,14 +75,43 @@ function attributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeB
 	return map
 }
 
-export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
+export abstract class TSoldyElement<TInstance extends IComponentView = IComponentView> extends HTMLElement {
 	protected binding?: TBinding<TInstance>
+
+	/**
+	 * Геттеры/сеттеры для всех props дескриптора на прототипе — JS-путь
+	 * `el.text = 'Click'`. Атрибуты покрывают только примитивы, поэтому свойства —
+	 * единственный способ передать объект или готовый инстанс.
+	 *
+	 * Метод класса, а не внешняя функция: `getProp`/`setProp` защищённые, и
+	 * только тело класса обращается к ним без приведения. `ctrl` пропускается —
+	 * у него своя пара ниже: читать его нужно из буфера, а не из state.
+	 */
+	static defineProps(descriptor: IComponentDescriptor): void {
+		for (const prop of Object.keys(createInspector(descriptor).getExportProps())) {
+			if (prop === 'ctrl') continue
+			if (Object.prototype.hasOwnProperty.call(this.prototype, prop)) continue
+
+			Object.defineProperty(this.prototype, prop, {
+				configurable: true,
+				enumerable: true,
+
+				get(this: TSoldyElement) {
+					return this.getProp(prop)
+				},
+
+				set(this: TSoldyElement, value: unknown) {
+					this.setProp(prop, value)
+				},
+			})
+		}
+	}
 
 	/** Дескриптор компонента — нужен для карты атрибутов. */
 	protected abstract get descriptor(): IComponentDescriptor
 
 	/** Шаблон компонента: структура корня и привязки. */
-	protected abstract get template(): ITemplate
+	protected abstract get template(): ITemplate<TInstance>
 
 	/** Создаёт binding через setup-слой компонента. */
 	protected abstract setup(
@@ -104,7 +133,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 	private _flushQueued = false
 	private _connected = false
 
-	get state(): TWebcState {
+	get state(): TInstanceState<TInstance> {
 		return this.binding?.state ?? {}
 	}
 
@@ -159,7 +188,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 
 	protected getProp(name: string): unknown {
 		// Props без триггеров (ctrl) в state не попадают — берём из буфера
-		if (this.binding && name in this.binding.state) return this.binding.state[name]
+		if (this.binding && name in this.binding.state) return Reflect.get(this.binding.state, name)
 
 		return this._pending[name]
 	}
@@ -203,7 +232,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		const applyAll = full || recreated
 
 		if (applyAll || this._dirty.has('classes')) {
-			root.className = ((state.classes as string[]) ?? []).join(' ')
+			root.className = (state.classes ?? []).join(' ')
 		}
 
 		if (applyAll || this._dirty.has('visible')) {
@@ -214,13 +243,13 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		// уже перевело 'inherit' в null: null снимает атрибут, направление
 		// наследуется от предка.
 		if (applyAll || this._dirty.has('dir')) {
-			const dir = state.dir as 'ltr' | 'rtl' | null
+			const dir = state.dir
 
 			if (dir) root.setAttribute('dir', dir)
 			else root.removeAttribute('dir')
 		}
 
-		const context: ITemplateContext = {
+		const context: ITemplateContext<TInstance> = {
 			root,
 			content: this._content!,
 			state,

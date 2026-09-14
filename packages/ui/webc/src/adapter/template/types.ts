@@ -13,7 +13,7 @@
  * базовый класс: они одинаковы у всех визуальных компонентов soldy.
  */
 
-import type { TWebcState } from '../runtime/useSyncProps'
+import type { TInstanceState } from '@soldy/setup'
 
 /**
  * Куда попадает содержимое слота.
@@ -30,25 +30,32 @@ export type TSlotTarget =
 /** Точки распределения света: имя слота → куда класть содержимое. */
 export type TSlotTargets = Record<string, TSlotTarget>
 
-export interface ITemplateContext {
+export interface ITemplateContext<TInstance = object> {
 	/** Корневой элемент внутри хоста */
 	root: HTMLElement
 	/** Узел слота по умолчанию — там же, куда перенесён свет без атрибута slot */
 	content: HTMLElement
-	state: TWebcState
+	/** Свойства инстанса компонента со снимком через `valueOf()` */
+	state: TInstanceState<TInstance>
 	/** Задано ли пользователем содержимое именованного слота */
 	hasSlot(name: string): boolean
 }
 
-export interface ITemplateBinding {
+/**
+ * Привязка «проп → DOM-операция».
+ *
+ * `apply` — метод: общая привязка, объявленная для части инстанса (`ariaBinding`
+ * для `{ aria }`), подходит шаблону любого компонента, у которого эта часть есть.
+ */
+export interface ITemplateBinding<TInstance = object> {
 	/** Пропы, при изменении которых привязку надо применить */
 	props: readonly string[]
-	apply(ctx: ITemplateContext): void
+	apply(ctx: ITemplateContext<TInstance>): void
 }
 
-export interface ITemplate {
+export interface ITemplate<TInstance = object> {
 	/** Имя тега корня из состояния */
-	tag(state: TWebcState): string
+	tag(state: TInstanceState<TInstance>): string
 
 	/**
 	 * Строит внутреннюю структуру корня и возвращает точки распределения света.
@@ -57,14 +64,14 @@ export interface ITemplate {
 	 */
 	create(root: HTMLElement): TSlotTargets
 
-	bindings: readonly ITemplateBinding[]
+	bindings: readonly ITemplateBinding<TInstance>[]
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */
-export function bind(
+export function bind<TInstance>(
 	props: string | readonly string[],
-	apply: (ctx: ITemplateContext) => void,
-): ITemplateBinding {
+	apply: (ctx: ITemplateContext<TInstance>) => void,
+): ITemplateBinding<TInstance> {
 	return {
 		props: typeof props === 'string' ? [props] : props,
 		apply,

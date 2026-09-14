@@ -7,19 +7,20 @@
  * плагины и расширения коллекции; сюда он приходит снимком.
  */
 
+import type { TAria } from '@soldy/core'
 import { bind, type ITemplateBinding } from './types'
 
 /** Что было поставлено в прошлый раз — чтобы снимать исчезнувшие атрибуты. */
 const APPLIED = new WeakMap<HTMLElement, string[]>()
 
-export const ariaBinding: ITemplateBinding = bind('aria', ({ root, state }) => {
-	const aria = (state.aria ?? {}) as Record<string, string | null>
+export const ariaBinding: ITemplateBinding<{ readonly aria: TAria }> = bind('aria', ({ root, state }) => {
+	const aria = state.aria ?? {}
 	const previous = APPLIED.get(root) ?? []
 	const current: string[] = []
 
 	for (const [name, value] of Object.entries(aria)) {
 		// null означает «атрибут не ставить»
-		if (value === null || value === undefined) continue
+		if (value === null) continue
 
 		root.setAttribute(name, value)
 		current.push(name)

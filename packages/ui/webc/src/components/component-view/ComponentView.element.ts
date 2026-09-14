@@ -9,7 +9,7 @@
 
 import { ComponentViewDescriptor } from '@soldy/setup'
 import type { IComponentDescriptor } from '@soldy/setup'
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import { TSoldyElement, defineProps, defineElement, useAttributes } from '../../adapter'
 import type { ITemplate, TBinding } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'
@@ -26,7 +26,7 @@ export class TComponentViewElement extends TSoldyElement<IComponentView> {
 		return DESCRIPTOR
 	}
 
-	protected get template(): ITemplate {
+	protected get template(): ITemplate<IComponentView> {
 		return componentViewTemplate
 	}
 
@@ -41,3 +41,13 @@ export class TComponentViewElement extends TSoldyElement<IComponentView> {
 
 defineProps(TComponentViewElement, DESCRIPTOR)
 defineElement('soldy-component-view', TComponentViewElement)
+
+/** `<soldy-component-view>` из JS: класс элемента плюс props дескриптора. */
+export type TComponentViewElementProps = TComponentViewElement &
+	Omit<IComponentViewProps, keyof HTMLElement>
+
+declare global {
+	interface HTMLElementTagNameMap {
+		'soldy-component-view': TComponentViewElementProps
+	}
+}

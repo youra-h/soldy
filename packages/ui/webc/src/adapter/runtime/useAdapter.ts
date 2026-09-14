@@ -12,19 +12,20 @@
  * планировать перерисовку — задача базового класса элемента.
  */
 
-import type { IAdapterContext } from '@soldy/setup'
-import { TPluginsBindingExtension } from '@soldy/setup'
+import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
-import { useSyncProps, type TWebcState } from './useSyncProps'
+import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TBinding<TInstance = any> = {
-	readonly state: TWebcState
+export type TBinding<TInstance = object> = {
+	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
+	readonly state: TInstanceState<TInstance>
 	readonly ctrl: TInstance
 	readonly plugins: IPluginBundle | null
-	syncProps(props: Record<string, any>): void
+	syncProps(props: object): void
 	bindElement(el: HTMLElement | null): void
 	destroy(): void
 }
@@ -41,11 +42,11 @@ export function useAdapter<TInstance extends object = object>(
 	const unbindEvents = useSyncEvents(adapter.accessor, inspector, host)
 
 	return {
-		state,
+		state: toInstanceState<TInstance>(state),
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
-		syncProps(props: Record<string, any>): void {
+		syncProps(props: object): void {
 			bindInput(props)
 		},
 

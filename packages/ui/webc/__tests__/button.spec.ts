@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TButton } from '@soldy/core'
 import { ButtonDescriptor } from '@soldy/setup'
 import { buttonTemplate } from '../src/components/button/button.template'
@@ -14,6 +14,20 @@ function mount(html: string): HTMLElement {
 	document.body.appendChild(host)
 
 	return host.firstElementChild as HTMLElement
+}
+
+/** `<soldy-button>` из разметки — с props дескриптора (тип из HTMLElementTagNameMap). */
+function mountButton(html: string): HTMLElementTagNameMap['soldy-button'] {
+	const host = document.createElement('div')
+
+	host.innerHTML = html
+	document.body.appendChild(host)
+
+	const el = host.querySelector('soldy-button')
+
+	if (!el) throw new Error('<soldy-button> не смонтирован')
+
+	return el
 }
 
 function root(el: HTMLElement): HTMLElement {
@@ -79,7 +93,7 @@ describe('<soldy-button> · атрибуты', () => {
 
 describe('<soldy-button> · свойства из JS', () => {
 	it('смена свойства перерисовывает', async () => {
-		const el = mount('<soldy-button text="A"></soldy-button>') as any
+		const el = mountButton('<soldy-button text="A"></soldy-button>')
 
 		el.text = 'B'
 		await flush()
@@ -88,7 +102,7 @@ describe('<soldy-button> · свойства из JS', () => {
 	})
 
 	it('смена tag пересоздаёт корневой элемент', async () => {
-		const el = mount('<soldy-button></soldy-button>') as any
+		const el = mountButton('<soldy-button></soldy-button>')
 
 		expect(root(el).tagName.toLowerCase()).toBe('button')
 
@@ -99,7 +113,7 @@ describe('<soldy-button> · свойства из JS', () => {
 	})
 
 	it('rendered=false убирает корень, visible=false прячет', async () => {
-		const el = mount('<soldy-button></soldy-button>') as any
+		const el = mountButton('<soldy-button></soldy-button>')
 
 		el.visible = false
 		await flush()
@@ -111,7 +125,7 @@ describe('<soldy-button> · свойства из JS', () => {
 	})
 
 	it('смена direction обновляет и снимает атрибут dir', async () => {
-		const el = mount('<soldy-button></soldy-button>') as any
+		const el = mountButton('<soldy-button></soldy-button>')
 
 		el.direction = 'rtl'
 		await flush()
@@ -132,7 +146,7 @@ describe('<soldy-button> · точечные обновления', () => {
 	 * не применялась.
 	 */
 	it('смена text не переписывает className', async () => {
-		const el = mount('<soldy-button text="A"></soldy-button>') as any
+		const el = mountButton('<soldy-button text="A"></soldy-button>')
 
 		root(el).classList.add('marker')
 
@@ -144,7 +158,7 @@ describe('<soldy-button> · точечные обновления', () => {
 	})
 
 	it('смена variant переписывает className', async () => {
-		const el = mount('<soldy-button></soldy-button>') as any
+		const el = mountButton('<soldy-button></soldy-button>')
 
 		root(el).classList.add('marker')
 
@@ -156,7 +170,7 @@ describe('<soldy-button> · точечные обновления', () => {
 	})
 
 	it('пересоздание корня применяет все привязки заново', async () => {
-		const el = mount('<soldy-button text="Hi" disabled></soldy-button>') as any
+		const el = mountButton('<soldy-button text="Hi" disabled></soldy-button>')
 
 		el.tag = 'a'
 		await flush()
@@ -171,7 +185,7 @@ describe('<soldy-button> · точечные обновления', () => {
 describe('<soldy-button> · внешний ctrl', () => {
 	it('отражает состояние инстанса и реагирует на его мутации', async () => {
 		const ctrl = new TButton({ text: 'FromCtrl', variant: 'accent' })
-		const el = document.createElement('soldy-button') as any
+		const el = document.createElement('soldy-button')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
@@ -189,7 +203,7 @@ describe('<soldy-button> · внешний ctrl', () => {
 describe('<soldy-button> · события', () => {
 	it('диспатчит CustomEvent с именем как в ядре', async () => {
 		const ctrl = new TButton({ view: 'filled' })
-		const el = document.createElement('soldy-button') as any
+		const el = document.createElement('soldy-button')
 		const seen: unknown[] = []
 
 		el.ctrl = ctrl
@@ -203,7 +217,7 @@ describe('<soldy-button> · события', () => {
 
 	it('change:visible не дублируется (дедупликация триггеров)', () => {
 		const ctrl = new TButton()
-		const el = document.createElement('soldy-button') as any
+		const el = document.createElement('soldy-button')
 		const seen: unknown[] = []
 
 		el.ctrl = ctrl
@@ -217,7 +231,7 @@ describe('<soldy-button> · события', () => {
 
 	it('событие всплывает наружу', () => {
 		const ctrl = new TButton()
-		const el = document.createElement('soldy-button') as any
+		const el = document.createElement('soldy-button')
 		let heard = false
 
 		el.ctrl = ctrl
@@ -233,9 +247,15 @@ describe('<soldy-button> · события', () => {
 describe('<soldy-button> · очистка', () => {
 	it('снимает подписки с внешнего ctrl при удалении из DOM', () => {
 		const ctrl = new TButton()
-		const count = () => (ctrl.events as any)._items._items.get('change:text')?.size ?? 0
+		// Подписки считаются по публичному API шины: подписались на change:text
+		// минус отписались
+		const on = vi.spyOn(ctrl.events, 'on')
+		const off = vi.spyOn(ctrl.events, 'off')
+		const count = () =>
+			on.mock.calls.filter(([event]) => event === 'change:text').length -
+			off.mock.calls.filter(([event]) => event === 'change:text').length
 
-		const el = document.createElement('soldy-button') as any
+		const el = document.createElement('soldy-button')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
@@ -267,7 +287,7 @@ describe('<soldy-button> · aria из ядра', () => {
 	})
 
 	it('снимает атрибуты, когда набор перестал их содержать', async () => {
-		const el = mount('<soldy-button tag="div"></soldy-button>') as any
+		const el = mountButton('<soldy-button tag="div"></soldy-button>')
 
 		expect(root(el).getAttribute('tabindex')).toBe('0')
 
@@ -318,7 +338,7 @@ describe('<soldy-button> · слоты', () => {
 	})
 
 	it('содержимое переживает пересоздание корня при смене tag', async () => {
-		const el = mount('<soldy-button><i slot="leading">L</i>Text</soldy-button>') as any
+		const el = mountButton('<soldy-button><i slot="leading">L</i>Text</soldy-button>')
 
 		el.tag = 'a'
 		await flush()
