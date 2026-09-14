@@ -1,5 +1,1 @@
-export {
-	default as BaseInputControl,
-	emitsInputControl,
-	propsInputControl,
-} from './base.component'
+export { default as BaseInputControl, emitsInputControl, propsInputControl } from './base.component'

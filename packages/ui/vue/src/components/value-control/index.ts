@@ -1,5 +1,1 @@
-export {
-	default as BaseValueControl,
-	emitsValueControl,
-	propsValueControl,
-} from './base.component'
+export { default as BaseValueControl, emitsValueControl, propsValueControl } from './base.component'
