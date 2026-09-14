@@ -32,8 +32,7 @@ export interface IListBoxExtension<
 export interface IListBoxExtensionOptions<
 	TOwner extends IListBox = IListBox,
 	TItem extends IListBoxItem = IListBoxItem,
-	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
-> extends IBaseOwnerItemExtensionOptions<TItem, TItemExt> {
+> extends IBaseOwnerItemExtensionOptions<TItem, IListBoxItemExtension<TItem>> {
 	/** Ссылка на инстанс компонента списка. */
 	owner: TOwner
 }

@@ -56,7 +56,7 @@ export class TSelectExtension<
 	private _batch: IBatchExtension<TItem> | null = null
 
 	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
-		super(TSelectItemExtension as any, options)
+		super(TSelectItemExtension, options)
 
 		this._owner = options.owner
 	}

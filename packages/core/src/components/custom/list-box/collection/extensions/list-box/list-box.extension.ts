@@ -1,8 +1,4 @@
-import type {
-	IExtension,
-	IExtensionContext,
-	IItemExtensionCtor,
-} from '../../../../../base/collection'
+import type { IExtension, IExtensionContext } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
@@ -25,30 +21,23 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  *
  * Раньше между ним и базой стоял `TListExtension` — ровно тот же код минус
  * `view`. Слой исчез вместе с компонентом `TList`: наследник у него был один.
+ * Вместе с ним ушёл дженерик `TItemExt` и второй аргумент конструктора: при
+ * своём `TItemExt` умолчание `TListBoxItemExtension` давало адаптер не того
+ * типа. Свой адаптер по-прежнему передаётся через `options.itemCtor`.
  */
 export class TListBoxExtension<
 	TOwner extends IListBox = IListBox,
 	TItem extends IListBoxItem = IListBoxItem,
-	// `any` в констрейнте: карта событий item-адаптера инвариантна, и точный
-	// набор здесь запретил бы наследнику её расширить
-	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
 >
-	extends TBaseOwnerItemExtension<TItem, TItemExt, TListBoxExtensionEvents>
-	implements IExtension<TItem>, IListBoxExtension<TItem, TItemExt>
+	extends TBaseOwnerItemExtension<TItem, IListBoxItemExtension<TItem>, TListBoxExtensionEvents>
+	implements IExtension<TItem>, IListBoxExtension<TItem>
 {
 	readonly name: string = 'list'
 
 	protected readonly _owner: TOwner
 
-	constructor(
-		options: IListBoxExtensionOptions<TOwner, TItem, TItemExt>,
-		itemCtor: IItemExtensionCtor<
-			TItem,
-			any,
-			TItemExt
-		> = TListBoxItemExtension as unknown as IItemExtensionCtor<TItem, any, TItemExt>,
-	) {
-		super(itemCtor, options)
+	constructor(options: IListBoxExtensionOptions<TOwner, TItem>) {
+		super(TListBoxItemExtension, options)
 
 		this._owner = options.owner
 	}

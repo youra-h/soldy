@@ -34,7 +34,7 @@ export class TAccordionContentExtension<TItem extends IAccordionItem = IAccordio
 	readonly name = 'content' as const
 
 	constructor(options?: IAccordionContentExtensionOptions<TItem>) {
-		super(TAccordionContentItemExtension as any, options)
+		super(TAccordionContentItemExtension, options)
 	}
 
 	/** `id` элемента-заголовка. */

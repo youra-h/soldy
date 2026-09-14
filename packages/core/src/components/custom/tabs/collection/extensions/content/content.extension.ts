@@ -36,7 +36,7 @@ export class TTabsContentExtension<TItem extends ITabsItem = ITabsItem>
 	readonly name = 'content' as const
 
 	constructor(options?: ITabsContentExtensionOptions<TItem>) {
-		super(TTabsContentItemExtension as any, options)
+		super(TTabsContentItemExtension, options)
 	}
 
 	/**
