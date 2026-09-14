@@ -8,8 +8,21 @@
  * Дублирующиеся имена props/events выбрасывают ошибку при создании.
  */
 
+import type { IEventSource } from '@soldy/core'
 import type { IAccessor } from './accessor.interface'
 import type { IAccessorProp, IAccessorEvent, IAccessorUnit } from './contract'
+
+/** Эмиттер или `TEvented`: то, на что адаптер подписывается через `on`/`off`. */
+function isEventSource(value: unknown): value is IEventSource {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'on' in value &&
+		typeof value.on === 'function' &&
+		'off' in value &&
+		typeof value.off === 'function'
+	)
+}
 
 export class TAccessor implements IAccessor {
 	private readonly _props: IAccessorProp[] = []
@@ -20,7 +33,9 @@ export class TAccessor implements IAccessor {
 		const seenEvents = new Set<string>()
 
 		for (const unit of units) {
-			if (!unit.instance) continue
+			const instance = unit.instance
+
+			if (!instance) continue
 
 			for (const decl of unit.props ?? []) {
 				if (seenProps.has(decl.name.getName())) {
@@ -31,7 +46,7 @@ export class TAccessor implements IAccessor {
 
 				this._props.push({
 					name: decl.name,
-					instance: unit.instance,
+					instance,
 					type: decl.type,
 					protected: !!decl.protected,
 					triggers: decl.triggers ?? [],
@@ -47,7 +62,7 @@ export class TAccessor implements IAccessor {
 
 				seenEvents.add(name.getName())
 
-				this._events.push({ name, instance: unit.instance })
+				this._events.push({ name, instance })
 			}
 		}
 	}
@@ -60,17 +75,21 @@ export class TAccessor implements IAccessor {
 		return this._events
 	}
 
-	/** prop.get(instance) если задан, иначе instance[name] */
-	getValue(prop: IAccessorProp): any {
+	/** prop.get(instance) если задан, иначе instance[name] (со снимком через valueOf) */
+	getValue(prop: IAccessorProp): unknown {
 		if (prop.get) return prop.get(prop.instance)
 
-		const val = prop.instance[prop.name.name]
+		const value: unknown = Reflect.get(prop.instance, prop.name.name)
 
-		return val?.valueOf?.() ?? val
+		if (typeof value === 'object' && value !== null && typeof value.valueOf === 'function') {
+			return value.valueOf() ?? value
+		}
+
+		return value
 	}
 
 	/** prop.set(instance, value) если задан, иначе instance[name] = value */
-	setValue(prop: IAccessorProp, value: any): void {
+	setValue(prop: IAccessorProp, value: unknown): void {
 		if (prop.protected) return
 
 		if (prop.set) {
@@ -79,12 +98,15 @@ export class TAccessor implements IAccessor {
 		}
 
 		if (prop.name.name in prop.instance) {
-			prop.instance[prop.name.name] = value
+			Reflect.set(prop.instance, prop.name.name, value)
 		}
 	}
 
 	/** instance.events (или сам instance, если events отсутствуют) */
-	getEventSource(item: IAccessorProp | IAccessorEvent): any {
-		return item.instance?.events ?? item.instance
+	getEventSource(item: IAccessorProp | IAccessorEvent): IEventSource | undefined {
+		const events: unknown = Reflect.get(item.instance, 'events')
+		const source = events ?? item.instance
+
+		return isEventSource(source) ? source : undefined
 	}
 }

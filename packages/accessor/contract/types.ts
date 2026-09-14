@@ -32,25 +32,32 @@ export interface INamingStrategy {
 	event(name: TName): string
 }
 
-/** Декларация одного свойства. Ключ словаря props — имя свойства. */
+/**
+ * Декларация одного свойства. Ключ словаря props — имя свойства.
+ *
+ * `get`/`set` объявлены методами, а не свойствами-функциями: contribution пишет
+ * их под instance своего компонента (`get: (item: TTabsItemCollectionFacade) =>
+ * item.closable`), а accessor вызывает их с instance того же unit — эту связь
+ * держит дескриптор, а не тип. Метод принимает такую реализацию без приведения.
+ */
 export interface IPropDefinition {
-	type?: any
+	type?: unknown
 	protected?: boolean
 	triggers?: string[]
 	/** Нетривиальное чтение: вместо instance[name] */
-	get?: (instance: any) => any
+	get?(instance: object): unknown
 	/** Нетривиальная запись: вместо instance[name] = value */
-	set?: (instance: any, value: any) => void
+	set?(instance: object, value: unknown): void
 }
 
 /** Нормализованная декларация свойства: имена уже TName */
 export interface IPropDeclaration {
 	name: TName
-	type?: any
+	type?: unknown
 	protected?: boolean
 	triggers?: TName[]
-	get?: (instance: any) => any
-	set?: (instance: any, value: any) => void
+	get?(instance: object): unknown
+	set?(instance: object, value: unknown): void
 }
 
 /**
@@ -78,7 +85,7 @@ export interface ISlotDefinition {
 	 * Значения — те же брендированные типы, что и у props (`defineType<T>`):
 	 * в рантайме нужен лишь состав ключей, тип живёт на уровне типов.
 	 */
-	scope?: Record<string, any>
+	scope?: Record<string, unknown>
 	/** Одна строка для документации и генерации. */
 	description?: string
 }
@@ -86,7 +93,7 @@ export interface ISlotDefinition {
 /** Нормализованная декларация слота: имя вынесено из ключа словаря. */
 export interface ISlotDeclaration {
 	name: string
-	scope?: Record<string, any>
+	scope?: Record<string, unknown>
 	description?: string
 }
 
@@ -102,7 +109,7 @@ export interface IContribution {
  * Компонент = несколько Unit'ов: сам instance, плагины, расширения коллекции и т.д.
  */
 export interface IAccessorUnit {
-	instance: any
+	instance: object | null | undefined
 	props?: IPropDeclaration[]
 	events?: TName[]
 }
@@ -111,18 +118,18 @@ export interface IAccessorUnit {
 export interface IAccessorProp {
 	name: TName
 	/** Объект-владелец: instance[name] = значение, instance.events = источник событий */
-	instance: any
-	type?: any
+	instance: object
+	type?: unknown
 	protected: boolean
 	triggers: TName[]
-	get?: (instance: any) => any
-	set?: (instance: any, value: any) => void
+	get?(instance: object): unknown
+	set?(instance: object, value: unknown): void
 }
 
 /** Скомпилированное событие: привязано к своему instance */
 export interface IAccessorEvent {
 	name: TName
-	instance: any
+	instance: object
 }
 
 /** Elevator: DI-абстракция для передачи значений от родителя к детям */

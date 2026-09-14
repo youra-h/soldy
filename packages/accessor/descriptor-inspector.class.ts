@@ -10,10 +10,13 @@ import type { INamingStrategy, TName } from './contract'
 
 type TStaticProp = {
 	name: TName
-	type?: any
+	type?: unknown
 	protected?: boolean
 	triggers?: TName[]
 }
+
+/** Настройка пропа для статического слоя фреймворка: тип и значение по умолчанию. */
+export type TExportPropConfig = { type?: unknown; default?: unknown }
 
 export class TDescriptorInspector {
 	private readonly _props: TStaticProp[]
@@ -60,14 +63,14 @@ export class TDescriptorInspector {
 	}
 
 	/** Для useProps/useEmits (статический слой) */
-	getExportProps(defaults: Record<string, any> = {}): Record<string, any> {
-		const result: Record<string, any> = {}
+	getExportProps(defaults: Record<string, unknown> = {}): Record<string, TExportPropConfig> {
+		const result: Record<string, TExportPropConfig> = {}
 
 		for (const prop of this._props) {
 			if (prop.protected) continue
 
 			const exportName = this.getExportPropName(prop)
-			const config: Record<string, any> = {}
+			const config: TExportPropConfig = {}
 
 			if (prop.type !== undefined) config.type = prop.type
 			if (prop.name.name in defaults) config.default = defaults[prop.name.name]

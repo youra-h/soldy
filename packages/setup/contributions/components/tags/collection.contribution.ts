@@ -1,6 +1,7 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { TButtonView } from '@soldy/core'
+import type { TTagsItemCollectionFacade } from '@soldy/core'
 
 /**
  * Коллекционные props/events владельца Tags — то, что выводит фасад
@@ -26,7 +27,7 @@ export const TagsCollectionItemContribution = (): IContribution => ({
 		tag_closable: {
 			type: Boolean,
 			protected: true,
-			get: (instance) => instance.closable,
+			get: (item: TTagsItemCollectionFacade) => item.closable,
 			triggers: ['change:closable'],
 		},
 		/**

@@ -1,4 +1,5 @@
 import type { IContribution } from '@soldy/accessor'
+import type { TTabsItemCollectionFacade } from '@soldy/core'
 
 /**
  * Коллекционные props/events владельца Tabs (выводятся фасадом TTabsCollectionFacade).
@@ -20,7 +21,7 @@ export const TabsCollectionItemContribution = (): IContribution => ({
 		tab_closable: {
 			type: Boolean,
 			protected: true,
-			get: (instance) => instance.closable,
+			get: (item: TTabsItemCollectionFacade) => item.closable,
 			triggers: ['change:closable'],
 		},
 	},

@@ -1,6 +1,6 @@
 import type { IContribution } from '@soldy/accessor'
 import { PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TFramePlacement } from '@soldy/plugins'
+import type { TAnchorPlugin, TFramePlacement } from '@soldy/plugins'
 import { defineType } from '../../defineType'
 
 /**
@@ -17,8 +17,8 @@ export const AnchorContribution = (): IContribution => ({
 		anchor: {
 			type: Object,
 			triggers: ['change:anchor'],
-			get: (plugin) => plugin.anchor,
-			set: (plugin, value) => {
+			get: (plugin: TAnchorPlugin) => plugin.anchor,
+			set: (plugin: TAnchorPlugin, value: Element | null) => {
 				if (value) {
 					plugin.setAnchor(value)
 				} else {
