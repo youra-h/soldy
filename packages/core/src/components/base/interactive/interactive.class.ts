@@ -33,14 +33,14 @@ export default class TInteractive<
 			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._own.emit('change:disabled', payload.newValue)
+			this._sink.emit('change:disabled', payload.newValue)
 		})
 
 		this._states.focused =
 			options.states?.focused ?? new TStateUnit<boolean>({ initial: focused })
 
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._own.emit('change:focused', payload.newValue)
+			this._sink.emit('change:focused', payload.newValue)
 		})
 	}
 
@@ -48,7 +48,7 @@ export default class TInteractive<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TInteractiveEvents> {
+	protected get _sink(): TEventSink<TInteractiveEvents> {
 		return this.events
 	}
 

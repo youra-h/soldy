@@ -166,7 +166,7 @@ export class TSelect<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TSelectEvents> {
+	protected get _sink(): TEventSink<TSelectEvents> {
 		return this.events
 	}
 
@@ -200,8 +200,8 @@ export class TSelect<
 		if (value && !this.openable) return
 
 		this._applyOpen(value)
-		this._own.emit('change:open', value)
-		this._own.emit(value ? 'open' : 'close')
+		this._sink.emit('change:open', value)
+		this._sink.emit(value ? 'open' : 'close')
 	}
 
 	/**
@@ -224,7 +224,7 @@ export class TSelect<
 		if (this._placeholder === value) return
 
 		this._placeholder = value
-		this._own.emit('change:placeholder', value)
+		this._sink.emit('change:placeholder', value)
 	}
 
 	get closeOnSelect(): boolean {
@@ -235,7 +235,7 @@ export class TSelect<
 		if (this._closeOnSelect === value) return
 
 		this._closeOnSelect = value
-		this._own.emit('change:closeOnSelect', value)
+		this._sink.emit('change:closeOnSelect', value)
 	}
 
 	get clearable(): boolean {
@@ -246,7 +246,7 @@ export class TSelect<
 		if (this._clearable === value) return
 
 		this._applyClearable(value)
-		this._own.emit('change:clearable', value)
+		this._sink.emit('change:clearable', value)
 	}
 
 	get clearLabel(): string {
@@ -257,7 +257,7 @@ export class TSelect<
 		if (this._clearLabel === value) return
 
 		this._clearLabel = value
-		this._own.emit('change:clearLabel', value)
+		this._sink.emit('change:clearLabel', value)
 	}
 
 	/**
@@ -276,7 +276,7 @@ export class TSelect<
 		if (this._editable === value) return
 
 		this._applyEditable(value)
-		this._own.emit('change:editable', value)
+		this._sink.emit('change:editable', value)
 
 		this.readonly = !value
 	}
@@ -299,7 +299,7 @@ export class TSelect<
 		if (this._editableMode === value) return
 
 		this._applyEditableMode(value)
-		this._own.emit('change:editableMode', value)
+		this._sink.emit('change:editableMode', value)
 	}
 
 	/**
@@ -316,7 +316,7 @@ export class TSelect<
 		if (this._removeOnBackspace === value) return
 
 		this._removeOnBackspace = value
-		this._own.emit('change:removeOnBackspace', value)
+		this._sink.emit('change:removeOnBackspace', value)
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
@@ -328,7 +328,7 @@ export class TSelect<
 		if (this._maxRows === value) return
 
 		this._maxRows = value
-		this._own.emit('change:maxRows', value)
+		this._sink.emit('change:maxRows', value)
 	}
 
 	/** Что делать с не помещающимся текстом. */
@@ -340,7 +340,7 @@ export class TSelect<
 		if (this._contentFit === value) return
 
 		this._applyContentFit(value)
-		this._own.emit('change:contentFit', value)
+		this._sink.emit('change:contentFit', value)
 	}
 
 	/** Как прокручивать к опции при навигации. */
@@ -352,7 +352,7 @@ export class TSelect<
 		if (this._scrollBehavior === value) return
 
 		this._scrollBehavior = value
-		this._own.emit('change:scrollBehavior', value)
+		this._sink.emit('change:scrollBehavior', value)
 	}
 
 	/** Где показывать отметку выбранной опции. */
@@ -364,7 +364,7 @@ export class TSelect<
 		if (this._indicator === value) return
 
 		this._applyIndicator(value)
-		this._own.emit('change:indicator', value)
+		this._sink.emit('change:indicator', value)
 	}
 
 	/**

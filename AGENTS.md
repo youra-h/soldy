@@ -630,11 +630,11 @@ Tags/Accordion/ListBox) не может эмитить своё **собстве
 приведения:
 
 ```ts
-protected get _own(): TEventSink<TValueControlEvents<TValue>> {
+protected get _sink(): TEventSink<TValueControlEvents<TValue>> {
 	return this.events
 }
 // …
-this._own.emit('change:value', payload)
+this._sink.emit('change:value', payload)
 ```
 
 У класса без собственного дженерика `TEvents` (лист иерархии вроде `TButton`,

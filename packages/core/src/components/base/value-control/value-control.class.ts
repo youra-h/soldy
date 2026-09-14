@@ -39,9 +39,9 @@ export default class TValueControl<
 		this._states.value = options.states?.value ?? new TStateUnit<TValue>({ initial: value })
 
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
-			this._own.emit('change:value', payload)
-			this._own.emit('input:value', payload)
-			this._own.emit('input', payload)
+			this._sink.emit('change:value', payload)
+			this._sink.emit('input:value', payload)
+			this._sink.emit('input', payload)
 		})
 	}
 
@@ -49,7 +49,7 @@ export default class TValueControl<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TValueControlEvents<TValue>> {
+	protected get _sink(): TEventSink<TValueControlEvents<TValue>> {
 		return this.events
 	}
 
@@ -60,7 +60,7 @@ export default class TValueControl<
 		if (this._name === value) return
 
 		this._name = value
-		this._own.emit('change:name', value)
+		this._sink.emit('change:name', value)
 	}
 
 	get value(): TValue {

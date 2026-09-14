@@ -55,7 +55,7 @@ export default class TAccordionItem<
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._own.emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 	}
 
@@ -63,7 +63,7 @@ export default class TAccordionItem<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TAccordionItemEvents> {
+	protected get _sink(): TEventSink<TAccordionItemEvents> {
 		return this.events
 	}
 
@@ -82,7 +82,7 @@ export default class TAccordionItem<
 	set arrowPlacement(value: TAccordionArrowPlacement) {
 		if (this._arrowPlacement !== value) {
 			this._arrowPlacement = value
-			this._own.emit('change:arrowPlacement', value)
+			this._sink.emit('change:arrowPlacement', value)
 		}
 	}
 

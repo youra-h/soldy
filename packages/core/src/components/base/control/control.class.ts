@@ -34,14 +34,14 @@ export default class TControl<
 			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._own.emit('change:disabled', payload.newValue)
+			this._sink.emit('change:disabled', payload.newValue)
 		})
 
 		this._states.focused =
 			options.states?.focused ?? new TStateUnit<boolean>({ initial: focused })
 
 		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._own.emit('change:focused', payload.newValue)
+			this._sink.emit('change:focused', payload.newValue)
 		})
 
 		this.events.on('change:disabled', () => this._syncDisabledAria())
@@ -54,7 +54,7 @@ export default class TControl<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TControlEvents> {
+	protected get _sink(): TEventSink<TControlEvents> {
 		return this.events
 	}
 

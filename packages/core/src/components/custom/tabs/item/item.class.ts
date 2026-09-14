@@ -53,12 +53,12 @@ export default class TTabsItem<
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._own.emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 
 		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
 			this._classes.toggle(`--closable`, !!payload.newValue)
-			this._own.emit('change:closable', payload.newValue)
+			this._sink.emit('change:closable', payload.newValue)
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
@@ -86,7 +86,7 @@ export default class TTabsItem<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TTabsItemEvents> {
+	protected get _sink(): TEventSink<TTabsItemEvents> {
 		return this.events
 	}
 
@@ -129,7 +129,7 @@ export default class TTabsItem<
 		if (this._closeLabel === value) return
 
 		this._closeLabel = value
-		this._own.emit('change:closeLabel', value)
+		this._sink.emit('change:closeLabel', value)
 	}
 
 	/**

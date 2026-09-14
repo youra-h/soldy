@@ -53,7 +53,7 @@ export default class TListBoxItem<
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._own.emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 	}
 
@@ -61,7 +61,7 @@ export default class TListBoxItem<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TListBoxItemEvents> {
+	protected get _sink(): TEventSink<TListBoxItemEvents> {
 		return this.events
 	}
 
@@ -81,7 +81,7 @@ export default class TListBoxItem<
 		if (this._contentFit === value) return
 
 		this._contentFit = value
-		this._own.emit('change:contentFit', value)
+		this._sink.emit('change:contentFit', value)
 	}
 
 	override getProps(): TProps {

@@ -31,7 +31,7 @@ export default class TTextable<
 		this._states.text = options.states?.text ?? new TStateUnit<string>({ initial: text })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._own.emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 	}
 
@@ -39,7 +39,7 @@ export default class TTextable<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TTextableEvents> {
+	protected get _sink(): TEventSink<TTextableEvents> {
 		return this.events
 	}
 

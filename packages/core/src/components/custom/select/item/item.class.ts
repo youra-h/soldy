@@ -42,7 +42,7 @@ export default class TSelectItem<
 			new TStateUnit<string>({ initial: own.text ?? ctor.defaultValues.text! })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._own.emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 
 		// Только то, что опция знает о себе сама: она — опция.
@@ -57,7 +57,7 @@ export default class TSelectItem<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TSelectItemEvents> {
+	protected get _sink(): TEventSink<TSelectItemEvents> {
 		return this.events
 	}
 

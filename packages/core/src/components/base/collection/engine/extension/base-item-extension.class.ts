@@ -25,7 +25,7 @@ export abstract class TBaseItemExtension<
 	 * Очистить собственные события item-адаптера (отписки, middleware, входящие подписки).
 	 */
 	destroy(): void {
-		this._own.emit('destroy')
+		this._sink.emit('destroy')
 		this.events.destroy()
 	}
 
@@ -33,7 +33,7 @@ export abstract class TBaseItemExtension<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TBaseItemEventsExtension> {
+	protected get _sink(): TEventSink<TBaseItemEventsExtension> {
 		return this.events
 	}
 }

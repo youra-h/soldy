@@ -54,14 +54,14 @@ export class TTabsContent<
 		if (this._value === value) return
 
 		this._value = value
-		this._own.emit('change:value', value)
+		this._sink.emit('change:value', value)
 	}
 
 	/**
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TTabsContentEvents> {
+	protected get _sink(): TEventSink<TTabsContentEvents> {
 		return this.events
 	}
 

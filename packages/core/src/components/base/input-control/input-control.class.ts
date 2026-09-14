@@ -66,14 +66,14 @@ export default class TInputControl<
 		if (this._id === value) return
 
 		this._id = value
-		this._own.emit('change:id', this.id)
+		this._sink.emit('change:id', this.id)
 	}
 
 	/**
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TInputControlEvents<TValue>> {
+	protected get _sink(): TEventSink<TInputControlEvents<TValue>> {
 		return this.events
 	}
 
@@ -91,7 +91,7 @@ export default class TInputControl<
 		if (this._readonly === value) return
 
 		this._applyReadonly(value)
-		this._own.emit('change:readonly', value)
+		this._sink.emit('change:readonly', value)
 	}
 
 	get required(): boolean {
@@ -108,7 +108,7 @@ export default class TInputControl<
 		if (this._required === value) return
 
 		this._applyRequired(value)
-		this._own.emit('change:required', value)
+		this._sink.emit('change:required', value)
 	}
 
 	/**

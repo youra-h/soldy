@@ -37,7 +37,7 @@ export default class TStylable<
 				oldClass: `--size-${payload.oldValue}`,
 				newClass: `--size-${payload.newValue}`,
 			})
-			this._own.emit('change:size', payload)
+			this._sink.emit('change:size', payload)
 		})
 
 		this._classes.add(`--size-${this._states.size.value}`)
@@ -53,7 +53,7 @@ export default class TStylable<
 				oldClass: `--${payload.oldValue}`,
 				newClass: `--${payload.newValue}`,
 			})
-			this._own.emit('change:variant', payload)
+			this._sink.emit('change:variant', payload)
 		})
 
 		this._classes.add(`--${this._states.variant.value}`)
@@ -63,7 +63,7 @@ export default class TStylable<
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TStylableEvents> {
+	protected get _sink(): TEventSink<TStylableEvents> {
 		return this.events
 	}
 

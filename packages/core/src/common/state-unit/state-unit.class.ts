@@ -44,14 +44,14 @@ export class TStateUnit<
 		const resolved = this.value
 		const payload: TValuePayload<TValue> = { newValue: resolved, oldValue: resolved }
 
-		this._own.emit('change', payload)
+		this._sink.emit('change', payload)
 	}
 
 	/**
 	 * Эмит собственных событий класса — без приведения `this.events` к
 	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
 	 */
-	protected get _own(): TEventSink<TStateUnitValueEvents<TValue>> {
+	protected get _sink(): TEventSink<TStateUnitValueEvents<TValue>> {
 		return this.events
 	}
 
@@ -77,6 +77,6 @@ export class TStateUnit<
 
 		const payload: TValuePayload<TValue> = { newValue: value, oldValue }
 
-		this._own.emit('change', payload)
+		this._sink.emit('change', payload)
 	}
 }
