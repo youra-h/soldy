@@ -15,9 +15,7 @@ import type { IListBox } from './../types'
  * только там. Из этих же наборов вычисляется, чего движку не хватает.
  */
 export const LIST_BOX_EXTENSIONS = (): TExtensionSet<IListBoxItem> => ({
-	...selectionExtensions<IListBoxItem>(
-		TListBoxItem as unknown as new (source: any) => IListBoxItem,
-	),
+	...selectionExtensions<IListBoxItem>(TListBoxItem),
 })
 
 /** То, чему нужен инстанс компонента. */

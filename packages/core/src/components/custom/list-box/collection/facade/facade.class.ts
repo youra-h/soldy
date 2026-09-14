@@ -6,7 +6,6 @@ import type {
 	TListBoxCollectionExtensions,
 	TListBoxCollectionFacadeOptions,
 } from '../types'
-import type { IListBox } from '../../types'
 import type { IListBoxItem } from '../../item/types'
 import type { TListBoxView } from '../../types'
 
@@ -25,11 +24,7 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectionFacadeProps<IListBoxItem> = {},
 		options: TListBoxCollectionFacadeOptions = {},
 	) {
-		const createEngine =
-			options.factory ??
-			(ListBoxFactory as unknown as (
-				owner: IListBox,
-			) => TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>)
+		const createEngine = options.factory ?? ListBoxFactory
 
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно ListBox. Именно здесь, а не в теле:
@@ -40,7 +35,7 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 				LIST_BOX_EXTENSIONS(),
 				LIST_BOX_OWNER_EXTENSIONS,
 				'ListBox',
-				createEngine as never,
+				createEngine,
 			) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
 		})
 

@@ -14,9 +14,7 @@ import type { IAccordion } from './../types'
  * появится только там.
  */
 export const ACCORDION_EXTENSIONS = (): TExtensionSet<IAccordionItem> => ({
-	...selectionExtensions<IAccordionItem>(
-		TAccordionItem as unknown as new (source: any) => IAccordionItem,
-	),
+	...selectionExtensions<IAccordionItem>(TAccordionItem),
 	content: () => new TAccordionContentExtension<IAccordionItem>(),
 })
 
