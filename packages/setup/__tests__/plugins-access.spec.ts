@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /**
  * Доступ к плагинам снаружи.
  *
@@ -7,8 +9,9 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import { required } from './helpers'
 import { TButton } from '@soldy/core'
-import { TElementPlugin, TReadyPlugin } from '@soldy/plugins'
+import { TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
 import {
 	createAdapterContext,
 	collectEventBindings,
@@ -48,16 +51,15 @@ describe('bundle:create — сторона инстанса', () => {
 
 	it('через bundle можно подписаться на события конкретного плагина', async () => {
 		const ctrl = new TButton()
-		// Тесты setup идут в node-окружении: элемент — заглушка с тем минимумом,
-		// который дёргают плагины. Поведение на настоящем DOM проверяют
-		// адаптерные пакеты.
-		const node = { tagName: 'BUTTON', addEventListener() {}, removeEventListener() {} }
+		const node = document.createElement('button')
 		let element: unknown = null
 
 		// Ровно тот сценарий, ради которого всё затевалось: на руках только
 		// ctrl, а нужен DOM-элемент, который знает только плагин
-		ctrl.events.on('bundle:create', (bundle: any) => {
-			bundle.get(TElementPlugin).events.on('ready', (el: unknown) => (element = el))
+		ctrl.events.on('bundle:create', (bundle: unknown) => {
+			if (!(bundle instanceof TPluginBundle)) return
+
+			bundle.get(TElementPlugin)?.events.on('ready', (el: unknown) => (element = el))
 		})
 
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
@@ -65,7 +67,7 @@ describe('bundle:create — сторона инстанса', () => {
 		await created()
 
 		// TElementPlugin отдаёт `ready` через rAF, поэтому проверяем синхронный путь
-		context.bundle.get(TElementPlugin).events.emit('ready', node)
+		required(context.bundle?.get(TElementPlugin), 'TElementPlugin').events.emit('ready', node)
 
 		expect(element).toBe(node)
 	})
@@ -127,7 +129,7 @@ describe('<ns>:create — сторона шаблона', () => {
 		const bundleCreate = emitted.find(([name]) => name === 'onBundleCreate')
 
 		// Плагин отдаёт сам себя — как engine:create отдаёт сам движок
-		expect(elementCreate?.[1]).toBe(context.bundle.get(TElementPlugin))
+		expect(elementCreate?.[1]).toBe(context.bundle?.get(TElementPlugin))
 		expect(bundleCreate?.[1]).toBe(context.bundle)
 	})
 
@@ -136,8 +138,12 @@ describe('<ns>:create — сторона шаблона', () => {
 		const order: string[] = []
 
 		context.instance.events.on('bundle:create', () => order.push('bundle'))
-		context.bundle.get(TElementPlugin).events.on('create', () => order.push('element'))
-		context.bundle.get(TReadyPlugin).events.on('create', () => order.push('ready'))
+		required(context.bundle?.get(TElementPlugin), 'TElementPlugin').events.on('create', () =>
+			order.push('element'),
+		)
+		required(context.bundle?.get(TReadyPlugin), 'TReadyPlugin').events.on('create', () =>
+			order.push('ready'),
+		)
 
 		await created()
 

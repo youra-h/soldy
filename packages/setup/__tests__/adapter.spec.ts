@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
+import { createEngine } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy/core'
 import { TPluginBundle, TDragPlugin } from '@soldy/plugins'
 import {
 	createAdapterContext,
@@ -13,15 +15,18 @@ import {
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
 	DRAG_CONTEXT_ELEVATOR,
+	type IElevatorKey,
 	type TElevatorFactory,
 	type IAdapterContext,
 } from '@soldy/setup'
+import { required } from './helpers'
 
 /** Простая in-memory реализация фабрики элеваторов для тестов. */
 function createElevatorFactory() {
-	const store = new Map<string | symbol, unknown>()
+	const store = new Map<IElevatorKey<unknown>, unknown>()
 
-	const factory: TElevatorFactory = <T>(key: string | symbol) => ({
+	// Как `inject<T>` во фреймворках: тип значения задаёт ключ, хранилищу он неизвестен
+	const factory: TElevatorFactory = <T>(key: IElevatorKey<T>) => ({
 		down: (value: T) => {
 			store.set(key, value)
 		},
@@ -29,6 +34,11 @@ function createElevatorFactory() {
 	})
 
 	return { factory, store }
+}
+
+/** Фасад-заглушка: у инстанса есть движок — всё, что нужно коллекционным расширениям. */
+class TEngineOwner {
+	constructor(readonly engine: TCollectionEngine<any, any>) {}
 }
 
 describe('TElevator', () => {
@@ -168,18 +178,13 @@ describe('расширения коллекций', () => {
 	it('TCollectionExtension опускает engine и регистрирует item через elevator', () => {
 		const { factory, store } = createElevatorFactory()
 
-		const engine = {
-			extensions: {
-				plain: {
-					push: vi.fn(),
-					remove: vi.fn(),
-				},
-			},
-		}
+		const engine = createEngine()
+		const push = vi.spyOn(engine.extensions.plain, 'push')
+		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
 		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{ ctrl: { engine } },
+			defineComponent({ ctor: TEngineOwner }),
+			{ ctrl: new TEngineOwner(engine) },
 			{ defaultExtensions: [] },
 		)
 
@@ -187,91 +192,87 @@ describe('расширения коллекций', () => {
 
 		expect(store.get(ITEM_CONTEXT_ELEVATOR)).toBe(engine)
 
-		const register = store.get(COLLECTION_ENGINE_ELEVATOR)
-		expect(typeof register).toBe('function')
+		const register = required(factory(COLLECTION_ENGINE_ELEVATOR).up(), 'регистратор элемента')
 
 		const item = { uid: 'a' }
-		const cleanup = register(item, {})
+		const cleanup = register(item, null)
 
-		expect(engine.extensions.plain.push).toHaveBeenCalledWith(item)
+		expect(push).toHaveBeenCalledWith(item)
 
 		cleanup()
-		expect(engine.extensions.plain.remove).toHaveBeenCalledWith(item)
+		expect(remove).toHaveBeenCalledWith(item)
 	})
 
 	it('элемент из данных не удаляется при размонтировании', () => {
-		const { factory, store } = createElevatorFactory()
+		const { factory } = createElevatorFactory()
 
 		const item = { uid: 'a' }
 
 		// элемент уже в коллекции — пришёл из `items`, разметка им не владеет
-		const engine = {
-			extensions: {
-				batch: { items: [item] },
-				plain: { push: vi.fn(), remove: vi.fn() },
-			},
-		}
+		const engine = createEngine({ items: [item] })
+		const push = vi.spyOn(engine.extensions.plain, 'push')
+		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
 		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{ ctrl: { engine } },
+			defineComponent({ ctor: TEngineOwner }),
+			{ ctrl: new TEngineOwner(engine) },
 			{ defaultExtensions: [] },
 		)
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
-		const register = store.get(COLLECTION_ENGINE_ELEVATOR)
-		const cleanup = register(item, {})
+		const register = required(factory(COLLECTION_ENGINE_ELEVATOR).up(), 'регистратор элемента')
+		const cleanup = register(item, null)
 
 		// повторно добавлять нечего
-		expect(engine.extensions.plain.push).not.toHaveBeenCalled()
+		expect(push).not.toHaveBeenCalled()
 
 		cleanup()
 
 		// и удалять тоже: фильтр сузил выдачу, ушла страница таблицы —
 		// данные при этом на месте
-		expect(engine.extensions.plain.remove).not.toHaveBeenCalled()
+		expect(remove).not.toHaveBeenCalled()
 	})
 
 	it('элемент из разметки удаляется при размонтировании', () => {
-		const { factory, store } = createElevatorFactory()
+		const { factory } = createElevatorFactory()
 
 		// коллекция пуста — элемент создаёт сама разметка
-		const engine = {
-			extensions: {
-				batch: { items: [] },
-				plain: { push: vi.fn(), remove: vi.fn() },
-			},
-		}
+		const engine = createEngine()
+		const push = vi.spyOn(engine.extensions.plain, 'push')
+		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
 		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{ ctrl: { engine } },
+			defineComponent({ ctor: TEngineOwner }),
+			{ ctrl: new TEngineOwner(engine) },
 			{ defaultExtensions: [] },
 		)
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
 		const item = { uid: 'b' }
-		const register = store.get(COLLECTION_ENGINE_ELEVATOR)
-		const cleanup = register(item, {})
+		const register = required(factory(COLLECTION_ENGINE_ELEVATOR).up(), 'регистратор элемента')
+		const cleanup = register(item, null)
 
-		expect(engine.extensions.plain.push).toHaveBeenCalledWith(item)
+		expect(push).toHaveBeenCalledWith(item)
 
 		cleanup()
 
-		expect(engine.extensions.plain.remove).toHaveBeenCalledWith(item)
+		expect(remove).toHaveBeenCalledWith(item)
 	})
 
-	it('TCollectionExtension бросает ошибку без engine у instance', () => {
+	it('TCollectionExtension не подключается к инстансу без engine', () => {
 		const { factory } = createElevatorFactory()
 
 		const ctx = createAdapterContext(
 			defineComponent({ ctor: class {} }),
-			{ ctrl: {} },
+			{},
 			{ defaultExtensions: [] },
 		)
 
+		// Компилятор такое подключение не пропускает; проверка в рантайме — для
+		// потребителя без типов.
+		// @ts-expect-error — у инстанса нет engine
 		expect(() => ctx.use(TCollectionExtension, { elevator: factory })).toThrow(
 			'Engine is not available in the engine instance.',
 		)
@@ -297,14 +298,14 @@ describe('расширения коллекций', () => {
 		// Родитель установил drag-контекст
 		store.set(DRAG_CONTEXT_ELEVATOR, true)
 
-		const engine = {}
-		const instance = { engine }
+		const engine = createEngine()
+		const instance = new TEngineOwner(engine)
 
 		const bundle = new TPluginBundle(instance)
 		bundle.use(TDragPlugin)
 
 		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
+			defineComponent({ ctor: TEngineOwner }),
 			{ ctrl: instance },
 			{ bundle, defaultExtensions: [] },
 		)
@@ -321,13 +322,13 @@ describe('расширения коллекций', () => {
 	it('TDragAndDropCollectionExtension не активирует плагин без drag-контекста', () => {
 		const { factory } = createElevatorFactory()
 
-		const instance = { engine: {} }
+		const instance = new TEngineOwner(createEngine())
 
 		const bundle = new TPluginBundle(instance)
 		bundle.use(TDragPlugin)
 
 		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
+			defineComponent({ ctor: TEngineOwner }),
 			{ ctrl: instance },
 			{ bundle, defaultExtensions: [] },
 		)

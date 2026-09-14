@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import { createPluginContext } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
 import {
@@ -41,15 +42,7 @@ async function setup(texts: string[]) {
 	const bundles = new TCollectionBundlesPlugin()
 	const keyboard = new TListKeyboardPlugin()
 
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => {
-			if (ctor === TElementPlugin) return rootElement
-			if (ctor === TCollectionBundlesPlugin) return bundles
-
-			return undefined
-		},
-	} as any
+	const ctx = createPluginContext(owner, [rootElement, bundles])
 
 	bundles.install(ctx)
 	keyboard.install(ctx)
@@ -59,12 +52,12 @@ async function setup(texts: string[]) {
 	for (const item of items) {
 		const bundle = new TPluginBundle(item)
 
-		bundle.use(TListItemPlugin as any)
+		bundle.use(TListItemPlugin)
 		itemPlugins.set(item.uid, bundle.get(TListItemPlugin) as TListItemPlugin)
 		bundles.register(bundle, item)
 	}
 
-	bundles.bindEngine(facade.engine as any)
+	bundles.bindEngine(facade.engine)
 
 	rootElement.element = root
 	await nextFrame()
@@ -183,14 +176,11 @@ describe('подсветка следует за выбором', () => {
 
 		const bundles = new TCollectionBundlesPlugin()
 		const keyboard = new TListKeyboardPlugin()
-		const ctx = {
-			getInstance: () => owner,
-			get: (ctor: unknown) => (ctor === TCollectionBundlesPlugin ? bundles : undefined),
-		} as any
+		const ctx = createPluginContext(owner, [bundles])
 
 		bundles.install(ctx)
 		keyboard.install(ctx)
-		bundles.bindEngine(facade.engine as any)
+		bundles.bindEngine(facade.engine)
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})

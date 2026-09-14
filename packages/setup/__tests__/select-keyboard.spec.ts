@@ -10,6 +10,8 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import type { ISelectProps } from '@soldy/core'
+import { createPluginContext } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -32,10 +34,10 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  */
 async function setup(
 	texts: string[],
-	props: Record<string, unknown> = {},
-	layoutProps: { scrollBehavior?: string } = {},
+	props: Partial<ISelectProps> = {},
+	layoutProps: Partial<ISelectProps> = {},
 ) {
-	const owner = new TSelect({ ...props, ...layoutProps } as any)
+	const owner = new TSelect({ ...props, ...layoutProps })
 	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
 
@@ -50,16 +52,7 @@ async function setup(
 	const elements = new TCollectionElements()
 	const keyboard = new TSelectKeyboardPlugin()
 
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => {
-			if (ctor === TElementPlugin) return rootElement
-			if (ctor === TCollectionBundlesPlugin) return bundles
-			if (ctor === TCollectionElements) return elements
-
-			return undefined
-		},
-	} as any
+	const ctx = createPluginContext(owner, [rootElement, bundles, elements])
 
 	bundles.install(ctx)
 	elements.install(ctx)
@@ -83,8 +76,8 @@ async function setup(
 		const bundle = new TPluginBundle(item)
 		const itemElement = new TElementPlugin()
 
-		bundle.use(TElementPlugin as any)
-		bundle.use(TListItemPlugin as any)
+		bundle.use(TElementPlugin)
+		bundle.use(TListItemPlugin)
 
 		const registered = bundle.get(TElementPlugin) as TElementPlugin
 		const highlight = bundle.get(TListItemPlugin) as TListItemPlugin
@@ -96,7 +89,7 @@ async function setup(
 		bundles.register(bundle, item)
 	}
 
-	bundles.bindEngine(facade.engine as any)
+	bundles.bindEngine(facade.engine)
 
 	rootElement.element = root
 	await nextFrame()

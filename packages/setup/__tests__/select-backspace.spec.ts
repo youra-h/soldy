@@ -11,8 +11,9 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import { createPluginContext } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade } from '@soldy/core'
-import type { ISelectItem } from '@soldy/core'
+import type { ISelectItem, ISelectProps } from '@soldy/core'
 import { TSelectBackspacePlugin, TElementPlugin, TCollectionBundlesPlugin } from '@soldy/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -22,8 +23,8 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  * способом, что `select-editable.spec.ts`. Плагину не нужны ни клавиатура,
  * ни DOM-узлы опций: он работает только с полем и расширениями коллекции.
  */
-async function setup(texts: string[], props: Record<string, unknown> = {}) {
-	const owner = new TSelect({ editable: true, removeOnBackspace: true, ...props } as any)
+async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
+	const owner = new TSelect({ editable: true, removeOnBackspace: true, ...props })
 	const facade = new TSelectCollectionFacade({ mode: 'multiple' }, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
 
@@ -39,20 +40,12 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 	const bundles = new TCollectionBundlesPlugin()
 	const backspace = new TSelectBackspacePlugin()
 
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => {
-			if (ctor === TElementPlugin) return rootElement
-			if (ctor === TCollectionBundlesPlugin) return bundles
-
-			return undefined
-		},
-	} as any
+	const ctx = createPluginContext(owner, [rootElement, bundles])
 
 	bundles.install(ctx)
 	backspace.install(ctx)
 
-	bundles.bindEngine(facade.engine as any)
+	bundles.bindEngine(facade.engine)
 
 	rootElement.element = root
 	await nextFrame()

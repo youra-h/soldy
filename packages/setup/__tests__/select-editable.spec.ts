@@ -14,6 +14,8 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import type { ISelectProps } from '@soldy/core'
+import { createPluginContext } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -33,8 +35,8 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  * `select-keyboard.spec.ts`, плюс настоящий `<input>` внутри корня: плагин
  * ищет его тем же способом, что `TInputPlugin` (`el.querySelector('input')`).
  */
-async function setup(texts: string[], props: Record<string, unknown> = {}) {
-	const owner = new TSelect({ editable: true, editableMode: 'search', ...props } as any)
+async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
+	const owner = new TSelect({ editable: true, editableMode: 'search', ...props })
 	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
 
@@ -52,17 +54,7 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 	const keyboard = new TSelectKeyboardPlugin()
 	const editable = new TEditablePlugin()
 
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => {
-			if (ctor === TElementPlugin) return rootElement
-			if (ctor === TCollectionBundlesPlugin) return bundles
-			if (ctor === TCollectionElements) return elements
-			if (ctor === TSelectKeyboardPlugin) return keyboard
-
-			return undefined
-		},
-	} as any
+	const ctx = createPluginContext(owner, [rootElement, bundles, elements, keyboard])
 
 	bundles.install(ctx)
 	elements.install(ctx)
@@ -78,8 +70,8 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 
 		const bundle = new TPluginBundle(item)
 
-		bundle.use(TElementPlugin as any)
-		bundle.use(TListItemPlugin as any)
+		bundle.use(TElementPlugin)
+		bundle.use(TListItemPlugin)
 
 		const registered = bundle.get(TElementPlugin) as TElementPlugin
 
@@ -88,7 +80,7 @@ async function setup(texts: string[], props: Record<string, unknown> = {}) {
 		bundles.register(bundle, item)
 	}
 
-	bundles.bindEngine(facade.engine as any)
+	bundles.bindEngine(facade.engine)
 
 	rootElement.element = root
 	await nextFrame()

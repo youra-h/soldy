@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import type { IComponentDescriptor, TComponentCtor } from '../descriptors'
 import {
 	AccordionCollectionDescriptor,
 	AccordionCollectionItemDescriptor,
@@ -32,10 +33,10 @@ import {
 } from '../descriptors'
 
 /** Ищет сеттер по всей цепочке прототипов — свойство может прийти из базы. */
-function hasSetter(ctor: any, name: string): boolean {
-	let proto = ctor?.prototype
+function hasSetter(ctor: TComponentCtor, name: string): boolean {
+	let proto: unknown = ctor.prototype
 
-	while (proto && proto !== Object.prototype) {
+	while (typeof proto === 'object' && proto !== null && proto !== Object.prototype) {
 		const descriptor = Object.getOwnPropertyDescriptor(proto, name)
 
 		if (descriptor) return typeof descriptor.set === 'function' || 'value' in descriptor
@@ -46,7 +47,7 @@ function hasSetter(ctor: any, name: string): boolean {
 	return false
 }
 
-const descriptors: Array<[string, () => any]> = [
+const descriptors: Array<[string, () => IComponentDescriptor]> = [
 	['Accordion', AccordionCollectionDescriptor],
 	['Accordion.Item', AccordionCollectionItemDescriptor],
 	['ListBox', ListBoxCollectionDescriptor],
@@ -73,13 +74,13 @@ describe('коллекционные фасады отвечают своему 
 	it.each(descriptors)('%s: у каждого записываемого пропа есть сеттер', (_name, factory) => {
 		const descriptor = factory()
 		const writable = descriptor.props.filter(
-			(prop: any) => !prop.protected && !PASS_THROUGH.has(prop.name.name),
+			(prop) => !prop.protected && !PASS_THROUGH.has(prop.name.name),
 		)
 
 		const missing = writable
 			// Проп с собственным `get`/`set` в декларации живёт мимо класса
-			.filter((prop: any) => !prop.get && !prop.set)
-			.map((prop: any) => prop.name.name as string)
+			.filter((prop) => !prop.get && !prop.set)
+			.map((prop) => prop.name.name)
 			.filter((name: string) => !hasSetter(descriptor.ctor, name))
 
 		expect(missing).toEqual([])

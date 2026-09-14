@@ -9,13 +9,15 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import type { ISelectProps } from '@soldy/core'
+import { createPluginContext } from './helpers'
 import { TSelect } from '@soldy/core'
 import { TSelectPointerPlugin, TElementPlugin } from '@soldy/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
-async function setup(props: Record<string, unknown> = {}) {
-	const owner = new TSelect({ ...props } as any)
+async function setup(props: Partial<ISelectProps> = {}) {
+	const owner = new TSelect({ ...props })
 
 	const root = document.createElement('div')
 	const field = document.createElement('input')
@@ -29,10 +31,7 @@ async function setup(props: Record<string, unknown> = {}) {
 	const rootElement = new TElementPlugin()
 	const pointer = new TSelectPointerPlugin()
 
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => (ctor === TElementPlugin ? rootElement : undefined),
-	} as any
+	const ctx = createPluginContext(owner, [rootElement])
 
 	pointer.install(ctx)
 

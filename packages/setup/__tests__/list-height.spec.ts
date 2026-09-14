@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, afterEach, beforeAll } from 'vitest'
+import { createPluginContext } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
 import {
@@ -33,7 +34,7 @@ beforeAll(() => {
 			disconnect(): void {}
 		}
 
-		;(globalThis as any).ResizeObserver = ResizeObserverStub
+		globalThis.ResizeObserver = ResizeObserverStub
 	}
 })
 
@@ -72,16 +73,7 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 	const elements = new TCollectionElements()
 	const height = new TListHeightPlugin()
 
-	const registry = new Map<unknown, unknown>([
-		[TElementPlugin, rootElement],
-		[TCollectionBundlesPlugin, bundles],
-		[TCollectionElements, elements],
-	])
-
-	const ctx = {
-		getInstance: () => owner,
-		get: (ctor: unknown) => registry.get(ctor),
-	} as any
+	const ctx = createPluginContext(owner, [rootElement, bundles, elements])
 
 	bundles.install(ctx)
 	elements.install(ctx)
@@ -90,7 +82,7 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 	for (const item of items) {
 		const bundle = new TPluginBundle(item)
 
-		bundle.use(TElementPlugin as any)
+		bundle.use(TElementPlugin)
 		bundles.register(bundle, item)
 
 		const element = document.createElement('div')
@@ -101,7 +93,7 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 		;(bundle.get(TElementPlugin) as TElementPlugin).element = element
 	}
 
-	bundles.bindEngine(facade.engine as any)
+	bundles.bindEngine(facade.engine)
 
 	rootElement.element = root
 	await nextFrame()

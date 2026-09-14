@@ -6,6 +6,8 @@ export type {
 	IPluginDefinition,
 	IComponentDefinitionOptions,
 	IComponentDescriptor,
+	TComponentCtor,
+	TResolveInstance,
 	TDescriptorInstance,
 	DescriptorProps,
 	DescriptorEvents,

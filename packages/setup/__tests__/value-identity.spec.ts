@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
+import { required } from './helpers'
 import { TComponentView, TSpinner, TCollectionEngine, TBatchExtension } from '@soldy/core'
 import { SpinnerDescriptor } from '../descriptors'
-import { createAdapterContext } from '../adapter'
+import { createAdapterContext, type IAdapterContext } from '../adapter'
 
 /**
  * Контракт границы core → ui.
@@ -20,8 +21,11 @@ import { createAdapterContext } from '../adapter'
  */
 
 /** Читает значение пропа так же, как это делает адаптер. */
-function read(ctx: any, name: string): any {
-	const prop = ctx.accessor.getProps(true).find((p: any) => p.name.name === name)
+function read(ctx: IAdapterContext, name: string): unknown {
+	const prop = required(
+		ctx.accessor.getProps(true).find((p) => p.name.name === name),
+		`проп ${name}`,
+	)
 
 	return ctx.accessor.getValue(prop)
 }

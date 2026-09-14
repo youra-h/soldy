@@ -34,7 +34,7 @@ describe('normalizeContribution', () => {
 		const text = result.props.find((p) => p.name.name === 'text')!
 		expect(text.type).toBe(String)
 		expect(text.protected).toBe(false)
-		expect(text.triggers.map((t) => t.name)).toEqual(['change:text'])
+		expect(text.triggers?.map((t) => t.name)).toEqual(['change:text'])
 		expect(text.get).toBe(get)
 		expect(text.set).toBe(set)
 
@@ -55,7 +55,7 @@ describe('normalizeContribution', () => {
 		)
 
 		expect(result.props[0].name.getName()).toBe('ns:x')
-		expect(result.props[0].triggers[0].getName()).toBe('ns:change:x')
+		expect(result.props[0].triggers?.[0]?.getName()).toBe('ns:change:x')
 		expect(result.events[0].getName()).toBe('ns:go')
 	})
 })

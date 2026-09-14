@@ -62,6 +62,9 @@ jobs:
       - name: Типы — Core
         run: npx tsc --noEmit -p packages/core/tsconfig.json
 
+      - name: Типы — Setup
+        run: npx tsc --noEmit -p packages/setup/tsconfig.json
+
       - name: Типы — Vue
         run: |
           npm run build:types --workspace=@soldy/ui-vue

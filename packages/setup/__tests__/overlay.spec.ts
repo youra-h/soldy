@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createPluginContext } from './helpers'
 import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy/plugins'
 import { TFrame } from '@soldy/core'
 
@@ -49,10 +50,7 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 function anchorFor(frame: TFrame, elementPlugin?: TElementPlugin): TAnchorPlugin {
 	const plugin = new TAnchorPlugin()
 
-	plugin.install({
-		getInstance: () => frame,
-		get: (ctor: unknown) => (ctor === TElementPlugin ? elementPlugin : undefined),
-	} as any)
+	plugin.install(createPluginContext(frame, elementPlugin ? [elementPlugin] : []))
 
 	return plugin
 }
@@ -214,10 +212,7 @@ describe('нажатие мимо', () => {
 		const elementPlugin = new TElementPlugin()
 		const dismiss = new TDismissPlugin()
 
-		dismiss.install({
-			getInstance: () => ({ uid }),
-			get: (ctor: unknown) => (ctor === TElementPlugin ? elementPlugin : undefined),
-		} as any)
+		dismiss.install(createPluginContext({ uid }, [elementPlugin]))
 
 		elementPlugin.element = element
 		await nextFrame()

@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { createPluginContext } from './helpers'
 import { TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
 import { TButton, TIcon, TSkeleton } from '@soldy/core'
 import type { IComponentView } from '@soldy/core'
@@ -25,7 +26,7 @@ import { createAdapterContext, resolveDefaultExtensions, TPluginPropsExtension }
 const install = (instance: IComponentView, options?: { role?: string }) => {
 	const plugin = new TAriaPlugin()
 
-	plugin.install({ getInstance: () => instance } as any, options)
+	plugin.install(createPluginContext(instance), options)
 
 	return plugin
 }
