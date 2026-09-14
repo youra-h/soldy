@@ -57,11 +57,18 @@ export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtens
  */
 export type TTagsCollectionFacadeEngine = TCollectionEngine<any, any>
 
-/** Owner-level props коллекции: состав + режим выбора (по умолчанию `none`). */
+/**
+ * Owner-level props коллекции: состав + режим выбора (по умолчанию `none`).
+ *
+ * `TCollection` по умолчанию — `TTagsCollectionFacadeEngine`, а не
+ * `TTagsCollection`: `engine` принимает движок любого уровня сборки, тот же
+ * контраст, что и у конструктора фасада (см. `TTagsCollectionFacadeEngine`
+ * выше). Параметр остаётся настраиваемым для мест, которым нужна точность.
+ */
 export interface ITagsCollectionProps<
 	TItemProps = ITagsItemProps,
 	TItem = ITagsItem,
-	TCollection = TTagsCollection,
+	TCollection = TTagsCollectionFacadeEngine,
 >
 	extends ICollectionProps<TCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,

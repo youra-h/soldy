@@ -55,9 +55,15 @@ export type TTabsCollectionFacadeEngine = TCollectionEngine<any, any>
 /**
  * Owner-level props коллекции Tabs.
  * Объединяет pass-through engine + batch (items, trackBy).
+ *
+ * `engine` принимает движок любого уровня сборки, а не только `TTabsCollection`
+ * — тот же контраст, что и у конструктора фасада (см. `TTabsCollectionFacadeEngine`
+ * выше): компонент доустанавливает недостающее сам через `resolveEngine`.
  */
 export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabsItem>
-	extends ICollectionProps<TTabsCollection>, IBatchCollectionProps<TItemProps, TItem> {}
+	extends
+		ICollectionProps<TTabsCollectionFacadeEngine>,
+		IBatchCollectionProps<TItemProps, TItem> {}
 
 /**
  * Item-level props элемента Tabs.

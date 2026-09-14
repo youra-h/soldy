@@ -38,14 +38,14 @@ const texts = () => [...options()].map((el) => el.textContent?.trim())
 async function renderSelect(props: Record<string, unknown> = {}) {
 	let engine: any
 
-	wrapper = mount(Select as never, {
+	wrapper = mount(Select, {
 		props: {
 			items: ITEMS,
 			'onEngine:create': (value: any) => {
 				engine = value
 			},
 			...props,
-		} as never,
+		},
 		attachTo: document.body,
 	})
 
@@ -316,16 +316,15 @@ describe('опции из разметки под отбором', () => {
 	async function renderWithSlot(props: Record<string, unknown> = {}) {
 		let engine: any
 
-		wrapper = mount(Select as never, {
+		wrapper = mount(Select, {
 			props: {
 				'onEngine:create': (value: any) => {
 					engine = value
 				},
 				...props,
-			} as never,
+			},
 			slots: {
-				default: () =>
-					ITEMS.map((item) => h(Select.Item as never, { key: item.value, ...item })),
+				default: () => ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 			},
 			attachTo: document.body,
 		})

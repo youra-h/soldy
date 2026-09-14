@@ -59,7 +59,9 @@ jobs:
           npm run test:layout
 
       - name: Типы — Vue
-        run: npm run build:types --workspace=@soldy/ui-vue
+        run: |
+          npm run build:types --workspace=@soldy/ui-vue
+          npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
 
       - name: Типы — Plugins
         run: npx tsc --noEmit -p packages/plugins/tsconfig.json

@@ -27,59 +27,62 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
-async function render(component: unknown, props: Record<string, unknown>) {
-	wrapper = mount(component as never, { props: props as never, attachTo: document.body })
-
-	await nextTick()
-
-	return wrapper
-}
-
 describe('написанное в разметке доезжает до чужого инстанса', () => {
 	it('Input: placeholder', async () => {
 		const ctrl = new TInput()
-		const w = await render(Input, { ctrl, placeholder: 'Введите текст' })
+		wrapper = mount(Input, { props: { ctrl, placeholder: 'Введите текст' }, attachTo: document.body })
+		await nextTick()
 
-		expect((ctrl as { placeholder: string }).placeholder).toBe('Введите текст')
-		expect(w.find('input').attributes('placeholder')).toBe('Введите текст')
+		expect(ctrl.placeholder).toBe('Введите текст')
+		expect(wrapper.find('input').attributes('placeholder')).toBe('Введите текст')
 	})
 
 	it('Select: placeholder и editable', async () => {
 		const ctrl = new TSelect()
-		const w = await render(Select, { ctrl, placeholder: 'Выберите', editable: true })
+		wrapper = mount(Select, {
+			props: { ctrl, placeholder: 'Выберите', editable: true },
+			attachTo: document.body,
+		})
+		await nextTick()
 
-		expect((ctrl as { editable: boolean }).editable).toBe(true)
+		expect(ctrl.editable).toBe(true)
 		// `editable` снимает `readonly` — без него в поле не поставить курсор
-		expect((ctrl as { readonly: boolean }).readonly).toBe(false)
-		expect(w.find('input').attributes('readonly')).toBeUndefined()
-		expect(w.find('input').attributes('placeholder')).toBe('Выберите')
+		expect(ctrl.readonly).toBe(false)
+		expect(wrapper.find('input').attributes('readonly')).toBeUndefined()
+		expect(wrapper.find('input').attributes('placeholder')).toBe('Выберите')
 	})
 
 	it('проп, написанный через дефис', async () => {
 		const ctrl = new TSelect()
 
-		await render(Select, { ctrl, 'editable-mode': 'filter' })
+		wrapper = mount(Select, {
+			props: { ctrl, 'editable-mode': 'filter' },
+			attachTo: document.body,
+		})
+		await nextTick()
 
-		expect((ctrl as { editableMode: string }).editableMode).toBe('filter')
+		expect(ctrl.editableMode).toBe('filter')
 	})
 
 	it('дальнейшие смены пропа работают как раньше', async () => {
 		const ctrl = new TSelect()
-		const w = await render(Select, { ctrl, placeholder: 'Первый' })
+		wrapper = mount(Select, { props: { ctrl, placeholder: 'Первый' }, attachTo: document.body })
+		await nextTick()
 
-		await w.setProps({ placeholder: 'Второй' } as never)
+		await wrapper.setProps({ placeholder: 'Второй' })
 
-		expect((ctrl as { placeholder: string }).placeholder).toBe('Второй')
+		expect(ctrl.placeholder).toBe('Второй')
 	})
 })
 
 describe('ненаписанное — не трогается', () => {
 	it('умолчания разметки не затирают состояние инстанса', async () => {
-		const ctrl = new TSelect({ editable: true, placeholder: 'Своё' } as never)
+		const ctrl = new TSelect({ editable: true, placeholder: 'Своё' })
 
-		await render(Select, { ctrl })
+		wrapper = mount(Select, { props: { ctrl }, attachTo: document.body })
+		await nextTick()
 
-		expect((ctrl as { editable: boolean }).editable).toBe(true)
-		expect((ctrl as { placeholder: string }).placeholder).toBe('Своё')
+		expect(ctrl.editable).toBe(true)
+		expect(ctrl.placeholder).toBe('Своё')
 	})
 })

@@ -61,12 +61,12 @@ describe('ListBox: рендер из shown', () => {
 	it('сузили shown — на экране меньше элементов, в коллекции все', async () => {
 		const engine = await renderWith(ListBox)
 
-		expect(wrapper!.findAllComponents(ListBox.Item as never).length).toBe(3)
+		expect(wrapper!.findAllComponents(ListBox.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(ListBox.Item as never).length).toBe(2)
+		expect(wrapper!.findAllComponents(ListBox.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
@@ -75,12 +75,12 @@ describe('Tabs: рендер из shown', () => {
 	it('сузили shown — на экране меньше вкладок, в коллекции все', async () => {
 		const engine = await renderWith(Tabs)
 
-		expect(wrapper!.findAllComponents(Tabs.Item as never).length).toBe(3)
+		expect(wrapper!.findAllComponents(Tabs.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Tabs.Item as never).length).toBe(2)
+		expect(wrapper!.findAllComponents(Tabs.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
@@ -89,12 +89,12 @@ describe('Accordion: рендер из shown', () => {
 	it('сузили shown — на экране меньше панелей, в коллекции все', async () => {
 		const engine = await renderWith(Accordion)
 
-		expect(wrapper!.findAllComponents(Accordion.Item as never).length).toBe(3)
+		expect(wrapper!.findAllComponents(Accordion.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Accordion.Item as never).length).toBe(2)
+		expect(wrapper!.findAllComponents(Accordion.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
@@ -103,12 +103,12 @@ describe('Tags: рендер из shown', () => {
 	it('сузили shown — на экране меньше тегов, в коллекции все', async () => {
 		const engine = await renderWith(Tags)
 
-		expect(wrapper!.findAllComponents(Tags.Item as never).length).toBe(3)
+		expect(wrapper!.findAllComponents(Tags.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Tags.Item as never).length).toBe(2)
+		expect(wrapper!.findAllComponents(Tags.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
