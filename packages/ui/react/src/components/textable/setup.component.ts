@@ -2,19 +2,15 @@
  * useSetupTextable — setup-слой Textable (аналог setup.component.ts во Vue).
  */
 
-import { useRef } from 'react'
 import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
-import type { IAdapterContext } from '@soldy/setup'
 import type { ITextable } from '@soldy/core'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useAdapterContext } from '../../adapter'
 import type { TextableProps } from './base.component'
 
 export function useSetupTextable(props: TextableProps) {
-	const adapterRef = useRef<IAdapterContext<ITextable> | null>(null)
+	const adapter = useAdapterContext<ITextable>(() =>
+		createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props }),
+	)
 
-	if (!adapterRef.current) {
-		adapterRef.current = createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props })
-	}
-
-	return useAdapter(adapterRef.current, props)
+	return useAdapter(adapter, props)
 }

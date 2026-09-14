@@ -152,5 +152,31 @@ export default defineConfigWithVueTs(
 			],
 		},
 	},
+	// Компоненты React — только проводка того, что отдал адаптер (AGENTS.md,
+	// «Механизмы фреймворка — только в адаптерном слое»). Значения из 'react'
+	// запрещены (это ловит и `import * as React` → `React.useRef`), но типы
+	// (`ElementType`, `ReactElement`) компонентам нужны — `allowTypeImports`
+	// пропускает `import type { ... } from 'react'`. Отсюда
+	// `@typescript-eslint/no-restricted-imports`, а не базовое `no-restricted-imports`:
+	// только у него есть эта опция.
+	{
+		name: 'soldy/react-components-no-framework',
+		files: ['packages/ui/react/src/components/**/*.{ts,tsx}'],
+		rules: {
+			'@typescript-eslint/no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'react',
+							allowTypeImports: true,
+							message:
+								'Механизмы React — только в src/adapter/** (AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»).',
+						},
+					],
+				},
+			],
+		},
+	},
 	skipFormatting,
 )

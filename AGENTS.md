@@ -199,6 +199,13 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 сканирует `packages/ui/{solid,svelte,angular}/src/components/**` на имена из
 таблицы выше.
 
+React-компоненты держат adapter-context между рендерами не сами: вместо
+своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
+с фабрикой, которая создаёт контекст. Сторож — блок eslint
+`soldy/react-components-no-framework` (`eslint.config.ts`): запрещает
+значения из `'react'` (в том числе `React.useRef` через namespace-импорт) в
+`packages/ui/react/src/components/**`, `import type` пропускает.
+
 ### `setup/adapter/extensions/` — тоже не место для операций над DOM
 
 Расширение адаптера — проводка, общая для всех фреймворков, но это не
