@@ -20,7 +20,7 @@ export interface IAnchorPluginOptions {
 
 export type TAnchorPluginEvents = TPluginEvents & {
 	/** change:anchor */
-	'change:anchor': (element: HTMLElement | null) => void
+	'change:anchor': (element: Element | null) => void
 	/** change:placement */
 	'change:placement': (value: TFramePlacement) => void
 	/** change:matchWidth */
@@ -36,7 +36,7 @@ export type TAnchorPluginEvents = TPluginEvents & {
  * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
  */
 export interface IAnchorPluginProps {
-	anchor?: HTMLElement | null
+	anchor?: Element | null
 	placement?: TFramePlacement
 	matchWidth?: boolean
 	offset?: number

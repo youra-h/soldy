@@ -23,7 +23,8 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
 export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _frame: IFrame | null = null
 	private _element: HTMLElement | null = null
-	private _anchor: HTMLElement | null = null
+	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
+	private _anchor: Element | null = null
 	private _placement: TFramePlacement = 'bottom-start'
 	private _matchWidth = false
 	private _offset = 0
@@ -51,7 +52,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._frame?.events.on('show', () => this._update())
 	}
 
-	setAnchor(element: HTMLElement): void {
+	setAnchor(element: Element): void {
 		if (this._anchor === element) return
 
 		this._anchor = element
@@ -68,7 +69,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this.events.emit('change:anchor', null)
 	}
 
-	get anchor(): HTMLElement | null {
+	get anchor(): Element | null {
 		return this._anchor
 	}
 

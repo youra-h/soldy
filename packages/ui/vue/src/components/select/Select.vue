@@ -118,7 +118,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 		<Frame
 			:visible="open"
 			position="fixed"
-			:anchor_anchor="anchorElement"
+			:anchor_anchor="rootElement"
 			anchor_placement="bottom-start"
 			:anchor_matchWidth="autoFitWidth"
 			:anchor_offset="4"
