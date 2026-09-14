@@ -43,7 +43,7 @@ export interface IBatchExtension<TItem extends object = any> extends IExtension<
 	get shown(): ReadonlyArray<TItem>
 
 	/** Количество элементов в хранилище. Показано — `shown.length`. */
-	get length(): number
+	get total(): number
 
 	/**
 	 * Найти элемент в хранилище. Среди показанных — `shown.find()`.

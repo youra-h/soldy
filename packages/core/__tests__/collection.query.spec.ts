@@ -134,7 +134,7 @@ describe('batch.items и batch.shown — разные вопросы', () => {
 
 		expect(col.extensions.batch.shown.map((i) => i.id)).toEqual([2])
 		expect(col.extensions.batch.items.map((i) => i.id)).toEqual([1, 2, 3])
-		expect(col.extensions.batch.length).toBe(3)
+		expect(col.extensions.batch.total).toBe(3)
 	})
 })
 

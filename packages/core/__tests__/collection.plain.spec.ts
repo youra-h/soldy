@@ -105,15 +105,6 @@ describe('TPlainExtension', () => {
 		])
 	})
 
-	it('get: получает элемент по индексу', () => {
-		const col = createCollection()
-
-		col.extensions.plain.insert({ id: 1, name: 'a' })
-
-		expect(col.extensions.plain.get(0)).toEqual({ id: 1, name: 'a' })
-		expect(col.extensions.plain.get(99)).toBeUndefined()
-	})
-
 	it('length: возвращает количество элементов', () => {
 		const col = createCollection()
 

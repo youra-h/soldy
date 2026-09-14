@@ -57,12 +57,6 @@ export class TBatchExtension<TItem extends object>
 		return this._ctx.driver.valueOf()
 	}
 
-	/**
-	 * Найти элемент в хранилище — по тому же составу, что отдаёт `items`.
-	 *
-	 * Скрытый отбором элемент здесь находится: он существует, просто не
-	 * показан. Нужен поиск среди показанного — `shown.find()`.
-	 */
 	set items(items: TCollectionEngineItemSource<TItem>[]) {
 		this.update(items)
 	}
@@ -86,13 +80,19 @@ export class TBatchExtension<TItem extends object>
 	 * Сколько элементов в хранилище.
 	 *
 	 * Именно в хранилище, а не в выборке: при активном отборе это число не
-	 * совпадёт с `items.length`. Перенесено из `plain` как есть — `plain`
+	 * совпадёт с `shown.length`. Перенесено из `plain` как есть — `plain`
 	 * отвечает за операции над одной записью, счёт состава к ним не относится.
 	 */
-	get length(): number {
+	get total(): number {
 		return this._ctx.driver.valueOf().length
 	}
 
+	/**
+	 * Найти элемент в хранилище — по тому же составу, что отдаёт `items`.
+	 *
+	 * Скрытый отбором элемент здесь находится: он существует, просто не
+	 * показан. Нужен поиск среди показанного — `shown.find()`.
+	 */
 	find(predicate: (item: TItem) => boolean): TItem | undefined {
 		return this.items.find(predicate)
 	}
