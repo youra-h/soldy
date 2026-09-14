@@ -1,6 +1,6 @@
 import { definePlugin } from '../base'
 import { TAriaPlugin } from '@soldy/plugins'
-import type { IAriaPluginOptions, TAriaPluginEvents } from '@soldy/plugins'
+import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
 import { AriaContribution } from '../../contributions'
 
 /**
@@ -17,7 +17,7 @@ import { AriaContribution } from '../../contributions'
  *                     Нужна только там, где без имени он декоративен (Icon).
  */
 export const AriaPluginDescriptor = (options?: IAriaPluginOptions) =>
-	definePlugin<'aria', TAriaPluginEvents>({
+	definePlugin<'aria', TAriaPluginEvents, IAriaPluginProps>({
 		ctor: TAriaPlugin,
 		namespace: 'aria',
 		contribution: AriaContribution(),

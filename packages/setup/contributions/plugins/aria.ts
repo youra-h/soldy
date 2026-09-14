@@ -2,21 +2,6 @@ import type { IContribution } from '@soldy/accessor'
 import { PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
- * Пропсы плагина такими, какими их видит разметка — с неймспейсом.
- *
- * Нужен потому, что типы плагинных пропсов до шаблона не доходят:
- * `DescriptorProps` выводит только собственные пропсы компонента, плагинные
- * остаются `unknown`. Объявлен рядом с contribution: имена обязаны меняться
- * вместе. Все шесть адаптеров используют одну стратегию именования
- * (`underscorePropNaming`), поэтому вид имён у них общий.
- */
-export type TAriaPluginProps = {
-	aria_label?: string
-	aria_labelledBy?: string
-	aria_describedBy?: string
-}
-
-/**
  * Единственный плагин, чьи пропсы пишутся снаружи, а не только читаются: имя
  * задаёт потребитель, вычислить его неоткуда.
  *

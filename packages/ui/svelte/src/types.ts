@@ -8,7 +8,7 @@ import type { IEntity } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type {
 	IComponentDescriptor,
-	DescriptorProps,
+	DescriptorAllProps,
 	DescriptorSlots,
 	DescriptorAllEvents,
 	TCallbackEventProps,
@@ -58,7 +58,7 @@ export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = TSvelteComponentProps<DescriptorProps<TDescriptorFn>, TInstance> &
+> = TSvelteComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance> &
 	TEvents &
 	SlotProps<TDescriptorFn>
 
@@ -68,4 +68,4 @@ export type UseDomProps<
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = UseProps<TDescriptorFn, TInstance, TEvents> &
-	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorProps<TDescriptorFn> | 'children'>
+	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorAllProps<TDescriptorFn> | 'children'>

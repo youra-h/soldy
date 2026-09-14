@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { Button, Icon, Spinner } from '@soldy/ui-vue'
+import { Button, Icon, Input, Spinner } from '@soldy/ui-vue'
 
 describe('Button', () => {
 	it('иконочная кнопка получает имя', () => {
@@ -21,7 +21,9 @@ describe('Button', () => {
 	})
 
 	it('без имени атрибута нет — имя вычислится из текста', () => {
-		expect(mount(Button, { props: { text: 'Сохранить' } }).attributes('aria-label')).toBeUndefined()
+		expect(
+			mount(Button, { props: { text: 'Сохранить' } }).attributes('aria-label'),
+		).toBeUndefined()
 	})
 
 	it('labelledBy и describedBy доходят до разметки', () => {
@@ -40,6 +42,17 @@ describe('Button', () => {
 		await nextTick()
 
 		expect(wrapper.attributes('aria-label')).toBe('Закрыть')
+	})
+})
+
+describe('Input', () => {
+	// Input — наследник ControlDescriptor, но не Button: раньше `aria_label`
+	// был типизирован только у Button (TAriaPluginProps домешивался вручную),
+	// здесь проверяем, что DescriptorAllProps выводит его без ручной вставки.
+	it('получает имя без приведений типа', () => {
+		const wrapper = mount(Input, { props: { aria_label: 'Поиск' } })
+
+		expect(wrapper.find('input').attributes('aria-label')).toBe('Поиск')
 	})
 })
 

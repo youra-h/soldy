@@ -1,4 +1,4 @@
-import { toRaw, ref } from 'vue'
+import { toRaw } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -31,8 +31,8 @@ import BaseSelect, { type SelectProps } from './base.component'
  * — в `TSelectKeyboardPlugin`. Иначе всё это пришлось бы повторить в шести
  * адаптерах и не забыть менять во всех сразу.
  *
- * Остаётся одна проводка: ссылка на поле, которую панель берёт как якорь.
- * Это то же самое, что `rootElement` — способ отдать DOM-узел, а не поведение.
+ * Якорь панели — `rootElement` из адаптера: разметка отдаёт DOM-узел,
+ * а не поведение, и собственной реактивности компоненту не нужно.
  */
 export default {
 	name: '_Select',
@@ -78,7 +78,6 @@ export default {
 			 * `facade` — `<Input :ctrl="field">` берёт его целиком.
 			 */
 			field: adapter.instance.field,
-			fieldElement: ref<HTMLElement | null>(null),
 			clearIconTag: useIcon('close'),
 			arrowIconTag: useIcon('arrowDown'),
 			...useSplitAttrs(),

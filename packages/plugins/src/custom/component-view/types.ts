@@ -22,3 +22,15 @@ export type TAriaPluginEvents = TPluginEvents & {
 	/** change:describedBy */
 	'change:describedBy': (value: string | undefined) => void
 }
+
+/**
+ * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
+ *
+ * Неймспейс (`aria_label`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
+ */
+export interface IAriaPluginProps {
+	label?: string
+	labelledBy?: string
+	describedBy?: string
+}

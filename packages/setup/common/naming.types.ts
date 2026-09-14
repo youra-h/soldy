@@ -46,3 +46,23 @@ export type TCallbackEventName<T extends string> = `on${ToPascalCase<T>}`
 export type TCallbackEventProps<T extends object> = {
 	[K in keyof T as K extends string ? TCallbackEventName<K> : never]?: T[K]
 }
+
+/**
+ * Тип-зеркало стратегии именования пропов из naming.ts (`underscorePropNaming`).
+ *
+ * Как и выше, TypeScript не умеет применять рантайм-функцию на уровне типов —
+ * логика продублирована. Оба определения обязаны меняться СИНХРОННО.
+ *
+ * Используется `DescriptorAllProps` в `packages/setup/descriptors/base/types.ts`
+ * для вывода пропов плагинов из их `namespace` (`aria` + `label` → `aria_label`).
+ */
+
+/** CamelCaseNamespace<'input-bool'> → 'inputBool' */
+type CamelCaseNamespace<S extends string> = S extends `${infer Head}-${infer Rest}`
+	? `${Head}${CamelCaseNamespace<Capitalize<Rest>>}`
+	: S
+
+/** TUnderscorePropName<'aria', 'label'> → 'aria_label'; TUnderscorePropName<undefined, 'text'> → 'text' */
+export type TUnderscorePropName<N extends string | undefined, K extends string> = N extends string
+	? `${CamelCaseNamespace<N>}_${K}`
+	: K

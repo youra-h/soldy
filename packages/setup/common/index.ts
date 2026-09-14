@@ -6,7 +6,7 @@
  */
 
 export { underscorePropNaming, callbackEventNaming } from './naming'
-export type { TCallbackEventName, TCallbackEventProps } from './naming.types'
+export type { TCallbackEventName, TCallbackEventProps, TUnderscorePropName } from './naming.types'
 export { createInspectorFactory, type TCreateInspector } from './createInspector'
 export { collectEventBindings, type IEventBinding } from './collectEventBindings'
 export { DEFAULT_SLOT, resolveSlotName, isScopedSlot, slotNames } from './slots'

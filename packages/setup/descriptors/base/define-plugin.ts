@@ -11,12 +11,13 @@ import { normalizeContribution } from './compile-contribution'
 export function definePlugin<
 	N extends string | undefined = undefined,
 	TEvents extends object = object,
+	TProps extends object = object,
 >(options: {
 	ctor: IPluginConstructor<any, any, any>
 	namespace?: N
 	contribution?: IContribution
 	options?: Record<string, any>
-}): IPluginDefinition<N, TEvents> {
+}): IPluginDefinition<N, TEvents, TProps> {
 	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
 	return {
