@@ -12,10 +12,17 @@ import type { ICommand } from './commands'
 
 export class TCollectionEngine<
 	T extends object,
-	TExtensions extends Record<string, IExtension<T>> = Record<string, never>,
+	TExtensions extends Record<string, IExtension<T>> = Record<never, IExtension<T>>,
 > {
 	private readonly _driver: ICollectionStorageDriver<T>
-	public readonly extensions: TExtensions
+	public readonly extensions: TExtensions & Record<string, IExtension<T> | undefined>
+	/**
+	 * Та же ссылка, что `extensions`, но без дженерика `TExtensions` в типе.
+	 * `use()` дописывает расширение по строковому ключу — TypeScript не даёт
+	 * писать по индексу в generic-пересечение (TS2862), поэтому запись идёт
+	 * через это поле. Объект один и тот же, второго пути к данным нет.
+	 */
+	private readonly _extensionsWritable: Record<string, IExtension<T> | undefined>
 	public readonly events = new TEvented<
 		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
 	>()
@@ -24,6 +31,7 @@ export class TCollectionEngine<
 		this._driver = new TCollectionStorageDriver(options.storage ?? new TArrayStorage<T>())
 
 		this.extensions = options.extensions
+		this._extensionsWritable = this.extensions
 
 		const ctx = this._createContext()
 
@@ -39,31 +47,34 @@ export class TCollectionEngine<
 	}
 
 	/**
-	 * Подключить расширение к коллекции с сохранением типизации.
+	 * Дописать расширение в уже собранный движок.
 	 *
-	 * Возвращает `this` с обновлённым типом `TExtensions`, включающим новое расширение.
-	 * Имя расширения (`name`) используется как ключ в `extensions`.
+	 * Ничего не возвращает: типизированную сборку делает только конструктор —
+	 * там состав известен заранее и `TExtensions` строится честно. `use()`
+	 * нужен для другого случая: движок уже существует (например, пришёл снаружи
+	 * через пропс `engine`, см. `attachEngine`), и в него нужно дописать то,
+	 * чего не хватает. На уровне типов такое расширение доступно в `extensions`
+	 * по имени как `IExtension<T> | undefined` — гарантии, что оно есть,
+	 * `TExtensions` не даёт.
 	 *
 	 * @example
 	 * ```ts
-	 * const col = new TCollectionEngine<Item>({ extensions: {} })
-	 *   .use(new TPlainExtension())
-	 *   .use(new TActivationExtension())
+	 * const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
+	 *   extensions: { plain: new TPlainExtension() },
+	 * })
 	 *
-	 * col.extensions.plain.insert(item)     // типизация работает
-	 * col.extensions.activation.activate(item)
+	 * col.extensions.plain.insert(item)   // типизация работает — известно из конструктора
+	 *
+	 * col.use(new TActivationExtension())
+	 * col.extensions.activation?.activate(item) // дописано позже, тип с `| undefined`
 	 * ```
 	 */
-	public use<E extends IExtension<T>>(
-		extension: E,
-	): TCollectionEngine<T, TExtensions & { [K in E['name']]: E }> {
-		;(this.extensions as Record<string, IExtension<T>>)[extension.name] = extension
+	public use(extension: IExtension<T>): void {
+		this._extensionsWritable[extension.name] = extension
 
 		const ctx = this._createContext()
 
 		extension.install(ctx)
-
-		return this as unknown as TCollectionEngine<T, TExtensions & { [K in E['name']]: E }>
 	}
 
 	/**

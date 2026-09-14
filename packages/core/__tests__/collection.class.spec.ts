@@ -120,84 +120,116 @@ describe('TCollectionEngine', () => {
 		expect(col.getCore().driver.valueOf().length).toBe(0)
 	})
 
-	// --- .use() — fluent-добавление расширений ---
+	// --- .use() — дописывает расширение в уже собранный движок ---
 
 	it('use: добавляет расширение после создания', () => {
-		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} })
+		const plain = new TPlainExtension<Item>()
+
+		col.use(plain)
 
 		expect(col.getCore().driver.valueOf().length).toBe(0)
-		expect(col.extensions.plain).toBeDefined()
+		expect(col.extensions.plain).toBe(plain)
 	})
 
-	it('use: цепочка добавляет несколько расширений с сохранением типов', () => {
+	it('use: добавляет несколько расширений', () => {
 		const col = new TCollectionEngine<Item>({ extensions: {} })
-			.use(new TPlainExtension<Item>())
-			.use(new TActivationExtension<Item>())
-			.use(new TSelectionExtension<Item>())
+		const plain = new TPlainExtension<Item>()
+		const activation = new TActivationExtension<Item>()
+		const selection = new TSelectionExtension<Item>()
+
+		col.use(plain)
+		col.use(activation)
+		col.use(selection)
 
 		const item: Item = { id: 1, name: 'a' }
 
-		col.extensions.plain.insert(item)
-		col.extensions.activation.activate(item)
-		col.extensions.selection.select(item)
+		plain.insert(item)
+		activation.activate(item)
+		selection.select(item)
 
+		expect(col.extensions.plain).toBe(plain)
+		expect(col.extensions.activation).toBe(activation)
+		expect(col.extensions.selection).toBe(selection)
 		expect(col.getCore().driver.valueOf().length).toBe(1)
-		expect(col.extensions.activation.isActive(item)).toBe(true)
-		expect(col.extensions.selection.isSelected(item)).toBe(true)
+		expect(activation.isActive(item)).toBe(true)
+		expect(selection.isSelected(item)).toBe(true)
 	})
 
 	it('use: install вызывается при добавлении', () => {
-		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} })
+		const plain = new TPlainExtension<Item>()
+
+		col.use(plain)
 
 		// plain готов к работе сразу после .use()
-		col.extensions.plain.insert({ id: 1, name: 'a' })
+		plain.insert({ id: 1, name: 'a' })
 
 		expect(col.getCore().driver.valueOf().length).toBe(1)
 	})
 
-	it('use: возвращает this (тот же объект)', () => {
+	it('use: после добавления extensions — тот же объект', () => {
 		const col = new TCollectionEngine<Item>({ extensions: {} })
+		const before = col.extensions
 
-		const result = col.use(new TPlainExtension<Item>())
+		col.use(new TPlainExtension<Item>())
 
-		expect(result).toBe(col)
+		expect(col.extensions).toBe(before)
 	})
 
 	it('use: расширения через конструктор + .use() работают вместе', () => {
 		const plain = new TPlainExtension<Item>()
+		const activation = new TActivationExtension<Item>()
 
 		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
 			extensions: { plain },
-		}).use(new TActivationExtension<Item>())
+		})
+
+		col.use(activation)
 
 		const item: Item = { id: 1, name: 'a' }
 
 		col.extensions.plain.insert(item)
-		col.extensions.activation.activate(item)
+		activation.activate(item)
 
-		expect(col.extensions.activation.activeItem).toBe(item)
+		expect(col.extensions.activation).toBe(activation)
+		expect(activation.activeItem).toBe(item)
 	})
 
 	it('use: события работают после добавления через .use()', () => {
-		const col = new TCollectionEngine<Item>({ extensions: {} }).use(new TPlainExtension<Item>())
+		const col = new TCollectionEngine<Item>({ extensions: {} })
+		const plain = new TPlainExtension<Item>()
+
+		col.use(plain)
 
 		const added = vi.fn()
 
 		col.getCore().driver.events.on('item:added', added)
-		col.extensions.plain.insert({ id: 1, name: 'a' })
+		plain.insert({ id: 1, name: 'a' })
 
 		expect(added).toHaveBeenCalledOnce()
 	})
 
 	it('use: TItemContextRegistry работает с .use() расширениями', () => {
 		const col = new TCollectionEngine<Item>({ extensions: {} })
-			.use(new TPlainExtension<Item>())
-			.use(new TActivationExtension<Item>())
+		const plain = new TPlainExtension<Item>()
+		const activation = new TActivationExtension<Item>()
 
-		const registry = new TItemContextRegistry(col.getCore())
+		col.use(plain)
+		col.use(activation)
+
+		// `activation` дописан через `use()` уже после сборки движка, поэтому
+		// статически в `TExtensions` движка его нет (см. JSDoc `use()`): движок
+		// отдал бы `IExtension<T> | undefined` без `active`. Реестру передаём
+		// тот же инстанс `activation` с точным типом — сам реестр рассчитан
+		// именно на набор расширений, а не на движок целиком.
+		const registry = new TItemContextRegistry<Item, { activation: TActivationExtension<Item> }>({
+			driver: col.getCore().driver,
+			extensions: { activation },
+		})
 		const item: Item = { id: 1, name: 'test' }
 
-		col.extensions.plain.insert(item)
+		plain.insert(item)
 
 		const ctx = registry.get(item)
 
@@ -206,6 +238,6 @@ describe('TCollectionEngine', () => {
 
 		ctx.adapters.activation.active = true
 
-		expect(col.extensions.activation.isActive(item)).toBe(true)
+		expect(activation.isActive(item)).toBe(true)
 	})
 })
