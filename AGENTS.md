@@ -31,13 +31,17 @@ npm run build --workspace=@soldy/theme-oren
 npm run generate --workspace=@soldy/ui-angular
 ```
 
-CI (`.github/workflows/ci.yml`) гоняет тесты, типы трёх пакетов, проверку дрейфа
+CI (`.github/workflows/ci.yml`) гоняет тесты, типы по шагам «Типы — Core»,
+«Типы — Vue», «Типы — Plugins», «Типы — Playground», «Типы — React», «Типы —
+Svelte», «Типы — Solid», «Типы — Web Components», проверку дрейфа
 `packages/ui/angular/src/generated` и сборки. Линт пока не блокирует.
 
-Тесты `packages/ui/vue/__tests__` тоже проверяются типами: шаг «Типы — Vue»
-гоняет `vue-tsc` по `packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`),
-а не только по `tsconfig.lib.json`, как раньше. Приведение вроде `as never`
-там больше не спрячет несовпавший контракт компонента.
+Тесты `packages/core/__tests__` и `packages/ui/vue/__tests__` тоже проверяются
+типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
+(include `src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
+`packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`), а не только по
+`tsconfig.lib.json`, как раньше. Приведение вроде `as never` там больше не
+спрячет несовпавший контракт компонента.
 
 ### Браузерный прогон (`test:layout`)
 
