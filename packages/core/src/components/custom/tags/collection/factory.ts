@@ -31,8 +31,8 @@ export const TAGS_EXTENSIONS = (): TExtensionSet<ITagsItem> => ({
 /** То, чему нужен инстанс компонента. */
 export const TAGS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITagsItem, ITags> = {
 	// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
-	value: (owner) => new TValueSelectionExtension({ owner }) as never,
-	tags: (owner) => new TTagsExtension({ owner }) as never,
+	value: (owner) => new TValueSelectionExtension({ owner }),
+	tags: (owner) => new TTagsExtension({ owner }),
 }
 
 /**

@@ -22,8 +22,8 @@ export const LIST_BOX_EXTENSIONS = (): TExtensionSet<IListBoxItem> => ({
 export const LIST_BOX_OWNER_EXTENSIONS: TOwnerExtensionSet<IListBoxItem, IListBox> = {
 	// Связь `value` ↔ выбор. Без неё проп `value` у ListBox был бы объявлен,
 	// но мёртв
-	value: (owner) => new TValueSelectionExtension({ owner }) as never,
-	list: (owner) => new TListBoxExtension({ owner }) as never,
+	value: (owner) => new TValueSelectionExtension({ owner }),
+	list: (owner) => new TListBoxExtension({ owner }),
 }
 
 /**

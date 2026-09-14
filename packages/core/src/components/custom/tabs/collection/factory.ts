@@ -21,7 +21,7 @@ export const TABS_EXTENSIONS = (): TExtensionSet<ITabsItem> => ({
 
 /** То, чему нужен инстанс компонента. */
 export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
-	tabs: (owner) => new TTabsExtension({ owner }) as never,
+	tabs: (owner) => new TTabsExtension({ owner }),
 }
 
 /**
