@@ -6,17 +6,17 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import { ButtonDescriptor } from '@soldy/setup'
 import Harness from './Slots.test.svelte'
 
-const mounted: any[] = []
+const mounted: ReturnType<typeof mount>[] = []
 
-function render(props: Record<string, any> = {}): HTMLElement {
+function render(props: ComponentProps<typeof Harness> = {}): HTMLElement {
 	const target = document.createElement('div')
 
 	document.body.appendChild(target)
-	mounted.push(mount(Harness as any, { target, props }))
+	mounted.push(mount(Harness, { target, props }))
 	flushSync()
 
 	return target

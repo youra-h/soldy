@@ -10,7 +10,6 @@
  */
 
 import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
-import type { IComponentView } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
@@ -20,5 +19,5 @@ export function setupComponentView(getProps: () => ComponentViewProps) {
 		props: getProps(),
 	})
 
-	return useAdapter<IComponentView>(adapter, getProps)
+	return useAdapter(adapter, getProps)
 }

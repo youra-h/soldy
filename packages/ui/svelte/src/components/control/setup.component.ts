@@ -10,7 +10,6 @@
  */
 
 import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
-import type { IControl } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ControlProps } from './base.component'
 
@@ -20,5 +19,5 @@ export function setupControl(getProps: () => ControlProps) {
 		props: getProps(),
 	})
 
-	return useAdapter<IControl>(adapter, getProps)
+	return useAdapter(adapter, getProps)
 }

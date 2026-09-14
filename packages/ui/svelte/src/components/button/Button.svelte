@@ -18,12 +18,12 @@
 
 		return {
 			...rest,
-			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
-			dir: (state.dir as 'ltr' | 'rtl' | null) ?? undefined,
+			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
+			dir: state.dir ?? undefined,
 			...(isNativeButton ? { disabled: state.disabled } : {}),
 			// aria вычисляет ядро: role, tabindex, aria-disabled.
 			// null в значении Svelte понимает как «атрибут не ставить».
-			...(state.aria as Record<string, string | null>),
+			...state.aria,
 		}
 	})
 </script>
@@ -46,7 +46,7 @@
 	>
 		{#if props.leading}{@render props.leading()}{/if}
 		<span class="s-button__text">
-			{#if props.children}{@render props.children({ text: state.text as string })}{:else}{state.text}{/if}
+			{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
 		</span>
 		{#if props.trailing}{@render props.trailing()}{/if}
 	</svelte:element>

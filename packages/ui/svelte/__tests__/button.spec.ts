@@ -1,17 +1,17 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import { TButton } from '@soldy/core'
 import { TActionPlugin } from '@soldy/plugins'
 import { Button } from '@soldy/ui-svelte'
 
 let target: HTMLElement
-const mounted: any[] = []
+const mounted: ReturnType<typeof mount>[] = []
 
-function render(props: Record<string, any> = {}) {
+function render(props: ComponentProps<typeof Button> = {}) {
 	target = document.createElement('div')
 	document.body.appendChild(target)
 
-	const app = mount(Button as any, { target, props })
+	const app = mount(Button, { target, props })
 
 	mounted.push(app)
 	flushSync()
@@ -105,9 +105,9 @@ describe('Button · внешний ctrl', () => {
 describe('Button · события через колбэк-пропы', () => {
 	it('onChangeText вызывается при изменении из ядра', () => {
 		const ctrl = new TButton({ text: 'A' })
-		const seen: any[] = []
+		const seen: unknown[] = []
 
-		render({ ctrl, onChangeText: (v: any) => seen.push(v) })
+		render({ ctrl, onChangeText: (v: unknown) => seen.push(v) })
 
 		ctrl.text = 'B'
 		flushSync()
@@ -157,9 +157,15 @@ describe('Button · события через колбэк-пропы', () => {
 describe('Button · очистка', () => {
 	it('снимает подписки с внешнего ctrl при размонтировании', () => {
 		const ctrl = new TButton()
-		const count = () => (ctrl.events as any)._items._items.get('change:text')?.size ?? 0
+		// Подписки считаются по публичному API шины: подписались на change:text
+		// минус отписались
+		const on = vi.spyOn(ctrl.events, 'on')
+		const off = vi.spyOn(ctrl.events, 'off')
+		const count = () =>
+			on.mock.calls.filter(([event]) => event === 'change:text').length -
+			off.mock.calls.filter(([event]) => event === 'change:text').length
 
-		const app = mount(Button as any, {
+		const app = mount(Button, {
 			target: document.body.appendChild(document.createElement('div')),
 			props: { ctrl },
 		})
@@ -191,7 +197,7 @@ describe('Button · aria и доступ к плагинам', () => {
 	})
 
 	it('onBundleCreate отдаёт bundle, onActionCreate — сам плагин', async () => {
-		const seen: any[] = []
+		const seen: Array<[string, unknown]> = []
 
 		render({
 			onBundleCreate: (b: unknown) => seen.push(['bundle', b]),

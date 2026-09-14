@@ -10,7 +10,6 @@
  */
 
 import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
-import type { IStylable } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { StylableProps } from './base.component'
 
@@ -20,5 +19,5 @@ export function setupStylable(getProps: () => StylableProps) {
 		props: getProps(),
 	})
 
-	return useAdapter<IStylable>(adapter, getProps)
+	return useAdapter(adapter, getProps)
 }

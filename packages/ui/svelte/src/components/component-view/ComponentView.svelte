@@ -16,9 +16,9 @@
 
 		return {
 			...rest,
-			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
+			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
 			// dir вычисляет ядро: null для 'inherit' — Svelte трактует как «атрибут не ставить»
-			dir: (state.dir as 'ltr' | 'rtl' | null) ?? undefined,
+			dir: state.dir ?? undefined,
 		}
 	})
 </script>

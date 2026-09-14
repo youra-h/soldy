@@ -10,7 +10,6 @@
  */
 
 import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
-import type { IButton } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ButtonProps } from './base.component'
 
@@ -20,5 +19,5 @@ export function setupButton(getProps: () => ButtonProps) {
 		props: getProps(),
 	})
 
-	return useAdapter<IButton>(adapter, getProps)
+	return useAdapter(adapter, getProps)
 }

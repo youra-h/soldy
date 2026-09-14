@@ -10,7 +10,6 @@
  */
 
 import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
-import type { ITextable } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { TextableProps } from './base.component'
 
@@ -20,5 +19,5 @@ export function setupTextable(getProps: () => TextableProps) {
 		props: getProps(),
 	})
 
-	return useAdapter<ITextable>(adapter, getProps)
+	return useAdapter(adapter, getProps)
 }

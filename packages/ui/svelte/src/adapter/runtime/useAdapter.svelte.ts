@@ -17,29 +17,34 @@
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
-import type { IAdapterContext } from '@soldy/setup'
-import { TPluginsBindingExtension } from '@soldy/setup'
+import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import { TElementPlugin } from '@soldy/plugins'
+import type { IPluginBundle } from '@soldy/plugins'
 import type { IAccessorProp } from '@soldy/accessor'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps.svelte'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TBinding<TInstance = any> = {
+/** Пропсы, которые компонент не съел. `children`, `plugins` и `ctrl` он съедает всегда. */
+type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'plugins' | 'ctrl'>
+
+export type TBinding<TInstance = object, TProps extends object = object> = {
 	readonly ctrl: TInstance
-	readonly plugins: any
-	readonly state: Record<string, any>
-	readonly forwardProps: Record<string, any>
+	readonly plugins: IPluginBundle | null
+	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
+	readonly state: TInstanceState<TInstance>
+	readonly forwardProps: TForwardProps<TProps>
 	/** Svelte-attachment: `<div {@attach binding.attachElement}>` */
 	attachElement: (node: Element) => (() => void) | void
 }
 
 /** Собирает имена props/событий, которые «съедает» компонент. Остальное уходит в DOM. */
-function computeForwardProps(
-	props: Record<string, any>,
+function computeForwardProps<TProps extends object>(
+	props: TProps,
 	accessor: IAdapterContext['accessor'],
 	inspector: ReturnType<typeof createInspector>,
-): Record<string, any> {
+): TForwardProps<TProps> {
 	const consumed = new Set<string>(['children', 'plugins', 'ctrl'])
 
 	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
@@ -55,19 +60,19 @@ function computeForwardProps(
 		consumed.add(inspector.getExportEventName(evt.name))
 	}
 
-	const rest: Record<string, any> = {}
+	const rest: Partial<TProps> = {}
 
 	for (const key of Object.keys(props)) {
-		if (!consumed.has(key)) rest[key] = props[key]
+		if (!consumed.has(key)) Reflect.set(rest, key, Reflect.get(props, key))
 	}
 
 	return rest
 }
 
-export function useAdapter<TInstance extends object = object>(
+export function useAdapter<TProps extends object, TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
-	getProps: () => Record<string, any>,
-): TBinding<TInstance> {
+	getProps: () => TProps,
+): TBinding<TInstance, TProps> {
 	const inspector = createInspector(adapter.accessor)
 
 	// 1. Реактивность: Core ↔ Svelte
@@ -93,7 +98,7 @@ export function useAdapter<TInstance extends object = object>(
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
-		state,
+		state: toInstanceState<TInstance>(state),
 
 		get forwardProps() {
 			return forwardProps

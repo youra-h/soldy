@@ -17,13 +17,15 @@ import { collectEventBindings } from '@soldy/setup'
 export function useSyncEvents(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-	getProps: () => Record<string, any>,
+	getProps: () => object,
 ): () => void {
 	const offs: Array<() => void> = []
 
 	for (const { source, rawName, exportName } of collectEventBindings(accessor, inspector)) {
-		const handler = (...args: any[]) => {
-			getProps()[exportName]?.(...args)
+		const handler = (...args: unknown[]) => {
+			const callback: unknown = Reflect.get(getProps(), exportName)
+
+			if (typeof callback === 'function') callback(...args)
 		}
 
 		source.on(rawName, handler)
