@@ -3,7 +3,11 @@ import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../.
 import type { TAccordionView } from '../../types'
 import { AccordionFactory, ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
-import type { TAccordionCollection, TAccordionCollectionExtensions } from '../types'
+import type {
+	TAccordionCollection,
+	TAccordionCollectionExtensions,
+	TAccordionCollectionFacadeEngine,
+} from '../types'
 import type { IAccordionItem } from '../../item/types'
 import type { IAccordion } from '../../types'
 
@@ -19,7 +23,7 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<IAccordionItem> = {},
-		options: TCollectionFacadeOptions<TAccordionCollection, IAccordion> = {},
+		options: TCollectionFacadeOptions<TAccordionCollectionFacadeEngine, IAccordion> = {},
 	) {
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Accordion. Именно здесь, а не в теле:

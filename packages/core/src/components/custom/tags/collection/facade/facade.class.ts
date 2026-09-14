@@ -1,9 +1,10 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TCollectionEngine, TSelectionFacadeProps } from '../../../../base/collection'
+import type { TCollectionEngine, TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import { TagsFactory, TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
-import type { TTagsCollectionExtensions, TTagsCollectionFacadeOptions } from '../types'
+import type { TTagsCollection, TTagsCollectionExtensions, TTagsCollectionFacadeEngine } from '../types'
 import type { ITagsItem } from '../../item/types'
+import type { ITags } from '../../types'
 import type { TTagsView } from '../../types'
 
 /**
@@ -19,7 +20,10 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<ITagsItem> = {},
-		options: TTagsCollectionFacadeOptions = {},
+		options: TCollectionFacadeOptions<TTagsCollectionFacadeEngine, ITags> & {
+			/** Фабрика движка коллекции — переопределяется наследником. */
+			factory?: (owner: ITags) => TTagsCollection
+		} = {},
 	) {
 		const createEngine = options.factory ?? TagsFactory
 

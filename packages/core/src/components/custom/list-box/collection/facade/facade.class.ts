@@ -1,12 +1,14 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TCollectionEngine, TSelectionFacadeProps } from '../../../../base/collection'
+import type { TCollectionEngine, TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import { ListBoxFactory, LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
 import type {
+	TListBoxCollection,
 	TListBoxCollectionExtensions,
-	TListBoxCollectionFacadeOptions,
+	TListBoxCollectionFacadeEngine,
 } from '../types'
 import type { IListBoxItem } from '../../item/types'
+import type { IListBox } from '../../types'
 import type { TListBoxView } from '../../types'
 
 /**
@@ -22,7 +24,10 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<IListBoxItem> = {},
-		options: TListBoxCollectionFacadeOptions = {},
+		options: TCollectionFacadeOptions<TListBoxCollectionFacadeEngine, IListBox> & {
+			/** Фабрика движка коллекции — переопределяется наследником. */
+			factory?: (owner: IListBox) => TListBoxCollection
+		} = {},
 	) {
 		const createEngine = options.factory ?? ListBoxFactory
 

@@ -22,20 +22,40 @@ import { TListBoxExtension } from './extensions'
 import type { IListBox } from '../types'
 import type { IListBoxItem, IListBoxItemProps } from '../item/types'
 
-export type TListBoxCollectionExtensions = {
-	factory: TFactoryExtension<IListBoxItem>
-	unique: TUniqueExtension<IListBoxItem>
-	meta: TMetaExtension<IListBoxItem>
-	order: TOrderExtension<IListBoxItem>
-	plain: TPlainExtension<IListBoxItem>
-	batch: TBatchExtension<IListBoxItem>
-	selection: TSelectionExtension<IListBoxItem>
+export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxItem> = {
+	factory: TFactoryExtension<TItem>
+	unique: TUniqueExtension<TItem>
+	meta: TMetaExtension<TItem>
+	order: TOrderExtension<TItem>
+	plain: TPlainExtension<TItem>
+	batch: TBatchExtension<TItem>
+	selection: TSelectionExtension<TItem>
 	/** Связь `value` списка с выбором коллекции — в обе стороны. */
-	value: TValueSelectionExtension<any, IListBoxItem>
-	list: TListBoxExtension<IListBox, IListBoxItem>
+	value: TValueSelectionExtension<any, TItem>
+	list: TListBoxExtension<IListBox, TItem>
 }
 
 export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>
+
+/**
+ * Движок, который можно передать конструктору фасада — любого уровня сборки
+ * (`createEngine`, `createEngineSelection`, `createEngineListBox`…). Фасад
+ * сам дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * поэтому годится любой уровень, включая уровень 1, где ни `TListBoxItem`,
+ * ни владельческие расширения ещё не собраны.
+ *
+ * Оба параметра — `any`, а не «уровень 1» или «частичный набор»: у
+ * `TCollectionEngine.events` есть `engine:create`, куда сам движок передаётся
+ * аргументом обработчика — `TEvented` инвариантен по карте событий (см.
+ * AGENTS.md, «События item-адаптера»), и через этот параметр инвариантность
+ * протаскивает оба параметра движка целиком. Любой конкретный тип здесь
+ * (в том числе `Partial<TListBoxCollectionExtensions>`) сделал бы совместимым
+ * только движок с буквально таким же типом — не более раннего уровня и не
+ * `TListBoxCollection`, который собирает `createEngineListBox`. Точность
+ * остаётся там, где движок инстанцируется (`TListBoxCollection`,
+ * `ListBoxFactory`), а не там, где его только принимают.
+ */
+export type TListBoxCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /** Owner-level props коллекции: состав + режим выбора. */
 export interface IListBoxCollectionProps<
