@@ -5,8 +5,8 @@
 			[ngClass]="state()['classes']"
 			[style.display]="state()['visible'] === false ? 'none' : null"
 			[attr.dir]="state()['dir'] ?? null"
-			[disabled]="state()['disabled']"
 			[ariaAttrs]="state()['aria']"
+			[attrs]="state()['attrs']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</button>
@@ -17,6 +17,7 @@
 			[style.display]="state()['visible'] === false ? 'none' : null"
 			[attr.dir]="state()['dir'] ?? null"
 			[ariaAttrs]="state()['aria']"
+			[attrs]="state()['attrs']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</div>

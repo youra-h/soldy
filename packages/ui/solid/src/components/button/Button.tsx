@@ -9,7 +9,8 @@ import type { ButtonProps } from './base.component'
  *
  * - `tag` по умолчанию `button` (из TButton.defaultValues)
  * - `children` переопределяет `text`
- * - disabled → атрибут disabled у нативного button, иначе aria-disabled
+ * - disabled → нативный атрибут `disabled` там, где тег его поддерживает
+ *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро
  */
 export function Button(props: ButtonProps): JSX.Element {
 	const binding = setupButton(props)
@@ -33,9 +34,10 @@ export function Button(props: ButtonProps): JSX.Element {
 					display: state.visible ? undefined : 'none',
 				}}
 				dir={state.dir ?? undefined}
-				disabled={state.tag === 'button' ? state.disabled : undefined}
-				// aria вычисляет ядро: role, tabindex, aria-disabled.
+				// attrs — нативный disabled там, где у тега он есть; aria вычисляет
+				// ядро: role, tabindex, aria-disabled на остальных тегах.
 				// null в значении Solid понимает как «атрибут не ставить».
+				{...state.attrs}
 				{...state.aria}
 				ref={binding.ref}
 			>

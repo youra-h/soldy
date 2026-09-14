@@ -38,6 +38,7 @@ export const ControlOutputs = [
 	'changeClasses',
 	'changeAria',
 	'changeDataset',
+	'changeAttrs',
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',

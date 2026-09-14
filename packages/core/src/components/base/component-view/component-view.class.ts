@@ -11,6 +11,7 @@ import {
 	TClasses,
 	TAria,
 	TDataset,
+	TAttributes,
 	TStateUnit,
 	TVisibilityState,
 	TActionEvent,
@@ -52,6 +53,7 @@ export default class TComponentView<
 	protected _classes: TClasses
 	protected _aria: TAria
 	protected _dataset: TDataset
+	protected _attrs: TAttributes
 	protected _ready: boolean = false
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -96,6 +98,12 @@ export default class TComponentView<
 
 		this._dataset.events.on('change', () =>
 			this._sink.emit('change:dataset', this._dataset.toObject()),
+		)
+
+		this._attrs = new TAttributes()
+
+		this._attrs.events.on('change', () =>
+			this._sink.emit('change:attrs', this._attrs.toObject()),
 		)
 	}
 
@@ -211,6 +219,22 @@ export default class TComponentView<
 	 */
 	get dataset(): TDataset {
 		return this._dataset
+	}
+
+	/**
+	 * Нативные атрибуты, зависящие от тега корня, — третий набор рядом с
+	 * `aria`/`dataset`. Пуст у визуального слоя самого по себе: он не знает,
+	 * какой нативный атрибут ему может понадобиться. `TControl` пишет сюда
+	 * `disabled`, когда тег умеет его сам (см. `NATIVE_DISABLED_TAGS`).
+	 *
+	 * Отдельный от `aria` и `dataset` набор, а не запись в один из них:
+	 * `aria-disabled` — контракт со скринридером, `data-*` — с CSS, а здесь
+	 * нативный HTML-атрибут, который решает поведение элемента (блокирует
+	 * фокус и исключает его из отправки формы), а не описывает его для чужого
+	 * потребителя.
+	 */
+	get attrs(): TAttributes {
+		return this._attrs
 	}
 
 	get tag(): string | object {

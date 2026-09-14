@@ -27,6 +27,7 @@ export const StylableOutputs = [
 	'changeClasses',
 	'changeAria',
 	'changeDataset',
+	'changeAttrs',
 	'changeSize',
 	'changeVariant',
 ] as const

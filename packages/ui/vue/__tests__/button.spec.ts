@@ -82,6 +82,13 @@ describe('Button · inline props (декларативные свойства)',
 		expect(link.attributes('disabled')).toBeUndefined()
 	})
 
+	it('disabled: fieldset тоже нативный тег — атрибут disabled, без aria-disabled', () => {
+		const fieldset = mount(Button, { props: { tag: 'fieldset', disabled: true } })
+
+		expect(fieldset.attributes('disabled')).toBeDefined()
+		expect(fieldset.attributes('aria-disabled')).toBeUndefined()
+	})
+
 	it('rendered=false убирает элемент, visible=false прячет через v-show', async () => {
 		const wrapper = mount(Button, { props: { rendered: true, visible: true } })
 		expect(wrapper.find('button').exists()).toBe(true)

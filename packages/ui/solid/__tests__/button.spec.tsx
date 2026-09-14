@@ -55,6 +55,13 @@ describe('Button · декларативные props', () => {
 		expect(link.hasAttribute('disabled')).toBe(false)
 	})
 
+	it('disabled: fieldset тоже нативный тег — атрибут disabled, без aria-disabled', () => {
+		const el = mount({ tag: 'fieldset', disabled: true }).firstElementChild as HTMLElement
+
+		expect(el.hasAttribute('disabled')).toBe(true)
+		expect(el.hasAttribute('aria-disabled')).toBe(false)
+	})
+
 	it('rendered=false убирает элемент, visible=false прячет', () => {
 		expect(mount({ rendered: false }).firstElementChild).toBeNull()
 

@@ -12,8 +12,7 @@ export default { ...SetupButton }
 		v-show="visible"
 		:class="classes"
 		:dir="dir ?? undefined"
-		:disabled="tag === 'button' ? disabled : undefined"
-		v-bind="aria"
+		v-bind="{ ...attrs, ...aria }"
 	>
 		<slot name="leading"> </slot>
 		<span class="s-button__text">

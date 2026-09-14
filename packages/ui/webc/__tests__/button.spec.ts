@@ -72,6 +72,14 @@ describe('<soldy-button> · атрибуты', () => {
 		expect(root(el).hasAttribute('disabled')).toBe(false)
 	})
 
+	it('fieldset тоже нативный тег — атрибут disabled, без aria-disabled', () => {
+		const el = mount('<soldy-button tag="fieldset" disabled></soldy-button>')
+
+		expect(root(el).tagName.toLowerCase()).toBe('fieldset')
+		expect(root(el).hasAttribute('disabled')).toBe(true)
+		expect(root(el).hasAttribute('aria-disabled')).toBe(false)
+	})
+
 	it('содержимое тега переопределяет text', () => {
 		const el = mount('<soldy-button text="ignored"><b>Custom</b></soldy-button>')
 

@@ -7,7 +7,8 @@ import type { ButtonProps } from './base.component'
  * Button — рендерит кнопку с текстом из Core.
  *
  * - `tag` по умолчанию `button` (из TButton.defaultValues)
- * - disabled → `disabled` у нативного button, иначе `aria-disabled`
+ * - disabled → нативный атрибут `disabled` там, где тег его поддерживает
+ *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро
  *
  * Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
  * адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
@@ -16,12 +17,11 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, disabled, text, aria, dir } = state
+	const { rendered, visible, tag, classes, text, aria, attrs, dir } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const isNativeButton = tag === 'button'
 
 	const { className: userClassName, style: userStyle, ...restProps } = forwardProps
 	const className = [classes?.join(' '), userClassName].filter(Boolean).join(' ')
@@ -37,7 +37,7 @@ export function Button(props: ButtonProps): ReactElement | null {
 			className={className}
 			style={style}
 			dir={dir ?? undefined}
-			{...(isNativeButton ? { disabled } : {})}
+			{...toAriaProps(attrs)}
 			{...toAriaProps(aria)}
 		>
 			{renderSlot(props.leading)}
