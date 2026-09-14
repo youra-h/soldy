@@ -10,11 +10,6 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 
 ```bash
 npm run dev:vue      # Vue demo (Vite)
-npm run dev:react    # React demo
-npm run dev:angular  # Angular demo (ng serve; predev прогоняет codegen)
-npm run dev:svelte   # Svelte demo (Vite)
-npm run dev:solid    # Solid demo (Vite)
-npm run dev:webc     # Web Components demo (Vite, без фреймворка)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
@@ -24,7 +19,7 @@ npm run test:layout  # раскладка стенда Vue в настоящем
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier
 
-# Тема отдаёт dist/index.css, который подключает сборка Angular (dist в .gitignore)
+# Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore)
 npm run build --workspace=@soldy/theme-oren
 
 # Angular: перегенерировать статические inputs/outputs после правки дескриптора
@@ -1482,8 +1477,7 @@ ARIA — контракт со скринридером, `data-*` — контр
 - `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins/accessor, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
 - `packages/themes/oren/AGENTS.md` — инструкции пакета темы: шкалы, схемы,
   токены. Читать перед правкой стилей; на другие темы не распространяется.
-- `packages/playground/` — стенд разработчика (`npm run dev:vue`). Пришёл на
-  смену папкам `_demo/`, которые лежали вне репозитория и устарели. См. раздел
+- `packages/playground/` — стенд разработчика (`npm run dev:vue`). См. раздел
   ниже.
 
 ## Playground: инструмент не диктует библиотеке (критично)

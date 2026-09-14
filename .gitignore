@@ -8,10 +8,6 @@ coverage/
 *.log
 packages/_plugins/
 
-# Демо адаптеров: остаются на диске как пример, но из репозитория убраны —
-# на смену им придёт общий playground
-_demo/
-
 # Сниппеты «открыть в VS Code»: пишутся dev-сервером по запросу из браузера
 packages/playground/*/scratch/
 
