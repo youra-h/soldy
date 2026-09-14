@@ -1,6 +1,5 @@
-import { toRaw, type SetupContext } from 'vue'
-import { createAdapterContext, IconDescriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { IconDescriptor } from '@soldy/setup'
+import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseIcon, { type IconProps } from './base.component'
 import { type IIconProps, type IIcon } from '@soldy/core'
 
@@ -8,8 +7,8 @@ export default {
 	name: '_Icon',
 	extends: BaseIcon,
 	setup(props: IconProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(IconDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(IconDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 

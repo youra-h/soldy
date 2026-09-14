@@ -88,7 +88,8 @@ export default defineConfigWithVueTs(
 						'`as never` прячет несовпавший контракт — почините тип (AGENTS.md, «Никаких костылей»).',
 				},
 				{
-					selector: "TSAsExpression > TSAsExpression[typeAnnotation.type='TSUnknownKeyword']",
+					selector:
+						"TSAsExpression > TSAsExpression[typeAnnotation.type='TSUnknownKeyword']",
 					message:
 						'`as unknown as X` прячет несовпавший контракт — почините тип (AGENTS.md, «Никаких костылей»).',
 				},
@@ -118,6 +119,37 @@ export default defineConfigWithVueTs(
 		rules: {
 			'vue/multi-word-component-names': 'off',
 			'vue/no-reserved-component-names': 'off',
+		},
+	},
+
+	// Компоненты Vue — только проводка того, что отдал адаптер (AGENTS.md,
+	// «Механизмы фреймворка — только в адаптерном слое»). `'vue'` тут не
+	// импортируют вовсе — реактивность и `toRaw` живут в `src/adapter/**`.
+	// Второй запрет ловит именно ту забытую проводку, из-за которой заведена
+	// задача 869f1qdxd: `createAdapterContext` напрямую пропускает снятие
+	// прокси с `ctrl`/`engine`, которое делает `createVueAdapterContext`.
+	{
+		name: 'soldy/vue-components-no-framework',
+		files: ['packages/ui/vue/src/components/**/*.{ts,vue}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'vue',
+							message:
+								'Механизмы Vue — только в src/adapter/** (AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»).',
+						},
+						{
+							name: '@soldy/setup',
+							importNames: ['createAdapterContext'],
+							message:
+								'Используйте createVueAdapterContext из src/adapter/common — он снимает Vue-прокси с ctrl/engine.',
+						},
+					],
+				},
+			],
 		},
 	},
 	skipFormatting,

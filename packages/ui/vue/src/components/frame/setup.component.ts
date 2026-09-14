@@ -1,6 +1,5 @@
-import { toRaw, type SetupContext } from 'vue'
-import { createAdapterContext, FrameDescriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { FrameDescriptor } from '@soldy/setup'
+import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseFrame, { type FrameProps } from './base.component'
 import { type IFrameProps, type IFrame } from '@soldy/core'
 
@@ -8,8 +7,8 @@ export default {
 	name: '_Frame',
 	extends: BaseFrame,
 	setup(props: FrameProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(FrameDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(FrameDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 

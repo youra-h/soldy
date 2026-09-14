@@ -1,13 +1,16 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TTabsContentBindingExtension,
 	TabsContentDescriptor,
 	TabsCollectionContentDescriptor,
 } from '@soldy/setup'
 import type { ITabsContent, ITabsContentProps } from '@soldy/core'
 import type { TTabsContentCollectionFacade } from '@soldy/core'
-import { useAdapter, VueElevatorFactory } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseTabsContent, { type TabsContentProps } from './base.component'
 
 /**
@@ -19,12 +22,12 @@ export default {
 	name: '_TabsContent',
 	extends: BaseTabsContent,
 	setup(props: TabsContentProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(TabsContentDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(TabsContentDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const contentAdapter = createAdapterContext(
+		const contentAdapter = createVueAdapterContext(
 			TabsCollectionContentDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },

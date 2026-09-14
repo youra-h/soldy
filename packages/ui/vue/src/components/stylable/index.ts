@@ -1,5 +1,1 @@
-export {
-	default as BaseStylable,
-	emitsStylable,
-	propsStylable,
-} from './base.component'
+export { default as BaseStylable, emitsStylable, propsStylable } from './base.component'

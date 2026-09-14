@@ -1,5 +1,1 @@
-export {
-	default as BaseTextable,
-	emitsTextable,
-	propsTextable,
-} from './base.component'
+export { default as BaseTextable, emitsTextable, propsTextable } from './base.component'

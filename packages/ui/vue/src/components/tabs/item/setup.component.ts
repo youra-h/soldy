@@ -1,13 +1,18 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionItemExtension,
 	TabsItemDescriptor,
 	TabsCollectionItemDescriptor,
 } from '@soldy/setup'
 import { TTabsItemCollectionFacade } from '@soldy/core'
 import type { ITabsItemProps, ITabsItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseTabsItem, { type TabsItemProps } from './base.component'
 
 export default {
@@ -15,12 +20,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseTabsItem,
 	setup(props: TabsItemProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(TabsItemDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(TabsItemDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const itemAdapter = createAdapterContext(
+		const itemAdapter = createVueAdapterContext(
 			TabsCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },

@@ -14,4 +14,3 @@ export default {
 	emits: emitsIcon,
 	props: propsIcon,
 }
-

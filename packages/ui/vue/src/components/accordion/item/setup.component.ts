@@ -1,13 +1,18 @@
-import { toRaw, type SetupContext } from 'vue'
 import {
-	createAdapterContext,
 	TCollectionItemExtension,
 	AccordionItemDescriptor,
 	AccordionCollectionItemDescriptor,
 } from '@soldy/setup'
 import { TAccordionItemCollectionFacade } from '@soldy/core'
 import type { IAccordionItemProps, IAccordionItem } from '@soldy/core'
-import { useAdapter, VueElevatorFactory, useIcon, useSplitAttrs } from '../../../adapter'
+import {
+	useAdapter,
+	VueElevatorFactory,
+	useIcon,
+	useSplitAttrs,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../../adapter'
 import BaseAccordionItem, { type AccordionItemProps } from './base.component'
 
 export default {
@@ -15,12 +20,12 @@ export default {
 	inheritAttrs: false,
 	extends: BaseAccordionItem,
 	setup(props: AccordionItemProps, { emit }: SetupContext) {
-		const adapter = createAdapterContext(AccordionItemDescriptor(), {
-			ctrl: toRaw(props.ctrl),
+		const adapter = createVueAdapterContext(AccordionItemDescriptor(), {
+			ctrl: props.ctrl,
 			props,
 		})
 
-		const itemAdapter = createAdapterContext(
+		const itemAdapter = createVueAdapterContext(
 			AccordionCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle, defaultExtensions: [] },
