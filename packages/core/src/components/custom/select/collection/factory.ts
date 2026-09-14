@@ -1,6 +1,6 @@
 import { TValueSelectionExtension, TFilterExtension } from '../../../base/collection'
 import { selectionExtensions, assembleEngine } from '../../../base/collection/create/internal'
-import type { TExtensionSet, TOwnerExtensionSet } from '../../../base/collection/create/internal'
+import type { TBaseExtensionSet, TOwnerExtensionSet } from '../../../base/collection/create/internal'
 import TSelectItem from '../item/item.class'
 import type { ISelectItem } from '../item/types'
 import type { ISelect } from '../types'
@@ -23,7 +23,7 @@ import type { TSelectCollection } from './types'
  * какому полю сравнивать, ставит `TSelectExtension`: сам `filter` про `text`
  * ничего не знает.
  */
-export const SELECT_EXTENSIONS = (): TExtensionSet<ISelectItem> => ({
+export const SELECT_EXTENSIONS = (): TBaseExtensionSet<ISelectItem> => ({
 	...selectionExtensions<ISelectItem>(TSelectItem),
 	filter: () => new TFilterExtension<ISelectItem>(),
 })
@@ -50,7 +50,7 @@ export const SELECT_OWNER_EXTENSIONS: TOwnerExtensionSet<ISelectItem, ISelect> =
  * который требует владельца явно.
  */
 export const SelectFactory = (owner: ISelect): TSelectCollection => {
-	const engine = assembleEngine<ISelectItem, any>(SELECT_EXTENSIONS())
+	const engine = assembleEngine<ISelectItem>(SELECT_EXTENSIONS())
 
 	for (const build of Object.values(SELECT_OWNER_EXTENSIONS)) engine.use(build(owner))
 

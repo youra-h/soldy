@@ -1,7 +1,7 @@
 import { TTabsCollection } from './types'
 import { TTabsExtension, TTabsContentExtension } from './extensions'
 import { activationExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
 import TTabsItem from './../item/item.class'
 import type { ITabsItem } from './../item/types'
 import type { ITabs } from './../types'
@@ -14,7 +14,7 @@ import type { ITabs } from './../types'
  * только там. Из этих же наборов вычисляется, чего движку не хватает, — без
  * второго списка, который однажды разъедется с первым.
  */
-export const TABS_EXTENSIONS = (): TExtensionSet<ITabsItem> => ({
+export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
 	...activationExtensions<ITabsItem>(TTabsItem),
 	content: () => new TTabsContentExtension<ITabsItem>(),
 })
@@ -29,7 +29,7 @@ export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
  * требует владельца явно.
  */
 export const TabsFactory = (owner: ITabs): TTabsCollection => {
-	const engine = assembleEngine<ITabsItem, any>(TABS_EXTENSIONS())
+	const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
 
 	for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
 
