@@ -39,24 +39,26 @@ describe('TComponentView', () => {
 
 	it('show/hide эмитят события и меняют visible', () => {
 		const p = new TComponentView({ visible: false })
-		const beforeShow = vi.spyOn(p as any, 'beforeShow').mockReturnValue(true)
-		const beforeHide = vi.spyOn(p as any, 'beforeHide').mockReturnValue(true)
 
+		const showBeforeHandler = vi.fn()
+		const hideBeforeHandler = vi.fn()
 		const showHandler = vi.fn()
 		const hideHandler = vi.fn()
 		const visibleHandler = vi.fn()
-		p.events.on('show' as any, showHandler)
-		p.events.on('hide' as any, hideHandler)
+		p.events.on('show:before', showBeforeHandler)
+		p.events.on('hide:before', hideBeforeHandler)
+		p.events.on('show', showHandler)
+		p.events.on('hide', hideHandler)
 		p.events.on('change:visible', visibleHandler)
 
 		p.show()
-		expect(beforeShow).toHaveBeenCalled()
+		expect(showBeforeHandler).toHaveBeenCalled()
 		expect(p.visible).toBe(true)
 		expect(showHandler).toHaveBeenCalled()
 		expect(visibleHandler).toHaveBeenCalledWith(true)
 
 		p.hide()
-		expect(beforeHide).toHaveBeenCalled()
+		expect(hideBeforeHandler).toHaveBeenCalled()
 		expect(p.visible).toBe(false)
 		expect(hideHandler).toHaveBeenCalled()
 		expect(visibleHandler).toHaveBeenCalledWith(false)
@@ -64,8 +66,8 @@ describe('TComponentView', () => {
 
 	it('visible=true вызывает show, visible=false вызывает hide', () => {
 		const p = new TComponentView({ visible: false })
-		const show = vi.spyOn(p as any, 'show')
-		const hide = vi.spyOn(p as any, 'hide')
+		const show = vi.spyOn(p, 'show')
+		const hide = vi.spyOn(p, 'hide')
 
 		p.visible = true
 		expect(show).toHaveBeenCalled()
@@ -82,7 +84,7 @@ describe('TComponentView', () => {
 
 		p.tag = 'section'
 		expect(tagHandler).toHaveBeenCalledWith('section')
-		;(p.classes as any).add('x', false)
+		p.classes.add('x', false)
 		expect(classesHandler).toHaveBeenCalled()
 	})
 

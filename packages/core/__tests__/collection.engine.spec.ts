@@ -40,14 +40,14 @@ describe('TCollectionStorageDriver', () => {
 	// Драйвер больше не Proxy над массивом: «дай хранилище» и «дай список»
 	// должны писаться по-разному, иначе обходить правила слишком легко.
 	it('массивом не притворяется: ни чтений, ни мутирующих методов', () => {
-		const driver = createEngine([{ id: 1 }]) as any
+		const driver = createEngine([{ id: 1 }])
 
-		expect(driver.length).toBeUndefined()
-		expect(driver[0]).toBeUndefined()
-		expect(driver.forEach).toBeUndefined()
-		expect(driver.find).toBeUndefined()
-		expect(driver.push).toBeUndefined()
-		expect(driver.splice).toBeUndefined()
+		expect('length' in driver).toBe(false)
+		expect(0 in driver).toBe(false)
+		expect('forEach' in driver).toBe(false)
+		expect('find' in driver).toBe(false)
+		expect('push' in driver).toBe(false)
+		expect('splice' in driver).toBe(false)
 	})
 
 	// --- execute + события ---

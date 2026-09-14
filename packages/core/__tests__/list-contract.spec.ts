@@ -16,12 +16,27 @@
 
 import { describe, it, expect } from 'vitest'
 import { TListBox, TSelect, LIST_DEFAULTS } from '../src'
+import type { IList, TDataset, TEvented, TListContentFit, TScrollBehavior, TListIndicator } from '../src'
+
+/**
+ * Контракт инстанса для параметризованных проверок ниже: собственно `IList`
+ * плюс то немногое, что нужно тесту снаружи него. `events` типизирован
+ * `TEvented<any>` — та же оговорка про инвариантность карты событий, что и у
+ * опции `engine` фасадов (AGENTS.md, «События item-адаптера»): два разных
+ * компонента несут разные точные карты, констрейнту здесь важно только
+ * «есть эмиттер».
+ */
+interface IListInstance extends IList {
+	readonly events: TEvented<any>
+	readonly dataset: TDataset
+	getProps(): Readonly<Partial<IList>>
+}
 
 /** Компоненты, которые обязаны нести списочный контракт целиком. */
-const IMPLEMENTATIONS = [
+const IMPLEMENTATIONS: Array<[string, () => IListInstance]> = [
 	['TListBox', () => new TListBox()],
 	['TSelect', () => new TSelect()],
-] as const
+]
 
 /** Свойство → значение, отличное от умолчания, чтобы сеттер было чем проверить. */
 const PROPERTIES = [
@@ -31,38 +46,66 @@ const PROPERTIES = [
 	['indicator', 'change:indicator', 'start'],
 ] as const
 
+type TListProp = (typeof PROPERTIES)[number][0]
+
+/**
+ * Пишет значение в конкретное поле `IList` по его имени.
+ *
+ * `instance[prop] = value`, где `prop` — union из четырёх ключей, не
+ * компилируется: TypeScript выводит для записи через union ключей тип цели
+ * `never`, а не объединение типов полей (чтение через union так не ведёт
+ * себя, только запись). Поэтому запись разведена по конкретным полям —
+ * приведение к точному типу поля, а не к `any`.
+ */
+function writeListProp(instance: IListInstance, prop: TListProp, value: unknown): void {
+	switch (prop) {
+		case 'maxRows':
+			instance.maxRows = value as number
+			return
+		case 'contentFit':
+			instance.contentFit = value as TListContentFit
+			return
+		case 'scrollBehavior':
+			instance.scrollBehavior = value as TScrollBehavior
+			return
+		case 'indicator':
+			instance.indicator = value as TListIndicator
+			return
+	}
+}
+
 describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, create) => {
 	it.each(PROPERTIES)('%s читается и по умолчанию берётся из LIST_DEFAULTS', (prop) => {
-		expect((create() as any)[prop]).toBe((LIST_DEFAULTS as any)[prop])
+		expect(create()[prop]).toBe(LIST_DEFAULTS[prop])
 	})
 
 	it.each(PROPERTIES)('%s пишется', (prop, _event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(instance[prop]).toBe(value)
 	})
 
 	it.each(PROPERTIES)('%s сообщает о смене событием %s', (prop, event, value) => {
-		const instance = create() as any
+		const instance = create()
 		const seen: unknown[] = []
 
 		instance.events.on(event, (v: unknown) => seen.push(v))
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(seen).toEqual([value])
 	})
 
 	it.each(PROPERTIES)('%s не эмитит на повторной записи того же значения', (prop, event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		const seen: unknown[] = []
 
 		instance.events.on(event, (v: unknown) => seen.push(v))
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(seen).toEqual([])
 	})
@@ -79,9 +122,9 @@ describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, c
 	})
 
 	it.each(PROPERTIES)('%s попадает в getProps()', (prop, _event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(instance.getProps()[prop]).toBe(value)
 	})

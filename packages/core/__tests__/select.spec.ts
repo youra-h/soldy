@@ -18,10 +18,10 @@ import {
 	TItemContextRegistry,
 	TInput,
 } from '@soldy/core'
-import type { ISelectItem } from '@soldy/core'
+import type { ISelectItem, ISelectProps } from '@soldy/core'
 
-function createSelect(values: string[], props: Record<string, unknown> = {}) {
-	const owner = new TSelect(props as any)
+function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
+	const owner = new TSelect(props)
 	const collection = new TSelectCollectionFacade({}, { owner })
 	const items = values.map((value) => new TSelectItem({ value, text: value.toUpperCase() }))
 
@@ -33,7 +33,7 @@ function createSelect(values: string[], props: Record<string, unknown> = {}) {
 	const facadeFor = (index: number) => {
 		const facade = new TSelectItemCollectionFacade()
 
-		facade.setContext(registry.get(items[index]) as any)
+		facade.setContext(registry.get(items[index]))
 
 		return facade
 	}

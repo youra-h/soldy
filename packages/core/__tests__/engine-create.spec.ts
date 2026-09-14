@@ -66,22 +66,85 @@ describe('уровни сборки', () => {
 /**
  * Компонентный уровень — у всех четырёх, а не только у Tabs. Список задан
  * данными: забытый пятый компонент иначе прошёл бы мимо проверки.
+ *
+ * Функции строят разные уровни движка (разный owner, разное дополнительное
+ * расширение), поэтому объединять их в одну сигнатуру пришлось бы через
+ * `any`. Вместо этого каждый кейс — замыкание, типизированное на своей
+ * функции: TypeScript проверяет каждое тело отдельно, без стирания типов.
  */
-describe.each([
-	['createEngineTabs', createEngineTabs, () => new TTabs(), 'tabs'],
-	['createEngineListBox', createEngineListBox, () => new TListBox(), 'list'],
-	['createEngineSelect', createEngineSelect, () => new TSelect(), 'select'],
-	['createEngineAccordion', createEngineAccordion, () => new TAccordion(), 'accordion'],
-] as const)('%s', (_name, create, makeOwner, ownerExtension) => {
-	it('отдаёт полный набор своего компонента', () => {
-		const engine = (create as any)({ owner: makeOwner() })
+type EngineTestCase = {
+	name: string
+	run: () => { batch: unknown; ownerExtension: unknown }
+	runWithoutOwner: () => void
+}
 
-		expect(engine.extensions.batch).toBeDefined()
-		expect(engine.extensions[ownerExtension]).toBeDefined()
-	})
+const engineCases: EngineTestCase[] = [
+	{
+		name: 'createEngineTabs',
+		run: () => {
+			const engine = createEngineTabs({ owner: new TTabs() })
+			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.tabs }
+		},
+		runWithoutOwner: () => {
+			expect(() => {
+				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
+				createEngineTabs({})
+			}).toThrow(/owner/)
+		},
+	},
+	{
+		name: 'createEngineListBox',
+		run: () => {
+			const engine = createEngineListBox({ owner: new TListBox() })
+			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.list }
+		},
+		runWithoutOwner: () => {
+			expect(() => {
+				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
+				createEngineListBox({})
+			}).toThrow(/owner/)
+		},
+	},
+	{
+		name: 'createEngineSelect',
+		run: () => {
+			const engine = createEngineSelect({ owner: new TSelect() })
+			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.select }
+		},
+		runWithoutOwner: () => {
+			expect(() => {
+				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
+				createEngineSelect({})
+			}).toThrow(/owner/)
+		},
+	},
+	{
+		name: 'createEngineAccordion',
+		run: () => {
+			const engine = createEngineAccordion({ owner: new TAccordion() })
+			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.accordion }
+		},
+		runWithoutOwner: () => {
+			expect(() => {
+				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
+				createEngineAccordion({})
+			}).toThrow(/owner/)
+		},
+	},
+]
 
-	it('без owner — внятная ошибка, а не undefined внутри расширения', () => {
-		expect(() => (create as any)({})).toThrow(/owner/)
+engineCases.forEach(({ name, run, runWithoutOwner }) => {
+	describe(name, () => {
+		it('отдаёт полный набор своего компонента', () => {
+			const { batch, ownerExtension } = run()
+
+			expect(batch).toBeDefined()
+			expect(ownerExtension).toBeDefined()
+		})
+
+		it('без owner — внятная ошибка, а не undefined внутри расширения', () => {
+			runWithoutOwner()
+		})
 	})
 })
 
@@ -100,8 +163,12 @@ describe('догон накопленного при привязке', () => {
 
 		new TTabsCollectionFacade({}, { owner, engine })
 
-		expect(engine.extensions.batch.items[0]).toBeInstanceOf(TTabsItem)
-		expect((engine.extensions.batch.items[0] as any).text).toBe('A')
+		const item = engine.extensions.batch.items[0]
+
+		expect(item).toBeInstanceOf(TTabsItem)
+		if (item instanceof TTabsItem) {
+			expect(item.text).toBe('A')
+		}
 	})
 
 	/**
@@ -117,7 +184,7 @@ describe('догон накопленного при привязке', () => {
 		const owner = new TTabs()
 		const facade = new TTabsCollectionFacade({}, { owner, engine })
 
-		expect((facade.activeItem as any)?.value).toBe('b')
+		expect(facade.activeItem?.value).toBe('b')
 	})
 
 	/** Владельческие раздают свойства владельца тоже по `item:added`. */
@@ -127,8 +194,13 @@ describe('догон накопленного при привязке', () => {
 
 		new TTabsCollectionFacade({}, { owner, engine })
 
-		expect((engine.extensions.batch.items[0] as any).size).toBe('lg')
-		expect((engine.extensions.batch.items[0] as any).variant).toBe('accent')
+		const item = engine.extensions.batch.items[0]
+
+		expect(item).toBeInstanceOf(TTabsItem)
+		if (item instanceof TTabsItem) {
+			expect(item.size).toBe('lg')
+			expect(item.variant).toBe('accent')
+		}
 	})
 
 	it('_.selected доезжает до выбора у списочных', () => {
@@ -139,7 +211,7 @@ describe('догон накопленного при привязке', () => {
 		const owner = new TListBox()
 		const facade = new TListBoxCollectionFacade({}, { owner, engine })
 
-		expect(facade.selected.map((item: any) => item.value)).toEqual(['a'])
+		expect(facade.selected.map((item) => item.value)).toEqual(['a'])
 	})
 })
 

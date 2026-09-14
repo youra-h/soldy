@@ -20,7 +20,7 @@ describe('TSwitch', () => {
 		const sw = new TSwitch({ value: false })
 		const changeValue = vi.fn()
 
-		sw.events.on('change:value' as any, changeValue)
+		sw.events.on('change:value', changeValue)
 
 		sw.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })

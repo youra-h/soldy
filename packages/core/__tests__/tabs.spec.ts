@@ -196,7 +196,7 @@ function createTabsCollection(tabs?: TTabs) {
 				activation: new TActivationExtension<ITabsItem>(),
 				tabs: new TTabsExtension({ owner }),
 			},
-		}) as unknown as TCollectionEngine<ITabsItem, TabsExtensions>,
+		}),
 	}
 }
 

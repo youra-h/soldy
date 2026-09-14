@@ -37,7 +37,7 @@ describe('TCheckBox', () => {
 		const cb = new TCheckBox({ value: false })
 		const changeValue = vi.fn()
 
-		cb.events.on('change:value' as any, changeValue)
+		cb.events.on('change:value', changeValue)
 
 		cb.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })

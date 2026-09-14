@@ -65,8 +65,8 @@ describe('TFrame', () => {
 	it('hide() при уже hidden не эмитит событий', () => {
 		const frame = new TFrame()
 		const events: string[] = []
-		frame.events.on('hide' as any, () => events.push('hide'))
-		frame.events.on('hide:before' as any, () => {
+		frame.events.on('hide', () => events.push('hide'))
+		frame.events.on('hide:before', () => {
 			events.push('hide:before')
 			return true
 		})
@@ -102,7 +102,7 @@ describe('TFrame', () => {
 
 	it('beforeShow может отменить показ', () => {
 		const frame = new TFrame()
-		frame.events.on('show:before' as any, (e: any) => e.preventDefault())
+		frame.events.on('show:before', (e) => e.preventDefault())
 
 		frame.show()
 		expect(frame.visible).toBe(false)
@@ -111,7 +111,7 @@ describe('TFrame', () => {
 
 	it('beforeHide может отменить скрытие', () => {
 		const frame = new TFrame({ visible: true })
-		frame.events.on('hide:before' as any, (e: any) => e.preventDefault())
+		frame.events.on('hide:before', (e) => e.preventDefault())
 
 		frame.hide()
 		expect(frame.visible).toBe(true)
@@ -121,14 +121,14 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		const log: string[] = []
 
-		frame.events.on('show:before' as any, () => {
+		frame.events.on('show:before', () => {
 			log.push('show:before')
 		})
-		frame.events.on('show' as any, () => log.push('show'))
-		frame.events.on('hide:before' as any, () => {
+		frame.events.on('show', () => log.push('show'))
+		frame.events.on('hide:before', () => {
 			log.push('hide:before')
 		})
-		frame.events.on('hide' as any, () => log.push('hide'))
+		frame.events.on('hide', () => log.push('hide'))
 
 		frame.show()
 		expect(log).toEqual(['show:before', 'show'])
@@ -140,7 +140,7 @@ describe('TFrame', () => {
 	it('change:visible эмитится при show/hide', () => {
 		const frame = new TFrame()
 		const values: boolean[] = []
-		frame.events.on('change:visible' as any, (v: boolean) => values.push(v))
+		frame.events.on('change:visible', (v: boolean) => values.push(v))
 
 		frame.show()
 		frame.hide()
@@ -152,8 +152,8 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		const xValues: number[] = []
 		const yValues: number[] = []
-		frame.events.on('change:x' as any, (v: number) => xValues.push(v))
-		frame.events.on('change:y' as any, (v: number) => yValues.push(v))
+		frame.events.on('change:x', (v: number) => xValues.push(v))
+		frame.events.on('change:y', (v: number) => yValues.push(v))
 
 		frame.x = 100
 		frame.y = 200
@@ -166,8 +166,8 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		const widthValues: (number | string)[] = []
 		const heightValues: (number | string)[] = []
-		frame.events.on('change:width' as any, (v: number | string) => widthValues.push(v))
-		frame.events.on('change:height' as any, (v: number | string) => heightValues.push(v))
+		frame.events.on('change:width', (v: number | string) => widthValues.push(v))
+		frame.events.on('change:height', (v: number | string) => heightValues.push(v))
 
 		frame.width = 500
 		frame.height = 300
@@ -179,7 +179,7 @@ describe('TFrame', () => {
 	it('change:zIndex эмитится при show()', () => {
 		const frame = new TFrame()
 		const zValues: number[] = []
-		frame.events.on('change:zIndex' as any, (v: number) => zValues.push(v))
+		frame.events.on('change:zIndex', (v: number) => zValues.push(v))
 
 		frame.show()
 		expect(zValues.length).toBe(1)
@@ -189,8 +189,8 @@ describe('TFrame', () => {
 	it('setter visible вызывает show/hide', () => {
 		const frame = new TFrame()
 		const log: string[] = []
-		frame.events.on('show' as any, () => log.push('show'))
-		frame.events.on('hide' as any, () => log.push('hide'))
+		frame.events.on('show', () => log.push('show'))
+		frame.events.on('hide', () => log.push('hide'))
 
 		frame.visible = true
 		expect(log).toContain('show')
@@ -283,7 +283,7 @@ describe('TFrame', () => {
     it('change:position эмитится при изменении', () => {
         const frame = new TFrame()
         const values: string[] = []
-        frame.events.on('change:position' as any, (v: string) => values.push(v))
+        frame.events.on('change:position', (v: string) => values.push(v))
 
         frame.position = 'absolute'
         expect(values).toEqual(['absolute'])
@@ -308,7 +308,7 @@ describe('TFrame', () => {
     it('change:target эмитится при изменении', () => {
         const frame = new TFrame()
         const values: string[] = []
-        frame.events.on('change:target' as any, (v: string) => values.push(v))
+        frame.events.on('change:target', (v: string) => values.push(v))
 
         frame.target = '#portal'
         expect(values).toEqual(['#portal'])
