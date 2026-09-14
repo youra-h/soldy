@@ -145,8 +145,52 @@ dismiss.events.on('dismiss', () => {
 **расширение адаптера** (`setup/adapter/extensions/` — проводка, общая для
 всех фреймворков), **событие или триггер** (если нужно просто сообщить).
 
-Допустимо в адаптере: `ref` на DOM-узел, `provide`/`inject` элеватора,
-`v-bind` набора, регистрация дочерних компонентов.
+### Механизмы фреймворка — только в адаптерном слое (критично)
+
+`packages/ui/<fw>` состоит из двух частей, и правила у них разные:
+
+- **адаптерный слой** `src/adapter/**` — единственное место, где работают
+  внутренние механизмы фреймворка: реактивность, хуки жизненного цикла,
+  контекст. Каждый фреймворк реализует адаптер по-своему, но отдаёт
+  компонентам одно и то же. Норма: `rootElement = ref<Element | null>(null)`
+  и `watch(rootElement, (el) => pluginsExt.bindElement(el))` в
+  `ui/vue/src/adapter/runtime/useAdapter.ts`, `provide` в
+  `ui/vue/src/adapter/elevator/`;
+- **компоненты** `src/components/**` — только проводка того, что отдал
+  адаптер: контексты из `createAdapterContext`/`useAdapter`, привязка
+  `rootElement` в разметке, раскладка набора (`v-bind`, спред), регистрация
+  дочерних компонентов.
+
+В компоненте **нельзя** заводить свои механизмы фреймворка:
+
+| Фреймворк | Чего нет в компоненте                                                                                           |
+| --------- | --------------------------------------------------------------------------------------------------------------- |
+| Vue       | `ref`, `shallowRef`, `reactive`, `computed`, `watch`, `watchEffect`, `on*`-хуки, `nextTick`, `provide`/`inject` |
+| React     | `useState`, `useEffect`, `useLayoutEffect`, `useMemo`, `useCallback`, `useRef`, `useContext`                    |
+| Solid     | `createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `useContext`                              |
+| Svelte    | `$state`, `$derived`, `$effect`, `onMount`, `onDestroy`, `getContext`/`setContext`                              |
+| Angular   | `signal`, `computed`, `effect`, `ngOnChanges`/`ngAfterViewInit` и прочие хуки                                   |
+
+Если компоненту понадобился такой механизм, значит адаптер не справляется, а
+обход в компоненте это прячет и расходится между шестью фреймворками. Реальный
+случай (PR #47): `TAnchorPlugin` требовал `HTMLElement`, `rootElement` адаптера
+типизирован `Element`, и в Vue Select появилось
+`anchorElement: computed(() => rootElement.value as HTMLElement | null)`.
+Исправлено в контракте: якорю хватает `Element`, и Select отдаёт
+`rootElement` напрямую.
+
+Что делать вместо обхода — по порядку:
+
+1. поправить контракт (тип пропа плагина, типы адаптера), если несовпадение в нём;
+2. положить поведение в плагин, расширение коллекции или расширение адаптера;
+3. если существующей механики не хватает — **остановиться и сообщить**:
+   программист возвращает задачу тимлиду, тимлид выносит владельцу
+   предложение новой механики адаптера. Решать молча нельзя.
+
+Известные нарушения, которые ещё не разобраны: Vue — задача 869f1pwb0;
+Solid (`createMemo`), Svelte (`$derived.by`) в Button и ComponentView, Angular
+(`computed`, `ngAfterViewInit` в Button и ComponentView) — задача 869f1q0t4.
+Новых не добавлять.
 
 ### `setup/adapter/extensions/` — тоже не место для операций над DOM
 
