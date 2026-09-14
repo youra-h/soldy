@@ -5,20 +5,16 @@
  * и связывает его с React Runtime через useAdapter.
  */
 
-import { useRef } from 'react'
 import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
-import type { IAdapterContext } from '@soldy/setup'
 import type { IControl } from '@soldy/core'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useAdapterContext } from '../../adapter'
 import type { ControlProps } from './base.component'
 
 export function useSetupControl(props: ControlProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapterRef = useRef<IAdapterContext<IControl> | null>(null)
+	const adapter = useAdapterContext<IControl>(() =>
+		createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props }),
+	)
 
-	if (!adapterRef.current) {
-		adapterRef.current = createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props })
-	}
-
-	return useAdapter(adapterRef.current, props)
+	return useAdapter(adapter, props)
 }

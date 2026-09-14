@@ -1,4 +1,5 @@
 export { useAdapter } from './useAdapter'
+export { useAdapterContext } from './useAdapterContext'
 export { useSyncProps } from './useSyncProps'
 export { useSyncEvents } from './useSyncEvents'
 export type { TBinding } from './useAdapter'

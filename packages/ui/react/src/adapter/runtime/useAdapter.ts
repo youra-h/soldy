@@ -1,8 +1,10 @@
 /**
- * useAdapter — единственный React-хук на весь проект (аналог useAdapter из Vue-пакета).
+ * useAdapter — основной React-хук связывания (аналог useAdapter из Vue-пакета).
+ * Держание adapter-context между рендерами — отдельный хук, useAdapterContext
+ * из этого же файла-баррела (см. `useAdapterContext.ts`).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
- * createAdapterContext) и связывает его с React:
+ * createAdapterContext + useAdapterContext) и связывает его с React:
  *
  * 1. Core → React: подписка на триггеры props (bindOutput)
  * 2. React → Core: синхронизация входных props (bindInput)

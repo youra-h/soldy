@@ -2,19 +2,15 @@
  * useSetupStylable — setup-слой Stylable (аналог setup.component.ts во Vue).
  */
 
-import { useRef } from 'react'
 import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
-import type { IAdapterContext } from '@soldy/setup'
 import type { IStylable } from '@soldy/core'
-import { useAdapter } from '../../adapter'
+import { useAdapter, useAdapterContext } from '../../adapter'
 import type { StylableProps } from './base.component'
 
 export function useSetupStylable(props: StylableProps) {
-	const adapterRef = useRef<IAdapterContext<IStylable> | null>(null)
+	const adapter = useAdapterContext<IStylable>(() =>
+		createAdapterContext(StylableDescriptor(), { ctrl: props.ctrl, props }),
+	)
 
-	if (!adapterRef.current) {
-		adapterRef.current = createAdapterContext(StylableDescriptor(), { ctrl: props.ctrl, props })
-	}
-
-	return useAdapter(adapterRef.current, props)
+	return useAdapter(adapter, props)
 }
