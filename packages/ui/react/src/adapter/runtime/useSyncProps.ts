@@ -18,16 +18,16 @@ import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/acce
 
 export interface ISyncOptions {
 	/** Коллбэк перед записью значения из React во внутренний Core */
-	onInput?: (prop: IAccessorProp, value: any) => any
+	onInput?: (prop: IAccessorProp, value: unknown) => unknown
 	/** Коллбэк при обновлении значения из Core в React */
-	onOutput?: (prop: IAccessorProp, value: any) => void
+	onOutput?: (prop: IAccessorProp, value: unknown) => void
 }
 
-type TState = Record<string, any>
-type TAction = { name: string; value: any }
+type TState = Readonly<Record<string, unknown>>
+type TAction = { name: string; value: unknown }
 
 function buildState(accessor: IAccessor, inspector: TDescriptorInspector): TState {
-	const state: TState = {}
+	const state: Record<string, unknown> = {}
 
 	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
 		// Пропускаем pass-through свойства без триггеров (ctrl, plugins)
@@ -89,10 +89,10 @@ export function useSyncProps(
 	}
 
 	// 2. React → Core (Input): синхронизация внешних props
-	function bindInput(props: Record<string, any>): void {
+	function bindInput(props: object): void {
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const exportName = inspector.getExportPropName(prop)
-			const value = props[exportName] ?? props[prop.name.name]
+			const value: unknown = Reflect.get(props, exportName) ?? Reflect.get(props, prop.name.name)
 
 			if (value === undefined) continue
 

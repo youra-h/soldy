@@ -19,8 +19,8 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	const Tag = tag as ElementType
 
 	const { className: userClassName, style: userStyle, ...restProps } = forwardProps
-	const className = [classes.join(' '), userClassName].filter(Boolean).join(' ')
-	const style = visible ? userStyle : { ...(userStyle ?? {}), display: 'none' }
+	const className = [classes?.join(' '), userClassName].filter(Boolean).join(' ')
+	const style = visible ? userStyle : { ...userStyle, display: 'none' }
 
 	// restProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
 	// потребителем ref, попав в restProps, перекрыл бы ref адаптера и тихо
@@ -31,7 +31,7 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
-			dir={(dir as 'ltr' | 'rtl' | null) ?? undefined}
+			dir={dir ?? undefined}
 		>
 			{renderSlot(props.children)}
 		</Tag>

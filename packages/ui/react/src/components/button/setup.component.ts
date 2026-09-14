@@ -8,7 +8,7 @@
 import { useRef } from 'react'
 import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
-import type { IButton, IButtonProps } from '@soldy/core'
+import type { IButton } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ButtonProps } from './base.component'
 
@@ -20,5 +20,5 @@ export function useSetupButton(props: ButtonProps) {
 		adapterRef.current = createAdapterContext(ButtonDescriptor(), { ctrl: props.ctrl, props })
 	}
 
-	return useAdapter<IButtonProps, IButton>(adapterRef.current, props)
+	return useAdapter(adapterRef.current, props)
 }

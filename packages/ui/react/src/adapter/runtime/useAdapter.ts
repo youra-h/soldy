@@ -14,28 +14,31 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import type { IAdapterContext } from '@soldy/setup'
-import { TPluginsBindingExtension } from '@soldy/setup'
+import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import { TElementPlugin } from '@soldy/plugins'
+import type { IPluginBundle } from '@soldy/plugins'
 import type { IAccessorProp } from '@soldy/accessor'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
 import { useSyncEvents } from './useSyncEvents'
 
-export type TBinding<TInstance = any> = {
+export type TBinding<TInstance = object, TProps extends object = object> = {
 	ctrl: TInstance
-	plugins: any
+	plugins: IPluginBundle | null
 	ref: (el: Element | null) => void
-	forwardProps: Record<string, any>
-	state: Record<string, any>
+	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
+	forwardProps: Partial<TProps>
+	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
+	state: TInstanceState<TInstance>
 }
 
 /** Собирает имена props/событий, которые «съедает» компонент. Остальное уходит в DOM. */
-function computeForwardProps(
-	props: Record<string, any>,
+function computeForwardProps<TProps extends object>(
+	props: TProps,
 	accessor: IAdapterContext['accessor'],
 	inspector: ReturnType<typeof createInspector>,
-): Record<string, any> {
+): Partial<TProps> {
 	const consumed = new Set<string>(['children', 'plugins', 'ctrl'])
 
 	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
@@ -51,19 +54,19 @@ function computeForwardProps(
 		consumed.add(inspector.getExportEventName(evt.name))
 	}
 
-	const rest: Record<string, any> = {}
+	const rest: Partial<TProps> = {}
 
 	for (const key of Object.keys(props)) {
-		if (!consumed.has(key)) rest[key] = props[key]
+		if (!consumed.has(key)) Reflect.set(rest, key, Reflect.get(props, key))
 	}
 
 	return rest
 }
 
-export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance extends object = object>(
+export function useAdapter<TProps extends object, TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
 	props: TProps,
-): TBinding<TInstance> {
+): TBinding<TInstance, TProps> {
 	const inspector = useMemo(() => createInspector(adapter.accessor), [adapter])
 
 	// 1. Реактивность: Core ↔ React (output + input)
@@ -108,6 +111,6 @@ export function useAdapter<TProps extends Record<string, any> = Record<string, a
 		plugins: adapter.bundle,
 		ref,
 		forwardProps,
-		state,
+		state: toInstanceState<TInstance>(state),
 	}
 }

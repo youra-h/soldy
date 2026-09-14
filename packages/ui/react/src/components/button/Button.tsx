@@ -24,8 +24,8 @@ export function Button(props: ButtonProps): ReactElement | null {
 	const isNativeButton = tag === 'button'
 
 	const { className: userClassName, style: userStyle, ...restProps } = forwardProps
-	const className = [classes.join(' '), userClassName].filter(Boolean).join(' ')
-	const style = visible ? userStyle : { ...(userStyle ?? {}), display: 'none' }
+	const className = [classes?.join(' '), userClassName].filter(Boolean).join(' ')
+	const style = visible ? userStyle : { ...userStyle, display: 'none' }
 
 	// restProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
 	// потребителем ref, попав в restProps, перекрыл бы ref адаптера и тихо
@@ -36,13 +36,13 @@ export function Button(props: ButtonProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
-			dir={(dir as 'ltr' | 'rtl' | null) ?? undefined}
-			{...(isNativeButton ? { disabled: disabled as boolean } : {})}
+			dir={dir ?? undefined}
+			{...(isNativeButton ? { disabled } : {})}
 			{...toAriaProps(aria)}
 		>
 			{renderSlot(props.leading)}
 			<span className="s-button__text">
-				{renderSlot(props.children, { text: text as string }) ?? text}
+				{renderSlot(props.children, { text: text ?? '' }) ?? text}
 			</span>
 			{renderSlot(props.trailing)}
 		</Tag>

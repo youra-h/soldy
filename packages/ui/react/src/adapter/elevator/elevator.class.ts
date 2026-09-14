@@ -13,29 +13,34 @@
 import { createContext, useContext } from 'react'
 import { TElevator } from '@soldy/setup'
 
-const CONTEXT_CACHE = new Map<symbol, React.Context<any>>()
+/**
+ * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же
+ * объект. Значения разных ключей разного типа, поэтому кэш хранит `unknown`, а
+ * тип значения задаёт ключ elevator'а.
+ */
+const CONTEXT_CACHE = new Map<symbol, React.Context<unknown>>()
 
-function resolveContext<T>(key: symbol): React.Context<T | undefined> {
+function resolveContext(key: symbol): React.Context<unknown> {
 	let ctx = CONTEXT_CACHE.get(key)
 
 	if (!ctx) {
-		ctx = createContext<T | undefined>(undefined)
+		ctx = createContext<unknown>(undefined)
 		CONTEXT_CACHE.set(key, ctx)
 	}
 
 	return ctx
 }
 
-export class TReactElevator<T = any> extends TElevator<T> {
+export class TReactElevator<T = unknown> extends TElevator<T> {
 	/** Готовый Context, чтобы прокинуть значение через JSX: <el.Context.Provider value={...}>. */
-	readonly Context: React.Context<T | undefined>
+	readonly Context: React.Context<unknown>
 
 	private _value: T | undefined
 
 	constructor(key: string | symbol) {
 		super(key)
 
-		this.Context = resolveContext<T>(this._key)
+		this.Context = resolveContext(this._key)
 	}
 
 	down(value: T): void {
@@ -43,7 +48,8 @@ export class TReactElevator<T = any> extends TElevator<T> {
 	}
 
 	up(): T | undefined {
-		const fromContext = useContext(this.Context)
+		// Тип значения задаёт ключ elevator'а: под этим ключом кладут только `T`
+		const fromContext = useContext(this.Context) as T | undefined
 
 		return fromContext ?? this._value
 	}

@@ -8,7 +8,7 @@
 import { useRef } from 'react'
 import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
 import type { IAdapterContext } from '@soldy/setup'
-import type { IControl, IControlProps } from '@soldy/core'
+import type { IControl } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ControlProps } from './base.component'
 
@@ -20,5 +20,5 @@ export function useSetupControl(props: ControlProps) {
 		adapterRef.current = createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props })
 	}
 
-	return useAdapter<IControlProps, IControl>(adapterRef.current, props)
+	return useAdapter(adapterRef.current, props)
 }

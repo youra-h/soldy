@@ -10,11 +10,11 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { ButtonDescriptor } from '@soldy/setup'
-import { Button } from '@soldy/ui-react'
+import { Button, type ButtonProps } from '@soldy/ui-react'
 
 const roots: Root[] = []
 
-function mount(props: Record<string, any> = {}): HTMLElement {
+function mount(props: ButtonProps = {}): HTMLElement {
 	const target = document.createElement('div')
 
 	document.body.appendChild(target)
