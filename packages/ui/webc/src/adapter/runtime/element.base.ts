@@ -19,7 +19,8 @@
  *   tag      → пересоздание корня (имя тега элемента поменять нельзя)
  *   classes → className
  *   visible → display
- *   dir     → атрибут dir (null для 'inherit' снимает — направление наследуется)
+ *   attrs   → нативные атрибуты корня (в т.ч. dir — ядро уже перевело
+ *             'inherit' в null, null снимает атрибут)
  *
  * Слоты распределяются по атрибуту `slot` — это нативная HTML-семантика, а
  * не выдумка soldy. Shadow DOM для этого не используется: тема раскладывается
@@ -30,7 +31,7 @@
 import type { IComponentView } from '@soldy/core'
 import { DEFAULT_SLOT, type IComponentDescriptor, type TInstanceState } from '@soldy/setup'
 import { buildAttributeMap, coerceAttribute, createInspector, type IAttributeBinding } from '../common'
-import type { ITemplate, ITemplateContext, TSlotTargets } from '../template'
+import { applyAttributeSet, type ITemplate, type ITemplateContext, type TSlotTargets } from '../template'
 import type { TBinding } from './useAdapter'
 
 /** Кэш карт атрибутов по дескриптору — строить её на каждый элемент незачем. */
@@ -132,6 +133,8 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 	private readonly _dirty = new Set<string>()
 	private _flushQueued = false
 	private _connected = false
+	/** Что из `attrs` выставлено на корне сейчас — снимает исчезнувшие. */
+	private _appliedAttrs: string[] = []
 
 	get state(): TInstanceState<TInstance> {
 		return this.binding?.state ?? {}
@@ -239,14 +242,13 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 			root.style.display = state.visible === false ? 'none' : ''
 		}
 
-		// dir — структурный проп визуального слоя (как classes/visible). Ядро
-		// уже перевело 'inherit' в null: null снимает атрибут, направление
-		// наследуется от предка.
-		if (applyAll || this._dirty.has('dir')) {
-			const dir = state.dir
-
-			if (dir) root.setAttribute('dir', dir)
-			else root.removeAttribute('dir')
+		// attrs — структурный набор визуального слоя (как classes/visible): в
+		// нём в том числе dir (ядро уже перевело 'inherit' в null) и, там, где
+		// тег его поддерживает, disabled. Применяется здесь для всех
+		// компонентов сразу, а не привязкой шаблона (как ariaBinding), — иначе
+		// пришлось бы подключать её в каждом шаблоне отдельно.
+		if (applyAll || this._dirty.has('attrs')) {
+			this._appliedAttrs = applyAttributeSet(root, state.attrs, this._appliedAttrs)
 		}
 
 		const context: ITemplateContext<TInstance> = {

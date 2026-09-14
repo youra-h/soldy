@@ -33,10 +33,10 @@ export function Button(props: ButtonProps): JSX.Element {
 					...(binding.forwardProps().style as object),
 					display: state.visible ? undefined : 'none',
 				}}
-				dir={state.dir ?? undefined}
-				// attrs — нативный disabled там, где у тега он есть; aria вычисляет
-				// ядро: role, tabindex, aria-disabled на остальных тегах.
-				// null в значении Solid понимает как «атрибут не ставить».
+				// attrs — нативный disabled там, где у тега он есть, и dir по
+				// direction; aria вычисляет ядро: role, tabindex, aria-disabled на
+				// остальных тегах. null в значении Solid понимает как «атрибут не
+				// ставить».
 				{...state.attrs}
 				{...state.aria}
 				ref={binding.ref}

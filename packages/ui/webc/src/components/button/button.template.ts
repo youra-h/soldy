@@ -8,16 +8,15 @@
  */
 
 import type { IButton } from '@soldy/core'
-import { ariaBinding, bind, createAttributesBinding, type ITemplate } from '../../adapter'
+import { ariaBinding, bind, type ITemplate } from '../../adapter'
 
 /**
  * Нативный `disabled` там, где он есть у тега (`NATIVE_DISABLED_TAGS`) — ядро
  * уже решило, есть ли он, и в каком наборе: `attrs` для нативного атрибута,
- * `aria` для `aria-disabled` на остальных тегах. Шаблону остаётся разложить
- * оба набора той же механикой, что и `ariaBinding`.
+ * `aria` для `aria-disabled` на остальных тегах. `attrs` (в т.ч. `dir`)
+ * раскладывает база (`TSoldyElement._flush`) для всех компонентов сразу —
+ * здесь остаётся только `aria`.
  */
-const attrsBinding = createAttributesBinding<Pick<IButton, 'attrs'>>('attrs')
-
 export const buttonTemplate: ITemplate<IButton> = {
 	tag: (state) => String(state.tag ?? 'button'),
 
@@ -35,7 +34,6 @@ export const buttonTemplate: ITemplate<IButton> = {
 	},
 
 	bindings: [
-		attrsBinding,
 		ariaBinding,
 
 		bind('text', ({ content, state, hasSlot }) => {

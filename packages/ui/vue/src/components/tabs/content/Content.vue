@@ -18,8 +18,7 @@ export default { ...SetupTabsContent }
 		v-if="rendered && active"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
-		v-bind="aria"
+		v-bind="{ ...attrs, ...aria }"
 	>
 		<slot />
 	</component>

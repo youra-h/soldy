@@ -17,6 +17,41 @@
 import type { TAria, TAttributesMap } from '@soldy/core'
 import { bind, type ITemplateBinding } from './types'
 
+/**
+ * Раскладывает один набор `имя → значение` на элемент, `null` снимает
+ * атрибут. Возвращает список выставленных имён — передай его следующим
+ * вызовом как `previous`, чтобы снять атрибуты, исчезнувшие из набора.
+ *
+ * Вынесена отдельно от `createAttributesBinding`: `TSoldyElement` (база
+ * `element.base.ts`) применяет её к `attrs` напрямую в `_flush`, минуя
+ * привязку шаблона, — `attrs` структурный набор (в нём в том числе `dir`) и
+ * нужен всем визуальным компонентам, а не только тем, чей шаблон подключил
+ * `createAttributesBinding('attrs')`.
+ */
+export function applyAttributeSet(
+	root: HTMLElement,
+	map: TAttributesMap | undefined,
+	previous: readonly string[],
+): string[] {
+	const current: string[] = []
+
+	for (const [name, value] of Object.entries(map ?? {})) {
+		// null означает «атрибут не ставить»
+		if (value === null) continue
+
+		root.setAttribute(name, value)
+		current.push(name)
+	}
+
+	// Пересоздание корня даёт чистый элемент, а вот смена tag на живом корне
+	// меняет состав набора: role/tabindex у нативной button не нужны
+	for (const name of previous) {
+		if (!current.includes(name)) root.removeAttribute(name)
+	}
+
+	return current
+}
+
 export function createAttributesBinding<TInstance extends object>(
 	prop: keyof TInstance & string,
 ): ITemplateBinding<TInstance> {
@@ -26,23 +61,8 @@ export function createAttributesBinding<TInstance extends object>(
 	return bind<TInstance>(prop, ({ root, state }) => {
 		const map = (state[prop] ?? {}) as TAttributesMap
 		const previous = applied.get(root) ?? []
-		const current: string[] = []
 
-		for (const [name, value] of Object.entries(map)) {
-			// null означает «атрибут не ставить»
-			if (value === null) continue
-
-			root.setAttribute(name, value)
-			current.push(name)
-		}
-
-		// Пересоздание корня даёт чистый элемент, а вот смена tag на живом корне
-		// меняет состав набора: role/tabindex у нативной button не нужны
-		for (const name of previous) {
-			if (!current.includes(name)) root.removeAttribute(name)
-		}
-
-		applied.set(root, current)
+		applied.set(root, applyAttributeSet(root, map, previous))
 	})
 }
 

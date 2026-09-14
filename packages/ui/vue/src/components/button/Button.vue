@@ -11,7 +11,6 @@ export default { ...SetupButton }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		v-bind="{ ...attrs, ...aria }"
 	>
 		<slot name="leading"> </slot>

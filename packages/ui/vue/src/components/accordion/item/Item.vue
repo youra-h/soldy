@@ -12,9 +12,8 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		v-bind="{ ...dataset, ...containerAttrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
 			Связка «заголовок ↔ панель» приходит из item-адаптера расширения

@@ -98,12 +98,6 @@ export interface IComponentView<
 	tag: string | object
 	/** Направление письма (`'inherit'` — наследуется от предка) */
 	direction: TDirection
-	/**
-	 * Значение атрибута `dir`, вычисленное из `direction`: `null` для
-	 * `'inherit'` — атрибут не ставится. Аналог `classes`/`aria`: ядро отдаёт
-	 * готовое к разметке значение, адаптер только биндит.
-	 */
-	readonly dir: 'ltr' | 'rtl' | null
 	/** CSS-классы (включая baseClass и динамические) */
 	readonly classes: TClasses
 	/** Атрибуты доступности — живой набор, как `classes` */

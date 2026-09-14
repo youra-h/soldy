@@ -10,8 +10,7 @@ export default { ...SetupSwitch }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
-		v-bind="containerAttrs"
+		v-bind="{ ...attrs, ...containerAttrs }"
 	>
 		<input
 			type="checkbox"

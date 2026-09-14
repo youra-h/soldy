@@ -9,9 +9,8 @@ export default { ...SetupSkeleton }
 		ref="rootElement"
 		:is="tag"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="layout_styles"
-		v-bind="aria"
+		v-bind="{ ...attrs, ...aria }"
 	>
 		<!--
 			Заглушка декоративна: она изображает будущий текст, а не является им.

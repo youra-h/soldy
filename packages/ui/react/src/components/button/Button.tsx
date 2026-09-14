@@ -17,7 +17,7 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, text, aria, attrs, dir } = state
+	const { rendered, visible, tag, classes, text, aria, attrs } = state
 
 	if (!rendered) return null
 
@@ -36,7 +36,6 @@ export function Button(props: ButtonProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
-			dir={dir ?? undefined}
 			{...toAriaProps(attrs)}
 			{...toAriaProps(aria)}
 		>

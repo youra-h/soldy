@@ -18,9 +18,8 @@ export default { ...SetupFrame, inheritAttrs: false }
 			v-if="rendered"
 			v-show="visible"
 			:class="classes"
-			:dir="dir ?? undefined"
 			:style="layout_styles"
-			v-bind="{ ...aria, ...$attrs }"
+			v-bind="{ ...attrs, ...aria, ...$attrs }"
 		>
 			<slot />
 		</component>

@@ -10,8 +10,7 @@ export default { ...SetupInput }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
-		v-bind="containerAttrs"
+		v-bind="{ ...attrs, ...containerAttrs }"
 	>
 		<div v-if="$slots.leading" class="s-input__leading">
 			<slot name="leading" :ctrl="ctrl"> </slot>
