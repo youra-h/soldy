@@ -16,13 +16,6 @@ export class TCollectionEngine<
 > {
 	private readonly _driver: ICollectionStorageDriver<T>
 	public readonly extensions: TExtensions & Record<string, IExtension<T> | undefined>
-	/**
-	 * Та же ссылка, что `extensions`, но без дженерика `TExtensions` в типе.
-	 * `use()` дописывает расширение по строковому ключу — TypeScript не даёт
-	 * писать по индексу в generic-пересечение (TS2862), поэтому запись идёт
-	 * через это поле. Объект один и тот же, второго пути к данным нет.
-	 */
-	private readonly _extensionsWritable: Record<string, IExtension<T> | undefined>
 	public readonly events = new TEvented<
 		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
 	>()
@@ -31,7 +24,6 @@ export class TCollectionEngine<
 		this._driver = new TCollectionStorageDriver(options.storage ?? new TArrayStorage<T>())
 
 		this.extensions = options.extensions
-		this._extensionsWritable = this.extensions
 
 		const ctx = this._createContext()
 
@@ -65,12 +57,14 @@ export class TCollectionEngine<
 	 *
 	 * col.extensions.plain.insert(item)   // типизация работает — известно из конструктора
 	 *
-	 * col.use(new TActivationExtension())
-	 * col.extensions.activation?.activate(item) // дописано позже, тип с `| undefined`
+	 * const activation = new TActivationExtension<Item>()
+	 *
+	 * col.use(activation)
+	 * activation.activate(item) // col.extensions.activation — `IExtension<Item> | undefined`
 	 * ```
 	 */
 	public use(extension: IExtension<T>): void {
-		this._extensionsWritable[extension.name] = extension
+		Object.assign(this.extensions, { [extension.name]: extension })
 
 		const ctx = this._createContext()
 
