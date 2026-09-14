@@ -27,7 +27,7 @@ export class TComponentComponent extends TComponentBase<IComponent> {
 
 	protected createBinding(
 		ctrl: IComponent | undefined,
-		inputs: Record<string, any>,
+		inputs: object,
 	): TBinding<IComponent> {
 		return setupComponent(ctrl, inputs)
 	}

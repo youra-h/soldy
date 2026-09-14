@@ -13,7 +13,7 @@ import { collectEventBindings } from '@soldy/setup'
 export function bindEvents(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-	outputs: Record<string, EventEmitter<any>>,
+	outputs: Record<string, EventEmitter<unknown>>,
 ): () => void {
 	const offs: Array<() => void> = []
 
@@ -22,7 +22,7 @@ export function bindEvents(
 
 		if (!emitter) continue
 
-		const handler = (...args: any[]) => emitter.emit(args[0])
+		const handler = (...args: unknown[]) => emitter.emit(args[0])
 
 		source.on(rawName, handler)
 		offs.push(() => source.off(rawName, handler))

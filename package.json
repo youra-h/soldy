@@ -28,7 +28,7 @@
     "test:solid": "npm run test --workspace=@soldy/ui-solid",
     "test:eslint": "vitest run --root tools/eslint",
     "lint": "eslint . --fix",
-    "lint:ci": "eslint packages/core packages/accessor packages/setup packages/plugins packages/ui/react packages/ui/solid packages/ui/svelte tools eslint.config.ts",
+    "lint:ci": "eslint packages/core packages/accessor packages/setup packages/plugins packages/ui/react packages/ui/solid packages/ui/svelte packages/ui/angular tools eslint.config.ts",
     "format": "prettier --write .",
     "test:webc": "npm run test --workspace=@soldy/ui-webc",
     "test:playground": "npm run test --workspace=@soldy/playground-shared && npm run test --workspace=@soldy/playground-vue",

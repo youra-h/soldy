@@ -9,10 +9,11 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import type { IComponentDescriptor } from '@soldy/setup'
 
 export type TManifest = {
 	name: string
-	descriptor: () => any
+	descriptor: () => IComponentDescriptor
 }
 
 export async function collectManifests(): Promise<TManifest[]> {

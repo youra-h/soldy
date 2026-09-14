@@ -1,5 +1,5 @@
 import { createAdapterContext, ComponentDescriptor } from '@soldy/setup'
-import type { IComponent, IComponentProps } from '@soldy/core'
+import type { IComponent } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
@@ -11,9 +11,9 @@ import type { TBinding } from '../../adapter'
  */
 export function setupComponent(
 	ctrl: IComponent | undefined,
-	props: Partial<IComponentProps>,
+	props: object,
 ): TBinding<IComponent> {
 	const adapter = createAdapterContext(ComponentDescriptor(), { ctrl, props })
 
-	return useAdapter<IComponent>(adapter)
+	return useAdapter(adapter)
 }

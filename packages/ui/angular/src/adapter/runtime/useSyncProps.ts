@@ -11,7 +11,7 @@
 
 import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/accessor'
 
-export type TAngularState = Record<string, any>
+export type TAngularState = Record<string, unknown>
 
 /** Читает начальное состояние из accessor (только props с триггерами). */
 export function buildInitialState(
@@ -33,7 +33,7 @@ export function buildInitialState(
 export function bindOutput(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-	onUpdate: (name: string, value: any) => void,
+	onUpdate: (name: string, value: unknown) => void,
 ): () => void {
 	const offs: Array<() => void> = []
 
@@ -64,11 +64,11 @@ export function bindOutput(
 export function bindInput(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-	inputs: Record<string, any>,
+	inputs: object,
 ): void {
 	for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 		const exportName = inspector.getExportPropName(prop)
-		const value = inputs[exportName] ?? inputs[prop.name.name]
+		const value: unknown = Reflect.get(inputs, exportName) ?? Reflect.get(inputs, prop.name.name)
 
 		if (value === undefined) continue
 

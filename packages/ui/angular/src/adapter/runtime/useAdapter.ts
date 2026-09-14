@@ -14,9 +14,9 @@
  * Сигнал уведомляет шаблон сам и одинаково работает в zone- и zoneless-режиме.
  */
 
-import { signal, type EventEmitter, type Signal } from '@angular/core'
-import type { IAdapterContext } from '@soldy/setup'
-import { TPluginsBindingExtension } from '@soldy/setup'
+import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
+import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common/createInspector'
@@ -24,11 +24,12 @@ import { buildInitialState, bindOutput, bindInput } from './useSyncProps'
 import { bindEvents } from './useSyncEvents'
 
 export type TBinding<TInstance = any> = {
-	readonly state: Signal<Record<string, any>>
+	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
+	readonly state: Signal<TInstanceState<TInstance>>
 	readonly ctrl: TInstance
 	readonly plugins: IPluginBundle | null
-	syncInputs(inputs: Record<string, any>): void
-	syncEvents(outputs: Record<string, EventEmitter<any>>): () => void
+	syncInputs(inputs: object): void
+	syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void
 	bindElement(el: HTMLElement | null): void
 	destroy(): void
 }
@@ -37,23 +38,23 @@ export function useAdapter<TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
 ): TBinding<TInstance> {
 	const inspector = createInspector(adapter.accessor)
-	const state = signal<Record<string, any>>(buildInitialState(adapter.accessor, inspector))
+	const values = signal<Record<string, unknown>>(buildInitialState(adapter.accessor, inspector))
 
 	const unbindOutput = bindOutput(adapter.accessor, inspector, (name, value) => {
-		state.update((prev) => (Object.is(prev[name], value) ? prev : { ...prev, [name]: value }))
+		values.update((prev) => (Object.is(prev[name], value) ? prev : { ...prev, [name]: value }))
 	})
 
 	return {
-		state,
+		state: computed(() => toInstanceState<TInstance>(values())),
 
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
-		syncInputs(inputs: Record<string, any>): void {
+		syncInputs(inputs: object): void {
 			bindInput(adapter.accessor, inspector, inputs)
 		},
 
-		syncEvents(outputs: Record<string, EventEmitter<any>>): () => void {
+		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {
 			return bindEvents(adapter.accessor, inspector, outputs)
 		},
 

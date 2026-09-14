@@ -35,6 +35,7 @@ import {
 	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy/core'
+import type { TInstanceState } from '@soldy/setup'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
 
@@ -47,7 +48,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 	protected abstract createBinding(
 		ctrl: TInstance | undefined,
-		inputs: Record<string, any>,
+		inputs: object,
 	): TBinding<TInstance>
 
 	private readonly _inputNames: readonly string[]
@@ -56,7 +57,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	private _eventsCleanup?: () => void
 
 	/** Состояние Core. Сигнал, т.к. binding появляется только в ngOnInit. */
-	readonly state = computed<Record<string, any>>(() => this._binding()?.state() ?? {})
+	readonly state = computed<TInstanceState<TInstance>>(() => this._binding()?.state() ?? {})
 
 	/** Объявленные потребителем `<ng-template slot="...">`. */
 	private readonly _slots = contentChildren(SlotDirective)
@@ -76,7 +77,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		this._outputNames = outputNames
 
 		for (const name of outputNames) {
-			;(this as any)[name] = new EventEmitter()
+			Reflect.set(this, name, new EventEmitter())
 		}
 	}
 
@@ -93,7 +94,7 @@ export abstract class TComponentBase<TInstance extends IEntity>
 
 		if (!binding) return
 
-		const inputs: Record<string, any> = {}
+		const inputs: Record<string, unknown> = {}
 
 		for (const key of Object.keys(changes)) {
 			inputs[key] = changes[key].currentValue
@@ -107,11 +108,11 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		this._binding()?.destroy()
 	}
 
-	protected collectInputs(): Record<string, any> {
-		const inputs: Record<string, any> = {}
+	protected collectInputs(): Record<string, unknown> {
+		const inputs: Record<string, unknown> = {}
 
 		for (const name of this._inputNames) {
-			const value = (this as any)[name]
+			const value: unknown = Reflect.get(this, name)
 			if (value !== undefined) inputs[name] = value
 		}
 
@@ -143,11 +144,13 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		})
 	}
 
-	private _collectOutputs(): Record<string, EventEmitter<any>> {
-		const outputs: Record<string, EventEmitter<any>> = {}
+	private _collectOutputs(): Record<string, EventEmitter<unknown>> {
+		const outputs: Record<string, EventEmitter<unknown>> = {}
 
 		for (const name of this._outputNames) {
-			outputs[name] = (this as any)[name]
+			const output: unknown = Reflect.get(this, name)
+
+			if (output instanceof EventEmitter) outputs[name] = output
 		}
 
 		return outputs

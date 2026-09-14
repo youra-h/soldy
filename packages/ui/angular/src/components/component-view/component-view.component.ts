@@ -36,7 +36,7 @@ export class TComponentViewComponent
 	implements AfterViewInit
 {
 	@HostBinding('class') get hostClass(): string {
-		return (this.state()['classes'] as string[] | undefined)?.join(' ') ?? ''
+		return this.state().classes?.join(' ') ?? ''
 	}
 
 	@HostBinding('style.display') get hostDisplay(): string | null {
@@ -47,7 +47,7 @@ export class TComponentViewComponent
 
 	/** dir вычисляет ядро: null для 'inherit' убирает атрибут (наследование). */
 	@HostBinding('attr.dir') get hostDir(): string | null {
-		return (this.state()['dir'] as 'ltr' | 'rtl' | null) ?? null
+		return this.state().dir ?? null
 	}
 
 	private readonly _elementRef = inject(ElementRef)
@@ -58,7 +58,7 @@ export class TComponentViewComponent
 
 	protected createBinding(
 		ctrl: IComponentView | undefined,
-		inputs: Record<string, any>,
+		inputs: object,
 	): TBinding<IComponentView> {
 		return setupComponentView(ctrl, inputs)
 	}
