@@ -68,6 +68,50 @@ export default defineConfigWithVueTs(
 		},
 	},
 
+	// Приведения, которые прячут несовпавший контракт, в ядре запрещены целиком
+	// (см. AGENTS.md, «Никаких костылей»). `as any` ловит soldy/no-explicit-any,
+	// `@ts-ignore`/`@ts-nocheck` — ban-ts-comment из recommended. Что блок
+	// действительно включён на путях ядра, проверяет tools/eslint/__tests__.
+	{
+		name: 'soldy/core-no-casts',
+		files: ['packages/core/**/*.ts'],
+		rules: {
+			'@typescript-eslint/consistent-type-assertions': [
+				'error',
+				{ assertionStyle: 'as', objectLiteralTypeAssertions: 'allow' },
+			],
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: "TSAsExpression[typeAnnotation.type='TSNeverKeyword']",
+					message:
+						'`as never` прячет несовпавший контракт — почините тип (AGENTS.md, «Никаких костылей»).',
+				},
+				{
+					selector: "TSAsExpression > TSAsExpression[typeAnnotation.type='TSUnknownKeyword']",
+					message:
+						'`as unknown as X` прячет несовпавший контракт — почините тип (AGENTS.md, «Никаких костылей»).',
+				},
+				{
+					selector: "TSAsExpression[typeAnnotation.typeName.name='TEvented']",
+					message:
+						'`as TEvented<…>` — свои события класс шлёт через TEventSink (AGENTS.md, «События item-адаптера»).',
+				},
+			],
+		},
+	},
+
+	// В тестах ядра `any` запрещён в любой позиции: инвариантных карт событий в
+	// констрейнтах там нет, а любой `any` глушит проверку, ради которой тест.
+	{
+		name: 'soldy/core-tests-no-any',
+		files: ['packages/core/__tests__/**/*.ts'],
+		rules: {
+			'soldy/no-explicit-any': 'off',
+			'@typescript-eslint/no-explicit-any': 'error',
+		},
+	},
+
 	{
 		name: 'soldy/ui-component-names',
 		files: ['packages/ui/**/*.vue'],
