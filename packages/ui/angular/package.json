@@ -8,13 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "ng serve",
-    "predev": "npm run generate",
-    "start": "ng serve",
-    "prestart": "npm run generate",
-    "build": "ng build",
     "generate": "tsx src/codegen/generate.ts",
-    "prebuild": "npm run generate",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {

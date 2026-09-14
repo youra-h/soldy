@@ -101,11 +101,8 @@ jobs:
           npm run generate --workspace=@soldy/ui-angular
           git diff --exit-code packages/ui/angular/src/generated
 
-      # Сборки Angular здесь нет намеренно: `ng build` собирал демо-приложение
-      # (`angular.json` → `_demo/index.html`), а `_demo` лежал в .gitignore и в
-      # CI не попадал никогда — шаг не мог работать. Демо удалены, им на смену
-      # пришёл packages/playground; когда Angular дорастёт до своего стенда,
-      # сборка вернётся сюда уже настоящей.
+      # Сборки Angular здесь нет намеренно: у пакета пока нет своего стенда в
+      # packages/playground. Когда он появится, сборка вернётся сюда.
 
       - name: Сборка стенда Vue
         run: |

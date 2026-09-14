@@ -1,11 +1,4 @@
-import {
-	Component,
-	ChangeDetectionStrategy,
-	ElementRef,
-	AfterViewInit,
-	HostBinding,
-	inject,
-} from '@angular/core'
+import { Component, ChangeDetectionStrategy, HostBinding } from '@angular/core'
 import type { IComponentView } from '@soldy/core'
 import type { TBinding } from '../../adapter'
 import { TComponentBase } from '../../adapter'
@@ -18,7 +11,8 @@ import { setupComponentView } from './setup.component'
  * inputs/outputs — статические константы из generated/component-view.metadata.ts.
  * Классы и видимость применяются к хост-элементу через @HostBinding.
  *
- * Хост существует всё время жизни компонента, поэтому DOM-биндинг разовый —
+ * Хост существует всё время жизни компонента, поэтому привязку к
+ * TElementPlugin берёт на себя TComponentBase со стратегией `'host'` —
  * в отличие от Button, где корень живёт внутри @if и пересоздаётся.
  *
  * Selector: <soldy-component-view>
@@ -31,10 +25,7 @@ import { setupComponentView } from './setup.component'
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class TComponentViewComponent
-	extends TComponentBase<IComponentView>
-	implements AfterViewInit
-{
+export class TComponentViewComponent extends TComponentBase<IComponentView> {
 	@HostBinding('class') get hostClass(): string {
 		return this.state().classes?.join(' ') ?? ''
 	}
@@ -50,10 +41,8 @@ export class TComponentViewComponent
 		return this.state().dir ?? null
 	}
 
-	private readonly _elementRef = inject(ElementRef)
-
 	constructor() {
-		super(ComponentViewInputNames, ComponentViewOutputNames)
+		super(ComponentViewInputNames, ComponentViewOutputNames, 'host')
 	}
 
 	protected createBinding(
@@ -61,9 +50,5 @@ export class TComponentViewComponent
 		inputs: object,
 	): TBinding<IComponentView> {
 		return setupComponentView(ctrl, inputs)
-	}
-
-	ngAfterViewInit(): void {
-		this.bindElement(this._elementRef.nativeElement)
 	}
 }

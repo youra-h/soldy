@@ -6,26 +6,6 @@
 
 	const binding = setupButton(() => props)
 	const state = binding.state
-
-	/**
-	 * Атрибуты собираются в один объект: у `<svelte:element>` тип атрибутов
-	 * обобщённый, поэтому `disabled` нельзя поставить отдельным атрибутом —
-	 * он уходит через спред.
-	 */
-	const attrs = $derived.by(() => {
-		const rest = binding.forwardProps
-		const isNativeButton = state.tag === 'button'
-
-		return {
-			...rest,
-			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
-			dir: state.dir ?? undefined,
-			...(isNativeButton ? { disabled: state.disabled } : {}),
-			// aria вычисляет ядро: role, tabindex, aria-disabled.
-			// null в значении Svelte понимает как «атрибут не ставить».
-			...state.aria,
-		}
-	})
 </script>
 
 <!--
@@ -40,7 +20,11 @@
 {#if state.rendered}
 	<svelte:element
 		this={state.tag as string}
-		{...attrs}
+		{...binding.forwardProps}
+		class={[state.classes?.join(' '), binding.forwardProps.class].filter(Boolean).join(' ')}
+		dir={state.dir ?? undefined}
+		{...state.tag === 'button' ? { disabled: state.disabled } : {}}
+		{...state.aria}
 		{@attach binding.attachElement}
 		style:display={state.visible ? null : 'none'}
 	>

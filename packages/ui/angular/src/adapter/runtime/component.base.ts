@@ -3,7 +3,8 @@
  *
  * Выносит общий жизненный цикл, чтобы убрать дублирование между компонентами:
  *
- * - constructor: создаёт EventEmitter'ы для всех имён из outputNames
+ * - constructor: создаёт EventEmitter'ы для всех имён из outputNames и
+ *   связывает корневой DOM-элемент с TElementPlugin (см. `_bindRoot`)
  * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
  * - ngOnInit: создаёт binding (createBinding) и подписывает outputs
  * - ngOnChanges: пробрасывает изменённые inputs в Core (syncInputs)
@@ -11,7 +12,10 @@
  *
  * Подкласс обязан реализовать:
  * - createBinding(ctrl, inputs): создаёт TBinding через setup-функцию
- * - super(inputNames, outputNames) в конструкторе: имена инпутов/аутпутов
+ * - super(inputNames, outputNames, rootStrategy?) в конструкторе: имена
+ *   инпутов/аутпутов и стратегия привязки корня — `'view'` (по умолчанию),
+ *   когда корень живёт внутри `@if`/`@else` и шаблон помечает его `#root`, или
+ *   `'host'`, когда корень — сам хост-элемент компонента.
  *
  * inputNames и outputNames передаются через конструктор (а не getter), т.к.
  * они нужны уже в конструкторе (создание EventEmitter'ов), а TS запрещает
@@ -31,13 +35,25 @@ import {
 	computed,
 	contentChildren,
 	effect,
+	inject,
 	signal,
-	type Signal,
+	viewChild,
 } from '@angular/core'
 import type { IEntity } from '@soldy/core'
 import type { TInstanceState } from '@soldy/setup'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
+
+/**
+ * Стратегия привязки корневого DOM-элемента к TElementPlugin.
+ *
+ * - `'view'` — корень существует не всегда (живёт внутри `@if`, может
+ *   пересоздаваться при смене `tag`): сигнальный `viewChild('root')`
+ *   переустанавливает связь при каждой пересоздании узла.
+ * - `'host'` — корень существует всё время жизни компонента: привязка
+ *   разовая, через инжектированный `ElementRef` хоста.
+ */
+export type TRootStrategy = 'view' | 'host'
 
 @Directive({ standalone: true })
 export abstract class TComponentBase<TInstance extends IEntity>
@@ -72,13 +88,19 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		return this._slots().find((slot) => slot.name === name)?.template ?? null
 	}
 
-	constructor(inputNames: readonly string[], outputNames: readonly string[]) {
+	constructor(
+		inputNames: readonly string[],
+		outputNames: readonly string[],
+		rootStrategy: TRootStrategy = 'view',
+	) {
 		this._inputNames = inputNames
 		this._outputNames = outputNames
 
 		for (const name of outputNames) {
 			Reflect.set(this, name, new EventEmitter())
 		}
+
+		this._bindRoot(rootStrategy)
 	}
 
 	ngOnInit(): void {
@@ -119,24 +141,29 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		return inputs
 	}
 
-	/** Разовая привязка — для компонентов, чей корень существует всегда (хост). */
-	protected bindElement(el: HTMLElement | null): void {
-		this._binding()?.bindElement(el)
-	}
-
 	/**
-	 * Связывает DOM-элемент с TElementPlugin и переустанавливает связь, когда
-	 * элемент пересоздаётся — при переключении `rendered` или смене `tag`
-	 * Angular уничтожает старую ноду и создаёт новую.
-	 *
-	 * Принимает сигнальный viewChild(), а не ElementRef: обычный @ViewChild
-	 * читается один раз в ngAfterViewInit и после пересоздания указывает
-	 * на мёртвый узел. Вызывать из конструктора подкласса (нужен injection context).
+	 * Связывает корневой DOM-элемент с TElementPlugin по выбранной стратегии.
+	 * Вызывается из конструктора — обеим стратегиям нужен injection context.
 	 */
-	protected bindElementFrom(element: Signal<ElementRef | undefined>): void {
+	private _bindRoot(strategy: TRootStrategy): void {
+		if (strategy === 'host') {
+			const elementRef = inject(ElementRef)
+
+			effect(() => {
+				this._binding()?.bindElement(elementRef.nativeElement)
+			})
+
+			return
+		}
+
+		// Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
+		// один раз в ngAfterViewInit и после пересоздания узла (смена `tag`,
+		// переключение `rendered`) указывает на мёртвый элемент.
+		const root = viewChild('root', { read: ElementRef })
+
 		effect(() => {
 			const binding = this._binding()
-			const ref = element()
+			const ref = root()
 
 			if (!binding) return
 

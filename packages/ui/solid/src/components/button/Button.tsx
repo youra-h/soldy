@@ -1,4 +1,4 @@
-import { Show, children, createMemo, type JSX } from 'solid-js'
+import { Show, children, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { renderSlot } from '../../adapter'
 import { setupButton } from './setup.component'
@@ -20,25 +20,25 @@ export function Button(props: ButtonProps): JSX.Element {
 	const resolved = children(() => renderSlot(props.children, { text: state.text ?? '' }))
 	const trailing = children(() => renderSlot(props.trailing))
 
-	const attrs = createMemo(() => {
-		const rest = binding.forwardProps()
-		const isNativeButton = state.tag === 'button'
-
-		return {
-			...rest,
-			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
-			style: { ...(rest.style as object), display: state.visible ? undefined : 'none' },
-			dir: state.dir ?? undefined,
-			...(isNativeButton ? { disabled: state.disabled } : {}),
-			// aria вычисляет ядро: role, tabindex, aria-disabled.
-			// null в значении Solid понимает как «атрибут не ставить».
-			...state.aria,
-		}
-	})
-
 	return (
 		<Show when={state.rendered}>
-			<Dynamic component={state.tag as string} {...attrs()} ref={binding.ref}>
+			<Dynamic
+				component={state.tag as string}
+				{...binding.forwardProps()}
+				class={[state.classes?.join(' '), binding.forwardProps().class]
+					.filter(Boolean)
+					.join(' ')}
+				style={{
+					...(binding.forwardProps().style as object),
+					display: state.visible ? undefined : 'none',
+				}}
+				dir={state.dir ?? undefined}
+				disabled={state.tag === 'button' ? state.disabled : undefined}
+				// aria вычисляет ядро: role, tabindex, aria-disabled.
+				// null в значении Solid понимает как «атрибут не ставить».
+				{...state.aria}
+				ref={binding.ref}
+			>
 				{leading()}
 				<span class="s-button__text">
 					<Show when={resolved()} fallback={state.text}>
