@@ -7,7 +7,7 @@ import type { IEntity } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type {
 	IComponentDescriptor,
-	DescriptorProps,
+	DescriptorAllProps,
 	DescriptorSlots,
 	DescriptorAllEvents,
 	TCallbackEventProps,
@@ -36,15 +36,17 @@ export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescr
  * Слоты компонента из дескриптора: `default` становится `children`,
  * остальные сохраняют имена. Слот со scope принимает и функцию.
  */
-export type SlotProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
-	TSlotProps<DescriptorSlots<TDescriptorFn>, JSX.Element>
+export type SlotProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> = TSlotProps<
+	DescriptorSlots<TDescriptorFn>,
+	JSX.Element
+>
 
 /** Props headless-слоя: core props + события + слоты + служебные поля. */
 export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = TSolidComponentProps<DescriptorProps<TDescriptorFn>, TInstance> &
+> = TSolidComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance> &
 	TEvents &
 	SlotProps<TDescriptorFn>
 
@@ -54,4 +56,4 @@ export type UseDomProps<
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = UseProps<TDescriptorFn, TInstance, TEvents> &
-	Omit<JSX.HTMLAttributes<HTMLElement>, keyof DescriptorProps<TDescriptorFn> | 'children'>
+	Omit<JSX.HTMLAttributes<HTMLElement>, keyof DescriptorAllProps<TDescriptorFn> | 'children'>

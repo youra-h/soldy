@@ -28,3 +28,16 @@ export type TAnchorPluginEvents = TPluginEvents & {
 	/** change:offset */
 	'change:offset': (value: number) => void
 }
+
+/**
+ * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
+ *
+ * Неймспейс (`anchor_anchor`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
+ */
+export interface IAnchorPluginProps {
+	anchor?: HTMLElement | null
+	placement?: TFramePlacement
+	matchWidth?: boolean
+	offset?: number
+}

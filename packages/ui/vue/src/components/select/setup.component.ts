@@ -1,4 +1,4 @@
-import { toRaw, ref } from 'vue'
+import { toRaw, ref, computed } from 'vue'
 import {
 	createAdapterContext,
 	TCollectionExtension,
@@ -79,6 +79,13 @@ export default {
 			 */
 			field: adapter.instance.field,
 			fieldElement: ref<HTMLElement | null>(null),
+			/**
+			 * Якорь панели. `rootElement` из адаптера типизирован общим `Element`
+			 * (он же обслуживает Icon с динамическим `<component :is>`), а корень
+			 * Select — всегда `<div>`, поэтому здесь можно сузить тип для
+			 * `anchor_anchor` (ждёт `HTMLElement | null`).
+			 */
+			anchorElement: computed(() => (refs.rootElement?.value as HTMLElement | null) ?? null),
 			clearIconTag: useIcon('close'),
 			arrowIconTag: useIcon('arrowDown'),
 			...useSplitAttrs(),

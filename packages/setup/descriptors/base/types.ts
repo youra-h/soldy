@@ -11,13 +11,17 @@ import type {
 	TName,
 } from '@soldy/accessor'
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+import type { TUnderscorePropName } from '../../common'
 
 /** Определение плагина в составе дескриптора. */
 export interface IPluginDefinition<
 	N extends string | undefined = string | undefined,
-	// Вытаскивается через infer в TPluginEventsUnion — линтер сквозь infer не видит.
+	// Вытаскиваются через infer в TPluginEventsFrom/TPluginPropsFrom — линтер
+	// сквозь infer их не видит.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TEvents extends object = object,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	TProps extends object = object,
 > {
 	ctor: IPluginConstructor<any, any, any>
 	/** Нормализованные props из contribution */
@@ -136,3 +140,27 @@ export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extend
 
 /** Все события дескриптора (свои + плагинные, namespaced): DescriptorAllEvents<typeof ButtonDescriptor> → TButtonEvents & { 'element:ready': ... } */
 export type DescriptorAllEvents<T> = DescriptorEvents<T> & TPluginEventsFrom<DescriptorPlugins<T>>
+
+/** NamespacedProps<{ label: ... }, 'aria'> → { aria_label: ... } (naming — как в underscorePropNaming) */
+type NamespacedProps<T extends object, N extends string> = {
+	[K in keyof T as K extends string ? TUnderscorePropName<N, K> : never]: T[K]
+}
+
+/** Пропсы всех плагинов дескриптора (namespaced): { aria_label?: ..., anchor_placement?: ... } */
+export type TPluginPropsFrom<P extends readonly IPluginDefinition[]> = P extends readonly [
+	infer Head,
+	...infer Tail,
+]
+	? Head extends IPluginDefinition<infer N, any, infer PP>
+		? N extends string
+			? Tail extends readonly IPluginDefinition[]
+				? NamespacedProps<PP, N> & TPluginPropsFrom<Tail>
+				: NamespacedProps<PP, N>
+			: Tail extends readonly IPluginDefinition[]
+				? TPluginPropsFrom<Tail>
+				: object
+		: object
+	: object
+
+/** Все пропсы дескриптора (свои + плагинные, namespaced): DescriptorAllProps<typeof ButtonDescriptor> → IButtonProps & { aria_label?: ... } */
+export type DescriptorAllProps<T> = DescriptorProps<T> & TPluginPropsFrom<DescriptorPlugins<T>>

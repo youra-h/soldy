@@ -7,7 +7,7 @@ import type { IEntity } from '@soldy/core'
 import type { IPluginBundle } from '@soldy/plugins'
 import type {
 	IComponentDescriptor,
-	DescriptorProps,
+	DescriptorAllProps,
 	DescriptorSlots,
 	DescriptorAllEvents,
 	TCallbackEventProps,
@@ -23,10 +23,7 @@ import type {
  * `children` здесь нет: слот по умолчанию объявлен в контракте компонента
  * наравне с остальными и приходит из SlotProps.
  */
-export type TReactComponentProps<
-	TCoreProps,
-	TInstance extends IEntity = IEntity,
-> = TCoreProps & {
+export type TReactComponentProps<TCoreProps, TInstance extends IEntity = IEntity> = TCoreProps & {
 	ctrl?: TInstance
 	plugins?: IPluginBundle
 }
@@ -39,15 +36,17 @@ export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescr
  * Слоты компонента из дескриптора: `default` становится `children`,
  * остальные сохраняют имена. Слот со scope принимает и функцию.
  */
-export type SlotProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
-	TSlotProps<DescriptorSlots<TDescriptorFn>, ReactNode>
+export type SlotProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> = TSlotProps<
+	DescriptorSlots<TDescriptorFn>,
+	ReactNode
+>
 
 /** Props headless-компонента: core props + события + слоты + служебные поля. */
 export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = TReactComponentProps<DescriptorProps<TDescriptorFn>, TInstance> &
+> = TReactComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance> &
 	TEvents &
 	SlotProps<TDescriptorFn>
 
@@ -62,4 +61,4 @@ export type UseDomProps<
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = UseProps<TDescriptorFn, TInstance, TEvents> &
-	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorProps<TDescriptorFn> | 'children'>
+	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorAllProps<TDescriptorFn> | 'children'>

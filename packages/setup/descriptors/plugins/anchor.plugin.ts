@@ -1,6 +1,6 @@
 import { definePlugin } from '../base'
 import { TAnchorPlugin } from '@soldy/plugins'
-import type { IAnchorPluginOptions, TAnchorPluginEvents } from '@soldy/plugins'
+import type { IAnchorPluginOptions, TAnchorPluginEvents, IAnchorPluginProps } from '@soldy/plugins'
 import { AnchorContribution } from '../../contributions'
 
 /**
@@ -13,7 +13,7 @@ import { AnchorContribution } from '../../contributions'
  * одним пропом — иначе пришлось бы доставать плагин из bundle.
  */
 export const AnchorPluginDescriptor = (options?: IAnchorPluginOptions) =>
-	definePlugin<'anchor', TAnchorPluginEvents>({
+	definePlugin<'anchor', TAnchorPluginEvents, IAnchorPluginProps>({
 		ctor: TAnchorPlugin,
 		namespace: 'anchor',
 		contribution: AnchorContribution(),

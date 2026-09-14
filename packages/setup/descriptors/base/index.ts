@@ -14,4 +14,6 @@ export type {
 	DescriptorAllEvents,
 	NamespacedEvents,
 	TPluginEventsFrom,
+	DescriptorAllProps,
+	TPluginPropsFrom,
 } from './types'

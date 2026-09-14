@@ -7,7 +7,6 @@ export {
 export { DismissContribution } from './dismiss'
 export type { TDismissPluginProps } from './dismiss'
 export { AriaContribution } from './aria'
-export type { TAriaPluginProps } from './aria'
 export { ActionContribution } from './action'
 export { ElementContribution } from './element'
 export * from './icon'

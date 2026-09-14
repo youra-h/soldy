@@ -1,7 +1,7 @@
 import { type IPluginBundle } from '@soldy/plugins'
 import type { IEntity } from '@soldy/core'
 import type { UnwrapNestedRefs } from 'vue'
-import type { IComponentDescriptor, DescriptorProps } from '@soldy/setup'
+import type { IComponentDescriptor, DescriptorAllProps } from '@soldy/setup'
 
 export type TEmits = readonly string[]
 export type TProps = Readonly<Record<string, any>>
@@ -15,4 +15,4 @@ export type TBaseComponentProps<TCoreProps, TInstance extends IEntity = IEntity>
 export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
-> = TBaseComponentProps<DescriptorProps<TDescriptorFn>, TInstance>
+> = TBaseComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance>

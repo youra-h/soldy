@@ -4,19 +4,6 @@ import type { TFramePlacement } from '@soldy/plugins'
 import { defineType } from '../../defineType'
 
 /**
- * Пропсы плагина в разметке — с неймспейсом.
- *
- * Нужен потому, что типы плагинных пропсов до шаблона не доходят:
- * `DescriptorProps` выводит только собственные пропсы компонента.
- */
-export type TAnchorPluginProps = {
-	anchor_anchor?: HTMLElement | null
-	anchor_placement?: TFramePlacement
-	anchor_matchWidth?: boolean
-	anchor_offset?: number
-}
-
-/**
  * Якорь пишется снаружи: элемент, у которого встаёт панель, знает только
  * разметка. Раньше привязку можно было задать лишь достав плагин из bundle —
  * то есть выпадающую панель нельзя было собрать декларативно.
