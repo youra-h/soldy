@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
-import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload, TAriaAttributes } from '../../../../common'
+import { TStateUnit } from '../../../../common'
+import type { TValuePayload, TAriaAttributes, TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from './types'
 
 /**
@@ -54,12 +54,12 @@ export default class TTagsItem<
 			})
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TTagsItemEvents>).emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
 
 		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
 			this._classes.toggle(`--closable`, !!payload.newValue)
-			;(this.events as TEvented<TTagsItemEvents>).emit('change:closable', payload.newValue)
+			this._sink.emit('change:closable', payload.newValue)
 		})
 
 		this._classes.toggle(`--closable`, !!this._states.closable.value)
@@ -76,6 +76,14 @@ export default class TTagsItem<
 				this._states.closable.value = customProps.closable ?? ctor.defaultValues.closable
 			}
 		})
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TTagsItemEvents> {
+		return this.events
 	}
 
 	get text(): string {
@@ -108,7 +116,7 @@ export default class TTagsItem<
 		if (this._closeLabel === value) return
 
 		this._closeLabel = value
-		;(this.events as TEvented<TTagsItemEvents>).emit('change:closeLabel', value)
+		this._sink.emit('change:closeLabel', value)
 	}
 
 	/**

@@ -1,6 +1,5 @@
 import { TControl } from '../../base/control'
 import type { IComponentOptions } from '../../base/component'
-import { TEvented } from '../../../common'
 import type {
 	IAccordion,
 	IAccordionProps,
@@ -46,7 +45,7 @@ export class TAccordion
 	set view(value: TAccordionView) {
 		if (this._view !== value) {
 			this._applyView(value, this._view)
-			;(this.events as TEvented<TAccordionEvents>).emit('change:view', value)
+			this.events.emit('change:view', value)
 		}
 	}
 

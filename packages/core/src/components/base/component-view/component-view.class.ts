@@ -15,8 +15,7 @@ import {
 	TVisibilityState,
 	TActionEvent,
 } from '../../../common'
-import type { IVisibilityState, TValuePayload } from '../../../common'
-import { TEvented } from '../../../common'
+import type { IVisibilityState, TValuePayload, TEventSink } from '../../../common'
 
 /**
  * Визуальный слой: всё, что связано с отображением.
@@ -71,17 +70,11 @@ export default class TComponentView<
 			(new TVisibilityState({ initial: visible }) as TStates['visible'])
 
 		this._states.rendered.events.on('change', (payload: TValuePayload<boolean>) => {
-			;(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:rendered',
-				payload.newValue,
-			)
+			this._sink.emit('change:rendered', payload.newValue)
 			this._emitPresent()
 		})
 		this._states.visible.events.on('change', (payload: TValuePayload<boolean>) => {
-			;(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:visible',
-				payload.newValue,
-			)
+			this._sink.emit('change:visible', payload.newValue)
 			this._emitPresent()
 		})
 
@@ -92,29 +85,26 @@ export default class TComponentView<
 		this._classes = new TClasses(ctor.baseClass)
 
 		this._classes.events.on('change', () =>
-			(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:classes',
-				this._classes.toArray(),
-			),
+			this._sink.emit('change:classes', this._classes.toArray()),
 		)
 
 		this._aria = new TAria()
 
-		this._aria.events.on('change', () =>
-			(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:aria',
-				this._aria.toObject(),
-			),
-		)
+		this._aria.events.on('change', () => this._sink.emit('change:aria', this._aria.toObject()))
 
 		this._dataset = new TDataset()
 
 		this._dataset.events.on('change', () =>
-			(this.events as TEvented<TComponentViewEvents>).emit(
-				'change:dataset',
-				this._dataset.toObject(),
-			),
+			this._sink.emit('change:dataset', this._dataset.toObject()),
 		)
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TComponentViewEvents> {
+		return this.events
 	}
 
 	get present(): boolean {
@@ -122,7 +112,7 @@ export default class TComponentView<
 	}
 
 	private _emitPresent(): void {
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:present', this.present)
+		this._sink.emit('change:present', this.present)
 	}
 
 	get rendered(): boolean {
@@ -152,13 +142,13 @@ export default class TComponentView<
 		if (!this.beforeShow()) return
 
 		const e = new TActionEvent()
-		;(this.events as TEvented<TComponentViewEvents>).emit('show:before', e)
+		this._sink.emit('show:before', e)
 		if (e.defaultPrevented) return
 		;(this._states.visible as IVisibilityState).show()
-		;(this.events as TEvented<TComponentViewEvents>).emit('show')
+		this._sink.emit('show')
 
 		this.afterShow()
-		;(this.events as TEvented<TComponentViewEvents>).emit('show:after')
+		this._sink.emit('show:after')
 	}
 
 	hide(): void {
@@ -167,13 +157,13 @@ export default class TComponentView<
 		if (!this.beforeHide()) return
 
 		const e = new TActionEvent()
-		;(this.events as TEvented<TComponentViewEvents>).emit('hide:before', e)
+		this._sink.emit('hide:before', e)
 		if (e.defaultPrevented) return
 		;(this._states.visible as IVisibilityState).hide()
-		;(this.events as TEvented<TComponentViewEvents>).emit('hide')
+		this._sink.emit('hide')
 
 		this.afterHide()
-		;(this.events as TEvented<TComponentViewEvents>).emit('hide:after')
+		this._sink.emit('hide:after')
 	}
 
 	protected beforeShow(): boolean {
@@ -230,7 +220,7 @@ export default class TComponentView<
 		if (this._tag === value) return
 
 		this._tag = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:tag', value)
+		this._sink.emit('change:tag', value)
 	}
 
 	get direction(): TDirection {
@@ -240,7 +230,7 @@ export default class TComponentView<
 		if (this._direction === value) return
 
 		this._direction = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('change:direction', value)
+		this._sink.emit('change:direction', value)
 	}
 
 	/**
@@ -259,7 +249,7 @@ export default class TComponentView<
 		if (this._ready === value) return
 
 		this._ready = value
-		;(this.events as TEvented<TComponentViewEvents>).emit('ready', value)
+		this._sink.emit('ready', value)
 	}
 
 	getProps(): TProps {

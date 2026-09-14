@@ -1,6 +1,7 @@
 import { TEvented } from '../event/evented'
 import type { TStateUnitValueEvents, IStateUnit } from './types'
 import type { TValuePayload } from '../../common'
+import type { TEventSink } from '../event/types'
 
 /**
  * Универсальная единица состояния со значением.
@@ -41,10 +42,17 @@ export class TStateUnit<
 	 */
 	notify(): void {
 		const resolved = this.value
-		;(this.events as TEvented<TStateUnitValueEvents<TValue>>).emit('change', {
-			newValue: resolved,
-			oldValue: resolved,
-		} as TValuePayload<TValue> as any)
+		const payload: TValuePayload<TValue> = { newValue: resolved, oldValue: resolved }
+
+		this._sink.emit('change', payload)
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TStateUnitValueEvents<TValue>> {
+		return this.events
 	}
 
 	get value(): TValue {
@@ -66,9 +74,9 @@ export class TStateUnit<
 
 		const oldValue = this._value
 		this._value = value
-		;(this.events as TEvented<TStateUnitValueEvents<TValue>>).emit('change', {
-			newValue: value,
-			oldValue,
-		} as TValuePayload<TValue> as any)
+
+		const payload: TValuePayload<TValue> = { newValue: value, oldValue }
+
+		this._sink.emit('change', payload)
 	}
 }

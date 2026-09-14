@@ -1,5 +1,5 @@
-import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload } from '../../../common'
+import { TStateUnit } from '../../../common'
+import type { TValuePayload, TEventSink } from '../../../common'
 import { TControl } from '../control'
 import type { IComponentOptions } from '../component'
 import type { ITextableProps, TTextableEvents, TTextableStates } from './types'
@@ -31,8 +31,16 @@ export default class TTextable<
 		this._states.text = options.states?.text ?? new TStateUnit<string>({ initial: text })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TTextableEvents>).emit('change:text', payload)
+			this._sink.emit('change:text', payload)
 		})
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TTextableEvents> {
+		return this.events
 	}
 
 	get text(): string {

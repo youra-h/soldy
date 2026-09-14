@@ -1,6 +1,6 @@
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions } from '../../base/component'
-import { TStateUnit, TEvented } from '../../../common'
+import { TStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../common'
 import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
 
@@ -82,22 +82,22 @@ export default class TFrame
 		}) as TFrameStates['height']
 
 		this._states.x.events.on('change', (payload: TValuePayload<number>) => {
-			;(this.events as TEvented<TFrameEvents>).emit('change:x', payload.newValue)
+			this.events.emit('change:x', payload.newValue)
 		})
 		this._states.y.events.on('change', (payload: TValuePayload<number>) => {
-			;(this.events as TEvented<TFrameEvents>).emit('change:y', payload.newValue)
+			this.events.emit('change:y', payload.newValue)
 		})
 		this._states.width.events.on('change', (payload: TValuePayload<number | string>) => {
-			;(this.events as TEvented<TFrameEvents>).emit('change:width', payload.newValue)
+			this.events.emit('change:width', payload.newValue)
 		})
 		this._states.height.events.on('change', (payload: TValuePayload<number | string>) => {
-			;(this.events as TEvented<TFrameEvents>).emit('change:height', payload.newValue)
+			this.events.emit('change:height', payload.newValue)
 		})
 
 		// При show() — присваиваем z-index
-		;(this.events as TEvented<TFrameEvents>).on('show' as any, () => {
+		this.events.on('show', () => {
 			this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
-			;(this.events as TEvented<TFrameEvents>).emit('change:zIndex', this._zIndex)
+			this.events.emit('change:zIndex', this._zIndex)
 		})
 	}
 
@@ -135,7 +135,7 @@ export default class TFrame
 	set position(value: TFramePosition) {
 		if (this._position === value) return
 		this._position = value
-		;(this.events as TEvented<TFrameEvents>).emit('change:position', value)
+		this.events.emit('change:position', value)
 	}
 
 	get target(): string {
@@ -144,7 +144,7 @@ export default class TFrame
 	set target(value: string) {
 		if (this._target === value) return
 		this._target = value
-		;(this.events as TEvented<TFrameEvents>).emit('change:target', value)
+		this.events.emit('change:target', value)
 	}
 
 	get zIndex(): number {

@@ -1,5 +1,6 @@
 import type { IItemExtension, TBaseItemEventsExtension } from './types'
 import { TEvented } from '@soldy/core'
+import type { TEventSink } from '@soldy/core'
 
 /**
  * Абстрактный item-адаптер — устраняет повторяющийся код конструктора:
@@ -24,7 +25,15 @@ export abstract class TBaseItemExtension<
 	 * Очистить собственные события item-адаптера (отписки, middleware, входящие подписки).
 	 */
 	destroy(): void {
-		;(this.events as TEvented<TBaseItemEventsExtension>).emit('destroy')
+		this._sink.emit('destroy')
 		this.events.destroy()
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TBaseItemEventsExtension> {
+		return this.events
 	}
 }

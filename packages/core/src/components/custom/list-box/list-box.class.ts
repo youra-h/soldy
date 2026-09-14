@@ -1,6 +1,5 @@
 import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
-import { TEvented } from '../../../common'
 import type { TScrollBehavior } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { TListContentFit, TListIndicator } from '../list'
@@ -78,7 +77,7 @@ export class TListBox
 		if (this._view === value) return
 
 		this._applyView(value, this._view)
-		;(this.events as TEvented<TListBoxEvents>).emit('change:view', value)
+		this.events.emit('change:view', value)
 	}
 
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
@@ -90,7 +89,7 @@ export class TListBox
 		if (this._maxRows === value) return
 
 		this._maxRows = value
-		;(this.events as TEvented<TListBoxEvents>).emit('change:maxRows', value)
+		this.events.emit('change:maxRows', value)
 	}
 
 	/** Что делать с не помещающимся текстом. */
@@ -102,7 +101,7 @@ export class TListBox
 		if (this._contentFit === value) return
 
 		this._applyContentFit(value)
-		;(this.events as TEvented<TListBoxEvents>).emit('change:contentFit', value)
+		this.events.emit('change:contentFit', value)
 	}
 
 	/** Как прокручивать к элементу при навигации. */
@@ -114,7 +113,7 @@ export class TListBox
 		if (this._scrollBehavior === value) return
 
 		this._scrollBehavior = value
-		;(this.events as TEvented<TListBoxEvents>).emit('change:scrollBehavior', value)
+		this.events.emit('change:scrollBehavior', value)
 	}
 
 	/** Где показывать отметку выбранного элемента. */
@@ -126,7 +125,7 @@ export class TListBox
 		if (this._indicator === value) return
 
 		this._applyIndicator(value)
-		;(this.events as TEvented<TListBoxEvents>).emit('change:indicator', value)
+		this.events.emit('change:indicator', value)
 	}
 
 	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView): void {

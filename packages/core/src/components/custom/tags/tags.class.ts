@@ -1,6 +1,5 @@
 import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions } from '../../base/component'
-import { TEvented } from '../../../common'
 import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView } from './types'
 
 /**
@@ -61,7 +60,7 @@ export class TTags
 		if (this._closable === value) return
 
 		this._closable = value
-		;(this.events as TEvented<TTagsEvents>).emit('change:closable', value)
+		this.events.emit('change:closable', value)
 	}
 
 	get view(): TTagsView {
@@ -72,7 +71,7 @@ export class TTags
 		if (this._view === value) return
 
 		this._applyView(value, this._view)
-		;(this.events as TEvented<TTagsEvents>).emit('change:view', value)
+		this.events.emit('change:view', value)
 	}
 
 	protected _applyView(newValue: TTagsView, oldValue?: TTagsView): void {

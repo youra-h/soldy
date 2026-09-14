@@ -1,4 +1,4 @@
-import { TStateUnit, TEvented } from '../../../common'
+import { TStateUnit } from '../../../common'
 import type { TComponentVariant, TValuePayload } from '../../../common'
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions } from '../../base/component'
@@ -58,7 +58,7 @@ export default class TSkeleton
 				oldClass: `--${payload.oldValue}`,
 				newClass: `--${payload.newValue}`,
 			})
-			;(this.events as TEvented<TSkeletonEvents>).emit('change:variant', payload)
+			this.events.emit('change:variant', payload)
 		})
 
 		this._classes.add(`--${this._states.variant.value}`)
@@ -100,7 +100,7 @@ export default class TSkeleton
 			newClass: `--${value}`,
 		})
 		this._shape = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:shape', value)
+		this.events.emit('change:shape', value)
 	}
 
 	get animation(): TSkeletonAnimation {
@@ -115,7 +115,7 @@ export default class TSkeleton
 			newClass: `--${value}`,
 		})
 		this._animation = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:animation', value)
+		this.events.emit('change:animation', value)
 	}
 
 	get width(): number | string {
@@ -126,7 +126,7 @@ export default class TSkeleton
 		if (value === this._width) return
 
 		this._width = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:width', value)
+		this.events.emit('change:width', value)
 	}
 
 	get height(): number | string {
@@ -137,7 +137,7 @@ export default class TSkeleton
 		if (value === this._height) return
 
 		this._height = value
-		;(this.events as TEvented<TSkeletonEvents>).emit('change:height', value)
+		this.events.emit('change:height', value)
 	}
 
 	getProps(): ISkeletonProps {

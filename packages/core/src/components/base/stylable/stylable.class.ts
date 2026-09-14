@@ -1,5 +1,5 @@
-import { TStateUnit, TEvented } from '../../../common'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../common'
+import { TStateUnit } from '../../../common'
+import type { TComponentSize, TComponentVariant, TValuePayload, TEventSink } from '../../../common'
 import { TComponentView } from '../component-view'
 import type { IComponentOptions } from '../component'
 import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
@@ -37,7 +37,7 @@ export default class TStylable<
 				oldClass: `--size-${payload.oldValue}`,
 				newClass: `--size-${payload.newValue}`,
 			})
-			;(this.events as TEvented<TStylableEvents>).emit('change:size', payload)
+			this._sink.emit('change:size', payload)
 		})
 
 		this._classes.add(`--size-${this._states.size.value}`)
@@ -53,10 +53,18 @@ export default class TStylable<
 				oldClass: `--${payload.oldValue}`,
 				newClass: `--${payload.newValue}`,
 			})
-			;(this.events as TEvented<TStylableEvents>).emit('change:variant', payload)
+			this._sink.emit('change:variant', payload)
 		})
 
 		this._classes.add(`--${this._states.variant.value}`)
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _sink(): TEventSink<TStylableEvents> {
+		return this.events
 	}
 
 	get size(): TComponentSize {

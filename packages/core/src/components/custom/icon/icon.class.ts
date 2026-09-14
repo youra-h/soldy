@@ -1,7 +1,7 @@
 import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
 import type { IComponentOptions } from '../../base/component'
-import { TStateUnit, TEvented } from '../../../common'
+import { TStateUnit } from '../../../common'
 import type { TValuePayload, TComponentSize } from '../../../common'
 
 /**
@@ -44,7 +44,7 @@ export default class TIcon
 				oldClass: `--size-${payload.oldValue}`,
 				newClass: `--size-${payload.newValue}`,
 			})
-			;(this.events as TEvented<TIconEvents>).emit('change:size' as any, payload)
+			this.events.emit('change:size', payload)
 		})
 
 		this._classes.add(`--size-${this._states.size.value}`, true)
@@ -68,7 +68,7 @@ export default class TIcon
 	set width(value: string | number | undefined) {
 		if (this._width !== value) {
 			this._width = value
-			;(this.events as TEvented<TIconEvents>).emit('change:width', value)
+			this.events.emit('change:width', value)
 		}
 	}
 
@@ -79,7 +79,7 @@ export default class TIcon
 	set height(value: string | number | undefined) {
 		if (this._height !== value) {
 			this._height = value
-			;(this.events as TEvented<TIconEvents>).emit('change:height', value)
+			this.events.emit('change:height', value)
 		}
 	}
 
