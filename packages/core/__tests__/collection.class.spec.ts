@@ -35,7 +35,7 @@ describe('TCollectionEngine', () => {
 		})
 
 		// plain должен иметь доступ к driver через _ctx
-		expect(plain.get(0)).toBeUndefined()
+		expect(plain.insert({ id: 1, name: 'a' })).toEqual({ id: 1, name: 'a' })
 	})
 
 	it('расширения могут взаимодействовать через driver', () => {

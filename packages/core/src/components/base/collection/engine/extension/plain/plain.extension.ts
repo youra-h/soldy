@@ -63,8 +63,4 @@ export class TPlainExtension<TItem extends object>
 	move(item: TItem, newIndex: number, oldIndex?: number): void {
 		this._ctx.execute(new TMoveCommand(item, newIndex, oldIndex))
 	}
-
-	get(index: number): TItem | undefined {
-		return this._ctx.driver.valueOf()[index]
-	}
 }
