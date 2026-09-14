@@ -39,7 +39,7 @@ import PropControl from '../src/components/PropControl.vue'
 const warnings: string[] = []
 
 beforeAll(async () => {
-	setIcons(material as never)
+	setIcons(material)
 	// Компоненты пишут в консоль события — в отчёте это шум
 	vi.spyOn(console, 'log').mockImplementation(() => {})
 	vi.spyOn(console, 'warn').mockImplementation((...args) => {

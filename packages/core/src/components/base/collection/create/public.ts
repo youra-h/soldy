@@ -1,5 +1,11 @@
 import { baseExtensions, activationExtensions, selectionExtensions, assembleEngine } from './internal'
 import type { TCreateEngineOptions } from './internal'
+import type {
+	TBaseCollectionExtensions,
+	TActivationCollectionExtensions,
+	TSelectionCollectionExtensions,
+} from './types'
+import type { TCollectionEngine } from '../engine'
 
 /**
  * Публичная сборка коллекции — единственное, что уходит в `@soldy/core` из
@@ -27,22 +33,48 @@ import type { TCreateEngineOptions } from './internal'
  */
 
 export type { TCreateEngineOptions }
+export type {
+	TBaseCollectionExtensions,
+	TActivationCollectionExtensions,
+	TSelectionCollectionExtensions,
+} from './types'
 
 /**
  * Коллекция без поведения: состав, порядок, meta.
  *
  * Годится куда угодно — компонент доустановит своё при привязке.
  */
-export function createEngine(options: TCreateEngineOptions = {}) {
-	return assembleEngine(baseExtensions(), options.items)
+export function createEngine<TItem extends object = object>(
+	options: TCreateEngineOptions = {},
+): TCollectionEngine<TItem, TBaseCollectionExtensions<TItem>> {
+	// `assembleEngine` наполняет движок динамически, по строковому ключу — за
+	// этим циклом компилятор точную карту расширений не видит. Приведение
+	// здесь кодирует инвариант набора (`baseExtensions()` без `itemCtor` даёт
+	// ровно эти пять расширений), а не затыкает несоответствие: сигнатура
+	// снаружи делает вызывающего типобезопасным без единого приведения на его
+	// стороне — ровно то, чего не хватало `TCollectionEngine<TItem, any>`.
+	return assembleEngine(baseExtensions<TItem>(), options.items) as TCollectionEngine<
+		TItem,
+		TBaseCollectionExtensions<TItem>
+	>
 }
 
 /** Коллекция с активным элементом — модель Tabs. */
-export function createEngineActivation(options: TCreateEngineOptions = {}) {
-	return assembleEngine(activationExtensions(), options.items)
+export function createEngineActivation<TItem extends object = object>(
+	options: TCreateEngineOptions = {},
+): TCollectionEngine<TItem, TActivationCollectionExtensions<TItem>> {
+	return assembleEngine(activationExtensions<TItem>(), options.items) as TCollectionEngine<
+		TItem,
+		TActivationCollectionExtensions<TItem>
+	>
 }
 
 /** Коллекция с выбором — модель ListBox, Select и Accordion. */
-export function createEngineSelection(options: TCreateEngineOptions = {}) {
-	return assembleEngine(selectionExtensions(), options.items)
+export function createEngineSelection<TItem extends object = object>(
+	options: TCreateEngineOptions = {},
+): TCollectionEngine<TItem, TSelectionCollectionExtensions<TItem>> {
+	return assembleEngine(selectionExtensions<TItem>(), options.items) as TCollectionEngine<
+		TItem,
+		TSelectionCollectionExtensions<TItem>
+	>
 }

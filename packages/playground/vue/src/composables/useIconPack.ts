@@ -1,11 +1,12 @@
 import { ref } from 'vue'
 import { setIcons } from '@soldy/setup'
+import type { TIconSource } from '@soldy/setup'
 import { ICON_PACKS } from '@soldy/playground-shared'
 import * as material from '@soldy/icons-material'
 
 /** Пакеты по идентификатору из общего реестра. */
-const PACKS: Record<string, Record<string, { viewBox: string; body: string }>> = {
-	material: material as never,
+const PACKS: Record<string, Record<string, TIconSource>> = {
+	material,
 }
 
 const pack = ref(ICON_PACKS[0].id)
