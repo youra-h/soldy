@@ -22,20 +22,40 @@ import { TTagsExtension } from './extensions'
 import type { ITags } from '../types'
 import type { ITagsItem, ITagsItemProps } from '../item/types'
 
-export type TTagsCollectionExtensions = {
-	factory: TFactoryExtension<ITagsItem>
-	unique: TUniqueExtension<ITagsItem>
-	meta: TMetaExtension<ITagsItem>
-	order: TOrderExtension<ITagsItem>
-	plain: TPlainExtension<ITagsItem>
-	batch: TBatchExtension<ITagsItem>
-	selection: TSelectionExtension<ITagsItem>
+export type TTagsCollectionExtensions<TItem extends ITagsItem = ITagsItem> = {
+	factory: TFactoryExtension<TItem>
+	unique: TUniqueExtension<TItem>
+	meta: TMetaExtension<TItem>
+	order: TOrderExtension<TItem>
+	plain: TPlainExtension<TItem>
+	batch: TBatchExtension<TItem>
+	selection: TSelectionExtension<TItem>
 	/** Связь `value` набора с выбором коллекции — в обе стороны. */
-	value: TValueSelectionExtension<any, ITagsItem>
-	tags: TTagsExtension<ITags, ITagsItem>
+	value: TValueSelectionExtension<any, TItem>
+	tags: TTagsExtension<ITags, TItem>
 }
 
 export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtensions>
+
+/**
+ * Движок, который можно передать конструктору фасада — любого уровня сборки
+ * (`createEngine`, `createEngineSelection`, `createEngineTags`…). Фасад сам
+ * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * поэтому годится любой уровень, включая уровень 1, где ни `TTagsItem`, ни
+ * владельческие расширения ещё не собраны.
+ *
+ * Оба параметра — `any`, а не «уровень 1» или «частичный набор»: у
+ * `TCollectionEngine.events` есть `engine:create`, куда сам движок передаётся
+ * аргументом обработчика — `TEvented` инвариантен по карте событий (см.
+ * AGENTS.md, «События item-адаптера»), и через этот параметр инвариантность
+ * протаскивает оба параметра движка целиком. Любой конкретный тип здесь
+ * (в том числе `Partial<TTagsCollectionExtensions>`) сделал бы совместимым
+ * только движок с буквально таким же типом — не более раннего уровня и не
+ * `TTagsCollection`, который собирает `createEngineTags`. Точность остаётся
+ * там, где движок инстанцируется (`TTagsCollection`, `TagsFactory`), а не
+ * там, где его только принимают.
+ */
+export type TTagsCollectionFacadeEngine = TCollectionEngine<any, any>
 
 /** Owner-level props коллекции: состав + режим выбора (по умолчанию `none`). */
 export interface ITagsCollectionProps<

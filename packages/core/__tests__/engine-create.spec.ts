@@ -43,8 +43,8 @@ describe('уровни сборки', () => {
 
 		expect(engine.extensions.batch).toBeDefined()
 		expect(engine.extensions.meta).toBeDefined()
-		expect(engine.extensions.activation).toBeUndefined()
-		expect(engine.extensions.selection).toBeUndefined()
+		expect('activation' in engine.extensions).toBe(false)
+		expect('selection' in engine.extensions).toBe(false)
 		expect(engine.extensions.batch.items.length).toBe(1)
 	})
 
@@ -55,7 +55,7 @@ describe('уровни сборки', () => {
 
 	/** Состав необязателен: его можно задать и потом, через сам движок. */
 	it('без items коллекция пуста, но рабочая', () => {
-		const engine = createEngine()
+		const engine = createEngine<{ value: string }>()
 
 		engine.extensions.batch.set([{ value: 'a' }, { value: 'b' }])
 
@@ -98,7 +98,7 @@ describe('догон накопленного при привязке', () => {
 
 		const owner = new TTabs()
 
-		new TTabsCollectionFacade({}, { owner, engine: engine as never })
+		new TTabsCollectionFacade({}, { owner, engine })
 
 		expect(engine.extensions.batch.items[0]).toBeInstanceOf(TTabsItem)
 		expect((engine.extensions.batch.items[0] as any).text).toBe('A')
@@ -115,7 +115,7 @@ describe('догон накопленного при привязке', () => {
 		})
 
 		const owner = new TTabs()
-		const facade = new TTabsCollectionFacade({}, { owner, engine: engine as never })
+		const facade = new TTabsCollectionFacade({}, { owner, engine })
 
 		expect((facade.activeItem as any)?.value).toBe('b')
 	})
@@ -125,7 +125,7 @@ describe('догон накопленного при привязке', () => {
 		const engine = createEngine({ items: [{ value: 'a', text: 'A' }] })
 		const owner = new TTabs({ size: 'lg', variant: 'accent' })
 
-		new TTabsCollectionFacade({}, { owner, engine: engine as never })
+		new TTabsCollectionFacade({}, { owner, engine })
 
 		expect((engine.extensions.batch.items[0] as any).size).toBe('lg')
 		expect((engine.extensions.batch.items[0] as any).variant).toBe('accent')
@@ -137,7 +137,7 @@ describe('догон накопленного при привязке', () => {
 		})
 
 		const owner = new TListBox()
-		const facade = new TListBoxCollectionFacade({}, { owner, engine: engine as never })
+		const facade = new TListBoxCollectionFacade({}, { owner, engine })
 
 		expect(facade.selected.map((item: any) => item.value)).toEqual(['a'])
 	})
@@ -147,10 +147,15 @@ describe('дополнение недостающего', () => {
 	it('движок уровня 1 получает всё, что нужно Tabs', () => {
 		const engine = createEngine({ items: [{ value: 'a' }] })
 
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine: engine as never })
+		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
+
+		// Facade доустановила эти четыре расширения поверх уровня 1 — движок
+		// вырос за пределы статического типа `createEngine()`, поэтому имя
+		// читаем через приведение к обобщённой карте, а не к `any`.
+		const extensions = engine.extensions as Record<string, unknown>
 
 		for (const name of ['factory', 'activation', 'content', 'tabs']) {
-			expect(engine.extensions[name], name).toBeDefined()
+			expect(extensions[name], name).toBeDefined()
 		}
 	})
 
@@ -163,10 +168,10 @@ describe('дополнение недостающего', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 		const engine = createEngine({ items: [{ value: 'a' }] })
 
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine: engine as never })
+		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
 		expect(warn).not.toHaveBeenCalled()
 
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine: engine as never })
+		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
 		expect(warn).toHaveBeenCalledOnce()
 	})
 })

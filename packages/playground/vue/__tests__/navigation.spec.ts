@@ -19,7 +19,7 @@ import { SHOWCASE, LAYERS } from '../src/catalog'
 import { router } from '../src/router'
 import AppSidebar from '../src/components/AppSidebar.vue'
 
-setIcons(material as never)
+setIcons(material)
 vi.spyOn(console, 'log').mockImplementation(() => {})
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
