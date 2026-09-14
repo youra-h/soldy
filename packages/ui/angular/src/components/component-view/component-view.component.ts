@@ -15,6 +15,11 @@ import { setupComponentView } from './setup.component'
  * TElementPlugin берёт на себя TComponentBase со стратегией `'host'` —
  * в отличие от Button, где корень живёт внутри @if и пересоздаётся.
  *
+ * `dir`/`aria`/`dataset`/`attrs` на хост-элемент раскладывает та же
+ * стратегия `'host'` в `TComponentBase` (переиспользует `applyAttributes` из
+ * `AriaDirective`) — здесь для них нет ни `@HostBinding`, ни директивы,
+ * потому что шаблона с элементом-целью у хост-компонента нет.
+ *
  * Selector: <soldy-component-view>
  */
 @Component({
@@ -34,11 +39,6 @@ export class TComponentViewComponent extends TComponentBase<IComponentView> {
 		const state = this.state()
 
 		return state['rendered'] === false || state['visible'] === false ? 'none' : null
-	}
-
-	/** dir вычисляет ядро: null для 'inherit' убирает атрибут (наследование). */
-	@HostBinding('attr.dir') get hostDir(): string | null {
-		return this.state().dir ?? null
 	}
 
 	constructor() {

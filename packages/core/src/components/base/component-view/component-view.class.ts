@@ -105,6 +105,9 @@ export default class TComponentView<
 		this._attrs.events.on('change', () =>
 			this._sink.emit('change:attrs', this._attrs.toObject()),
 		)
+
+		this.events.on('change:direction', () => this._syncDir())
+		this._syncDir()
 	}
 
 	/**
@@ -223,9 +226,10 @@ export default class TComponentView<
 
 	/**
 	 * Нативные атрибуты, зависящие от тега корня, — третий набор рядом с
-	 * `aria`/`dataset`. Пуст у визуального слоя самого по себе: он не знает,
-	 * какой нативный атрибут ему может понадобиться. `TControl` пишет сюда
-	 * `disabled`, когда тег умеет его сам (см. `NATIVE_DISABLED_TAGS`).
+	 * `aria`/`dataset`. Сам `TComponentView` пишет сюда `dir` по `direction`
+	 * (`'inherit'` атрибут снимает — направление наследуется от предка).
+	 * `TControl` дописывает `disabled`, когда тег умеет его сам (см.
+	 * `NATIVE_DISABLED_TAGS`).
 	 *
 	 * Отдельный от `aria` и `dataset` набор, а не запись в один из них:
 	 * `aria-disabled` — контракт со скринридером, `data-*` — с CSS, а здесь
@@ -258,12 +262,15 @@ export default class TComponentView<
 	}
 
 	/**
-	 * Значение атрибута `dir` для разметки. `'inherit'` → `null`: атрибут не
-	 * ставится, направление берётся от предка. Перевод сентинела в DOM-значение
-	 * живёт здесь, а не в шести адаптерах.
+	 * Пишет `dir` в общий набор нативных атрибутов рядом с `disabled`
+	 * (`TControl._syncDisabled`) — один путь в разметку вместо отдельного
+	 * пропа `dir`, который раньше вычисляли в шести адаптерах.
+	 *
+	 * `'inherit'` → `null`: атрибут не ставится, направление наследуется от
+	 * предка.
 	 */
-	get dir(): 'ltr' | 'rtl' | null {
-		return this._direction === 'inherit' ? null : this._direction
+	private _syncDir(): void {
+		this._attrs.add('dir', this._direction === 'inherit' ? null : this._direction)
 	}
 
 	get ready(): boolean {

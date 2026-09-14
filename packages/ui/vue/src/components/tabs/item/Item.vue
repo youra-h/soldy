@@ -12,9 +12,8 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		v-bind="{ ...dataset, ...containerAttrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
 			Вся ARIA таба — на элементе, который и есть таб. Раньше

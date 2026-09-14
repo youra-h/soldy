@@ -23,9 +23,8 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		v-bind="{ ...dataset, ...containerAttrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
 			`dataset` биндится дважды, и это не описка. Тема читает

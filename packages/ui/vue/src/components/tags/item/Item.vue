@@ -32,9 +32,8 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		v-bind="{ ...dataset, ...containerAttrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
 			:tag="tag"

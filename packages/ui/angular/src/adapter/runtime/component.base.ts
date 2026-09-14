@@ -39,8 +39,9 @@ import {
 	signal,
 	viewChild,
 } from '@angular/core'
-import type { IEntity } from '@soldy/core'
+import type { IEntity, TAttributesMap } from '@soldy/core'
 import type { TInstanceState } from '@soldy/setup'
+import { applyAttributes } from './aria.directive'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'
 
@@ -149,8 +150,26 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		if (strategy === 'host') {
 			const elementRef = inject(ElementRef)
 
+			let appliedAria: string[] = []
+			let appliedAttrs: string[] = []
+			let appliedDataset: string[] = []
+
 			effect(() => {
 				this._binding()?.bindElement(elementRef.nativeElement)
+
+				// Хост существует всё время жизни компонента, шаблона на него нет
+				// (в отличие от Button, где эти же наборы раскладывает `[ariaAttrs]`
+				// в разметке) — поэтому три набора ядра применяются здесь тем же
+				// алгоритмом, что и в `AriaDirective`.
+				const state = this.state() as Record<string, TAttributesMap | undefined>
+
+				appliedAria = applyAttributes(elementRef.nativeElement, state['aria'], appliedAria)
+				appliedAttrs = applyAttributes(elementRef.nativeElement, state['attrs'], appliedAttrs)
+				appliedDataset = applyAttributes(
+					elementRef.nativeElement,
+					state['dataset'],
+					appliedDataset,
+				)
 			})
 
 			return

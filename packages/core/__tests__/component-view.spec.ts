@@ -109,18 +109,28 @@ describe('TComponentView', () => {
 		expect(handler).toHaveBeenLastCalledWith('inherit')
 	})
 
-	it('dir: вычисляется из direction, inherit → null (атрибут не ставится)', () => {
+	it('dir пишется в attrs по direction, inherit — ключа нет', () => {
 		const p = new TComponentView()
-		expect(p.dir).toBeNull()
+		expect(p.attrs.get('dir')).toBeUndefined()
+
+		const handler = vi.fn()
+		p.events.on('change:attrs', handler)
 
 		p.direction = 'rtl'
-		expect(p.dir).toBe('rtl')
+		expect(p.attrs.get('dir')).toBe('rtl')
+		expect(handler).toHaveBeenCalledWith(expect.objectContaining({ dir: 'rtl' }))
 
 		p.direction = 'ltr'
-		expect(p.dir).toBe('ltr')
+		expect(p.attrs.get('dir')).toBe('ltr')
 
 		p.direction = 'inherit'
-		expect(p.dir).toBeNull()
+		expect(p.attrs.get('dir')).toBeUndefined()
+		expect(p.attrs.has('dir')).toBe(false)
+
+		// без изменения набор не эмитит
+		handler.mockClear()
+		p.direction = 'inherit'
+		expect(handler).not.toHaveBeenCalled()
 	})
 
 	it('direction: принимается через props и сериализуется', () => {

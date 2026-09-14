@@ -40,10 +40,9 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
 		:style="{ order: order }"
 		@click="context?.adapters.select.choose()"
-		v-bind="{ ...aria, ...dataset, ...containerAttrs }"
+		v-bind="{ ...aria, ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
 			tag="span"

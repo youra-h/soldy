@@ -11,8 +11,7 @@ export default { ...SetupTags, components: { TagsItem } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
-		v-bind="aria"
+		v-bind="{ ...attrs, ...aria }"
 	>
 		<slot>
 			<!--

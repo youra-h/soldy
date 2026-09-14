@@ -22,8 +22,15 @@
 import { Directive, ElementRef, Input, type OnChanges } from '@angular/core'
 import type { TAriaAttributes, TAttributesMap } from '@soldy/core'
 
-/** Раскладывает один набор `имя → значение` на элемент, `null` снимает атрибут. */
-function applyAttributes(
+/**
+ * Раскладывает один набор `имя → значение` на элемент, `null` снимает
+ * атрибут.
+ *
+ * Экспортирована: `TComponentBase` (`component.base.ts`) применяет её же для
+ * компонентов со стратегией `'host'` (`ComponentView`), где сам хост-элемент
+ * — корень, и обычная директива на элемент шаблона не накладывается.
+ */
+export function applyAttributes(
 	element: HTMLElement,
 	map: Record<string, string | null | undefined> | undefined,
 	previous: string[],

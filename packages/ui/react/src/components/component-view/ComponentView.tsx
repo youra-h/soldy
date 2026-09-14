@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot } from '../../adapter'
+import { renderSlot, toAriaProps } from '../../adapter'
 import { useSetupComponentView } from './setup.component'
 import type { ComponentViewProps } from './base.component'
 
@@ -8,11 +8,14 @@ import type { ComponentViewProps } from './base.component'
  *
  * - `rendered` — v-if (null при false)
  * - `visible` — v-show (display: none при false)
+ * - `attrs`/`aria`/`dataset` — три набора ядра раскладываются на корень, как
+ *   у Button: сам по себе ComponentView не пишет в них ничего, но наследники
+ *   (Icon, Spinner, …) пишут, и без раскладки здесь запись до DOM не доходит.
  */
 export function ComponentView(props: ComponentViewProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupComponentView(props)
 
-	const { rendered, visible, tag, classes, dir } = state
+	const { rendered, visible, tag, classes, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
@@ -31,7 +34,9 @@ export function ComponentView(props: ComponentViewProps): ReactElement | null {
 			ref={ref}
 			className={className}
 			style={style}
-			dir={dir ?? undefined}
+			{...toAriaProps(attrs)}
+			{...toAriaProps(aria)}
+			{...toAriaProps(dataset)}
 		>
 			{renderSlot(props.children)}
 		</Tag>

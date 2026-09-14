@@ -23,11 +23,6 @@ export const ComponentViewContribution = (): IContribution => ({
 		},
 		tag: { type: [String, Object], triggers: ['change:tag'] },
 		direction: { type: String, triggers: ['change:direction'] },
-		dir: {
-			type: String,
-			protected: true,
-			triggers: ['change:direction'],
-		},
 		classes: {
 			type: Object,
 			protected: true,

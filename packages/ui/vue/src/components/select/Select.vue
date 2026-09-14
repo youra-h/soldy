@@ -16,8 +16,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
-		v-bind="{ ...dataset, ...containerAttrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
 			Поле — готовый `Input`, а не свой `<input>`: у него уже есть слоты

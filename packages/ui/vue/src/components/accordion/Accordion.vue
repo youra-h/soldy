@@ -11,7 +11,7 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:dir="dir ?? undefined"
+		v-bind="attrs"
 	>
 		<slot>
 			<!--
