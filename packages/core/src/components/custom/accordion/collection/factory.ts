@@ -1,7 +1,7 @@
 import { TAccordionCollection } from './types'
 import { TAccordionExtension, TAccordionContentExtension } from './extensions'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
 import TAccordionItem from './../item/item.class'
 import type { IAccordionItem } from './../item/types'
 import type { IAccordion } from './../types'
@@ -13,7 +13,7 @@ import type { IAccordion } from './../types'
  * снаружи (`createEngine`) и передать компоненту, а инстанс `TAccordion`
  * появится только там.
  */
-export const ACCORDION_EXTENSIONS = (): TExtensionSet<IAccordionItem> => ({
+export const ACCORDION_EXTENSIONS = (): TBaseExtensionSet<IAccordionItem> => ({
 	...selectionExtensions<IAccordionItem>(TAccordionItem),
 	content: () => new TAccordionContentExtension<IAccordionItem>(),
 })
@@ -28,7 +28,7 @@ export const ACCORDION_OWNER_EXTENSIONS: TOwnerExtensionSet<IAccordionItem, IAcc
  * который требует владельца явно.
  */
 export const AccordionFactory = (owner: IAccordion): TAccordionCollection => {
-	const engine = assembleEngine<IAccordionItem, any>(ACCORDION_EXTENSIONS())
+	const engine = assembleEngine<IAccordionItem>(ACCORDION_EXTENSIONS())
 
 	for (const build of Object.values(ACCORDION_OWNER_EXTENSIONS)) engine.use(build(owner))
 

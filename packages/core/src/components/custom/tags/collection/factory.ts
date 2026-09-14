@@ -3,7 +3,7 @@ import { TTagsExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { TSelectionExtension } from './../../../base/collection'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
 import TTagsItem from './../item/item.class'
 import type { ITagsItem } from './../item/types'
 import type { ITags } from './../types'
@@ -17,7 +17,7 @@ import type { ITags } from './../types'
  * отображённый тегами). Дефолт самого `TSelectionExtension` не трогаем —
  * переопределение только здесь, в фабрике конкретной коллекции.
  */
-export const TAGS_EXTENSIONS = (): TExtensionSet<ITagsItem> => ({
+export const TAGS_EXTENSIONS = (): TBaseExtensionSet<ITagsItem> => ({
 	...selectionExtensions<ITagsItem>(TTagsItem),
 	selection: () => {
 		const selection = new TSelectionExtension<ITagsItem>()
@@ -40,7 +40,7 @@ export const TAGS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITagsItem, ITags> = {
  * требует владельца явно.
  */
 export const TagsFactory = (owner: ITags): TTagsCollection => {
-	const engine = assembleEngine<ITagsItem, any>(TAGS_EXTENSIONS())
+	const engine = assembleEngine<ITagsItem>(TAGS_EXTENSIONS())
 
 	for (const build of Object.values(TAGS_OWNER_EXTENSIONS)) engine.use(build(owner))
 

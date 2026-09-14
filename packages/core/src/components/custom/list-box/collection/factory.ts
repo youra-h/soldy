@@ -2,7 +2,7 @@ import { TListBoxCollection } from './types'
 import { TListBoxExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
 import TListBoxItem from './../item/item.class'
 import type { IListBoxItem } from './../item/types'
 import type { IListBox } from './../types'
@@ -14,7 +14,7 @@ import type { IListBox } from './../types'
  * снаружи (`createEngine`) и передать компоненту, а инстанс `TListBox` появится
  * только там. Из этих же наборов вычисляется, чего движку не хватает.
  */
-export const LIST_BOX_EXTENSIONS = (): TExtensionSet<IListBoxItem> => ({
+export const LIST_BOX_EXTENSIONS = (): TBaseExtensionSet<IListBoxItem> => ({
 	...selectionExtensions<IListBoxItem>(TListBoxItem),
 })
 
@@ -31,7 +31,7 @@ export const LIST_BOX_OWNER_EXTENSIONS: TOwnerExtensionSet<IListBoxItem, IListBo
  * который требует владельца явно.
  */
 export const ListBoxFactory = (owner: IListBox): TListBoxCollection => {
-	const engine = assembleEngine<IListBoxItem, any>(LIST_BOX_EXTENSIONS())
+	const engine = assembleEngine<IListBoxItem>(LIST_BOX_EXTENSIONS())
 
 	for (const build of Object.values(LIST_BOX_OWNER_EXTENSIONS)) engine.use(build(owner))
 

@@ -36,6 +36,16 @@ import type { IExtension } from '../engine'
 /** Как построить расширение. Функция, а не готовый объект: набор переиспользуется. */
 export type TExtensionSet<TItem extends object> = Record<string, () => IExtension<TItem>>
 
+/**
+ * То же, но с гарантией `batch`: он есть в любом наборе, который строят
+ * `baseExtensions`, `activationExtensions` и `selectionExtensions`.
+ * `assembleEngine` полагается на эту гарантию, чтобы наполнить движок без
+ * приведения типа.
+ */
+export type TBaseExtensionSet<TItem extends object> = TExtensionSet<TItem> & {
+	batch: () => TBatchExtension<TItem>
+}
+
 /** То же для расширений, которым нужен инстанс компонента. */
 export type TOwnerExtensionSet<TItem extends object, TOwner> = Record<
 	string,
@@ -65,8 +75,8 @@ export type TCreateEngineOptions = {
  */
 export function baseExtensions<TItem extends object>(
 	itemCtor?: new (source: any) => TItem,
-): TExtensionSet<TItem> {
-	const set: TExtensionSet<TItem> = {
+): TBaseExtensionSet<TItem> {
+	const set: TBaseExtensionSet<TItem> = {
 		unique: () => new TUniqueExtension<TItem>(),
 		meta: () => new TMetaExtension<TItem>(),
 		order: () => new TOrderExtension<TItem>(),
@@ -82,33 +92,41 @@ export function baseExtensions<TItem extends object>(
 /** Базовый набор плюс активный элемент — модель Tabs. */
 export function activationExtensions<TItem extends object>(
 	itemCtor?: new (source: any) => TItem,
-): TExtensionSet<TItem> {
+): TBaseExtensionSet<TItem> {
 	return { ...baseExtensions<TItem>(itemCtor), activation: () => new TActivationExtension<TItem>() }
 }
 
 /** Базовый набор плюс выбор — модель ListBox, Select и Accordion. */
 export function selectionExtensions<TItem extends object>(
 	itemCtor?: new (source: any) => TItem,
-): TExtensionSet<TItem> {
+): TBaseExtensionSet<TItem> {
 	return { ...baseExtensions<TItem>(itemCtor), selection: () => new TSelectionExtension<TItem>() }
 }
 
-/** Собрать движок по набору и, если дали, наполнить. */
-export function assembleEngine<TItem extends object, TExtensions extends Record<string, any>>(
-	set: TExtensionSet<TItem>,
+/**
+ * Собрать движок по набору и, если дали, наполнить.
+ *
+ * `batch` строится отдельно от цикла по остальным расширениям: набор
+ * гарантирует его типом (`TBaseExtensionSet`), поэтому наполнение движка идёт
+ * через готовую ссылку на инстанс, без обращения к `engine.extensions` и без
+ * приведения типа.
+ */
+export function assembleEngine<TItem extends object>(
+	set: TBaseExtensionSet<TItem>,
 	items?: readonly any[],
-): TCollectionEngine<TItem, TExtensions> {
-	const extensions: Record<string, IExtension<TItem>> = {}
+): TCollectionEngine<TItem, any> {
+	const batch = set.batch()
+	const extensions: Record<string, IExtension<TItem>> = { batch }
 
-	for (const [name, build] of Object.entries(set)) extensions[name] = build()
+	for (const [name, build] of Object.entries(set)) {
+		if (name === 'batch') continue
 
-	const engine = new TCollectionEngine<TItem, TExtensions>({
-		extensions: extensions as TExtensions,
-	})
-
-	if (items?.length) {
-		;(engine.extensions as any).batch?.set([...items])
+		extensions[name] = build()
 	}
+
+	const engine = new TCollectionEngine<TItem, any>({ extensions })
+
+	if (items?.length) batch.set([...items])
 
 	return engine
 }
@@ -125,7 +143,7 @@ export function assembleEngine<TItem extends object, TExtensions extends Record<
  */
 export function createComponentEngine<TItem extends object, TOwner>(
 	label: string,
-	set: TExtensionSet<TItem>,
+	set: TBaseExtensionSet<TItem>,
 	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
 	options: TCreateEngineOptions & { owner: TOwner },
 ) {
@@ -133,7 +151,7 @@ export function createComponentEngine<TItem extends object, TOwner>(
 		throw new Error(`${label}: нужен owner — инстанс компонента, которому принадлежит коллекция`)
 	}
 
-	const engine = assembleEngine<TItem, any>(set, options.items)
+	const engine = assembleEngine<TItem>(set, options.items)
 
 	for (const build of Object.values(ownerSet)) engine.use(build(options.owner))
 
