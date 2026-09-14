@@ -28,7 +28,11 @@ describe('TInteractive', () => {
 
 		class TLoggedDisableableState extends TStateUnit<boolean> {
 			constructor(initial: boolean, private readonly _log: string[]) {
-				super(initial)
+				super({ initial })
+			}
+
+			override get value(): boolean {
+				return super.value
 			}
 
 			override set value(value: boolean) {
@@ -42,6 +46,6 @@ describe('TInteractive', () => {
 		const i1 = new TInteractive({}, { states: { disabled: instance } })
 		i1.disabled = true
 		expect(log).toContain('disabled:true')
-
+		expect(i1.disabled).toBe(true)
 	})
 })

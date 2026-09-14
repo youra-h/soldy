@@ -1,18 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { TInputControl } from '@soldy/core'
-import type { ITextInputControlProps } from '@soldy/core'
 
 describe('TInputControl', () => {
 	it('принимает form-flags через { props } и через plain props', () => {
-		const a = new TInputControl<ITextInputControlProps>({
+		const a = new TInputControl({
 			value: '', readonly: true, required: true,
-		} as any)
+		})
 		expect(a.readonly).toBe(true)
 		expect(a.required).toBe(true)
 	})
 
 	it('сеттерами эмитит change:* события', () => {
-		const c = new TInputControl<ITextInputControlProps>({ value: '' } as any)
+		const c = new TInputControl({ value: '' })
 		const ro = vi.fn()
 		const req = vi.fn()
 		c.events.on('change:readonly', ro)
@@ -25,18 +24,18 @@ describe('TInputControl', () => {
 	})
 
 	it('getProps/toJSON отражают input flags', () => {
-		const c = new TInputControl<ITextInputControlProps>({
+		const c = new TInputControl({
 			value: '',
 			readonly: true,
 			required: true,
-		} as any)
+		})
 		const props = c.getProps()
 		expect(props).toMatchObject({ readonly: true, required: true })
 		expect(c.toJSON()).toEqual(props)
 	})
 
 	it('value setter эмитит change:value и input:value', () => {
-		const c = new TInputControl<ITextInputControlProps>({ value: 'a' } as any)
+		const c = new TInputControl({ value: 'a' })
 		const change = vi.fn()
 		const input = vi.fn()
 		c.events.on('change:value', change)

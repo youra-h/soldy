@@ -7,6 +7,7 @@ import {
 	TOrderExtension,
 	TItemContextRegistry,
 	TBaseOwnerItemExtension,
+	TBaseItemExtension,
 } from '@soldy/core'
 import type {
 	IExtension,
@@ -19,17 +20,17 @@ import type {
 
 type Item = { id: number; name: string }
 
+type TCustomEvents = Record<string, (...args: any) => any>
+
 interface ICustomItemExtension extends IItemExtension<Item> {
 	readonly active: boolean
 	customAction(): string
 }
 
-class TCustomItemExtension implements ICustomItemExtension {
-	constructor(
-		private readonly _item: Item,
-		private readonly _parent: TCustomExtension,
-	) {}
-
+class TCustomItemExtension
+	extends TBaseItemExtension<Item, TCustomExtension>
+	implements ICustomItemExtension
+{
 	get active(): boolean {
 		return this._parent.isActiveItem(this._item)
 	}
@@ -40,8 +41,8 @@ class TCustomItemExtension implements ICustomItemExtension {
 }
 
 class TCustomExtension
-	extends TBaseOwnerItemExtension<Item, ICustomItemExtension, object>
-	implements IExtension<Item>, IExtensionItems<Item, ICustomItemExtension>
+	extends TBaseOwnerItemExtension<Item, ICustomItemExtension, TCustomEvents>
+	implements IExtension<Item, TCustomEvents>, IExtensionItems<Item, ICustomItemExtension>
 {
 	readonly name = 'customFeature'
 

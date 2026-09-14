@@ -4,6 +4,15 @@ import type { IComponentOptions } from '../../base/component'
 import { TStateUnit, TEvented } from '../../../common'
 import type { TValuePayload, TComponentSize } from '../../../common'
 
+/**
+ * Отличает объект props иконки (`{ tag, size, ... }`) от сырого значения тега:
+ * `tag` сам может быть объектом (рендер-функция, VNode-подобное значение), поэтому
+ * различаем по наличию ключа `tag`, а не по `typeof`.
+ */
+function isIconProps(value: object | string): value is IIconProps {
+	return typeof value === 'object' && value !== null && 'tag' in value
+}
+
 export default class TIcon
 	extends TComponentView<IIconProps, TIconEvents, TIconStates>
 	implements IIcon
@@ -86,20 +95,20 @@ export default class TIcon
 
 	/**
 	 * Получает экземпляр иконки.
-	 * @param value Значение, по которому нужно получить иконку, если это уже экземпляр TIcon, он будет возвращен как есть, иначе будет создан новый экземпляр.
+	 * @param value Значение, по которому нужно получить иконку: готовый экземпляр TIcon
+	 * возвращается как есть, объект props иконки (распознаётся по ключу `tag`) идёт в
+	 * конструктор целиком, иначе value считается сырым значением тега (`props.tag`).
 	 * @returns Экземпляр иконки.
 	 */
-	static getInstance(value: TIcon | object): TIcon {
+	static getInstance(value: TIcon | IIconProps | NonNullable<IIconProps['tag']>): TIcon {
 		if (value instanceof TIcon) {
 			return value
 		}
 
-		// Если value - объект, создаем новый экземпляр с его свойствами
-		if (value && value instanceof Object && 'tag' in value) {
-			return new TIcon(value as any)
+		if (isIconProps(value)) {
+			return new TIcon(value)
 		}
 
-		// Иначе value - это объект с иконкой
 		return new TIcon({ tag: value })
 	}
 
