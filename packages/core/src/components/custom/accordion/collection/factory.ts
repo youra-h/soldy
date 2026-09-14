@@ -20,7 +20,7 @@ export const ACCORDION_EXTENSIONS = (): TExtensionSet<IAccordionItem> => ({
 
 /** То, чему нужен инстанс компонента. */
 export const ACCORDION_OWNER_EXTENSIONS: TOwnerExtensionSet<IAccordionItem, IAccordion> = {
-	accordion: (owner) => new TAccordionExtension({ owner }) as never,
+	accordion: (owner) => new TAccordionExtension({ owner }),
 }
 
 /**

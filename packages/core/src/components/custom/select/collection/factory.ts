@@ -40,9 +40,9 @@ export const SELECT_OWNER_EXTENSIONS: TOwnerExtensionSet<ISelectItem, ISelect> =
 	// Связь `value` ↔ выбор — то же расширение, что у ListBox. Раньше это было
 	// написано внутри `TSelectExtension`, пока Select оставался единственным
 	// списком со значением
-	value: (owner) => new TValueSelectionExtension({ owner }) as never,
-	tags: (owner) => new TSelectTagsExtension({ owner }) as never,
-	select: (owner) => new TSelectExtension({ owner }) as never,
+	value: (owner) => new TValueSelectionExtension({ owner }),
+	tags: (owner) => new TSelectTagsExtension({ owner }),
+	select: (owner) => new TSelectExtension({ owner }),
 }
 
 /**
