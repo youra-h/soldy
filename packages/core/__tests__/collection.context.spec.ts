@@ -198,8 +198,10 @@ describe('TItemContext + TItemContextRegistry', () => {
 
 		const ctx = registry.get(item)
 
-		// @ts-expect-error — plain не имеет item-адаптеров
-		expect(ctx.adapters.plain).toBeUndefined()
+		// Тип совпадает с рантаймом: у расширения без item-адаптеров ключ — `undefined`.
+		const plain: undefined = ctx.adapters.plain
+
+		expect(plain).toBeUndefined()
 	})
 
 	// --- Типы выводятся корректно (compile-time проверка) ---

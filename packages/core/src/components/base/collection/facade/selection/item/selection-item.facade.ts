@@ -1,12 +1,7 @@
 import { TOrderItemFacade } from '../../order/item'
-import type { TOrderItemAdapters } from '../../order/item'
 import type { TItemContext } from '../../../engine'
-import type { IExtension, ISelectionItemExtension } from '../../../engine'
+import type { IExtension, TOrderExtension, TSelectionExtension } from '../../../engine'
 import type { TComponentEvents } from '../../../../component'
-
-export type TSelectionItemAdapters<TItem extends object> = TOrderItemAdapters<TItem> & {
-	selection: ISelectionItemExtension<TItem>
-}
 
 /**
  * Фасад элемента, который можно выбрать: `selected` плюс порядок из базы.
@@ -21,7 +16,10 @@ export type TSelectionItemAdapters<TItem extends object> = TOrderItemAdapters<TI
  */
 export abstract class TSelectionItemFacade<
 	TItem extends object,
-	TExtensions extends Record<string, IExtension<TItem>>,
+	TExtensions extends {
+		order: TOrderExtension<any>
+		selection: TSelectionExtension<any>
+	} & Record<string, IExtension<any>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TOrderItemFacade<TItem, TExtensions, TEvents> {
 	override setContext(context: TItemContext<TItem, TExtensions>): void {
@@ -29,20 +27,16 @@ export abstract class TSelectionItemFacade<
 
 		if (!this._context) return
 
-		this.events.relay(this._adapters.selection.events, ['change:selected'])
+		this.events.relay(this._context.adapters.selection.events, ['change:selected'])
 	}
 
 	get selected(): boolean {
-		return this._context ? this._adapters.selection.selected : false
+		return this._context?.adapters.selection.selected ?? false
 	}
 
 	set selected(value: boolean) {
 		if (!this._context) return
 
-		this._adapters.selection.selected = value
-	}
-
-	protected override get _adapters(): TSelectionItemAdapters<TItem> {
-		return this._context?.adapters as unknown as TSelectionItemAdapters<TItem>
+		this._context.adapters.selection.selected = value
 	}
 }

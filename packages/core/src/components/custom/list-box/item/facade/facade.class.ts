@@ -1,6 +1,6 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TListBoxCollectionExtensions, TListBoxAdapters } from '../../collection/types'
+import type { TListBoxCollectionExtensions } from '../../collection/types'
 import type { IListBoxItem } from '../types'
 import type { TListBoxView } from '../../types'
 import { LIST_DEFAULTS } from '../../../list'
@@ -24,11 +24,11 @@ export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 
 		if (!this._context) return
 
-		this.events.relay(this._listAdapters.list.events, ['change:view', 'change:indicator'])
+		this.events.relay(this._context.adapters.list.events, ['change:view', 'change:indicator'])
 	}
 
 	get view(): TListBoxView {
-		return this._context ? this._listAdapters.list.view : 'plain'
+		return this._context?.adapters.list.view ?? 'plain'
 	}
 
 	/**
@@ -37,10 +37,6 @@ export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 	 * как `view`.
 	 */
 	get indicator(): TListIndicator {
-		return this._context ? this._listAdapters.list.indicator : LIST_DEFAULTS.indicator
-	}
-
-	private get _listAdapters(): TListBoxAdapters {
-		return this._context?.adapters as unknown as TListBoxAdapters
+		return this._context?.adapters.list.indicator ?? LIST_DEFAULTS.indicator
 	}
 }

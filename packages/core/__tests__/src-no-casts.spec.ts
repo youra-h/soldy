@@ -27,12 +27,10 @@ import * as ts from 'typescript'
  * `T` — это второй синтаксис приведения. Директивы ts-ignore/ts-nocheck не
  * бывают узлом AST (это комментарии), поэтому их ищем в сыром тексте файла.
  *
- * Allow-список — 4 поштучные строки, у каждой в комментарии — задача на
- * снятие (см. AGENTS.md, «Временное исключение без срока»):
- * - 869f1qfv6 (4) — `_context?.adapters as unknown as TXxxAdapters` в фасадах
- *   item-адаптеров коллекций: тип контекста неполон.
- *
- * Новых строк в списке быть не должно.
+ * Allow-список пуст. Новую запись добавляют поштучно, с комментарием
+ * «временно, до <задача>» — без срока такое исключение запрещено тем же
+ * правилом, которое стережёт этот файл (см. AGENTS.md, «Временное исключение
+ * без срока»).
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -45,15 +43,8 @@ const AT = '@'
 const TS_IGNORE = new RegExp(`${AT}ts-ignore\\b`)
 const TS_NOCHECK = new RegExp(`${AT}ts-nocheck\\b`)
 
-/** `relativeFile:line` — временные, задокументированные исключения. */
-const ALLOW_LIST = new Set<string>([
-	// 869f1qfv6 — фасады item-адаптеров коллекций: тип `_context.adapters`
-	// неполон, приведение к конкретной карте адаптеров остаётся до задачи.
-	'packages/core/src/components/base/collection/facade/order/item/order-item.facade.ts:48',
-	'packages/core/src/components/base/collection/facade/selection/item/selection-item.facade.ts:46',
-	'packages/core/src/components/custom/list-box/item/facade/facade.class.ts:44',
-	'packages/core/src/components/custom/tags/item/facade/facade.class.ts:36',
-])
+/** `relativeFile:line` — временные, задокументированные исключения. Сейчас пусто. */
+const ALLOW_LIST = new Set<string>([])
 
 function collectSourceFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((name) => {

@@ -1,12 +1,7 @@
 import { TCollectionItemComponent } from '../../collection-item-component.class'
 import type { TItemContext } from '../../../engine'
-import type { IExtension, IOrderItemExtension } from '../../../engine'
+import type { IExtension, TOrderExtension } from '../../../engine'
 import type { TComponentEvents } from '../../../../component'
-
-/** Item-адаптеры, без которых этот фасад не собрать. */
-export type TOrderItemAdapters<TItem extends object> = {
-	order: IOrderItemExtension<TItem>
-}
 
 /**
  * Фасад элемента коллекции, у которого есть порядок.
@@ -18,10 +13,15 @@ export type TOrderItemAdapters<TItem extends object> = {
  * `-1` при отсутствующем контексте — не «в начало», а «порядка ещё нет»:
  * контекст ставится adapter-слоем после того, как известна коллекция-владелец,
  * и до этого момента элемент вне неё.
+ *
+ * Набор расширений сужен до `{ order }`, как у фасадов коллекций
+ * (`TBatchCollectionFacade`): без порядка фасад не подключить, и
+ * `adapters.order` выводится из набора без приведения. Тип элемента у
+ * расширения `any` — расширения инвариантны по элементу.
  */
 export abstract class TOrderItemFacade<
 	TItem extends object,
-	TExtensions extends Record<string, IExtension<TItem>>,
+	TExtensions extends { order: TOrderExtension<any> } & Record<string, IExtension<any>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TCollectionItemComponent<TItem, TExtensions, TEvents> {
 	override setContext(context: TItemContext<TItem, TExtensions>): void {
@@ -29,22 +29,10 @@ export abstract class TOrderItemFacade<
 
 		if (!this._context) return
 
-		this.events.relay(this._adapters.order.events, ['change:order'])
+		this.events.relay(this._context.adapters.order.events, ['change:order'])
 	}
 
 	get order(): number {
-		return this._context ? this._adapters.order.order : -1
-	}
-
-	/**
-	 * Типизированный доступ к item-адаптерам.
-	 *
-	 * `TItemContext` отдаёт `adapters` широким типом, поэтому раньше каждый
-	 * фасад приводил его сам — в List через `as unknown as`, в ListBox через
-	 * `as any` с комментарием, что тип адаптера неполон. Приведение осталось
-	 * одно, в базе, и наследник сужает его через дженерик.
-	 */
-	protected get _adapters(): TOrderItemAdapters<TItem> {
-		return this._context?.adapters as unknown as TOrderItemAdapters<TItem>
+		return this._context?.adapters.order.order ?? -1
 	}
 }
