@@ -27,13 +27,13 @@ import * as ts from 'typescript'
  * `T` — это второй синтаксис приведения. Директивы ts-ignore/ts-nocheck не
  * бывают узлом AST (это комментарии), поэтому их ищем в сыром тексте файла.
  *
- * Allow-список — 22 поштучных строки, у каждой в комментарии — задача на
+ * Allow-список — 21 поштучная строка, у каждой в комментарии — задача на
  * снятие (см. AGENTS.md, «Временное исключение без срока»):
  * - 869f1qfv6 (4) — `_context?.adapters as unknown as TXxxAdapters` в фасадах
  *   item-адаптеров коллекций: тип контекста неполон.
  * - 869f1qfy5 (4) — конкретный item-адаптер приводится к генерику
  *   `IItemExtensionCtor` в конструкторах расширений коллекций.
- * - 869f1qg0v (8) — движок коллекции (контекст элемента, `engine.class.ts`,
+ * - 869f1qg0v (7) — движок коллекции (контекст элемента,
  *   `unique.extension.ts`, `collection-component.class.ts`).
  * - 869f1qg4t (6) — `TEvented.relay()`: пробрасывает произвольные события
  *   между несвязанными картами по конструкции метода.
@@ -70,7 +70,6 @@ const ALLOW_LIST = new Set<string>([
 	// 869f1qg0v — движок коллекции.
 	'packages/core/src/components/base/collection/engine/context/item.class.ts:38',
 	'packages/core/src/components/base/collection/engine/context/item.class.ts:40',
-	'packages/core/src/components/base/collection/engine/engine.class.ts:66',
 	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:35',
 	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:41',
 	'packages/core/src/components/base/collection/engine/extension/unique/unique.extension.ts:51',
