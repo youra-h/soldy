@@ -11,25 +11,23 @@ import { TDragPlugin } from '@soldy/plugins'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { DRAG_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import type { TCollectionOwner } from './collection.extension.class'
 
 export interface IDragAndDropCollectionExtensionOptions {
 	elevator: TElevatorFactory
 }
 
 export class TDragAndDropCollectionExtension {
-	constructor(context: IAdapterContext, options: IDragAndDropCollectionExtensionOptions) {
+	constructor(
+		context: IAdapterContext<TCollectionOwner>,
+		options: IDragAndDropCollectionExtensionOptions,
+	) {
 		const { elevator } = options
-		const { bundle } = context
 
-		const dragElevator = elevator<boolean>(DRAG_CONTEXT_ELEVATOR)
-		const dragContext = dragElevator.up()
+		const dragContext = elevator(DRAG_CONTEXT_ELEVATOR).up()
 
 		if (!dragContext) return
 
-		const engine = (context.instance as any)?.engine
-
-		if (engine) {
-			bundle.get(TDragPlugin)?.activate(engine)
-		}
+		context.bundle?.get(TDragPlugin)?.activate(context.instance.engine)
 	}
 }

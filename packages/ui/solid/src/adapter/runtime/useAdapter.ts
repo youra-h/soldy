@@ -64,8 +64,8 @@ function computeForwardProps(
 	return rest
 }
 
-export function useAdapter<TInstance = any>(
-	adapter: IAdapterContext,
+export function useAdapter<TInstance extends object = object>(
+	adapter: IAdapterContext<TInstance>,
 	props: Record<string, any>,
 ): TBinding<TInstance> {
 	const inspector = createInspector(adapter.accessor)
@@ -90,7 +90,7 @@ export function useAdapter<TInstance = any>(
 	)
 
 	return {
-		ctrl: adapter.instance as TInstance,
+		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		state,
 		forwardProps,

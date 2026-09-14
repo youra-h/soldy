@@ -86,12 +86,16 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 
 	/** Создаёт binding через setup-слой компонента. */
 	protected abstract setup(
+		ctrl: TInstance | undefined,
 		props: Record<string, unknown>,
 		onUpdate: (name: string, value: unknown) => void,
 	): TBinding<TInstance>
 
 	/** Значения, выставленные до подключения к DOM. */
 	private readonly _pending: Record<string, unknown> = {}
+
+	/** Готовый core-инстанс, выставленный до подключения к DOM. */
+	private _ctrl?: TInstance
 	/** Свет, сгруппированный по имени слота. */
 	private _light = new Map<string, ChildNode[]>()
 	private _root: HTMLElement | null = null
@@ -109,11 +113,11 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 	 * adapter-context создаётся один раз, как и в остальных адаптерах.
 	 */
 	get ctrl(): TInstance | undefined {
-		return (this.binding?.ctrl ?? this._pending.ctrl) as TInstance | undefined
+		return this.binding?.ctrl ?? this._ctrl
 	}
 
 	set ctrl(value: TInstance | undefined) {
-		this._pending.ctrl = value
+		this._ctrl = value
 	}
 
 	connectedCallback(): void {
@@ -124,7 +128,7 @@ export abstract class TSoldyElement<TInstance = any> extends HTMLElement {
 		// Снимаем свет ДО первой отрисовки: дальше он живёт внутри корня
 		this._light = groupBySlot(Array.from(this.childNodes))
 
-		this.binding = this.setup(this._pending, (name, value) => this._onUpdate(name, value))
+		this.binding = this.setup(this._ctrl, this._pending, (name, value) => this._onUpdate(name, value))
 		this.binding.syncProps(this._pending)
 
 		this._flush(true)

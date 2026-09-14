@@ -14,7 +14,7 @@ import type { ControlProps } from './base.component'
 
 export function useSetupControl(props: ControlProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapterRef = useRef<IAdapterContext | null>(null)
+	const adapterRef = useRef<IAdapterContext<IControl> | null>(null)
 
 	if (!adapterRef.current) {
 		adapterRef.current = createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props })

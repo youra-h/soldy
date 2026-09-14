@@ -26,14 +26,16 @@ import { bindEvents } from './useSyncEvents'
 export type TBinding<TInstance = any> = {
 	readonly state: Signal<Record<string, any>>
 	readonly ctrl: TInstance
-	readonly plugins: IPluginBundle
+	readonly plugins: IPluginBundle | null
 	syncInputs(inputs: Record<string, any>): void
 	syncEvents(outputs: Record<string, EventEmitter<any>>): () => void
 	bindElement(el: HTMLElement | null): void
 	destroy(): void
 }
 
-export function useAdapter<TInstance = any>(adapter: IAdapterContext): TBinding<TInstance> {
+export function useAdapter<TInstance extends object = object>(
+	adapter: IAdapterContext<TInstance>,
+): TBinding<TInstance> {
 	const inspector = createInspector(adapter.accessor)
 	const state = signal<Record<string, any>>(buildInitialState(adapter.accessor, inspector))
 
@@ -44,7 +46,7 @@ export function useAdapter<TInstance = any>(adapter: IAdapterContext): TBinding<
 	return {
 		state,
 
-		ctrl: adapter.instance as TInstance,
+		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
 		syncInputs(inputs: Record<string, any>): void {

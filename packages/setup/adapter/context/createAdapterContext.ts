@@ -18,20 +18,20 @@ import type {
 import { resolveDefaultExtensions } from '../extensions'
 import type { IComponentDescriptor } from '@soldy/setup'
 
-export function createAdapterContext(
-	descriptor: IComponentDescriptor,
-	options: IAdapterContextOptions,
+export function createAdapterContext<TInstance extends object>(
+	descriptor: IComponentDescriptor<any, any, any, any, TInstance>,
+	options: IAdapterContextOptions<TInstance>,
 	config: IAdapterContextConfig = {},
-): IAdapterContext {
+): IAdapterContext<TInstance> {
 	const instance =
-		options.ctrl ?? new (descriptor.ctor as any)(options.props ?? {}, options.options ?? {})
+		options.ctrl ?? new descriptor.ctor(options.props ?? {}, options.options ?? {})
 	const bundle = config.bundle ?? descriptor.createBundle(instance)
 	const accessor = descriptor.createAccessor(instance, bundle)
 
 	const events = new TEvented<TAdapterEvents>()
-	const extensionsMap = new Map<TAnyExtensionCtor, any>()
+	const extensions = new Map<TAnyExtensionCtor, unknown>()
 
-	const context: IAdapterContext = {
+	const context: IAdapterContext<TInstance> = {
 		instance,
 		bundle,
 		accessor,
@@ -39,21 +39,21 @@ export function createAdapterContext(
 		props: options.props ?? {},
 		events,
 
-		use(ExtensionCtor: any, opts?: any) {
-			const ext = new ExtensionCtor(this, opts)
-
-			extensionsMap.set(ExtensionCtor, ext)
+		use(ExtensionCtor: TAnyExtensionCtor, extensionOptions?: unknown) {
+			extensions.set(ExtensionCtor, new ExtensionCtor(this, extensionOptions))
 
 			return this
 		},
 
-		get(ExtensionCtor: any) {
-			return extensionsMap.get(ExtensionCtor)
+		get<T>(ExtensionCtor: new (...args: any[]) => T): T | undefined {
+			const extension = extensions.get(ExtensionCtor)
+
+			return extension instanceof ExtensionCtor ? extension : undefined
 		},
 
 		destroy() {
 			events.emit('destroy')
-			extensionsMap.clear()
+			extensions.clear()
 		},
 	}
 
@@ -63,7 +63,7 @@ export function createAdapterContext(
 	const defaultExtensions = config.defaultExtensions ?? resolveDefaultExtensions(descriptor)
 
 	for (const Ext of defaultExtensions) {
-		;(context as any).use(Ext)
+		context.use(Ext)
 	}
 
 	return context

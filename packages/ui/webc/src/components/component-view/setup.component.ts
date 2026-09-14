@@ -12,10 +12,11 @@ import type { TBinding } from '../../adapter'
 
 export function setupComponentView(
 	host: HTMLElement,
+	ctrl: IComponentView | undefined,
 	props: Record<string, unknown>,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<IComponentView> {
-	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl, props })
 
 	return useAdapter<IComponentView>(adapter, host, onUpdate)
 }

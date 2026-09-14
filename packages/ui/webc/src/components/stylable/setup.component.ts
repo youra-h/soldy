@@ -12,10 +12,11 @@ import type { TBinding } from '../../adapter'
 
 export function setupStylable(
 	host: HTMLElement,
+	ctrl: IStylable | undefined,
 	props: Record<string, unknown>,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<IStylable> {
-	const adapter = createAdapterContext(StylableDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createAdapterContext(StylableDescriptor(), { ctrl, props })
 
 	return useAdapter<IStylable>(adapter, host, onUpdate)
 }

@@ -10,7 +10,7 @@ import { useAdapter } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
 export function useSetupComponentView(props: ComponentViewProps) {
-	const adapterRef = useRef<IAdapterContext | null>(null)
+	const adapterRef = useRef<IAdapterContext<IComponentView> | null>(null)
 
 	if (!adapterRef.current) {
 		adapterRef.current = createAdapterContext(ComponentViewDescriptor(), { ctrl: props.ctrl, props })

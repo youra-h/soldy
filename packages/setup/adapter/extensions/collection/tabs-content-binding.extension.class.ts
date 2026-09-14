@@ -24,19 +24,20 @@
  */
 
 import { TItemContextRegistry } from '@soldy/core'
-import type { TAria, TAriaAttributes } from '@soldy/core'
+import type { ITabsContent, ITabsItem, TAria, TAriaAttributes, TTabsCollection } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
+import type { TCollectionItemFacade } from './collection-item.extension.class'
 
 export interface ITabsContentBindingOptions {
 	/** Инстанс панели (TTabsContent) — источник `value`. */
-	content: any
+	content: ITabsContent
 	elevator: TElevatorFactory
 }
 
 /** Таб, чьё значение совпало со значением панели. */
-function findByValue(engine: any, value: unknown): any {
+function findByValue(engine: TTabsCollection, value: unknown): ITabsItem | undefined {
 	for (const item of engine.extensions.batch.items) {
 		if (item.value === value) return item
 	}
@@ -59,13 +60,17 @@ function clearAria(aria: TAria, attributes: TAriaAttributes): void {
 }
 
 export class TTabsContentBindingExtension {
-	constructor(context: IAdapterContext, options: ITabsContentBindingOptions) {
+	constructor(
+		context: IAdapterContext<TCollectionItemFacade>,
+		options: ITabsContentBindingOptions,
+	) {
 		const { content, elevator } = options
-		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
+
+		// Лифт отдаёт движок любой коллекции; над Tabs.Content это движок Tabs.
+		const engine: TTabsCollection | undefined = elevator(ITEM_CONTEXT_ELEVATOR).up()
 
 		if (!engine) return
 
-		const facade = context.instance as any
 		const registry = new TItemContextRegistry(engine.getCore())
 
 		/**
@@ -74,7 +79,7 @@ export class TTabsContentBindingExtension {
 		 * перечислять их здесь заново значило бы держать формулу связки в двух
 		 * местах.
 		 */
-		let boundItem: any
+		let boundItem: ITabsItem | undefined
 		let boundPanelAria: TAriaAttributes | undefined
 
 		const unbind = (): void => {
@@ -95,10 +100,10 @@ export class TTabsContentBindingExtension {
 
 			const itemContext = registry.get(item)
 
-			facade.setContext(itemContext)
+			context.instance.setContext(itemContext)
 
 			boundItem = item
-			boundPanelAria = (itemContext.adapters.content as any).panelAria as TAriaAttributes
+			boundPanelAria = itemContext.adapters.content.panelAria
 
 			applyAria(content.aria, boundPanelAria)
 		}

@@ -1,5 +1,5 @@
-import type { TElevatorFactory } from '@soldy/setup'
+import type { IElevatorKey, TElevatorFactory } from '@soldy/setup'
 import { TSvelteElevator } from './elevator.class'
 
-export const SvelteElevatorFactory: TElevatorFactory = <T>(key: string | symbol) =>
-	new TSvelteElevator<T>(key)
+export const SvelteElevatorFactory: TElevatorFactory = <T>(key: IElevatorKey<T>) =>
+	new TSvelteElevator<T>(key.name)

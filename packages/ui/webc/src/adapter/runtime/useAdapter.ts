@@ -23,14 +23,14 @@ import { useSyncEvents } from './useSyncEvents'
 export type TBinding<TInstance = any> = {
 	readonly state: TWebcState
 	readonly ctrl: TInstance
-	readonly plugins: IPluginBundle
+	readonly plugins: IPluginBundle | null
 	syncProps(props: Record<string, any>): void
 	bindElement(el: HTMLElement | null): void
 	destroy(): void
 }
 
-export function useAdapter<TInstance = any>(
-	adapter: IAdapterContext,
+export function useAdapter<TInstance extends object = object>(
+	adapter: IAdapterContext<TInstance>,
 	host: HTMLElement,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<TInstance> {
@@ -42,7 +42,7 @@ export function useAdapter<TInstance = any>(
 
 	return {
 		state,
-		ctrl: adapter.instance as TInstance,
+		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
 		syncProps(props: Record<string, any>): void {

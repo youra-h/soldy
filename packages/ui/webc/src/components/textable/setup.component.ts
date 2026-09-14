@@ -12,10 +12,11 @@ import type { TBinding } from '../../adapter'
 
 export function setupTextable(
 	host: HTMLElement,
+	ctrl: ITextable | undefined,
 	props: Record<string, unknown>,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<ITextable> {
-	const adapter = createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createAdapterContext(TextableDescriptor(), { ctrl, props })
 
 	return useAdapter<ITextable>(adapter, host, onUpdate)
 }

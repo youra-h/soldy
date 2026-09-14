@@ -7,15 +7,40 @@
  * Никакого namespace или pluginsMap.
  */
 
+import type { IEventEmitter } from '@soldy/core'
 import { TPluginBundle } from '@soldy/plugins'
+import type { IPluginBundle } from '@soldy/plugins'
 import {
 	TAccessor,
 	type IPropDeclaration,
 	type ISlotDeclaration,
 	type TName,
 } from '@soldy/accessor'
-import type { IComponentDefinitionOptions, IComponentDescriptor, IPluginDefinition } from './types'
+import type {
+	IComponentDefinitionOptions,
+	IComponentDescriptor,
+	IPluginDefinition,
+	TResolveInstance,
+} from './types'
 import { normalizeContribution } from './compile-contribution'
+
+/** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
+type TDefinitionOptions = IComponentDefinitionOptions<
+	readonly IPluginDefinition[],
+	readonly IPluginDefinition[],
+	object,
+	object
+>
+
+/** Шина событий инстанса — если она у него есть. */
+function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'emit' in value &&
+		typeof value.emit === 'function'
+	)
+}
 
 function createPluginCollector() {
 	const map = new Map<IPluginDefinition['ctor'], IPluginDefinition>()
@@ -42,7 +67,7 @@ function mergeSlots(
 	return [...map.values()]
 }
 
-function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescriptor {
+function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
 
 	const collector = createPluginCollector()
@@ -83,7 +108,7 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 			return [...slots]
 		},
 
-		createBundle(instance: any) {
+		createBundle(instance: object) {
 			if (plugins.length === 0) {
 				return null
 			}
@@ -106,7 +131,9 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 			// Сначала bundle, потом плагины: иначе обработчик `bundle:create`
 			// не успел бы подписаться на плагинный `create`.
 			Promise.resolve().then(() => {
-				instance?.events?.emit('bundle:create', bundle)
+				const events: unknown = Reflect.get(instance, 'events')
+
+				if (hasEmit(events)) events.emit('bundle:create', bundle)
 
 				for (const plugin of plugins) {
 					bundle.get(plugin.ctor)?.created()
@@ -116,7 +143,7 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 			return bundle
 		},
 
-		createAccessor(instance: any, bundle: TPluginBundle | null) {
+		createAccessor(instance: object, bundle: IPluginBundle | null) {
 			return new TAccessor([
 				// Unit компонента: все наследуемые + собственные props/events
 				{ instance, props, events },
@@ -140,18 +167,21 @@ function buildDescriptor(options: IComponentDefinitionOptions): IComponentDescri
 export function defineComponent<
 	const TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
+	TInstance extends object = never,
+	TParentInstance extends object = object,
 >(
-	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
+	options: IComponentDefinitionOptions<TPlugins, TParentPlugins, TInstance, TParentInstance>,
 ): IComponentDescriptor<
 	Record<string, unknown>,
 	object,
 	readonly [...TParentPlugins, ...TPlugins],
-	object
+	object,
+	TResolveInstance<TInstance, TParentInstance>
 >
 
 /**
  * Curried-форма: явные TProps/TEvents/TSlots на первом вызове, кортеж плагинов
- * выводится на втором. Используется типизированными дескрипторами.
+ * и тип инстанса выводятся на втором. Используется типизированными дескрипторами.
  *
  * TSlots с дефолтом `{}` — дескрипторы без слотов не переписываются.
  */
@@ -162,14 +192,22 @@ export function defineComponent<
 >(): <
 	const TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
+	TInstance extends object = never,
+	TParentInstance extends object = object,
 >(
-	options: IComponentDefinitionOptions<TPlugins, TParentPlugins>,
-) => IComponentDescriptor<TProps, TEvents, readonly [...TParentPlugins, ...TPlugins], TSlots>
+	options: IComponentDefinitionOptions<TPlugins, TParentPlugins, TInstance, TParentInstance>,
+) => IComponentDescriptor<
+	TProps,
+	TEvents,
+	readonly [...TParentPlugins, ...TPlugins],
+	TSlots,
+	TResolveInstance<TInstance, TParentInstance>
+>
 
 export function defineComponent(
-	options?: IComponentDefinitionOptions,
-): IComponentDescriptor | ((options: IComponentDefinitionOptions) => IComponentDescriptor) {
+	options?: TDefinitionOptions,
+): IComponentDescriptor | ((options: TDefinitionOptions) => IComponentDescriptor) {
 	if (options) return buildDescriptor(options)
 
-	return (curried: IComponentDefinitionOptions) => buildDescriptor(curried)
+	return (curried: TDefinitionOptions) => buildDescriptor(curried)
 }

@@ -42,7 +42,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		:class="classes"
 		:dir="dir ?? undefined"
 		:style="{ order: order }"
-		@click="context.adapters.select.choose()"
+		@click="context?.adapters.select.choose()"
 		v-bind="{ ...aria, ...dataset, ...containerAttrs }"
 	>
 		<Button

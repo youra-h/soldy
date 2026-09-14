@@ -6,42 +6,52 @@
  */
 
 import { TItemContextRegistry } from '@soldy/core'
+import type { TItemContext } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { collectItemProps } from '../../../descriptors/base/collect-props'
 
+/** Инстанс, к которому подключается расширение: item-фасад, принимающий контекст элемента. */
+export type TCollectionItemFacade = {
+	setContext(context: TItemContext<any, any>): void
+}
+
 export interface ICollectionItemExtensionOptions {
 	/** Реальный элемент коллекции (инстанс из owner-дескриптора). */
-	item: any
+	item: object
 	elevator: TElevatorFactory
 }
 
 export class TCollectionItemExtension {
-	constructor(context: IAdapterContext, options: ICollectionItemExtensionOptions) {
+	constructor(
+		context: IAdapterContext<TCollectionItemFacade>,
+		options: ICollectionItemExtensionOptions,
+	) {
 		const { item, elevator } = options
 
 		// context.instance — item-фасад, созданный item-дескриптором.
-		const facade = context.instance as any
-		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up() as any
+		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
 
 		if (engine) {
 			const registry = new TItemContextRegistry(engine.getCore())
-			facade.setContext(registry.get(item))
+			context.instance.setContext(registry.get(item))
 		}
 
 		this._register(context, item, elevator)
 
-		if (engine?.extensions?.meta) {
+		if (engine?.extensions.meta) {
 			const meta = collectItemProps(context.descriptor.props, context.props)
 			engine.extensions.meta.apply(item, meta)
 		}
 	}
 
-	private _register(context: IAdapterContext, item: any, elevator: TElevatorFactory): void {
-		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
-
-		const register = itemElevator.up() as ((item: any, bundle: any) => () => void) | undefined
+	private _register(
+		context: IAdapterContext<TCollectionItemFacade>,
+		item: object,
+		elevator: TElevatorFactory,
+	): void {
+		const register = elevator(COLLECTION_ENGINE_ELEVATOR).up()
 
 		if (register) {
 			const cleanup = register(item, context.bundle)

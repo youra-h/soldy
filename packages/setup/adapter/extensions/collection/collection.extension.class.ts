@@ -8,22 +8,27 @@
  * через COLLECTION_ENGINE_ELEVATOR.
  */
 
+import type { TCollectionEngine } from '@soldy/core'
+import { TCollectionBundlesPlugin } from '@soldy/plugins'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
-import { TCollectionBundlesPlugin } from '@soldy/plugins'
+
+/** Инстанс, к которому подключается расширение: фасад, владеющий коллекцией. */
+export type TCollectionOwner = {
+	readonly engine: TCollectionEngine<any, any>
+}
 
 export interface ICollectionExtensionOptions {
 	elevator: TElevatorFactory
 }
 
 export class TCollectionExtension {
-	constructor(context: IAdapterContext, options: ICollectionExtensionOptions) {
+	constructor(context: IAdapterContext<TCollectionOwner>, options: ICollectionExtensionOptions) {
 		const { elevator } = options
 
 		// Фасад-режим: инстанс сам владеет коллекцией (context.instance — фасад).
-		const instance = context.instance as any
-		const engine = instance?.engine
+		const engine = context.instance.engine
 
 		if (!engine) {
 			throw new Error('Engine is not available in the engine instance.')
@@ -40,18 +45,22 @@ export class TCollectionExtension {
 	 * @param elevator Лифт для передачи элементов коллекции.
 	 * @param engine Коллекция, которую необходимо настроить.
 	 */
-	private _wire(context: IAdapterContext, elevator: TElevatorFactory, engine: any): void {
+	private _wire(
+		context: IAdapterContext<TCollectionOwner>,
+		elevator: TElevatorFactory,
+		engine: TCollectionEngine<any, any>,
+	): void {
 		const bundles = context.bundle?.get(TCollectionBundlesPlugin)
 
 		// Передаём ссылку на коллекцию в плагин — это единственный источник
 		// состояния коллекции (активный элемент, порядок, элементы) для плагинов.
-		if (bundles && engine) {
+		if (bundles) {
 			bundles.bindEngine(engine)
 		}
 
 		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
 
-		itemElevator.down((instance: any, bundle: any) => {
+		itemElevator.down((instance, bundle) => {
 			// Кто создал элемент, тот им и владеет.
 			//
 			// Элемент, пришедший из данных (`items`), уже лежит в коллекции — его
@@ -62,20 +71,21 @@ export class TCollectionExtension {
 			// Элемент, объявленный в разметке, до этого момента коллекции не
 			// принадлежал. Для него источник состава — шаблон, и исчезновение из
 			// шаблона действительно означает удаление.
-			const items = engine?.extensions?.batch?.items
+			const items = engine.extensions.batch?.items
 			const owned = !items?.includes(instance)
 
 			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
 			// elevator по мере монтирования, поэтому добавляем их последовательно.
-			if (owned) engine?.extensions?.plain?.push(instance)
+			if (owned) engine.extensions.plain?.push(instance)
 
-			// Регистрируем bundle элемента (ключ — uid элемента).
-			bundles?.register(bundle, instance)
+			// Регистрируем bundle элемента (ключ — uid элемента). У элемента без
+			// плагинов бандла нет — регистрировать нечего.
+			if (bundle) bundles?.register(bundle, instance)
 
 			return () => {
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
-				if (owned) engine?.extensions?.plain?.remove(instance)
+				if (owned) engine.extensions.plain?.remove(instance)
 			}
 		})
 	}

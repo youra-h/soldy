@@ -11,7 +11,7 @@ import type { IPropDeclaration } from '@soldy/accessor'
  */
 export function collectDeclaredProps(
 	decls: IPropDeclaration[],
-	props: Readonly<Record<string, unknown>>,
+	props: object,
 ): Record<string, unknown> {
 	const result: Record<string, unknown> = {}
 
@@ -20,8 +20,10 @@ export function collectDeclaredProps(
 
 		const key = decl.name.name
 
-		if (key in props && props[key] !== undefined) {
-			result[key] = props[key]
+		const value: unknown = Reflect.get(props, key)
+
+		if (value !== undefined) {
+			result[key] = value
 		}
 	}
 
@@ -31,7 +33,7 @@ export function collectDeclaredProps(
 /** Item-level пропсы коллекции (active, selected, ...). */
 export function collectItemProps(
 	itemProps: IPropDeclaration[],
-	props: Readonly<Record<string, unknown>>,
+	props: object,
 ): Record<string, unknown> {
 	return collectDeclaredProps(itemProps, props)
 }

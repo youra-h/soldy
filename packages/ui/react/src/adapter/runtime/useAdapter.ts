@@ -60,8 +60,8 @@ function computeForwardProps(
 	return rest
 }
 
-export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance = any>(
-	adapter: IAdapterContext,
+export function useAdapter<TProps extends Record<string, any> = Record<string, any>, TInstance extends object = object>(
+	adapter: IAdapterContext<TInstance>,
 	props: TProps,
 ): TBinding<TInstance> {
 	const inspector = useMemo(() => createInspector(adapter.accessor), [adapter])
@@ -104,7 +104,7 @@ export function useAdapter<TProps extends Record<string, any> = Record<string, a
 	)
 
 	return {
-		ctrl: adapter.instance as TInstance,
+		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		ref,
 		forwardProps,

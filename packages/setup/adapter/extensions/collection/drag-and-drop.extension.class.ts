@@ -20,7 +20,7 @@ export class TDragAndDropExtension {
 	constructor(context: IAdapterContext, options: IDragAndDropExtensionOptions) {
 		const { elevator } = options
 
-		const dragElevator = elevator<boolean>(DRAG_CONTEXT_ELEVATOR)
+		const dragElevator = elevator(DRAG_CONTEXT_ELEVATOR)
 		// Опускаем флаг drag-контекста вниз детям
 		dragElevator.down(true)
 	}

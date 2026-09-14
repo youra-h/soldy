@@ -13,6 +13,20 @@ import type {
 import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 import type { TUnderscorePropName } from '../../common'
 
+/**
+ * Конструктор инстанса компонента.
+ *
+ * Параметры стёрты: пропсы и опции приходят от фреймворка в рантайме, и сверять
+ * их здесь не с чем. Тип инстанса не стёрт — его дескриптор несёт дальше, в
+ * `IAdapterContext<TInstance>` (см. AGENTS.md, «`any`: где он честный»).
+ */
+export type TComponentCtor<TInstance extends object = object> = new (...args: any[]) => TInstance
+
+/** Инстанс дескриптора: из своего `ctor`, а без него — унаследованный от `extends`. */
+export type TResolveInstance<TOwn extends object, TParent extends object> = [TOwn] extends [never]
+	? TParent
+	: TOwn
+
 /** Определение плагина в составе дескриптора. */
 export interface IPluginDefinition<
 	N extends string | undefined = string | undefined,
@@ -38,11 +52,13 @@ export interface IPluginDefinition<
 export interface IComponentDefinitionOptions<
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
+	TInstance extends object = never,
+	TParentInstance extends object = object,
 > {
-	/** Конструктор core-компонента */
-	ctor?: any
+	/** Конструктор core-компонента. Без него инстанс наследуется от `extends`. */
+	ctor?: TComponentCtor<TInstance>
 	/** Родительский дескриптор (наследование props, events, slots, plugins) */
-	extends?: IComponentDescriptor<any, any, TParentPlugins, any>
+	extends?: IComponentDescriptor<any, any, TParentPlugins, any, TParentInstance>
 	/** Собственная контрибуция компонента */
 	contribution?: IContribution
 	/** Плагины (каждый — результат definePlugin) */
@@ -69,8 +85,10 @@ export interface IComponentDescriptor<
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
 	TSlots extends object = object,
 	/* eslint-enable @typescript-eslint/no-unused-vars */
+	/** Тип инстанса, который строит `ctor`; уходит в `IAdapterContext<TInstance>`. */
+	TInstance extends object = object,
 > {
-	ctor: any
+	ctor: TComponentCtor<TInstance>
 	/** Own component props (excluding plugin props). */
 	props: IPropDeclaration[]
 	/** Own component events (excluding plugin events). */
@@ -85,9 +103,9 @@ export interface IComponentDescriptor<
 	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
 	getSlots(): ISlotDeclaration[]
 
-	createBundle(instance: any): IPluginBundle | null
+	createBundle(instance: TInstance): IPluginBundle | null
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
-	createAccessor(instance: any, bundle: IPluginBundle | null): TAccessor
+	createAccessor(instance: TInstance, bundle: IPluginBundle | null): TAccessor
 }
 
 /* -------------------------------------------------------------------------- */

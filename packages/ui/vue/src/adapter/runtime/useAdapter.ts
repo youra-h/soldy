@@ -46,9 +46,9 @@ export type TBinding<TProps, TInstance> = {
 
 export function useAdapter<
 	TProps extends Record<string, any> = Record<string, any>,
-	TInstance = any,
+	TInstance extends object = object,
 >(
-	adapter: IAdapterContext,
+	adapter: IAdapterContext<TInstance>,
 	props: TProps,
 	emit?: (event: string, ...args: any[]) => void,
 ): TBinding<TProps, TInstance> {
@@ -83,7 +83,7 @@ export function useAdapter<
 	})
 
 	return {
-		ctrl: adapter.instance as TInstance,
+		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		...(rootElement ? { rootElement } : {}),
 		...refs,

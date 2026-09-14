@@ -6,11 +6,22 @@
  * живёт в своём UI-пакете и передаётся сюда через TElevatorFactory.
  */
 
+import type { TCollectionEngine } from '@soldy/core'
+import type { IPluginBundle } from '@soldy/plugins'
+import type { IElevatorKey } from './types'
+
+/** Регистрация элемента в родительской коллекции; возвращает снятие регистрации. */
+export type TCollectionItemRegister = (item: object, bundle: IPluginBundle | null) => () => void
+
 /** Родительская коллекция. Ребёнок толкает { instance, bundle } наверх. */
-export const COLLECTION_ENGINE_ELEVATOR = 'soldy:collection-engine'
+export const COLLECTION_ENGINE_ELEVATOR: IElevatorKey<TCollectionItemRegister> = {
+	name: 'soldy:collection-engine',
+}
 
 /** Drag-and-drop контекст. DragAndDrop → Collection. */
-export const DRAG_CONTEXT_ELEVATOR = 'soldy:drag-context'
+export const DRAG_CONTEXT_ELEVATOR: IElevatorKey<boolean> = { name: 'soldy:drag-context' }
 
 /** Контекст коллекции для дочернего элемента. Родитель → дочерний элемент. */
-export const ITEM_CONTEXT_ELEVATOR = 'soldy:item-context'
+export const ITEM_CONTEXT_ELEVATOR: IElevatorKey<TCollectionEngine<any, any>> = {
+	name: 'soldy:item-context',
+}

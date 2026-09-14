@@ -10,7 +10,7 @@ import { useAdapter } from '../../adapter'
 import type { StylableProps } from './base.component'
 
 export function useSetupStylable(props: StylableProps) {
-	const adapterRef = useRef<IAdapterContext | null>(null)
+	const adapterRef = useRef<IAdapterContext<IStylable> | null>(null)
 
 	if (!adapterRef.current) {
 		adapterRef.current = createAdapterContext(StylableDescriptor(), { ctrl: props.ctrl, props })

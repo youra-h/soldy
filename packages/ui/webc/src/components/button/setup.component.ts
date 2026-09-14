@@ -12,10 +12,11 @@ import type { TBinding } from '../../adapter'
 
 export function setupButton(
 	host: HTMLElement,
+	ctrl: IButton | undefined,
 	props: Record<string, unknown>,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<IButton> {
-	const adapter = createAdapterContext(ButtonDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createAdapterContext(ButtonDescriptor(), { ctrl, props })
 
 	return useAdapter<IButton>(adapter, host, onUpdate)
 }

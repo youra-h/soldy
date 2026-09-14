@@ -31,10 +31,11 @@ export class TComponentViewElement extends TSoldyElement<IComponentView> {
 	}
 
 	protected setup(
+		ctrl: IComponentView | undefined,
 		props: Record<string, unknown>,
 		onUpdate: (name: string, value: unknown) => void,
 	): TBinding<IComponentView> {
-		return setupComponentView(this, props, onUpdate)
+		return setupComponentView(this, ctrl, props, onUpdate)
 	}
 }
 

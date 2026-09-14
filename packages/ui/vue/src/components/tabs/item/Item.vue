@@ -39,7 +39,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			view="none"
 			:size="size"
 			:variant="variant"
-			@click="context.adapters.activation.active = true"
+			@click="context && (context.adapters.activation.active = true)"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>

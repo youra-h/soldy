@@ -12,10 +12,11 @@ import type { TBinding } from '../../adapter'
 
 export function setupControl(
 	host: HTMLElement,
+	ctrl: IControl | undefined,
 	props: Record<string, unknown>,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<IControl> {
-	const adapter = createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props })
+	const adapter = createAdapterContext(ControlDescriptor(), { ctrl, props })
 
 	return useAdapter<IControl>(adapter, host, onUpdate)
 }

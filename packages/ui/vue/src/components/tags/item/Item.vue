@@ -43,7 +43,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			@click="context.adapters.selection.toggle()"
+			@click="context?.adapters.selection.toggle()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>

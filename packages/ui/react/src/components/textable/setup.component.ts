@@ -10,7 +10,7 @@ import { useAdapter } from '../../adapter'
 import type { TextableProps } from './base.component'
 
 export function useSetupTextable(props: TextableProps) {
-	const adapterRef = useRef<IAdapterContext | null>(null)
+	const adapterRef = useRef<IAdapterContext<ITextable> | null>(null)
 
 	if (!adapterRef.current) {
 		adapterRef.current = createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props })

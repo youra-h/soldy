@@ -31,10 +31,11 @@ export class TButtonElement extends TSoldyElement<IButton> {
 	}
 
 	protected setup(
+		ctrl: IButton | undefined,
 		props: Record<string, unknown>,
 		onUpdate: (name: string, value: unknown) => void,
 	): TBinding<IButton> {
-		return setupButton(this, props, onUpdate)
+		return setupButton(this, ctrl, props, onUpdate)
 	}
 }
 
