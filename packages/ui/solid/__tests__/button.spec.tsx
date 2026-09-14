@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import type { ComponentProps } from 'solid-js'
 import { render } from 'solid-js/web'
 import { TButton } from '@soldy/core'
 import { TActionPlugin } from '@soldy/plugins'
@@ -6,7 +7,7 @@ import { Button } from '@soldy/ui-solid'
 
 const disposers: Array<() => void> = []
 
-function mount(props: Record<string, any> = {}): HTMLElement {
+function mount(props: ComponentProps<typeof Button> = {}): HTMLElement {
 	const target = document.createElement('div')
 	document.body.appendChild(target)
 
@@ -135,7 +136,13 @@ describe('Button · события через колбэк-пропы', () => {
 describe('Button · очистка', () => {
 	it('снимает подписки с внешнего ctrl при размонтировании', () => {
 		const ctrl = new TButton()
-		const count = () => (ctrl.events as any)._items._items.get('change:text')?.size ?? 0
+		// Подписки считаются по публичному API шины: подписались на change:text
+		// минус отписались
+		const on = vi.spyOn(ctrl.events, 'on')
+		const off = vi.spyOn(ctrl.events, 'off')
+		const count = () =>
+			on.mock.calls.filter(([event]) => event === 'change:text').length -
+			off.mock.calls.filter(([event]) => event === 'change:text').length
 
 		const target = document.createElement('div')
 		document.body.appendChild(target)
@@ -167,7 +174,7 @@ describe('Button · aria и доступ к плагинам', () => {
 	})
 
 	it('onBundleCreate отдаёт bundle, onActionCreate — сам плагин', async () => {
-		const seen: any[] = []
+		const seen: Array<[string, unknown]> = []
 
 		mount({
 			onBundleCreate: (b: unknown) => seen.push(['bundle', b]),

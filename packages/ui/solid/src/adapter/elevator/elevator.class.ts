@@ -17,29 +17,34 @@ import { createContext, useContext } from 'solid-js'
 import type { Context } from 'solid-js'
 import { TElevator } from '@soldy/setup'
 
-const CONTEXT_CACHE = new Map<symbol, Context<any>>()
+/**
+ * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же
+ * объект. Значения разных ключей разного типа, поэтому кэш хранит `unknown`, а
+ * тип значения задаёт ключ elevator'а.
+ */
+const CONTEXT_CACHE = new Map<symbol, Context<unknown>>()
 
-function resolveContext<T>(key: symbol): Context<T | undefined> {
+function resolveContext(key: symbol): Context<unknown> {
 	let context = CONTEXT_CACHE.get(key)
 
 	if (!context) {
-		context = createContext<T | undefined>(undefined)
+		context = createContext<unknown>(undefined)
 		CONTEXT_CACHE.set(key, context)
 	}
 
 	return context
 }
 
-export class TSolidElevator<T = any> extends TElevator<T> {
+export class TSolidElevator<T = unknown> extends TElevator<T> {
 	/** Готовый Context — прокинуть значение можно через <el.Context.Provider>. */
-	readonly Context: Context<T | undefined>
+	readonly Context: Context<unknown>
 
 	private _value: T | undefined
 
 	constructor(key: string | symbol) {
 		super(key)
 
-		this.Context = resolveContext<T>(this._key)
+		this.Context = resolveContext(this._key)
 	}
 
 	down(value: T): void {
@@ -47,6 +52,9 @@ export class TSolidElevator<T = any> extends TElevator<T> {
 	}
 
 	up(): T | undefined {
-		return useContext(this.Context) ?? this._value
+		// Тип значения задаёт ключ elevator'а: под этим ключом кладут только `T`
+		const fromContext = useContext(this.Context) as T | undefined
+
+		return fromContext ?? this._value
 	}
 }

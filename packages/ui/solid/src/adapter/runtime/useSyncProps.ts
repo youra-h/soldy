@@ -19,16 +19,16 @@ import type { IAccessor, IAccessorProp, TDescriptorInspector } from '@soldy/acce
 
 export interface ISyncOptions {
 	/** Коллбэк перед записью значения из Solid во внутренний Core */
-	onInput?: (prop: IAccessorProp, value: any) => any
+	onInput?: (prop: IAccessorProp, value: unknown) => unknown
 	/** Коллбэк при обновлении значения из Core в Solid */
-	onOutput?: (prop: IAccessorProp, value: any) => void
+	onOutput?: (prop: IAccessorProp, value: unknown) => void
 }
 
 function buildInitialState(
 	accessor: IAccessor,
 	inspector: TDescriptorInspector,
-): Record<string, any> {
-	const state: Record<string, any> = {}
+): Record<string, unknown> {
+	const state: Record<string, unknown> = {}
 
 	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
 		// Пропускаем pass-through свойства без триггеров (ctrl)
@@ -45,7 +45,7 @@ export function useSyncProps(
 	inspector: TDescriptorInspector,
 	options: ISyncOptions = {},
 ) {
-	const [state, setState] = createStore<Record<string, any>>(
+	const [state, setState] = createStore<Record<string, unknown>>(
 		buildInitialState(accessor, inspector),
 	)
 
@@ -84,10 +84,10 @@ export function useSyncProps(
 	}
 
 	// 2. Solid → Core (Input): синхронизация внешних props
-	function bindInput(props: Record<string, any>): void {
+	function bindInput(props: object): void {
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const exportName = inspector.getExportPropName(prop)
-			const value = props[exportName] ?? props[prop.name.name]
+			const value: unknown = Reflect.get(props, exportName) ?? Reflect.get(props, prop.name.name)
 
 			if (value === undefined) continue
 

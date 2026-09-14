@@ -7,12 +7,11 @@
  */
 
 import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
-import type { IComponentView } from '@soldy/core'
 import { useAdapter } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
 export function setupComponentView(props: ComponentViewProps) {
 	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl: props.ctrl, props })
 
-	return useAdapter<IComponentView>(adapter, props)
+	return useAdapter(adapter, props)
 }

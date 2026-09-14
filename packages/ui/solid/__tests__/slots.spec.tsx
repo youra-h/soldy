@@ -3,13 +3,14 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import type { ComponentProps } from 'solid-js'
 import { render } from 'solid-js/web'
 import { ButtonDescriptor } from '@soldy/setup'
 import { Button } from '@soldy/ui-solid'
 
 const disposers: Array<() => void> = []
 
-function mount(props: Record<string, any> = {}): HTMLElement {
+function mount(props: ComponentProps<typeof Button> = {}): HTMLElement {
 	const target = document.createElement('div')
 
 	document.body.appendChild(target)

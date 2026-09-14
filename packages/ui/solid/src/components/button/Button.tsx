@@ -17,7 +17,7 @@ export function Button(props: ButtonProps): JSX.Element {
 
 	// Слоты контракта: leading, default (scope { text }), trailing
 	const leading = children(() => renderSlot(props.leading))
-	const resolved = children(() => renderSlot(props.children, { text: state.text as string }))
+	const resolved = children(() => renderSlot(props.children, { text: state.text ?? '' }))
 	const trailing = children(() => renderSlot(props.trailing))
 
 	const attrs = createMemo(() => {
@@ -26,13 +26,13 @@ export function Button(props: ButtonProps): JSX.Element {
 
 		return {
 			...rest,
-			class: [(state.classes as string[]).join(' '), rest.class].filter(Boolean).join(' '),
+			class: [state.classes?.join(' '), rest.class].filter(Boolean).join(' '),
 			style: { ...(rest.style as object), display: state.visible ? undefined : 'none' },
-			dir: (state.dir as 'ltr' | 'rtl' | null) ?? undefined,
+			dir: state.dir ?? undefined,
 			...(isNativeButton ? { disabled: state.disabled } : {}),
 			// aria вычисляет ядро: role, tabindex, aria-disabled.
 			// null в значении Solid понимает как «атрибут не ставить».
-			...(state.aria as Record<string, string | null>),
+			...state.aria,
 		}
 	})
 
