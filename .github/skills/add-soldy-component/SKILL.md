@@ -298,8 +298,13 @@ Button is the canonical minimal component. Copy its shape:
 
 Адаптер реализует **только** стратегию именования событий. Если пишешь что-то в
 `packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в общем слое.
-Починил баг в одном адаптере — проверь остальные два.
+Починил баг в одном адаптере — проверь остальные адаптеры.
 
 ## Collection components (Vue only for now)
 
-Collection-based components (tabs, accordion, list, list-box) are currently wired **only for Vue** — React has no collection adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`, the collection facades (`TTabsCollectionFacade` / `TTabItemCollectionFacade`), and the two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle). Details: [Collection components reference](./references/collection-component.md).
+Collection-based components (Tabs, Accordion, List, ListBox, Select, Tags) are currently
+wired **only for Vue** — the other five adapters (React, Angular, …) have no collection
+adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`,
+the collection facades (`TTabsCollectionFacade` / `TTabsItemCollectionFacade`), and the
+two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle).
+Details: [Collection components reference](./references/collection-component.md).
