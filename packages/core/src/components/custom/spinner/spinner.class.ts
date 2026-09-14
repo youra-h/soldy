@@ -1,6 +1,5 @@
 import { TStylable } from '../../base/stylable'
 import type { IComponentOptions } from '../../base/component'
-import { type TEvented } from '../../../common'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
@@ -46,7 +45,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	set borderWidth(value: number | 'auto') {
 		if (this._borderWidth !== value) {
 			this._borderWidth = value
-			;(this.events as TEvented<TSpinnerEvents>).emit('change:borderWidth', value)
+			this.events.emit('change:borderWidth', value)
 		}
 	}
 

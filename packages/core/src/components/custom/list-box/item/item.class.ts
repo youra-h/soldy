@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
-import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../common'
+import { TStateUnit } from '../../../../common'
+import type { TValuePayload, TEventSink } from '../../../../common'
 import type { TListItemContentFit } from '../../list'
 import type {
 	IListBoxItem,
@@ -53,8 +53,16 @@ export default class TListBoxItem<
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TListBoxItemEvents>).emit('change:text', payload)
+			this._own.emit('change:text', payload)
 		})
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TListBoxItemEvents> {
+		return this.events
 	}
 
 	get text(): string {
@@ -73,7 +81,7 @@ export default class TListBoxItem<
 		if (this._contentFit === value) return
 
 		this._contentFit = value
-		;(this.events as TEvented<TListBoxItemEvents>).emit('change:contentFit', value)
+		this._own.emit('change:contentFit', value)
 	}
 
 	override getProps(): TProps {

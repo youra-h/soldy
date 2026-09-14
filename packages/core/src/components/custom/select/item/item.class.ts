@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
-import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../common'
+import { TStateUnit } from '../../../../common'
+import type { TValuePayload, TEventSink } from '../../../../common'
 import type { ISelectItem, ISelectItemProps, TSelectItemEvents, TSelectItemStates } from './types'
 
 /**
@@ -42,7 +42,7 @@ export default class TSelectItem<
 			new TStateUnit<string>({ initial: own.text ?? ctor.defaultValues.text! })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TSelectItemEvents>).emit('change:text', payload)
+			this._own.emit('change:text', payload)
 		})
 
 		// Только то, что опция знает о себе сама: она — опция.
@@ -51,6 +51,14 @@ export default class TSelectItem<
 		// сослалось поле через `aria-activedescendant`, второй выражает выбор.
 		// И то и другое знает коллекция, а не элемент; пишет `TSelectExtension`.
 		this._aria.add('role', 'option')
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TSelectItemEvents> {
+		return this.events
 	}
 
 	get text(): string {

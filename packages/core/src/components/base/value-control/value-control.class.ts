@@ -1,8 +1,8 @@
 import { TControl } from '../control'
 import type { IComponentOptions } from '../component'
 import type { IValueControlProps, TValueControlEvents, TValueControlStates } from './types'
-import { TStateUnit, TEvented } from '../../../common'
-import type { TValuePayload } from '../../../common'
+import { TStateUnit } from '../../../common'
+import type { TValuePayload, TEventSink } from '../../../common'
 
 /**
  * База для контролов со значением.
@@ -39,10 +39,18 @@ export default class TValueControl<
 		this._states.value = options.states?.value ?? new TStateUnit<TValue>({ initial: value })
 
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
-			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('change:value', payload)
-			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('input:value', payload)
-			;(this.events as TEvented<TValueControlEvents<TValue>>).emit('input', payload)
+			this._own.emit('change:value', payload)
+			this._own.emit('input:value', payload)
+			this._own.emit('input', payload)
 		})
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TValueControlEvents<TValue>> {
+		return this.events
 	}
 
 	get name(): string {
@@ -52,7 +60,7 @@ export default class TValueControl<
 		if (this._name === value) return
 
 		this._name = value
-		;(this.events as TEvented<TValueControlEvents<TValue>>).emit('change:name' as any, value)
+		this._own.emit('change:name', value)
 	}
 
 	get value(): TValue {

@@ -1,6 +1,6 @@
 import { TComponentView } from '../../../base/component-view'
 import type { IComponentOptions } from '../../../base/component'
-import { TEvented } from '../../../../common'
+import type { TEventSink } from '../../../../common'
 import type {
 	ITabsContent,
 	ITabsContentProps,
@@ -54,7 +54,15 @@ export class TTabsContent<
 		if (this._value === value) return
 
 		this._value = value
-		;(this.events as TEvented<TTabsContentEvents>).emit('change:value', value)
+		this._own.emit('change:value', value)
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TTabsContentEvents> {
+		return this.events
 	}
 
 	override getProps(): TProps {

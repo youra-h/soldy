@@ -1,7 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import type { IInput, IInputProps, TInputEvents } from './types'
-import { TEvented } from '../../../common'
 
 export class TInput extends TInputControl<string, IInputProps, TInputEvents> implements IInput {
 	static override baseClass = 's-input'
@@ -33,7 +32,7 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 		if (this._placeholder === value) return
 
 		this._applyPlaceholder(value)
-		;(this.events as TEvented<TInputEvents>).emit('change:placeholder', value)
+		this.events.emit('change:placeholder', value)
 	}
 
 	/**

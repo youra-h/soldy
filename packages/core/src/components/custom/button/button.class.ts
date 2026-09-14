@@ -1,7 +1,6 @@
 import { TTextable } from '../../base/textable'
 import type { IButton, IButtonProps, TButtonView, TButtonEvents, TButtonStates } from './types'
 import type { IComponentOptions } from '../../base/component'
-import { TEvented } from '../../../common/event/evented'
 import { NATIVE_BUTTON_TAGS } from '../../../common'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
@@ -46,7 +45,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 	set view(value: TButtonView) {
 		if (value && this._view !== value) {
 			this._applyView(value, this._view)
-			;(this.events as TEvented<TButtonEvents>).emit('change:view', value)
+			this.events.emit('change:view', value)
 		}
 	}
 

@@ -1,7 +1,7 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
 import type { IComponentOptions } from '../component'
-import { TEvented } from '../../../common'
+import type { TEventSink } from '../../../common'
 
 /**
  * База для input-элементов (текстовые поля, checkbox, switch и т.д.).
@@ -66,7 +66,15 @@ export default class TInputControl<
 		if (this._id === value) return
 
 		this._id = value
-		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:id', this.id)
+		this._own.emit('change:id', this.id)
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TInputControlEvents<TValue>> {
+		return this.events
 	}
 
 	get readonly(): boolean {
@@ -83,7 +91,7 @@ export default class TInputControl<
 		if (this._readonly === value) return
 
 		this._applyReadonly(value)
-		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:readonly', value)
+		this._own.emit('change:readonly', value)
 	}
 
 	get required(): boolean {
@@ -100,7 +108,7 @@ export default class TInputControl<
 		if (this._required === value) return
 
 		this._applyRequired(value)
-		;(this.events as TEvented<TInputControlEvents<TValue>>).emit('change:required', value)
+		this._own.emit('change:required', value)
 	}
 
 	/**

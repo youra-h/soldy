@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions } from '../../../base/component'
-import { TStateUnit, TEvented } from '../../../../common'
-import type { TValuePayload } from '../../../../common'
+import { TStateUnit } from '../../../../common'
+import type { TValuePayload, TEventSink } from '../../../../common'
 import type {
 	IAccordionItem,
 	IAccordionItemProps,
@@ -55,8 +55,16 @@ export default class TAccordionItem<
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			;(this.events as TEvented<TAccordionItemEvents>).emit('change:text', payload)
+			this._own.emit('change:text', payload)
 		})
+	}
+
+	/**
+	 * Эмит собственных событий класса — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `common/event/types.ts`).
+	 */
+	protected get _own(): TEventSink<TAccordionItemEvents> {
+		return this.events
 	}
 
 	get text(): string {
@@ -74,7 +82,7 @@ export default class TAccordionItem<
 	set arrowPlacement(value: TAccordionArrowPlacement) {
 		if (this._arrowPlacement !== value) {
 			this._arrowPlacement = value
-			;(this.events as TEvented<TAccordionItemEvents>).emit('change:arrowPlacement', value)
+			this._own.emit('change:arrowPlacement', value)
 		}
 	}
 

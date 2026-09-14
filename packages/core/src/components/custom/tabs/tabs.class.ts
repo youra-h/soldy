@@ -1,6 +1,5 @@
 import { TControl } from '../../base/control'
 import type { IComponentOptions } from '../../base/component'
-import { TEvented } from '../../../common'
 import type {
 	ITabs,
 	ITabsProps,
@@ -55,7 +54,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set orientation(value: TTabsOrientation) {
 		if (this._orientation !== value) {
 			this._applyOrientation(value, this._orientation)
-			;(this.events as TEvented<TTabsEvents>).emit('change:orientation', value)
+			this.events.emit('change:orientation', value)
 		}
 	}
 
@@ -74,7 +73,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set alignment(value: TTabsAlignment) {
 		if (this._alignment !== value) {
 			this._applyAlignment(value, this._alignment)
-			;(this.events as TEvented<TTabsEvents>).emit('change:alignment', value)
+			this.events.emit('change:alignment', value)
 		}
 	}
 
@@ -93,7 +92,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set position(value: TTabsPosition) {
 		if (this._position !== value) {
 			this._applyPosition(value, this._position)
-			;(this.events as TEvented<TTabsEvents>).emit('change:position', value)
+			this.events.emit('change:position', value)
 		}
 	}
 
@@ -112,7 +111,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set view(value: TTabsView) {
 		if (this._view !== value) {
 			this._applyView(value, this._view)
-			;(this.events as TEvented<TTabsEvents>).emit('change:view', value)
+			this.events.emit('change:view', value)
 		}
 	}
 
@@ -131,7 +130,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	set closable(value: boolean) {
 		if (this._closable !== value) {
 			this._closable = value
-			;(this.events as TEvented<TTabsEvents>).emit('change:closable', value)
+			this.events.emit('change:closable', value)
 		}
 	}
 
