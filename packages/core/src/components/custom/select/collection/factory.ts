@@ -24,7 +24,7 @@ import type { TSelectCollection } from './types'
  * ничего не знает.
  */
 export const SELECT_EXTENSIONS = (): TExtensionSet<ISelectItem> => ({
-	...selectionExtensions<ISelectItem>(TSelectItem as unknown as new (source: any) => ISelectItem),
+	...selectionExtensions<ISelectItem>(TSelectItem),
 	filter: () => new TFilterExtension<ISelectItem>(),
 })
 

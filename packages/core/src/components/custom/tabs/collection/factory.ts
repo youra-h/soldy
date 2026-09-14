@@ -15,7 +15,7 @@ import type { ITabs } from './../types'
  * второго списка, который однажды разъедется с первым.
  */
 export const TABS_EXTENSIONS = (): TExtensionSet<ITabsItem> => ({
-	...activationExtensions<ITabsItem>(TTabsItem as unknown as new (source: any) => ITabsItem),
+	...activationExtensions<ITabsItem>(TTabsItem),
 	content: () => new TTabsContentExtension<ITabsItem>(),
 })
 

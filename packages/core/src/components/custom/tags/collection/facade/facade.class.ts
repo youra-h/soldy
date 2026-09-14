@@ -3,7 +3,6 @@ import type { TCollectionEngine, TSelectionFacadeProps } from '../../../../base/
 import { TagsFactory, TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
 import type { TTagsCollectionExtensions, TTagsCollectionFacadeOptions } from '../types'
-import type { ITags } from '../../types'
 import type { ITagsItem } from '../../item/types'
 import type { TTagsView } from '../../types'
 
@@ -22,11 +21,7 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectionFacadeProps<ITagsItem> = {},
 		options: TTagsCollectionFacadeOptions = {},
 	) {
-		const createEngine =
-			options.factory ??
-			(TagsFactory as unknown as (
-				owner: ITags,
-			) => TCollectionEngine<ITagsItem, TTagsCollectionExtensions>)
+		const createEngine = options.factory ?? TagsFactory
 
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Tags. Именно здесь, а не в теле:
@@ -37,7 +32,7 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 				TAGS_EXTENSIONS(),
 				TAGS_OWNER_EXTENSIONS,
 				'Tags',
-				createEngine as never,
+				createEngine,
 			) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
 		})
 

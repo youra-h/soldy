@@ -18,7 +18,7 @@ import type { ITags } from './../types'
  * переопределение только здесь, в фабрике конкретной коллекции.
  */
 export const TAGS_EXTENSIONS = (): TExtensionSet<ITagsItem> => ({
-	...selectionExtensions<ITagsItem>(TTagsItem as unknown as new (source: any) => ITagsItem),
+	...selectionExtensions<ITagsItem>(TTagsItem),
 	selection: () => {
 		const selection = new TSelectionExtension<ITagsItem>()
 
