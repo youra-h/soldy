@@ -56,10 +56,15 @@ export type TAccordionCollectionFacadeEngine = TCollectionEngine<any, any>
 /**
  * Owner-level props коллекции Accordion.
  * Объединяет pass-through engine + batch (items, trackBy) + selection (mode).
+ *
+ * `engine` принимает движок любого уровня сборки, а не только
+ * `TAccordionCollection` — тот же контраст, что и у конструктора фасада (см.
+ * `TAccordionCollectionFacadeEngine` выше): компонент доустанавливает
+ * недостающее сам через `resolveEngine`.
  */
 export interface IAccordionCollectionProps<TItemProps = IAccordionItemProps, TItem = IAccordionItem>
 	extends
-		ICollectionProps<TAccordionCollection>,
+		ICollectionProps<TAccordionCollectionFacadeEngine>,
 		IBatchCollectionProps<TItemProps, TItem>,
 		ISelectionCollectionProps {}
 

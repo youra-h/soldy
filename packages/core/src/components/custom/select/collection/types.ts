@@ -69,10 +69,15 @@ export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
  * `mode` приходит из selection и служит переключателем множественного выбора:
  * отдельного пропа `multiple` нет намеренно — два имени для одного состояния
  * однажды разошлись бы.
+ *
+ * `engine` принимает движок любого уровня сборки, а не только
+ * `TSelectCollection` — тот же контраст, что и у конструктора фасада (см.
+ * `TSelectCollectionFacadeEngine` выше): компонент доустанавливает
+ * недостающее сам через `resolveEngine`.
  */
 export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = ISelectItem>
 	extends
-		ICollectionProps<TSelectCollection>,
+		ICollectionProps<TSelectCollectionFacadeEngine>,
 		IBatchCollectionProps<TItemProps, TItem>,
 		ISelectionCollectionProps {}
 

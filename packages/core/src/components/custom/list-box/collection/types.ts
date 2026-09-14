@@ -57,11 +57,18 @@ export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollect
  */
 export type TListBoxCollectionFacadeEngine = TCollectionEngine<any, any>
 
-/** Owner-level props коллекции: состав + режим выбора. */
+/**
+ * Owner-level props коллекции: состав + режим выбора.
+ *
+ * `TCollection` по умолчанию — `TListBoxCollectionFacadeEngine`, а не
+ * `TListBoxCollection`: `engine` принимает движок любого уровня сборки, тот
+ * же контраст, что и у конструктора фасада (см. `TListBoxCollectionFacadeEngine`
+ * выше). Параметр остаётся настраиваемым для мест, которым нужна точность.
+ */
 export interface IListBoxCollectionProps<
 	TItemProps = IListBoxItemProps,
 	TItem = IListBoxItem,
-	TCollection = TListBoxCollection,
+	TCollection = TListBoxCollectionFacadeEngine,
 >
 	extends ICollectionProps<TCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,

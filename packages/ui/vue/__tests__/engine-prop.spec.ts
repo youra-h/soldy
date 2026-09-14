@@ -26,7 +26,9 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-const ITEMS = [
+type TItem = { value: string; text: string }
+
+const ITEMS: TItem[] = [
 	{ value: 'a', text: 'Первый' },
 	{ value: 'b', text: 'Второй' },
 ]
@@ -44,10 +46,10 @@ describe.each([
 	['Accordion', Accordion],
 ] as const)('%s принимает готовую коллекцию', (name, Component) => {
 	it('рисует элементы движка уровня 1', async () => {
-		const engine = createEngine({ items: ITEMS })
+		const engine = createEngine<TItem>({ items: ITEMS })
 
-		wrapper = mount(Component as never, {
-			props: { engine } as never,
+		wrapper = mount(Component, {
+			props: { engine },
 			attachTo: document.body,
 		})
 
@@ -61,10 +63,10 @@ describe.each([
 	 * видна в разметке. Иначе проп был бы разовым снимком, а не связью.
 	 */
 	it('добавление в движок доезжает до разметки', async () => {
-		const engine = createEngine({ items: ITEMS })
+		const engine = createEngine<TItem>({ items: ITEMS })
 
-		wrapper = mount(Component as never, {
-			props: { engine } as never,
+		wrapper = mount(Component, {
+			props: { engine },
 			attachTo: document.body,
 		})
 
@@ -80,10 +82,10 @@ describe.each([
 describe('Select принимает готовую коллекцию', () => {
 	/** Опции Select лежат в телепортированной панели, поэтому ищем по документу. */
 	it('рисует опции движка уровня 1', async () => {
-		const engine = createEngine({ items: ITEMS })
+		const engine = createEngine<TItem>({ items: ITEMS })
 
-		wrapper = mount(Select as never, {
-			props: { engine } as never,
+		wrapper = mount(Select, {
+			props: { engine },
 			attachTo: document.body,
 		})
 
@@ -99,22 +101,27 @@ describe('уровень движка компоненту не важен', () 
 	 * нельзя: смысл уровней в том, что заранее знать компонент не обязательно.
 	 */
 	it('Tabs доустанавливает недостающее сам', async () => {
-		const bare = createEngine({ items: ITEMS })
+		const bare = createEngine<TItem>({ items: ITEMS })
 
-		expect(bare.extensions.activation).toBeUndefined()
+		// `bare` статически типизирован уровнем 1 — прочитать имя расширения,
+		// которое доустановит Tabs при привязке, можно только через
+		// обобщённую карту, как в core/__tests__/engine-create.spec.ts.
+		const extensions = bare.extensions as Record<string, unknown>
 
-		wrapper = mount(Tabs as never, { props: { engine: bare } as never, attachTo: document.body })
+		expect(extensions.activation).toBeUndefined()
+
+		wrapper = mount(Tabs, { props: { engine: bare }, attachTo: document.body })
 		await nextTick()
 
-		expect(bare.extensions.activation).toBeDefined()
-		expect(bare.extensions.tabs).toBeDefined()
+		expect(extensions.activation).toBeDefined()
+		expect(extensions.tabs).toBeDefined()
 	})
 
 	it('движок нужного уровня принимается как есть', async () => {
-		const ready = createEngineActivation({ items: ITEMS })
+		const ready = createEngineActivation<TItem>({ items: ITEMS })
 		const activation = ready.extensions.activation
 
-		wrapper = mount(Tabs as never, { props: { engine: ready } as never, attachTo: document.body })
+		wrapper = mount(Tabs, { props: { engine: ready }, attachTo: document.body })
 		await nextTick()
 
 		// Не пересоздано: своё расширение осталось тем же объектом

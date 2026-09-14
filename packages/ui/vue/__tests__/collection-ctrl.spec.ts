@@ -19,7 +19,11 @@ import { mount } from '@vue/test-utils'
 import { TListBox, TSelect, TTabs, TAccordion } from '@soldy/core'
 import { ListBox, Select, Tabs, Accordion } from '@soldy/ui-vue'
 
-let wrapper: ReturnType<typeof mount> | null = null
+// Не `ReturnType<typeof mount>`: `mount` перегружен, и утилита `ReturnType`
+// берёт только последнюю (самую общую) перегрузку — без `ctrl` в результате.
+// Для очистки после теста хватает структурного `unmount()`, а сам wrapper с
+// точным типом живёт локально в каждом тесте.
+let wrapper: { unmount(): void } | null = null
 
 afterEach(() => {
 	wrapper?.unmount()
@@ -28,16 +32,18 @@ afterEach(() => {
 })
 
 const CASES = [
-	['ListBox', ListBox, TListBox],
-	['Select', Select, TSelect],
-	['Tabs', Tabs, TTabs],
-	['Accordion', Accordion, TAccordion],
+	['ListBox', () => mount(ListBox, { attachTo: document.body }), TListBox],
+	['Select', () => mount(Select, { attachTo: document.body }), TSelect],
+	['Tabs', () => mount(Tabs, { attachTo: document.body }), TTabs],
+	['Accordion', () => mount(Accordion, { attachTo: document.body }), TAccordion],
 ] as const
 
 describe('коллекционные компоненты отдают наружу свой инстанс', () => {
-	it.each(CASES)('%s: ctrl — экземпляр компонента', (_name, Component, Ctor) => {
-		wrapper = mount(Component as never, { attachTo: document.body })
+	it.each(CASES)('%s: ctrl — экземпляр компонента', (_name, mountComponent, Ctor) => {
+		const w = mountComponent()
 
-		expect((wrapper.vm as unknown as { ctrl: unknown }).ctrl).toBeInstanceOf(Ctor)
+		wrapper = w
+
+		expect(w.vm.ctrl).toBeInstanceOf(Ctor)
 	})
 })
