@@ -38,7 +38,7 @@ function createTabs(values: string[]) {
 		const facade = new TTabsContentCollectionFacade()
 		const item = find(value)
 
-		if (item) facade.setContext(registry.get(item) as any)
+		if (item) facade.setContext(registry.get(item))
 
 		return facade
 	}
@@ -48,13 +48,13 @@ function createTabs(values: string[]) {
 		const facade = new TTabsItemCollectionFacade()
 		const item = find(value)
 
-		if (item) facade.setContext(registry.get(item) as any)
+		if (item) facade.setContext(registry.get(item))
 
 		return facade
 	}
 
 	/** Контекст item-адаптеров таба с таким значением. */
-	const contextFor = (value: string) => registry.get(find(value)!) as any
+	const contextFor = (value: string) => registry.get(find(value)!)
 
 	return { owner, collection, items, facadeFor, tabFacadeFor, contextFor }
 }
@@ -128,7 +128,7 @@ describe('фасад панели — активность', () => {
 describe('связка ARIA таб ↔ панель', () => {
 	/** Сторона панели — её читает проводка, когда панель нашла свой таб. */
 	const panelAriaFor = (ctx: ReturnType<typeof createTabs>, value: string) =>
-		(ctx.contextFor(value).adapters.content as any).panelAria
+		ctx.contextFor(value).adapters.content.panelAria
 
 	it('таб получает свою сторону связки при добавлении в коллекцию', () => {
 		// Не при появлении панели: так связка попадает в первую же отрисовку,
@@ -150,7 +150,7 @@ describe('связка ARIA таб ↔ панель', () => {
 	it('формула идентификаторов одна на обе стороны', () => {
 		// Разнеси её по двум местам — и половинки однажды разойдутся
 		const ctx = createTabs(['a'])
-		const content = ctx.collection.engine.extensions.content as any
+		const content = ctx.collection.engine.extensions.content
 
 		expect(content.tabId(ctx.items[0])).toBe(ctx.items[0].aria.get('id'))
 		expect(content.panelId(ctx.items[0])).toBe(panelAriaFor(ctx, 'a').id)

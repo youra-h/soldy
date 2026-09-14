@@ -57,8 +57,8 @@ describe('TComponent — невизуальная база', () => {
 		expect('rendered' in c).toBe(false)
 		expect('visible' in c).toBe(false)
 		expect('present' in c).toBe(false)
-		expect((c as any).show).toBeUndefined()
-		expect((c as any).hide).toBeUndefined()
+		expect('show' in c).toBe(false)
+		expect('hide' in c).toBe(false)
 	})
 
 	it('даёт события и реестр состояний', () => {

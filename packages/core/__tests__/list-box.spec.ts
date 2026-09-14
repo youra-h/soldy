@@ -25,10 +25,10 @@ import {
 	TListBoxItemCollectionFacade,
 	TItemContextRegistry,
 } from '../src'
-import type { IListBoxItem } from '@soldy/core'
+import type { IListBoxItem, IListBoxProps } from '@soldy/core'
 
-function createListBox(texts: string[], props: Record<string, unknown> = {}) {
-	const owner = new TListBox(props as any)
+function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
+	const owner = new TListBox(props)
 	const collection = new TListBoxCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TListBoxItem({ value: text, text }))
 
@@ -40,7 +40,7 @@ function createListBox(texts: string[], props: Record<string, unknown> = {}) {
 	const facadeFor = (index: number) => {
 		const facade = new TListBoxItemCollectionFacade()
 
-		facade.setContext(registry.get(items[index]) as any)
+		facade.setContext(registry.get(items[index]))
 
 		return facade
 	}
@@ -134,7 +134,7 @@ describe('value ↔ выбор', () => {
 	 * заданное значение молча терялось бы.
 	 */
 	it('значение, заданное до появления элементов, применяется при их добавлении', () => {
-		const owner = new TListBox({ value: 'b' } as any)
+		const owner = new TListBox({ value: 'b' })
 		const collection = new TListBoxCollectionFacade({}, { owner })
 
 		expect(owner.value).toBe('b')

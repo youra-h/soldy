@@ -31,7 +31,7 @@ function createAccordion(values: string[]) {
 	const facadeFor = (index: number) => {
 		const facade = new TAccordionItemCollectionFacade()
 
-		facade.setContext(registry.get(items[index]) as any)
+		facade.setContext(registry.get(items[index]))
 
 		return facade
 	}

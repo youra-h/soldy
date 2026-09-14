@@ -10,7 +10,7 @@ class TTestItem implements ITestItem {
 	id: number
 	text: string
 
-	constructor(source: any) {
+	constructor(source: ITestItem | [number, string]) {
 		if (Array.isArray(source)) {
 			;[this.id, this.text] = source
 		} else {

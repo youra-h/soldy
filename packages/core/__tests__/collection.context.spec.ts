@@ -20,7 +20,7 @@ import type {
 
 type Item = { id: number; name: string }
 
-type TCustomEvents = Record<string, (...args: any) => any>
+type TCustomEvents = Record<string, (...args: unknown[]) => unknown>
 
 interface ICustomItemExtension extends IItemExtension<Item> {
 	readonly active: boolean

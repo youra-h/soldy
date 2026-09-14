@@ -20,10 +20,10 @@ import {
 	TItemContextRegistry,
 	createEngineTags,
 } from '../src'
-import type { ITagsItem } from '@soldy/core'
+import type { ITagsItem, ITagsProps } from '@soldy/core'
 
-function createTags(texts: string[], props: Record<string, unknown> = {}) {
-	const owner = new TTags(props as any)
+function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
+	const owner = new TTags(props)
 	const collection = new TTagsCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TTagsItem({ value: text, text }))
 
@@ -35,7 +35,7 @@ function createTags(texts: string[], props: Record<string, unknown> = {}) {
 	const facadeFor = (index: number) => {
 		const facade = new TTagsItemCollectionFacade()
 
-		facade.setContext(registry.get(items[index]) as any)
+		facade.setContext(registry.get(items[index]))
 
 		return facade
 	}

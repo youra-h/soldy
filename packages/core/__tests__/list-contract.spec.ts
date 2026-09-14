@@ -16,12 +16,32 @@
 
 import { describe, it, expect } from 'vitest'
 import { TListBox, TSelect, LIST_DEFAULTS } from '../src'
+import type { IList, TDataset } from '../src'
+import type { TListEvents, IListProps } from '../src/components/custom/list/types'
+
+/**
+ * Контракт инстанса для параметризованных проверок ниже: собственно `IList`
+ * плюс то немногое, что нужно тесту снаружи него. `events` типизирован
+ * структурно — только методом `on` по `TListEvents`: два компонента несут
+ * разные точные карты событий (в каждой сверх `TListEvents` есть ещё
+ * собственные события), тесту нужна лишь подписка на списочные.
+ */
+interface IListInstance extends IList {
+	readonly events: {
+		on<K extends keyof TListEvents>(event: K, handler: TListEvents[K]): void
+	}
+	readonly dataset: TDataset
+	getProps(): Readonly<Partial<IList>>
+}
+
+/** Конструктор компонента, который обязан нести списочный контракт целиком. */
+type TListCtor = new (props?: Partial<IListProps>) => IListInstance
 
 /** Компоненты, которые обязаны нести списочный контракт целиком. */
-const IMPLEMENTATIONS = [
-	['TListBox', () => new TListBox()],
-	['TSelect', () => new TSelect()],
-] as const
+const IMPLEMENTATIONS: Array<[string, TListCtor]> = [
+	['TListBox', TListBox],
+	['TSelect', TSelect],
+]
 
 /** Свойство → значение, отличное от умолчания, чтобы сеттер было чем проверить. */
 const PROPERTIES = [
@@ -31,38 +51,61 @@ const PROPERTIES = [
 	['indicator', 'change:indicator', 'start'],
 ] as const
 
-describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, create) => {
+type TListProp = (typeof PROPERTIES)[number][0]
+
+/**
+ * Пишет значение в конкретное поле `IList` по его имени.
+ *
+ * `instance[prop] = value` через union ключей не компилируется: TypeScript
+ * выводит для записи через union тип цели `never` (чтение через union так не
+ * ведёт себя, только запись — известное ограничение). Обобщённая по `K`
+ * функция — тот особый случай, для которого компилятор запись всё же
+ * разрешает: `K` здесь один конкретный (хоть и неизвестный вызывающему)
+ * ключ, а не готовый union.
+ */
+function writeListProp<K extends TListProp>(instance: IList, prop: K, value: IList[K]): void {
+	instance[prop] = value
+}
+
+/** Тот же приём для построения `props`: `{ [prop]: value }` под конкретным `K`. */
+function propsFor<K extends TListProp>(prop: K, value: IList[K]): Partial<IListProps> {
+	return { [prop]: value }
+}
+
+describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, Ctor) => {
+	const create = () => new Ctor()
+
 	it.each(PROPERTIES)('%s читается и по умолчанию берётся из LIST_DEFAULTS', (prop) => {
-		expect((create() as any)[prop]).toBe((LIST_DEFAULTS as any)[prop])
+		expect(create()[prop]).toBe(LIST_DEFAULTS[prop])
 	})
 
 	it.each(PROPERTIES)('%s пишется', (prop, _event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(instance[prop]).toBe(value)
 	})
 
 	it.each(PROPERTIES)('%s сообщает о смене событием %s', (prop, event, value) => {
-		const instance = create() as any
+		const instance = create()
 		const seen: unknown[] = []
 
 		instance.events.on(event, (v: unknown) => seen.push(v))
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(seen).toEqual([value])
 	})
 
 	it.each(PROPERTIES)('%s не эмитит на повторной записи того же значения', (prop, event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		const seen: unknown[] = []
 
 		instance.events.on(event, (v: unknown) => seen.push(v))
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(seen).toEqual([])
 	})
@@ -73,15 +116,13 @@ describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, c
 	 * заявлен как headless-модель, и адаптера у него может не быть вовсе.
 	 */
 	it.each(PROPERTIES)('%s принимается конструктором', (prop, _event, value) => {
-		const Ctor = create().constructor as new (props: Record<string, unknown>) => any
-
-		expect(new Ctor({ [prop]: value })[prop]).toBe(value)
+		expect(new Ctor(propsFor(prop, value))[prop]).toBe(value)
 	})
 
 	it.each(PROPERTIES)('%s попадает в getProps()', (prop, _event, value) => {
-		const instance = create() as any
+		const instance = create()
 
-		instance[prop] = value
+		writeListProp(instance, prop, value)
 
 		expect(instance.getProps()[prop]).toBe(value)
 	})
@@ -92,7 +133,9 @@ describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, c
  * получает каждый элемент, и тема читает одно свойство на двух уровнях —
  * `expand` со списка, `wrap` с элемента.
  */
-describe.each(IMPLEMENTATIONS)('%s отдаёт contentFit в data-*', (_name, create) => {
+describe.each(IMPLEMENTATIONS)('%s отдаёт contentFit в data-*', (_name, Ctor) => {
+	const create = () => new Ctor()
+
 	it('атрибут стоит сразу, а не после первой смены', () => {
 		expect(create().dataset.get('content-fit')).toBe(LIST_DEFAULTS.contentFit)
 	})
@@ -111,7 +154,9 @@ describe.each(IMPLEMENTATIONS)('%s отдаёт contentFit в data-*', (_name, c
  * под отметку резервировалось до первого выбора, а элементам тот же атрибут
  * ставит расширение коллекции.
  */
-describe.each(IMPLEMENTATIONS)('%s отдаёт indicator в data-*', (_name, create) => {
+describe.each(IMPLEMENTATIONS)('%s отдаёт indicator в data-*', (_name, Ctor) => {
+	const create = () => new Ctor()
+
 	it('атрибут стоит сразу, а не после первой смены', () => {
 		expect(create().dataset.get('indicator')).toBe(LIST_DEFAULTS.indicator)
 	})
