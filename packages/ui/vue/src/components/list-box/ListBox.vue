@@ -11,9 +11,8 @@ export default { ...SetupListBox, components: { ListBoxItem } }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		:aria-disabled="disabled"
 		tabindex="0"
-		v-bind="attrs"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<slot name="header" />
 		<slot>

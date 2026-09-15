@@ -1,5 +1,5 @@
 export { bind } from './types'
-export { applyAttributeSet, ariaBinding, createAttributesBinding } from './aria'
+export { applyAttributeSet, ariaBinding, createAttributesBinding, datasetBinding } from './aria'
 export type {
 	ITemplate,
 	ITemplateBinding,

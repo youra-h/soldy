@@ -7,21 +7,21 @@
 // от поверхности». Развернуть это в per-компонентные блоки значило бы
 // размазать одну мысль по пяти файлам.
 @mixin button-state-bg($color, $hover-bg, $active-bg) {
-	&:hover:not([disabled]),
-	// &:focus:not([disabled]),
-	// &:focus-visible:not([disabled]),
-	&[data-highlighted='true']:not([disabled]) {
+	&:hover:not([data-disabled='true']),
+	// &:focus:not([data-disabled='true']),
+	// &:focus-visible:not([data-disabled='true']),
+	&[data-highlighted='true']:not([data-disabled='true']) {
 		@apply #{'bg-s-' + $color + '-' + $hover-bg};
 	}
 
-	&:active:not([disabled]),
-	&[data-selected='true']:not([disabled]) {
+	&:active:not([data-disabled='true']),
+	&[data-selected='true']:not([data-disabled='true']) {
 		@apply #{'bg-s-' + $color + '-' + $active-bg};
 	}
 
 	// Когда элемент выбран (data-selected) и на нём клавиатурная подсветка (data-highlighted),
 	// показываем фон выбранного состояния + полупрозрачную маску сверху
-	&[data-selected='true'][data-highlighted='true']:not([disabled]) {
+	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
 		@apply relative overflow-hidden;
 
 		&::after {
@@ -60,9 +60,9 @@
 
 	@include button-state-bg($color, $hover-bg, $active-bg);
 
-	&:hover:not([disabled]),
-	&:focus:not([disabled]),
-	&:focus-visible:not([disabled]) {
+	&:hover:not([data-disabled='true']),
+	&:focus:not([data-disabled='true']),
+	&:focus-visible:not([data-disabled='true']) {
 		border-color: var(--s-#{$color}-#{$brd-hover});
 	}
 }

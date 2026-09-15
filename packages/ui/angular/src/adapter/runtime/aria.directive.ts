@@ -1,19 +1,19 @@
 /**
- * ariaAttrs — раскладывает набор атрибутов доступности на элемент, вторым
- * входом — набор `attrs` (нативные атрибуты вроде `disabled`, зависящие от
- * тега корня).
+ * ariaAttrs — раскладывает набор атрибутов доступности на элемент, ещё двумя
+ * входами — наборы `attrs` (нативные атрибуты вроде `disabled`, зависящие от
+ * тега корня) и `dataset` (`data-*` для темы).
  *
  * Существует только потому, что Angular единственный из шести фреймворков не
- * умеет спред атрибутов: у Vue есть `v-bind="{ ...attrs, ...aria }"`, у
- * React/Svelte/Solid — спред объекта, в Web Components это setAttribute в
+ * умеет спред атрибутов: у Vue есть `v-bind="{ ...attrs, ...aria, ...dataset }"`,
+ * у React/Svelte/Solid — спред объекта, в Web Components это setAttribute в
  * шаблоне. Здесь же пришлось бы перечислять `[attr.role]`, `[attr.tabindex]`,
- * `[attr.aria-*]`, `[attr.disabled]` в каждом шаблоне руками — то есть ровно
- * тот захардкоженный набор, который вынос в ядро и убирает.
+ * `[attr.aria-*]`, `[attr.disabled]`, `[attr.data-*]` в каждом шаблоне руками —
+ * то есть ровно тот захардкоженный набор, который вынос в ядро и убирает.
  *
- * Оба набора применяются одним и тем же алгоритмом, но независимо друг от
- * друга: `aria` и `attrs` не пересекаются по именам, а раздельное отслеживание
- * «поставленного в прошлый раз» не даёт одному набору снять атрибут,
- * поставленный другим.
+ * Все три набора применяются одним и тем же алгоритмом, но независимо друг от
+ * друга: `aria`, `attrs` и `dataset` не пересекаются по именам, а раздельное
+ * отслеживание «поставленного в прошлый раз» не даёт одному набору снять
+ * атрибут, поставленный другим.
  *
  * Селектор — `[ariaAttrs]`, а не `[aria]`: последний совпал бы с любым
  * элементом, у которого есть атрибут `aria`.
@@ -60,10 +60,12 @@ export function applyAttributes(
 export class AriaDirective implements OnChanges {
 	@Input('ariaAttrs') aria: TAriaAttributes | undefined
 	@Input() attrs: TAttributesMap | undefined
+	@Input() dataset: TAttributesMap | undefined
 
 	/** Поставленное в прошлый раз, отдельно на каждый набор. */
 	private _appliedAria: string[] = []
 	private _appliedAttrs: string[] = []
+	private _appliedDataset: string[] = []
 
 	constructor(private readonly _elementRef: ElementRef<HTMLElement>) {}
 
@@ -72,5 +74,6 @@ export class AriaDirective implements OnChanges {
 
 		this._appliedAria = applyAttributes(element, this.aria, this._appliedAria)
 		this._appliedAttrs = applyAttributes(element, this.attrs, this._appliedAttrs)
+		this._appliedDataset = applyAttributes(element, this.dataset, this._appliedDataset)
 	}
 }

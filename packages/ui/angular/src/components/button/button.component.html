@@ -6,6 +6,7 @@
 			[style.display]="state()['visible'] === false ? 'none' : null"
 			[ariaAttrs]="state()['aria']"
 			[attrs]="state()['attrs']"
+			[dataset]="state()['dataset']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</button>
@@ -16,6 +17,7 @@
 			[style.display]="state()['visible'] === false ? 'none' : null"
 			[ariaAttrs]="state()['aria']"
 			[attrs]="state()['attrs']"
+			[dataset]="state()['dataset']"
 		>
 			<ng-container [ngTemplateOutlet]="content" />
 		</div>

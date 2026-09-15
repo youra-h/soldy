@@ -89,6 +89,30 @@ describe('Button · inline props (декларативные свойства)',
 		expect(fieldset.attributes('aria-disabled')).toBeUndefined()
 	})
 
+	/**
+	 * `disabled` и `aria-disabled` решает тег, а тема читает одно значение на
+	 * любом теге — `data-disabled` из `dataset`. `false` — строкой: тема смотрит
+	 * `[data-disabled='true']`, «выключено» отличается от «неприменимо».
+	 */
+	it('disabled: data-disabled на <button> и на других тегах', async () => {
+		expect(mount(Button, { props: { disabled: true } }).attributes('data-disabled')).toBe('true')
+		expect(
+			mount(Button, { props: { tag: 'a', disabled: true } }).attributes('data-disabled'),
+		).toBe('true')
+
+		const wrapper = mount(Button, { props: { tag: 'span' } })
+
+		expect(wrapper.attributes('data-disabled')).toBe('false')
+
+		await wrapper.setProps({ disabled: true })
+		expect(wrapper.attributes('aria-disabled')).toBe('true')
+		expect(wrapper.attributes('data-disabled')).toBe('true')
+
+		await wrapper.setProps({ tag: 'button' })
+		expect(wrapper.attributes('disabled')).toBeDefined()
+		expect(wrapper.attributes('data-disabled')).toBe('true')
+	})
+
 	it('rendered=false убирает элемент, visible=false прячет через v-show', async () => {
 		const wrapper = mount(Button, { props: { rendered: true, visible: true } })
 		expect(wrapper.find('button').exists()).toBe(true)

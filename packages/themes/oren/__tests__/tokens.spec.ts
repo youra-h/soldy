@@ -56,14 +56,38 @@ function scaleOf(tokens: Map<string, string>, family: string): number[] {
 	})
 }
 
-function scssFiles(dir: string): string[] {
+/** Исходники стилей — `.scss` и `.css`, рекурсивно. */
+function styleFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((entry) => {
 		const path = join(dir, entry)
 
-		if (statSync(path).isDirectory()) return scssFiles(path)
+		if (statSync(path).isDirectory()) return styleFiles(path)
 
-		return path.endsWith('.scss') ? [path] : []
+		return /\.s?css$/.test(path) ? [path] : []
 	})
+}
+
+/**
+ * Все стили темы кодом без комментариев — общий вход для запретов на уровне
+ * исходников. Весь `src`, а не только компоненты: токены и утилиты в `.css`
+ * попадают в ту же сборку.
+ *
+ * Комментарии выкусываются не для скорости: в них лежат объяснения этих самых
+ * запретов, и сканер поймал бы их как нарушения. Ровно та же ловушка, что и у
+ * сканера Tailwind, который читает комментарии и генерирует утилиты по
+ * упомянутым в них именам.
+ */
+const sources = styleFiles(SRC).map((file) => ({
+	name: relative(SRC, file),
+	code: readFileSync(file, 'utf8')
+		.replace(/\/\*[\s\S]*?\*\//g, '')
+		.replace(/\/\/.*$/gm, ''),
+}))
+
+function scan(pattern: RegExp): string[] {
+	return sources.flatMap(({ name, code }) =>
+		[...code.matchAll(pattern)].map(([match]) => `${name}: ${match}`),
+	)
 }
 
 const FAMILIES = ['accent', 'positive', 'negative', 'caution', 'neutral']
@@ -133,27 +157,6 @@ describe('компоненты не берут цвет мимо темы', () =
 		'red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone'
 
 	/**
-	 * Код без комментариев. Комментарии выкусываются не для скорости: в них
-	 * лежат объяснения этих самых запретов, и сканер поймал бы их как
-	 * нарушения. Ровно та же ловушка, что и у сканера Tailwind, который
-	 * читает комментарии и генерирует утилиты по упомянутым в них именам.
-	 */
-	const sources = [...scssFiles(join(SRC, 'components')), ...scssFiles(join(SRC, 'mixins'))].map(
-		(file) => ({
-			name: relative(SRC, file),
-			code: readFileSync(file, 'utf8')
-				.replace(/\/\*[\s\S]*?\*\//g, '')
-				.replace(/\/\/.*$/gm, ''),
-		}),
-	)
-
-	function scan(pattern: RegExp): string[] {
-		return sources.flatMap(({ name, code }) =>
-			[...code.matchAll(pattern)].map(([match]) => `${name}: ${match}`),
-		)
-	}
-
-	/**
 	 * Палитра Tailwind живёт мимо `--s-*`, значит пакет темы её не видит:
 	 * такой цвет одинаков во всех темах и во всех цветовых схемах.
 	 */
@@ -196,5 +199,35 @@ describe('компоненты не берут цвет мимо темы', () =
 	 */
 	it('не заливают фон белым или чёрным в обход токена', () => {
 		expect(scan(/\bbg-(?:white|black)\b/g)).toEqual([])
+	})
+})
+
+/**
+ * ARIA — контракт со скринридером, `data-*` — с темой (корневой `AGENTS.md`,
+ * «CSS не стилизуется по `aria-*`»). Селектор по ARIA-атрибуту молча
+ * перестаёт срабатывать, как только атрибут переезжает на другой элемент или
+ * уступает место нативному: так однажды перестали раскрываться панели
+ * Accordion. Состояние тема читает из `data-*` — `data-selected`,
+ * `data-disabled` и соседей.
+ */
+describe('тема не стилизуется по aria-*', () => {
+	/** Пробелы после скобки селектору не мешают, поэтому ловятся и они. */
+	it('нет селекторов по атрибуту aria-*', () => {
+		expect(scan(/\[\s*aria-[^\]]*\]?/g)).toEqual([])
+	})
+
+	/**
+	 * Вариант Tailwind компилируется в тот же селектор по атрибуту. Две формы:
+	 * вариант в цепочке утилиты внутри `@apply` — в том числе составной (с
+	 * `group-`, `peer-`, `not-` впереди) и с произвольным значением в скобках —
+	 * и директива `@variant`.
+	 *
+	 * Примеры здесь целиком не написаны: сканер Tailwind читает исходники пакета
+	 * вместе с этим файлом, и упоминание породило бы в `dist` утилиту ровно с
+	 * тем селектором, который тест запрещает.
+	 */
+	it('нет вариантов Tailwind aria-*', () => {
+		expect(scan(/(?<![\w$.#%-])(?:[a-z][\w-]*-)?aria-[^\s:;{}]*:/g)).toEqual([])
+		expect(scan(/@variant\s+(?:[a-z][\w-]*-)?aria-/g)).toEqual([])
 	})
 })

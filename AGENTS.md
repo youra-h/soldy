@@ -1169,9 +1169,9 @@ APG, следуем ему, а расхождения объясняем в ко
 Плата: вычисляемых записей нет, правила стали подписками.
 
 ```ts
-this.events.on('change:disabled', () => this._syncDisabledAria())
-this.events.on('change:tag', () => this._syncDisabledAria())
-this._syncDisabledAria() // начальное состояние — руками
+this.events.on('change:disabled', () => this._syncDisabled())
+this.events.on('change:tag', () => this._syncDisabled())
+this._syncDisabled() // начальное состояние — руками
 ```
 
 Забыть подписку легче, чем забыть геттер. Взамен у пропа `aria` **один**
@@ -1222,6 +1222,7 @@ this._syncDisabledAria() // начальное состояние — рукам
 | `TActivationExtension` | `data-selected` — то же имя при состоянии `active`         |
 | `TListLayoutPlugin`    | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
 | `TListItemPlugin`      | `data-highlighted`                                         |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит        |
 | ядро компонента        | своё состояние — `data-open` у `TSelect`                   |
 
 Два правила, которые легко нарушить:
@@ -1254,6 +1255,12 @@ this._syncDisabledAria() // начальное состояние — рукам
 либо `aria-disabled` в `aria` — никогда оба на одном элементе. Раньше это
 условие (`tag === 'button' ? disabled : undefined`) писал каждый шаблон Button
 сам, и поменять список тегов значило бы поменять шесть шаблонов.
+
+Теме ни одна из этих половин не годится: обе решает тег, и обе переезжают
+вместе с ним. Поэтому `TControl` пишет ещё одну запись того же состояния —
+`data-disabled` в `dataset`: на любом теге, отдельной подпиской на
+`change:disabled`, мимо `_syncDisabled`. Тема читает disabled только из неё
+(см. «CSS не стилизуется по `aria-*`»).
 
 Значение — непустая строка (`'disabled'`), не `''` и не `'false'`: у
 `disabled` играет роль только присутствие атрибута, но `''` React не
@@ -1486,6 +1493,16 @@ ARIA — контракт со скринридером, `data-*` — контр
 открываться, и ни один тест не заметил, потому что все они проверяли ARIA.
 
 Обёртка отдаёт состояние как `data-selected`, тема смотрит на него.
+
+Disabled — так же: тема читает `data-disabled`, которое `TControl` пишет на
+любом теге (см. «Третий набор: `attrs`»), а не `aria-disabled` и не нативный
+`disabled`. Оба последних решает тег элемента, и переезжают они вместе с ним —
+селектор по ним перестал бы срабатывать молча, как с Accordion.
+
+Сторожит `packages/themes/oren/__tests__/tokens.spec.ts`: во всём `src` темы
+(`.scss` и `.css`, без комментариев) нет ни селектора по атрибуту `aria-*`, ни
+варианта Tailwind `aria-*` в `@apply` и `@variant` — он компилируется в тот же
+селектор.
 
 ### Прочее
 

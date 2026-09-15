@@ -9,9 +9,7 @@
  */
 
 import type { IComponentView } from '@soldy/core'
-import { ariaBinding, createAttributesBinding, type ITemplate } from '../../adapter'
-
-const datasetBinding = createAttributesBinding<Pick<IComponentView, 'dataset'>>('dataset')
+import { ariaBinding, datasetBinding, type ITemplate } from '../../adapter'
 
 export const componentViewTemplate: ITemplate<IComponentView> = {
 	tag: (state) => String(state.tag ?? 'div'),

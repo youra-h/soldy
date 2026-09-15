@@ -7,14 +7,17 @@
  * без изменений. Набор держит ядро (`TAria`), пишут в него наследники,
  * плагины и расширения коллекции; сюда он приходит снимком.
  *
- * `createAttributesBinding` — та же механика для наборов, нужных только части
- * шаблонов (`attrs` — нативные атрибуты вроде `disabled`, зависящие от тега
- * корня, есть только у Button). Каждый вызов заводит свой `WeakMap`: наборы
- * не пересекаются по именам, а раздельное отслеживание «поставленного в
- * прошлый раз» не даёт одному набору снять атрибут, поставленный другим.
+ * `datasetBinding` — то же для `dataset` (`data-*` для темы): общая привязка
+ * для шаблонов, чей корень читает тема (`ComponentView`, `Button`), а не своя
+ * копия в каждом.
+ *
+ * `createAttributesBinding` — сама механика. Каждый вызов заводит свой
+ * `WeakMap`: наборы не пересекаются по именам, а раздельное отслеживание
+ * «поставленного в прошлый раз» не даёт одному набору снять атрибут,
+ * поставленный другим.
  */
 
-import type { TAria, TAttributesMap } from '@soldy/core'
+import type { TAria, TAttributesMap, TDataset } from '@soldy/core'
 import { bind, type ITemplateBinding } from './types'
 
 /**
@@ -68,3 +71,6 @@ export function createAttributesBinding<TInstance extends object>(
 
 export const ariaBinding: ITemplateBinding<{ readonly aria: TAria }> =
 	createAttributesBinding('aria')
+
+export const datasetBinding: ITemplateBinding<{ readonly dataset: TDataset }> =
+	createAttributesBinding('dataset')

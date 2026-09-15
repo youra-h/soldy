@@ -53,6 +53,17 @@ export default class TControl<
 		this.events.on('change:tag', () => this._syncDisabled())
 
 		this._syncDisabled()
+
+		// `data-disabled` — то же состояние для темы. Отдельной подпиской, а не
+		// в `_syncDisabled`: тот пересчитывается и на `change:tag`, потому что
+		// каждая его запись зависит от тега своего элемента — нативный
+		// `disabled` есть только у части тегов, `aria-disabled` ставится только
+		// на остальных. Теме нужно одно значение на любом теге, иначе её
+		// селектор переезжал бы вместе с атрибутом. Булево уходит как есть:
+		// префикс и строку делает `TDataset`, `false` остаётся `"false"`.
+		this.events.on('change:disabled', () => this._dataset.add('disabled', this.disabled))
+
+		this._dataset.add('disabled', this.disabled)
 	}
 
 	/**

@@ -11,7 +11,7 @@ export default { ...SetupButton }
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
-		v-bind="{ ...attrs, ...aria }"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<slot name="leading"> </slot>
 		<span class="s-button__text">

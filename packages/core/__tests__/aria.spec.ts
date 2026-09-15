@@ -186,6 +186,66 @@ describe('TControl.aria · aria-disabled', () => {
 	})
 })
 
+/**
+ * Нативный `disabled` и `aria-disabled` решает тег, и они переезжают вместе с
+ * ним. Тема читает одно значение на любом теге — `data-disabled` в `dataset`,
+ * поэтому от тега оно не зависит и на его смену не пересчитывается.
+ */
+describe('TControl.dataset · data-disabled', () => {
+	it('следует за disabled: "false" → "true" → "false"', () => {
+		const control = new TControl()
+
+		expect(control.dataset.get('disabled')).toBe('false')
+
+		control.disabled = true
+		expect(control.dataset.get('disabled')).toBe('true')
+
+		control.disabled = false
+		expect(control.dataset.get('disabled')).toBe('false')
+	})
+
+	it('disabled: true из конструктора стоит в наборе сразу', () => {
+		expect(new TControl({ disabled: true }).dataset.get('disabled')).toBe('true')
+	})
+
+	it.each(['button', 'fieldset', 'a'])('одинаков на теге %s', (tag) => {
+		expect(new TControl({ tag, disabled: true }).dataset.get('disabled')).toBe('true')
+		expect(new TControl({ tag }).dataset.get('disabled')).toBe('false')
+	})
+
+	it('смена тега набор не трогает', () => {
+		const control = new TControl({ tag: 'button', disabled: true })
+		let count = 0
+
+		control.events.on('change:dataset', () => count++)
+
+		control.tag = 'a'
+		control.tag = 'fieldset'
+
+		expect(control.dataset.get('disabled')).toBe('true')
+		expect(count).toBe(0)
+	})
+
+	it('TInput: то же — ни тег корня, ни <input> под aria на значение не влияют', () => {
+		const input = new TInput({ tag: 'div', disabled: true })
+
+		expect(input.dataset.get('disabled')).toBe('true')
+
+		input.tag = 'span'
+		expect(input.dataset.get('disabled')).toBe('true')
+
+		input.disabled = false
+		expect(input.dataset.get('disabled')).toBe('false')
+	})
+
+	it('отдельный набор: data-disabled не попадает ни в aria, ни в attrs', () => {
+		const control = new TControl({ tag: 'div', disabled: true })
+
+		expect(control.aria.has('data-disabled')).toBe(false)
+		expect(control.attrs.has('data-disabled')).toBe(false)
+	})
+})
+
 describe('TInputControl.aria · aria-required', () => {
 	it('TInput: не ставится без readonly — required у вложенного <input> нативный', () => {
 		const input = new TInput({ required: true })

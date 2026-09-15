@@ -21,6 +21,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { ListBox } from '@soldy/ui-vue'
 import AccordionHarness from './Accordion.test.vue'
 import TabsHarness from './TabsContent.test.vue'
 import SelectHarness from './Select.test.vue'
@@ -103,5 +104,64 @@ describe('Select: корень несёт data-open для темы', () => {
 
 		expect(wrapper.find('.s-select').attributes('aria-expanded')).toBeUndefined()
 		expect(wrapper.find('[role="combobox"]').attributes('aria-expanded')).toBe('false')
+	})
+})
+
+/**
+ * Disabled тема читает из `data-disabled` — одного на любом теге: нативный
+ * `disabled` и `aria-disabled` решает тег элемента, и они переезжают вместе с
+ * ним. Корень ListBox — сам фокусируемый виджет, поэтому `aria-disabled` на
+ * нём тоже стоит, но приходит набором ядра, а не вычисляется шаблоном.
+ */
+describe('ListBox: корень несёт data-disabled для темы', () => {
+	it('disabled: data-disabled="true" рядом с aria-disabled из набора', () => {
+		const root = mount(ListBox, { props: { disabled: true } })
+
+		expect(root.attributes('data-disabled')).toBe('true')
+		expect(root.attributes('aria-disabled')).toBe('true')
+	})
+
+	it('без disabled: data-disabled="false", aria-disabled нет вовсе', async () => {
+		const root = mount(ListBox)
+
+		expect(root.attributes('data-disabled')).toBe('false')
+		expect(root.attributes('aria-disabled')).toBeUndefined()
+
+		await root.setProps({ disabled: true })
+
+		expect(root.attributes('data-disabled')).toBe('true')
+		expect(root.attributes('aria-disabled')).toBe('true')
+	})
+})
+
+describe('Select: опция несёт data-disabled для темы', () => {
+	let wrapper: ReturnType<typeof mount> | null = null
+
+	afterEach(() => {
+		wrapper?.unmount()
+		wrapper = null
+		document.body.innerHTML = ''
+	})
+
+	/**
+	 * Обёртку опции красит `_select.scss`, кнопку внутри — общий
+	 * `button-state-bg`: атрибут обязан доехать до обоих.
+	 */
+	it('корень опции и её .s-button помечены data-disabled', async () => {
+		wrapper = mount(SelectHarness, { attachTo: document.body })
+
+		await nextFrame()
+		await wrapper.find('.s-select').trigger('click')
+		await nextTick()
+
+		const options = [...document.querySelectorAll('[role="option"]')]
+
+		// В обёртке disabled объявлена третья опция
+		expect(options.map((option) => option.getAttribute('data-disabled'))).toEqual([
+			'false',
+			'false',
+			'true',
+		])
+		expect(options[2].querySelector('.s-button')?.getAttribute('data-disabled')).toBe('true')
 	})
 })
