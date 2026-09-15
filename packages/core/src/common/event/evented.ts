@@ -1,16 +1,18 @@
 import { TEventEmitter } from './event-emitter'
 import type { IEventEmitter } from './event-emitter'
 import type { TEventContext, TEventMiddleware } from './middleware'
+import type { TEventSink, TRelayRule, TRelayedEvents } from './types'
 
 /**
  * Вид эмиттера, через который работает тело {@link TEvented.relay}.
  *
- * Правила проброса называют события строками, и связь «аргументы события
- * источника подходят событию цели» TypeScript на дженерик-картах не выражает:
- * `on` ждёт обработчик ровно `TSource[K]`, `emit` — аргументы ровно
- * `Parameters<TEvents[K]>`, и построить такие значения внутри дженерик-метода
- * нельзя. Поэтому relay соединяет эмиттеры по их нетипизированному контракту —
- * тому же `IEventEmitter`, который объявляет `TEventEmitter`.
+ * Правила и обработчики сверяет сигнатура `relay`: имена — тип правила
+ * `TRelayRule`, обработчики — `this`-параметр (см. JSDoc метода). Тело этой
+ * сверкой воспользоваться не может: на дженерик-картах `on` ждёт обработчик
+ * ровно `TSource[K]`, `emit` — аргументы ровно `Parameters<TEvents[K]>`, и
+ * построить такие значения внутри дженерик-метода нельзя. Поэтому тело
+ * соединяет эмиттеры по их нетипизированному контракту — тому же
+ * `IEventEmitter`, который объявляет `TEventEmitter`.
  *
  * `TEvented<T>` присваивается в этот вид структурно, без приведения, как
  * `TEventEmitter<T>` удовлетворяет `implements IEventEmitter`. Проброс идёт
@@ -18,51 +20,6 @@ import type { TEventContext, TEventMiddleware } from './middleware'
  * работают как при прямом вызове.
  */
 type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
-
-/**
- * Описание правила проброса одного события из источника.
- *
- * Объединение по событиям источника: у правила с `from: 'item:added'` хук
- * `then` имеет тип обработчика именно `item:added`.
- *
- * @template TSource - события источника
- * @template TTarget - события цели (текущего эмиттера)
- */
-export type TRelayRule<
-	TSource extends Record<string, (...args: any) => any>,
-	TTarget extends Record<string, (...args: any) => any>,
-> = {
-	[TFrom in keyof TSource & string]: {
-		/** Имя события в источнике */
-		from: TFrom
-		/**
-		 * Имя события в цели. Если не указано — используется то же имя, что и `from`.
-		 * Используется для переименования событий при проброске.
-		 *
-		 * @example
-		 * // Пробросить item:added как tab:added
-		 * { from: 'item:added', as: 'tab:added' }
-		 */
-		as?: keyof TTarget & string
-		/**
-		 * Хук, вызываемый **до** проброса события в цель. Тип — обработчик
-		 * события `from`: аргументы те же.
-		 * Удобен для подписки на события нового элемента сразу в момент его добавления —
-		 * до того, как внешний код узнает о событии.
-		 *
-		 * @example
-		 * {
-		 *   from: 'item:added',
-		 *   then: ({ item }) => {
-		 *     item.events.on('change:disabled', (value) => {
-		 *       this.events.emit('item:disabled', item, value)
-		 *     })
-		 *   }
-		 * }
-		 */
-		then?: TSource[TFrom]
-	}
-}[keyof TSource & string]
 
 export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _items: TEventEmitter<TEvents> = new TEventEmitter()
@@ -244,6 +201,31 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * - `as` — переименовать событие при проброске
 	 * - `then` — хук, вызываемый **до** проброса (удобно для подписки на дочерние события)
 	 *
+	 * **Что сверяет сигнатура.**
+	 * - Имена — тип правила `TRelayRule`: строковое правило есть в обеих картах,
+	 *   `from` — в источнике, `as ?? from` — в цели. Ошибка встаёт на строку правила.
+	 * - Обработчики — `this`-параметр: цель обязана быть `TEventSink` карты
+	 *   проброшенных событий `TRelayedEvents` (имя в цели → обработчик `from`).
+	 *   Проброс — это эмит в цель, а `TEvented<TEvents>` при `TEvents extends TOwn`
+	 *   присваивается в `TEventSink<TOwn>`. Поэтому дженерик-карта цели сверяется
+	 *   по своему констрейнту.
+	 * - Обработчик цели должен принимать аргументы события источника; параметров у
+	 *   цели может быть меньше (`change:selection` → `change:selected: () => void`).
+	 *   Обработчики, несовместимые в обе стороны, — ошибка.
+	 * - Карта с индексной сигнатурой (у источника или у цели) принимает любое имя и
+	 *   обработчики не сверяет.
+	 *
+	 * **Чего не видит.** TypeScript сравнивает карту цели с картой проброшенных
+	 * событий целиком и принимает и обратную сторону — когда вызов пробрасывает одно
+	 * событие или правила покрывают карту цели полностью. В таком вызове расширенный
+	 * аргумент источника (`boolean | undefined` → `boolean`) и новый обязательный
+	 * параметр цели проверка не видит. Вызов с несколькими событиями, не покрывающий
+	 * карту цели, обратную сторону не проходит.
+	 *
+	 * **Почему тело на канале.** Построить аргументы `emit` дженерик-карты внутри
+	 * метода нельзя, поэтому тело соединяет эмиттеры без карты событий — см.
+	 * `TRelayChannel`. Сверку оно не ослабляет: её уже сделала сигнатура.
+	 *
 	 * @param source - источник событий (другой `TEvented`)
 	 * @param rules  - список правил проброса
 	 *
@@ -287,11 +269,15 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *   'item:deleted',
 	 * ])
 	 */
-	relay<TSource extends Record<string, (...args: any) => any>>(
+	relay<
+		TSource extends Record<string, (...args: any) => any>,
+		const TRules extends readonly TRelayRule<TSource, TEvents>[],
+	>(
+		this: TEvented<TEvents> & NoInfer<TEventSink<TRelayedEvents<TSource, TRules>>>,
 		source: TEvented<TSource>,
-		rules: ((keyof TSource & string) | TRelayRule<TSource, TEvents>)[],
+		rules: TRules,
 	): void {
-		// Сигнатура сверяет `from` с картой источника и `as` с картой цели. Тело
+		// Имена и обработчики сверила сигнатура (TRelayRule и this-параметр). Тело
 		// работает с эмиттерами как с каналами без карты событий — см. TRelayChannel.
 		const src = source._channel
 		const tgt = this._channel

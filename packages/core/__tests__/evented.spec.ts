@@ -293,6 +293,109 @@ describe('TEvented', () => {
 		expect(callOrder).toEqual(['hook', 'handler'])
 	})
 
+	// --- relay: сверка правил и обработчиков с картами событий ---
+
+	// Негативные случаи ловит не vitest, а «Типы — Core»: tsc проверяет и
+	// __tests__, а неиспользованный @ts-expect-error — тоже ошибка. Ослабленная
+	// сверка уронит типы, а не пройдёт молча.
+	describe('relay: сверка с картами событий', () => {
+		type TForwardEvents = { forwarded: (value: string) => void }
+
+		type TWideEvents = {
+			closable: (value: boolean | undefined) => void
+			size: (value: number) => void
+		}
+
+		type TNarrowEvents = {
+			destroy: () => void
+			closable: (value: boolean) => void
+			size: (value: number) => void
+		}
+
+		it('имени из правила нет в карте — ошибка типов', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const other = new TEvented<{ other: () => void }>()
+			const same = new TEvented<TestEvents>()
+
+			// @ts-expect-error — строкового правила `change` нет в карте цели
+			target.relay(source, ['change'])
+			// @ts-expect-error — строкового правила `change` нет в карте источника
+			same.relay(other, ['change'])
+			// @ts-expect-error — `as` называет событие, которого нет в цели
+			target.relay(source, [{ from: 'change', as: 'missing' }])
+			// @ts-expect-error — у правила без `as` поле `from` не объявлено в цели
+			target.relay(source, [{ from: 'change' }])
+		})
+
+		it('несовместимые обработчики — ошибка типов', () => {
+			const source = new TEvented<{ id: (id: number) => void }>()
+			const target = new TEvented<TForwardEvents>()
+
+			// @ts-expect-error — `(id: number)` и `(value: string)` несовместимы в обе стороны
+			target.relay(source, [{ from: 'id', as: 'forwarded' }])
+		})
+
+		it('несколько событий, не покрывающих карту цели: аргумент шире цели — ошибка типов', () => {
+			const source = new TEvented<TWideEvents>()
+			const target = new TEvented<TNarrowEvents>()
+
+			// @ts-expect-error — два события из трёх, у `closable` аргумент источника шире цели
+			target.relay(source, ['closable', 'size'])
+		})
+
+		it('событие с аргументом пробрасывается в цель без параметров', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<{ ping: () => void }>()
+			const handler = vi.fn()
+
+			target.on('ping', handler)
+			target.relay(source, [{ from: 'submit', as: 'ping' }])
+			source.emit('submit', 42)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+
+		it('хук then без аннотации получает аргументы события from', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const received: string[] = []
+
+			target.relay(source, [
+				{
+					from: 'change',
+					as: 'forwarded',
+					then: (value) => {
+						received.push(value.toUpperCase())
+					},
+				},
+			])
+			source.emit('change', 'hello')
+
+			expect(received).toEqual(['HELLO'])
+		})
+
+		it('дженерик-карта цели сверяется по констрейнту', () => {
+			const relayChange = <TEvents extends { change: (value: string) => void }>(
+				target: TEvented<TEvents>,
+				source: TEvented<TestEvents>,
+			): void => {
+				target.relay(source, ['change'])
+				// @ts-expect-error — `submit` не объявлен в констрейнте карты цели
+				target.relay(source, ['submit'])
+			}
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<{ change: (value: string) => void; extra: () => void }>()
+			const handler = vi.fn()
+
+			target.on('change', handler)
+			relayChange(target, source)
+			source.emit('change', 'hello')
+
+			expect(handler).toHaveBeenCalledWith('hello')
+		})
+	})
+
 	// --- destroy ---
 
 	it('destroy: отписывает relay-подписки от источника', () => {
