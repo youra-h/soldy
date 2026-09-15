@@ -138,6 +138,56 @@ describe('batch.items и batch.shown — разные вопросы', () => {
 	})
 })
 
+describe('batch.length — сколько показано', () => {
+	it('без подписчиков совпадает с total', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(items())
+
+		expect(col.extensions.batch.length).toBe(3)
+		expect(col.extensions.batch.length).toBe(col.extensions.batch.total)
+	})
+
+	it('под отбором равен числу отобранных, total остаётся полным', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(items())
+		useFilter(col, (item) => item.id !== 2)
+
+		expect(col.extensions.batch.length).toBe(2)
+		expect(col.extensions.batch.total).toBe(3)
+	})
+
+	it('вставка под отбором меняет length, только если элемент проходит отбор', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(items())
+		useFilter(col, (item) => item.name.startsWith('d'))
+
+		expect(col.extensions.batch.length).toBe(0)
+
+		col.extensions.plain.insert({ id: 4, name: 'omega' })
+
+		expect(col.extensions.batch.length).toBe(0)
+		expect(col.extensions.batch.total).toBe(4)
+
+		col.extensions.plain.insert({ id: 5, name: 'delta' })
+
+		expect(col.extensions.batch.length).toBe(1)
+		expect(col.extensions.batch.total).toBe(5)
+	})
+
+	it('preventDefault в items:query:before даёт 0', () => {
+		const col = createCollection()
+
+		col.extensions.batch.set(items())
+		col.getCore().driver.events.on('items:query:before', (e) => e.preventDefault())
+
+		expect(col.extensions.batch.length).toBe(0)
+		expect(col.extensions.batch.total).toBe(3)
+	})
+})
+
 describe('batch.find — согласован с items', () => {
 	it('находит элемент в полном составе', () => {
 		const col = createCollection()
