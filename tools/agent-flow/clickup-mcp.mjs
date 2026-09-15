@@ -24,13 +24,16 @@ const HASHTAGS = {
  * Размер задачи владелец задаёт тегом в ClickUp. Тег может меняться между
  * этапами: крупный анализ, а следом простое планирование по готовой карте.
  *
- * Тега нет — значит normal. Если владелец повесил несколько, берём больший:
- * недооценить масштаб дороже, чем переоценить.
+ * Тега нет — значит normal, а тимлид может проставить размер сам
+ * (`clickup_set_size`). Если тегов несколько, берём больший: недооценить
+ * масштаб дороже, чем переоценить.
  */
 const SIZES = ['simple', 'normal', 'hard']
 
+const sizeTagsOf = (tags) => tags.filter((tag) => SIZES.includes(tag))
+
 function sizeOf(tags) {
-	const found = tags.filter((tag) => SIZES.includes(tag))
+	const found = sizeTagsOf(tags)
 
 	if (found.length === 0) return 'normal'
 
@@ -93,6 +96,8 @@ function trimTask(task) {
 		name: task.name,
 		status: task.status?.status ?? null,
 		size: sizeOf(tags),
+		// false — тега размера нет, `size` подставлен по умолчанию.
+		sizeTagged: sizeTagsOf(tags).length > 0,
 		busy: tags.includes(BUSY),
 		url: task.url,
 		description: task.description || task.text_content || '',
@@ -291,6 +296,47 @@ const tools = {
 			await setBusy(task_id, tagsOf(await api(`/task/${task_id}`)), false)
 
 			return { status, assigned_to: owner, tag: FREE }
+		},
+	},
+
+	clickup_set_size: {
+		description:
+			'Проставить размер задачи тегом, если владелец его не поставил (`sizeTagged: false` в `clickup_get_task`). Только для тимлида. Тег владельца не перезаписывает — вернёт ошибку.',
+		schema: {
+			type: 'object',
+			properties: {
+				task_id: { type: 'string' },
+				role: {
+					type: 'string',
+					enum: ['techlead'],
+					description: 'Твоя роль. Проставлять размер может только тимлид.',
+				},
+				size: { type: 'string', enum: SIZES, description: 'Твоя оценка масштаба задачи.' },
+			},
+			required: ['task_id', 'role', 'size'],
+		},
+		async run({ task_id, role, size }) {
+			if (role !== 'techlead') {
+				throw new Error(`Роль "${role}" не может проставлять размер. Работай по полю size.`)
+			}
+
+			if (!SIZES.includes(size)) {
+				throw new Error(`Неизвестный размер "${size}". Ожидается: ${SIZES.join(', ')}`)
+			}
+
+			// Проверяем здесь, а не в промпте: размер, поставленный владельцем, —
+			// его решение, и роль не должна его переписать даже по ошибке.
+			const existing = sizeTagsOf(tagsOf(await api(`/task/${task_id}`)))
+
+			if (existing.length > 0) {
+				throw new Error(
+					`Размер уже задан тегом "${existing.join(', ')}" — это решение владельца, не меняй его.`,
+				)
+			}
+
+			await api(tagPath(task_id, size), { method: 'POST' })
+
+			return { size }
 		},
 	},
 
