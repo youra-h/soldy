@@ -64,7 +64,18 @@ Playwright (конфиг `vitest.browser.config.ts`).
 - CI ставит Chromium сам: кэш `~/.cache/ms-playwright` по `package-lock.json`,
   `playwright install chromium` при промахе, `install-deps` всегда.
 
-- Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 3, Vite 6.
+**Событие `error` на `window` роняет тест.** Хук
+`packages/playground/vue/browser/setup.ts` (подключён в `setupFiles` конфига,
+общий для всех браузерных спеков) слушает `error` у `window` на время каждого
+теста, после двух кадров снимает слушателя и роняет тест с текстами пришедших
+событий. Сам Vitest событие без поля `error` только печатает: так прогон
+оставался зелёным при `ResizeObserver loop completed with undelivered
+notifications`. Фильтра по тексту в стороже нет и быть не должно: пока на
+`window` висит чужой слушатель `error`, Vitest ошибки окна не считает вовсе, и
+отфильтрованное сторожем не увидел бы никто. Сторож красный — чинится причина,
+а не он.
+
+- Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 4, Vite 8.
 - npm workspaces: `packages/*` and `packages/ui/*`.
 
 ## Никаких костылей (критично)

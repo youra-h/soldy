@@ -102,6 +102,49 @@ const ResizableAnchorHarness = defineComponent({
 	},
 })
 
+/**
+ * Панель над якорем с `matchWidth` и текстом, который переносится: якорь
+ * сужается кликом, и от новой ширины панель становится выше.
+ */
+const WrappingPanelHarness = defineComponent({
+	data() {
+		return { anchorEl: null as Element | null, narrow: false }
+	},
+	mounted() {
+		this.anchorEl = this.$refs.anchor as Element
+	},
+	render() {
+		return h('div', { style: 'position: relative; padding-top: 300px' }, [
+			h(
+				'button',
+				{
+					ref: 'anchor',
+					class: 's-test-anchor',
+					style: `width: ${this.narrow ? 120 : 360}px; height: 32px`,
+					onClick: () => {
+						this.narrow = true
+					},
+				},
+				'anchor',
+			),
+			this.anchorEl
+				? h(
+						Frame,
+						{
+							visible: true,
+							position: 'fixed',
+							anchor_anchor: this.anchorEl,
+							anchor_placement: 'top-start',
+							anchor_matchWidth: true,
+							class: 's-test-panel',
+						},
+						{ default: () => h('div', 'один два три четыре пять шесть семь') },
+					)
+				: null,
+		])
+	},
+})
+
 /** Якорь внутри `dir="rtl"`: `-start` обязан выравниваться по правому краю. */
 const RtlHarness = defineComponent({
 	data() {
@@ -255,6 +298,29 @@ describe('пересчёт без scroll/resize окна', () => {
 		await userEvent.click(anchor())
 
 		await expect.poll(() => panel().getBoundingClientRect().width).toBeCloseTo(260, 0)
+	})
+
+	/**
+	 * На уведомление якоря плагин снимает наблюдение панели до следующего
+	 * кадра, иначе её уведомление пропускалось бы в том же шаге. От новой
+	 * ширины текст перенёсся, и панель выросла, пока за ней никто не следил:
+	 * поправить `y` плагин может только по вернувшемуся наблюдению.
+	 */
+	it('якорь сузился, текст панели перенёсся — top-start поправляет y по вернувшемуся наблюдению', async () => {
+		render(WrappingPanelHarness)
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().bottom)
+			.toBeCloseTo(anchor().getBoundingClientRect().top, 0)
+
+		const height = panel().getBoundingClientRect().height
+
+		await userEvent.click(anchor())
+
+		await expect.poll(() => panel().getBoundingClientRect().height).toBeGreaterThan(height)
+		await expect
+			.poll(() => panel().getBoundingClientRect().bottom)
+			.toBeCloseTo(anchor().getBoundingClientRect().top, 0)
 	})
 })
 

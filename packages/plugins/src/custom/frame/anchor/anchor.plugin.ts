@@ -61,6 +61,11 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _offset = TAnchorPlugin.defaultValues.offset
 	private _cleanups: Array<() => void> = []
 	private _panelObserver: ResizeObserver | null = null
+	/**
+	 * Кадр, в котором вернётся наблюдение панели, снятое на уведомление якоря
+	 * (см. `_onAnchorResize`); `null` — возвращать нечего.
+	 */
+	private _panelResumeFrame: number | null = null
 	/** Сторона, реально отданная во Frame — по ней решаем, менялся ли `data-placement`. */
 	private _actualPlacement: TFramePlacement | null = null
 
@@ -77,7 +82,10 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		// Размер панели меняется вместе с содержимым (выросший Popover, теги
 		// перенеслись) без единого scroll/resize — за ним следит свой наблюдатель.
+		// Его колбэк ничего не приостанавливает: `observe()` сразу присылает
+		// уведомление, и пауза здесь зациклилась бы (см. `_onAnchorResize`).
 		elementPlugin?.events.on('ready', (element) => {
+			this._cancelPanelResume()
 			this._element = element
 			this._panelObserver?.disconnect()
 			this._panelObserver = new ResizeObserver(() => this._update())
@@ -86,6 +94,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		})
 
 		elementPlugin?.events.on('removed', () => {
+			this._cancelPanelResume()
 			this._panelObserver?.disconnect()
 			this._panelObserver = null
 			this._element = null
@@ -169,6 +178,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	override destroy(): void {
 		this._unsubscribe()
 
+		this._cancelPanelResume()
 		this._panelObserver?.disconnect()
 		this._panelObserver = null
 
@@ -293,6 +303,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
 	 * Следит за скроллом предков якоря, ресайзом окна и изменением размера
 	 * самого якоря (без скролла — например, у него пропал соседний тег).
+	 * Scroll и resize пересчитывают координаты сразу, уведомление наблюдателя
+	 * якоря — через `_onAnchorResize`.
 	 *
 	 * Каждый слушатель снимается по своей ссылке на элемент: одна переменная
 	 * цикла, захваченная всеми замыканиями, к моменту очистки была бы уже
@@ -320,7 +332,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			window.removeEventListener('scroll', update)
 		})
 
-		const anchorObserver = new ResizeObserver(update)
+		const anchorObserver = new ResizeObserver(() => this._onAnchorResize())
 
 		anchorObserver.observe(this._anchor)
 		this._cleanups.push(() => anchorObserver.disconnect())
@@ -330,5 +342,67 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		for (const cleanup of this._cleanups) cleanup()
 
 		this._cleanups = []
+	}
+
+	/**
+	 * Пересчёт по уведомлению наблюдателя якоря — с паузой в наблюдении панели.
+	 *
+	 * Колбэк `ResizeObserver` выполняется внутри шага наблюдения кадра, и
+	 * записанные здесь `x`, `y` и `width` адаптер успевает отрисовать тут же, в
+	 * микрозадаче после колбэка. При `matchWidth` от этого в том же шаге
+	 * меняется размер панели. Панель телепортирована и в DOM лежит мельче
+	 * якоря, а после уведомления якоря браузер в этом шаге доставляет только
+	 * уведомления узлов глубже него. Уведомление панели пропускается: на
+	 * `window` уходит `error` («ResizeObserver loop completed with undelivered
+	 * notifications»), который получают трекеры ошибок у потребителя, а позиция
+	 * по новому размеру панели запаздывает на кадр.
+	 *
+	 * Поэтому наблюдение панели снимается до пересчёта и возвращается следующим
+	 * кадром — приём `autoUpdate` из Floating UI. Вернувшееся наблюдение само
+	 * присылает текущий размер: если от новой ширины выросла высота (перенос
+	 * текста при `top-*`), `y` поправится по нему. Возвращать микрозадачей
+	 * нельзя: она попадёт в тот же шаг, и уведомление снова пропустится.
+	 *
+	 * Пауза только у якоря. Колбэк панели ничего не приостанавливает:
+	 * `observe()` сразу присылает уведомление, и пауза на нём зациклилась бы.
+	 * Scroll и resize окна, сеттеры и `show` выполняются вне шага наблюдения, им
+	 * пауза не нужна.
+	 */
+	private _onAnchorResize(): void {
+		this._pausePanel()
+		this._update()
+	}
+
+	/**
+	 * Снимает наблюдение панели до следующего кадра.
+	 *
+	 * Возврат один: повторное уведомление до кадра второго не заводит, иначе
+	 * отмена застала бы только последний. Отменяют возврат `removed`, новый
+	 * `ready` и `destroy` — то, что убирает или меняет саму панель. Снятие якоря
+	 * (`removeAnchor`, `_unsubscribe`) его не отменяет: панель осталась, и без
+	 * возврата за её размером никто бы не следил.
+	 */
+	private _pausePanel(): void {
+		const observer = this._panelObserver
+		const element = this._element
+
+		if (!observer || !element) return
+
+		observer.unobserve(element)
+
+		if (this._panelResumeFrame !== null) return
+
+		this._panelResumeFrame = requestAnimationFrame(() => {
+			this._panelResumeFrame = null
+			observer.observe(element)
+		})
+	}
+
+	/** Отменяет отложенный возврат наблюдения панели. */
+	private _cancelPanelResume(): void {
+		if (this._panelResumeFrame === null) return
+
+		cancelAnimationFrame(this._panelResumeFrame)
+		this._panelResumeFrame = null
 	}
 }
