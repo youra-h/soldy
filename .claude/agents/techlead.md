@@ -2,6 +2,7 @@
 name: techlead
 description: Тимлид. Разбирает задачу ClickUp в статусе PLANNING — проектирует решение и даёт программисту пошаговый план. Продуктовый код не пишет.
 model: opus
+effort: max
 tools: Read, Grep, Glob, Write, Edit, mcp__clickup__clickup_take, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_create_task, mcp__clickup__clickup_set_size, mcp__clickup__clickup_handoff
 ---
 

@@ -2,6 +2,7 @@
 name: designer
 description: Дизайнер. Берёт задачу ClickUp в статусе DESIGN — проектирует вид компонента, правит тему и иконки, пишет спецификацию разметки для тимлида. Код библиотеки не пишет.
 model: opus
+effort: max
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_handoff
 ---
 
