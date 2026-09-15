@@ -70,7 +70,7 @@ export class TBatchExtension<TItem extends object>
 	 * снятие фильтра возвращает всё как было.
 	 *
 	 * Читать отсюда должно всё, что показывает: список на экране, навигация с
-	 * клавиатуры, пустое состояние, счётчик «показано N».
+	 * клавиатуры, пустое состояние. Счётчик «показано N» — `length`.
 	 */
 	get shown(): ReadonlyArray<TItem> {
 		return this._ctx.driver.query(new TQueryCommand<TItem>())
@@ -80,11 +80,22 @@ export class TBatchExtension<TItem extends object>
 	 * Сколько элементов в хранилище.
 	 *
 	 * Именно в хранилище, а не в выборке: при активном отборе это число не
-	 * совпадёт с `shown.length`. Перенесено из `plain` как есть — `plain`
+	 * совпадёт с `length`. Перенесено из `plain` как есть — `plain`
 	 * отвечает за операции над одной записью, счёт состава к ним не относится.
 	 */
 	get total(): number {
 		return this._ctx.driver.valueOf().length
+	}
+
+	/**
+	 * Сколько элементов показано — длина выборки после отбора.
+	 *
+	 * Производное от `shown`: каждое чтение проходит тот же `TQueryCommand`,
+	 * своего счётчика нет. Об изменении сообщает `change:shown`. Сколько в
+	 * хранилище — `total`.
+	 */
+	get length(): number {
+		return this.shown.length
 	}
 
 	/**
