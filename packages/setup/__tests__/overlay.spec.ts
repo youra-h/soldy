@@ -14,8 +14,13 @@
  * потребителя.
  */
 
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
-import { createPluginContext } from './helpers'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+	createPluginContext,
+	installResizeObserverStub,
+	observerCount,
+	triggerResize,
+} from './helpers'
 import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy/plugins'
 import { TFrame } from '@soldy/core'
 
@@ -57,74 +62,14 @@ function anchorFor(frame: TFrame, elementPlugin?: TElementPlugin): TAnchorPlugin
 	return plugin
 }
 
-/**
- * Заглушка `ResizeObserver`: jsdom его не реализует. В отличие от заглушек в
- * других файлах (`list-height.spec.ts`), эта сохраняет колбэк и список
- * наблюдаемых узлов — тестам нужно самим дёргать срабатывание, чтобы
- * проверить пересчёт без scroll/resize, и проверять, что `removeAnchor`
- * действительно отключает наблюдателя, а не просто перестаёт слать координаты.
- */
-class ResizeObserverStub implements ResizeObserver {
-	private readonly _callback: ResizeObserverCallback
-	private readonly _elements = new Set<Element>()
-
-	constructor(callback: ResizeObserverCallback) {
-		this._callback = callback
-		resizeObserverInstances.push(this)
-	}
-
-	observe(element: Element): void {
-		this._elements.add(element)
-	}
-
-	unobserve(element: Element): void {
-		this._elements.delete(element)
-	}
-
-	disconnect(): void {
-		this._elements.clear()
-	}
-
-	isObserving(element: Element): boolean {
-		return this._elements.has(element)
-	}
-
-	trigger(element: Element): void {
-		if (!this._elements.has(element)) return
-
-		this._callback([{ target: element } as ResizeObserverEntry], this)
-	}
-}
-
-let resizeObserverInstances: ResizeObserverStub[] = []
-
-/** Симулирует срабатывание наблюдателя без реального изменения раскладки. */
-function triggerResize(element: Element): void {
-	for (const observer of resizeObserverInstances) observer.trigger(element)
-}
-
-/** Наблюдает ли хоть один активный `ResizeObserver` за узлом. */
-function isObserved(element: Element): boolean {
-	return resizeObserverInstances.some((observer) => observer.isObserving(element))
-}
-
-/** Сколько активных `ResizeObserver` следят за узлом. */
-function observerCount(element: Element): number {
-	return resizeObserverInstances.filter((observer) => observer.isObserving(element)).length
-}
-
-beforeAll(() => {
-	globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
-})
-
 beforeEach(() => {
+	installResizeObserverStub()
 	window.innerWidth = 1000
 	window.innerHeight = 800
 })
 
 afterEach(() => {
 	document.body.innerHTML = ''
-	resizeObserverInstances = []
 })
 
 describe('привязка к якорю', () => {
@@ -399,12 +344,12 @@ describe('подписка на скролл', () => {
 
 		plugin.setAnchor(anchor)
 		expect(frame.dataset.get('placement')).toBe('bottom-start')
-		expect(isObserved(anchor)).toBe(true)
+		expect(observerCount(anchor)).toBe(1)
 
 		plugin.removeAnchor()
 
 		expect(frame.dataset.has('placement')).toBe(false)
-		expect(isObserved(anchor)).toBe(false)
+		expect(observerCount(anchor)).toBe(0)
 	})
 })
 

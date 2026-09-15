@@ -25,14 +25,17 @@ export function createPluginContext(
 /**
  * Заглушка `ResizeObserver`: jsdom его не реализует.
  *
- * Помнит наблюдаемые узлы, поэтому тест видит не только то, что наблюдатель
- * заведён, но и сколько их висит за узлом: плагин, не отключивший прежний
- * наблюдатель, оставляет за узлом два.
+ * Помнит колбэк и наблюдаемые узлы. Поэтому тест может сам вызвать
+ * срабатывание (`triggerResize`) и проверить пересчёт без scroll/resize, а
+ * ещё видит, сколько наблюдателей висит за узлом: плагин, не отключивший
+ * прежний наблюдатель, оставляет за узлом два.
  */
 class ResizeObserverStub implements ResizeObserver {
+	private readonly _callback: ResizeObserverCallback
 	private readonly _elements = new Set<Element>()
 
-	constructor() {
+	constructor(callback: ResizeObserverCallback) {
+		this._callback = callback
 		resizeObservers.push(this)
 	}
 
@@ -51,6 +54,20 @@ class ResizeObserverStub implements ResizeObserver {
 	isObserving(element: Element): boolean {
 		return this._elements.has(element)
 	}
+
+	trigger(element: Element): void {
+		if (!this._elements.has(element)) return
+
+		const entry: ResizeObserverEntry = {
+			target: element,
+			contentRect: element.getBoundingClientRect(),
+			borderBoxSize: [],
+			contentBoxSize: [],
+			devicePixelContentBoxSize: [],
+		}
+
+		this._callback([entry], this)
+	}
 }
 
 let resizeObservers: ResizeObserverStub[] = []
@@ -59,6 +76,11 @@ let resizeObservers: ResizeObserverStub[] = []
 export function installResizeObserverStub(): void {
 	globalThis.ResizeObserver = ResizeObserverStub
 	resizeObservers = []
+}
+
+/** Срабатывание наблюдателей узла без реального изменения раскладки. */
+export function triggerResize(element: Element): void {
+	for (const observer of resizeObservers) observer.trigger(element)
 }
 
 /** Сколько наблюдателей сейчас следят за узлом. */
