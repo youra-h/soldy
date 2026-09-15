@@ -23,7 +23,9 @@ export default defineConfig({
 	test: {
 		name: 'layout',
 		include: ['browser/**/*.spec.ts'],
-		setupFiles: ['./__tests__/setup.ts'],
+		// `__tests__/setup.ts` — общий с jsdom (заглушки и иконки),
+		// `browser/setup.ts` — сторож ошибок окна, только для браузера.
+		setupFiles: ['./__tests__/setup.ts', './browser/setup.ts'],
 		browser: {
 			enabled: true,
 			headless: true,
