@@ -187,32 +187,26 @@ describe('TControl.aria · aria-disabled', () => {
 })
 
 describe('TInputControl.aria · aria-required', () => {
-	it('не ставится на нативном теге без readonly', () => {
-		const input = new TInput({ tag: 'input', required: true })
+	it('TInput: не ставится без readonly — required у вложенного <input> нативный', () => {
+		const input = new TInput({ required: true })
 
 		// Нативный required сообщает состояние сам
 		expect(input.aria.has('aria-required')).toBe(false)
 	})
 
-	it('ставится на нативном теге, если он readonly', () => {
+	it('TInput: ставится на readonly-поле', () => {
 		// readonly гасит нативную валидацию — required остался бы немым
-		const input = new TInput({ tag: 'input', required: true, readonly: true })
+		const input = new TInput({ required: true, readonly: true })
 
 		expect(input.aria.get('aria-required')).toBe('true')
 	})
 
-	it('ставится там, где нативного required нет', () => {
-		expect(new TInput({ tag: 'div', required: true }).aria.get('aria-required')).toBe('true')
+	it('TInput: не ставится при required: false', () => {
+		expect(new TInput({ readonly: true }).aria.has('aria-required')).toBe(false)
 	})
 
-	it('не ставится при required: false', () => {
-		const input = new TInput({ tag: 'div', required: false })
-
-		expect(input.aria.has('aria-required')).toBe(false)
-	})
-
-	it('переключается сеттером в рантайме', () => {
-		const input = new TInput({ tag: 'div' })
+	it('TInput: переключается сеттером в рантайме', () => {
+		const input = new TInput({ readonly: true })
 
 		expect(input.aria.has('aria-required')).toBe(false)
 
@@ -223,22 +217,30 @@ describe('TInputControl.aria · aria-required', () => {
 		expect(input.aria.has('aria-required')).toBe(false)
 	})
 
-	it('пересчитывается при смене readonly', () => {
-		const input = new TInput({ tag: 'input', required: true })
+	it('TInput: пересчитывается при смене readonly', () => {
+		const input = new TInput({ required: true })
 
 		expect(input.aria.has('aria-required')).toBe(false)
 
 		input.readonly = true
 		expect(input.aria.get('aria-required')).toBe('true')
+
+		input.readonly = false
+		expect(input.aria.has('aria-required')).toBe(false)
 	})
 
-	it('пересчитывается при смене тега', () => {
-		const input = new TInput({ tag: 'div', required: true })
+	it('TInput: тег корня не влияет — aria стоит на вложенном <input>', () => {
+		const plain = new TInput({ tag: 'div', required: true })
+		const readonly = new TInput({ tag: 'div', required: true, readonly: true })
 
-		expect(input.aria.get('aria-required')).toBe('true')
+		expect(plain.aria.has('aria-required')).toBe(false)
+		expect(readonly.aria.get('aria-required')).toBe('true')
 
-		input.tag = 'input'
-		expect(input.aria.has('aria-required')).toBe(false)
+		plain.tag = 'input'
+		readonly.tag = 'input'
+
+		expect(plain.aria.has('aria-required')).toBe(false)
+		expect(readonly.aria.get('aria-required')).toBe('true')
 	})
 
 	it('TSelect: aria-required у комбобокса — на field, не на самом Select', () => {
@@ -261,43 +263,27 @@ describe('TInputControl.aria · aria-required', () => {
 })
 
 describe('TInputControl.aria · aria-readonly', () => {
-	it('не ставится на нативном теге', () => {
-		const input = new TInput({ tag: 'input', readonly: true })
-
-		expect(input.aria.has('aria-readonly')).toBe(false)
+	it('TInput: не ставится — readonly у вложенного <input> нативный', () => {
+		expect(new TInput({ readonly: true }).aria.has('aria-readonly')).toBe(false)
 	})
 
-	it('ставится там, где нативного readonly нет', () => {
-		expect(new TInput({ tag: 'div', readonly: true }).aria.get('aria-readonly')).toBe('true')
-	})
-
-	it('не ставится при readonly: false', () => {
-		expect(new TInput({ tag: 'div', readonly: false }).aria.has('aria-readonly')).toBe(false)
-	})
-
-	it('переключается сеттером в рантайме', () => {
+	it('TInput: не появляется ни от сеттера, ни от смены тега корня', () => {
 		const input = new TInput({ tag: 'div' })
 
 		input.readonly = true
-		expect(input.aria.get('aria-readonly')).toBe('true')
-
-		input.readonly = false
 		expect(input.aria.has('aria-readonly')).toBe(false)
-	})
-
-	it('пересчитывается при смене тега', () => {
-		const input = new TInput({ tag: 'div', readonly: true })
-
-		expect(input.aria.get('aria-readonly')).toBe('true')
 
 		input.tag = 'input'
 		expect(input.aria.has('aria-readonly')).toBe(false)
 	})
 
-	it('TSelect: aria-readonly у комбобокса — на field, не на самом Select', () => {
+	it('TSelect: aria-readonly нет ни у field, ни у самого Select', () => {
+		// Поле select-only readonly, но сообщает это нативный атрибут
+		// вложенного `<input>` — ARIA-дубль рядом с ним не нужен
 		const select = new TSelect({ readonly: true })
 
-		expect(select.field.aria.get('aria-readonly')).toBe('true')
+		expect(select.field.readonly).toBe(true)
+		expect(select.field.aria.has('aria-readonly')).toBe(false)
 		expect(select.aria.has('aria-readonly')).toBe(false)
 	})
 
@@ -307,6 +293,56 @@ describe('TInputControl.aria · aria-readonly', () => {
 
 	it('TSwitch: HTML не знает readonly у checkbox — атрибут ставится всегда', () => {
 		expect(new TSwitch({ readonly: true }).aria.get('aria-readonly')).toBe('true')
+	})
+})
+
+describe('TControl · тег элемента с aria', () => {
+	/** `aria` уходит на вложенный `<input>`, `attrs` остаётся на корне. */
+	class TNestedInputControl extends TControl {
+		protected override get _ariaTag(): string {
+			return 'input'
+		}
+	}
+
+	it('aria-disabled решает тег элемента с aria, disabled в attrs — тег корня', () => {
+		const control = new TNestedInputControl({ tag: 'div', disabled: true })
+
+		// У корня-div нативного disabled нет, у <input> он есть — дубль не нужен
+		expect(control.attrs.has('disabled')).toBe(false)
+		expect(control.aria.has('aria-disabled')).toBe(false)
+
+		control.tag = 'fieldset'
+
+		// Смена корня переносит только нативную половину
+		expect(control.attrs.get('disabled')).toBe('disabled')
+		expect(control.aria.has('aria-disabled')).toBe(false)
+	})
+})
+
+describe.each([
+	['TInput', TInput],
+	['TCheckBox', TCheckBox],
+	['TSwitch', TSwitch],
+] as const)('%s · disabled вложенного <input>', (_name, Ctor) => {
+	// Нативный disabled на <input> проводит разметка: ядро не пишет ему
+	// ARIA-дубль, а корню-div — атрибут, которого у div нет
+	it('при disabled нет ни aria-disabled, ни disabled в attrs', () => {
+		const control = new Ctor({ disabled: true })
+
+		expect(control.aria.has('aria-disabled')).toBe(false)
+		expect(control.attrs.has('disabled')).toBe(false)
+	})
+
+	it('не появляются ни от сеттера, ни от смены тега корня', () => {
+		const control = new Ctor()
+
+		control.disabled = true
+		expect(control.aria.has('aria-disabled')).toBe(false)
+		expect(control.attrs.has('disabled')).toBe(false)
+
+		control.tag = 'span'
+		expect(control.aria.has('aria-disabled')).toBe(false)
+		expect(control.attrs.has('disabled')).toBe(false)
 	})
 })
 

@@ -21,7 +21,7 @@ export default { ...SetupCheckBox, components: { Icon } }
 			:disabled="disabled"
 			:required="required"
 			:aria-checked="ctrl.getAriaChecked()"
-			v-bind="controlAttrs"
+			v-bind="{ ...aria, ...controlAttrs }"
 		/>
 		<div class="s-check-box__container">
 			<!-- Слот для checked иконки -->

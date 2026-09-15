@@ -76,6 +76,13 @@ describe('поле', () => {
 		expect(field.attributes('readonly')).toBeDefined()
 	})
 
+	it('readonly поля — нативный атрибут, aria-readonly рядом не дублирует', () => {
+		const field = render().find('input')
+
+		expect(field.attributes('readonly')).toBeDefined()
+		expect(field.attributes('aria-readonly')).toBeUndefined()
+	})
+
 	it('editable: вложенный input не readonly', () => {
 		const field = render({ editable: true }).find('input')
 

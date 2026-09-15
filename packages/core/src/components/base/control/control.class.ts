@@ -4,6 +4,11 @@ import type { IComponentOptions } from '../component'
 import { TStylable } from '../stylable'
 import type { IControlProps, TControlEvents, TControlStates } from './types'
 
+/** Есть ли у тега собственный атрибут `disabled` (см. `NATIVE_DISABLED_TAGS`). */
+function hasNativeDisabled(tag: string | object): boolean {
+	return typeof tag === 'string' && NATIVE_DISABLED_TAGS.has(tag.toLowerCase())
+}
+
 /**
  * База для Ui-контролов: stylable (size/variant) + интерактивность (disabled/focused/click).
  *
@@ -77,6 +82,22 @@ export default class TControl<
 	}
 
 	/**
+	 * Тег элемента, на который разметка биндит `aria`.
+	 *
+	 * По умолчанию это корень — `tag`: у Button `aria` и `attrs` стоят на одном
+	 * элементе. Наследник, который выводит `aria` на вложенный контрол
+	 * фиксированного тега, возвращает тег этого контрола (`TInput`,
+	 * `TCheckBox`, `TSwitch` — `input`). Тогда ARIA-половина правил решается
+	 * по элементу, на котором её прочтёт скринридер, а не по корню.
+	 *
+	 * Пересчёт идёт на `change:disabled` и `change:tag`: хук, зависящий от
+	 * чего-то ещё, потребует своей подписки.
+	 */
+	protected get _ariaTag(): string | object {
+		return this.tag
+	}
+
+	/**
 	 * У тегов с собственным `disabled` (`NATIVE_DISABLED_TAGS`) состояние
 	 * передаётся нативным атрибутом — он и блокирует фокус, и исключает
 	 * элемент из отправки формы, чего `aria-disabled` не умеет. У остальных
@@ -84,23 +105,30 @@ export default class TControl<
 	 * скринридеру, а дублировать его нативным атрибутом было бы неверно: тега
 	 * с таким атрибутом нет.
 	 *
-	 * Одна функция пишет обе половины, потому что решение об одной неотделимо
-	 * от решения о другой — это один и тот же факт «есть ли у тега нативный
-	 * `disabled`», просто в двух разных наборах.
+	 * Наборы биндятся к своим элементам, поэтому каждую половину решает тег её
+	 * элемента: `disabled` в `attrs` — тег корня (`tag`), `aria-disabled` в
+	 * `aria` — тег элемента с `aria` (`_ariaTag`). «Никогда оба» значит
+	 * «никогда оба на одном элементе». У Button это один и тот же элемент. У
+	 * Input, CheckBox и Switch `aria` стоит на вложенном `<input>`: его
+	 * нативный `disabled` проводит разметка, поэтому ARIA-дубль ядро ему не
+	 * пишет, а у корня-`div` нативного `disabled` нет вовсе.
 	 *
 	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
 	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
 	 * набор — такие правила приходится проводить явно.
 	 */
 	protected _syncDisabled(): void {
-		const nativeDisabled =
-			typeof this.tag === 'string' && NATIVE_DISABLED_TAGS.has(this.tag.toLowerCase())
-
 		// Непустая строка: '' React не поставит атрибут вовсе, а 'false' в DOM
 		// всё равно блокирует элемент — value здесь не имеет значения, только
 		// присутствие атрибута.
-		this._attrs.add('disabled', this.disabled && nativeDisabled ? 'disabled' : null)
-		this._aria.add('aria-disabled', this.disabled && !nativeDisabled ? 'true' : null)
+		this._attrs.add(
+			'disabled',
+			this.disabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
+		)
+		this._aria.add(
+			'aria-disabled',
+			this.disabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+		)
 	}
 
 	getProps(): TProps {
