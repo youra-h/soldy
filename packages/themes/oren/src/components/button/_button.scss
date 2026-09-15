@@ -14,8 +14,11 @@
 		@apply grow truncate text-center;
 	}
 
-	&[disabled],
-	&[aria-disabled='true'] {
+	// Disabled читается из `data-disabled`: ядро пишет его на любом теге.
+	// Нативный атрибут есть только у части тегов (у Button на `span` его нет
+	// никогда), ARIA-атрибут — только у остальных, и оба переезжают вместе с
+	// тегом: селектор по ним молча перестал бы срабатывать.
+	&[data-disabled='true'] {
 		@apply opacity-s-component-disabled cursor-default pointer-events-none;
 	}
 

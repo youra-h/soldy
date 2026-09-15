@@ -8,14 +8,15 @@
  */
 
 import type { IButton } from '@soldy/core'
-import { ariaBinding, bind, type ITemplate } from '../../adapter'
+import { ariaBinding, bind, datasetBinding, type ITemplate } from '../../adapter'
 
 /**
  * Нативный `disabled` там, где он есть у тега (`NATIVE_DISABLED_TAGS`) — ядро
  * уже решило, есть ли он, и в каком наборе: `attrs` для нативного атрибута,
  * `aria` для `aria-disabled` на остальных тегах. `attrs` (в т.ч. `dir`)
  * раскладывает база (`TSoldyElement._flush`) для всех компонентов сразу —
- * здесь остаётся только `aria`.
+ * здесь остаются `aria` и `dataset`: из последнего тема читает
+ * `data-disabled`, одинаковый на любом теге.
  */
 export const buttonTemplate: ITemplate<IButton> = {
 	tag: (state) => String(state.tag ?? 'button'),
@@ -35,6 +36,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 
 	bindings: [
 		ariaBinding,
+		datasetBinding,
 
 		bind('text', ({ content, state, hasSlot }) => {
 			// Содержимое слота по умолчанию переопределяет проп text

@@ -18,13 +18,13 @@
 	border-color: var(--s-neutral-300);
 
 	&:hover {
-		&:not([aria-disabled='true']) {
+		&:not([data-disabled='true']) {
 			border-color: var(--s-neutral-400);
 		}
 	}
 
 	&:focus-visible {
-		&:not([aria-disabled='true']) {
+		&:not([data-disabled='true']) {
 			@apply outline-2 outline-offset-2 outline-s-component;
 		}
 	}

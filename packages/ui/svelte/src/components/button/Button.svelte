@@ -12,6 +12,8 @@
 	Button — рендерит кнопку с текстом из Core.
 
 	- `tag` по умолчанию `button` (из TButton.defaultValues)
+	- disabled → нативный `disabled` (`attrs`) или `aria-disabled` (`aria`) по
+	  тегу, `data-disabled` для темы (`dataset`) — на любом теге
 
 	Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
 	адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
@@ -24,6 +26,7 @@
 		class={[state.classes?.join(' '), binding.forwardProps.class].filter(Boolean).join(' ')}
 		{...state.attrs}
 		{...state.aria}
+		{...state.dataset}
 		{@attach binding.attachElement}
 		style:display={state.visible ? null : 'none'}
 	>

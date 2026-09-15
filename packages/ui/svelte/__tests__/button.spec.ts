@@ -52,10 +52,12 @@ describe('Button · декларативные props', () => {
 	it('disabled: атрибут на <button>, aria-disabled на других тегах', () => {
 		const btn = render({ disabled: true }).firstElementChild as HTMLElement
 		expect(btn.hasAttribute('disabled')).toBe(true)
+		expect(btn.getAttribute('data-disabled')).toBe('true')
 
 		const link = render({ tag: 'a', disabled: true }).firstElementChild as HTMLElement
 		expect(link.getAttribute('aria-disabled')).toBe('true')
 		expect(link.hasAttribute('disabled')).toBe(false)
+		expect(link.getAttribute('data-disabled')).toBe('true')
 	})
 
 	it('disabled: fieldset тоже нативный тег — атрибут disabled, без aria-disabled', () => {
@@ -63,6 +65,14 @@ describe('Button · декларативные props', () => {
 
 		expect(el.hasAttribute('disabled')).toBe(true)
 		expect(el.hasAttribute('aria-disabled')).toBe(false)
+		expect(el.getAttribute('data-disabled')).toBe('true')
+	})
+
+	/** Тема смотрит `[data-disabled='true']`: «выключено» — строка, а не пропавший атрибут. */
+	it('без disabled data-disabled="false"', () => {
+		const el = render().firstElementChild as HTMLElement
+
+		expect(el.getAttribute('data-disabled')).toBe('false')
 	})
 
 	it('rendered=false убирает элемент, visible=false прячет', () => {
@@ -106,6 +116,26 @@ describe('Button · внешний ctrl', () => {
 		flushSync()
 
 		expect((root.firstElementChild as HTMLElement).tagName.toLowerCase()).toBe('span')
+	})
+
+	/** `data-disabled` для темы одно на любом теге — смена тега его не трогает. */
+	it('data-disabled следует за disabled инстанса и переживает смену тега', () => {
+		const ctrl = new TButton()
+		const root = render({ ctrl })
+		const el = () => root.firstElementChild as HTMLElement
+
+		ctrl.disabled = true
+		flushSync()
+		expect(el().getAttribute('data-disabled')).toBe('true')
+
+		ctrl.tag = 'span'
+		flushSync()
+		expect(el().getAttribute('aria-disabled')).toBe('true')
+		expect(el().getAttribute('data-disabled')).toBe('true')
+
+		ctrl.disabled = false
+		flushSync()
+		expect(el().getAttribute('data-disabled')).toBe('false')
 	})
 })
 

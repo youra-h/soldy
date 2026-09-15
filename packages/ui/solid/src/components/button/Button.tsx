@@ -35,10 +35,11 @@ export function Button(props: ButtonProps): JSX.Element {
 				}}
 				// attrs — нативный disabled там, где у тега он есть, и dir по
 				// direction; aria вычисляет ядро: role, tabindex, aria-disabled на
-				// остальных тегах. null в значении Solid понимает как «атрибут не
-				// ставить».
+				// остальных тегах; dataset — data-disabled для темы, на любом теге.
+				// null в значении Solid понимает как «атрибут не ставить».
 				{...state.attrs}
 				{...state.aria}
+				{...state.dataset}
 				ref={binding.ref}
 			>
 				{leading()}

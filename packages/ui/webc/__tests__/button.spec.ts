@@ -62,6 +62,7 @@ describe('<soldy-button> · атрибуты', () => {
 		const el = mount('<soldy-button disabled></soldy-button>')
 
 		expect(root(el).hasAttribute('disabled')).toBe(true)
+		expect(root(el).getAttribute('data-disabled')).toBe('true')
 	})
 
 	it('на не-button теге disabled уходит в aria-disabled', () => {
@@ -70,6 +71,7 @@ describe('<soldy-button> · атрибуты', () => {
 		expect(root(el).tagName.toLowerCase()).toBe('a')
 		expect(root(el).getAttribute('aria-disabled')).toBe('true')
 		expect(root(el).hasAttribute('disabled')).toBe(false)
+		expect(root(el).getAttribute('data-disabled')).toBe('true')
 	})
 
 	it('fieldset тоже нативный тег — атрибут disabled, без aria-disabled', () => {
@@ -78,6 +80,14 @@ describe('<soldy-button> · атрибуты', () => {
 		expect(root(el).tagName.toLowerCase()).toBe('fieldset')
 		expect(root(el).hasAttribute('disabled')).toBe(true)
 		expect(root(el).hasAttribute('aria-disabled')).toBe(false)
+		expect(root(el).getAttribute('data-disabled')).toBe('true')
+	})
+
+	/** Тема смотрит `[data-disabled='true']`: «выключено» — строка, а не пропавший атрибут. */
+	it('без disabled data-disabled="false"', () => {
+		const el = mount('<soldy-button></soldy-button>')
+
+		expect(root(el).getAttribute('data-disabled')).toBe('false')
 	})
 
 	it('содержимое тега переопределяет text', () => {
@@ -187,6 +197,7 @@ describe('<soldy-button> · точечные обновления', () => {
 		expect(root(el).tagName.toLowerCase()).toBe('a')
 		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Hi')
 		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+		expect(root(el).getAttribute('data-disabled')).toBe('true')
 	})
 })
 
@@ -298,6 +309,7 @@ describe('<soldy-button> · aria из ядра', () => {
 		const el = mountButton('<soldy-button tag="div"></soldy-button>')
 
 		expect(root(el).getAttribute('tabindex')).toBe('0')
+		expect(root(el).getAttribute('data-disabled')).toBe('false')
 
 		el.disabled = true
 		await flush()
@@ -305,6 +317,8 @@ describe('<soldy-button> · aria из ядра', () => {
 		// tabindex ушёл из набора — значит должен исчезнуть и из DOM
 		expect(root(el).hasAttribute('tabindex')).toBe(false)
 		expect(root(el).getAttribute('aria-disabled')).toBe('true')
+		// dataset привязан к смене пропа, а не только к первой отрисовке
+		expect(root(el).getAttribute('data-disabled')).toBe('true')
 	})
 })
 

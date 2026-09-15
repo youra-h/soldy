@@ -8,7 +8,8 @@ import type { ButtonProps } from './base.component'
  *
  * - `tag` по умолчанию `button` (из TButton.defaultValues)
  * - disabled → нативный атрибут `disabled` там, где тег его поддерживает
- *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро
+ *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро;
+ *   `data-disabled` для темы (`dataset`) стоит на любом теге
  *
  * Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
  * адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
@@ -17,7 +18,7 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, text, aria, attrs } = state
+	const { rendered, visible, tag, classes, text, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
@@ -38,6 +39,7 @@ export function Button(props: ButtonProps): ReactElement | null {
 			style={style}
 			{...toAriaProps(attrs)}
 			{...toAriaProps(aria)}
+			{...toAriaProps(dataset)}
 		>
 			{renderSlot(props.leading)}
 			<span className="s-button__text">

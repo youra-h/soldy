@@ -170,7 +170,7 @@
 	&[data-selected='true'] {
 	}
 
-	&[aria-disabled='true'] {
+	&[data-disabled='true'] {
 		@apply opacity-50 pointer-events-none;
 	}
 }

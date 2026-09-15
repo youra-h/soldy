@@ -926,11 +926,18 @@ scope**, а спеллинг остаётся родным:
 
 ```ts
 // TControl
-protected _syncDisabledAria(): void {
-	const nativeDisabled = /* тег со своим disabled */
-	this._aria.add('aria-disabled', this.disabled && !nativeDisabled ? 'true' : null)
+protected _syncDisabled(): void {
+	this._attrs.add('disabled', this.disabled && hasNativeDisabled(this.tag) ? 'disabled' : null)
+	this._aria.add(
+		'aria-disabled',
+		this.disabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+	)
 }
 ```
+
+Нативный `disabled` уходит в набор `attrs` по тегу корня, `aria-disabled` — в
+`aria` по тегу элемента, на котором стоит `aria` (`_ariaTag`), и никогда оба на
+одном элементе. Пересчёт — на `change:disabled` и `change:tag`.
 
 `protected: true` в `ComponentViewContribution`, триггер один — `change:aria`.
 За границу core → ui уходит снимок (`valueOf()`), а не ссылка на объект.
@@ -996,8 +1003,14 @@ ListBox, Tabs и Select копий стало бы сорок.
 
 **Кто пишет:** `TSelectionExtension` — `data-selected` всем элементам,
 `TActivationExtension` — то же имя при состоянии `active`, `TListLayoutPlugin` —
-уже разрешённый `data-word-wrap`, `TListItemPlugin` — `data-highlighted`, сам
-компонент — своё (`data-open` у `TSelect`, рядом со строкой `aria-expanded`).
+уже разрешённый `data-word-wrap`, `TListItemPlugin` — `data-highlighted`,
+`TControl` — `data-disabled` на любом теге, сам компонент — своё (`data-open` у
+`TSelect`, рядом со строкой `aria-expanded`).
+
+`data-disabled` пишется отдельной подпиской на `change:disabled`, а не в
+`_syncDisabled`: тот пересчитывается и на смену тега, потому что нативный
+`disabled` и `aria-disabled` зависят от тега своего элемента. Теме нужно одно
+значение на любом теге, иначе её селектор переезжал бы вместе с атрибутом.
 
 **Почему родительское расширение, а не item-расширение.** Первая версия писала
 из `TSelectionItemExtension` — там, где `selected` и вычисляется. Тесты сразу
