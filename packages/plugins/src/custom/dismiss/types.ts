@@ -19,12 +19,25 @@ export interface IDismissPluginOptions {
 	enabled?: boolean
 }
 
+/**
+ * Нажатие мимо, которое ждёт решения. Касание решает `pointerup` того же
+ * `pointerId`, перо — он же или совместимый `mousedown`, смотря что придёт
+ * первым.
+ */
+export type TDismissPendingPress = {
+	pointerId: number
+	pointerType: 'touch' | 'pen'
+}
+
 export type TDismissPluginEvents = TPluginEvents & {
 	/**
-	 * Нажатие пришлось мимо владельца и его панелей. У мыши и пера это
-	 * `pointerdown`, у касания — `pointerup`: прокрутка пальцем не закрывает.
+	 * Нажатие пришлось мимо владельца и его панелей. Приходит событие, которое
+	 * это решило: у мыши — `pointerdown`; у касания — `pointerup`, прокрутка
+	 * пальцем не закрывает; у пера — то, что пришло первым: `pointerup`
+	 * (стилус на экране) или совместимый `mousedown` (перо графического
+	 * планшета). Отсюда тип `MouseEvent`: `PointerEvent` — его подтип.
 	 */
-	dismiss: (event: PointerEvent) => void
+	dismiss: (event: MouseEvent) => void
 	/** change:enabled */
 	'change:enabled': (value: boolean) => void
 }
