@@ -183,8 +183,7 @@ describe('TUniqueExtension', () => {
 	})
 
 	describe('внутри батча', () => {
-		// временно, до 869f2h1h9 (https://app.clickup.com/t/869f2h1h9)
-		it.skip('batch.set: из двух элементов с одним uid вставляется один', () => {
+		it('batch.set: из двух элементов с одним uid вставляется один', () => {
 			const engine = createEngine<Item>()
 			const a: Item = { uid: 1, name: 'a' }
 			const twin: Item = { uid: 1, name: 'twin' }
@@ -195,8 +194,19 @@ describe('TUniqueExtension', () => {
 			expect(engine.extensions.batch.items[0]).toBe(a)
 		})
 
-		// временно, до 869f2h1h9 (https://app.clickup.com/t/869f2h1h9)
-		it.skip('engine.batch: удалённый и снова вставленный элемент остаётся в составе', () => {
+		it('batch.patch: из двух новых элементов с одним uid вставляется один', () => {
+			const engine = createEngine<Item>()
+			const a: Item = { uid: 1, name: 'a' }
+			const twin: Item = { uid: 1, name: 'twin' }
+
+			engine.extensions.batch.trackBy = (item) => item.name
+			engine.extensions.batch.patch([a, twin])
+
+			expect(engine.extensions.batch.items).toHaveLength(1)
+			expect(engine.extensions.batch.items[0]).toBe(a)
+		})
+
+		it('engine.batch: удалённый и снова вставленный элемент остаётся в составе', () => {
 			const engine = createEngine<Item>()
 			const a: Item = { uid: 1, name: 'a' }
 
@@ -208,6 +218,40 @@ describe('TUniqueExtension', () => {
 			})
 
 			expect([...engine.extensions.batch.items]).toEqual([a])
+			expect(engine.extensions.unique.has(a)).toBe(true)
+		})
+
+		it('engine.batch: clear и set того же элемента — элемент в составе', () => {
+			const engine = createEngine<Item>()
+			const a: Item = { uid: 1, name: 'a' }
+
+			engine.extensions.batch.set([a])
+
+			engine.batch(() => {
+				engine.extensions.batch.clear()
+				engine.extensions.batch.set([a])
+			})
+
+			expect([...engine.extensions.batch.items]).toEqual([a])
+			expect(engine.extensions.unique.has(a)).toBe(true)
+		})
+
+		it('has и exists — по составу хранилища, не дожидаясь конца батча', () => {
+			const engine = createEngine<Item>()
+			const a: Item = { uid: 1, name: 'a' }
+			const b: Item = { uid: 2, name: 'b' }
+
+			engine.extensions.plain.insert(a)
+
+			engine.batch(() => {
+				engine.extensions.plain.remove(a)
+				engine.extensions.plain.insert(b)
+
+				expect(engine.extensions.unique.has(a)).toBe(false)
+				expect(engine.extensions.unique.createItem(a).exists).toBe(false)
+				expect(engine.extensions.unique.has(b)).toBe(true)
+				expect(engine.extensions.unique.createItem(b).exists).toBe(true)
+			})
 		})
 	})
 })
