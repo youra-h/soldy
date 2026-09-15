@@ -1,3 +1,5 @@
+import type { TPluginEvents } from '../../../base'
+
 export type TActiveTabOffset = {
 	listEl: HTMLElement
 	offsetLeft: number
@@ -6,6 +8,6 @@ export type TActiveTabOffset = {
 	offsetHeight: number
 }
 
-export type TTabsActiveTabPluginEvents = {
+export type TTabsActiveTabPluginEvents = TPluginEvents & {
 	'change:active-tab': (offset: TActiveTabOffset | null) => void
 }

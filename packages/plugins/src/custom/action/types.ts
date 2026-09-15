@@ -1,4 +1,4 @@
-import type { IPlugin } from '../../base'
+import type { TPluginEvents } from '../../base'
 
 /**
  * События взаимодействия с пользователем.
@@ -9,10 +9,7 @@ import type { IPlugin } from '../../base'
  * приходит; Enter/Space на `<div>` кликом не становятся. `press` сглаживает
  * это, `click` оставляет как есть — иначе с инстанса не добраться до правды.
  */
-export type TActionPluginEvents = {
-	/** Плагин доступен снаружи (PLUGIN_EVENTS). */
-	create: (plugin: IPlugin<any, any>) => void
-
+export type TActionPluginEvents = TPluginEvents & {
 	/** Активация контрола: клик мышью либо Enter/Space. Не приходит на disabled. */
 	press: (event: MouseEvent | KeyboardEvent) => void
 
