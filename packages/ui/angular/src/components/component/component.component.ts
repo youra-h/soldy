@@ -15,8 +15,8 @@ import { setupComponent } from './setup.component'
 @Component({
 	selector: 'soldy-component',
 	standalone: true,
-	inputs: ComponentInputNames as unknown as string[],
-	outputs: ComponentOutputNames as unknown as string[],
+	inputs: [...ComponentInputNames],
+	outputs: [...ComponentOutputNames],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })

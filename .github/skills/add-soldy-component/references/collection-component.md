@@ -264,12 +264,12 @@ const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectio
 return { ...refs, ...refsCollection }
 ```
 
-`useCollectionAdapter` (`packages/ui/vue/src/adapter/runtime/useCollectionAdapter.ts`) wraps
-`useAdapter` and strips `ctrl` / `rootElement` before returning: both adapters put those keys
-in their result, but under the facade they'd mean the facade instance and its (nonexistent)
+`useCollectionAdapter` (`packages/ui/vue/src/adapter/runtime/useCollectionAdapter.ts`) is
+built from the same parts as `useAdapter` (`useAdapterParts`) but leaves `ctrl` / `rootElement`
+out of its result: under the facade they'd mean the facade instance and its (nonexistent)
 root element rather than the component's — spreading them in `{ ...refs, ...refsCollection }`
-without stripping depends on spread order, which is exactly what broke before this helper
-existed (see the JSDoc on `TCollectionBinding`).
+would depend on spread order, which is exactly what broke before this helper existed (see the
+JSDoc on `useCollectionAdapter`).
 
 The item setup mirrors the two-context shape (`TabsItemDescriptor` +
 `TabsCollectionItemDescriptor`, shared bundle, `defaultExtensions: []`,

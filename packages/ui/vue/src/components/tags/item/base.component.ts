@@ -6,7 +6,7 @@ import type { ITagsItem } from '@soldy/core'
 export const emitsTagsItem: TEmits = [
 	...useEmits(TagsItemDescriptor()),
 	...useEmits(TagsCollectionItemDescriptor()),
-] as unknown as TEmits
+]
 
 export const propsTagsItem: TProps = {
 	...(useProps(TagsItemDescriptor()) as TProps),

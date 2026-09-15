@@ -1,6 +1,11 @@
 import type { IAdapterContext } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import { useAdapter, type TExtractControllerState, type TUnwrapRefs } from './useAdapter'
+import {
+	toBindingState,
+	useAdapterParts,
+	type TExtractControllerState,
+	type TUnwrapRefs,
+} from './useAdapter'
 
 /**
  * То же, что `TBinding`, но без `ctrl` и `rootElement`.
@@ -19,9 +24,9 @@ export type TCollectionBinding<TProps, TInstance> = { plugins: IPluginBundle | n
 /**
  * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
  *
- * У коллекционного компонента адаптеров два: свой и фасада. Оба проходят через
- * `useAdapter`, и оба кладут в результат `ctrl` и `rootElement` — а это имена
- * компонента, не фасада:
+ * У коллекционного компонента адаптеров два: свой и фасада. Оба собираются из
+ * одних частей (`useAdapterParts`), но `ctrl` и `rootElement` — имена
+ * компонента, не фасада, и в результат фасада они не попадают:
  *
  * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
  *   ждут сам компонент;
@@ -47,11 +52,10 @@ export function useCollectionAdapter<TProps extends object, TInstance extends ob
 	props: object,
 	emit?: (event: string, ...args: unknown[]) => void,
 ): TCollectionBinding<TProps, TInstance> {
-	// Через rest-деструктуризацию: перечислять остающиеся ключи нельзя — это
-	// рефы фасада, и у каждой коллекции они свои
-	const { ctrl: _ctrl, rootElement: _rootElement, ...refs } = useAdapter(adapter, props, emit)
+	const { refs } = useAdapterParts(adapter, props, emit)
 
-	// Приведение: какие два ключа сняты, известно нам, но через дженерик
-	// rest-деструктуризации TypeScript этого не доказывает
-	return refs as TCollectionBinding<TProps, TInstance>
+	return {
+		plugins: adapter.bundle,
+		...toBindingState<TProps, TInstance>(refs),
+	}
 }

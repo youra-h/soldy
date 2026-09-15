@@ -81,7 +81,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { <Name>Descriptor } from '@soldy/setup'
 import type { I<Name> } from '@soldy/core'
 
-export const emits<Name>: TEmits = useEmits(<Name>Descriptor()) as unknown as TEmits
+export const emits<Name>: TEmits = useEmits(<Name>Descriptor())
 export const props<Name>: TProps = useProps(<Name>Descriptor()) as TProps
 
 export type <Name>Props = UseProps<typeof <Name>Descriptor, I<Name>>
@@ -225,8 +225,8 @@ export function setup<Name>(
 @Component({
   selector: 'soldy-<name>',
   standalone: true,
-  inputs: <Name>InputNames as unknown as string[],
-  outputs: <Name>OutputNames as unknown as string[],
+  inputs: [...<Name>InputNames],
+  outputs: [...<Name>OutputNames],
   imports: [NgClass, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './<name>.component.html',

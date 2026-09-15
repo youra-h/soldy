@@ -19,8 +19,8 @@ import { setupButton } from './setup.component'
 @Component({
 	selector: 'soldy-button',
 	standalone: true,
-	inputs: ButtonInputNames as unknown as string[],
-	outputs: ButtonOutputNames as unknown as string[],
+	inputs: [...ButtonInputNames],
+	outputs: [...ButtonOutputNames],
 	imports: [NgClass, NgTemplateOutlet, AriaDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './button.component.html',

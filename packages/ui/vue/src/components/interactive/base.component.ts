@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { InteractiveDescriptor } from '@soldy/setup'
 import type { IInteractive } from '@soldy/core'
 
-export const emitsInteractive: TEmits = useEmits(InteractiveDescriptor()) as unknown as TEmits
+export const emitsInteractive: TEmits = useEmits(InteractiveDescriptor())
 
 export const propsInteractive: TProps = useProps(InteractiveDescriptor()) as TProps
 

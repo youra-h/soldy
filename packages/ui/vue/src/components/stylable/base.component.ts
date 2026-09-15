@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { StylableDescriptor } from '@soldy/setup'
 import type { IStylable } from '@soldy/core'
 
-export const emitsStylable: TEmits = useEmits(StylableDescriptor()) as unknown as TEmits
+export const emitsStylable: TEmits = useEmits(StylableDescriptor())
 
 export const propsStylable: TProps = useProps(StylableDescriptor()) as TProps
 

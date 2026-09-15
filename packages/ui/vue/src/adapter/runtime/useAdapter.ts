@@ -45,14 +45,31 @@ export type TBinding<TProps, TInstance> = {
 } & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
-export function useAdapter<
-	TProps extends Record<string, any> = Record<string, any>,
-	TInstance extends object = object,
->(
+/**
+ * Типизированный вид на рефы адаптера: пропы `TProps` и свойства инстанса.
+ *
+ * Граница между рантаймом и типом, одна на `useAdapter` и
+ * `useCollectionAdapter` — как `toInstanceState` у остальных адаптеров. Рефы
+ * `useSyncProps` собраны по дескриптору из того же инстанса, что описывает
+ * `TInstance`, но по именам свойств — эту связь держит дескриптор, TypeScript
+ * её не видит. В значениях лежат `Ref`, а тип уже развёрнут: рефы из
+ * результата `setup()` шаблон разворачивает сам.
+ */
+export function toBindingState<TProps, TInstance>(
+	refs: Readonly<Record<string, unknown>>,
+): TUnwrapRefs<TProps> & TExtractControllerState<TInstance> {
+	return refs as TUnwrapRefs<TProps> & TExtractControllerState<TInstance>
+}
+
+/**
+ * Общая часть `useAdapter` и `useCollectionAdapter`: подписки, DOM-биндинг и
+ * очистка. Отдаёт то, из чего каждый хук собирает свой результат.
+ */
+export function useAdapterParts<TInstance extends object>(
 	adapter: IAdapterContext<TInstance>,
-	props: TProps,
+	props: object,
 	emit?: (event: string, ...args: unknown[]) => void,
-): TBinding<TProps, TInstance> {
+): { refs: Readonly<Record<string, Ref<unknown>>>; rootElement: Ref<Element | null> | null } {
 	const inspector = createInspector(adapter.accessor)
 
 	// 1. Реактивность
@@ -83,10 +100,23 @@ export function useAdapter<
 		adapter.destroy()
 	})
 
+	return { refs, rootElement }
+}
+
+export function useAdapter<
+	TProps extends Record<string, any> = Record<string, any>,
+	TInstance extends object = object,
+>(
+	adapter: IAdapterContext<TInstance>,
+	props: TProps,
+	emit?: (event: string, ...args: unknown[]) => void,
+): TBinding<TProps, TInstance> {
+	const { refs, rootElement } = useAdapterParts(adapter, props, emit)
+
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		...(rootElement ? { rootElement } : {}),
-		...refs,
-	} as unknown as TBinding<TProps, TInstance>
+		...toBindingState<TProps, TInstance>(refs),
+	}
 }

@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { ValueControlDescriptor } from '@soldy/setup'
 import type { IValueControl } from '@soldy/core'
 
-export const emitsValueControl: TEmits = useEmits(ValueControlDescriptor()) as unknown as TEmits
+export const emitsValueControl: TEmits = useEmits(ValueControlDescriptor())
 
 export const propsValueControl: TProps = useProps(ValueControlDescriptor()) as TProps
 

@@ -4,7 +4,7 @@ import { SwitchDescriptor } from '@soldy/setup'
 import { Spinner } from '../spinner'
 import type { ISwitch } from '@soldy/core'
 
-export const emitsSwitch: TEmits = useEmits(SwitchDescriptor()) as unknown as TEmits
+export const emitsSwitch: TEmits = useEmits(SwitchDescriptor())
 
 export const propsSwitch: TProps = useProps(SwitchDescriptor()) as TProps
 
