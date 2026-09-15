@@ -14,6 +14,12 @@ export interface IAnchorPluginOptions {
 	placement?: TFramePlacement
 	/** Тянуть ширину панели по ширине якоря. */
 	matchWidth?: boolean
+	/**
+	 * Переворачивать ли панель на противоположную сторону, когда на выбранной
+	 * она не влезает по высоте окна. По умолчанию `true`. Выключенный flip
+	 * оставляет сторону потребителя как есть; shift от него не зависит.
+	 */
+	flip?: boolean
 	/** Отступ панели от якоря, px. По умолчанию `0`. */
 	offset?: number
 }
@@ -25,6 +31,8 @@ export type TAnchorPluginEvents = TPluginEvents & {
 	'change:placement': (value: TFramePlacement) => void
 	/** change:matchWidth */
 	'change:matchWidth': (value: boolean) => void
+	/** change:flip */
+	'change:flip': (value: boolean) => void
 	/** change:offset */
 	'change:offset': (value: number) => void
 }
@@ -39,5 +47,6 @@ export interface IAnchorPluginProps {
 	anchor?: Element | null
 	placement?: TFramePlacement
 	matchWidth?: boolean
+	flip?: boolean
 	offset?: number
 }

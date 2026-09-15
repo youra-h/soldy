@@ -22,6 +22,8 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * панель по горизонтали, чтобы она не вылезала за левый и правый край окна.
  * Оба работают внутри тех же четырёх вариантов `placement`: flip переключает
  * `top`/`bottom`, shift не меняет `placement`, а только ограничивает `x`.
+ * Flip выключается свойством `flip` (по умолчанию включён): панель остаётся на
+ * стороне потребителя, даже если там не влезает. Shift от него не зависит.
  * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
  * в RTL `-start` выравнивает панель по правому краю якоря, `-end` — по левому.
  *
@@ -40,6 +42,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _anchor: Element | null = null
 	private _placement: TFramePlacement = 'bottom-start'
 	private _matchWidth = false
+	private _flip = true
 	private _offset = 0
 	private _cleanups: Array<() => void> = []
 	private _panelObserver: ResizeObserver | null = null
@@ -51,6 +54,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._placement = options?.placement ?? this._placement
 		this._matchWidth = options?.matchWidth ?? this._matchWidth
+		this._flip = options?.flip ?? this._flip
 		this._offset = options?.offset ?? this._offset
 		this._frame = ctx.getInstance<IFrame>() ?? null
 
@@ -123,6 +127,18 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this.events.emit('change:matchWidth', value)
 	}
 
+	get flip(): boolean {
+		return this._flip
+	}
+
+	set flip(value: boolean) {
+		if (this._flip === value) return
+
+		this._flip = value
+		this._update()
+		this.events.emit('change:flip', value)
+	}
+
 	get offset(): number {
 		return this._offset
 	}
@@ -186,10 +202,13 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * здесь, в вычислении фактической стороны. Переключаемся на
 	 * противоположную, только если на выбранной панель не влезает по высоте
 	 * окна, а на противоположной места больше; если не влезает нигде, остаёмся
-	 * на стороне потребителя.
+	 * на стороне потребителя. С выключенным `flip` сторона потребителя
+	 * отдаётся сразу.
 	 */
 	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
 		const wants = this._placement.startsWith('top-') ? 'top' : 'bottom'
+
+		if (!this._flip) return wants
 		const spaceTop = rect.top
 		const spaceBottom = window.innerHeight - rect.bottom
 		const needed = panelHeight + this._offset
