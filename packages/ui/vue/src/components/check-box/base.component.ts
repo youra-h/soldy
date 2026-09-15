@@ -4,7 +4,7 @@ import { CheckBoxDescriptor } from '@soldy/setup'
 import { Icon } from '../icon'
 import type { ICheckBox } from '@soldy/core'
 
-export const emitsCheckBox: TEmits = useEmits(CheckBoxDescriptor()) as unknown as TEmits
+export const emitsCheckBox: TEmits = useEmits(CheckBoxDescriptor())
 
 export const propsCheckBox: TProps = useProps(CheckBoxDescriptor()) as TProps
 

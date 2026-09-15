@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { SpinnerDescriptor } from '@soldy/setup'
 import type { ISpinner } from '@soldy/core'
 
-export const emitsSpinner: TEmits = useEmits(SpinnerDescriptor()) as unknown as TEmits
+export const emitsSpinner: TEmits = useEmits(SpinnerDescriptor())
 
 export const propsSpinner: TProps = useProps(SpinnerDescriptor()) as TProps
 

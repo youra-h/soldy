@@ -6,7 +6,7 @@ import type { ISelectItem } from '@soldy/core'
 export const emitsSelectItem: TEmits = [
 	...useEmits(SelectItemDescriptor()),
 	...useEmits(SelectCollectionItemDescriptor()),
-] as unknown as TEmits
+]
 
 export const propsSelectItem: TProps = {
 	...(useProps(SelectItemDescriptor()) as TProps),

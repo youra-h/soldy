@@ -6,7 +6,7 @@ import type { IAccordion } from '@soldy/core'
 export const emitsAccordion: TEmits = [
 	...useEmits(AccordionDescriptor()),
 	...useEmits(AccordionCollectionDescriptor()),
-] as unknown as TEmits
+]
 
 export const propsAccordion: TProps = {
 	...(useProps(AccordionDescriptor()) as TProps),

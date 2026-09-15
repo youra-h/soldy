@@ -80,13 +80,14 @@ Playwright (конфиг `vitest.browser.config.ts`).
   Один метод с режимом внутри был бы ровно таким костылём.
 - **Приведение типа, чтобы заткнуть несоответствие.** `as any`,
   `as unknown as X` и `!` вместо проверки прячут ошибку, а не чинят её. Если
-  типы не сходятся — неверен контракт, править надо его. В `packages/core`
-  это стережёт eslint (`eslint.config.ts`, блоки `soldy/core-no-casts` и
-  `soldy/core-tests-no-any`; что блоки включены на путях ядра, проверяет
-  `npm run test:eslint`): `as never`, `as unknown as X`, `as TEvented<…>`,
-  угловое приведение `<T>x`, `@ts-ignore` и `@ts-nocheck` роняют CI, а в
-  `__tests__` — ещё и `any` в любом типе. Честный `@ts-expect-error` с
-  пояснением не запрещён.
+  типы не сходятся — неверен контракт, править надо его. Во всём репозитории
+  это стережёт eslint (`eslint.config.ts`, блок `soldy/no-casts`): `as never`,
+  `as unknown as X`, `as TEvented<…>`, угловое приведение `<T>x`, `@ts-ignore`
+  и `@ts-nocheck` роняют CI. В тестах ядра блок `soldy/core-tests-no-any`
+  запрещает ещё и `any` в любом типе. Что блоки включены на своих путях,
+  проверяет `npm run test:eslint`. Честный `@ts-expect-error` с пояснением не
+  запрещён. Пробелов два, оба временные: `packages/plugins` исключён из блока
+  до 869f2grdv, а `.svelte` eslint пока не линтит вовсе (869f2gxbn).
 - **Второй путь к тем же данным.** Свой кэш «чтобы не дёргать расширение»,
   дубль геттера, копия состояния рядом с источником. Два пути неизбежно
   расходятся, и расхождение всплывает не там, где сделано.
@@ -657,9 +658,11 @@ this._sink.emit('change:value', payload)
 `TFrame`, `TTabs`) `this.events` уже имеет точную карту — там `TEventSink` не
 нужен, эмитьте через `this.events.emit(...)` напрямую.
 
-Приведения в `src` ядра стережёт eslint (см. «Никаких костылей»): `as never`,
-`as unknown as X`, `as TEvented<…>`, угловое приведение `<T>x`, директивы
-отключения проверки типов; `as any` ловит `soldy/no-explicit-any`. Голый `any`
+Приведения во всём репозитории стережёт eslint (см. «Никаких костылей»):
+`as never`, `as unknown as X`, `as TEvented<…>`, угловое приведение `<T>x`,
+директивы отключения проверки типов; `as any` ловит `soldy/no-explicit-any`.
+Исключения временные: `packages/plugins` — до 869f2grdv (плагины ещё шлют свои
+события через `as unknown as`), `.svelte` eslint не линтит (869f2gxbn). Голый `any`
 в констрейнте дженерика (см. абзацы выше) не запрещён — так распознаётся сама
 инвариантность, а не костыль. Приведения в адаптерах фасадов item-элементов, в
 конструкторах item-адаптеров расширений, во внутренностях движка коллекции и в
@@ -697,6 +700,14 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 — его свойства после `valueOf()`. Объект собирается по дескриптору в рантайме,
 поэтому граница с типом одна, `toInstanceState`, и приведений в разметке
 компонентов нет. Тип инстанса несёт дескриптор (`IAdapterContext<TInstance>`).
+
+Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps` и свойства
+инстанса), и граница у него своя — `toBindingState`
+(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы `useSyncProps` собраны по
+тому же дескриптору, связь их имён с типом держит он, поэтому внутри обычный
+`as` из `Readonly<Record<string, unknown>>`. Через неё проходят и `useAdapter`,
+и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement` добавляются к
+результату без приведения.
 
 ### Логику, которой нужен элемент, кладите в item-адаптер
 
@@ -761,7 +772,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` strips `ctrl` and `rootElement` from its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Граница переиспользования между похожими компонентами (критично)
 

@@ -6,7 +6,7 @@ import type { ITabsContent } from '@soldy/core'
 export const emitsTabsContent: TEmits = [
 	...useEmits(TabsContentDescriptor()),
 	...useEmits(TabsCollectionContentDescriptor()),
-] as unknown as TEmits
+]
 
 export const propsTabsContent: TProps = {
 	...(useProps(TabsContentDescriptor()) as TProps),

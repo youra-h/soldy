@@ -6,7 +6,7 @@ import type { IListBoxItem } from '@soldy/core'
 export const emitsListBoxItem: TEmits = [
 	...useEmits(ListBoxItemDescriptor()),
 	...useEmits(ListBoxCollectionItemDescriptor()),
-] as unknown as TEmits
+]
 
 export const propsListBoxItem: TProps = {
 	...(useProps(ListBoxItemDescriptor()) as TProps),

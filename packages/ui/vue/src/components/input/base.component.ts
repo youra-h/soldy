@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { InputDescriptor } from '@soldy/setup'
 import type { IInput } from '@soldy/core'
 
-export const emitsInput: TEmits = useEmits(InputDescriptor()) as unknown as TEmits
+export const emitsInput: TEmits = useEmits(InputDescriptor())
 
 export const propsInput: TProps = useProps(InputDescriptor()) as TProps
 

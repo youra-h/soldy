@@ -3,7 +3,7 @@ import type { TEmits, TProps, UseProps } from '../../types/common'
 import { SkeletonDescriptor } from '@soldy/setup'
 import type { ISkeleton } from '@soldy/core'
 
-export const emitsSkeleton: TEmits = useEmits(SkeletonDescriptor()) as unknown as TEmits
+export const emitsSkeleton: TEmits = useEmits(SkeletonDescriptor())
 
 export const propsSkeleton: TProps = useProps(SkeletonDescriptor()) as TProps
 

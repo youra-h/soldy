@@ -3,7 +3,7 @@ import { useEmits, useProps } from '../../adapter'
 import { ComponentDescriptor } from '@soldy/setup'
 import type { IComponent } from '@soldy/core'
 
-export const emitsComponent: TEmits = useEmits(ComponentDescriptor()) as unknown as TEmits
+export const emitsComponent: TEmits = useEmits(ComponentDescriptor())
 
 export const propsComponent: TProps = useProps(ComponentDescriptor()) as TProps
 
