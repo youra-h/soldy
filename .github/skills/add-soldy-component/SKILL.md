@@ -1,6 +1,6 @@
 ---
 name: add-soldy-component
-description: 'Add a new headless UI component to the soldy monorepo. Use when creating a component (Button, Badge, Input, etc.), porting a component from packages/_plugins, or wiring a core model through setup (contribution + descriptor) and the Vue or React adapter with barrel exports and tests.'
+description: 'Add a new headless UI component to the soldy monorepo. Use when creating a component (Button, Badge, Input, etc.), porting a component from packages/_plugins, or wiring a core model through setup (contribution + descriptor) and the Vue or React adapter with barrel exports and tests. Also covers complex components (Select) and when a part needs its own internal instance rather than markup.'
 argument-hint: 'component name (e.g. Badge)'
 ---
 
@@ -308,3 +308,11 @@ adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/compone
 the collection facades (`TTabsCollectionFacade` / `TTabsItemCollectionFacade`), and the
 two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle).
 Details: [Collection components reference](./references/collection-component.md).
+
+## Complex components: internal instances vs. markup
+
+Some parts of a complex component (e.g. Select's `field`, `tags`) need their own
+core instance rather than plain markup — state written by the core, a collection
+extension, or a plugin needs somewhere to live. Others (a nested close button, an
+arrow icon) never need one — they only display what the owner already computed.
+Worked example and the criterion for telling them apart: [Complex component reference](./references/complex-component.md).
