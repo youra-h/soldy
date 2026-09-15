@@ -442,6 +442,113 @@ describe('наблюдатель панели', () => {
 	})
 })
 
+/**
+ * Колбэк наблюдателя якоря пишет во Frame `x`, `y` и `width`, адаптер тут же
+ * перерисовывает панель, и её размер меняется в том же шаге наблюдения, где
+ * браузер её уведомление уже не доставит. Поэтому на уведомление якоря плагин
+ * снимает наблюдение панели и возвращает его следующим кадром.
+ *
+ * Заглушка сама ничего не присылает: срабатывание вызывает `triggerResize`, а
+ * снято ли наблюдение, видно по `observerCount`.
+ */
+describe('пауза наблюдения панели на уведомление якоря', () => {
+	/** Панель объявлена, якорь назначен: за каждым следит свой наблюдатель. */
+	const anchored = async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+		plugin.setAnchor(anchor)
+
+		return { frame, panel, anchor, plugin }
+	}
+
+	it('уведомление якоря пересчитывает координаты и снимает наблюдение панели до следующего кадра', async () => {
+		const { frame, panel, anchor } = await anchored()
+
+		anchor.getBoundingClientRect = () => new DOMRect(40, 0, 200, 250)
+		triggerResize(anchor)
+
+		expect(frame.x).toBe(40)
+		expect(observerCount(panel.element)).toBe(0)
+
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(1)
+	})
+
+	/** `observe()` сразу присылает уведомление: пауза на нём зациклилась бы. */
+	it('уведомление панели её наблюдение не снимает', async () => {
+		const { panel } = await anchored()
+
+		triggerResize(panel.element)
+
+		expect(observerCount(panel.element)).toBe(1)
+	})
+
+	/** Без возврата панель осталась бы без наблюдателя, хотя сама никуда не делась. */
+	it('removeAnchor до кадра возврат не отменяет: панель снова наблюдается', async () => {
+		const { panel, anchor, plugin } = await anchored()
+
+		triggerResize(anchor)
+		plugin.removeAnchor()
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(1)
+	})
+
+	it('removed до кадра: за панелью не остаётся наблюдателя', async () => {
+		const { panel, anchor } = await anchored()
+
+		triggerResize(anchor)
+		panel.plugin.element = null
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(0)
+	})
+
+	it('destroy до кадра: за панелью не остаётся наблюдателя', async () => {
+		const { panel, anchor, plugin } = await anchored()
+
+		triggerResize(anchor)
+		plugin.destroy()
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(0)
+	})
+
+	/**
+	 * Новый узел приходит прямым эмитом `ready`, без `removed` — как в тесте
+	 * наблюдателя панели выше: проверяется сам плагин.
+	 */
+	it('новый ready до кадра: прежний узел не наблюдается, новый — одним наблюдателем', async () => {
+		const { panel, anchor } = await anchored()
+		const next = panelOf(120, 60)
+
+		triggerResize(anchor)
+		panel.plugin.events.emit('ready', next.element)
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(0)
+		expect(observerCount(next.element)).toBe(1)
+	})
+
+	/** Второе уведомление до кадра не заводит второго возврата, который `removed` не отменил бы. */
+	it('повторное уведомление якоря до кадра: removed всё равно отменяет возврат', async () => {
+		const { panel, anchor } = await anchored()
+
+		triggerResize(anchor)
+		triggerResize(anchor)
+		panel.plugin.element = null
+		await nextFrame()
+
+		expect(observerCount(panel.element)).toBe(0)
+	})
+})
+
 describe('нажатие мимо', () => {
 	const setup = async (uid: number) => {
 		const element = document.createElement('div')
