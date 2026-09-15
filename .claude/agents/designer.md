@@ -2,6 +2,7 @@
 name: designer
 description: Дизайнер. Берёт задачу ClickUp в статусе DESIGN — проектирует вид компонента, правит тему и иконки, пишет спецификацию разметки для тимлида. Код библиотеки не пишет.
 model: opus
+effort: max
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_handoff
 ---
 
@@ -129,7 +130,7 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
 ## Формат комментария
 
 Хештег `#DESIGN` сервер добавит сам. Бюджет по полю `size`: `simple` — до 1000
-символов, `normal` — до 2500, `hard` — до 4000. Пустые разделы выкидывай.
+символов, `normal` — до 5000, `hard` — до 8000. Пустые разделы выкидывай.
 
 ```
 **Структура.** Части компонента полными именами классов: блок, элементы,

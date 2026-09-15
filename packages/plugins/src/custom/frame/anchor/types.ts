@@ -5,7 +5,7 @@ import type { TPluginEvents } from '../../../base'
  *
  * Набор намеренно маленький: это выбор потребителя, а не подбор места.
  * Автоматический переворот при нехватке места (flip) и сдвиг у края экрана
- * (shift) — отдельная задача, здесь их нет.
+ * (shift) плагин делает сам поверх этого выбора — см. `TAnchorPlugin`.
  */
 export type TFramePlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
 

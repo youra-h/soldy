@@ -2,6 +2,7 @@
 name: analyst
 description: Аналитик. Разбирает задачу ClickUp в статусе ANALYSIS — формулирует проблему, границы, риски и критерии приёмки. Код не пишет.
 model: opus
+effort: max
 tools: Read, Grep, Glob, mcp__clickup__clickup_take, mcp__clickup__clickup_get_task, mcp__clickup__clickup_get_comments, mcp__clickup__clickup_add_comment, mcp__clickup__clickup_handoff
 ---
 
@@ -35,8 +36,8 @@ tools: Read, Grep, Glob, mcp__clickup__clickup_take, mcp__clickup__clickup_get_t
 3. Изучи репозиторий в объёме, необходимом для **понимания** задачи. Читай код,
    но не начинай его чинить.
 
-   Бюджет по полю `size` из `clickup_get_task`: `simple` — до 5 файлов,
-   `normal` — до 12, `hard` — сколько нужно. Размер задаёт владелец тегом на
+   Бюджет по полю `size` из `clickup_get_task`: `simple` — до 10 файлов,
+   `normal` — до 24, `hard` — сколько нужно. Размер задаёт владелец тегом на
    задаче, это не твоя оценка.
 
    Твоя цель — найти места, которых задача коснётся, и понять ограничения. Не
@@ -52,8 +53,8 @@ tools: Read, Grep, Glob, mcp__clickup__clickup_take, mcp__clickup__clickup_get_t
 
 Хештег `#ANALYSIS` сервер добавит сам — в тексте его писать не нужно.
 
-Бюджет по `size`: `simple` — до 1000 символов, `normal` — до 2500, `hard` — до
-4000. Комментарий, который не дочитывают, бесполезен: режь воду, а не смысл. На
+Бюджет по `size`: `simple` — до 1000 символов, `normal` — до 5000, `hard` — до
+8000. Комментарий, который не дочитывают, бесполезен: режь воду, а не смысл. На
 `simple` половина разделов окажется пустой — не заполняй их ради формы, выкинь.
 
 ```
