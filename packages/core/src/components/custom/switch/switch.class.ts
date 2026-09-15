@@ -37,6 +37,14 @@ export default class TSwitch
 	}
 
 	/**
+	 * `aria` стоит на вложенном `<input type="checkbox">`, а не на корне:
+	 * `disabled` у него нативный, и `aria-disabled` рядом был бы дублем.
+	 */
+	protected override get _ariaTag(): string {
+		return 'input'
+	}
+
+	/**
 	 * Рендерится в `<input type="checkbox">` — `required` у него нативный,
 	 * дублировать в ARIA не нужно.
 	 *

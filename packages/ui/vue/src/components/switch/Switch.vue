@@ -20,7 +20,7 @@ export default { ...SetupSwitch }
 			:disabled="disabled"
 			:required="required"
 			:aria-checked="Boolean(value)"
-			v-bind="controlAttrs"
+			v-bind="{ ...aria, ...controlAttrs }"
 		/>
 		<div class="s-switch__track">
 			<div class="s-switch__track--thumb">

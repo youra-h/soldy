@@ -36,15 +36,27 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 	}
 
 	/**
+	 * `aria` поля стоит на вложенном `<input>`, а не на корне: корень Input —
+	 * обёртка со слотами `leading`/`trailing`, а тег поля внутри неё
+	 * фиксирован.
+	 */
+	protected override get _ariaTag(): string {
+		return 'input'
+	}
+
+	/**
 	 * На теге `input` `required` и `readonly` нативные — браузер сам сообщает
 	 * о них скринридеру, дублировать в ARIA не нужно.
 	 *
 	 * Исключение — `required` на `readonly`-поле: браузер такое поле не
 	 * валидирует, нативный `required` на нём бессмыслен, и без явного
 	 * `aria-required` состояние останется немым.
+	 *
+	 * Решает тег элемента с `aria` (`_ariaTag`), а не `tag` корня: дубль встал
+	 * бы рядом с нативным атрибутом на том же вложенном `<input>`.
 	 */
 	protected override _syncInputAccessibility(): void {
-		const isNativeTag = typeof this.tag === 'string' && this.tag.toLowerCase() === 'input'
+		const isNativeTag = this._ariaTag.toLowerCase() === 'input'
 
 		this._aria.add(
 			'aria-required',
