@@ -1,13 +1,16 @@
 import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
+import pluginSvelte from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
+import tseslint from 'typescript-eslint'
 import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 import soldy from './tools/eslint/plugin'
 
 export default defineConfigWithVueTs(
 	{
 		name: 'app/files-to-lint',
-		files: ['**/*.{ts,mts,tsx,vue}'],
+		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
 	},
 
 	globalIgnores([
@@ -20,6 +23,28 @@ export default defineConfigWithVueTs(
 
 	pluginVue.configs['flat/essential'],
 	vueTsConfigs.recommended,
+
+	// Компоненты Svelte: `<script lang="ts">` разбирает TS-парсер внутри
+	// svelte-eslint-parser, поэтому блоки ниже (no-casts, no-explicit-any) видят
+	// в них те же узлы, что в `.ts`. `.svelte.ts` сюда не входят — это обычный
+	// TypeScript, их по-прежнему разбирает парсер из vueTsConfigs.
+	{
+		name: 'soldy/svelte-components',
+		files: ['**/*.svelte'],
+		plugins: { svelte: pluginSvelte },
+		processor: 'svelte/svelte',
+		languageOptions: {
+			parser: svelteParser,
+			parserOptions: {
+				parser: tseslint.parser,
+				extraFileExtensions: ['.svelte'],
+			},
+		},
+		rules: {
+			'svelte/comment-directive': 'error',
+			'svelte/system': 'error',
+		},
+	},
 
 	// Библиотека компонентов: Button, Select, Input — это имена продукта.
 	// Оба правила рассчитаны на прикладной код, где односложное имя рискует
@@ -60,7 +85,7 @@ export default defineConfigWithVueTs(
 	// «`any`: где он честный»).
 	{
 		name: 'soldy/no-explicit-any',
-		files: ['**/*.{ts,mts,tsx,vue}'],
+		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
 		plugins: { soldy },
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off',
@@ -74,7 +99,7 @@ export default defineConfigWithVueTs(
 	// действительно включён на путях пакетов, проверяет tools/eslint/__tests__.
 	{
 		name: 'soldy/no-casts',
-		files: ['**/*.{ts,mts,tsx,vue}'],
+		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
 		// Временно, до 869f2grdv
 		ignores: ['packages/plugins/**'],
 		rules: {

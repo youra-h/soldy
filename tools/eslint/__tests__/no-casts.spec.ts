@@ -26,12 +26,32 @@ async function ruleIds(code: string, filePath: string): Promise<string[]> {
 describe('eslint.config.ts: приведения в src ядра', () => {
 	it.each([
 		['as unknown as', CAST, 'no-restricted-syntax'],
-		['as never', 'declare const value: object\nexport const x = value as never', 'no-restricted-syntax'],
-		['as TEvented<…>', "import type { TEvented } from '@soldy/core'\ndeclare const value: object\nexport const x = value as TEvented<object>", 'no-restricted-syntax'],
-		['угловое приведение', 'declare const value: unknown\nexport const x = <string>value', '@typescript-eslint/consistent-type-assertions'],
-		['@ts-ignore', '// @ts-ignore\nexport const x: number = 1', '@typescript-eslint/ban-ts-comment'],
+		[
+			'as never',
+			'declare const value: object\nexport const x = value as never',
+			'no-restricted-syntax',
+		],
+		[
+			'as TEvented<…>',
+			"import type { TEvented } from '@soldy/core'\ndeclare const value: object\nexport const x = value as TEvented<object>",
+			'no-restricted-syntax',
+		],
+		[
+			'угловое приведение',
+			'declare const value: unknown\nexport const x = <string>value',
+			'@typescript-eslint/consistent-type-assertions',
+		],
+		[
+			'@ts-ignore',
+			'// @ts-ignore\nexport const x: number = 1',
+			'@typescript-eslint/ban-ts-comment',
+		],
 		['@ts-nocheck', '// @ts-nocheck\nexport const x = 1', '@typescript-eslint/ban-ts-comment'],
-		['as any', 'declare const value: unknown\nexport const x = value as any', 'soldy/no-explicit-any'],
+		[
+			'as any',
+			'declare const value: unknown\nexport const x = value as any',
+			'soldy/no-explicit-any',
+		],
 	])('%s — ошибка', async (_title, code, ruleId) => {
 		expect(await ruleIds(code, SRC)).toContain(ruleId)
 	})
@@ -39,8 +59,14 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 	it.each([
 		['as X', 'declare const value: unknown\nexport const x = value as string'],
 		['as const', "export const x = ['a', 'b'] as const"],
-		['@ts-expect-error с пояснением', "// @ts-expect-error — строка в числе проверяет тип\nexport const x: number = 'a'"],
-		['any в констрейнте', 'export type TMap<T extends Record<string, (...args: any) => any>> = T'],
+		[
+			'@ts-expect-error с пояснением',
+			"// @ts-expect-error — строка в числе проверяет тип\nexport const x: number = 'a'",
+		],
+		[
+			'any в констрейнте',
+			'export type TMap<T extends Record<string, (...args: any) => any>> = T',
+		],
 	])('%s — допустимо', async (_title, code) => {
 		expect(await ruleIds(code, SRC)).toEqual([])
 	})
@@ -77,6 +103,26 @@ describe('eslint.config.ts: приведения вне ядра', () => {
 			await ruleIds(code, 'packages/ui/vue/src/components/__fixture__/Fixture.vue'),
 		).toContain('no-restricted-syntax')
 	})
+
+	it.each([
+		['as unknown as', 'const text = value as unknown as string', 'no-restricted-syntax'],
+		['as any', 'const text = value as any', 'soldy/no-explicit-any'],
+	])(
+		'<script lang="ts"> в .svelte под packages/ui/svelte/src: %s — ошибка',
+		async (_title, cast, ruleId) => {
+			const code = `<script lang="ts">
+const value: object = {}
+${cast}
+</script>
+
+<p>{text}</p>
+`
+
+			expect(
+				await ruleIds(code, 'packages/ui/svelte/src/components/__fixture__/Fixture.svelte'),
+			).toContain(ruleId)
+		},
+	)
 
 	// Временно, до 869f2grdv: кейс уходит вместе с исключением в eslint.config.ts
 	it('packages/plugins пропускается', async () => {
