@@ -1,5 +1,7 @@
 // plugins/custom/input-bool/types.ts
 
-export type TInputBoolPluginEvents = {
+import type { TPluginEvents } from '../../base'
+
+export type TInputBoolPluginEvents = TPluginEvents & {
 	'change:value': (payload: { value: boolean | undefined }) => void
 }

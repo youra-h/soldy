@@ -1,4 +1,5 @@
 import type { IControl } from '@soldy/core'
+import type { TPluginEvents } from '../../../base'
 
 /**
  * Куда переехала подсветка.
@@ -12,7 +13,7 @@ export type THighlightPayload = {
 	nextItem: IControl | null
 }
 
-export type TListNavigationPluginEvents = {
+export type TListNavigationPluginEvents = TPluginEvents & {
 	'change:highlight': (payload: THighlightPayload) => void
 }
 

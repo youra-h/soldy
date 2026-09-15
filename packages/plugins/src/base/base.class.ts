@@ -1,14 +1,15 @@
 import type { IPlugin, IPluginContext, TPluginEvents } from './types'
 import { TEvented } from '@soldy/core'
+import type { TEventSink } from '@soldy/core'
 
 export abstract class TBasePlugin<
 	TInstance = any,
-	TEvents extends Record<string, (...args: any) => any> = TPluginEvents,
+	TEvents extends TPluginEvents = TPluginEvents,
 > implements IPlugin<TInstance, TEvents> {
 	readonly events: TEvented<TEvents> = new TEvented<TEvents>()
 
 	install(ctx: IPluginContext, options?: unknown): void {
-		;(this.events as unknown as TEvented<TPluginEvents>).emit('install', ctx, options)
+		this._sink.emit('install', ctx, options)
 	}
 
 	/**
@@ -19,10 +20,19 @@ export abstract class TBasePlugin<
 	 * раньше, и эмит ушёл бы в пустоту.
 	 */
 	created(): void {
-		;(this.events as unknown as TEvented<TPluginEvents>).emit('create', this)
+		this._sink.emit('create', this)
 	}
 
 	destroy(): void {
-		;(this.events as unknown as TEvented<TPluginEvents>).emit('destroy', {} as IPluginContext, undefined)
+		this._sink.emit('destroy')
+	}
+
+	/**
+	 * Эмит собственных событий базы — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `@soldy/core`). Эмит звучит за
+	 * счёт констрейнта: карта наследника включает `TPluginEvents`.
+	 */
+	protected get _sink(): TEventSink<TPluginEvents> {
+		return this.events
 	}
 }

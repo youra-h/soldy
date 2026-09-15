@@ -10,7 +10,11 @@ export interface IPluginContext {
 
 export type TPluginEvents = {
 	install: (ctx: IPluginContext, options?: unknown) => void
-	destroy: (ctx: IPluginContext, options?: unknown) => void
+	/**
+	 * Плагин уничтожается. Без аргументов, как и сам `destroy()`: контекста
+	 * при уничтожении у плагина нет.
+	 */
+	destroy: () => void
 	/**
 	 * Плагин создан и доступен снаружи. Эмитится adapter-слоем — не в install,
 	 * потому что на момент установки подписчиков ещё нет: bundle собирается
