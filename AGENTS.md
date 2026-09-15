@@ -969,6 +969,10 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
   `rendered` и `visible`), иначе потребитель получает два эмита на одно изменение.
   Дедуплицировать можно только проброс событий — синхронизацию состояния нельзя,
   `present` обязан пересчитываться на обоих триггерах.
+- `collectForwardProps(props, adapter, inspector, 'children')` — пропсы, которые
+  React, Solid и Svelte спредят в атрибуты корня. Съедает пропы, события и
+  **слоты** дескриптора (`resolveSlotName`), иначе `leading={<Icon/>}` доезжает
+  до DOM атрибутом.
 - `resolveDefaultExtensions` (в `adapter/extensions/`) — уже применяется по
   умолчанию внутри `createAdapterContext`, передавать его вручную не нужно.
 

@@ -17,11 +17,10 @@
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
-import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import { TPluginsBindingExtension, collectForwardProps, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IAccessorProp } from '@soldy/accessor'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps.svelte'
 import { useSyncEvents } from './useSyncEvents'
@@ -37,36 +36,6 @@ export type TBinding<TInstance = object, TProps extends object = object> = {
 	readonly forwardProps: TForwardProps<TProps>
 	/** Svelte-attachment: `<div {@attach binding.attachElement}>` */
 	attachElement: (node: Element) => (() => void) | void
-}
-
-/** Собирает имена props/событий, которые «съедает» компонент. Остальное уходит в DOM. */
-function computeForwardProps<TProps extends object>(
-	props: TProps,
-	accessor: IAdapterContext['accessor'],
-	inspector: ReturnType<typeof createInspector>,
-): TForwardProps<TProps> {
-	const consumed = new Set<string>(['children', 'plugins', 'ctrl'])
-
-	for (const prop of accessor.getProps(true) as IAccessorProp[]) {
-		consumed.add(inspector.getExportPropName(prop))
-		consumed.add(prop.name.name)
-
-		for (const trigger of inspector.getExportTriggers(prop)) {
-			consumed.add(trigger)
-		}
-	}
-
-	for (const evt of accessor.getEvents()) {
-		consumed.add(inspector.getExportEventName(evt.name))
-	}
-
-	const rest: Partial<TProps> = {}
-
-	for (const key of Object.keys(props)) {
-		if (!consumed.has(key)) Reflect.set(rest, key, Reflect.get(props, key))
-	}
-
-	return rest
 }
 
 export function useAdapter<TProps extends object, TInstance extends object = object>(
@@ -93,7 +62,7 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 	// 3. Очистка контекста
 	$effect(() => () => adapter.destroy())
 
-	const forwardProps = $derived(computeForwardProps(getProps(), adapter.accessor, inspector))
+	const forwardProps = $derived(collectForwardProps(getProps(), adapter, inspector, 'children'))
 
 	return {
 		ctrl: adapter.instance,

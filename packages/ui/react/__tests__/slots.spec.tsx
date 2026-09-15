@@ -124,3 +124,12 @@ describe('слот не ограничивает содержимое', () => {
 		expect(el.querySelector('.s-button__text li')?.textContent).toBe('Заголовок')
 	})
 })
+
+describe('слоты не уходят в атрибуты корня', () => {
+	it('leading и trailing не становятся атрибутами', () => {
+		const el = root(mount({ text: 'Mid', leading: <i>L</i>, trailing: <i>T</i> }))
+
+		expect(el.hasAttribute('leading')).toBe(false)
+		expect(el.hasAttribute('trailing')).toBe(false)
+	})
+})

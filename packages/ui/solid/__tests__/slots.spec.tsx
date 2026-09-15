@@ -67,3 +67,12 @@ describe('поведение слотов Button', () => {
 		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Fallback')
 	})
 })
+
+describe('слоты не уходят в атрибуты корня', () => {
+	it('leading и trailing не становятся атрибутами', () => {
+		const el = root(mount({ text: 'Mid', leading: <i>L</i>, trailing: <i>T</i> }))
+
+		expect(el.hasAttribute('leading')).toBe(false)
+		expect(el.hasAttribute('trailing')).toBe(false)
+	})
+})
