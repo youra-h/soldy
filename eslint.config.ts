@@ -68,13 +68,15 @@ export default defineConfigWithVueTs(
 		},
 	},
 
-	// Приведения, которые прячут несовпавший контракт, в ядре запрещены целиком
+	// Приведения, которые прячут несовпавший контракт, запрещены целиком
 	// (см. AGENTS.md, «Никаких костылей»). `as any` ловит soldy/no-explicit-any,
 	// `@ts-ignore`/`@ts-nocheck` — ban-ts-comment из recommended. Что блок
-	// действительно включён на путях ядра, проверяет tools/eslint/__tests__.
+	// действительно включён на путях пакетов, проверяет tools/eslint/__tests__.
 	{
-		name: 'soldy/core-no-casts',
-		files: ['packages/core/**/*.ts'],
+		name: 'soldy/no-casts',
+		files: ['**/*.{ts,mts,tsx,vue}'],
+		// Временно, до 869f2grdv
+		ignores: ['packages/plugins/**'],
 		rules: {
 			'@typescript-eslint/consistent-type-assertions': [
 				'error',
