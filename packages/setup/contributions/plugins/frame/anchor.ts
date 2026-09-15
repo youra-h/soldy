@@ -34,6 +34,10 @@ export const AnchorContribution = (): IContribution => ({
 			type: Boolean,
 			triggers: ['change:matchWidth'],
 		},
+		flip: {
+			type: Boolean,
+			triggers: ['change:flip'],
+		},
 		offset: {
 			type: Number,
 			triggers: ['change:offset'],
