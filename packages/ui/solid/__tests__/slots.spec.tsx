@@ -20,7 +20,8 @@ function mount(props: ComponentProps<typeof Button> = {}): HTMLElement {
 }
 
 afterEach(() => {
-	while (disposers.length) disposers.pop()!()
+	// С конца — в порядке, обратном монтированию
+	for (const dispose of disposers.splice(0).reverse()) dispose()
 	document.body.innerHTML = ''
 })
 

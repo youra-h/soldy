@@ -53,7 +53,9 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 	}
 
 	private _updateLine(offset: TActiveTabOffset | null): void {
-		if (!offset || !this._engine) return
+		const tabs = this._tabs
+
+		if (!offset || !this._engine || !tabs) return
 
 		const activeItem = this._engine.extensions.activation.activeItem
 
@@ -61,7 +63,7 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 
 		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
-		if (this._tabs!.orientation === 'vertical') {
+		if (tabs.orientation === 'vertical') {
 			listEl.style.setProperty('--underline-pos', `${offsetTop}px`)
 			listEl.style.setProperty('--underline-size', `${offsetHeight}px`)
 		} else {
@@ -71,11 +73,13 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 	}
 
 	private _updateOutline(offset: TActiveTabOffset | null): void {
-		if (!offset || !this._engine) return
+		const tabs = this._tabs
+
+		if (!offset || !this._engine || !tabs) return
 
 		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
-		if (this._tabs!.orientation === 'vertical') {
+		if (tabs.orientation === 'vertical') {
 			listEl.style.setProperty('--gap-pos', `${offsetTop + 1}px`)
 			listEl.style.setProperty('--gap-size', `${offsetHeight - 1}px`)
 		} else {

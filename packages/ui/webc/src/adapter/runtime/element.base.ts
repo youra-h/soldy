@@ -230,8 +230,7 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 		}
 
 		// Пересоздание корня равносильно полной отрисовке: новый DOM пуст
-		const recreated = this._ensureRoot(this.template.tag(state))
-		const root = this._root!
+		const { root, content, recreated } = this._ensureRoot(this.template.tag(state))
 		const applyAll = full || recreated
 
 		if (applyAll || this._dirty.has('classes')) {
@@ -253,7 +252,7 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 
 		const context: ITemplateContext<TInstance> = {
 			root,
-			content: this._content!,
+			content,
 			state,
 			hasSlot: (name) => (this._light.get(name)?.length ?? 0) > 0,
 		}
@@ -267,9 +266,11 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 		this._dirty.clear()
 	}
 
-	/** Создаёт корень нужного тега. Возвращает true, если он был пересоздан. */
-	private _ensureRoot(tag: string): boolean {
-		if (this._root && this._root.tagName.toLowerCase() === tag) return false
+	/** Корень нужного тега и точка содержимого; `recreated` — корень пересоздан. */
+	private _ensureRoot(tag: string): { root: HTMLElement; content: HTMLElement; recreated: boolean } {
+		if (this._root && this._content && this._root.tagName.toLowerCase() === tag) {
+			return { root: this._root, content: this._content, recreated: false }
+		}
 
 		const root = document.createElement(tag)
 		const targets = this.template.create(root)
@@ -281,24 +282,26 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 		// не иметь других: тогда содержимое просто ляжет в корень.
 		const fallback = targets[DEFAULT_SLOT]
 
-		this._content = fallback?.mode === 'append' ? fallback.node : root
+		const content = fallback?.mode === 'append' ? fallback.node : root
+
+		this._content = content
 
 		this.appendChild(root)
-		this._distribute(targets)
+		this._distribute(root, targets)
 		this.binding?.bindElement(root)
 
-		return true
+		return { root, content, recreated: true }
 	}
 
 	/** Раскладывает свет по точкам, объявленным шаблоном. */
-	private _distribute(targets: TSlotTargets): void {
+	private _distribute(root: HTMLElement, targets: TSlotTargets): void {
 		for (const [name, nodes] of this._light) {
 			const target = targets[name]
 
 			for (const node of nodes) {
 				if (!target) {
 					// Слот не объявлен шаблоном — содержимое не теряем, кладём в корень
-					this._root!.appendChild(node)
+					root.appendChild(node)
 				} else if (target.mode === 'append') {
 					target.node.appendChild(node)
 				} else {

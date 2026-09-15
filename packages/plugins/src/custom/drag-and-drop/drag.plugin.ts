@@ -94,11 +94,12 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	 * каждый DOM-узел элемента коллекции атрибутом `draggable="true"`.
 	 */
 	private _setup(): void {
-		if (this._cleanup) return
+		const element = this._element
+		const engine = this._engine
+		const collectionElements = this._collectionElements
 
-		const element = this._element!
-		const engine = this._engine!
-		const collectionElements = this._collectionElements!
+		// Без корня, коллекции или TCollectionElements в бандле перетаскивать нечего.
+		if (this._cleanup || !element || !engine || !collectionElements) return
 
 		// Индекс перетаскиваемого элемента; null — перетаскивание не активно.
 		let draggingIndex: number | null = null
@@ -154,7 +155,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			draggingUid = uid
 			lastDragOverTarget = null
 
-			e.dataTransfer!.effectAllowed = 'move'
+			if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
 
 			const item = collectionItems()[index]
 
@@ -190,7 +191,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 
 		const onDragOver = (e: DragEvent) => {
 			e.preventDefault()
-			e.dataTransfer!.dropEffect = 'move'
+			if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
 
 			if (draggingIndex === null) return
 

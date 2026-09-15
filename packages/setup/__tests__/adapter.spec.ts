@@ -147,7 +147,7 @@ describe('createAdapterContext', () => {
 		ctx.use(MyExt, { x: 1 })
 
 		expect(ctx.get(MyExt)).toBeInstanceOf(MyExt)
-		expect(ctx.get(MyExt)!.opts).toEqual({ x: 1 })
+		expect(required(ctx.get(MyExt), 'расширение MyExt').opts).toEqual({ x: 1 })
 	})
 
 	it('destroy эмитит событие и очищает расширения', () => {

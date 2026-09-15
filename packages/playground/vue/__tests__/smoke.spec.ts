@@ -216,7 +216,9 @@ describe('свойства коллекции', () => {
 		await nextTick()
 		await nextFrame()
 
-		const row = modeRow(wrapper)!
+		const row = modeRow(wrapper)
+
+		if (!row) throw new Error('нет строки mode')
 
 		// Значение шлём через сам контрол строки — так же, как это делает клик
 		// пользователя. Отрисовку Select проверяют его собственные тесты
@@ -250,8 +252,15 @@ describe('свойства коллекции', () => {
  * снятый `readonly` у поля (снимает только `editable`).
  */
 describe('пресет строки', () => {
-	const rowOf = (wrapper: ReturnType<typeof mount>, name: string) =>
-		wrapper.findAll('.pg-prop').find((row) => row.find('.pg-prop__name').text() === name)!
+	const rowOf = (wrapper: ReturnType<typeof mount>, name: string) => {
+		const found = wrapper
+			.findAll('.pg-prop')
+			.find((row) => row.find('.pg-prop__name').text() === name)
+
+		if (!found) throw new Error(`нет строки ${name}`)
+
+		return found
+	}
 
 	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })

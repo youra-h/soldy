@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { createPluginContext } from './helpers'
+import { createPluginContext, required } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
 import {
@@ -105,8 +105,8 @@ describe('навигация', () => {
 		press('ArrowDown')
 		press('ArrowDown')
 
-		expect(itemPlugins.get(items[0].uid)!.highlighted).toBe(false)
-		expect(itemPlugins.get(items[1].uid)!.highlighted).toBe(true)
+		expect(required(itemPlugins.get(items[0].uid), 'плагин элемента').highlighted).toBe(false)
+		expect(required(itemPlugins.get(items[1].uid), 'плагин элемента').highlighted).toBe(true)
 	})
 
 	it('недоступные элементы не пропускаются — в отличие от Select', async () => {

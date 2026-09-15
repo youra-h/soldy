@@ -54,7 +54,13 @@ function createTabs(values: string[]) {
 	}
 
 	/** Контекст item-адаптеров таба с таким значением. */
-	const contextFor = (value: string) => registry.get(find(value)!)
+	const contextFor = (value: string) => {
+		const item = find(value)
+
+		if (!item) throw new Error(`таба со значением ${value} нет`)
+
+		return registry.get(item)
+	}
 
 	return { owner, collection, items, facadeFor, tabFacadeFor, contextFor }
 }

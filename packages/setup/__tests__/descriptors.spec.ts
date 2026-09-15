@@ -45,6 +45,7 @@ import {
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
+import { required } from './helpers'
 
 const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
 	d.props.map((p) => p.name.name)
@@ -86,8 +87,8 @@ describe('дескрипторы компонентов (наследовани�
 		const bundle = d.createBundle(instance)
 
 		expect(bundle).not.toBeNull()
-		expect(bundle!.get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
-		expect(bundle!.get(TReadyPlugin)).toBeInstanceOf(TReadyPlugin)
+		expect(required(bundle, 'бандл Button').get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+		expect(required(bundle, 'бандл Button').get(TReadyPlugin)).toBeInstanceOf(TReadyPlugin)
 	})
 
 	it('ButtonDescriptor accessor привязывает собственные props к instance', () => {
@@ -96,7 +97,10 @@ describe('дескрипторы компонентов (наследовани�
 		const bundle = d.createBundle(instance)
 		const accessor = d.createAccessor(instance, bundle)
 
-		const viewProp = accessor.getProps().find((p) => p.name.name === 'view')!
+		const viewProp = required(
+			accessor.getProps().find((p) => p.name.name === 'view'),
+			'prop view',
+		)
 		expect(viewProp.instance).toBe(instance)
 
 		// Плагины дают события с namespace
@@ -124,7 +128,9 @@ describe('дескрипторы компонентов (наследовани�
 	it('ComponentViewDescriptor содержит Element/Ready, DragAndDropDescriptor — нет', () => {
 		const cv = ComponentViewDescriptor()
 		const cvBundle = cv.createBundle(new TComponentView())
-		expect(cvBundle!.get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+		expect(required(cvBundle, 'бандл ComponentView').get(TElementPlugin)).toBeInstanceOf(
+			TElementPlugin,
+		)
 
 		const dd = DragAndDropDescriptor()
 		expect(dd.ctor).toBe(TDragAndDrop)
@@ -226,7 +232,10 @@ describe('дескрипторы коллекций (фасады)', () => {
 		// делает расширение коллекции, а не фасад
 		expect(names).not.toContain('list_wordWrap')
 
-		const view = d.props.find((p) => p.name.name === 'view')!
+		const view = required(
+			d.props.find((p) => p.name.name === 'view'),
+			'prop view',
+		)
 		expect(view.protected).toBe(true)
 	})
 

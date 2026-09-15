@@ -20,7 +20,9 @@ type TEngine = TCollectionEngine<{ readonly value: unknown }, any>
 /** `TElementPlugin` отдаёт узел через `requestAnimationFrame` — ждём кадр. */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
-let wrapper: ReturnType<typeof mount> | null = null
+type TWrapper = ReturnType<typeof mount>
+
+let wrapper: TWrapper | null = null
 
 afterEach(() => {
 	wrapper?.unmount()
@@ -39,10 +41,12 @@ const ITEMS = [
 const options = () => document.querySelectorAll('[role="option"]')
 const texts = () => [...options()].map((el) => el.textContent?.trim())
 
-async function renderSelect(props: Record<string, unknown> = {}): Promise<TEngine> {
+async function renderSelect(
+	props: Record<string, unknown> = {},
+): Promise<{ wrapper: TWrapper; engine: TEngine }> {
 	let engine: TEngine | undefined
 
-	wrapper = mount(Select, {
+	const mounted = mount(Select, {
 		props: {
 			items: ITEMS,
 			'onEngine:create': (value: TEngine) => {
@@ -53,24 +57,27 @@ async function renderSelect(props: Record<string, unknown> = {}): Promise<TEngin
 		attachTo: document.body,
 	})
 
+	// модульная ссылка — только для размонтирования в afterEach
+	wrapper = mounted
+
 	await nextTick()
 	await nextTick()
 
 	if (!engine) throw new Error('engine:create не пришёл')
 
-	return engine
+	return { wrapper: mounted, engine }
 }
 
 describe('Select под отбором', () => {
 	it('движок доезжает до теста и содержит filter', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		expect(engine).toBeDefined()
 		expect(engine.extensions.filter).toBeDefined()
 	})
 
 	it('сужает список на экране', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		expect(options().length).toBe(4)
 
@@ -81,7 +88,7 @@ describe('Select под отбором', () => {
 	})
 
 	it('скрытые опции остаются в коллекции — размонтирование их не удаляет', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		engine.extensions.filter.query = 'тре'
 		await nextTick()
@@ -92,7 +99,7 @@ describe('Select под отбором', () => {
 	})
 
 	it('снятие отбора возвращает весь список', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		engine.extensions.filter.query = 'тре'
 		await nextTick()
@@ -105,7 +112,7 @@ describe('Select под отбором', () => {
 	})
 
 	it('отбор по тексту, а не по значению — поле сравнения ставит Select', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		expect(engine.extensions.filter.fields).toEqual(['text'])
 
@@ -117,7 +124,7 @@ describe('Select под отбором', () => {
 	})
 
 	it('пустой отбор показывает слот empty', async () => {
-		const engine = await renderSelect()
+		const { engine } = await renderSelect()
 
 		engine.extensions.filter.query = 'ничего такого нет'
 		await nextTick()
@@ -127,7 +134,7 @@ describe('Select под отбором', () => {
 	})
 
 	it('выбор скрытой опции не теряется', async () => {
-		const engine = await renderSelect({ value: 'a' })
+		const { engine } = await renderSelect({ value: 'a' })
 
 		expect(engine.extensions.selection.selectedCount).toBe(1)
 
@@ -158,8 +165,8 @@ describe('Select под отбором', () => {
  */
 describe('ввод в поле под отбором', () => {
 	/** Набрать текст в поле так, как это делает пользователь. */
-	async function type(value: string) {
-		const field = wrapper!.find('input')
+	async function type(select: TWrapper, value: string) {
+		const field = select.find('input')
 
 		;(field.element as HTMLInputElement).value = value
 		await field.trigger('input')
@@ -167,10 +174,10 @@ describe('ввод в поле под отбором', () => {
 	}
 
 	it('editableMode: filter — набранное сужает список', async () => {
-		const engine = await renderSelect({ editable: true, editableMode: 'filter' })
+		const { wrapper, engine } = await renderSelect({ editable: true, editableMode: 'filter' })
 
 		await nextFrame()
-		await type('тре')
+		await type(wrapper, 'тре')
 
 		expect(texts()).toEqual(['Третий'])
 		expect(engine.extensions.filter.query).toBe('тре')
@@ -179,20 +186,20 @@ describe('ввод в поле под отбором', () => {
 	})
 
 	it('editableMode: search — список остаётся целым', async () => {
-		const engine = await renderSelect({ editable: true, editableMode: 'search' })
+		const { wrapper, engine } = await renderSelect({ editable: true, editableMode: 'search' })
 
 		await nextFrame()
-		await type('тре')
+		await type(wrapper, 'тре')
 
 		expect(options().length).toBe(4)
 		expect(engine.extensions.filter.query).toBe('')
 	})
 
 	it('без editable ввод не слушается вовсе', async () => {
-		const engine = await renderSelect({ editableMode: 'filter' })
+		const { wrapper, engine } = await renderSelect({ editableMode: 'filter' })
 
 		await nextFrame()
-		await type('тре')
+		await type(wrapper, 'тре')
 
 		expect(engine.extensions.filter.query).toBe('')
 		expect(options().length).toBe(4)
@@ -208,31 +215,31 @@ describe('ввод в поле под отбором', () => {
 	 * которую перетирал ближайший рендер `Input`.
 	 */
 	it('первый Escape закрывает панель и не трогает отбор, второй — снимает и возвращает текст', async () => {
-		const engine = await renderSelect({
+		const { wrapper, engine } = await renderSelect({
 			editable: true,
 			editableMode: 'filter',
 			value: 'a',
 		})
 
 		await nextFrame()
-		await type('тре')
+		await type(wrapper, 'тре')
 		expect(texts()).toEqual(['Третий'])
 
-		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await wrapper.trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
 		expect(engine.extensions.filter.query).toBe('тре')
 		expect(texts()).toEqual(['Третий'])
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('тре')
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('тре')
 
-		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await wrapper.trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
 		expect(engine.extensions.filter.query).toBe('')
 		expect(texts()).toEqual(['Первый', 'Второй', 'Третий', 'Четвёртый'])
 		// выбор фильтр не трогал
 		expect(engine.extensions.selection.selectedCount).toBe(1)
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Первый')
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Первый')
 	})
 
 	/**
@@ -243,22 +250,22 @@ describe('ввод в поле под отбором', () => {
 	 * неоткуда взять старый текст.
 	 */
 	it('несовпавший текст, Esc, Esc, ↓ — поле остаётся пустым', async () => {
-		await renderSelect({ editable: true })
+		const { wrapper } = await renderSelect({ editable: true })
 
 		await nextFrame()
-		await type('несуществующий текст')
+		await type(wrapper, 'несуществующий текст')
 
-		await wrapper!.trigger('keydown', { key: 'Escape' })
+		await wrapper.trigger('keydown', { key: 'Escape' })
 		await nextTick()
-		await wrapper!.trigger('keydown', { key: 'Escape' })
-		await nextTick()
-
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
-
-		await wrapper!.trigger('keydown', { key: 'ArrowDown' })
+		await wrapper.trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
+
+		await wrapper.trigger('keydown', { key: 'ArrowDown' })
+		await nextTick()
+
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
 	})
 
 	/**
@@ -268,18 +275,18 @@ describe('ввод в поле под отбором', () => {
 	 * `change:selection` сама, независимо от `editableMode`.
 	 */
 	it('multiple: Enter добавляет тег и очищает поле, включая перерисовку', async () => {
-		await renderSelect({ editable: true, mode: 'multiple' })
+		const { wrapper } = await renderSelect({ editable: true, mode: 'multiple' })
 
 		await nextFrame()
-		await type('Пер')
+		await type(wrapper, 'Пер')
 		await nextTick()
 
-		await wrapper!.trigger('keydown', { key: 'Enter' })
+		await wrapper.trigger('keydown', { key: 'Enter' })
 		await nextTick()
 		await nextTick()
 
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('')
-		expect(wrapper!.findAll('.s-tags-item').length).toBe(1)
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
+		expect(wrapper.findAll('.s-tags-item').length).toBe(1)
 	})
 
 	/**
@@ -288,17 +295,17 @@ describe('ввод в поле под отбором', () => {
 	 * поле обязано вернуться к тексту выбранного, а не остаться с набранным.
 	 */
 	it('single: Enter на уже выбранной опции возвращает её текст в поле', async () => {
-		const engine = await renderSelect({ editable: true, value: 'c' })
+		const { wrapper, engine } = await renderSelect({ editable: true, value: 'c' })
 
 		await nextFrame()
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Третий')
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Третий')
 
-		await type('Тре')
-		await wrapper!.trigger('keydown', { key: 'Enter' })
+		await type(wrapper, 'Тре')
+		await wrapper.trigger('keydown', { key: 'Enter' })
 		await nextTick()
 
 		expect(engine.extensions.selection.selectedCount).toBe(1)
-		expect((wrapper!.find('input').element as HTMLInputElement).value).toBe('Третий')
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Третий')
 	})
 })
 
@@ -319,10 +326,12 @@ describe('опции из разметки под отбором', () => {
 			.filter((el) => (el as HTMLElement).style.display !== 'none')
 			.map((el) => el.textContent?.trim())
 
-	async function renderWithSlot(props: Record<string, unknown> = {}): Promise<TEngine> {
+	async function renderWithSlot(
+		props: Record<string, unknown> = {},
+	): Promise<{ wrapper: TWrapper; engine: TEngine }> {
 		let engine: TEngine | undefined
 
-		wrapper = mount(Select, {
+		const mounted = mount(Select, {
 			props: {
 				'onEngine:create': (value: TEngine) => {
 					engine = value
@@ -335,16 +344,18 @@ describe('опции из разметки под отбором', () => {
 			attachTo: document.body,
 		})
 
+		wrapper = mounted
+
 		await nextTick()
 		await nextTick()
 
 		if (!engine) throw new Error('engine:create не пришёл')
 
-		return engine
+		return { wrapper: mounted, engine }
 	}
 
 	it('отбор из кода прячет несовпавшие опции', async () => {
-		const engine = await renderWithSlot()
+		const { engine } = await renderWithSlot()
 
 		expect(visibleTexts().length).toBe(4)
 
@@ -357,11 +368,11 @@ describe('опции из разметки под отбором', () => {
 	})
 
 	it('ввод в поле прячет несовпавшие опции', async () => {
-		const engine = await renderWithSlot({ editable: true, editableMode: 'filter' })
+		const { wrapper, engine } = await renderWithSlot({ editable: true, editableMode: 'filter' })
 
 		await nextFrame()
 
-		const field = wrapper!.find('input')
+		const field = wrapper.find('input')
 
 		;(field.element as HTMLInputElement).value = 'вто'
 		await field.trigger('input')
@@ -372,7 +383,7 @@ describe('опции из разметки под отбором', () => {
 	})
 
 	it('снятие отбора возвращает все опции', async () => {
-		const engine = await renderWithSlot()
+		const { engine } = await renderWithSlot()
 
 		engine.extensions.filter.query = 'вто'
 		await nextTick()

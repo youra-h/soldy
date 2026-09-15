@@ -91,8 +91,8 @@ describe('TFactoryExtension + TBatchExtension.update/trackBy', () => {
 
 		expect(byId.size).toBe(2)
 		expect(byId.get(1)).toBeInstanceOf(TTestItem)
-		expect(byId.get(1)!.text).toBe('a-updated')
+		expect(byId.get(1)?.text).toBe('a-updated')
 		expect(byId.get(3)).toBeInstanceOf(TTestItem)
-		expect(byId.get(3)!.text).toBe('c')
+		expect(byId.get(3)?.text).toBe('c')
 	})
 })

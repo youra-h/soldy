@@ -31,9 +31,8 @@ function mount(props: ButtonProps = {}): HTMLElement {
 }
 
 afterEach(() => {
-	while (roots.length) {
-		const reactRoot = roots.pop()!
-
+	// С конца — в порядке, обратном монтированию
+	for (const reactRoot of roots.splice(0).reverse()) {
 		act(() => reactRoot.unmount())
 	}
 

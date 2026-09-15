@@ -81,9 +81,11 @@ describe('Select: корень несёт data-open для темы', () => {
 	})
 
 	it('следует за открытием панели', async () => {
-		wrapper = mount(SelectHarness, { attachTo: document.body })
+		const select = mount(SelectHarness, { attachTo: document.body })
 
-		const root = () => wrapper!.find('.s-select')
+		wrapper = select
+
+		const root = () => select.find('.s-select')
 
 		expect(root().attributes('data-open')).toBe('false')
 

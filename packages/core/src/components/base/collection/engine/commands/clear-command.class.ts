@@ -11,11 +11,11 @@ import { TClearEvent, TRemoveEvent } from '../types'
  * хранилище не трогаем и никаких событий не шлём.
  */
 export class TClearCommand<TItem> implements ICommand<TItem> {
-	private _event?: TClearEvent<TItem>
-	private _cleared = false
+	/** Снимок удалённых элементов. Есть только после состоявшейся очистки. */
+	private _cleared: TClearEvent<TItem> | null = null
 
 	get changed(): boolean {
-		return this._cleared
+		return this._cleared !== null
 	}
 
 	apply(ctx: ICommandContext<TItem>): void {
@@ -24,21 +24,22 @@ export class TClearCommand<TItem> implements ICommand<TItem> {
 		if (items.length === 0) return
 
 		const event = new TClearEvent<TItem>([...items])
-		this._event = event
 
 		ctx.events.emit('items:clear:before', event)
 
 		if (event.defaultPrevented) return
 
-		this._cleared = true
+		this._cleared = event
 
 		ctx.storage.clear()
 	}
 
 	emitEvents(ctx: ICommandContext<TItem>): void {
-		if (!this._cleared) return
+		const cleared = this._cleared
 
-		this._event!.items.forEach((item) =>
+		if (!cleared) return
+
+		cleared.items.forEach((item) =>
 			ctx.events.emit('item:removed', new TRemoveEvent<TItem>(item)),
 		)
 

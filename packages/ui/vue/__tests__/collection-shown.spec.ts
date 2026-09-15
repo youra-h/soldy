@@ -18,7 +18,9 @@ import type { TCollectionEngine } from '@soldy/core'
 /** Движок, который коллекция отдаёт через `engine:create`: элементы с `value`. */
 type TEngine = TCollectionEngine<{ readonly value: unknown }, any>
 
-let wrapper: ReturnType<typeof mount> | null = null
+type TWrapper = ReturnType<typeof mount>
+
+let wrapper: TWrapper | null = null
 
 afterEach(() => {
 	wrapper?.unmount()
@@ -44,10 +46,10 @@ function narrowShown(engine: TEngine) {
 async function renderWith(
 	component: Component,
 	extraProps: Record<string, unknown> = {},
-): Promise<TEngine> {
+): Promise<{ wrapper: TWrapper; engine: TEngine }> {
 	let engine: TEngine | undefined
 
-	wrapper = mount(component, {
+	const mounted = mount(component, {
 		props: {
 			items: ITEMS,
 			'onEngine:create': (value: TEngine) => {
@@ -58,66 +60,69 @@ async function renderWith(
 		attachTo: document.body,
 	})
 
+	// модульная ссылка — только для размонтирования в afterEach
+	wrapper = mounted
+
 	await nextTick()
 	await nextTick()
 
 	if (!engine) throw new Error('engine:create не пришёл')
 
-	return engine
+	return { wrapper: mounted, engine }
 }
 
 describe('ListBox: рендер из shown', () => {
 	it('сузили shown — на экране меньше элементов, в коллекции все', async () => {
-		const engine = await renderWith(ListBox)
+		const { wrapper, engine } = await renderWith(ListBox)
 
-		expect(wrapper!.findAllComponents(ListBox.Item).length).toBe(3)
+		expect(wrapper.findAllComponents(ListBox.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(ListBox.Item).length).toBe(2)
+		expect(wrapper.findAllComponents(ListBox.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
 
 describe('Tabs: рендер из shown', () => {
 	it('сузили shown — на экране меньше вкладок, в коллекции все', async () => {
-		const engine = await renderWith(Tabs)
+		const { wrapper, engine } = await renderWith(Tabs)
 
-		expect(wrapper!.findAllComponents(Tabs.Item).length).toBe(3)
+		expect(wrapper.findAllComponents(Tabs.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Tabs.Item).length).toBe(2)
+		expect(wrapper.findAllComponents(Tabs.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
 
 describe('Accordion: рендер из shown', () => {
 	it('сузили shown — на экране меньше панелей, в коллекции все', async () => {
-		const engine = await renderWith(Accordion)
+		const { wrapper, engine } = await renderWith(Accordion)
 
-		expect(wrapper!.findAllComponents(Accordion.Item).length).toBe(3)
+		expect(wrapper.findAllComponents(Accordion.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Accordion.Item).length).toBe(2)
+		expect(wrapper.findAllComponents(Accordion.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })
 
 describe('Tags: рендер из shown', () => {
 	it('сузили shown — на экране меньше тегов, в коллекции все', async () => {
-		const engine = await renderWith(Tags)
+		const { wrapper, engine } = await renderWith(Tags)
 
-		expect(wrapper!.findAllComponents(Tags.Item).length).toBe(3)
+		expect(wrapper.findAllComponents(Tags.Item).length).toBe(3)
 
 		narrowShown(engine)
 		await nextTick()
 
-		expect(wrapper!.findAllComponents(Tags.Item).length).toBe(2)
+		expect(wrapper.findAllComponents(Tags.Item).length).toBe(2)
 		expect(engine.extensions.batch.items.length).toBe(3)
 	})
 })

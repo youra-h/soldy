@@ -11,7 +11,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import type { ISelectProps } from '@soldy/core'
-import { createPluginContext } from './helpers'
+import { createPluginContext, required } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -234,8 +234,8 @@ describe('открытая панель — навигация', () => {
 		press('ArrowDown')
 		press('ArrowDown')
 
-		expect(itemPlugins.get(items[0].uid)!.highlighted).toBe(false)
-		expect(itemPlugins.get(items[1].uid)!.highlighted).toBe(true)
+		expect(required(itemPlugins.get(items[0].uid), 'плагин опции').highlighted).toBe(false)
+		expect(required(itemPlugins.get(items[1].uid), 'плагин опции').highlighted).toBe(true)
 	})
 
 	/**

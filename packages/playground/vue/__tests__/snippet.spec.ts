@@ -12,7 +12,16 @@ import type { TPropControl } from '@soldy/playground-shared'
 import { COMPONENTS } from '@soldy/playground-shared'
 import { propSnippet, instanceSnippet } from '../src/snippet'
 
-const accordion = COMPONENTS.find((entry) => entry.id === 'accordion')!
+/** Запись манифеста по id; без неё проверять нечего. */
+function entryOf(id: string) {
+	const entry = COMPONENTS.find((candidate) => candidate.id === id)
+
+	if (!entry) throw new Error(`нет компонента «${id}»`)
+
+	return entry
+}
+
+const accordion = entryOf('accordion')
 
 const control = (overrides: Partial<TPropControl>): TPropControl => ({
 	name: 'view',
@@ -74,7 +83,7 @@ describe('propSnippet', () => {
  * получает, и код обязан тоже: иначе вставленный пример не повторит стенд.
  */
 describe('пресет строки', () => {
-	const select = COMPONENTS.find((entry) => entry.id === 'select')!
+	const select = entryOf('select')
 	const preset = { editable: true, mode: 'multiple' }
 
 	it('propSnippet пишет пресет рядом с самим пропом', () => {

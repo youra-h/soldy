@@ -18,6 +18,7 @@ import {
 	isScopedSlot,
 	slotNames,
 } from '@soldy/setup'
+import { required } from './helpers'
 
 describe('normalizeContribution · slots', () => {
 	it('переносит имя из ключа словаря в декларацию', () => {
@@ -65,13 +66,16 @@ describe('наследование слотов', () => {
 
 	it('Button уточняет унаследованный default, добавляя scope', () => {
 		const inherited = ComponentViewDescriptor().getSlots()[0]
-		const refined = ButtonDescriptor()
-			.getSlots()
-			.find((slot) => slot.name === 'default')!
+		const refined = required(
+			ButtonDescriptor()
+				.getSlots()
+				.find((slot) => slot.name === 'default'),
+			'слот default у Button',
+		)
 
 		expect(isScopedSlot(inherited.scope)).toBe(false)
 		expect(isScopedSlot(refined.scope)).toBe(true)
-		expect(Object.keys(refined.scope!)).toEqual(['text'])
+		expect(Object.keys(required(refined.scope, 'scope слота default'))).toEqual(['text'])
 	})
 
 	it('невизуальный слой слотов не имеет', () => {

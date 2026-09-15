@@ -39,21 +39,28 @@ function declarations(body: string): Map<string, string> {
 	return map
 }
 
+/** Значение токена; без токена мерить нечего — падаем с его именем. */
+function tokenOf(tokens: Map<string, string>, name: string): string {
+	const value = tokens.get(name)
+
+	if (value === undefined) throw new Error(`нет ${name}`)
+
+	return value
+}
+
 /** Светлота из oklch(L C H) — первое число. */
 function lightness(value: string): number {
 	const match = value.match(/oklch\(\s*([\d.]+)/)
-	expect(match, `не oklch: ${value}`).not.toBeNull()
 
-	return Number(match![1])
+	if (!match) throw new Error(`не oklch: ${value}`)
+
+	return Number(match[1])
 }
 
 function scaleOf(tokens: Map<string, string>, family: string): number[] {
-	return [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => {
-		const value = tokens.get(`--s-${family}-${step}`)
-		expect(value, `нет --s-${family}-${step}`).toBeDefined()
-
-		return lightness(value!)
-	})
+	return [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) =>
+		lightness(tokenOf(tokens, `--s-${family}-${step}`)),
+	)
 }
 
 /** Исходники стилей — `.scss` и `.css`, рекурсивно. */
@@ -147,8 +154,8 @@ describe('токены цветовых схем', () => {
 
 	/** Поверхность обязана быть тёмной, текст — светлым, иначе схема не тёмная. */
 	it('в тёмной схеме поверхность темнее текста', () => {
-		expect(lightness(dark.get('--s-neutral-50')!)).toBeLessThan(0.3)
-		expect(lightness(dark.get('--s-neutral-800')!)).toBeGreaterThan(0.7)
+		expect(lightness(tokenOf(dark, '--s-neutral-50'))).toBeLessThan(0.3)
+		expect(lightness(tokenOf(dark, '--s-neutral-800'))).toBeGreaterThan(0.7)
 	})
 })
 

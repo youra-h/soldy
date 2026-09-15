@@ -46,6 +46,15 @@ function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
 	return { owner, collection, items, facadeFor, select: collection.engine.extensions.select }
 }
 
+/** Движок тегов: есть только в multiple, без него проверять нечего. */
+function tagsEngine(collection: TSelectCollectionFacade) {
+	const engine = collection.tags_engine
+
+	if (!engine) throw new Error('движка тегов нет')
+
+	return engine
+}
+
 describe('TSelect — собственные props', () => {
 	it('о коллекции ничего не знает', () => {
 		const select = new TSelect()
@@ -590,7 +599,9 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		expect([...collection.tags_engine!.extensions.batch.items].map((item) => item.text)).toEqual(['A', 'B'])
+		expect([...tagsEngine(collection).extensions.batch.items].map((item) => item.text)).toEqual(
+			['A', 'B'],
+		)
 	})
 
 	it('снятие выбора убирает тег', () => {
@@ -600,7 +611,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		facadeFor(0).choose() // повторный выбор в multiple снимает
 
-		expect([...collection.tags_engine!.extensions.batch.items]).toHaveLength(0)
+		expect([...tagsEngine(collection).extensions.batch.items]).toHaveLength(0)
 	})
 
 	it('закрытие тега снимает выбор с опции по value', () => {
@@ -610,7 +621,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		facadeFor(1).choose()
 
-		const engine = collection.tags_engine!
+		const engine = tagsEngine(collection)
 		const tag = [...engine.extensions.batch.items][0]
 
 		engine.extensions.tags.closeTag(tag)
@@ -625,7 +636,7 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		owner.disabled = true
 
-		const tag = [...collection.tags_engine!.extensions.batch.items][0]
+		const tag = [...tagsEngine(collection).extensions.batch.items][0]
 
 		expect(tag.closable).toBe(false)
 	})

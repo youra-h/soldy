@@ -32,14 +32,22 @@ function mount(element: ReactElement): HTMLElement {
 }
 
 afterEach(() => {
-	while (roots.length) {
-		const reactRoot = roots.pop()!
-
+	// С конца — в порядке, обратном монтированию
+	for (const reactRoot of roots.splice(0).reverse()) {
 		act(() => reactRoot.unmount())
 	}
 
 	document.body.innerHTML = ''
 })
+
+/** Клик по первой кнопке внутри цели. */
+function clickButton(target: HTMLElement) {
+	const button = target.querySelector('button')
+
+	if (!button) throw new Error('кнопка не отрисована')
+
+	button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+}
 
 describe('useAdapterContext', () => {
 	it('вызывает фабрику один раз, а на повторных рендерах отдаёт тот же объект', () => {
@@ -67,12 +75,8 @@ describe('useAdapterContext', () => {
 
 		const target = mount(<Harness />)
 
-		act(() => {
-			target.querySelector('button')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		act(() => {
-			target.querySelector('button')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
+		act(() => clickButton(target))
+		act(() => clickButton(target))
 
 		expect(factory).toHaveBeenCalledTimes(1)
 		expect(seen.length).toBe(3)

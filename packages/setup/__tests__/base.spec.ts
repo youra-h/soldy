@@ -8,6 +8,7 @@ import {
 	collectDeclaredProps,
 	collectItemProps,
 } from '@soldy/setup'
+import { required } from './helpers'
 
 describe('normalizeContribution', () => {
 	it('возвращает пустой результат для undefined и пустого contribution', () => {
@@ -31,14 +32,20 @@ describe('normalizeContribution', () => {
 
 		expect(result.props).toHaveLength(2)
 
-		const text = result.props.find((p) => p.name.name === 'text')!
+		const text = required(
+			result.props.find((p) => p.name.name === 'text'),
+			'prop text',
+		)
 		expect(text.type).toBe(String)
 		expect(text.protected).toBe(false)
 		expect(text.triggers?.map((t) => t.name)).toEqual(['change:text'])
 		expect(text.get).toBe(get)
 		expect(text.set).toBe(set)
 
-		const secret = result.props.find((p) => p.name.name === 'secret')!
+		const secret = required(
+			result.props.find((p) => p.name.name === 'secret'),
+			'prop secret',
+		)
 		expect(secret.protected).toBe(true)
 		expect(secret.triggers).toEqual([])
 
@@ -170,9 +177,12 @@ describe('defineComponent', () => {
 		const bundle = descriptor.createBundle(instance)
 		const accessor = descriptor.createAccessor(instance, bundle)
 
-		const activeProp = accessor.getProps().find((p) => p.name.getName() === 'p:active')!
+		const activeProp = required(
+			accessor.getProps().find((p) => p.name.getName() === 'p:active'),
+			'prop p:active',
+		)
 		expect(activeProp).toBeDefined()
-		expect(activeProp.instance).toBe(bundle!.get(PluginWithProps))
+		expect(activeProp.instance).toBe(required(bundle, 'бандл').get(PluginWithProps))
 
 		expect(accessor.getEvents().some((e) => e.name.getName() === 'p:toggle')).toBe(true)
 	})

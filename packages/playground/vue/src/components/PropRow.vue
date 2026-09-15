@@ -73,10 +73,16 @@ const engine = isCollectionRow ? createEngineSelection() : null
 const facade: TInstance | null = engine ? createFacade(engine) : null
 
 function createFacade(withEngine: unknown): TInstance {
-	const Ctor = props.entry.collectionDescriptor!().ctor as new (
-		props: object,
-		options: object,
-	) => TInstance
+	const collectionDescriptor = props.entry.collectionDescriptor
+
+	// Коллекционная строка без дескриптора коллекции — ошибка манифеста стенда.
+	if (!collectionDescriptor) {
+		throw new Error(
+			`[playground] ${props.entry.id}: у коллекционного пропа нет collectionDescriptor`,
+		)
+	}
+
+	const Ctor = collectionDescriptor().ctor as new (props: object, options: object) => TInstance
 
 	return new Ctor({}, { engine: withEngine, owner: instance.value })
 }

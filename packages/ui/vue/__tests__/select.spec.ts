@@ -136,7 +136,11 @@ describe('поле', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		expect(wrapper.find('input').attributes('aria-controls')).toBe(panel()!.id)
+		const list = panel()
+
+		if (!list) throw new Error('список не отрисован')
+
+		expect(wrapper.find('input').attributes('aria-controls')).toBe(list.id)
 	})
 })
 
@@ -248,7 +252,7 @@ describe('множественный выбор', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		expect(panel()!.getAttribute('aria-multiselectable')).toBe('true')
+		expect(panel()?.getAttribute('aria-multiselectable')).toBe('true')
 	})
 
 	it('в одиночном режиме пометки нет', async () => {
@@ -258,7 +262,7 @@ describe('множественный выбор', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		expect(panel()!.hasAttribute('aria-multiselectable')).toBe(false)
+		expect(panel()?.hasAttribute('aria-multiselectable')).toBe(false)
 	})
 
 	/**
@@ -322,7 +326,7 @@ describe('панель как телепортированный Frame', () => {
 		const frame = document.querySelector('.s-select__panel')
 
 		expect(frame).not.toBeNull()
-		expect(frame!.hasAttribute('data-owner')).toBe(true)
+		expect(frame?.hasAttribute('data-owner')).toBe(true)
 	})
 
 	it('нажатие внутрь панели её не закрывает', async () => {
@@ -335,7 +339,9 @@ describe('панель как телепортированный Frame', () => {
 		await nextTick()
 		await nextTick()
 
-		const option = document.querySelector('[role="option"]')!
+		const option = document.querySelector('[role="option"]')
+
+		if (!option) throw new Error('опция не отрисована')
 
 		option.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 		await nextTick()
@@ -426,7 +432,7 @@ describe('слоты поля', () => {
 	})
 
 	it('переопределённый field получает экземпляр TInput с role combobox в aria', () => {
-		let received: IInput | null = null
+		let received: IInput | undefined
 
 		const wrapper = mount(Select, {
 			props: { name: 'Город' },
@@ -439,8 +445,8 @@ describe('слоты поля', () => {
 			attachTo: document.body,
 		})
 
-		expect(received).not.toBeNull()
-		expect(received!.aria.get('role')).toBe('combobox')
+		expect(received).toBeDefined()
+		expect(received?.aria.get('role')).toBe('combobox')
 
 		wrapper.unmount()
 	})

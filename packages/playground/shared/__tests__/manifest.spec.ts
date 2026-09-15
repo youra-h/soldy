@@ -65,9 +65,9 @@ describe('пресеты строк', () => {
 	it.each(Object.entries(PRESETS))('%s: пресеты ссылаются на настоящие пропы', (id, rows) => {
 		const entry = COMPONENTS.find((candidate) => candidate.id === id)
 
-		expect(entry, `нет компонента «${id}»`).toBeDefined()
+		if (!entry) throw new Error(`нет компонента «${id}»`)
 
-		const props = new Map(editableProps(entry!).map((prop) => [prop.name.name, prop]))
+		const props = new Map(editableProps(entry).map((prop) => [prop.name.name, prop]))
 		const broken: string[] = []
 
 		for (const [row, preset] of Object.entries(rows)) {
