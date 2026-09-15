@@ -52,6 +52,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		elementPlugin?.events.on('ready', (element) => {
 			this._element = element
+			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this._scheduleUpdate())
 			this._rootObserver.observe(element)
 			this._scheduleUpdate()

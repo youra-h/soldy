@@ -11,8 +11,8 @@
  * плагину сделала ядро несамодостаточным, и мы её откатили.
  */
 
-import { describe, it, expect, afterEach, beforeAll } from 'vitest'
-import { createPluginContext } from './helpers'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { createPluginContext, installResizeObserverStub, observerCount } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
 import {
@@ -26,17 +26,7 @@ import {
 const ROW_HEIGHT = 20
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
-beforeAll(() => {
-	if (!('ResizeObserver' in globalThis)) {
-		class ResizeObserverStub {
-			observe(): void {}
-			unobserve(): void {}
-			disconnect(): void {}
-		}
-
-		globalThis.ResizeObserver = ResizeObserverStub
-	}
-})
+beforeEach(installResizeObserverStub)
 
 afterEach(() => {
 	document.body.innerHTML = ''
@@ -99,7 +89,7 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 	await nextFrame()
 	await nextFrame()
 
-	return { root, panel, owner }
+	return { root, panel, owner, rootElement }
 }
 
 describe('высота контейнера по maxRows', () => {
@@ -174,5 +164,30 @@ describe('высота контейнера по maxRows', () => {
 
 		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT + 4 + 4}px`)
 		expect(panel.style.overflowY).toBe('hidden')
+	})
+})
+
+describe('наблюдатель корня', () => {
+	/**
+	 * Повторный `ready` без `removed` между объявлениями даёт гонка
+	 * `TElementPlugin`: узел дважды ушёл и вернулся до кадра, и оба отложенных
+	 * объявления прошли проверку. Прежний наблюдатель корня обязан отключиться
+	 * до создания нового, иначе он продолжает планировать пересчёт высоты.
+	 */
+	it('повторный ready не оставляет за корнем второго наблюдателя', async () => {
+		const { root, rootElement } = await setup(4, 2)
+		const ready = vi.fn()
+
+		rootElement.events.on('ready', ready)
+
+		rootElement.element = null
+		rootElement.element = root
+		rootElement.element = null
+		rootElement.element = root
+		await nextFrame()
+
+		// Без двух ready тест проверял бы одно объявление, а не повторное
+		expect(ready).toHaveBeenCalledTimes(2)
+		expect(observerCount(root)).toBe(1)
 	})
 })

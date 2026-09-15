@@ -22,6 +22,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<any, TTabsLayoutPluginEvents>
 		super.install(ctx)
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
+			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this.events.emit('change:layout'))
 			this._rootObserver.observe(element)
 		})

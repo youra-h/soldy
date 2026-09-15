@@ -22,6 +22,50 @@ export function createPluginContext(
 	}
 }
 
+/**
+ * Заглушка `ResizeObserver`: jsdom его не реализует.
+ *
+ * Помнит наблюдаемые узлы, поэтому тест видит не только то, что наблюдатель
+ * заведён, но и сколько их висит за узлом: плагин, не отключивший прежний
+ * наблюдатель, оставляет за узлом два.
+ */
+class ResizeObserverStub implements ResizeObserver {
+	private readonly _elements = new Set<Element>()
+
+	constructor() {
+		resizeObservers.push(this)
+	}
+
+	observe(element: Element): void {
+		this._elements.add(element)
+	}
+
+	unobserve(element: Element): void {
+		this._elements.delete(element)
+	}
+
+	disconnect(): void {
+		this._elements.clear()
+	}
+
+	isObserving(element: Element): boolean {
+		return this._elements.has(element)
+	}
+}
+
+let resizeObservers: ResizeObserverStub[] = []
+
+/** Ставит заглушку вместо глобального `ResizeObserver` и забывает прежние наблюдатели. */
+export function installResizeObserverStub(): void {
+	globalThis.ResizeObserver = ResizeObserverStub
+	resizeObservers = []
+}
+
+/** Сколько наблюдателей сейчас следят за узлом. */
+export function observerCount(element: Element): number {
+	return resizeObservers.filter((observer) => observer.isObserving(element)).length
+}
+
 /** Значение, которое тест обязан получить: без него дальше проверять нечего. */
 export function required<T>(value: T | null | undefined, what: string): T {
 	if (value === null || value === undefined) {
