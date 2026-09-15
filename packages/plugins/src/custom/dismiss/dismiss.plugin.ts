@@ -15,6 +15,16 @@ import type { IDismissPluginOptions, TDismissPluginEvents } from './types'
  * и до него успевает произойти смена фокуса — панель закрывается уже после
  * того, как фокус ушёл, и порядок событий для скринридера ломается.
  *
+ * Касание пальцем решается на `pointerup`. На тач-устройстве с того же
+ * `pointerdown` начинается прокрутка страницы, и панель закрывалась бы, едва
+ * пользователь начал листать. Поэтому касание мимо только запоминает свой
+ * `pointerId`, а `dismiss` шлёт `pointerup` того же касания. Порог сдвига не
+ * нужен: забрав касание под прокрутку, браузер шлёт `pointercancel`, и
+ * `pointerup` не приходит. `click` не годится и здесь — `pointerType` в нём
+ * есть не у всех браузеров. Порядку фокуса это не вредит: на касании фокус
+ * переходит только перед `click`, уже после `pointerup`. Мышь и перо остаются
+ * на `pointerdown`.
+ *
  * Как считается «мимо». Панель обычно телепортирована в `body`, то есть
  * лежит вне поддерева владельца — простой `contains()` по корню посчитал бы
  * нажатие внутри панели нажатием снаружи. Поэтому панель помечается
@@ -29,6 +39,8 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	private _property: string | null = 'open'
 	private _enabled = false
 	private _listening = false
+	/** `pointerId` касания мимо, которое ждёт своего `pointerup`. */
+	private _touchId: number | null = null
 
 	override install(ctx: IPluginContext, options?: IDismissPluginOptions): void {
 		super.install(ctx, options)
@@ -123,13 +135,43 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		return !!this._owner && !!target.closest(`[data-owner="${this._owner}"]`)
 	}
 
+	/** Мышь и перо решают на нажатии, касание — на отпускании (см. шапку). */
 	private readonly _onPointerDown = (event: PointerEvent): void => {
+		if (event.pointerType === 'touch') {
+			this._startTouch(event)
+			return
+		}
+
 		if (this._isInside(event.target)) return
 
 		this.events.emit('dismiss', event)
 	}
 
-	/** Слушатель на документе живёт, только пока он нужен. */
+	/**
+	 * Касание ничего не закрывает — только запоминается, если пришлось мимо.
+	 * Ждём последнее опущенное касание: палец, лёгший внутрь, снимает ожидание
+	 * прежнего, иначе его отпускание закрыло бы панель, с которой уже работают.
+	 */
+	private _startTouch(event: PointerEvent): void {
+		this._touchId = this._isInside(event.target) ? null : event.pointerId
+	}
+
+	/** Касание мимо отпустили, не начав прокрутку, — это и есть нажатие мимо. */
+	private readonly _onPointerUp = (event: PointerEvent): void => {
+		if (event.pointerId !== this._touchId) return
+
+		this._touchId = null
+		this.events.emit('dismiss', event)
+	}
+
+	/** Браузер забрал касание под прокрутку или жест — закрывать нечего. */
+	private readonly _onPointerCancel = (event: PointerEvent): void => {
+		if (event.pointerId !== this._touchId) return
+
+		this._touchId = null
+	}
+
+	/** Слушатели на документе живут, только пока они нужны. */
 	private _sync(): void {
 		const shouldListen = this._enabled && !!this._element
 
@@ -141,8 +183,14 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		if (shouldListen) {
 			doc.addEventListener('pointerdown', this._onPointerDown, true)
+			doc.addEventListener('pointerup', this._onPointerUp, true)
+			doc.addEventListener('pointercancel', this._onPointerCancel, true)
 		} else {
 			doc.removeEventListener('pointerdown', this._onPointerDown, true)
+			doc.removeEventListener('pointerup', this._onPointerUp, true)
+			doc.removeEventListener('pointercancel', this._onPointerCancel, true)
+			// Отпускание касания, начатого до снятия, к следующему открытию не относится
+			this._touchId = null
 		}
 
 		this._listening = shouldListen

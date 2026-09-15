@@ -20,7 +20,10 @@ export interface IDismissPluginOptions {
 }
 
 export type TDismissPluginEvents = TPluginEvents & {
-	/** Нажатие пришлось мимо владельца и его панелей. */
+	/**
+	 * Нажатие пришлось мимо владельца и его панелей. У мыши и пера это
+	 * `pointerdown`, у касания — `pointerup`: прокрутка пальцем не закрывает.
+	 */
 	dismiss: (event: PointerEvent) => void
 	/** change:enabled */
 	'change:enabled': (value: boolean) => void

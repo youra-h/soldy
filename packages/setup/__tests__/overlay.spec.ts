@@ -389,8 +389,22 @@ describe('нажатие мимо', () => {
 		return { dismiss, element, elementPlugin }
 	}
 
-	const press = (target: Element) =>
-		target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+	/** Мышь или перо: решение принимается на самом нажатии. */
+	const press = (target: Element, pointerType: 'mouse' | 'pen' = 'mouse') =>
+		target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }))
+
+	/**
+	 * Шаг касания пальцем. Прокрутку jsdom не изображает, поэтому то, чем её
+	 * отмечает браузер, — `pointercancel` — тест шлёт сам.
+	 */
+	const touch = (
+		type: 'pointerdown' | 'pointerup' | 'pointercancel',
+		target: Element,
+		pointerId = 1,
+	) =>
+		target.dispatchEvent(
+			new PointerEvent(type, { bubbles: true, pointerType: 'touch', pointerId }),
+		)
 
 	it('пока не включён, ничего не слушает', async () => {
 		const { dismiss } = await setup(1)
@@ -476,5 +490,120 @@ describe('нажатие мимо', () => {
 
 	it('ownerAttribute несёт uid владельца — им помечается панель', async () => {
 		expect((await setup(7)).dismiss.ownerAttribute).toEqual({ 'data-owner': '7' })
+	})
+
+	it('перо закрывает на pointerdown, как мышь', async () => {
+		const { dismiss } = await setup(8)
+		const handler = vi.fn()
+
+		dismiss.events.on('dismiss', handler)
+		dismiss.enabled = true
+		press(document.body, 'pen')
+
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	describe('касание пальцем', () => {
+		it('pointerdown мимо не закрывает — с него же начинается прокрутка', async () => {
+			const { dismiss } = await setup(9)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('pointerdown и pointerup мимо закрывают один раз', async () => {
+			const { dismiss } = await setup(10)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body)
+			touch('pointerup', document.body)
+			// Второе отпускание без нового касания ожидания уже не застаёт
+			touch('pointerup', document.body)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+
+		it('после pointercancel не закрывает — касание ушло в прокрутку', async () => {
+			const { dismiss } = await setup(11)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body)
+			touch('pointercancel', document.body)
+			// Браузер после отмены pointerup не шлёт. Здесь он проверяет, что
+			// ожидание сброшено, а не просто не дождалось отпускания
+			touch('pointerup', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('pointerup чужого касания не закрывает', async () => {
+			const { dismiss } = await setup(12)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body, 1)
+			touch('pointerup', document.body, 2)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('касание внутрь владельца не закрывает', async () => {
+			const { dismiss, element } = await setup(13)
+			const handler = vi.fn()
+			const inner = document.createElement('span')
+
+			element.appendChild(inner)
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', inner)
+			touch('pointerup', inner)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('касание внутрь снимает ожидание пальца, лежавшего мимо', async () => {
+			// Один палец придерживает страницу, другой работает с панелью:
+			// отпускание первого панель не закрывает
+			const { dismiss, element } = await setup(14)
+			const handler = vi.fn()
+			const inner = document.createElement('span')
+
+			element.appendChild(inner)
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body, 1)
+			touch('pointerdown', inner, 2)
+			touch('pointerup', inner, 2)
+			touch('pointerup', document.body, 1)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('выключение сбрасывает ожидание касания', async () => {
+			// Панель закрыли и открыли снова, пока палец лежал на странице:
+			// отпускание того касания к новому открытию не относится
+			const { dismiss } = await setup(15)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body)
+			dismiss.enabled = false
+			dismiss.enabled = true
+			touch('pointerup', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
 	})
 })
