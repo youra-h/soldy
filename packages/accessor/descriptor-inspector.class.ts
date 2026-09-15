@@ -13,6 +13,8 @@ type TStaticProp = {
 	type?: unknown
 	protected?: boolean
 	triggers?: TName[]
+	/** Умолчание из декларации: значим ключ, а не значение (см. `IPropDeclaration.default`). */
+	default?: unknown
 }
 
 /** Настройка пропа для статического слоя фреймворка: тип и значение по умолчанию. */
@@ -62,8 +64,16 @@ export class TDescriptorInspector {
 		)
 	}
 
-	/** Для useProps/useEmits (статический слой) */
-	getExportProps(defaults: Record<string, unknown> = {}): Record<string, TExportPropConfig> {
+	/**
+	 * Для useProps/useEmits (статический слой).
+	 *
+	 * `default` берётся из декларации и попадает в конфиг, только если ключ в
+	 * ней есть: `default: undefined` — тоже объявленное умолчание. Карту
+	 * умолчаний со стороны инспектор не принимает: поиск в ней по имени без
+	 * неймспейса не давал умолчаний пропам плагинов, а при совпадении имён
+	 * отдал бы им чужое.
+	 */
+	getExportProps(): Record<string, TExportPropConfig> {
 		const result: Record<string, TExportPropConfig> = {}
 
 		for (const prop of this._props) {
@@ -73,7 +83,7 @@ export class TDescriptorInspector {
 			const config: TExportPropConfig = {}
 
 			if (prop.type !== undefined) config.type = prop.type
-			if (prop.name.name in defaults) config.default = defaults[prop.name.name]
+			if (Object.hasOwn(prop, 'default')) config.default = prop.default
 
 			result[exportName] = config
 		}

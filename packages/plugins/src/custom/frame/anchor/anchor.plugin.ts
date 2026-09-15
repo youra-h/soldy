@@ -22,6 +22,8 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * панель по горизонтали, чтобы она не вылезала за левый и правый край окна.
  * Оба работают внутри тех же четырёх вариантов `placement`: flip переключает
  * `top`/`bottom`, shift не меняет `placement`, а только ограничивает `x`.
+ * Flip выключается свойством `flip` (по умолчанию включён): панель остаётся на
+ * стороне потребителя, даже если там не влезает. Shift от него не зависит.
  * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
  * в RTL `-start` выравнивает панель по правому краю якоря, `-end` — по левому.
  *
@@ -34,13 +36,29 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * отсчёт шёл бы от позиционированного предка.
  */
 export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
+	/**
+	 * Умолчания опций, объявленных пропами. Из них стартуют поля плагина, и их
+	 * же `definePlugin` кладёт в декларации пропов: значение живёт в одном
+	 * месте. `flip: true` в приватном поле адаптер не увидел бы и отдал бы
+	 * Frame без `anchor_flip` своё `false`.
+	 */
+	static defaultValues: Required<
+		Pick<IAnchorPluginOptions, 'placement' | 'matchWidth' | 'flip' | 'offset'>
+	> = {
+		placement: 'bottom-start',
+		matchWidth: false,
+		flip: true,
+		offset: 0,
+	}
+
 	private _frame: IFrame | null = null
 	private _element: HTMLElement | null = null
 	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
 	private _anchor: Element | null = null
-	private _placement: TFramePlacement = 'bottom-start'
-	private _matchWidth = false
-	private _offset = 0
+	private _placement: TFramePlacement = TAnchorPlugin.defaultValues.placement
+	private _matchWidth = TAnchorPlugin.defaultValues.matchWidth
+	private _flip = TAnchorPlugin.defaultValues.flip
+	private _offset = TAnchorPlugin.defaultValues.offset
 	private _cleanups: Array<() => void> = []
 	private _panelObserver: ResizeObserver | null = null
 	/** Сторона, реально отданная во Frame — по ней решаем, менялся ли `data-placement`. */
@@ -51,6 +69,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._placement = options?.placement ?? this._placement
 		this._matchWidth = options?.matchWidth ?? this._matchWidth
+		this._flip = options?.flip ?? this._flip
 		this._offset = options?.offset ?? this._offset
 		this._frame = ctx.getInstance<IFrame>() ?? null
 
@@ -123,6 +142,18 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this.events.emit('change:matchWidth', value)
 	}
 
+	get flip(): boolean {
+		return this._flip
+	}
+
+	set flip(value: boolean) {
+		if (this._flip === value) return
+
+		this._flip = value
+		this._update()
+		this.events.emit('change:flip', value)
+	}
+
 	get offset(): number {
 		return this._offset
 	}
@@ -186,10 +217,13 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * здесь, в вычислении фактической стороны. Переключаемся на
 	 * противоположную, только если на выбранной панель не влезает по высоте
 	 * окна, а на противоположной места больше; если не влезает нигде, остаёмся
-	 * на стороне потребителя.
+	 * на стороне потребителя. С выключенным `flip` сторона потребителя
+	 * отдаётся сразу.
 	 */
 	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
 		const wants = this._placement.startsWith('top-') ? 'top' : 'bottom'
+
+		if (!this._flip) return wants
 		const spaceTop = rect.top
 		const spaceBottom = window.innerHeight - rect.bottom
 		const needed = panelHeight + this._offset

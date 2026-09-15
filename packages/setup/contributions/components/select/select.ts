@@ -1,7 +1,13 @@
 import type { IContribution } from '@soldy/accessor'
 import { defineType } from '../../defineType'
 import { LIST_PROPS } from '../list'
-import type { IInput, ISelectItem, TSelectEditableMode } from '@soldy/core'
+import type {
+	IInput,
+	ISelectItem,
+	TSelectEditableMode,
+	TSelectPanelPlacement,
+	TSelectPlacement,
+} from '@soldy/core'
 import type { TEmptySlotScope } from '../../types'
 
 /**
@@ -74,6 +80,10 @@ export const SelectContribution = (): IContribution => ({
 			triggers: ['change:editableMode'],
 		},
 		removeOnBackspace: { type: Boolean, triggers: ['change:removeOnBackspace'] },
+		placement: {
+			type: defineType<TSelectPlacement>(String),
+			triggers: ['change:placement'],
+		},
 		/**
 		 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 		 * описывает само поле, а это соседняя кнопка.
@@ -100,6 +110,21 @@ export const SelectContribution = (): IContribution => ({
 			type: Boolean,
 			protected: true,
 			triggers: ['change:contentFit'],
+		},
+		/**
+		 * Сторона панели и разрешение flip для плагина якоря — производные от
+		 * `placement`, как `autoFitWidth` от `contentFit`. Вычисляет ядро,
+		 * шаблон только пробрасывает в `anchor_placement` и `anchor_flip`.
+		 */
+		panelPlacement: {
+			type: defineType<TSelectPanelPlacement>(String),
+			protected: true,
+			triggers: ['change:placement'],
+		},
+		panelFlip: {
+			type: Boolean,
+			protected: true,
+			triggers: ['change:placement'],
 		},
 		// Общие с ListBox — объявлены один раз в `components/list.ts`
 		...LIST_PROPS,

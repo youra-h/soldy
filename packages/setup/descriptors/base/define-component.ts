@@ -20,9 +20,11 @@ import type {
 	IComponentDefinitionOptions,
 	IComponentDescriptor,
 	IPluginDefinition,
+	TComponentCtor,
 	TResolveInstance,
 } from './types'
 import { normalizeContribution } from './compile-contribution'
+import { withClassDefault } from './prop-default'
 
 /** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
 type TDefinitionOptions = IComponentDefinitionOptions<
@@ -69,6 +71,7 @@ function mergeSlots(
 
 function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 	const parent = options.extends
+	const ctor: TComponentCtor = options.ctor ?? parent?.ctor ?? Object
 
 	const collector = createPluginCollector()
 
@@ -79,8 +82,13 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 
 	const own = normalizeContribution(options.contribution)
 
-	// Статические props/events: свои + наследуемые (без плагинов — они в plugins[])
-	const props: IPropDeclaration[] = [...(parent?.props ?? []), ...own.props]
+	// Статические props/events: свои + наследуемые (без плагинов — они в plugins[],
+	// умолчания им уже дал definePlugin). Умолчание — от итогового ctor и
+	// пересчётом, а не копией родительского: наследник вправе поменять значение
+	// (у Frame `visible: false`, у ComponentView — `true`).
+	const props: IPropDeclaration[] = [...(parent?.props ?? []), ...own.props].map((prop) =>
+		withClassDefault(prop, ctor.defaultValues),
+	)
 
 	const events = [...(parent?.events ?? []), ...own.events]
 
@@ -89,7 +97,7 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 	const slots: ISlotDeclaration[] = mergeSlots(parent?.slots ?? [], own.slots)
 
 	return {
-		ctor: options.ctor ?? parent?.ctor ?? Object,
+		ctor,
 
 		props,
 		events,

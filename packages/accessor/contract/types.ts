@@ -56,6 +56,22 @@ export interface IPropDeclaration {
 	type?: unknown
 	protected?: boolean
 	triggers?: TName[]
+	/**
+	 * Значение, с которым владелец пропа стартует, если проп не задан.
+	 *
+	 * В contribution (`IPropDefinition`) этого поля нет: умолчание принадлежит
+	 * классу, а не метаданным. Заполняет его setup при сборке дескриптора — из
+	 * `defaultValues` класса ядра, а у пропа плагина из опции дескриптора или
+	 * `defaultValues` плагина. Адаптер берёт его отсюда
+	 * (`TDescriptorInspector.getExportProps`) и сам не ищет.
+	 *
+	 * **Объявлено — значит, ключ есть, даже со значением `undefined`.**
+	 * `closable: undefined` у `TTabsItem`/`TTagsItem` держит наследование от
+	 * владельца, `value: undefined` у `TValueControl` не даёт Vue превратить
+	 * отсутствующий `value` в `false`. Проверка `default !== undefined` сломала
+	 * бы оба случая молча, поэтому проверяется наличие ключа.
+	 */
+	default?: unknown
 	get?(instance: object): unknown
 	set?(instance: object, value: unknown): void
 }

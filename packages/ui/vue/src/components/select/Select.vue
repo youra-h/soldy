@@ -113,12 +113,17 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			вычистило бы коллекцию, а вместе с ней и выбор, то есть значение
 			поля. `v-show` ставит `display: none`, чего достаточно и чтобы
 			убрать панель из дерева доступности.
+
+			Сторону панели шаблон не вычисляет: `placement` Select ядро переводит
+			в `panelPlacement` и `panelFlip`, а у края окна сторону выбирает
+			`TAnchorPlugin`, если `placement` не запретил ему flip.
 		-->
 		<Frame
 			:visible="open"
 			position="fixed"
 			:anchor_anchor="rootElement"
-			anchor_placement="bottom-start"
+			:anchor_placement="panelPlacement"
+			:anchor_flip="panelFlip"
 			:anchor_matchWidth="autoFitWidth"
 			:anchor_offset="4"
 			class="s-select__panel"

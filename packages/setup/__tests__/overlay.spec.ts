@@ -241,6 +241,74 @@ describe('flip: сторона у края экрана', () => {
 		expect(frame.y).toBe(420)
 		expect(frame.dataset.get('placement')).toBe('bottom-start')
 	})
+
+	it('flip = false: у нижнего края остаётся bottom-start', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 100)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.flip = false
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 750, bottom: 780, right: 220 }))
+
+		expect(frame.y).toBe(780)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+	})
+
+	it('flip = false: top-start у верхнего края остаётся сверху', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 100)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.placement = 'top-start'
+		plugin.flip = false
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 20, bottom: 50, right: 220 }))
+
+		expect(frame.y).toBe(-80)
+		expect(frame.dataset.get('placement')).toBe('top-start')
+	})
+
+	it('переключение flip на лету пересчитывает y и data-placement', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 100)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 750, bottom: 780, right: 220 }))
+		expect(frame.dataset.get('placement')).toBe('top-start')
+
+		plugin.flip = false
+
+		expect(frame.y).toBe(780)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+
+		plugin.flip = true
+
+		expect(frame.y).toBe(650)
+		expect(frame.dataset.get('placement')).toBe('top-start')
+	})
+
+	it('запись того же значения flip события не шлёт', () => {
+		const plugin = anchorFor(new TFrame({ position: 'fixed' }))
+		const handler = vi.fn()
+
+		plugin.events.on('change:flip', handler)
+		plugin.flip = true
+
+		expect(handler).not.toHaveBeenCalled()
+
+		plugin.flip = false
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(false)
+	})
 })
 
 describe('shift: сдвиг внутрь окна', () => {

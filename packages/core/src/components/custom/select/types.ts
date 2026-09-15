@@ -38,6 +38,24 @@ export type TSelectValue = string | number | (string | number)[] | undefined
  */
 export type TSelectEditableMode = 'none' | 'search' | 'filter'
 
+/**
+ * С какой стороны поля открывается панель со списком.
+ *
+ * `auto` — снизу, а если снизу панель не помещается в окно и сверху места
+ * больше, то сверху. `bottom` и `top` — сторона, на которой настаивает
+ * потребитель: она держится, даже если панель там не помещается.
+ *
+ * Сторону считает `TAnchorPlugin` вложенного Frame; Select только переводит
+ * выбор в его пропы (`panelPlacement`, `panelFlip`).
+ */
+export type TSelectPlacement = 'auto' | 'top' | 'bottom'
+
+/**
+ * Сторона панели в терминах плагина якоря — то, что Select отдаёт в
+ * `anchor_placement` вложенного Frame. Выравнивание всегда по началу поля.
+ */
+export type TSelectPanelPlacement = 'bottom-start' | 'top-start'
+
 export type TSelectEvents = TInputControlEvents<TSelectValue> &
 	TCollectionStorageDriverEvents<ISelectItem> &
 	TListEvents & {
@@ -61,6 +79,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:editableMode': (value: TSelectEditableMode) => void
 		/** change:removeOnBackspace */
 		'change:removeOnBackspace': (value: boolean) => void
+		/** change:placement */
+		'change:placement': (value: TSelectPlacement) => void
 	}
 
 /**
@@ -97,6 +117,11 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 	 * каждое следующее подряд удаляет последний тег.
 	 */
 	removeOnBackspace?: boolean
+	/**
+	 * С какой стороны поля открывается панель. По умолчанию `auto`: снизу, а у
+	 * нижнего края окна сверху. `top` и `bottom` держат сторону всегда.
+	 */
+	placement?: TSelectPlacement
 }
 
 /** Полный набор props: собственные + коллекционные. */
@@ -132,6 +157,12 @@ export interface ISelect<
 	 * только вместе с `editable` и множественным выбором; по умолчанию `false`.
 	 */
 	removeOnBackspace: boolean
+	/** С какой стороны поля открывается панель. По умолчанию `auto` */
+	placement: TSelectPlacement
+	/** Сторона панели для плагина якоря. Производное от `placement` */
+	readonly panelPlacement: TSelectPanelPlacement
+	/** Разрешён ли плагину якоря flip. Производное от `placement` */
+	readonly panelFlip: boolean
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */
