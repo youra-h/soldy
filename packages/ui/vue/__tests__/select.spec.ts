@@ -15,8 +15,9 @@ import { nextTick, h } from 'vue'
  * плагины, которым нужен DOM-узел, включаются кадром позже. Ждём кадр.
  */
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-import { Select, SelectItem, Input, propsSelect } from '@soldy/ui-vue'
-import type { IInput } from '@soldy/core'
+import { Frame, Select, SelectItem, Input, propsSelect } from '@soldy/ui-vue'
+import { TAnchorPlugin } from '@soldy/plugins'
+import type { IInput, TSelectPlacement } from '@soldy/core'
 import Harness from './Select.test.vue'
 
 /**
@@ -558,5 +559,62 @@ describe('отступ панели от поля', () => {
 		const panelTop = parseFloat(panelEl.style.top || '0')
 
 		expect(panelTop).toBeGreaterThanOrEqual(fieldBottom)
+	})
+})
+
+/**
+ * `placement` Select доходит до плагина якоря вложенного Frame — сторону
+ * считает он. Ядро переводит выбор в `panelPlacement` и `panelFlip`, шаблон
+ * только пробрасывает их в `anchor_placement` и `anchor_flip`.
+ */
+describe('сторона панели', () => {
+	const mountSelect = async (props: { placement?: TSelectPlacement } = {}) => {
+		const select = mount(Select, { props, attachTo: document.body })
+
+		wrapper = select
+		// `anchor:create` отложен на микрозадачу
+		await nextTick()
+
+		const [plugin] = select.findComponent(Frame).emitted('anchor:create')?.[0] ?? []
+
+		expect(plugin).toBeInstanceOf(TAnchorPlugin)
+
+		return { select, plugin: plugin instanceof TAnchorPlugin ? plugin : null }
+	}
+
+	it('по умолчанию bottom-start, flip включён', async () => {
+		const { plugin } = await mountSelect()
+
+		expect(plugin?.placement).toBe('bottom-start')
+		expect(plugin?.flip).toBe(true)
+	})
+
+	it('placement="top" — top-start, flip выключен', async () => {
+		const { plugin } = await mountSelect({ placement: 'top' })
+
+		expect(plugin?.placement).toBe('top-start')
+		expect(plugin?.flip).toBe(false)
+	})
+
+	it('смена placement на лету доходит до плагина', async () => {
+		const { select, plugin } = await mountSelect()
+
+		await select.setProps({ placement: 'top' })
+		await nextTick()
+
+		expect(plugin?.placement).toBe('top-start')
+		expect(plugin?.flip).toBe(false)
+
+		await select.setProps({ placement: 'bottom' })
+		await nextTick()
+
+		expect(plugin?.placement).toBe('bottom-start')
+		expect(plugin?.flip).toBe(false)
+
+		await select.setProps({ placement: 'auto' })
+		await nextTick()
+
+		expect(plugin?.placement).toBe('bottom-start')
+		expect(plugin?.flip).toBe(true)
 	})
 })

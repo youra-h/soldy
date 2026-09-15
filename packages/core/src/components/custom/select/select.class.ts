@@ -11,6 +11,8 @@ import type {
 	ISelectProps,
 	TSelectEditableMode,
 	TSelectEvents,
+	TSelectPanelPlacement,
+	TSelectPlacement,
 	TSelectStates,
 	TSelectValue,
 } from './types'
@@ -69,6 +71,7 @@ export class TSelect<
 		editable: false,
 		editableMode: 'search',
 		removeOnBackspace: false,
+		placement: 'auto',
 		// Не `false` от `TInputControl`: select-only (`editable: false`) и есть
 		// `readonly`, с ним Select и стартует. Умолчание уходит адаптеру через
 		// декларацию пропа, и Vue отдал бы отсутствующему `readonly` не то.
@@ -88,6 +91,7 @@ export class TSelect<
 	protected _editable!: boolean
 	protected _editableMode!: TSelectEditableMode
 	protected _removeOnBackspace!: boolean
+	protected _placement!: TSelectPlacement
 	protected readonly _field: IInput
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -136,6 +140,7 @@ export class TSelect<
 		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
 		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
 		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace!
+		this._placement = own.placement ?? ctor.defaultValues.placement!
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
 		this._applyReadonly(!this._editable)
@@ -323,6 +328,25 @@ export class TSelect<
 		this._sink.emit('change:removeOnBackspace', value)
 	}
 
+	/**
+	 * С какой стороны поля открывается панель. `auto` (по умолчанию) — снизу,
+	 * а у нижнего края окна, где снизу не помещается, сверху. `top` и `bottom`
+	 * держат сторону, даже если панель там не помещается.
+	 *
+	 * Сторону считает не ядро, а `TAnchorPlugin` вложенного Frame: здесь только
+	 * выбор потребителя, перевод в пропы якоря — `panelPlacement` и `panelFlip`.
+	 */
+	get placement(): TSelectPlacement {
+		return this._placement
+	}
+
+	set placement(value: TSelectPlacement) {
+		if (this._placement === value) return
+
+		this._placement = value
+		this._sink.emit('change:placement', value)
+	}
+
 	/** Сколько строк показывать до появления прокрутки. `0` — все. */
 	get maxRows(): number {
 		return this._maxRows
@@ -384,6 +408,28 @@ export class TSelect<
 	 */
 	get autoFitWidth(): boolean {
 		return this._contentFit !== 'expand'
+	}
+
+	/**
+	 * Сторона панели для плагина якоря (`anchor_placement`) — перевод
+	 * `placement`: `top` — `top-start`, `auto` и `bottom` — `bottom-start`.
+	 *
+	 * Здесь, а не в разметке, по той же причине, что `autoFitWidth`: сторону
+	 * телепортированной панели считает плагин якоря, шаблону остаётся только
+	 * пробросить значение. Тернарный оператор в шаблоне повторился бы в каждом
+	 * из шести адаптеров.
+	 */
+	get panelPlacement(): TSelectPanelPlacement {
+		return this._placement === 'top' ? 'top-start' : 'bottom-start'
+	}
+
+	/**
+	 * Разрешён ли плагину якоря flip (`anchor_flip`). Только в `auto`: `top` и
+	 * `bottom` — сторона, на которой настоял потребитель, переворачивать её
+	 * нельзя. Вычисляется здесь по той же причине, что `panelPlacement`.
+	 */
+	get panelFlip(): boolean {
+		return this._placement === 'auto'
 	}
 
 	/**
@@ -492,6 +538,7 @@ export class TSelect<
 			editable: this._editable,
 			editableMode: this._editableMode,
 			removeOnBackspace: this._removeOnBackspace,
+			placement: this._placement,
 			maxRows: this._maxRows,
 			contentFit: this._contentFit,
 			scrollBehavior: this._scrollBehavior,

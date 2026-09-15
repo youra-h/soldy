@@ -13,6 +13,7 @@ import {
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
 	SELECT_EDITABLE_MODES,
+	SELECT_PLACEMENTS,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
 	TABS_ALIGNMENTS,
@@ -93,6 +94,8 @@ const OWN: Record<string, Record<string, string>> = {
 			'Что делает ввод текста при editable: ничего, подсветка совпадения или фильтрация',
 		removeOnBackspace:
 			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
+		placement:
+			'С какой стороны открывается панель: auto — снизу, у края окна сверху; top и bottom — всегда там',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -157,7 +160,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	button: { view: BUTTON_VIEWS },
 	accordion: { view: ACCORDION_VIEWS },
 	'list-box': { view: LIST_BOX_VIEWS },
-	select: { editableMode: SELECT_EDITABLE_MODES },
+	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,

@@ -18,6 +18,7 @@ import type {
 	TScrollBehavior,
 	TSelectionMode,
 	TSelectEditableMode,
+	TSelectPlacement,
 } from '@soldy/core'
 
 /**
@@ -106,6 +107,9 @@ export const SELECTION_MODES = enumOf<TSelectionMode>()(['none', 'single', 'mult
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])
+
+/** С какой стороны поля Select открывается панель. */
+export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bottom'])
 
 /** Теги, которыми осмысленно подменять корень компонента через `tag`. */
 export const HTML_TAGS = ['div', 'span', 'button', 'a', 'section', 'li'] as const

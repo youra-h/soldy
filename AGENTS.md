@@ -902,8 +902,9 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 
 - **`TFrame`** — телепорт, `rendered`/`visible`, стек z-index.
 - **`TAnchorPlugin`** (namespace `anchor`) — привязка к чужому элементу:
-  `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`. Считает координаты
-  и пишет их во Frame (`x`/`y`/`width`); раскладывает их `TFrameLayoutPlugin`.
+  `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`, `anchor_flip`.
+  Считает координаты и пишет их во Frame (`x`/`y`/`width`); раскладывает их
+  `TFrameLayoutPlugin`.
   Разделение не формальное: раскладка отвечает за собственные пропсы Frame,
   привязка — за слежение за посторонним элементом. Поверх выбора потребителя
   (`placement`, один из `bottom-start`/`bottom-end`/`top-start`/`top-end`)
@@ -917,7 +918,9 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
   `data-placement` на самом Frame. Размер якоря и панели плагин узнаёт без
   scroll/resize окна — на обоих висит свой `ResizeObserver`, поэтому позиция
   пересчитывается и когда меняется только их размер (пропал тег, вырос
-  Popover).
+  Popover). Flip выключается `anchor_flip: false` (по умолчанию включён):
+  панель держит сторону потребителя, даже если там не влезает, — так Select
+  выражает `placement: 'top'` и `'bottom'`. Shift от выключателя не зависит.
 - **`TDismissPlugin`** (namespace `dismiss`) — «нажали мимо». Сам следит за
   открытостью владельца (`property`, по умолчанию `open`) и закрывает его.
 

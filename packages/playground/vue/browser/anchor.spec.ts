@@ -13,6 +13,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Frame, Select, SelectItem } from '@soldy/ui-vue'
+import type { TSelectPlacement } from '@soldy/core'
 
 import '@soldy/theme-oren'
 
@@ -137,25 +138,30 @@ const RtlHarness = defineComponent({
 	},
 })
 
+/** Select с опциями. Без `placement` проп не пишется вовсе — работает умолчание. */
+const selectWith = (placement?: TSelectPlacement) =>
+	h(
+		Select,
+		{ name: 'Город', ...(placement ? { placement } : {}) },
+		{
+			default: () =>
+				OPTIONS.map((text, index) => h(SelectItem, { key: text, value: String(index), text })),
+		},
+	)
+
 /** Поле почти у нижнего края окна — панели внизу не хватит места. */
-const SelectBottomHarness = {
+const selectAtBottom = (placement?: TSelectPlacement) => ({
 	render: () =>
 		h('div', [
 			h('div', { style: 'height: calc(100vh - 48px)' }),
-			h('div', { style: 'width: 320px' }, [
-				h(
-					Select,
-					{ name: 'Город' },
-					{
-						default: () =>
-							OPTIONS.map((text, index) =>
-								h(SelectItem, { key: text, value: String(index), text }),
-							),
-					},
-				),
-			]),
+			h('div', { style: 'width: 320px' }, [selectWith(placement)]),
 		]),
-}
+})
+
+/** Поле у верхнего края страницы — панели сверху места нет. */
+const selectAtTop = (placement?: TSelectPlacement) => ({
+	render: () => h('div', { style: 'width: 320px' }, [selectWith(placement)]),
+})
 
 const panel = () => document.querySelector('.s-test-panel') as HTMLElement
 const anchor = () => document.querySelector('.s-test-anchor') as HTMLElement
@@ -197,22 +203,46 @@ describe('измерение панели', () => {
 })
 
 describe('flip', () => {
+	const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
+	const field = () => document.querySelector('.s-select__field input') as HTMLElement
+	const selectPanel = () => document.querySelector('.s-select__panel') as HTMLElement
+
 	it('Select у низа окна открывается вверх', async () => {
-		render(SelectBottomHarness)
+		render(selectAtBottom())
 
-		const arrow = document.querySelector('.s-select__arrow') as HTMLElement
-		const field = document.querySelector('.s-select__field input') as HTMLElement
+		await userEvent.click(arrow())
 
-		await userEvent.click(arrow)
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
 
-		await expect
-			.poll(() => document.querySelector('.s-select__panel')?.getAttribute('data-placement'))
-			.toBe('top-start')
+		expect(selectPanel().getBoundingClientRect().bottom).toBeLessThanOrEqual(
+			field().getBoundingClientRect().top + 1,
+		)
+	})
 
-		const fieldRect = field.getBoundingClientRect()
-		const panelRect = document.querySelector('.s-select__panel')!.getBoundingClientRect()
+	/** `bottom` запрещает flip: панель остаётся снизу, хоть там и не влезает. */
+	it('placement: bottom у низа окна остаётся снизу', async () => {
+		render(selectAtBottom('bottom'))
 
-		expect(panelRect.bottom).toBeLessThanOrEqual(fieldRect.top + 1)
+		await userEvent.click(arrow())
+
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('bottom-start')
+
+		expect(selectPanel().getBoundingClientRect().top).toBeGreaterThanOrEqual(
+			field().getBoundingClientRect().bottom - 1,
+		)
+	})
+
+	/** `top` у верха страницы: места сверху нет, но сторона потребителя держится. */
+	it('placement: top у верха страницы остаётся сверху', async () => {
+		render(selectAtTop('top'))
+
+		await userEvent.click(arrow())
+
+		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
+
+		expect(selectPanel().getBoundingClientRect().bottom).toBeLessThanOrEqual(
+			field().getBoundingClientRect().top + 1,
+		)
 	})
 })
 

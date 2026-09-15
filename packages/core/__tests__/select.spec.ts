@@ -18,7 +18,12 @@ import {
 	TItemContextRegistry,
 	TInput,
 } from '@soldy/core'
-import type { ISelectItem, ISelectProps } from '@soldy/core'
+import type {
+	ISelectItem,
+	ISelectProps,
+	TSelectPanelPlacement,
+	TSelectPlacement,
+} from '@soldy/core'
 
 function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
 	const owner = new TSelect(props)
@@ -862,6 +867,48 @@ describe('editableMode — что делает ввод текста', () => {
 
 			expect(select.field.aria.get('aria-autocomplete')).toBe('list')
 		})
+	})
+})
+
+/**
+ * `placement` — с какой стороны поля открывается панель. Сторону считает
+ * плагин якоря вложенного Frame; ядро только переводит выбор потребителя в его
+ * пропы: `panelPlacement` → `anchor_placement`, `panelFlip` → `anchor_flip`.
+ */
+describe('placement — сторона панели', () => {
+	it('по умолчанию auto', () => {
+		expect(new TSelect().placement).toBe('auto')
+	})
+
+	const cases: Array<[TSelectPlacement, TSelectPanelPlacement, boolean]> = [
+		['auto', 'bottom-start', true],
+		['bottom', 'bottom-start', false],
+		['top', 'top-start', false],
+	]
+
+	it.each(cases)('%s: панель %s, flip %s', (placement, panelPlacement, panelFlip) => {
+		const select = new TSelect({ placement })
+
+		expect(select.panelPlacement).toBe(panelPlacement)
+		expect(select.panelFlip).toBe(panelFlip)
+	})
+
+	it('смена на лету пересчитывает сторону и flip и сообщает об этом ровно раз', () => {
+		const select = new TSelect()
+		const handler = vi.fn()
+
+		select.events.on('change:placement', handler)
+		select.placement = 'top'
+		select.placement = 'top'
+
+		expect(select.panelPlacement).toBe('top-start')
+		expect(select.panelFlip).toBe(false)
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith('top')
+	})
+
+	it('getProps отдаёт placement', () => {
+		expect(new TSelect({ placement: 'bottom' }).getProps().placement).toBe('bottom')
 	})
 })
 
