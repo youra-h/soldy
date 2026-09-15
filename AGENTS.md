@@ -272,6 +272,12 @@ React-компоненты держат adapter-context между рендер�
 поэтому её атрибуты отдаются пропом (`content_aria`, `list_aria`). Это не
 исключение из правила «пишем в набор», а его граница.
 
+Этот критерий про то, становится ли часть **компонентом для потребителя**.
+Отдельный вопрос — нужен ли части **внутри** компонента собственный экземпляр
+(так у Select устроены `field` и `tags`, хотя потребитель их не адресует):
+критерий и разбор на примере Select —
+[Complex component reference](.github/skills/add-soldy-component/references/complex-component.md).
+
 Критерий выведен из модели soldy, а не заимствован. Ark-таксономия
 (`Root`/`Trigger`/`Indicator`/`Label`/`Positioner`) кодирует чужую модель: там
 нет слотов и табы не коллекция. В soldy `TTabs` — `TCollectionComponent`,
@@ -1511,6 +1517,9 @@ ARIA — контракт со скринридером, `data-*` — контр
 ## Docs
 
 - `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins/accessor, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
+- `.github/skills/add-soldy-component/references/complex-component.md` —
+  разбор Select как эталона сложного компонента: анатомия по слоям и критерий
+  «внутренний экземпляр или разметка».
 - `packages/themes/oren/AGENTS.md` — инструкции пакета темы: шкалы, схемы,
   токены. Читать перед правкой стилей; на другие темы не распространяется.
 - `packages/playground/` — стенд разработчика (`npm run dev:vue`). См. раздел
