@@ -1,6 +1,11 @@
 import { TOrderItemFacade } from '../../order/item'
 import type { TItemContext } from '../../../engine'
-import type { IExtension, TOrderExtension, TSelectionExtension } from '../../../engine'
+import type {
+	IExtension,
+	ISelectionCollectionItemProps,
+	TOrderExtension,
+	TSelectionExtension,
+} from '../../../engine'
 import type { TComponentEvents } from '../../../../component'
 
 /**
@@ -22,6 +27,15 @@ export abstract class TSelectionItemFacade<
 	} & Record<string, IExtension<any>>,
 	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
 > extends TOrderItemFacade<TItem, TExtensions, TEvents> {
+	/**
+	 * Вне коллекции элемент не выбран — то же, что отдаёт геттер без контекста.
+	 * Умолчание уходит адаптеру через декларацию пропа `selected`.
+	 */
+	static defaultValues: ISelectionCollectionItemProps = {
+		...TOrderItemFacade.defaultValues,
+		selected: false,
+	}
+
 	override setContext(context: TItemContext<TItem, TExtensions>): void {
 		super.setContext(context)
 

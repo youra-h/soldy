@@ -69,6 +69,10 @@ export class TSelect<
 		editable: false,
 		editableMode: 'search',
 		removeOnBackspace: false,
+		// Не `false` от `TInputControl`: select-only (`editable: false`) и есть
+		// `readonly`, с ним Select и стартует. Умолчание уходит адаптеру через
+		// декларацию пропа, и Vue отдал бы отсутствующему `readonly` не то.
+		readonly: true,
 		tag: 'div',
 	}
 

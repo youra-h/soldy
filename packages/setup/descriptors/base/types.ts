@@ -19,8 +19,16 @@ import type { TUnderscorePropName } from '../../common'
  * Параметры стёрты: пропсы и опции приходят от фреймворка в рантайме, и сверять
  * их здесь не с чем. Тип инстанса не стёрт — его дескриптор несёт дальше, в
  * `IAdapterContext<TInstance>` (см. AGENTS.md, «`any`: где он честный»).
+ *
+ * `defaultValues` — статика класса ядра (`TComponentView.defaultValues`): из неё
+ * `defineComponent` собирает умолчания пропов в декларации. Объявлена в типе,
+ * чтобы читать её без рефлексии; у класса без статики её просто нет.
  */
-export type TComponentCtor<TInstance extends object = object> = new (...args: any[]) => TInstance
+export type TComponentCtor<TInstance extends object = object> = (new (
+	...args: any[]
+) => TInstance) & {
+	readonly defaultValues?: Readonly<Record<string, unknown>>
+}
 
 /** Инстанс дескриптора: из своего `ctor`, а без него — унаследованный от `extends`. */
 export type TResolveInstance<TOwn extends object, TParent extends object> = [TOwn] extends [never]

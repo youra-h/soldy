@@ -20,10 +20,9 @@ function resolveVueType(rawType: unknown): PropType<unknown> | undefined {
 }
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, unknown> {
-	// Значения по умолчанию лежат статикой на классе ядра, если он их объявил
-	const rawDefaults: unknown = Reflect.get(descriptor.ctor, 'defaultValues')
-	const defaults = typeof rawDefaults === 'object' && rawDefaults !== null ? { ...rawDefaults } : {}
-	const rawProps = createInspector(descriptor).getExportProps(defaults)
+	// Умолчание — поле декларации пропа: его собирает setup, адаптер только
+	// раскладывает (см. AGENTS.md, «Умолчание пропа — в декларации»)
+	const rawProps = createInspector(descriptor).getExportProps()
 
 	const vueProps: Record<string, unknown> = {}
 

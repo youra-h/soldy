@@ -44,6 +44,16 @@ export interface IPluginConstructor<
 	P extends IPlugin<TInstance, TEvents> = IPlugin<TInstance, TEvents>,
 > {
 	new (): P
+	/**
+	 * Умолчания опций, которые плагин объявляет пропами, — тот же приём, что
+	 * `static defaultValues` у классов ядра.
+	 *
+	 * С них плагин стартует, если опция не задана, и из них же setup собирает
+	 * умолчание в декларацию пропа (`IPropDeclaration.default`), откуда его
+	 * берёт адаптер. Умолчание в приватном поле метаданные не видят: адаптер
+	 * подставил бы отсутствующему пропу своё значение и записал его в плагин.
+	 */
+	readonly defaultValues?: Readonly<Record<string, unknown>>
 }
 
 /**

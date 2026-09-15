@@ -36,14 +36,29 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * отсчёт шёл бы от позиционированного предка.
  */
 export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
+	/**
+	 * Умолчания опций, объявленных пропами. Из них стартуют поля плагина, и их
+	 * же `definePlugin` кладёт в декларации пропов: значение живёт в одном
+	 * месте. `flip: true` в приватном поле адаптер не увидел бы и отдал бы
+	 * Frame без `anchor_flip` своё `false`.
+	 */
+	static defaultValues: Required<
+		Pick<IAnchorPluginOptions, 'placement' | 'matchWidth' | 'flip' | 'offset'>
+	> = {
+		placement: 'bottom-start',
+		matchWidth: false,
+		flip: true,
+		offset: 0,
+	}
+
 	private _frame: IFrame | null = null
 	private _element: HTMLElement | null = null
 	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
 	private _anchor: Element | null = null
-	private _placement: TFramePlacement = 'bottom-start'
-	private _matchWidth = false
-	private _flip = true
-	private _offset = 0
+	private _placement: TFramePlacement = TAnchorPlugin.defaultValues.placement
+	private _matchWidth = TAnchorPlugin.defaultValues.matchWidth
+	private _flip = TAnchorPlugin.defaultValues.flip
+	private _offset = TAnchorPlugin.defaultValues.offset
 	private _cleanups: Array<() => void> = []
 	private _panelObserver: ResizeObserver | null = null
 	/** Сторона, реально отданная во Frame — по ней решаем, менялся ли `data-placement`. */

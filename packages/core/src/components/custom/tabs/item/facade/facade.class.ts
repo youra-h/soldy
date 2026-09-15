@@ -1,6 +1,6 @@
 import { TOrderItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TTabsCollectionExtensions } from '../../collection/types'
+import type { ITabsCollectionItemProps, TTabsCollectionExtensions } from '../../collection/types'
 import type { ITabsItem } from '../types'
 
 /**
@@ -14,6 +14,15 @@ export class TTabsItemCollectionFacade extends TOrderItemFacade<
 	ITabsItem,
 	TTabsCollectionExtensions
 > {
+	/**
+	 * Вне коллекции таб не активен — то же, что отдаёт геттер без контекста.
+	 * Умолчание уходит адаптеру через декларацию пропа `active`.
+	 */
+	static defaultValues: ITabsCollectionItemProps = {
+		...TOrderItemFacade.defaultValues,
+		active: false,
+	}
+
 	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
 		super.setContext(context)
 

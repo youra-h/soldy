@@ -33,11 +33,16 @@ import type { IDismissPluginOptions, TDismissPluginEvents } from './types'
  * между компонентами.
  */
 export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
+	/** Умолчания опций, объявленных пропами, — см. `TAnchorPlugin.defaultValues`. */
+	static defaultValues: Required<Pick<IDismissPluginOptions, 'enabled'>> = {
+		enabled: false,
+	}
+
 	private _element: HTMLElement | null = null
 	private _owner: string | null = null
 	private _instance: object | null = null
 	private _property: string | null = 'open'
-	private _enabled = false
+	private _enabled = TDismissPlugin.defaultValues.enabled
 	private _listening = false
 	/** `pointerId` касания мимо, которое ждёт своего `pointerup`. */
 	private _touchId: number | null = null
@@ -63,7 +68,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		})
 
 		this._property = options?.property === undefined ? this._property : options.property
-		this._enabled = options?.enabled ?? false
+		this._enabled = options?.enabled ?? this._enabled
 
 		this._bindOpenState(options?.event ?? `change:${this._property}`)
 	}
