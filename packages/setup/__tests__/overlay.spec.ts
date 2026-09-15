@@ -10,10 +10,11 @@
  * Раскладка и привязка — разные плагины: `TFrameLayoutPlugin` превращает
  * собственные пропсы Frame в стили, `TAnchorPlugin` следит за посторонним
  * элементом и пишет во Frame координаты. Здесь проверяется вторая половина —
- * что она кладёт во Frame.
+ * что она кладёт во Frame, включая flip, shift и RTL поверх выбора
+ * потребителя.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { createPluginContext } from './helpers'
 import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy/plugins'
 import { TFrame } from '@soldy/core'
@@ -30,12 +31,13 @@ function anchorAt(rect: Partial<DOMRect>): HTMLElement {
 	return element
 }
 
-/** Панель заданного размера — нужна только для `*-end` и `top-*`. */
+/** Панель заданного размера — нужна только для `*-end`, `top-*`, flip и shift. */
 function panelOf(width: number, height: number): { element: HTMLElement; plugin: TElementPlugin } {
 	const element = document.createElement('div')
 
-	Object.defineProperty(element, 'offsetWidth', { value: width })
-	Object.defineProperty(element, 'offsetHeight', { value: height })
+	element.getBoundingClientRect = () =>
+		({ left: 0, top: 0, right: width, bottom: height, width, height }) as DOMRect
+
 	document.body.appendChild(element)
 
 	return { element, plugin: new TElementPlugin() }
@@ -55,6 +57,61 @@ function anchorFor(frame: TFrame, elementPlugin?: TElementPlugin): TAnchorPlugin
 	return plugin
 }
 
+/**
+ * Заглушка `ResizeObserver`: jsdom его не реализует. В отличие от заглушек в
+ * других файлах (`list-height.spec.ts`), эта сохраняет колбэк и список
+ * наблюдаемых узлов — тестам нужно самим дёргать срабатывание, чтобы
+ * проверить пересчёт без scroll/resize, и проверять, что `removeAnchor`
+ * действительно отключает наблюдателя, а не просто перестаёт слать координаты.
+ */
+class ResizeObserverStub implements ResizeObserver {
+	private readonly _callback: ResizeObserverCallback
+	private readonly _elements = new Set<Element>()
+
+	constructor(callback: ResizeObserverCallback) {
+		this._callback = callback
+		resizeObserverInstances.push(this)
+	}
+
+	observe(element: Element): void {
+		this._elements.add(element)
+	}
+
+	unobserve(element: Element): void {
+		this._elements.delete(element)
+	}
+
+	disconnect(): void {
+		this._elements.clear()
+	}
+
+	isObserving(element: Element): boolean {
+		return this._elements.has(element)
+	}
+
+	trigger(element: Element): void {
+		if (!this._elements.has(element)) return
+
+		this._callback([{ target: element } as ResizeObserverEntry], this)
+	}
+}
+
+let resizeObserverInstances: ResizeObserverStub[] = []
+
+/** Симулирует срабатывание наблюдателя без реального изменения раскладки. */
+function triggerResize(element: Element): void {
+	for (const observer of resizeObserverInstances) observer.trigger(element)
+}
+
+/** Наблюдает ли хоть один активный `ResizeObserver` за узлом. */
+function isObserved(element: Element): boolean {
+	return resizeObserverInstances.some((observer) => observer.isObserving(element))
+}
+
+beforeAll(() => {
+	globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
+})
+
 beforeEach(() => {
 	window.innerWidth = 1000
 	window.innerHeight = 800
@@ -62,6 +119,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	document.body.innerHTML = ''
+	resizeObserverInstances = []
 })
 
 describe('привязка к якорю', () => {
@@ -172,6 +230,85 @@ describe('привязка к якорю', () => {
 	})
 })
 
+describe('flip: сторона у края экрана', () => {
+	it('у нижнего края окна bottom становится top, data-placement = top-start', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 100)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		// Якорю почти некуда расти вниз (20px до края), а сверху места много
+		plugin.setAnchor(anchorAt({ left: 100, top: 750, bottom: 780, right: 220 }))
+
+		expect(frame.y).toBe(650)
+		expect(frame.dataset.get('placement')).toBe('top-start')
+	})
+
+	it('места мало с обеих сторон — остаётся выбранная сторона', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 500)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		// Якорь посередине окна: сверху и снизу поровну, панель не влезает никуда
+		plugin.setAnchor(anchorAt({ left: 100, top: 380, bottom: 420, right: 220 }))
+
+		expect(frame.y).toBe(420)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+	})
+})
+
+describe('shift: сдвиг внутрь окна', () => {
+	it('у левого края не даёт панели уйти за x=0', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: -50, bottom: 250, right: 50 }))
+
+		expect(frame.x).toBe(0)
+	})
+
+	it('у правого края не даёт панели уйти за правый край окна', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		// Якорь у самого правого края 1000px-окна
+		plugin.setAnchor(anchorAt({ left: 950, bottom: 250, right: 1050 }))
+
+		expect(frame.x).toBe(880) // 1000 - 120
+	})
+})
+
+describe('RTL', () => {
+	it('в rtl -start выравнивает панель по правому краю якоря', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
+
+		anchor.style.direction = 'rtl'
+		plugin.setAnchor(anchor)
+
+		expect(frame.x).toBe(180) // 300 - 120, как -end в LTR
+	})
+})
+
 describe('подписка на скролл', () => {
 	it('снимает слушателей у всех предков якоря', () => {
 		// Одна переменная цикла, захваченная всеми замыканиями, к моменту
@@ -200,6 +337,38 @@ describe('подписка на скролл', () => {
 		plugin.destroy()
 
 		expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
+	})
+
+	it('изменение размера якоря без скролла пересчитывает координаты', () => {
+		// Тег в поле Select удалили, соседние сместились — сам якорь не
+		// скроллился и не менял размеры окна, но подвинулся его край
+		const frame = new TFrame({ position: 'fixed' })
+		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
+		const plugin = anchorFor(frame)
+
+		plugin.setAnchor(anchor)
+		expect(frame.x).toBe(100)
+
+		anchor.getBoundingClientRect = () =>
+			({ left: 40, top: 0, right: 240, bottom: 250, width: 200, height: 0 }) as DOMRect
+		triggerResize(anchor)
+
+		expect(frame.x).toBe(40)
+	})
+
+	it('removeAnchor снимает data-placement и отключает наблюдатели', () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const anchor = anchorAt({ left: 100, bottom: 250, right: 300 })
+		const plugin = anchorFor(frame)
+
+		plugin.setAnchor(anchor)
+		expect(frame.dataset.get('placement')).toBe('bottom-start')
+		expect(isObserved(anchor)).toBe(true)
+
+		plugin.removeAnchor()
+
+		expect(frame.dataset.has('placement')).toBe(false)
+		expect(isObserved(anchor)).toBe(false)
 	})
 })
 

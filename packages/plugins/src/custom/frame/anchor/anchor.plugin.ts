@@ -16,6 +16,19 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * привязка — за слежение за посторонним элементом. Смешивать их значит
  * заводить в одном плагине два повода меняться.
  *
+ * Поверх выбора потребителя (`placement`) плагин сам решает две вещи:
+ * **flip** — если панель не влезает по высоте окна с выбранной стороны, а с
+ * противоположной места больше, показывает её там; **shift** — сдвигает
+ * панель по горизонтали, чтобы она не вылезала за левый и правый край окна.
+ * Оба работают внутри тех же четырёх вариантов `placement`: flip переключает
+ * `top`/`bottom`, shift не меняет `placement`, а только ограничивает `x`.
+ * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
+ * в RTL `-start` выравнивает панель по правому краю якоря, `-end` — по левому.
+ *
+ * Фактическая сторона после flip уходит теме через `data-placement` на самом
+ * Frame (`frame.dataset`) — она не всегда совпадает с тем, что задал
+ * потребитель в `placement`.
+ *
  * Работает только при `position: 'fixed'`: координаты берутся из
  * `getBoundingClientRect()`, то есть относительно окна, а при `absolute`
  * отсчёт шёл бы от позиционированного предка.
@@ -29,6 +42,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _matchWidth = false
 	private _offset = 0
 	private _cleanups: Array<() => void> = []
+	private _panelObserver: ResizeObserver | null = null
+	/** Сторона, реально отданная во Frame — по ней решаем, менялся ли `data-placement`. */
+	private _actualPlacement: TFramePlacement | null = null
 
 	override install(ctx: IPluginContext, options?: IAnchorPluginOptions): void {
 		super.install(ctx, options)
@@ -38,13 +54,20 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._offset = options?.offset ?? this._offset
 		this._frame = ctx.getInstance<IFrame>() ?? null
 
-		// Размер панели нужен только для `*-end` и `top-*` без matchWidth
-		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
+		const elementPlugin = ctx.get(TElementPlugin)
+
+		// Размер панели меняется вместе с содержимым (выросший Popover, теги
+		// перенеслись) без единого scroll/resize — за ним следит свой наблюдатель.
+		elementPlugin?.events.on('ready', (element) => {
 			this._element = element
+			this._panelObserver = new ResizeObserver(() => this._update())
+			this._panelObserver.observe(element)
 			this._update()
 		})
 
-		ctx.get(TElementPlugin)?.events.on('removed', () => {
+		elementPlugin?.events.on('removed', () => {
+			this._panelObserver?.disconnect()
+			this._panelObserver = null
 			this._element = null
 		})
 
@@ -66,6 +89,8 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._anchor = null
 		this._unsubscribe()
+		this._actualPlacement = null
+		this._frame?.dataset.add('placement', null)
 		this.events.emit('change:anchor', null)
 	}
 
@@ -112,6 +137,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	override destroy(): void {
 		this._unsubscribe()
 
+		this._panelObserver?.disconnect()
+		this._panelObserver = null
+
 		this._frame = null
 		this._element = null
 		this._anchor = null
@@ -132,21 +160,84 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (!frame || !anchor || frame.position !== 'fixed') return
 
 		const rect = anchor.getBoundingClientRect()
+		const panel = this._panelSize()
 
 		if (this._matchWidth) frame.width = rect.width
 
-		frame.x = this._placement.endsWith('-end')
-			? rect.right - this._panelSize().width
-			: rect.left
+		const rtl = getComputedStyle(anchor).direction === 'rtl'
+		const alignment = this._placement.endsWith('-end') ? 'end' : 'start'
+		const side = this._resolveSide(rect, panel.height)
 
-		frame.y = this._placement.startsWith('top-')
-			? rect.top - this._panelSize().height - this._offset
-			: rect.bottom + this._offset
+		frame.x = this._resolveX(rect, panel.width, alignment, rtl)
+		frame.y =
+			side === 'top'
+				? rect.top - panel.height - this._offset
+				: rect.bottom + this._offset
+
+		this._applyPlacement(`${side}-${alignment}`)
 	}
 
 	/**
-	 * Размер панели. Нужен только для выравнивания по правому краю и для
-	 * показа сверху — там координата отсчитывается от дальнего края.
+	 * Сторона (`top`/`bottom`) с учётом flip.
+	 *
+	 * Выбор потребителя в `_placement` не перетирается — flip живёт только
+	 * здесь, в вычислении фактической стороны. Переключаемся на
+	 * противоположную, только если на выбранной панель не влезает по высоте
+	 * окна, а на противоположной места больше; если не влезает нигде, остаёмся
+	 * на стороне потребителя.
+	 */
+	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
+		const wants = this._placement.startsWith('top-') ? 'top' : 'bottom'
+		const spaceTop = rect.top
+		const spaceBottom = window.innerHeight - rect.bottom
+		const needed = panelHeight + this._offset
+		const spaceWanted = wants === 'top' ? spaceTop : spaceBottom
+		const spaceOpposite = wants === 'top' ? spaceBottom : spaceTop
+
+		if (spaceWanted >= needed || spaceOpposite <= spaceWanted) return wants
+
+		return wants === 'top' ? 'bottom' : 'top'
+	}
+
+	/**
+	 * Левый край панели с учётом выравнивания, RTL и shift.
+	 *
+	 * В LTR `-start` выравнивает панель по левому краю якоря, `-end` — по
+	 * правому; в RTL наоборот. После выравнивания `x` сдвигается внутрь окна
+	 * по горизонтали, чтобы панель не вылезала ни слева, ни справа — если
+	 * панель шире окна, прижимается к левому краю.
+	 */
+	private _resolveX(
+		rect: DOMRect,
+		panelWidth: number,
+		alignment: 'start' | 'end',
+		rtl: boolean,
+	): number {
+		const alignRight = rtl ? alignment === 'start' : alignment === 'end'
+		const x = alignRight ? rect.right - panelWidth : rect.left
+		const maxX = Math.max(0, window.innerWidth - panelWidth)
+
+		return Math.min(Math.max(x, 0), maxX)
+	}
+
+	/** Пишет фактическую сторону во Frame, только если она изменилась. */
+	private _applyPlacement(placement: TFramePlacement): void {
+		if (this._actualPlacement === placement) return
+
+		this._actualPlacement = placement
+		this._frame?.dataset.add('placement', placement)
+	}
+
+	/**
+	 * Размер панели. Нужен для выравнивания по правому краю, для показа
+	 * сверху и для shift — везде координата отсчитывается от размера панели,
+	 * а не только от якоря.
+	 *
+	 * Берём `getBoundingClientRect()`, а не `offsetWidth`/`offsetHeight`:
+	 * оба нулевые, пока `v-show` держит панель на `display: none`, но
+	 * `getBoundingClientRect()` пересчитывается уже на первом кадре после
+	 * того, как её сняли — раньше на это полагаться было нельзя, теперь за
+	 * этим кадром следит `ResizeObserver`.
 	 *
 	 * При `matchWidth` ширина уже известна из якоря, поэтому самый частый
 	 * случай (список под полем) не зависит от того, отрисовалась ли панель.
@@ -154,11 +245,14 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _panelSize(): { width: number; height: number } {
 		if (!this._element) return { width: 0, height: 0 }
 
-		return { width: this._element.offsetWidth, height: this._element.offsetHeight }
+		const rect = this._element.getBoundingClientRect()
+
+		return { width: rect.width, height: rect.height }
 	}
 
 	/**
-	 * Следит за скроллом предков якоря и за ресайзом окна.
+	 * Следит за скроллом предков якоря, ресайзом окна и изменением размера
+	 * самого якоря (без скролла — например, у него пропал соседний тег).
 	 *
 	 * Каждый слушатель снимается по своей ссылке на элемент: одна переменная
 	 * цикла, захваченная всеми замыканиями, к моменту очистки была бы уже
@@ -185,6 +279,11 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			window.removeEventListener('resize', update)
 			window.removeEventListener('scroll', update)
 		})
+
+		const anchorObserver = new ResizeObserver(update)
+
+		anchorObserver.observe(this._anchor)
+		this._cleanups.push(() => anchorObserver.disconnect())
 	}
 
 	private _unsubscribe(): void {

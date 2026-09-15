@@ -19,7 +19,7 @@ export default { ...SetupFrame, inheritAttrs: false }
 			v-show="visible"
 			:class="classes"
 			:style="layout_styles"
-			v-bind="{ ...attrs, ...aria, ...$attrs }"
+			v-bind="{ ...attrs, ...aria, ...dataset, ...$attrs }"
 		>
 			<slot />
 		</component>
