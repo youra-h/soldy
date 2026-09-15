@@ -108,6 +108,11 @@ function isObserved(element: Element): boolean {
 	return resizeObserverInstances.some((observer) => observer.isObserving(element))
 }
 
+/** Сколько активных `ResizeObserver` следят за узлом. */
+function observerCount(element: Element): number {
+	return resizeObserverInstances.filter((observer) => observer.isObserving(element)).length
+}
+
 beforeAll(() => {
 	globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
 })
@@ -166,6 +171,37 @@ describe('привязка к якорю', () => {
 		plugin.setAnchor(anchorAt({ left: 0, bottom: 0, width: 320 }))
 
 		expect(frame.width).toBe(320)
+	})
+
+	/**
+	 * При `matchWidth` ширина панели для `x` берётся из якоря, а не из DOM: во
+	 * Frame она уже записана, но до узла доедет только после рендера адаптера.
+	 * Панель под `v-show` меряется нулём, и `*-end` съехал бы на ширину якоря.
+	 */
+	it('bottom-end + matchWidth при нулевой ширине панели ставит x по левому краю якоря', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(0, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.placement = 'bottom-end'
+		plugin.matchWidth = true
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 100, bottom: 250, right: 300, width: 200 }))
+
+		expect(frame.x).toBe(100)
+	})
+
+	it('bottom-end + matchWidth без панели ставит x по левому краю якоря', () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const plugin = anchorFor(frame)
+
+		plugin.placement = 'bottom-end'
+		plugin.matchWidth = true
+		plugin.setAnchor(anchorAt({ left: 100, bottom: 250, right: 300, width: 200 }))
+
+		expect(frame.x).toBe(100)
 	})
 
 	it('самый частый случай не зависит от того, отрисовалась ли панель', () => {
@@ -369,6 +405,27 @@ describe('подписка на скролл', () => {
 
 		expect(frame.dataset.has('placement')).toBe(false)
 		expect(isObserved(anchor)).toBe(false)
+	})
+})
+
+describe('наблюдатель панели', () => {
+	/**
+	 * Прежний наблюдатель панели обязан отключиться до создания нового, иначе
+	 * повторный `ready` оставит его висеть. Повтор присылается прямым эмитом в
+	 * обход сеттера: тест проверяет сам плагин, а не то, умеет ли
+	 * `TElementPlugin` такой повтор произвести.
+	 */
+	it('повторный ready без removed не оставляет за панелью второго наблюдателя', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+
+		anchorFor(frame, panel.plugin)
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		panel.plugin.events.emit('ready', panel.element)
+
+		expect(observerCount(panel.element)).toBe(1)
 	})
 })
 

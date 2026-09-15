@@ -60,6 +60,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		// перенеслись) без единого scroll/resize — за ним следит свой наблюдатель.
 		elementPlugin?.events.on('ready', (element) => {
 			this._element = element
+			this._panelObserver?.disconnect()
 			this._panelObserver = new ResizeObserver(() => this._update())
 			this._panelObserver.observe(element)
 			this._update()
@@ -150,8 +151,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
 	 * Считает координаты и кладёт их во Frame.
 	 *
-	 * `matchWidth` ставится до координат: при `*-end` левый край считается от
-	 * правого края якоря минус ширина панели, а её только что задали.
+	 * При `matchWidth` ширину панели для `x` и shift даёт якорь (см.
+	 * `_panelSize`), а не записанный во Frame `width`: до DOM он доедет только
+	 * после рендера адаптера.
 	 */
 	private _update(): void {
 		const frame = this._frame
@@ -160,7 +162,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (!frame || !anchor || frame.position !== 'fixed') return
 
 		const rect = anchor.getBoundingClientRect()
-		const panel = this._panelSize()
+		const panel = this._panelSize(rect)
 
 		if (this._matchWidth) frame.width = rect.width
 
@@ -239,15 +241,19 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * того, как её сняли — раньше на это полагаться было нельзя, теперь за
 	 * этим кадром следит `ResizeObserver`.
 	 *
-	 * При `matchWidth` ширина уже известна из якоря, поэтому самый частый
-	 * случай (список под полем) не зависит от того, отрисовалась ли панель.
+	 * При `matchWidth` ширина берётся из якоря, а не из DOM: во Frame она уже
+	 * записана, но узел получит её только после рендера адаптера, а панели ещё
+	 * может не быть вовсе. Поэтому список под полем не зависит от того,
+	 * отрисовалась ли панель, и с `*-end` не мигает по устаревшей ширине.
+	 * Высоту якорь не знает — она всегда из DOM.
 	 */
-	private _panelSize(): { width: number; height: number } {
-		if (!this._element) return { width: 0, height: 0 }
+	private _panelSize(anchorRect: DOMRect): { width: number; height: number } {
+		const panel = this._element?.getBoundingClientRect()
 
-		const rect = this._element.getBoundingClientRect()
-
-		return { width: rect.width, height: rect.height }
+		return {
+			width: this._matchWidth ? anchorRect.width : (panel?.width ?? 0),
+			height: panel?.height ?? 0,
+		}
 	}
 
 	/**
