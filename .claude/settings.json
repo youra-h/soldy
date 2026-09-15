@@ -45,7 +45,10 @@
 			"Bash(node --version)",
 			"Bash(npm --version)",
 
-			"mcp__clickup"
+			"mcp__clickup",
+
+			"WebSearch",
+			"WebFetch"
 		]
 	}
 }

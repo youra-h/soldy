@@ -8,17 +8,29 @@
  * Запуск: CLICKUP_TOKEN=pk_... node tools/agent-flow/clickup-mcp.mjs
  */
 
-import { api, config, requireConfig, tasksByStatus } from './clickup-api.mjs'
+import { api, config, PRIORITIES, requireConfig, tasksByStatus } from './clickup-api.mjs'
 
 const log = (...args) => process.stderr.write(`[clickup-mcp] ${args.join(' ')}\n`)
 
-/** Метка этапа в ленте комментариев. По ней видно, кто и на каком шаге писал. */
+/**
+ * Метка этапа в ленте комментариев. По ней видно, кто и на каком шаге писал.
+ *
+ * Менеджер пишет в ленту только при смене статуса — объясняет, почему задачу
+ * переставили. Но и его комментарий обязан нести хештег: всё, что без хештега,
+ * роли читают как слово владельца.
+ */
 const HASHTAGS = {
 	analyst: '#ANALYSIS',
 	techlead: '#PLANNING',
 	designer: '#DESIGN',
 	developer: '#DEV',
+	manager: '#MANAGE',
 }
+
+const textOf = (comment) => (comment.comment_text ?? '').trimStart()
+
+/** Комментарий роли начинается с её хештега. Всё остальное в ленте написал владелец. */
+const isRoleComment = (comment) => Object.values(HASHTAGS).some((tag) => textOf(comment).startsWith(tag))
 
 /**
  * Размер задачи владелец задаёт тегом в ClickUp. Тег может меняться между
@@ -52,6 +64,14 @@ function sizeOf(tags) {
 const BUSY = 'on'
 const FREE = 'off'
 
+/**
+ * Отложенная задача — тег `hold`. Менеджер ставит его, убирая в OVERVIEW задачу,
+ * которая ждёт другие или столкнётся с ними в коде, и снимает, возвращая её в
+ * PLANNING. Так OVERVIEW делится на две очереди: отложенные менеджер выпускает
+ * сам, остальные — только после ответа владельца.
+ */
+const HOLD = 'hold'
+
 const tagPath = (taskId, tag) => `/task/${taskId}/tag/${encodeURIComponent(tag)}`
 
 /** Переставить тег занятости. Удаляем только то, что висит: не шлём лишних запросов. */
@@ -74,6 +94,9 @@ const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
  * Дизайнер — редкая роль для крупных задач, в DESIGN задачу отправляет тимлид
  * или владелец. Исходы у него те же, что у программиста: `done` — правились
  * только тема и иконки, `questions` — нужен код, дальше планирует тимлид.
+ *
+ * Менеджера здесь нет: он задачу не берёт и этап не завершает, а переставляет
+ * чужие задачи — см. `MANAGER_MOVES`.
  */
 const TRANSITIONS = {
 	analyst: { review: 'overview' },
@@ -82,23 +105,105 @@ const TRANSITIONS = {
 	developer: { done: 'approved', questions: 'planning' },
 }
 
+/**
+ * Статусы, на которых работает менеджер, и куда из каждого он может задачу
+ * переставить. Здесь только направления — что ещё проверяется на переходе
+ * (ответ владельца, `hold`, блокеры), решает `clickup_move`.
+ *
+ * Менеджер разводит параллельных программистов: пересекающиеся и зависимые
+ * задачи откладывает в OVERVIEW, а когда путь свободен, возвращает в PLANNING.
+ * Из PLANNING в работу — нельзя: план пишет и отдаёт в работу тимлид.
+ * ANALYSIS, DESIGN и APPROVED менеджер не трогает — это этапы ролей и ревью
+ * владельца.
+ */
+const MANAGER_MOVES = {
+	overview: ['planning', 'inProgress'],
+	planning: ['overview'],
+	inProgress: ['planning', 'overview'],
+}
+
+/** Ключ `config.statuses` по статусу задачи. ClickUp отдаёт имя статуса в нижнем регистре. */
+const statusKeyOf = (task) =>
+	Object.keys(config.statuses).find((key) => config.statuses[key] === task.status?.status)
+
+/* ─────────────────────────── Связи задач ─────────────────────────── */
+
+/**
+ * Зависимость ClickUp `{ task_id, depends_on }` читается как «task_id ждёт
+ * depends_on». Одна и та же запись приходит в обеих задачах пары, поэтому
+ * направление определяем по тому, с какой стороны стоит сама задача.
+ */
+const waitingOnIds = (task) =>
+	(task.dependencies ?? []).filter((dep) => dep.task_id === task.id).map((dep) => dep.depends_on)
+
+const blockingIds = (task) =>
+	(task.dependencies ?? []).filter((dep) => dep.depends_on === task.id).map((dep) => dep.task_id)
+
+/** Связь без зависимости. В паре `{ task_id, link_id }` вторая задача — та, что не эта. */
+const linkedIds = (task) =>
+	(task.linked_tasks ?? []).map((link) => (link.task_id === task.id ? link.link_id : link.task_id))
+
+/**
+ * Блокер снят, только когда задача завершена: статус типа `closed` или `done`
+ * (в Space есть оба — `complete` и `done`). APPROVED не в счёт: PR ещё не
+ * в `main`, и ветка зависимой задачи его изменений не увидит.
+ */
+const isClosed = (task) =>
+	['closed', 'done'].includes(task.status?.type) || task.status?.status === config.statuses.closed
+
+/**
+ * Задачи, которых ждут переданные. Статус блокера ClickUp в ответе не отдаёт,
+ * а без него не понять, заблокирована ли задача, — дочитываем каждую.
+ *
+ * Блокер, который прочитать не удалось, в карту не попадёт и будет считаться
+ * открытым: лучше лишний раз придержать задачу, чем отдать её в работу раньше
+ * того, от чего она зависит.
+ */
+async function blockersOf(tasks) {
+	const ids = [...new Set(tasks.flatMap(waitingOnIds))]
+	const found = await Promise.all(ids.map((id) => api(`/task/${id}`).catch(() => null)))
+
+	return new Map(found.filter(Boolean).map((task) => [task.id, task]))
+}
+
 /* ─────────────────────────── Формат ответов ─────────────────────────── */
 
 /**
  * Задача целиком — это сотни полей, из которых ролям нужны единицы.
  * Возвращаем только их: контекст агента дороже полноты ответа.
+ *
+ * `blockers` — карта из `blockersOf`: без неё `blocked` не посчитать.
  */
-function trimTask(task) {
+function trimTask(task, blockers = new Map()) {
 	const tags = tagsOf(task)
+	const waitingOn = waitingOnIds(task).map((id) => {
+		const blocker = blockers.get(id)
+
+		return {
+			id,
+			name: blocker?.name ?? null,
+			status: blocker?.status?.status ?? null,
+			closed: blocker ? isClosed(blocker) : false,
+		}
+	})
 
 	return {
 		id: task.id,
 		name: task.name,
 		status: task.status?.status ?? null,
+		// null — приоритет не проставлен; в очереди такая задача стоит как normal.
+		priority: task.priority?.priority ?? null,
 		size: sizeOf(tags),
 		// false — тега размера нет, `size` подставлен по умолчанию.
 		sizeTagged: sizeTagsOf(tags).length > 0,
 		busy: tags.includes(BUSY),
+		// true — задачу отложил менеджер: ждёт задачи из `waitingOn`, вернётся в PLANNING.
+		hold: tags.includes(HOLD),
+		// true — задача ждёт незакрытую задачу из `waitingOn`: брать её рано.
+		blocked: waitingOn.some((dep) => !dep.closed),
+		waitingOn,
+		blocking: blockingIds(task),
+		linked: linkedIds(task),
 		url: task.url,
 		description: task.description || task.text_content || '',
 		assignees: (task.assignees ?? []).map((user) => user.username),
@@ -135,19 +240,50 @@ function chunk(text, size) {
 	return parts.map((part, index) => `${part}\n\n_(часть ${index + 1}/${parts.length})_`)
 }
 
+/**
+ * Задача, которую менеджер может менять. Проверяем здесь, а не в промпте:
+ * задачу с тегом `on` прямо сейчас делает роль, и приоритет или статус,
+ * переставленные у неё под руками, ломают заход незаметно для всех.
+ */
+async function managedTask(taskId, role) {
+	if (role !== 'manager') {
+		throw new Error(`Роль "${role}" не может менять приоритет и статус чужих задач — это работа менеджера.`)
+	}
+
+	const task = await api(`/task/${taskId}`)
+
+	if (tagsOf(task).includes(BUSY)) {
+		throw new Error(`Задача ${taskId} в работе у роли (тег "${BUSY}") — не трогай её.`)
+	}
+
+	const key = statusKeyOf(task)
+
+	if (!MANAGER_MOVES[key]) {
+		const scope = Object.keys(MANAGER_MOVES).map((k) => config.statuses[k])
+
+		throw new Error(
+			`Задача ${taskId} в статусе "${task.status?.status}". Менеджер работает только со статусами: ${scope.join(', ')}.`,
+		)
+	}
+
+	return { task, key }
+}
+
 /* ─────────────────────────── Инструменты ─────────────────────────── */
 
 const tools = {
 	clickup_get_task: {
 		description:
-			'Прочитать задачу ClickUp: название, описание, статус, размер (size), исполнителей, теги. Возвращает урезанный набор полей.',
+			'Прочитать задачу ClickUp: название, описание, статус, приоритет, размер (size), занятость, зависимости (waitingOn, blocking, blocked), связи, исполнителей, теги. Возвращает урезанный набор полей.',
 		schema: {
 			type: 'object',
 			properties: { task_id: { type: 'string', description: 'ID задачи ClickUp' } },
 			required: ['task_id'],
 		},
 		async run({ task_id }) {
-			return trimTask(await api(`/task/${task_id}`))
+			const task = await api(`/task/${task_id}`)
+
+			return trimTask(task, await blockersOf([task]))
 		},
 	},
 
@@ -239,6 +375,11 @@ const tools = {
 			}
 
 			await setBusy(task_id, tags, true)
+
+			// Задачу взяла роль — значит, она больше не отложена. Забытый `hold`
+			// (владелец вытащил задачу руками) позже выпустил бы её из OVERVIEW мимо
+			// его ответа.
+			if (tags.includes(HOLD)) await api(tagPath(task_id, HOLD), { method: 'DELETE' })
 
 			return { taken: task_id, tag: BUSY }
 		},
@@ -340,9 +481,237 @@ const tools = {
 		},
 	},
 
+	clickup_set_priority: {
+		description:
+			'Поставить задаче приоритет. Только для менеджера и только задаче в IN PROGRESS, PLANNING или OVERVIEW без тега `on`. Роли берут задачи в порядке urgent → high → normal → low.',
+		schema: {
+			type: 'object',
+			properties: {
+				task_id: { type: 'string' },
+				role: {
+					type: 'string',
+					enum: ['manager'],
+					description: 'Твоя роль. Приоритеты расставляет только менеджер.',
+				},
+				priority: { type: 'string', enum: PRIORITIES },
+			},
+			required: ['task_id', 'role', 'priority'],
+		},
+		async run({ task_id, role, priority }) {
+			if (!PRIORITIES.includes(priority)) {
+				throw new Error(`Неизвестный приоритет "${priority}". Ожидается: ${PRIORITIES.join(', ')}`)
+			}
+
+			const { task } = await managedTask(task_id, role)
+			const was = task.priority?.priority ?? null
+
+			if (was !== priority) {
+				// В API приоритет — число: 1 urgent … 4 low.
+				await api(`/task/${task_id}`, {
+					method: 'PUT',
+					body: JSON.stringify({ priority: PRIORITIES.indexOf(priority) + 1 }),
+				})
+			}
+
+			return { priority, was }
+		},
+	},
+
+	clickup_move: {
+		description:
+			'Переставить задачу между IN PROGRESS, PLANNING и OVERVIEW. Только для менеджера и только задачу без тега `on`. Сначала оставь комментарий с причиной, потом вызывай. В OVERVIEW задача уходит либо отложенной (`hold: true`, тег `hold`) — до закрытия задач, которых ждёт, — либо владельцу (`hold: false`). Сервер откажет: отложить задачу, которая не ждёт незакрытых задач; вернуть отложенную куда-либо, кроме PLANNING, или пока она ещё ждёт; выпустить из OVERVIEW неотложенную задачу, пока владелец не ответил после последнего комментария роли; в IN PROGRESS — без плана #PLANNING или с незакрытыми блокерами; из PLANNING — куда-либо, кроме OVERVIEW.',
+		schema: {
+			type: 'object',
+			properties: {
+				task_id: { type: 'string' },
+				role: {
+					type: 'string',
+					enum: ['manager'],
+					description: 'Твоя роль. Переставлять задачи может только менеджер.',
+				},
+				status: {
+					type: 'string',
+					enum: Object.keys(MANAGER_MOVES).map((key) => config.statuses[key]),
+					description: 'Куда переставить.',
+				},
+				hold: {
+					type: 'boolean',
+					description:
+						'Только при status overview. true — отложить: задача ждёт незакрытые задачи (waits_on) и вернётся в PLANNING, когда они закроются. false (по умолчанию) — вопрос владельцу.',
+				},
+			},
+			required: ['task_id', 'role', 'status'],
+		},
+		async run({ task_id, role, status, hold = false }) {
+			const { task, key } = await managedTask(task_id, role)
+			const target = MANAGER_MOVES[key].find((to) => config.statuses[to] === status)
+
+			if (!target) {
+				const allowed = MANAGER_MOVES[key].map((to) => config.statuses[to])
+
+				throw new Error(
+					`Из "${task.status.status}" менеджер переставляет только в: ${allowed.join(', ')}.`,
+				)
+			}
+
+			if (hold && target !== 'overview') {
+				throw new Error('`hold` ставится только при перестановке в OVERVIEW.')
+			}
+
+			const tagged = tagsOf(task).includes(HOLD)
+			// Тег вне OVERVIEW — забытый: задачу вытащили руками. Отложенной её не считаем.
+			const held = key === 'overview' && tagged
+			const open = trimTask(task, await blockersOf([task]))
+				.waitingOn.filter((dep) => !dep.closed)
+				.map((dep) => dep.id)
+
+			// Отложенную задачу пора вернуть, когда закрылось то, чего она ждёт. Без
+			// зависимости этот момент не определить, и задача осела бы в OVERVIEW.
+			if (hold && open.length === 0) {
+				throw new Error(
+					`Задача ${task_id} не ждёт незакрытых задач — откладывать нечего. Сначала свяжи её waits_on с задачей, которой она уступает.`,
+				)
+			}
+
+			if (held) {
+				// Пока задача ждала, main ушёл вперёд: план сверяет тимлид, в работу напрямую нельзя.
+				if (target !== 'planning') {
+					throw new Error(
+						`Задача ${task_id} отложена (тег "${HOLD}") — вернуть её можно только в PLANNING: план сверит тимлид.`,
+					)
+				}
+
+				if (open.length > 0) {
+					throw new Error(`Задача ${task_id} ещё ждёт: ${open.join(', ')} — возвращать рано.`)
+				}
+			}
+
+			if ((key === 'overview' && !held) || target === 'inProgress') {
+				// От новых к старым: первый подходящий — последний по времени.
+				const { comments = [] } = await api(`/task/${task_id}/comment`)
+
+				if (key === 'overview' && !held) {
+					// Неотложенная задача в OVERVIEW ждёт владельца: выпускает её только его ответ.
+					// Свою заметку менеджер оставляет перед перестановкой — её пропускаем.
+					const last = comments.find((comment) => !textOf(comment).startsWith(HASHTAGS.manager))
+
+					if (!last || isRoleComment(last)) {
+						throw new Error(
+							`Задача ${task_id} ждёт владельца: после последнего комментария роли он не ответил. Оставь её в OVERVIEW.`,
+						)
+					}
+				}
+
+				if (target === 'inProgress') {
+					if (!comments.some((comment) => textOf(comment).startsWith(HASHTAGS.techlead))) {
+						throw new Error(`В ленте задачи ${task_id} нет плана ${HASHTAGS.techlead} — в работу рано, её ждёт тимлид.`)
+					}
+
+					if (open.length > 0) {
+						throw new Error(`Задача ${task_id} ждёт незакрытые задачи: ${open.join(', ')} — в работу рано.`)
+					}
+				}
+			}
+
+			const owner = Number(requireConfig('ownerId'))
+
+			await api(`/task/${task_id}`, {
+				method: 'PUT',
+				body: JSON.stringify({ status: config.statuses[target], assignees: { add: [owner] } }),
+			})
+
+			// Тег — после смены статуса: упадёт запрос, и задача останется в OVERVIEW
+			// без `hold`, то есть в очереди владельца, а не выпустится мимо него.
+			const keep = target === 'overview' && hold
+
+			if (keep && !tagged) await api(tagPath(task_id, HOLD), { method: 'POST' })
+			if (!keep && tagged) await api(tagPath(task_id, HOLD), { method: 'DELETE' })
+
+			return { status: config.statuses[target], was: task.status.status, hold: keep }
+		},
+	},
+
+	clickup_link_tasks: {
+		description:
+			'Связать две задачи. `waits_on` — зависимость ClickUp: `task_id` нельзя начинать, пока не закрыта `other_task_id`; роли такую задачу из очереди не берут. `related` — просто связь, ничего не блокирует. Для менеджера и тимлида. Менеджер не может менять `task_id` с тегом `on`. Удалять связи инструмент не умеет.',
+		schema: {
+			type: 'object',
+			properties: {
+				task_id: {
+					type: 'string',
+					description: 'Задача, которую связываешь. Для waits_on — та, что ждёт.',
+				},
+				role: {
+					type: 'string',
+					enum: ['manager', 'techlead'],
+					description: 'Твоя роль. Связывать задачи могут менеджер и тимлид.',
+				},
+				relation: {
+					type: 'string',
+					enum: ['waits_on', 'related'],
+					description: 'waits_on — task_id ждёт other_task_id. related — связь без ожидания.',
+				},
+				other_task_id: {
+					type: 'string',
+					description: 'Для waits_on — задача, которую ждут: пока она не закрыта, task_id заблокирована.',
+				},
+			},
+			required: ['task_id', 'role', 'relation', 'other_task_id'],
+		},
+		async run({ task_id, role, relation, other_task_id }) {
+			if (role !== 'manager' && role !== 'techlead') {
+				throw new Error(`Роль "${role}" не может связывать задачи.`)
+			}
+
+			if (relation !== 'waits_on' && relation !== 'related') {
+				throw new Error(`Неизвестная связь "${relation}". Ожидается: waits_on, related`)
+			}
+
+			if (task_id === other_task_id) {
+				throw new Error('Задачу нельзя связать саму с собой.')
+			}
+
+			const task = await api(`/task/${task_id}`)
+
+			// Тимлид связывает и задачу, которую сам держит под `on`. Менеджеру задачи
+			// в работе недоступны, но ждать задачу в работе — можно: связь ставится
+			// со стороны ждущей.
+			if (role === 'manager' && tagsOf(task).includes(BUSY)) {
+				throw new Error(`Задача ${task_id} в работе у роли (тег "${BUSY}") — не трогай её.`)
+			}
+
+			const result = { task_id, relation, other_task_id }
+
+			if (relation === 'related') {
+				if (linkedIds(task).includes(other_task_id)) return { ...result, already: true }
+
+				await api(`/task/${task_id}/link/${other_task_id}`, { method: 'POST' })
+
+				return result
+			}
+
+			if (waitingOnIds(task).includes(other_task_id)) return { ...result, already: true }
+
+			// Две задачи, ждущие друг друга, не возьмёт ни одна роль. Ловим только
+			// прямой цикл: длинный требует обхода всего графа.
+			if (blockingIds(task).includes(other_task_id)) {
+				throw new Error(
+					`${other_task_id} уже ждёт ${task_id} — обратная зависимость замкнёт цикл, и обе задачи встанут.`,
+				)
+			}
+
+			await api(`/task/${task_id}/dependency`, {
+				method: 'POST',
+				body: JSON.stringify({ depends_on: other_task_id }),
+			})
+
+			return result
+		},
+	},
+
 	clickup_list_by_status: {
 		description:
-			'Найти задачи списка в заданном статусе. Нужен диспетчеру и для ручной проверки очереди. У каждой задачи поле `busy`: true — задача уже в работе у роли (тег `on`), брать её нельзя.',
+			'Найти задачи в заданном статусе. Список отсортирован по приоритету (urgent → high → normal → low; без приоритета — как normal), внутри приоритета — от старых к новым. `busy: true` — задача уже в работе у роли (тег `on`); `blocked: true` — ждёт незакрытую задачу из `waitingOn`. Ни ту, ни другую брать нельзя.',
 		schema: {
 			type: 'object',
 			properties: {
@@ -354,13 +723,16 @@ const tools = {
 			required: ['status'],
 		},
 		async run({ status }) {
-			return (await tasksByStatus(status)).map(trimTask)
+			const tasks = await tasksByStatus(status)
+			const blockers = await blockersOf(tasks)
+
+			return tasks.map((task) => trimTask(task, blockers))
 		},
 	},
 
 	clickup_create_task: {
 		description:
-			'Завести отдельную задачу на проблему, найденную попутно и не входящую в текущую. Новая задача ложится владельцу в OVERVIEW — в очередь ролей она сама не попадёт. Не заменяет отчёт: упомяни созданную задачу в своём комментарии.',
+			'Завести отдельную задачу на проблему, найденную попутно и не входящую в текущую. Новая задача ложится владельцу в OVERVIEW — в очередь ролей она сама не попадёт. Не заменяет отчёт: упомяни созданную задачу в своём комментарии. Если новая задача не может начаться, пока не закрыта текущая, — свяжи их `clickup_link_tasks`.',
 		schema: {
 			type: 'object',
 			properties: {

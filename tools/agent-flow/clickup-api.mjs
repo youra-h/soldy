@@ -54,6 +54,23 @@ export function requireConfig(field) {
 }
 
 /**
+ * Приоритеты ClickUp в том порядке, в каком роли берут задачи. В API
+ * приоритет — число от 1 (urgent) до 4 (low): позиция в списке плюс один.
+ */
+export const PRIORITIES = ['urgent', 'high', 'normal', 'low']
+
+/** Приоритета нет — задача стоит как normal, так же как задача без тега размера. */
+function priorityRank(task) {
+	const rank = PRIORITIES.indexOf(task.priority?.priority)
+
+	return rank === -1 ? PRIORITIES.indexOf('normal') : rank
+}
+
+/** Порядок очереди: сначала важные, внутри одного приоритета — от старых к новым. */
+export const queueOrder = (a, b) =>
+	priorityRank(a) - priorityRank(b) || Number(a.date_created) - Number(b.date_created)
+
+/**
  * Задачи в заданном статусе.
  *
  * Если в конфиге указан spaceId — ищем по всему Space: тогда новые списки
@@ -69,9 +86,9 @@ export async function tasksByStatus(status) {
 			)
 		: await api(`/list/${requireConfig('listId')}/task?${filter}`)
 
-	// От старых к новым. Роль без явного ID берёт первую задачу из очереди, и без
+	// Роль без явного ID берёт первую свободную задачу из очереди, и без
 	// сортировки «первая» означала бы «как сегодня отдал ClickUp».
-	return tasks.sort((a, b) => Number(a.date_created) - Number(b.date_created))
+	return tasks.sort(queueOrder)
 }
 
 export function setStatus(taskId, status) {
