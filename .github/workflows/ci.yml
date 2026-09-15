@@ -50,6 +50,7 @@ jobs:
           npm run test:eslint
           npm run test:setup
           npm run test:accessor
+          npm run test:plugins
           npm run test:vue
           npm run test:react
           npm run test:svelte
@@ -92,6 +93,10 @@ jobs:
 
       - name: Типы — Web Components
         run: npx tsc --noEmit -p packages/ui/webc/tsconfig.json
+
+      # Без сборки и ngc: шаблоны @Component здесь не проверяются, только TS.
+      - name: Типы — Angular
+        run: npx tsc --noEmit -p packages/ui/angular/tsconfig.json
 
       # Сгенерированные метаданные закоммичены: Angular AOT требует статические
       # массивы inputs/outputs. Если дескриптор изменили, а generate не запускали,

@@ -26,10 +26,13 @@ npm run build --workspace=@soldy/theme-oren
 npm run generate --workspace=@soldy/ui-angular
 ```
 
-CI (`.github/workflows/ci.yml`) гоняет тесты, типы по шагам «Типы — Core»,
-«Типы — Vue», «Типы — Plugins», «Типы — Playground», «Типы — React», «Типы —
-Svelte», «Типы — Solid», «Типы — Web Components», проверку дрейфа
-`packages/ui/angular/src/generated` и сборки. Линт пока не блокирует.
+CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов (включая
+`test:plugins`), типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
+«Типы — Plugins», «Типы — Playground», «Типы — React», «Типы — Svelte», «Типы —
+Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
+`packages/ui/angular/src/generated` и сборки. Сборки и AOT-компиляции (`ngc`)
+Angular в CI нет: «Типы — Angular» — это `tsc --noEmit`, шаблоны декораторов
+`@Component` он не проверяет. Линт роняет CI отдельной задачей `lint`.
 
 Тесты `packages/core/__tests__` и `packages/ui/vue/__tests__` тоже проверяются
 типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
