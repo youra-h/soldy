@@ -11,7 +11,7 @@
  * плагину сделала ядро несамодостаточным, и мы её откатили.
  */
 
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { createPluginContext, installResizeObserverStub, observerCount } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
@@ -169,25 +169,17 @@ describe('высота контейнера по maxRows', () => {
 
 describe('наблюдатель корня', () => {
 	/**
-	 * Повторный `ready` без `removed` между объявлениями даёт гонка
-	 * `TElementPlugin`: узел дважды ушёл и вернулся до кадра, и оба отложенных
-	 * объявления прошли проверку. Прежний наблюдатель корня обязан отключиться
-	 * до создания нового, иначе он продолжает планировать пересчёт высоты.
+	 * Прежний наблюдатель корня обязан отключиться до создания нового, иначе
+	 * повторный `ready` оставит его висеть, и тот продолжит планировать
+	 * пересчёт высоты. Повтор присылается прямым эмитом в обход сеттера: тест
+	 * проверяет сам плагин, а не то, умеет ли `TElementPlugin` такой повтор
+	 * произвести.
 	 */
-	it('повторный ready не оставляет за корнем второго наблюдателя', async () => {
+	it('повторный ready без removed не оставляет за корнем второго наблюдателя', async () => {
 		const { root, rootElement } = await setup(4, 2)
-		const ready = vi.fn()
 
-		rootElement.events.on('ready', ready)
+		rootElement.events.emit('ready', root)
 
-		rootElement.element = null
-		rootElement.element = root
-		rootElement.element = null
-		rootElement.element = root
-		await nextFrame()
-
-		// Без двух ready тест проверял бы одно объявление, а не повторное
-		expect(ready).toHaveBeenCalledTimes(2)
 		expect(observerCount(root)).toBe(1)
 	})
 })

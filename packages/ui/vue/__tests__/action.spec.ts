@@ -68,6 +68,25 @@ describe('press · нормализованная активация', () => {
 	})
 })
 
+describe('смена корня · tag на лету', () => {
+	/**
+	 * Смена `tag` пересоздаёт корень, и `watch` адаптера видит сразу новый узел,
+	 * без промежуточного `null`. Слушатели обязаны переехать на новый корень:
+	 * `TElementPlugin` шлёт `removed` для старого узла и `ready` для нового.
+	 */
+	it('после смены tag клик по новому корню даёт ровно один press', async () => {
+		const press = vi.fn()
+		const wrapper = mount(Button, { props: { 'onAction:press': press } })
+
+		await mounted()
+		await wrapper.setProps({ tag: 'div' })
+		await mounted()
+		await wrapper.trigger('click')
+
+		expect(press).toHaveBeenCalledTimes(1)
+	})
+})
+
 describe('focused · связь с настоящим фокусом', () => {
 	it('DOM-фокус пишется в инстанс', async () => {
 		const ctrl = new TButton()

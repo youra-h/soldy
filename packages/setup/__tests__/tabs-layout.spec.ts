@@ -9,7 +9,7 @@
  * проверяется число наблюдателей за узлом.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createPluginContext, installResizeObserverStub, observerCount } from './helpers'
 import { TElementPlugin, TTabsLayoutPlugin } from '@soldy/plugins'
 
@@ -48,24 +48,14 @@ describe('наблюдатель корня', () => {
 	})
 
 	/**
-	 * Повторный `ready` без `removed` между объявлениями даёт гонка
-	 * `TElementPlugin`: узел дважды ушёл и вернулся до кадра, и оба отложенных
-	 * объявления прошли проверку.
+	 * Повтор присылается прямым эмитом в обход сеттера: тест проверяет сам
+	 * плагин, а не то, умеет ли `TElementPlugin` такой повтор произвести.
 	 */
-	it('повторный ready не оставляет за корнем второго наблюдателя', async () => {
+	it('повторный ready без removed не оставляет за корнем второго наблюдателя', async () => {
 		const { root, rootElement } = await setup()
-		const ready = vi.fn()
 
-		rootElement.events.on('ready', ready)
+		rootElement.events.emit('ready', root)
 
-		rootElement.element = null
-		rootElement.element = root
-		rootElement.element = null
-		rootElement.element = root
-		await nextFrame()
-
-		// Без двух ready тест проверял бы одно объявление, а не повторное
-		expect(ready).toHaveBeenCalledTimes(2)
 		expect(observerCount(root)).toBe(1)
 	})
 })

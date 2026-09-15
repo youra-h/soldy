@@ -1522,7 +1522,9 @@ ARIA — контракт со скринридером, `data-*` — контр
   (`useSyncProps.bindOutput` пропускает такие). Даже у постоянного значения
   должен быть хотя бы один триггер — для плагинов подходит `create`.
 - `TElementPlugin` эмитит `ready` через `requestAnimationFrame`. В тестах
-  ждите кадр, а не `nextTick`.
+  ждите кадр, а не `nextTick`. Контракт: одно `ready` на подключение узла,
+  `removed` синхронно и только после `ready`, замена узла — пара `removed` +
+  `ready`.
 - В `packages/setup` нет своего vitest-конфига, окружение по умолчанию —
   `node`. Тестам с DOM нужна первая строка `// @vitest-environment jsdom`.
 
