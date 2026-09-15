@@ -2,7 +2,7 @@ import { isEventSource } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
-import type { IDismissPluginOptions, TDismissPluginEvents } from './types'
+import type { IDismissPluginOptions, TDismissPendingPress, TDismissPluginEvents } from './types'
 
 /**
  * TDismissPlugin — «нажали мимо».
@@ -22,8 +22,23 @@ import type { IDismissPluginOptions, TDismissPluginEvents } from './types'
  * нужен: забрав касание под прокрутку, браузер шлёт `pointercancel`, и
  * `pointerup` не приходит. `click` не годится и здесь — `pointerType` в нём
  * есть не у всех браузеров. Порядку фокуса это не вредит: на касании фокус
- * переходит только перед `click`, уже после `pointerup`. Мышь и перо остаются
- * на `pointerdown`.
+ * переходит только перед `click`, уже после `pointerup`. Мышь остаётся на
+ * `pointerdown`.
+ *
+ * Перо решается первым из двух событий: `pointerup` того же `pointerId` или
+ * совместимым `mousedown`. По `pointerType` стилус на сенсорном экране (Apple
+ * Pencil, S Pen, перо Windows-планшета) не отличить от пера графического
+ * планшета, а ведут они себя по-разному. Решать перо на `pointerdown`, как
+ * мышь, нельзя: стилус листает страницу, как палец. Ждать `pointerup`, как у
+ * касания, тоже нельзя: перо планшета ведёт себя как мышь — `mousedown`, а с
+ * ним и смена фокуса, идёт сразу за `pointerdown`, и панель закрылась бы уже
+ * после ухода фокуса. Поэтому устройство не угадываем, а решаем по порядку
+ * событий, который задаёт браузер. На планшете первым приходит `mousedown`, и
+ * панель закрывается до смены фокуса. Стилусу на экране совместимые события
+ * мыши приходят только после отпускания: решает `pointerup`, а прокрутка
+ * (`pointercancel`) снимает ожидание и ничего не закрывает. Исключение одно:
+ * страница отменила `pointerdown`. Совместимых событий тогда нет, и перо
+ * решает `pointerup` и на планшете.
  *
  * Как считается «мимо». Панель обычно телепортирована в `body`, то есть
  * лежит вне поддерева владельца — простой `contains()` по корню посчитал бы
@@ -44,8 +59,8 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	private _property: string | null = 'open'
 	private _enabled = TDismissPlugin.defaultValues.enabled
 	private _listening = false
-	/** `pointerId` касания мимо, которое ждёт своего `pointerup`. */
-	private _touchId: number | null = null
+	/** Нажатие мимо, которое ждёт решения, — касание или перо (см. `_onPointerDown`). */
+	private _pending: TDismissPendingPress | null = null
 
 	override install(ctx: IPluginContext, options?: IDismissPluginOptions): void {
 		super.install(ctx, options)
@@ -140,10 +155,25 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		return !!this._owner && !!target.closest(`[data-owner="${this._owner}"]`)
 	}
 
-	/** Мышь и перо решают на нажатии, касание — на отпускании (см. шапку). */
+	/**
+	 * Мышь решает на нажатии, касание и перо ждут (см. шапку).
+	 *
+	 * Ожидание одно — для последнего опущенного нажатия, поэтому любое нажатие
+	 * (мышью, пальцем или пером, внутрь или мимо) сначала снимает прежнее.
+	 * Иначе панель, с которой уже работают, закрыло бы отпускание пальца,
+	 * лёгшего мимо раньше, или `mousedown` мыши, нажатой внутрь, пока перо
+	 * лежит мимо: он засчитался бы за перо.
+	 */
 	private readonly _onPointerDown = (event: PointerEvent): void => {
+		this._pending = null
+
 		if (event.pointerType === 'touch') {
 			this._startTouch(event)
+			return
+		}
+
+		if (event.pointerType === 'pen') {
+			this._startPen(event)
 			return
 		}
 
@@ -152,28 +182,58 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		this.events.emit('dismiss', event)
 	}
 
-	/**
-	 * Касание ничего не закрывает — только запоминается, если пришлось мимо.
-	 * Ждём последнее опущенное касание: палец, лёгший внутрь, снимает ожидание
-	 * прежнего, иначе его отпускание закрыло бы панель, с которой уже работают.
-	 */
+	/** Касание ничего не закрывает — только запоминается, если пришлось мимо. */
 	private _startTouch(event: PointerEvent): void {
-		this._touchId = this._isInside(event.target) ? null : event.pointerId
+		if (this._isInside(event.target)) return
+
+		this._pending = { pointerId: event.pointerId, pointerType: 'touch' }
 	}
 
-	/** Касание мимо отпустили, не начав прокрутку, — это и есть нажатие мимо. */
-	private readonly _onPointerUp = (event: PointerEvent): void => {
-		if (event.pointerId !== this._touchId) return
+	/**
+	 * Перо тоже только запоминается, если пришлось мимо. Решит его то, что
+	 * придёт первым: `pointerup` (стилус на экране) или совместимый `mousedown`
+	 * (перо графического планшета).
+	 */
+	private _startPen(event: PointerEvent): void {
+		if (this._isInside(event.target)) return
 
-		this._touchId = null
+		this._pending = { pointerId: event.pointerId, pointerType: 'pen' }
+	}
+
+	/**
+	 * Касание или перо мимо отпустили, не начав прокрутку, — это и есть нажатие
+	 * мимо. Перо, которое уже решил его `mousedown`, ожидания не оставляет, и
+	 * отпускание его не повторяет.
+	 */
+	private readonly _onPointerUp = (event: PointerEvent): void => {
+		if (event.pointerId !== this._pending?.pointerId) return
+
+		this._pending = null
 		this.events.emit('dismiss', event)
 	}
 
-	/** Браузер забрал касание под прокрутку или жест — закрывать нечего. */
+	/** Браузер забрал касание или перо под прокрутку или жест — закрывать нечего. */
 	private readonly _onPointerCancel = (event: PointerEvent): void => {
-		if (event.pointerId !== this._touchId) return
+		if (event.pointerId !== this._pending?.pointerId) return
 
-		this._touchId = null
+		this._pending = null
+	}
+
+	/**
+	 * Совместимый `mousedown` решает перо, если пришёл раньше его `pointerup`:
+	 * так ведёт себя перо планшета, и панель закрывается до смены фокуса.
+	 *
+	 * Касание он не решает: прослойки, которые шлют `mousedown` на
+	 * `touchstart`, вернули бы закрытие в начале прокрутки. Мышь к нему уже
+	 * решена своим `pointerdown` и ожидания не оставляет. Переносить её сюда
+	 * нельзя: страница, отменившая `pointerdown` (так делают drag-библиотеки),
+	 * совместимого `mousedown` не получает.
+	 */
+	private readonly _onMouseDown = (event: MouseEvent): void => {
+		if (this._pending?.pointerType !== 'pen') return
+
+		this._pending = null
+		this.events.emit('dismiss', event)
 	}
 
 	/** Слушатели на документе живут, только пока они нужны. */
@@ -190,12 +250,14 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 			doc.addEventListener('pointerdown', this._onPointerDown, true)
 			doc.addEventListener('pointerup', this._onPointerUp, true)
 			doc.addEventListener('pointercancel', this._onPointerCancel, true)
+			doc.addEventListener('mousedown', this._onMouseDown, true)
 		} else {
 			doc.removeEventListener('pointerdown', this._onPointerDown, true)
 			doc.removeEventListener('pointerup', this._onPointerUp, true)
 			doc.removeEventListener('pointercancel', this._onPointerCancel, true)
-			// Отпускание касания, начатого до снятия, к следующему открытию не относится
-			this._touchId = null
+			doc.removeEventListener('mousedown', this._onMouseDown, true)
+			// Нажатие, начатое до снятия, к следующему открытию не относится
+			this._pending = null
 		}
 
 		this._listening = shouldListen

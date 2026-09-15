@@ -459,9 +459,25 @@ describe('нажатие мимо', () => {
 		return { dismiss, element, elementPlugin }
 	}
 
-	/** Мышь или перо: решение принимается на самом нажатии. */
-	const press = (target: Element, pointerType: 'mouse' | 'pen' = 'mouse') =>
-		target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }))
+	/** Мышь: решение принимается на самом нажатии. */
+	const press = (target: Element) =>
+		target.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+
+	/**
+	 * Совместимый `mousedown`. Браузер шлёт его вслед за нажатием: у мыши и
+	 * пера планшета — сразу за `pointerdown`, у касания и стилуса на экране —
+	 * после `pointerup`. jsdom его не шлёт, поэтому тест ставит его сам, туда,
+	 * где он пришёл бы на устройстве.
+	 */
+	const mouseDown = (target: Element): MouseEvent => {
+		const event = new MouseEvent('mousedown', { bubbles: true })
+
+		target.dispatchEvent(event)
+
+		return event
+	}
 
 	/**
 	 * Шаг касания пальцем. Прокрутку jsdom не изображает, поэтому то, чем её
@@ -475,6 +491,24 @@ describe('нажатие мимо', () => {
 		target.dispatchEvent(
 			new PointerEvent(type, { bubbles: true, pointerType: 'touch', pointerId }),
 		)
+
+	/**
+	 * Шаг пера. Какое перед нами устройство, браузер выражает только порядком
+	 * событий, а его jsdom не воспроизводит: `pointercancel` и совместимый
+	 * `mousedown` тест ставит сам. Отдаёт событие — по нему видно, что именно
+	 * решило закрытие.
+	 */
+	const pen = (
+		type: 'pointerdown' | 'pointerup' | 'pointercancel',
+		target: Element,
+		pointerId = 1,
+	): PointerEvent => {
+		const event = new PointerEvent(type, { bubbles: true, pointerType: 'pen', pointerId })
+
+		target.dispatchEvent(event)
+
+		return event
+	}
 
 	it('пока не включён, ничего не слушает', async () => {
 		const { dismiss } = await setup(1)
@@ -562,15 +596,20 @@ describe('нажатие мимо', () => {
 		expect((await setup(7)).dismiss.ownerAttribute).toEqual({ 'data-owner': '7' })
 	})
 
-	it('перо закрывает на pointerdown, как мышь', async () => {
+	it('мышь: pointerdown и совместимый mousedown мимо закрывают один раз', async () => {
+		// Мышь решена на pointerdown, mousedown ей ничего не добавляет. У инстанса
+		// здесь нет `open`, слушатели после закрытия не снимаются, и второе
+		// закрытие на mousedown было бы видно
 		const { dismiss } = await setup(8)
-		const handler = vi.fn()
+		const handler = vi.fn<(event: MouseEvent) => void>()
 
 		dismiss.events.on('dismiss', handler)
 		dismiss.enabled = true
-		press(document.body, 'pen')
+		press(document.body)
+		mouseDown(document.body)
 
 		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler.mock.lastCall?.[0]).toBeInstanceOf(PointerEvent)
 	})
 
 	describe('касание пальцем', () => {
@@ -672,6 +711,137 @@ describe('нажатие мимо', () => {
 			dismiss.enabled = false
 			dismiss.enabled = true
 			touch('pointerup', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('совместимый mousedown ожидание касания не решает', async () => {
+			// Решает только pointerup: прослойки, которые шлют mousedown на
+			// touchstart, иначе вернули бы закрытие в начале прокрутки
+			const { dismiss } = await setup(16)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			touch('pointerdown', document.body)
+			mouseDown(document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+
+			// И не снимает: отпускание того же касания закрывает, как обычно
+			touch('pointerup', document.body)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('перо', () => {
+		it('pointerdown мимо не закрывает — стилус на экране с него начинает прокрутку', async () => {
+			const { dismiss } = await setup(17)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('планшет: mousedown сразу за pointerdown закрывает, pointerup не повторяет', async () => {
+			// Перо планшета шлёт mousedown, а с ним и смену фокуса, сразу за
+			// pointerdown: панель закрывается на нём, до смены фокуса
+			const { dismiss } = await setup(18)
+			const handler = vi.fn<(event: MouseEvent) => void>()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+			const mouse = mouseDown(document.body)
+			pen('pointerup', document.body)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+			expect(handler.mock.lastCall?.[0]).toBe(mouse)
+		})
+
+		it('экран: pointerup закрывает, совместимый mousedown после него не повторяет', async () => {
+			// Стилусу на экране совместимые события мыши приходят только после отпускания
+			const { dismiss } = await setup(19)
+			const handler = vi.fn<(event: MouseEvent) => void>()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+			const up = pen('pointerup', document.body)
+			mouseDown(document.body)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+			expect(handler.mock.lastCall?.[0]).toBe(up)
+		})
+
+		it('после pointercancel не закрывают ни pointerup, ни mousedown — стилус ушёл в прокрутку', async () => {
+			const { dismiss } = await setup(20)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+			pen('pointercancel', document.body)
+			// После отмены браузер не шлёт ни того, ни другого. Здесь они
+			// проверяют, что ожидание сброшено, а не просто не дождалось
+			pen('pointerup', document.body)
+			mouseDown(document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('перо внутрь владельца не закрывает', async () => {
+			const { dismiss, element } = await setup(21)
+			const handler = vi.fn()
+			const inner = document.createElement('span')
+
+			element.appendChild(inner)
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', inner)
+			mouseDown(inner)
+			pen('pointerup', inner)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('мышь, нажатая внутрь, пока перо лежит мимо, не закрывает', async () => {
+			// Ожидание одно — для последнего нажатия. Иначе mousedown мыши
+			// засчитался бы за перо
+			const { dismiss, element } = await setup(22)
+			const handler = vi.fn()
+			const inner = document.createElement('span')
+
+			element.appendChild(inner)
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+			press(inner)
+			mouseDown(inner)
+			pen('pointerup', document.body)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('выключение сбрасывает ожидание пера', async () => {
+			// Панель закрыли и открыли снова, пока перо лежало на странице:
+			// ни его mousedown, ни отпускание к новому открытию не относятся
+			const { dismiss } = await setup(23)
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			pen('pointerdown', document.body)
+			dismiss.enabled = false
+			dismiss.enabled = true
+			mouseDown(document.body)
+			pen('pointerup', document.body)
 
 			expect(handler).not.toHaveBeenCalled()
 		})
