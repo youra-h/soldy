@@ -1376,6 +1376,20 @@ this._syncDisabled() // начальное состояние — руками
 `TSwitch` возвращают из него `input`, и по нему же `TInput` решает
 `aria-required` и `aria-readonly`.
 
+**`tag` — всегда тег корня**, и разметка обязана рисовать корень по нему
+(`<component :is="tag">` во Vue). Иначе проп декоративен: у Tabs.Item и
+Accordion.Item он был `'button'` при жёстком `<div>` в шаблоне, и нативный
+`disabled` уезжал на обёртку, у которой такого атрибута нет. Тег вложенной
+строки фиксирует разметка (`tag="span"` у `Select.Item`, `tag="div"` у
+`ListBox.Item` и `Tags.Item`), а `_ariaTag` элемента возвращает именно его:
+`'button'` у Tabs.Item и Accordion.Item (`aria` стоит на вложенной кнопке),
+`'div'` у ListBox.Item и Tags.Item.
+
+Совпадение `aria-disabled` элемента с тем, что вложенный `Button` пишет себе
+сам, — не второй путь к данным: это один атрибут одного элемента от одного
+состояния, посчитанный по одному и тому же правилу. Второй путь был бы, если
+бы разметка вычисляла его сама.
+
 Нативные атрибуты вложенного контрола фиксированного тега — `disabled`,
 `required` и `readonly` у `<input>` Input, CheckBox и Switch — проводка в
 разметке, как `name`: у фиксированного тега нет условия «есть ли атрибут у
@@ -1386,7 +1400,8 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
 набора или пропа под вложенный контрол нет.
 
 Сторожат `core/__tests__/aria.spec.ts` — что ядро пишет в какой набор — и
-`ui/vue/__tests__/input-control-attrs.spec.ts` — на каком элементе что стоит.
+`ui/vue/__tests__/input-control-attrs.spec.ts` с
+`ui/vue/__tests__/item-control-attrs.spec.ts` — на каком элементе что стоит.
 
 ### Готовые паттерны
 

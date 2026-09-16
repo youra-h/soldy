@@ -110,7 +110,7 @@ describe('TTabsItem (чистый класс)', () => {
 		expect(tab.value).toBe('')
 		expect(tab.closable).toBeUndefined()
 		expect(tab.classes.toArray()).toContain('s-tabs-item')
-		expect(tab.tag).toBe('button')
+		expect(tab.tag).toBe('div')
 	})
 
 	it('принимает props через конструктор', () => {

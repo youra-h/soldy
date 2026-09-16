@@ -16,6 +16,9 @@ import {
 	TSpinner,
 	TSkeleton,
 	TTabsItem,
+	TAccordionItem,
+	TListBoxItem,
+	TTagsItem,
 	TInput,
 	TSelect,
 	TCheckBox,
@@ -542,5 +545,100 @@ describe('TTabsItem.closeAria · имя кнопки закрытия', () => {
 		const item = new TTabsItem({ text: 'Почта' })
 
 		expect(item.aria.has('aria-label')).toBe(false)
+	})
+})
+
+/** То, что нужно этим тестам от элемента: свой props-тип у каждого класса свой. */
+type TItemProps = { disabled?: boolean; tag?: string }
+
+/**
+ * Фабрики, а не конструкторы: generic-параметры item-классов делают их
+ * сигнатуры несовместимыми между собой, и `describe.each` по списку классов не
+ * типизируется.
+ */
+const NESTED_BUTTON: readonly [string, (props: TItemProps) => TTabsItem | TAccordionItem][] = [
+	['TTabsItem', (props) => new TTabsItem(props)],
+	['TAccordionItem', (props) => new TAccordionItem(props)],
+]
+
+const NESTED_DIV: readonly [string, (props: TItemProps) => TListBoxItem | TTagsItem][] = [
+	['TListBoxItem', (props) => new TListBoxItem(props)],
+	['TTagsItem', (props) => new TTagsItem(props)],
+]
+
+/**
+ * Элементы коллекций составные: корень-обёртка держит `data-*` для темы, а
+ * `aria` стоит на вложенном `Button` — строке элемента. `tag` называет корень,
+ * как и требует `TComponentView`, а ARIA-половину правила решает `_ariaTag`.
+ *
+ * Строка Tabs и Accordion — `<button>` со своим нативным `disabled`, поэтому
+ * ARIA-дубля ей ядро не пишет.
+ */
+describe.each(NESTED_BUTTON)('%s · disabled составного элемента', (_name, create) => {
+	it('корень — div: ни нативного disabled на обёртке, ни ARIA-дубля кнопке', () => {
+		const item = create({ disabled: true })
+
+		// `_ariaTag` — 'button': нативный disabled строке пишет её же TButton
+		expect(item.tag).toBe('div')
+		expect(item.attrs.has('disabled')).toBe(false)
+		expect(item.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('состояние для темы остаётся в data-disabled', () => {
+		expect(create({ disabled: true }).dataset.get('disabled')).toBe('true')
+	})
+
+	it('tag="button" даёт корню нативный disabled и не трогает ARIA строки', () => {
+		const item = create({ tag: 'button', disabled: true })
+
+		expect(item.attrs.get('disabled')).toBe('disabled')
+		expect(item.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('смена тега корня в рантайме переносит только нативную половину', () => {
+		const item = create({ disabled: true })
+
+		item.tag = 'button'
+		expect(item.attrs.get('disabled')).toBe('disabled')
+		expect(item.aria.has('aria-disabled')).toBe(false)
+
+		item.tag = 'div'
+		expect(item.attrs.has('disabled')).toBe(false)
+		expect(item.aria.has('aria-disabled')).toBe(false)
+	})
+})
+
+/** Строка ListBox и Tags — `div`: нативного `disabled` у неё нет, остаётся ARIA. */
+describe.each(NESTED_DIV)('%s · disabled составного элемента', (_name, create) => {
+	it('строка — div: состояние уходит в aria-disabled, нативного нет', () => {
+		const item = create({ disabled: true })
+
+		// `_ariaTag` — 'div': у него своего disabled нет, ARIA единственная
+		expect(item.tag).toBe('div')
+		expect(item.attrs.has('disabled')).toBe(false)
+		expect(item.aria.get('aria-disabled')).toBe('true')
+	})
+
+	it('состояние для темы остаётся в data-disabled', () => {
+		expect(create({ disabled: true }).dataset.get('disabled')).toBe('true')
+	})
+
+	it('tag="button" даёт корню нативный disabled и не трогает ARIA строки', () => {
+		const item = create({ tag: 'button', disabled: true })
+
+		expect(item.attrs.get('disabled')).toBe('disabled')
+		expect(item.aria.get('aria-disabled')).toBe('true')
+	})
+
+	it('смена тега корня в рантайме переносит только нативную половину', () => {
+		const item = create({ disabled: true })
+
+		item.tag = 'button'
+		expect(item.attrs.get('disabled')).toBe('disabled')
+		expect(item.aria.get('aria-disabled')).toBe('true')
+
+		item.tag = 'div'
+		expect(item.attrs.has('disabled')).toBe(false)
+		expect(item.aria.get('aria-disabled')).toBe('true')
 	})
 })

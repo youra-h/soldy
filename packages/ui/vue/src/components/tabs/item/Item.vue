@@ -7,8 +7,9 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
@@ -70,5 +71,5 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 				</Button>
 			</template>
 		</Button>
-	</div>
+	</component>
 </template>

@@ -18,8 +18,9 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
@@ -38,9 +39,14 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			— часть задачи про доступность ListBox, там же, где ему добавят
 			`role="option"`; сейчас `aria-selected` всё ещё захардкожен здесь,
 			а не приходит набором.
+
+			Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
+			`tag` — тег корня (`TComponentView`), и рисует по нему корень
+			`<component :is>` выше. Под фиксированный тег строки написан и
+			`TListBoxItem._ariaTag` — он решает, писать ли `aria-disabled`.
 		-->
 		<Button
-			:tag="tag"
+			tag="div"
 			:view="view"
 			:disabled="disabled"
 			:size="size"
@@ -75,5 +81,5 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 				</span>
 			</template>
 		</Button>
-	</div>
+	</component>
 </template>
