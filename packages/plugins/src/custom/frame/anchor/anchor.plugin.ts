@@ -34,6 +34,12 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  * Работает только при `position: 'fixed'`: координаты берутся из
  * `getBoundingClientRect()`, то есть относительно окна, а при `absolute`
  * отсчёт шёл бы от позиционированного предка.
+ *
+ * По той же причине оба наблюдателя (`ResizeObserver`) смотрят border-box:
+ * наблюдать надо ровно то, что меряем. Умолчание `content-box` пропустило бы
+ * смену одной рамки или паддинга — толщина рамки по состоянию, паддинг по
+ * размеру, — и координаты держались бы устаревшими до ближайшего
+ * scroll/resize окна.
  */
 export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
@@ -89,7 +95,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 			this._element = element
 			this._panelObserver?.disconnect()
 			this._panelObserver = new ResizeObserver(() => this._update())
-			this._panelObserver.observe(element)
+			this._panelObserver.observe(element, { box: 'border-box' })
 			this._update()
 		})
 
@@ -334,7 +340,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		const anchorObserver = new ResizeObserver(() => this._onAnchorResize())
 
-		anchorObserver.observe(this._anchor)
+		anchorObserver.observe(this._anchor, { box: 'border-box' })
 		this._cleanups.push(() => anchorObserver.disconnect())
 	}
 
@@ -394,7 +400,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		this._panelResumeFrame = requestAnimationFrame(() => {
 			this._panelResumeFrame = null
-			observer.observe(element)
+			observer.observe(element, { box: 'border-box' })
 		})
 	}
 
