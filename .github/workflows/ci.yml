@@ -142,8 +142,9 @@ jobs:
     runs-on: ubuntu-latest
     # PR, который меняет библиотечный пакет, несёт .changeset/*.md (см. AGENTS.md,
     # «Версии пакетов»). Только на PR: на push в main сравнивать не с чем — HEAD там
-    # и есть origin/main, и проверка была бы зелёной всегда.
-    if: github.event_name == 'pull_request'
+    # и есть origin/main, и проверка была бы зелёной всегда. Не на release/*: в PR
+    # выпуска changeset'ы уже удалены (см. .claude/agents/developer.md, «Выпуск»).
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/')
 
     steps:
       # Полная история: changeset status ищет, где ветка отошла от origin/main

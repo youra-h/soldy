@@ -19,7 +19,7 @@ npm run test:layout  # раскладка стенда Vue в настоящем
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier; CI проверяет `prettier --check .` в задаче `lint`
 npm run changeset -- --patch @soldy/core -m "…"  # changeset для PR, см. «Версии пакетов»
-npm run changeset:version  # выпуск: версии, CHANGELOG.md, package-lock (владелец)
+npm run changeset:version  # выпуск: версии, CHANGELOG.md, package-lock (программист, /release)
 
 # Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore)
 npm run build --workspace=@soldy/theme-oren
@@ -132,12 +132,15 @@ npm run changeset -- --empty
 `npx changeset status --since=origin/main`; новый changeset она видит только
 после `git add`.
 
-**Выпуск** — `npm run changeset:version` и коммит владельца прямо в `main`.
-Команда поднимает версию группы, собирает `CHANGELOG.md` из changeset'ов,
-удаляет их и обновляет `package-lock.json`: версии воркспейсов записаны и там.
-Через PR выпуск не идёт — changeset'ы в нём уже удалены, и задача `changeset`
-его уронит. Версии и `CHANGELOG.md` руками не правятся, PR задачи версию не
-трогает.
+**Выпуск** — по команде владельца `/release`: программист от свежего `main`
+запускает `npm run changeset:version` и открывает PR `Выпуск <версия>` из
+ветки `release/v<версия>`, мержит его владелец (порядок —
+`.claude/agents/developer.md`, «Выпуск»). Команда поднимает версию группы,
+собирает `CHANGELOG.md` из changeset'ов, удаляет их и обновляет
+`package-lock.json`: версии воркспейсов записаны и там. Задача CI `changeset`
+на ветках `release/*` не запускается — changeset'ы в выпуске уже удалены, и
+она бы его уронила; поэтому ветка `release/*` — только для выпуска. Версии и
+`CHANGELOG.md` руками не правятся, PR задачи версию не трогает.
 
 Сторожит `packages/setup/__tests__/workspace-manifests.spec.ts`. Библиотечные
 пакеты для него — пакеты из `workspaces` корневого манифеста, кроме `ignore`;
