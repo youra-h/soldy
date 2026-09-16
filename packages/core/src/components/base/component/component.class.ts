@@ -1,6 +1,5 @@
 import { TEntity } from '../entity'
 import { TEvented } from '../../../common'
-import type { TAnyEvents } from '../../../common'
 import type {
 	IComponent,
 	IComponentOptions,
@@ -18,10 +17,16 @@ import type {
  *
  * Видимость (rendered/visible/present, show/hide) и всё остальное, связанное
  * с DOM, живёт в TComponentView.
+ *
+ * Констрейнт `TEvents` — закрытая карта `TComponentEvents`, а не открытый
+ * `TAnyEvents`, как у `IComponent`. Где тип инстанса выводится из конструктора
+ * (`ctor` дескриптора, `InstanceType<typeof …>`), TS ставит на место дженерика
+ * констрейнт, а не дефолт, и открытый констрейнт вернул бы в карту инстанса
+ * индексную сигнатуру. Наследники держат тот же приём: констрейнт равен дефолту.
  */
 export default class TComponent<
 	TProps extends IComponentProps = IComponentProps,
-	TEvents extends TAnyEvents = TComponentEvents,
+	TEvents extends TComponentEvents = TComponentEvents,
 	TStates extends TComponentStates = TComponentStates,
 >
 	extends TEntity<TProps>

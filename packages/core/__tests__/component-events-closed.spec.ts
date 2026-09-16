@@ -1,9 +1,19 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TButton, TEvented } from '@soldy/core'
-import type { TValuePayload } from '@soldy/core'
+import { TButton, TCollectionItemComponent, TComponent, TEvented } from '@soldy/core'
+import type { IExtension, TComponentEvents, TValuePayload } from '@soldy/core'
 
 type TTextEvents = { 'change:text': (payload: TValuePayload<string>) => void }
 type TTypoEvents = { 'change:txt': (payload: TValuePayload<string>) => void }
+
+/**
+ * Живой инстанс абстрактного `TCollectionItemComponent`. Дженерики — его
+ * констрейнты: такой тип и выводится из конструктора.
+ */
+class TProbeItem extends TCollectionItemComponent<
+	object,
+	Record<string, IExtension<object>>,
+	TComponentEvents
+> {}
 
 /**
  * Сторож закрытой карты событий компонента.
@@ -11,13 +21,16 @@ type TTypoEvents = { 'change:txt': (payload: TValuePayload<string>) => void }
  * `TComponentEvents` была `Record<string, …>`. Индексная сигнатура попадала в
  * карту каждого наследника, `keyof` у неё становился `string`, и опечатка в
  * имени события компилировалась у любого компонента: в `on`, в `emit` и в
- * правиле `relay`. Открытый вид остался только констрейнтом дженерика —
- * `TAnyEvents`.
+ * правиле `relay`. Открытый вид — `TAnyEvents` — остался только констрейнтом
+ * интерфейсов (`IComponent`). У классов `TComponent` и
+ * `TCollectionItemComponent` констрейнт — закрытая карта: инстанс, тип которого
+ * выведен из конструктора, получает констрейнт, а не дефолт.
  *
  * Негативные случаи ловит не vitest, а «Типы — Core»: неиспользованный
- * `@ts-expect-error` — тоже ошибка, поэтому вернувшийся в карту индекс уронит
- * типы, а не пройдёт молча. Рядом с каждым — живой случай с объявленным
- * именем, чтобы запрет не оказался запретом всего подряд.
+ * `@ts-expect-error` — тоже ошибка, поэтому вернувшийся в карту или в
+ * констрейнт класса индекс уронит типы, а не пройдёт молча. Рядом с каждым —
+ * живой случай с объявленным именем, чтобы запрет не оказался запретом всего
+ * подряд.
  */
 describe('карта событий компонента закрыта', () => {
 	it('on и emit не принимают имя, которого нет в карте', () => {
@@ -65,5 +78,28 @@ describe('карта событий компонента закрыта', () => 
 
 		expect(seen).toEqual([bundle])
 		expect(seen[0]).toBe(bundle)
+	})
+
+	it('инстанс, тип которого выведен из конструктора, тоже закрыт', () => {
+		// Так тип инстанса получает дескриптор из `ctor`: на месте дженерика класса
+		// стоит констрейнт. Открытый констрейнт вернул бы индекс в эту карту.
+		const component: InstanceType<typeof TComponent> = new TComponent()
+		const item: InstanceType<typeof TCollectionItemComponent> = new TProbeItem()
+		const typo = vi.fn()
+
+		// @ts-expect-error — `change:txt` нет в карте, выведенной из TComponent
+		component.events.on('change:txt', typo)
+		// @ts-expect-error — `change:txt` нет в карте, выведенной из TCollectionItemComponent
+		item.events.on('change:txt', typo)
+
+		const bundle = { plugins: [] }
+		const seen: unknown[] = []
+
+		component.events.on('bundle:create', (received: unknown) => seen.push(received))
+		item.events.on('bundle:create', (received: unknown) => seen.push(received))
+		component.events.emit('bundle:create', bundle)
+		item.events.emit('bundle:create', bundle)
+
+		expect(seen).toEqual([bundle, bundle])
 	})
 })

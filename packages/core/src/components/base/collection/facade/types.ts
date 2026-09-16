@@ -20,10 +20,11 @@ import type {
  * событие драйвера или движка доезжает до фасада само, и переименование ломает
  * компиляцию, а не оставляет мёртвое имя.
  *
- * Начинается с `TComponentEvents`, как карта любого компонента: фасад — тоже
- * `TComponent`, и события его шины (`bundle:create`) объявлены там. Карта ядра
- * закрыта, поэтому пересечение с ней имён не открывает. Открытый вид —
- * `TAnyEvents` — остаётся только констрейнтом дженерика.
+ * Начинается с `TComponentEvents`, как карта любого компонента: констрейнт
+ * `TEvents` у базы (`TComponent`) — закрытая корневая карта, и карта фасада
+ * обязана её содержать. Там же объявлено событие шины фасада
+ * (`bundle:create`). Индекса у корневой карты нет, поэтому пересечение с ней
+ * имён не открывает.
  *
  * Набор расширений в аргументе движка — `any`: иначе карта тянула бы за собой
  * `TExtensions`, а движок инвариантен по нему через `engine:create`.
@@ -40,8 +41,14 @@ export type TBatchCollectionFacadeEvents<TItem extends object> = TCollectionComp
 export type TSelectionCollectionFacadeEvents<TItem extends object> =
 	TBatchCollectionFacadeEvents<TItem> & TSelectionEvents<TItem>
 
-/** События фасада элемента с расширением `order` — карта его адаптера. */
-export type TOrderItemFacadeEvents = TOrderItemEventsExtension
+/**
+ * События фасада элемента с расширением `order` — карта его адаптера.
+ *
+ * Начинается с `TComponentEvents`: констрейнт `TEvents` у базы
+ * (`TCollectionItemComponent`) — закрытая корневая карта. Фасады элементов
+ * ниже получают её через эту карту.
+ */
+export type TOrderItemFacadeEvents = TComponentEvents & TOrderItemEventsExtension
 
 /** События фасада элемента, который можно выбрать: порядок плюс выбор. */
 export type TSelectionItemFacadeEvents = TOrderItemFacadeEvents & TSelectionItemEventsExtension
