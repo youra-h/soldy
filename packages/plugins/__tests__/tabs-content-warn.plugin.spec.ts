@@ -10,15 +10,24 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { TElementPlugin, TTabsContentWarnPlugin } from '../src'
-import type { IPluginContext } from '../src'
+import { TElementPlugin, TPluginBundle, TTabsContentWarnPlugin } from '../src'
 
-function contextFor(elementPlugin: TElementPlugin): IPluginContext {
-	return {
-		get: ((ctor) =>
-			ctor === TElementPlugin ? elementPlugin : undefined) as IPluginContext['get'],
-		getInstance: () => null,
+/**
+ * Bundle панели с установленным `TElementPlugin` и сам плагин узла.
+ *
+ * Узел плагин получает от настоящего bundle, как в рантайме: связь «класс →
+ * экземпляр» держит его реестр, а заглушка контекста была бы второй
+ * реализацией поиска. Владелец диагностике не нужен — хватает пустого объекта.
+ */
+function bundleWithElement() {
+	const bundle = new TPluginBundle({}).use(TElementPlugin)
+	const elementPlugin = bundle.get(TElementPlugin)
+
+	if (!elementPlugin) {
+		throw new Error('TElementPlugin не установлен в bundle')
 	}
+
+	return { bundle, elementPlugin }
 }
 
 afterEach(() => {
@@ -34,13 +43,13 @@ describe('TTabsContentWarnPlugin — панель внутри [role="tablist"]'
 		tablist.setAttribute('role', 'tablist')
 		document.body.appendChild(tablist)
 
-		const elementPlugin = new TElementPlugin()
+		const { bundle, elementPlugin } = bundleWithElement()
 		const panel = document.createElement('div')
 
 		tablist.appendChild(panel)
 		elementPlugin.element = panel
 
-		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
+		bundle.use(TTabsContentWarnPlugin)
 
 		expect(warn).toHaveBeenCalledTimes(1)
 		expect(warn.mock.calls[0][0]).toContain('[role="tablist"]')
@@ -48,13 +57,13 @@ describe('TTabsContentWarnPlugin — панель внутри [role="tablist"]'
 
 	it('молчит, когда панель снаружи tablist', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		const elementPlugin = new TElementPlugin()
+		const { bundle, elementPlugin } = bundleWithElement()
 		const panel = document.createElement('div')
 
 		document.body.appendChild(panel)
 		elementPlugin.element = panel
 
-		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
+		bundle.use(TTabsContentWarnPlugin)
 
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -66,9 +75,9 @@ describe('TTabsContentWarnPlugin — панель внутри [role="tablist"]'
 		tablist.setAttribute('role', 'tablist')
 		document.body.appendChild(tablist)
 
-		const elementPlugin = new TElementPlugin()
+		const { bundle, elementPlugin } = bundleWithElement()
 
-		new TTabsContentWarnPlugin().install(contextFor(elementPlugin))
+		bundle.use(TTabsContentWarnPlugin)
 
 		expect(warn).not.toHaveBeenCalled()
 
@@ -84,18 +93,18 @@ describe('TTabsContentWarnPlugin — панель внутри [role="tablist"]'
 
 	it('нет элемента (SSR) — не бросает и не предупреждает', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		const elementPlugin = new TElementPlugin()
+		const { bundle } = bundleWithElement()
 
-		expect(() => new TTabsContentWarnPlugin().install(contextFor(elementPlugin))).not.toThrow()
+		expect(() => bundle.use(TTabsContentWarnPlugin)).not.toThrow()
 
 		expect(warn).not.toHaveBeenCalled()
 	})
 
 	it('нет TElementPlugin в bundle — не бросает и не предупреждает', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		const ctx: IPluginContext = { get: () => undefined, getInstance: () => null }
+		const bundle = new TPluginBundle({})
 
-		expect(() => new TTabsContentWarnPlugin().install(ctx)).not.toThrow()
+		expect(() => bundle.use(TTabsContentWarnPlugin)).not.toThrow()
 
 		expect(warn).not.toHaveBeenCalled()
 	})

@@ -15,10 +15,11 @@ import { nextTick } from 'vue'
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { setIcons } from '@soldy/setup'
 import * as material from '@soldy/icons-material'
-import { COMPONENTS, NON_EDITABLE } from '@soldy/playground-shared'
+import { COMPONENTS, propControls } from '@soldy/playground-shared'
 import { AVAILABLE, SHOWCASE } from '../src/catalog'
 import { PREVIEW_COMPONENTS } from '../src/previews'
 import { router } from '../src/router'
+import { useIconPack } from '../src/composables/useIconPack'
 import OverviewPage from '../src/views/OverviewPage.vue'
 import ComponentPage from '../src/views/ComponentPage.vue'
 import PropControl from '../src/components/PropControl.vue'
@@ -59,6 +60,17 @@ function firstLines(): string[] {
 }
 
 const mountOptions = { global: { plugins: [router] }, attachTo: document.body }
+
+/** Строка страницы по имени пропа; без неё проверять нечего. */
+function rowOf(wrapper: ReturnType<typeof mount>, name: string) {
+	const found = wrapper
+		.findAll('.pg-prop')
+		.find((row) => row.find('.pg-prop__name').text() === name)
+
+	if (!found) throw new Error(`нет строки ${name}`)
+
+	return found
+}
 
 describe('каталог адаптера', () => {
 	/**
@@ -102,14 +114,14 @@ describe('страница компонента', () => {
 			await nextTick()
 			await nextFrame()
 
-			// Оба дескриптора: коллекционные свойства (`mode`) объявлены на
-			// фасаде и показываются отдельной группой
-			const editable = [
-				...entry.descriptor().props,
-				...(entry.collectionDescriptor?.().props ?? []),
-			].filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
+			// Все три группы: коллекционные свойства (`mode`) объявлены на
+			// фасаде, плагинные (`aria_label`) — на плагинах. Счёт из того же
+			// источника, из которого строится страница, а не своей копией фильтра
+			const { componentControls, collectionControls, pluginControls } = propControls(entry)
+			const rows =
+				componentControls.length + collectionControls.length + pluginControls.length
 
-			expect(wrapper.findAll('.pg-prop')).toHaveLength(editable.length)
+			expect(wrapper.findAll('.pg-prop')).toHaveLength(rows)
 			expect(firstLines()).toEqual([])
 
 			wrapper.unmount()
@@ -244,6 +256,67 @@ describe('свойства коллекции', () => {
 })
 
 /**
+ * Свойства плагинов — третья группа на странице.
+ *
+ * Проверка идёт до DOM, а не до наличия строки: правая колонка пишет проп не в
+ * инстанс, а в плагин из bundle, который приходит событием `bundle:create`, и
+ * молчаливо не сработать там есть чему. `aria_label` виден сразу — атрибутом
+ * `aria-label` на корне кнопки.
+ */
+describe('свойства плагинов', () => {
+	const ariaLabels = (wrapper: ReturnType<typeof mount>) =>
+		rowOf(wrapper, 'aria_label')
+			.findAll('.pg-col__stage .s-button')
+			.map((button) => button.attributes('aria-label'))
+
+	it('aria_label доходит до DOM в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+
+		await nextTick()
+		await nextFrame()
+
+		// Значение шлём через контрол строки — так же, как строка `mode`
+		rowOf(wrapper, 'aria_label')
+			.findComponent(PropControl)
+			.vm.$emit('update:modelValue', 'Закрыть')
+		await nextTick()
+		await nextFrame()
+
+		expect(ariaLabels(wrapper)).toEqual(['Закрыть', 'Закрыть'])
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Смена пакета иконок меняет `key` превью, и правая колонка монтируется
+	 * заново — с новым bundle, чей плагин стартует без имени и снимает его с
+	 * инстанса. Значение обязано доехать и до этого bundle.
+	 */
+	it('значение переживает перемонтирование колонок', async () => {
+		const { version } = useIconPack()
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+
+		await nextTick()
+		await nextFrame()
+
+		rowOf(wrapper, 'aria_label')
+			.findComponent(PropControl)
+			.vm.$emit('update:modelValue', 'Закрыть')
+		await nextTick()
+		await nextFrame()
+
+		version.value++
+		await nextTick()
+		await nextFrame()
+
+		expect(ariaLabels(wrapper)).toEqual(['Закрыть', 'Закрыть'])
+
+		wrapper.unmount()
+		version.value--
+	})
+})
+
+/**
  * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
@@ -252,16 +325,6 @@ describe('свойства коллекции', () => {
  * снятый `readonly` у поля (снимает только `editable`).
  */
 describe('пресет строки', () => {
-	const rowOf = (wrapper: ReturnType<typeof mount>, name: string) => {
-		const found = wrapper
-			.findAll('.pg-prop')
-			.find((row) => row.find('.pg-prop__name').text() === name)
-
-		if (!found) throw new Error(`нет строки ${name}`)
-
-		return found
-	}
-
 	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
 

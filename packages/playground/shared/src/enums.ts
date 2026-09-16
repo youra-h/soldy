@@ -20,6 +20,7 @@ import type {
 	TSelectEditableMode,
 	TSelectPlacement,
 } from '@soldy/core'
+import type { TFramePlacement } from '@soldy/plugins'
 
 /**
  * Списки допустимых значений перечислимых пропов.
@@ -110,6 +111,17 @@ export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'sea
 
 /** С какой стороны поля Select открывается панель. */
 export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bottom'])
+
+/**
+ * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не
+ * ядро, а `TAnchorPlugin`: проп принадлежит плагину.
+ */
+export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
+	'bottom-start',
+	'bottom-end',
+	'top-start',
+	'top-end',
+])
 
 /** Теги, которыми осмысленно подменять корень компонента через `tag`. */
 export const HTML_TAGS = ['div', 'span', 'button', 'a', 'section', 'li'] as const

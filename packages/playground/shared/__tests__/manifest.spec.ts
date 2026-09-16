@@ -11,30 +11,28 @@
 
 import { describe, it, expect } from 'vitest'
 import { COMPONENTS } from '../src/registry'
-import { describeProp, optionsForProp, controlKind, NON_EDITABLE, PRESETS } from '../src/props'
+import { describeProp, optionsForProp, PRESETS, propControls } from '../src/props'
+import type { TPropControl } from '../src/types'
 
 /**
- * Пропы, которые стенд показывает как редактируемые.
+ * Строки, которые стенд показывает, — все группы страницы.
  *
- * Оба дескриптора, а не один: `mode` объявлен на фасаде коллекции, и пока
- * проверка смотрела только компонентный, описания для него никто не требовал —
- * а страница его и не показывала.
+ * Считает их та же `propControls`, что строит страницу: своя копия фильтра
+ * здесь расходилась бы со страницей молча, а с плагинными пропами разошлась бы
+ * наверняка. Все группы, а не одна: пока проверка смотрела только компонентный
+ * дескриптор, описания для `mode` с фасада коллекции никто не требовал — а
+ * страница его и не показывала.
  */
-function editableProps(entry: (typeof COMPONENTS)[number]) {
-	const declarations = [
-		...entry.descriptor().props,
-		...(entry.collectionDescriptor?.().props ?? []),
-	]
-
-	return declarations.filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
+function editableControls(entry: (typeof COMPONENTS)[number]): TPropControl[] {
+	return Object.values(propControls(entry)).flat()
 }
 
 describe('манифест покрывает контракт', () => {
 	it.each(COMPONENTS.map((entry) => [entry.id, entry] as const))(
 		'%s: у каждого редактируемого пропа есть описание',
 		(_id, entry) => {
-			const missing = editableProps(entry)
-				.map((prop) => prop.name.name)
+			const missing = editableControls(entry)
+				.map((control) => control.name)
 				.filter((name) => !describeProp(entry.id, name))
 
 			expect(missing).toEqual([])
@@ -48,10 +46,10 @@ describe('манифест покрывает контракт', () => {
 	it.each(COMPONENTS.map((entry) => [entry.id, entry] as const))(
 		'%s: у каждого select-пропа есть непустой список значений',
 		(_id, entry) => {
-			const broken = editableProps(entry)
-				.filter((prop) => controlKind(entry.id, prop) === 'select')
-				.filter((prop) => !optionsForProp(entry.id, prop.name.name)?.length)
-				.map((prop) => prop.name.name)
+			const broken = editableControls(entry)
+				.filter((control) => control.kind === 'select')
+				.map((control) => control.name)
+				.filter((name) => !optionsForProp(entry.id, name)?.length)
 
 			expect(broken).toEqual([])
 		},
@@ -70,16 +68,14 @@ describe('пресеты строк', () => {
 
 		if (!entry) throw new Error(`нет компонента «${id}»`)
 
-		const props = new Map(editableProps(entry).map((prop) => [prop.name.name, prop]))
+		const names = new Set(editableControls(entry).map((control) => control.name))
 		const broken: string[] = []
 
 		for (const [row, preset] of Object.entries(rows)) {
-			if (!props.has(row)) broken.push(`строка ${row}`)
+			if (!names.has(row)) broken.push(`строка ${row}`)
 
 			for (const [name, value] of Object.entries(preset)) {
-				const prop = props.get(name)
-
-				if (!prop) {
+				if (!names.has(name)) {
 					broken.push(`${row} → ${name}`)
 					continue
 				}

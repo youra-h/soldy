@@ -1,9 +1,41 @@
-import type { IComponentDescriptor } from '@soldy/setup'
+import type { IComponentDescriptor, IPluginDefinition } from '@soldy/setup'
 
 /** Чем редактировать проп. Выводится из метаданных, руками не задаётся. */
 export type TControlKind = 'switch' | 'text' | 'number' | 'select'
 
-export type TPropControl = {
+/**
+ * Где проп живёт у плагина.
+ *
+ * Имя здесь своё, без неймспейса: в разметке проп называется
+ * `anchor_placement`, а свойство самого `TAnchorPlugin` — `placement`.
+ */
+export type TPluginPropAddress = {
+	/** Ключ плагина в bundle: `bundle.get(ctor)`. */
+	ctor: IPluginDefinition['ctor']
+	/** Свойство на плагине — имя пропа из декларации. */
+	name: string
+}
+
+/**
+ * Кому проп принадлежит.
+ *
+ * Пропом его задают одинаково — Vue-компонент склеивает все наборы. А вот
+ * через экземпляр по-разному: свойство компонента пишется в сам инстанс,
+ * свойство коллекции — в фасад, который стенд строит поверх своего движка,
+ * свойство плагина — в плагин из bundle, который адаптер отдаёт событием
+ * `bundle:create`. Поэтому адрес плагина есть только у плагинной строки.
+ */
+export type TPropOwner =
+	| { scope: 'component' }
+	| { scope: 'collection' }
+	| { scope: 'plugin'; plugin: TPluginPropAddress }
+
+export type TPropControl = TPropOwner & {
+	/**
+	 * Имя, которым проп пишут в разметке (`underscorePropNaming`). У пропа
+	 * плагина оно с неймспейсом — `anchor_placement`, у остальных совпадает с
+	 * именем из декларации.
+	 */
 	name: string
 	kind: TControlKind
 	/** Значения для `select`; у остальных пусто. */
@@ -21,15 +53,20 @@ export type TPropControl = {
 	 * `editable` и `multiple`). Превью строки получает их вместе с самим пропом.
 	 */
 	preset?: Record<string, unknown>
-	/**
-	 * Кому проп принадлежит.
-	 *
-	 * Пропом его задают одинаково — Vue-компонент склеивает оба набора. А вот
-	 * через экземпляр по-разному: свойство компонента пишется в сам инстанс,
-	 * свойство коллекции — в фасад, который стенд строит поверх движка,
-	 * пришедшего событием `engine:create`.
-	 */
-	scope: 'component' | 'collection'
+}
+
+/**
+ * Строки страницы компонента, разведённые по владельцу пропа:
+ * `componentControls`, `collectionControls`, `pluginControls`.
+ *
+ * Группы, а не один список: так устроена сама библиотека, и через экземпляр
+ * проп каждого владельца пишется по-своему (см. `TPropOwner`). Ключи выведены
+ * из `scope`, чтобы новый владелец не остался без группы; суффикс — потому что
+ * поля с голым именем `collection` в проекте нет (AGENTS.md, «Переменная —
+ * `engine`, а не `collection`»).
+ */
+export type TPropControlGroups = {
+	[TScope in TPropOwner['scope'] as `${TScope}Controls`]: TPropControl[]
 }
 
 export type TComponentEntry = {
