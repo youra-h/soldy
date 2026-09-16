@@ -219,9 +219,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		frame.x = this._resolveX(rect, panel.width, alignment, rtl)
 		frame.y =
-			side === 'top'
-				? rect.top - panel.height - this._offset
-				: rect.bottom + this._offset
+			side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset
 
 		this._applyPlacement(`${side}-${alignment}`)
 	}

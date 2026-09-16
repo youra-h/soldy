@@ -1,4 +1,3 @@
-
 @use './mixins' as mixines;
 .s-tabs {
 	$this: &;
@@ -303,7 +302,6 @@
 		@apply opacity-50 pointer-events-none;
 	}
 }
-
 
 .s-tabs-item {
 	$this: &;

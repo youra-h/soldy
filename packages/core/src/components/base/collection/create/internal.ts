@@ -93,7 +93,10 @@ export function baseExtensions<TItem extends object>(
 export function activationExtensions<TItem extends object>(
 	itemCtor?: new (source: Partial<TItem>) => TItem,
 ): TBaseExtensionSet<TItem> {
-	return { ...baseExtensions<TItem>(itemCtor), activation: () => new TActivationExtension<TItem>() }
+	return {
+		...baseExtensions<TItem>(itemCtor),
+		activation: () => new TActivationExtension<TItem>(),
+	}
 }
 
 /** Базовый набор плюс выбор — модель ListBox, Select и Accordion. */
@@ -148,7 +151,9 @@ export function createComponentEngine<TItem extends object, TOwner>(
 	options: TCreateEngineOptions<TItem> & { owner: TOwner },
 ) {
 	if (!options?.owner) {
-		throw new Error(`${label}: нужен owner — инстанс компонента, которому принадлежит коллекция`)
+		throw new Error(
+			`${label}: нужен owner — инстанс компонента, которому принадлежит коллекция`,
+		)
 	}
 
 	const engine = assembleEngine<TItem>(set, options.items)

@@ -27,7 +27,10 @@ describe('TInteractive', () => {
 		const log: string[] = []
 
 		class TLoggedDisableableState extends TStateUnit<boolean> {
-			constructor(initial: boolean, private readonly _log: string[]) {
+			constructor(
+				initial: boolean,
+				private readonly _log: string[],
+			) {
 				super({ initial })
 			}
 

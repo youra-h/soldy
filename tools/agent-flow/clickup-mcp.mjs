@@ -30,7 +30,8 @@ const HASHTAGS = {
 const textOf = (comment) => (comment.comment_text ?? '').trimStart()
 
 /** Комментарий роли начинается с её хештега. Всё остальное в ленте написал владелец. */
-const isRoleComment = (comment) => Object.values(HASHTAGS).some((tag) => textOf(comment).startsWith(tag))
+const isRoleComment = (comment) =>
+	Object.values(HASHTAGS).some((tag) => textOf(comment).startsWith(tag))
 
 /**
  * Размер задачи владелец задаёт тегом в ClickUp. Тег может меняться между
@@ -141,7 +142,9 @@ const blockingIds = (task) =>
 
 /** Связь без зависимости. В паре `{ task_id, link_id }` вторая задача — та, что не эта. */
 const linkedIds = (task) =>
-	(task.linked_tasks ?? []).map((link) => (link.task_id === task.id ? link.link_id : link.task_id))
+	(task.linked_tasks ?? []).map((link) =>
+		link.task_id === task.id ? link.link_id : link.task_id,
+	)
 
 /**
  * Блокер снят, только когда задача завершена: статус типа `closed` или `done`
@@ -247,7 +250,9 @@ function chunk(text, size) {
  */
 async function managedTask(taskId, role) {
 	if (role !== 'manager') {
-		throw new Error(`Роль "${role}" не может менять приоритет и статус чужих задач — это работа менеджера.`)
+		throw new Error(
+			`Роль "${role}" не может менять приоритет и статус чужих задач — это работа менеджера.`,
+		)
 	}
 
 	const task = await api(`/task/${taskId}`)
@@ -363,7 +368,9 @@ const tools = {
 		},
 		async run({ task_id, role }) {
 			if (!TRANSITIONS[role]) {
-				throw new Error(`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`)
+				throw new Error(
+					`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`,
+				)
 			}
 
 			const tags = tagsOf(await api(`/task/${task_id}`))
@@ -410,7 +417,9 @@ const tools = {
 			const allowed = TRANSITIONS[role]
 
 			if (!allowed) {
-				throw new Error(`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`)
+				throw new Error(
+					`Неизвестная роль "${role}". Ожидается: ${Object.keys(TRANSITIONS).join(', ')}`,
+				)
 			}
 
 			// Переходы проверяем здесь, а не в промпте: задача, отправленная не
@@ -499,7 +508,9 @@ const tools = {
 		},
 		async run({ task_id, role, priority }) {
 			if (!PRIORITIES.includes(priority)) {
-				throw new Error(`Неизвестный приоритет "${priority}". Ожидается: ${PRIORITIES.join(', ')}`)
+				throw new Error(
+					`Неизвестный приоритет "${priority}". Ожидается: ${PRIORITIES.join(', ')}`,
+				)
 			}
 
 			const { task } = await managedTask(task_id, role)
@@ -582,7 +593,9 @@ const tools = {
 				}
 
 				if (open.length > 0) {
-					throw new Error(`Задача ${task_id} ещё ждёт: ${open.join(', ')} — возвращать рано.`)
+					throw new Error(
+						`Задача ${task_id} ещё ждёт: ${open.join(', ')} — возвращать рано.`,
+					)
 				}
 			}
 
@@ -593,7 +606,9 @@ const tools = {
 				if (key === 'overview' && !held) {
 					// Неотложенная задача в OVERVIEW ждёт владельца: выпускает её только его ответ.
 					// Свою заметку менеджер оставляет перед перестановкой — её пропускаем.
-					const last = comments.find((comment) => !textOf(comment).startsWith(HASHTAGS.manager))
+					const last = comments.find(
+						(comment) => !textOf(comment).startsWith(HASHTAGS.manager),
+					)
 
 					if (!last || isRoleComment(last)) {
 						throw new Error(
@@ -603,12 +618,18 @@ const tools = {
 				}
 
 				if (target === 'inProgress') {
-					if (!comments.some((comment) => textOf(comment).startsWith(HASHTAGS.techlead))) {
-						throw new Error(`В ленте задачи ${task_id} нет плана ${HASHTAGS.techlead} — в работу рано, её ждёт тимлид.`)
+					if (
+						!comments.some((comment) => textOf(comment).startsWith(HASHTAGS.techlead))
+					) {
+						throw new Error(
+							`В ленте задачи ${task_id} нет плана ${HASHTAGS.techlead} — в работу рано, её ждёт тимлид.`,
+						)
 					}
 
 					if (open.length > 0) {
-						throw new Error(`Задача ${task_id} ждёт незакрытые задачи: ${open.join(', ')} — в работу рано.`)
+						throw new Error(
+							`Задача ${task_id} ждёт незакрытые задачи: ${open.join(', ')} — в работу рано.`,
+						)
 					}
 				}
 			}
@@ -617,7 +638,10 @@ const tools = {
 
 			await api(`/task/${task_id}`, {
 				method: 'PUT',
-				body: JSON.stringify({ status: config.statuses[target], assignees: { add: [owner] } }),
+				body: JSON.stringify({
+					status: config.statuses[target],
+					assignees: { add: [owner] },
+				}),
 			})
 
 			// Тег — после смены статуса: упадёт запрос, и задача останется в OVERVIEW
@@ -649,11 +673,13 @@ const tools = {
 				relation: {
 					type: 'string',
 					enum: ['waits_on', 'related'],
-					description: 'waits_on — task_id ждёт other_task_id. related — связь без ожидания.',
+					description:
+						'waits_on — task_id ждёт other_task_id. related — связь без ожидания.',
 				},
 				other_task_id: {
 					type: 'string',
-					description: 'Для waits_on — задача, которую ждут: пока она не закрыта, task_id заблокирована.',
+					description:
+						'Для waits_on — задача, которую ждут: пока она не закрыта, task_id заблокирована.',
 				},
 			},
 			required: ['task_id', 'role', 'relation', 'other_task_id'],
@@ -738,7 +764,8 @@ const tools = {
 			properties: {
 				source_task_id: {
 					type: 'string',
-					description: 'ID задачи, в которой ты нашёл проблему. Определяет список и даёт ссылку на источник.',
+					description:
+						'ID задачи, в которой ты нашёл проблему. Определяет список и даёт ссылку на источник.',
 				},
 				role: {
 					type: 'string',
@@ -747,7 +774,8 @@ const tools = {
 				},
 				name: {
 					type: 'string',
-					description: 'Заголовок: что именно не так. Одна строка, без «нужно доработать».',
+					description:
+						'Заголовок: что именно не так. Одна строка, без «нужно доработать».',
 				},
 				description: {
 					type: 'string',
@@ -766,7 +794,9 @@ const tools = {
 			// Программист находки не заводит, а отдаёт тимлиду через PLANNING:
 			// новая это задача или часть текущей — решает тимлид.
 			if (role !== 'techlead') {
-				throw new Error(`Роль "${role}" не может заводить задачи. Опиши находку в комментарии и верни задачу в PLANNING.`)
+				throw new Error(
+					`Роль "${role}" не может заводить задачи. Опиши находку в комментарии и верни задачу в PLANNING.`,
+				)
 			}
 
 			if (size && !SIZES.includes(size)) {

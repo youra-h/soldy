@@ -223,10 +223,12 @@ describe('TCollectionEngine', () => {
 		// отдал бы `IExtension<T> | undefined` без `active`. Реестру передаём
 		// тот же инстанс `activation` с точным типом — сам реестр рассчитан
 		// именно на набор расширений, а не на движок целиком.
-		const registry = new TItemContextRegistry<Item, { activation: TActivationExtension<Item> }>({
-			driver: col.getCore().driver,
-			extensions: { activation },
-		})
+		const registry = new TItemContextRegistry<Item, { activation: TActivationExtension<Item> }>(
+			{
+				driver: col.getCore().driver,
+				extensions: { activation },
+			},
+		)
 		const item: Item = { id: 1, name: 'test' }
 
 		plain.insert(item)

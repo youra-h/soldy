@@ -16,23 +16,23 @@ import type { IContextElevator } from '@soldy/accessor'
 const KEY_MAP = new Map<string | symbol, symbol>()
 
 function resolveKey(key: string | symbol): symbol {
-    let k = KEY_MAP.get(key)
+	let k = KEY_MAP.get(key)
 
-    if (!k) {
-        k = Symbol(key.toString())
-        KEY_MAP.set(key, k)
-    }
+	if (!k) {
+		k = Symbol(key.toString())
+		KEY_MAP.set(key, k)
+	}
 
-    return k
+	return k
 }
 
 export abstract class TElevator<T = any> implements IContextElevator<T> {
-    protected readonly _key: symbol
+	protected readonly _key: symbol
 
-    constructor(key: string | symbol) {
-        this._key = resolveKey(key)
-    }
+	constructor(key: string | symbol) {
+		this._key = resolveKey(key)
+	}
 
-    abstract down(value: T): void
-    abstract up(): T | undefined
+	abstract down(value: T): void
+	abstract up(): T | undefined
 }

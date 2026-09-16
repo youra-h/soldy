@@ -9,35 +9,35 @@ import path from 'node:path'
  * @tailwindcss/postcss.
  */
 export default defineConfig({
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
-      formats: ['es'],
-    },
-    rollupOptions: {
-      output: {
-        assetFileNames: 'index.css',
-      },
-    },
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: (content: string) => {
-          const importLine = `@import "${path.resolve(__dirname, 'src/base.css')}";\n`
-          const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
+	build: {
+		outDir: 'dist',
+		emptyOutDir: true,
+		lib: {
+			entry: path.resolve(__dirname, 'src/index.ts'),
+			formats: ['es'],
+		},
+		rollupOptions: {
+			output: {
+				assetFileNames: 'index.css',
+			},
+		},
+	},
+	css: {
+		preprocessorOptions: {
+			scss: {
+				additionalData: (content: string) => {
+					const importLine = `@import "${path.resolve(__dirname, 'src/base.css')}";\n`
+					const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
 
-          if (matches.length > 0) {
-            const last = matches[matches.length - 1]
-            const end = (last.index ?? 0) + last[0].length
-            return content.slice(0, end) + importLine + content.slice(end)
-          }
+					if (matches.length > 0) {
+						const last = matches[matches.length - 1]
+						const end = (last.index ?? 0) + last[0].length
+						return content.slice(0, end) + importLine + content.slice(end)
+					}
 
-          return importLine + content
-        },
-      },
-    },
-  },
+					return importLine + content
+				},
+			},
+		},
+	},
 })

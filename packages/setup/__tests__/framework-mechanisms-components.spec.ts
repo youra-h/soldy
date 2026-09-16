@@ -48,7 +48,10 @@ function importedNames(source: string, moduleRe: RegExp): Set<string> {
 		if (!moduleRe.test(moduleName)) continue
 
 		for (const raw of specifiers.split(',')) {
-			const name = raw.trim().split(/\s+as\s+/)[0]?.trim()
+			const name = raw
+				.trim()
+				.split(/\s+as\s+/)[0]
+				?.trim()
 			if (name) names.add(name)
 		}
 	}

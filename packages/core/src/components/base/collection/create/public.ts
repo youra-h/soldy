@@ -1,4 +1,9 @@
-import { baseExtensions, activationExtensions, selectionExtensions, assembleEngine } from './internal'
+import {
+	baseExtensions,
+	activationExtensions,
+	selectionExtensions,
+	assembleEngine,
+} from './internal'
 import type { TCreateEngineOptions } from './internal'
 import type {
 	TBaseCollectionExtensions,

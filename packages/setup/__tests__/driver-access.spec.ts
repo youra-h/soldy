@@ -18,13 +18,7 @@ import { join, resolve, relative } from 'node:path'
 const ROOT = resolve(__dirname, '../../..')
 const PACKAGES_DIR = join(ROOT, 'packages')
 
-const EXCLUDED_DIR_NAMES = new Set([
-	'node_modules',
-	'dist',
-	'__tests__',
-	'coverage',
-	'.turbo',
-])
+const EXCLUDED_DIR_NAMES = new Set(['node_modules', 'dist', '__tests__', 'coverage', '.turbo'])
 
 /** Единственные места, легально обращающиеся к driver. */
 const ALLOWED_PATTERNS = [

@@ -18,7 +18,8 @@ export default class TTabsItem<
 {
 	static override baseClass = 's-tabs-item'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',

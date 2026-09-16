@@ -1,6 +1,7 @@
 # Soldy UI Component Adapter Architecture Overview
 
 ## Project Structure
+
 Multi-package monorepo with framework adapters for Vue, React, Angular, Svelte, Solid и Web Components.
 Core business logic is **framework-agnostic** in `packages/core/src`.
 
@@ -9,7 +10,9 @@ Core business logic is **framework-agnostic** in `packages/core/src`.
 ## Layer 1: Core Components (`packages/core/src`)
 
 ### Role
+
 Defines **headless (framework-agnostic)** component models with:
+
 - Event emission via `TEvented`
 - State management via `TStateUnit`
 - Property tracking without UI binding
@@ -54,12 +57,14 @@ TEntity (uid, getProps, assign, toJSON)
 `ReadyPluginDescriptor`.
 
 ### Key Files
+
 - [base/component/component.class.ts](packages/core/src/components/base/component/component.class.ts) - Base IComponent interface
 - [base/control/control.class.ts](packages/core/src/components/base/control/control.class.ts) - Interactive controls
 - [custom/button/button.class.ts](packages/core/src/components/custom/button/button.class.ts) - Button implementation
 - Custom components: Tree, Tabs, ListBox, Icon, Spinner, Accordion, List, Input, etc.
 
 ### Key Exports
+
 - `IComponent<TProps, TEvents, TStates>` - Component contract
 - `TEvented<T>` - Event emitter
 - `TStateUnit<T>` - Reactive state wrapper
@@ -69,9 +74,11 @@ TEntity (uid, getProps, assign, toJSON)
 ## Layer 2: Accessor Layer (`packages/accessor`)
 
 ### Role
+
 **Runtime reflection API** for components. Provides unified access to properties and events with namespace/plugin support.
 
 ### Key Classes
+
 - **TComponentAccessor**: Delegates to TDescriptorInspector for name formatting, handles getValue/setValue
   - `getProps(includeProtected?)` - Compiled props list
   - `getEvents()` - Compiled events list
@@ -82,12 +89,14 @@ TEntity (uid, getProps, assign, toJSON)
   - Used by Vue adapter to generate props/emits static definitions
 
 ### Key Files
+
 - [accessor.interface.ts](packages/accessor/accessor.interface.ts) - IAccessor contract
 - [component-accessor.class.ts](packages/accessor/component-accessor.class.ts) - Runtime reflection
 - [descriptor-inspector.class.ts](packages/accessor/descriptor-inspector.class.ts) - Schema compilation
 - [contract/types.ts](packages/accessor/contract/types.ts) - ICompiledProp, ICompiledEvent, INamingStrategy
 
 ### Key Exports
+
 - `IAccessor` - Unified access interface
 - `TComponentAccessor` - Component reflection
 - `TDescriptorInspector` - Schema formatter
@@ -98,13 +107,16 @@ TEntity (uid, getProps, assign, toJSON)
 ## Layer 3: Setup & Descriptors (`packages/setup/descriptors`)
 
 ### Role
+
 **Build-time component metadata**. Single source of truth for:
+
 - Props schema (from contributions + plugins)
 - Events schema
 - Plugin definitions with namespaces
 - Inheritance hierarchy
 
 ### Descriptor Pattern
+
 ```
 defineComponent({
   ctor: TButton,
@@ -115,12 +127,14 @@ defineComponent({
 ```
 
 Returns `IComponentDescriptor` with:
+
 - `props: ICompiledProp[]` - Full prop list (own + parent + plugins)
 - `events: ICompiledEvent[]` - Full event list
 - `createBundle(instance)` - Create plugin bundle
 - `createAccessor(instance, bundle)` - Create runtime accessor
 
 ### Key Files
+
 - [base/define-component.ts](packages/setup/descriptors/base/define-component.ts) - defineComponent factory
 - [base/define-plugin.ts](packages/setup/descriptors/base/define-plugin.ts) - definePlugin factory
 - [base/compile-contribution.ts](packages/setup/descriptors/base/compile-contribution.ts) - Contribution merger
@@ -128,6 +142,7 @@ Returns `IComponentDescriptor` with:
 - Descriptor files for: Control, ValueControl, TextInput, CheckBox, Switch, Tabs, ListBox, Tree, Accordion, Icon, Spinner, Skeleton, Input, Frame, DragAndDrop
 
 ### Key Exports
+
 - `IComponentDescriptor<TProps, TEvents, TPlugins>` - Metadata contract (phantom: props + события + TUPLE плагинов; `TProps extends object`, `TEvents extends object`, `TPlugins extends readonly IPluginDefinition[]`)
 - `IPluginDefinition<N, TEvents>` - Plugin definition (generic: namespace + plugin events)
 - `defineComponent` - **двойная сигнатура**: одноразовая `defineComponent({...})` (нетипизированные дескрипторы) и curried `defineComponent<TProps, TEvents>()({...})` (типизированные). Curried нужна из-за ограничения TS: явные type-аргументы ломают tuple-вывод из `plugins` в одном вызове.
@@ -135,7 +150,9 @@ Returns `IComponentDescriptor` with:
 - Extractors (types): `TDescriptorInstance<T>`, `DescriptorProps<T>`, `DescriptorEvents<T>` (свои события), `DescriptorPlugins<T>` (tuple плагинов), `DescriptorAllEvents<T>` (свои + namespaced события плагинов). + framework-agnostic helpers `NamespacedEvents`, `TPluginEventsFrom`. **Descriptor = единственный source of truth для типов props/events/plugin-events** (фреймворки не импортируют `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins).
 
 ### Component Descriptors (22+)
+
 Organized by inheritance:
+
 - **Base**: Component, Entity, ComponentView, Control, Interactive
 - **ValueControl**: InputControl, CheckBox, Switch
 - **TextableControl**: Button
@@ -147,12 +164,15 @@ Organized by inheritance:
 ## Layer 4: Plugins (`packages/plugins/src`)
 
 ### Role
+
 **Runtime behavior extenders**. Each plugin:
+
 - Registers with a unique `namespace` (string literal, declared in the descriptor)
 - Emits events via `TEvented`
 - Gets installed into `TPluginBundle`
 
 ### Base Classes
+
 - **TBasePlugin**: Provides events, install/destroy/created lifecycle
   - Namespace is declared in the plugin descriptor (`definePlugin({ namespace })`), not on the class
   - Can add props/events via contribution
@@ -166,7 +186,7 @@ contribution каждого плагина явно:
 
 ```ts
 export const ElementContribution = (): IContribution => ({
-	events: [...PLUGIN_EVENTS, 'ready', 'removed'],
+  events: [...PLUGIN_EVENTS, 'ready', 'removed'],
 })
 ```
 
@@ -180,6 +200,7 @@ export const ElementContribution = (): IContribution => ({
 чем фреймворк привязывает обработчики. См. Layer 5b.
 
 ### Plugin Examples
+
 - `TElementPlugin` - Stores DOM element reference, emits 'ready'
 - `TActionPlugin` (`custom/action/`, namespace `action`, на `ControlDescriptor`) - взаимодействие
   с пользователем: `press` (нормализованная активация: клик или Enter/Space, с гейтом по
@@ -195,6 +216,7 @@ export const ElementContribution = (): IContribution => ({
 - `TCollectionBundlesAccess` / `TCollectionElements` (`custom/collection/`) - доступ к bundles / DOM-элементам (не накапливают; element лежит в bundle, instance в collection)
 
 ### Key Files
+
 - [base/base.class.ts](packages/plugins/src/base/base.class.ts) - TBasePlugin base
 - [base/bundle.class.ts](packages/plugins/src/base/bundle.class.ts) - TPluginBundle registry
 - [custom/element/element.plugin.ts](packages/plugins/src/custom/element/element.plugin.ts) - DOM binding
@@ -202,6 +224,7 @@ export const ElementContribution = (): IContribution => ({
 - [custom/collection/collection.plugin.ts](packages/plugins/src/custom/collection/collection.plugin.ts) - Collection management
 
 ### Key Exports
+
 - `IPlugin<TInstance, TEvents>` - Plugin contract
 - `TBasePlugin` - Base class
 - `TPluginBundle` - Registry
@@ -212,12 +235,15 @@ export const ElementContribution = (): IContribution => ({
 ## Layer 5: Adapter Context (`packages/setup/adapter`)
 
 ### Role
+
 **Headless runtime container** that:
+
 1. Creates component instance from core
 2. Creates plugin bundle from descriptor
 3. Manages lifecycle via extensions
 
 ### IAdapterContext (Registry Pattern)
+
 ```
 use<T>(ExtensionCtor, options?) → this
 get<T>(ExtensionCtor) → T | undefined
@@ -231,24 +257,28 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 ### Adapter Layers
 
 #### Context (`createAdapterContext`)
+
 - Creates `instance` (TButton, TCheckBox, etc.)
 - Creates `bundle` (plugin registry)
 - Creates `accessor` (reflection API)
 - Manages extensions registry
 
 #### Extensions (`packages/setup/adapter/extensions/`)
+
 - `TPluginsBindingExtension` - Binds DOM element to TElementPlugin
 - `TCollectionExtension` - Provides child registration via elevator
 - `TCollectionItemExtension` - Child registers itself with parent
 - `TDragAndDropExtension` - Drag/drop handler
 
 #### Elevator (`packages/setup/adapter/elevator/`)
+
 - **TElevator** (base) - Caches string/symbol keys to unique symbols
 - **TVueElevator** - Uses Vue provide/inject
 - **ReactElevator** - Uses React.Context
 - **Pattern**: Abstracts parent-child context passing
 
 ### Key Files
+
 - [context/createAdapterContext.ts](packages/setup/adapter/context/createAdapterContext.ts) - Factory
 - [context/types.ts](packages/setup/adapter/context/types.ts) - IAdapterContext contract
 - [elevator/elevator.class.ts](packages/setup/adapter/elevator/elevator.class.ts) - Base elevator
@@ -256,6 +286,7 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 - [extensions/collection/collection.extension.class.ts](packages/setup/adapter/extensions/collection/collection.extension.class.ts) - Collection registry
 
 ### Key Exports
+
 - `IAdapterContext` - Container contract
 - `createAdapterContext(descriptor, options)` - Factory
 - `TElevator` - Parent-child context base
@@ -270,13 +301,13 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 Поведение, которое обязано совпадать во всех фреймворках. Адаптер реализует
 только то, что действительно различается — стратегию именования **событий**.
 
-| Экспорт | Назначение |
-|---|---|
-| `underscorePropNaming(name)` | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
-| `createInspectorFactory(naming)` | Адаптер связывает инспектор со своей стратегией один раз. |
-| `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий. |
-| `resolveDefaultExtensions(descriptor)` | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`. |
-| `setIcons` / `getIcon` / `ICON_ROLES` | Реестр и контракт пакетов иконок. |
+| Экспорт                                     | Назначение                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `underscorePropNaming(name)`                | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
+| `createInspectorFactory(naming)`            | Адаптер связывает инспектор со своей стратегией один раз.                                                        |
+| `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий.                                 |
+| `resolveDefaultExtensions(descriptor)`      | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`.                           |
+| `setIcons` / `getIcon` / `ICON_ROLES`       | Реестр и контракт пакетов иконок.                                                                                |
 
 ### Пакеты иконок — контракт, а не мешок SVG
 
@@ -289,8 +320,8 @@ Starts with default extension: `TPluginsBindingExtension` (binds DOM to element 
 
 ```ts
 export type TIconSource = {
-	viewBox: string   // система координат
-	body: string      // содержимое <svg>, без самого тега
+  viewBox: string // система координат
+  body: string // содержимое <svg>, без самого тега
 }
 ```
 
@@ -316,7 +347,7 @@ export type TIconSource = {
 
 ```ts
 setIcons(material)
-setIcons({ close: myCloseIcon })   // точечно, поверх
+setIcons({ close: myCloseIcon }) // точечно, поверх
 ```
 
 Незарегистрированная роль даёт пустую заглушку и одно предупреждение в консоль.
@@ -340,14 +371,14 @@ setIcons({ close: myCloseIcon })   // точечно, поверх
 
 Вместо этого номер ступени переопределён как **роль, а не светлота**:
 
-| Ступень | Роль |
-|---|---|
-| `50` | поверхность (страница, панель) |
-| `100` / `200` | приподнято на шаг: hover, контейнер, поверхность контрола |
-| `300` / `400` | границы |
-| `500` | приглушённый текст; точка симметрии — ~0.55 в обеих схемах |
-| `800` | основной текст |
-| `950` | максимальный контраст с поверхностью |
+| Ступень       | Роль                                                       |
+| ------------- | ---------------------------------------------------------- |
+| `50`          | поверхность (страница, панель)                             |
+| `100` / `200` | приподнято на шаг: hover, контейнер, поверхность контрола  |
+| `300` / `400` | границы                                                    |
+| `500`         | приглушённый текст; точка симметрии — ~0.55 в обеих схемах |
+| `800`         | основной текст                                             |
+| `950`         | максимальный контраст с поверхностью                       |
 
 `tokens-dark.css` инвертирует шкалу по этим ролям. После этого арифметика
 `$hover-bg: $bg + 100` в миксинах в обеих схемах значит одно: «отойти дальше от
@@ -490,7 +521,7 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 
 ```html
 <!-- так НЕ делаем -->
-<Button :ctrl="btn" :plugins="bundle" />
+<button :ctrl="btn" :plugins="bundle" />
 ```
 
 Выглядит симметрично, но симметрии нет. `ctrl` необязателен: компонент умеет
@@ -560,17 +591,17 @@ soldy `TTabs` наследует `TCollectionComponent`, `TTabsItem` —
 
 Прогон критерия:
 
-| Часть | Адресует потребитель | Решение |
-|---|---|---|
-| `Tabs` | да | компонент |
-| `TabsItem` | да — размещает и задаёт `value`/`text` | компонент |
-| `TabsContent` | да — `<Tabs.Content value="a">` | компонент |
-| `SelectItem` | да | компонент |
-| панель Accordion | нет — только содержимое в слот | слот + проп `content_aria` |
-| список Select | нет — он всегда один и внутри | разметка + проп `list_aria` |
-| список табов | нет | слот |
-| `CheckBox.Control` / `Indicator` / `Label` | нет | слоты |
-| `Button.*` | — | частей нет |
+| Часть                                      | Адресует потребитель                   | Решение                     |
+| ------------------------------------------ | -------------------------------------- | --------------------------- |
+| `Tabs`                                     | да                                     | компонент                   |
+| `TabsItem`                                 | да — размещает и задаёт `value`/`text` | компонент                   |
+| `TabsContent`                              | да — `<Tabs.Content value="a">`        | компонент                   |
+| `SelectItem`                               | да                                     | компонент                   |
+| панель Accordion                           | нет — только содержимое в слот         | слот + проп `content_aria`  |
+| список Select                              | нет — он всегда один и внутри          | разметка + проп `list_aria` |
+| список табов                               | нет                                    | слот                        |
+| `CheckBox.Control` / `Indicator` / `Label` | нет                                    | слоты                       |
+| `Button.*`                                 | —                                      | частей нет                  |
 
 Следствие для ARIA. У части-компонента есть экземпляр, значит есть и живой
 набор `aria`, в который пишут ядро, плагины и расширения. У разметки без
@@ -602,9 +633,10 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 
 **Ограничение Vue.** Точка резолвится только компилятором SFC, который видит
 импорт как биндинг области видимости. Рантайм-компилятор (строковый `template`
-+ `components: {}`) ищет `Tabs.Item` как имя в реестре, не находит и рендерит
-пустоту — молча. Проверяется в `packages/ui/vue/__tests__/parts.spec.ts`,
-включая сам факт ограничения.
+
+- `components: {}`) ищет `Tabs.Item` как имя в реестре, не находит и рендерит
+  пустоту — молча. Проверяется в `packages/ui/vue/__tests__/parts.spec.ts`,
+  включая сам факт ограничения.
 
 ### Нейминг коллекций и их частей
 
@@ -612,11 +644,11 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 — если коллекция сама по себе одна сущность (`ListBox`, `Accordion`). Часть
 всегда `Item`, независимо от числа владельца.
 
-| Коллекция | Части | Почему так |
-|---|---|---|
-| `Tabs` | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value` |
-| `Accordion` | `Accordion.Item` | панель внутри элемента, отдельно не существует → слот `item-content` |
-| `ListBox` | `ListBox.Item` | панели нет вовсе: выбор ничего не раскрывает |
+| Коллекция   | Части                       | Почему так                                                           |
+| ----------- | --------------------------- | -------------------------------------------------------------------- |
+| `Tabs`      | `Tabs.Item`, `Tabs.Content` | панель — сосед списка, пишется отдельно, связывается по `value`      |
+| `Accordion` | `Accordion.Item`            | панель внутри элемента, отдельно не существует → слот `item-content` |
+| `ListBox`   | `ListBox.Item`              | панели нет вовсе: выбор ничего не раскрывает                         |
 
 **Набор частей выводится из критерия, а не копируется между коллекциями.**
 Панель есть и у Tabs, и у Accordion, но частью стала только у Tabs: у Accordion
@@ -639,7 +671,8 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 <slot name="item-leading" :item="item" />
 <slot name="item" :item="item" />
 <slot name="item-trailing" :item="item" />
-<slot name="item-content" :item="item" />   <!-- Accordion: панель -->
+<slot name="item-content" :item="item" />
+<!-- Accordion: панель -->
 ```
 
 Динамических имён (`item:${item.value}:leading`, `panel:${value}`) быть не
@@ -650,11 +683,11 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 
 Самая частая ошибка — смешать слои; она уже приводила к переписыванию.
 
-| Слой | Отвечает за | Пример |
-|---|---|---|
-| Класс ядра | собственные props и events | `TTabsItem` — `value`, `text`, `closable` |
-| Фасад коллекции | членство в коллекции | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
-| Расширение | функциональность сверх стандартной коллекции | `TTabsExtension` — закрытие вкладок |
+| Слой            | Отвечает за                                  | Пример                                                      |
+| --------------- | -------------------------------------------- | ----------------------------------------------------------- |
+| Класс ядра      | собственные props и events                   | `TTabsItem` — `value`, `text`, `closable`                   |
+| Фасад коллекции | членство в коллекции                         | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
+| Расширение      | функциональность сверх стандартной коллекции | `TTabsExtension` — закрытие вкладок                         |
 
 **Класс ядра о коллекции не знает.** Ни движка, ни `bindEngine`, ни активности.
 Если классу «нужен доступ к коллекции» — логика оказалась не в том слое.
@@ -754,11 +787,11 @@ Type 'TEventContext<TListBoxItemEventsExtension, "change:view" | "destroy" | "ch
 **Что нашлось при разборе.** Одно свойство писалось в трёх фасадах по
 отдельности, и три копии дали три разных API:
 
-| Фасад | `mode` | `selected` |
-|---|---|---|
+| Фасад                        | `mode`        | `selected`    |
+| ---------------------------- | ------------- | ------------- |
 | `TAccordionCollectionFacade` | только getter | только getter |
-| `TListCollectionFacade` | get + set | get + set |
-| `TSelectCollectionFacade` | get + set | только getter |
+| `TListCollectionFacade`      | get + set     | get + set     |
+| `TSelectCollectionFacade`    | get + set     | только getter |
 
 Contributions при этом объявляют `mode` записываемым пропом. Итог:
 `<Accordion mode="multiple">` молча не работал — вторая раскрытая секция
@@ -842,11 +875,11 @@ Vue-шаблонах (41 объявление), и ни один другой с
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
 export const ButtonContribution = (): IContribution => ({
-	slots: {
-		leading: { description: 'Перед текстом' },
-		default: { scope: { text: defineType<string>(String) } },
-		trailing: { description: 'После текста' },
-	},
+  slots: {
+    leading: { description: 'Перед текстом' },
+    default: { scope: { text: defineType<string>(String) } },
+    trailing: { description: 'После текста' },
+  },
 })
 ```
 
@@ -878,14 +911,14 @@ export const ButtonContribution = (): IContribution => ({
 передать данные в световое содержимое). Поэтому одинаковы **имена, состав и
 scope**, а спеллинг остаётся родным:
 
-| Адаптер | Спеллинг | scope |
-|---|---|---|
-| Vue | `<template #leading>` | `v-slot="{ text }"` |
-| Svelte 5 | `{#snippet leading()}` | параметр сниппета |
-| React | `leading={<Icon/>}` | `{({ text }) => …}` |
-| Solid | `leading={<Icon/>}` | `{({ text }) => …}` |
-| Angular | `<span slot="leading">` | `<ng-template slot let-text>` |
-| WebC | `<span slot="leading">` | ✗ |
+| Адаптер  | Спеллинг                | scope                         |
+| -------- | ----------------------- | ----------------------------- |
+| Vue      | `<template #leading>`   | `v-slot="{ text }"`           |
+| Svelte 5 | `{#snippet leading()}`  | параметр сниппета             |
+| React    | `leading={<Icon/>}`     | `{({ text }) => …}`           |
+| Solid    | `leading={<Icon/>}`     | `{({ text }) => …}`           |
+| Angular  | `<span slot="leading">` | `<ng-template slot let-text>` |
+| WebC     | `<span slot="leading">` | ✗                             |
 
 `default` → `children` в React/Solid/Svelte (`resolveSlotName`), в остальных
 сохраняется. Это единственное преобразование имени.
@@ -956,13 +989,13 @@ protected _syncDisabled(): void {
 
 **Кто что пишет:**
 
-| Источник | Что | Пример |
-|---|---|---|
-| ядро компонента | природа элемента | `role="tab"`, `role="status"`, `aria-disabled` |
-| `TAriaPlugin` | имя и описание | `aria-label`, `aria-labelledby` |
-| расширение коллекции | знание коллекции | `aria-selected`, связка `id`/`aria-controls` |
-| плагин поведения | то, что меняется от взаимодействия | `aria-activedescendant` из `TSelectKeyboardPlugin` |
-| проводка adapter-слоя | известное лишь при связывании | сторона панели `Tabs.Content` |
+| Источник              | Что                                | Пример                                             |
+| --------------------- | ---------------------------------- | -------------------------------------------------- |
+| ядро компонента       | природа элемента                   | `role="tab"`, `role="status"`, `aria-disabled`     |
+| `TAriaPlugin`         | имя и описание                     | `aria-label`, `aria-labelledby`                    |
+| расширение коллекции  | знание коллекции                   | `aria-selected`, связка `id`/`aria-controls`       |
+| плагин поведения      | то, что меняется от взаимодействия | `aria-activedescendant` из `TSelectKeyboardPlugin` |
+| проводка adapter-слоя | известное лишь при связывании      | сторона панели `Tabs.Content`                      |
 
 Кроме `aria-*` набор несёт `role` и `tabindex` — без них ARIA-паттерн не
 работает: `<div role="button">` без `tabindex` нельзя сфокусировать, а значит
@@ -979,8 +1012,10 @@ protected _syncDisabled(): void {
 уже разошлись, отдавая одно состояние по-разному:
 
 ```html
-<!-- ListBox/item -->  :data-highlighted="listItem_highlighted"
-<!-- Select/item -->   :data-highlighted="String(!!listItem_highlighted)"
+<!-- ListBox/item -->
+:data-highlighted="listItem_highlighted"
+<!-- Select/item -->
+:data-highlighted="String(!!listItem_highlighted)"
 ```
 
 Работало по случайности: Vue сам приводит `false` к `"false"`, а `undefined`
@@ -1041,11 +1076,11 @@ ListBox, Tabs и Select копий стало бы сорок.
 **Готовые паттерны.** Если для виджета есть паттерн WAI-ARIA APG — следуем ему;
 расхождения объясняем в комментарии. Реализовано:
 
-| Компонент | Паттерн | Ключевое |
-|---|---|---|
-| Tabs | Tabs | `tablist`/`tab`/`tabpanel`, связка `aria-controls` ↔ `aria-labelledby` |
-| Accordion | Accordion | `aria-expanded` на заголовке, `role="region"` у панели; до переименования компонент назывался `Collapse` — имя не совпадало с паттерном |
-| Select | Combobox (select-only) | `role="combobox"`, `aria-activedescendant`, фокус не уходит с поля |
+| Компонент | Паттерн                | Ключевое                                                                                                                                |
+| --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Tabs      | Tabs                   | `tablist`/`tab`/`tabpanel`, связка `aria-controls` ↔ `aria-labelledby`                                                                  |
+| Accordion | Accordion              | `aria-expanded` на заголовке, `role="region"` у панели; до переименования компонент назывался `Collapse` — имя не совпадало с паттерном |
+| Select    | Combobox (select-only) | `role="combobox"`, `aria-activedescendant`, фокус не уходит с поля                                                                      |
 
 Два правила, общих для всех трёх. `aria-selected="false"` ставится и на
 невыбранных: скринридер объявляет «2 из 7, не выбрана», и без атрибута этого
@@ -1120,14 +1155,14 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 
 **Списки одинаковы на вид и различны по семантике:**
 
-| | ListBox | список Select | Menu |
-|---|---|---|---|
-| роль контейнера | `listbox` | `listbox` | `menu` |
-| роль элемента | `option` | `option` | `menuitem` |
-| где DOM-фокус | на контейнере | **на поле, не в списке** | на элементе |
-| навигация | roving tabindex | `aria-activedescendant` | roving tabindex |
-| элемент | выбирается | выбирается | выполняет действие |
-| `aria-selected` | есть | есть | нет |
+|                 | ListBox         | список Select            | Menu               |
+| --------------- | --------------- | ------------------------ | ------------------ |
+| роль контейнера | `listbox`       | `listbox`                | `menu`             |
+| роль элемента   | `option`        | `option`                 | `menuitem`         |
+| где DOM-фокус   | на контейнере   | **на поле, не в списке** | на элементе        |
+| навигация       | roving tabindex | `aria-activedescendant`  | roving tabindex    |
+| элемент         | выбирается      | выбирается               | выполняет действие |
+| `aria-selected` | есть            | есть                     | нет                |
 
 Проверка на коде: `ListBox.vue` держит `tabindex="0"` на корне, а
 `TListKeyboardPlugin` слушает `keydown` там же — ListBox спроектирован как
@@ -1139,14 +1174,14 @@ ListBox режимы ради чужого компонента, после че
 
 **Поэтому делим по слоям, а не по компонентам:**
 
-| Слой | Общий? | Где |
-|---|---|---|
-| оверлей: якорь, позиционирование, z-index, закрытие | общий | `TFrame` + `TAnchorPlugin` + `TDismissPlugin` |
-| поведение списка: подсветка, скролл, высота | общий | `TListItemPlugin`, `TListScrollPlugin`, `TListLayoutPlugin` |
-| визуальная строка элемента | общий | `Button` внутри элемента + SCSS |
-| движок коллекции, `selection`, `order`, `meta` | общий | `base/collection` |
-| контейнер списка и его ARIA | свой | у каждого компонента |
-| модель фокуса и клавиатура | своя | у каждого компонента |
+| Слой                                                | Общий? | Где                                                         |
+| --------------------------------------------------- | ------ | ----------------------------------------------------------- |
+| оверлей: якорь, позиционирование, z-index, закрытие | общий  | `TFrame` + `TAnchorPlugin` + `TDismissPlugin`               |
+| поведение списка: подсветка, скролл, высота         | общий  | `TListItemPlugin`, `TListScrollPlugin`, `TListLayoutPlugin` |
+| визуальная строка элемента                          | общий  | `Button` внутри элемента + SCSS                             |
+| движок коллекции, `selection`, `order`, `meta`      | общий  | `base/collection`                                           |
+| контейнер списка и его ARIA                         | свой   | у каждого компонента                                        |
+| модель фокуса и клавиатура                          | своя   | у каждого компонента                                        |
 
 Критерий: **общее — то, что не зависит от роли и модели фокуса.**
 
@@ -1295,10 +1330,12 @@ namespace `editable`), подключённый после `TSelectKeyboardPlugi
 ### ✅ COMPLETE IMPLEMENTATION
 
 #### Static Layer (`adapter/static/`)
+
 - `useProps(descriptor)` - Generate Vue props config from descriptor
 - `useEmits(descriptor)` - Generate Vue emits array + update:prop triggers
 
 #### Runtime Layer (`adapter/runtime/`)
+
 - `useAdapter<TProps, TInstance>()` - Main hook (syncs props, events, DOM)
   - Returns TVueBinding with `ctrl`, `plugins`, `rootElement`, props refs
   - Subscribed to all events, syncs DOM via ref watchers
@@ -1318,9 +1355,11 @@ namespace `editable`), подключённый после `TSelectKeyboardPlugi
 Раньше объявления существовали, но никогда не эмитились.
 
 #### Elevator (`adapter/elevator/`)
+
 - `TVueElevator<T>` - Wraps Vue provide/inject
 
 #### Common Utilities (`adapter/common/`)
+
 - `createInspector()` - Unified TDescriptorInspector factory
 - `VueNaming` - Vue naming strategy (camelCase props, dash-case events)
 - `useIcon(role)` — компонент иконки по роли из реестра. Строит разметку через
@@ -1344,9 +1383,12 @@ namespace `editable`), подключённый после `TSelectKeyboardPlugi
 `packages/setup/common/`, куда фреймворки не импортируются.
 
 #### Components (`components/`)
+
 **22+ Framework Components** (one per core component):
+
 - Each has: `base.component.ts` (props/emits) + `setup.component.ts` (logic) + `.vue` template
 - Pattern:
+
   ```ts
   // base.component.ts - Static props/emits
   extends: BaseParent,
@@ -1361,6 +1403,7 @@ namespace `editable`), подключённый после `TSelectKeyboardPlugi
   ```
 
 ### Key Files
+
 - [adapter/static/useProps.ts](packages/ui/vue/src/adapter/static/useProps.ts) - Vue props factory
 - [adapter/static/useEmits.ts](packages/ui/vue/src/adapter/static/useEmits.ts) - Vue emits factory
 - [adapter/runtime/useAdapter.ts](packages/ui/vue/src/adapter/runtime/useAdapter.ts) - Main hook
@@ -1368,6 +1411,7 @@ namespace `editable`), подключённый после `TSelectKeyboardPlugi
 - [adapter/common/useSplitAttrs.ts](packages/ui/vue/src/adapter/common/useSplitAttrs.ts) - Разделение сквозных атрибутов
 
 ### Component Hierarchy (Vue)
+
 ```
 BaseComponent (Entity props)
 ├── BaseControl (disabled, focused, tag)
@@ -1403,6 +1447,7 @@ Select стоит здесь особняком: он единственный, 
 ### ✅ IMPLEMENTED (mirrors Vue `adapter/` architecture)
 
 **Structure (1:1 with Vue adapter, 3-module component split):**
+
 - `adapter/common/` — `createInspector` (через `createInspectorFactory(ReactNaming)`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`. `resolveDefaultExtensions` переехал в `@soldy/setup` и применяется по умолчанию
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - тип-зеркало `TCallbackEventProps` живёт в `@soldy/setup/common` (им же пользуется Svelte). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `TCallbackEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
@@ -1413,6 +1458,7 @@ Select стоит здесь особняком: он единственный, 
   - concrete layers (`component-view`, `button`): `base.component.ts` + `setup.component.ts` + `.tsx` view
 
 **Key design decisions (React-specific):**
+
 - `useSetupXxx(props)` hook creates `IAdapterContext` once via lazy `useRef` (StrictMode-safe) and passes it to `useAdapter` — `createAdapterContext` is called DIRECTLY in setup hooks (not hidden in `useAdapter`), so users can pass custom `defaultExtensions`
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`), `forwardProps` = DOM attrs not consumed by the component (`ctrl`/`plugins`/`children` + prop/event names are consumed)
 - DOM binding goes directly through `adapter.bundle.get(TElementPlugin).element` (not `TPluginsBindingExtension`) so it survives `adapter.destroy()` on StrictMode remount
@@ -1422,6 +1468,7 @@ Select стоит здесь особняком: он единственный, 
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
 ### Theming (`@soldy/theme-oren`) — foundation REMOVED
+
 - `packages/foundation` deleted. Themes live in `packages/themes/*` (workspace glob `packages/themes/*` added to root).
 - `@soldy/theme-oren` = standalone theme package: `src/{tokens.css, utilities.css, base.css, index.scss, mixins/_button.scss, components/_button.scss}` → built to `dist/index.css` (main/style/exports point to `dist/index.css`).
 - Theme build = Vite lib mode (`entry: src/index.scss`, `assetFileNames: 'index.css'`) + `postcss.config.mjs` (`@tailwindcss/postcss`) + SCSS `additionalData` injecting `@import ".../src/base.css"` (base.css = `@import 'tailwindcss'` + tokens + utilities). `@apply` resolves because tailwind context is injected.
@@ -1433,15 +1480,18 @@ Select стоит здесь особняком: он единственный, 
 - Remaining Vue component styles (`_fade.scss`/`_required.scss`, CheckBox/Switch/Input inline styles) NOT yet migrated to theme.
 
 ### React demo (`packages/ui/react/demo`) — mirrors Vue demo, ComponentView + Button only
+
 - `App.tsx` — nav (Sandbox/Logs) + sidebar + playground switching; `common/` (EventLog, Properties, PropertyField, PanelDemo, items, useEventLogger, useSyncPropsToInstance); `layouts/PlaygroundLayout.tsx`; `playgrounds/{Button,ComponentView}.tsx`; `components/{button,component-view}/{Component,Instance,Slots}.tsx`; `demo.scss` (all demo styles)
 - Demo uses raw event lists (`items.ts`: COMPONENT_VIEW_EVENTS / BUTTON_EVENTS) + `toReactHandler` → `onXxx` (same mapping as `ReactNaming.event`)
 - Core instance logging via `instance.events.use()` middleware (catches ALL instance events, no enumeration)
 
 ### React package config
+
 - `package.json` deps: `@soldy/accessor`, `@soldy/setup`, `@soldy/theme-oren`
 - `tsconfig.json` paths + `vite.config.ts` aliases for `@soldy/accessor`, `@soldy/setup` added
 
 ### ⚠️ React pitfall: infinite loop via `visible` setter
+
 - Core `TComponent.visible` setter calls `show()`/`hide()`, which emit `show:before`/`hide:before` **unconditionally** (before the `if (this.visible) return` guard). So writing `instance.visible = sameValue` still emits events.
 - Fix in `useSyncProps.bindInput`: guard `if (accessor.getValue(prop) === value) continue` before `setValue`. Without it, event-logging demos re-render forever (Vue avoids it because `watch` only fires on actual value change).
 
@@ -1657,6 +1707,7 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
 ## Data Flow & Connection Patterns
 
 ### Static (Build Time)
+
 ```
 defineComponent({ ctor, extends, contribution, plugins })
   ↓
@@ -1668,6 +1719,7 @@ Inspector generates Vue props/emits schemas
 ```
 
 ### Runtime (Component Initialization)
+
 ```
 setup(props, { emit }) {
   1. createAdapterContext(Descriptor, { ctrl, props })
@@ -1691,6 +1743,7 @@ setup(props, { emit }) {
 ```
 
 ### Collection Pattern (Parent-Child)
+
 ```
 Parent (TCollectionExtension, in setup layer):
   - context.bundle.get(TCollectionBundlesPlugin)
@@ -1709,11 +1762,12 @@ TCollectionBundlesPlugin (plugins layer):
 ```
 
 Key files:
+
 - `packages/plugins/src/custom/collection/bundles.plugin.ts` — TCollectionBundlesPlugin (+ TBundlesEvents) — реестр item-bundles + ссылка на collection; эмитит `collection:bound` при bindCollection
 - `packages/plugins/src/custom/collection/collection-bundles-access.plugin.ts` — TCollectionBundlesAccess (abstract, доступ к bundles по uid/item/index)
 - `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
-- `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin / TTabsViewPlugin (мигрированы из _plugins)
-- `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из _plugins; activate(collection), использует TCollectionElements + TCollectionBundlesPlugin)
+- `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin / TTabsViewPlugin (мигрированы из \_plugins)
+- `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(collection), использует TCollectionElements + TCollectionBundlesPlugin)
 - `packages/setup/adapter/extensions/collection/collection.extension.class.ts` — TCollectionExtension (фасад: создание коллекции через TCollectionFactoryExtension + owner-props через TCollectionPropsExtension + bindCollection + insert/register). descriptor опционален.
 - `packages/setup/adapter/extensions/collection/collection-factory.extension.class.ts` — TCollectionFactoryExtension (создаёт коллекцию / берёт engine; нужен для context.get(TCollectionFactoryExtension) в useVueCollection и TDragAndDropCollectionExtension)
 - `packages/setup/adapter/extensions/collection/collection-props.extension.class.ts` — TCollectionPropsExtension (применяет owner-props)
@@ -1726,36 +1780,47 @@ Key files:
 ## Key Architectural Patterns
 
 ### 1. **Descriptor Pattern**
+
 Single source of truth for metadata. Enables:
+
 - Inheritance (TextableDescriptor → ButtonDescriptor)
 - Plugin composition
 - Static framework adapter generation
 
 ### 2. **Accessor Pattern (Runtime Reflection)**
+
 Unified reflection API. Enables:
+
 - Framework-agnostic property/event access
 - Namespace prefixing for plugins
 - Prop/event name formatting per framework
 
 ### 3. **Plugin System**
+
 Extensibility via namespaced plugins:
+
 - Each plugin = isolated behavior
 - Props/events added via contribution
 - Lifecycle: install → destroy
 
 ### 4. **Adapter Context (Registry)**
+
 Container for:
+
 - Component instance + bundle + accessor
 - Extensions (behavior customization)
 - Lifecycle management via events
 
 ### 5. **Elevator Pattern (Parent-Child Context)**
+
 Framework-agnostic dependency injection:
+
 - Vue: provide/inject
 - React: React.Context
 - Abstracts framework differences
 
 ### 6. **Headless + Renderer Separation**
+
 - **Core** (@soldy/core) - Business logic, no UI
 - **Adapter** (@soldy/ui-vue) - Framework binding only
 - Each framework can implement independently
@@ -1765,22 +1830,26 @@ Framework-agnostic dependency injection:
 ## Missing/Incomplete Areas
 
 ### React
+
 - Hooks (`useAdapter`, `useSyncProps`, `useSyncEvents`), elevator (`TReactElevator`), DOM/plugin binding — done
 - [ ] All 20+ component implementations (only `component-view`, `button` done)
 - [ ] Collection support (owner/item registration over the elevator)
 
 ### Angular
+
 - Адаптер, кодогенерация метаданных, сигналы, жизненный цикл, DOM-биндинг — done
 - [ ] Все компоненты, кроме `component-view` и `button`
 - [ ] Коллекции (elevator реализован, но не подключён и не использует DI)
 - [ ] Именованные слоты, двусторонняя привязка, произвольный `tag`
 
 ### Svelte (Not Started)
+
 - [ ] Store integration
 - [ ] Reactive statement handling
 - [ ] Component implementations
 
 ### Solid (Not Started)
+
 - [ ] Signal integration
 - [ ] Effect synchronization
 - [ ] Component implementations
@@ -1789,19 +1858,18 @@ Framework-agnostic dependency injection:
 
 ## Package Exports
 
-| Package | Main Exports |
-|---------|-------------|
-| @soldy/core | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit |
-| @soldy/accessor | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor |
-| @soldy/setup | createAdapterContext, IAdapterContext, defineComponent, definePlugin, underscorePropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions |
-| @soldy/plugins | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin |
-| @soldy/ui-vue | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |
-| @soldy/ui-react | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers |
-| @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming |
-| @soldy/ui-svelte | Button, ComponentView, useAdapter, TSvelteElevator, SvelteNaming |
-| @soldy/ui-solid | Button, ComponentView, useAdapter, TSolidElevator, SolidNaming |
-| @soldy/ui-webc | `<soldy-button>`, `<soldy-component-view>`, TSoldyElement, useAdapter, WebcNaming |
-
+| Package           | Main Exports                                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| @soldy/core       | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit                                                                                                               |
+| @soldy/accessor   | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor                                                                                                     |
+| @soldy/setup      | createAdapterContext, IAdapterContext, defineComponent, definePlugin, underscorePropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions       |
+| @soldy/plugins    | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin                                                                                                                      |
+| @soldy/ui-vue     | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |
+| @soldy/ui-react   | Button, ComponentView, useAdapter, useSyncProps/useSyncEvents, useSetupXxx hooks, naming/plugins type transformers                                                       |
+| @soldy/ui-angular | TButtonComponent, TComponentViewComponent, TComponentComponent, useAdapter, TAngularComponentBase, AngularNaming                                                         |
+| @soldy/ui-svelte  | Button, ComponentView, useAdapter, TSvelteElevator, SvelteNaming                                                                                                         |
+| @soldy/ui-solid   | Button, ComponentView, useAdapter, TSolidElevator, SolidNaming                                                                                                           |
+| @soldy/ui-webc    | `<soldy-button>`, `<soldy-component-view>`, TSoldyElement, useAdapter, WebcNaming                                                                                        |
 
 ---
 
@@ -1821,6 +1889,7 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 `TList` был headless-моделью списка, от которой рос `TListBox`. Слоя больше нет:
 наследник у него был один, а второй потребитель раскладки — `TSelect` — растёт
 от `TInputControl` и наследоваться от списка не мог в принципе.
+
 - Core: `TListBox extends TValueControl` (+ `view`), `TListBoxItem extends TValueControl` (`text` + свой трёхзначный `wordWrap`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Раскладка (`maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior`) — не у компонента, а у `TListLayoutPlugin`, подключённого с `flatProps`: пропы выходят наружу без префикса и потому неотличимы от собственных. Так их получают и ListBox, и Select — без общего предка.
 - Collections: `ListBoxFactory`. `TListBoxExtension` (проброс `disabled`/`size`/`variant`/`view`) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (только `view`) ← `TBaseItemExtension`. Разрешение `wordWrap` из адаптера ушло: `data-word-wrap` элементам ставит плагин.

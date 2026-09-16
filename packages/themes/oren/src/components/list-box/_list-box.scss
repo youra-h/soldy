@@ -1,4 +1,3 @@
-
 .s-list-box {
 	@apply flex flex-col gap-1;
 	@apply rounded-md border box-border;
@@ -35,7 +34,6 @@
 		@apply w-max min-w-0 max-w-none;
 	}
 }
-
 
 .s-list-box-item {
 	@apply min-h-fit;

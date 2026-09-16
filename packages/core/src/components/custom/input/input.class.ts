@@ -5,7 +5,8 @@ import type { IInput, IInputProps, TInputEvents } from './types'
 export class TInput extends TInputControl<string, IInputProps, TInputEvents> implements IInput {
 	static override baseClass = 's-input'
 
-	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<IInputProps, 'placeholder'> = {
+	static defaultValues: typeof TInputControl.defaultValues &
+		TDefaultValues<IInputProps, 'placeholder'> = {
 		...TInputControl.defaultValues,
 		placeholder: '',
 	}

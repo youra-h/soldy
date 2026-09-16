@@ -55,7 +55,8 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 	const press = (key: string, init: KeyboardEventInit = {}) =>
 		input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
 
-	const selectedValues = () => facade.engine.extensions.selection.selected.map((item) => item.value)
+	const selectedValues = () =>
+		facade.engine.extensions.selection.selected.map((item) => item.value)
 
 	return { owner, facade, items, backspace, input, root, choose, press, selectedValues }
 }

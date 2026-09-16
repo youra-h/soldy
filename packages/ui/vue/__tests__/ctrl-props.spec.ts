@@ -30,7 +30,10 @@ afterEach(() => {
 describe('написанное в разметке доезжает до чужого инстанса', () => {
 	it('Input: placeholder', async () => {
 		const ctrl = new TInput()
-		wrapper = mount(Input, { props: { ctrl, placeholder: 'Введите текст' }, attachTo: document.body })
+		wrapper = mount(Input, {
+			props: { ctrl, placeholder: 'Введите текст' },
+			attachTo: document.body,
+		})
 		await nextTick()
 
 		expect(ctrl.placeholder).toBe('Введите текст')

@@ -44,5 +44,4 @@ describe('TControl', () => {
 			focused: false,
 		})
 	})
-
 })

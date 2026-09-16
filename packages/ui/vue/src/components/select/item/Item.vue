@@ -54,7 +54,11 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 			v-bind="{ ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
-				<span v-if="indicator === 'start'" class="s-select-item__indicator" aria-hidden="true">
+				<span
+					v-if="indicator === 'start'"
+					class="s-select-item__indicator"
+					aria-hidden="true"
+				>
 					<slot name="indicator-icon" :selected="selected">
 						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
 					</slot>
@@ -68,7 +72,11 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
-				<span v-if="indicator === 'end'" class="s-select-item__indicator" aria-hidden="true">
+				<span
+					v-if="indicator === 'end'"
+					class="s-select-item__indicator"
+					aria-hidden="true"
+				>
 					<slot name="indicator-icon" :selected="selected">
 						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
 					</slot>

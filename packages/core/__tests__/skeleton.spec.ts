@@ -29,7 +29,6 @@ describe('TSkeleton', () => {
 		expect(skeleton.height).toBe(60)
 	})
 
-
 	it('should change shape', () => {
 		const skeleton = new TSkeleton()
 		const shapes: TSkeletonShape[] = ['rect', 'rounded', 'circle']

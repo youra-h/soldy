@@ -103,5 +103,6 @@ export type TRelayedEvents<
 	TSource extends Record<string, (...args: any) => any>,
 	TRules extends readonly unknown[],
 > = {
-	[TRule in TRules[number] as TRelayTo<TRule> & string]: TSource[TRelayFrom<TRule> & keyof TSource]
+	[TRule in TRules[number] as TRelayTo<TRule> & string]: TSource[TRelayFrom<TRule> &
+		keyof TSource]
 }

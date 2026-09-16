@@ -2,7 +2,11 @@ import { TBatchCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
 import { TabsFactory, TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
-import type { TTabsCollection, TTabsCollectionExtensions, TTabsCollectionFacadeEngine } from '../types'
+import type {
+	TTabsCollection,
+	TTabsCollectionExtensions,
+	TTabsCollectionFacadeEngine,
+} from '../types'
 import type { TTabsCollectionFacadeEvents } from '../types'
 import type { ITabsItem } from '../../item/types'
 import type { ITabs } from '../../types'
@@ -27,7 +31,18 @@ export class TTabsCollectionFacade extends TBatchCollectionFacade<
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Tabs. Именно здесь, а не в теле: базы
 		// трогают расширения в своих конструкторах
-		super({}, { engine: resolveEngine(options, TABS_EXTENSIONS(), TABS_OWNER_EXTENSIONS, 'Tabs', TabsFactory) as TTabsCollection })
+		super(
+			{},
+			{
+				engine: resolveEngine(
+					options,
+					TABS_EXTENSIONS(),
+					TABS_OWNER_EXTENSIONS,
+					'Tabs',
+					TabsFactory,
+				) as TTabsCollection,
+			},
+		)
 
 		this.events.relayAll(this.extensions.activation.events)
 

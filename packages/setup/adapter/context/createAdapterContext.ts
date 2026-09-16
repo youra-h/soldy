@@ -23,8 +23,7 @@ export function createAdapterContext<TInstance extends object>(
 	options: IAdapterContextOptions<TInstance>,
 	config: IAdapterContextConfig = {},
 ): IAdapterContext<TInstance> {
-	const instance =
-		options.ctrl ?? new descriptor.ctor(options.props ?? {}, options.options ?? {})
+	const instance = options.ctrl ?? new descriptor.ctor(options.props ?? {}, options.options ?? {})
 	const bundle = config.bundle ?? descriptor.createBundle(instance)
 	const accessor = descriptor.createAccessor(instance, bundle)
 

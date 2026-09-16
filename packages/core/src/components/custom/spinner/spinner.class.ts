@@ -5,7 +5,8 @@ import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
 	static override baseClass = 's-spinner'
 
-	static defaultValues: typeof TStylable.defaultValues & TDefaultValues<ISpinnerProps, 'borderWidth'> = {
+	static defaultValues: typeof TStylable.defaultValues &
+		TDefaultValues<ISpinnerProps, 'borderWidth'> = {
 		...TStylable.defaultValues,
 		variant: 'accent',
 		tag: 'span',

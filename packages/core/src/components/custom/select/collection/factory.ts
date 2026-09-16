@@ -1,6 +1,9 @@
 import { TValueSelectionExtension, TFilterExtension } from '../../../base/collection'
 import { selectionExtensions, assembleEngine } from '../../../base/collection/create/internal'
-import type { TBaseExtensionSet, TOwnerExtensionSet } from '../../../base/collection/create/internal'
+import type {
+	TBaseExtensionSet,
+	TOwnerExtensionSet,
+} from '../../../base/collection/create/internal'
 import TSelectItem from '../item/item.class'
 import type { ISelectItem } from '../item/types'
 import type { ISelect } from '../types'

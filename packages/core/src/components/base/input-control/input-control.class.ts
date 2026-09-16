@@ -17,7 +17,8 @@ export default class TInputControl<
 	TEvents extends TInputControlEvents<TValue> = TInputControlEvents<TValue>,
 	TStates extends TInputControlStates<TValue> = TInputControlStates<TValue>,
 > extends TValueControl<TValue, TProps, TEvents> {
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IInputControlProps<any>, 'readonly' | 'required' | 'id'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required' | 'id'> = {
 		...TValueControl.defaultValues,
 		readonly: false,
 		required: false,

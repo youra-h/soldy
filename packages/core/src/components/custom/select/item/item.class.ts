@@ -24,7 +24,8 @@ export default class TSelectItem<
 {
 	static override baseClass = 's-select-item'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ISelectItemProps, 'text'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<ISelectItemProps, 'text'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',

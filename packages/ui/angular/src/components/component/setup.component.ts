@@ -9,10 +9,7 @@ import type { TBinding } from '../../adapter'
  *
  * Вызывается из ngOnInit() Angular-компонента.
  */
-export function setupComponent(
-	ctrl: IComponent | undefined,
-	props: object,
-): TBinding<IComponent> {
+export function setupComponent(ctrl: IComponent | undefined, props: object): TBinding<IComponent> {
 	const adapter = createAdapterContext(ComponentDescriptor(), { ctrl, props })
 
 	return useAdapter(adapter)

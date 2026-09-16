@@ -40,7 +40,8 @@ export default class TComponentView<
 	/** Базовый CSS-класс по умолчанию (можно переопределить в наследниках). */
 	static baseClass = 's-component-view'
 
-	static defaultValues: typeof TComponent.defaultValues & TDefaultValues<IComponentViewProps, 'rendered' | 'visible' | 'tag' | 'direction'> = {
+	static defaultValues: typeof TComponent.defaultValues &
+		TDefaultValues<IComponentViewProps, 'rendered' | 'visible' | 'tag' | 'direction'> = {
 		...TComponent.defaultValues,
 		rendered: true,
 		visible: true,

@@ -1,10 +1,4 @@
-@mixin checkbox-variant(
-	$this,
-	$color: 'neutral',
-	$border: 300,
-	$mark: 500,
-	$bg-disabled: 50,
-) {
+@mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
 	#{$this}__container {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
 		border-color: var(--s-#{$color}-#{$border});

@@ -10,8 +10,8 @@ describe('TFrame', () => {
 		const frame = new TFrame()
 		expect(frame.x).toBe(0)
 		expect(frame.y).toBe(0)
-        expect(frame.width).toBe('auto')
-        expect(frame.height).toBe('auto')
+		expect(frame.width).toBe('auto')
+		expect(frame.height).toBe('auto')
 		expect(frame.visible).toBe(false)
 		expect(frame.zIndex).toBe(0)
 	})
@@ -208,9 +208,9 @@ describe('TFrame', () => {
 			width: 300,
 			height: 200,
 			visible: true,
-            position: 'absolute',
-            target: '#portal',
-        })
+			position: 'absolute',
+			target: '#portal',
+		})
 
 		const props = frame.getProps()
 		expect(props).toMatchObject({
@@ -219,8 +219,8 @@ describe('TFrame', () => {
 			width: 300,
 			height: 200,
 			visible: true,
-            position: 'absolute',
-            target: '#portal',
+			position: 'absolute',
+			target: '#portal',
 		})
 		expect(frame.toJSON()).toEqual(props)
 	})
@@ -264,53 +264,53 @@ describe('TFrame', () => {
 		expect(frame.y).toBe(50)
 	})
 
-    it('position по умолчанию fixed', () => {
-        const frame = new TFrame()
-        expect(frame.position).toBe('fixed')
-    })
+	it('position по умолчанию fixed', () => {
+		const frame = new TFrame()
+		expect(frame.position).toBe('fixed')
+	})
 
-    it('position можно задать при создании', () => {
-        const frame = new TFrame({ position: 'absolute' })
-        expect(frame.position).toBe('absolute')
-    })
+	it('position можно задать при создании', () => {
+		const frame = new TFrame({ position: 'absolute' })
+		expect(frame.position).toBe('absolute')
+	})
 
-    it('position можно изменить через сеттер', () => {
-        const frame = new TFrame()
-        frame.position = 'absolute'
-        expect(frame.position).toBe('absolute')
-    })
+	it('position можно изменить через сеттер', () => {
+		const frame = new TFrame()
+		frame.position = 'absolute'
+		expect(frame.position).toBe('absolute')
+	})
 
-    it('change:position эмитится при изменении', () => {
-        const frame = new TFrame()
-        const values: string[] = []
-        frame.events.on('change:position', (v: string) => values.push(v))
+	it('change:position эмитится при изменении', () => {
+		const frame = new TFrame()
+		const values: string[] = []
+		frame.events.on('change:position', (v: string) => values.push(v))
 
-        frame.position = 'absolute'
-        expect(values).toEqual(['absolute'])
-    })
+		frame.position = 'absolute'
+		expect(values).toEqual(['absolute'])
+	})
 
-    it('target по умолчанию body', () => {
-        const frame = new TFrame()
-        expect(frame.target).toBe('body')
-    })
+	it('target по умолчанию body', () => {
+		const frame = new TFrame()
+		expect(frame.target).toBe('body')
+	})
 
-    it('target можно задать при создании', () => {
-        const frame = new TFrame({ target: '#portal' })
-        expect(frame.target).toBe('#portal')
-    })
+	it('target можно задать при создании', () => {
+		const frame = new TFrame({ target: '#portal' })
+		expect(frame.target).toBe('#portal')
+	})
 
-    it('target можно изменить через сеттер', () => {
-        const frame = new TFrame()
-        frame.target = '#my-modal'
-        expect(frame.target).toBe('#my-modal')
-    })
+	it('target можно изменить через сеттер', () => {
+		const frame = new TFrame()
+		frame.target = '#my-modal'
+		expect(frame.target).toBe('#my-modal')
+	})
 
-    it('change:target эмитится при изменении', () => {
-        const frame = new TFrame()
-        const values: string[] = []
-        frame.events.on('change:target', (v: string) => values.push(v))
+	it('change:target эмитится при изменении', () => {
+		const frame = new TFrame()
+		const values: string[] = []
+		frame.events.on('change:target', (v: string) => values.push(v))
 
-        frame.target = '#portal'
-        expect(values).toEqual(['#portal'])
-    })
+		frame.target = '#portal'
+		expect(values).toEqual(['#portal'])
+	})
 })

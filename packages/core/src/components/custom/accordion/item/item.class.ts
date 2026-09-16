@@ -24,7 +24,8 @@ export default class TAccordionItem<
 {
 	static override baseClass = 's-accordion-item'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',

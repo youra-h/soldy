@@ -31,7 +31,9 @@ function typesOf(type: unknown): unknown[] {
  * Строится один раз на класс: дескриптор доступен на уровне модуля, поэтому,
  * в отличие от Angular, кодогенерация не нужна.
  */
-export function buildAttributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeBinding> {
+export function buildAttributeMap(
+	descriptor: IComponentDescriptor,
+): Map<string, IAttributeBinding> {
 	const inspector = createInspector(descriptor)
 	const map = new Map<string, IAttributeBinding>()
 

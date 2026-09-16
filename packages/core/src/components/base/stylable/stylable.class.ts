@@ -15,7 +15,8 @@ export default class TStylable<
 	TEvents extends TStylableEvents = TStylableEvents,
 	TStates extends TStylableStates = TStylableStates,
 > extends TComponentView<TProps, TEvents, TStates> {
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IStylableProps, 'size' | 'variant'> = {
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<IStylableProps, 'size' | 'variant'> = {
 		...TComponentView.defaultValues,
 		size: 'normal',
 		variant: 'normal',

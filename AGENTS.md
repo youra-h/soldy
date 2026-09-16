@@ -146,13 +146,13 @@ notifications`. Фильтра по тексту в стороже нет и б�
 ```ts
 // packages/ui/vue/.../setup.component.ts
 watch(
-    () => instance.open,
-    (open) => {
-        dismiss.enabled = open
-    },
+  () => instance.open,
+  (open) => {
+    dismiss.enabled = open
+  },
 )
 dismiss.events.on('dismiss', () => {
-    instance.open = false
+  instance.open = false
 })
 ```
 
@@ -358,12 +358,12 @@ Accordion она не имеет собственной идентичности
 ```ts
 // ❌ читается как «массив элементов»
 bundles.events.on('engine:bound', (collection) => {
-    this._collection = collection
+  this._collection = collection
 })
 
 // ✅
 bundles.events.on('engine:bound', (engine) => {
-    this._engine = engine
+  this._engine = engine
 })
 ```
 
@@ -547,13 +547,13 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
 Всем остальным — плагинам, расширениям адаптера, фасадам, коду `packages/ui/*`
 — driver недоступен. Они работают со стандартными расширениями:
 
-| Что нужно                                                               | Через что                        |
-| ----------------------------------------------------------------------- | -------------------------------- |
-| список элементов, длина, поиск, индекс                                  | `engine.extensions.batch.items`  |
-| `item:added` / `item:removed` / `item:moved` / `reset` / `change:items` | `engine.extensions.plain.events` |
+| Что нужно                                                                                                   | Через что                        |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| список элементов, длина, поиск, индекс                                                                      | `engine.extensions.batch.items`  |
+| `item:added` / `item:removed` / `item:moved` / `reset` / `change:items`                                     | `engine.extensions.plain.events` |
 | `item:add:before` / `item:update:before` / `item:remove:before` / `item:move:before` / `items:clear:before` | `engine.extensions.plain.events` |
-| вставка, удаление, перемещение, обновление                              | `engine.extensions.plain`        |
-| замена набора целиком                                                   | `engine.extensions.batch`        |
+| вставка, удаление, перемещение, обновление                                                                  | `engine.extensions.plain`        |
+| замена набора целиком                                                                                       | `engine.extensions.batch`        |
 
 `plain` и `batch` есть у любой коллекции компонента — их ставит
 `baseExtensions()` (`base/collection/create/internal.ts`), поэтому проверять
@@ -846,20 +846,20 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Contributions** are arrow-function factories returning an `IContribution` dictionary:
 
-    ```ts
-    export const ButtonContribution = (): IContribution => ({
-        props: { view: { type: String, triggers: ['change:view'] } },
-        events: ['click'],
-    })
-    ```
+  ```ts
+  export const ButtonContribution = (): IContribution => ({
+    props: { view: { type: String, triggers: ['change:view'] } },
+    events: ['click'],
+  })
+  ```
 
-    `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
+  `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
 
 - **Descriptors** are arrow-function factories too. Call them when used as `extends` / options (do not pass the function reference):
 
-    ```ts
-    export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
-    ```
+  ```ts
+  export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
+  ```
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
@@ -929,8 +929,8 @@ conformance-тест сразу покажет, какие пакеты её е�
 
 ```ts
 export const close: TIconSource = {
-    viewBox: '0 -960 960 960',
-    body: '<path d="M480-424 284-228q…"/>',
+  viewBox: '0 -960 960 960',
+  body: '<path d="M480-424 284-228q…"/>',
 }
 ```
 
@@ -1273,11 +1273,11 @@ Vue приводит сам. Расхождение чинится значен�
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
 export const ButtonContribution = (): IContribution => ({
-    slots: {
-        leading: { description: 'Перед текстом' },
-        default: { scope: { text: defineType<string>(String) } },
-        trailing: { description: 'После текста' },
-    },
+  slots: {
+    leading: { description: 'Перед текстом' },
+    default: { scope: { text: defineType<string>(String) } },
+    trailing: { description: 'После текста' },
+  },
 })
 ```
 

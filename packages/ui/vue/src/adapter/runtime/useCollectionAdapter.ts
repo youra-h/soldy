@@ -18,7 +18,9 @@ import {
  * пересечение в плоский тип, и `items` из объявленного пропа перестаёт
  * совмещаться с `items` фасада — шаблон видит union, у которого нет `uid`.
  */
-export type TCollectionBinding<TProps, TInstance> = { plugins: IPluginBundle | null } & TUnwrapRefs<TProps> &
+export type TCollectionBinding<TProps, TInstance> = {
+	plugins: IPluginBundle | null
+} & TUnwrapRefs<TProps> &
 	TExtractControllerState<TInstance>
 
 /**

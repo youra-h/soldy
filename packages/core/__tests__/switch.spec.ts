@@ -11,7 +11,9 @@ describe('TSwitch', () => {
 		expect(b.value).toBe(false)
 
 		const c = new TSwitch({
-			value: true, size: 'xl', variant: 'accent',
+			value: true,
+			size: 'xl',
+			variant: 'accent',
 		})
 		expect(c.classes.toArray()).toContain('s-switch')
 	})
@@ -25,5 +27,4 @@ describe('TSwitch', () => {
 		sw.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })
 	})
-
 })

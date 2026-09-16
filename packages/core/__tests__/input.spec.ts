@@ -30,7 +30,6 @@ describe('TInput', () => {
 
 		input.required = true
 		expect(input.classes.toArray()).toContain('s-input--required')
-
 	})
 
 	it('value setter эмитит change:value и input:value', () => {
@@ -131,5 +130,4 @@ describe('TInput', () => {
 		expect(input.value).toBe('b')
 		expect(input.readonly).toBe(true)
 	})
-
 })

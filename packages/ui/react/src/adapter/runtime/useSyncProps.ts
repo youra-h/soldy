@@ -92,7 +92,8 @@ export function useSyncProps(
 	function bindInput(props: object): void {
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const exportName = inspector.getExportPropName(prop)
-			const value: unknown = Reflect.get(props, exportName) ?? Reflect.get(props, prop.name.name)
+			const value: unknown =
+				Reflect.get(props, exportName) ?? Reflect.get(props, prop.name.name)
 
 			if (value === undefined) continue
 

@@ -18,15 +18,17 @@ import type {
 export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implements ITabs {
 	static override baseClass = 's-tabs'
 
-	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'view' | 'closable'> = {
-		...TControl.defaultValues,
-		orientation: 'horizontal',
-		alignment: 'start',
-		position: 'start',
-		view: 'line',
-		closable: false,
-		variant: 'normal',
-	}
+	static defaultValues: typeof TControl.defaultValues &
+		TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'view' | 'closable'> =
+		{
+			...TControl.defaultValues,
+			orientation: 'horizontal',
+			alignment: 'start',
+			position: 'start',
+			view: 'line',
+			closable: false,
+			variant: 'normal',
+		}
 
 	protected _orientation!: TTabsOrientation
 	protected _alignment!: TTabsAlignment

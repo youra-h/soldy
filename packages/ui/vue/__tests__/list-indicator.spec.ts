@@ -76,7 +76,9 @@ describe('ListBox: отметка выбранного', () => {
 
 		await clickItem(1)
 
-		const icons = listItems().map((item) => !!item.querySelector('.s-list-box-item__indicator svg'))
+		const icons = listItems().map(
+			(item) => !!item.querySelector('.s-list-box-item__indicator svg'),
+		)
 
 		expect(icons).toEqual([false, true, false])
 	})
@@ -101,9 +103,9 @@ describe('ListBox: отметка выбранного', () => {
 		renderListBox({ indicator: 'start' })
 		await clickItem(0)
 
-		expect(document.querySelector('.s-list-box-item__indicator')?.getAttribute('aria-hidden')).toBe(
-			'true',
-		)
+		expect(
+			document.querySelector('.s-list-box-item__indicator')?.getAttribute('aria-hidden'),
+		).toBe('true')
 	})
 
 	it('в multiple отметка стоит у каждого выбранного', async () => {
@@ -197,8 +199,8 @@ describe('Select: отметка выбранной опции', () => {
 	it('отметка не попадает в дерево доступности', async () => {
 		await renderSelect({ indicator: 'start' })
 
-		expect(document.querySelector('.s-select-item__indicator')?.getAttribute('aria-hidden')).toBe(
-			'true',
-		)
+		expect(
+			document.querySelector('.s-select-item__indicator')?.getAttribute('aria-hidden'),
+		).toBe('true')
 	})
 })

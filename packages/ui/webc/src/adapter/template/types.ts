@@ -24,9 +24,7 @@ import type { TInstanceState } from '@soldy/setup'
  * позволяет обойтись без узлов-обёрток, которых нет в остальных пяти адаптерах:
  * лишний `<span>` вокруг иконки сломал бы селекторы темы.
  */
-export type TSlotTarget =
-	| { mode: 'append'; node: HTMLElement }
-	| { mode: 'before'; node: Node }
+export type TSlotTarget = { mode: 'append'; node: HTMLElement } | { mode: 'before'; node: Node }
 
 /** Точки распределения света: имя слота → куда класть содержимое. */
 export type TSlotTargets = Record<string, TSlotTarget>

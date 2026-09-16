@@ -72,7 +72,8 @@ export interface IListBoxCollectionProps<
 	TItem = IListBoxItem,
 	TCollection = TListBoxCollectionFacadeEngine,
 >
-	extends ICollectionProps<TCollection>,
+	extends
+		ICollectionProps<TCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,
 		ISelectionCollectionProps {}
 

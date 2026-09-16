@@ -178,7 +178,10 @@ describe('догон накопленного при привязке', () => {
 	 */
 	it('_.active из items уровня 1 доезжает до активации', () => {
 		const engine = createEngine({
-			items: [{ value: 'a', text: 'A' }, { value: 'b', text: 'B', _: { active: true } }],
+			items: [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B', _: { active: true } },
+			],
 		})
 
 		const owner = new TTabs()

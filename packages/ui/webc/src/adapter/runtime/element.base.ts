@@ -30,8 +30,18 @@
 
 import type { IComponentView } from '@soldy/core'
 import { DEFAULT_SLOT, type IComponentDescriptor, type TInstanceState } from '@soldy/setup'
-import { buildAttributeMap, coerceAttribute, createInspector, type IAttributeBinding } from '../common'
-import { applyAttributeSet, type ITemplate, type ITemplateContext, type TSlotTargets } from '../template'
+import {
+	buildAttributeMap,
+	coerceAttribute,
+	createInspector,
+	type IAttributeBinding,
+} from '../common'
+import {
+	applyAttributeSet,
+	type ITemplate,
+	type ITemplateContext,
+	type TSlotTargets,
+} from '../template'
 import type { TBinding } from './useAdapter'
 
 /** Кэш карт атрибутов по дескриптору — строить её на каждый элемент незачем. */
@@ -76,7 +86,9 @@ function attributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeB
 	return map
 }
 
-export abstract class TSoldyElement<TInstance extends IComponentView = IComponentView> extends HTMLElement {
+export abstract class TSoldyElement<
+	TInstance extends IComponentView = IComponentView,
+> extends HTMLElement {
 	protected binding?: TBinding<TInstance>
 
 	/**
@@ -160,7 +172,9 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 		// Снимаем свет ДО первой отрисовки: дальше он живёт внутри корня
 		this._light = groupBySlot(Array.from(this.childNodes))
 
-		this.binding = this.setup(this._ctrl, this._pending, (name, value) => this._onUpdate(name, value))
+		this.binding = this.setup(this._ctrl, this._pending, (name, value) =>
+			this._onUpdate(name, value),
+		)
 		this.binding.syncProps(this._pending)
 
 		this._flush(true)
@@ -267,7 +281,11 @@ export abstract class TSoldyElement<TInstance extends IComponentView = IComponen
 	}
 
 	/** Корень нужного тега и точка содержимого; `recreated` — корень пересоздан. */
-	private _ensureRoot(tag: string): { root: HTMLElement; content: HTMLElement; recreated: boolean } {
+	private _ensureRoot(tag: string): {
+		root: HTMLElement
+		content: HTMLElement
+		recreated: boolean
+	} {
 		if (this._root && this._content && this._root.tagName.toLowerCase() === tag) {
 			return { root: this._root, content: this._content, recreated: false }
 		}

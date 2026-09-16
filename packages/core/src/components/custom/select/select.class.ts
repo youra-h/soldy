@@ -60,7 +60,20 @@ export class TSelect<
 {
 	static override baseClass = 's-select'
 
-	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISelectProps, keyof IListProps | 'open' | 'placeholder' | 'closeOnSelect' | 'clearable' | 'clearLabel' | 'editable' | 'editableMode' | 'removeOnBackspace' | 'placement'> = {
+	static defaultValues: typeof TInputControl.defaultValues &
+		TDefaultValues<
+			ISelectProps,
+			| keyof IListProps
+			| 'open'
+			| 'placeholder'
+			| 'closeOnSelect'
+			| 'clearable'
+			| 'clearLabel'
+			| 'editable'
+			| 'editableMode'
+			| 'removeOnBackspace'
+			| 'placement'
+		> = {
 		...TInputControl.defaultValues,
 		...LIST_DEFAULTS,
 		open: false,

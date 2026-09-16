@@ -31,15 +31,18 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Select. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
-		super({}, {
-			engine: resolveEngine(
-				options,
-				SELECT_EXTENSIONS(),
-				SELECT_OWNER_EXTENSIONS,
-				'Select',
-				SelectFactory,
-			) as TSelectCollection,
-		})
+		super(
+			{},
+			{
+				engine: resolveEngine(
+					options,
+					SELECT_EXTENSIONS(),
+					SELECT_OWNER_EXTENSIONS,
+					'Select',
+					SelectFactory,
+				) as TSelectCollection,
+			},
+		)
 
 		this.events.relayAll(this._tags.events)
 

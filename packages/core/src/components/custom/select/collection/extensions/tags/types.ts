@@ -9,8 +9,10 @@ import type { ISelectItem } from '../../../item/types'
  * Живёт только в `multiple`: в `single` инстанса нет вовсе — теги рисуют
  * выбор набора, а не одной опции.
  */
-export interface ISelectTagsExtension<TItem extends ISelectItem = ISelectItem>
-	extends IExtension<TItem, TSelectTagsExtensionEvents> {
+export interface ISelectTagsExtension<TItem extends ISelectItem = ISelectItem> extends IExtension<
+	TItem,
+	TSelectTagsExtensionEvents
+> {
 	/** Инстанс `TTags`, пока режим `multiple`; иначе `null`. */
 	readonly tags: ITags | null
 	/** Коллекция тегов — та, что рисует `tags` своими элементами. */

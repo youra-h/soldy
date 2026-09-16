@@ -32,11 +32,12 @@ const root = (target: HTMLElement) => target.firstElementChild as HTMLElement
 describe('соответствие контракту', () => {
 	it('обёртка передаёт ровно слоты дескриптора', () => {
 		// children — это `default` контракта в терминах Svelte
-		expect(ButtonDescriptor().getSlots().map((slot) => slot.name).sort()).toEqual([
-			'default',
-			'leading',
-			'trailing',
-		])
+		expect(
+			ButtonDescriptor()
+				.getSlots()
+				.map((slot) => slot.name)
+				.sort(),
+		).toEqual(['default', 'leading', 'trailing'])
 	})
 })
 

@@ -6,4 +6,3 @@ import type { EventProps, UseDomProps } from '../../types'
 export type ButtonEventProps = EventProps<typeof ButtonDescriptor>
 
 export type ButtonProps = UseDomProps<typeof ButtonDescriptor, IButton, ButtonEventProps>
-

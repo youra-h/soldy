@@ -33,7 +33,11 @@ describe('ключ default без значения', () => {
 		wrapper = mount(
 			{
 				render: () =>
-					h(Tabs, { closable: true }, { default: () => [h(TabsItem, { value: 'a', text: 'A' })] }),
+					h(
+						Tabs,
+						{ closable: true },
+						{ default: () => [h(TabsItem, { value: 'a', text: 'A' })] },
+					),
 			},
 			{ attachTo: document.body },
 		)
@@ -54,6 +58,8 @@ describe('ключ default без значения', () => {
 
 		expect(select.props('value')).toBeUndefined()
 		expect(bundle).toBeInstanceOf(TPluginBundle)
-		expect(bundle instanceof TPluginBundle && bundle.getInstance<ISelect>()?.value).toBeUndefined()
+		expect(
+			bundle instanceof TPluginBundle && bundle.getInstance<ISelect>()?.value,
+		).toBeUndefined()
 	})
 })

@@ -153,7 +153,7 @@ describe('TBatchExtension', () => {
 
 		col.extensions.batch.patch([
 			{ id: 1, name: 'a-updated' }, // update
-			{ id: 3, name: 'c' },         // add
+			{ id: 3, name: 'c' }, // add
 		])
 
 		const byId = new Map([...col.extensions.batch.items].map((i) => [i.id, i.name]))

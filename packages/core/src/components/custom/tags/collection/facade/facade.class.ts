@@ -1,8 +1,16 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TCollectionEngine, TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
+import type {
+	TCollectionEngine,
+	TCollectionFacadeOptions,
+	TSelectionFacadeProps,
+} from '../../../../base/collection'
 import { TagsFactory, TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
-import type { TTagsCollection, TTagsCollectionExtensions, TTagsCollectionFacadeEngine } from '../types'
+import type {
+	TTagsCollection,
+	TTagsCollectionExtensions,
+	TTagsCollectionFacadeEngine,
+} from '../types'
 import type { ITagsItem } from '../../item/types'
 import type { ITags } from '../../types'
 import type { TTagsView } from '../../types'
@@ -30,15 +38,18 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Tags. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
-		super({}, {
-			engine: resolveEngine(
-				options,
-				TAGS_EXTENSIONS(),
-				TAGS_OWNER_EXTENSIONS,
-				'Tags',
-				createEngine,
-			) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
-		})
+		super(
+			{},
+			{
+				engine: resolveEngine(
+					options,
+					TAGS_EXTENSIONS(),
+					TAGS_OWNER_EXTENSIONS,
+					'Tags',
+					createEngine,
+				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
+			},
+		)
 
 		this.applyProps(props)
 	}

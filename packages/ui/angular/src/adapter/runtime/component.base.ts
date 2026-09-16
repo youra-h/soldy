@@ -166,7 +166,11 @@ export abstract class TComponentBase<TInstance extends IEntity>
 				const state = this.state() as Record<string, TAttributesMap | undefined>
 
 				appliedAria = applyAttributes(elementRef.nativeElement, state['aria'], appliedAria)
-				appliedAttrs = applyAttributes(elementRef.nativeElement, state['attrs'], appliedAttrs)
+				appliedAttrs = applyAttributes(
+					elementRef.nativeElement,
+					state['attrs'],
+					appliedAttrs,
+				)
 				appliedDataset = applyAttributes(
 					elementRef.nativeElement,
 					state['dataset'],

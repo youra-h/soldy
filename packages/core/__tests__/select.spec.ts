@@ -141,7 +141,6 @@ describe('когда панель открывать нельзя', () => {
 
 		expect(select.open).toBe(false)
 	})
-
 })
 
 describe('clearAria — имя кнопки очистки', () => {
@@ -581,7 +580,9 @@ describe('теги в multiple', () => {
 	 * проверка по нему гасила подсказку у пустого поля.
 	 */
 	it('плейсхолдер гаснет только когда тег реально появился', () => {
-		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { placeholder: 'Выберите' })
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], {
+			placeholder: 'Выберите',
+		})
 
 		collection.mode = 'multiple'
 

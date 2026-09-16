@@ -197,9 +197,7 @@ export class TSelectKeyboardPlugin
 	 * любое другое открытие без явного участника подсветку не ставят.
 	 */
 	highlightSelected(): void {
-		const selected = this._engine?.extensions?.selection?.selected?.[0] as
-			| IControl
-			| undefined
+		const selected = this._engine?.extensions?.selection?.selected?.[0] as IControl | undefined
 
 		if (selected && this.indexOf(selected.uid) !== -1) {
 			this.highlight(selected.uid)

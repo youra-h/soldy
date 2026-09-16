@@ -13,7 +13,11 @@
 import { defineComponent } from '../base'
 import { TFrame } from '@soldy/core'
 import type { IFrameProps, TFrameEvents } from '@soldy/core'
-import { FrameLayoutPluginDescriptor, AnchorPluginDescriptor, AriaPluginDescriptor } from '../plugins'
+import {
+	FrameLayoutPluginDescriptor,
+	AnchorPluginDescriptor,
+	AriaPluginDescriptor,
+} from '../plugins'
 import { FrameContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 

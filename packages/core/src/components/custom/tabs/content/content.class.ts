@@ -31,7 +31,8 @@ export class TTabsContent<
 {
 	static override baseClass = 's-tabs__panel'
 
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<ITabsContentProps, 'value'> = {
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<ITabsContentProps, 'value'> = {
 		...TComponentView.defaultValues,
 		value: '',
 	}

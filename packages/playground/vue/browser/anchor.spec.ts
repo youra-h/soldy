@@ -55,7 +55,10 @@ const TopStartHarness = defineComponent({
 							anchor_placement: 'top-start',
 							class: 's-test-panel',
 						},
-						{ default: () => h('div', { style: 'width: 120px; height: 60px' }, 'panel') },
+						{
+							default: () =>
+								h('div', { style: 'width: 120px; height: 60px' }, 'panel'),
+						},
 					)
 				: null,
 		])
@@ -224,7 +227,10 @@ const RtlHarness = defineComponent({
 								anchor_placement: 'bottom-start',
 								class: 's-test-panel',
 							},
-							{ default: () => h('div', { style: 'width: 120px; height: 40px' }, 'panel') },
+							{
+								default: () =>
+									h('div', { style: 'width: 120px; height: 40px' }, 'panel'),
+							},
 						)
 					: null,
 			],
@@ -239,7 +245,9 @@ const selectWith = (placement?: TSelectPlacement) =>
 		{ name: 'Город', ...(placement ? { placement } : {}) },
 		{
 			default: () =>
-				OPTIONS.map((text, index) => h(SelectItem, { key: text, value: String(index), text })),
+				OPTIONS.map((text, index) =>
+					h(SelectItem, { key: text, value: String(index), text }),
+				),
 		},
 	)
 
@@ -369,7 +377,9 @@ describe('пересчёт без scroll/resize окна', () => {
 
 		// Сначала убеждаемся, что поменялся именно border-box якоря: иначе
 		// проверка ниже прошла бы и на неподвижной панели.
-		await expect.poll(() => anchor().getBoundingClientRect().width).toBeGreaterThan(before.width)
+		await expect
+			.poll(() => anchor().getBoundingClientRect().width)
+			.toBeGreaterThan(before.width)
 		expect(anchor().getBoundingClientRect().height).toBeGreaterThan(before.height)
 
 		await expect

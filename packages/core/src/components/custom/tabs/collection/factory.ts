@@ -1,7 +1,10 @@
 import { TTabsCollection } from './types'
 import { TTabsExtension, TTabsContentExtension } from './extensions'
 import { activationExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type {
+	TBaseExtensionSet,
+	TOwnerExtensionSet,
+} from './../../../base/collection/create/internal'
 import TTabsItem from './../item/item.class'
 import type { ITabsItem } from './../item/types'
 import type { ITabs } from './../types'

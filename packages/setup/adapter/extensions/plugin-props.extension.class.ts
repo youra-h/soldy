@@ -42,7 +42,8 @@ export class TPluginPropsExtension {
 				// нужны потому же, почему и там: адаптеры зовут проп
 				// `aria_label`, а тесты и headless-код — просто `label`.
 				const value: unknown =
-					Reflect.get(context.props, underscorePropNaming(prop.name)) ?? Reflect.get(context.props, prop.name.name)
+					Reflect.get(context.props, underscorePropNaming(prop.name)) ??
+					Reflect.get(context.props, prop.name.name)
 
 				if (value === undefined) continue
 

@@ -124,7 +124,9 @@ const castByVue = (props: readonly IPropDeclaration[]) =>
 	props.filter((declaration) => !declaration.protected && hasBoolean(declaration.type))
 
 function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
-	return typeof value === 'object' && value !== null && 'createBundle' in value && 'plugins' in value
+	return (
+		typeof value === 'object' && value !== null && 'createBundle' in value && 'plugins' in value
+	)
 }
 
 /** Все дескрипторы компонентов из экспорта — не ручным списком: новый попадёт сюда сам. */

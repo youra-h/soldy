@@ -22,11 +22,13 @@ export type TBaseCollectionExtensions<TItem extends object> = {
 }
 
 /** Уровень 2: базовый набор плюс активный элемент — модель Tabs. */
-export type TActivationCollectionExtensions<TItem extends object> = TBaseCollectionExtensions<TItem> & {
-	activation: TActivationExtension<TItem>
-}
+export type TActivationCollectionExtensions<TItem extends object> =
+	TBaseCollectionExtensions<TItem> & {
+		activation: TActivationExtension<TItem>
+	}
 
 /** Уровень 2: базовый набор плюс выбор — модель ListBox, Select, Accordion. */
-export type TSelectionCollectionExtensions<TItem extends object> = TBaseCollectionExtensions<TItem> & {
-	selection: TSelectionExtension<TItem>
-}
+export type TSelectionCollectionExtensions<TItem extends object> =
+	TBaseCollectionExtensions<TItem> & {
+		selection: TSelectionExtension<TItem>
+	}

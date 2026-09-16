@@ -167,7 +167,8 @@ export const noExplicitAny = ESLintUtils.RuleCreator.withoutDocs({
 	meta: {
 		type: 'suggestion',
 		docs: {
-			description: '`any` только в констрейнте, extends условного типа и аргументе дженерика проекта',
+			description:
+				'`any` только в констрейнте, extends условного типа и аргументе дженерика проекта',
 		},
 		messages: {
 			unexpectedAny:
@@ -179,7 +180,11 @@ export const noExplicitAny = ESLintUtils.RuleCreator.withoutDocs({
 	create(context) {
 		return {
 			TSAnyKeyword(node) {
-				if (isInTypeBound(node) || isInAllowedSignature(node) || isProjectGenericArgument(node)) {
+				if (
+					isInTypeBound(node) ||
+					isInAllowedSignature(node) ||
+					isProjectGenericArgument(node)
+				) {
 					return
 				}
 

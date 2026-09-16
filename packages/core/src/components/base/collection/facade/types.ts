@@ -32,8 +32,8 @@ export type TCollectionComponentEvents<TItem extends object> = TPlainEvents<TIte
 	TCollectionEngineEvents<TCollectionEngine<TItem, any>>
 
 /** События фасада коллекции с расширением `batch`: набор базы плюс карта `batch`. */
-export type TBatchCollectionFacadeEvents<TItem extends object> =
-	TCollectionComponentEvents<TItem> & TBatchEvents<TItem>
+export type TBatchCollectionFacadeEvents<TItem extends object> = TCollectionComponentEvents<TItem> &
+	TBatchEvents<TItem>
 
 /** События фасада коллекции с расширением `selection`: набор `batch` плюс карта `selection`. */
 export type TSelectionCollectionFacadeEvents<TItem extends object> =

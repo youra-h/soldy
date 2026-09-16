@@ -29,7 +29,8 @@ export default class TListBoxItem<
 {
 	static override baseClass = 's-list-box-item'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IListBoxItemProps, 'text', 'contentFit'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<IListBoxItemProps, 'text', 'contentFit'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',

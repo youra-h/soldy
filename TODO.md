@@ -5,6 +5,7 @@
 **Цель:** каждый пакет собирает собственные декларации типов, а UI-либы (`ui/vue` и др.) ссылаются на готовые типы, а не на исходники. Сейчас это сделано «в лоб» для `@soldy/ui-vue` через `preserveSymlinks` + `paths: {}` (см. `packages/ui/vue/tsconfig.lib.json`) — депсы при этом чек-аются как `.ts`-исходники.
 
 ### Текущее состояние
+
 - Все `@soldy/*` пакеты — `private: true`, отдают исходники: `main`/`exports` → `./src/index.ts`.
 - `@soldy/ui-vue`: `build:lib` (vite lib) + `build:types` (vue-tsc → `lib/*.d.ts`) работают.
 
@@ -32,4 +33,5 @@
    - Для потребителей указать `types`, `exports` с `import`/`require` и `types`.
 
 ### Ссылки
+
 - Пример текущей сборки Vue: `packages/ui/vue/vite.lib.config.ts`, `packages/ui/vue/tsconfig.lib.json`.

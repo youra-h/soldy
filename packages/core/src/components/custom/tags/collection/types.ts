@@ -72,7 +72,8 @@ export interface ITagsCollectionProps<
 	TItem = ITagsItem,
 	TCollection = TTagsCollectionFacadeEngine,
 >
-	extends ICollectionProps<TCollection>,
+	extends
+		ICollectionProps<TCollection>,
 		IBatchCollectionProps<TItemProps, TItem>,
 		ISelectionCollectionProps {}
 
@@ -105,5 +106,4 @@ export type TTagsAdapters<TItem extends ITagsItem = ITagsItem> = {
  * У самого `TTagsCollectionFacade` карты нет — сверх базы он не релеит ничего,
  * и дефолт `TSelectionCollectionFacade` уже точен.
  */
-export type TTagsItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
-	TTagsItemEventsExtension
+export type TTagsItemCollectionFacadeEvents = TSelectionItemFacadeEvents & TTagsItemEventsExtension

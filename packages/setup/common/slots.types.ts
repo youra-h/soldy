@@ -30,9 +30,9 @@ type TSlotValue<TScope extends object, TNode> = keyof TScope extends never
  *     → { leading?: ReactNode; children?: ReactNode | ((s: { text: string }) => ReactNode); trailing?: ReactNode }
  */
 export type TSlotProps<TSlots extends object, TNode> = {
-	[K in keyof TSlots as K extends typeof DEFAULT_SLOT
-		? 'children'
-		: K]?: TSlots[K] extends object ? TSlotValue<TSlots[K], TNode> : TNode
+	[K in keyof TSlots as K extends typeof DEFAULT_SLOT ? 'children' : K]?: TSlots[K] extends object
+		? TSlotValue<TSlots[K], TNode>
+		: TNode
 }
 
 /**

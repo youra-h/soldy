@@ -34,8 +34,7 @@ export type TListBoxEvents = TValueControlEvents<TListBoxValue> &
  * Общий там только контракт: реализация у каждого своя, потому что предок
  * занят (`TValueControl` здесь, `TInputControl` там).
  */
-export interface IListBoxComponentProps
-	extends IValueControlProps<TListBoxValue>, IListProps {
+export interface IListBoxComponentProps extends IValueControlProps<TListBoxValue>, IListProps {
 	/** Внешний вид компонента */
 	view?: TListBoxView
 }
@@ -50,7 +49,8 @@ export interface IListBox<
 	TProps extends IListBoxComponentProps = IListBoxProps,
 	TEvents extends TListBoxEvents = TListBoxEvents,
 	TStates extends TListBoxStates = TListBoxStates,
-> extends IValueControl<TListBoxValue, TProps, TEvents, TStates>, IList {
+>
+	extends IValueControl<TListBoxValue, TProps, TEvents, TStates>, IList {
 	/** Внешний вид компонента */
 	view: TListBoxView
 }

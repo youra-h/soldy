@@ -147,10 +147,7 @@ describe('TComponentView', () => {
 	it('states позволяет передавать инстансы или конструкторы для visibility-state', () => {
 		const log: string[] = []
 
-		class TLoggedVisibilityState
-			extends TStateUnit<boolean>
-			implements IVisibilityState
-		{
+		class TLoggedVisibilityState extends TStateUnit<boolean> implements IVisibilityState {
 			constructor({ initial }: { initial: boolean }) {
 				super({ initial })
 				this.events.on('change', (payload) => {
@@ -184,7 +181,6 @@ describe('TComponentView', () => {
 
 		expect(log).toContain('state:value=true')
 		expect(log).toContain('component-view:change:visible=true')
-
 	})
 
 	it('states.rendered доступен через instance.states и setResolver меняет возвращаемое значение', () => {

@@ -6,13 +6,7 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 </script>
 
 <template>
-	<div
-		ref="rootElement"
-		v-if="rendered"
-		v-show="visible"
-		:class="classes"
-		v-bind="attrs"
-	>
+	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="attrs">
 		<slot>
 			<!--
 				Слоты элементов статические и получают элемент через scope —

@@ -17,7 +17,8 @@ export default class TSkeleton
 {
 	static override baseClass = 's-skeleton'
 
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<ISkeletonProps, 'shape' | 'animation' | 'variant' | 'width' | 'height'> = {
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<ISkeletonProps, 'shape' | 'animation' | 'variant' | 'width' | 'height'> = {
 		...TComponentView.defaultValues,
 		shape: 'rounded',
 		animation: 'pulse',

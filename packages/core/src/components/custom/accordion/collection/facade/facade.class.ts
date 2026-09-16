@@ -30,15 +30,18 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно Accordion. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
-		super({}, {
-			engine: resolveEngine(
-				options,
-				ACCORDION_EXTENSIONS(),
-				ACCORDION_OWNER_EXTENSIONS,
-				'Accordion',
-				AccordionFactory,
-			) as TAccordionCollection,
-		})
+		super(
+			{},
+			{
+				engine: resolveEngine(
+					options,
+					ACCORDION_EXTENSIONS(),
+					ACCORDION_OWNER_EXTENSIONS,
+					'Accordion',
+					AccordionFactory,
+				) as TAccordionCollection,
+			},
+		)
 
 		this.events.relayAll(this.extensions.accordion.events)
 

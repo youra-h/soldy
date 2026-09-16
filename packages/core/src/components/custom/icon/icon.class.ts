@@ -19,11 +19,12 @@ export default class TIcon
 {
 	static override baseClass = 's-icon'
 
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IIconProps, 'size'> = {
-		...TComponentView.defaultValues,
-		size: 'normal',
-		tag: 'error',
-	}
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IIconProps, 'size'> =
+		{
+			...TComponentView.defaultValues,
+			size: 'normal',
+			tag: 'error',
+		}
 
 	protected _width: string | number | undefined
 	protected _height: string | number | undefined

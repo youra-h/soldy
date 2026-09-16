@@ -15,7 +15,8 @@ export default class TInteractive<
 	TEvents extends TInteractiveEvents = TInteractiveEvents,
 	TStates extends TInteractiveStates = TInteractiveStates,
 > extends TComponentView<TProps, TEvents, TStates> {
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IInteractiveProps, 'disabled' | 'focused'> = {
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<IInteractiveProps, 'disabled' | 'focused'> = {
 		...TComponentView.defaultValues,
 		disabled: false,
 		focused: false,

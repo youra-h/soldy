@@ -26,7 +26,10 @@ async function ruleIds(code: string, filePath: string): Promise<string[]> {
 describe('eslint.config.ts: компоненты React не импортируют фреймворк', () => {
 	it("value-импорт из 'react' в компоненте — ошибка", async () => {
 		expect(
-			await ruleIds("import { useRef } from 'react'\nexport const x = useRef(null)", COMPONENT_TS),
+			await ruleIds(
+				"import { useRef } from 'react'\nexport const x = useRef(null)",
+				COMPONENT_TS,
+			),
 		).toContain('@typescript-eslint/no-restricted-imports')
 	})
 
@@ -39,7 +42,8 @@ describe('eslint.config.ts: компоненты React не импортирую
 	})
 
 	it("import type из 'react' в компоненте — допустимо", async () => {
-		const code = "import type { ReactElement } from 'react'\nexport const x: ReactElement | null = null"
+		const code =
+			"import type { ReactElement } from 'react'\nexport const x: ReactElement | null = null"
 
 		expect(await ruleIds(code, COMPONENT_TSX)).not.toContain(
 			'@typescript-eslint/no-restricted-imports',

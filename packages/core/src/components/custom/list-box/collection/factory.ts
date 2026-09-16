@@ -2,7 +2,10 @@ import { TListBoxCollection } from './types'
 import { TListBoxExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type {
+	TBaseExtensionSet,
+	TOwnerExtensionSet,
+} from './../../../base/collection/create/internal'
 import TListBoxItem from './../item/item.class'
 import type { IListBoxItem } from './../item/types'
 import type { IListBox } from './../types'

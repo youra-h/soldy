@@ -1,7 +1,10 @@
 import { TAccordionCollection } from './types'
 import { TAccordionExtension, TAccordionContentExtension } from './extensions'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type {
+	TBaseExtensionSet,
+	TOwnerExtensionSet,
+} from './../../../base/collection/create/internal'
 import TAccordionItem from './../item/item.class'
 import type { IAccordionItem } from './../item/types'
 import type { IAccordion } from './../types'

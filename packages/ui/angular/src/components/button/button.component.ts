@@ -30,10 +30,7 @@ export class TButtonComponent extends TComponentBase<IButton> {
 		super(ButtonInputNames, ButtonOutputNames)
 	}
 
-	protected createBinding(
-		ctrl: IButton | undefined,
-		inputs: object,
-	): TBinding<IButton> {
+	protected createBinding(ctrl: IButton | undefined, inputs: object): TBinding<IButton> {
 		return setupButton(ctrl, inputs)
 	}
 }

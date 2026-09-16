@@ -23,7 +23,8 @@ export default class TTagsItem<
 {
 	static override baseClass = 's-tags-item'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITagsItemProps, 'text' | 'closeLabel', 'closable'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<ITagsItemProps, 'text' | 'closeLabel', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',

@@ -39,7 +39,11 @@ export function propSnippet(
  * коллекции. `new TAccordion().mode = …` в реальном проекте упал бы или
  * молча ничего не сделал.
  */
-export function instanceSnippet(entry: TComponentEntry, control: TPropControl, value: unknown): string {
+export function instanceSnippet(
+	entry: TComponentEntry,
+	control: TPropControl,
+	value: unknown,
+): string {
 	return control.scope === 'collection'
 		? collectionInstanceSnippet(entry, control.name, value, control.preset)
 		: componentInstanceSnippet(entry, control.name, value, control.preset)

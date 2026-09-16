@@ -4,7 +4,9 @@ import { TInputControl } from '@soldy/core'
 describe('TInputControl', () => {
 	it('принимает form-flags через { props } и через plain props', () => {
 		const a = new TInputControl({
-			value: '', readonly: true, required: true,
+			value: '',
+			readonly: true,
+			required: true,
 		})
 		expect(a.readonly).toBe(true)
 		expect(a.required).toBe(true)

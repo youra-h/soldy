@@ -19,11 +19,12 @@ export class TAccordion
 {
 	static override baseClass = 's-accordion'
 
-	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IAccordionProps, 'view'> = {
-		...TControl.defaultValues,
-		view: 'plain',
-		variant: 'normal',
-	}
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IAccordionProps, 'view'> =
+		{
+			...TControl.defaultValues,
+			view: 'plain',
+			variant: 'normal',
+		}
 
 	protected _view!: TAccordionView
 

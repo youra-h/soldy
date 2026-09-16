@@ -11,7 +11,10 @@ describe('TCheckBox', () => {
 		expect(b.value).toBe(false)
 
 		const c = new TCheckBox({
-			value: true, size: 'xl', variant: 'accent', plain: true,
+			value: true,
+			size: 'xl',
+			variant: 'accent',
+			plain: true,
 		})
 		expect(c.classes.toArray()).toContain('s-check-box')
 	})

@@ -1,5 +1,9 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TCollectionEngine, TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
+import type {
+	TCollectionEngine,
+	TCollectionFacadeOptions,
+	TSelectionFacadeProps,
+} from '../../../../base/collection'
 import { ListBoxFactory, LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
 import type {
@@ -34,15 +38,18 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
 		// дополнит его до того, что нужно ListBox. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
-		super({}, {
-			engine: resolveEngine(
-				options,
-				LIST_BOX_EXTENSIONS(),
-				LIST_BOX_OWNER_EXTENSIONS,
-				'ListBox',
-				createEngine,
-			) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
-		})
+		super(
+			{},
+			{
+				engine: resolveEngine(
+					options,
+					LIST_BOX_EXTENSIONS(),
+					LIST_BOX_OWNER_EXTENSIONS,
+					'ListBox',
+					createEngine,
+				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
+			},
+		)
 
 		this.applyProps(props)
 	}

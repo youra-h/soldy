@@ -158,7 +158,8 @@ export class TSelectExtension<
 			selection.events.on('change:selection', () => this._onSelectionChanged())
 
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
-			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())		}
+			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
+		}
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
 		// живёт всё время, пока `multiple`, даже без единого тега. `tags` в

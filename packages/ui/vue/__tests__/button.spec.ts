@@ -95,7 +95,9 @@ describe('Button · inline props (декларативные свойства)',
 	 * `[data-disabled='true']`, «выключено» отличается от «неприменимо».
 	 */
 	it('disabled: data-disabled на <button> и на других тегах', async () => {
-		expect(mount(Button, { props: { disabled: true } }).attributes('data-disabled')).toBe('true')
+		expect(mount(Button, { props: { disabled: true } }).attributes('data-disabled')).toBe(
+			'true',
+		)
 		expect(
 			mount(Button, { props: { tag: 'a', disabled: true } }).attributes('data-disabled'),
 		).toBe('true')
@@ -259,7 +261,9 @@ describe('Button · доступ к плагинам', () => {
 		const [bundle] = seen
 
 		expect(seen).toHaveLength(1)
-		expect(bundle instanceof TPluginBundle && bundle.get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+		expect(bundle instanceof TPluginBundle && bundle.get(TElementPlugin)).toBeInstanceOf(
+			TElementPlugin,
+		)
 	})
 
 	it('@element:create отдаёт сам плагин, минуя bundle', async () => {

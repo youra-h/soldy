@@ -12,7 +12,10 @@ import { TTags } from '@soldy/core'
 import type { ITagsProps, TTagsEvents } from '@soldy/core'
 import { TagsContribution, type TTagsSlots } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import { CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor } from '../../plugins'
+import {
+	CollectionBundlesPluginDescriptor,
+	CollectionElementsPluginDescriptor,
+} from '../../plugins'
 
 export const TagsDescriptor = () =>
 	defineComponent<ITagsProps, TTagsEvents, TTagsSlots>()({

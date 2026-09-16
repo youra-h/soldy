@@ -239,6 +239,7 @@ export class T<Name>Component extends TAngularComponentBase<I<Name>> {
 ```
 
 Правила разметки:
+
 - корень помечается `#rootEl` и живёт внутри `@if (state()['rendered'])`;
 - `<ng-content>` объявляется **ровно один раз** внутри `<ng-template #content>`
   и подставляется через `[ngTemplateOutlet]="content"` — два слота во

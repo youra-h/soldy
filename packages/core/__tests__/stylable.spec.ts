@@ -27,10 +27,7 @@ describe('TStylable', () => {
 	it('states.size позволяет передать внешний TStateUnit и классы обновляются при его изменении', () => {
 		const customSizeState = new TStateUnit<TComponentSize>({ initial: 'xl' })
 
-		const stylable = new TStylable<IStylableProps>(
-			{},
-			{ states: { size: customSizeState } },
-		)
+		const stylable = new TStylable<IStylableProps>({}, { states: { size: customSizeState } })
 
 		expect(stylable.size).toBe('xl')
 

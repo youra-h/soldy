@@ -8,7 +8,8 @@ export default class TCheckBox
 {
 	static override baseClass = 's-check-box'
 
-	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ICheckBoxProps, 'indeterminate' | 'plain'> = {
+	static defaultValues: typeof TInputControl.defaultValues &
+		TDefaultValues<ICheckBoxProps, 'indeterminate' | 'plain'> = {
 		...TInputControl.defaultValues,
 		value: false,
 		indeterminate: false,

@@ -68,7 +68,8 @@ export function bindInput(
 ): void {
 	for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 		const exportName = inspector.getExportPropName(prop)
-		const value: unknown = Reflect.get(inputs, exportName) ?? Reflect.get(inputs, prop.name.name)
+		const value: unknown =
+			Reflect.get(inputs, exportName) ?? Reflect.get(inputs, prop.name.name)
 
 		if (value === undefined) continue
 

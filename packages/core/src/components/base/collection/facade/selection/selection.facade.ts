@@ -42,7 +42,8 @@ export abstract class TSelectionCollectionFacade<
 		batch: TBatchExtension<any>
 		selection: TSelectionExtension<any>
 	} & Record<string, IExtension<any>>,
-	TEvents extends TSelectionCollectionFacadeEvents<TItem> = TSelectionCollectionFacadeEvents<TItem>,
+	TEvents extends TSelectionCollectionFacadeEvents<TItem> =
+		TSelectionCollectionFacadeEvents<TItem>,
 > extends TBatchCollectionFacade<TItem, TExtensions, TEvents> {
 	constructor(
 		props: Partial<IComponentProps> = {},

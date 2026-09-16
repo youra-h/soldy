@@ -1,8 +1,8 @@
 {
-    "mcpServers": {
-        "clickup": {
-            "command": "node",
-            "args": ["tools/agent-flow/clickup-mcp.mjs"]
-        }
+  "mcpServers": {
+    "clickup": {
+      "command": "node",
+      "args": ["tools/agent-flow/clickup-mcp.mjs"]
     }
+  }
 }

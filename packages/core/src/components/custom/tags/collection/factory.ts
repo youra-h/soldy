@@ -3,7 +3,10 @@ import { TTagsExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { TSelectionExtension } from './../../../base/collection'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type { TBaseExtensionSet, TOwnerExtensionSet } from './../../../base/collection/create/internal'
+import type {
+	TBaseExtensionSet,
+	TOwnerExtensionSet,
+} from './../../../base/collection/create/internal'
 import TTagsItem from './../item/item.class'
 import type { ITagsItem } from './../item/types'
 import type { ITags } from './../types'

@@ -97,18 +97,21 @@ describe.each(IMPLEMENTATIONS)('%s несёт контракт IList', (_name, C
 		expect(seen).toEqual([value])
 	})
 
-	it.each(PROPERTIES)('%s не эмитит на повторной записи того же значения', (prop, event, value) => {
-		const instance = create()
+	it.each(PROPERTIES)(
+		'%s не эмитит на повторной записи того же значения',
+		(prop, event, value) => {
+			const instance = create()
 
-		writeListProp(instance, prop, value)
+			writeListProp(instance, prop, value)
 
-		const seen: unknown[] = []
+			const seen: unknown[] = []
 
-		instance.events.on(event, (v: unknown) => seen.push(v))
-		writeListProp(instance, prop, value)
+			instance.events.on(event, (v: unknown) => seen.push(v))
+			writeListProp(instance, prop, value)
 
-		expect(seen).toEqual([])
-	})
+			expect(seen).toEqual([])
+		},
+	)
 
 	/**
 	 * Свойства принимаются конструктором — то, ради чего они и вернулись в

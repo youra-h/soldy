@@ -24,19 +24,46 @@ function lint(code: string) {
 describe('soldy/no-explicit-any', () => {
 	describe('пропускает any, который стирает инвариантность', () => {
 		it.each([
-			['констрейнт карты событий', 'type A<T extends Record<string, (...args: any) => any>> = T'],
+			[
+				'констрейнт карты событий',
+				'type A<T extends Record<string, (...args: any) => any>> = T',
+			],
 			['дефолт параметра типа', 'class C<TItem extends object = any> {}'],
-			['extends условного типа', 'type X<T> = T extends TComponent<any, any, infer S> ? S : never'],
-			['extends условного типа с типом библиотеки', 'type X<T> = T extends Array<any> ? T : never'],
+			[
+				'extends условного типа',
+				'type X<T> = T extends TComponent<any, any, infer S> ? S : never',
+			],
+			[
+				'extends условного типа с типом библиотеки',
+				'type X<T> = T extends Array<any> ? T : never',
+			],
 			['rest конструкторного типа', 'type Ctor<T> = new (...args: any[]) => T'],
-			['rest абстрактного конструкторного типа', 'type Ctor<T> = abstract new (...args: any[]) => T'],
-			['this статической фабрики', 'declare function create<T>(this: new (...args: any[]) => T): T'],
+			[
+				'rest абстрактного конструкторного типа',
+				'type Ctor<T> = abstract new (...args: any[]) => T',
+			],
+			[
+				'this статической фабрики',
+				'declare function create<T>(this: new (...args: any[]) => T): T',
+			],
 			['аргумент дженерика проекта в типе', 'let engine: TCollectionEngine<object, any>'],
-			['аргумент дженерика проекта в new', 'const engine = new TCollectionEngine<object, any>({})'],
-			['аргумент дженерика проекта в extends интерфейса', 'interface I extends IItemExtension<object, any> {}'],
-			['аргумент дженерика проекта в extends/implements класса', 'class K extends TBase<any> implements IThing<any> {}'],
+			[
+				'аргумент дженерика проекта в new',
+				'const engine = new TCollectionEngine<object, any>({})',
+			],
+			[
+				'аргумент дженерика проекта в extends интерфейса',
+				'interface I extends IItemExtension<object, any> {}',
+			],
+			[
+				'аргумент дженерика проекта в extends/implements класса',
+				'class K extends TBase<any> implements IThing<any> {}',
+			],
 			['квалифицированное имя дженерика проекта', 'let events: core.TEvented<any>'],
-			['дженерик проекта внутри Partial', 'class D { static defaults: Partial<IInputControlProps<any>> = {} }'],
+			[
+				'дженерик проекта внутри Partial',
+				'class D { static defaults: Partial<IInputControlProps<any>> = {} }',
+			],
 			['универсальная функция', 'type TEvents = Record<string, (...args: any) => any>'],
 			['универсальная функция с any[]', 'type F = (...args: any[]) => any'],
 		])('%s', (_title, code) => {

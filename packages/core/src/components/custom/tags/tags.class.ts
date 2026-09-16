@@ -31,7 +31,8 @@ export class TTags
 {
 	static override baseClass = 's-tags'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITagsProps, 'closable' | 'view'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<ITagsProps, 'closable' | 'view'> = {
 		...TValueControl.defaultValues,
 		closable: false,
 		view: 'filled',

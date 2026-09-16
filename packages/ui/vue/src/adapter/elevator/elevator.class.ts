@@ -10,11 +10,11 @@ import { provide, inject } from 'vue'
 import { TElevator } from '@soldy/setup'
 
 export class TVueElevator<T = any> extends TElevator<T> {
-    down(value: T): void {
-        provide(this._key, value)
-    }
+	down(value: T): void {
+		provide(this._key, value)
+	}
 
-    up(): T | undefined {
-        return inject<T | undefined>(this._key, undefined)
-    }
+	up(): T | undefined {
+		return inject<T | undefined>(this._key, undefined)
+	}
 }

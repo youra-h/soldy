@@ -21,7 +21,10 @@ import { describeProp, optionsForProp, controlKind, NON_EDITABLE, PRESETS } from
  * а страница его и не показывала.
  */
 function editableProps(entry: (typeof COMPONENTS)[number]) {
-	const declarations = [...entry.descriptor().props, ...(entry.collectionDescriptor?.().props ?? [])]
+	const declarations = [
+		...entry.descriptor().props,
+		...(entry.collectionDescriptor?.().props ?? []),
+	]
 
 	return declarations.filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
 }

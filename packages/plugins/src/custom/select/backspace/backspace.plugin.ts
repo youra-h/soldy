@@ -167,9 +167,9 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 
 		if (!lastTag) return
 
-		const item = (this._engine?.extensions.batch.items as ReadonlyArray<ISelectItem> | undefined)?.find(
-			(candidate) => candidate.value === lastTag.value,
-		)
+		const item = (
+			this._engine?.extensions.batch.items as ReadonlyArray<ISelectItem> | undefined
+		)?.find((candidate) => candidate.value === lastTag.value)
 
 		if (item) selection.deselect(item)
 	}

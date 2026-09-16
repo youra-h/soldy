@@ -7,7 +7,10 @@ function createCollection() {
 	const plain = new TPlainExtension<Item>()
 	const selection = new TSelectionExtension<Item>()
 
-	return new TCollectionEngine<Item, { plain: TPlainExtension<Item>; selection: TSelectionExtension<Item> }>({
+	return new TCollectionEngine<
+		Item,
+		{ plain: TPlainExtension<Item>; selection: TSelectionExtension<Item> }
+	>({
 		extensions: { plain, selection },
 	})
 }

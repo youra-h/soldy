@@ -21,7 +21,8 @@ export default class TControl<
 	TEvents extends TControlEvents = TControlEvents,
 	TStates extends TControlStates = TControlStates,
 > extends TStylable<TProps, TEvents, TStates> {
-	static defaultValues: typeof TStylable.defaultValues & TDefaultValues<IControlProps, 'disabled' | 'focused'> = {
+	static defaultValues: typeof TStylable.defaultValues &
+		TDefaultValues<IControlProps, 'disabled' | 'focused'> = {
 		...TStylable.defaultValues,
 		disabled: false,
 		focused: false,

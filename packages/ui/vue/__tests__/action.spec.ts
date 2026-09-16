@@ -148,7 +148,8 @@ describe('доступ к плагину', () => {
 		const press = vi.fn()
 
 		ctrl.events.on('bundle:create', (bundle: unknown) => {
-			if (bundle instanceof TPluginBundle) bundle.get(TActionPlugin)?.events.on('press', press)
+			if (bundle instanceof TPluginBundle)
+				bundle.get(TActionPlugin)?.events.on('press', press)
 		})
 
 		const wrapper = mount(Button, { props: { ctrl } })

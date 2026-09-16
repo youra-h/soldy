@@ -74,7 +74,11 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
-				<span v-if="indicator === 'end'" class="s-list-box-item__indicator" aria-hidden="true">
+				<span
+					v-if="indicator === 'end'"
+					class="s-list-box-item__indicator"
+					aria-hidden="true"
+				>
 					<slot name="indicator-icon" :selected="selected">
 						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
 					</slot>

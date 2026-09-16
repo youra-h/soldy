@@ -34,7 +34,9 @@ export class TDescriptorInspector {
 			// Статический режим: props[] + events[]
 			this._props = propsOrAccessor
 			this._events = Array.isArray(eventsOrNaming) ? eventsOrNaming : []
-			this._naming = Array.isArray(eventsOrNaming) ? naming : (eventsOrNaming as INamingStrategy)
+			this._naming = Array.isArray(eventsOrNaming)
+				? naming
+				: (eventsOrNaming as INamingStrategy)
 		} else {
 			// Runtime режим: IAccessor
 			const accessor = propsOrAccessor as IAccessor

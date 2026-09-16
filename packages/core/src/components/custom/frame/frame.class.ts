@@ -24,7 +24,8 @@ export default class TFrame
 {
 	static baseClass = 's-frame'
 
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'target'> = {
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'target'> = {
 		...TComponentView.defaultValues,
 		x: 0,
 		y: 0,

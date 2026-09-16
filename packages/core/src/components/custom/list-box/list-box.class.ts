@@ -40,7 +40,8 @@ export class TListBox
 {
 	static override baseClass = 's-list-box'
 
-	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IListBoxProps, keyof IListProps | 'view'> = {
+	static defaultValues: typeof TValueControl.defaultValues &
+		TDefaultValues<IListBoxProps, keyof IListProps | 'view'> = {
 		...TValueControl.defaultValues,
 		...LIST_DEFAULTS,
 		view: 'plain',

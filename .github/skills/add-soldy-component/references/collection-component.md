@@ -38,20 +38,20 @@ is typed `TBaseExtensionSet`, not the bare `TExtensionSet`: it guarantees `batch
 
 ```ts
 export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
-	...activationExtensions<ITabsItem>(TTabsItem),
-	content: () => new TTabsContentExtension<ITabsItem>(),
+  ...activationExtensions<ITabsItem>(TTabsItem),
+  content: () => new TTabsContentExtension<ITabsItem>(),
 })
 
 export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
-	tabs: (owner) => new TTabsExtension({ owner }),
+  tabs: (owner) => new TTabsExtension({ owner }),
 }
 
 export const TabsFactory = (owner: ITabs): TTabsCollection => {
-	const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
+  const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
 
-	for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
+  for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
 
-	return engine as TTabsCollection
+  return engine as TTabsCollection
 }
 ```
 
@@ -63,8 +63,15 @@ whatever a supplied engine is missing.
 `collection/create.ts` is the public entry, requiring an owner explicitly:
 
 ```ts
-export function createEngineTabs(options: TCreateEngineOptions & { owner: ITabs }): TTabsCollection {
-	return createComponentEngine('createEngineTabs', TABS_EXTENSIONS(), TABS_OWNER_EXTENSIONS, options) as TTabsCollection
+export function createEngineTabs(
+  options: TCreateEngineOptions & { owner: ITabs },
+): TTabsCollection {
+  return createComponentEngine(
+    'createEngineTabs',
+    TABS_EXTENSIONS(),
+    TABS_OWNER_EXTENSIONS,
+    options,
+  ) as TTabsCollection
 }
 ```
 
@@ -72,15 +79,15 @@ export function createEngineTabs(options: TCreateEngineOptions & { owner: ITabs 
 
 ```ts
 export type TTabsCollectionExtensions = {
-	factory: TFactoryExtension<ITabsItem>
-	unique: TUniqueExtension<ITabsItem>
-	meta: TMetaExtension<ITabsItem>
-	order: TOrderExtension<ITabsItem>
-	plain: TPlainExtension<ITabsItem>
-	batch: TBatchExtension<ITabsItem>
-	activation: TActivationExtension<ITabsItem>
-	tabs: TTabsExtension<ITabs, ITabsItem>
-	content: TTabsContentExtension<ITabsItem>
+  factory: TFactoryExtension<ITabsItem>
+  unique: TUniqueExtension<ITabsItem>
+  meta: TMetaExtension<ITabsItem>
+  order: TOrderExtension<ITabsItem>
+  plain: TPlainExtension<ITabsItem>
+  batch: TBatchExtension<ITabsItem>
+  activation: TActivationExtension<ITabsItem>
+  tabs: TTabsExtension<ITabs, ITabsItem>
+  content: TTabsContentExtension<ITabsItem>
 }
 
 export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtensions>
@@ -129,33 +136,48 @@ source maps (AGENTS.md, «Карта событий выводится из ис
 ```ts
 // collection/types.ts
 export type TTabsCollectionFacadeEvents = TBatchCollectionFacadeEvents<ITabsItem> &
-	TActivationEvents<ITabsItem> &
-	TTabsExtensionEvents
+  TActivationEvents<ITabsItem> &
+  TTabsExtensionEvents
 
 export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
-	TActivationItemEventsExtension &
-	TTabsItemEventsExtension
+  TActivationItemEventsExtension &
+  TTabsItemEventsExtension
 ```
 
 ```ts
 export class TTabsCollectionFacade extends TBatchCollectionFacade<
-	ITabsItem,
-	TTabsCollectionExtensions,
-	TTabsCollectionFacadeEvents
+  ITabsItem,
+  TTabsCollectionExtensions,
+  TTabsCollectionFacadeEvents
 > {
-	constructor(
-		props: TCollectionFacadeProps<ITabsItem> = {},
-		options: TCollectionFacadeOptions<TTabsCollectionFacadeEngine, ITabs> = {},
-	) {
-		super({}, { engine: resolveEngine(options, TABS_EXTENSIONS(), TABS_OWNER_EXTENSIONS, 'Tabs', TabsFactory) as TTabsCollection })
+  constructor(
+    props: TCollectionFacadeProps<ITabsItem> = {},
+    options: TCollectionFacadeOptions<TTabsCollectionFacadeEngine, ITabs> = {},
+  ) {
+    super(
+      {},
+      {
+        engine: resolveEngine(
+          options,
+          TABS_EXTENSIONS(),
+          TABS_OWNER_EXTENSIONS,
+          'Tabs',
+          TabsFactory,
+        ) as TTabsCollection,
+      },
+    )
 
-		this.events.relayAll(this.extensions.activation.events)
-		this.events.relayAll(this.extensions.tabs.events)
-		this.applyProps(props)
-	}
+    this.events.relayAll(this.extensions.activation.events)
+    this.events.relayAll(this.extensions.tabs.events)
+    this.applyProps(props)
+  }
 
-	get activeItem(): ITabsItem | undefined { return this.extensions.activation.activeItem }
-	activate(item: ITabsItem): void { this.extensions.activation.activate(item) }
+  get activeItem(): ITabsItem | undefined {
+    return this.extensions.activation.activeItem
+  }
+  activate(item: ITabsItem): void {
+    this.extensions.activation.activate(item)
+  }
 }
 ```
 
@@ -164,19 +186,23 @@ extension layer and relays the item adapters' events the same way:
 
 ```ts
 export class TTabsItemCollectionFacade extends TOrderItemFacade<
-	ITabsItem,
-	TTabsCollectionExtensions,
-	TTabsItemCollectionFacadeEvents
+  ITabsItem,
+  TTabsCollectionExtensions,
+  TTabsItemCollectionFacadeEvents
 > {
-	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
-		super.setContext(context)
-		if (!this._context) return
-		this.events.relayAll(this._context.adapters.activation.events)
-		this.events.relayAll(this._context.adapters.tabs.events)
-	}
+  override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
+    super.setContext(context)
+    if (!this._context) return
+    this.events.relayAll(this._context.adapters.activation.events)
+    this.events.relayAll(this._context.adapters.tabs.events)
+  }
 
-	get active(): boolean { return this._context?.adapters.activation.active ?? false }
-	set active(value: boolean) { if (this._context) this._context.adapters.activation.active = value }
+  get active(): boolean {
+    return this._context?.adapters.activation.active ?? false
+  }
+  set active(value: boolean) {
+    if (this._context) this._context.adapters.activation.active = value
+  }
 }
 ```
 
@@ -195,16 +221,21 @@ Owner-level and item-level contributions are separate factories.
 
 ```ts
 export const TabsCollectionContribution = (): IContribution => ({
-	props: { activeItem: { type: Object, protected: true, triggers: ['change:activation'] } },
-	events: ['item:activated', 'item:deactivated', 'item:close'],
+  props: { activeItem: { type: Object, protected: true, triggers: ['change:activation'] } },
+  events: ['item:activated', 'item:deactivated', 'item:close'],
 })
 
 export const TabsCollectionItemContribution = (): IContribution => ({
-	props: {
-		active: { type: Boolean, triggers: ['change:active'] },
-		order: { type: Number, protected: true, triggers: ['change:order'] },
-		tab_closable: { type: Boolean, protected: true, get: (i) => i.closable, triggers: ['change:closable'] },
-	},
+  props: {
+    active: { type: Boolean, triggers: ['change:active'] },
+    order: { type: Number, protected: true, triggers: ['change:order'] },
+    tab_closable: {
+      type: Boolean,
+      protected: true,
+      get: (i) => i.closable,
+      triggers: ['change:closable'],
+    },
+  },
 })
 ```
 
@@ -216,17 +247,17 @@ base `CollectionDescriptor`.
 
 ```ts
 export const TabsCollectionDescriptor = () =>
-	defineComponent({
-		ctor: TTabsCollectionFacade,
-		extends: CollectionDescriptor(),
-		contribution: TabsCollectionContribution(),
-	})
+  defineComponent({
+    ctor: TTabsCollectionFacade,
+    extends: CollectionDescriptor(),
+    contribution: TabsCollectionContribution(),
+  })
 
 export const TabsCollectionItemDescriptor = () =>
-	defineComponent({
-		ctor: TTabsItemCollectionFacade,
-		contribution: TabsCollectionItemContribution(),
-	})
+  defineComponent({
+    ctor: TTabsItemCollectionFacade,
+    contribution: TabsCollectionItemContribution(),
+  })
 ```
 
 The owner component descriptor (`TabsDescriptor`) additionally wires the collection
@@ -234,19 +265,19 @@ plugins:
 
 ```ts
 export const TabsDescriptor = () =>
-	defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
-		ctor: TTabs,
-		extends: ControlDescriptor(),
-		contribution: TabsContribution(),
-		plugins: [
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
-			TabsLayoutPluginDescriptor(),
-			TabsActiveTabPluginDescriptor(),
-			TabsViewPluginDescriptor(),
-			DragPluginDescriptor(),
-		],
-	})
+  defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
+    ctor: TTabs,
+    extends: ControlDescriptor(),
+    contribution: TabsContribution(),
+    plugins: [
+      CollectionBundlesPluginDescriptor(),
+      CollectionElementsPluginDescriptor(),
+      TabsLayoutPluginDescriptor(),
+      TabsActiveTabPluginDescriptor(),
+      TabsViewPluginDescriptor(),
+      DragPluginDescriptor(),
+    ],
+  })
 ```
 
 ## Plugins (collection access)
@@ -281,50 +312,50 @@ building one otherwise:
 
 ```ts
 import {
-	TCollectionExtension,
-	TDragAndDropCollectionExtension,
-	TabsDescriptor,
-	TabsCollectionDescriptor,
+  TCollectionExtension,
+  TDragAndDropCollectionExtension,
+  TabsDescriptor,
+  TabsCollectionDescriptor,
 } from '@soldy/setup'
 import { TTabsCollectionFacade } from '@soldy/core'
 import type { ITabsCollectionProps } from '@soldy/core'
 import {
-	useAdapter,
-	useCollectionAdapter,
-	VueElevatorFactory,
-	createVueAdapterContext,
-	type SetupContext,
+  useAdapter,
+  useCollectionAdapter,
+  VueElevatorFactory,
+  createVueAdapterContext,
+  type SetupContext,
 } from '../../adapter'
 import BaseTabs, { type TabsProps } from './base.component'
 import { type ITabsComponentProps, type ITabs } from '@soldy/core'
 
 export default {
-	name: '_Tabs',
-	extends: BaseTabs,
-	setup(props: TabsProps, { emit }: SetupContext) {
-		const adapter = createVueAdapterContext(TabsDescriptor(), {
-			ctrl: props.ctrl,
-			props,
-		})
+  name: '_Tabs',
+  extends: BaseTabs,
+  setup(props: TabsProps, { emit }: SetupContext) {
+    const adapter = createVueAdapterContext(TabsDescriptor(), {
+      ctrl: props.ctrl,
+      props,
+    })
 
-		const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
+    const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
 
-		const collectionAdapter = createVueAdapterContext(
-			TabsCollectionDescriptor(),
-			{ props, options: { owner: adapter.instance, engine: props.engine } },
-			{ bundle: adapter.bundle, defaultExtensions: [] },
-		)
-			.use(TCollectionExtension, { elevator: VueElevatorFactory })
-			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
+    const collectionAdapter = createVueAdapterContext(
+      TabsCollectionDescriptor(),
+      { props, options: { owner: adapter.instance, engine: props.engine } },
+      { bundle: adapter.bundle, defaultExtensions: [] },
+    )
+      .use(TCollectionExtension, { elevator: VueElevatorFactory })
+      .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(
-			collectionAdapter,
-			props,
-			emit,
-		)
+    const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(
+      collectionAdapter,
+      props,
+      emit,
+    )
 
-		return { ...refs, ...refsCollection }
-	},
+    return { ...refs, ...refsCollection }
+  },
 }
 ```
 

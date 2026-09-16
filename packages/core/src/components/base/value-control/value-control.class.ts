@@ -19,7 +19,8 @@ export default class TValueControl<
 	TEvents extends TValueControlEvents<TValue> = TValueControlEvents<TValue>,
 	TStates extends TValueControlStates<TValue> = TValueControlStates<TValue>,
 > extends TControl<TProps, TEvents, TStates> {
-	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IValueControlProps<any>, 'name', 'value'> = {
+	static defaultValues: typeof TControl.defaultValues &
+		TDefaultValues<IValueControlProps<any>, 'name', 'value'> = {
 		...TControl.defaultValues,
 		name: '',
 		value: undefined,
