@@ -93,23 +93,23 @@ export default {
 }
 ```
 
-- `setup.component.ts`: type the `setup` props with `<Name>Props` and return `useAdapter`:
+- `setup.component.ts`: type the `setup` props with `<Name>Props`, create the context with `createVueAdapterContext` and return `useAdapter`. The wrapper (`packages/ui/vue/src/adapter/common/`) strips the Vue proxy from `ctrl`, so the component imports nothing from `'vue'` and never imports `createAdapterContext` from `@soldy/setup` — the eslint block `soldy/vue-components-no-framework` fails on both:
 
 ```ts
-import { toRaw } from 'vue'
-import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
-import { useAdapter } from '../../adapter'
+import { <Name>Descriptor } from '@soldy/setup'
+import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import Base<Name>, { type <Name>Props } from './base.component'
 import { type I<Name>Props, type I<Name> } from '@soldy/core'
 
 export default {
   name: '_<Name>',
   extends: Base<Name>,
-  setup(props: <Name>Props, { emit }: any) {
-    const adapter = createAdapterContext(<Name>Descriptor(), {
-      ctrl: toRaw(props.ctrl),
+  setup(props: <Name>Props, { emit }: SetupContext) {
+    const adapter = createVueAdapterContext(<Name>Descriptor(), {
+      ctrl: props.ctrl,
       props,
     })
+
     return useAdapter<I<Name>Props, I<Name>>(adapter, props, emit)
   },
 }
@@ -137,27 +137,20 @@ export type <Name>EventProps = EventProps<typeof <Name>Descriptor>
 export type <Name>Props = UseDomProps<typeof <Name>Descriptor, I<Name>, <Name>EventProps>
 ```
 
-- `setup.component.ts`: one hook that creates the adapter once per component lifetime:
+- `setup.component.ts`: one hook that creates the adapter context once per component lifetime. The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`: the eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes):
 
 ```ts
-import { useRef } from 'react'
 import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
-import type { IAdapterContext } from '@soldy/setup'
-import { useAdapter, resolveDefaultExtensions } from '../../adapter'
-import type { I<Name>Props, I<Name> } from '@soldy/core'
+import type { I<Name> } from '@soldy/core'
+import { useAdapter, useAdapterContext } from '../../adapter'
 import type { <Name>Props } from './base.component'
 
 export function useSetup<Name>(props: <Name>Props) {
-  const adapterRef = useRef<IAdapterContext | null>(null)
-  if (!adapterRef.current) {
-    const descriptor = <Name>Descriptor()
-    adapterRef.current = createAdapterContext(
-      descriptor,
-      { ctrl: props.ctrl, props },
-      { defaultExtensions: resolveDefaultExtensions(descriptor) },
-    )
-  }
-  return useAdapter<I<Name>Props, I<Name>>(adapterRef.current, props)
+  const adapter = useAdapterContext<I<Name>>(() =>
+    createAdapterContext(<Name>Descriptor(), { ctrl: props.ctrl, props }),
+  )
+
+  return useAdapter(adapter, props)
 }
 ```
 
