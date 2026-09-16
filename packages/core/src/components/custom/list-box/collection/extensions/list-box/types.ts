@@ -21,7 +21,7 @@ export interface IListBoxExtension<
 	// здесь точный набор значило бы запретить наследнику её расширить
 	TItemExt extends IListBoxItemExtension<TItem, any> = IListBoxItemExtension<TItem>,
 >
-	extends IExtension<TItem>, IExtensionItems<TItem, TItemExt> {
+	extends IExtension<TItem, TListBoxExtensionEvents>, IExtensionItems<TItem, TItemExt> {
 	/** Внешний вид со списка. */
 	readonly view: TListBoxView
 	/** Где стоит отметка выбранного — свойство списка, не элемента. */
