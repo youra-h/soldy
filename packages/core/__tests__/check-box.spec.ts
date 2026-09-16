@@ -42,15 +42,4 @@ describe('TCheckBox', () => {
 		cb.value = true
 		expect(changeValue).toHaveBeenCalledWith({ newValue: true, oldValue: false })
 	})
-
-	it('getAriaChecked возвращает mixed/true/false', () => {
-		const cb = new TCheckBox({ value: false })
-		expect(cb.getAriaChecked()).toBe('false')
-
-		cb.value = true
-		expect(cb.getAriaChecked()).toBe('true')
-
-		cb.indeterminate = true
-		expect(cb.getAriaChecked()).toBe('mixed')
-	})
 })

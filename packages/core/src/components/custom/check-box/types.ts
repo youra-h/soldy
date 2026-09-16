@@ -28,6 +28,4 @@ export interface ICheckBox extends IInputControl<
 	plain: boolean
 	/** Переключает состояние чекбокса */
 	toggle(): void
-	/** Возвращает значение для aria-атрибута checked */
-	getAriaChecked(): 'true' | 'false' | 'mixed'
 }
