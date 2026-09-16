@@ -223,6 +223,45 @@ describe('TActivationExtension', () => {
 		expect(handler).toHaveBeenCalledWith(undefined)
 	})
 
+	it('удаление неактивного элемента активный не меняет', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+		const handler = vi.fn()
+
+		col.extensions.plain.push(a)
+		col.extensions.plain.push(b)
+		col.extensions.plain.push(c)
+		col.extensions.activation.activate(c)
+		col.extensions.activation.events.on('change:activation', handler)
+
+		col.extensions.plain.remove(a)
+
+		expect(col.extensions.activation.activeItem).toBe(c)
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('удаление активного среди нескольких только сбрасывает: соседа общее расширение не ищет', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+		const handler = vi.fn()
+
+		col.extensions.plain.push(a)
+		col.extensions.plain.push(b)
+		col.extensions.plain.push(c)
+		col.extensions.activation.activate(b)
+		col.extensions.activation.events.on('change:activation', handler)
+
+		col.extensions.plain.remove(b)
+
+		expect(col.extensions.activation.activeItem).toBeUndefined()
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(undefined)
+	})
+
 	it('сбрасывает активацию при reset driver', () => {
 		const col = createCollection()
 		const item: Item = { id: 1, name: 'a' }

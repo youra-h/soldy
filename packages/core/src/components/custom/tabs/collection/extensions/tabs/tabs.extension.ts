@@ -45,6 +45,15 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	private readonly _owner: TOwner
 	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
 
+	/**
+	 * Закрываемый активный таб и сосед, который станет активным вместо него.
+	 *
+	 * Сосед считается в `item:remove:before` — после удаления индекс закрытого
+	 * уже не узнать. Активируется он в `item:removed`: в before-хуке удаление
+	 * ещё могут отменить через `preventDefault()`.
+	 */
+	private _pendingActivation?: { removed: TItem; next: TItem | undefined }
+
 	constructor(options: ITabsExtensionOptions<TOwner, TItem>) {
 		super(TTabsItemExtension, options)
 
@@ -106,7 +115,31 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 			activation.events.on('change:activation', () => this._syncSelectedAria())
 
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
-			ctx.driver.events.on('item:removed', () => this._syncSelectedAria())
+
+			// Закрыли активный таб — активным становится сосед: иначе в списке не
+			// останется ни активного таба, ни панели. Это политика Tabs, а не
+			// активации: общее расширение на удаление активного только сбрасывает.
+			ctx.driver.events.on('item:remove:before', (e) => {
+				if (!activation.isActive(e.item)) return
+
+				this._pendingActivation = {
+					removed: e.item,
+					next: activation.findActivatable((item) => this._isEnabledTab(item), e.item),
+				}
+			})
+
+			ctx.driver.events.on('item:removed', (e) => {
+				const pending = this._pendingActivation
+
+				// Запись одноразовая: забирается первым же `item:removed`, какой бы
+				// элемент ни удалили, а сосед активируется, только если удалён
+				// именно запомненный таб.
+				this._pendingActivation = undefined
+
+				if (pending?.next && pending.removed === e.item) activation.activate(pending.next)
+
+				this._syncSelectedAria()
+			})
 
 			this._syncSelectedAria()
 		}
@@ -147,9 +180,12 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 * @returns true, если есть хотя бы один такой элемент, иначе false
 	 */
 	hasEnabledTabs(): boolean {
-		return this._ctx.driver
-			.valueOf()
-			.some((item) => !item.disabled && item.visible && item.rendered)
+		return this._ctx.driver.valueOf().some((item) => this._isEnabledTab(item))
+	}
+
+	/** Таб, на который можно перейти: не disabled, visible и rendered. */
+	private _isEnabledTab(item: TItem): boolean {
+		return !item.disabled && item.visible && item.rendered
 	}
 
 	/**
