@@ -14,7 +14,7 @@ import type { TListScrollPluginEvents } from './types'
  * ядро, плагин его только применяет. Так устроены и остальные плагины пакета.
  */
 export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents> {
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	private _list: IList | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private readonly _scheduleScroll: (payload: {
@@ -115,7 +115,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		})
 	}
 
-	private _isFullyVisible(el: HTMLElement): boolean {
+	private _isFullyVisible(el: Element): boolean {
 		if (!this._element) return false
 
 		const containerRect = this._element.getBoundingClientRect()

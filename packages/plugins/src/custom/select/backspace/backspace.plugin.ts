@@ -54,7 +54,7 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
-		elementPlugin?.events.on('ready', (element: HTMLElement) => {
+		elementPlugin?.events.on('ready', (element: Element) => {
 			this._input = element.querySelector<HTMLInputElement>('input')
 			this._syncListener()
 		})

@@ -1,7 +1,9 @@
+// @vitest-environment jsdom
+
 import { describe, it, expect, vi } from 'vitest'
 import { createEngine } from '@soldy/core'
 import type { TCollectionEngine } from '@soldy/core'
-import { TPluginBundle, TDragPlugin } from '@soldy/plugins'
+import { TPluginBundle, TDragPlugin, TElementPlugin } from '@soldy/plugins'
 import {
 	createAdapterContext,
 	defineComponent,
@@ -122,6 +124,18 @@ describe('createAdapterContext', () => {
 		const ctx = createAdapterContext(DragAndDropDescriptor(), {})
 
 		expect(ctx.get(TPluginsBindingExtension)).toBeUndefined()
+	})
+
+	it('bindElement кладёт не-HTML узел в плагин как есть', () => {
+		// Корнем компонента бывает `svg`: `tag` — свободный проп. Расширение узел
+		// не сужает и не подменяет на `null` — иначе плагины остались бы без узла
+		// молча.
+		const ctx = createAdapterContext(ButtonDescriptor(), {})
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+
+		required(ctx.get(TPluginsBindingExtension), 'TPluginsBindingExtension').bindElement(svg)
+
+		expect(required(ctx.bundle?.get(TElementPlugin), 'TElementPlugin').element).toBe(svg)
 	})
 
 	it('позволяет переопределить стартовый набор расширений', () => {

@@ -75,7 +75,7 @@ import type { TEditablePluginEvents } from './types'
  */
 export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	private _owner: ISelect | null = null
-	private _root: HTMLElement | null = null
+	private _root: Element | null = null
 	private _keyboard: TSelectKeyboardPlugin | null = null
 	private _engine: TCollectionEngine<any, any> | null = null
 	private _input: HTMLInputElement | null = null

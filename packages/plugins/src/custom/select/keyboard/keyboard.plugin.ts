@@ -245,7 +245,7 @@ export class TSelectKeyboardPlugin
 		}
 	}
 
-	private _optionElement(uid: string | number): HTMLElement | null {
+	private _optionElement(uid: string | number): Element | null {
 		return this._elements?.getElementByUid(uid) ?? null
 	}
 }

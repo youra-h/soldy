@@ -53,7 +53,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		enabled: false,
 	}
 
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	private _owner: string | null = null
 	private _instance: object | null = null
 	private _property: string | null = 'open'

@@ -1,6 +1,8 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
+import { isFocusableElement } from '../../utils/isFocusableElement'
+import type { IDomEventTarget } from '../../utils/domEventTarget'
 import type { IControl } from '@soldy/core'
 import type { IActionPluginOptions, TActionPluginEvents } from './types'
 
@@ -30,7 +32,7 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  *    (`<Button @click="...">`), а через ctrl — только отсюда.
  */
 export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	private _instance: IControl | null = null
 	private _keys: readonly string[] = ['Enter', ' ']
 	private _syncingFocus = false
@@ -60,42 +62,53 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	/** Корневой элемент контрола. Появляется только после монтирования. */
-	get element(): HTMLElement | null {
+	get element(): Element | null {
 		return this._element
 	}
 
-	/** Перевести фокус на контрол. */
+	/**
+	 * Перевести фокус на контрол.
+	 *
+	 * Узел плагину приходит как `Element`, поэтому фокусируемость проверяется
+	 * гардом: у корня-`svg` фокус есть, а у произвольного `Element` — нет.
+	 */
 	focus(): void {
-		this._element?.focus()
+		const element = this._element
+
+		if (isFocusableElement(element)) element.focus()
 	}
 
 	blur(): void {
-		this._element?.blur()
+		const element = this._element
+
+		if (isFocusableElement(element)) element.blur()
 	}
 
-	private _attach(element: HTMLElement): void {
+	private _attach(element: Element): void {
 		this._detach()
 
 		this._element = element
 
-		element.addEventListener('click', this._onClick)
-		element.addEventListener('keydown', this._onKeyDown)
-		element.addEventListener('focusin', this._onFocusIn)
-		element.addEventListener('focusout', this._onFocusOut)
+		const target: IDomEventTarget = element
+
+		target.addEventListener('click', this._onClick)
+		target.addEventListener('keydown', this._onKeyDown)
+		target.addEventListener('focusin', this._onFocusIn)
+		target.addEventListener('focusout', this._onFocusOut)
 
 		// Инстанс мог быть создан с focused: true до появления элемента
 		if (this._instance?.focused) this._onFocusedChange(true)
 	}
 
 	private _detach(): void {
-		const element = this._element
+		const target: IDomEventTarget | null = this._element
 
-		if (!element) return
+		if (!target) return
 
-		element.removeEventListener('click', this._onClick)
-		element.removeEventListener('keydown', this._onKeyDown)
-		element.removeEventListener('focusin', this._onFocusIn)
-		element.removeEventListener('focusout', this._onFocusOut)
+		target.removeEventListener('click', this._onClick)
+		target.removeEventListener('keydown', this._onKeyDown)
+		target.removeEventListener('focusin', this._onFocusIn)
+		target.removeEventListener('focusout', this._onFocusOut)
 
 		this._element = null
 	}
@@ -173,8 +186,8 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 		try {
 			if (value) {
-				element.focus()
-			} else if (active instanceof HTMLElement) {
+				if (isFocusableElement(element)) element.focus()
+			} else if (isFocusableElement(active)) {
 				active.blur()
 			}
 		} finally {

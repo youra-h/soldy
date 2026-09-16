@@ -148,7 +148,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	 */
 	private _bindRoot(strategy: TRootStrategy): void {
 		if (strategy === 'host') {
-			const elementRef = inject(ElementRef)
+			// `ElementRef<Element>`, а не `any` по умолчанию: узел `TElementPlugin` —
+			// `Element`, и без явного параметра несовпадение типов здесь не видно.
+			const elementRef = inject<ElementRef<Element>>(ElementRef)
 
 			let appliedAria: string[] = []
 			let appliedAttrs: string[] = []
@@ -178,7 +180,11 @@ export abstract class TComponentBase<TInstance extends IEntity>
 		// Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
 		// один раз в ngAfterViewInit и после пересоздания узла (смена `tag`,
 		// переключение `rendered`) указывает на мёртвый элемент.
-		const root = viewChild('root', { read: ElementRef })
+		//
+		// Параметры заданы явно: первый — тип локатора, здесь строка, второй —
+		// то, что отдаёт `read`. Без него `nativeElement` был бы `any`, и
+		// несовпадение с узлом `TElementPlugin` не было бы видно.
+		const root = viewChild<unknown, ElementRef<Element>>('root', { read: ElementRef })
 
 		effect(() => {
 			const binding = this._binding()

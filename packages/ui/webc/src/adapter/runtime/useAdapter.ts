@@ -26,7 +26,7 @@ export type TBinding<TInstance = object> = {
 	readonly ctrl: TInstance
 	readonly plugins: IPluginBundle | null
 	syncProps(props: object): void
-	bindElement(el: HTMLElement | null): void
+	bindElement(el: Element | null): void
 	destroy(): void
 }
 
@@ -50,7 +50,7 @@ export function useAdapter<TInstance extends object = object>(
 			bindInput(props)
 		},
 
-		bindElement(el: HTMLElement | null): void {
+		bindElement(el: Element | null): void {
 			const plugin = adapter.bundle?.get(TElementPlugin)
 
 			if (plugin) {

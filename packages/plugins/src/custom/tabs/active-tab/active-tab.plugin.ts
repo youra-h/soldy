@@ -3,6 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { isMeasurableElement } from '../../../utils/isMeasurableElement'
 import { TTabsLayoutPlugin } from '../layout'
 import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
 
@@ -18,7 +19,7 @@ import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
  * изменении view и изменении layout (resize).
  */
 export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPluginEvents> {
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	private _tabs: ITabs | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private _engine: TTabsCollection | null = null
@@ -82,21 +83,24 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 		}
 
 		const listCls = this._tabs.classes.resolve('__list', { point: true })
-		const listEl = this._element.querySelector(listCls) as HTMLElement | null
+		const listEl = this._element.querySelector(listCls)
 
-		if (!listEl) return null
+		// Подчёркивание таба тема рисует переменными на списке, а позиция считается
+		// в `offset*`: без layout-бокса offset'ы считать не по чему.
+		if (!isMeasurableElement(listEl)) return null
 
 		const activeItem = this._engine.extensions.activation.activeItem
 		const activeEl = activeItem
 			? this._collectionElements.getElementByUid(activeItem.uid)
 			: null
+		const activeBox = isMeasurableElement(activeEl) ? activeEl : null
 
 		return {
 			listEl,
-			offsetLeft: activeEl ? activeEl.offsetLeft : 0,
-			offsetWidth: activeEl ? activeEl.offsetWidth : 0,
-			offsetTop: activeEl ? activeEl.offsetTop : 0,
-			offsetHeight: activeEl ? activeEl.offsetHeight : 0,
+			offsetLeft: activeBox ? activeBox.offsetLeft : 0,
+			offsetWidth: activeBox ? activeBox.offsetWidth : 0,
+			offsetTop: activeBox ? activeBox.offsetTop : 0,
+			offsetHeight: activeBox ? activeBox.offsetHeight : 0,
 		}
 	}
 }

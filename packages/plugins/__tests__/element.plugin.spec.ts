@@ -15,7 +15,7 @@ import { TElementPlugin } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
-type TEntry = ['ready', HTMLElement] | ['removed']
+type TEntry = ['ready', Element] | ['removed']
 
 /** Плагин и журнал его событий в порядке прихода. */
 function track() {
@@ -29,7 +29,7 @@ function track() {
 }
 
 /** Плагин, уже объявивший узел: кадр пройден, журнал пуст. */
-async function announced(element: HTMLElement) {
+async function announced(element: Element) {
 	const tracked = track()
 
 	tracked.plugin.element = element
@@ -40,6 +40,7 @@ async function announced(element: HTMLElement) {
 }
 
 const node = () => document.createElement('div')
+const svgNode = () => document.createElementNS('http://www.w3.org/2000/svg', 'svg')
 
 describe('узел до кадра', () => {
 	it('null → A: до кадра ничего, после кадра одно ready(A)', async () => {
@@ -128,6 +129,24 @@ describe('объявленный узел', () => {
 		plugin.element = null
 
 		expect(log).toEqual([['ready', a], ['removed'], ['ready', b], ['removed']])
+	})
+})
+
+describe('узел без HTML-специфики', () => {
+	// `tag` — свободный проп, корнем компонента бывает `svg`. Плагин держит
+	// узел как `Element` и не подменяет его на `null`: подписчик получает ровно
+	// то, что отдал адаптер.
+	it('SVG-узел доходит до подписчика тем же узлом', async () => {
+		const { plugin, log } = track()
+		const svg = svgNode()
+
+		plugin.element = svg
+
+		expect(plugin.element).toBe(svg)
+
+		await nextFrame()
+
+		expect(log).toEqual([['ready', svg]])
 	})
 })
 

@@ -2,6 +2,7 @@ import type { IComponentView, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'
+import type { IDomEventTarget } from '../../utils/domEventTarget'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../collection'
 import type { TDragPluginEvents } from './types'
 
@@ -33,7 +34,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 	private _engine: TCollectionEngine<any, any> | null = null
 
 	/** Корневой DOM-элемент, на котором висят обработчики drag-событий. */
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 
 	/** Ссылка на плагин, предоставляющий корневой DOM-элемент. */
 	private _elementPlugin: TElementPlugin | null = null
@@ -119,7 +120,7 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 		}) => {
 			const elementPlugin = bundle.get(TElementPlugin)
 
-			const markDraggable = (el: HTMLElement) => el.setAttribute('draggable', 'true')
+			const markDraggable = (el: Element) => el.setAttribute('draggable', 'true')
 
 			if (elementPlugin?.element) {
 				markDraggable(elementPlugin.element)
@@ -215,14 +216,16 @@ export class TDragPlugin extends TBasePlugin<any, TDragPluginEvents> {
 			draggingIndex = targetIndex
 		}
 
-		element.addEventListener('dragstart', onDragStart)
-		element.addEventListener('dragend', onDragEnd)
-		element.addEventListener('dragover', onDragOver)
+		const target: IDomEventTarget = element
+
+		target.addEventListener('dragstart', onDragStart)
+		target.addEventListener('dragend', onDragEnd)
+		target.addEventListener('dragover', onDragOver)
 
 		this._cleanup = () => {
-			element.removeEventListener('dragstart', onDragStart)
-			element.removeEventListener('dragend', onDragEnd)
-			element.removeEventListener('dragover', onDragOver)
+			target.removeEventListener('dragstart', onDragStart)
+			target.removeEventListener('dragend', onDragEnd)
+			target.removeEventListener('dragover', onDragOver)
 			this._bundles?.events.off('bundle:registered', onBundleRegistered)
 
 			collectionItems().forEach((item) => {

@@ -21,7 +21,7 @@ export class TPluginsBindingExtension {
 
 	bindElement(el: Element | null): void {
 		if (this._elementPlugin) {
-			this._elementPlugin.element = el as HTMLElement | null
+			this._elementPlugin.element = el
 		}
 	}
 }

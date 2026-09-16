@@ -61,7 +61,7 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 			const plugin = adapter.bundle?.get(TElementPlugin)
 
 			if (plugin) {
-				plugin.element = el as HTMLElement | null
+				plugin.element = el
 			} else {
 				adapter.get(TPluginsBindingExtension)?.bindElement(el ?? null)
 			}

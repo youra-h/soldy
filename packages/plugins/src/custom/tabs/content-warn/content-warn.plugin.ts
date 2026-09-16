@@ -26,7 +26,7 @@ export class TTabsContentWarnPlugin extends TBasePlugin {
 
 		if (!elementPlugin) return
 
-		const check = (el: HTMLElement | null): void => {
+		const check = (el: Element | null): void => {
 			if (!el || !el.closest('[role="tablist"]')) return
 
 			console.warn(
@@ -40,7 +40,7 @@ export class TTabsContentWarnPlugin extends TBasePlugin {
 			return
 		}
 
-		const onReady = (el: HTMLElement): void => {
+		const onReady = (el: Element): void => {
 			elementPlugin.events.off('ready', onReady)
 			check(el)
 		}

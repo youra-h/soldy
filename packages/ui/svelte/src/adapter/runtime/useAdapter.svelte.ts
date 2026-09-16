@@ -77,7 +77,7 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 			const plugin = adapter.bundle?.get(TElementPlugin)
 
 			if (plugin) {
-				plugin.element = node as HTMLElement
+				plugin.element = node
 
 				return () => {
 					plugin.element = null

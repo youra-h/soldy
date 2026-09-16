@@ -1731,6 +1731,13 @@ Disabled — так же: тема читает `data-disabled`, которое 
   `ready`. Промиса ожидания узла у плагина нет: ждать узел — только подпиской
   на `ready`, готовность компоненту отдаёт `TReadyPlugin` через
   `IComponentView.ready`.
+- Узел у плагина — `Element`, а не `HTMLElement`: `tag` свободен, корнем
+  бывает `svg`. Нужна HTML-специфика (`offset*`, инлайновый `style`,
+  `focus`/`blur`) — сужайте тип-гардом из `packages/plugins/src/utils`
+  (`isMeasurableElement`, `isFocusableElement`); приведение `as HTMLElement`
+  запрещено — оно прячет несовпадение, а не чинит его. Слушатели вешаются
+  через `IDomEventTarget` оттуда же: `Element.addEventListener` типизирован
+  урезанной картой событий, и это неточность lib.dom, а не узла.
 - В `packages/setup` нет своего vitest-конфига, окружение по умолчанию —
   `node`. Тестам с DOM нужна первая строка `// @vitest-environment jsdom`.
 

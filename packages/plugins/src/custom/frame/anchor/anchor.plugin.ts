@@ -58,7 +58,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	private _frame: IFrame | null = null
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
 	private _anchor: Element | null = null
 	private _placement: TFramePlacement = TAnchorPlugin.defaultValues.placement

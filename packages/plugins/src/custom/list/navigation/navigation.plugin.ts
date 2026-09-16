@@ -3,6 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
+import type { IDomEventTarget } from '../../../utils/domEventTarget'
 import { TListItemPlugin } from '../item'
 import type { TListEdge, TListNavigationPluginEvents } from './types'
 
@@ -27,7 +28,8 @@ import type { TListEdge, TListNavigationPluginEvents } from './types'
 export abstract class TListNavigationPlugin<
 	TEvents extends TListNavigationPluginEvents = TListNavigationPluginEvents,
 > extends TBasePlugin<any, TEvents> {
-	protected _element: HTMLElement | null = null
+	/** Узел нужен только под слушатель клавиш — отсюда и тип. */
+	protected _element: IDomEventTarget | null = null
 	protected _bundles: TCollectionBundlesPlugin | null = null
 	protected _engine: TCollectionEngine<any, any> | null = null
 	protected _highlightedUid: string | number | null = null
@@ -37,7 +39,7 @@ export abstract class TListNavigationPlugin<
 
 		this._bundles = ctx.get(TCollectionBundlesPlugin) ?? null
 
-		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
+		ctx.get(TElementPlugin)?.events.on('ready', (element: IDomEventTarget) => {
 			this._element = element
 			element.addEventListener('keydown', this._onKeyDown)
 		})

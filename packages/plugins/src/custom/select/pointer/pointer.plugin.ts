@@ -2,6 +2,7 @@ import type { ISelect } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import type { IDomEventTarget } from '../../../utils/domEventTarget'
 import type { TSelectPointerPluginEvents } from './types'
 
 /** Класс стрелки — единственное место клика, которое открывает/закрывает панель в `editable`. */
@@ -27,7 +28,8 @@ const ARROW_SELECTOR = '.s-select__arrow'
  */
 export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginEvents> {
 	private _owner: ISelect | null = null
-	private _element: HTMLElement | null = null
+	/** Узел нужен только под слушатели указателя — отсюда и тип. */
+	private _element: IDomEventTarget | null = null
 	private _editable = false
 
 	override install(ctx: IPluginContext): void {

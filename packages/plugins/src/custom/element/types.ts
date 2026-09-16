@@ -7,7 +7,7 @@ export type TElementServiceEvents = TPluginEvents & {
 	 * привязан. Если узел несколько раз сменился до кадра, приходит одно
 	 * `ready` — для итогового узла.
 	 */
-	ready: (element: HTMLElement) => void
+	ready: (element: Element) => void
 	/**
 	 * Объявленный узел отключён или заменён. Приходит синхронно и только для
 	 * узла, о котором уже было `ready`: события строго чередуются, первым всегда

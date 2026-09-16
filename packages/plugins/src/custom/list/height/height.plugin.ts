@@ -4,6 +4,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { isMeasurableElement } from '../../../utils/isMeasurableElement'
 
 /**
  * Что плагину нужно от компонента: число строк и канал о его смене.
@@ -28,7 +29,7 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
  * ядру, применение — плагину.
  */
 export class TListHeightPlugin extends TBasePlugin<any> {
-	private _element: HTMLElement | null = null
+	private _element: Element | null = null
 	private _list: IListHeightOwner | null = null
 	private _collectionElements: TCollectionElements | null = null
 	private _rootObserver: ResizeObserver | null = null
@@ -100,7 +101,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		super.destroy()
 	}
 
-	private _observeItem(uid: string | number, element: HTMLElement): void {
+	private _observeItem(uid: string | number, element: Element): void {
 		this._itemObservers.get(uid)?.disconnect()
 
 		const observer = new ResizeObserver(() => this._scheduleUpdate())
@@ -129,7 +130,9 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		const elements = this._collectionElements?.getAll() ?? []
 		const container = elements[0]?.parentElement ?? this._element
 
-		if (!container) return
+		// Высота пишется инлайновым стилем и считается по `offsetHeight` — у узла
+		// без layout-бокса (например, корень-`svg`) мерить нечего и писать некуда.
+		if (!isMeasurableElement(container)) return
 
 		const maxRows = this._list?.maxRows ?? 0
 
@@ -161,7 +164,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	 * `content-box` добавлять нечего, поэтому решаем по факту стиля, а не по
 	 * допущению про конкретную тему.
 	 */
-	private _measure(container: HTMLElement, elements: HTMLElement[], count: number): number {
+	private _measure(container: HTMLElement, elements: readonly Element[], count: number): number {
 		if (count === 0) return 0
 
 		const style = getComputedStyle(container)
@@ -170,7 +173,11 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		let total = 0
 
 		for (let i = 0; i < count; i++) {
-			total += elements[i].offsetHeight
+			const row = elements[i]
+
+			// Строка без layout-бокса высоты не имеет — она идёт в счёт строк, но
+			// не в сумму.
+			if (isMeasurableElement(row)) total += row.offsetHeight
 		}
 
 		total += (count - 1) * gap

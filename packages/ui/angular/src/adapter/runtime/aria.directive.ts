@@ -31,7 +31,7 @@ import type { TAriaAttributes, TAttributesMap } from '@soldy/core'
  * — корень, и обычная директива на элемент шаблона не накладывается.
  */
 export function applyAttributes(
-	element: HTMLElement,
+	element: Element,
 	map: Record<string, string | null | undefined> | undefined,
 	previous: string[],
 ): string[] {
