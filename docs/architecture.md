@@ -1873,30 +1873,9 @@ Framework-agnostic dependency injection:
 
 ## Missing/Incomplete Areas
 
-### React
-
-- Hooks (`useAdapter`, `useSyncProps`, `useSyncEvents`), elevator (`TReactElevator`), DOM/plugin binding — done
-- [ ] All 20+ component implementations (only `component-view`, `button` done)
-- [ ] Collection support (owner/item registration over the elevator)
-
-### Angular
-
-- Адаптер, кодогенерация метаданных, сигналы, жизненный цикл, DOM-биндинг — done
-- [ ] Все компоненты, кроме `component-view` и `button`
-- [ ] Коллекции (elevator реализован, но не подключён и не использует DI)
-- [ ] Именованные слоты, двусторонняя привязка, произвольный `tag`
-
-### Svelte (Not Started)
-
-- [ ] Store integration
-- [ ] Reactive statement handling
-- [ ] Component implementations
-
-### Solid (Not Started)
-
-- [ ] Signal integration
-- [ ] Effect synchronization
-- [ ] Component implementations
+Что готово в каждом адаптере — в [README, раздел Components](../README.md#components). Статус
+ведётся там в одном месте: копия здесь устаревала отдельно от кода. Ограничения адаптеров —
+в их разделах выше (Layer 7–8d).
 
 ---
 
