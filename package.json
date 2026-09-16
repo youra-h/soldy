@@ -10,7 +10,7 @@
     "packages/playground/*"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.12.0 || ^24 || >=26"
   },
   "scripts": {
     "watch:theme": "npm run watch --workspace=@soldy/theme-oren",
