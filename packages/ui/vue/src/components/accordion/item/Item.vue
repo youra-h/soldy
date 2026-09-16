@@ -7,8 +7,9 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
@@ -73,5 +74,5 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 				<slot />
 			</div>
 		</div>
-	</div>
+	</component>
 </template>

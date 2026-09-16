@@ -22,13 +22,19 @@ import SetupTagsItem from './setup.component'
  * тега; на обёртке уже стоит `dir`, но Button — интерактивный элемент со
  * своим DOM-узлом, и для него направление передаётся явно, а не только через
  * наследование `dir` от родителя.
+ *
+ * Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
+ * `tag` — тег корня (`TComponentView`), и рисует по нему корень
+ * `<component :is>`. Под фиксированный тег строки написан и
+ * `TTagsItem._ariaTag` — он решает, писать ли `aria-disabled`.
  */
 export default { ...SetupTagsItem, components: { Icon, Button } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
@@ -36,7 +42,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
-			:tag="tag"
+			tag="div"
 			:view="view"
 			:direction="direction"
 			:disabled="disabled"
@@ -72,5 +78,5 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 				</Button>
 			</template>
 		</Button>
-	</div>
+	</component>
 </template>

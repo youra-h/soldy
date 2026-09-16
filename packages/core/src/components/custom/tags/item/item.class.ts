@@ -86,6 +86,17 @@ export default class TTagsItem<
 		return this.events
 	}
 
+	/**
+	 * `aria` тега стоит на вложенном `Button` — строке тега. Тег у неё
+	 * фиксированный (`div`), разметка задаёт его сама, поэтому от `tag` корня
+	 * ARIA-половина правила «нативный атрибут вместо ARIA-дубля» не зависит:
+	 * у `div` своего `disabled` нет, и состояние остаётся `aria-disabled`,
+	 * каким бы ни был корень.
+	 */
+	protected override get _ariaTag(): string {
+		return 'div'
+	}
+
 	get text(): string {
 		return this._states.text.value
 	}

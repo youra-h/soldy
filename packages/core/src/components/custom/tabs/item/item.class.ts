@@ -25,7 +25,7 @@ export default class TTabsItem<
 		closable: undefined,
 		closeLabel: 'Close',
 		variant: 'normal',
-		tag: 'button',
+		tag: 'div',
 	}
 
 	protected _closeLabel!: string
@@ -88,6 +88,19 @@ export default class TTabsItem<
 	 */
 	protected get _sink(): TEventSink<TTabsItemEvents> {
 		return this.events
+	}
+
+	/**
+	 * `aria` таба стоит на вложенном `<button>`: корень элемента — обёртка,
+	 * которая держит `data-*` для темы, а табом со своей ролью и связкой с
+	 * панелью является кнопка внутри.
+	 *
+	 * Поэтому ARIA-половину правила «нативный атрибут вместо ARIA-дубля»
+	 * решает тег этой кнопки, а не `tag` корня: нативный `disabled` она
+	 * получает от своего `TButton`, и `aria-disabled` рядом был бы дублем.
+	 */
+	protected override get _ariaTag(): string {
+		return 'button'
 	}
 
 	get text(): string {

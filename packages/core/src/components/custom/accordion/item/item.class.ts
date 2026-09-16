@@ -30,7 +30,7 @@ export default class TAccordionItem<
 		value: '',
 		arrowPlacement: 'start',
 		variant: 'normal',
-		tag: 'button',
+		tag: 'div',
 	}
 
 	protected _arrowPlacement!: TAccordionArrowPlacement
@@ -65,6 +65,19 @@ export default class TAccordionItem<
 	 */
 	protected get _sink(): TEventSink<TAccordionItemEvents> {
 		return this.events
+	}
+
+	/**
+	 * `aria` секции стоит на заголовке `.s-accordion-item__header` — вложенном
+	 * `<button>`, который раскрывает панель. Корень элемента только оборачивает
+	 * заголовок и панель и держит `data-*` для темы.
+	 *
+	 * Поэтому ARIA-половину правила «нативный атрибут вместо ARIA-дубля»
+	 * решает тег заголовка, а не `tag` корня: нативный `disabled` он получает
+	 * от своего `TButton`, и `aria-disabled` рядом был бы дублем.
+	 */
+	protected override get _ariaTag(): string {
+		return 'button'
 	}
 
 	get text(): string {
