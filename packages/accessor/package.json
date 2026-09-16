@@ -24,8 +24,7 @@
   "main": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./contract": "./contract/index.ts",
-    "./runtime": "./runtime/index.ts"
+    "./contract": "./contract/index.ts"
   },
   "dependencies": {
     "@soldy/core": "*"

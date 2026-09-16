@@ -79,11 +79,11 @@ TEntity (uid, getProps, assign, toJSON)
 
 ### Key Classes
 
-- **TComponentAccessor**: Delegates to TDescriptorInspector for name formatting, handles getValue/setValue
+- **TAccessor**: Binds props/events of each unit (`{ instance, props, events }` — the component, its plugins) to that instance, handles getValue/setValue
   - `getProps(includeProtected?)` - Compiled props list
   - `getEvents()` - Compiled events list
   - `getValue(prop)` / `setValue(prop, value)` - Access instance properties
-  - `getExportName(item)` - Format prop/event name for framework (e.g., 'icon:ready' → 'iconReady')
+  - `getEventSource(item)` - Event source of the prop/event instance (`instance.events` or the instance itself); `undefined` without `on`/`off`
 
 - **TDescriptorInspector**: Compiles schema + applies naming strategy
   - Used by Vue adapter to generate props/emits static definitions
@@ -91,14 +91,14 @@ TEntity (uid, getProps, assign, toJSON)
 ### Key Files
 
 - [accessor.interface.ts](packages/accessor/accessor.interface.ts) - IAccessor contract
-- [component-accessor.class.ts](packages/accessor/component-accessor.class.ts) - Runtime reflection
+- [accessor.class.ts](packages/accessor/accessor.class.ts) - Runtime reflection
 - [descriptor-inspector.class.ts](packages/accessor/descriptor-inspector.class.ts) - Schema compilation
-- [contract/types.ts](packages/accessor/contract/types.ts) - ICompiledProp, ICompiledEvent, INamingStrategy
+- [contract/types.ts](packages/accessor/contract/types.ts) - IAccessorUnit, IAccessorProp, IAccessorEvent, INamingStrategy
 
 ### Key Exports
 
 - `IAccessor` - Unified access interface
-- `TComponentAccessor` - Component reflection
+- `TAccessor` - Component reflection
 - `TDescriptorInspector` - Schema formatter
 - `INamingStrategy` - Prop/event naming rules (vue: 'iconReady', React: 'icon_ready')
 
@@ -1726,7 +1726,7 @@ setup(props, { emit }) {
      ↓
      - Create instance (TButton)
      - Create bundle (TPluginBundle)
-     - Create accessor (TComponentAccessor)
+     - Create accessor (TAccessor)
      - Register TPluginsBindingExtension
      ↓
   2. useAdapter(adapter, props, emit)
@@ -1861,7 +1861,7 @@ Framework-agnostic dependency injection:
 | Package           | Main Exports                                                                                                                                                             |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | @soldy/core       | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit                                                                                                               |
-| @soldy/accessor   | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor                                                                                                     |
+| @soldy/accessor   | TAccessor, TDescriptorInspector, INamingStrategy, IAccessor                                                                                                              |
 | @soldy/setup      | createAdapterContext, IAdapterContext, defineComponent, definePlugin, underscorePropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions       |
 | @soldy/plugins    | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin                                                                                                                      |
 | @soldy/ui-vue     | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |

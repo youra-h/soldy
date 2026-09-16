@@ -80,7 +80,7 @@ notifications`. Фильтра по тексту в стороже нет и б�
 а не он.
 
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 4, Vite 8.
-- npm workspaces: `packages/*` and `packages/ui/*`.
+- npm workspaces: patterns are in `workspaces` of the root `package.json`.
 
 ## Версии пакетов
 
@@ -146,7 +146,7 @@ notifications`. Фильтра по тексту в стороже нет и б�
 | Package             | Responsibility                                                                                                                |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`).                                                            |
+| `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
 | `packages/setup`    | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`.                                                 |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
