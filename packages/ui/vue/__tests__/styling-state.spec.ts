@@ -184,7 +184,7 @@ describe('Select: опция несёт data-disabled для темы', () => {
 		await wrapper.find('.s-select').trigger('click')
 		await nextTick()
 
-		const options = [...document.querySelectorAll('[role="option"]')]
+		const options = [...document.querySelectorAll('.s-select-item')]
 
 		// В обёртке disabled объявлена третья опция
 		expect(options.map((option) => option.getAttribute('data-disabled'))).toEqual([

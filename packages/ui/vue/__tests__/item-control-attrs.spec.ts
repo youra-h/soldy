@@ -5,8 +5,9 @@
  * Наборы ядра стоят на разных элементах: `attrs` — атрибуты корня, `aria` — на
  * строке. Нативного `disabled` на обёртке быть не должно (у `div` такого
  * атрибута нет), а ARIA-половину решает тег строки: у Tabs и Accordion это
- * `<button>` со своим нативным `disabled`, у ListBox и Tags — `div`, где
- * `aria-disabled` остаётся единственным способом сообщить состояние.
+ * `<button>` со своим нативным `disabled`, у ListBox и Tags — `div`, у Select —
+ * `span`, где `aria-disabled` остаётся единственным способом сообщить
+ * состояние.
  *
  * Корень рисуется по `tag` — иначе проп декоративен, и нативный `disabled`
  * из `attrs` попадает на элемент, у которого его нет.
@@ -23,6 +24,8 @@ import {
 	AccordionItem,
 	ListBox,
 	ListBoxItem,
+	Select,
+	SelectItem,
 	Tabs,
 	TabsItem,
 	Tags,
@@ -71,19 +74,27 @@ const renderTags = (tag = '') =>
 		`<Tags><TagsItem value="a" text="A" disabled${tagAttr(tag)} /></Tags>`,
 	)
 
+/** Опции телепортированы в панель, но панель в документе, хоть и закрыта. */
+const renderSelect = (tag = '') =>
+	renderSlotted(
+		{ Select, SelectItem },
+		`<Select><SelectItem value="a" text="A" disabled${tagAttr(tag)} /></Select>`,
+	)
+
 const root = (selector: string) => document.querySelector(selector)
 const line = (selector: string) => document.querySelector(`${selector} .s-button`)
 
 /** Строка — вложенный `<button>`: нативный `disabled` у неё свой, от `TButton`. */
 const NATIVE_LINE = [
-	['Tabs.Item', '.s-tabs-item', renderTabs],
-	['Accordion.Item', '.s-accordion-item', renderAccordion],
+	['Tabs.Item', '.s-tabs-item', renderTabs, 'BUTTON'],
+	['Accordion.Item', '.s-accordion-item', renderAccordion, 'BUTTON'],
 ] as const
 
-/** Строка — `div` с фиксированным тегом: нативного `disabled` у неё нет. */
+/** Строка с фиксированным тегом без нативного `disabled`: `div` или `span`. */
 const ARIA_LINE = [
-	['ListBox.Item', '.s-list-box-item', renderListBox],
-	['Tags.Item', '.s-tags-item', renderTags],
+	['ListBox.Item', '.s-list-box-item', renderListBox, 'DIV'],
+	['Tags.Item', '.s-tags-item', renderTags, 'DIV'],
+	['Select.Item', '.s-select-item', renderSelect, 'SPAN'],
 ] as const
 
 const WRAPPER_CASES = [...NATIVE_LINE, ...ARIA_LINE]
@@ -111,13 +122,13 @@ describe.each(WRAPPER_CASES)('%s · обёртка', (_name, selector, render) =
 	})
 })
 
-describe.each(NATIVE_LINE)('%s · строка', (_name, selector, render) => {
+describe.each(NATIVE_LINE)('%s · строка', (_name, selector, render, lineTag) => {
 	it('вложенный <button> несёт нативный disabled без ARIA-дубля', async () => {
 		await render()
 
 		const lineEl = line(selector)
 
-		expect(lineEl?.tagName).toBe('BUTTON')
+		expect(lineEl?.tagName).toBe(lineTag)
 		expect(lineEl?.hasAttribute('disabled')).toBe(true)
 		expect(lineEl?.hasAttribute('aria-disabled')).toBe(false)
 	})
@@ -129,24 +140,58 @@ describe.each(NATIVE_LINE)('%s · строка', (_name, selector, render) => {
 	})
 })
 
-describe.each(ARIA_LINE)('%s · строка', (_name, selector, render) => {
-	it('строка-div несёт aria-disabled без нативного дубля', async () => {
+describe.each(ARIA_LINE)('%s · строка', (_name, selector, render, lineTag) => {
+	it('строка несёт aria-disabled без нативного дубля', async () => {
 		await render()
 
 		const lineEl = line(selector)
 
-		expect(lineEl?.tagName).toBe('DIV')
+		expect(lineEl?.tagName).toBe(lineTag)
 		expect(lineEl?.getAttribute('aria-disabled')).toBe('true')
 		expect(lineEl?.hasAttribute('disabled')).toBe(false)
 	})
 
-	it('тег корня строку не переписывает: она остаётся div с aria-disabled', async () => {
+	it('тег корня строку не переписывает: тег и aria-disabled остаются', async () => {
 		await render('fieldset')
 
 		const lineEl = line(selector)
 
-		expect(lineEl?.tagName).toBe('DIV')
+		expect(lineEl?.tagName).toBe(lineTag)
 		expect(lineEl?.getAttribute('aria-disabled')).toBe('true')
 		expect(lineEl?.hasAttribute('disabled')).toBe(false)
+	})
+})
+
+/**
+ * Строка Select — не только вид, но и сама опция, как строка Tabs — сам таб:
+ * набор опции ложится поверх того, что `Button` пишет себе сам. Узел с ролью
+ * один — обёртка ничего не объявляет, строка не объявляет себя кнопкой.
+ */
+describe('Select.Item · строка и есть опция', () => {
+	it('role, id и aria-selected опции стоят на строке', async () => {
+		await renderSelect()
+
+		const lineEl = line('.s-select-item')
+
+		expect(lineEl?.getAttribute('role')).toBe('option')
+		expect(lineEl?.id).toMatch(/^s-select-option-/)
+		expect(lineEl?.getAttribute('aria-selected')).toBe('false')
+	})
+
+	it('обёртка без ARIA: ни роли, ни id, ни второго aria-disabled', async () => {
+		await renderSelect()
+
+		const wrapperEl = root('.s-select-item')
+
+		for (const name of ['role', 'id', 'aria-selected', 'aria-disabled']) {
+			expect(wrapperEl?.hasAttribute(name)).toBe(false)
+		}
+	})
+
+	it('строка из обхода выведена и кнопкой себя не объявляет', async () => {
+		await renderSelect()
+
+		expect(document.querySelectorAll('.s-select-item [role="button"]')).toHaveLength(0)
+		expect(line('.s-select-item')?.getAttribute('tabindex')).toBe('-1')
 	})
 })

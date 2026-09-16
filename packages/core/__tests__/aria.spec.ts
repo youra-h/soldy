@@ -19,6 +19,7 @@ import {
 	TAccordionItem,
 	TListBoxItem,
 	TTagsItem,
+	TSelectItem,
 	TInput,
 	TSelect,
 	TCheckBox,
@@ -631,9 +632,13 @@ const NESTED_BUTTON: readonly [string, (props: TItemProps) => TTabsItem | TAccor
 	['TAccordionItem', (props) => new TAccordionItem(props)],
 ]
 
-const NESTED_DIV: readonly [string, (props: TItemProps) => TListBoxItem | TTagsItem][] = [
+const NESTED_ARIA: readonly [
+	string,
+	(props: TItemProps) => TListBoxItem | TTagsItem | TSelectItem,
+][] = [
 	['TListBoxItem', (props) => new TListBoxItem(props)],
 	['TTagsItem', (props) => new TTagsItem(props)],
+	['TSelectItem', (props) => new TSelectItem(props)],
 ]
 
 /**
@@ -678,12 +683,15 @@ describe.each(NESTED_BUTTON)('%s · disabled составного элемент
 	})
 })
 
-/** Строка ListBox и Tags — `div`: нативного `disabled` у неё нет, остаётся ARIA. */
-describe.each(NESTED_DIV)('%s · disabled составного элемента', (_name, create) => {
-	it('строка — div: состояние уходит в aria-disabled, нативного нет', () => {
+/**
+ * Строка ListBox и Tags — `div`, строка Select — `span`: нативного `disabled`
+ * у них нет, остаётся ARIA.
+ */
+describe.each(NESTED_ARIA)('%s · disabled составного элемента', (_name, create) => {
+	it('строка без нативного disabled: состояние уходит в aria-disabled', () => {
 		const item = create({ disabled: true })
 
-		// `_ariaTag` — 'div': у него своего disabled нет, ARIA единственная
+		// `_ariaTag` — 'div' или 'span': своего disabled нет, ARIA единственная
 		expect(item.tag).toBe('div')
 		expect(item.attrs.has('disabled')).toBe(false)
 		expect(item.aria.get('aria-disabled')).toBe('true')

@@ -320,10 +320,10 @@ describe('ввод в поле под отбором', () => {
  * виден: движок отбирает, а на экране всё те же три пункта.
  */
 describe('опции из разметки под отбором', () => {
-	/** Показанные — те, что не скрыты `v-show`. */
+	/** Показанные — те, что не скрыты `v-show`: он стоит на корне элемента, не на строке. */
 	const visibleTexts = () =>
-		[...options()]
-			.filter((el) => (el as HTMLElement).style.display !== 'none')
+		[...document.querySelectorAll<HTMLElement>('.s-select-item')]
+			.filter((el) => el.style.display !== 'none')
 			.map((el) => el.textContent?.trim())
 
 	async function renderWithSlot(
