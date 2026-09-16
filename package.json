@@ -1,6 +1,5 @@
 {
   "name": "soldy",
-  "version": "0.1.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -11,7 +10,7 @@
     "packages/playground/*"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.12.0 || ^24 || >=26"
   },
   "scripts": {
     "watch:theme": "npm run watch --workspace=@soldy/theme-oren",
@@ -30,11 +29,15 @@
     "lint": "eslint . --fix",
     "lint:ci": "eslint .",
     "format": "prettier --write .",
+    "changeset": "changeset",
+    "changeset:version": "changeset version && npm install --package-lock-only",
     "test:webc": "npm run test --workspace=@soldy/ui-webc",
     "test:playground": "npm run test --workspace=@soldy/playground-shared && npm run test --workspace=@soldy/playground-vue",
     "test:layout": "npm run build --workspace=@soldy/theme-oren && npm run test:browser --workspace=@soldy/playground-vue"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@changesets/read": "^1.0.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/browser": "4.1.11",
     "@vitest/browser-playwright": "4.1.11",
