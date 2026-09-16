@@ -599,7 +599,6 @@ describe('Закрытие активного таба: активным ста�
 	it('следующий сосед disabled — активен следующий за ним', () => {
 		const { engine, activation, a, b, c } = setup()
 
-		// После вставки: `disabled` элементу при добавлении пишет владелец
 		b.disabled = true
 
 		activation.activate(a)

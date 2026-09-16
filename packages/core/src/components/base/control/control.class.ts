@@ -75,11 +75,20 @@ export default class TControl<
 		return this.events
 	}
 
+	/**
+	 * Итог: у элемента коллекции — своё **или** владельца (см.
+	 * `bindDisabledToOwner`), у остальных — своё.
+	 */
 	get disabled(): boolean {
 		return this._states.disabled.value
 	}
+	/**
+	 * Пишет своё значение. Сравнивает со своим (`rawValue`), а не с итогом:
+	 * в выключенном списке итог уже `true`, и своё `true` иначе проглотилось
+	 * бы — и пропало при включении списка.
+	 */
 	set disabled(value: boolean) {
-		if (this._states.disabled.value !== value) {
+		if (this._states.disabled.rawValue !== value) {
 			this._states.disabled.value = value
 		}
 	}
