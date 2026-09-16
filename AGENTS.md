@@ -36,12 +36,14 @@ Angular в CI нет: «Типы — Angular» — это `tsc --noEmit`, шаб
 роняют CI отдельной задачей `lint`. Отступы и ширину строки Prettier берёт из
 `.editorconfig`, в `.prettierrc.json` их не дублировать.
 
-Тесты `packages/core/__tests__` и `packages/ui/vue/__tests__` тоже проверяются
-типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
-(include `src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
+Тесты `packages/core/__tests__`, `packages/plugins/__tests__` и
+`packages/ui/vue/__tests__` тоже проверяются типами: «Типы — Core» гоняет
+`tsc --noEmit` по `packages/core/tsconfig.json` (include `src` + `__tests__`),
+«Типы — Plugins» — `tsc --noEmit` по `packages/plugins/tsconfig.json` (include
+`src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
 `packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`), а не только по
 `tsconfig.lib.json`, как раньше. Приведение вроде `as never` там больше не
-спрячет несовпавший контракт компонента.
+спрячет несовпавший контракт компонента или плагина.
 
 ### Браузерный прогон (`test:layout`)
 
