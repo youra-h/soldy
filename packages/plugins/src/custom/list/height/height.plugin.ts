@@ -24,6 +24,14 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
  * требует измерений: высоту строк без DOM не узнать. Ради этого здесь и живут
  * `ResizeObserver`ы.
  *
+ * Оба наблюдателя — за корнем и за каждой строкой — смотрят border-box:
+ * наблюдать надо ровно то, что меряем, а строки меряются `offsetHeight`.
+ * Умолчание `content-box` пропустило бы смену одного паддинга или рамки
+ * строки (паддинг по размеру, толщина рамки по состоянию): content-box строки
+ * от неё не меняется, а контейнер, уже зажатый `max-height`, не меняется
+ * вовсе. Предел держался бы по старой высоте строк до ближайшего пересчёта по
+ * другой причине.
+ *
  * Само свойство лежит на инстансе (`IList`), плагин его читает и подписан на
  * `change:maxRows`. Так устроены и остальные плагины пакета: свойство —
  * ядру, применение — плагину.
@@ -55,7 +63,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 			this._element = element
 			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this._scheduleUpdate())
-			this._rootObserver.observe(element)
+			this._rootObserver.observe(element, { box: 'border-box' })
 			this._scheduleUpdate()
 		})
 
@@ -106,7 +114,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 
 		const observer = new ResizeObserver(() => this._scheduleUpdate())
 
-		observer.observe(element)
+		observer.observe(element, { box: 'border-box' })
 
 		this._itemObservers.set(uid, observer)
 		this._scheduleUpdate()

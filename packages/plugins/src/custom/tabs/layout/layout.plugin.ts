@@ -13,6 +13,13 @@ import type { TTabsLayoutPluginEvents } from './types'
  *
  * Эмитит change:layout при изменении размеров — нужно для обновления позиции/размера
  * индикатора активного таба (view: line/outline) и при переносе табов на другую строку.
+ *
+ * Оба наблюдателя смотрят border-box: наблюдать надо ровно то, что меряется
+ * по `change:layout`, — `TTabsActiveTabPlugin` берёт позицию и размер таба из
+ * `offsetLeft`/`offsetTop` и `offsetWidth`/`offsetHeight`. Умолчание
+ * `content-box` пропустило бы смену одного паддинга или рамки таба (паддинг
+ * по размеру, толщина рамки по состоянию), и `--underline-size`/`--gap-size`
+ * держались бы по старому размеру до ближайшего пересчёта по другой причине.
  */
 export class TTabsLayoutPlugin extends TBasePlugin<any, TTabsLayoutPluginEvents> {
 	private _rootObserver: ResizeObserver | null = null
@@ -24,7 +31,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<any, TTabsLayoutPluginEvents>
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
 			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this.events.emit('change:layout'))
-			this._rootObserver.observe(element)
+			this._rootObserver.observe(element, { box: 'border-box' })
 		})
 
 		ctx.get(TElementPlugin)?.events.on('removed', () => {
@@ -43,7 +50,7 @@ export class TTabsLayoutPlugin extends TBasePlugin<any, TTabsLayoutPluginEvents>
 				this._itemObservers.get(uid)?.disconnect()
 
 				const observer = new ResizeObserver(() => this.events.emit('change:layout'))
-				observer.observe(element)
+				observer.observe(element, { box: 'border-box' })
 
 				this._itemObservers.set(uid, observer)
 			})
