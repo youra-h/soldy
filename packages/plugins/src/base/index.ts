@@ -4,6 +4,8 @@ export type {
 	IPluginConstructor,
 	IPluginBundle,
 	TPluginEvents,
+	TPluginPublicEventName,
+	TPluginInternalEvents,
 } from './types'
 export { PLUGIN_EVENTS } from './events'
 export { TBasePlugin } from './base.class'

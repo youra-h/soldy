@@ -1,4 +1,5 @@
 import type { TEvented } from '@soldy/core'
+import type { PLUGIN_EVENTS } from './events'
 
 /**
  * Контекст, передаваемый плагину при установке.
@@ -22,6 +23,23 @@ export type TPluginEvents = {
 	 */
 	create: (plugin: IPlugin<any, any>) => void
 }
+
+/**
+ * Имена событий базы, которые плагин публикует наружу, — `create`.
+ *
+ * Выведены из `PLUGIN_EVENTS`, а не перечислены второй раз: один и тот же
+ * список contribution плагина подмешивает в свои события (рантайм-проброс), и
+ * из него же строятся типы дескриптора в `@soldy/setup`.
+ */
+export type TPluginPublicEventName = (typeof PLUGIN_EVENTS)[number]
+
+/**
+ * Внутренние события базы — `TPluginEvents` без опубликованных: `install` и
+ * `destroy`. Эмиттер плагина их шлёт, это рабочая механика bundle, но наружу
+ * они не уходят, поэтому `TPluginEventsFrom` в `@soldy/setup` снимает их с
+ * карты плагина.
+ */
+export type TPluginInternalEvents = Omit<TPluginEvents, TPluginPublicEventName>
 
 /**
  * Плагин — независимая единица логики, устанавливаемая на компонент.

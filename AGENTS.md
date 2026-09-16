@@ -1264,6 +1264,10 @@ Vue приводит сам. Расхождение чинится значен�
 `create` объявлен в слое плагинов (`PLUGIN_EVENTS` в
 `packages/plugins/src/base/events.ts`) и подмешивается в contribution каждого
 плагина **явно**. Не добавляйте его автоматически внутри `definePlugin`.
+Этот же список задаёт и рантайм-проброс, и типы дескриптора: остальные события
+базы (`TPluginInternalEvents` — `install` и `destroy`) `TPluginEventsFrom`
+снимает с карты плагина, второго списка имён в setup нет. Сторожит
+`packages/setup/__tests__/plugin-events.spec.ts`.
 
 ## Слоты — третья категория контракта
 

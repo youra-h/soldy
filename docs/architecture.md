@@ -199,6 +199,13 @@ export const ElementContribution = (): IContribution => ({
 микрозадачу: на момент установки подписчиков ещё нет, bundle собирается раньше,
 чем фреймворк привязывает обработчики. См. Layer 5b.
 
+`PLUGIN_EVENTS` задаёт не только рантайм, но и типы дескриптора.
+`TPluginEventsFrom` навешивает namespace на карту плагина без
+`TPluginInternalEvents` — это `TPluginEvents` минус `PLUGIN_EVENTS`, — поэтому
+`action:install` нет ни в пробросе, ни в плагинных событиях `DescriptorAllEvents`.
+Сторожит `packages/setup/__tests__/plugin-events.spec.ts`: типы и `getEvents()`
+дескриптора проверяются там на одних и тех же именах.
+
 ### Plugin Examples
 
 - `TElementPlugin` - Stores DOM element reference, emits 'ready'

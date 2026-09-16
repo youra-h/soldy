@@ -10,7 +10,7 @@ import type {
 	TAccessor,
 	TName,
 } from '@soldy/accessor'
-import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+import type { IPluginBundle, IPluginConstructor, TPluginInternalEvents } from '@soldy/plugins'
 import type { TUnderscorePropName } from '../../common'
 
 /**
@@ -148,6 +148,16 @@ export type NamespacedEvents<T extends object, N extends string> = {
 	[K in keyof T as K extends string ? `${N}:${K}` : never]: T[K]
 }
 
+/**
+ * Карта плагина без внутренних событий базы (`install`, `destroy`).
+ *
+ * Наружу адаптер пробрасывает только события contribution плагина, а базовые
+ * среди них задаёт `PLUGIN_EVENTS`. Внутренние выведены из того же списка
+ * (`TPluginInternalEvents`), поэтому плагинные события в типах дескриптора не
+ * обещают того, что не придёт: `action:install` нет ни в них, ни в рантайме.
+ */
+type TPublishedPluginEvents<T extends object> = Omit<T, keyof TPluginInternalEvents>
+
 /** События всех плагинов дескриптора (namespaced): { 'element:ready': ..., 'element:removed': ... } */
 export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extends readonly [
 	infer Head,
@@ -156,8 +166,8 @@ export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extend
 	? Head extends IPluginDefinition<infer N, infer PE>
 		? N extends string
 			? Tail extends readonly IPluginDefinition[]
-				? NamespacedEvents<PE, N> & TPluginEventsFrom<Tail>
-				: NamespacedEvents<PE, N>
+				? NamespacedEvents<TPublishedPluginEvents<PE>, N> & TPluginEventsFrom<Tail>
+				: NamespacedEvents<TPublishedPluginEvents<PE>, N>
 			: Tail extends readonly IPluginDefinition[]
 				? TPluginEventsFrom<Tail>
 				: object
