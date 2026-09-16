@@ -1,4 +1,4 @@
-import type { IControl, IBatchExtension, TCollectionEngine } from '@soldy/core'
+import type { IControl, IBatchExtension, TCollectionEngine, TEventSink } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -51,6 +51,16 @@ export abstract class TListNavigationPlugin<
 			this._engine = engine
 			this.onEngineBound(engine)
 		})
+	}
+
+	/**
+	 * Эмит собственных событий навигации — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `@soldy/core`). Перекрывает сток
+	 * базы: карта наследника включает `TListNavigationPluginEvents`, поэтому
+	 * эмит `change:highlight` звучит на любом `TEvents`.
+	 */
+	protected override get _sink(): TEventSink<TListNavigationPluginEvents> {
+		return this.events
 	}
 
 	override destroy(): void {
@@ -208,11 +218,7 @@ export abstract class TListNavigationPlugin<
 		prevItem: IControl | null,
 		nextItem: IControl | null,
 	): void {
-		;(
-			this.events as unknown as {
-				emit(name: 'change:highlight', payload: unknown): void
-			}
-		).emit('change:highlight', { item, prevItem, nextItem })
+		this._sink.emit('change:highlight', { item, prevItem, nextItem })
 	}
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
