@@ -53,7 +53,7 @@ async function setup(texts: string[]) {
 		const bundle = new TPluginBundle(item)
 
 		bundle.use(TListItemPlugin)
-		itemPlugins.set(item.uid, bundle.get(TListItemPlugin) as TListItemPlugin)
+		itemPlugins.set(item.uid, required(bundle.get(TListItemPlugin), 'TListItemPlugin'))
 		bundles.register(bundle, item)
 	}
 
