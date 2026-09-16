@@ -63,7 +63,7 @@ async function setup(
 
 	// Каждой опции — свой bundle с элементом и плагином подсветки. `id` узлу
 	// не ставим: в разметке он стоит на строке опции, а не на корне, и
-	// `aria-activedescendant` берёт его из формулы коллекции, а не из DOM
+	// `aria-activedescendant` берёт его из набора `aria` опции, а не из DOM
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
 
 	for (const item of items) {

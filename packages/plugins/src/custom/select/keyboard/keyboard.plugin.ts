@@ -3,7 +3,6 @@ import type {
 	IControl,
 	IList,
 	ISelect,
-	ISelectExtension,
 	ISelectItem,
 	TCollectionEngine,
 } from '@soldy/core'
@@ -115,14 +114,13 @@ export class TSelectKeyboardPlugin
 	/**
 	 * Подсветка для скринридера плюс прокрутка к опции.
 	 *
-	 * `id` опции — из формулы `TSelectExtension`, а не с DOM-узла: узел,
-	 * который знает плагин, — корень элемента, а `id` вместе со всей ARIA
-	 * опции стоит на её строке. Формула одна на обе стороны связки.
+	 * `id` опции — из её набора `aria`, а не с DOM-узла: узел, который знает
+	 * плагин, — корень элемента, а `id` вместе со всей ARIA опции стоит на её
+	 * строке. В набор его пишет `TSelectExtension`, и ссылка берёт ровно то,
+	 * что окажется в разметке.
 	 */
 	protected override onHighlightChanged(uid: string | number | null): void {
-		const item = uid == null ? null : (this.itemByUid(uid) as ISelectItem | null)
-		const select = this._engine?.extensions.select as ISelectExtension | undefined
-		const id = item && select ? select.optionId(item) : null
+		const id = uid == null ? null : (this.itemByUid(uid)?.aria.get('id') ?? null)
 
 		this._owner?.field.aria.add('aria-activedescendant', id)
 
