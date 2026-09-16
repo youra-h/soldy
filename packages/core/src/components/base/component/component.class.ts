@@ -1,5 +1,6 @@
 import { TEntity } from '../entity'
 import { TEvented } from '../../../common'
+import type { TAnyEvents } from '../../../common'
 import type {
 	IComponent,
 	IComponentOptions,
@@ -20,7 +21,7 @@ import type {
  */
 export default class TComponent<
 	TProps extends IComponentProps = IComponentProps,
-	TEvents extends TComponentEvents = TComponentEvents,
+	TEvents extends TAnyEvents = TComponentEvents,
 	TStates extends TComponentStates = TComponentStates,
 >
 	extends TEntity<TProps>
@@ -37,9 +38,9 @@ export default class TComponent<
 		this.events = new TEvented<TEvents>()
 	}
 
-	static create<T extends TComponent>(
+	static create<T extends TComponent<IComponentProps, any>>(
 		this: new (...args: any[]) => T,
-		props?: Partial<T extends TComponent<infer P> ? P : IComponentProps>,
+		props?: Partial<T extends TComponent<infer P, any> ? P : IComponentProps>,
 		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : TComponentStates>,
 	): T {
 		return new this(props ?? {}, options ?? {})

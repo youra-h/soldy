@@ -1,4 +1,4 @@
-import type { IComponentOptions } from '../../component'
+import type { IComponentOptions, TComponentEvents } from '../../component'
 import type {
 	TCollectionEngine,
 	IExtension,
@@ -20,15 +20,16 @@ import type {
  * событие драйвера или движка доезжает до фасада само, и переименование ломает
  * компиляцию, а не оставляет мёртвое имя.
  *
- * `TComponentEvents` в карту не входит: это `Record<string, …>`, и любая
- * карта, пересёкшая его, снова принимает любое имя с любым обработчиком. Он
- * остаётся только констрейнтом дженерика — открыт в констрейнте, точен в
- * инстанцировании.
+ * Начинается с `TComponentEvents`, как карта любого компонента: фасад — тоже
+ * `TComponent`, и события его шины (`bundle:create`) объявлены там. Карта ядра
+ * закрыта, поэтому пересечение с ней имён не открывает. Открытый вид —
+ * `TAnyEvents` — остаётся только констрейнтом дженерика.
  *
  * Набор расширений в аргументе движка — `any`: иначе карта тянула бы за собой
  * `TExtensions`, а движок инвариантен по нему через `engine:create`.
  */
-export type TCollectionComponentEvents<TItem extends object> = TPlainEvents<TItem> &
+export type TCollectionComponentEvents<TItem extends object> = TComponentEvents &
+	TPlainEvents<TItem> &
 	TCollectionEngineEvents<TCollectionEngine<TItem, any>>
 
 /** События фасада коллекции с расширением `batch`: набор базы плюс карта `batch`. */

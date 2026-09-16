@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest'
 import { createPluginContext } from './helpers'
 import { TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
 import { TButton, TIcon, TSkeleton } from '@soldy/core'
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import {
 	ButtonDescriptor,
 	IconDescriptor,
@@ -23,7 +23,10 @@ import {
 } from '../descriptors'
 import { createAdapterContext, resolveDefaultExtensions, TPluginPropsExtension } from '../adapter'
 
-const install = (instance: IComponentView, options?: { role?: string }) => {
+const install = (
+	instance: IComponentView<IComponentViewProps, any>,
+	options?: { role?: string },
+) => {
 	const plugin = new TAriaPlugin()
 
 	plugin.install(createPluginContext(instance), options)

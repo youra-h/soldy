@@ -1,5 +1,6 @@
 import { TComponent } from '../../component'
-import type { IComponentProps, TComponentEvents } from '../../component'
+import type { IComponentProps } from '../../component'
+import type { TAnyEvents } from '../../../../common'
 import { TItemContext } from './../engine'
 import type { IExtension, TExtractItemAdapters } from './../engine'
 
@@ -13,7 +14,7 @@ import type { IExtension, TExtractItemAdapters } from './../engine'
 export abstract class TCollectionItemComponent<
 	TItem extends object,
 	TExtensions extends Record<string, IExtension<TItem>>,
-	TEvents extends TComponentEvents,
+	TEvents extends TAnyEvents,
 > extends TComponent<IComponentProps, TEvents> {
 	protected _context?: TItemContext<TItem, TExtensions>
 

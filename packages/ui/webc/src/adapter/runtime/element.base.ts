@@ -28,7 +28,7 @@
  * переносится вручную в точки, объявленные шаблоном.
  */
 
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import { DEFAULT_SLOT, type IComponentDescriptor, type TInstanceState } from '@soldy/setup'
 import {
 	buildAttributeMap,
@@ -87,7 +87,7 @@ function attributeMap(descriptor: IComponentDescriptor): Map<string, IAttributeB
 }
 
 export abstract class TSoldyElement<
-	TInstance extends IComponentView = IComponentView,
+	TInstance extends IComponentView<IComponentViewProps, any> = IComponentView,
 > extends HTMLElement {
 	protected binding?: TBinding<TInstance>
 

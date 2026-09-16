@@ -17,15 +17,37 @@ import { CheckBox, Switch } from '@soldy/ui-vue'
  */
 const mounted = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
+/**
+ * Инстанс и компонент монтируются в одной записи таблицы. Разнесённые по
+ * столбцам, они стали бы независимыми объединениями, и `TCheckBox` уходил бы
+ * в `ctrl` компонента `Switch`: карты событий у них разные.
+ */
 const CHECKABLES = [
-	['CheckBox', (readonly: boolean) => new TCheckBox({ readonly }), CheckBox],
-	['Switch', (readonly: boolean) => new TSwitch({ readonly }), Switch],
+	[
+		'CheckBox',
+		(readonly: boolean) => {
+			const ctrl = new TCheckBox({ readonly })
+			const input = mount(CheckBox, { props: { ctrl }, attachTo: document.body }).find(
+				'input',
+			)
+
+			return { ctrl, input }
+		},
+	],
+	[
+		'Switch',
+		(readonly: boolean) => {
+			const ctrl = new TSwitch({ readonly })
+			const input = mount(Switch, { props: { ctrl }, attachTo: document.body }).find('input')
+
+			return { ctrl, input }
+		},
+	],
 ] as const
 
-describe.each(CHECKABLES)('%s · клик', (_name, create, component) => {
+describe.each(CHECKABLES)('%s · клик', (_name, mountCheckable) => {
 	it('переключает DOM и модель', async () => {
-		const ctrl = create(false)
-		const input = mount(component, { props: { ctrl }, attachTo: document.body }).find('input')
+		const { ctrl, input } = mountCheckable(false)
 
 		await mounted()
 		await input.trigger('click')
@@ -35,8 +57,7 @@ describe.each(CHECKABLES)('%s · клик', (_name, create, component) => {
 	})
 
 	it('readonly — клик отменён: DOM и модель не меняются', async () => {
-		const ctrl = create(true)
-		const input = mount(component, { props: { ctrl }, attachTo: document.body }).find('input')
+		const { ctrl, input } = mountCheckable(true)
 
 		await mounted()
 		await input.trigger('click')

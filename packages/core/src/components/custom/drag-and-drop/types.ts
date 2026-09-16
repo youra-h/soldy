@@ -2,6 +2,6 @@ import type { IComponent, IComponentProps, TComponentEvents } from '../../base/c
 
 export interface IDragAndDropProps extends IComponentProps {}
 
-export type TDragAndDropEvents = TComponentEvents & {}
+export type TDragAndDropEvents = TComponentEvents
 
 export interface IDragAndDrop extends IComponent<IDragAndDropProps, TDragAndDropEvents> {}
