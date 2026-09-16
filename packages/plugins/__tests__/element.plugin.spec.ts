@@ -131,24 +131,13 @@ describe('объявленный узел', () => {
 	})
 })
 
-describe('ready() и destroy()', () => {
-	it('ready(), вызванный до привязки, резолвится узлом в кадре объявления', async () => {
+describe('объявление узла и destroy()', () => {
+	// Промиса ожидания узла у плагина нет: объявление идёт только событием,
+	// иначе у одного факта два источника и две точки резолва
+	it('промиса ожидания узла плагин не отдаёт', () => {
 		const { plugin } = track()
-		const a = node()
-		let resolved: HTMLElement | null = null
 
-		void plugin.ready().then((element) => {
-			resolved = element
-		})
-
-		plugin.element = a
-		await Promise.resolve()
-
-		expect(resolved).toBeNull()
-
-		await nextFrame()
-
-		expect(resolved).toBe(a)
+		expect('ready' in plugin).toBe(false)
 	})
 
 	it('destroy() до кадра: ready не приходит', async () => {

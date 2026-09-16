@@ -13,12 +13,15 @@ import type { TElementServiceEvents } from './types'
  * каждая смена узла отменяет предыдущее. По нему же видно, объявлен ли
  * текущий узел: узел есть, а объявление кадра не ждёт. Отдельного флага нет,
  * чтобы у одного факта не было двух источников.
+ *
+ * Объявление узла — только событие: промиса ожидания у плагина нет. Ждать
+ * узел — подпиской на `ready`; готовность компоненту отдаёт `TReadyPlugin`
+ * через `IComponentView.ready`.
  */
 export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 	private _element: HTMLElement | null = null
 	/** Кадр с отложенным объявлением узла; `null` — объявлять нечего. */
 	private _announceFrame: number | null = null
-	private _readyResolve: ((el: HTMLElement) => void) | null = null
 
 	get element(): HTMLElement | null {
 		return this._element
@@ -37,14 +40,6 @@ export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 		if (el) this._announce(el)
 	}
 
-	ready(): Promise<HTMLElement> {
-		if (this._element) return Promise.resolve(this._element)
-
-		return new Promise<HTMLElement>((resolve) => {
-			this._readyResolve = resolve
-		})
-	}
-
 	override destroy(): void {
 		// База подписчиков не снимает: без отмены кадр объявил бы узел уже
 		// после уничтожения
@@ -57,9 +52,6 @@ export class TElementPlugin extends TBasePlugin<any, TElementServiceEvents> {
 	private _announce(el: HTMLElement): void {
 		this._announceFrame = requestAnimationFrame(() => {
 			this._announceFrame = null
-
-			this._readyResolve?.(el)
-			this._readyResolve = null
 
 			this.events.emit('ready', el)
 		})
