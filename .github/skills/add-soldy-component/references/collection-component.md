@@ -127,7 +127,7 @@ constructor body — base facades already touch extensions in their own construc
 (`TSelectionCollectionFacade` relays `extensions.selection.events`), and those run before
 the subclass body. See the JSDoc on `resolveEngine`
 (`packages/core/src/components/base/collection/create/internal.ts`) for why the order
-matters:
+matters.
 
 A facade never lists the events it forwards: it is a projection of its extensions, so it
 relays each source whole with `relayAll`, and its event map is the intersection of the
