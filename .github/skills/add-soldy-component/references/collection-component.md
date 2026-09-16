@@ -32,21 +32,25 @@ building blocks every collection composes from:
 - `assembleEngine(set, items?)`, `createComponentEngine(...)`, `attachEngine(...)`,
   `resolveEngine(...)` — see below.
 
-Tabs builds its own set on top of `activationExtensions` in `collection/factory.ts`:
+Tabs builds its own set on top of `activationExtensions` in `collection/factory.ts`. The set
+is typed `TBaseExtensionSet`, not the bare `TExtensionSet`: it guarantees `batch`, which
+`assembleEngine` relies on to fill the engine without a cast:
 
 ```ts
-export const TABS_EXTENSIONS = (): TExtensionSet<ITabsItem> => ({
+export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
 	...activationExtensions<ITabsItem>(TTabsItem),
 	content: () => new TTabsContentExtension<ITabsItem>(),
 })
 
 export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
-	tabs: (owner) => new TTabsExtension({ owner }) as never,
+	tabs: (owner) => new TTabsExtension({ owner }),
 }
 
 export const TabsFactory = (owner: ITabs): TTabsCollection => {
-	const engine = assembleEngine<ITabsItem, any>(TABS_EXTENSIONS())
+	const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
+
 	for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
+
 	return engine as TTabsCollection
 }
 ```
@@ -243,25 +247,62 @@ They are installed on the owner component; the engine is bound from the adapter 
 
 ## Vue wiring
 
-The owner setup creates **two adapter contexts sharing one bundle**. The facade context
-passes `engine: toRaw(props.engine)` through — a caller-supplied engine wins, `resolveEngine`
-falls back to building one otherwise:
+The owner setup creates **two adapter contexts sharing one bundle**, both through
+`createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext`
+from `@soldy/setup`: the wrapper strips Vue proxies from `ctrl` and from the top-level values of
+`options`, so the component passes `props.ctrl` / `props.engine` as they are, without `toRaw`.
+The eslint block `soldy/vue-components-no-framework` fails on an import from `'vue'` and on
+`createAdapterContext` imported from `@soldy/setup`. The facade context passes
+`engine: props.engine` through — a caller-supplied engine wins, `resolveEngine` falls back to
+building one otherwise:
 
 ```ts
-const adapter = createAdapterContext(TabsDescriptor(), { ctrl: toRaw(props.ctrl), props })
-const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
+import {
+	TCollectionExtension,
+	TDragAndDropCollectionExtension,
+	TabsDescriptor,
+	TabsCollectionDescriptor,
+} from '@soldy/setup'
+import { TTabsCollectionFacade } from '@soldy/core'
+import type { ITabsCollectionProps } from '@soldy/core'
+import {
+	useAdapter,
+	useCollectionAdapter,
+	VueElevatorFactory,
+	createVueAdapterContext,
+	type SetupContext,
+} from '../../adapter'
+import BaseTabs, { type TabsProps } from './base.component'
+import { type ITabsComponentProps, type ITabs } from '@soldy/core'
 
-const collectionAdapter = createAdapterContext(
-	TabsCollectionDescriptor(),
-	{ props, options: { owner: adapter.instance, engine: toRaw(props.engine) } },
-	{ bundle: adapter.bundle, defaultExtensions: [] },
-)
-	.use(TCollectionExtension, { elevator: VueElevatorFactory })
-	.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
+export default {
+	name: '_Tabs',
+	extends: BaseTabs,
+	setup(props: TabsProps, { emit }: SetupContext) {
+		const adapter = createVueAdapterContext(TabsDescriptor(), {
+			ctrl: props.ctrl,
+			props,
+		})
 
-const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(collectionAdapter, props, emit)
+		const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
 
-return { ...refs, ...refsCollection }
+		const collectionAdapter = createVueAdapterContext(
+			TabsCollectionDescriptor(),
+			{ props, options: { owner: adapter.instance, engine: props.engine } },
+			{ bundle: adapter.bundle, defaultExtensions: [] },
+		)
+			.use(TCollectionExtension, { elevator: VueElevatorFactory })
+			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
+
+		const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(
+			collectionAdapter,
+			props,
+			emit,
+		)
+
+		return { ...refs, ...refsCollection }
+	},
+}
 ```
 
 `useCollectionAdapter` (`packages/ui/vue/src/adapter/runtime/useCollectionAdapter.ts`) is
