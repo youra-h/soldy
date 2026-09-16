@@ -65,7 +65,6 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 	for (const item of items) {
 		const node = document.createElement('div')
 
-		node.id = `s-select-option-${item.uid}`
 		root.appendChild(node)
 
 		const bundle = new TPluginBundle(item)

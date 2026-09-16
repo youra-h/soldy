@@ -4,9 +4,18 @@ import { Button } from '../../button'
 import SetupSelectItem from './setup.component'
 
 /**
- * Вся ARIA опции — на ней самой: `role="option"` от ядра, `id` и
- * `aria-selected` от расширения коллекции. Один набор, шаблону не нужно знать,
- * кто в него писал.
+ * Вся ARIA опции — на вложенном `Button`, строке опции: `role="option"` от
+ * ядра, `id` и `aria-selected` от расширения коллекции. Один набор, шаблону не
+ * нужно знать, кто в него писал. Узел с ролью один, как у Tabs, Accordion,
+ * ListBox и Tags: набор опции ложится поверх того, что `Button` пишет себе
+ * сам, — `role="option"` перекрывает `role="button"`, `tabindex="-1"` выводит
+ * строку из обхода (фокус остаётся на поле), а `aria-disabled` у них один и
+ * тот же.
+ *
+ * Тег строки фиксирован (`tag="span"`), а не берётся из `tag` элемента:
+ * `tag` — тег корня (`TComponentView`), и рисует по нему корень
+ * `<component :is>`. Под фиксированный тег строки написан и
+ * `TSelectItem._ariaTag` — он решает, писать ли `aria-disabled`.
  *
  * `dataset` — то же состояние для темы (`data-selected`, `data-highlighted`),
  * тоже готовым набором: выбор пишет расширение выборки, подсветку —
@@ -35,14 +44,15 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
 		:style="{ order: order }"
 		@click="context?.adapters.select.choose()"
-		v-bind="{ ...aria, ...dataset, ...containerAttrs, ...attrs }"
+		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
 			tag="span"
@@ -51,7 +61,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 			:variant="variant"
 			:disabled="disabled"
 			tabindex="-1"
-			v-bind="{ ...dataset, ...controlAttrs }"
+			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>
 				<span
@@ -83,5 +93,5 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 				</span>
 			</template>
 		</Button>
-	</div>
+	</component>
 </template>

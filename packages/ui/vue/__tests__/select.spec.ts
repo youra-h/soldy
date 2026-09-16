@@ -155,6 +155,24 @@ describe('опции', () => {
 		expect(options()).toHaveLength(3)
 	})
 
+	/**
+	 * Поле ссылается на подсвеченную опцию по `id`. Формула у него одна
+	 * (`TSelectExtension`), а стоит он на строке опции вместе со всей её ARIA:
+	 * ссылка обязана находить в документе именно узел с ролью.
+	 */
+	it('aria-activedescendant указывает на узел с role="option"', async () => {
+		const wrapper = render()
+
+		await nextFrame()
+		await wrapper.find('.s-select').trigger('keydown', { key: 'ArrowDown' })
+		await nextTick()
+
+		const id = wrapper.find('input').attributes('aria-activedescendant')
+
+		expect(id).toBeTruthy()
+		expect(document.getElementById(id as string)?.getAttribute('role')).toBe('option')
+	})
+
 	it('aria-selected стоит на всех, а не только на выбранной', async () => {
 		const wrapper = render()
 
@@ -208,7 +226,7 @@ describe('опции', () => {
 		await wrapper.find('input').trigger('click')
 		await nextTick()
 
-		const button = options()[0].querySelector('.s-button') as HTMLElement
+		const button = document.querySelector('.s-select-item .s-button') as HTMLElement
 
 		expect(button.getAttribute('data-selected')).toBe('true')
 		expect(button.className).toContain('s-button--a-plain')

@@ -62,6 +62,17 @@ export default class TSelectItem<
 		return this.events
 	}
 
+	/**
+	 * `aria` опции стоит на вложенном `Button` — строке опции. Тег у неё
+	 * фиксированный (`span`), разметка задаёт его сама, поэтому от `tag` корня
+	 * ARIA-половина правила «нативный атрибут вместо ARIA-дубля» не зависит:
+	 * у `span` своего `disabled` нет, и состояние остаётся `aria-disabled`,
+	 * каким бы ни был корень.
+	 */
+	protected override get _ariaTag(): string {
+		return 'span'
+	}
+
 	get text(): string {
 		return this._states.text.value
 	}

@@ -61,13 +61,14 @@ async function setup(
 	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
 	const scrolls: Array<Record<string, unknown> | undefined> = []
 
-	// Каждой опции — свой bundle с элементом и плагином подсветки
+	// Каждой опции — свой bundle с элементом и плагином подсветки. `id` узлу
+	// не ставим: в разметке он стоит на строке опции, а не на корне, и
+	// `aria-activedescendant` берёт его из формулы коллекции, а не из DOM
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
 
 	for (const item of items) {
 		const node = document.createElement('div')
 
-		node.id = `s-select-option-${item.uid}`
 		node.scrollIntoView = (arg?: unknown) => {
 			scrolls.push(arg as Record<string, unknown> | undefined)
 		}
