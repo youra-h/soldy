@@ -91,6 +91,10 @@ describe('eslint.config.ts: приведения вне ядра', () => {
 		'packages/accessor/contract/__fixture__.ts',
 		'packages/ui/vue/src/adapter/runtime/__fixture__.ts',
 		'packages/ui/angular/src/components/__fixture__/__fixture__.component.ts',
+		'packages/ui/react/src/components/__fixture__/Fixture.tsx',
+		'packages/ui/solid/src/components/__fixture__/Fixture.tsx',
+		'packages/ui/svelte/src/adapter/runtime/__fixture__.ts',
+		'packages/ui/webc/src/components/__fixture__/setup.component.ts',
 		'packages/plugins/src/__fixture__.ts',
 	])('%s — ошибка', async (filePath) => {
 		expect(await ruleIds(CAST, filePath)).toContain('no-restricted-syntax')
