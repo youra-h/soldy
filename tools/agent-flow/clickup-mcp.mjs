@@ -88,13 +88,14 @@ const tagsOf = (task) => (task.tags ?? []).map((tag) => tag.name.toLowerCase())
 /**
  * Куда роль может отправить задачу по итогам этапа: исход → ключ `config.statuses`.
  *
- * Владельцу (OVERVIEW) задачу возвращают только аналитик и тимлид. Программист
- * и дизайнер с вопросами идут к тимлиду: тот решает, правка это плана, новая
- * задача или вопрос владельцу.
+ * Программист работает на той же модели, что и тимлид, поэтому расхождения с
+ * планом решает сам и тимлиду задачу не возвращает: с тем, что решить не смог,
+ * он идёт к владельцу (OVERVIEW). Дизайнер с вопросами идёт к тимлиду — разметку
+ * по его спецификации планирует тимлид.
  *
  * Дизайнер — редкая роль для крупных задач, в DESIGN задачу отправляет тимлид
- * или владелец. Исходы у него те же, что у программиста: `done` — правились
- * только тема и иконки, `questions` — нужен код, дальше планирует тимлид.
+ * или владелец. Исходы: `done` — правились только тема и иконки, `questions` —
+ * нужен код, дальше планирует тимлид.
  *
  * Менеджера здесь нет: он задачу не берёт и этап не завершает, а переставляет
  * чужие задачи — см. `MANAGER_MOVES`.
@@ -103,7 +104,7 @@ const TRANSITIONS = {
 	analyst: { review: 'overview' },
 	techlead: { ready: 'inProgress', design: 'design', questions: 'overview', done: 'approved' },
 	designer: { done: 'approved', questions: 'planning' },
-	developer: { done: 'approved', questions: 'planning' },
+	developer: { done: 'approved', questions: 'overview' },
 }
 
 /**
@@ -244,6 +245,32 @@ function chunk(text, size) {
 }
 
 /**
+ * Комментарий роли. Хештег ставим здесь, а не в промпте: на нём держится вся
+ * цепочка этапов, и полагаться на то, что модель его не забудет, нельзя.
+ */
+async function postComment(taskId, role, text) {
+	const hashtag = HASHTAGS[role]
+
+	if (!hashtag) {
+		throw new Error(
+			`Неизвестная роль "${role}". Ожидается: ${Object.keys(HASHTAGS).join(', ')}`,
+		)
+	}
+
+	const body = text.trimStart().startsWith(hashtag) ? text.trimStart() : `${hashtag}\n\n${text}`
+	const parts = chunk(body, config.commentChunkSize ?? 30000)
+
+	for (const part of parts) {
+		await api(`/task/${taskId}/comment`, {
+			method: 'POST',
+			body: JSON.stringify({ comment_text: part, notify_all: false }),
+		})
+	}
+
+	return parts.length
+}
+
+/**
  * Задача, которую менеджер может менять. Проверяем здесь, а не в промпте:
  * задачу с тегом `on` прямо сейчас делает роль, и приоритет или статус,
  * переставленные у неё под руками, ломают заход незаметно для всех.
@@ -325,29 +352,7 @@ const tools = {
 			required: ['task_id', 'role', 'text'],
 		},
 		async run({ task_id, role, text }) {
-			const hashtag = HASHTAGS[role]
-
-			if (!hashtag) {
-				throw new Error(
-					`Неизвестная роль "${role}". Ожидается: ${Object.keys(HASHTAGS).join(', ')}`,
-				)
-			}
-
-			// Хештег ставим здесь, а не в промпте: на нём держится вся цепочка
-			// этапов, и полагаться на то, что модель его не забудет, нельзя.
-			const body = text.trimStart().startsWith(hashtag)
-				? text.trimStart()
-				: `${hashtag}\n\n${text}`
-			const parts = chunk(body, config.commentChunkSize ?? 30000)
-
-			for (const part of parts) {
-				await api(`/task/${task_id}/comment`, {
-					method: 'POST',
-					body: JSON.stringify({ comment_text: part, notify_all: false }),
-				})
-			}
-
-			return { posted: parts.length }
+			return { posted: await postComment(task_id, role, text) }
 		},
 	},
 
@@ -408,7 +413,7 @@ const tools = {
 					type: 'string',
 					enum: [...new Set(Object.values(TRANSITIONS).flatMap(Object.keys))],
 					description:
-						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), design (нужен дизайн → DESIGN), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). designer: done (правились только тема и иконки, PR открыт → APPROVED), questions (нужен код или решение тимлида → PLANNING). developer: done (сделано, вопросов нет → APPROVED), questions (нужна доработка тимлидом → PLANNING).',
+						'analyst: review (→ OVERVIEW). techlead: ready (план готов, вопросов нет → IN PROGRESS), design (нужен дизайн → DESIGN), questions (нужен владелец → OVERVIEW), done (работа программиста принята → APPROVED). designer: done (правились только тема и иконки, PR открыт → APPROVED), questions (нужен код или решение тимлида → PLANNING). developer: done (сделано и протестировано, PR открыт; остаток и находки, если есть, вынесены задачами → APPROVED), questions (критическое расхождение, задача не сделана → OVERVIEW).',
 				},
 			},
 			required: ['task_id', 'role', 'outcome'],
@@ -758,7 +763,7 @@ const tools = {
 
 	clickup_create_task: {
 		description:
-			'Завести отдельную задачу на проблему, найденную попутно и не входящую в текущую. Новая задача ложится владельцу в OVERVIEW — в очередь ролей она сама не попадёт. Не заменяет отчёт: упомяни созданную задачу в своём комментарии. Если новая задача не может начаться, пока не закрыта текущая, — свяжи их `clickup_link_tasks`.',
+			'Завести отдельную задачу на работу, не входящую в текущую. Новая задача ложится владельцу в OVERVIEW — в очередь ролей она сама не попадёт. `description` — для владельца, простым текстом; `plan` сервер публикует первым комментарием новой задачи с хештегом твоей роли. Не заменяет отчёт: упомяни созданную задачу в своём комментарии.',
 		schema: {
 			type: 'object',
 			properties: {
@@ -769,8 +774,9 @@ const tools = {
 				},
 				role: {
 					type: 'string',
-					enum: ['techlead'],
-					description: 'Твоя роль. Заводить задачи может только тимлид.',
+					enum: ['techlead', 'developer'],
+					description:
+						'Твоя роль. Тимлид — побочные находки и то, что не влезает в заход. Программист — побочные находки и остаток задачи: критическое расхождение или объём больше ожидаемого.',
 				},
 				name: {
 					type: 'string',
@@ -780,7 +786,12 @@ const tools = {
 				description: {
 					type: 'string',
 					description:
-						'Две части. Сначала выжимка для человека: 2–4 строки о том, что не так и почему это стоит сделать, обычными словами, без путей к файлам и имён классов — владелец читает это в OVERVIEW без твоего контекста. Потом блок «**ТЗ.**» для программиста: где живёт проблема (полные пути к файлам), что менять и почему не решается здесь.',
+						'Для владельца: 2–4 строки о том, что не так и почему это стоит сделать, обычными словами — он читает это в OVERVIEW без твоего контекста. Простой текст: описание задачи ClickUp не понимает Markdown. Без разметки, путей к файлам, имён классов и сигнатур.',
+				},
+				plan: {
+					type: 'string',
+					description:
+						'Markdown для исполнителя, уйдёт первым комментарием новой задачи. Тимлид — план в формате своего комментария. Программист — что уже сделано в исходной задаче (PR), что сделать и почему вынесено, с полными путями к файлам.',
 				},
 				size: {
 					type: 'string',
@@ -788,15 +799,11 @@ const tools = {
 					description: 'Необязательно. Твоя оценка; владелец может её изменить.',
 				},
 			},
-			required: ['source_task_id', 'role', 'name', 'description'],
+			required: ['source_task_id', 'role', 'name', 'description', 'plan'],
 		},
-		async run({ source_task_id, role, name, description, size }) {
-			// Программист находки не заводит, а отдаёт тимлиду через PLANNING:
-			// новая это задача или часть текущей — решает тимлид.
-			if (role !== 'techlead') {
-				throw new Error(
-					`Роль "${role}" не может заводить задачи. Опиши находку в комментарии и верни задачу в PLANNING.`,
-				)
+		async run({ source_task_id, role, name, description, plan, size }) {
+			if (!['techlead', 'developer'].includes(role)) {
+				throw new Error(`Роль "${role}" не может заводить задачи.`)
 			}
 
 			if (size && !SIZES.includes(size)) {
@@ -814,7 +821,8 @@ const tools = {
 			}
 
 			const owner = Number(requireConfig('ownerId'))
-			const origin = `\n\n---\n_Выделено из [${source.name}](${source.url}) на этапе ${HASHTAGS[role]}._`
+			// Описание — простой текст: разметку ClickUp покажет в нём как есть.
+			const origin = `\n\nВыделено из задачи «${source.name}» на этапе ${HASHTAGS[role]}: ${source.url}`
 
 			const created = await api(`/list/${listId}/task`, {
 				method: 'POST',
@@ -829,6 +837,10 @@ const tools = {
 					notify_all: false,
 				}),
 			})
+
+			// План — комментарием роли, а не в описании: `#PLANNING` в ленте нужен,
+			// чтобы задачу можно было отдать программисту, не прогоняя через тимлида.
+			await postComment(created.id, role, plan)
 
 			return { id: created.id, url: created.url, status: config.statuses.overview }
 		},
