@@ -1,0 +1,11 @@
+# Отступы и ширину строки Prettier берёт из .editorconfig: код — табы, JSON,
+# YAML и Markdown — два пробела, строка до 100. В .prettierrc.json их нет
+# намеренно: tabWidth оттуда перекрывал .editorconfig на всех файлах, и
+# `npm run format` переписывал JSON и Markdown в четыре пробела.
+
+# Метаданные Angular пишет генератор (npm run generate --workspace=@soldy/ui-angular),
+# а CI сверяет его вывод с закоммиченным. Второго писателя у этих файлов быть не должно.
+packages/ui/angular/src/generated
+
+# Лок-файл пишет npm.
+package-lock.json

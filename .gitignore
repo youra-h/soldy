@@ -16,3 +16,6 @@ packages/playground/*/scratch/
 # придётся вывести из-под __screenshots__, они, наоборот, коммитятся.
 .vitest-attachments/
 __screenshots__/
+
+# Отчёт Playwright о последнем прогоне — пишется при каждом запуске.
+test-results/

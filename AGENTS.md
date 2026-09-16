@@ -17,7 +17,7 @@ npm run test:vue
 npm run test:theme   # Vitest — инварианты токенов темы oren
 npm run test:layout  # раскладка стенда Vue в настоящем Chromium (сам собирает тему)
 npm run lint         # ESLint (auto-fix)
-npm run format       # Prettier
+npm run format       # Prettier; CI проверяет `prettier --check .` в задаче `lint`
 
 # Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore)
 npm run build --workspace=@soldy/theme-oren
@@ -32,7 +32,9 @@ CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов 
 Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
 `packages/ui/angular/src/generated` и сборки. Сборки и AOT-компиляции (`ngc`)
 Angular в CI нет: «Типы — Angular» — это `tsc --noEmit`, шаблоны декораторов
-`@Component` он не проверяет. Линт роняет CI отдельной задачей `lint`.
+`@Component` он не проверяет. Линт и форматирование (`prettier --check .`)
+роняют CI отдельной задачей `lint`. Отступы и ширину строки Prettier берёт из
+`.editorconfig`, в `.prettierrc.json` их не дублировать.
 
 Тесты `packages/core/__tests__` и `packages/ui/vue/__tests__` тоже проверяются
 типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
