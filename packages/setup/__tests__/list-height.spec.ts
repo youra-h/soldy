@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
-import { createPluginContext, installResizeObserverStub, observerCount } from './helpers'
+import { createPluginContext, installResizeObserverStub, observerCount, required } from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
 import type { IListBoxItem } from '@soldy/core'
 import {
@@ -80,7 +80,7 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 		// jsdom не считает раскладку — высоту строки задаём сами
 		Object.defineProperty(element, 'offsetHeight', { value: ROW_HEIGHT })
 		panel.appendChild(element)
-		;(bundle.get(TElementPlugin) as TElementPlugin).element = element
+		required(bundle.get(TElementPlugin), 'TElementPlugin').element = element
 	}
 
 	bundles.bindEngine(facade.engine)

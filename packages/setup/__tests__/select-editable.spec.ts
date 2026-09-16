@@ -15,7 +15,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import type { ISelectProps } from '@soldy/core'
-import { createPluginContext } from './helpers'
+import { createPluginContext, required } from './helpers'
 import { TSelect, TSelectItem, TSelectCollectionFacade } from '@soldy/core'
 import type { ISelectItem } from '@soldy/core'
 import {
@@ -73,7 +73,7 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
 
-		const registered = bundle.get(TElementPlugin) as TElementPlugin
+		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
 
 		registered.element = node
 

@@ -74,17 +74,15 @@ async function setup(
 		root.appendChild(node)
 
 		const bundle = new TPluginBundle(item)
-		const itemElement = new TElementPlugin()
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
 
-		const registered = bundle.get(TElementPlugin) as TElementPlugin
-		const highlight = bundle.get(TListItemPlugin) as TListItemPlugin
+		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
+		const highlight = required(bundle.get(TListItemPlugin), 'TListItemPlugin')
 
 		registered.element = node
 		itemPlugins.set(item.uid, highlight)
-		void itemElement
 
 		bundles.register(bundle, item)
 	}
