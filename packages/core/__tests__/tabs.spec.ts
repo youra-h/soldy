@@ -7,6 +7,7 @@ import {
 	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
+	createEngineTabs,
 } from '@soldy/core'
 import type { ITabsItem, ITabs } from '@soldy/core'
 
@@ -532,5 +533,108 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(onClose).not.toHaveBeenCalled()
 		expect(collection.getCore().driver.valueOf().length).toBe(1)
+	})
+})
+
+// ============================================================================
+// Закрытие активного таба
+// ============================================================================
+
+/**
+ * Политика Tabs, а не активации: общее расширение на удаление активного только
+ * сбрасывает, соседа выбирает `TTabsExtension`.
+ *
+ * Коллекция собрана как у компонента (`createEngineTabs`): порядок установки
+ * `activation` раньше `tabs` задаёт он, и на `item:removed` сначала
+ * отрабатывает сброс, потом активация соседа.
+ */
+describe('Закрытие активного таба: активным становится сосед', () => {
+	function setup() {
+		const engine = createEngineTabs({ owner: new TTabs({ closable: true }) })
+		const a = engine.extensions.plain.push(createTab('A'))
+		const b = engine.extensions.plain.push(createTab('B'))
+		const c = engine.extensions.plain.push(createTab('C'))
+
+		return { engine, activation: engine.extensions.activation, a, b, c }
+	}
+
+	it('закрыли активный первый — активен следующий', () => {
+		const { engine, activation, a, b } = setup()
+
+		activation.activate(a)
+		engine.extensions.plain.remove(a)
+
+		expect(activation.activeItem).toBe(b)
+		expect(b.aria.get('aria-selected')).toBe('true')
+	})
+
+	it('закрыли активный последний — активен предыдущий', () => {
+		const { engine, activation, b, c } = setup()
+
+		activation.activate(c)
+		engine.extensions.plain.remove(c)
+
+		expect(activation.activeItem).toBe(b)
+	})
+
+	it('закрыли неактивный — активный не меняется', () => {
+		const { engine, activation, a, c } = setup()
+
+		activation.activate(c)
+		engine.extensions.plain.remove(a)
+
+		expect(activation.activeItem).toBe(c)
+	})
+
+	it('закрыли единственный — активного нет', () => {
+		const engine = createEngineTabs({ owner: new TTabs({ closable: true }) })
+		const tab = engine.extensions.plain.push(createTab('Tab'))
+
+		engine.extensions.activation.activate(tab)
+		engine.extensions.plain.remove(tab)
+
+		expect(engine.extensions.activation.activeItem).toBeUndefined()
+	})
+
+	it('следующий сосед disabled — активен следующий за ним', () => {
+		const { engine, activation, a, b, c } = setup()
+
+		// После вставки: `disabled` элементу при добавлении пишет владелец
+		b.disabled = true
+
+		activation.activate(a)
+		engine.extensions.plain.remove(a)
+
+		expect(activation.activeItem).toBe(c)
+	})
+
+	it('closeTab активного даёт тот же результат, что plain.remove', () => {
+		const { engine, activation, a, b } = setup()
+
+		activation.activate(a)
+
+		expect(engine.extensions.tabs.closeTab(a)).toBe(true)
+		expect(activation.activeItem).toBe(b)
+	})
+
+	it('удаление отменили в item:remove:before — активный не меняется', () => {
+		const { engine, activation, a } = setup()
+
+		engine.extensions.plain.events.on('item:remove:before', (e) => e.preventDefault())
+
+		activation.activate(a)
+		engine.extensions.plain.remove(a)
+
+		expect(engine.extensions.batch.items).toContain(a)
+		expect(activation.activeItem).toBe(a)
+	})
+
+	it('batch.clear() не активирует ничего', () => {
+		const { engine, activation, a } = setup()
+
+		activation.activate(a)
+		engine.extensions.batch.clear()
+
+		expect(activation.activeItem).toBeUndefined()
 	})
 })

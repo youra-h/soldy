@@ -38,6 +38,13 @@ export interface IActivationExtension<TItem extends object = any>
 	/** Сбросить активный элемент (деактивировать без указания конкретного). */
 	reset(): void
 
+	/**
+	 * Найти подходящий для активации элемент: сначала вперёд от `fromItem`,
+	 * затем назад. Кого активировать взамен удалённого, расширение не решает
+	 * само — поиск зовёт компонент, у которого такая политика есть.
+	 */
+	findActivatable(predicate?: (item: TItem) => boolean, fromItem?: TItem): TItem | undefined
+
 	/** @inheritdoc IExtensionItems.createItem */
 	createItem(owner: TItem): IActivationItemExtension<TItem>
 }
