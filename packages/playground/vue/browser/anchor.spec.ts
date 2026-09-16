@@ -103,6 +103,57 @@ const ResizableAnchorHarness = defineComponent({
 })
 
 /**
+ * Якорь, у которого кликом меняются только рамка и паддинг: содержимое то же,
+ * content-box прежний, border-box вырос.
+ *
+ * `box-sizing: content-box` здесь обязателен и задан явно: на стенде и в теме
+ * глобально `border-box`, и при нём фиксированные `width`/`height` удержали бы
+ * внешний размер якоря — меняться было бы нечему.
+ */
+const PaddedAnchorHarness = defineComponent({
+	data() {
+		return { anchorEl: null as Element | null, thick: false }
+	},
+	mounted() {
+		this.anchorEl = this.$refs.anchor as Element
+	},
+	render() {
+		return h('div', { style: 'position: relative; padding-top: 200px' }, [
+			h(
+				'button',
+				{
+					ref: 'anchor',
+					class: 's-test-anchor',
+					style: [
+						'box-sizing: content-box; width: 120px; height: 32px',
+						`padding: ${this.thick ? 20 : 0}px`,
+						`border: ${this.thick ? 6 : 0}px solid`,
+					].join('; '),
+					onClick: () => {
+						this.thick = true
+					},
+				},
+				'anchor',
+			),
+			this.anchorEl
+				? h(
+						Frame,
+						{
+							visible: true,
+							position: 'fixed',
+							anchor_anchor: this.anchorEl,
+							anchor_placement: 'bottom-start',
+							anchor_matchWidth: true,
+							class: 's-test-panel',
+						},
+						{ default: () => h('div', { style: 'height: 40px' }, 'panel') },
+					)
+				: null,
+		])
+	},
+})
+
+/**
  * Панель над якорем с `matchWidth` и текстом, который переносится: якорь
  * сужается кликом, и от новой ширины панель становится выше.
  */
@@ -298,6 +349,35 @@ describe('пересчёт без scroll/resize окна', () => {
 		await userEvent.click(anchor())
 
 		await expect.poll(() => panel().getBoundingClientRect().width).toBeCloseTo(260, 0)
+	})
+
+	/**
+	 * Наблюдатели смотрят border-box — ровно то, что плагин меряет
+	 * `getBoundingClientRect()`. У якоря меняются только рамка и паддинг:
+	 * content-box прежний, и с умолчанием `content-box` уведомления бы не было
+	 * вовсе, а `y` и ширина панели держались бы устаревшими до ближайшего
+	 * scroll/resize окна.
+	 */
+	it('у якоря сменились только рамка и паддинг — bottom-start и matchWidth едут следом', async () => {
+		render(PaddedAnchorHarness)
+
+		await expect.poll(() => panel().getBoundingClientRect().width).toBeCloseTo(120, 0)
+
+		const before = anchor().getBoundingClientRect()
+
+		await userEvent.click(anchor())
+
+		// Сначала убеждаемся, что поменялся именно border-box якоря: иначе
+		// проверка ниже прошла бы и на неподвижной панели.
+		await expect.poll(() => anchor().getBoundingClientRect().width).toBeGreaterThan(before.width)
+		expect(anchor().getBoundingClientRect().height).toBeGreaterThan(before.height)
+
+		await expect
+			.poll(() => panel().getBoundingClientRect().width)
+			.toBeCloseTo(anchor().getBoundingClientRect().width, 0)
+		await expect
+			.poll(() => panel().getBoundingClientRect().top)
+			.toBeCloseTo(anchor().getBoundingClientRect().bottom, 0)
 	})
 
 	/**
