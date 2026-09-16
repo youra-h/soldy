@@ -122,16 +122,35 @@ the subclass body. See the JSDoc on `resolveEngine`
 (`packages/core/src/components/base/collection/create/internal.ts`) for why the order
 matters:
 
+A facade never lists the events it forwards: it is a projection of its extensions, so it
+relays each source whole with `relayAll`, and its event map is the intersection of the
+source maps (AGENTS.md, «Карта событий выводится из источника, а не переписывается»):
+
 ```ts
-export class TTabsCollectionFacade extends TBatchCollectionFacade<ITabsItem, TTabsCollectionExtensions> {
+// collection/types.ts
+export type TTabsCollectionFacadeEvents = TBatchCollectionFacadeEvents<ITabsItem> &
+	TActivationEvents<ITabsItem> &
+	TTabsExtensionEvents
+
+export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
+	TActivationItemEventsExtension &
+	TTabsItemEventsExtension
+```
+
+```ts
+export class TTabsCollectionFacade extends TBatchCollectionFacade<
+	ITabsItem,
+	TTabsCollectionExtensions,
+	TTabsCollectionFacadeEvents
+> {
 	constructor(
 		props: TCollectionFacadeProps<ITabsItem> = {},
-		options: TCollectionFacadeOptions<TTabsCollection, ITabs> = {},
+		options: TCollectionFacadeOptions<TTabsCollectionFacadeEngine, ITabs> = {},
 	) {
 		super({}, { engine: resolveEngine(options, TABS_EXTENSIONS(), TABS_OWNER_EXTENSIONS, 'Tabs', TabsFactory) as TTabsCollection })
 
-		this.events.relay(this.extensions.activation.events, ['change:activation', 'item:activated', 'item:deactivated'])
-		this.events.relay(this.extensions.tabs.events, ['item:close', 'change:closable'])
+		this.events.relayAll(this.extensions.activation.events)
+		this.events.relayAll(this.extensions.tabs.events)
 		this.applyProps(props)
 	}
 
@@ -141,15 +160,19 @@ export class TTabsCollectionFacade extends TBatchCollectionFacade<ITabsItem, TTa
 ```
 
 The item facade (`item/facade/facade.class.ts`) holds a `TItemContext` set by the adapter
-extension layer and relays the item adapters' events:
+extension layer and relays the item adapters' events the same way:
 
 ```ts
-export class TTabsItemCollectionFacade extends TOrderItemFacade<ITabsItem, TTabsCollectionExtensions> {
+export class TTabsItemCollectionFacade extends TOrderItemFacade<
+	ITabsItem,
+	TTabsCollectionExtensions,
+	TTabsItemCollectionFacadeEvents
+> {
 	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
 		super.setContext(context)
 		if (!this._context) return
-		this.events.relay(this._context.adapters.activation.events, ['change:active'])
-		this.events.relay(this._context.adapters.tabs.events, ['change:closable'])
+		this.events.relayAll(this._context.adapters.activation.events)
+		this.events.relayAll(this._context.adapters.tabs.events)
 	}
 
 	get active(): boolean { return this._context?.adapters.activation.active ?? false }

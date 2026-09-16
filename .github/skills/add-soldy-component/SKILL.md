@@ -75,7 +75,6 @@ export const <Name>Descriptor = () =>
 - `base.component.ts`: runtime `props`/`emits` from `useProps(<Name>Descriptor())` / `useEmits(<Name>Descriptor())`, **plus** the precise props type derived from the descriptor:
 
 ```ts
-import { Base<X> } from '../<x>'
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
 import { <Name>Descriptor } from '@soldy/setup'
