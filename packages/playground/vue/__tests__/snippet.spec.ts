@@ -8,8 +8,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { TPropControl } from '@soldy/playground-shared'
+import type { TPropControl, TPropOwner } from '@soldy/playground-shared'
 import { COMPONENTS } from '@soldy/playground-shared'
+import { TAriaPlugin } from '@soldy/plugins'
 import { propSnippet, instanceSnippet } from '../src/snippet'
 
 /** Запись манифеста по id; без неё проверять нечего. */
@@ -23,11 +24,14 @@ function entryOf(id: string) {
 
 const accordion = entryOf('accordion')
 
-const control = (overrides: Partial<TPropControl>): TPropControl => ({
+/**
+ * Владелец строки задаётся всегда: у плагинной вместе со `scope` приходит адрес
+ * плагина, и подставленный по умолчанию `scope` разошёлся бы с ним.
+ */
+const control = (overrides: Partial<TPropControl> & TPropOwner): TPropControl => ({
 	name: 'view',
 	kind: 'text',
 	description: '',
-	scope: 'component',
 	...overrides,
 })
 
@@ -62,6 +66,32 @@ describe('instanceSnippet', () => {
 		expect(code).toContain(':engine="engine"')
 		expect(code).not.toContain('instance.mode')
 		expect(code).not.toContain(':ctrl="instance"')
+	})
+
+	/**
+	 * Плагинный проп — ни `instance.aria_label`, ни `instance.label`: таких
+	 * свойств у инстанса нет. Плагин берут из bundle, который компонент отдаёт
+	 * событием `bundle:create`, и пишут ему имя без неймспейса.
+	 */
+	it('свойство плагина пишет в плагин из bundle', () => {
+		const code = instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			'Закрыть',
+		)
+
+		expect(code).toContain('const instance = new TButton()')
+		expect(code).toContain("import { TPluginBundle, TAriaPlugin } from '@soldy/plugins'")
+		expect(code).toContain("instance.events.on('bundle:create'")
+		expect(code).toContain('const plugin = bundle.get(TAriaPlugin)')
+		expect(code).toContain("plugin.label = 'Закрыть'")
+		expect(code).toContain(':ctrl="instance"')
+		expect(code).not.toContain('instance.aria_label')
+		expect(code).not.toContain('instance.label')
 	})
 })
 

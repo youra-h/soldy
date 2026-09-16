@@ -1,10 +1,12 @@
 import type { IPropDeclaration } from '@soldy/accessor'
+import { underscorePropNaming } from '@soldy/setup'
 import {
 	ACCORDION_VIEWS,
 	COMPONENT_SIZES,
 	BUTTON_VIEWS,
 	COMPONENT_VARIANTS,
 	DIRECTIONS,
+	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
 	LIST_BOX_VIEWS,
@@ -21,7 +23,13 @@ import {
 	TABS_POSITIONS,
 	TABS_VIEWS,
 } from './enums'
-import type { TControlKind, TPropControl } from './types'
+import type {
+	TComponentEntry,
+	TControlKind,
+	TPropControl,
+	TPropControlGroups,
+	TPropOwner,
+} from './types'
 
 /**
  * Описания пропов — то единственное, чего нет в контракте.
@@ -68,6 +76,28 @@ const SHARED: Record<string, string> = {
 	contentFit: 'Что делать с не помещающимся текстом: обрезать, перенести или раздвинуть список',
 	scrollBehavior: 'Как прокручивать к элементу при навигации с клавиатуры',
 	indicator: 'Где показывать отметку выбранного: нигде, в начале или в конце строки',
+}
+
+/**
+ * Пропы плагинов — по имени с неймспейсом, как их пишут в разметке.
+ *
+ * Имя с неймспейсом уникально на всю библиотеку, поэтому описание одно:
+ * `anchor_placement` значит одно и то же у любого компонента с якорем, а
+ * `placement` у Select — другой проп, и описан он у самого Select.
+ */
+const PLUGIN: Record<string, string> = {
+	aria_label:
+		'Доступное имя для скринридера. Нужно, когда видимого текста нет: иконка, поле без подписи',
+	aria_labelledBy: 'id элемента, чей текст служит именем. Сильнее aria_label',
+	aria_describedBy: 'id элемента с пояснением: подсказка под полем, текст ошибки',
+	anchor_placement:
+		'Сторона и выравнивание панели у якоря. Не влезает по высоте — flip переносит на другую сторону',
+	anchor_matchWidth: 'Тянуть ширину панели по ширине якоря',
+	anchor_flip:
+		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
+	anchor_offset: 'Отступ панели от якоря, px',
+	dismiss_enabled:
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select его ведёт сам плагин по open',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -156,6 +186,9 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		indicator: LIST_INDICATORS,
 		// Коллекционный: один и тот же режим выбора у всех коллекций
 		mode: SELECTION_MODES,
+		// Плагинный — по имени с неймспейсом: оно уникально, и с `placement`
+		// у Select общий список не столкнётся
+		anchor_placement: FRAME_PLACEMENTS,
 	},
 	button: { view: BUTTON_VIEWS },
 	accordion: { view: ACCORDION_VIEWS },
@@ -198,6 +231,9 @@ export function presetForProp(componentId: string, prop: string): Record<string,
  * `ctrl` — не свойство компонента, а способ отдать ему готовый экземпляр ядра.
  * Стенд им и пользуется во второй колонке, поэтому в список редактируемых
  * пропов он не идёт.
+ *
+ * Ключ — имя из разметки, то же, что у описаний: у пропа плагина с неймспейсом.
+ * `protected`-пропы сюда не вносятся — их снимает общий фильтр `propControls`.
  */
 export const NON_EDITABLE = new Set([
 	'ctrl',
@@ -208,10 +244,12 @@ export const NON_EDITABLE = new Set([
 	'trackBy',
 	// Готовая коллекция снаружи — как `ctrl`, объект, а не значение
 	'engine',
+	// Якорь — DOM-элемент, как `ctrl` и `engine`: вводить в контрол нечего
+	'anchor_anchor',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {
-	return OWN[componentId]?.[prop] ?? SHARED[prop]
+	return OWN[componentId]?.[prop] ?? SHARED[prop] ?? PLUGIN[prop]
 }
 
 export function optionsForProp(componentId: string, prop: string): readonly string[] | undefined {
@@ -245,7 +283,7 @@ function firstCtorName(type: unknown): string | undefined {
  * но редактировать его текстовым полем бессмысленно — вариантов четыре.
  */
 export function controlKind(componentId: string, prop: IPropDeclaration): TControlKind {
-	if (optionsForProp(componentId, prop.name.name)) return 'select'
+	if (optionsForProp(componentId, underscorePropNaming(prop.name))) return 'select'
 
 	const ctor = firstCtorName(prop.type)
 
@@ -259,24 +297,30 @@ export function controlKind(componentId: string, prop: IPropDeclaration): TContr
  * Полное описание контрола для одного пропа.
  *
  * Умолчание — из самой декларации: его кладёт туда setup при сборке дескриптора
- * (`withClassDefault`), и своего пути к `ctor.defaultValues` стенду больше не
- * нужно. Заодно уходит старая натяжка: умолчания компонента подставлялись и
- * пропам фасада коллекции, у которого свой класс.
+ * (`withClassDefault`, у пропа плагина — `definePlugin`), и своего пути к
+ * `defaultValues` стенду больше не нужно. Заодно уходит старая натяжка:
+ * умолчания компонента подставлялись и пропам фасада коллекции, у которого
+ * свой класс.
  *
  * Значим ключ, а не значение — ровно как в setup: `closable` у элемента Tabs и
  * Tags объявлен с умолчанием `undefined`, и проверка `!== undefined` спутала бы
  * его с пропом, у которого умолчания нет вовсе.
+ *
+ * Имя — то, которым проп пишут в разметке (`underscorePropNaming`). У пропов
+ * компонента и коллекции оно совпадает с именем из декларации, а плагинные
+ * перестают сталкиваться с одноимёнными: `placement` есть и у Select, и у
+ * якоря. По этому же имени ищутся описание, список значений и пресет.
  */
 export function propControl(
 	componentId: string,
 	prop: IPropDeclaration,
-	scope: TPropControl['scope'] = 'component',
+	owner: TPropOwner = { scope: 'component' },
 ): TPropControl {
-	const name = prop.name.name
+	const name = underscorePropNaming(prop.name)
 
 	const control: TPropControl = {
+		...owner,
 		name,
-		scope,
 		kind: controlKind(componentId, prop),
 		options: optionsForProp(componentId, name),
 		description: describeProp(componentId, name) ?? '',
@@ -286,4 +330,61 @@ export function propControl(
 	if (Object.hasOwn(prop, 'default')) control.default = prop.default
 
 	return control
+}
+
+/**
+ * Есть ли у пропа строка на странице.
+ *
+ * `protected` — вычисляемые наружу значения (`classes`, `aria`, `dataset`,
+ * `present`, `styles` плагинов раскладки): аксессор их не пишет вовсе, и
+ * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки.
+ */
+function isEditable(prop: IPropDeclaration): boolean {
+	return !prop.protected && !NON_EDITABLE.has(underscorePropNaming(prop.name))
+}
+
+/**
+ * По алфавиту: порядок объявления идёт от слоя наследования, а не от смысла, и
+ * искать в нём глазами дольше, чем прочитать список.
+ */
+function byName(a: TPropControl, b: TPropControl): number {
+	return a.name.localeCompare(b.name)
+}
+
+/**
+ * Строки страницы компонента по группам владельцев.
+ *
+ * Один источник на всех, кто считает строки: страницу, проверку манифеста и
+ * дымовой тест. Пока фильтр был продублирован в каждом, плагинные пропы
+ * разошлись бы по ним наверняка.
+ *
+ * Плагинные — из `descriptor.plugins`, а не из плоского `getProps()`: он не
+ * говорит, какому плагину проп принадлежит, а без адреса второй колонке некуда
+ * его записать. Плагины есть только у компонентного дескриптора: фасад
+ * коллекции работает с bundle компонента.
+ */
+export function propControls(entry: TComponentEntry): TPropControlGroups {
+	const descriptor = entry.descriptor()
+	const collectionProps = entry.collectionDescriptor?.().props ?? []
+
+	return {
+		componentControls: descriptor.props
+			.filter(isEditable)
+			.map((prop) => propControl(entry.id, prop))
+			.sort(byName),
+		collectionControls: collectionProps
+			.filter(isEditable)
+			.map((prop) => propControl(entry.id, prop, { scope: 'collection' }))
+			.sort(byName),
+		pluginControls: descriptor.plugins
+			.flatMap(({ ctor, props }) =>
+				props.filter(isEditable).map((prop) =>
+					propControl(entry.id, prop, {
+						scope: 'plugin',
+						plugin: { ctor, name: prop.name.name },
+					}),
+				),
+			)
+			.sort(byName),
+	}
 }

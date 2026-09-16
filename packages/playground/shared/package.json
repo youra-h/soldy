@@ -13,6 +13,7 @@
   "dependencies": {
     "@soldy/accessor": "*",
     "@soldy/core": "*",
+    "@soldy/plugins": "*",
     "@soldy/setup": "*"
   }
 }
