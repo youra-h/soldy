@@ -6,6 +6,7 @@ import type {
 	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -25,7 +26,9 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  *    `aria-controls` в `owner.field.aria` и `id` списка, на
  *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
  *    разойдутся.
- * 2. **Проброс `disabled`/`size`/`variant`** с поля на опции — как у ListBox.
+ * 2. **Проброс `size`/`variant`** с поля на опции — как у ListBox. `disabled`
+ *    не пробрасывается, а сочетается: опция выключена, если выключена сама
+ *    или выключено поле (`bindDisabledToOwner`).
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
  * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
@@ -123,11 +126,8 @@ export class TSelectExtension<
 		// Тем опциям `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._onItemAdded(item as TItem))
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
+		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			ctx.driver.valueOf().forEach((item) => {
@@ -215,7 +215,7 @@ export class TSelectExtension<
 	}
 
 	private _onItemAdded(item: TItem): void {
-		item.disabled = this._owner.disabled
+		bindDisabledToOwner(item, this._owner)
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 

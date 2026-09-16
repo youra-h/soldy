@@ -1,5 +1,6 @@
 import type { IExtension, IExtensionContext } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -11,8 +12,9 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
 /**
  * TListBoxExtension — то, что элемент списка знает благодаря коллекции.
  *
- * Пробрасывает на элементы свойства владельца: `disabled`, `size`, `variant`,
- * `view`.
+ * Пробрасывает на элементы свойства владельца: `size`, `variant`, `view`.
+ * `disabled` не пробрасывается, а сочетается: элемент выключен, если выключен
+ * сам или выключен список (`bindDisabledToOwner`).
  *
  * `wordWrap` сюда не входит, хотя раньше входил: он переехал в
  * `TListLayoutPlugin` вместе с остальной раскладкой. Плагин ставит элементам
@@ -62,11 +64,8 @@ export class TListBoxExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
+		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			ctx.driver.valueOf().forEach((item) => {
@@ -92,9 +91,12 @@ export class TListBoxExtension<
 		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
 	}
 
-	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
+	/**
+	 * Свойства владельца, которые элемент получает от него, а не задаёт сам, —
+	 * кроме `disabled`: его элемент сочетает со своим.
+	 */
 	private _applyOwner(item: TItem): void {
-		item.disabled = this._owner.disabled
+		bindDisabledToOwner(item, this._owner)
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 

@@ -9,14 +9,17 @@ import type {
 	IAccordionExtension,
 } from './types'
 import { TAccordionItemExtension, type IAccordionItemExtension } from './item'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TAccordionExtension — расширение коллекции для управления элементами accordion.
  *
  * Получает ссылку на инстанс TAccordion через options.owner и автоматически
- * пробрасывает свойства (disabled, size, variant, view) на добавляемые элементы,
- * а также подписывается на изменения владельца для синхронизации.
+ * пробрасывает свойства (size, variant, view) на добавляемые элементы, а также
+ * подписывается на изменения владельца для синхронизации. `disabled` не
+ * пробрасывается, а сочетается: секция выключена, если выключена сама или
+ * выключен accordion (`bindDisabledToOwner`).
  *
  * @template TOwner — тип владельца (TAccordion или наследник)
  * @template TItem  — тип элемента (IAccordionItem или наследник)
@@ -65,13 +68,10 @@ export class TAccordionExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		// При изменении свойств владельца — пробрасываем на все элементы
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
+		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
@@ -89,9 +89,12 @@ export class TAccordionExtension<
 		this.events.relay(this._owner.events, ['change:view'])
 	}
 
-	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
+	/**
+	 * Свойства владельца, которые элемент получает от него, а не задаёт сам, —
+	 * кроме `disabled`: его элемент сочетает со своим.
+	 */
 	private _applyOwner(item: TItem): void {
-		item.disabled = this._owner.disabled
+		bindDisabledToOwner(item, this._owner)
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 	}

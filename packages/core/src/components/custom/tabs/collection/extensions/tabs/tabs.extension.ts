@@ -18,14 +18,17 @@ import type {
 	ITabsExtension,
 } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TTabsExtension — расширение коллекции для управления табами.
  *
  * Получает ссылку на инстанс TTabs через options.owner и автоматически
- * пробрасывает свойства (disabled, size, variant) на добавляемые элементы,
- * а также подписывается на изменения владельца для синхронизации.
+ * пробрасывает свойства (size, variant) на добавляемые элементы, а также
+ * подписывается на изменения владельца для синхронизации. `disabled` не
+ * пробрасывается, а сочетается: таб выключен, если выключен сам или выключен
+ * набор (`bindDisabledToOwner`).
  *
  * @template TOwner — тип владельца (TTabs или наследник)
  * @template TItem  — тип элемента таба (ITabsItem или наследник)
@@ -89,13 +92,10 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// При изменении свойств владельца — пробрасываем на все элементы
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
+		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// При изменении свойств владельца — пробрасываем на все элементы
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			ctx.driver.valueOf().forEach((item) => {
 				item.size = payload.newValue
@@ -155,19 +155,22 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	/**
+	 * Свойства владельца, которые элемент получает от него, а не задаёт сам, —
+	 * кроме `disabled`: его элемент сочетает со своим.
+	 */
+	private _applyOwner(item: TItem): void {
+		bindDisabledToOwner(item, this._owner)
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+	}
+
+	/**
 	 * Проставляет `aria-selected` каждому табу.
 	 *
 	 * У неактивных стоит `"false"`, а не отсутствует: в паттерне вкладок
 	 * скринридер объявляет «1 из 5, не выбрана», и для этого атрибут должен
 	 * быть на всех табах набора.
 	 */
-	/** Свойства владельца, которые элемент получает от него, а не задаёт сам. */
-	private _applyOwner(item: TItem): void {
-		item.disabled = this._owner.disabled
-		item.size = this._owner.size
-		item.variant = this._owner.variant
-	}
-
 	private _syncSelectedAria(): void {
 		const activation = this._ctx.extensions.activation as
 			| IActivationExtension<TItem>
