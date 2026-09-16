@@ -3,7 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
-import type { IDomEventTarget } from '../../../utils/domEventTarget'
+import type { IDomEventTarget } from '../../../utils'
 import { TListItemPlugin } from '../item'
 import type { TListEdge, TListNavigationPluginEvents } from './types'
 

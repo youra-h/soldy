@@ -2,7 +2,7 @@ import type { ISelect } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
-import type { IDomEventTarget } from '../../../utils/domEventTarget'
+import type { IDomEventTarget } from '../../../utils'
 import type { TSelectPointerPluginEvents } from './types'
 
 /** Класс стрелки — единственное место клика, которое открывает/закрывает панель в `editable`. */

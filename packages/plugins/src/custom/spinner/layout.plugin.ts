@@ -1,7 +1,7 @@
 import type { ISpinner } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import { toCssValue } from '../../utils/toCssValue'
+import { toCssValue } from '../../utils'
 import type { TSpinnerLayoutPluginEvents } from './types'
 
 /**

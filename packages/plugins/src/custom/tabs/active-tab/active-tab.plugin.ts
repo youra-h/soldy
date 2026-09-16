@@ -3,7 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import { isMeasurableElement } from '../../../utils/isMeasurableElement'
+import { isMeasurableElement } from '../../../utils'
 import { TTabsLayoutPlugin } from '../layout'
 import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
 

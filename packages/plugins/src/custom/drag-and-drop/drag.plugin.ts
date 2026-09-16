@@ -2,7 +2,7 @@ import type { IComponentView, TCollectionEngine } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'
-import type { IDomEventTarget } from '../../utils/domEventTarget'
+import type { IDomEventTarget } from '../../utils'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../collection'
 import type { TDragPluginEvents } from './types'
 

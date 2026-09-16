@@ -4,7 +4,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import { isMeasurableElement } from '../../../utils/isMeasurableElement'
+import { isMeasurableElement } from '../../../utils'
 
 /**
  * Что плагину нужно от компонента: число строк и канал о его смене.
