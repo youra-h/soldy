@@ -1,7 +1,7 @@
 import { TCollectionItemComponent } from '../../collection-item-component.class'
 import type { TItemContext } from '../../../engine'
 import type { IExtension, TOrderExtension } from '../../../engine'
-import type { TComponentEvents } from '../../../../component'
+import type { TOrderItemFacadeEvents } from '../../types'
 
 /**
  * Фасад элемента коллекции, у которого есть порядок.
@@ -22,14 +22,14 @@ import type { TComponentEvents } from '../../../../component'
 export abstract class TOrderItemFacade<
 	TItem extends object,
 	TExtensions extends { order: TOrderExtension<any> } & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TOrderItemFacadeEvents = TOrderItemFacadeEvents,
 > extends TCollectionItemComponent<TItem, TExtensions, TEvents> {
 	override setContext(context: TItemContext<TItem, TExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.order.events, ['change:order'])
+		this.events.relayAll(this._context.adapters.order.events)
 	}
 
 	get order(): number {

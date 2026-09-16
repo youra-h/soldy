@@ -1,8 +1,8 @@
 import { TComponent } from '../../component'
-import type { IComponentProps, TComponentEvents } from '../../component'
+import type { IComponentProps } from '../../component'
 import { TCollectionEngine } from './../engine'
 import type { IExtension, TPlainExtension } from './../engine'
-import type { ICollectionComponentOptions } from './types'
+import type { ICollectionComponentOptions, TCollectionComponentEvents } from './types'
 
 /**
  * Фасад владельца коллекции.
@@ -23,7 +23,7 @@ import type { ICollectionComponentOptions } from './types'
 export abstract class TCollectionComponent<
 	TItem extends object,
 	TExtensions extends { plain: TPlainExtension<any> } & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TCollectionComponentEvents<TItem> = TCollectionComponentEvents<TItem>,
 > extends TComponent<IComponentProps, TEvents> {
 	public readonly engine: TCollectionEngine<TItem, TExtensions>
 
@@ -35,24 +35,11 @@ export abstract class TCollectionComponent<
 
 		this.engine = options.engine
 
-		// Системные события движка: item:*, change:items/count, reset.
-		this.events.relay(this.extensions.plain.events, [
-			'item:add:before',
-			'item:added',
-			'item:remove:before',
-			'item:removed',
-			'item:update:before',
-			'item:updated',
-			'item:move:before',
-			'item:moved',
-			'items:clear:before',
-			'change:items',
-			'change:count',
-			'reset',
-		])
+		// Хранилище целиком — состав проброса объявляет карта plain, не список здесь.
+		this.events.relayAll(this.extensions.plain.events)
 
-		// Релеи событий движка (включая engine:create).
-		this.events.relay(this.engine.events, ['engine:create'])
+		// Собственные события движка (engine:create).
+		this.events.relayAll(this.engine.events)
 	}
 
 	get extensions(): TExtensions {

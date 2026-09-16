@@ -15,20 +15,9 @@ export class TPlainExtension<TItem extends object>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		this.events.relay(ctx.driver.events, [
-			'item:add:before',
-			'item:added',
-			'item:remove:before',
-			'item:removed',
-			'item:update:before',
-			'item:updated',
-			'item:move:before',
-			'item:moved',
-			'items:clear:before',
-			'change:items',
-			'change:count',
-			'reset',
-		])
+		// Расширение отдаёт наружу хранилище как есть и своих событий не имеет:
+		// состав проброса — это карта драйвера, см. TPlainEvents.
+		this.events.relayAll(ctx.driver.events)
 	}
 
 	/**

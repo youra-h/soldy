@@ -21,6 +21,8 @@ import type { IListBoxItemExtension } from './extensions/list-box/item/types'
 import { TListBoxExtension } from './extensions'
 import type { IListBox } from '../types'
 import type { IListBoxItem, IListBoxItemProps } from '../item/types'
+import type { TSelectionItemFacadeEvents } from '../../../base/collection'
+import type { TListBoxItemEventsExtension } from './extensions/list-box/item/types'
 
 export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxItem> = {
 	factory: TFactoryExtension<TItem>
@@ -96,3 +98,12 @@ export type TListBoxAdapters<TItem extends IListBoxItem = IListBoxItem> = {
 	order: IOrderItemExtension<TItem>
 	list: IListBoxItemExtension<TItem>
 }
+
+/**
+ * События фасада элемента списка: набор базы плюс карта адаптера `list`.
+ *
+ * У самого `TListBoxCollectionFacade` карты нет — сверх базы он не релеит
+ * ничего, и дефолт `TSelectionCollectionFacade` уже точен.
+ */
+export type TListBoxItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	TListBoxItemEventsExtension

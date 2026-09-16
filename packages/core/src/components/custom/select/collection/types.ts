@@ -23,6 +23,12 @@ import { TSelectExtension, TSelectTagsExtension } from './extensions'
 import type { ISelectItemExtension } from './extensions/select/item/types'
 import type { ISelect } from '../types'
 import type { ISelectItem, ISelectItemProps } from '../item/types'
+import type {
+	TSelectionCollectionFacadeEvents,
+	TSelectionItemFacadeEvents,
+} from '../../../base/collection'
+import type { TSelectTagsExtensionEvents } from './extensions'
+import type { TSelectItemEventsExtension } from './extensions/select/item/types'
 
 export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem> = {
 	factory: TFactoryExtension<TItem>
@@ -95,3 +101,11 @@ export type TSelectAdapters = {
 	order: IOrderItemExtension<ISelectItem>
 	select: ISelectItemExtension<ISelectItem>
 }
+
+/** События фасада коллекции Select: набор `selection`-базы плюс карта расширения `tags`. */
+export type TSelectCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ISelectItem> &
+	TSelectTagsExtensionEvents
+
+/** События фасада опции: набор базы плюс карта адаптера `select`. */
+export type TSelectItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	TSelectItemEventsExtension

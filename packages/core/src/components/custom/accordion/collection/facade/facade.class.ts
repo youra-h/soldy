@@ -8,6 +8,7 @@ import type {
 	TAccordionCollectionExtensions,
 	TAccordionCollectionFacadeEngine,
 } from '../types'
+import type { TAccordionCollectionFacadeEvents } from '../types'
 import type { IAccordionItem } from '../../item/types'
 import type { IAccordion } from '../../types'
 
@@ -19,7 +20,8 @@ import type { IAccordion } from '../../types'
  */
 export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 	IAccordionItem,
-	TAccordionCollectionExtensions
+	TAccordionCollectionExtensions,
+	TAccordionCollectionFacadeEvents
 > {
 	constructor(
 		props: TSelectionFacadeProps<IAccordionItem> = {},
@@ -38,7 +40,7 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 			) as TAccordionCollection,
 		})
 
-		this.events.relay(this.extensions.accordion.events, ['change:view'])
+		this.events.relayAll(this.extensions.accordion.events)
 
 		this.applyProps(props)
 	}

@@ -17,6 +17,13 @@ import { TTabsExtension, TTabsContentExtension } from './extensions'
 import type { ITabs } from '../types'
 import type { ITabsItem } from '../item/types'
 import type { ITabsItemProps } from '../item/types'
+import type {
+	TActivationEvents,
+	TActivationItemEventsExtension,
+	TBatchCollectionFacadeEvents,
+	TOrderItemFacadeEvents,
+} from '../../../base/collection'
+import type { TTabsExtensionEvents, TTabsItemEventsExtension } from './extensions'
 
 export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
 	factory: TFactoryExtension<TItem>
@@ -70,3 +77,22 @@ export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabs
  * Объединяет activation (active) + потенциальные item-расширения.
  */
 export interface ITabsCollectionItemProps extends IActivationCollectionItemProps {}
+
+/** События фасада коллекции табов: набор `batch`-базы плюс активация и закрытие. */
+export type TTabsCollectionFacadeEvents = TBatchCollectionFacadeEvents<ITabsItem> &
+	TActivationEvents<ITabsItem> &
+	TTabsExtensionEvents
+
+/** События фасада элемента таба: порядок из базы плюс активность и закрытие. */
+export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
+	TActivationItemEventsExtension &
+	TTabsItemEventsExtension
+
+/**
+ * События фасада панели таба.
+ *
+ * База у панели — `TCollectionItemComponent`, и порядка у неё нет: панель не
+ * член коллекции, она держит контекст **связанного** таба. Поэтому в карте
+ * только то, что даёт адаптер активации.
+ */
+export type TTabsContentCollectionFacadeEvents = TActivationItemEventsExtension

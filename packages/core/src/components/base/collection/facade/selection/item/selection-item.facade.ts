@@ -6,7 +6,7 @@ import type {
 	TOrderExtension,
 	TSelectionExtension,
 } from '../../../engine'
-import type { TComponentEvents } from '../../../../component'
+import type { TSelectionItemFacadeEvents } from '../../types'
 
 /**
  * Фасад элемента, который можно выбрать: `selected` плюс порядок из базы.
@@ -25,7 +25,7 @@ export abstract class TSelectionItemFacade<
 		order: TOrderExtension<any>
 		selection: TSelectionExtension<any>
 	} & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TSelectionItemFacadeEvents = TSelectionItemFacadeEvents,
 > extends TOrderItemFacade<TItem, TExtensions, TEvents> {
 	/**
 	 * Вне коллекции элемент не выбран — то же, что отдаёт геттер без контекста.
@@ -41,7 +41,7 @@ export abstract class TSelectionItemFacade<
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.selection.events, ['change:selected'])
+		this.events.relayAll(this._context.adapters.selection.events)
 	}
 
 	get selected(): boolean {

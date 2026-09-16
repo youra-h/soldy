@@ -14,7 +14,6 @@ export type TBatchEvents<TItem> = {
 	'items:added': (items: TCollectionEngineItemSource<TItem>[]) => void
 	'items:removed': (items: TItem[]) => void
 	'change:trackBy': (fn?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown) => void
-	'change:items': (items: TItem[]) => void
 
 	/**
 	 * Показанное изменилось — из-за состава или из-за условий отбора.
