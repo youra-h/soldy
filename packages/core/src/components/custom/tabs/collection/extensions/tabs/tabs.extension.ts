@@ -2,6 +2,7 @@ import type {
 	IExtension,
 	IExtensionContext,
 	IActivationExtension,
+	TRemoveEvent,
 } from '../../../../../base/collection'
 import {
 	TBaseOwnerItemExtension,
@@ -46,13 +47,19 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
 
 	/**
-	 * Закрываемый активный таб и сосед, который станет активным вместо него.
+	 * Удаление активного таба и состав списка перед ним.
 	 *
-	 * Сосед считается в `item:remove:before` — после удаления индекс закрытого
-	 * уже не узнать. Активируется он в `item:removed`: в before-хуке удаление
-	 * ещё могут отменить через `preventDefault()`.
+	 * Состав снимается в `item:remove:before` — после удаления место закрытого
+	 * таба уже не узнать. Сосед выбирается в `item:removed`: в before-хуке
+	 * удаление ещё могут отменить через `preventDefault()`, а пакетное удаление
+	 * (`batch.remove`, патч) шлёт `item:removed` только после всех удалений —
+	 * и сосед мог уйти той же операцией.
+	 *
+	 * Удаление узнаётся по объекту события, а не по элементу: команда шлёт один
+	 * и тот же `TRemoveEvent` в оба хука, а отменённое удаление того же таба
+	 * позже придёт с другим.
 	 */
-	private _pendingActivation?: { removed: TItem; next: TItem | undefined }
+	private _pendingActivation?: { event: TRemoveEvent<TItem>; siblings: TItem[] }
 
 	constructor(options: ITabsExtensionOptions<TOwner, TItem>) {
 		super(TTabsItemExtension, options)
@@ -120,23 +127,25 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 			// останется ни активного таба, ни панели. Это политика Tabs, а не
 			// активации: общее расширение на удаление активного только сбрасывает.
 			ctx.driver.events.on('item:remove:before', (e) => {
+				this._dropCancelledActivation()
+
 				if (!activation.isActive(e.item)) return
 
-				this._pendingActivation = {
-					removed: e.item,
-					next: activation.findActivatable((item) => this._isEnabledTab(item), e.item),
-				}
+				this._pendingActivation = { event: e, siblings: [...ctx.driver.valueOf()] }
 			})
 
 			ctx.driver.events.on('item:removed', (e) => {
+				this._dropCancelledActivation()
+
 				const pending = this._pendingActivation
 
-				// Запись одноразовая: забирается первым же `item:removed`, какой бы
-				// элемент ни удалили, а сосед активируется, только если удалён
-				// именно запомненный таб.
-				this._pendingActivation = undefined
+				if (pending?.event === e) {
+					this._pendingActivation = undefined
 
-				if (pending?.next && pending.removed === e.item) activation.activate(pending.next)
+					const next = this._findNeighbour(pending.siblings, e.item)
+
+					if (next) activation.activate(next)
+				}
 
 				this._syncSelectedAria()
 			})
@@ -186,6 +195,30 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	/** Таб, на который можно перейти: не disabled, visible и rendered. */
 	private _isEnabledTab(item: TItem): boolean {
 		return !item.disabled && item.visible && item.rendered
+	}
+
+	/**
+	 * Ближайший к закрытому табу годный таб, оставшийся в списке: сначала
+	 * справа, затем слева. `siblings` — состав до удаления, в нём у закрытого
+	 * ещё есть место.
+	 */
+	private _findNeighbour(siblings: TItem[], removed: TItem): TItem | undefined {
+		const present = new Set(this._ctx.driver.valueOf())
+		const index = siblings.indexOf(removed)
+		const available = (item: TItem) => present.has(item) && this._isEnabledTab(item)
+
+		return (
+			siblings.slice(index + 1).find(available) ??
+			siblings.slice(0, index).reverse().find(available)
+		)
+	}
+
+	/**
+	 * Отменённое удаление `item:removed` не пришлёт никогда. Отмену видно
+	 * только постфактум, поэтому запись сверяется на следующем событии удаления.
+	 */
+	private _dropCancelledActivation(): void {
+		if (this._pendingActivation?.event.defaultPrevented) this._pendingActivation = undefined
 	}
 
 	/**

@@ -637,4 +637,39 @@ describe('Закрытие активного таба: активным ста�
 
 		expect(activation.activeItem).toBeUndefined()
 	})
+
+	it('отменённое удаление не всплывает при следующем удалении того же таба', () => {
+		const { engine, activation, a, c } = setup()
+		const cancel = (e: { preventDefault(): void }) => e.preventDefault()
+
+		engine.extensions.plain.events.on('item:remove:before', cancel)
+		activation.activate(a)
+		engine.extensions.plain.remove(a)
+		engine.extensions.plain.events.off('item:remove:before', cancel)
+
+		activation.activate(c)
+		engine.extensions.plain.remove(a)
+
+		expect(activation.activeItem).toBe(c)
+	})
+
+	it('batch.remove активного вместе с правым соседом — активен сосед слева', () => {
+		const { engine, activation, b, c } = setup()
+		const d = engine.extensions.plain.push(createTab('D'))
+
+		activation.activate(c)
+		engine.extensions.batch.remove([c, d])
+
+		expect(activation.activeItem).toBe(b)
+	})
+
+	it('batch.remove: правый сосед удалён раньше активного — активен сосед слева', () => {
+		const { engine, activation, b, c } = setup()
+		const d = engine.extensions.plain.push(createTab('D'))
+
+		activation.activate(c)
+		engine.extensions.batch.remove([d, c])
+
+		expect(activation.activeItem).toBe(b)
+	})
 })
