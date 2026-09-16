@@ -462,6 +462,63 @@ TCollectionItemComponent
 Сторожит `setup/__tests__/facade-props.spec.ts`: у каждого объявленного
 записываемого пропа обязан быть сеттер в цепочке прототипов фасада.
 
+### Карта событий выводится из источника, а не переписывается (критично)
+
+`TEvented.relay` сверяет имена и обработчики с картами источника и цели. Но у
+списка правил есть цена: **состав проброса записывается дважды** — именами в
+теле и картой событий в типах. Два списка расходятся молча. Так и было: одни и
+те же 12 имён драйвера лежали в `plain.extension.ts`, в
+`collection-component.class.ts` и третий раз в карте фасада, а `TPlainEvents`
+обещала сверх них `items:query:before` и `items:query:invalidated`, которых
+проброс не передавал, — подписка на них не срабатывала никогда.
+
+Поэтому там, где цель **представляет** источник наружу, списка быть не должно:
+
+```ts
+// ✅ состав проброса — это карта источника
+this.events.relayAll(this.extensions.batch.events)
+type TFacadeEvents = TBatchCollectionFacadeEvents<TItem> & TTabsExtensionEvents
+
+// ❌ то же знание в двух местах: добавил событие — правь оба
+this.events.relay(this.extensions.batch.events, ['items:added', 'items:removed'])
+type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
+```
+
+Правило по слоям:
+
+- **Фасад коллекции и фасад элемента** — всегда `relayAll`. Фасад не эмитит
+  ничего сам, он проекция расширения, и новое событие расширения обязано
+  доехать наружу само.
+- **Расширение над владельцем, item-адаптер над элементом** — `relay` со
+  списком. Там проброс сознательно уже карты источника (у владельца событий
+  много) или событие переименовано (`change:selection` → `change:selected`), и
+  список несёт смысл, а не дублирует карту.
+
+Следствия, за которыми надо следить:
+
+- **Карта фасада не пересекает `TComponentEvents`.** Это
+  `Record<string, (...args: any) => any>`, и карта, которая его пересечёт, снова
+  принимает любое имя с любым обработчиком. Он остаётся только констрейнтом
+  дженерика — тот же приём, что в «События item-адаптера: `any` в констрейнте,
+  точный набор в инстанцировании».
+- **«Событий нет» — это `{}`, а не `Record<string, never>`.** У второго есть
+  индексная сигнатура, и для проверки это «любое имя». На
+  `TSelectExtensionEvents` так и вышло: карта обещала отсутствие событий, а
+  расширение релеило в неё `change:indicator`.
+- **Два `relayAll` не должны пересекаться по именам** — цель получит два эмита
+  на один факт. Пересечение значит, что событие идёт до цели двумя путями, и
+  лечится у источника. Так снят релей `change:items` из `batch`: подписчиков у
+  него не было, а фасаду он давал дубль поверх пути через `plain`.
+- **Событие item-адаптера о вычисленном значении объявляется без аргумента.**
+  Геттер отдаёт `элемент ?? владелец`, источников у значения два, и ни один не
+  равен результату: элемент шлёт `undefined` как «наследую», владелец шлёт своё
+  даже когда результат не менялся. Событие значит «перечитай геттер» —
+  `change:active`, `change:order`, `change:selected`, `change:closable`.
+
+Сторожит `core/__tests__/collection-relay-all.spec.ts`: событие доходит до
+фасада без упоминания в списке имён, `change:items` приходит один раз, а имя
+вне карт источников не компилируется.
+
 ### Расположение фасадов
 
 Каждый — своя папка с баррелем, как у расширений:
@@ -804,7 +861,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).
 
-- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above.
+- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
 - **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 

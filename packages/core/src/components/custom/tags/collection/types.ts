@@ -21,6 +21,8 @@ import type { ITagsItemExtension } from './extensions/tags/item/types'
 import { TTagsExtension } from './extensions'
 import type { ITags } from '../types'
 import type { ITagsItem, ITagsItemProps } from '../item/types'
+import type { TSelectionItemFacadeEvents } from '../../../base/collection'
+import type { TTagsItemEventsExtension } from './extensions/tags/item/types'
 
 export type TTagsCollectionExtensions<TItem extends ITagsItem = ITagsItem> = {
 	factory: TFactoryExtension<TItem>
@@ -96,3 +98,12 @@ export type TTagsAdapters<TItem extends ITagsItem = ITagsItem> = {
 	order: IOrderItemExtension<TItem>
 	tags: ITagsItemExtension<TItem>
 }
+
+/**
+ * События фасада элемента Tags: набор базы плюс карта адаптера `tags`.
+ *
+ * У самого `TTagsCollectionFacade` карты нет — сверх базы он не релеит ничего,
+ * и дефолт `TSelectionCollectionFacade` уже точен.
+ */
+export type TTagsItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	TTagsItemEventsExtension

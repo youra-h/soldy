@@ -28,9 +28,6 @@ export class TBatchExtension<TItem extends object>
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// items живут в driver — relay позволяет batch.events реагировать на change:items
-		this.events.relay(ctx.driver.events, ['change:items'])
-
 		// Показанное меняется по двум причинам: изменился состав хранилища или
 		// изменились условия отбора. Читателю экрана разница не важна — ему в
 		// обоих случаях надо перечитать `shown`.

@@ -1,6 +1,9 @@
 import { TCollectionItemComponent } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TTabsCollectionExtensions } from '../../collection/types'
+import type {
+	TTabsCollectionExtensions,
+	TTabsContentCollectionFacadeEvents,
+} from '../../collection/types'
 import type { ITabsItem } from '../../item/types'
 
 /**
@@ -16,14 +19,15 @@ import type { ITabsItem } from '../../item/types'
  */
 export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	ITabsItem,
-	TTabsCollectionExtensions
+	TTabsCollectionExtensions,
+	TTabsContentCollectionFacadeEvents
 > {
 	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.activation.events, ['change:active'])
+		this.events.relayAll(this._context.adapters.activation.events)
 	}
 
 	/** Активен ли связанный таб. Без контекста — нет, панель показывать нечего. */

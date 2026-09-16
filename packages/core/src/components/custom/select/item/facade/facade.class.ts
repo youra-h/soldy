@@ -1,6 +1,9 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TSelectCollectionExtensions } from '../../collection/types'
+import type {
+	TSelectCollectionExtensions,
+	TSelectItemCollectionFacadeEvents,
+} from '../../collection/types'
 import type { ISelectItem } from '../types'
 import { LIST_DEFAULTS } from '../../../list'
 import type { TListIndicator } from '../../../list'
@@ -13,14 +16,15 @@ import type { TListIndicator } from '../../../list'
  */
 export class TSelectItemCollectionFacade extends TSelectionItemFacade<
 	ISelectItem,
-	TSelectCollectionExtensions
+	TSelectCollectionExtensions,
+	TSelectItemCollectionFacadeEvents
 > {
 	override setContext(context: TItemContext<ISelectItem, TSelectCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.select.events, ['change:indicator'])
+		this.events.relayAll(this._context.adapters.select.events)
 	}
 
 	/**

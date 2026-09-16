@@ -1,2 +1,2 @@
-export type { ITabsItemExtension } from './types'
+export type { ITabsItemExtension, TTabsItemEventsExtension } from './types'
 export { TTabsItemExtension } from './item.extension'

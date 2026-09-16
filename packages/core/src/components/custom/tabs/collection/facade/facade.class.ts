@@ -3,6 +3,7 @@ import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../
 import { TabsFactory, TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
 import type { TTabsCollection, TTabsCollectionExtensions, TTabsCollectionFacadeEngine } from '../types'
+import type { TTabsCollectionFacadeEvents } from '../types'
 import type { ITabsItem } from '../../item/types'
 import type { ITabs } from '../../types'
 
@@ -16,7 +17,8 @@ import type { ITabs } from '../../types'
  */
 export class TTabsCollectionFacade extends TBatchCollectionFacade<
 	ITabsItem,
-	TTabsCollectionExtensions
+	TTabsCollectionExtensions,
+	TTabsCollectionFacadeEvents
 > {
 	constructor(
 		props: TCollectionFacadeProps<ITabsItem> = {},
@@ -27,13 +29,9 @@ export class TTabsCollectionFacade extends TBatchCollectionFacade<
 		// трогают расширения в своих конструкторах
 		super({}, { engine: resolveEngine(options, TABS_EXTENSIONS(), TABS_OWNER_EXTENSIONS, 'Tabs', TabsFactory) as TTabsCollection })
 
-		this.events.relay(this.extensions.activation.events, [
-			'change:activation',
-			'item:activated',
-			'item:deactivated',
-		])
+		this.events.relayAll(this.extensions.activation.events)
 
-		this.events.relay(this.extensions.tabs.events, ['item:close', 'change:closable'])
+		this.events.relayAll(this.extensions.tabs.events)
 
 		this.applyProps(props)
 	}

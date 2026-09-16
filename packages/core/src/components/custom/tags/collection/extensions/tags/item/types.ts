@@ -2,7 +2,16 @@ import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../..
 import type { TTagsView } from '../../../../types'
 
 export type TTagsItemEventsExtension = TBaseItemEventsExtension & {
-	'change:closable': (value: boolean) => void
+	/**
+	 * `closable` изменился — перечитайте геттер.
+	 *
+	 * Без аргумента намеренно, как `change:active` и `change:order` у базовых
+	 * адаптеров. Геттер отдаёт `элемент ?? владелец`, а источников у значения
+	 * два, и ни один не равен результату: элемент шлёт `undefined` как
+	 * «наследую», владелец шлёт своё даже когда у элемента есть собственное и
+	 * результат не изменился. Значение в аргументе было бы неверным.
+	 */
+	'change:closable': () => void
 	'change:view': (value: TTagsView) => void
 }
 

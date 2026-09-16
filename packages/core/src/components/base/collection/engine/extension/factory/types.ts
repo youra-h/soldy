@@ -1,7 +1,14 @@
 import type { IExtension } from '../types'
 
-/** События item-factory расширения (собственных событий нет). */
-export type TFactoryEvents = Record<string, never>
+/**
+ * Событий у расширения нет.
+ *
+ * Пустой объект, а не `Record<string, never>`: у второго есть индексная
+ * сигнатура, и «событий нет» читается проверкой `relay` как «любое имя
+ * подойдёт». Пустая карта не пропускает ни одного.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type TFactoryEvents = {}
 
 /** Опции конструктора фабрики элементов. */
 export interface IFactoryExtensionOptions<TItem extends object = any> {

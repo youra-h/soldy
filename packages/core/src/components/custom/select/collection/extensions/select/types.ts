@@ -3,7 +3,7 @@ import type {
 	IExtension,
 	IExtensionItems,
 } from '../../../../../base/collection'
-import type { TListIndicator } from '../../../../list'
+import type { TListEvents, TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import type { ISelectItemExtension } from './item'
@@ -40,4 +40,12 @@ export interface ISelectExtensionOptions<
 	owner: TOwner
 }
 
-export type TSelectExtensionEvents = Record<string, never>
+/**
+ * События расширения `select` — сторона отметки, доезжающая до item-адаптеров.
+ *
+ * Карта была `Record<string, never>` — «событий нет». Но у неё индексная
+ * сигнатура, поэтому проверка читала её как «любое имя», и `change:indicator`,
+ * который расширение релеит с владельца, проезжал мимо. Имя объявлено, тип
+ * взят у источника — разойтись не даст.
+ */
+export type TSelectExtensionEvents = Pick<TListEvents, 'change:indicator'>

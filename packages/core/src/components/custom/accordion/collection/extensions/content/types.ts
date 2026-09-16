@@ -24,4 +24,12 @@ export interface IAccordionContentExtension<TItem extends IAccordionItem = IAcco
 export type IAccordionContentExtensionOptions<TItem extends IAccordionItem = IAccordionItem> =
 	IBaseOwnerItemExtensionOptions<TItem, IAccordionContentItemExtension<TItem>>
 
-export type TAccordionContentExtensionEvents = Record<string, never>
+/**
+ * Событий у расширения нет.
+ *
+ * Пустой объект, а не `Record<string, never>`: у второго есть индексная
+ * сигнатура, и «событий нет» читается проверкой `relay` как «любое имя
+ * подойдёт». Пустая карта не пропускает ни одного.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type TAccordionContentExtensionEvents = {}

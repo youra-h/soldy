@@ -1,6 +1,9 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TListBoxCollectionExtensions } from '../../collection/types'
+import type {
+	TListBoxCollectionExtensions,
+	TListBoxItemCollectionFacadeEvents,
+} from '../../collection/types'
 import type { IListBoxItem } from '../types'
 import type { TListBoxView } from '../../types'
 import { LIST_DEFAULTS } from '../../../list'
@@ -17,14 +20,15 @@ import type { TListIndicator } from '../../../list'
  */
 export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 	IListBoxItem,
-	TListBoxCollectionExtensions
+	TListBoxCollectionExtensions,
+	TListBoxItemCollectionFacadeEvents
 > {
 	override setContext(context: TItemContext<IListBoxItem, TListBoxCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.list.events, ['change:view', 'change:indicator'])
+		this.events.relayAll(this._context.adapters.list.events)
 	}
 
 	get view(): TListBoxView {

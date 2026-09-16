@@ -13,7 +13,7 @@ import type { IExtension, TExtractItemAdapters } from './../engine'
 export abstract class TCollectionItemComponent<
 	TItem extends object,
 	TExtensions extends Record<string, IExtension<TItem>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TComponentEvents,
 > extends TComponent<IComponentProps, TEvents> {
 	protected _context?: TItemContext<TItem, TExtensions>
 

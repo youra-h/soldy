@@ -7,6 +7,7 @@ import type {
 	TSelectCollectionExtensions,
 	TSelectCollectionFacadeOptions,
 } from '../types'
+import type { TSelectCollectionFacadeEvents } from '../types'
 import type { ISelect } from '../../types'
 import type { ISelectItem } from '../../item/types'
 import type { TSelectExtension, TSelectTagsExtension } from '../extensions'
@@ -20,7 +21,8 @@ import type { ITags, TTagsCollection } from '../../../tags'
  */
 export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	ISelectItem,
-	TSelectCollectionExtensions
+	TSelectCollectionExtensions,
+	TSelectCollectionFacadeEvents
 > {
 	constructor(
 		props: TSelectionFacadeProps<ISelectItem> = {},
@@ -39,7 +41,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 			) as TSelectCollection,
 		})
 
-		this.events.relay(this._tags.events, ['change:tags'])
+		this.events.relayAll(this._tags.events)
 
 		this.applyProps(props)
 	}

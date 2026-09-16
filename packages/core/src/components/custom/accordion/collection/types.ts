@@ -18,6 +18,11 @@ import { TAccordionExtension, TAccordionContentExtension } from './extensions'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
 import type { IAccordionItemProps } from '../item/types'
+import type {
+	TSelectionCollectionFacadeEvents,
+	TSelectionItemFacadeEvents,
+} from '../../../base/collection'
+import type { TAccordionExtensionEvents, TAccordionItemEventsExtension } from './extensions'
 
 export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccordionItem> = {
 	factory: TFactoryExtension<TItem>
@@ -73,3 +78,11 @@ export interface IAccordionCollectionProps<TItemProps = IAccordionItemProps, TIt
  * Объединяет selection (selected) + потенциальные item-расширения.
  */
 export interface IAccordionCollectionItemProps extends ISelectionCollectionItemProps {}
+
+/** События фасада коллекции Accordion: набор `selection`-базы плюс карта расширения. */
+export type TAccordionCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IAccordionItem> &
+	TAccordionExtensionEvents
+
+/** События фасада элемента Accordion: набор базы плюс карта его адаптера. */
+export type TAccordionItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	TAccordionItemEventsExtension

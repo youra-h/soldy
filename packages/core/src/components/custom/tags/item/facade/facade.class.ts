@@ -1,6 +1,9 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { TTagsCollectionExtensions } from '../../collection/types'
+import type {
+	TTagsCollectionExtensions,
+	TTagsItemCollectionFacadeEvents,
+} from '../../collection/types'
 import type { ITagsItem } from '../types'
 import type { TTagsView } from '../../types'
 
@@ -14,14 +17,15 @@ import type { TTagsView } from '../../types'
  */
 export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 	ITagsItem,
-	TTagsCollectionExtensions
+	TTagsCollectionExtensions,
+	TTagsItemCollectionFacadeEvents
 > {
 	override setContext(context: TItemContext<ITagsItem, TTagsCollectionExtensions>): void {
 		super.setContext(context)
 
 		if (!this._context) return
 
-		this.events.relay(this._context.adapters.tags.events, ['change:closable', 'change:view'])
+		this.events.relayAll(this._context.adapters.tags.events)
 	}
 
 	get closable(): boolean {
