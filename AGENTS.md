@@ -1657,7 +1657,9 @@ Disabled — так же: тема читает `data-disabled`, которое 
 - `TElementPlugin` эмитит `ready` через `requestAnimationFrame`. В тестах
   ждите кадр, а не `nextTick`. Контракт: одно `ready` на подключение узла,
   `removed` синхронно и только после `ready`, замена узла — пара `removed` +
-  `ready`.
+  `ready`. Промиса ожидания узла у плагина нет: ждать узел — только подпиской
+  на `ready`, готовность компоненту отдаёт `TReadyPlugin` через
+  `IComponentView.ready`.
 - В `packages/setup` нет своего vitest-конфига, окружение по умолчанию —
   `node`. Тестам с DOM нужна первая строка `// @vitest-environment jsdom`.
 
