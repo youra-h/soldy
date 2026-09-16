@@ -2,7 +2,7 @@
  * Дескриптор Button (TButton).
  *
  * Наследует TextableDescriptor (text, disabled, focused, size, variant, ...)
- * и добавляет view.
+ * и добавляет view и presentational.
  */
 
 import { defineComponent } from '../base'

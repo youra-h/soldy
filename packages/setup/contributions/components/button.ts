@@ -23,6 +23,7 @@ export type TButtonSlots = {
 export const ButtonContribution = (): IContribution => ({
 	props: {
 		view: { type: String, triggers: ['change:view'] },
+		presentational: { type: Boolean, triggers: ['change:presentational'] },
 	},
 	slots: {
 		leading: { description: 'Перед текстом' },

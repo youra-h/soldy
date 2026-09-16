@@ -11,6 +11,10 @@
  * Корень рисуется по `tag` — иначе проп декоративен, и нативный `disabled`
  * из `attrs` попадает на элемент, у которого его нет.
  *
+ * У Select.Item наоборот: `aria` стоит на корне-опции, а строка — `span`,
+ * который только рисует её. Строка там `presentational` и себя не объявляет:
+ * ни роли кнопки, ни второго `aria-disabled` под опцией.
+ *
  * Что ядро пишет в какой набор, проверяет `core/__tests__/aria.spec.ts`;
  * здесь — что наборы доехали до своих элементов.
  */
@@ -23,6 +27,8 @@ import {
 	AccordionItem,
 	ListBox,
 	ListBoxItem,
+	Select,
+	SelectItem,
 	Tabs,
 	TabsItem,
 	Tags,
@@ -148,5 +154,39 @@ describe.each(ARIA_LINE)('%s · строка', (_name, selector, render) => {
 		expect(lineEl?.tagName).toBe('DIV')
 		expect(lineEl?.getAttribute('aria-disabled')).toBe('true')
 		expect(lineEl?.hasAttribute('disabled')).toBe(false)
+	})
+})
+
+/** Опции телепортированы в панель, но панель в документе и закрытой. */
+const renderSelect = () =>
+	renderSlotted(
+		{ Select, SelectItem },
+		`<Select><SelectItem value="a" text="A" disabled /></Select>`,
+	)
+
+describe('Select.Item · строка внутри опции', () => {
+	it('состояние объявляет опция: role="option" и aria-disabled на корне', async () => {
+		await renderSelect()
+
+		const option = root('.s-select-item')
+
+		expect(option?.getAttribute('role')).toBe('option')
+		expect(option?.getAttribute('aria-disabled')).toBe('true')
+	})
+
+	it('строка-span не объявляет себя: ни role, ни aria-disabled', async () => {
+		await renderSelect()
+
+		const lineEl = line('.s-select-item')
+
+		expect(lineEl?.tagName).toBe('SPAN')
+		expect(lineEl?.hasAttribute('role')).toBe(false)
+		expect(lineEl?.hasAttribute('aria-disabled')).toBe(false)
+	})
+
+	it('data-disabled для темы на строке остаётся', async () => {
+		await renderSelect()
+
+		expect(line('.s-select-item')?.getAttribute('data-disabled')).toBe('true')
 	})
 })

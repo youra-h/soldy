@@ -515,6 +515,103 @@ describe('TButton.aria · role и tabindex', () => {
 	})
 })
 
+/**
+ * Строка чужого элемента: `<Button tag="span">` внутри `role="option"` у
+ * Select.Item. Роль и состояние объявляет корень опции, у строки своей роли
+ * нет — значит, и записей в `aria` от неё быть не должно.
+ */
+describe('TButton.aria · presentational', () => {
+	it('по умолчанию выключен', () => {
+		const button = new TButton()
+
+		expect(button.presentational).toBe(false)
+		expect(button.getProps().presentational).toBe(false)
+	})
+
+	it('из конструктора: ни role, ни tabindex, ни aria-disabled', () => {
+		// TControl синхронизирует aria-disabled раньше, чем TButton задал
+		// проп, — запись от этого раннего прохода остаться не должна
+		const button = new TButton({ tag: 'span', presentational: true, disabled: true })
+
+		expect(button.aria.toObject()).toEqual({})
+	})
+
+	it('без disabled набор тоже пуст: tabindex="0" не пишется', () => {
+		expect(new TButton({ tag: 'span', presentational: true }).aria.toObject()).toEqual({})
+	})
+
+	it('data-disabled для темы остаётся', () => {
+		const button = new TButton({ tag: 'span', presentational: true, disabled: true })
+
+		expect(button.dataset.get('disabled')).toBe('true')
+
+		button.disabled = false
+
+		expect(button.dataset.get('disabled')).toBe('false')
+	})
+
+	it('нативный disabled в attrs не трогает — это не ARIA', () => {
+		const button = new TButton({ presentational: true, disabled: true })
+
+		expect(button.attrs.get('disabled')).toBe('disabled')
+		expect(button.aria.toObject()).toEqual({})
+	})
+
+	it('ни смена disabled, ни смена тега записи не возвращают', () => {
+		const button = new TButton({ tag: 'span', presentational: true })
+
+		button.disabled = true
+		expect(button.aria.toObject()).toEqual({})
+
+		button.tag = 'div'
+		expect(button.aria.toObject()).toEqual({})
+
+		button.disabled = false
+		expect(button.aria.toObject()).toEqual({})
+	})
+
+	it('включение в рантайме снимает role, tabindex и aria-disabled', () => {
+		const button = new TButton({ tag: 'span', disabled: true })
+
+		expect(button.aria.get('role')).toBe('button')
+		expect(button.aria.get('aria-disabled')).toBe('true')
+
+		button.presentational = true
+
+		expect(button.aria.toObject()).toEqual({})
+	})
+
+	it('снятие пропа всё возвращает', () => {
+		const button = new TButton({ tag: 'span', presentational: true, disabled: true })
+
+		button.presentational = false
+
+		expect(button.aria.get('role')).toBe('button')
+		expect(button.aria.get('aria-disabled')).toBe('true')
+		// disabled по-прежнему убирает элемент из порядка обхода
+		expect(button.aria.has('tabindex')).toBe(false)
+
+		button.disabled = false
+
+		expect(button.aria.get('tabindex')).toBe('0')
+		expect(button.aria.has('aria-disabled')).toBe(false)
+	})
+
+	it('change:presentational эмитится только при настоящем изменении', () => {
+		const button = new TButton({ tag: 'span' })
+		const seen: boolean[] = []
+
+		button.events.on('change:presentational', (value) => seen.push(value))
+
+		button.presentational = false
+		button.presentational = true
+		button.presentational = true
+		button.presentational = false
+
+		expect(seen).toEqual([true, false])
+	})
+})
+
 describe('aria · контракт границы', () => {
 	it('снимок — новый объект, а не ссылка на состояние', () => {
 		const button = new TButton({ tag: 'div' })

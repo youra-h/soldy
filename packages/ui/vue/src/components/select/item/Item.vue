@@ -8,6 +8,10 @@ import SetupSelectItem from './setup.component'
  * `aria-selected` от расширения коллекции. Один набор, шаблону не нужно знать,
  * кто в него писал.
  *
+ * Поэтому `Button` внутри — `presentational`: он только рисует строку и сам
+ * себя не объявляет — ни `role="button"` с `tabindex="0"`, ни `aria-disabled`
+ * поверх того, что уже сказала опция.
+ *
  * `dataset` — то же состояние для темы (`data-selected`, `data-highlighted`),
  * тоже готовым набором: выбор пишет расширение выборки, подсветку —
  * `TListItemPlugin`. ARIA для скринридера, `data-*` для стилей; смешивать
@@ -47,6 +51,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		<Button
 			tag="span"
 			view="plain"
+			presentational
 			:size="size"
 			:variant="variant"
 			:disabled="disabled"

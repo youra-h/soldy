@@ -110,6 +110,26 @@ export default class TControl<
 	}
 
 	/**
+	 * Объявляет ли элемент своё состояние скринридеру сам.
+	 *
+	 * По умолчанию да: `aria-disabled` пишется на элемент с `aria`, если у его
+	 * тега нет нативного `disabled`. Нет — когда элемент только рисует часть
+	 * чужого: строка опции Select живёт внутри `role="option"`, своей роли у
+	 * неё нет, и состояние объявляет корень опции. Второе объявление на
+	 * потомке было бы шумом в дереве доступности. `data-disabled` для темы от
+	 * хука не зависит, нативный `disabled` в `attrs` — тоже: это не ARIA.
+	 *
+	 * Как и у `_ariaTag`, пересчёт в `TControl` идёт на `change:disabled` и
+	 * `change:tag`. Хук, зависящий от собственного пропа наследника,
+	 * подписывается на его смену сам и пересчитывает ещё раз после
+	 * инициализации пропа: конструктор `TControl` зовёт `_syncDisabled`
+	 * раньше, чем наследник успевает его задать.
+	 */
+	protected get _announcesState(): boolean {
+		return true
+	}
+
+	/**
 	 * У тегов с собственным `disabled` (`NATIVE_DISABLED_TAGS`) состояние
 	 * передаётся нативным атрибутом — он и блокирует фокус, и исключает
 	 * элемент из отправки формы, чего `aria-disabled` не умеет. У остальных
@@ -123,7 +143,9 @@ export default class TControl<
 	 * «никогда оба на одном элементе». У Button это один и тот же элемент. У
 	 * Input, CheckBox и Switch `aria` стоит на вложенном `<input>`: его
 	 * нативный `disabled` проводит разметка, поэтому ARIA-дубль ядро ему не
-	 * пишет, а у корня-`div` нативного `disabled` нет вовсе.
+	 * пишет, а у корня-`div` нативного `disabled` нет вовсе. Элементу, который
+	 * своё состояние не объявляет (`_announcesState`), `aria-disabled` не
+	 * пишется ни на каком теге.
 	 *
 	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
 	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
@@ -139,7 +161,9 @@ export default class TControl<
 		)
 		this._aria.add(
 			'aria-disabled',
-			this.disabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+			this.disabled && this._announcesState && !hasNativeDisabled(this._ariaTag)
+				? 'true'
+				: null,
 		)
 	}
 

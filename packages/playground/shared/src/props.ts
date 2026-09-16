@@ -104,6 +104,8 @@ const PLUGIN: Record<string, string> = {
 const OWN: Record<string, Record<string, string>> = {
 	button: {
 		view: 'Оформление: заливка, только текст, контур или ничего',
+		presentational:
+			'Только строка чужого элемента: без role, tabindex и aria-disabled — их объявляет сам элемент',
 	},
 	input: {
 		placeholder: 'Подсказка в пустом поле',
