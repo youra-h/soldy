@@ -136,3 +136,30 @@ jobs:
       # `npm run format`: его правка утонет в чужих строках.
       - name: Форматирование
         run: npx prettier --check .
+
+  changeset:
+    name: Changeset
+    runs-on: ubuntu-latest
+    # PR, который меняет библиотечный пакет, несёт .changeset/*.md (см. AGENTS.md,
+    # «Версии пакетов»). Только на PR: на push в main сравнивать не с чем — HEAD там
+    # и есть origin/main, и проверка была бы зелёной всегда.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      # Полная история: changeset status ищет, где ветка отошла от origin/main
+      # (git merge-base). Клон по умолчанию — один merge-коммит PR без ветки main
+      # и без общего предка.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Пакет изменён, а changeset'а в PR нет — код 1. Пустой changeset проходит.
+      - name: Changeset
+        run: npx changeset status --since=origin/main

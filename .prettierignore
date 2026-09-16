@@ -9,3 +9,6 @@ packages/ui/angular/src/generated
 
 # Лок-файл пишет npm.
 package-lock.json
+
+# CHANGELOG.md пакетов пишет changesets при выпуске (npm run changeset:version).
+CHANGELOG.md

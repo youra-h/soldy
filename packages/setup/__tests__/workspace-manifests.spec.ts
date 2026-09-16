@@ -1,27 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { readChangesets } from '@changesets/read'
 
 /**
- * Сторож раздела «Версии пакетов» (см. AGENTS.md). Все библиотечные пакеты
- * `@soldy/*` идут одной версией — версией корневого манифеста — и несут
- * метаданные пакета: описание, лицензию и путь в репозитории.
+ * Сторож раздела «Версии пакетов» (см. AGENTS.md). Версии ведёт changesets:
+ * библиотечные пакеты `@soldy/*` — одна группа `fixed` и потому одна версия,
+ * стенд — в `ignore`. Библиотечный пакет несёт метаданные: описание, лицензию и
+ * путь в репозитории.
  *
  * Список пакетов не хардкодится: он раскрывается из `workspaces` корневого
- * манифеста, поэтому новый пакет попадает под проверку сам.
+ * манифеста, поэтому новый пакет попадает под проверку сам. Список стенда —
+ * `ignore` конфига changesets, второго списка здесь нет.
  */
 
 const ROOT = resolve(__dirname, '../../..')
-
-/**
- * Пакеты стенда. Стенд — инструмент разработки, а не библиотека: в общую
- * версию не входит и метаданных пакета не несёт. Новый стенд вносится сюда
- * явно; забытый упадёт на проверке как библиотечный пакет.
- */
-const PLAYGROUND_PACKAGES: ReadonlySet<string> = new Set([
-	'@soldy/playground-shared',
-	'@soldy/playground-vue',
-])
 
 /** Манифест как есть: поля не принимаются на веру, а проверяются по одному. */
 type TManifest = Readonly<Record<string, unknown>>
@@ -32,6 +25,21 @@ type TWorkspacePackage = {
 	readonly manifest: TManifest
 }
 
+/** Поля `.changeset/config.json`, на которых держится общая версия. */
+type TChangesetConfig = {
+	/** Группы пакетов, которые выходят одной версией. */
+	readonly fixed: readonly (readonly string[])[]
+	/** Пакеты, которые changesets не выпускает, — стенд. */
+	readonly ignore: readonly string[]
+}
+
+/** Changeset в том виде, в каком его читает сам changesets (`@changesets/read`). */
+type TChangeset = {
+	/** Имя файла без `.md`, от `.changeset/`. */
+	readonly id: string
+	readonly releases: readonly { readonly name: string; readonly type: string }[]
+}
+
 function isRecord(value: unknown): value is TManifest {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -40,15 +48,41 @@ function isStringArray(value: unknown): value is readonly string[] {
 	return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
-function readManifest(dir: string): TManifest {
-	const file = join(ROOT, dir, 'package.json')
+function isGroupArray(value: unknown): value is readonly (readonly string[])[] {
+	return Array.isArray(value) && value.every(isStringArray)
+}
+
+function readJsonObject(file: string): TManifest {
 	const parsed: unknown = JSON.parse(readFileSync(file, 'utf-8'))
 
 	if (!isRecord(parsed)) {
-		throw new Error(`${file}: манифест не объект`)
+		throw new Error(`${file}: ожидается объект JSON`)
 	}
 
 	return parsed
+}
+
+function readManifest(dir: string): TManifest {
+	return readJsonObject(join(ROOT, dir, 'package.json'))
+}
+
+/**
+ * Читает из конфига changesets `fixed` и `ignore`. Нет поля — пустой список, как
+ * у самого changesets; поле другой формы — ошибка, а не молча пустой список.
+ */
+function readChangesetConfig(): TChangesetConfig {
+	const file = join(ROOT, '.changeset', 'config.json')
+	const { fixed = [], ignore = [] } = readJsonObject(file)
+
+	if (!isGroupArray(fixed)) {
+		throw new Error(`${file}: fixed — не массив групп имён пакетов`)
+	}
+
+	if (!isStringArray(ignore)) {
+		throw new Error(`${file}: ignore — не массив имён пакетов`)
+	}
+
+	return { fixed, ignore }
 }
 
 function joinDir(dir: string, name: string): string {
@@ -96,14 +130,20 @@ function collectWorkspacePackages(root: TManifest): TWorkspacePackage[] {
 	return [...dirs].map((dir) => ({ dir, manifest: readManifest(dir) }))
 }
 
-function isPlayground({ manifest }: TWorkspacePackage): boolean {
-	return typeof manifest.name === 'string' && PLAYGROUND_PACKAGES.has(manifest.name)
+/** Библиотечные пакеты — воркспейс без `ignore`: ровно то, что выпускает changesets. */
+function selectLibrary(
+	packages: readonly TWorkspacePackage[],
+	config: TChangesetConfig,
+): TWorkspacePackage[] {
+	const ignored = new Set<unknown>(config.ignore)
+
+	return packages.filter(({ manifest }) => !ignored.has(manifest.name))
 }
 
 /** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
-function checkLibraryPackage({ dir, manifest }: TWorkspacePackage, version: unknown): string[] {
+function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	const violations: string[] = []
-	const { description, license, repository } = manifest
+	const { description, license, repository, version } = manifest
 	const directory = isRecord(repository) ? repository.directory : undefined
 
 	if (typeof description !== 'string' || description.trim() === '') {
@@ -120,31 +160,124 @@ function checkLibraryPackage({ dir, manifest }: TWorkspacePackage, version: unkn
 		)
 	}
 
-	if (manifest.version !== version) {
-		violations.push(
-			`version ${JSON.stringify(manifest.version)}, ожидается версия корня ${JSON.stringify(version)}`,
-		)
+	// Пакет без версии changesets пропускает молча — он выпал бы из выпуска.
+	if (typeof version !== 'string' || version === '') {
+		violations.push(`version ${JSON.stringify(version)}, ожидается строка версии`)
 	}
 
 	return violations.map((violation) => `${dir}: ${violation}`)
 }
 
-/** Нарушения по всем пакетам воркспейса; стенд не проверяется. */
-function collectViolations(packages: readonly TWorkspacePackage[], version: unknown): string[] {
-	return packages
-		.filter((pkg) => !isPlayground(pkg))
-		.flatMap((pkg) => checkLibraryPackage(pkg, version))
+/**
+ * Одна версия на все библиотечные пакеты, у корня версии нет: changesets
+ * поднимает только пакеты воркспейса, и версия корня после первого же выпуска
+ * стала бы устаревшей копией.
+ */
+function checkVersions(root: TManifest, library: readonly TWorkspacePackage[]): string[] {
+	const violations: string[] = []
+	const dirsByVersion = new Map<unknown, string[]>()
+
+	if ('version' in root) {
+		violations.push(
+			`корневой package.json: version ${JSON.stringify(root.version)} — версия у пакетов, у корня её нет`,
+		)
+	}
+
+	for (const { dir, manifest } of library) {
+		dirsByVersion.set(manifest.version, [...(dirsByVersion.get(manifest.version) ?? []), dir])
+	}
+
+	if (dirsByVersion.size > 1) {
+		const groups = [...dirsByVersion].map(
+			([version, dirs]) => `${JSON.stringify(version)} — ${dirs.join(', ')}`,
+		)
+
+		violations.push(`версии библиотечных пакетов разошлись: ${groups.join('; ')}`)
+	}
+
+	return violations
+}
+
+/**
+ * `fixed` — одна группа, и в ней ровно библиотечные пакеты. Пакет вне группы
+ * разошёлся бы с остальными на первом же выпуске, стенд в группе выпускался бы
+ * вместе с библиотекой.
+ */
+function checkFixed(config: TChangesetConfig, library: readonly TWorkspacePackage[]): string[] {
+	const violations: string[] = []
+	const libraryNames = new Set(library.map(({ manifest }) => manifest.name))
+	const fixedNames = config.fixed.flat()
+	const fixedSet = new Set<unknown>(fixedNames)
+
+	if (config.fixed.length !== 1) {
+		violations.push(`fixed: групп ${config.fixed.length}, ожидается одна`)
+	}
+
+	for (const { dir, manifest } of library) {
+		if (!fixedSet.has(manifest.name)) {
+			violations.push(
+				`fixed: нет ${JSON.stringify(manifest.name)} (${dir}) — пакет вне общей версии`,
+			)
+		}
+	}
+
+	for (const name of fixedNames) {
+		if (!libraryNames.has(name)) {
+			violations.push(`fixed: ${JSON.stringify(name)} — не библиотечный пакет`)
+		}
+	}
+
+	return violations
+}
+
+/** Имена из `ignore`, которых нет в воркспейсе: исключение стенда без пакета. */
+function checkIgnore(config: TChangesetConfig, packages: readonly TWorkspacePackage[]): string[] {
+	const names = new Set(packages.map(({ manifest }) => manifest.name))
+
+	return config.ignore
+		.filter((name) => !names.has(name))
+		.map((name) => `ignore: ${JSON.stringify(name)} — нет такого пакета в воркспейсе`)
+}
+
+/**
+ * До `1.0` ломающее изменение поднимает minor: `major` у пакета версии `0.x`
+ * выпустил бы `1.0.0` всей группы.
+ */
+function checkChangesets(
+	changesets: readonly TChangeset[],
+	library: readonly TWorkspacePackage[],
+): string[] {
+	const violations: string[] = []
+	const versions = new Map(
+		library.map(({ manifest }): [unknown, unknown] => [manifest.name, manifest.version]),
+	)
+
+	for (const { id, releases } of changesets) {
+		for (const { name, type } of releases) {
+			const version = versions.get(name)
+
+			if (type === 'major' && typeof version === 'string' && version.startsWith('0.')) {
+				violations.push(
+					`.changeset/${id}.md: major у "${name}" при версии ${version} — до 1.0 ломающее изменение поднимает minor`,
+				)
+			}
+		}
+	}
+
+	return violations
 }
 
 describe('манифесты пакетов воркспейса', () => {
 	const root = readManifest('')
 	const packages = collectWorkspacePackages(root)
+	const config = readChangesetConfig()
+	const library = selectLibrary(packages, config)
 
-	it('библиотечные пакеты заполнены и идут версией корня', () => {
-		const violations = collectViolations(packages, root.version)
+	it('библиотечные пакеты заполнены', () => {
+		const violations = library.flatMap(checkLibraryPackage)
 
 		expect(
-			packages.filter((pkg) => !isPlayground(pkg)).length,
+			library.length,
 			'из workspaces не раскрылось ни одного библиотечного пакета',
 		).toBeGreaterThan(0)
 		expect(
@@ -153,22 +286,51 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('каждое имя из списка стенда — пакет воркспейса', () => {
-		const names = new Set(packages.map(({ manifest }) => manifest.name))
-		const stale = [...PLAYGROUND_PACKAGES].filter((name) => !names.has(name))
+	it('библиотечные пакеты идут одной версией, у корня версии нет', () => {
+		const violations = checkVersions(root, library)
 
-		expect(stale, 'Исключение стенда без пакета — уберите имя из списка').toEqual([])
+		expect(
+			violations,
+			'Версии разошлись с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('группа fixed — ровно библиотечные пакеты', () => {
+		const violations = checkFixed(config, library)
+
+		expect(
+			violations,
+			'.changeset/config.json разошёлся с воркспейсом:\n' + violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('каждое имя из ignore — пакет воркспейса', () => {
+		const violations = checkIgnore(config, packages)
+
+		expect(
+			violations,
+			'Исключение стенда без пакета — уберите имя из ignore:\n' + violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('changeset не объявляет major, пока версия 0.x', async () => {
+		const violations = checkChangesets(await readChangesets(ROOT), library)
+
+		expect(
+			violations,
+			'Changeset разошёлся с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
+		).toEqual([])
 	})
 })
 
 describe('сторож манифестов', () => {
-	const ROOT_VERSION = '1.2.0'
+	const VERSION = '1.2.0'
 
 	const library = (overrides: TManifest): TWorkspacePackage => ({
 		dir: 'packages/example',
 		manifest: {
 			name: '@soldy/example',
-			version: ROOT_VERSION,
+			version: VERSION,
 			description: 'Пакет для проверки сторожа',
 			license: 'MIT',
 			repository: { type: 'git', directory: 'packages/example' },
@@ -176,48 +338,131 @@ describe('сторож манифестов', () => {
 		},
 	})
 
-	it('заполненный пакет на версии корня — без нарушений', () => {
-		expect(collectViolations([library({})], ROOT_VERSION)).toEqual([])
+	const other = (version: string): TWorkspacePackage => ({
+		dir: 'packages/other',
+		manifest: {
+			...library({}).manifest,
+			name: '@soldy/other',
+			version,
+			repository: { type: 'git', directory: 'packages/other' },
+		},
+	})
+
+	const playground: TWorkspacePackage = {
+		dir: 'packages/playground/vue',
+		manifest: { name: '@soldy/playground-vue', version: '0.0.0' },
+	}
+
+	const config = (overrides: Partial<TChangesetConfig>): TChangesetConfig => ({
+		fixed: [['@soldy/example', '@soldy/other']],
+		ignore: ['@soldy/playground-vue'],
+		...overrides,
+	})
+
+	const changeset = (type: string): TChangeset => ({
+		id: 'brave-dogs-sing',
+		releases: [{ name: '@soldy/example', type }],
+	})
+
+	it('заполненный пакет — без нарушений', () => {
+		expect(checkLibraryPackage(library({}))).toEqual([])
 	})
 
 	it('пакет без description — нарушение', () => {
 		const expected = ['packages/example: пустой description']
 
-		expect(collectViolations([library({ description: undefined })], ROOT_VERSION)).toEqual(
-			expected,
-		)
-		expect(collectViolations([library({ description: '  ' })], ROOT_VERSION)).toEqual(expected)
-	})
-
-	it('версия, отличная от корневой, — нарушение', () => {
-		expect(collectViolations([library({ version: '0.0.0' })], ROOT_VERSION)).toEqual([
-			'packages/example: version "0.0.0", ожидается версия корня "1.2.0"',
-		])
+		expect(checkLibraryPackage(library({ description: undefined }))).toEqual(expected)
+		expect(checkLibraryPackage(library({ description: '  ' }))).toEqual(expected)
 	})
 
 	it('repository.directory не совпадает с путём пакета — нарушение', () => {
 		const wrong = library({ repository: { type: 'git', directory: 'packages/other' } })
 
-		expect(collectViolations([wrong], ROOT_VERSION)).toEqual([
+		expect(checkLibraryPackage(wrong)).toEqual([
 			'packages/example: repository.directory "packages/other", ожидается путь пакета "packages/example"',
 		])
-		expect(collectViolations([library({ repository: undefined })], ROOT_VERSION)).toEqual([
+		expect(checkLibraryPackage(library({ repository: undefined }))).toEqual([
 			'packages/example: repository.directory undefined, ожидается путь пакета "packages/example"',
 		])
 	})
 
 	it('лицензия не MIT — нарушение', () => {
-		expect(collectViolations([library({ license: 'ISC' })], ROOT_VERSION)).toEqual([
+		expect(checkLibraryPackage(library({ license: 'ISC' }))).toEqual([
 			'packages/example: license "ISC", ожидается "MIT"',
 		])
 	})
 
-	it('стенд на 0.0.0 без метаданных — не нарушение', () => {
-		const playground: TWorkspacePackage = {
-			dir: 'packages/playground/vue',
-			manifest: { name: '@soldy/playground-vue', version: '0.0.0' },
-		}
+	it('пакет без version — нарушение', () => {
+		expect(checkLibraryPackage(library({ version: undefined }))).toEqual([
+			'packages/example: version undefined, ожидается строка версии',
+		])
+	})
 
-		expect(collectViolations([playground], ROOT_VERSION)).toEqual([])
+	it('одна версия и корень без version — без нарушений', () => {
+		expect(checkVersions({ name: 'soldy' }, [library({}), other(VERSION)])).toEqual([])
+	})
+
+	it('версии библиотечных пакетов разошлись — нарушение с их списком', () => {
+		expect(checkVersions({ name: 'soldy' }, [library({}), other('1.3.0')])).toEqual([
+			'версии библиотечных пакетов разошлись: "1.2.0" — packages/example; "1.3.0" — packages/other',
+		])
+	})
+
+	it('version у корня — нарушение', () => {
+		expect(checkVersions({ name: 'soldy', version: VERSION }, [library({})])).toEqual([
+			'корневой package.json: version "1.2.0" — версия у пакетов, у корня её нет',
+		])
+	})
+
+	it('стенд из ignore — не библиотечный пакет', () => {
+		const packages = [library({}), other(VERSION), playground]
+
+		expect(selectLibrary(packages, config({}))).toEqual([library({}), other(VERSION)])
+		expect(selectLibrary(packages, config({ ignore: [] }))).toContainEqual(playground)
+	})
+
+	it('fixed из библиотечных пакетов — без нарушений', () => {
+		expect(checkFixed(config({}), [library({}), other(VERSION)])).toEqual([])
+	})
+
+	it('пакет вне fixed — нарушение', () => {
+		expect(
+			checkFixed(config({ fixed: [['@soldy/example']] }), [library({}), other(VERSION)]),
+		).toEqual(['fixed: нет "@soldy/other" (packages/other) — пакет вне общей версии'])
+	})
+
+	it('стенд в fixed — нарушение', () => {
+		const fixed = [['@soldy/example', '@soldy/other', '@soldy/playground-vue']]
+
+		expect(checkFixed(config({ fixed }), [library({}), other(VERSION)])).toEqual([
+			'fixed: "@soldy/playground-vue" — не библиотечный пакет',
+		])
+	})
+
+	it('fixed из двух групп — нарушение', () => {
+		const fixed = [['@soldy/example'], ['@soldy/other']]
+
+		expect(checkFixed(config({ fixed }), [library({}), other(VERSION)])).toEqual([
+			'fixed: групп 2, ожидается одна',
+		])
+	})
+
+	it('имя из ignore без пакета — нарушение', () => {
+		const ignore = ['@soldy/playground-vue', '@soldy/playground-react']
+
+		expect(checkIgnore(config({ ignore }), [library({}), playground])).toEqual([
+			'ignore: "@soldy/playground-react" — нет такого пакета в воркспейсе',
+		])
+	})
+
+	it('major при версии 0.x — нарушение', () => {
+		expect(checkChangesets([changeset('major')], [library({ version: '0.3.0' })])).toEqual([
+			'.changeset/brave-dogs-sing.md: major у "@soldy/example" при версии 0.3.0 — до 1.0 ломающее изменение поднимает minor',
+		])
+	})
+
+	it('minor при версии 0.x и major при 1.x — без нарушений', () => {
+		expect(checkChangesets([changeset('minor')], [library({ version: '0.3.0' })])).toEqual([])
+		expect(checkChangesets([changeset('major')], [library({})])).toEqual([])
 	})
 })
