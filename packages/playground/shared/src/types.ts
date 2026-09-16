@@ -9,7 +9,12 @@ export type TPropControl = {
 	/** Значения для `select`; у остальных пусто. */
 	options?: readonly string[]
 	description: string
-	/** Значение по умолчанию из `ctor.defaultValues`. */
+	/**
+	 * Значение по умолчанию из декларации пропа (`IPropDeclaration.default`).
+	 *
+	 * Значим ключ, а не значение: объявленное умолчание бывает и `undefined`
+	 * (`closable` у элемента Tabs и Tags). Ключа нет — умолчания у пропа нет.
+	 */
 	default?: unknown
 	/**
 	 * Соседние пропы, без которых этот не виден (`removeOnBackspace` требует

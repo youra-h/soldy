@@ -15,17 +15,6 @@ const entry = computed(() => findAvailable(props.id))
 
 const descriptor = computed(() => entry.value?.descriptor())
 
-/**
- * Значения по умолчанию берутся со статики core-класса, а не из декларации:
- * в `IPropDeclaration` поля `default` нет вовсе — так же их достаёт и сам
- * адаптер (`useProps`).
- */
-const defaults = computed<Record<string, unknown>>(
-	() =>
-		(descriptor.value?.ctor as { defaultValues?: Record<string, unknown> })?.defaultValues ??
-		{},
-)
-
 const collectionDescriptor = computed(() => entry.value?.collectionDescriptor?.())
 
 /**
@@ -49,7 +38,7 @@ function controlsOf(
 
 	return source.props
 		.filter((prop) => !prop.protected && !NON_EDITABLE.has(prop.name.name))
-		.map((prop) => propControl(current.id, prop, defaults.value, scope))
+		.map((prop) => propControl(current.id, prop, scope))
 		.sort((a, b) => a.name.localeCompare(b.name))
 }
 

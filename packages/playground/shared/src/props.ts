@@ -255,22 +255,35 @@ export function controlKind(componentId: string, prop: IPropDeclaration): TContr
 	return 'text'
 }
 
-/** Полное описание контрола для одного пропа. */
+/**
+ * Полное описание контрола для одного пропа.
+ *
+ * Умолчание — из самой декларации: его кладёт туда setup при сборке дескриптора
+ * (`withClassDefault`), и своего пути к `ctor.defaultValues` стенду больше не
+ * нужно. Заодно уходит старая натяжка: умолчания компонента подставлялись и
+ * пропам фасада коллекции, у которого свой класс.
+ *
+ * Значим ключ, а не значение — ровно как в setup: `closable` у элемента Tabs и
+ * Tags объявлен с умолчанием `undefined`, и проверка `!== undefined` спутала бы
+ * его с пропом, у которого умолчания нет вовсе.
+ */
 export function propControl(
 	componentId: string,
 	prop: IPropDeclaration,
-	defaults: Record<string, unknown> = {},
 	scope: TPropControl['scope'] = 'component',
 ): TPropControl {
 	const name = prop.name.name
 
-	return {
+	const control: TPropControl = {
 		name,
 		scope,
 		kind: controlKind(componentId, prop),
 		options: optionsForProp(componentId, name),
 		description: describeProp(componentId, name) ?? '',
-		default: defaults[name],
 		preset: presetForProp(componentId, name),
 	}
+
+	if (Object.hasOwn(prop, 'default')) control.default = prop.default
+
+	return control
 }
