@@ -359,6 +359,76 @@ describe('TInputControl.aria · aria-readonly', () => {
 	})
 })
 
+/**
+ * APG Switch на `input[type="checkbox"]`: роль — `switch`, состояние — нативный
+ * `checked`. Роль знает о себе только сам переключатель, поэтому её пишет ядро.
+ */
+describe('TSwitch.aria · role', () => {
+	it('switch — с первого экземпляра, без участия разметки', () => {
+		expect(new TSwitch().aria.get('role')).toBe('switch')
+	})
+
+	it('не зависит ни от value, ни от disabled и readonly', () => {
+		const control = new TSwitch({ value: true, disabled: true, readonly: true })
+
+		expect(control.aria.get('role')).toBe('switch')
+
+		control.toggle()
+		control.disabled = false
+		control.readonly = false
+
+		expect(control.aria.get('role')).toBe('switch')
+	})
+
+	it('TCheckBox роли не пишет: у input[type=checkbox] она неявная', () => {
+		expect(new TCheckBox().aria.has('role')).toBe(false)
+	})
+})
+
+/**
+ * Состояние нативного чекбокса сообщает `checked`, «выбрано частично» — его
+ * DOM-свойство `indeterminate`; оба проводит разметка. `aria-checked` рядом был
+ * бы дублем того же состояния, поэтому ядро не пишет его ни при каком значении.
+ */
+describe('TCheckBox и TSwitch · без aria-checked', () => {
+	it.each([true, false, undefined])('TSwitch: нет при value: %s и после toggle', (value) => {
+		const control = new TSwitch({ value })
+
+		expect(control.aria.has('aria-checked')).toBe(false)
+
+		control.toggle()
+
+		expect(control.aria.has('aria-checked')).toBe(false)
+	})
+
+	it.each([
+		[false, false],
+		[true, false],
+		[false, true],
+		[true, true],
+	])('TCheckBox: нет при value: %s, indeterminate: %s', (value, indeterminate) => {
+		const control = new TCheckBox({ value, indeterminate })
+
+		expect(control.aria.has('aria-checked')).toBe(false)
+	})
+
+	it('TCheckBox: не появляется ни от сеттеров, ни от toggle из indeterminate', () => {
+		const control = new TCheckBox()
+
+		control.indeterminate = true
+		expect(control.aria.has('aria-checked')).toBe(false)
+
+		// indeterminate снимается, value становится true
+		control.toggle()
+		expect(control.indeterminate).toBe(false)
+		expect(control.value).toBe(true)
+		expect(control.aria.has('aria-checked')).toBe(false)
+
+		control.value = false
+		expect(control.aria.has('aria-checked')).toBe(false)
+	})
+})
+
 describe('TControl · тег элемента с aria', () => {
 	/** `aria` уходит на вложенный `<input>`, `attrs` остаётся на корне. */
 	class TNestedInputControl extends TControl {

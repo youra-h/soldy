@@ -28,6 +28,15 @@ export default class TCheckBox
 		this._applyIndeterminate(props.indeterminate ?? ctor.defaultValues.indeterminate!)
 		this._applyPlain(props.plain ?? ctor.defaultValues.plain!)
 	}
+
+	/**
+	 * Состояние «выбрано частично».
+	 *
+	 * Скринридеру его сообщает DOM-свойство `indeterminate` вложенного
+	 * `<input type="checkbox">`, а не `aria-checked="mixed"`: свойство проводит
+	 * разметка, как и `checked`, а `aria-checked` на нативном чекбоксе дублирует
+	 * его собственное состояние — поэтому ядро этот атрибут не пишет вовсе.
+	 */
 	get indeterminate(): boolean {
 		return this._indeterminate
 	}
@@ -74,18 +83,6 @@ export default class TCheckBox
 		} else {
 			this.value = this.value === true ? false : true
 		}
-	}
-
-	/**
-	 * Возвращает значение для aria-атрибута checked
-	 * @returns 'true' | 'false' | 'mixed'
-	 */
-	getAriaChecked(): 'true' | 'false' | 'mixed' {
-		if (this.indeterminate) {
-			return 'mixed'
-		}
-
-		return String(!!this.value) as 'true' | 'false'
 	}
 
 	getProps(): ICheckBoxProps {

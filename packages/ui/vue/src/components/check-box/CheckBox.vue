@@ -17,10 +17,10 @@ export default { ...SetupCheckBox, components: { Icon } }
 			type="checkbox"
 			:id="id"
 			:checked="value"
+			:indeterminate="indeterminate"
 			:name="name"
 			:disabled="disabled"
 			:required="required"
-			:aria-checked="ctrl.getAriaChecked()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		/>
 		<div class="s-check-box__container">

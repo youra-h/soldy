@@ -4,7 +4,9 @@
  * Наборы ядра у них стоят на разных элементах: `attrs` — атрибуты корня
  * (`dir`), `aria` — на `<input>`. Нативные `disabled`/`required`/`readonly`
  * вложенного `<input>` проводит разметка, как `name`, поэтому ARIA-дублей
- * рядом с ними быть не должно, а на корне нативного `disabled` нет вовсе.
+ * рядом с ними быть не должно, а на корне нативного `disabled` нет вовсе. То же
+ * с состоянием чекбокса: `checked` и `indeterminate` — свойства `<input>`, без
+ * `aria-checked`.
  *
  * Что ядро пишет в какой набор, проверяет `core/__tests__/aria.spec.ts`;
  * здесь — что наборы доехали до своих элементов.
@@ -90,5 +92,43 @@ describe.each(CHECKABLES)('%s', (_name, render) => {
 		const input = render({ aria_label: 'Согласие' }).find('input')
 
 		expect(input.attributes('aria-label')).toBe('Согласие')
+	})
+
+	it.each([true, false])('value: %s — нативный checked у <input>, без aria-checked', (value) => {
+		const input = render({ value }).find('input')
+
+		expect(input.element.checked).toBe(value)
+		expect(input.attributes('aria-checked')).toBeUndefined()
+	})
+})
+
+describe('CheckBox · indeterminate', () => {
+	it('DOM-свойство <input>, а не aria-checked="mixed"', () => {
+		const input = mount(CheckBox, { props: { indeterminate: true } }).find('input')
+
+		expect(input.element.indeterminate).toBe(true)
+		expect(input.attributes('aria-checked')).toBeUndefined()
+	})
+
+	it('смена пропа доходит до свойства в обе стороны', async () => {
+		const wrapper = mount(CheckBox)
+		const input = wrapper.find('input')
+
+		expect(input.element.indeterminate).toBe(false)
+
+		await wrapper.setProps({ indeterminate: true })
+		expect(input.element.indeterminate).toBe(true)
+
+		await wrapper.setProps({ indeterminate: false })
+		expect(input.element.indeterminate).toBe(false)
+	})
+})
+
+describe('Switch · role', () => {
+	it('role="switch" на <input>, а не на корне', () => {
+		const wrapper = mount(Switch)
+
+		expect(wrapper.find('input').attributes('role')).toBe('switch')
+		expect(wrapper.attributes('role')).toBeUndefined()
 	})
 })

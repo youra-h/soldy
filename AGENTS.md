@@ -1478,6 +1478,12 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `aria-activedescendant` на подсвеченную опцию. **DOM-фокус никогда не
   уходит с поля** — отсюда и `keydown` на поле, а не на списке, и подсветка
   через `aria-activedescendant`, а не через настоящий фокус.
+- **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
+  `role="switch"` на вложенном `<input>`, состояние сообщает нативный
+  `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
+  чекбоксе он дубль `checked`. «Выбрано частично» у CheckBox — DOM-свойство
+  `indeterminate` вложенного `<input>`, его проводит разметка, как `checked`,
+  а не `aria-checked="mixed"`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only

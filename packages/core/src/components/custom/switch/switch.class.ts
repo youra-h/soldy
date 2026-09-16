@@ -2,6 +2,19 @@ import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions } from '../../base/component'
 import type { ISwitch, ISwitchProps, TSwitchEvents } from './types'
 
+/**
+ * Переключатель — паттерн Switch из WAI-ARIA APG, вариант на
+ * `input[type="checkbox"]`.
+ *
+ * `aria` стоит на вложенном `<input>`, и ядро пишет туда `role="switch"`:
+ * это единственное, что переключатель знает о себе сверх чекбокса, — без
+ * роли скринридер объявил бы «флажок, отмечен» вместо «переключатель, вкл».
+ *
+ * `aria-checked` не пишется намеренно. Состояние нативного чекбокса сообщает
+ * `checked`, который проводит разметка, и APG для switch на
+ * `input[type="checkbox"]` требует именно его: `aria-checked` рядом был бы
+ * дублем того же состояния вторым путём.
+ */
 export default class TSwitch
 	extends TInputControl<boolean | undefined, ISwitchProps, TSwitchEvents>
 	implements ISwitch
@@ -20,6 +33,8 @@ export default class TSwitch
 		const ctor = new.target as typeof TSwitch
 
 		this.value = props.value ?? (ctor.defaultValues.value as boolean)
+
+		this._aria.add('role', 'switch')
 	}
 
 	/**
