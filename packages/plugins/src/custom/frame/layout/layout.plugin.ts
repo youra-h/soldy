@@ -16,8 +16,10 @@ import type { TFrameLayoutPluginEvents } from './types'
  * что во Frame уже лежит.
  *
  * @example
- * const layout = bundle.get(TFrameLayoutPlugin)!
- * // layout.styles → { position: 'fixed', left: '100px', top: '200px', 'z-index': 1001 }
+ * const layout = bundle.get(TFrameLayoutPlugin)
+ * if (layout) {
+ *     // layout.styles → { position: 'fixed', left: '100px', top: '200px', 'z-index': 1001 }
+ * }
  */
 export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvents> {
 	private _styles: Record<string, string | number> = {}

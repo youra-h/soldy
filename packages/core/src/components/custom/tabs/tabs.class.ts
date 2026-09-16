@@ -1,5 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type {
 	ITabs,
 	ITabsProps,
@@ -18,7 +18,7 @@ import type {
 export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implements ITabs {
 	static override baseClass = 's-tabs'
 
-	static defaultValues: Partial<ITabsProps> = {
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'view' | 'closable'> = {
 		...TControl.defaultValues,
 		orientation: 'horizontal',
 		alignment: 'start',
@@ -39,12 +39,12 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
 		const ctor = new.target as typeof TTabs
 
-		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation!)
-		this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment!)
-		this._applyPosition(props.position ?? ctor.defaultValues.position!)
-		this._applyView(props.view ?? ctor.defaultValues.view!)
+		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
+		this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment)
+		this._applyPosition(props.position ?? ctor.defaultValues.position)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 
-		this._closable = props.closable ?? ctor.defaultValues.closable!
+		this._closable = props.closable ?? ctor.defaultValues.closable
 	}
 
 	get orientation(): TTabsOrientation {

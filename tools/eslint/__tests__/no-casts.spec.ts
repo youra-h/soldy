@@ -17,6 +17,20 @@ const TESTS = 'packages/core/__tests__/__fixture__.spec.ts'
 
 const CAST = 'declare const value: object\nexport const x = value as unknown as string'
 
+const NON_NULL = 'declare const value: string | undefined\nexport const x = value!'
+
+const OUTSIDE_CORE = [
+	'packages/setup/contributions/__fixture__.ts',
+	'packages/accessor/contract/__fixture__.ts',
+	'packages/ui/vue/src/adapter/runtime/__fixture__.ts',
+	'packages/ui/angular/src/components/__fixture__/__fixture__.component.ts',
+	'packages/ui/react/src/components/__fixture__/Fixture.tsx',
+	'packages/ui/solid/src/components/__fixture__/Fixture.tsx',
+	'packages/ui/svelte/src/adapter/runtime/__fixture__.ts',
+	'packages/ui/webc/src/components/__fixture__/setup.component.ts',
+	'packages/plugins/src/__fixture__.ts',
+]
+
 async function ruleIds(code: string, filePath: string): Promise<string[]> {
 	const [result] = await eslint.lintText(code, { filePath })
 
@@ -52,6 +66,7 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 			'declare const value: unknown\nexport const x = value as any',
 			'soldy/no-explicit-any',
 		],
+		['non-null assertion `x!`', NON_NULL, '@typescript-eslint/no-non-null-assertion'],
 	])('%s — ошибка', async (_title, code, ruleId) => {
 		expect(await ruleIds(code, SRC)).toContain(ruleId)
 	})
@@ -67,6 +82,7 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 			'any в констрейнте',
 			'export type TMap<T extends Record<string, (...args: any) => any>> = T',
 		],
+		['definite assignment у поля', 'export class TSample {\n\tprivate _a!: string\n}'],
 	])('%s — допустимо', async (_title, code) => {
 		expect(await ruleIds(code, SRC)).toEqual([])
 	})
@@ -83,21 +99,21 @@ describe('eslint.config.ts: тесты ядра', () => {
 	it('as unknown as — ошибка', async () => {
 		expect(await ruleIds(CAST, TESTS)).toContain('no-restricted-syntax')
 	})
+
+	it('`x!` — ошибка', async () => {
+		expect(await ruleIds(NON_NULL, TESTS)).toContain('@typescript-eslint/no-non-null-assertion')
+	})
 })
 
 describe('eslint.config.ts: приведения вне ядра', () => {
-	it.each([
-		'packages/setup/contributions/__fixture__.ts',
-		'packages/accessor/contract/__fixture__.ts',
-		'packages/ui/vue/src/adapter/runtime/__fixture__.ts',
-		'packages/ui/angular/src/components/__fixture__/__fixture__.component.ts',
-		'packages/ui/react/src/components/__fixture__/Fixture.tsx',
-		'packages/ui/solid/src/components/__fixture__/Fixture.tsx',
-		'packages/ui/svelte/src/adapter/runtime/__fixture__.ts',
-		'packages/ui/webc/src/components/__fixture__/setup.component.ts',
-		'packages/plugins/src/__fixture__.ts',
-	])('%s — ошибка', async (filePath) => {
+	it.each(OUTSIDE_CORE)('%s — ошибка', async (filePath) => {
 		expect(await ruleIds(CAST, filePath)).toContain('no-restricted-syntax')
+	})
+
+	it.each(OUTSIDE_CORE)('%s: `x!` — ошибка', async (filePath) => {
+		expect(await ruleIds(NON_NULL, filePath)).toContain(
+			'@typescript-eslint/no-non-null-assertion',
+		)
 	})
 
 	it('<script lang="ts"> в .vue под packages/ui/vue/src — ошибка', async () => {

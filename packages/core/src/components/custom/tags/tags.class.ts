@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView } from './types'
 
 /**
@@ -31,7 +31,7 @@ export class TTags
 {
 	static override baseClass = 's-tags'
 
-	static defaultValues: Partial<ITagsProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITagsProps, 'closable' | 'view'> = {
 		...TValueControl.defaultValues,
 		closable: false,
 		view: 'filled',
@@ -45,9 +45,9 @@ export class TTags
 
 		const ctor = new.target as typeof TTags
 
-		this._closable = props.closable ?? ctor.defaultValues.closable!
+		this._closable = props.closable ?? ctor.defaultValues.closable
 
-		this._applyView(props.view ?? ctor.defaultValues.view!)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 
 		this._aria.add('role', 'list')
 	}

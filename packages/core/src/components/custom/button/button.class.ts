@@ -1,12 +1,12 @@
 import { TTextable } from '../../base/textable'
 import type { IButton, IButtonProps, TButtonView, TButtonEvents, TButtonStates } from './types'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { NATIVE_BUTTON_TAGS } from '../../../common'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
 	static override baseClass = 's-button'
 
-	static defaultValues: Partial<IButtonProps> = {
+	static defaultValues: typeof TTextable.defaultValues & TDefaultValues<IButtonProps, 'view'> = {
 		...TTextable.defaultValues,
 		variant: 'normal',
 		view: 'filled',
@@ -20,7 +20,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 
 		const ctor = new.target as typeof TButton
 
-		this._applyView(props.view ?? ctor.defaultValues.view!)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 
 		this.events.on('change:tag', () => this._syncButtonAria())
 		this.events.on('change:disabled', () => this._syncButtonAria())

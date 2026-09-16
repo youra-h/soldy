@@ -34,6 +34,7 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
 - `<name>.class.ts`:
   - `export default class T<Name> extends TBase<...> implements I<Name>`
   - `static baseClass = 's-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
+  - `static defaultValues` is typed `typeof TBase.defaultValues & TDefaultValues<I<Name>Props, 'ownKeyA' | 'ownKeyB'>` (own keys only; keys declared as `undefined` go to the third argument), never `Partial<I<Name>Props>`. The constructor then reads `props.x ?? ctor.defaultValues.x` without `!` — `x!` fails `lint:ci`. See AGENTS.md, «Умолчание пропа — в декларации».
 - `index.ts`: `export * from './types'` + `export { default as T<Name> } from './<name>.class'`.
 
 ### 2. Contribution — `packages/setup/contributions/components/<name>.ts`

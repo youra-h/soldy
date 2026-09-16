@@ -1,7 +1,7 @@
 import { TStateUnit } from '../../../common'
 import type { TComponentVariant, TValuePayload } from '../../../common'
 import { TComponentView } from '../../base/component-view'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type {
 	ISkeleton,
 	ISkeletonProps,
@@ -17,7 +17,7 @@ export default class TSkeleton
 {
 	static override baseClass = 's-skeleton'
 
-	static defaultValues: Partial<ISkeletonProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<ISkeletonProps, 'shape' | 'animation' | 'variant' | 'width' | 'height'> = {
 		...TComponentView.defaultValues,
 		shape: 'rounded',
 		animation: 'pulse',
@@ -39,10 +39,10 @@ export default class TSkeleton
 
 		const ctor = new.target as typeof TSkeleton
 
-		this._shape = props.shape ?? ctor.defaultValues.shape!
-		this._animation = props.animation ?? ctor.defaultValues.animation!
-		this._width = props.width ?? ctor.defaultValues.width!
-		this._height = props.height ?? ctor.defaultValues.height!
+		this._shape = props.shape ?? ctor.defaultValues.shape
+		this._animation = props.animation ?? ctor.defaultValues.animation
+		this._width = props.width ?? ctor.defaultValues.width
+		this._height = props.height ?? ctor.defaultValues.height
 
 		this._classes.add(`--${this._shape}`)
 		this._classes.add(`--${this._animation}`)
@@ -50,7 +50,7 @@ export default class TSkeleton
 		this._states.variant =
 			options.states?.variant ??
 			new TStateUnit<TComponentVariant>({
-				initial: props.variant ?? (ctor.defaultValues.variant as TComponentVariant),
+				initial: props.variant ?? ctor.defaultValues.variant,
 			})
 
 		this._states.variant.events.on('change', (payload: TValuePayload<TComponentVariant>) => {

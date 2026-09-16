@@ -96,8 +96,10 @@ notifications`. Фильтра по тексту в стороже нет и б�
   `as unknown as X` и `!` вместо проверки прячут ошибку, а не чинят её. Если
   типы не сходятся — неверен контракт, править надо его. Во всём репозитории
   это стережёт eslint (`eslint.config.ts`, блок `soldy/no-casts`): `as never`,
-  `as unknown as X`, `as TEvented<…>`, угловое приведение `<T>x`, `@ts-ignore`
-  и `@ts-nocheck` роняют CI. В тестах ядра блок `soldy/core-tests-no-any`
+  `as unknown as X`, `as TEvented<…>`, угловое приведение `<T>x`, `x!`
+  (`@typescript-eslint/no-non-null-assertion`), `@ts-ignore` и `@ts-nocheck`
+  роняют CI. Definite assignment у поля (`protected _x!: boolean`) — не
+  приведение, правило его не ловит. В тестах ядра блок `soldy/core-tests-no-any`
   запрещает ещё и `any` в любом типе. Что блоки включены на своих путях,
   проверяет `npm run test:eslint`. Честный `@ts-expect-error` с пояснением не
   запрещён. Блок действует и на `<script lang="ts">` компонентов `.vue` и
@@ -1178,6 +1180,32 @@ placeholder="Выберите">` обязан показать плейсхол�
 владельца, `value: undefined` у `TValueControl` не даёт Vue сделать
 отсутствующий `value` равным `false`. Проверка `default !== undefined` ломает
 оба случая молча.
+
+**Тип умолчаний — `TDefaultValues`, не `Partial<IXProps>`.** `Partial` делает
+объявленные ключи необязательными, и конструктор добирал умолчание через
+`ctor.defaultValues.x!`. Класс пересекает умолчания родителя со своими и
+перечисляет только свои ключи: с настоящим умолчанием — вторым аргументом,
+объявленные со значением `undefined` — третьим:
+
+```ts
+static defaultValues: typeof TValueControl.defaultValues &
+	TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
+	...TValueControl.defaultValues,
+	text: '',
+	closable: undefined,
+	…
+}
+
+this._closeLabel = own.closeLabel ?? ctor.defaultValues.closeLabel
+```
+
+Родительский `typeof` обязателен, иначе статическая сторона наследника
+несовместима с базой; переопределённый ключ родителя (`visible: false` у
+Frame) в список не вносится. Списки сверяет компилятор: забытый ключ, ключ
+литерала вне списка и родителя, ключ вне props-интерфейса — ошибки. `satisfies
+Partial<IXProps>` вместо аннотации не годится: он оставляет литеральные типы, и
+`visible: false` у наследника против `true` у базы роняет наследование.
+Сторож — `packages/core/__tests__/default-values.spec.ts`.
 
 **Почему не адаптер.** Раньше `useProps` во Vue сам читал `defaultValues` ядра
 рефлексией и искал в карте по имени без неймспейса. Пропы плагинов умолчаний

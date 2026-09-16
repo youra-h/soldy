@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { ISwitch, ISwitchProps, TSwitchEvents } from './types'
 
 /**
@@ -21,7 +21,7 @@ export default class TSwitch
 {
 	static override baseClass = 's-switch'
 
-	static defaultValues: Partial<ISwitchProps> = {
+	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISwitchProps> = {
 		...TInputControl.defaultValues,
 		value: false,
 		variant: 'normal',
@@ -32,7 +32,7 @@ export default class TSwitch
 
 		const ctor = new.target as typeof TSwitch
 
-		this.value = props.value ?? (ctor.defaultValues.value as boolean)
+		this.value = props.value ?? ctor.defaultValues.value
 
 		this._aria.add('role', 'switch')
 	}

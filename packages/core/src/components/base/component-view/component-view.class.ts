@@ -1,5 +1,5 @@
 import { TComponent } from '../component'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type {
 	IComponentView,
 	IComponentViewProps,
@@ -40,7 +40,7 @@ export default class TComponentView<
 	/** Базовый CSS-класс по умолчанию (можно переопределить в наследниках). */
 	static baseClass = 's-component-view'
 
-	static defaultValues: Partial<IComponentViewProps> = {
+	static defaultValues: typeof TComponent.defaultValues & TDefaultValues<IComponentViewProps, 'rendered' | 'visible' | 'tag' | 'direction'> = {
 		...TComponent.defaultValues,
 		rendered: true,
 		visible: true,
@@ -61,8 +61,8 @@ export default class TComponentView<
 
 		super(props, options)
 
-		const rendered = props.rendered ?? (ctor.defaultValues.rendered as boolean)
-		const visible = props.visible ?? (ctor.defaultValues.visible as boolean)
+		const rendered = props.rendered ?? ctor.defaultValues.rendered
+		const visible = props.visible ?? ctor.defaultValues.visible
 
 		this._states.rendered =
 			options.states?.rendered ??
@@ -80,9 +80,9 @@ export default class TComponentView<
 			this._emitPresent()
 		})
 
-		this._tag = props.tag ?? ctor.defaultValues.tag!
+		this._tag = props.tag ?? ctor.defaultValues.tag
 
-		this._direction = props.direction ?? (ctor.defaultValues.direction as TDirection)
+		this._direction = props.direction ?? ctor.defaultValues.direction
 
 		this._classes = new TClasses(ctor.baseClass)
 

@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import { TStateUnit } from '../../../../common'
 import type { TValuePayload, TAriaAttributes, TEventSink } from '../../../../common'
 import type { ITabsItem, ITabsItemProps, TTabsItemEvents, TTabsItemStates } from './types'
@@ -18,7 +18,7 @@ export default class TTabsItem<
 {
 	static override baseClass = 's-tabs-item'
 
-	static defaultValues: Partial<ITabsItemProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITabsItemProps, 'text' | 'closeLabel', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -38,12 +38,12 @@ export default class TTabsItem<
 		// Type assertion: TProps extends ITabsItemProps, поэтому props содержит text и closable
 		const customProps = props as Partial<ITabsItemProps>
 
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel!
+		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
 		// Инициализация state-объектов
 		this._states.text =
 			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
+			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
 
 		this._states.closable =
 			options.states?.closable ??

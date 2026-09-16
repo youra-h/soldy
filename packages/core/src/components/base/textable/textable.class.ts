@@ -1,7 +1,7 @@
 import { TStateUnit } from '../../../common'
 import type { TValuePayload, TEventSink } from '../../../common'
 import { TControl } from '../control'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type { ITextableProps, TTextableEvents, TTextableStates } from './types'
 
 /**
@@ -16,7 +16,7 @@ export default class TTextable<
 	TEvents extends TTextableEvents = TTextableEvents,
 	TStates extends TTextableStates = TTextableStates,
 > extends TControl<TProps, TEvents, TStates> {
-	static defaultValues: Partial<ITextableProps> = {
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITextableProps, 'text'> = {
 		...TControl.defaultValues,
 		text: '',
 	}
@@ -26,7 +26,7 @@ export default class TTextable<
 
 		const ctor = new.target as typeof TTextable
 
-		const text = props.text ?? (ctor.defaultValues.text as string)
+		const text = props.text ?? ctor.defaultValues.text
 
 		this._states.text = options.states?.text ?? new TStateUnit<string>({ initial: text })
 

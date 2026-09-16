@@ -6,6 +6,7 @@ import type {
 	IComponentProps,
 	TComponentEvents,
 	TComponentStates,
+	TDefaultValues,
 } from './types'
 
 /**
@@ -25,7 +26,7 @@ export default class TComponent<
 	extends TEntity<TProps>
 	implements IComponent<TProps, TEvents, TStates>
 {
-	static defaultValues: Partial<IComponentProps> = {}
+	static defaultValues: TDefaultValues<IComponentProps> = {}
 
 	protected _states = {} as TStates
 	public readonly events: TEvented<TEvents>

@@ -1,8 +1,8 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { TScrollBehavior } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
-import type { TListContentFit, TListIndicator } from '../list'
+import type { IListProps, TListContentFit, TListIndicator } from '../list'
 import type {
 	IListBoxProps,
 	TListBoxView,
@@ -40,7 +40,7 @@ export class TListBox
 {
 	static override baseClass = 's-list-box'
 
-	static defaultValues: Partial<IListBoxProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IListBoxProps, keyof IListProps | 'view'> = {
 		...TValueControl.defaultValues,
 		...LIST_DEFAULTS,
 		view: 'plain',
@@ -60,13 +60,13 @@ export class TListBox
 
 		const ctor = new.target as typeof TListBox
 
-		this._applyView(props.view ?? ctor.defaultValues.view!)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 
-		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows!
-		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
+		this._maxRows = props.maxRows ?? ctor.defaultValues.maxRows
+		this._scrollBehavior = props.scrollBehavior ?? ctor.defaultValues.scrollBehavior
 
-		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit!)
-		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator!)
+		this._applyContentFit(props.contentFit ?? ctor.defaultValues.contentFit)
+		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator)
 	}
 
 	get view(): TListBoxView {

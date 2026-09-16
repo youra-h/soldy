@@ -1,6 +1,6 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 
 /**
@@ -17,7 +17,7 @@ export default class TInputControl<
 	TEvents extends TInputControlEvents<TValue> = TInputControlEvents<TValue>,
 	TStates extends TInputControlStates<TValue> = TInputControlStates<TValue>,
 > extends TValueControl<TValue, TProps, TEvents> {
-	static defaultValues: Partial<IInputControlProps<any>> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IInputControlProps<any>, 'readonly' | 'required' | 'id'> = {
 		...TValueControl.defaultValues,
 		readonly: false,
 		required: false,
@@ -34,11 +34,11 @@ export default class TInputControl<
 		const ctor = new.target as typeof TInputControl
 
 		// Простые свойства
-		// this._readonly = props.readonly ?? (ctor.defaultValues.readonly as boolean)
-		this._applyReadonly(props.readonly ?? (ctor.defaultValues.readonly as boolean))
-		this._applyRequired(props.required ?? (ctor.defaultValues.required as boolean))
+		// this._readonly = props.readonly ?? ctor.defaultValues.readonly
+		this._applyReadonly(props.readonly ?? ctor.defaultValues.readonly)
+		this._applyRequired(props.required ?? ctor.defaultValues.required)
 
-		this._id = props.id ?? (ctor.defaultValues.id as string)
+		this._id = props.id ?? ctor.defaultValues.id
 
 		this.events.on('change:required', () => this._syncInputAccessibility())
 		this.events.on('change:readonly', () => this._syncInputAccessibility())

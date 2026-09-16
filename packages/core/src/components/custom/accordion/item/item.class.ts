@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import { TStateUnit } from '../../../../common'
 import type { TValuePayload, TEventSink } from '../../../../common'
 import type {
@@ -24,7 +24,7 @@ export default class TAccordionItem<
 {
 	static override baseClass = 's-accordion-item'
 
-	static defaultValues: Partial<IAccordionItemProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -49,9 +49,9 @@ export default class TAccordionItem<
 		// Инициализация state-объектов
 		this._states.text =
 			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
+			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
 
-		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement!
+		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement
 
 		// Подписка на изменения state-объектов
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {

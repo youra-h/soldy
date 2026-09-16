@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import { TStateUnit } from '../../../../common'
 import type { TValuePayload, TEventSink } from '../../../../common'
 import type { TListItemContentFit } from '../../list'
@@ -29,7 +29,7 @@ export default class TListBoxItem<
 {
 	static override baseClass = 's-list-box-item'
 
-	static defaultValues: Partial<IListBoxItemProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<IListBoxItemProps, 'text', 'contentFit'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -48,7 +48,7 @@ export default class TListBoxItem<
 
 		this._states.text =
 			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
+			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
 
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
 

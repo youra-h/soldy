@@ -101,6 +101,9 @@ export default defineConfigWithVueTs(
 		name: 'soldy/no-casts',
 		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
 		rules: {
+			// `x!` — то же приведение к «не пусто» без проверки. Definite
+			// assignment у поля (`private _a!: string`) правило не ловит.
+			'@typescript-eslint/no-non-null-assertion': 'error',
 			'@typescript-eslint/consistent-type-assertions': [
 				'error',
 				{ assertionStyle: 'as', objectLiteralTypeAssertions: 'allow' },

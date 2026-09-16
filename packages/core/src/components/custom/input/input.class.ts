@@ -1,11 +1,11 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { IInput, IInputProps, TInputEvents } from './types'
 
 export class TInput extends TInputControl<string, IInputProps, TInputEvents> implements IInput {
 	static override baseClass = 's-input'
 
-	static defaultValues: Partial<IInputProps> = {
+	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<IInputProps, 'placeholder'> = {
 		...TInputControl.defaultValues,
 		placeholder: '',
 	}
@@ -17,7 +17,7 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 
 		const ctor = new.target as typeof TInput
 
-		this._applyPlaceholder(props.placeholder ?? ctor.defaultValues.placeholder!)
+		this._applyPlaceholder(props.placeholder ?? ctor.defaultValues.placeholder)
 	}
 
 	get placeholder(): string {

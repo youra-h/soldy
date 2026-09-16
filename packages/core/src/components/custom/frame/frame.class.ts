@@ -1,5 +1,5 @@
 import { TComponentView } from '../../base/component-view'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../common'
 import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
@@ -24,7 +24,7 @@ export default class TFrame
 {
 	static baseClass = 's-frame'
 
-	static defaultValues: Partial<IFrameProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'target'> = {
 		...TComponentView.defaultValues,
 		x: 0,
 		y: 0,
@@ -64,13 +64,13 @@ export default class TFrame
 
 		super(props, options)
 
-		const x = props.x ?? ctor.defaultValues.x!
-		const y = props.y ?? ctor.defaultValues.y!
-		const width = props.width ?? ctor.defaultValues.width!
-		const height = props.height ?? ctor.defaultValues.height!
+		const x = props.x ?? ctor.defaultValues.x
+		const y = props.y ?? ctor.defaultValues.y
+		const width = props.width ?? ctor.defaultValues.width
+		const height = props.height ?? ctor.defaultValues.height
 
-		this._position = props.position ?? ctor.defaultValues.position!
-		this._target = props.target ?? ctor.defaultValues.target!
+		this._position = props.position ?? ctor.defaultValues.position
+		this._target = props.target ?? ctor.defaultValues.target
 
 		this._states.x = new TStateUnit<number>({ initial: x }) as TFrameStates['x']
 		this._states.y = new TStateUnit<number>({ initial: y }) as TFrameStates['y']

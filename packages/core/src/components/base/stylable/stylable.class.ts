@@ -1,7 +1,7 @@
 import { TStateUnit } from '../../../common'
 import type { TComponentSize, TComponentVariant, TValuePayload, TEventSink } from '../../../common'
 import { TComponentView } from '../component-view'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
 
 /**
@@ -15,7 +15,7 @@ export default class TStylable<
 	TEvents extends TStylableEvents = TStylableEvents,
 	TStates extends TStylableStates = TStylableStates,
 > extends TComponentView<TProps, TEvents, TStates> {
-	static defaultValues: Partial<IStylableProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IStylableProps, 'size' | 'variant'> = {
 		...TComponentView.defaultValues,
 		size: 'normal',
 		variant: 'normal',
@@ -29,7 +29,7 @@ export default class TStylable<
 		this._states.size =
 			options.states?.size ??
 			new TStateUnit<TComponentSize>({
-				initial: props.size ?? (ctor.defaultValues.size as TComponentSize),
+				initial: props.size ?? ctor.defaultValues.size,
 			})
 
 		this._states.size.events.on('change', (payload: TValuePayload<TComponentSize>) => {
@@ -45,7 +45,7 @@ export default class TStylable<
 		this._states.variant =
 			options.states?.variant ??
 			new TStateUnit<TComponentVariant>({
-				initial: props.variant ?? (ctor.defaultValues.variant as TComponentVariant),
+				initial: props.variant ?? ctor.defaultValues.variant,
 			})
 
 		this._states.variant.events.on('change', (payload: TValuePayload<TComponentVariant>) => {

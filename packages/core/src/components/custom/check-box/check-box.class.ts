@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents } from './types'
 
 export default class TCheckBox
@@ -8,7 +8,7 @@ export default class TCheckBox
 {
 	static override baseClass = 's-check-box'
 
-	static defaultValues: Partial<ICheckBoxProps> = {
+	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ICheckBoxProps, 'indeterminate' | 'plain'> = {
 		...TInputControl.defaultValues,
 		value: false,
 		indeterminate: false,
@@ -24,9 +24,9 @@ export default class TCheckBox
 
 		const ctor = new.target as typeof TCheckBox
 
-		this.value = props.value ?? (ctor.defaultValues.value as boolean)
-		this._applyIndeterminate(props.indeterminate ?? ctor.defaultValues.indeterminate!)
-		this._applyPlain(props.plain ?? ctor.defaultValues.plain!)
+		this.value = props.value ?? ctor.defaultValues.value
+		this._applyIndeterminate(props.indeterminate ?? ctor.defaultValues.indeterminate)
+		this._applyPlain(props.plain ?? ctor.defaultValues.plain)
 	}
 
 	/**

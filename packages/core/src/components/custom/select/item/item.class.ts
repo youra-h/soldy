@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import { TStateUnit } from '../../../../common'
 import type { TValuePayload, TEventSink } from '../../../../common'
 import type { ISelectItem, ISelectItemProps, TSelectItemEvents, TSelectItemStates } from './types'
@@ -24,7 +24,7 @@ export default class TSelectItem<
 {
 	static override baseClass = 's-select-item'
 
-	static defaultValues: Partial<ISelectItemProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ISelectItemProps, 'text'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -39,7 +39,7 @@ export default class TSelectItem<
 
 		this._states.text =
 			options.states?.text ??
-			new TStateUnit<string>({ initial: own.text ?? ctor.defaultValues.text! })
+			new TStateUnit<string>({ initial: own.text ?? ctor.defaultValues.text })
 
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
 			this._sink.emit('change:text', payload)

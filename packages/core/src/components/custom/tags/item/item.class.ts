@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import { TStateUnit } from '../../../../common'
 import type { TValuePayload, TAriaAttributes, TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from './types'
@@ -23,7 +23,7 @@ export default class TTagsItem<
 {
 	static override baseClass = 's-tags-item'
 
-	static defaultValues: Partial<ITagsItemProps> = {
+	static defaultValues: typeof TValueControl.defaultValues & TDefaultValues<ITagsItemProps, 'text' | 'closeLabel', 'closable'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
@@ -41,11 +41,11 @@ export default class TTagsItem<
 		const ctor = new.target as typeof TTagsItem
 		const customProps = props as Partial<ITagsItemProps>
 
-		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel!
+		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
 		this._states.text =
 			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text! })
+			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
 
 		this._states.closable =
 			options.states?.closable ??

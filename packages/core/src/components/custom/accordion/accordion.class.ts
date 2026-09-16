@@ -1,5 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type {
 	IAccordion,
 	IAccordionProps,
@@ -19,7 +19,7 @@ export class TAccordion
 {
 	static override baseClass = 's-accordion'
 
-	static defaultValues: Partial<IAccordionProps> = {
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IAccordionProps, 'view'> = {
 		...TControl.defaultValues,
 		view: 'plain',
 		variant: 'normal',
@@ -35,7 +35,7 @@ export class TAccordion
 
 		const ctor = new.target as typeof TAccordion
 
-		this._applyView(props.view ?? ctor.defaultValues.view!)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 	}
 
 	get view(): TAccordionView {

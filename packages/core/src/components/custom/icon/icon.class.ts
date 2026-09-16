@@ -1,6 +1,6 @@
 import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit } from '../../../common'
 import type { TValuePayload, TComponentSize } from '../../../common'
 
@@ -19,7 +19,7 @@ export default class TIcon
 {
 	static override baseClass = 's-icon'
 
-	static defaultValues: Partial<IIconProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IIconProps, 'size'> = {
 		...TComponentView.defaultValues,
 		size: 'normal',
 		tag: 'error',
@@ -36,7 +36,7 @@ export default class TIcon
 		this._states.size =
 			options.states?.size ??
 			new TStateUnit<TComponentSize>({
-				initial: (props.size ?? ctor.defaultValues.size!) as TComponentSize,
+				initial: props.size ?? ctor.defaultValues.size,
 			})
 
 		this._states.size.events.on('change', (payload: TValuePayload<TComponentSize>) => {

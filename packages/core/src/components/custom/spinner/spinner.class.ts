@@ -1,11 +1,11 @@
 import { TStylable } from '../../base/stylable'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
 	static override baseClass = 's-spinner'
 
-	static defaultValues: Partial<ISpinnerProps> = {
+	static defaultValues: typeof TStylable.defaultValues & TDefaultValues<ISpinnerProps, 'borderWidth'> = {
 		...TStylable.defaultValues,
 		variant: 'accent',
 		tag: 'span',
@@ -22,7 +22,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 
 		const ctor = new.target as typeof TSpinner
 
-		this._borderWidth = props.borderWidth ?? ctor.defaultValues.borderWidth!
+		this._borderWidth = props.borderWidth ?? ctor.defaultValues.borderWidth
 
 		// `role="status"` — вежливая живая область: `aria-live="polite"` и
 		// `aria-atomic="true"` в ней уже подразумеваются, дублировать не надо.

@@ -1,5 +1,5 @@
 import { TControl } from '../control'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type { IValueControlProps, TValueControlEvents, TValueControlStates } from './types'
 import { TStateUnit } from '../../../common'
 import type { TValuePayload, TEventSink } from '../../../common'
@@ -19,7 +19,7 @@ export default class TValueControl<
 	TEvents extends TValueControlEvents<TValue> = TValueControlEvents<TValue>,
 	TStates extends TValueControlStates<TValue> = TValueControlStates<TValue>,
 > extends TControl<TProps, TEvents, TStates> {
-	static defaultValues: Partial<IValueControlProps<any>> = {
+	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IValueControlProps<any>, 'name', 'value'> = {
 		...TControl.defaultValues,
 		name: '',
 		value: undefined,
@@ -32,7 +32,7 @@ export default class TValueControl<
 
 		const ctor = new.target as typeof TValueControl
 
-		this._name = props.name ?? (ctor.defaultValues.name as string)
+		this._name = props.name ?? ctor.defaultValues.name
 
 		const value = props.value ?? (ctor.defaultValues.value as TValue)
 

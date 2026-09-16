@@ -1,6 +1,6 @@
 import { TStateUnit, NATIVE_DISABLED_TAGS } from '../../../common'
 import type { TValuePayload, TEventSink } from '../../../common'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import { TStylable } from '../stylable'
 import type { IControlProps, TControlEvents, TControlStates } from './types'
 
@@ -21,7 +21,7 @@ export default class TControl<
 	TEvents extends TControlEvents = TControlEvents,
 	TStates extends TControlStates = TControlStates,
 > extends TStylable<TProps, TEvents, TStates> {
-	static defaultValues: Partial<IControlProps> = {
+	static defaultValues: typeof TStylable.defaultValues & TDefaultValues<IControlProps, 'disabled' | 'focused'> = {
 		...TStylable.defaultValues,
 		disabled: false,
 		focused: false,
@@ -32,8 +32,8 @@ export default class TControl<
 
 		const ctor = new.target as typeof TControl
 
-		const disabled = props.disabled ?? (ctor.defaultValues.disabled as boolean)
-		const focused = props.focused ?? (ctor.defaultValues.focused as boolean)
+		const disabled = props.disabled ?? ctor.defaultValues.disabled
+		const focused = props.focused ?? ctor.defaultValues.focused
 
 		this._states.disabled =
 			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })

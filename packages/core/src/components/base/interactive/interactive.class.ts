@@ -1,6 +1,6 @@
 import { TStateUnit } from '../../../common'
 import { TComponentView } from '../component-view'
-import type { IComponentOptions } from '../component'
+import type { IComponentOptions, TDefaultValues } from '../component'
 import type { IInteractiveProps, TInteractiveEvents, TInteractiveStates } from './types'
 import type { TValuePayload, TEventSink } from '../../../common'
 
@@ -15,7 +15,7 @@ export default class TInteractive<
 	TEvents extends TInteractiveEvents = TInteractiveEvents,
 	TStates extends TInteractiveStates = TInteractiveStates,
 > extends TComponentView<TProps, TEvents, TStates> {
-	static defaultValues: Partial<IInteractiveProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IInteractiveProps, 'disabled' | 'focused'> = {
 		...TComponentView.defaultValues,
 		disabled: false,
 		focused: false,
@@ -26,8 +26,8 @@ export default class TInteractive<
 
 		const ctor = new.target as typeof TInteractive
 
-		const disabled = props.disabled ?? (ctor.defaultValues.disabled as boolean)
-		const focused = props.focused ?? (ctor.defaultValues.focused as boolean)
+		const disabled = props.disabled ?? ctor.defaultValues.disabled
+		const focused = props.focused ?? ctor.defaultValues.focused
 
 		this._states.disabled =
 			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })

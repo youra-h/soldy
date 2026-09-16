@@ -1,9 +1,9 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions } from '../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { TAriaAttributes, TScrollBehavior, TValuePayload, TEventSink } from '../../../common'
 import type { TComponentSize, TComponentVariant } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
-import type { TListContentFit, TListIndicator } from '../list'
+import type { IListProps, TListContentFit, TListIndicator } from '../list'
 import { TInput } from '../input'
 import type { IInput } from '../input'
 import type {
@@ -60,7 +60,7 @@ export class TSelect<
 {
 	static override baseClass = 's-select'
 
-	static defaultValues: Partial<ISelectProps> = {
+	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISelectProps, keyof IListProps | 'open' | 'placeholder' | 'closeOnSelect' | 'clearable' | 'clearLabel' | 'editable' | 'editableMode' | 'removeOnBackspace' | 'placement'> = {
 		...TInputControl.defaultValues,
 		...LIST_DEFAULTS,
 		open: false,
@@ -117,34 +117,34 @@ export class TSelect<
 			disabled: this.disabled,
 			size: this.size,
 			variant: this.variant,
-			readonly: !(own.editable ?? ctor.defaultValues.editable!),
+			readonly: !(own.editable ?? ctor.defaultValues.editable),
 			required: this.required,
 			name: this.name,
 			id: this.id,
 		})
 
-		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder!
-		this._closeOnSelect = own.closeOnSelect ?? ctor.defaultValues.closeOnSelect!
-		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel!
+		this._placeholder = own.placeholder ?? ctor.defaultValues.placeholder
+		this._closeOnSelect = own.closeOnSelect ?? ctor.defaultValues.closeOnSelect
+		this._clearLabel = own.clearLabel ?? ctor.defaultValues.clearLabel
 
-		this._maxRows = own.maxRows ?? ctor.defaultValues.maxRows!
-		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior!
+		this._maxRows = own.maxRows ?? ctor.defaultValues.maxRows
+		this._scrollBehavior = own.scrollBehavior ?? ctor.defaultValues.scrollBehavior
 
-		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit!)
-		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator!)
+		this._applyContentFit(own.contentFit ?? ctor.defaultValues.contentFit)
+		this._applyIndicator(own.indicator ?? ctor.defaultValues.indicator)
 
-		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable!)
+		this._applyClearable(own.clearable ?? ctor.defaultValues.clearable)
 		// `_editableMode` — до `_applyEditable`: тот вызывает
 		// `_syncAutocomplete()`, и на момент вызова режим должен быть уже
 		// установлен (сам `aria-autocomplete` от режима не зависит).
-		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode!
-		this._applyEditable(own.editable ?? ctor.defaultValues.editable!)
-		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace!
-		this._placement = own.placement ?? ctor.defaultValues.placement!
+		this._editableMode = own.editableMode ?? ctor.defaultValues.editableMode
+		this._applyEditable(own.editable ?? ctor.defaultValues.editable)
+		this._removeOnBackspace = own.removeOnBackspace ?? ctor.defaultValues.removeOnBackspace
+		this._placement = own.placement ?? ctor.defaultValues.placement
 		// Тем же правилом, что и сеттер `editable`, только без события — и
 		// после `TInputControl`, поэтому проп `readonly` здесь перекрывается.
 		this._applyReadonly(!this._editable)
-		this._applyOpen(own.open ?? ctor.defaultValues.open!)
+		this._applyOpen(own.open ?? ctor.defaultValues.open)
 
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью — оба
 		// в `field.aria`: паттерн combobox описывает нативный `<input>`, а не

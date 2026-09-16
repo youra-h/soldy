@@ -1,5 +1,5 @@
 import { TComponentView } from '../../../base/component-view'
-import type { IComponentOptions } from '../../../base/component'
+import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import type { TEventSink } from '../../../../common'
 import type {
 	ITabsContent,
@@ -31,7 +31,7 @@ export class TTabsContent<
 {
 	static override baseClass = 's-tabs__panel'
 
-	static defaultValues: Partial<ITabsContentProps> = {
+	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<ITabsContentProps, 'value'> = {
 		...TComponentView.defaultValues,
 		value: '',
 	}
@@ -43,7 +43,7 @@ export class TTabsContent<
 
 		const ctor = new.target as typeof TTabsContent
 
-		this._value = props.value ?? (ctor.defaultValues.value as string | number)
+		this._value = props.value ?? ctor.defaultValues.value
 	}
 
 	get value(): string | number {
