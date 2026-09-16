@@ -91,6 +91,7 @@ describe('eslint.config.ts: приведения вне ядра', () => {
 		'packages/accessor/contract/__fixture__.ts',
 		'packages/ui/vue/src/adapter/runtime/__fixture__.ts',
 		'packages/ui/angular/src/components/__fixture__/__fixture__.component.ts',
+		'packages/plugins/src/__fixture__.ts',
 	])('%s — ошибка', async (filePath) => {
 		expect(await ruleIds(CAST, filePath)).toContain('no-restricted-syntax')
 	})
@@ -123,9 +124,4 @@ ${cast}
 			).toContain(ruleId)
 		},
 	)
-
-	// Временно, до 869f2grdv: кейс уходит вместе с исключением в eslint.config.ts
-	it('packages/plugins пропускается', async () => {
-		expect(await ruleIds(CAST, 'packages/plugins/src/__fixture__.ts')).toEqual([])
-	})
 })

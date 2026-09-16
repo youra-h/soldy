@@ -100,8 +100,6 @@ export default defineConfigWithVueTs(
 	{
 		name: 'soldy/no-casts',
 		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
-		// Временно, до 869f2grdv
-		ignores: ['packages/plugins/**'],
 		rules: {
 			'@typescript-eslint/consistent-type-assertions': [
 				'error',

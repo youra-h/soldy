@@ -241,9 +241,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		if (this._query === value) return
 
 		this._query = value
-		;(this.events as unknown as {
-			emit(name: 'change:query', value: string): void
-		}).emit('change:query', value)
+		this.events.emit('change:query', value)
 	}
 
 	/**

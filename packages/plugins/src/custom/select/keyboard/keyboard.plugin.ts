@@ -185,7 +185,7 @@ export class TSelectKeyboardPlugin
 	}
 
 	emitClosedEscape(): void {
-		;(this.events as unknown as { emit(name: 'escape'): void }).emit('escape')
+		this.events.emit('escape')
 	}
 
 	/**
