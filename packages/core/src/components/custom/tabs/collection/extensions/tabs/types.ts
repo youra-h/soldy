@@ -13,7 +13,9 @@ import type { ITabsItem } from '../../../item/types'
  * Используется как тип TParent в TTabsItemExtension для типизированного доступа к _parent.
  */
 export interface ITabsExtension<TItem extends ITabsItem = ITabsItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, ITabsItemExtension<TItem>> {
+	extends
+		IExtension<TItem, TTabsExtensionEvents>,
+		IExtensionItems<TItem, ITabsItemExtension<TItem>> {
 	/** Глобальный closable с инстанса TTabs. */
 	readonly closable: boolean
 

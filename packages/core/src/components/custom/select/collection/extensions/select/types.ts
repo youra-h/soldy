@@ -15,7 +15,9 @@ import type { ISelectItemExtension } from './item'
  * синхронизирует `value` владельца с выбором в коллекции.
  */
 export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, ISelectItemExtension<TItem>> {
+	extends
+		IExtension<TItem, TSelectExtensionEvents>,
+		IExtensionItems<TItem, ISelectItemExtension<TItem>> {
 	/** `id` элемента с `role="listbox"`. */
 	readonly listId: string
 	/** `id` элемента с `role="option"`. */

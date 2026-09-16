@@ -3,6 +3,7 @@ import type {
 	IExtension,
 	IExtensionItems,
 } from '../../../../../base/collection'
+import type { TNoEvents } from '@soldy/core'
 import type { IAccordionItem } from '../../../item/types'
 import type { IAccordionContentItemExtension } from './item'
 
@@ -14,7 +15,9 @@ import type { IAccordionContentItemExtension } from './item'
  * компонента, а значит и своего набора, у неё нет.
  */
 export interface IAccordionContentExtension<TItem extends IAccordionItem = IAccordionItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, IAccordionContentItemExtension<TItem>> {
+	extends
+		IExtension<TItem, TAccordionContentExtensionEvents>,
+		IExtensionItems<TItem, IAccordionContentItemExtension<TItem>> {
 	/** `id` элемента-заголовка. */
 	headerId(item: TItem): string
 	/** `id` раскрывающейся панели. */
@@ -24,12 +27,5 @@ export interface IAccordionContentExtension<TItem extends IAccordionItem = IAcco
 export type IAccordionContentExtensionOptions<TItem extends IAccordionItem = IAccordionItem> =
 	IBaseOwnerItemExtensionOptions<TItem, IAccordionContentItemExtension<TItem>>
 
-/**
- * Событий у расширения нет.
- *
- * Пустой объект, а не `Record<string, never>`: у второго есть индексная
- * сигнатура, и «событий нет» читается проверкой `relay` как «любое имя
- * подойдёт». Пустая карта не пропускает ни одного.
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type TAccordionContentExtensionEvents = {}
+/** Событий у расширения нет — см. `TNoEvents`. */
+export type TAccordionContentExtensionEvents = TNoEvents
