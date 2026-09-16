@@ -55,9 +55,24 @@ export abstract class TListNavigationPlugin<
 
 	/**
 	 * Эмит собственных событий навигации — без приведения `this.events` к
-	 * конкретной карте (см. `TEventSink` в `@soldy/core`). Перекрывает сток
-	 * базы: карта наследника включает `TListNavigationPluginEvents`, поэтому
-	 * эмит `change:highlight` звучит на любом `TEvents`.
+	 * конкретной карте (см. `TEventSink` в `@soldy/core`).
+	 *
+	 * Перекрывает сток базы, потому что у `TBasePlugin._sink` карта
+	 * `TPluginEvents`, а `change:highlight` объявлен здесь: через базовый сток
+	 * это имя не пройдёт. Свой сток заводит каждый уровень иерархии, который
+	 * добавил событие; `TListKeyboardPlugin` и `TSelectKeyboardPlugin` к механике
+	 * навигации ничего не добавляют и пользуются этим.
+	 *
+	 * Дженерик карту не заменяет. На `TEventSink<TEvents>` эмит упирается в
+	 * `Parameters<TEvents['change:highlight']>` — тип, который на
+	 * непроинстанцированном дженерике не разрешается. Вынести карту отдельным
+	 * параметром базы тоже не выход: ошибка переезжает в базу, где этот параметр
+	 * снова дженерик. Сток обязан назвать карту точно — тем он и отличается от
+	 * `this.events`.
+	 *
+	 * Расширять карту базы безопасно: наследник не может сузить обработчик
+	 * (`TEvents extends TListNavigationPluginEvents` сверяется контравариантно по
+	 * аргументам), поэтому эмит базы через расширенный сток звучит.
 	 */
 	protected override get _sink(): TEventSink<TListNavigationPluginEvents> {
 		return this.events
