@@ -17,6 +17,12 @@ import type {
  *
  * Видимость (rendered/visible/present, show/hide) и всё остальное, связанное
  * с DOM, живёт в TComponentView.
+ *
+ * Констрейнт `TEvents` — закрытая карта `TComponentEvents`, а не открытый
+ * `TAnyEvents`, как у `IComponent`. Где тип инстанса выводится из конструктора
+ * (`ctor` дескриптора, `InstanceType<typeof …>`), TS ставит на место дженерика
+ * констрейнт, а не дефолт, и открытый констрейнт вернул бы в карту инстанса
+ * индексную сигнатуру. Наследники держат тот же приём: констрейнт равен дефолту.
  */
 export default class TComponent<
 	TProps extends IComponentProps = IComponentProps,
@@ -37,9 +43,9 @@ export default class TComponent<
 		this.events = new TEvented<TEvents>()
 	}
 
-	static create<T extends TComponent>(
+	static create<T extends TComponent<IComponentProps, any>>(
 		this: new (...args: any[]) => T,
-		props?: Partial<T extends TComponent<infer P> ? P : IComponentProps>,
+		props?: Partial<T extends TComponent<infer P, any> ? P : IComponentProps>,
 		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : TComponentStates>,
 	): T {
 		return new this(props ?? {}, options ?? {})

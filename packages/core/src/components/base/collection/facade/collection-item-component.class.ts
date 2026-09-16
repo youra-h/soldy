@@ -9,6 +9,9 @@ import type { IExtension, TExtractItemAdapters } from './../engine'
  * Похож на обычный `TComponent`, но внутри держит `TItemContext` (item-адаптеры)
  * и релеит события адаптеров в собственный `events`. Благодаря этому дескриптор
  * item-фасада собирается обычным `defineComponent` — без `defineCollection`.
+ *
+ * Констрейнт `TEvents` — закрытая `TComponentEvents` по той же причине, что у
+ * `TComponent`: инстанс, выведенный из конструктора, получает констрейнт.
  */
 export abstract class TCollectionItemComponent<
 	TItem extends object,

@@ -1,5 +1,6 @@
 import type { IEntity } from '../entity'
 import { TEvented } from '../../../common'
+import type { TAnyEvents } from '../../../common'
 
 /**
  * События невизуального компонента.
@@ -7,8 +8,27 @@ import { TEvented } from '../../../common'
  * Видимость (show/hide, change:visible/rendered/present) живёт в TComponentView:
  * TComponent — база для всего, включая то, что не рендерится (TDragAndDrop,
  * фасады коллекций).
+ *
+ * Карта закрыта: индексной сигнатуры нет, и имя, которого в ней нет, не
+ * компилируется ни в `on`, ни в `emit`, ни в правиле `relay`. Открытый вид —
+ * `TAnyEvents` — только констрейнт интерфейсов (`IComponent`), а не карта. У
+ * класса иерархии `TComponent` констрейнт — его собственная закрытая карта (см.
+ * `TComponent`). Карты компонентов и фасадов начинаются с этой и закрыты тоже.
+ *
+ * **`bundle:create` объявлен здесь, хотя плагины — слой над ядром.** Его шлёт
+ * setup (`createBundle`) на шину инстанса: это единственный канал, видимый обеим
+ * поверхностям управления — подписке с инстанса (`ctrl.events.on`) и пропу
+ * событий адаптера (`@bundle:create`, `onBundleCreate`), который выводится из
+ * этой же карты. Без имени в карте закрытая карта отвергла бы обе подписки.
+ *
+ * **Тип бандла ядро не знает** и не объявляет: `@soldy/plugins` оно не
+ * импортирует. Поэтому аргумент `unknown`, а подписчик сужает его сам
+ * (`bundle instanceof TPluginBundle`).
  */
-export type TComponentEvents = Record<string, (...args: any) => any>
+export type TComponentEvents = {
+	/** Плагины компонента созданы при монтировании; аргумент — их bundle. */
+	'bundle:create': (bundle: unknown) => void
+}
 
 // Корень иерархии пропсов: пустой намеренно — от него наследуются типы
 // пропсов всех компонентов, и собственных полей у него быть не должно.
@@ -49,7 +69,7 @@ export type TComponentStates = Record<string, unknown>
 
 export interface IComponent<
 	TProps extends IComponentProps = IComponentProps,
-	TEvents extends Record<string, (...args: any) => any> = TComponentEvents,
+	TEvents extends TAnyEvents = TComponentEvents,
 	TStates extends TComponentStates = TComponentStates,
 > extends IEntity<TProps> {
 	readonly events: TEvented<TEvents>

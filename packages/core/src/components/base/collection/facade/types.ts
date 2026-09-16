@@ -1,4 +1,4 @@
-import type { IComponentOptions } from '../../component'
+import type { IComponentOptions, TComponentEvents } from '../../component'
 import type {
 	TCollectionEngine,
 	IExtension,
@@ -20,15 +20,17 @@ import type {
  * событие драйвера или движка доезжает до фасада само, и переименование ломает
  * компиляцию, а не оставляет мёртвое имя.
  *
- * `TComponentEvents` в карту не входит: это `Record<string, …>`, и любая
- * карта, пересёкшая его, снова принимает любое имя с любым обработчиком. Он
- * остаётся только констрейнтом дженерика — открыт в констрейнте, точен в
- * инстанцировании.
+ * Начинается с `TComponentEvents`, как карта любого компонента: констрейнт
+ * `TEvents` у базы (`TComponent`) — закрытая корневая карта, и карта фасада
+ * обязана её содержать. Там же объявлено событие шины фасада
+ * (`bundle:create`). Индекса у корневой карты нет, поэтому пересечение с ней
+ * имён не открывает.
  *
  * Набор расширений в аргументе движка — `any`: иначе карта тянула бы за собой
  * `TExtensions`, а движок инвариантен по нему через `engine:create`.
  */
-export type TCollectionComponentEvents<TItem extends object> = TPlainEvents<TItem> &
+export type TCollectionComponentEvents<TItem extends object> = TComponentEvents &
+	TPlainEvents<TItem> &
 	TCollectionEngineEvents<TCollectionEngine<TItem, any>>
 
 /** События фасада коллекции с расширением `batch`: набор базы плюс карта `batch`. */
@@ -39,8 +41,14 @@ export type TBatchCollectionFacadeEvents<TItem extends object> = TCollectionComp
 export type TSelectionCollectionFacadeEvents<TItem extends object> =
 	TBatchCollectionFacadeEvents<TItem> & TSelectionEvents<TItem>
 
-/** События фасада элемента с расширением `order` — карта его адаптера. */
-export type TOrderItemFacadeEvents = TOrderItemEventsExtension
+/**
+ * События фасада элемента с расширением `order` — карта его адаптера.
+ *
+ * Начинается с `TComponentEvents`: констрейнт `TEvents` у базы
+ * (`TCollectionItemComponent`) — закрытая корневая карта. Фасады элементов
+ * ниже получают её через эту карту.
+ */
+export type TOrderItemFacadeEvents = TComponentEvents & TOrderItemEventsExtension
 
 /** События фасада элемента, который можно выбрать: порядок плюс выбор. */
 export type TSelectionItemFacadeEvents = TOrderItemFacadeEvents & TSelectionItemEventsExtension

@@ -24,6 +24,7 @@ import type {
 	TOrderItemFacadeEvents,
 } from '../../../base/collection'
 import type { TTabsExtensionEvents, TTabsItemEventsExtension } from './extensions'
+import type { TComponentEvents } from '../../../base/component'
 
 export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
 	factory: TFactoryExtension<TItem>
@@ -93,6 +94,7 @@ export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
  *
  * База у панели — `TCollectionItemComponent`, и порядка у неё нет: панель не
  * член коллекции, она держит контекст **связанного** таба. Поэтому в карте
- * только то, что даёт адаптер активации.
+ * только то, что даёт адаптер активации, — поверх `TComponentEvents`:
+ * констрейнт `TEvents` у базы — закрытая корневая карта.
  */
-export type TTabsContentCollectionFacadeEvents = TActivationItemEventsExtension
+export type TTabsContentCollectionFacadeEvents = TComponentEvents & TActivationItemEventsExtension
