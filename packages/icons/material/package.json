@@ -1,6 +1,24 @@
 {
   "name": "@soldy/icons-material",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Иконки Material: реализация контракта ролей ICON_ROLES",
+  "keywords": [
+    "soldy",
+    "ui",
+    "icons",
+    "material"
+  ],
+  "license": "MIT",
+  "author": "Youra Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/icons/material"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

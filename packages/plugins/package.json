@@ -1,6 +1,24 @@
 {
   "name": "@soldy/plugins",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Плагины поведения в рантайме, ставятся в TPluginBundle: DOM, фокус, клавиатура, оверлей",
+  "keywords": [
+    "soldy",
+    "headless",
+    "ui",
+    "plugins"
+  ],
+  "license": "MIT",
+  "author": "Youra Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/plugins"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

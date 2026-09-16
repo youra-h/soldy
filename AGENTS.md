@@ -80,7 +80,26 @@ notifications`. Фильтра по тексту в стороже нет и б�
 а не он.
 
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 4, Vite 8.
-- npm workspaces: `packages/*` and `packages/ui/*`.
+- npm workspaces: patterns are in `workspaces` of the root `package.json`.
+
+## Версии пакетов
+
+Библиотечные пакеты `@soldy/*` — ядро, `accessor`, `setup`, `plugins`,
+адаптеры `ui-*`, тема и иконки — идут **одной версией**, и это версия корневого
+`package.json`. Адаптеры жёстко привязаны к контракту `core` и `setup`:
+отдельные версии пакетов дали бы только таблицу совместимости.
+
+- До `1.0` ломающее изменение поднимает minor: `0.1.0` → `0.2.0`.
+- Версию поднимает владелец отдельным коммитом при выпуске — в корне и во всех
+  библиотечных манифестах разом. PR задачи версию не трогает.
+- Стенд (`@soldy/playground-*`) — инструмент, а не библиотека: в общую версию
+  не входит и метаданных пакета не несёт.
+
+Сторожит `packages/setup/__tests__/workspace-manifests.spec.ts`. У каждого
+пакета из `workspaces` корневого манифеста, кроме стенда: непустой
+`description`, `license` — `MIT`, `repository.directory` совпадает с путём
+пакета, `version` — с версией корня. Новый пакет попадает под проверку сам,
+новый стенд вносится в список исключений спека явно.
 
 ## Никаких костылей (критично)
 
@@ -127,7 +146,7 @@ notifications`. Фильтра по тексту в стороже нет и б�
 | Package             | Responsibility                                                                                                                |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`).                                                            |
+| `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
 | `packages/setup`    | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`.                                                 |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
