@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
-import { createEngineSelection } from '@soldy/core'
+import { createEngineSelection, isEventSource } from '@soldy/core'
+import { TPluginBundle } from '@soldy/plugins'
 import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
 import { PREVIEW_COMPONENTS } from '../previews'
 import { propSnippet, instanceSnippet } from '../snippet'
@@ -98,12 +99,53 @@ function createInstance(): TInstance {
 	return new Ctor()
 }
 
-/** Куда писать проп: коллекционный — в фасад, остальные — в инстанс. */
+/**
+ * Bundle правой колонки — последний, пришедший событием `bundle:create`.
+ *
+ * Плагины собирает адаптер при монтировании превью, и тому, у кого на руках
+ * только инстанс, их отдаёт одно это событие на шине самого инстанса. Своего
+ * bundle стенд не собирает: набор плагинов — инвариант компонента, а не его
+ * параметр. Перемонтирование колонки (смена пакета иконок меняет `key`)
+ * собирает новый bundle со свежими плагинами — поэтому значение пишется при
+ * каждом его появлении, а не только при смене.
+ */
+let bundle: TPluginBundle | null = null
+
+if (props.control.scope === 'plugin') {
+	const events: unknown = instance.value.events
+
+	if (isEventSource(events)) {
+		events.on('bundle:create', (created: unknown) => {
+			if (!(created instanceof TPluginBundle)) return
+
+			bundle = created
+			write(value.value)
+		})
+	}
+}
+
+/**
+ * Куда писать проп: коллекционный — в фасад, плагинный — в свой плагин под
+ * именем без неймспейса, остальные — в инстанс.
+ */
 function write(next: unknown): void {
+	// Пустая строка означает «проп не задан», а не пустое значение
+	const written = next === '' ? undefined : next
+	const control = props.control
+
+	if (control.scope === 'plugin') {
+		// Плагина может не быть: превью `frame` и слоёв — заглушка на
+		// ComponentView, и в её bundle нет ни якоря, ни доступного имени
+		const plugin = bundle?.get(control.plugin.ctor)
+
+		if (plugin) Reflect.set(plugin, control.plugin.name, written)
+
+		return
+	}
+
 	const target = isCollectionRow ? facade : instance.value
 
-	// Пустая строка означает «проп не задан», а не пустое значение
-	if (target) target[props.control.name] = next === '' ? undefined : next
+	if (target) target[control.name] = written
 }
 
 watch(value, write)

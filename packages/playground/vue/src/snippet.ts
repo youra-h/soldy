@@ -1,4 +1,4 @@
-import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
+import type { TComponentEntry, TPluginPropAddress, TPropControl } from '@soldy/playground-shared'
 
 /**
  * Сниппет для колонки «Component»: значение приходит пропом.
@@ -37,16 +37,22 @@ export function propSnippet(
  * Ветвится по `control.scope`, а не пишет `instance.${prop}` вслепую:
  * коллекционные пропы (`mode`) не существуют на самом компоненте — только на
  * коллекции. `new TAccordion().mode = …` в реальном проекте упал бы или
- * молча ничего не сделал.
+ * молча ничего не сделал. То же с плагинными: `instance.anchor_placement`
+ * нет ни у инстанса, ни у плагина — у `TAnchorPlugin` свойство `placement`.
  */
 export function instanceSnippet(
 	entry: TComponentEntry,
 	control: TPropControl,
 	value: unknown,
 ): string {
-	return control.scope === 'collection'
-		? collectionInstanceSnippet(entry, control.name, value, control.preset)
-		: componentInstanceSnippet(entry, control.name, value, control.preset)
+	switch (control.scope) {
+		case 'component':
+			return componentInstanceSnippet(entry, control.name, value, control.preset)
+		case 'collection':
+			return collectionInstanceSnippet(entry, control.name, value, control.preset)
+		case 'plugin':
+			return pluginInstanceSnippet(entry, control.plugin, value, control.preset)
+	}
 }
 
 function componentInstanceSnippet(
@@ -104,6 +110,47 @@ function collectionInstanceSnippet(
 		'',
 		'<template>',
 		`\t<${entry.label}${presetAttrs(preset)} :engine="engine" />`,
+		'</template>',
+	].join('\n')
+}
+
+/**
+ * Третий способ — для плагинных пропов: плагин из bundle.
+ *
+ * Bundle собирает компонент при монтировании, свойством инстанса до него не
+ * дотянуться — только событием `bundle:create` на шине инстанса. Дальше
+ * `bundle.get(<класс плагина>)` и запись под именем без неймспейса. Ровно так
+ * правую колонку ведёт и сам стенд (`PropRow.vue`).
+ */
+function pluginInstanceSnippet(
+	entry: TComponentEntry,
+	address: TPluginPropAddress,
+	value: unknown,
+	preset?: Record<string, unknown>,
+): string {
+	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
+	const pluginCtor = address.ctor.name
+	const literal = toTemplateValue(value) ?? 'true'
+
+	return [
+		'<script setup lang="ts">',
+		`import { ${entry.label} } from '@soldy/ui-vue'`,
+		`import { ${ctor} } from '@soldy/core'`,
+		`import { TPluginBundle, ${pluginCtor} } from '@soldy/plugins'`,
+		'',
+		`const instance = new ${ctor}()`,
+		'',
+		"instance.events.on('bundle:create', (bundle: unknown) => {",
+		'\tif (!(bundle instanceof TPluginBundle)) return',
+		'',
+		`\tconst plugin = bundle.get(${pluginCtor})`,
+		'',
+		`\tif (plugin) plugin.${address.name} = ${literal}`,
+		'})',
+		'</script>',
+		'',
+		'<template>',
+		`\t<${entry.label}${presetAttrs(preset)} :ctrl="instance" />`,
 		'</template>',
 	].join('\n')
 }
