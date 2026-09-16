@@ -79,11 +79,11 @@ TEntity (uid, getProps, assign, toJSON)
 
 ### Key Classes
 
-- **TComponentAccessor**: Delegates to TDescriptorInspector for name formatting, handles getValue/setValue
+- **TAccessor**: Binds props/events of each unit (`{ instance, props, events }` — the component, its plugins) to that instance, handles getValue/setValue
   - `getProps(includeProtected?)` - Compiled props list
   - `getEvents()` - Compiled events list
   - `getValue(prop)` / `setValue(prop, value)` - Access instance properties
-  - `getExportName(item)` - Format prop/event name for framework (e.g., 'icon:ready' → 'iconReady')
+  - `getEventSource(item)` - Event source of the prop/event instance (`instance.events` or the instance itself); `undefined` without `on`/`off`
 
 - **TDescriptorInspector**: Compiles schema + applies naming strategy
   - Used by Vue adapter to generate props/emits static definitions
@@ -91,14 +91,14 @@ TEntity (uid, getProps, assign, toJSON)
 ### Key Files
 
 - [accessor.interface.ts](packages/accessor/accessor.interface.ts) - IAccessor contract
-- [component-accessor.class.ts](packages/accessor/component-accessor.class.ts) - Runtime reflection
+- [accessor.class.ts](packages/accessor/accessor.class.ts) - Runtime reflection
 - [descriptor-inspector.class.ts](packages/accessor/descriptor-inspector.class.ts) - Schema compilation
-- [contract/types.ts](packages/accessor/contract/types.ts) - ICompiledProp, ICompiledEvent, INamingStrategy
+- [contract/types.ts](packages/accessor/contract/types.ts) - IAccessorUnit, IAccessorProp, IAccessorEvent, INamingStrategy
 
 ### Key Exports
 
 - `IAccessor` - Unified access interface
-- `TComponentAccessor` - Component reflection
+- `TAccessor` - Component reflection
 - `TDescriptorInspector` - Schema formatter
 - `INamingStrategy` - Prop/event naming rules (vue: 'iconReady', React: 'icon_ready')
 
@@ -198,6 +198,13 @@ export const ElementContribution = (): IContribution => ({
 `create` эмитится не в `install`, а из `createBundle` и с задержкой на
 микрозадачу: на момент установки подписчиков ещё нет, bundle собирается раньше,
 чем фреймворк привязывает обработчики. См. Layer 5b.
+
+`PLUGIN_EVENTS` задаёт не только рантайм, но и типы дескриптора.
+`TPluginEventsFrom` навешивает namespace на карту плагина без
+`TPluginInternalEvents` — это `TPluginEvents` минус `PLUGIN_EVENTS`, — поэтому
+`action:install` нет ни в пробросе, ни в плагинных событиях `DescriptorAllEvents`.
+Сторожит `packages/setup/__tests__/plugin-events.spec.ts`: типы и `getEvents()`
+дескриптора проверяются там на одних и тех же именах.
 
 ### Plugin Examples
 
@@ -1728,7 +1735,7 @@ setup(props, { emit }) {
      ↓
      - Create instance (TButton)
      - Create bundle (TPluginBundle)
-     - Create accessor (TComponentAccessor)
+     - Create accessor (TAccessor)
      - Register TPluginsBindingExtension
      ↓
   2. useAdapter(adapter, props, emit)
@@ -1863,7 +1870,7 @@ Framework-agnostic dependency injection:
 | Package           | Main Exports                                                                                                                                                             |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | @soldy/core       | TComponent, TButton, TCheckBox, etc., TEvented, TStateUnit                                                                                                               |
-| @soldy/accessor   | TComponentAccessor, TDescriptorInspector, INamingStrategy, IAccessor                                                                                                     |
+| @soldy/accessor   | TAccessor, TDescriptorInspector, INamingStrategy, IAccessor                                                                                                              |
 | @soldy/setup      | createAdapterContext, IAdapterContext, defineComponent, definePlugin, underscorePropNaming, createInspectorFactory, collectEventBindings, resolveDefaultExtensions       |
 | @soldy/plugins    | TPluginBundle, TBasePlugin, TElementPlugin, IPlugin                                                                                                                      |
 | @soldy/ui-vue     | Vue components (Button, CheckBox, etc.) + adapter (useAdapter, useProps, useEmits, VueNaming, TVueElevator) — `src/index.ts` теперь экспортирует `./adapter`, раньше нет |
@@ -1894,7 +1901,7 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 
 - Core: `TListBox extends TValueControl` (+ `view`), `TListBoxItem extends TValueControl` (`text` + свой трёхзначный `wordWrap`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Раскладка (`maxRows`, `wordWrap`, `autoWidth`, `scrollBehavior`) — не у компонента, а у `TListLayoutPlugin`, подключённого с `flatProps`: пропы выходят наружу без префикса и потому неотличимы от собственных. Так их получают и ListBox, и Select — без общего предка.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (проброс `disabled`/`size`/`variant`/`view`) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (только `view`) ← `TBaseItemExtension`. Разрешение `wordWrap` из адаптера ушло: `data-word-wrap` элементам ставит плагин.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (проброс `size`/`variant`/`view`; `disabled` элемента — своё или списка) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (только `view`) ← `TBaseItemExtension`. Разрешение `wordWrap` из адаптера ушло: `data-word-wrap` элементам ставит плагин.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListLayoutPlugin`, `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у соседнего layout — композиция, не наследование).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListLayout/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + Layout + Keyboard + Scroll + Drag.

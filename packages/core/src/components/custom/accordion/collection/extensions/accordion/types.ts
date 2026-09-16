@@ -14,7 +14,9 @@ import type { IAccordionItem } from '../../../item/types'
  * Используется как тип TParent в TAccordionItemExtension для типизированного доступа к _parent.
  */
 export interface IAccordionExtension<TItem extends IAccordionItem = IAccordionItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, IAccordionItemExtension<TItem>> {
+	extends
+		IExtension<TItem, TAccordionExtensionEvents>,
+		IExtensionItems<TItem, IAccordionItemExtension<TItem>> {
 	/** Внешний вид с инстанса TAccordion. */
 	readonly view: TAccordionView
 }

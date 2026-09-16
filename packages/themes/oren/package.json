@@ -1,6 +1,24 @@
 {
   "name": "@soldy/theme-oren",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Тема oren: CSS под BEM-классы и data-* компонентов soldy, светлая и тёмная схемы",
+  "keywords": [
+    "soldy",
+    "ui",
+    "theme",
+    "css"
+  ],
+  "license": "MIT",
+  "author": "Youra Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/themes/oren"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
   "private": true,
   "type": "module",
   "main": "./dist/index.css",

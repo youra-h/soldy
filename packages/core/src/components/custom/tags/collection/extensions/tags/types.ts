@@ -14,7 +14,9 @@ import type { ITagsItem } from '../../../item/types'
  * Используется как тип `TParent` в `TTagsItemExtension` для доступа к `_parent`.
  */
 export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
-	extends IExtension<TItem>, IExtensionItems<TItem, ITagsItemExtension<TItem>> {
+	extends
+		IExtension<TItem, TTagsExtensionEvents>,
+		IExtensionItems<TItem, ITagsItemExtension<TItem>> {
 	/** Глобальный closable с инстанса TTags. */
 	readonly closable: boolean
 

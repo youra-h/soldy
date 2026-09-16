@@ -80,7 +80,26 @@ notifications`. Фильтра по тексту в стороже нет и б�
 а не он.
 
 - Node `^20.19.0 || >=22.12.0`, TypeScript 6 in **strict** mode, ESLint 10, Vitest 4, Vite 8.
-- npm workspaces: `packages/*` and `packages/ui/*`.
+- npm workspaces: patterns are in `workspaces` of the root `package.json`.
+
+## Версии пакетов
+
+Библиотечные пакеты `@soldy/*` — ядро, `accessor`, `setup`, `plugins`,
+адаптеры `ui-*`, тема и иконки — идут **одной версией**, и это версия корневого
+`package.json`. Адаптеры жёстко привязаны к контракту `core` и `setup`:
+отдельные версии пакетов дали бы только таблицу совместимости.
+
+- До `1.0` ломающее изменение поднимает minor: `0.1.0` → `0.2.0`.
+- Версию поднимает владелец отдельным коммитом при выпуске — в корне и во всех
+  библиотечных манифестах разом. PR задачи версию не трогает.
+- Стенд (`@soldy/playground-*`) — инструмент, а не библиотека: в общую версию
+  не входит и метаданных пакета не несёт.
+
+Сторожит `packages/setup/__tests__/workspace-manifests.spec.ts`. У каждого
+пакета из `workspaces` корневого манифеста, кроме стенда: непустой
+`description`, `license` — `MIT`, `repository.directory` совпадает с путём
+пакета, `version` — с версией корня. Новый пакет попадает под проверку сам,
+новый стенд вносится в список исключений спека явно.
 
 ## Никаких костылей (критично)
 
@@ -127,7 +146,7 @@ notifications`. Фильтра по тексту в стороже нет и б�
 | Package             | Responsibility                                                                                                                |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TComponentAccessor`, `TDescriptorInspector`).                                                            |
+| `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
 | `packages/setup`    | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`.                                                 |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
@@ -519,10 +538,18 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
   `core/__tests__/component-events-closed.spec.ts` — и у наследника
   `TComponentView`, и у инстанса, выведенного из конструктора `TComponent` и
   `TCollectionItemComponent`.
-- **«Событий нет» — это `{}`, а не `Record<string, never>`.** У второго есть
-  индексная сигнатура, и для проверки это «любое имя». На
+- **«Событий нет» — это `TNoEvents`, а не `Record<string, never>`.** У второго
+  есть индексная сигнатура, и для проверки это «любое имя». На
   `TSelectExtensionEvents` так и вышло: карта обещала отсутствие событий, а
-  расширение релеило в неё `change:indicator`.
+  расширение релеило в неё `change:indicator`. `TNoEvents`
+  (`common/event/types.ts`) — `Record<never, …>`: `keyof` пуст, констрейнт карты
+  выполнен, и `eslint-disable`, без которого не обходится `{}`, не нужен.
+- **Интерфейс расширения передаёт свою карту вторым аргументом `IExtension`.**
+  Item-адаптер берёт родителя через интерфейс
+  (`TParent extends ITabsExtension<TItem>`), и без второго аргумента
+  `parent.events` — дефолт `IExtension`, карта с индексной сигнатурой: `relay`
+  из неё принимает любое имя, а событие, переименованное в карте расширения,
+  компилируется молча.
 - **Два `relayAll` не должны пересекаться по именам** — цель получит два эмита
   на один факт. Пересечение значит, что событие идёт до цели двумя путями, и
   лечится у источника. Так снят релей `change:items` из `batch`: подписчиков у
@@ -535,7 +562,10 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
 
 Сторожит `core/__tests__/collection-relay-all.spec.ts`: событие доходит до
 фасада без упоминания в списке имён, `change:items` приходит один раз, а имя
-вне карт источников не компилируется.
+вне карт источников не компилируется. Карты расширений сторожит
+`core/__tests__/extension-events-map.spec.ts`: у каждого `I*Extension` в
+`extends` два аргумента `IExtension`, а подписка и `relay` имени вне карты — через
+тип интерфейса и из `TNoEvents` — не компилируются.
 
 ### Расположение фасадов
 
@@ -841,6 +871,30 @@ get panelAria() { return { role: 'tabpanel', id: this._panelId, 'aria-labelledby
 adapter-контекстов (собственного и коллекционного) сливаются в один объект, и
 одноимённые затирают друг друга. У панели уже есть унаследованный `aria` — она
 и вынудила префикс.
+
+### `disabled` элемента: своё или владельца
+
+Элемент выключен, если выключен сам **или** выключен владелец — как
+`<fieldset disabled>`. Своё значение лежит в `item.states.disabled.rawValue`:
+его пишут фабрика, разметка и `batch.patch` через сеттер. Итог отдаёт
+резольвер, поэтому `attrs`/`aria`/`data-disabled`, плагины и клавиатура читают
+`item.disabled` как раньше. Правило одно на все коллекции —
+`bindDisabledToOwner` и `notifyOwnerDisabled` в `base/control/owner-disabled.ts`.
+
+**Расширения `item.disabled` не пишут.** Раньше они писали туда значение
+владельца, и список, собранный данными (`items`), терял собственное
+«выключено» элемента: в разметке его случайно возвращал биндинг после
+регистрации, а при сборке данными — нет.
+
+Отсюда контракт `TStateUnit`: `change` сообщает о разрешённом значении, а не о
+`rawValue`, — приходит, только когда сменился итог, и несёт его же. Сеттер
+`TControl.disabled` сравнивает со своим значением: своё `true` в выключенном
+списке итога не меняет, но обязано записаться, иначе пропадёт при включении
+списка.
+
+Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: пять
+`createEngine*` — свой `disabled` из `items`, переключения владельца,
+`batch.patch` и число `change:disabled` у элементов.
 
 ### ARIA: что знает элемент, а что коллекция
 
@@ -1281,6 +1335,10 @@ TPluginBundle`). В список событий дескриптора имя в
 `create` объявлен в слое плагинов (`PLUGIN_EVENTS` в
 `packages/plugins/src/base/events.ts`) и подмешивается в contribution каждого
 плагина **явно**. Не добавляйте его автоматически внутри `definePlugin`.
+Этот же список задаёт и рантайм-проброс, и типы дескриптора: остальные события
+базы (`TPluginInternalEvents` — `install` и `destroy`) `TPluginEventsFrom`
+снимает с карты плагина, второго списка имён в setup нет. Сторожит
+`packages/setup/__tests__/plugin-events.spec.ts`.
 
 ## Слоты — третья категория контракта
 

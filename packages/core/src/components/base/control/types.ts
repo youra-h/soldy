@@ -16,6 +16,21 @@ export type TControlStates = TStylableStates & {
 	focused: IStateUnit<boolean>
 }
 
+/**
+ * Элемент, чьё «выключено» сочетается с владельцем (`bindDisabledToOwner`).
+ *
+ * Правилу нужна единица состояния, а не свойство: своё значение лежит в её
+ * `rawValue`, итог отдаёт резольвер.
+ */
+export interface IDisabledItem {
+	readonly states: Pick<TControlStates, 'disabled'>
+}
+
+/** Владелец, чьё «выключено» распространяется на его элементы. */
+export interface IDisabledOwner {
+	readonly disabled: boolean
+}
+
 export interface IControl<
 	TProps extends IControlProps = IControlProps,
 	TEvents extends Record<string, (...args: any) => any> = TControlEvents,

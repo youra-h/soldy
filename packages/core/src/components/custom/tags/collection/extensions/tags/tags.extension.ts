@@ -17,6 +17,7 @@ import type {
 	ITagsExtension,
 } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -24,8 +25,10 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *
  * Четыре обязанности:
  *
- * 1. **Проброс** `disabled`/`size`/`variant` с владельца на теги — как у
- *    `TListBoxExtension`/`TTabsExtension`.
+ * 1. **Проброс** `size`/`variant` с владельца на теги — как у
+ *    `TListBoxExtension`/`TTabsExtension`. `disabled` не пробрасывается, а
+ *    сочетается: тег выключен, если выключен сам или выключен набор
+ *    (`bindDisabledToOwner`).
  * 2. **Закрытие** — `closeTag`, копия `closeTab` у Tabs: закрывает только
  *    `closable` тег и эмитит `item:close` перед удалением.
  * 3. **Роль набора**, когда у коллекции включён выбор. Tags — не список
@@ -77,11 +80,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
+		// Итог `disabled` тегу отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			ctx.driver.valueOf().forEach((item) => {
@@ -113,9 +113,12 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		}
 	}
 
-	/** Свойства владельца, которые тег получает от него, а не задаёт сам. */
+	/**
+	 * Свойства владельца, которые тег получает от него, а не задаёт сам, —
+	 * кроме `disabled`: его тег сочетает со своим.
+	 */
 	private _applyOwner(item: TItem): void {
-		item.disabled = this._owner.disabled
+		bindDisabledToOwner(item, this._owner)
 		item.size = this._owner.size
 		item.variant = this._owner.variant
 	}

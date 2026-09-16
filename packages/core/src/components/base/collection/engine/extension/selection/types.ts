@@ -1,5 +1,4 @@
 import type { IExtension, IExtensionItems } from '../types'
-import type { TEvented } from '@soldy/core'
 import type { ISelectionItemExtension } from './item/types'
 
 export type TSelectionMode = 'none' | 'single' | 'multiple'
@@ -20,9 +19,6 @@ export interface ISelectionExtension<TItem extends object = any>
 	extends
 		IExtension<TItem, TSelectionEvents<TItem>>,
 		IExtensionItems<TItem, ISelectionItemExtension<TItem>> {
-	/** События расширения: change:selection, change:mode. */
-	readonly events: TEvented<TSelectionEvents<TItem>>
-
 	/** Режим выделения: none, single, multiple. */
 	mode: TSelectionMode
 

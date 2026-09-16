@@ -10,6 +10,21 @@
 export type TAnyEvents = Record<string, (...args: any) => any>
 
 /**
+ * Карта событий «событий нет».
+ *
+ * `keyof` у неё пуст, поэтому ни `on`, ни `relay` не примут ни одного имени, а
+ * констрейнт карты событий (`TAnyEvents`) она удовлетворяет. Та же идиома
+ * «пусто», что у `TCollectionEngine` без расширений: дефолт `TExtensions` —
+ * `Record<never, IExtension<T>>`.
+ *
+ * Не `Record<string, never>`: у него индексная сигнатура, `keyof` — `string`, и
+ * для проверки это «любое имя». Не `{}`: тип тот же, но пустой литерал требует
+ * `eslint-disable` правила `@typescript-eslint/no-empty-object-type` в каждом
+ * месте, где карта пуста.
+ */
+export type TNoEvents = Record<never, (...args: any) => any>
+
+/**
  * Вид карты событий «только эмит».
  *
  * Класс с дженериком `TEvents extends TOwn` не может эмитить своё **собственное**

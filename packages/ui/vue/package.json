@@ -1,6 +1,25 @@
 {
   "name": "@soldy/ui-vue",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Адаптер Vue: компоненты на headless-моделях ядра",
+  "keywords": [
+    "soldy",
+    "headless",
+    "ui",
+    "components",
+    "vue"
+  ],
+  "license": "MIT",
+  "author": "Youra Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/ui/vue"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

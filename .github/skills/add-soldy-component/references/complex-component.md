@@ -23,8 +23,9 @@ Select — самый сложный компонент в проекте: в н
     коллекции: `list_aria`, геттеры `tags`/`tags_engine`, метод `clear()`;
   - `extensions/select/select.extension.ts` (`TSelectExtension`) —
     ARIA-связка поле ↔ список ↔ опция (`aria-controls`, `id` опций), проброс
-    `disabled`/`size`/`variant`/`contentFit`/`indicator` на опции, текст
-    выбранного;
+    `size`/`variant`/`contentFit`/`indicator` на опции (`disabled` опции —
+    своё или поля, см. AGENTS.md → «`disabled` элемента: своё или
+    владельца»), текст выбранного;
   - `extensions/tags/tags.extension.ts` (`TSelectTagsExtension`) — инстанс
     `TTags` в режиме `multiple`, синхронизация «выбор → теги» и «закрытие
     тега → снять выбор».

@@ -1,5 +1,4 @@
 import type { IExtension, IExtensionItems } from '../types'
-import type { TEvented } from '@soldy/core'
 import type { IActivationItemExtension } from './item/types'
 
 export type TActivationEvents<TItem> = {
@@ -13,9 +12,6 @@ export interface IActivationExtension<TItem extends object = any>
 	extends
 		IExtension<TItem, TActivationEvents<TItem>>,
 		IExtensionItems<TItem, IActivationItemExtension<TItem>> {
-	/** События расширения: change:activation, item:activated, item:deactivated. */
-	readonly events: TEvented<TActivationEvents<TItem>>
-
 	/** Текущий активный элемент (или undefined, если нет активного). */
 	readonly activeItem: TItem | undefined
 

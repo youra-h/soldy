@@ -1,6 +1,25 @@
 {
   "name": "@soldy/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Headless-модели компонентов без привязки к фреймворку: компоненты, движок коллекций, фасады, расширения",
+  "keywords": [
+    "soldy",
+    "headless",
+    "ui",
+    "components",
+    "framework-agnostic"
+  ],
+  "license": "MIT",
+  "author": "Youra Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

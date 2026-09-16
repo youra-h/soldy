@@ -9,6 +9,13 @@ import type { TEventSink } from '../event/types'
  * Через `resolver` можно задать функцию-преобразователь,
  * которая будет вызываться при чтении `value`.
  * Если резольвер не задан — возвращается хранимое значение как есть.
+ *
+ * `change` сообщает о смене `value` — разрешённого значения, а не хранимого:
+ * подписчик получает то же, что отдаёт геттер, и только когда оно сменилось.
+ * Иначе событие расходилось бы с геттером и приходило без реальной смены. Без
+ * резольвера это одно и то же. С резольвером запись, не сменившая итог,
+ * молчит, хотя `rawValue` обновлён: так своё `disabled = true` у элемента в
+ * выключенном списке не шлёт `change:disabled`.
  */
 export class TStateUnit<
 	TValue,
@@ -28,11 +35,18 @@ export class TStateUnit<
 	 * Установить резольвер — функцию, которая преобразует хранимое значение при чтении.
 	 * Передайте `undefined` чтобы сбросить.
 	 *
+	 * Если с новым резольвером сменилось `value`, эмитит `change` с разрешёнными
+	 * значениями до и после; иначе молчит.
+	 *
 	 * @example
 	 * state.setResolver((current) => current ?? getDefault() ?? false)
 	 */
 	setResolver(resolver: ((value: TValue) => TValue) | undefined): void {
+		const oldValue = this.value
+
 		this._resolver = resolver
+
+		this._emitIfChanged(oldValue)
 	}
 
 	/**
@@ -69,13 +83,27 @@ export class TStateUnit<
 		return this._resolver
 	}
 
+	/**
+	 * Записать своё значение. `change` — только если сменилось `value`, с
+	 * разрешёнными значениями до и после записи.
+	 */
 	set value(value: TValue) {
 		if (this._value === value) return
 
-		const oldValue = this._value
+		const oldValue = this.value
+
 		this._value = value
 
-		const payload: TValuePayload<TValue> = { newValue: value, oldValue }
+		this._emitIfChanged(oldValue)
+	}
+
+	/** Эмитит `change`, если `value` отличается от разрешённого до операции. */
+	private _emitIfChanged(oldValue: TValue): void {
+		const newValue = this.value
+
+		if (newValue === oldValue) return
+
+		const payload: TValuePayload<TValue> = { newValue, oldValue }
 
 		this._sink.emit('change', payload)
 	}
