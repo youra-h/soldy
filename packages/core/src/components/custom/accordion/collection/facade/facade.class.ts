@@ -7,6 +7,7 @@ import type {
 	TAccordionCollection,
 	TAccordionCollectionExtensions,
 	TAccordionCollectionFacadeEngine,
+	TAccordionCollectionFacadeEvents,
 } from '../types'
 import type { IAccordionItem } from '../../item/types'
 import type { IAccordion } from '../../types'
@@ -19,7 +20,8 @@ import type { IAccordion } from '../../types'
  */
 export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 	IAccordionItem,
-	TAccordionCollectionExtensions
+	TAccordionCollectionExtensions,
+	TAccordionCollectionFacadeEvents
 > {
 	constructor(
 		props: TSelectionFacadeProps<IAccordionItem> = {},

@@ -1,6 +1,10 @@
 import { TCollectionComponent } from '../collection-component.class'
-import type { ICollectionComponentOptions, TCollectionFacadeProps } from '../types'
-import type { IComponentProps, TComponentEvents } from '../../../component'
+import type {
+	ICollectionComponentOptions,
+	TBatchCollectionFacadeEvents,
+	TCollectionFacadeProps,
+} from '../types'
+import type { IComponentProps } from '../../../component'
 import type { IExtension, TCollectionEngineItemSource } from '../../engine'
 import type { TBatchExtension, TPlainExtension } from '../../engine'
 
@@ -38,7 +42,7 @@ export abstract class TBatchCollectionFacade<
 		plain: TPlainExtension<any>
 		batch: TBatchExtension<any>
 	} & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TBatchCollectionFacadeEvents<TItem> = TBatchCollectionFacadeEvents<TItem>,
 > extends TCollectionComponent<TItem, TExtensions, TEvents> {
 	constructor(
 		props: Partial<IComponentProps> = {},

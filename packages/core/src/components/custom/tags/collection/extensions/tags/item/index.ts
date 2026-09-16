@@ -1,2 +1,2 @@
-export type { ITagsItemExtension } from './types'
+export type { ITagsItemExtension, TTagsItemEventsExtension } from './types'
 export { TTagsItemExtension } from './item.extension'

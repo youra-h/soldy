@@ -16,8 +16,12 @@ import type {
 	TBatchExtension,
 	TSelectionExtension,
 	TValueSelectionExtension,
+	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { IListBoxItemExtension } from './extensions/list-box/item/types'
+import type {
+	IListBoxItemExtension,
+	TListBoxItemEventsExtension,
+} from './extensions/list-box/item/types'
 import { TListBoxExtension } from './extensions'
 import type { IListBox } from '../types'
 import type { IListBoxItem, IListBoxItemProps } from '../item/types'
@@ -96,3 +100,13 @@ export type TListBoxAdapters<TItem extends IListBoxItem = IListBoxItem> = {
 	order: IOrderItemExtension<TItem>
 	list: IListBoxItemExtension<TItem>
 }
+
+/**
+ * События фасада элемента списка: набор базы плюс то, что фасад релеит сам с
+ * адаптера `list`.
+ *
+ * У самого `TListBoxCollectionFacade` карты нет — сверх базы он не релеит
+ * ничего, и дефолт `TSelectionCollectionFacade` уже точен.
+ */
+export type TListBoxItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	Pick<TListBoxItemEventsExtension, 'change:view' | 'change:indicator'>

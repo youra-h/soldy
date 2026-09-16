@@ -1,8 +1,8 @@
 import { TComponent } from '../../component'
-import type { IComponentProps, TComponentEvents } from '../../component'
+import type { IComponentProps } from '../../component'
 import { TCollectionEngine } from './../engine'
 import type { IExtension, TPlainExtension } from './../engine'
-import type { ICollectionComponentOptions } from './types'
+import type { ICollectionComponentOptions, TCollectionComponentEvents } from './types'
 
 /**
  * Фасад владельца коллекции.
@@ -23,7 +23,7 @@ import type { ICollectionComponentOptions } from './types'
 export abstract class TCollectionComponent<
 	TItem extends object,
 	TExtensions extends { plain: TPlainExtension<any> } & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TCollectionComponentEvents<TItem> = TCollectionComponentEvents<TItem>,
 > extends TComponent<IComponentProps, TEvents> {
 	public readonly engine: TCollectionEngine<TItem, TExtensions>
 

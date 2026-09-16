@@ -1,6 +1,10 @@
 import { TOrderItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
-import type { ITabsCollectionItemProps, TTabsCollectionExtensions } from '../../collection/types'
+import type {
+	ITabsCollectionItemProps,
+	TTabsCollectionExtensions,
+	TTabsItemCollectionFacadeEvents,
+} from '../../collection/types'
 import type { ITabsItem } from '../types'
 
 /**
@@ -12,7 +16,8 @@ import type { ITabsItem } from '../types'
  */
 export class TTabsItemCollectionFacade extends TOrderItemFacade<
 	ITabsItem,
-	TTabsCollectionExtensions
+	TTabsCollectionExtensions,
+	TTabsItemCollectionFacadeEvents
 > {
 	/**
 	 * Вне коллекции таб не активен — то же, что отдаёт геттер без контекста.

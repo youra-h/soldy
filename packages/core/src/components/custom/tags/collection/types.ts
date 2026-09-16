@@ -16,8 +16,9 @@ import type {
 	TBatchExtension,
 	TSelectionExtension,
 	TValueSelectionExtension,
+	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { ITagsItemExtension } from './extensions/tags/item/types'
+import type { ITagsItemExtension, TTagsItemEventsExtension } from './extensions/tags/item/types'
 import { TTagsExtension } from './extensions'
 import type { ITags } from '../types'
 import type { ITagsItem, ITagsItemProps } from '../item/types'
@@ -96,3 +97,13 @@ export type TTagsAdapters<TItem extends ITagsItem = ITagsItem> = {
 	order: IOrderItemExtension<TItem>
 	tags: ITagsItemExtension<TItem>
 }
+
+/**
+ * События фасада элемента Tags: набор базы плюс то, что фасад релеит сам с
+ * адаптера `tags`.
+ *
+ * У самого `TTagsCollectionFacade` карты нет — сверх базы он не релеит ничего,
+ * и дефолт `TSelectionCollectionFacade` уже точен.
+ */
+export type TTagsItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	Pick<TTagsItemEventsExtension, 'change:closable' | 'change:view'>

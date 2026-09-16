@@ -9,11 +9,17 @@ import type { IExtension, TExtractItemAdapters } from './../engine'
  * Похож на обычный `TComponent`, но внутри держит `TItemContext` (item-адаптеры)
  * и релеит события адаптеров в собственный `events`. Благодаря этому дескриптор
  * item-фасада собирается обычным `defineComponent` — без `defineCollection`.
+ *
+ * У `TEvents` нет умолчания, и это намеренно: своих релеев у базы нет, а
+ * открытый `Record<string, …>` по умолчанию выключал бы сверку `relay` у
+ * каждого наследника, который карту не передал. Все три потребителя
+ * (`TOrderItemFacade`, `TSelectionItemFacade` через него и
+ * `TTabsContentCollectionFacade`) передают свою.
  */
 export abstract class TCollectionItemComponent<
 	TItem extends object,
 	TExtensions extends Record<string, IExtension<TItem>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TComponentEvents,
 > extends TComponent<IComponentProps, TEvents> {
 	protected _context?: TItemContext<TItem, TExtensions>
 

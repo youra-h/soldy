@@ -2,7 +2,12 @@ import { TBatchCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
 import { TabsFactory, TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
-import type { TTabsCollection, TTabsCollectionExtensions, TTabsCollectionFacadeEngine } from '../types'
+import type {
+	TTabsCollection,
+	TTabsCollectionExtensions,
+	TTabsCollectionFacadeEngine,
+	TTabsCollectionFacadeEvents,
+} from '../types'
 import type { ITabsItem } from '../../item/types'
 import type { ITabs } from '../../types'
 
@@ -16,7 +21,8 @@ import type { ITabs } from '../../types'
  */
 export class TTabsCollectionFacade extends TBatchCollectionFacade<
 	ITabsItem,
-	TTabsCollectionExtensions
+	TTabsCollectionExtensions,
+	TTabsCollectionFacadeEvents
 > {
 	constructor(
 		props: TCollectionFacadeProps<ITabsItem> = {},

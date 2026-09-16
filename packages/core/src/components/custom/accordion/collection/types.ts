@@ -13,8 +13,11 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
+	TSelectionCollectionFacadeEvents,
+	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
 import { TAccordionExtension, TAccordionContentExtension } from './extensions'
+import type { TAccordionExtensionEvents, TAccordionItemEventsExtension } from './extensions'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
 import type { IAccordionItemProps } from '../item/types'
@@ -73,3 +76,14 @@ export interface IAccordionCollectionProps<TItemProps = IAccordionItemProps, TIt
  * Объединяет selection (selected) + потенциальные item-расширения.
  */
 export interface IAccordionCollectionItemProps extends ISelectionCollectionItemProps {}
+
+/**
+ * События фасада коллекции Accordion: набор `selection`-базы плюс `change:view`
+ * — единственное, что фасад релеит сам.
+ */
+export type TAccordionCollectionFacadeEvents = TSelectionCollectionFacadeEvents<IAccordionItem> &
+	TAccordionExtensionEvents
+
+/** События фасада элемента Accordion: набор базы плюс `change:view` с адаптера. */
+export type TAccordionItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	Pick<TAccordionItemEventsExtension, 'change:view'>

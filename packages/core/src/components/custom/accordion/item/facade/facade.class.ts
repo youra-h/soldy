@@ -1,7 +1,10 @@
 import { TSelectionItemFacade } from '../../../../base/collection'
 import type { TItemContext } from '../../../../base/collection'
 import type { TAriaAttributes } from '../../../../../common'
-import type { TAccordionCollectionExtensions } from '../../collection/types'
+import type {
+	TAccordionCollectionExtensions,
+	TAccordionItemCollectionFacadeEvents,
+} from '../../collection/types'
 import type { IAccordionItem } from '../types'
 import type { TAccordionView } from '../../types'
 
@@ -13,7 +16,8 @@ import type { TAccordionView } from '../../types'
  */
 export class TAccordionItemCollectionFacade extends TSelectionItemFacade<
 	IAccordionItem,
-	TAccordionCollectionExtensions
+	TAccordionCollectionExtensions,
+	TAccordionItemCollectionFacadeEvents
 > {
 	override setContext(
 		context: TItemContext<IAccordionItem, TAccordionCollectionExtensions>,

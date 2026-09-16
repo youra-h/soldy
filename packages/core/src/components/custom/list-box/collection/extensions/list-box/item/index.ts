@@ -1,2 +1,2 @@
-export type { IListBoxItemExtension } from './types'
+export type { IListBoxItemExtension, TListBoxItemEventsExtension } from './types'
 export { TListBoxItemExtension } from './item.extension'

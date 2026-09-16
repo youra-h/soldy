@@ -12,8 +12,13 @@ import type {
 	ICollectionProps,
 	IBatchCollectionProps,
 	IActivationCollectionItemProps,
+	TActivationEvents,
+	TActivationItemEventsExtension,
+	TBatchCollectionFacadeEvents,
+	TOrderItemFacadeEvents,
 } from '../../../base/collection'
 import { TTabsExtension, TTabsContentExtension } from './extensions'
+import type { TTabsExtensionEvents, TTabsItemEventsExtension } from './extensions'
 import type { ITabs } from '../types'
 import type { ITabsItem } from '../item/types'
 import type { ITabsItemProps } from '../item/types'
@@ -70,3 +75,35 @@ export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabs
  * Объединяет activation (active) + потенциальные item-расширения.
  */
 export interface ITabsCollectionItemProps extends IActivationCollectionItemProps {}
+
+/**
+ * События фасада коллекции табов — карта цели его релеев.
+ *
+ * Набор `batch`-базы плюс то, что фасад релеит сам: активацию с расширения
+ * `activation` и закрытие с `tabs`. Карта закрыта именно здесь, а не оставлена
+ * `Record<string, …>` у базы: с открытой картой `relay` не сверял ни имя, ни
+ * обработчик. Имена и аргументы взяты `Pick`-ом с карт источников.
+ */
+export type TTabsCollectionFacadeEvents = TBatchCollectionFacadeEvents<ITabsItem> &
+	Pick<
+		TActivationEvents<ITabsItem>,
+		'change:activation' | 'item:activated' | 'item:deactivated'
+	> &
+	TTabsExtensionEvents
+
+/** События фасада элемента таба: порядок из базы плюс активность и `closable`. */
+export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
+	Pick<TActivationItemEventsExtension, 'change:active'> &
+	Pick<TTabsItemEventsExtension, 'change:closable'>
+
+/**
+ * События фасада панели таба.
+ *
+ * База у панели — `TCollectionItemComponent`, и порядка у неё нет: панель не
+ * член коллекции, она держит контекст **связанного** таба. Поэтому в карте
+ * ровно одно событие.
+ */
+export type TTabsContentCollectionFacadeEvents = Pick<
+	TActivationItemEventsExtension,
+	'change:active'
+>

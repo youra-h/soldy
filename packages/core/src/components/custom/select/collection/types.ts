@@ -18,9 +18,15 @@ import type {
 	TCollectionFacadeOptions,
 	ISelectionItemExtension,
 	IOrderItemExtension,
+	TSelectionCollectionFacadeEvents,
+	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
 import { TSelectExtension, TSelectTagsExtension } from './extensions'
-import type { ISelectItemExtension } from './extensions/select/item/types'
+import type { TSelectTagsExtensionEvents } from './extensions'
+import type {
+	ISelectItemExtension,
+	TSelectItemEventsExtension,
+} from './extensions/select/item/types'
 import type { ISelect } from '../types'
 import type { ISelectItem, ISelectItemProps } from '../item/types'
 
@@ -95,3 +101,14 @@ export type TSelectAdapters = {
 	order: IOrderItemExtension<ISelectItem>
 	select: ISelectItemExtension<ISelectItem>
 }
+
+/**
+ * События фасада коллекции Select: набор `selection`-базы плюс `change:tags` —
+ * единственное, что фасад релеит сам (с расширения `tags`).
+ */
+export type TSelectCollectionFacadeEvents = TSelectionCollectionFacadeEvents<ISelectItem> &
+	TSelectTagsExtensionEvents
+
+/** События фасада опции: набор базы плюс `change:indicator` с адаптера `select`. */
+export type TSelectItemCollectionFacadeEvents = TSelectionItemFacadeEvents &
+	Pick<TSelectItemEventsExtension, 'change:indicator'>

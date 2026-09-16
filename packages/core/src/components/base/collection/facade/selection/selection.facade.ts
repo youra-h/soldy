@@ -1,6 +1,10 @@
 import { TBatchCollectionFacade } from '../batch'
-import type { ICollectionComponentOptions, TCollectionFacadeProps } from '../types'
-import type { IComponentProps, TComponentEvents } from '../../../component'
+import type {
+	ICollectionComponentOptions,
+	TCollectionFacadeProps,
+	TSelectionCollectionFacadeEvents,
+} from '../types'
+import type { IComponentProps } from '../../../component'
 import type {
 	IExtension,
 	TBatchExtension,
@@ -38,7 +42,7 @@ export abstract class TSelectionCollectionFacade<
 		batch: TBatchExtension<any>
 		selection: TSelectionExtension<any>
 	} & Record<string, IExtension<any>>,
-	TEvents extends TComponentEvents = TComponentEvents & Record<string, (...args: any[]) => any>,
+	TEvents extends TSelectionCollectionFacadeEvents<TItem> = TSelectionCollectionFacadeEvents<TItem>,
 > extends TBatchCollectionFacade<TItem, TExtensions, TEvents> {
 	constructor(
 		props: Partial<IComponentProps> = {},

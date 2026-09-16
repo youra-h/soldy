@@ -5,6 +5,7 @@ import { resolveEngine } from '../../../../base/collection/create/internal'
 import type {
 	TSelectCollection,
 	TSelectCollectionExtensions,
+	TSelectCollectionFacadeEvents,
 	TSelectCollectionFacadeOptions,
 } from '../types'
 import type { ISelect } from '../../types'
@@ -20,7 +21,8 @@ import type { ITags, TTagsCollection } from '../../../tags'
  */
 export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	ISelectItem,
-	TSelectCollectionExtensions
+	TSelectCollectionExtensions,
+	TSelectCollectionFacadeEvents
 > {
 	constructor(
 		props: TSelectionFacadeProps<ISelectItem> = {},
