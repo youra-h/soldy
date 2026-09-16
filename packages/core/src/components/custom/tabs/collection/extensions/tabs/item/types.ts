@@ -1,7 +1,15 @@
 import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../../base/collection'
 
 export type TTabsItemEventsExtension = TBaseItemEventsExtension & {
-	'change:closable': (value: boolean) => void
+	/**
+	 * `closable` таба изменился — перечитайте геттер `closable`.
+	 *
+	 * Аргумента нет намеренно. Значение вычисляемое (`элемент ?? родитель`), а
+	 * источников у него два, и ни один не равен результату: элемент шлёт
+	 * `undefined` как «наследую от владельца», владелец шлёт своё значение даже
+	 * тогда, когда у элемента есть собственное и результат не изменился.
+	 */
+	'change:closable': () => void
 }
 
 /**

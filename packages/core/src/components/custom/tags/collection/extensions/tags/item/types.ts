@@ -2,7 +2,15 @@ import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../..
 import type { TTagsView } from '../../../../types'
 
 export type TTagsItemEventsExtension = TBaseItemEventsExtension & {
-	'change:closable': (value: boolean) => void
+	/**
+	 * `closable` тега изменился — перечитайте геттер `closable`.
+	 *
+	 * Аргумента нет намеренно. Значение вычисляемое (`элемент ?? родитель`), а
+	 * источников у него два, и ни один не равен результату: элемент шлёт
+	 * `undefined` как «наследую от набора», набор шлёт своё значение даже тогда,
+	 * когда у элемента есть собственное и результат не изменился.
+	 */
+	'change:closable': () => void
 	'change:view': (value: TTagsView) => void
 }
 

@@ -191,4 +191,28 @@ describe('TBatchExtension', () => {
 
 		expect(() => col.extensions.batch.patch([{ id: 1, name: 'a' }])).toThrow()
 	})
+
+	// Своей сигнатуры у batch нет: `change:items` подмешан из карты драйвера,
+	// поэтому подписчик получает состав хранилища ровно таким, каким его отдаёт
+	// драйвер, — только для чтения. Обработчик, которому нужен изменяемый
+	// массив, карту не проходит: это и есть то, что чинила задача.
+	it('change:items: подписчик batch получает состав хранилища только для чтения', () => {
+		const col = createCollection()
+		const seen: (readonly Item[])[] = []
+
+		col.extensions.batch.events.on('change:items', (items) => {
+			seen.push(items)
+		})
+
+		col.extensions.batch.set([
+			{ id: 1, name: 'a' },
+			{ id: 2, name: 'b' },
+		])
+
+		expect(seen).toHaveLength(1)
+		expect([...seen[0]]).toEqual([...col.extensions.batch.items])
+
+		// @ts-expect-error — состав уходит readonly, мутировать его подписчик не вправе
+		col.extensions.batch.events.on('change:items', (items: Item[]) => items.pop())
+	})
 })

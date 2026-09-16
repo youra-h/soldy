@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import type { TCollectionEngineItemSource } from '../../types'
+import type { TCollectionEngineItemSource, TCollectionStorageDriverEvents } from '../../types'
 
 /** Owner-level props коллекции от batch-расширения (input). Зеркало BatchExtensionContribution. */
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
@@ -9,12 +9,20 @@ export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
 	trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 }
 
-export type TBatchEvents<TItem> = {
+/**
+ * События batch-расширения.
+ *
+ * `change:items` batch не объявляет сам, а берёт из карты драйвера: состав
+ * хранилища принадлежит драйверу, batch лишь пробрасывает его событие
+ * (`relay` в `install`). Своя копия сигнатуры — второе объявление одного
+ * контракта, и оно уже разошлось: у драйвера состав уходит `readonly`, а копия
+ * разрешала подписчику мутировать массив хранилища.
+ */
+export type TBatchEvents<TItem> = Pick<TCollectionStorageDriverEvents<TItem>, 'change:items'> & {
 	/** Уходит вход — источники (сырые props + meta `_`) или готовые инстансы, не то, что легло в хранилище. */
 	'items:added': (items: TCollectionEngineItemSource<TItem>[]) => void
 	'items:removed': (items: TItem[]) => void
 	'change:trackBy': (fn?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown) => void
-	'change:items': (items: TItem[]) => void
 
 	/**
 	 * Показанное изменилось — из-за состава или из-за условий отбора.
