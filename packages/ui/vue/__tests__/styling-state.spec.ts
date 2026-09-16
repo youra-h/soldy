@@ -21,7 +21,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { ListBox } from '@soldy/ui-vue'
+import { ListBox, Tabs, TabsItem } from '@soldy/ui-vue'
 import AccordionHarness from './Accordion.test.vue'
 import TabsHarness from './TabsContent.test.vue'
 import SelectHarness from './Select.test.vue'
@@ -68,6 +68,34 @@ describe('Tabs: обёртка несёт data-selected для темы', () => 
 
 		expect(wrapper.find('.s-tabs-item').attributes('aria-selected')).toBeUndefined()
 		expect(wrapper.find('[role="tab"]').attributes('aria-selected')).toBeDefined()
+	})
+})
+
+/**
+ * Строку таба рисует вложенный Button, и тема исключает выключенный таб из
+ * hover селектором по его `data-disabled`: нативный атрибут есть не у каждого
+ * тега и переехал бы вместе с ним. Значит атрибут обязан доехать до Button, а
+ * не остаться на обёртке.
+ */
+describe('Tabs: строка таба несёт data-disabled для темы', () => {
+	it('выключенный таб помечен "true", включённый — "false"', () => {
+		const wrapper = mount(
+			{
+				components: { Tabs, TabsItem },
+				template: `
+					<Tabs>
+						<TabsItem value="a" text="First" active />
+						<TabsItem value="b" text="Second" disabled />
+					</Tabs>
+				`,
+			},
+			{ attachTo: document.body },
+		)
+
+		// Селектор темы — тот же: строка таба это прямой потомок обёртки
+		const rows = wrapper.findAll('.s-tabs-item > *')
+
+		expect(rows.map((row) => row.attributes('data-disabled'))).toEqual(['false', 'true'])
 	})
 })
 
