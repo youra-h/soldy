@@ -92,3 +92,26 @@ describe('TCollectionComponent — relay *:before хуков до фасада',
 		expect(item.name).toBe('a')
 	})
 })
+
+/**
+ * Карта событий фасада — это карта цели его релеев, и закрыта она затем, чтобы
+ * `TEvented.relay` сверял имена. Пока у баз стоял `Record<string, …>`, проверка
+ * была пустой: проходило любое имя с любым обработчиком.
+ */
+describe('TCollectionComponent — карта событий фасада сверяется при relay', () => {
+	it('своё событие доходит, чужое не компилируется', () => {
+		const facade = createFacade()
+		const added = vi.fn()
+
+		facade.events.on('item:added', added)
+
+		// `change:trackBy` у расширения `batch` есть, но в карте этой базы его
+		// нет — он появляется только в `TBatchCollectionFacadeEvents`.
+		// @ts-expect-error — события нет в карте событий фасада
+		facade.events.relay(facade.extensions.batch.events, ['change:trackBy'])
+
+		facade.extensions.plain.insert({ id: 1, name: 'a' })
+
+		expect(added).toHaveBeenCalledTimes(1)
+	})
+})
