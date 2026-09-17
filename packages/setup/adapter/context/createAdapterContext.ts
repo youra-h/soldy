@@ -18,6 +18,20 @@ import type {
 import { resolveDefaultExtensions } from '../extensions'
 import type { IComponentDescriptor } from '@soldy/setup'
 
+/**
+ * Имя места вложенного компонента: из опций, а без них — из пропсов фреймворка.
+ * Проп `embedded` объявлен у всех компонентов (`EntityContribution`), и читает
+ * его setup, а не каждый адаптер: шаг, который шесть адаптеров обязаны помнить,
+ * седьмой забудет.
+ */
+function embeddedOf(options: IAdapterContextOptions<object>): string | undefined {
+	if (options.embedded !== undefined) return options.embedded
+
+	const value: unknown = options.props ? Reflect.get(options.props, 'embedded') : undefined
+
+	return typeof value === 'string' ? value : undefined
+}
+
 export function createAdapterContext<TInstance extends object>(
 	descriptor: IComponentDescriptor<any, any, any, any, TInstance>,
 	options: IAdapterContextOptions<TInstance>,
@@ -28,7 +42,7 @@ export function createAdapterContext<TInstance extends object>(
 	// коллекции делит bundle компонента) — уничтожает его он же.
 	const ownsBundle = config.bundle === undefined
 	const bundle =
-		config.bundle ?? descriptor.createBundle(instance, { embedded: options.embedded })
+		config.bundle ?? descriptor.createBundle(instance, { embedded: embeddedOf(options) })
 	const accessor = descriptor.createAccessor(instance, bundle)
 
 	const events = new TEvented<TAdapterEvents>()

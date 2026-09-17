@@ -48,7 +48,12 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			скринридера (см. `TInput._syncInputAccessibility()`).
 		-->
 		<slot name="field" :field="field">
-			<Input class="s-select__field" :ctrl="field" v-bind="controlAttrs">
+			<Input
+				embedded="select.field"
+				class="s-select__field"
+				:ctrl="field"
+				v-bind="controlAttrs"
+			>
 				<!-- Слоты Input пробрасываются наружу как есть -->
 				<template #leading>
 					<!--
@@ -57,6 +62,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 						`multiple` — в `single` `tags` пуст, и слот получает то же поле.
 					-->
 					<Tags
+						embedded="select.tags"
 						v-if="tags"
 						class="s-select__tags"
 						:ctrl="tags"
@@ -73,6 +79,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 					-->
 					<slot name="clear" :clear="facade.clear">
 						<Button
+							embedded="select.clear"
 							v-if="clearable"
 							class="s-select__clear"
 							:size="size"
@@ -80,7 +87,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 							@click.stop="facade.clear()"
 							v-bind="clearAria"
 						>
-							<Icon :tag="clearIconTag" :size="size" />
+							<Icon embedded="select.clear-icon" :tag="clearIconTag" :size="size" />
 						</Button>
 					</slot>
 
@@ -96,7 +103,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 					-->
 					<span class="s-select__arrow">
 						<slot name="arrow-icon">
-							<Icon :tag="arrowIconTag" :size="size" />
+							<Icon embedded="select.arrow" :tag="arrowIconTag" :size="size" />
 						</slot>
 					</span>
 
@@ -123,6 +130,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			`TAnchorPlugin`, если `placement` не запретил ему flip.
 		-->
 		<Frame
+			embedded="select.frame"
 			:visible="open"
 			position="fixed"
 			:anchor_anchor="rootElement"

@@ -32,6 +32,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			состояния: иначе его пришлось бы повторить в пяти других адаптерах.
 		-->
 		<Button
+			embedded="accordion.header"
 			class="s-accordion-item__header"
 			:view="view"
 			:disabled="disabled"
@@ -43,6 +44,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			<template #leading>
 				<slot name="leading-icon">
 					<Icon
+						embedded="accordion.arrow"
 						v-if="arrowPlacement === 'start'"
 						:tag="arrowIconTag"
 						:size="size"
@@ -60,6 +62,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 				<slot name="trailing" />
 				<slot name="trailing-icon">
 					<Icon
+						embedded="accordion.arrow"
 						v-if="arrowPlacement === 'end'"
 						:tag="arrowIconTag"
 						:size="size"

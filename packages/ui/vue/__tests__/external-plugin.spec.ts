@@ -8,17 +8,20 @@
  *
  * Пример — таймер на кнопке: работает только при варианте темы, который он
  * понимает (`brand` из фикстуры), нажатие запускает и останавливает отсчёт.
+ *
+ * Плагин на тип (`usePlugins`) по умолчанию ставится только компонентам
+ * пользователя: строку и крестик тега разметка помечает `embedded`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import type { TButton } from '@soldy/core'
 import { TActionPlugin, TBasePlugin, TPluginBundle } from '@soldy/plugins'
 import type { IPluginContext } from '@soldy/plugins'
 import type { IExtension, IExtensionContext } from '@soldy/core'
-import { TCollectionEngine, TEvented } from '@soldy/core'
-import { Button, ListBox } from '@soldy/ui-vue'
+import { TButton, TCollectionEngine, TEvented } from '@soldy/core'
+import { usePlugins } from '@soldy/setup'
+import { Button, ListBox, Tags, TagsItem } from '@soldy/ui-vue'
 
 /** Слушатели нажатия появляются по `element:ready`, а он приходит через кадр. */
 const mounted = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
@@ -169,6 +172,65 @@ describe('расширение снаружи · через engine:create', () =
 
 		expect(received.engine?.extensions.probe).toBe(probe)
 		expect(probe.count).toBe(2)
+
+		wrapper.unmount()
+	})
+})
+
+/** Плагин реестра: запоминает кнопки, которым поставлен. */
+const installedOn: TButton[] = []
+
+class TMarkPlugin extends TBasePlugin<TButton> {
+	override install(ctx: IPluginContext, options?: unknown): void {
+		super.install(ctx, options)
+		const button = ctx.getInstance()
+
+		if (button instanceof TButton) installedOn.push(button)
+	}
+}
+
+describe('плагин на тип · usePlugins', () => {
+	let dispose: (() => void) | null = null
+
+	afterEach(() => {
+		dispose?.()
+		dispose = null
+		installedOn.length = 0
+	})
+
+	/** Кнопка пользователя рядом с закрываемым тегом: у тега строка и крестик — тоже Button. */
+	const render = () =>
+		mount({
+			components: { Button, Tags, TagsItem },
+			template: `
+				<div>
+					<Button text="Своя" />
+					<Tags closable><TagsItem value="a" text="A" /></Tags>
+				</div>
+			`,
+		})
+
+	it('по умолчанию — только кнопки пользователя, строка и крестик тега без плагина', async () => {
+		dispose = usePlugins(TButton, [TMarkPlugin])
+
+		const wrapper = render()
+
+		await nextTick()
+
+		expect(installedOn).toHaveLength(1)
+		expect(installedOn[0].text).toBe('Своя')
+
+		wrapper.unmount()
+	})
+
+	it("scope 'all' — и вложенные: строка и крестик тега", async () => {
+		dispose = usePlugins(TButton, [TMarkPlugin], { scope: 'all' })
+
+		const wrapper = render()
+
+		await nextTick()
+
+		expect(installedOn).toHaveLength(3)
 
 		wrapper.unmount()
 	})

@@ -23,6 +23,12 @@ import type {
  */
 export type TSvelteComponentProps<TCoreProps, TInstance extends IEntity = IEntity> = TCoreProps & {
 	ctrl?: TInstance
+	/**
+	 * Имя места, если компонент — деталь разметки другого компонента soldy
+	 * (`tags.close`). Ставит разметка библиотеки, а не потребитель: по нему
+	 * `usePlugins` со `scope: 'own'` пропускает вложенный компонент.
+	 */
+	embedded?: string
 }
 
 /** Событийные пропы компонента из дескриптора (core + плагины). */

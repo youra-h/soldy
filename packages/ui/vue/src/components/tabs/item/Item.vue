@@ -35,6 +35,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			опции. Пишет его расширение активации, шаблон ничего не вычисляет.
 		-->
 		<Button
+			embedded="tabs.row"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
@@ -74,6 +75,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			и разметка библиотеки их не знает. Обе части тема красит по контексту.
 		-->
 		<Button
+			embedded="tabs.close"
 			:rendered="!!tab_closable"
 			class="s-tabs-item__close"
 			:disabled="disabled"
@@ -82,7 +84,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			v-bind="closeAria"
 		>
 			<slot name="close-icon">
-				<Icon :tag="closeIconTag" :size="size" />
+				<Icon embedded="tabs.close-icon" :tag="closeIconTag" :size="size" />
 			</slot>
 		</Button>
 	</component>

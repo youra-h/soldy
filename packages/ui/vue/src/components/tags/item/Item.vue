@@ -20,10 +20,14 @@ import SetupTagsItem from './setup.component'
  * и выбор обязаны покрывать и кнопку закрытия, а она стоит рядом со строкой.
  * Тема читает вид с класса набора. Строке и крестику вид в разметке не
  * передаётся — значения вида объявляет тема, и части тега она красит по
- * контексту (`.s-tags-item`). `direction` — своё направление письма тега; на корне уже стоит
- * `dir`, но Button — интерактивный элемент со своим DOM-узлом, и для него
- * направление передаётся явно, а не только через наследование `dir` от
- * родителя.
+ * контексту (`.s-tags-item`).
+ *
+ * `direction` — своё направление письма тега; на корне уже стоит `dir`, но
+ * Button — интерактивный элемент со своим DOM-узлом, и для него направление
+ * передаётся явно, а не только через наследование `dir` от родителя.
+ *
+ * `embedded` — имя места у строки, крестика и иконки: это детали тега, и
+ * плагины приложения на Button (`usePlugins`) их по умолчанию не трогают.
  *
  * Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
  * `tag` — тег корня (`TComponentView`), и рисует по нему корень
@@ -44,6 +48,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
+			embedded="tags.row"
 			tag="div"
 			:direction="direction"
 			:disabled="disabled"
@@ -82,6 +87,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			(`.s-tags-item`).
 		-->
 		<Button
+			embedded="tags.close"
 			:rendered="!!tag_closable"
 			class="s-tags-item__close"
 			:disabled="disabled"
@@ -90,7 +96,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			v-bind="closeAria"
 		>
 			<slot name="close-icon">
-				<Icon :tag="closeIconTag" :size="size" />
+				<Icon embedded="tags.close-icon" :tag="closeIconTag" :size="size" />
 			</slot>
 		</Button>
 	</component>

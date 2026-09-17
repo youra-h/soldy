@@ -31,7 +31,7 @@ export default { ...SetupCheckBox, components: { Icon } }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<Icon :tag="defaultIconTag" :size="size" />
+				<Icon embedded="check-box.icon" :tag="defaultIconTag" :size="size" />
 			</slot>
 			<!-- Слот для indeterminate иконки -->
 			<slot
@@ -40,7 +40,11 @@ export default { ...SetupCheckBox, components: { Icon } }
 				:value="value"
 				:indeterminate="indeterminate"
 			>
-				<Icon :tag="defaultIndeterminateIconTag" :size="size" />
+				<Icon
+					embedded="check-box.indeterminate-icon"
+					:tag="defaultIndeterminateIconTag"
+					:size="size"
+				/>
 			</slot>
 		</div>
 	</div>

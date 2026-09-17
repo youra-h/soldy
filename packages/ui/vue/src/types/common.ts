@@ -11,6 +11,12 @@ export type TBaseComponentProps<TCoreProps, TInstance extends IEntity = IEntity>
 	 * равно снимает прокси через `toRaw`.
 	 */
 	ctrl?: TInstance
+	/**
+	 * Имя места, если компонент — деталь разметки другого компонента soldy
+	 * (`tags.close`). Ставит разметка библиотеки, а не потребитель: по нему
+	 * `usePlugins` со `scope: 'own'` пропускает вложенный компонент.
+	 */
+	embedded?: string
 }
 
 /** Props компонента, выведенные из дескриптора: UseProps<typeof ButtonDescriptor, IButton> → ButtonProps */

@@ -56,6 +56,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
+			embedded="select.row"
 			tag="span"
 			:size="size"
 			:variant="variant"
@@ -70,7 +71,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="select.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 				<slot name="leading" />
@@ -88,7 +94,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="select.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 			</template>
