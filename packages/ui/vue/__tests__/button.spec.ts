@@ -30,15 +30,15 @@ describe('Button · inline props (декларативные свойства)',
 			expect.arrayContaining([
 				's-button',
 				's-button--size-normal', // Stylable
-				's-button--normal', // Stylable (variant)
-				's-button--a-filled', // Button (view)
 			]),
 		)
+		// variant и view — значения темы: без них модификаторов нет вовсе
+		expect(wrapper.classes().filter((cls) => /--(variant|view)-/.test(cls))).toEqual([])
 	})
 
 	it('отображает text и применяет variant/size/view классы', () => {
 		const wrapper = mount(Button, {
-			props: { text: 'Hello', variant: 'accent', size: 'xl', view: 'plain' },
+			props: { text: 'Hello', variant: 'brand', size: 'xl', view: 'ghost' },
 		})
 
 		expect(wrapper.find('.s-button__text').text()).toBe('Hello')
@@ -47,14 +47,12 @@ describe('Button · inline props (декларативные свойства)',
 			expect.arrayContaining([
 				's-button',
 				's-button--size-xl',
-				's-button--accent',
-				's-button--a-plain',
+				's-button--variant-brand',
+				's-button--view-ghost',
 			]),
 		)
 		// Старые классы заменены, а не накоплены
 		expect(wrapper.classes()).not.toContain('s-button--size-normal')
-		expect(wrapper.classes()).not.toContain('s-button--normal')
-		expect(wrapper.classes()).not.toContain('s-button--a-filled')
 	})
 
 	it('меняет корневой тег через prop tag', () => {
@@ -130,21 +128,22 @@ describe('Button · inline props (декларативные свойства)',
 
 	it('setProps обновляет DOM и эмитит change:* события', async () => {
 		const wrapper = mount(Button, {
-			props: { text: 'A', variant: 'normal', size: 'normal', view: 'filled' },
+			props: { text: 'A', variant: 'danger', size: 'normal', view: 'solid' },
 		})
 
-		await wrapper.setProps({ text: 'B', variant: 'accent', size: 'xl', view: 'plain' })
+		await wrapper.setProps({ text: 'B', variant: 'brand', size: 'xl', view: 'ghost' })
 
 		expect(wrapper.find('.s-button__text').text()).toBe('B')
-		expect(wrapper.classes()).toContain('s-button--accent')
+		expect(wrapper.classes()).toContain('s-button--variant-brand')
 		expect(wrapper.classes()).toContain('s-button--size-xl')
-		expect(wrapper.classes()).toContain('s-button--a-plain')
+		expect(wrapper.classes()).toContain('s-button--view-ghost')
+		expect(wrapper.classes()).not.toContain('s-button--view-solid')
 
 		expect(wrapper.emitted('change:text')).toBeTruthy()
 		expect(wrapper.emitted('change:variant')).toBeTruthy()
 		expect(wrapper.emitted('change:size')).toBeTruthy()
 		// TButton эмитит change:view с самим значением
-		expect(wrapper.emitted('change:view')?.at(-1)).toEqual(['plain'])
+		expect(wrapper.emitted('change:view')?.at(-1)).toEqual(['ghost'])
 	})
 
 	it('эмитит change:disabled и change:focused', async () => {
@@ -162,26 +161,26 @@ describe('Button · ctrl instance (программные свойства)', ()
 	it('отражает состояние переданного instance', () => {
 		const btn = new TButton({
 			text: 'FromCtrl',
-			variant: 'accent',
+			variant: 'brand',
 			size: 'lg',
-			view: 'outlined',
+			view: 'solid',
 		})
 
 		const wrapper = mount(Button, { props: { ctrl: btn } })
 
 		expect(wrapper.find('.s-button__text').text()).toBe('FromCtrl')
-		expect(wrapper.classes()).toContain('s-button--accent')
+		expect(wrapper.classes()).toContain('s-button--variant-brand')
 		expect(wrapper.classes()).toContain('s-button--size-lg')
-		expect(wrapper.classes()).toContain('s-button--a-outlined')
+		expect(wrapper.classes()).toContain('s-button--view-solid')
 	})
 
 	it('мутации instance обновляют компонент и эмитят события', async () => {
 		const btn = new TButton({ text: 'X' })
 		const wrapper = mount(Button, { props: { ctrl: btn } })
 
-		btn.variant = 'accent'
+		btn.variant = 'brand'
 		await nextTick()
-		expect(wrapper.classes()).toContain('s-button--accent')
+		expect(wrapper.classes()).toContain('s-button--variant-brand')
 		expect(wrapper.emitted('change:variant')).toBeTruthy()
 
 		btn.text = 'Y'
@@ -189,9 +188,9 @@ describe('Button · ctrl instance (программные свойства)', ()
 		expect(wrapper.find('.s-button__text').text()).toBe('Y')
 		expect(wrapper.emitted('change:text')).toBeTruthy()
 
-		btn.view = 'plain'
+		btn.view = 'ghost'
 		await nextTick()
-		expect(wrapper.classes()).toContain('s-button--a-plain')
+		expect(wrapper.classes()).toContain('s-button--view-ghost')
 		expect(wrapper.emitted('change:view')).toBeTruthy()
 
 		btn.disabled = true

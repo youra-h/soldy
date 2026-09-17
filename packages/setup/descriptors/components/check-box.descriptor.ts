@@ -2,7 +2,7 @@
  * Дескриптор CheckBox (TCheckBox).
  *
  * Наследует InputControlDescriptor (readonly, required, value, name, disabled, focused, size, variant, ...)
- * и добавляет indeterminate, plain + плагин InputBool.
+ * и добавляет indeterminate, view + плагин InputBool.
  */
 
 import { defineComponent } from '../base'

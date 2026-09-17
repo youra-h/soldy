@@ -36,7 +36,6 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		-->
 		<Button
 			:disabled="disabled"
-			view="none"
 			:size="size"
 			:variant="variant"
 			@click="context && (context.adapters.activation.active = true)"
@@ -70,6 +69,9 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			От размера зависит кегль, от кегля — иконка; выключенный таб
 			выключает и свою кнопку. Место рядом со строкой держит тема
 			(`.s-tabs-item`).
+
+			`view` нет ни у крестика, ни у строки: значения вида объявляет тема,
+			и разметка библиотеки их не знает. Обе части тема красит по контексту.
 		-->
 		<Button
 			:rendered="!!tab_closable"
@@ -77,7 +79,6 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			:disabled="disabled"
 			:size="size"
 			@click.stop="context?.adapters?.tabs?.close()"
-			view="plain"
 			v-bind="closeAria"
 		>
 			<slot name="close-icon">

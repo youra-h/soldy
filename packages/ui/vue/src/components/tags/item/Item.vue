@@ -17,8 +17,10 @@ import SetupTagsItem from './setup.component'
  * самого элемента), обёртка получает тот же набор для будущих контейнерных
  * стилей. `TSelectionExtension` пишет его всем элементам коллекции.
  *
- * `view` на внутреннем Button — вид со набора целиком (`TTags.view`,
- * дефолт `'filled'`), как у ListBox. `direction` — своё направление письма
+ * `view` на внутреннем Button — вид со набора целиком (`TTags.view`), как у
+ * ListBox: не задан у набора — не задан и у тега. Крестику вид в разметке не
+ * передаётся — значения вида объявляет тема, и крестик она красит по
+ * контексту (`.s-tags-item__close`). `direction` — своё направление письма
  * тега; на обёртке уже стоит `dir`, но Button — интерактивный элемент со
  * своим DOM-узлом, и для него направление передаётся явно, а не только через
  * наследование `dir` от родителя.
@@ -69,7 +71,6 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 					:rendered="!!tag_closable"
 					class="s-tags-item__close"
 					@click.stop="context?.adapters?.tags?.close()"
-					view="plain"
 					v-bind="closeAria"
 				>
 					<slot name="close-icon">

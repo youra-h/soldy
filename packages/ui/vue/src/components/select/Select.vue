@@ -66,11 +66,15 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 				</template>
 
 				<template #trailing>
+					<!--
+						У кнопки очистки нет `view`: значения вида объявляет тема, и
+						разметка библиотеки их не знает. Кнопку тема красит по контексту
+						(`.s-select__clear`).
+					-->
 					<slot name="clear" :clear="facade.clear">
 						<Button
 							v-if="clearable"
 							class="s-select__clear"
-							view="plain"
 							:size="size"
 							:disabled="disabled"
 							@click.stop="facade.clear()"

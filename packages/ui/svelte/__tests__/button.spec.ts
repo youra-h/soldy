@@ -30,17 +30,18 @@ describe('Button · декларативные props', () => {
 
 		expect(el.tagName.toLowerCase()).toBe('button')
 		expect(el.className).toContain('s-button')
-		expect(el.className).toContain('s-button--a-filled')
+		// variant и view — значения темы: без них модификаторов нет вовсе
+		expect(el.className).not.toMatch(/--(variant|view)-/)
 	})
 
 	it('отображает text и применяет классы size/variant/view', () => {
-		const el = render({ text: 'Hello', variant: 'accent', size: 'xl', view: 'plain' })
+		const el = render({ text: 'Hello', variant: 'brand', size: 'xl', view: 'ghost' })
 			.firstElementChild as HTMLElement
 
 		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Hello')
 		expect(el.className).toContain('s-button--size-xl')
-		expect(el.className).toContain('s-button--accent')
-		expect(el.className).toContain('s-button--a-plain')
+		expect(el.className).toContain('s-button--variant-brand')
+		expect(el.className).toContain('s-button--view-ghost')
 	})
 
 	it('меняет корневой тег через prop tag', () => {
@@ -85,12 +86,12 @@ describe('Button · декларативные props', () => {
 
 describe('Button · внешний ctrl', () => {
 	it('отражает состояние переданного инстанса', () => {
-		const ctrl = new TButton({ text: 'FromCtrl', variant: 'accent', view: 'outlined' })
+		const ctrl = new TButton({ text: 'FromCtrl', variant: 'brand', view: 'solid' })
 		const el = render({ ctrl }).firstElementChild as HTMLElement
 
 		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('FromCtrl')
-		expect(el.className).toContain('s-button--accent')
-		expect(el.className).toContain('s-button--a-outlined')
+		expect(el.className).toContain('s-button--variant-brand')
+		expect(el.className).toContain('s-button--view-solid')
 	})
 
 	it('мутации инстанса обновляют DOM', () => {
@@ -98,12 +99,12 @@ describe('Button · внешний ctrl', () => {
 		const root = render({ ctrl })
 
 		ctrl.text = 'Y'
-		ctrl.variant = 'accent'
+		ctrl.variant = 'brand'
 		flushSync()
 
 		const el = root.firstElementChild as HTMLElement
 		expect(el.querySelector('.s-button__text')?.textContent?.trim()).toBe('Y')
-		expect(el.className).toContain('s-button--accent')
+		expect(el.className).toContain('s-button--variant-brand')
 	})
 
 	it('смена tag через инстанс меняет корневой элемент', () => {
@@ -155,15 +156,15 @@ describe('Button · события через колбэк-пропы', () => {
 	})
 
 	it('onChangeView отдаёт значение', () => {
-		const ctrl = new TButton({ view: 'filled' })
+		const ctrl = new TButton({ view: 'solid' })
 		const seen: string[] = []
 
 		render({ ctrl, onChangeView: (v: string) => seen.push(v) })
 
-		ctrl.view = 'plain'
+		ctrl.view = 'ghost'
 		flushSync()
 
-		expect(seen).toEqual(['plain'])
+		expect(seen).toEqual(['ghost'])
 	})
 
 	it('onChangeVisible не дублируется (дедупликация триггеров)', () => {
