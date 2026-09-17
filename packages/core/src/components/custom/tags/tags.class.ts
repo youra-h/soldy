@@ -20,10 +20,10 @@ import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView
  * элементам — на `option`; это знание коллекции, а не ядра, и пишет его
  * `TTagsExtension`.
  *
- * `view` — как у ListBox: значение целиком со набора, каждый тег отдаёт его
- * своему внутреннему `Button` через `TTagsExtension`/`TTagsItemExtension`.
- * По умолчанию вида нет — ровно как у `Button`, поэтому тег без `view`
- * выглядит кнопкой вида темы по умолчанию.
+ * `view` — как у ListBox: значение целиком со набора, тег получает его через
+ * `TTagsExtension`/`TTagsItemExtension`. Рисуется тег видом `Button` целиком,
+ * вместе с кнопкой закрытия. По умолчанию вида нет — ровно как у `Button`,
+ * поэтому тег без `view` выглядит кнопкой вида темы по умолчанию.
  */
 export class TTags
 	extends TValueControl<TTagsValue, ITagsProps, TTagsEvents, TTagsStates>

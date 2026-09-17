@@ -135,13 +135,19 @@ describe('без closable', () => {
 describe('вид — у пилюли, а не у строки', () => {
 	it('строка вида не рисует, вид набора — классом на наборе', async () => {
 		await render(`
-			<Tags closable view="outlined">
+			<Tags closable view="ghost">
 				<TagsItem value="a" text="A" />
 			</Tags>
 		`)
 
-		expect(document.querySelector('.s-tags')?.classList.contains('s-tags--outlined')).toBe(true)
-		expect(rowOf('A').classList.contains('s-button--a-none')).toBe(true)
+		expect(document.querySelector('.s-tags')?.classList.contains('s-tags--view-ghost')).toBe(
+			true,
+		)
+
+		// Строке и крестику вид даёт тема по контексту, разметка его не передаёт
+		for (const part of [rowOf('A'), closeOf('A')]) {
+			expect([...part.classList].filter((name) => name.includes('--view-'))).toEqual([])
+		}
 	})
 
 	it('выбор отмечен на элементе тега, а строка его не несёт', async () => {

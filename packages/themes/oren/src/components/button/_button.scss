@@ -4,29 +4,21 @@
 	$this: &;
 
 	@apply flex items-center justify-center;
-	@apply rounded-md cursor-pointer;
-	@apply relative;
-	@include mixines.button-transition;
-	@apply outline-transparent;
+	@apply cursor-pointer;
 	@apply max-h-full;
+
+	@include mixines.button-surface;
 
 	&__text {
 		@apply grow truncate text-center;
 	}
 
-	// Disabled читается из `data-disabled`: ядро пишет его на любом теге.
-	// Нативный атрибут есть только у части тегов (у Button на `span` его нет
-	// никогда), ARIA-атрибут — только у остальных, и оба переезжают вместе с
-	// тегом: селектор по ним молча перестал бы срабатывать.
-	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default pointer-events-none;
-	}
+	@include mixines.button-disabled;
 
-	// Кольца нет у вида `none`. Строка таба выглядит как `none` без
-	// модификатора — кольцо с неё снимает `tabs/_tabs.scss`.
+	// Кольца нет у вида `none`. Строки таба и тега выглядят как `none` без
+	// модификатора — кольцо с них снимают `tabs/_tabs.scss` и `tags/_tags.scss`.
 	&:focus-visible:not(#{$this}--view-none) {
-		@apply duration-100;
-		@apply outline-2 outline-offset-2 outline-s-component;
+		@include mixines.button-focus-ring;
 	}
 
 	svg {
