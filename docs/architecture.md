@@ -408,7 +408,7 @@ setIcons({ close: myCloseIcon }) // точечно, поверх
 
 **У хроматических шкал зеркальны только концы.** Середина (500–700) в обеих
 схемах остаётся насыщенной заливкой, на которой держится `text-white` у
-`Button--filled`. Инвертируй её вслед за нейтралью — hover увёл бы заливку в
+вида `filled` у Button. Инвертируй её вслед за нейтралью — hover увёл бы заливку в
 светлую пастель, и подпись стала бы нечитаемой. Меняется только направление
 hover: в тёмной схеме заливка светлеет.
 
@@ -1504,7 +1504,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `packages/foundation` deleted. Themes live in `packages/themes/*` (workspace glob `packages/themes/*` added to root).
 - `@soldy/theme-oren` = standalone theme package: `src/{index.ts, index.scss, base.css, tokens.css, tokens-dark.css, utilities.css}`, `src/mixins/` (`_fade.scss`, `_required.scss`), `src/components/<component>/_<component>.scss` (+ `_mixins.scss`) → built to `dist/index.css` (`main`/`style` and the `default` condition of `exports` point to `dist/index.css`, `types` — to `index.d.ts`).
 - Theme build = Vite lib mode (`entry: src/index.ts`, which only imports `index.scss`: Vite 8 fails when `lib.entry` is `.scss`; `assetFileNames: 'index.css'`) + `postcss.config.mjs` (`@tailwindcss/postcss`) + SCSS `additionalData` injecting `@import ".../src/base.css"` (base.css = `@import 'tailwindcss'` + tokens + tokens-dark + utilities). `@apply` resolves because tailwind context is injected.
-- **Contract = BEM classes and `data-*`** (`.s-button`, `.s-button--size-*`, `.s-button--a-*`, `[data-selected='true']`). UI packages emit only classes and `data-*`; theme ships their CSS. Tailwind/SCSS live ONLY in the theme package. Theme rules — `packages/themes/oren/AGENTS.md`.
+- **Contract = BEM classes and `data-*`** (`.s-button`, `.s-button--size-*`, `.s-button--view-*`, `[data-selected='true']`). UI packages emit only classes and `data-*`; theme ships their CSS. Values of appearance modifiers (`--view-*`, `--variant-*`, `--shape-*`, `--animation-*`) are declared by the theme in `index.d.ts`, not by the library (AGENTS.md, «Оформление: значения объявляет тема»). Tailwind/SCSS live ONLY in the theme package. Theme rules — `packages/themes/oren/AGENTS.md`.
 - **Tokens**: `:root,[data-theme='oren'] { --s-accent-500: oklch(...) }` + `@theme inline { --color-s-accent-500: var(--s-accent-500) }` — utilities reference vars, so runtime theme switching via `data-theme` works without rebuild.
 - **Colour schemes**: `tokens-dark.css` (`[data-theme='oren-dark']`) redefines the same scales with roles mirrored; imported AFTER `tokens.css` in `base.css` because both selectors have specificity (0,1,0) and source order decides. See «Тёмная схема» above.
 - UI packages (`ui-react`, `ui-vue`) + `core`/`angular`/`solid`/`svelte` dropped `@soldy/foundation` dep. Component styles are no longer in the UI packages: Button styles were removed from React (`button.scss`/`_mixines.scss`), and no Vue component keeps a `<style>` block — the rest (`_fade.scss`/`_required.scss`, CheckBox/Switch/Input) moved to the theme too.

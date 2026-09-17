@@ -28,8 +28,9 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
 
 - `types.ts`:
   - `I<Name>Props` extends a base props interface (`ITextableProps`, `IComponentProps`, …).
-  - `T<Name>Events` intersects a base events type plus per-prop change events, e.g. `'change:view': (v: T<Name>View) => void`.
+  - `T<Name>Events` intersects a base events type plus per-prop change events, e.g. `'change:view': (v: T<Name>View | undefined) => void`.
   - `I<Name>` interface extends the base component interface: `interface I<Name> extends ITextable<I<Name>Props, T<Name>Events>`.
+  - An appearance prop — its value describes only the look and the set of values is a design decision (`view`, `shape`) — is **not** a union: its values are declared by the theme. Declare an empty registry `interface I<Name>Views extends TThemeRegistry {}` with `type T<Name>View = Extract<keyof I<Name>Views, string>`, default `undefined` (third argument of `TDefaultValues`), class via `this._classes.swap({ prefix: '--view-', oldValue, newValue })`, and no theme value in any adapter markup. A row drawn by `Button` reuses `TButtonView` instead of its own registry. See AGENTS.md, «Оформление: значения объявляет тема».
 - `<name>.class.ts`:
   - `export default class T<Name> extends TBase<...> implements I<Name>`
   - `static override baseClass = 's-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
