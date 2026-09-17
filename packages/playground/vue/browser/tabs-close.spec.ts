@@ -1,13 +1,12 @@
 /**
- * Кнопка закрытия таба в настоящем браузере: вид закрываемого таба прежний.
+ * Кнопка закрытия таба в настоящем браузере.
  *
- * Крестик был последней частью строки-Button: перед ним зазор строки, после —
- * её паддинг, высота — контент строки, кегль — строки. Наведение на него
- * проявляло строку, фон активного таба и подчёркивание покрывали его вместе
- * со строкой. Теперь крестик — сосед строки в обёртке элемента (иначе он
- * вложенная кнопка в `role="tab"`, см. `ui/vue/__tests__/tabs-close.spec.ts`),
- * и всё это тема держит сама. Проверки не знают, как именно: каждая сверяет
- * крестик со строкой, а не с числами темы. В jsdom раскладки нет.
+ * Крестик — сосед строки в обёртке элемента (иначе он вложенная кнопка в
+ * `role="tab"`, см. `ui/vue/__tests__/tabs-close.spec.ts`). Стоит вплотную за
+ * строкой, без зазора, и кончается вместе с табом; высота и кегль у него от
+ * строки. Таб покрывает его целиком: подчёркивание, карточка активного таба,
+ * наведение и прозрачность. Проверки сверяют крестик со строкой и табом, а не
+ * с числами темы. В jsdom раскладки нет.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -84,23 +83,21 @@ afterEach(() => {
 	cleanup()
 })
 
-describe.each(COMPONENT_SIZES)('размер %s: крестик на месте последней части строки', (size) => {
-	it('перед крестиком зазор строки, после — её паддинг', () => {
+/**
+ * Проверка в цикле по размерам: зазор, вернувшийся на одном размере, она
+ * поймает.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: крестик рядом со строкой', (size) => {
+	it('крестик вплотную за строкой, после него — край таба', () => {
 		render(harness({ size }))
 
-		const { item, row, text, close } = tab('a')
-		const style = getComputedStyle(row)
+		const { item, row, close } = tab('a')
 
-		expect(box(close).left - box(text).right).toBeCloseTo(px(style.columnGap), 1)
-		expect(box(item).right - box(close).right).toBeCloseTo(px(style.paddingLeft), 1)
+		expect(box(close).left).toBeCloseTo(box(row).right, 1)
+		expect(box(close).right).toBeCloseTo(box(item).right, 1)
 	})
 
-	/**
-	 * Одно отличие от прежнего вида есть, на `2xl`: внутри строки крестик был
-	 * размера Button по умолчанию, и его высоту резала размерная высота
-	 * `normal` — 32px при контенте строки 36px. Теперь размер у крестика —
-	 * размер таба, и правило одно на все размеры.
-	 */
+	/** Размер у крестика — размер таба, правило одно на все размеры. */
 	it('по высоте — контент строки, по центру строки', () => {
 		render(harness({ size }))
 
@@ -126,14 +123,13 @@ describe.each(COMPONENT_SIZES)('размер %s: крестик на месте 
 })
 
 describe('направление письма', () => {
-	it('в RTL крестик слева от текста: зазор и паддинг зеркальны', () => {
+	it('в RTL крестик вплотную слева от строки, его левый край — край таба', () => {
 		render(harness({}, 'rtl'))
 
-		const { item, row, text, close } = tab('a')
-		const style = getComputedStyle(row)
+		const { item, row, close } = tab('a')
 
-		expect(box(text).left - box(close).right).toBeCloseTo(px(style.columnGap), 1)
-		expect(box(close).left - box(item).left).toBeCloseTo(px(style.paddingRight), 1)
+		expect(box(close).right).toBeCloseTo(box(row).left, 1)
+		expect(box(close).left).toBeCloseTo(box(item).left, 1)
 	})
 })
 
@@ -144,17 +140,20 @@ describe('таб покрывает крестик', () => {
 		const list = find('.s-tabs__list')
 		const { item, close } = tab('a')
 
+		// Полосу `TTabsActiveTabPlugin` считает в целых `offsetLeft`/`offsetWidth`:
+		// сверяется в тех же единицах — полоса лежит под всем табом, а не под
+		// строкой. Что крестик внутри таба — по боксам, дробные с дробными.
 		await expect
 			.poll(() => px(list.style.getPropertyValue('--underline-size')))
 			.toBe(item.offsetWidth)
 
-		const start = px(list.style.getPropertyValue('--underline-pos'))
-		const end = start + px(list.style.getPropertyValue('--underline-size'))
-		const closeBox = box(close)
-		const left = box(list).left
+		expect(px(list.style.getPropertyValue('--underline-pos'))).toBe(item.offsetLeft)
 
-		expect(closeBox.left - left).toBeGreaterThanOrEqual(start)
-		expect(closeBox.right - left).toBeLessThanOrEqual(end)
+		const itemBox = box(item)
+		const closeBox = box(close)
+
+		expect(closeBox.left).toBeGreaterThanOrEqual(itemBox.left)
+		expect(closeBox.right).toBeLessThanOrEqual(itemBox.right)
 	})
 
 	/**

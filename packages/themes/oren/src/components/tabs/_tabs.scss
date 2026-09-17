@@ -1,4 +1,3 @@
-@use 'sass:map';
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
 .s-tabs {
@@ -343,8 +342,9 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		}
 	}
 
-	// Крестик встаёт на место последней части строки. Высота — высота строки
-	// без её вертикального паддинга, а не размерная высота Button.
+	// Крестик стоит сразу за строкой, без зазора, со своим узким паддингом.
+	// Высота — высота строки без её вертикального паддинга, а не размерная
+	// высота Button.
 	> #{$this}__close {
 		@apply shrink-0 self-stretch h-auto my-1 px-1;
 	}
