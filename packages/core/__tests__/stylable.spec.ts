@@ -4,7 +4,7 @@ import type { IStylableProps, TComponentSize } from '@soldy/core'
 
 describe('TStylable', () => {
 	it('size и variant выставляются и эмитят события', () => {
-		const stylable = new TStylable<IStylableProps>({ size: 'normal', variant: 'normal' })
+		const stylable = new TStylable<IStylableProps>({ size: 'normal', variant: 'danger' })
 		const sizeHandler = vi.fn()
 		const variantHandler = vi.fn()
 		stylable.events.on('change:size', sizeHandler)
@@ -14,14 +14,35 @@ describe('TStylable', () => {
 		expect(sizeHandler).toHaveBeenCalledWith({ newValue: 'xl', oldValue: 'normal' })
 		expect(stylable.classes.toArray()).toContain('s-component-view--size-xl')
 
-		stylable.variant = 'accent'
-		expect(variantHandler).toHaveBeenCalledWith({ newValue: 'accent', oldValue: 'normal' })
-		expect(stylable.classes.toArray()).toContain('s-component-view--accent')
+		stylable.variant = 'brand'
+		expect(variantHandler).toHaveBeenCalledWith({ newValue: 'brand', oldValue: 'danger' })
+		expect(stylable.classes.toArray()).toContain('s-component-view--variant-brand')
+		expect(stylable.classes.toArray()).not.toContain('s-component-view--variant-danger')
+	})
+
+	/**
+	 * Вариант — значение темы: без него модификатора нет вовсе, а сброс в
+	 * `undefined` снимает прежний. `swapClass` с шаблонной строкой дал бы здесь
+	 * класс `--variant-undefined`.
+	 */
+	it('variant без значения не ставит модификатор, сброс снимает прежний', () => {
+		const stylable = new TStylable<IStylableProps>()
+		const variantClasses = () =>
+			stylable.classes.toArray().filter((cls) => cls.includes('--variant-'))
+
+		expect(stylable.variant).toBeUndefined()
+		expect(variantClasses()).toEqual([])
+
+		stylable.variant = 'brand'
+		expect(variantClasses()).toEqual(['s-component-view--variant-brand'])
+
+		stylable.variant = undefined
+		expect(variantClasses()).toEqual([])
 	})
 
 	it('getProps отражает size и variant', () => {
-		const stylable = new TStylable<IStylableProps>({ size: 'lg', variant: 'accent' })
-		expect(stylable.getProps()).toMatchObject({ size: 'lg', variant: 'accent' })
+		const stylable = new TStylable<IStylableProps>({ size: 'lg', variant: 'brand' })
+		expect(stylable.getProps()).toMatchObject({ size: 'lg', variant: 'brand' })
 	})
 
 	it('states.size позволяет передать внешний TStateUnit и классы обновляются при его изменении', () => {
@@ -49,14 +70,14 @@ describe('TStylable', () => {
 	})
 
 	it('states.variant доступен через instance.states и setResolver меняет variant', () => {
-		const s = new TStylable<IStylableProps>({ variant: 'normal' })
+		const s = new TStylable<IStylableProps>({ variant: 'danger' })
 
 		expect(s.states.variant).toBeDefined()
-		expect(s.variant).toBe('normal')
+		expect(s.variant).toBe('danger')
 
-		s.states.variant.setResolver(() => 'accent')
+		s.states.variant.setResolver(() => 'brand')
 
-		expect(s.variant).toBe('accent')
-		expect(s.states.variant.rawValue).toBe('normal')
+		expect(s.variant).toBe('brand')
+		expect(s.states.variant.rawValue).toBe('danger')
 	})
 })

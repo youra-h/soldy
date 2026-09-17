@@ -22,8 +22,8 @@ import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView
  *
  * `view` — как у ListBox: значение целиком со набора, каждый тег отдаёт его
  * своему внутреннему `Button` через `TTagsExtension`/`TTagsItemExtension`.
- * Дефолт `'filled'` — вид `Button` по умолчанию, чтобы включение пропа не
- * поменяло вид молча.
+ * По умолчанию вида нет — ровно как у `Button`, поэтому тег без `view`
+ * выглядит кнопкой вида темы по умолчанию.
  */
 export class TTags
 	extends TValueControl<TTagsValue, ITagsProps, TTagsEvents, TTagsStates>
@@ -32,14 +32,14 @@ export class TTags
 	static override baseClass = 's-tags'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITagsProps, 'closable' | 'view'> = {
+		TDefaultValues<ITagsProps, 'closable', 'view'> = {
 		...TValueControl.defaultValues,
 		closable: false,
-		view: 'filled',
+		view: undefined,
 	}
 
 	protected _closable!: boolean
-	protected _view!: TTagsView
+	protected _view: TTagsView | undefined
 
 	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions<TTagsStates> = {}) {
 		super(props, options)
@@ -64,21 +64,23 @@ export class TTags
 		this.events.emit('change:closable', value)
 	}
 
-	get view(): TTagsView {
+	get view(): TTagsView | undefined {
 		return this._view
 	}
 
-	set view(value: TTagsView) {
+	set view(value: TTagsView | undefined) {
 		if (this._view === value) return
 
 		this._applyView(value, this._view)
 		this.events.emit('change:view', value)
 	}
 
-	protected _applyView(newValue: TTagsView, oldValue?: TTagsView): void {
-		this._classes.swapClass({
-			oldClass: `--${oldValue}`,
-			newClass: `--${newValue}`,
+	/** Модификатор вида — с префиксом `--view-`; `swap` пропускает пустое значение. */
+	protected _applyView(newValue: TTagsView | undefined, oldValue?: TTagsView): void {
+		this._classes.swap({
+			prefix: '--view-',
+			oldValue,
+			newValue,
 		})
 
 		this._view = newValue

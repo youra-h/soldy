@@ -6,10 +6,16 @@ import type {
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { IList, IListProps, TListEvents } from '../list'
+import type { TButtonView } from '../button/types'
 import type { IListBoxCollectionProps } from './collection/types'
 import type { IListBoxItem, IListBoxItemProps } from './item/types'
 
-export type TListBoxView = 'plain' | 'outlined' | 'filled'
+/**
+ * Вид списка — значение `TButtonView` целиком: каждую строку рисует `Button`,
+ * и вид списка это ровно вид его строк. Своего реестра нет: пробрасывая
+ * значение в строку, его нельзя было бы типизировать.
+ */
+export type TListBoxView = TButtonView
 
 /**
  * Значение списка — то, что выбрано, в виде значений элементов.
@@ -24,7 +30,7 @@ export type TListBoxEvents = TValueControlEvents<TListBoxValue> &
 	TCollectionStorageDriverEvents<IListBoxItem> &
 	TListEvents & {
 		/** change:view */
-		'change:view': (value: TListBoxView) => void
+		'change:view': (value: TListBoxView | undefined) => void
 	}
 
 /**
@@ -52,5 +58,5 @@ export interface IListBox<
 >
 	extends IValueControl<TListBoxValue, TProps, TEvents, TStates>, IList {
 	/** Внешний вид компонента */
-	view: TListBoxView
+	view: TListBoxView | undefined
 }

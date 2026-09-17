@@ -31,7 +31,7 @@ export class TListBoxItemExtension<
 	}
 
 	/** Внешний вид элемента — берётся у владельца целиком. */
-	get view(): TListBoxView {
+	get view(): TListBoxView | undefined {
 		return this._parent.view
 	}
 

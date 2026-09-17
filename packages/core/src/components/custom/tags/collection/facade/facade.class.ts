@@ -54,7 +54,7 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		this.applyProps(props)
 	}
 
-	get view(): TTagsView {
+	get view(): TTagsView | undefined {
 		return this.extensions.tags.view
 	}
 }

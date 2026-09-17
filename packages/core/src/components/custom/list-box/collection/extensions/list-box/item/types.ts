@@ -3,7 +3,7 @@ import type { TListBoxView } from '../../../../types'
 import type { TListIndicator } from '../../../../../list'
 
 export type TListBoxItemEventsExtension = TBaseItemEventsExtension & {
-	'change:view': (value: TListBoxView) => void
+	'change:view': (value: TListBoxView | undefined) => void
 	'change:indicator': (value: TListIndicator) => void
 }
 
@@ -23,7 +23,7 @@ export interface IListBoxItemExtension<
 	TEvents extends TListBoxItemEventsExtension = TListBoxItemEventsExtension,
 > extends IItemExtension<TItem, TEvents> {
 	/** Внешний вид элемента — со списка. */
-	readonly view: TListBoxView
+	readonly view: TListBoxView | undefined
 	/** Где стоит отметка выбранного — значение списка целиком. */
 	readonly indicator: TListIndicator
 }

@@ -18,17 +18,17 @@ export default class TSkeleton
 	static override baseClass = 's-skeleton'
 
 	static defaultValues: typeof TComponentView.defaultValues &
-		TDefaultValues<ISkeletonProps, 'shape' | 'animation' | 'variant' | 'width' | 'height'> = {
+		TDefaultValues<ISkeletonProps, 'width' | 'height', 'shape' | 'animation' | 'variant'> = {
 		...TComponentView.defaultValues,
-		shape: 'rounded',
-		animation: 'pulse',
-		variant: 'normal',
+		shape: undefined,
+		animation: undefined,
+		variant: undefined,
 		width: 'auto',
 		height: 'auto',
 	}
 
-	protected _shape: TSkeletonShape
-	protected _animation: TSkeletonAnimation
+	protected _shape: TSkeletonShape | undefined
+	protected _animation: TSkeletonAnimation | undefined
 	protected _width: number | string
 	protected _height: number | string
 
@@ -45,24 +45,30 @@ export default class TSkeleton
 		this._width = props.width ?? ctor.defaultValues.width
 		this._height = props.height ?? ctor.defaultValues.height
 
-		this._classes.add(`--${this._shape}`)
-		this._classes.add(`--${this._animation}`)
+		// Форма, анимация и вариант — значения темы: модификатор с префиксом,
+		// а без значения его нет вовсе (`swap` пропускает пустое).
+		this._classes.swap({ prefix: '--shape-', newValue: this._shape })
+		this._classes.swap({ prefix: '--animation-', newValue: this._animation })
 
 		this._states.variant =
 			options.states?.variant ??
-			new TStateUnit<TComponentVariant>({
+			new TStateUnit<TComponentVariant | undefined>({
 				initial: props.variant ?? ctor.defaultValues.variant,
 			})
 
-		this._states.variant.events.on('change', (payload: TValuePayload<TComponentVariant>) => {
-			this._classes.swapClass({
-				oldClass: `--${payload.oldValue}`,
-				newClass: `--${payload.newValue}`,
-			})
-			this.events.emit('change:variant', payload)
-		})
+		this._states.variant.events.on(
+			'change',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				this._classes.swap({
+					prefix: '--variant-',
+					oldValue: payload.oldValue,
+					newValue: payload.newValue,
+				})
+				this.events.emit('change:variant', payload)
+			},
+		)
 
-		this._classes.add(`--${this._states.variant.value}`)
+		this._classes.swap({ prefix: '--variant-', newValue: this._states.variant.value })
 
 		// Пока показана заглушка, область помечена `aria-busy`: скринридер
 		// знает, что содержимое ещё меняется, и не зачитывает промежуточное.
@@ -79,42 +85,36 @@ export default class TSkeleton
 		this._aria.add('aria-busy', this.present ? 'true' : null)
 	}
 
-	get variant(): TComponentVariant {
+	get variant(): TComponentVariant | undefined {
 		return this._states.variant.value
 	}
 
-	set variant(value: TComponentVariant) {
+	set variant(value: TComponentVariant | undefined) {
 		if (value === this._states.variant.value) return
 
 		this._states.variant.value = value
 	}
 
-	get shape(): TSkeletonShape {
+	get shape(): TSkeletonShape | undefined {
 		return this._shape
 	}
 
-	set shape(value: TSkeletonShape) {
+	set shape(value: TSkeletonShape | undefined) {
 		if (value === this._shape) return
 
-		this._classes.swapClass({
-			oldClass: `--${this._shape}`,
-			newClass: `--${value}`,
-		})
+		this._classes.swap({ prefix: '--shape-', oldValue: this._shape, newValue: value })
 		this._shape = value
 		this.events.emit('change:shape', value)
 	}
 
-	get animation(): TSkeletonAnimation {
+	get animation(): TSkeletonAnimation | undefined {
 		return this._animation
 	}
 
-	set animation(value: TSkeletonAnimation) {
+	set animation(value: TSkeletonAnimation | undefined) {
 		if (value === this._animation) return
 
-		this._classes.swapClass({
-			oldClass: `--${this._animation}`,
-			newClass: `--${value}`,
-		})
+		this._classes.swap({ prefix: '--animation-', oldValue: this._animation, newValue: value })
 		this._animation = value
 		this.events.emit('change:animation', value)
 	}

@@ -28,7 +28,7 @@ export class TAccordionItemExtension<
 	 * Внешний вид элемента.
 	 * Берётся из родительского расширения (TAccordion).
 	 */
-	get view(): TAccordionView {
+	get view(): TAccordionView | undefined {
 		return this._parent.view
 	}
 }

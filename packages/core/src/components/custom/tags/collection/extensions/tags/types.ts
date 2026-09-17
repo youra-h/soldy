@@ -21,7 +21,7 @@ export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
 	readonly closable: boolean
 
 	/** Внешний вид тегов — со набора целиком, как `view` у `TListBoxExtension`. */
-	readonly view: TTagsView
+	readonly view: TTagsView | undefined
 
 	/** Закрыть тег (удалить элемент из коллекции). */
 	closeTag(item: TItem): boolean
@@ -43,7 +43,7 @@ export type TTagsExtensionEvents = {
 	'item:close': (item: ITagsItem) => void
 	'change:closable': (value: boolean) => void
 	/** change:view */
-	'change:view': (value: TTagsView) => void
+	'change:view': (value: TTagsView | undefined) => void
 }
 
 export type TTagsExtensions<TItem extends ITagsItem> = {

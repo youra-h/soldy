@@ -31,8 +31,8 @@ export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 		this.events.relayAll(this._context.adapters.list.events)
 	}
 
-	get view(): TListBoxView {
-		return this._context?.adapters.list.view ?? 'plain'
+	get view(): TListBoxView | undefined {
+		return this._context?.adapters.list.view
 	}
 
 	/**

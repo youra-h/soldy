@@ -24,7 +24,6 @@ export default class TSwitch
 	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISwitchProps> = {
 		...TInputControl.defaultValues,
 		value: false,
-		variant: 'normal',
 	}
 
 	constructor(props: Partial<ISwitchProps> = {}, options: IComponentOptions = {}) {

@@ -48,7 +48,7 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 		this.applyProps(props)
 	}
 
-	get view(): TAccordionView {
+	get view(): TAccordionView | undefined {
 		return this.extensions.accordion.view
 	}
 }

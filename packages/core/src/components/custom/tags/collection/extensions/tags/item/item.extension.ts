@@ -37,7 +37,7 @@ export class TTagsItemExtension<
 	}
 
 	/** Внешний вид тега — берётся у родительского расширения целиком. */
-	get view(): TTagsView {
+	get view(): TTagsView | undefined {
 		return this._parent.view
 	}
 

@@ -2,7 +2,7 @@ import type { IItemExtension, TBaseItemEventsExtension } from '../../../../../..
 import type { TAccordionView } from '../../../../types'
 
 export type TAccordionItemEventsExtension = TBaseItemEventsExtension & {
-	'change:view': (value: TAccordionView) => void
+	'change:view': (value: TAccordionView | undefined) => void
 }
 
 /**
@@ -14,5 +14,5 @@ export interface IAccordionItemExtension<TItem extends object = any> extends IIt
 	TAccordionItemEventsExtension
 > {
 	/** Внешний вид элемента (наследуется от TAccordion). */
-	readonly view: TAccordionView
+	readonly view: TAccordionView | undefined
 }

@@ -17,31 +17,48 @@ describe('TButton', () => {
 	it('classes меняются при смене variant/size/view', () => {
 		const btn = new TButton()
 
-		btn.variant = 'accent'
-		expect(btn.classes.toArray()).toContain('s-button--accent')
+		btn.variant = 'brand'
+		expect(btn.classes.toArray()).toContain('s-button--variant-brand')
 
 		btn.size = 'xl'
 		expect(btn.classes.toArray()).toContain('s-button--size-xl')
 
-		btn.view = 'plain'
-		expect(btn.classes.toArray()).toContain('s-button--a-plain')
+		btn.view = 'ghost'
+		expect(btn.classes.toArray()).toContain('s-button--view-ghost')
 	})
 
 	it('getProps/toJSON отражают ключевые props', () => {
 		const btn = new TButton({
 			text: 't',
-			variant: 'accent',
+			variant: 'brand',
 			size: 'lg',
-			view: 'outlined',
+			view: 'solid',
 		})
 
 		const props = btn.getProps()
 		expect(props).toMatchObject({
 			text: 't',
-			variant: 'accent',
+			variant: 'brand',
 			size: 'lg',
-			view: 'outlined',
+			view: 'solid',
 		})
 		expect(btn.toJSON()).toEqual(props)
+	})
+
+	/**
+	 * Вид темы снимается записью `undefined`. Раньше сеттер пропускал пустое
+	 * значение (`if (value && …)`), и вернуться к виду по умолчанию было нельзя.
+	 */
+	it('view сбрасывается в undefined: модификатор снят, change:view пришёл', () => {
+		const btn = new TButton({ view: 'ghost' })
+		const seen: unknown[] = []
+
+		btn.events.on('change:view', (value) => seen.push(value))
+
+		btn.view = undefined
+
+		expect(btn.view).toBeUndefined()
+		expect(btn.classes.toArray().filter((cls) => cls.includes('--view-'))).toEqual([])
+		expect(seen).toEqual([undefined])
 	})
 })

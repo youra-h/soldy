@@ -175,9 +175,12 @@ export class TSelect<
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			this._field.size = payload.newValue
 		})
-		this.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			this._field.variant = payload.newValue
-		})
+		this.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				this._field.variant = payload.newValue
+			},
+		)
 		this.events.on('change:readonly', (value: boolean) => (this._field.readonly = value))
 		this.events.on('change:required', (value: boolean) => (this._field.required = value))
 		this.events.on('change:name', (value: string) => (this._field.name = value))

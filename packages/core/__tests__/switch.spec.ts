@@ -13,7 +13,7 @@ describe('TSwitch', () => {
 		const c = new TSwitch({
 			value: true,
 			size: 'xl',
-			variant: 'accent',
+			variant: 'brand',
 		})
 		expect(c.classes.toArray()).toContain('s-switch')
 	})

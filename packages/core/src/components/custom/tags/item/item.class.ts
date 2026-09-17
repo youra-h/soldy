@@ -30,7 +30,6 @@ export default class TTagsItem<
 		value: '',
 		closable: undefined,
 		closeLabel: 'Close',
-		variant: 'normal',
 		tag: 'div',
 	}
 

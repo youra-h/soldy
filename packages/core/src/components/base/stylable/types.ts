@@ -6,17 +6,18 @@ export type TStylableEvents = TComponentViewEvents & {
 	/** change:size */
 	'change:size': (payload: TValuePayload<TComponentSize>) => void
 	/** change:variant */
-	'change:variant': (payload: TValuePayload<TComponentVariant>) => void
+	'change:variant': (payload: TValuePayload<TComponentVariant | undefined>) => void
 }
 
 export interface IStylableProps extends IComponentViewProps {
 	size?: TComponentSize
+	/** Вариант темы. Не задан — модификатора нет, компонент выглядит вариантом темы по умолчанию */
 	variant?: TComponentVariant
 }
 
 export type TStylableStates = TComponentViewStates & {
 	size: IStateUnit<TComponentSize>
-	variant: IStateUnit<TComponentVariant>
+	variant: IStateUnit<TComponentVariant | undefined>
 }
 
 export interface IStylable<
@@ -25,5 +26,5 @@ export interface IStylable<
 	TStates extends TStylableStates = TStylableStates,
 > extends IComponentView<TProps, TEvents, TStates> {
 	size: TComponentSize
-	variant: TComponentVariant
+	variant: TComponentVariant | undefined
 }

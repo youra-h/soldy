@@ -102,11 +102,14 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 			})
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.variant = payload.newValue
-			})
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.variant = payload.newValue
+				})
+			},
+		)
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
 		// (TTabsItemExtension резолвит closable из item ?? owner).

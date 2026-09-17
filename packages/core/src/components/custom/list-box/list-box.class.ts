@@ -41,13 +41,13 @@ export class TListBox
 	static override baseClass = 's-list-box'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<IListBoxProps, keyof IListProps | 'view'> = {
+		TDefaultValues<IListBoxProps, keyof IListProps, 'view'> = {
 		...TValueControl.defaultValues,
 		...LIST_DEFAULTS,
-		view: 'plain',
+		view: undefined,
 	}
 
-	protected _view!: TListBoxView
+	protected _view: TListBoxView | undefined
 	protected _maxRows: number
 	protected _contentFit!: TListContentFit
 	protected _scrollBehavior: TScrollBehavior
@@ -70,11 +70,11 @@ export class TListBox
 		this._applyIndicator(props.indicator ?? ctor.defaultValues.indicator)
 	}
 
-	get view(): TListBoxView {
+	get view(): TListBoxView | undefined {
 		return this._view
 	}
 
-	set view(value: TListBoxView) {
+	set view(value: TListBoxView | undefined) {
 		if (this._view === value) return
 
 		this._applyView(value, this._view)
@@ -129,10 +129,12 @@ export class TListBox
 		this.events.emit('change:indicator', value)
 	}
 
-	protected _applyView(newValue: TListBoxView, oldValue?: TListBoxView): void {
-		this._classes.swapClass({
-			oldClass: `--${oldValue}`,
-			newClass: `--${newValue}`,
+	/** Модификатор вида — с префиксом `--view-`; `swap` пропускает пустое значение. */
+	protected _applyView(newValue: TListBoxView | undefined, oldValue?: TListBoxView): void {
+		this._classes.swap({
+			prefix: '--view-',
+			oldValue,
+			newValue,
 		})
 		this._view = newValue
 	}

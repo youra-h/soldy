@@ -32,7 +32,7 @@ export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 		return this._context?.adapters.tags.closable ?? false
 	}
 
-	get view(): TTagsView {
-		return this._context?.adapters.tags.view ?? 'filled'
+	get view(): TTagsView | undefined {
+		return this._context?.adapters.tags.view
 	}
 }

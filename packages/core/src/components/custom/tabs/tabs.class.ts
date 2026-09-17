@@ -19,21 +19,20 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	static override baseClass = 's-tabs'
 
 	static defaultValues: typeof TControl.defaultValues &
-		TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'view' | 'closable'> =
+		TDefaultValues<ITabsProps, 'orientation' | 'alignment' | 'position' | 'closable', 'view'> =
 		{
 			...TControl.defaultValues,
 			orientation: 'horizontal',
 			alignment: 'start',
 			position: 'start',
-			view: 'line',
+			view: undefined,
 			closable: false,
-			variant: 'normal',
 		}
 
 	protected _orientation!: TTabsOrientation
 	protected _alignment!: TTabsAlignment
 	protected _position!: TTabsPosition
-	protected _view!: TTabsView
+	protected _view: TTabsView | undefined
 	protected _closable!: boolean
 
 	constructor(props: Partial<ITabsProps> = {}, options: IComponentOptions<TTabsStates> = {}) {
@@ -124,21 +123,26 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 		this._position = newValue
 	}
 
-	get view(): TTabsView {
+	get view(): TTabsView | undefined {
 		return this._view
 	}
 
-	set view(value: TTabsView) {
+	set view(value: TTabsView | undefined) {
 		if (this._view !== value) {
 			this._applyView(value, this._view)
 			this.events.emit('change:view', value)
 		}
 	}
 
-	protected _applyView(newValue: TTabsView, oldValue?: TTabsView) {
-		this._classes.swapClass({
-			oldClass: `--${oldValue}`,
-			newClass: `--${newValue}`,
+	/**
+	 * Модификатор вида — с префиксом: без него вид темы `vertical` совпал бы с
+	 * модификатором ориентации. `swap` пропускает пустое значение.
+	 */
+	protected _applyView(newValue: TTabsView | undefined, oldValue?: TTabsView) {
+		this._classes.swap({
+			prefix: '--view-',
+			oldValue,
+			newValue,
 		})
 		this._view = newValue
 	}

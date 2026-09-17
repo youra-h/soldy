@@ -20,25 +20,25 @@ describe('TControl', () => {
 	})
 
 	it('classes включает baseClass + state-модификаторы', () => {
-		const ctrl = new TControl<IControlProps>({ size: 'normal', variant: 'normal' })
+		const ctrl = new TControl<IControlProps>({ size: 'normal', variant: 'danger' })
 		ctrl.size = 'xl'
-		ctrl.variant = 'accent'
+		ctrl.variant = 'brand'
 		const classes = ctrl.classes.toArray()
 
 		expect(classes).toContain('s-component-view')
 		expect(classes).toContain('s-component-view--size-xl')
-		expect(classes).toContain('s-component-view--accent')
+		expect(classes).toContain('s-component-view--variant-brand')
 	})
 
 	it('getProps возвращает variant/size/disabled/focused', () => {
 		const ctrl = new TControl<IControlProps>({
 			size: 'sm',
-			variant: 'accent',
+			variant: 'brand',
 			disabled: true,
 			focused: false,
 		})
 		expect(ctrl.getProps()).toMatchObject({
-			variant: 'accent',
+			variant: 'brand',
 			size: 'sm',
 			disabled: true,
 			focused: false,

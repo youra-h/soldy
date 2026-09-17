@@ -88,9 +88,12 @@ export class TSelectTagsExtension<
 			if (this._tags) this._tags.size = payload.newValue
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			if (this._tags) this._tags.variant = payload.newValue
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				if (this._tags) this._tags.variant = payload.newValue
+			},
+		)
 
 		this._syncMode()
 	}

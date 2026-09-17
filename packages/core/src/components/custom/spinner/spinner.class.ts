@@ -8,7 +8,6 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	static defaultValues: typeof TStylable.defaultValues &
 		TDefaultValues<ISpinnerProps, 'borderWidth'> = {
 		...TStylable.defaultValues,
-		variant: 'accent',
 		tag: 'span',
 		borderWidth: 'auto',
 	}

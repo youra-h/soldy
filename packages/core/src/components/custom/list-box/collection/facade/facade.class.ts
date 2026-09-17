@@ -54,7 +54,7 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 		this.applyProps(props)
 	}
 
-	get view(): TListBoxView {
+	get view(): TListBoxView | undefined {
 		return this.extensions.list.view
 	}
 }
