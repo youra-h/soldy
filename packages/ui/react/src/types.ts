@@ -4,7 +4,6 @@
 
 import type { HTMLAttributes, ReactNode } from 'react'
 import type { IEntity } from '@soldy/core'
-import type { IPluginBundle } from '@soldy/plugins'
 import type {
 	IComponentDescriptor,
 	DescriptorAllProps,
@@ -15,17 +14,14 @@ import type {
 } from '@soldy/setup'
 
 /**
- * Базовые props React-компонента: core-props + служебные поля.
- *
- * - `ctrl` — готовый core-инстанс (если не передан, создаётся из Ctor)
- * - `plugins` — готовый бандл плагинов (для обратной совместимости)
+ * Базовые props React-компонента: core-props + `ctrl` — готовый core-инстанс
+ * (если не передан, создаётся из Ctor).
  *
  * `children` здесь нет: слот по умолчанию объявлен в контракте компонента
  * наравне с остальными и приходит из SlotProps.
  */
 export type TReactComponentProps<TCoreProps, TInstance extends IEntity = IEntity> = TCoreProps & {
 	ctrl?: TInstance
-	plugins?: IPluginBundle
 }
 
 /** Событийные пропсы компонента из дескриптора (core + плагины). */

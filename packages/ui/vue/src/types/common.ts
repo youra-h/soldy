@@ -1,4 +1,3 @@
-import { type IPluginBundle } from '@soldy/plugins'
 import type { IEntity } from '@soldy/core'
 import type { IComponentDescriptor, DescriptorAllProps } from '@soldy/setup'
 
@@ -12,7 +11,6 @@ export type TBaseComponentProps<TCoreProps, TInstance extends IEntity = IEntity>
 	 * равно снимает прокси через `toRaw`.
 	 */
 	ctrl?: TInstance
-	plugins?: IPluginBundle | undefined
 }
 
 /** Props компонента, выведенные из дескриптора: UseProps<typeof ButtonDescriptor, IButton> → ButtonProps */
