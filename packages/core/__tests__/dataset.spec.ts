@@ -168,6 +168,6 @@ describe('Активность → data-selected', () => {
 /**
  * Списочные `data-content-fit` и `data-indicator` проверяются не здесь: у самих
  * ListBox и Select — в `list-contract.spec.ts`, `data-indicator` элементов — в
- * `list-box.spec.ts` и `select.spec.ts`, `data-content-fit` опций Select — в
- * `ui/vue/__tests__/select.spec.ts`.
+ * `list-box.spec.ts` и `select.spec.ts`, `data-content-fit` элементов ListBox —
+ * в `list-box.spec.ts`, опций Select — в `ui/vue/__tests__/select.spec.ts`.
  */
