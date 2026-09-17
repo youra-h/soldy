@@ -18,7 +18,7 @@
 | `index.d.ts`                     | значения оформления темы: наборы `variant`, `view`, `shape`, `animation`     |
 | `__tests__/tokens.spec.ts`       | инварианты схем и запреты на уровне исходников                               |
 | `__tests__/theme-values.spec.ts` | каждый модификатор темы объявлен в `index.d.ts`                              |
-| `setup/`                         | поведение темы: `defineTheme` с плагинами, данные которых читает её CSS      |
+| `setup/`                         | поведение темы: `plugins/` (+ `install.ts`), `index.ts` с `defineTheme`      |
 | `__tests__/theme-setup.spec.ts`  | регистрации темы ставят плагины нужным компонентам                           |
 
 ```bash
@@ -164,8 +164,8 @@ CheckBox и Switch — нейтраль. Корень базового вида 
 CSS и `index.d.ts` — не всё, что нужно теме. Полосу под активным табом
 `_tabs.scss` рисует по переменным `--underline-*` и `--gap-*`, а пишет их
 `TTabsViewPlugin`. Раньше он лежал в `@soldy/plugins` и стоял в дескрипторе
-Tabs, то есть библиотека работала на CSS одной темы. Теперь он в
-`setup/tabs-view.plugin.ts`, а `setup/index.ts` отдаёт объект `defineTheme`:
+Tabs, то есть библиотека работала на CSS одной темы. Теперь он в теме, а
+`setup/index.ts` отдаёт объект `defineTheme`:
 
 ```ts
 import '@soldy/theme-oren'
@@ -173,6 +173,22 @@ import oren from '@soldy/theme-oren/setup'
 
 useTheme(oren)
 ```
+
+Раскладка — по виду регистрации:
+
+```
+setup/
+  index.ts             defineTheme: собирает установщики
+  plugins/
+    install.ts         какие плагины на какие компоненты (IThemePlugins[])
+    index.ts
+    tabs-view.plugin.ts
+  extensions/          расширения коллекций — тем же порядком, когда появятся
+```
+
+Новый плагин — файл в `plugins/` и строка в `plugins/install.ts`; `index.ts`
+темы не меняется. Расширение коллекции — папка `extensions/` со своим
+`install.ts` (`IThemeExtensions[]`), подключённым в `setup/index.ts`.
 
 - Экспорт `./setup` отдельный от `.`: корень пакета — CSS, и приложение,
   которому поведение не нужно, его не тянет.

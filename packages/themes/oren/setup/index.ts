@@ -1,5 +1,6 @@
 /**
- * Поведение темы oren: плагины, которые пишут данные для её CSS.
+ * Поведение темы oren: плагины и расширения коллекций, данные которых читает
+ * её CSS.
  *
  * Подключается в точке входа приложения рядом со стилями:
  *
@@ -10,18 +11,18 @@
  *
  * Без этого вызова стили на месте, но то, что CSS читает из переменных
  * плагинов, не рисуется: полоса под активным табом.
+ *
+ * Раскладка — по виду регистрации: `plugins/` — плагины и их установщик
+ * (`install.ts`). Расширения коллекций встанут рядом тем же порядком:
+ * `extensions/` со своим установщиком, подключённым здесь.
  */
 
-import { TTabs } from '@soldy/core'
 import { defineTheme } from '@soldy/setup'
-import { TTabsViewPlugin } from './tabs-view.plugin'
+import { plugins } from './plugins'
 
-export { TTabsViewPlugin }
+export { TTabsViewPlugin } from './plugins'
 
 export default defineTheme({
 	name: 'oren',
-	plugins: [
-		// Полоса и разрыв линии под активным табом (`--underline-*`, `--gap-*`)
-		{ type: TTabs, plugins: [TTabsViewPlugin] },
-	],
+	plugins,
 })
