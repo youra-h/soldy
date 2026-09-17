@@ -34,7 +34,7 @@ export const TagsItemContribution = (): IContribution => ({
 		closeLabel: { type: String, triggers: ['change:closeLabel'] },
 		/**
 		 * Имя кнопки закрытия. Отдельный набор, а не часть `aria`: `aria`
-		 * описывает сам тег, а это — вложенная в него кнопка.
+		 * описывает сам тег, а это — кнопка рядом с ним.
 		 */
 		closeAria: {
 			type: Object,

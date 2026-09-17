@@ -20,8 +20,9 @@ import type { ITagsProps, TTagsEvents, TTagsStates, ITags, TTagsValue, TTagsView
  * элементам — на `option`; это знание коллекции, а не ядра, и пишет его
  * `TTagsExtension`.
  *
- * `view` — как у ListBox: значение целиком со набора, каждый тег отдаёт его
- * своему внутреннему `Button` через `TTagsExtension`/`TTagsItemExtension`.
+ * `view` — как у ListBox: значение целиком со набора, тег получает его через
+ * `TTagsExtension`/`TTagsItemExtension`. Рисуется тег видом `Button` целиком,
+ * вместе с кнопкой закрытия.
  * Дефолт `'filled'` — вид `Button` по умолчанию, чтобы включение пропа не
  * поменяло вид молча.
  */

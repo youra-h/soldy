@@ -1,3 +1,4 @@
+@use 'sass:list';
 @use 'sass:map';
 
 // Шкала размеров: кегль, горизонтальный паддинг, высота и зазор между частями
@@ -40,6 +41,17 @@ $sizes: (
 		'gap': 3,
 	),
 );
+
+// Виды и цвета вариантов — матрица, которую красят `button-view` и
+// `button-view-color` (ниже). Порядок видов — порядок правил в CSS. У варианта
+// `normal` своего цвета нет: это нейтраль вида.
+$views: ('filled', 'none', 'plain', 'outlined');
+$colors: ('accent', 'positive', 'negative', 'caution');
+
+// Фокус поверхности. У Button это фокус её самой; поверхность, которая сама не
+// фокусируется, передаёт в миксины вида селектор (или список) фокуса своей
+// части.
+$self-focus: ('&:focus', '&:focus-visible');
 
 // Размер по шкале `$sizes`
 @mixin button-size($size) {
@@ -105,7 +117,13 @@ $sizes: (
 }
 
 // Outlined: прозрачный фон, цвет текста + рамка, hover/active фон + рамка
-@mixin button-variant-outlined($color, $text: 800, $border: 200, $hover-bg: 100) {
+@mixin button-variant-outlined(
+	$color,
+	$text: 800,
+	$border: 200,
+	$hover-bg: 100,
+	$focused: $self-focus
+) {
 	$active-bg: $hover-bg + 100;
 	$brd-hover: $border + 100;
 
@@ -115,9 +133,72 @@ $sizes: (
 
 	@include button-state-bg($color, $hover-bg, $active-bg);
 
-	&:hover:not([data-disabled='true']),
-	&:focus:not([data-disabled='true']),
-	&:focus-visible:not([data-disabled='true']) {
-		border-color: var(--s-#{$color}-#{$brd-hover});
+	#{list.join(('&:hover',), $focused)} {
+		&:not([data-disabled='true']) {
+			border-color: var(--s-#{$color}-#{$brd-hover});
+		}
 	}
+}
+
+// Вид (`view`) в нейтральном цвете: фон, рамка, текст и их состояния.
+//
+// Миксином, а не правилами прямо в `.s-button--a-*`: тем же видом красится не
+// только Button. Пилюлю тега рисует обёртка элемента — строка тега и кнопка
+// закрытия стоят в ней соседями (`tags/_tags.scss`), — и вид набора тегов
+// обязан совпадать с видом Button. Скопируй туда матрицу — и однажды она
+// разъедется молча.
+@mixin button-view($view, $focused: $self-focus) {
+	@if $view == 'filled' {
+		@include button-variant-filled('neutral', 100);
+	} @else if $view == 'plain' {
+		@apply bg-transparent;
+
+		@include button-variant-plain('neutral');
+	} @else if $view == 'outlined' {
+		@apply bg-transparent border;
+
+		@include button-variant-outlined('neutral', $focused: $focused);
+	} @else {
+		@apply bg-transparent;
+	}
+}
+
+// Вид в цвете варианта — поверх нейтрального
+@mixin button-view-color($view, $color, $focused: $self-focus) {
+	@if $view == 'filled' {
+		@apply text-white;
+
+		@include button-variant-filled($color);
+	} @else if $view == 'plain' {
+		@include button-variant-plain($color);
+	} @else if $view == 'outlined' {
+		@include button-variant-outlined($color, $focused: $focused);
+	}
+}
+
+// Поверхность вида: скругление, проявление цвета и текст по умолчанию. Её
+// рисует не только Button: пилюлю тега — обёртка элемента (`tags/_tags.scss`).
+@mixin button-surface {
+	@apply rounded-md;
+	@apply relative transition-colors duration-200;
+	@apply outline-transparent;
+	@apply text-s-component;
+}
+
+// Выключенная поверхность.
+//
+// Disabled читается из `data-disabled`: ядро пишет его на любом теге.
+// Нативный атрибут есть только у части тегов (у Button на `span` его нет
+// никогда), ARIA-атрибут — только у остальных, и оба переезжают вместе с
+// тегом: селектор по ним молча перестал бы срабатывать.
+@mixin button-disabled {
+	&[data-disabled='true'] {
+		@apply opacity-s-component-disabled cursor-default pointer-events-none;
+	}
+}
+
+// Кольцо фокуса поверхности
+@mixin button-focus-ring {
+	@apply duration-100;
+	@apply outline-2 outline-offset-2 outline-s-component;
 }

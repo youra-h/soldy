@@ -4,28 +4,20 @@
 	$this: &;
 
 	@apply flex items-center justify-center;
-	@apply rounded-md cursor-pointer;
-	@apply relative transition-colors duration-200;
-	@apply outline-transparent;
-	@apply text-s-component;
+	@apply cursor-pointer;
 	@apply max-h-full;
+
+	@include mixines.button-surface;
 
 	&__text {
 		@apply grow truncate text-center;
 	}
 
-	// Disabled читается из `data-disabled`: ядро пишет его на любом теге.
-	// Нативный атрибут есть только у части тегов (у Button на `span` его нет
-	// никогда), ARIA-атрибут — только у остальных, и оба переезжают вместе с
-	// тегом: селектор по ним молча перестал бы срабатывать.
-	&[data-disabled='true'] {
-		@apply opacity-s-component-disabled cursor-default pointer-events-none;
-	}
+	@include mixines.button-disabled;
 
 	&:focus-visible {
 		&:not(#{$this}--a-none) {
-			@apply duration-100;
-			@apply outline-2 outline-offset-2 outline-s-component;
+			@include mixines.button-focus-ring;
 		}
 	}
 
@@ -39,78 +31,16 @@
 		}
 	}
 
-	&--a-filled {
-		@include mixines.button-variant-filled('neutral', 100);
+	// Вид и цвет варианта — матрица из миксинов: ею же красится пилюля тега
+	@each $view in mixines.$views {
+		&--a-#{$view} {
+			@include mixines.button-view($view);
 
-		&.s-button--accent,
-		&.s-button--positive,
-		&.s-button--negative,
-		&.s-button--caution {
-			@apply text-white;
-		}
-
-		&.s-button--accent {
-			@include mixines.button-variant-filled('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-filled('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-filled('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-filled('caution');
-		}
-	}
-
-	&--a-none {
-		@apply bg-transparent;
-	}
-
-	&--a-plain {
-		@apply bg-transparent;
-
-		@include mixines.button-variant-plain('neutral');
-
-		&.s-button--accent {
-			@include mixines.button-variant-plain('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-plain('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-plain('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-plain('caution');
-		}
-	}
-
-	&--a-outlined {
-		@apply bg-transparent border;
-
-		@include mixines.button-variant-outlined('neutral');
-
-		&.s-button--accent {
-			@include mixines.button-variant-outlined('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-outlined('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-outlined('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-outlined('caution');
+			@each $color in mixines.$colors {
+				&#{$this}--#{$color} {
+					@include mixines.button-view-color($view, $color);
+				}
+			}
 		}
 	}
 }
