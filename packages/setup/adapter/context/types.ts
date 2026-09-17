@@ -62,6 +62,8 @@ export interface IAdapterContext<TInstance extends object = object> {
 	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
 	readonly props: object
+	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
+	readonly embedded: string | undefined
 	readonly events: TEvented<TAdapterEvents>
 
 	/** Подключить расширение БЕЗ опций */

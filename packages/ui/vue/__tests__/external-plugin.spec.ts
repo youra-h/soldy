@@ -19,9 +19,9 @@ import { nextTick } from 'vue'
 import { TActionPlugin, TBasePlugin, TPluginBundle } from '@soldy/plugins'
 import type { IPluginContext } from '@soldy/plugins'
 import type { IExtension, IExtensionContext } from '@soldy/core'
-import { TButton, TCollectionEngine, TEvented } from '@soldy/core'
-import { usePlugins } from '@soldy/setup'
-import { Button, ListBox, Tags, TagsItem } from '@soldy/ui-vue'
+import { TButton, TCollectionEngine, TEvented, TTags } from '@soldy/core'
+import { useExtensions, usePlugins } from '@soldy/setup'
+import { Button, ListBox, Select, SelectItem, Tags, TagsItem } from '@soldy/ui-vue'
 
 /** Слушатели нажатия появляются по `element:ready`, а он приходит через кадр. */
 const mounted = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
@@ -231,6 +231,72 @@ describe('плагин на тип · usePlugins', () => {
 		await nextTick()
 
 		expect(installedOn).toHaveLength(3)
+
+		wrapper.unmount()
+	})
+})
+
+/** Расширение реестра: запоминает владельцев, в чьи движки поставлено. */
+const extendedOwners: object[] = []
+
+class TOwnerProbeExtension implements IExtension<object> {
+	readonly name = 'ownerProbe'
+	readonly events = new TEvented<Record<string, never>>()
+
+	constructor(owner: object) {
+		extendedOwners.push(owner)
+	}
+
+	install(): void {}
+}
+
+describe('расширение на тип · useExtensions', () => {
+	let dispose: (() => void) | null = null
+
+	afterEach(() => {
+		dispose?.()
+		dispose = null
+		extendedOwners.length = 0
+	})
+
+	/** Теги пользователя и Select с тегами в поле: у Select свои Tags — деталь. */
+	const render = async () => {
+		const wrapper = mount({
+			components: { Tags, TagsItem, Select, SelectItem },
+			template: `
+				<div>
+					<Tags><TagsItem value="a" text="A" /></Tags>
+					<Select mode="multiple" editable :value="['0']">
+						<SelectItem value="0" text="Москва" />
+					</Select>
+				</div>
+			`,
+		})
+
+		await nextTick()
+
+		return wrapper
+	}
+
+	it('по умолчанию — движок тегов пользователя, а не тегов в поле Select', async () => {
+		dispose = useExtensions(TTags, [(owner) => new TOwnerProbeExtension(owner)])
+
+		const wrapper = await render()
+
+		expect(extendedOwners).toHaveLength(1)
+
+		wrapper.unmount()
+	})
+
+	it("scope 'all' — и теги в поле Select", async () => {
+		dispose = useExtensions(TTags, [(owner) => new TOwnerProbeExtension(owner)], {
+			scope: 'all',
+		})
+
+		const wrapper = await render()
+
+		expect(extendedOwners).toHaveLength(2)
+		expect(extendedOwners.every((owner) => owner instanceof TTags)).toBe(true)
 
 		wrapper.unmount()
 	})

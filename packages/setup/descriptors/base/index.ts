@@ -2,6 +2,8 @@ export { normalizeContribution } from './compile-contribution'
 export { definePlugin } from './define-plugin'
 export { defineComponent } from './define-component'
 export { usePlugins, resolveRegisteredPlugins } from './plugin-registry'
+export { useExtensions, applyRegisteredExtensions } from './extension-registry'
+export type { TExtensionFactory } from './extension-registry'
 export type {
 	IBundleContext,
 	IPluginRegistrationOptions,
