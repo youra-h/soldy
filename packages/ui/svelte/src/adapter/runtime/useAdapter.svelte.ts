@@ -25,8 +25,8 @@ import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps.svelte'
 import { useSyncEvents } from './useSyncEvents'
 
-/** Пропсы, которые компонент не съел. `children`, `plugins` и `ctrl` он съедает всегда. */
-type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'plugins' | 'ctrl'>
+/** Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда. */
+type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl'>
 
 export type TBinding<TInstance = object, TProps extends object = object> = {
 	readonly ctrl: TInstance

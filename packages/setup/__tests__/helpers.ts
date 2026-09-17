@@ -1,5 +1,33 @@
 import { TPluginBundle } from '@soldy/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy/plugins'
+import * as exported from '../descriptors'
+import type { IComponentDescriptor } from '../descriptors'
+
+function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
+	return (
+		typeof value === 'object' && value !== null && 'createBundle' in value && 'plugins' in value
+	)
+}
+
+/**
+ * Все дескрипторы компонентов из экспорта — не ручным списком: новый попадёт
+ * под проверку сам. Определения плагинов (`AriaPluginDescriptor`) отсеиваются:
+ * у них нет `createBundle`.
+ */
+export function exportedDescriptors(): Array<[string, IComponentDescriptor]> {
+	const entries: Record<string, unknown> = exported
+	const result: Array<[string, IComponentDescriptor]> = []
+
+	for (const [name, factory] of Object.entries(entries)) {
+		if (!name.endsWith('Descriptor') || typeof factory !== 'function') continue
+
+		const value: unknown = factory()
+
+		if (isComponentDescriptor(value)) result.push([name, value])
+	}
+
+	return result
+}
 
 /**
  * Контекст установки плагина для тестов без адаптера фреймворка.

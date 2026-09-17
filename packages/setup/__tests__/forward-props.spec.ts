@@ -34,9 +34,7 @@ describe('collectForwardProps', () => {
 	})
 
 	it('пропы, события и пропы адаптера съедаются', () => {
-		expect(forward({ text: 'x', onReady: () => {}, plugins: null, ctrl: undefined })).toEqual(
-			{},
-		)
+		expect(forward({ text: 'x', onReady: () => {}, ctrl: undefined })).toEqual({})
 	})
 
 	it('всё остальное уходит как есть', () => {

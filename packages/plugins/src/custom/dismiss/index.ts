@@ -1,2 +1,2 @@
 export { TDismissPlugin } from './dismiss.plugin'
-export type { IDismissPluginOptions, TDismissPluginEvents } from './types'
+export type { IDismissPluginOptions, TDismissPluginEvents, IDismissPluginProps } from './types'

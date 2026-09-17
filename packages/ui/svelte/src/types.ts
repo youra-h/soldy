@@ -5,7 +5,6 @@
 import type { Snippet } from 'svelte'
 import type { HTMLAttributes } from 'svelte/elements'
 import type { IEntity } from '@soldy/core'
-import type { IPluginBundle } from '@soldy/plugins'
 import type {
 	IComponentDescriptor,
 	DescriptorAllProps,
@@ -16,17 +15,14 @@ import type {
 } from '@soldy/setup'
 
 /**
- * Базовые props Svelte-компонента: core-props + служебные поля.
- *
- * - `ctrl` — готовый core-инстанс (если не передан, создаётся из Ctor)
- * - `plugins` — готовый бандл плагинов
+ * Базовые props Svelte-компонента: core-props + `ctrl` — готовый core-инстанс
+ * (если не передан, создаётся из Ctor).
  *
  * `children` здесь нет: слот по умолчанию объявлен в контракте компонента
  * наравне с остальными и приходит из SlotProps.
  */
 export type TSvelteComponentProps<TCoreProps, TInstance extends IEntity = IEntity> = TCoreProps & {
 	ctrl?: TInstance
-	plugins?: IPluginBundle
 }
 
 /** Событийные пропы компонента из дескриптора (core + плагины). */

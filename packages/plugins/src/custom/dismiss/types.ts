@@ -41,3 +41,14 @@ export type TDismissPluginEvents = TPluginEvents & {
 	/** change:enabled */
 	'change:enabled': (value: boolean) => void
 }
+
+/**
+ * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
+ *
+ * Неймспейс (`dismiss_enabled`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
+ * Защищённого `ownerAttribute` здесь нет: это выход, в разметку его не пишут.
+ */
+export interface IDismissPluginProps {
+	enabled?: boolean
+}
