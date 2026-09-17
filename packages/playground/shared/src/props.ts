@@ -1,15 +1,14 @@
 import type { IPropDeclaration } from '@soldy/accessor'
 import { underscorePropNaming } from '@soldy/setup'
 import {
-	ACCORDION_VIEWS,
 	COMPONENT_SIZES,
 	BUTTON_VIEWS,
+	CHECK_BOX_VIEWS,
 	COMPONENT_VARIANTS,
 	DIRECTIONS,
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
-	LIST_BOX_VIEWS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
 	SCROLL_BEHAVIORS,
@@ -111,7 +110,7 @@ const OWN: Record<string, Record<string, string>> = {
 	'check-box': {
 		indeterminate:
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
-		plain: 'Без рамки и фона — для плотных списков',
+		view: 'Оформление: plain — без рамки и фона, для плотных списков',
 	},
 	select: {
 		open: 'Раскрыта ли панель со списком',
@@ -191,8 +190,9 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		anchor_placement: FRAME_PLACEMENTS,
 	},
 	button: { view: BUTTON_VIEWS },
-	accordion: { view: ACCORDION_VIEWS },
-	'list-box': { view: LIST_BOX_VIEWS },
+	'check-box': { view: CHECK_BOX_VIEWS },
+	accordion: { view: BUTTON_VIEWS },
+	'list-box': { view: BUTTON_VIEWS },
 	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,

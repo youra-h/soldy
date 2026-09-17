@@ -1,10 +1,11 @@
+/// <reference types="@soldy/theme-oren" />
+
 import type {
 	TComponentSize,
 	TComponentVariant,
 	TButtonView,
-	TAccordionView,
+	TCheckBoxView,
 	TAccordionArrowPlacement,
-	TListBoxView,
 	TListContentFit,
 	TListIndicator,
 	TSkeletonShape,
@@ -35,9 +36,15 @@ import type { TFramePlacement } from '@soldy/plugins'
  *
  * **Почему это не разъедется с библиотекой.** Каждый список сверяется с
  * исходным типом на компиляции — см. `enumOf` ниже. Добавили значение в
- * `TButtonView` и забыли сюда — `vue-tsc` покажет, какого именно не хватает.
+ * `TTabsAlignment` и забыли сюда — `vue-tsc` покажет, какого именно не хватает.
  * Ровно этой сверки не было у прежнего демо, где такие же списки лежали в
  * `playgrounds/Tabs.vue` и тихо устаревали.
+ *
+ * **Значения оформления — из темы.** `variant`, `view`, `shape` и `animation`
+ * объявляет не библиотека, а тема (корневой `AGENTS.md`, «Оформление: значения
+ * объявляет тема»): реестры ядра пусты. Стенд рисует тему oren, поэтому её
+ * объявление подключено к программе типов директивой выше, и эти списки
+ * сверяются с ним. Тема добавила вид — `vue-tsc` попросит его и здесь.
  */
 
 /**
@@ -72,13 +79,15 @@ export const COMPONENT_VARIANTS = enumOf<TComponentVariant>()([
 	'caution',
 ])
 
+/**
+ * Вид кнопки — он же вид строк, которые рисует Button: у ListBox, Accordion и
+ * Tags `view` — псевдоним `TButtonView`, и список у них этот же.
+ */
 export const BUTTON_VIEWS = enumOf<TButtonView>()(['filled', 'plain', 'outlined', 'none'])
 
-export const ACCORDION_VIEWS = enumOf<TAccordionView>()(['plain', 'outlined', 'filled'])
+export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['plain'])
 
 export const ACCORDION_ARROW_PLACEMENTS = enumOf<TAccordionArrowPlacement>()(['start', 'end'])
-
-export const LIST_BOX_VIEWS = enumOf<TListBoxView>()(['plain', 'outlined', 'filled'])
 
 /** Общее для ListBox и Select: что делать с не помещающимся текстом. */
 export const LIST_CONTENT_FITS = enumOf<TListContentFit>()(['truncate', 'wrap', 'expand'])

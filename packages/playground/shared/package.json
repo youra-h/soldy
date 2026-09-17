@@ -15,5 +15,8 @@
     "@soldy/core": "*",
     "@soldy/plugins": "*",
     "@soldy/setup": "*"
+  },
+  "devDependencies": {
+    "@soldy/theme-oren": "*"
   }
 }
