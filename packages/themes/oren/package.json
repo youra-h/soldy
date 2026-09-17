@@ -1,7 +1,7 @@
 {
   "name": "@soldy/theme-oren",
   "version": "0.1.0",
-  "description": "Тема oren: CSS под BEM-классы и data-* компонентов soldy, светлая и тёмная схемы",
+  "description": "Тема oren: CSS под BEM-классы и data-* компонентов Soldy UI, светлая и тёмная схемы",
   "keywords": [
     "soldy",
     "ui",

@@ -1,4 +1,4 @@
-# soldy
+# Soldy UI
 
 **UI components with the logic written once: a framework-agnostic core and thin adapters that
 render it in Vue, React, Angular, Svelte, Solid and Web Components.**
@@ -11,14 +11,14 @@ render it in Vue, React, Angular, Svelte, Solid and Web Components.**
 
 ## What it is
 
-The behavior of a soldy component lives in a headless core with no framework in it: component
+The behavior of a Soldy UI component lives in a headless core with no framework in it: component
 models in plain TypeScript that own their state, events, collections and ARIA. Behavior that needs
 the DOM — focus, keyboard, overlay — comes as plugins, and the component contract (props, events,
 slots) is declared once, in a descriptor. Thin adapters for Vue, React, Angular, Svelte, Solid and
 Web Components connect that model to a framework and render the markup: BEM classes `s-*` and
 `data-*` state attributes. The look comes from a theme, shipped as a separate package.
 
-## Why soldy
+## Why Soldy UI
 
 - **Logic is written once.** Behavior lives in the core, plugins and collection extensions, and an
   adapter only wires it up. Reactivity and lifecycle hooks stay in the adapter layer of each
