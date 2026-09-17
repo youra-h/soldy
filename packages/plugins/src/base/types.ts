@@ -100,4 +100,16 @@ export interface IPluginBundle {
 	): this
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void
+	/**
+	 * Объявить набор наружу: `created()` у каждого плагина, в порядке установки.
+	 * Плагин, поставленный после этого, объявляется сразу в `use()`. Повторный
+	 * вызов ничего не делает. Вызывает setup (`createBundle`).
+	 */
+	created(): void
+	/**
+	 * Уничтожить набор: `destroy()` у каждого плагина, в обратном порядке
+	 * установки. Вызывает владелец набора — адаптерный контекст, который его
+	 * создал.
+	 */
+	destroy(): void
 }

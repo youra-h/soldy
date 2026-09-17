@@ -137,15 +137,15 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			// того, как получил bundle, и синхронный эмит ушёл бы в пустоту.
 			//
 			// Сначала bundle, потом плагины: иначе обработчик `bundle:create`
-			// не успел бы подписаться на плагинный `create`.
+			// не успел бы подписаться на плагинный `create`. Объявляет плагины
+			// сам набор, а не цикл по дескриптору: плагин, поставленный в
+			// обработчике `bundle:create`, объявляется вместе с остальными.
 			Promise.resolve().then(() => {
 				const events: unknown = Reflect.get(instance, 'events')
 
 				if (hasEmit(events)) events.emit('bundle:create', bundle)
 
-				for (const plugin of plugins) {
-					bundle.get(plugin.ctor)?.created()
-				}
+				bundle.created()
 			})
 
 			return bundle

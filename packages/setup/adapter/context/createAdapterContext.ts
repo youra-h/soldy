@@ -24,6 +24,9 @@ export function createAdapterContext<TInstance extends object>(
 	config: IAdapterContextConfig = {},
 ): IAdapterContext<TInstance> {
 	const instance = options.ctrl ?? new descriptor.ctor(options.props ?? {}, options.options ?? {})
+	// Набор, пришедший в конфиге, принадлежит тому, кто его передал (адаптер
+	// коллекции делит bundle компонента) — уничтожает его он же.
+	const ownsBundle = config.bundle === undefined
 	const bundle = config.bundle ?? descriptor.createBundle(instance)
 	const accessor = descriptor.createAccessor(instance, bundle)
 
@@ -53,6 +56,10 @@ export function createAdapterContext<TInstance extends object>(
 		destroy() {
 			events.emit('destroy')
 			extensions.clear()
+
+			// После расширений: `destroy` у них отвязывает узел от плагинов,
+			// и плагины успевают получить `removed`
+			if (ownsBundle) bundle?.destroy()
 		},
 	}
 
