@@ -369,8 +369,10 @@ React-компоненты держат adapter-context между рендер�
 
 Критерий выведен из модели soldy, а не заимствован. Ark-таксономия
 (`Root`/`Trigger`/`Indicator`/`Label`/`Positioner`) кодирует чужую модель: там
-нет слотов и табы не коллекция. В soldy `TTabs` — `TCollectionComponent`,
-`TTabsItem` — `TCollectionItemComponent`, поэтому часть называется `Item`, а не
+нет слотов и табы не коллекция. В soldy табы — коллекция: `TTabs` наследует
+`TControl`, а членство в ней выставляют фасады — `TTabsCollectionFacade`
+(`TCollectionComponent`) у владельца и `TTabsItemCollectionFacade`
+(`TCollectionItemComponent`) у таба. Поэтому часть называется `Item`, а не
 `Trigger`; иначе публичное API разъедется с ядром.
 
 ### Составные компоненты: точка — основная форма
@@ -469,11 +471,11 @@ bundles.events.on('engine:bound', (engine) => {
 
 ### Три слоя, и они не пересекаются
 
-| Слой                | Отвечает за                                   | Пример                                                      |
-| ------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| **Класс ядра**      | собственные props и events                    | `TTabsItem` — `value`, `text`, `closable`                   |
-| **Фасад коллекции** | членство в коллекции                          | `TTabsItemCollectionFacade` — `active`, `order`, `tab_aria` |
-| **Расширение**      | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок                         |
+| Слой                | Отвечает за                                   | Пример                                                          |
+| ------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| **Класс ядра**      | собственные props и events                    | `TTabsItem` — `value`, `text`, `closable`                       |
+| **Фасад коллекции** | членство в коллекции                          | `TTabsItemCollectionFacade` — `active`, `order`, `tab_closable` |
+| **Расширение**      | функциональность поверх стандартной коллекции | `TTabsExtension` — закрытие вкладок                             |
 
 **Класс ядра не знает о коллекции.** Ни движка, ни `bindEngine`, ни активности.
 Если классу «нужен доступ к коллекции» — значит логика не в том слое.
@@ -508,11 +510,11 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 ```
 TCollectionComponent
 └── TBatchCollectionFacade          batch      → Tabs
-    └── TSelectionCollectionFacade  + selection → Accordion, Select, List → ListBox
+    └── TSelectionCollectionFacade  + selection → Accordion, Select, ListBox, Tags
 
 TCollectionItemComponent
 └── TOrderItemFacade                order      → Tabs.Item
-    └── TSelectionItemFacade        + selected → Accordion/List/Select.Item
+    └── TSelectionItemFacade        + selected → Accordion/ListBox/Select/Tags.Item
 ```
 
 У табов активность, а не выбор — поэтому они наследуют только `batch` и
@@ -524,7 +526,7 @@ TCollectionItemComponent
 которое она потребляет (`TExtensions extends { selection: TSelectionExtension<any> }`),
 поэтому наследование без расширения — ошибка компиляции. Тип элемента у
 расширения при этом `any`: расширения инвариантны по элементу, и `TItem` там
-ломает цепочку List → ListBox.
+ломал цепочку List → ListBox (слой `TList` с тех пор слит с ListBox).
 
 **Чем это уже окупилось.** До баз одно свойство писалось в трёх фасадах по
 отдельности, и три копии дали три разных API: у Accordion не было сеттера
@@ -721,8 +723,9 @@ relay и порядок, который расширения выстраива�
 
 ### Когда заводить своё расширение
 
-Стандартный набор лежит в `core/components/base/collection/engine/extension/`
-(`plain`, `batch`, `activation`, `order`, `unique`, `meta`, `factory`).
+Стандартный набор лежит в `core/src/components/base/collection/engine/extension/`
+(`plain`, `batch`, `activation`, `selection`, `value`, `order`, `unique`, `meta`,
+`factory`, `filter`).
 **Своё расширение заводится, когда конкретной коллекции нужна функциональность
 сверх стандартной.** Не для того, чтобы что-то куда-то положить.
 
@@ -899,27 +902,30 @@ Vue отдаёт шаблону не `state`, а рефы (`TBinding`: проп�
 
 ### Логику, которой нужен элемент, кладите в item-адаптер
 
-У адаптера есть `_item` — поэтому всё, что вычисляется от элемента, считается
-там, и **обе стороны парной связки считаются в одном месте**:
+У адаптера есть `_item` и `_parent` — поэтому всё, что вычисляется от элемента,
+отдаётся там, и **обе стороны парной связки считаются по одной формуле**. Сама
+формула — в родительском расширении, а item-адаптер (`tabAria`, `panelAria`)
+только подставляет в неё свой элемент:
 
 ```ts
-// content/item/item.extension.ts — id панели и aria-controls таба это одно и то же
-private get _panelId() { return `s-tabpanel-${this._item.uid}` }
-
-get tabAria()   { return { id: this._tabId, 'aria-controls': this._panelId } }
-get panelAria() { return { role: 'tabpanel', id: this._panelId, 'aria-labelledby': this._tabId } }
+// content/content.extension.ts — id панели и aria-controls таба это одно и то же
+tabId(item)   { return `s-tab-${item.uid}` }
+panelId(item) { return `s-tabpanel-${item.uid}` }
 ```
 
-Разнеси эти два геттера по разным файлам — однажды разойдутся. Фасады только
-читают: `tab_aria` → `adapters.content.tabAria`, `content_aria` →
-`adapters.content.panelAria`.
+Разнеси формулу по разным файлам — однажды разойдутся. Сторону таба
+`TTabsContentExtension` пишет в `aria` элемента при добавлении в коллекцию,
+сторону панели `TTabsContentBindingExtension` берёт у item-адаптера
+(`adapters.content.panelAria`) и кладёт в `aria` панели. Фасад отдаёт атрибуты
+связки пропом, только когда у панели нет экземпляра: у Accordion `content_aria`
+→ `adapters.content.contentAria`.
 
 ### Имена props фасада префиксуются
 
-`tab_closable`, `tab_aria`, `content_aria`. Причина: в шаблоне значения двух
+`tab_closable`, `content_aria`, `list_aria`. Причина: в шаблоне значения двух
 adapter-контекстов (собственного и коллекционного) сливаются в один объект, и
-одноимённые затирают друг друга. У панели уже есть унаследованный `aria` — она
-и вынудила префикс.
+одноимённые затирают друг друга. У таба уже есть свой `closable`, у элемента
+Accordion и у Select — унаследованный `aria`: они и вынудили префикс.
 
 ### `disabled` элемента: своё или владельца
 
@@ -1016,7 +1022,7 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 | Слой                                                   | Общий?    | Где                                                         |
 | ------------------------------------------------------ | --------- | ----------------------------------------------------------- |
 | оверлей: якорь, позиционирование, z-index, закрытие    | **общий** | `TFrame` + `TAnchorPlugin` + `TDismissPlugin`               |
-| поведение списка: подсветка, скролл к элементу, высота | **общий** | `TListItemPlugin`, `TListScrollPlugin`, `TListLayoutPlugin` |
+| поведение списка: подсветка, скролл к элементу, высота | **общий** | `TListItemPlugin`, `TListScrollPlugin`, `TListHeightPlugin` |
 | визуальная строка элемента                             | **общий** | `Button` внутри элемента + SCSS                             |
 | движок коллекции, `selection`, `order`, `meta`         | **общий** | `base/collection`                                           |
 | контейнер списка и его ARIA                            | **свой**  | у каждого компонента                                        |
@@ -1185,7 +1191,7 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 - `resolveDefaultExtensions` (в `adapter/extensions/`) — уже применяется по
   умолчанию внутри `createAdapterContext`, передавать его вручную не нужно.
 
-**Правило:** починил баг в одном адаптере — проверь остальные два. Исторически
+**Правило:** починил баг в одном адаптере — проверь остальные. Исторически
 исправления уезжали в React/Angular и не возвращались во Vue.
 
 ## Невизуальное против визуального
@@ -1234,7 +1240,7 @@ get styles() { return this._styles }   // ❌ наружу уходит живо
 
 Смежное правило: **`change:*` эмитится только при реальном изменении.** Сеттеры
 обязаны проверять текущее значение до эмита (сравни `show()` и `hide()` в
-`component.class.ts` — асимметрия здесь однажды уже приводила к бесконечному
+`component-view.class.ts` — асимметрия здесь однажды уже приводила к бесконечному
 циклу ре-рендеров в React).
 
 ## Две поверхности управления (критично)
@@ -1435,7 +1441,7 @@ export const ButtonContribution = (): IContribution => ({
 | WebC     | `<span slot="leading">` | ✗ нет механизма               |
 
 Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
-(`resolveSlotName` из `@soldy/setup/common`). Остальные имена одинаковы везде.
+(`resolveSlotName` из `packages/setup/common`). Остальные имена одинаковы везде.
 
 Особенности, о которые легко споткнуться:
 
@@ -1523,14 +1529,15 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                  |
-| ---------------------- | ---------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции             |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`         |
-| `TListLayoutPlugin`    | `data-word-wrap` — уже разрешённый (элемент поверх списка) |
-| `TListItemPlugin`      | `data-highlighted`                                         |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит        |
-| ядро компонента        | своё состояние — `data-open` у `TSelect`                   |
+| Источник               | Что пишет                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                  |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                              |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator` |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                  |
+| `TListItemPlugin`      | `data-highlighted`                                                              |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                             |
+| ядро компонента        | своё состояние — `data-open` у `TSelect`                                        |
 
 Два правила, которые легко нарушить:
 
@@ -1802,7 +1809,8 @@ Disabled-элементы пропускаются при навигации с 
 `aria-hidden`, а с именем меняет его на эту роль. Обе стороны у одного
 владельца, иначе при снятии имени неясно, кому возвращать `aria-hidden`.
 
-Это единственный плагин, чьи пропсы пишутся снаружи. Начальные значения
+Пропсы, которые пишутся снаружи, есть не только у него: ещё у `TAnchorPlugin`
+(`anchor_*`) и `TDismissPlugin` (`dismiss_enabled`). Начальные значения
 доносит `TPluginPropsExtension` — ядро получает пропсы через конструктор,
 плагины нет.
 
@@ -1875,9 +1883,13 @@ Disabled — так же: тема читает `data-disabled`, которое 
   `npm run generate` (CI проверяет дрейф).
 - Состояние — сигнал (`state()` в шаблонах), а не поле + `markForCheck()`:
   `markForCheck` не планирует проверку и работал только благодаря Zone.js.
-- Корень компонента живёт внутри `@if`, поэтому DOM-биндинг делается через
-  `bindElementFrom(viewChild(...))` — обычный `@ViewChild` читается один раз в
-  `ngAfterViewInit` и после пересоздания узла указывает на мёртвый элемент.
+- Корень компонента живёт внутри `@if`, поэтому DOM-биндинг делает базовый
+  `TComponentBase` (`packages/ui/angular/src/adapter/runtime/component.base.ts`):
+  корень в шаблоне помечен `#root`, а сигнальный `viewChild('root')` в `effect`
+  переустанавливает связь при пересоздании узла. Обычный `@ViewChild` читается
+  один раз в `ngAfterViewInit` и после пересоздания узла указывает на мёртвый
+  элемент. Если корень — хост-элемент и живёт всё время, компонент передаёт
+  стратегию `'host'`: узел берётся из `inject(ElementRef)` один раз.
 - `<ng-content>` объявляется ровно один раз и подставляется через
   `ngTemplateOutlet`: два слота во взаимоисключающих ветках теряют содержимое.
 

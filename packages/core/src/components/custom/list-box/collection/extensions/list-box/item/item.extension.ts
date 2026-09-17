@@ -8,10 +8,10 @@ import type { TListIndicator } from '../../../../../list'
 /**
  * TListBoxItemExtension — stateless-делегат элемента ListBox.
  *
- * Отдаёт `view` владельца. Раньше между ним и базой стоял `TListItemExtension`,
- * резолвивший `wordWrap` как «значение элемента поверх значения списка»; теперь
- * списочным `wordWrap` владеет `TListLayoutPlugin`, и он же разрешает пару,
- * записывая элементу `data-word-wrap`.
+ * Отдаёт `view` и `indicator` владельца. Раньше между ним и базой стоял
+ * `TListItemExtension`, резолвивший `wordWrap` как «значение элемента поверх
+ * значения списка»; теперь такую пару — `contentFit` — разрешает родительский
+ * `TListBoxExtension`, записывая элементу `data-content-fit`.
  *
  * @template TItem   — тип элемента (IListBoxItem или наследник)
  * @template TParent — тип родительского расширения (IListBoxExtension или наследник)

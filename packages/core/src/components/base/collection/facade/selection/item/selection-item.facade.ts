@@ -11,8 +11,8 @@ import type { TSelectionItemFacadeEvents } from '../../types'
 /**
  * Фасад элемента, который можно выбрать: `selected` плюс порядок из базы.
  *
- * Подключают элементы Accordion, List (и через него ListBox) и Select. У таба
- * не выбор, а активация, поэтому он наследует только `TOrderItemFacade`.
+ * Подключают элементы Accordion, ListBox, Select и Tags. У таба не выбор, а
+ * активация, поэтому он наследует только `TOrderItemFacade`.
  *
  * Сеттер здесь есть, и это исправление: у опции Select его не было, хотя
  * contribution объявляет `selected` записываемым пропом, — присваивание

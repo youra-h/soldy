@@ -166,7 +166,8 @@ describe('Активность → data-selected', () => {
 })
 
 /**
- * `data-word-wrap` проверяется не здесь, а в `setup/__tests__/list-layout.spec.ts`:
- * атрибут ставит `TListLayoutPlugin`, которому принадлежит и списочный
- * `wordWrap`. Ядро о нём больше не знает.
+ * Списочные `data-content-fit` и `data-indicator` проверяются не здесь: у самих
+ * ListBox и Select — в `list-contract.spec.ts`, `data-indicator` элементов — в
+ * `list-box.spec.ts` и `select.spec.ts`, `data-content-fit` опций Select — в
+ * `ui/vue/__tests__/select.spec.ts`.
  */

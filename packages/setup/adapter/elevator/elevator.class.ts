@@ -7,7 +7,10 @@
  *
  * Конкретные реализации:
  *   - TVueElevator extends TElevator (provide/inject)
- *   - ReactElevator extends TElevator (React.Context)
+ *   - TReactElevator extends TElevator (React.Context)
+ *   - TSolidElevator extends TElevator (Solid Context)
+ *   - TSvelteElevator extends TElevator (setContext/getContext)
+ *   - TAngularElevator extends TElevator (DI: InjectionToken)
  */
 
 import type { IContextElevator } from '@soldy/accessor'

@@ -29,7 +29,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 	>
 		<!--
 			`dataset` биндится дважды, и это не описка. Тема читает
-			`data-word-wrap` с обёртки, а `data-selected` / `data-highlighted`
+			`data-content-fit` с обёртки, а `data-selected` / `data-highlighted`
 			— с `.s-button`: у ListBox состояние размазано по двум элементам,
 			в отличие от Select и Accordion, где всё на обёртке.
 

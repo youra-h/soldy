@@ -16,7 +16,7 @@ import type { TBundlesEvents } from './types'
  * дополнительной обработки.
  *
  * Устанавливается на owner-компоненте коллекции (например, Tabs). Коллекция
- * привязывается через {@link bindCollection} из adapter-слоя после её создания.
+ * привязывается через {@link bindEngine} из adapter-слоя после её создания.
  */
 export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 	private _engine: TCollectionEngine<any, any> | null = null
