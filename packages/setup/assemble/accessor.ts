@@ -1,21 +1,24 @@
 /**
- * Аксессор компонента: units инстанса и плагинов дескриптора.
+ * Аксессор компонента: units инстанса и плагинов состава.
  *
  * Unit — `{ instance, props, events }`: свойство читается прямо с инстанса,
  * которому принадлежит, без неймспейса и карты плагинов.
  *
- * Плагины реестра units не дают: контракт компонента объявляет дескриптор, а
- * внешний плагин его не расширяет (AGENTS.md, «Плагины и расширения снаружи»).
- * Поэтому аксессор один и тот же у владельца набора и у фасада коллекции,
- * который тот же набор делит.
+ * Units дают только те записи состава, у которых есть декларации, то есть
+ * плагины дескриптора: внешний плагин контракт компонента не расширяет
+ * (AGENTS.md, «Внешний плагин не расширяет контракт компонента»). Поэтому
+ * фасад коллекции, делящий набор с компонентом, строит аксессор по тем же
+ * правилам, что и владелец набора.
  */
 
 import { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IComponentDescriptor } from '../define/types'
+import type { ICompositionEntry } from './types'
 
 export function assembleAccessor(
-	descriptor: Pick<IComponentDescriptor, 'props' | 'events' | 'plugins'>,
+	descriptor: Pick<IComponentDescriptor, 'props' | 'events'>,
+	composition: readonly ICompositionEntry[],
 	instance: object,
 	bundle: IPluginBundle | null,
 ): TAccessor {
@@ -23,12 +26,13 @@ export function assembleAccessor(
 		// Unit компонента: все наследуемые + собственные props/events
 		{ instance, props: descriptor.props, events: descriptor.events },
 		// Units плагинов
-		...descriptor.plugins
-			.map((def) => ({
-				instance: bundle?.get(def.ctor),
-				props: def.props,
-				events: def.events,
+		...composition
+			.filter((entry) => entry.props?.length || entry.events?.length)
+			.map((entry) => ({
+				instance: bundle?.get(entry.ctor),
+				props: [...(entry.props ?? [])],
+				events: [...(entry.events ?? [])],
 			}))
-			.filter((u) => u.instance != null),
+			.filter((unit) => unit.instance != null),
 	])
 }

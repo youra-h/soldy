@@ -1,5 +1,5 @@
 /**
- * Набор плагинов компонента: плагины дескриптора, затем реестра, объявление на микрозадаче.
+ * Набор плагинов компонента: по составу, с объявлением наружу на микрозадаче.
  *
  * Эмит `bundle:create` живёт там же, где плагины создаются, а не отдельным
  * шагом, который каждый адаптер обязан помнить и вызывать: седьмой адаптер про
@@ -9,8 +9,7 @@
 import type { IEventEmitter } from '@soldy/core'
 import { TPluginBundle } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
-import { resolveRegisteredPlugins } from '../registry'
-import type { IBundleContext, IComponentDescriptor } from '../define/types'
+import type { ICompositionEntry } from './types'
 
 /** Шина событий инстанса — если она у него есть. */
 function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
@@ -34,7 +33,7 @@ function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
  *
  * Сначала bundle, потом плагины: иначе обработчик `bundle:create` не успел бы
  * подписаться на плагинный `create`. Объявляет плагины сам набор, а не цикл по
- * дескриптору: плагин, поставленный в обработчике `bundle:create`, объявляется
+ * составу: плагин, поставленный в обработчике `bundle:create`, объявляется
  * вместе с остальными.
  */
 function announceOnMicrotask(bundle: IPluginBundle, instance: object): void {
@@ -47,39 +46,17 @@ function announceOnMicrotask(bundle: IPluginBundle, instance: object): void {
 	})
 }
 
-/**
- * Собирает набор: плагины дескриптора, затем плагины реестра (`usePlugins`),
- * подходящие компоненту по типу и `context.embedded`.
- */
+/** Собирает набор по составу; пустой состав — набора у компонента нет. */
 export function assembleBundle(
-	descriptor: Pick<IComponentDescriptor, 'ctor' | 'plugins'>,
+	composition: readonly ICompositionEntry[],
 	instance: object,
-	context: IBundleContext,
 ): IPluginBundle | null {
-	// Без своих плагинов у компонента нет и узла для них (`TElementPlugin`):
-	// плагины реестра такому компоненту не ставятся
-	if (descriptor.plugins.length === 0) {
-		return null
-	}
+	if (composition.length === 0) return null
 
 	const bundle = new TPluginBundle(instance)
 
-	for (const plugin of descriptor.plugins) {
-		bundle.use(plugin.ctor, plugin.options ?? {})
-	}
-
-	// Плагины реестра — после своих: они зависят от плагинов компонента,
-	// а не наоборот. Заменить свой плагин внешний не может: набор
-	// компонента — его инвариант (AGENTS.md, «Почему bundle не
-	// принимается снаружи»).
-	for (const plugin of resolveRegisteredPlugins(instance, context)) {
-		if (bundle.get(plugin.ctor)) {
-			throw new Error(
-				`${plugin.ctor.name} уже входит в состав ${descriptor.ctor.name}: плагин реестра только добавляет`,
-			)
-		}
-
-		bundle.use(plugin.ctor, plugin.options ?? {})
+	for (const entry of composition) {
+		bundle.use(entry.ctor, entry.options ?? {})
 	}
 
 	announceOnMicrotask(bundle, instance)

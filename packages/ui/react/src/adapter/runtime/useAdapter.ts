@@ -9,16 +9,15 @@
  * 1. Core → React: подписка на триггеры props (bindOutput)
  * 2. React → Core: синхронизация входных props (bindInput)
  * 3. События (Core → React колбэки-пропсы)
- * 4. DOM-биндинг через TElementPlugin / TPluginsBindingExtension
+ * 4. DOM-биндинг через контекст (TElementPlugin)
  * 5. Очистка (adapter.destroy) при размонтировании
  *
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { TPluginsBindingExtension, collectForwardProps, toInstanceState } from '@soldy/setup'
+import { collectForwardProps, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
-import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
@@ -54,20 +53,8 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 	// 2. События (Core → React колбэки-пропсы)
 	useSyncEvents(adapter.accessor, inspector, props)
 
-	// 3. DOM-биндинг: привязываем элемент напрямую к TElementPlugin,
-	// чтобы работало и после destroy (StrictMode remount).
-	const ref = useCallback(
-		(el: Element | null) => {
-			const plugin = adapter.bundle?.get(TElementPlugin)
-
-			if (plugin) {
-				plugin.element = el
-			} else {
-				adapter.get(TPluginsBindingExtension)?.bindElement(el ?? null)
-			}
-		},
-		[adapter],
-	)
+	// 3. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
+	const ref = useCallback((el: Element | null) => adapter.bindElement(el), [adapter])
 
 	// 4. Очистка: destroy эмитит 'destroy', расширения отписываются сами.
 	useEffect(() => () => adapter.destroy(), [adapter])

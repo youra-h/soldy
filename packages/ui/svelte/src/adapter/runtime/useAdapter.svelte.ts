@@ -17,9 +17,8 @@
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
-import { TPluginsBindingExtension, collectForwardProps, toInstanceState } from '@soldy/setup'
+import { collectForwardProps, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
-import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps.svelte'
@@ -74,23 +73,9 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 		},
 
 		attachElement(node: Element) {
-			const plugin = adapter.bundle?.get(TElementPlugin)
+			adapter.bindElement(node)
 
-			if (plugin) {
-				plugin.element = node
-
-				return () => {
-					plugin.element = null
-				}
-			}
-
-			const extension = adapter.get<TPluginsBindingExtension>(TPluginsBindingExtension)
-
-			if (!extension) return
-
-			extension.bindElement(node)
-
-			return () => extension.bindElement(null)
+			return () => adapter.bindElement(null)
 		},
 	}
 }

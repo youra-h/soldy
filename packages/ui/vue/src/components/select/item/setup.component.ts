@@ -34,7 +34,7 @@ export default {
 		const itemAdapter = createVueAdapterContext(
 			SelectCollectionItemDescriptor(),
 			{ props },
-			{ bundle: adapter.bundle, defaultExtensions: [] },
+			{ bundle: adapter.bundle },
 		).use(TCollectionItemExtension, {
 			item: adapter.instance,
 			elevator: VueElevatorFactory,

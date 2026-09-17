@@ -1,9 +1,23 @@
 /**
- * Контракты сборки: вход одного монтирования и собранный по нему компонент.
+ * Контракты сборки: состав компонента, вход одного монтирования и собранный по нему компонент.
  */
 
-import type { TAccessor } from '@soldy/accessor'
-import type { IPluginBundle } from '@soldy/plugins'
+import type { IPropDeclaration, TAccessor, TName } from '@soldy/accessor'
+import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+
+/**
+ * Запись состава: какой плагин ставить, с чем и что он объявляет наружу.
+ *
+ * Декларации есть только у плагинов дескриптора: внешний плагин контракт
+ * компонента не расширяет (AGENTS.md, «Внешний плагин не расширяет контракт
+ * компонента»).
+ */
+export interface ICompositionEntry {
+	readonly ctor: IPluginConstructor<any, any, any>
+	readonly options?: object
+	readonly props?: readonly IPropDeclaration[]
+	readonly events?: readonly TName[]
+}
 
 /** Что известно о монтировании: готовый инстанс или аргументы конструктора, место, чужой набор. */
 export interface IAssemblyInput<TInstance extends object = object> {

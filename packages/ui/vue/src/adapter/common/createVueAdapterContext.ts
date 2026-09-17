@@ -2,23 +2,17 @@ import { toRaw } from 'vue'
 import {
 	createAdapterContext,
 	type IAdapterContext,
+	type IAdapterContextConfig,
+	type IAdapterContextOptions,
 	type IComponentDescriptor,
-	type TAnyExtensionCtor,
 } from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
 
-/** Зеркало `IAdapterContextOptions<TInstance>` из `@soldy/setup` — тот тип не экспортирован. */
-export interface IVueAdapterContextOptions<TInstance extends object> {
-	ctrl?: TInstance
-	props?: object
-	options?: object
-}
-
-/** Зеркало `IAdapterContextConfig` из `@soldy/setup` — тот тип тоже не экспортирован. */
-export interface IVueAdapterContextConfig {
-	bundle?: IPluginBundle | null
-	defaultExtensions?: Array<TAnyExtensionCtor>
-}
+/**
+ * Опции и конфиг — те же, что у `createAdapterContext`: setup их экспортирует,
+ * и копии здесь больше нет. Имена оставлены прежними — их ждут компоненты.
+ */
+export type IVueAdapterContextOptions<TInstance extends object> = IAdapterContextOptions<TInstance>
+export type IVueAdapterContextConfig = IAdapterContextConfig
 
 /** Снимает Vue-прокси со значений верхнего уровня объекта, не заглядывая внутрь. */
 function stripTopLevelProxies<T extends object>(value: T): T {

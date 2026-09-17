@@ -16,9 +16,8 @@
  */
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
-import { TPluginsBindingExtension, collectForwardProps, toInstanceState } from '@soldy/setup'
+import { collectForwardProps, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
-import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
@@ -67,25 +66,9 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 		forwardProps,
 
 		ref(el: Element) {
-			const plugin = adapter.bundle?.get(TElementPlugin)
+			adapter.bindElement(el)
 
-			if (plugin) {
-				plugin.element = el
-
-				onCleanup(() => {
-					plugin.element = null
-				})
-
-				return
-			}
-
-			const extension = adapter.get<TPluginsBindingExtension>(TPluginsBindingExtension)
-
-			if (!extension) return
-
-			extension.bindElement(el)
-
-			onCleanup(() => extension.bindElement(null))
+			onCleanup(() => adapter.bindElement(null))
 		},
 	}
 }

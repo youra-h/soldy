@@ -10,7 +10,6 @@ import {
 	ButtonDescriptor,
 	DragAndDropDescriptor,
 	TElevator,
-	TPluginsBindingExtension,
 	TCollectionExtension,
 	TDragAndDropExtension,
 	TDragAndDropCollectionExtension,
@@ -70,11 +69,7 @@ describe('createAdapterContext', () => {
 			value = 1
 		}
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: Simple }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: Simple }), {})
 
 		expect(ctx.instance).toBeInstanceOf(Simple)
 	})
@@ -83,11 +78,7 @@ describe('createAdapterContext', () => {
 		class Simple {}
 		const ctrl = new Simple()
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: Simple }),
-			{ ctrl },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: Simple }), { ctrl })
 
 		expect(ctx.instance).toBe(ctrl)
 	})
@@ -101,47 +92,41 @@ describe('createAdapterContext', () => {
 		}
 
 		const descriptor = defineComponent({ ctor: WithProps })
-		const ctx = createAdapterContext(
-			descriptor,
-			{ props: { text: 'hi' } },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(descriptor, { props: { text: 'hi' } })
 
 		expect(ctx.instance.text).toBe('hi')
 		expect(ctx.descriptor).toBe(descriptor)
 		expect(ctx.accessor).toBeDefined()
 	})
 
-	it('применяет TPluginsBindingExtension по умолчанию при наличии ElementPlugin', () => {
-		const ctx = createAdapterContext(ButtonDescriptor(), {})
-
-		expect(ctx.get(TPluginsBindingExtension)).toBeInstanceOf(TPluginsBindingExtension)
-	})
-
-	it('не подключает TPluginsBindingExtension, если нет TElementPlugin', () => {
-		// DragAndDrop наследует ComponentDescriptor (headless), плагина элемента нет.
-		// Расширение требует его и бросило бы исключение — поэтому не подключается.
-		const ctx = createAdapterContext(DragAndDropDescriptor(), {})
-
-		expect(ctx.get(TPluginsBindingExtension)).toBeUndefined()
-	})
-
 	it('bindElement кладёт не-HTML узел в плагин как есть', () => {
-		// Корнем компонента бывает `svg`: `tag` — свободный проп. Расширение узел
+		// Корнем компонента бывает `svg`: `tag` — свободный проп. Контекст узел
 		// не сужает и не подменяет на `null` — иначе плагины остались бы без узла
 		// молча.
 		const ctx = createAdapterContext(ButtonDescriptor(), {})
 		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
 
-		required(ctx.get(TPluginsBindingExtension), 'TPluginsBindingExtension').bindElement(svg)
+		ctx.bindElement(svg)
 
 		expect(required(ctx.bundle?.get(TElementPlugin), 'TElementPlugin').element).toBe(svg)
 	})
 
-	it('позволяет переопределить стартовый набор расширений', () => {
-		const ctx = createAdapterContext(ButtonDescriptor(), {}, { defaultExtensions: [] })
+	it('bindElement у компонента без TElementPlugin ничего не делает', () => {
+		// DragAndDrop наследует ComponentDescriptor (headless), плагина элемента
+		// нет: привязывать узел не к чему, и адаптеру не нужно об этом помнить.
+		const ctx = createAdapterContext(DragAndDropDescriptor(), {})
 
-		expect(ctx.get(TPluginsBindingExtension)).toBeUndefined()
+		expect(() => ctx.bindElement(document.createElement('div'))).not.toThrow()
+	})
+
+	it('destroy отвязывает узел до уничтожения набора', () => {
+		const ctx = createAdapterContext(ButtonDescriptor(), {})
+		const plugin = required(ctx.bundle?.get(TElementPlugin), 'TElementPlugin')
+
+		ctx.bindElement(document.createElement('div'))
+		ctx.destroy()
+
+		expect(plugin.element).toBeNull()
 	})
 
 	it('регистрирует и возвращает расширения через use/get', () => {
@@ -152,11 +137,7 @@ describe('createAdapterContext', () => {
 			) {}
 		}
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: class {} }), {})
 
 		ctx.use(MyExt, { x: 1 })
 
@@ -169,11 +150,7 @@ describe('createAdapterContext', () => {
 			constructor(public readonly context: IAdapterContext) {}
 		}
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: class {} }), {})
 
 		let destroyed = false
 		ctx.events.on('destroy', () => {
@@ -196,11 +173,9 @@ describe('расширения коллекций', () => {
 		const push = vi.spyOn(engine.extensions.plain, 'push')
 		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: TEngineOwner }),
-			{ ctrl: new TEngineOwner(engine) },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			ctrl: new TEngineOwner(engine),
+		})
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
@@ -227,11 +202,9 @@ describe('расширения коллекций', () => {
 		const push = vi.spyOn(engine.extensions.plain, 'push')
 		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: TEngineOwner }),
-			{ ctrl: new TEngineOwner(engine) },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			ctrl: new TEngineOwner(engine),
+		})
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
@@ -256,11 +229,9 @@ describe('расширения коллекций', () => {
 		const push = vi.spyOn(engine.extensions.plain, 'push')
 		const remove = vi.spyOn(engine.extensions.plain, 'remove')
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: TEngineOwner }),
-			{ ctrl: new TEngineOwner(engine) },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			ctrl: new TEngineOwner(engine),
+		})
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
@@ -278,11 +249,7 @@ describe('расширения коллекций', () => {
 	it('TCollectionExtension не подключается к инстансу без engine', () => {
 		const { factory } = createElevatorFactory()
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: class {} }), {})
 
 		// Компилятор такое подключение не пропускает; проверка в рантайме — для
 		// потребителя без типов.
@@ -295,11 +262,7 @@ describe('расширения коллекций', () => {
 	it('TDragAndDropExtension опускает флаг drag-контекста вниз', () => {
 		const { factory, store } = createElevatorFactory()
 
-		const ctx = createAdapterContext(
-			defineComponent({ ctor: class {} }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createAdapterContext(defineComponent({ ctor: class {} }), {})
 
 		ctx.use(TDragAndDropExtension, { elevator: factory })
 
@@ -321,7 +284,7 @@ describe('расширения коллекций', () => {
 		const ctx = createAdapterContext(
 			defineComponent({ ctor: TEngineOwner }),
 			{ ctrl: instance },
-			{ bundle, defaultExtensions: [] },
+			{ bundle },
 		)
 
 		const activateSpy = vi.spyOn(TDragPlugin.prototype, 'activate')
@@ -344,7 +307,7 @@ describe('расширения коллекций', () => {
 		const ctx = createAdapterContext(
 			defineComponent({ ctor: TEngineOwner }),
 			{ ctrl: instance },
-			{ bundle, defaultExtensions: [] },
+			{ bundle },
 		)
 
 		const activateSpy = vi.spyOn(TDragPlugin.prototype, 'activate')

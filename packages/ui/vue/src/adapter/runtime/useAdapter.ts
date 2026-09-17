@@ -2,12 +2,13 @@
  * useAdapter — единственный Vue-хук на весь проект.
  *
  * 1. Навешивает реактивность (SyncProps / SyncEvents)
- * 2. Привязывает DOM-элемент через TPluginsBindingExtension
+ * 2. Привязывает DOM-элемент корня к TElementPlugin через контекст
  * 3. Вызывает adapter.destroy() при анмаунте компонента
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import { type IAdapterContext, TPluginsBindingExtension } from '@soldy/setup'
+import { TElementPlugin } from '@soldy/plugins'
+import type { IAdapterContext } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
@@ -84,12 +85,13 @@ export function useAdapterParts<TInstance extends object>(
 	// 2. Эмиты
 	const unbindEvents = useSyncEvents(adapter.accessor, inspector, emit)
 
-	// 3. DOM-биндинг через экстеншн плагинов
-	const pluginsExt = adapter.get(TPluginsBindingExtension)
-	const rootElement = pluginsExt ? ref<Element | null>(null) : null
+	// 3. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда
+	// привязать: у headless-слоёв и фасада коллекции `TElementPlugin` нет, и
+	// `rootElement` в результат не попадает.
+	const rootElement = adapter.bundle?.get(TElementPlugin) ? ref<Element | null>(null) : null
 
-	if (pluginsExt && rootElement) {
-		watch(rootElement, (el) => pluginsExt.bindElement(el ?? null), { flush: 'post' })
+	if (rootElement) {
+		watch(rootElement, (el) => adapter.bindElement(el ?? null), { flush: 'post' })
 	}
 
 	// 4. Очистка. Отписка обязательна: при внешнем `ctrl`, переживающем компонент,

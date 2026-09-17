@@ -5,10 +5,16 @@
  * `.use(Ctor, options?)` и извлекается `.get(Ctor)`. Жизненный цикл — через
  * `TEvented`: `destroy()` эмитит `destroy`, забывает расширения и уничтожает
  * набор, если тот собран для этого контекста.
+ *
+ * `bindElement` — связка корневого узла разметки с `TElementPlugin`: её зовут
+ * все шесть адаптеров, поэтому она метод контекста, а не расширение, которое
+ * каждый из них обязан помнить и подключать. У компонента без `TElementPlugin`
+ * (headless-слои) вызов ничего не делает.
  */
 
 import { TEvented } from '@soldy/core'
 import type { TAccessor } from '@soldy/accessor'
+import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IAssembledComponent } from '../../assemble'
 import type { IComponentDescriptor } from '../../define'
@@ -53,12 +59,21 @@ export class TAdapterContext<TInstance extends object> implements IAdapterContex
 		return extension instanceof ExtensionCtor ? extension : undefined
 	}
 
+	bindElement(element: Element | null): void {
+		const plugin = this.bundle?.get(TElementPlugin)
+
+		if (plugin) plugin.element = element
+	}
+
 	destroy(): void {
 		this.events.emit('destroy')
 		this._extensions.clear()
 
-		// После расширений: `destroy` у них отвязывает узел от плагинов,
-		// и плагины успевают получить `removed`
-		if (this._ownsBundle) this.bundle?.destroy()
+		// Узел отвязывается до уничтожения набора: плагины успевают получить
+		// `removed`. Чужой набор не трогаем — его узел привязывал владелец.
+		if (this._ownsBundle) {
+			this.bindElement(null)
+			this.bundle?.destroy()
+		}
 	}
 }

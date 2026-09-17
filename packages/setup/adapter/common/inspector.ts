@@ -16,10 +16,9 @@ import type { TCreateInspector } from './types'
  */
 export function createInspectorFactory(naming: INamingStrategy): TCreateInspector {
 	return (source) => {
-		if ('createAccessor' in source) {
-			return new TDescriptorInspector(source.getProps(), source.getEvents(), naming)
-		}
+		// Значения умеет читать только аксессор: у дескриптора инстанса нет
+		if ('getValue' in source) return new TDescriptorInspector(source, naming)
 
-		return new TDescriptorInspector(source, naming)
+		return new TDescriptorInspector(source.getProps(), source.getEvents(), naming)
 	}
 }

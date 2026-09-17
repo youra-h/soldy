@@ -32,9 +32,9 @@ export type TCollectionBinding<TProps, TInstance> = {
  *
  * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
  *   ждут сам компонент;
- * - `rootElement` у фасада своего нет вовсе — он появляется только при
- *   подключённом `TPluginsBindingExtension`, а коллекционный контекст
- *   создаётся с `defaultExtensions: []`.
+ * - `rootElement` у фасада своего нет вовсе: он появляется только там, где в
+ *   наборе есть `TElementPlugin`, а фасад делит набор компонента и своего узла
+ *   не имеет.
  *
  * `plugins` остаётся: у обоих адаптеров это **один и тот же** bundle — второй
  * контекст создаётся с `{ bundle: adapter.bundle }`, — так что перекрытие

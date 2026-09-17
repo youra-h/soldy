@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { TName, type IPropDeclaration } from '@soldy/accessor'
 import { TBasePlugin } from '@soldy/plugins'
-import {
-	normalizeContribution,
-	defineComponent,
-	definePlugin,
-	collectDeclaredProps,
-	collectItemProps,
-} from '@soldy/setup'
+import { normalizeContribution, defineComponent, definePlugin } from '@soldy/setup'
+import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
 import { required } from './helpers'
 
 describe('normalizeContribution', () => {
@@ -127,13 +121,16 @@ describe('defineComponent', () => {
 		expect(childOverride.plugins[0].options).toEqual({ x: 1 })
 	})
 
-	it('создаёт null-бандл при отсутствии плагинов', () => {
+	it('состав без плагинов набора не создаёт', () => {
 		const descriptor = defineComponent({ ctor: class {} })
+		const instance = new descriptor.ctor()
+		const composition = resolveComposition(descriptor, instance, {})
 
-		expect(descriptor.createBundle(new descriptor.ctor())).toBeNull()
+		expect(composition).toEqual([])
+		expect(assembleBundle(composition, instance)).toBeNull()
 	})
 
-	it('createAccessor привязывает props/events к instance', () => {
+	it('аксессор привязывает props/events к instance', () => {
 		const descriptor = defineComponent({
 			ctor: class {},
 			contribution: {
@@ -143,7 +140,7 @@ describe('defineComponent', () => {
 		})
 
 		const instance = new descriptor.ctor()
-		const accessor = descriptor.createAccessor(instance, null)
+		const accessor = assembleAccessor(descriptor, [], instance, null)
 
 		expect(accessor.getProps()).toHaveLength(1)
 		expect(accessor.getProps()[0].instance).toBe(instance)
@@ -154,7 +151,7 @@ describe('defineComponent', () => {
 		expect(accessor.getEvents()[0].name.name).toBe('click')
 	})
 
-	it('createAccessor добавляет Unit плагина с его props/events', () => {
+	it('аксессор добавляет Unit плагина с его props/events', () => {
 		class PluginWithProps extends TBasePlugin {
 			active = false
 		}
@@ -174,11 +171,12 @@ describe('defineComponent', () => {
 		})
 
 		const instance = new descriptor.ctor()
-		const bundle = descriptor.createBundle(instance)
-		const accessor = descriptor.createAccessor(instance, bundle)
+		const composition = resolveComposition(descriptor, instance, {})
+		const bundle = assembleBundle(composition, instance)
+		const accessor = assembleAccessor(descriptor, composition, instance, bundle)
 
 		const activeProp = required(
-			accessor.getProps().find((p) => p.name.getName() === 'p:active'),
+			accessor.getProps().find((prop) => prop.name.getName() === 'p:active'),
 			'prop p:active',
 		)
 		expect(activeProp).toBeDefined()
@@ -206,23 +204,5 @@ describe('definePlugin', () => {
 		expect(plugin.props.map((p) => p.name.getName())).toEqual(['x:v'])
 		expect(plugin.events.map((e) => e.getName())).toEqual(['x:go'])
 		expect(plugin.options).toEqual({ a: 1 })
-	})
-})
-
-describe('collectDeclaredProps / collectItemProps', () => {
-	const decls: IPropDeclaration[] = [
-		{ name: new TName('a') },
-		{ name: new TName('b'), protected: true },
-		{ name: new TName('c') },
-	]
-
-	const props = { a: 1, b: 2, c: undefined, d: 4 }
-
-	it('выбирает только объявленные незащищённые пропсы с заданным значением', () => {
-		expect(collectDeclaredProps(decls, props)).toEqual({ a: 1 })
-	})
-
-	it('collectItemProps делегирует collectDeclaredProps', () => {
-		expect(collectItemProps(decls, props)).toEqual({ a: 1 })
 	})
 })

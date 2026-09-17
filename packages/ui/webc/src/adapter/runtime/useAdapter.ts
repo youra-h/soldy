@@ -12,9 +12,8 @@
  * планировать перерисовку — задача базового класса элемента.
  */
 
-import { TPluginsBindingExtension, toInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
-import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { createInspector } from '../common'
 import { useSyncProps } from './useSyncProps'
@@ -51,15 +50,7 @@ export function useAdapter<TInstance extends object = object>(
 		},
 
 		bindElement(el: Element | null): void {
-			const plugin = adapter.bundle?.get(TElementPlugin)
-
-			if (plugin) {
-				plugin.element = el
-
-				return
-			}
-
-			adapter.get<TPluginsBindingExtension>(TPluginsBindingExtension)?.bindElement(el)
+			adapter.bindElement(el)
 		},
 
 		destroy(): void {

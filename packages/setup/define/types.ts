@@ -1,18 +1,12 @@
 /**
  * Контракт дескриптора компонента и определения плагина.
  *
- * Дескриптор отдаёт декларации (props, events, slots, plugins) и собирает по
- * ним набор и аксессор: Unit аксессора = { instance, props, events }.
+ * Дескриптор отдаёт декларации: props, events, slots и состав плагинов
+ * библиотеки. Собирает по ним компонент сборка (`assemble/`).
  */
 
-import type {
-	IContribution,
-	IPropDeclaration,
-	ISlotDeclaration,
-	TAccessor,
-	TName,
-} from '@soldy/accessor'
-import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+import type { IContribution, IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
+import type { IPluginConstructor } from '@soldy/plugins'
 
 /**
  * Конструктор инстанса компонента.
@@ -120,12 +114,4 @@ export interface IComponentDescriptor<
 	getEvents(): TName[]
 	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
 	getSlots(): ISlotDeclaration[]
-
-	/**
-	 * Собирает набор: плагины дескриптора, затем плагины реестра
-	 * (`usePlugins`), подходящие компоненту по типу и `context.embedded`.
-	 */
-	createBundle(instance: TInstance, context?: IBundleContext): IPluginBundle | null
-	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
-	createAccessor(instance: TInstance, bundle: IPluginBundle | null): TAccessor
 }

@@ -42,8 +42,8 @@ const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 	naming: [],
 	contributions: [],
 	registry: [],
-	assemble: ['registry'],
-	define: ['assemble'],
+	assemble: ['registry', 'naming'],
+	define: [],
 	descriptors: ['define', 'contributions'],
 	adapter: ['assemble', 'registry', 'naming'],
 	[ENTRY]: ['contributions', 'define', 'descriptors', 'registry', 'adapter', 'naming'],
@@ -364,8 +364,10 @@ describe('структура packages/setup', () => {
 		return to === undefined || to === from ? [] : [{ file, specifier, from, to }]
 	})
 
-	it('разбор находит известную рантайм-связь define → assemble', () => {
-		expect(crossings.some(({ from, to }) => from === 'define' && to === 'assemble')).toBe(true)
+	it('разбор находит известную рантайм-связь assemble → registry', () => {
+		expect(crossings.some(({ from, to }) => from === 'assemble' && to === 'registry')).toBe(
+			true,
+		)
 	})
 
 	it('у каждой папки и файла верхнего уровня есть строка в таблице', () => {

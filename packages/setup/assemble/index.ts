@@ -1,4 +1,6 @@
 export { assembleComponent } from './component'
 export { assembleBundle } from './bundle'
 export { assembleAccessor } from './accessor'
-export type { IAssembledComponent, IAssemblyInput } from './types'
+export { resolveComposition } from './composition'
+export { applyInitialPluginProps } from './plugin-props'
+export type { IAssembledComponent, IAssemblyInput, ICompositionEntry } from './types'
