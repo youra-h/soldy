@@ -11,6 +11,8 @@ import type {
 	DescriptorAllEvents,
 	TCallbackEventProps,
 	TSlotProps,
+	TRegisteredPluginEvents,
+	TRegisteredPluginProps,
 } from '@soldy/setup'
 
 /**
@@ -48,8 +50,13 @@ export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = TReactComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance> &
+> = TReactComponentProps<
+	DescriptorAllProps<TDescriptorFn> & TRegisteredPluginProps<TInstance>,
+	TInstance
+> &
 	TEvents &
+	// Плагины реестра (`usePlugins`) — по типу инстанса, из `IRegisteredPlugins`
+	TCallbackEventProps<TRegisteredPluginEvents<TInstance>> &
 	SlotProps<TDescriptorFn>
 
 /**

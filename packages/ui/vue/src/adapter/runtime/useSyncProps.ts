@@ -1,4 +1,4 @@
-import { getCurrentInstance, ref, watch, onUnmounted, type Ref } from 'vue'
+import { getCurrentInstance, ref, watch, onBeforeUpdate, onUnmounted, type Ref } from 'vue'
 import type { IAccessor, TDescriptorInspector, IAccessorProp } from '@soldy/accessor'
 
 export interface ISyncOptions {
@@ -83,13 +83,23 @@ export function useSyncProps(
 	}
 
 	// 2. Vue → Core (Input): watch внешних props
+	//
+	// Проп плагина из реестра (`usePlugins` с определением `definePlugin`) Vue не
+	// объявлен: объявления собираются при импорте компонента, а реестр
+	// пополняется позже, в точке входа приложения. Такой проп приходит в `attrs`.
+	// `attrs` не реактивны — `watch` их не видит, поэтому значение перечитывается
+	// перед каждым обновлением компонента: смена атрибута родителем его и вызывает.
 	function bindInput(props: object): void {
 		const passed = passedNames()
+		const attrs: object = getCurrentInstance()?.attrs ?? {}
+		const fromAttrs: Array<() => void> = []
 
 		for (const prop of accessor.getProps(false) as IAccessorProp[]) {
 			const formattedPropName = inspector.getExportPropName(prop)
+			const declared = formattedPropName in props || prop.name.name in props
+			const source = declared ? props : attrs
 			const read = (): unknown =>
-				Reflect.get(props, formattedPropName) ?? Reflect.get(props, prop.name.name)
+				Reflect.get(source, formattedPropName) ?? Reflect.get(source, prop.name.name)
 
 			const write = (newVal: unknown) => {
 				if (newVal === undefined) return
@@ -100,10 +110,24 @@ export function useSyncProps(
 			// Стартовое значение — только для написанного в разметке
 			if (passed.has(formattedPropName) || passed.has(prop.name.name)) write(read())
 
-			const stopWatch = watch(read, write)
+			if (declared) {
+				cleanupFns.push(watch(read, write))
+				continue
+			}
 
-			cleanupFns.push(stopWatch)
+			let last = read()
+
+			fromAttrs.push(() => {
+				const next = read()
+
+				if (Object.is(next, last)) return
+
+				last = next
+				write(next)
+			})
 		}
+
+		if (fromAttrs.length > 0) onBeforeUpdate(() => fromAttrs.forEach((sync) => sync()))
 	}
 
 	function cleanup(): void {

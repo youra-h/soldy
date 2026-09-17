@@ -16,11 +16,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { TActionPlugin, TBasePlugin, TPluginBundle } from '@soldy/plugins'
-import type { IPluginContext } from '@soldy/plugins'
+import { PLUGIN_EVENTS, TActionPlugin, TBasePlugin, TPluginBundle } from '@soldy/plugins'
+import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
 import type { IExtension, IExtensionContext } from '@soldy/core'
 import { TButton, TCollectionEngine, TEvented, TTags } from '@soldy/core'
-import { useExtensions, usePlugins } from '@soldy/setup'
+import type { IButton } from '@soldy/core'
+import { definePlugin, useExtensions, usePlugins } from '@soldy/setup'
 import { Button, ListBox, Select, SelectItem, Tags, TagsItem } from '@soldy/ui-vue'
 
 /** Слушатели нажатия появляются по `element:ready`, а он приходит через кадр. */
@@ -297,6 +298,114 @@ describe('расширение на тип · useExtensions', () => {
 
 		expect(extendedOwners).toHaveLength(2)
 		expect(extendedOwners.every((owner) => owner instanceof TTags)).toBe(true)
+
+		wrapper.unmount()
+	})
+})
+
+type TIntervalEvents = TPluginEvents & {
+	'change:value': (value: number) => void
+	tick: (count: number) => void
+}
+
+/** Плагин реестра с пропом `value` и событием `tick` — наружу `interval_value`, `@interval:tick`. */
+class TIntervalPlugin extends TBasePlugin<object, TIntervalEvents> {
+	static instances: TIntervalPlugin[] = []
+
+	private _value = 1000
+
+	override install(ctx: IPluginContext, options?: unknown): void {
+		super.install(ctx, options)
+		TIntervalPlugin.instances.push(this)
+	}
+
+	get value(): number {
+		return this._value
+	}
+
+	set value(value: number) {
+		if (value === this._value) return
+
+		this._value = value
+		this.events.emit('change:value', value)
+	}
+
+	tick(count: number): void {
+		this.events.emit('tick', count)
+	}
+}
+
+const IntervalPluginDescriptor = () =>
+	definePlugin<'interval', TIntervalEvents, { value?: number }>({
+		ctor: TIntervalPlugin,
+		namespace: 'interval',
+		contribution: {
+			props: { value: { type: Number, triggers: ['change:value'] } },
+			events: [...PLUGIN_EVENTS, 'tick'],
+		},
+	})
+
+/** Типы пропсов плагина реестра: без дополнения `interval_value` у Button не скомпилировался бы. */
+declare module '@soldy/setup' {
+	interface IRegisteredPlugins {
+		interval: { type: IButton; plugin: ReturnType<typeof IntervalPluginDescriptor> }
+	}
+}
+
+describe('плагин реестра · пропсы и события во Vue', () => {
+	let dispose: (() => void) | null = null
+
+	afterEach(() => {
+		dispose?.()
+		dispose = null
+		TIntervalPlugin.instances.length = 0
+	})
+
+	/**
+	 * Vue объявляет пропсы компонента при импорте, а реестр пополняется позже —
+	 * проп плагина приходит в `attrs`. Смена значения родителем доезжает до
+	 * плагина: адаптер перечитывает `attrs` перед обновлением.
+	 */
+	it('проп из разметки доходит до плагина и обновляется', async () => {
+		dispose = usePlugins(TButton, [IntervalPluginDescriptor()])
+
+		const wrapper = mount(Button, { props: { interval_value: 250 } })
+		const [plugin] = TIntervalPlugin.instances
+
+		expect(plugin.value).toBe(250)
+
+		await wrapper.setProps({ interval_value: 500 })
+
+		expect(plugin.value).toBe(500)
+
+		wrapper.unmount()
+	})
+
+	it('событие плагина приходит в обработчик один раз', async () => {
+		dispose = usePlugins(TButton, [IntervalPluginDescriptor()])
+
+		const onTick = vi.fn()
+		const wrapper = mount(Button, { props: { 'onInterval:tick': onTick } })
+
+		TIntervalPlugin.instances[0].tick(2)
+
+		expect(onTick.mock.calls).toEqual([[2]])
+
+		wrapper.unmount()
+	})
+
+	/** Фасад коллекции делит набор с компонентом — событие всё равно одно. */
+	it('у коллекционного компонента событие тоже одно', async () => {
+		dispose = usePlugins(TTags, [IntervalPluginDescriptor()])
+
+		const onTick = vi.fn()
+		const wrapper = mount(Tags, { props: { 'onInterval:tick': onTick } })
+
+		expect(TIntervalPlugin.instances).toHaveLength(1)
+
+		TIntervalPlugin.instances[0].tick(1)
+
+		expect(onTick.mock.calls).toEqual([[1]])
 
 		wrapper.unmount()
 	})

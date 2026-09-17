@@ -9,7 +9,10 @@ export type { ITheme, IThemePlugins, IThemeExtensions } from './theme'
 export type {
 	IBundleContext,
 	IPluginRegistrationOptions,
+	IRegisteredPlugins,
 	IResolvedPlugin,
+	TRegisteredPluginEvents,
+	TRegisteredPluginProps,
 	TPluginScope,
 	TRegisteredPlugin,
 } from './plugin-registry'

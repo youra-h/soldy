@@ -25,7 +25,12 @@ import type {
 } from './types'
 import { normalizeContribution } from './compile-contribution'
 import { withClassDefault } from './prop-default'
-import { resolveRegisteredPlugins, type IBundleContext } from './plugin-registry'
+import {
+	registeredPluginsOf,
+	rememberRegisteredPlugins,
+	resolveRegisteredPlugins,
+	type IBundleContext,
+} from './plugin-registry'
 
 /** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
 type TDefinitionOptions = IComponentDefinitionOptions<
@@ -134,7 +139,9 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			// а не наоборот. Заменить свой плагин внешний не может: набор
 			// компонента — его инвариант (AGENTS.md, «Почему bundle не
 			// принимается снаружи»).
-			for (const plugin of resolveRegisteredPlugins(instance, context)) {
+			const registered = resolveRegisteredPlugins(instance, context)
+
+			for (const plugin of registered) {
 				if (bundle.get(plugin.ctor)) {
 					throw new Error(
 						`${plugin.ctor.name} уже входит в состав ${ctor.name}: плагин реестра только добавляет`,
@@ -143,6 +150,8 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
+
+			rememberRegisteredPlugins(bundle, instance, registered)
 
 			// Плагины появились — объявляем их наружу. `bundle:create` идёт на
 			// шину инстанса: это единственный канал, видимый и шаблону, и тому,
@@ -180,6 +189,17 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 						events: def.events,
 					}))
 					.filter((u) => u.instance != null),
+				// Units плагинов реестра — только у определений с пропсами и событиями.
+				// Декларации адаптера (`getProps`) о них не знают: список статичен, а
+				// реестр пополняется в рантайме. Адаптеры, которые читают пропсы по
+				// аксессору, получают их сами; Vue — из `attrs` (`useSyncProps`).
+				...registeredPluginsOf(bundle, instance)
+					.filter((def) => def.props?.length || def.events?.length)
+					.map((def) => ({
+						instance: bundle?.get(def.ctor),
+						props: [...(def.props ?? [])],
+						events: [...(def.events ?? [])],
+					})),
 			])
 		},
 	}
