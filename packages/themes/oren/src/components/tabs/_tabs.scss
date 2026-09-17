@@ -1,4 +1,6 @@
+@use 'sass:map';
 @use './mixins' as mixines;
+@use '../button/mixins' as button;
 .s-tabs {
 	$this: &;
 
@@ -146,6 +148,13 @@
 		#{$this}__list {
 			@apply p-1 gap-1.5;
 			@apply rounded-md;
+		}
+
+		// Карточка активного таба — на обёртке, а не на строке: кнопка закрытия
+		// стоит рядом со строкой, и карточка строки её бы не покрыла. Скругление
+		// и проявление фона — те же, что у строки-Button.
+		.s-tabs-item {
+			@apply rounded-md transition-colors duration-200;
 		}
 
 		&#{$this}--normal {
@@ -306,29 +315,73 @@
 .s-tabs-item {
 	$this: &;
 
+	// Строка таба и кнопка закрытия — соседи в одну линию. Внутри строки
+	// кнопке не место: строка — `<button role="tab">`, интерактивный потомок у
+	// кнопки запрещён, а подпись крестика вошла бы в имя таба.
+	//
+	// Поэтому всё, что покрывает таб целиком, — наведение, кольцо фокуса,
+	// карточка активного таба у `contained`, — стоит на обёртке: на строке
+	// крестик остался бы за краем.
+	@apply relative flex items-center;
+
 	> * {
 		@apply opacity-75;
+	}
+
+	> #{mixines.$row} {
 		@apply w-full py-1;
 
-		#{$this}__close {
-			@apply px-1;
-		}
-
-		// Строку таба рисует Button, и disabled у неё читается оттуда же, откуда
-		// его читает сам Button, — из `data-disabled`: ядро пишет его на любом
-		// теге, а нативный атрибут переехал бы вместе с тегом.
-		&:hover:not([data-disabled='true']) {
-			@apply opacity-100;
-		}
-
+		// Своего кольца у строки нет — его рисует обёртка (ниже). Без этого
+		// остаётся кольцо браузера: `outline: auto` цветом `transparent`
+		// рисует одну белую кайму.
 		&:focus-visible {
-			@apply outline-2 -outline-offset-2 outline-s-component;
+			@apply outline-none;
 		}
 	}
 
-	&[data-selected='true'] {
-		> * {
-			@apply opacity-100;
+	// Крестик встаёт на место последней части строки. Высота — высота строки
+	// без её вертикального паддинга, а не размерная высота Button.
+	> #{$this}__close {
+		@apply shrink-0 self-stretch h-auto my-1 px-1;
+	}
+
+	// Перед крестиком — зазор строки, после него — паддинг строки: строка, за
+	// которой он стоит, отдаёт ему свой концевой паддинг. Числа — из шкалы
+	// Button, размер у строки и крестика один, `size` таба.
+	@each $size, $scale in button.$sizes {
+		&--size-#{$size} {
+			> :has(+ #{$this}__close) {
+				@apply #{'pe-' + map.get($scale, 'gap')};
+			}
+
+			> #{$this}__close {
+				@apply #{'me-' + map.get($scale, 'px')};
+			}
 		}
+	}
+
+	// Disabled читается из `data-disabled` обёртки: ядро пишет его на любом
+	// теге, а нативный атрибут переехал бы вместе с тегом. Наведение — на весь
+	// таб: наведённый крестик проявляет и строку.
+	&:hover:not([data-disabled='true']) > * {
+		@apply opacity-100;
+	}
+
+	&[data-selected='true'] > * {
+		@apply opacity-100;
+	}
+
+	// Кольцо фокуса. Фокус у строки, а обвести надо таб вместе с крестиком —
+	// кольцо рисует обёртка, слоем с боксом и скруглением строки. Не своим
+	// outline: у `view="outline"` он лёг бы на рамку обёртки и потерял бы
+	// нижние скругления.
+	&::after {
+		content: '';
+		@apply absolute inset-0 rounded-md pointer-events-none;
+		@apply outline-transparent transition-colors duration-200;
+	}
+
+	&:has(> #{mixines.$row}:focus-visible)::after {
+		@apply outline-2 -outline-offset-2 outline-s-component;
 	}
 }
