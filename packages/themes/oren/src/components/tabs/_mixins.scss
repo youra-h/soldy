@@ -1,3 +1,7 @@
+// Строка таба — всё в обёртке элемента, кроме кнопки закрытия: она стоит рядом
+// со строкой, а не внутри неё (`_tabs.scss`, `.s-tabs-item`).
+$row: ':not(.s-tabs-item__close)';
+
 // Миксин для view="line"
 // $color       — название цвета (sky, emerald, rose, amber, neutral)
 // $text    — индекс цвета текста при hover/active (берётся из Button--outlined text)
@@ -17,16 +21,12 @@
 
 		// Цвет текста при hover и у активного таба
 		.s-tabs-item {
-			> * {
-				&:hover:not([data-disabled='true']) {
-					@apply #{'text-s-' + $color + '-' + $text};
-				}
+			&:hover:not([data-disabled='true']) > #{$row} {
+				@apply #{'text-s-' + $color + '-' + $text};
 			}
 
-			&[data-selected='true'] {
-				> * {
-					@apply #{'text-s-' + $color + '-' + $text};
-				}
+			&[data-selected='true'] > #{$row} {
+				@apply #{'text-s-' + $color + '-' + $text};
 			}
 		}
 	}
@@ -40,15 +40,15 @@
 	}
 
 	.s-tabs-item {
-		> * {
-			&:hover:not([data-disabled='true']) {
-				@apply #{'text-s-' + $color + '-' + $text};
-			}
+		&:hover:not([data-disabled='true']) > #{$row} {
+			@apply #{'text-s-' + $color + '-' + $text};
 		}
 
+		// Карточка — на обёртке: она покрывает и кнопку закрытия
 		&[data-selected='true'] {
-			> * {
-				@apply bg-s-component-surface shadow-sm;
+			@apply bg-s-component-surface shadow-sm;
+
+			> #{$row} {
 				@apply #{'text-s-' + $color + '-' + $text};
 			}
 		}
@@ -72,16 +72,12 @@
 		border-color: var(--s-#{$color}-#{$border});
 
 		// @apply border-b-transparent;
-		> * {
-			&:hover:not([data-disabled='true']) {
-				@apply #{'text-s-' + $color + '-' + $text};
-			}
+		&:hover:not([data-disabled='true']) > #{$row} {
+			@apply #{'text-s-' + $color + '-' + $text};
 		}
 
-		&[data-selected='true'] {
-			> * {
-				@apply #{'text-s-' + $color + '-' + $text};
-			}
+		&[data-selected='true'] > #{$row} {
+			@apply #{'text-s-' + $color + '-' + $text};
 		}
 	}
 }

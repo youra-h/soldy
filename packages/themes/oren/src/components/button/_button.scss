@@ -33,33 +33,10 @@
 		fill: currentColor;
 	}
 
-	&--size-sm {
-		@apply text-sm;
-		@apply px-1.5 h-7;
-		@apply gap-1;
-	}
-
-	&--size-normal {
-		@apply px-2.5 h-8;
-		@apply gap-1.5;
-	}
-
-	&--size-lg {
-		@apply text-lg;
-		@apply px-3 h-9;
-		@apply gap-2;
-	}
-
-	&--size-xl {
-		@apply text-xl;
-		@apply px-3.5 h-10;
-		@apply gap-2.5;
-	}
-
-	&--size-2xl {
-		@apply text-2xl;
-		@apply px-4 h-11;
-		@apply gap-3;
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.button-size($size);
+		}
 	}
 
 	&--a-filled {

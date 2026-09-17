@@ -612,7 +612,7 @@ describe('TTabsItem.closeAria · имя кнопки закрытия', () => {
 		expect(item.closeAria['aria-label']).toBe('Close Второй')
 	})
 
-	it('отдельный набор: это имя вложенной кнопки, а не самого таба', () => {
+	it('отдельный набор: это имя кнопки рядом с табом, а не самого таба', () => {
 		const item = new TTabsItem({ text: 'Почта' })
 
 		expect(item.aria.has('aria-label')).toBe(false)

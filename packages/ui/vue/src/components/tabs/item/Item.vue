@@ -52,24 +52,37 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
-				<!--
-					Имя кнопки закрытия приходит из ядра вместе с текстом таба
-					(«Close Настройки»). Без него у кнопки нет имени вообще, а с
-					одним лишь «Close» все кнопки набора неразличимы в списке
-					элементов скринридера.
-				-->
-				<Button
-					:rendered="!!tab_closable"
-					class="s-tabs-item__close"
-					@click.stop="context?.adapters?.tabs?.close()"
-					view="plain"
-					v-bind="closeAria"
-				>
-					<slot name="close-icon">
-						<Icon :tag="closeIconTag" :size="size" />
-					</slot>
-				</Button>
 			</template>
+		</Button>
+
+		<!--
+			Кнопка закрытия — сосед строки, а не её часть. Строка — это
+			`<button role="tab">`: интерактивный потомок у кнопки HTML запрещает,
+			потомки таба для скринридера презентационны, а имя таба считается из
+			содержимого. Внутри строки крестик не был кнопкой, и его подпись
+			приклеивалась к названию: «Настройки Close Настройки».
+
+			Имя кнопки приходит из ядра вместе с текстом таба («Close Настройки»).
+			Без него у кнопки нет имени вообще, а с одним лишь «Close» все кнопки
+			набора неразличимы в списке элементов скринридера.
+
+			`size` и `disabled` — явно: от строки кнопка их больше не наследует.
+			От размера зависит кегль, от кегля — иконка; выключенный таб
+			выключает и свою кнопку. Место рядом со строкой держит тема
+			(`.s-tabs-item`).
+		-->
+		<Button
+			:rendered="!!tab_closable"
+			class="s-tabs-item__close"
+			:disabled="disabled"
+			:size="size"
+			@click.stop="context?.adapters?.tabs?.close()"
+			view="plain"
+			v-bind="closeAria"
+		>
+			<slot name="close-icon">
+				<Icon :tag="closeIconTag" :size="size" />
+			</slot>
 		</Button>
 	</component>
 </template>
