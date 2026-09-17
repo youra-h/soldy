@@ -1,5 +1,5 @@
 ---
-'@soldy/plugins': patch
+'@soldy/theme-oren': patch
 ---
 
 Tabs: `TTabsViewPlugin` пишет переменные полосы и разрыва линии под активным табом и ставит `--ready-animation` при любом виде табов, а не только у `line` и `outline`: имена видов объявляет тема, и у табов без `view` модификатора нет вовсе.
