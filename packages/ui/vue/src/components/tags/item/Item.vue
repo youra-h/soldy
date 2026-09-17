@@ -4,24 +4,25 @@ import { Button } from '../../button'
 import SetupTagsItem from './setup.component'
 
 /**
- * Разметка — копия Tabs.Item: внутренний Button рисует строку тега, кнопка
- * закрытия — вложенный Button со своим `aria-label` (`closeAria`).
+ * Разметка — по образцу Tabs.Item: в корне два соседа — строка тега
+ * (внутренний Button) и кнопка закрытия со своим `aria-label` (`closeAria`).
  *
  * ARIA тега (`role`, `aria-selected`) приходит одним набором `aria` — пишет
  * его `TTagsExtension` в зависимости от режима выбора коллекции (`list`/
  * `listitem`, пока `mode === 'none'`, иначе `listbox`/`option`), шаблону об
  * этом знать незачем.
  *
- * `dataset` биндится дважды, как у `ListBox.Item`: тема красит выбранный тег
- * по `data-selected` на `.s-button` (миксины Button реагируют на атрибут
- * самого элемента), обёртка получает тот же набор для будущих контейнерных
- * стилей. `TSelectionExtension` пишет его всем элементам коллекции.
+ * `dataset` — на корне: пилюлю тега рисует он (см. ниже), и выбранный тег
+ * тема красит по `data-selected` корня. `TSelectionExtension` пишет его всем
+ * элементам коллекции.
  *
- * `view` на внутреннем Button — вид со набора целиком (`TTags.view`,
- * дефолт `'filled'`), как у ListBox. `direction` — своё направление письма
- * тега; на обёртке уже стоит `dir`, но Button — интерактивный элемент со
- * своим DOM-узлом, и для него направление передаётся явно, а не только через
- * наследование `dir` от родителя.
+ * Строка — `view="none"`: вид набора (`TTags.view`, дефолт `'filled'`) рисует
+ * корень, а не строка. Фон, рамка, наведение и выбор обязаны покрывать и
+ * кнопку закрытия, а она стоит рядом со строкой; тема читает вид с класса
+ * набора. `direction` — своё направление письма тега; на корне уже стоит
+ * `dir`, но Button — интерактивный элемент со своим DOM-узлом, и для него
+ * направление передаётся явно, а не только через наследование `dir` от
+ * родителя.
  *
  * Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
  * `tag` — тег корня (`TComponentView`), и рисует по нему корень
@@ -43,13 +44,13 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 	>
 		<Button
 			tag="div"
-			:view="view"
+			view="none"
 			:direction="direction"
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
 			@click="context?.adapters.selection.toggle()"
-			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
+			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>
 				<slot name="leading" />
@@ -61,22 +62,37 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 
 			<template #trailing>
 				<slot name="trailing" />
-				<!--
-					Имя кнопки закрытия приходит из ядра вместе с текстом тега
-					(«Close Настройки»), как у Tabs.
-				-->
-				<Button
-					:rendered="!!tag_closable"
-					class="s-tags-item__close"
-					@click.stop="context?.adapters?.tags?.close()"
-					view="plain"
-					v-bind="closeAria"
-				>
-					<slot name="close-icon">
-						<Icon :tag="closeIconTag" :size="size" />
-					</slot>
-				</Button>
 			</template>
+		</Button>
+
+		<!--
+			Кнопка закрытия — сосед строки, а не её часть. В режиме выбора
+			строка — `role="option"`: потомки опции для скринридера
+			презентационны, а имя опции считается из содержимого. Внутри строки
+			крестик не был кнопкой, и его подпись приклеивалась к названию тега:
+			«Настройки Close Настройки».
+
+			Имя кнопки приходит из ядра вместе с текстом тега («Close Настройки»).
+			Без него у кнопки нет имени вообще, а с одним лишь «Close» все кнопки
+			набора неразличимы в списке элементов скринридера.
+
+			`size` и `disabled` — явно: от строки кнопка их больше не наследует.
+			От размера зависит кегль, от кегля — иконка; выключенный тег
+			выключает и свою кнопку. Место рядом со строкой держит тема
+			(`.s-tags-item`).
+		-->
+		<Button
+			:rendered="!!tag_closable"
+			class="s-tags-item__close"
+			:disabled="disabled"
+			:size="size"
+			@click.stop="context?.adapters?.tags?.close()"
+			view="plain"
+			v-bind="closeAria"
+		>
+			<slot name="close-icon">
+				<Icon :tag="closeIconTag" :size="size" />
+			</slot>
 		</Button>
 	</component>
 </template>

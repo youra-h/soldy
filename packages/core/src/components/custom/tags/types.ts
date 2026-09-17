@@ -20,9 +20,8 @@ import type { ITagsItem, ITagsItemProps } from './item/types'
 export type TTagsValue = string | number | (string | number)[] | undefined
 
 /**
- * Внешний вид тегов — значение `TButtonView` целиком: каждый тег рисует
- * `Button`, и вид набора это ровно вид, который берёт его `Button`. Как
- * `TListBoxView` у ListBox.
+ * Внешний вид тегов — значение `TButtonView` целиком: тег рисуется видом
+ * `Button`, вместе с кнопкой закрытия. Как `TListBoxView` у ListBox.
  */
 export type TTagsView = TButtonView
 
@@ -38,7 +37,7 @@ export type TTagsEvents = TValueControlEvents<TTagsValue> &
 export interface ITagsComponentProps extends IValueControlProps<TTagsValue> {
 	/** Разрешить закрытие тегов (по умолчанию false); тег переопределяет своим `closable` */
 	closable?: boolean
-	/** Внешний вид тегов (передаётся во внутренний Button каждого элемента) */
+	/** Внешний вид тегов — вид Button, которым рисуется каждый тег */
 	view?: TTagsView
 }
 
