@@ -27,7 +27,8 @@ export function createAdapterContext<TInstance extends object>(
 	// Набор, пришедший в конфиге, принадлежит тому, кто его передал (адаптер
 	// коллекции делит bundle компонента) — уничтожает его он же.
 	const ownsBundle = config.bundle === undefined
-	const bundle = config.bundle ?? descriptor.createBundle(instance)
+	const bundle =
+		config.bundle ?? descriptor.createBundle(instance, { embedded: options.embedded })
 	const accessor = descriptor.createAccessor(instance, bundle)
 
 	const events = new TEvented<TAdapterEvents>()

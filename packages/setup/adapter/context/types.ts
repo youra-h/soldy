@@ -41,6 +41,12 @@ export interface IAdapterContextOptions<TInstance extends object = object> {
 	 */
 	props?: object
 	options?: object
+	/**
+	 * Имя места, если компонент — деталь разметки другого компонента (строка и
+	 * крестик тега). Уходит в `createBundle`: плагины реестра со `scope: 'own'`
+	 * вложенному компоненту не ставятся.
+	 */
+	embedded?: string
 }
 
 export interface IAdapterContextConfig {

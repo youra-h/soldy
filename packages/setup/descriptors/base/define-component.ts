@@ -25,6 +25,7 @@ import type {
 } from './types'
 import { normalizeContribution } from './compile-contribution'
 import { withClassDefault } from './prop-default'
+import { resolveRegisteredPlugins, type IBundleContext } from './plugin-registry'
 
 /** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
 type TDefinitionOptions = IComponentDefinitionOptions<
@@ -116,7 +117,9 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			return [...slots]
 		},
 
-		createBundle(instance: object) {
+		createBundle(instance: object, context: IBundleContext = {}) {
+			// Без своих плагинов у компонента нет и узла для них (`TElementPlugin`):
+			// плагины реестра такому компоненту не ставятся
 			if (plugins.length === 0) {
 				return null
 			}
@@ -124,6 +127,20 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			const bundle = new TPluginBundle(instance)
 
 			for (const plugin of plugins) {
+				bundle.use(plugin.ctor, plugin.options ?? {})
+			}
+
+			// Плагины реестра — после своих: они зависят от плагинов компонента,
+			// а не наоборот. Заменить свой плагин внешний не может: набор
+			// компонента — его инвариант (AGENTS.md, «Почему bundle не
+			// принимается снаружи»).
+			for (const plugin of resolveRegisteredPlugins(instance, context)) {
+				if (bundle.get(plugin.ctor)) {
+					throw new Error(
+						`${plugin.ctor.name} уже входит в состав ${ctor.name}: плагин реестра только добавляет`,
+					)
+				}
+
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
 
