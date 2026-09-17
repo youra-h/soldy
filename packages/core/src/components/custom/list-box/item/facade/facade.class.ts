@@ -12,11 +12,11 @@ import type { TListIndicator } from '../../../list'
 /**
  * Фасад элемента списка.
  *
- * `selected` и `order` — из базы; своё — только `view`.
+ * `selected` и `order` — из базы; своё — `view` и `indicator`.
  *
- * `wordWrap` отсюда ушёл вместе с раскладкой: её свойства теперь у
- * `TListLayoutPlugin`, и `data-word-wrap` элементам он ставит сам. Шаблону
- * этот проп был нужен только ради того атрибута.
+ * `wordWrap` отсюда ушёл: шаблону этот проп был нужен только ради атрибута
+ * `data-word-wrap`, а его преемника `data-content-fit` элементам ставит
+ * `TListBoxExtension`.
  */
 export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 	IListBoxItem,

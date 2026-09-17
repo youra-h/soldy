@@ -10,12 +10,13 @@ import type { ITabsItem } from '../../item/types'
  * Фасад панели таба.
  *
  * Держит `TItemContext` **связанного таба** — того, чьё `value` совпало со
- * значением панели. Отсюда и активность, и ARIA-связка: и то и другое —
- * свойства членства в коллекции, а не самой панели.
+ * значением панели. Отсюда и активность: это свойство членства в коллекции, а
+ * не самой панели.
  *
- * Ничего не вычисляет сам: активность берёт у адаптера `activation`, атрибуты
- * — у адаптера `content`. Ровно как `TTabsItemCollectionFacade` берёт `closable`
- * у адаптера `tabs`.
+ * Ничего не вычисляет сам: активность берёт у адаптера `activation` — ровно
+ * как `TTabsItemCollectionFacade` берёт `closable` у адаптера `tabs`. Атрибутов
+ * связки фасад не отдаёт: сторону панели из адаптера `content` кладёт прямо в
+ * `aria` панели `TTabsContentBindingExtension`.
  */
 export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	ITabsItem,

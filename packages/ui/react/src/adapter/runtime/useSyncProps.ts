@@ -97,9 +97,11 @@ export function useSyncProps(
 
 			if (value === undefined) continue
 
-			// Не пишем в Core, если значение не изменилось: сеттеры вроде
-			// `visible` → show()/hide() эмитят show:before/hide:before даже
-			// при том же значении, что даёт бесконечный цикл ре-рендеров.
+			// Не пишем в Core, если значение не изменилось: эффект получает все
+			// props на каждом рендере родителя. Сеттер, эмитящий и на том же
+			// значении, замкнул бы через колбэки событий цикл ре-рендеров — так
+			// было с `visible`, пока show()/hide() не начали проверять значение
+			// до эмита show:before/hide:before.
 			if (accessor.getValue(prop) === value) continue
 
 			const valueToSet = options.onInput ? options.onInput(prop, value) : value
