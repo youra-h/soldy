@@ -23,6 +23,10 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
+			'@soldy/theme-oren/setup': path.resolve(
+				import.meta.dirname,
+				'../../themes/oren/setup/index.ts',
+			),
 			'@soldy/accessor': path.resolve(import.meta.dirname, '../../accessor'),
 			'@soldy/core': path.resolve(import.meta.dirname, '../../core/src'),
 			'@soldy/icons-material': path.resolve(import.meta.dirname, '../../icons/material/src'),

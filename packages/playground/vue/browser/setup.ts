@@ -19,6 +19,15 @@
  */
 
 import { afterEach, beforeEach, expect } from 'vitest'
+import { useTheme } from '@soldy/setup'
+import oren from '@soldy/theme-oren/setup'
+
+/**
+ * Поведение темы oren — как в точке входа стенда (`src/main.ts`): стили
+ * спеки подключают сами, а плагины темы (полоса под активным табом) ставит
+ * регистрация.
+ */
+useTheme(oren)
 
 /** Тексты событий `error`, пришедших на `window` за текущий тест. */
 let messages: string[] = []

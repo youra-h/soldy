@@ -4,6 +4,8 @@ export { defineComponent } from './define-component'
 export { usePlugins, resolveRegisteredPlugins } from './plugin-registry'
 export { useExtensions, applyRegisteredExtensions } from './extension-registry'
 export type { TExtensionFactory } from './extension-registry'
+export { defineTheme, useTheme } from './theme'
+export type { ITheme, IThemePlugins, IThemeExtensions } from './theme'
 export type {
 	IBundleContext,
 	IPluginRegistrationOptions,

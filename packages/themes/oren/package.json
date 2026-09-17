@@ -28,11 +28,13 @@
     ".": {
       "types": "./index.d.ts",
       "default": "./dist/index.css"
-    }
+    },
+    "./setup": "./setup/index.ts"
   },
   "files": [
     "dist",
-    "index.d.ts"
+    "index.d.ts",
+    "setup"
   ],
   "scripts": {
     "build": "vite build",
@@ -40,7 +42,9 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@soldy/core": "*"
+    "@soldy/core": "*",
+    "@soldy/plugins": "*",
+    "@soldy/setup": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

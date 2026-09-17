@@ -1,11 +1,11 @@
 import type { ITabs, TTabsCollection } from '@soldy/core'
-import { TBasePlugin } from '../../../base'
-import type { IPluginContext } from '../../../base'
-import { TElementPlugin } from '../../element'
-import { TCollectionBundlesPlugin } from '../../collection'
-import { TTabsActiveTabPlugin } from '../active-tab'
-import type { TActiveTabOffset } from '../active-tab'
-import type { TTabsViewPluginEvents } from './types'
+import {
+	TBasePlugin,
+	TCollectionBundlesPlugin,
+	TElementPlugin,
+	TTabsActiveTabPlugin,
+} from '@soldy/plugins'
+import type { IPluginContext, TActiveTabOffset } from '@soldy/plugins'
 
 /**
  * TTabsViewPlugin — геометрия активного таба для темы.
@@ -16,12 +16,12 @@ import type { TTabsViewPluginEvents } from './types'
  * монтирования ставит модификатор `--ready-animation`: переходы полосы до него
  * не нужны, иначе она выезжала бы из угла при первой отрисовке.
  *
- * Вид табов плагин не читает. Значения вида объявляет тема (`ITabsViews`), и
- * вида, которому нужна полоса, библиотека назвать не может: у темы без
- * модификатора вид по умолчанию, у другой темы — свои имена. Поэтому
- * переменные пишутся всегда, а какие из них нужны виду, решает тема.
+ * Плагин темы, а не библиотеки: переменные читает только CSS oren, у другой
+ * темы полосы может не быть вовсе. Ставит его тема (`setup/index.ts`) на все
+ * Tabs. Вид табов плагин не читает: переменные пишутся всегда, а какие из них
+ * нужны виду, решает CSS.
  */
-export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
+export class TTabsViewPlugin extends TBasePlugin<ITabs> {
 	private _tabs: ITabs | null = null
 	private _engine: TTabsCollection | null = null
 
