@@ -1,6 +1,8 @@
 export { shiftSize } from './utility/size'
 export { frameDebounce } from './utility/frame-debounce'
 export type {
+	TThemeRegistry,
+	IComponentVariants,
 	TComponentVariant,
 	TComponentSize,
 	TValuePayload,

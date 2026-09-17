@@ -4,9 +4,9 @@ $row: ':not(.s-tabs-item__close)';
 
 // Миксин для view="line"
 // $color       — название цвета (sky, emerald, rose, amber, neutral)
-// $text    — индекс цвета текста при hover/active (берётся из Button--outlined text)
-// $border  — индекс цвета линии под списком (берётся из Button--outlined border)
-//                indicator = border + 400 (берётся из Button--outlined hover border)
+// $text    — индекс цвета текста при hover/active (как текст вида `outlined` у Button)
+// $border  — индекс цвета линии под списком (как рамка вида `outlined` у Button)
+//                indicator = border + 400 (как рамка вида `outlined` у Button при наведении)
 @mixin tabs-line-variant($color, $text: 800, $border: 200) {
 	$indicator: $border + 400;
 

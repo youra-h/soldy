@@ -30,7 +30,7 @@ export type TTagsEvents = TValueControlEvents<TTagsValue> &
 		/** change:closable */
 		'change:closable': (value: boolean) => void
 		/** change:view */
-		'change:view': (value: TTagsView) => void
+		'change:view': (value: TTagsView | undefined) => void
 	}
 
 /** Пропсы самого компонента (без коллекционной части). */
@@ -55,5 +55,5 @@ export interface ITags<
 	/** Разрешить закрытие тегов (глобально; тег переопределяет своим `closable`) */
 	closable: boolean
 	/** Внешний вид тегов (целиком со набора, как у ListBox) */
-	view: TTagsView
+	view: TTagsView | undefined
 }

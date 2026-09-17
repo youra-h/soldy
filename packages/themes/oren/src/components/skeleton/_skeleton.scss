@@ -34,25 +34,18 @@
 		@apply absolute inset-0 z-10;
 
 		// shape
-		#{$this}--rect & {
+		#{$this}--shape-rect & {
 			@apply rounded-none;
 		}
 
-		#{$this}--rounded & {
-			@apply rounded-md;
-		}
-
-		#{$this}--circle & {
+		#{$this}--shape-circle & {
 			@apply rounded-full;
 		}
 
 		// animation
-		#{$this}--pulse & {
-			animation: skeleton-pulse 1.5s ease-in-out infinite;
-		}
-
-		#{$this}--wave & {
+		#{$this}--animation-wave & {
 			@apply overflow-hidden;
+			animation: none;
 
 			&::after {
 				content: '';
@@ -67,24 +60,24 @@
 			}
 		}
 
-		// variant colors
-		#{$this}--normal & {
-			@include mixins.skeleton-variant('neutral');
+		#{$this}--animation-none & {
+			animation: none;
 		}
 
-		#{$this}--accent & {
+		// variant colors
+		#{$this}--variant-accent & {
 			@include mixins.skeleton-variant('accent');
 		}
 
-		#{$this}--positive & {
+		#{$this}--variant-positive & {
 			@include mixins.skeleton-variant('positive');
 		}
 
-		#{$this}--negative & {
+		#{$this}--variant-negative & {
 			@include mixins.skeleton-variant('negative');
 		}
 
-		#{$this}--caution & {
+		#{$this}--variant-caution & {
 			@include mixins.skeleton-variant('caution');
 		}
 	}
@@ -107,4 +100,16 @@
 			transform: translateX(100%);
 		}
 	}
+}
+
+// Вид блока без модификаторов — форма `rounded`, анимация `pulse` и нейтраль.
+// Модификаторы `rounded`, `pulse` и `normal` своих правил не требуют: они
+// совпадают с базой. У блока нулевая специфичность — модификатор перекрывает
+// базу, не споря с ней. Анимацию модификатор объявляет всегда, и `none` тоже:
+// иначе под ним осталась бы пульсация базы.
+:where(.s-skeleton) .s-skeleton__placeholder {
+	@apply rounded-md;
+	animation: skeleton-pulse 1.5s ease-in-out infinite;
+
+	@include mixins.skeleton-variant('neutral');
 }

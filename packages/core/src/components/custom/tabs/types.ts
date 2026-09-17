@@ -1,4 +1,5 @@
 import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
+import type { TThemeRegistry } from '../../../common'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { ITabsCollectionProps } from './collection/types'
 import type { ITabsItem, ITabsItemProps } from './item/types'
@@ -6,7 +7,15 @@ import type { ITabsItem, ITabsItemProps } from './item/types'
 export type TTabsOrientation = 'horizontal' | 'vertical'
 export type TTabsAlignment = 'start' | 'center' | 'end' | 'stretch'
 export type TTabsPosition = 'start' | 'end'
-export type TTabsView = 'line' | 'contained' | 'outline'
+/**
+ * Реестр видов табов. Значения объявляет тема (см. `TThemeRegistry`).
+ *
+ * Ориентация, выравнивание и сторона сюда не входят: их читают ядро, плагины и
+ * разметка, и смысл у них один в любой теме.
+ */
+export interface ITabsViews extends TThemeRegistry {}
+
+export type TTabsView = Extract<keyof ITabsViews, string>
 
 export type TTabsEvents = TControlEvents &
 	TCollectionStorageDriverEvents<ITabsItem> & {
@@ -17,7 +26,7 @@ export type TTabsEvents = TControlEvents &
 		/** change:position */
 		'change:position': (value: TTabsPosition) => void
 		/** change:view */
-		'change:view': (value: TTabsView) => void
+		'change:view': (value: TTabsView | undefined) => void
 		/** change:closable */
 		'change:closable': (value: boolean) => void
 		// /** item:close — эмитится перед удалением таба при закрытии */
@@ -48,7 +57,7 @@ export interface ITabsComponentProps extends IControlProps {
 	alignment?: TTabsAlignment
 	/** Позиция табов (для vertical) */
 	position?: TTabsPosition
-	/** Стиль отображения */
+	/** Вид табов. Не задан — модификатора нет, и табы выглядят видом темы по умолчанию */
 	view?: TTabsView
 	/** Разрешить закрытие табов (по умолчанию false) */
 	closable?: boolean
@@ -67,8 +76,8 @@ export interface ITabs extends IControl<ITabsProps, TTabsEvents> {
 	alignment: TTabsAlignment
 	/** Позиция табов (для vertical) */
 	position: TTabsPosition
-	/** Стиль отображения */
-	view: TTabsView
+	/** Вид табов */
+	view: TTabsView | undefined
 	/** Разрешить закрытие табов */
 	closable: boolean
 }

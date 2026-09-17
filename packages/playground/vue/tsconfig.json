@@ -8,6 +8,7 @@
     // запрещает. Безопасно: пакет ничего не эмитит.
     "allowImportingTsExtensions": true,
     "paths": {
+      "@soldy/theme-oren/setup": ["../../themes/oren/setup/index.ts"],
       "@soldy/accessor": ["../../accessor"],
       "@soldy/core": ["../../core/src"],
       "@soldy/icons-material": ["../../icons/material/src"],

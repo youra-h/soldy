@@ -46,6 +46,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`TListBoxItem._ariaTag` — он решает, писать ли `aria-disabled`.
 		-->
 		<Button
+			embedded="list-box.row"
 			tag="div"
 			:view="view"
 			:disabled="disabled"
@@ -62,7 +63,12 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="list-box.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 				<slot name="leading" />
@@ -80,7 +86,12 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="list-box.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 			</template>

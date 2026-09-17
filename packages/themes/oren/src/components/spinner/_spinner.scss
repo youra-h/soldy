@@ -25,23 +25,27 @@
 		@apply w-7 h-7;
 	}
 
-	&--normal {
+	&--variant-normal {
 		@include mixines.spinner-variant('neutral');
 	}
 
-	&--accent {
-		@include mixines.spinner-variant('accent');
-	}
-
-	&--positive {
+	&--variant-positive {
 		@include mixines.spinner-variant('positive');
 	}
 
-	&--negative {
+	&--variant-negative {
 		@include mixines.spinner-variant('negative');
 	}
 
-	&--caution {
+	&--variant-caution {
 		@include mixines.spinner-variant('caution');
 	}
+}
+
+// Вид блока без варианта — `accent`, прежнее умолчание спиннера. Модификатору
+// `accent` правило не нужно, он совпадает с базой, а `normal` у спиннера — не
+// база, а нейтраль. Нулевая специфичность — вариант перекрывает базу, не споря
+// с ней.
+:where(.s-spinner) {
+	@include mixines.spinner-variant('accent');
 }

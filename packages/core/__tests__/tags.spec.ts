@@ -170,16 +170,16 @@ describe('disabled сбрасывает closable', () => {
 })
 
 describe('view пробрасывается с Tags на тег', () => {
-	it('дефолт — filled, как у Button', () => {
+	it('без вида у набора вида нет и у тега — как у Button', () => {
 		const { facadeFor } = createTags(['a'])
 
-		expect(facadeFor(0).view).toBe('filled')
+		expect(facadeFor(0).view).toBeUndefined()
 	})
 
 	it('тег берёт вид владельца', () => {
-		const { facadeFor } = createTags(['a'], { view: 'outlined' })
+		const { facadeFor } = createTags(['a'], { view: 'ghost' })
 
-		expect(facadeFor(0).view).toBe('outlined')
+		expect(facadeFor(0).view).toBe('ghost')
 	})
 
 	/**
@@ -188,25 +188,25 @@ describe('view пробрасывается с Tags на тег', () => {
 	 * бы о смене вида только при пересоздании.
 	 */
 	it('смена вида доходит до тега событием', () => {
-		const { owner, facadeFor } = createTags(['a', 'b'], { view: 'plain' })
+		const { owner, facadeFor } = createTags(['a', 'b'], { view: 'ghost' })
 		const facade = facadeFor(0)
 		const seen: unknown[] = []
 
 		facade.events.on('change:view', (value: unknown) => seen.push(value))
 
-		owner.view = 'filled'
+		owner.view = 'solid'
 
-		expect(seen).toEqual(['filled'])
-		expect(facade.view).toBe('filled')
+		expect(seen).toEqual(['solid'])
+		expect(facade.view).toBe('solid')
 	})
 
 	it('вид доходит до всех тегов, а не только до первого', () => {
-		const { owner, facadeFor } = createTags(['a', 'b', 'c'], { view: 'plain' })
+		const { owner, facadeFor } = createTags(['a', 'b', 'c'], { view: 'ghost' })
 		const facades = [facadeFor(0), facadeFor(1), facadeFor(2)]
 
-		owner.view = 'filled'
+		owner.view = 'solid'
 
-		expect(facades.map((facade) => facade.view)).toEqual(['filled', 'filled', 'filled'])
+		expect(facades.map((facade) => facade.view)).toEqual(['solid', 'solid', 'solid'])
 	})
 })
 

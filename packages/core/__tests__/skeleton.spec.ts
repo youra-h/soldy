@@ -3,35 +3,39 @@ import { TSkeleton } from '@soldy/core'
 import type { TSkeletonShape, TSkeletonAnimation } from '@soldy/core'
 
 describe('TSkeleton', () => {
+	/**
+	 * Форма, анимация и вариант — значения темы: по умолчанию их нет, и
+	 * заглушка выглядит так, как тема рисует блок без модификаторов.
+	 */
 	it('should create with default values', () => {
 		const skeleton = new TSkeleton()
 
-		expect(skeleton.variant).toBe('normal')
-		expect(skeleton.shape).toBe('rounded')
-		expect(skeleton.animation).toBe('pulse')
+		expect(skeleton.variant).toBeUndefined()
+		expect(skeleton.shape).toBeUndefined()
+		expect(skeleton.animation).toBeUndefined()
 		expect(skeleton.width).toBe('auto')
 		expect(skeleton.height).toBe('auto')
 	})
 
 	it('should create with custom props', () => {
 		const skeleton = new TSkeleton({
-			variant: 'accent',
-			shape: 'circle',
-			animation: 'wave',
+			variant: 'brand',
+			shape: 'pill',
+			animation: 'shimmer',
 			width: 120,
 			height: 60,
 		})
 
-		expect(skeleton.variant).toBe('accent')
-		expect(skeleton.shape).toBe('circle')
-		expect(skeleton.animation).toBe('wave')
+		expect(skeleton.variant).toBe('brand')
+		expect(skeleton.shape).toBe('pill')
+		expect(skeleton.animation).toBe('shimmer')
 		expect(skeleton.width).toBe(120)
 		expect(skeleton.height).toBe(60)
 	})
 
 	it('should change shape', () => {
 		const skeleton = new TSkeleton()
-		const shapes: TSkeletonShape[] = ['rect', 'rounded', 'circle']
+		const shapes: TSkeletonShape[] = ['square', 'pill']
 
 		for (const shape of shapes) {
 			skeleton.shape = shape
@@ -41,7 +45,7 @@ describe('TSkeleton', () => {
 
 	it('should change animation', () => {
 		const skeleton = new TSkeleton()
-		const animations: TSkeletonAnimation[] = ['pulse', 'wave', 'none']
+		const animations: TSkeletonAnimation[] = ['shimmer', 'blink']
 
 		for (const animation of animations) {
 			skeleton.animation = animation
@@ -74,8 +78,8 @@ describe('TSkeleton', () => {
 		skeleton.events.on('change:width', () => events.push('width'))
 		skeleton.events.on('change:height', () => events.push('height'))
 
-		skeleton.shape = 'circle'
-		skeleton.animation = 'wave'
+		skeleton.shape = 'pill'
+		skeleton.animation = 'shimmer'
 		skeleton.width = 100
 		skeleton.height = 50
 
@@ -88,20 +92,35 @@ describe('TSkeleton', () => {
 	})
 
 	it('should have shape class', () => {
-		const skeleton = new TSkeleton()
-		expect(skeleton.classes.has('--rounded')).toBe(true)
+		const skeleton = new TSkeleton({ shape: 'pill' })
+		expect(skeleton.classes.has('--shape-pill')).toBe(true)
 
-		skeleton.shape = 'rect'
-		expect(skeleton.classes.has('--rect')).toBe(true)
-		expect(skeleton.classes.has('--rounded')).toBe(false)
+		skeleton.shape = 'square'
+		expect(skeleton.classes.has('--shape-square')).toBe(true)
+		expect(skeleton.classes.has('--shape-pill')).toBe(false)
+
+		skeleton.shape = undefined
+		expect(skeleton.classes.has('--shape-square')).toBe(false)
 	})
 
 	it('should have animation class', () => {
-		const skeleton = new TSkeleton()
-		expect(skeleton.classes.has('--pulse')).toBe(true)
+		const skeleton = new TSkeleton({ animation: 'shimmer' })
+		expect(skeleton.classes.has('--animation-shimmer')).toBe(true)
 
-		skeleton.animation = 'none'
-		expect(skeleton.classes.has('--none')).toBe(true)
-		expect(skeleton.classes.has('--pulse')).toBe(false)
+		skeleton.animation = 'blink'
+		expect(skeleton.classes.has('--animation-blink')).toBe(true)
+		expect(skeleton.classes.has('--animation-shimmer')).toBe(false)
+
+		skeleton.animation = undefined
+		expect(skeleton.classes.has('--animation-blink')).toBe(false)
+	})
+
+	it('should have variant class', () => {
+		const skeleton = new TSkeleton({ variant: 'brand' })
+		expect(skeleton.classes.has('--variant-brand')).toBe(true)
+
+		skeleton.variant = 'danger'
+		expect(skeleton.classes.has('--variant-danger')).toBe(true)
+		expect(skeleton.classes.has('--variant-brand')).toBe(false)
 	})
 })

@@ -9,6 +9,9 @@ import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
  *
  * Раньше эти свойства жили в `TControl`/`TControlInput`.
  * Здесь они вынесены в отдельный слой + state-units.
+ *
+ * `size` — шкала библиотеки: её читает `shiftSize`. `variant` — значение темы
+ * (`IComponentVariants`): по умолчанию его нет, и модификатора нет тоже.
  */
 export default class TStylable<
 	TProps extends IStylableProps = IStylableProps,
@@ -16,10 +19,10 @@ export default class TStylable<
 	TStates extends TStylableStates = TStylableStates,
 > extends TComponentView<TProps, TEvents, TStates> {
 	static defaultValues: typeof TComponentView.defaultValues &
-		TDefaultValues<IStylableProps, 'size' | 'variant'> = {
+		TDefaultValues<IStylableProps, 'size', 'variant'> = {
 		...TComponentView.defaultValues,
 		size: 'normal',
-		variant: 'normal',
+		variant: undefined,
 	}
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
@@ -45,19 +48,25 @@ export default class TStylable<
 
 		this._states.variant =
 			options.states?.variant ??
-			new TStateUnit<TComponentVariant>({
+			new TStateUnit<TComponentVariant | undefined>({
 				initial: props.variant ?? ctor.defaultValues.variant,
 			})
 
-		this._states.variant.events.on('change', (payload: TValuePayload<TComponentVariant>) => {
-			this._classes.swapClass({
-				oldClass: `--${payload.oldValue}`,
-				newClass: `--${payload.newValue}`,
-			})
-			this._sink.emit('change:variant', payload)
-		})
+		// `swap`, а не `swapClass` с шаблонной строкой: значения может не быть, и
+		// шаблон дал бы класс `--variant-undefined`.
+		this._states.variant.events.on(
+			'change',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				this._classes.swap({
+					prefix: '--variant-',
+					oldValue: payload.oldValue,
+					newValue: payload.newValue,
+				})
+				this._sink.emit('change:variant', payload)
+			},
+		)
 
-		this._classes.add(`--${this._states.variant.value}`)
+		this._classes.swap({ prefix: '--variant-', newValue: this._states.variant.value })
 	}
 
 	/**
@@ -78,11 +87,11 @@ export default class TStylable<
 		this._states.size.value = value
 	}
 
-	get variant(): TComponentVariant {
+	get variant(): TComponentVariant | undefined {
 		return this._states.variant.value
 	}
 
-	set variant(value: TComponentVariant) {
+	set variant(value: TComponentVariant | undefined) {
 		if (value === this._states.variant.value) return
 
 		this._states.variant.value = value

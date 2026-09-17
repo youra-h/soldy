@@ -1,3 +1,5 @@
+@use '../button/mixins' as button;
+
 // Select — поле выбора из списка.
 //
 // Поле — обычный `Input`, поэтому его собственных стилей здесь нет: они
@@ -173,4 +175,13 @@
 	&[data-disabled='true'] {
 		@apply opacity-50 pointer-events-none;
 	}
+}
+
+// Строка опции и кнопка очистки — вид `plain`. Раньше его задавала разметка;
+// значение темы разметка больше не передаёт, и вид даёт контекст. Строке
+// опции нужен вид с фоном состояний: подсветку и выбор рисует он
+// (`button-state-bg`), у `none` их нет.
+:where(.s-select-item > .s-button),
+:where(.s-select__clear) {
+	@include button.button-view('plain');
 }

@@ -41,6 +41,12 @@ export interface IAdapterContextOptions<TInstance extends object = object> {
 	 */
 	props?: object
 	options?: object
+	/**
+	 * Имя места, если компонент — деталь разметки другого компонента (строка и
+	 * крестик тега). Уходит в `createBundle`: плагины реестра со `scope: 'own'`
+	 * вложенному компоненту не ставятся.
+	 */
+	embedded?: string
 }
 
 export interface IAdapterContextConfig {
@@ -56,6 +62,8 @@ export interface IAdapterContext<TInstance extends object = object> {
 	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
 	readonly props: object
+	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
+	readonly embedded: string | undefined
 	readonly events: TEvented<TAdapterEvents>
 
 	/** Подключить расширение БЕЗ опций */

@@ -216,7 +216,7 @@ describe('опции', () => {
 	 * с самой кнопки, поэтому набор обязан доехать и туда, не только на
 	 * обёртку опции. Тот же приём, что у `ListBoxItem`.
 	 */
-	it('data-selected и вид кнопки доезжают до .s-button опции', async () => {
+	it('data-selected доезжает до .s-button опции, а вида в разметке нет', async () => {
 		const wrapper = render()
 
 		await nextFrame()
@@ -229,7 +229,9 @@ describe('опции', () => {
 		const button = document.querySelector('.s-select-item .s-button') as HTMLElement
 
 		expect(button.getAttribute('data-selected')).toBe('true')
-		expect(button.className).toContain('s-button--a-plain')
+		// Вид строки опции — значение темы: разметка его не передаёт, тема
+		// красит строку по контексту
+		expect(button.className).not.toMatch(/--view-/)
 	})
 })
 

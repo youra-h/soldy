@@ -19,8 +19,8 @@ describe('TInput', () => {
 
 		expect(input.classes.toArray()).toContain('s-input')
 
-		input.variant = 'accent'
-		expect(input.classes.toArray()).toContain('s-input--accent')
+		input.variant = 'brand'
+		expect(input.classes.toArray()).toContain('s-input--variant-brand')
 
 		input.size = 'lg'
 		expect(input.classes.toArray()).toContain('s-input--size-lg')
@@ -87,7 +87,7 @@ describe('TInput', () => {
 			focused: false,
 			readonly: false,
 			required: true,
-			variant: 'accent',
+			variant: 'brand',
 			size: 'lg',
 			visible: false,
 			rendered: true,
@@ -101,7 +101,7 @@ describe('TInput', () => {
 			focused: false,
 			readonly: false,
 			required: true,
-			variant: 'accent',
+			variant: 'brand',
 			size: 'lg',
 			visible: false,
 			rendered: true,

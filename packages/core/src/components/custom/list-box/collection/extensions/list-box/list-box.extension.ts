@@ -54,7 +54,7 @@ export class TListBoxExtension<
 	}
 
 	/** Внешний вид со списка. */
-	get view(): TListBoxView {
+	get view(): TListBoxView | undefined {
 		return this._owner.view
 	}
 
@@ -82,11 +82,14 @@ export class TListBoxExtension<
 			})
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.variant = payload.newValue
-			})
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.variant = payload.newValue
+				})
+			},
+		)
 
 		// У `data-content-fit` два источника — список и сам элемент, и атрибут
 		// пересчитывается на смену любого из них

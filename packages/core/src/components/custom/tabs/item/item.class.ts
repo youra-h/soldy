@@ -25,7 +25,6 @@ export default class TTabsItem<
 		value: '',
 		closable: undefined,
 		closeLabel: 'Close',
-		variant: 'normal',
 		tag: 'div',
 	}
 

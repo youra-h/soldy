@@ -135,11 +135,14 @@ export class TSelectExtension<
 			})
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.variant = payload.newValue
-			})
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.variant = payload.newValue
+				})
+			},
+		)
 
 		this._owner.events.on('change:contentFit', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))

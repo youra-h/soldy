@@ -30,7 +30,6 @@ export default class TAccordionItem<
 		text: '',
 		value: '',
 		arrowPlacement: 'start',
-		variant: 'normal',
 		tag: 'div',
 	}
 

@@ -37,31 +37,16 @@ $focused: '&:has(> #{$row}:focus)';
 
 	@include button.button-surface;
 
-	// Вид — вид набора, та же матрица, что у Button. Строка — `view="none"` и
-	// сама не красит ничего, поэтому вид читается с класса набора.
-	@each $view in button.$views {
-		.s-tags--#{$view} > & {
-			@include button.button-view($view, $focused);
+	// Кольцо фокуса — вокруг пилюли и, как у Button, кроме вида `none`. Своё
+	// кольцо строки снимается целиком: и обводка, и укороченный ею переход.
+	// С цветом `transparent` браузер рисовал бы вместо него белую кайму.
+	> #{$row}:focus-visible {
+		@apply outline-none;
+		@include button.button-transition;
+	}
 
-			@each $color in button.$colors {
-				&#{$this}--#{$color} {
-					@include button.button-view-color($view, $color, $focused);
-				}
-			}
-
-			// Кольцо фокуса — вокруг пилюли и, как у Button, кроме вида `none`.
-			// Своё кольцо строки гасится: с цветом `transparent` браузер
-			// рисует вместо него белую кайму.
-			@if $view != 'none' {
-				> #{$row}:focus-visible {
-					@apply outline-none;
-				}
-
-				&:has(> #{$row}:focus-visible) {
-					@include button.button-focus-ring;
-				}
-			}
-		}
+	.s-tags:not(.s-tags--view-none) > &:has(> #{$row}:focus-visible) {
+		@include button.button-focus-ring;
 	}
 
 	// Высота пилюли — размерная высота Button. Строка (`max-h-full` у Button)
@@ -106,6 +91,32 @@ $focused: '&:has(> #{$row}:focus)';
 	&[data-disabled='true'] > .s-button {
 		@apply opacity-100;
 	}
+}
+
+// Вид пилюли — вид набора, та же матрица, что у Button. Без модификатора
+// набора — вид Button по умолчанию, `filled` с нейтралью; вариант читается с
+// модификатора самого элемента. Нулевая специфичность базы — как у Button:
+// модификатор набора перекрывает её, не споря.
+:where(.s-tags-item) {
+	@include button.button-view('filled', $focused, 's-tags-item');
+}
+
+@each $view in button.$views {
+	.s-tags--view-#{$view} > .s-tags-item {
+		@include button.button-view($view, $focused, 's-tags-item');
+	}
+}
+
+// Части тега по контексту — раньше их вид задавала разметка, а значение темы
+// разметка больше не передаёт. Строка — `none`: пилюлю рисует обёртка, и
+// строка сама не красит ничего. Крестик — `plain`. Нулевая специфичность, как
+// у базового вида Button.
+:where(.s-tags-item > #{$row}) {
+	@include button.button-view('none');
+}
+
+:where(.s-tags-item__close) {
+	@include button.button-view('plain');
 }
 
 // Теги внутри поля ввода: высоту диктует слот, а не размерный класс.

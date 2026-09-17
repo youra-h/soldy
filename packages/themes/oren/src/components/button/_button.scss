@@ -15,10 +15,10 @@
 
 	@include mixines.button-disabled;
 
-	&:focus-visible {
-		&:not(#{$this}--a-none) {
-			@include mixines.button-focus-ring;
-		}
+	// Кольца нет у вида `none`. Строки таба и тега выглядят как `none` без
+	// модификатора — кольцо с них снимают `tabs/_tabs.scss` и `tags/_tags.scss`.
+	&:focus-visible:not(#{$this}--view-none) {
+		@include mixines.button-focus-ring;
 	}
 
 	svg {
@@ -30,17 +30,22 @@
 			@include mixines.button-size($size);
 		}
 	}
+}
 
-	// Вид и цвет варианта — матрица из миксинов: ею же красится пилюля тега
-	@each $view in mixines.$views {
-		&--a-#{$view} {
-			@include mixines.button-view($view);
+// Вид блока без модификатора — `filled` с нейтралью. Цвет кнопки целиком в
+// виде, у самого блока его нет.
+//
+// Нулевая специфичность: вид по контексту и модификатор перекрывают базовый
+// вид, не споря с ним. Виды по контексту — у частей, чей вид раньше был зашит
+// в разметку: строки ListBox, Accordion и Select, крестики Tabs и Tags,
+// очистка Select (`plain`), строка таба (`none`). Объявлены в файлах этих
+// компонентов, после Button.
+:where(.s-button) {
+	@include mixines.button-view('filled');
+}
 
-			@each $color in mixines.$colors {
-				&#{$this}--#{$color} {
-					@include mixines.button-view-color($view, $color);
-				}
-			}
-		}
+@each $view in mixines.$views {
+	.s-button--view-#{$view} {
+		@include mixines.button-view($view);
 	}
 }

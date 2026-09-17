@@ -35,7 +35,6 @@ export default class TListBoxItem<
 		text: '',
 		value: '',
 		contentFit: undefined,
-		variant: 'normal',
 		tag: 'div',
 	}
 

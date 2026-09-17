@@ -61,7 +61,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/** Внешний вид со набора. */
-	get view(): TTagsView {
+	get view(): TTagsView | undefined {
 		return this._owner.view
 	}
 
@@ -89,11 +89,14 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 			})
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.variant = payload.newValue
-			})
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.variant = payload.newValue
+				})
+			},
+		)
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
 		// (TTagsItemExtension резолвит closable из item ?? owner). change:view —

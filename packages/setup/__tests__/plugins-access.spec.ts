@@ -11,7 +11,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { required } from './helpers'
 import { TButton } from '@soldy/core'
-import { TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
+import { TBasePlugin, TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
 import {
 	createAdapterContext,
 	collectEventBindings,
@@ -97,6 +97,77 @@ describe('bundle:create — сторона инстанса', () => {
 
 		expect(context.bundle).toBeNull()
 		expect(handler).not.toHaveBeenCalled()
+	})
+})
+
+/** Плагин снаружи: журнал своего жизненного цикла. */
+class TExternalPlugin extends TBasePlugin {
+	readonly log: string[] = []
+
+	override created(): void {
+		super.created()
+		this.log.push('create')
+	}
+
+	override destroy(): void {
+		this.log.push('destroy')
+		super.destroy()
+	}
+}
+
+describe('плагин, поставленный снаружи', () => {
+	it('поставленный в bundle:create объявляется вместе с плагинами дескриптора', async () => {
+		const ctrl = new TButton()
+		const order: string[] = []
+
+		ctrl.events.on('bundle:create', (bundle: unknown) => {
+			if (!(bundle instanceof TPluginBundle)) return
+
+			bundle.use(TExternalPlugin)
+			bundle.get(TExternalPlugin)?.events.on('create', () => order.push('external'))
+			bundle.get(TElementPlugin)?.events.on('create', () => order.push('element'))
+		})
+
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+
+		await created()
+
+		expect(context.bundle?.get(TExternalPlugin)?.log).toEqual(['create'])
+		// Порядок установки: плагины дескриптора раньше внешнего
+		expect(order).toEqual(['element', 'external'])
+	})
+
+	it('уничтожается вместе с компонентом', async () => {
+		const context = createAdapterContext(ButtonDescriptor(), {})
+		const bundle = required(context.bundle, 'bundle')
+
+		bundle.use(TExternalPlugin)
+		const plugin = required(bundle.get(TExternalPlugin), 'TExternalPlugin')
+
+		await created()
+		context.destroy()
+
+		expect(plugin.log).toEqual(['create', 'destroy'])
+		expect(bundle.get(TElementPlugin)).toBeUndefined()
+	})
+
+	it('чужой набор контекст не уничтожает: его уничтожит владелец', async () => {
+		const owner = createAdapterContext(ButtonDescriptor(), {})
+		const bundle = required(owner.bundle, 'bundle')
+		const shared = createAdapterContext(
+			ButtonDescriptor(),
+			{ ctrl: owner.instance },
+			{ bundle },
+		)
+
+		await created()
+		shared.destroy()
+
+		expect(bundle.get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
+
+		owner.destroy()
+
+		expect(bundle.get(TElementPlugin)).toBeUndefined()
 	})
 })
 

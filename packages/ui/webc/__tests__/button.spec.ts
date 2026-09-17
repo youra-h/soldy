@@ -44,18 +44,19 @@ describe('<soldy-button> · атрибуты', () => {
 
 		expect(root(el).tagName.toLowerCase()).toBe('button')
 		expect(root(el).className).toContain('s-button')
-		expect(root(el).className).toContain('s-button--a-filled')
+		// variant и view — значения темы: без них модификаторов нет вовсе
+		expect(root(el).className).not.toMatch(/--(variant|view)-/)
 	})
 
 	it('читает text и классы из атрибутов', () => {
 		const el = mount(
-			'<soldy-button text="Hello" variant="accent" size="xl" view="plain"></soldy-button>',
+			'<soldy-button text="Hello" variant="brand" size="xl" view="ghost"></soldy-button>',
 		)
 
 		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('Hello')
 		expect(root(el).className).toContain('s-button--size-xl')
-		expect(root(el).className).toContain('s-button--accent')
-		expect(root(el).className).toContain('s-button--a-plain')
+		expect(root(el).className).toContain('s-button--variant-brand')
+		expect(root(el).className).toContain('s-button--view-ghost')
 	})
 
 	it('boolean-атрибут работает по HTML-семантике (важно наличие)', () => {
@@ -180,10 +181,10 @@ describe('<soldy-button> · точечные обновления', () => {
 
 		root(el).classList.add('marker')
 
-		el.variant = 'accent'
+		el.variant = 'brand'
 		await flush()
 
-		expect(root(el).className).toContain('s-button--accent')
+		expect(root(el).className).toContain('s-button--variant-brand')
 		expect(root(el).classList.contains('marker')).toBe(false)
 	})
 
@@ -203,14 +204,14 @@ describe('<soldy-button> · точечные обновления', () => {
 
 describe('<soldy-button> · внешний ctrl', () => {
 	it('отражает состояние инстанса и реагирует на его мутации', async () => {
-		const ctrl = new TButton({ text: 'FromCtrl', variant: 'accent' })
+		const ctrl = new TButton({ text: 'FromCtrl', variant: 'brand' })
 		const el = document.createElement('soldy-button')
 
 		el.ctrl = ctrl
 		document.body.appendChild(el)
 
 		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('FromCtrl')
-		expect(root(el).className).toContain('s-button--accent')
+		expect(root(el).className).toContain('s-button--variant-brand')
 
 		ctrl.text = 'Changed'
 		await flush()
@@ -221,7 +222,7 @@ describe('<soldy-button> · внешний ctrl', () => {
 
 describe('<soldy-button> · события', () => {
 	it('диспатчит CustomEvent с именем как в ядре', async () => {
-		const ctrl = new TButton({ view: 'filled' })
+		const ctrl = new TButton({ view: 'solid' })
 		const el = document.createElement('soldy-button')
 		const seen: unknown[] = []
 
@@ -229,9 +230,9 @@ describe('<soldy-button> · события', () => {
 		el.addEventListener('change:view', (e: Event) => seen.push((e as CustomEvent).detail))
 		document.body.appendChild(el)
 
-		ctrl.view = 'plain'
+		ctrl.view = 'ghost'
 
-		expect(seen).toEqual(['plain'])
+		expect(seen).toEqual(['ghost'])
 	})
 
 	it('change:visible не дублируется (дедупликация триггеров)', () => {

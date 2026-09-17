@@ -25,6 +25,12 @@ import type {
 } from './types'
 import { normalizeContribution } from './compile-contribution'
 import { withClassDefault } from './prop-default'
+import {
+	registeredPluginsOf,
+	rememberRegisteredPlugins,
+	resolveRegisteredPlugins,
+	type IBundleContext,
+} from './plugin-registry'
 
 /** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
 type TDefinitionOptions = IComponentDefinitionOptions<
@@ -116,7 +122,9 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			return [...slots]
 		},
 
-		createBundle(instance: object) {
+		createBundle(instance: object, context: IBundleContext = {}) {
+			// Без своих плагинов у компонента нет и узла для них (`TElementPlugin`):
+			// плагины реестра такому компоненту не ставятся
 			if (plugins.length === 0) {
 				return null
 			}
@@ -126,6 +134,24 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			for (const plugin of plugins) {
 				bundle.use(plugin.ctor, plugin.options ?? {})
 			}
+
+			// Плагины реестра — после своих: они зависят от плагинов компонента,
+			// а не наоборот. Заменить свой плагин внешний не может: набор
+			// компонента — его инвариант (AGENTS.md, «Почему bundle не
+			// принимается снаружи»).
+			const registered = resolveRegisteredPlugins(instance, context)
+
+			for (const plugin of registered) {
+				if (bundle.get(plugin.ctor)) {
+					throw new Error(
+						`${plugin.ctor.name} уже входит в состав ${ctor.name}: плагин реестра только добавляет`,
+					)
+				}
+
+				bundle.use(plugin.ctor, plugin.options ?? {})
+			}
+
+			rememberRegisteredPlugins(bundle, instance, registered)
 
 			// Плагины появились — объявляем их наружу. `bundle:create` идёт на
 			// шину инстанса: это единственный канал, видимый и шаблону, и тому,
@@ -137,15 +163,15 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 			// того, как получил bundle, и синхронный эмит ушёл бы в пустоту.
 			//
 			// Сначала bundle, потом плагины: иначе обработчик `bundle:create`
-			// не успел бы подписаться на плагинный `create`.
+			// не успел бы подписаться на плагинный `create`. Объявляет плагины
+			// сам набор, а не цикл по дескриптору: плагин, поставленный в
+			// обработчике `bundle:create`, объявляется вместе с остальными.
 			Promise.resolve().then(() => {
 				const events: unknown = Reflect.get(instance, 'events')
 
 				if (hasEmit(events)) events.emit('bundle:create', bundle)
 
-				for (const plugin of plugins) {
-					bundle.get(plugin.ctor)?.created()
-				}
+				bundle.created()
 			})
 
 			return bundle
@@ -163,6 +189,17 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 						events: def.events,
 					}))
 					.filter((u) => u.instance != null),
+				// Units плагинов реестра — только у определений с пропсами и событиями.
+				// Декларации адаптера (`getProps`) о них не знают: список статичен, а
+				// реестр пополняется в рантайме. Адаптеры, которые читают пропсы по
+				// аксессору, получают их сами; Vue — из `attrs` (`useSyncProps`).
+				...registeredPluginsOf(bundle, instance)
+					.filter((def) => def.props?.length || def.events?.length)
+					.map((def) => ({
+						instance: bundle?.get(def.ctor),
+						props: [...(def.props ?? [])],
+						events: [...(def.events ?? [])],
+					})),
 			])
 		},
 	}

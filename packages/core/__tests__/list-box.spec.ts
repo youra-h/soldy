@@ -50,7 +50,15 @@ function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 
 describe('view пробрасывается со списка на элемент', () => {
 	it('элемент берёт вид владельца', () => {
-		expect(createListBox(['a'], { view: 'filled' }).facadeFor(0).view).toBe('filled')
+		expect(createListBox(['a'], { view: 'solid' }).facadeFor(0).view).toBe('solid')
+	})
+
+	/**
+	 * Запасного значения у фасада нет: вид строки по умолчанию рисует тема, и
+	 * имени для него у библиотеки нет. Раньше фасад подставлял `'plain'`.
+	 */
+	it('у списка без вида нет вида и у элемента', () => {
+		expect(createListBox(['a']).facadeFor(0).view).toBeUndefined()
 	})
 
 	/**
@@ -58,25 +66,25 @@ describe('view пробрасывается со списка на элемен�
 	 * пересоздании — то есть в живом интерфейсе не узнавал бы вовсе.
 	 */
 	it('смена вида у списка доходит до элемента событием', () => {
-		const { owner, facadeFor } = createListBox(['a', 'b'], { view: 'plain' })
+		const { owner, facadeFor } = createListBox(['a', 'b'], { view: 'ghost' })
 		const facade = facadeFor(0)
 		const seen: unknown[] = []
 
 		facade.events.on('change:view', (value: unknown) => seen.push(value))
 
-		owner.view = 'filled'
+		owner.view = 'solid'
 
-		expect(seen).toEqual(['filled'])
-		expect(facade.view).toBe('filled')
+		expect(seen).toEqual(['solid'])
+		expect(facade.view).toBe('solid')
 	})
 
 	it('вид доходит до всех элементов, а не только до первого', () => {
-		const { owner, facadeFor } = createListBox(['a', 'b', 'c'], { view: 'plain' })
+		const { owner, facadeFor } = createListBox(['a', 'b', 'c'], { view: 'ghost' })
 		const facades = [facadeFor(0), facadeFor(1), facadeFor(2)]
 
-		owner.view = 'filled'
+		owner.view = 'solid'
 
-		expect(facades.map((facade) => facade.view)).toEqual(['filled', 'filled', 'filled'])
+		expect(facades.map((facade) => facade.view)).toEqual(['solid', 'solid', 'solid'])
 	})
 })
 

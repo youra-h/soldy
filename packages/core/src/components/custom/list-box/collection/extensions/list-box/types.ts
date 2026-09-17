@@ -23,7 +23,7 @@ export interface IListBoxExtension<
 >
 	extends IExtension<TItem, TListBoxExtensionEvents>, IExtensionItems<TItem, TItemExt> {
 	/** Внешний вид со списка. */
-	readonly view: TListBoxView
+	readonly view: TListBoxView | undefined
 	/** Где стоит отметка выбранного — свойство списка, не элемента. */
 	readonly indicator: TListIndicator
 }
@@ -38,7 +38,7 @@ export interface IListBoxExtensionOptions<
 }
 
 export type TListBoxExtensionEvents = {
-	'change:view': (value: TListBoxView) => void
+	'change:view': (value: TListBoxView | undefined) => void
 	'change:indicator': (value: TListIndicator) => void
 }
 

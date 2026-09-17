@@ -193,7 +193,7 @@ describe('догон накопленного при привязке', () => {
 	/** Владельческие раздают свойства владельца тоже по `item:added`. */
 	it('элементы, добавленные до привязки, получают size и variant владельца', () => {
 		const engine = createEngine({ items: [{ value: 'a', text: 'A' }] })
-		const owner = new TTabs({ size: 'lg', variant: 'accent' })
+		const owner = new TTabs({ size: 'lg', variant: 'brand' })
 
 		new TTabsCollectionFacade({}, { owner, engine })
 
@@ -202,7 +202,7 @@ describe('догон накопленного при привязке', () => {
 		expect(item).toBeInstanceOf(TTabsItem)
 		if (item instanceof TTabsItem) {
 			expect(item.size).toBe('lg')
-			expect(item.variant).toBe('accent')
+			expect(item.variant).toBe('brand')
 		}
 	})
 

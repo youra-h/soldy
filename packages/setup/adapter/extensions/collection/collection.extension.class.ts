@@ -10,6 +10,7 @@
 
 import type { TCollectionEngine } from '@soldy/core'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
+import { applyRegisteredExtensions } from '../../../descriptors/base/extension-registry'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
@@ -57,6 +58,13 @@ export class TCollectionExtension {
 		if (bundles) {
 			bundles.bindEngine(engine)
 		}
+
+		// Расширения реестра (`useExtensions`) — в движок владельца. Владелец —
+		// хозяин набора плагинов: фасад делит набор с компонентом, а сам
+		// компонентом не является.
+		const owner = context.bundle?.getInstance<object>()
+
+		if (owner) applyRegisteredExtensions(owner, engine, { embedded: context.embedded })
 
 		const itemElevator = elevator(COLLECTION_ENGINE_ELEVATOR)
 

@@ -52,11 +52,26 @@ describe('TClasses', () => {
 
 	it('swap меняет класс по prefix+value', () => {
 		const c = new TClasses('s-test')
-		c.add('--normal', true)
+		c.add('--variant-danger', true)
 
-		c.swap({ prefix: '--', oldValue: 'normal', newValue: 'accent' })
-		expect(c.toArray()).toContain('s-test--accent')
-		expect(c.toArray()).not.toContain('s-test--normal')
+		c.swap({ prefix: '--variant-', oldValue: 'danger', newValue: 'brand' })
+		expect(c.toArray()).toContain('s-test--variant-brand')
+		expect(c.toArray()).not.toContain('s-test--variant-danger')
+	})
+
+	/**
+	 * На этом держатся модификаторы темы: значения может не быть, и тогда
+	 * класса нет вовсе, а не `--variant-undefined`.
+	 */
+	it('swap пропускает пустое значение с обеих сторон', () => {
+		const c = new TClasses('s-test')
+
+		c.swap({ prefix: '--variant-', newValue: undefined })
+		expect(c.toArray()).toEqual(['s-test'])
+
+		c.swap({ prefix: '--variant-', newValue: 'brand' })
+		c.swap({ prefix: '--variant-', oldValue: 'brand', newValue: undefined })
+		expect(c.toArray()).toEqual(['s-test'])
 	})
 
 	it('setBase обновляет базовый класс и эмитит change', () => {

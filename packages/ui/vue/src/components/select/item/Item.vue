@@ -23,10 +23,11 @@ import SetupSelectItem from './setup.component'
  * нельзя, иначе правка доступности ломает вид.
  *
  * `dataset` биндится дважды — на обёртку и на `Button`: фон при hover/
- * подсветке/выборе рисует общий `button-state-bg` темы, а он читает
- * `data-highlighted` / `data-selected` с самой кнопки (`view="plain"`, не
- * `"none"` — иначе миксин не применяется). То же устройство, что у
- * `ListBoxItem`.
+ * подсветке/выборе тема рисует на самой кнопке и читает `data-highlighted` /
+ * `data-selected` с неё. То же устройство, что у `ListBoxItem`.
+ *
+ * Вида у строки в разметке нет: значения вида объявляет тема, и библиотека их
+ * не знает. Строку опции тема красит по контексту (`.s-select-item`).
  *
  * Выбранность и подсветка — разные вещи: подсветка живёт, только пока панель
  * открыта, и в значение не попадает.
@@ -55,8 +56,8 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
+			embedded="select.row"
 			tag="span"
-			view="plain"
 			:size="size"
 			:variant="variant"
 			:disabled="disabled"
@@ -70,7 +71,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="select.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 				<slot name="leading" />
@@ -88,7 +94,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 					aria-hidden="true"
 				>
 					<slot name="indicator-icon" :selected="selected">
-						<Icon v-if="selected" :tag="indicatorIconTag" :size="size" />
+						<Icon
+							embedded="select.indicator"
+							v-if="selected"
+							:tag="indicatorIconTag"
+							:size="size"
+						/>
 					</slot>
 				</span>
 			</template>

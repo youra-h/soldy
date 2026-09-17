@@ -40,6 +40,11 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
+			// Раньше корня пакета: алиас сравнивается префиксом
+			'@soldy/theme-oren/setup': path.resolve(
+				import.meta.dirname,
+				'../../themes/oren/setup/index.ts',
+			),
 			'@soldy/theme-oren': path.resolve(
 				import.meta.dirname,
 				'../../themes/oren/dist/index.css',

@@ -22,18 +22,18 @@ describe('TTabs (чистый класс)', () => {
 		expect(tabs.orientation).toBe('horizontal')
 		expect(tabs.alignment).toBe('start')
 		expect(tabs.position).toBe('start')
-		expect(tabs.view).toBe('line')
+		expect(tabs.view).toBeUndefined()
 		expect(tabs.closable).toBe(false)
-		expect(tabs.variant).toBe('normal')
+		expect(tabs.variant).toBeUndefined()
 		expect(tabs.classes.toArray()).toContain('s-tabs')
 	})
 
 	it('принимает props через plain-объект', () => {
-		const tabs = new TTabs({ orientation: 'vertical', closable: true, view: 'outline' })
+		const tabs = new TTabs({ orientation: 'vertical', closable: true, view: 'pills' })
 
 		expect(tabs.orientation).toBe('vertical')
 		expect(tabs.closable).toBe(true)
-		expect(tabs.view).toBe('outline')
+		expect(tabs.view).toBe('pills')
 	})
 
 	it('принимает props через { props }', () => {
@@ -57,12 +57,12 @@ describe('TTabs (чистый класс)', () => {
 
 		tabs.orientation = 'vertical'
 		tabs.closable = true
-		tabs.view = 'outline'
+		tabs.view = 'pills'
 		tabs.alignment = 'end'
 
 		expect(onOrientation).toHaveBeenCalledWith('vertical')
 		expect(onClosable).toHaveBeenCalledWith(true)
-		expect(onView).toHaveBeenCalledWith('outline')
+		expect(onView).toHaveBeenCalledWith('pills')
 		expect(onAlignment).toHaveBeenCalledWith('end')
 	})
 
@@ -82,19 +82,19 @@ describe('TTabs (чистый класс)', () => {
 		tabs.orientation = 'vertical'
 		expect(tabs.classes.toArray()).toContain('s-tabs--vertical')
 
-		tabs.view = 'contained'
-		expect(tabs.classes.toArray()).toContain('s-tabs--contained')
+		tabs.view = 'cards'
+		expect(tabs.classes.toArray()).toContain('s-tabs--view-cards')
 	})
 
 	it('getProps возвращает актуальные значения', () => {
-		const tabs = new TTabs({ orientation: 'vertical', closable: true, view: 'outline' })
+		const tabs = new TTabs({ orientation: 'vertical', closable: true, view: 'pills' })
 
 		const props = tabs.getProps()
 
 		expect(props).toMatchObject({
 			orientation: 'vertical',
 			closable: true,
-			view: 'outline',
+			view: 'pills',
 		})
 	})
 })
@@ -222,7 +222,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 	})
 
 	it('TTabsExtension пробрасывает свойства владельца при добавлении элемента', () => {
-		const tabs = new TTabs({ disabled: true, size: 'lg', variant: 'accent' })
+		const tabs = new TTabs({ disabled: true, size: 'lg', variant: 'brand' })
 		const { collection } = createTabsCollection(tabs)
 
 		const tab = createTab('Tab')
@@ -230,7 +230,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(tab.disabled).toBe(true)
 		expect(tab.size).toBe('lg')
-		expect(tab.variant).toBe('accent')
+		expect(tab.variant).toBe('brand')
 	})
 
 	it('TTabsExtension пробрасывает изменение disabled на все элементы', () => {

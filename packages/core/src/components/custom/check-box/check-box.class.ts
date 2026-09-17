@@ -1,6 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents } from './types'
+import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents, TCheckBoxView } from './types'
 
 export default class TCheckBox
 	extends TInputControl<boolean | undefined, ICheckBoxProps, TCheckBoxEvents>
@@ -9,16 +9,15 @@ export default class TCheckBox
 	static override baseClass = 's-check-box'
 
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<ICheckBoxProps, 'indeterminate' | 'plain'> = {
+		TDefaultValues<ICheckBoxProps, 'indeterminate', 'view'> = {
 		...TInputControl.defaultValues,
 		value: false,
 		indeterminate: false,
-		plain: false,
-		variant: 'normal',
+		view: undefined,
 	}
 
 	protected _indeterminate!: boolean
-	protected _plain!: boolean
+	protected _view: TCheckBoxView | undefined
 
 	constructor(props: Partial<ICheckBoxProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
@@ -27,7 +26,7 @@ export default class TCheckBox
 
 		this.value = props.value ?? ctor.defaultValues.value
 		this._applyIndeterminate(props.indeterminate ?? ctor.defaultValues.indeterminate)
-		this._applyPlain(props.plain ?? ctor.defaultValues.plain)
+		this._applyView(props.view ?? ctor.defaultValues.view)
 	}
 
 	/**
@@ -55,21 +54,26 @@ export default class TCheckBox
 		}
 	}
 
-	get plain(): boolean {
-		return this._plain
+	get view(): TCheckBoxView | undefined {
+		return this._view
 	}
 
-	protected _applyPlain(value: boolean) {
-		this._classes.toggle(`--plain`, value)
+	/** Модификатор вида — с префиксом `--view-`; `swap` пропускает пустое значение. */
+	protected _applyView(newValue: TCheckBoxView | undefined, oldValue?: TCheckBoxView) {
+		this._classes.swap({
+			prefix: '--view-',
+			oldValue,
+			newValue,
+		})
 
-		this._plain = value
+		this._view = newValue
 	}
 
-	set plain(value: boolean) {
-		if (this._plain !== value) {
-			this._applyPlain(value)
-			this.events.emit('change:plain', value)
-		}
+	set view(value: TCheckBoxView | undefined) {
+		if (this._view === value) return
+
+		this._applyView(value, this._view)
+		this.events.emit('change:view', value)
 	}
 
 	/**
@@ -90,7 +94,7 @@ export default class TCheckBox
 		return {
 			...super.getProps(),
 			indeterminate: this.indeterminate,
-			plain: this.plain,
+			view: this.view,
 		}
 	}
 

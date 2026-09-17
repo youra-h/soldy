@@ -2,6 +2,8 @@ import type { IPlugin, IPluginBundle, IPluginConstructor } from './types'
 
 export class TPluginBundle implements IPluginBundle {
 	private _plugins = new Map<IPluginConstructor<any, any, any>, IPlugin<any, any>>()
+	/** Набор объявлен наружу (`created()`): плагин, поставленный позже, объявляется сразу. */
+	private _created = false
 
 	constructor(private readonly _instance: object) {}
 
@@ -30,6 +32,11 @@ export class TPluginBundle implements IPluginBundle {
 			options,
 		)
 
+		// Набор уже объявлен — объявлять этот плагин больше некому. Так плагин,
+		// поставленный снаружи (из `bundle:create` или позже), живёт по тому же
+		// циклу, что и плагины дескриптора.
+		if (this._created) plugin.created()
+
 		return this
 	}
 
@@ -43,5 +50,21 @@ export class TPluginBundle implements IPluginBundle {
 		plugin?.destroy()
 
 		this._plugins.delete(PluginCtor)
+	}
+
+	created(): void {
+		if (this._created) return
+
+		this._created = true
+
+		for (const plugin of [...this._plugins.values()]) plugin.created()
+	}
+
+	destroy(): void {
+		// Обратный порядок: плагин ставится после тех, от кого зависит, и
+		// уничтожается раньше них
+		for (const plugin of [...this._plugins.values()].reverse()) plugin.destroy()
+
+		this._plugins.clear()
 	}
 }

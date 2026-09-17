@@ -18,7 +18,7 @@ export interface IAccordionExtension<TItem extends IAccordionItem = IAccordionIt
 		IExtension<TItem, TAccordionExtensionEvents>,
 		IExtensionItems<TItem, IAccordionItemExtension<TItem>> {
 	/** Внешний вид с инстанса TAccordion. */
-	readonly view: TAccordionView
+	readonly view: TAccordionView | undefined
 }
 
 /**
@@ -37,7 +37,7 @@ export interface IAccordionExtensionOptions<
  * События расширения TAccordionExtension.
  */
 export type TAccordionExtensionEvents = {
-	'change:view': (value: TAccordionView) => void
+	'change:view': (value: TAccordionView | undefined) => void
 }
 
 export type TAccordionExtensions<TItem extends IAccordionItem> = {

@@ -12,7 +12,7 @@ export type TTagsItemEventsExtension = TBaseItemEventsExtension & {
 	 * результат не изменился. Значение в аргументе было бы неверным.
 	 */
 	'change:closable': () => void
-	'change:view': (value: TTagsView) => void
+	'change:view': (value: TTagsView | undefined) => void
 }
 
 /**
@@ -28,7 +28,7 @@ export interface ITagsItemExtension<TItem extends object = any> extends IItemExt
 	readonly closable: boolean
 
 	/** Внешний вид тега — берётся у владельца целиком. */
-	readonly view: TTagsView
+	readonly view: TTagsView | undefined
 
 	/** Закрыть тег. Делегирует в родительское расширение. */
 	close(): void

@@ -6,14 +6,14 @@ import { NATIVE_BUTTON_TAGS } from '../../../common'
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
 	static override baseClass = 's-button'
 
-	static defaultValues: typeof TTextable.defaultValues & TDefaultValues<IButtonProps, 'view'> = {
+	static defaultValues: typeof TTextable.defaultValues &
+		TDefaultValues<IButtonProps, never, 'view'> = {
 		...TTextable.defaultValues,
-		variant: 'normal',
-		view: 'filled',
+		view: undefined,
 		tag: 'button',
 	}
 
-	protected _view!: TButtonView
+	protected _view: TButtonView | undefined
 
 	constructor(props: Partial<IButtonProps> = {}, options: IComponentOptions<TButtonStates> = {}) {
 		super(props, options)
@@ -28,13 +28,18 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		this._syncButtonAria()
 	}
 
-	get view(): TButtonView {
+	get view(): TButtonView | undefined {
 		return this._view
 	}
 
-	protected _applyView(newValue: TButtonView, oldValue?: TButtonView) {
+	/**
+	 * Модификатор вида — с префиксом `--view-`: имя значения выбирает тема, и
+	 * без префикса оно столкнулось бы с модификатором библиотеки. `swap`
+	 * пропускает пустое значение — без вида модификатора нет вовсе.
+	 */
+	protected _applyView(newValue: TButtonView | undefined, oldValue?: TButtonView) {
 		this._classes.swap({
-			prefix: '--a-',
+			prefix: '--view-',
 			oldValue,
 			newValue,
 		})
@@ -42,11 +47,11 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		this._view = newValue
 	}
 
-	set view(value: TButtonView) {
-		if (value && this._view !== value) {
-			this._applyView(value, this._view)
-			this.events.emit('change:view', value)
-		}
+	set view(value: TButtonView | undefined) {
+		if (this._view === value) return
+
+		this._applyView(value, this._view)
+		this.events.emit('change:view', value)
 	}
 
 	/**

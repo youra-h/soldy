@@ -19,14 +19,13 @@ export class TAccordion
 {
 	static override baseClass = 's-accordion'
 
-	static defaultValues: typeof TControl.defaultValues & TDefaultValues<IAccordionProps, 'view'> =
-		{
-			...TControl.defaultValues,
-			view: 'plain',
-			variant: 'normal',
-		}
+	static defaultValues: typeof TControl.defaultValues &
+		TDefaultValues<IAccordionProps, never, 'view'> = {
+		...TControl.defaultValues,
+		view: undefined,
+	}
 
-	protected _view!: TAccordionView
+	protected _view: TAccordionView | undefined
 
 	constructor(
 		props: Partial<IAccordionProps> = {},
@@ -39,21 +38,23 @@ export class TAccordion
 		this._applyView(props.view ?? ctor.defaultValues.view)
 	}
 
-	get view(): TAccordionView {
+	get view(): TAccordionView | undefined {
 		return this._view
 	}
 
-	set view(value: TAccordionView) {
+	set view(value: TAccordionView | undefined) {
 		if (this._view !== value) {
 			this._applyView(value, this._view)
 			this.events.emit('change:view', value)
 		}
 	}
 
-	protected _applyView(newValue: TAccordionView, oldValue?: TAccordionView) {
-		this._classes.swapClass({
-			oldClass: `--${oldValue}`,
-			newClass: `--${newValue}`,
+	/** Модификатор вида — с префиксом `--view-`; `swap` пропускает пустое значение. */
+	protected _applyView(newValue: TAccordionView | undefined, oldValue?: TAccordionView) {
+		this._classes.swap({
+			prefix: '--view-',
+			oldValue,
+			newValue,
 		})
 		this._view = newValue
 	}

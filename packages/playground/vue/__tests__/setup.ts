@@ -1,9 +1,11 @@
-import { setIcons } from '@soldy/setup'
+import { setIcons, useTheme } from '@soldy/setup'
 import * as material from '@soldy/icons-material'
+import oren from '@soldy/theme-oren/setup'
 
 /**
  * То же, что в `ui/vue/__tests__/setup.ts`: заглушка браузерного API, которого
- * в jsdom нет, и пакет иконок.
+ * в jsdom нет, и пакет иконок. Сверх того — поведение темы oren, как в
+ * `src/main.ts` стенда.
  *
  * `ResizeObserver` держат `TAnchorPlugin`, `TListHeightPlugin` и
  * `TTabsLayoutPlugin` — все трое меряют элементы. Без заглушки каждая
@@ -23,3 +25,6 @@ if (!('ResizeObserver' in globalThis)) {
 
 /** Пакет иконок подключает приложение — в тестах эту роль играет setup. */
 setIcons(material)
+
+/** Поведение темы подключает приложение (`src/main.ts`) — здесь тоже setup. */
+useTheme(oren)

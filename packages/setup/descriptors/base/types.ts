@@ -10,6 +10,7 @@ import type {
 	TAccessor,
 	TName,
 } from '@soldy/accessor'
+import type { IBundleContext } from './plugin-registry'
 import type { IPluginBundle, IPluginConstructor, TPluginInternalEvents } from '@soldy/plugins'
 import type { TUnderscorePropName } from '../../common'
 
@@ -111,7 +112,11 @@ export interface IComponentDescriptor<
 	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
 	getSlots(): ISlotDeclaration[]
 
-	createBundle(instance: TInstance): IPluginBundle | null
+	/**
+	 * Собирает набор: плагины дескриптора, затем плагины реестра
+	 * (`usePlugins`), подходящие компоненту по типу и `context.embedded`.
+	 */
+	createBundle(instance: TInstance, context?: IBundleContext): IPluginBundle | null
 	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
 	createAccessor(instance: TInstance, bundle: IPluginBundle | null): TAccessor
 }

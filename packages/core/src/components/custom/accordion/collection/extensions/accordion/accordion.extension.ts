@@ -53,7 +53,7 @@ export class TAccordionExtension<
 	}
 
 	/** Внешний вид с инстанса TAccordion. */
-	get view(): TAccordionView {
+	get view(): TAccordionView | undefined {
 		return this._owner.view
 	}
 
@@ -78,11 +78,14 @@ export class TAccordionExtension<
 			})
 		})
 
-		this._owner.events.on('change:variant', (payload: TValuePayload<TComponentVariant>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.variant = payload.newValue
-			})
-		})
+		this._owner.events.on(
+			'change:variant',
+			(payload: TValuePayload<TComponentVariant | undefined>) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.variant = payload.newValue
+				})
+			},
+		)
 
 		// Внешний вид: пробрасываем change:view в item-адаптеры
 		// (TAccordionItemExtension резолвит view из owner).

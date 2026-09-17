@@ -29,8 +29,8 @@ export class TAccordionItemCollectionFacade extends TSelectionItemFacade<
 		this.events.relayAll(this._context.adapters.accordion.events)
 	}
 
-	get view(): TAccordionView {
-		return this._context?.adapters.accordion.view ?? 'plain'
+	get view(): TAccordionView | undefined {
+		return this._context?.adapters.accordion.view
 	}
 
 	/**
