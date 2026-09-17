@@ -25,7 +25,7 @@ import {
 	TListBoxItemCollectionFacade,
 	TItemContextRegistry,
 } from '../src'
-import type { IListBoxItem, IListBoxProps } from '@soldy/core'
+import type { IListBoxItem, IListBoxProps, TListContentFit, TListItemContentFit } from '@soldy/core'
 
 function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 	const owner = new TListBox(props)
@@ -218,6 +218,107 @@ describe('indicator пробрасывается со списка на элем
 		collection.items = [...items, late] as IListBoxItem[]
 
 		expect(late.dataset.get('indicator')).toBe('end')
+	})
+})
+
+/**
+ * `contentFit` элемента — своё значение поверх списочного.
+ *
+ * В отличие от `indicator`, своё значение у элемента есть, и оно трёхзначно:
+ * `undefined` значит «как у списка». Разрешённое значение уходит в
+ * `data-content-fit`, и пишет его родительское расширение — по той же причине,
+ * что `data-indicator`. Источников у атрибута два, поэтому пересчитывается он
+ * на смену любого из них: и списка, и самого элемента.
+ */
+describe('data-content-fit элемента: своё значение поверх списочного', () => {
+	/** Список и элементы; `undefined` в `own` — элемент без своего значения. */
+	const createFitted = (
+		own: (TListItemContentFit | undefined)[],
+		contentFit: TListContentFit = 'truncate',
+	) => {
+		const owner = new TListBox({ contentFit })
+		const collection = new TListBoxCollectionFacade({}, { owner })
+		const items = own.map(
+			(fit, index) => new TListBoxItem({ value: String(index), contentFit: fit }),
+		)
+
+		collection.items = items as IListBoxItem[]
+
+		return { owner, collection, items }
+	}
+
+	const fits = (items: IListBoxItem[]) => items.map((item) => item.dataset.get('content-fit'))
+
+	it('при добавлении своё значение берёт верх над списочным', () => {
+		const { items } = createFitted(['wrap', undefined])
+
+		expect(fits(items)).toEqual(['wrap', 'truncate'])
+	})
+
+	it('смена у списка не перекрывает своё значение элемента', () => {
+		const { owner, items } = createFitted(['truncate', undefined])
+
+		owner.contentFit = 'wrap'
+
+		expect(fits(items)).toEqual(['truncate', 'wrap'])
+	})
+
+	/**
+	 * Своё значение меняется и после добавления: во Vue это динамический проп
+	 * `content-fit` у `ListBox.Item`. Пересчёт только на добавлении и на смене у
+	 * списка оставлял атрибут прежним.
+	 */
+	it('смена своего значения после добавления переставляет атрибут', () => {
+		const { items } = createFitted([undefined, undefined])
+
+		items[0].contentFit = 'wrap'
+
+		expect(fits(items)).toEqual(['wrap', 'truncate'])
+	})
+
+	it('undefined у элемента возвращает списочное значение', () => {
+		const { items } = createFitted(['truncate'], 'wrap')
+
+		items[0].contentFit = undefined
+
+		expect(fits(items)).toEqual(['wrap'])
+	})
+
+	/**
+	 * Состав без `trackBy` пересобирается через очистку: элементы уходят и
+	 * возвращаются теми же инстансами. Вернувшийся элемент слушается снова.
+	 */
+	it('элемент, вернувшийся в список, слушается снова', () => {
+		const { collection, items } = createFitted([undefined, undefined])
+
+		collection.items = [...items] as IListBoxItem[]
+		items[1].contentFit = 'wrap'
+
+		expect(fits(items)).toEqual(['truncate', 'wrap'])
+	})
+
+	/**
+	 * Элемент, ушедший из списка, атрибут от него больше не получает, а
+	 * подписка не удерживает список, пока жив элемент.
+	 */
+	it('удалённый элемент список больше не слушает', () => {
+		const { collection, items } = createFitted([undefined, undefined])
+
+		collection.engine.extensions.batch.remove([items[0]])
+		items[0].contentFit = 'wrap'
+
+		expect(items[0].dataset.get('content-fit')).toBe('truncate')
+	})
+
+	it('после очистки списка элементы тоже не слушаются', () => {
+		const { collection, items } = createFitted([undefined, undefined])
+
+		collection.engine.extensions.batch.clear()
+		items.forEach((item) => {
+			item.contentFit = 'wrap'
+		})
+
+		expect(fits(items)).toEqual(['truncate', 'truncate'])
 	})
 })
 

@@ -37,6 +37,16 @@ export class TListBoxExtension<
 
 	protected readonly _owner: TOwner
 
+	/**
+	 * Подписки на собственный `contentFit` элементов, которые сейчас в списке.
+	 *
+	 * Обработчик у каждого элемента свой: ему нужен элемент, а событие несёт
+	 * только значение. Поэтому он хранится до удаления элемента — иначе снять
+	 * подписку было бы нечем. `WeakMap` — чтобы запись не удерживала элемент,
+	 * если движок выбросят, не удалив из него элементы.
+	 */
+	private readonly _contentFitWatchers = new WeakMap<TItem, () => void>()
+
 	constructor(options: IListBoxExtensionOptions<TOwner, TItem>) {
 		super(TListBoxItemExtension, options)
 
@@ -78,9 +88,17 @@ export class TListBoxExtension<
 			})
 		})
 
+		// У `data-content-fit` два источника — список и сам элемент, и атрибут
+		// пересчитывается на смену любого из них
 		this._owner.events.on('change:contentFit', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
+
+		ctx.driver.valueOf().forEach((item) => this._watchContentFit(item))
+		ctx.driver.events.on('item:added', (e) => this._watchContentFit(e.item as TItem))
+		// Очистка шлёт `item:removed` каждому элементу перед `reset` — отдельной
+		// подписки на неё не нужно
+		ctx.driver.events.on('item:removed', (e) => this._unwatchContentFit(e.item))
 
 		this._owner.events.on('change:indicator', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
@@ -127,5 +145,33 @@ export class TListBoxExtension<
 	 */
 	private _applyContentFit(item: TItem): void {
 		item.dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, item.contentFit ?? this._owner.contentFit)
+	}
+
+	/**
+	 * Слушать собственный `contentFit` элемента: своё значение меняется и после
+	 * добавления — во Vue, например, динамическим пропом `content-fit` у
+	 * `ListBox.Item`. Повторный вызов для того же элемента второй подписки не
+	 * заводит.
+	 */
+	private _watchContentFit(item: TItem): void {
+		if (this._contentFitWatchers.has(item)) return
+
+		const watcher = (): void => this._applyContentFit(item)
+
+		this._contentFitWatchers.set(item, watcher)
+		item.events.on('change:contentFit', watcher)
+	}
+
+	/**
+	 * Удалённый элемент список больше не слушает: атрибут ему пишет уже не этот
+	 * список, а подписка удерживала бы список, пока жив сам элемент.
+	 */
+	private _unwatchContentFit(item: TItem): void {
+		const watcher = this._contentFitWatchers.get(item)
+
+		if (!watcher) return
+
+		item.events.off('change:contentFit', watcher)
+		this._contentFitWatchers.delete(item)
 	}
 }
