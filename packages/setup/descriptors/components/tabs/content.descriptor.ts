@@ -6,7 +6,7 @@
  * отвечает за props и events, коллекционная часть — за членство в коллекции.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsContent, TTabsContentCollectionFacade } from '@soldy/core'
 import type { ITabsContentProps, TTabsContentEvents } from '@soldy/core'
 import {
@@ -17,7 +17,7 @@ import {
 import { ComponentViewDescriptor } from '../component-view.descriptor'
 import { TabsContentWarnPluginDescriptor } from '../../plugins'
 
-export const TabsContentDescriptor = () =>
+export const TabsContentDescriptor = defineDescriptor(() =>
 	defineComponent<ITabsContentProps, TTabsContentEvents, TTabsContentSlots>()({
 		ctor: TTabsContent,
 
@@ -26,11 +26,13 @@ export const TabsContentDescriptor = () =>
 		contribution: TabsContentContribution(),
 
 		plugins: [TabsContentWarnPluginDescriptor()],
-	})
+	}),
+)
 
-export const TabsCollectionContentDescriptor = () =>
+export const TabsCollectionContentDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TTabsContentCollectionFacade,
 
 		contribution: TabsCollectionContentContribution(),
-	})
+	}),
+)

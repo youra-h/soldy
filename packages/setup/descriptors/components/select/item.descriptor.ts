@@ -9,14 +9,14 @@
  * только пока панель открыта, и в `value` не попадает.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TSelectItem } from '@soldy/core'
 import type { ISelectItemProps, TSelectItemEvents } from '@soldy/core'
 import { SelectItemContribution, type TSelectItemSlots } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
-export const SelectItemDescriptor = () =>
+export const SelectItemDescriptor = defineDescriptor(() =>
 	defineComponent<ISelectItemProps, TSelectItemEvents, TSelectItemSlots>()({
 		ctor: TSelectItem,
 
@@ -25,4 +25,5 @@ export const SelectItemDescriptor = () =>
 		contribution: SelectItemContribution(),
 
 		plugins: [ListItemPluginDescriptor()],
-	})
+	}),
+)

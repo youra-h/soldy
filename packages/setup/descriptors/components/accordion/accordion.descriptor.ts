@@ -7,7 +7,7 @@
  * Добавляет: view + плагины (коллекция + drag-and-drop).
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordion } from '@soldy/core'
 import type { IAccordionProps, TAccordionEvents } from '@soldy/core'
 import { AccordionContribution, type TAccordionSlots } from '../../../contributions'
@@ -18,7 +18,7 @@ import {
 	DragPluginDescriptor,
 } from '../../plugins'
 
-export const AccordionDescriptor = () =>
+export const AccordionDescriptor = defineDescriptor(() =>
 	defineComponent<IAccordionProps, TAccordionEvents, TAccordionSlots>()({
 		ctor: TAccordion,
 
@@ -33,4 +33,5 @@ export const AccordionDescriptor = () =>
 			// Drag-and-drop
 			DragPluginDescriptor(),
 		],
-	})
+	}),
+)

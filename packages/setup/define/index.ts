@@ -1,6 +1,7 @@
 export { normalizeContribution } from './contribution'
 export { definePlugin } from './plugin'
 export { defineComponent } from './component'
+export { defineDescriptor } from './descriptor'
 export type {
 	IBundleContext,
 	IComponentDefinitionOptions,

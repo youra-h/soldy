@@ -5,17 +5,18 @@
  * и добавляет readonly, required.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TInputControl } from '@soldy/core'
 import type { IInputControlProps, TInputControlEvents } from '@soldy/core'
 import { InputControlContribution } from '../../contributions'
 import { ValueControlDescriptor } from './value-control.descriptor'
 
-export const InputControlDescriptor = () =>
+export const InputControlDescriptor = defineDescriptor(() =>
 	defineComponent<IInputControlProps, TInputControlEvents>()({
 		ctor: TInputControl,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: InputControlContribution(),
-	})
+	}),
+)

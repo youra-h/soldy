@@ -7,7 +7,7 @@
  * Добавляет: orientation, alignment, position, view, closable + плагины Tabs.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabs } from '@soldy/core'
 import type { ITabsProps, TTabsEvents } from '@soldy/core'
 
@@ -22,7 +22,7 @@ import {
 	TabsLayoutPluginDescriptor,
 } from '../../plugins'
 
-export const TabsDescriptor = () =>
+export const TabsDescriptor = defineDescriptor(() =>
 	defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
 		ctor: TTabs,
 
@@ -42,4 +42,5 @@ export const TabsDescriptor = () =>
 			// Drag-and-drop
 			DragPluginDescriptor(),
 		],
-	})
+	}),
+)

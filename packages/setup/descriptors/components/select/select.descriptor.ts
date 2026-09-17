@@ -6,7 +6,7 @@
  * состояние панели и плагины оверлея.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TSelect } from '@soldy/core'
 import type { ISelectProps, TSelectEvents } from '@soldy/core'
 import { SelectContribution, type TSelectSlots } from '../../../contributions'
@@ -22,7 +22,7 @@ import {
 	SelectPointerPluginDescriptor,
 } from '../../plugins'
 
-export const SelectDescriptor = () =>
+export const SelectDescriptor = defineDescriptor(() =>
 	defineComponent<ISelectProps, TSelectEvents, TSelectSlots>()({
 		ctor: TSelect,
 
@@ -51,4 +51,5 @@ export const SelectDescriptor = () =>
 			// включается свойством removeOnBackspace
 			SelectBackspacePluginDescriptor(),
 		],
-	})
+	}),
+)

@@ -10,7 +10,7 @@
  * Добавляет x, y, width, height, position, target, zIndex + frame-layout плагин.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TFrame } from '@soldy/core'
 import type { IFrameProps, TFrameEvents } from '@soldy/core'
 import {
@@ -21,7 +21,7 @@ import {
 import { FrameContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const FrameDescriptor = () =>
+export const FrameDescriptor = defineDescriptor(() =>
 	defineComponent<IFrameProps, TFrameEvents>()({
 		ctor: TFrame,
 
@@ -30,4 +30,5 @@ export const FrameDescriptor = () =>
 		contribution: FrameContribution(),
 
 		plugins: [FrameLayoutPluginDescriptor(), AnchorPluginDescriptor(), AriaPluginDescriptor()],
-	})
+	}),
+)

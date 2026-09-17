@@ -14,7 +14,7 @@
  * реализация у каждого своя, потому что предок занят.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TListBox } from '@soldy/core'
 import type { IListBoxProps, TListBoxEvents } from '@soldy/core'
 import { ListBoxContribution, type TListBoxSlots } from '../../../contributions'
@@ -28,7 +28,7 @@ import {
 	ListScrollPluginDescriptor,
 } from '../../plugins'
 
-export const ListBoxDescriptor = () =>
+export const ListBoxDescriptor = defineDescriptor(() =>
 	defineComponent<IListBoxProps, TListBoxEvents, TListBoxSlots>()({
 		ctor: TListBox,
 
@@ -49,4 +49,5 @@ export const ListBoxDescriptor = () =>
 			// Drag-and-drop
 			DragPluginDescriptor(),
 		],
-	})
+	}),
+)

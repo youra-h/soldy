@@ -5,14 +5,14 @@
  * и добавляет size, width, height + плагин IconStyle.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TIcon } from '@soldy/core'
 import type { IIconProps, TIconEvents } from '@soldy/core'
 import { IconLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { IconContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const IconDescriptor = () =>
+export const IconDescriptor = defineDescriptor(() =>
 	defineComponent<IIconProps, TIconEvents>()({
 		ctor: TIcon,
 
@@ -23,4 +23,5 @@ export const IconDescriptor = () =>
 		// Иконка декоративна, пока ей не дали имя; с именем она обязана стать
 		// `role="img"` — эту роль и передаём плагину.
 		plugins: [IconLayoutPluginDescriptor(), AriaPluginDescriptor({ role: 'img' })],
-	})
+	}),
+)

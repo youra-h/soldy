@@ -6,14 +6,14 @@
  * (клавиатурная навигация).
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TListBoxItem } from '@soldy/core'
 import type { IListBoxItemProps, TListBoxItemEvents } from '@soldy/core'
 import { ListBoxItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
-export const ListBoxItemDescriptor = () =>
+export const ListBoxItemDescriptor = defineDescriptor(() =>
 	defineComponent<IListBoxItemProps, TListBoxItemEvents>()({
 		ctor: TListBoxItem,
 
@@ -22,4 +22,5 @@ export const ListBoxItemDescriptor = () =>
 		contribution: ListBoxItemContribution(),
 
 		plugins: [ListItemPluginDescriptor()],
-	})
+	}),
+)

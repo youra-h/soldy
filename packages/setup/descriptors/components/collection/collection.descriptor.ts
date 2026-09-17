@@ -1,4 +1,4 @@
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { CollectionContribution } from '../../../contributions'
 
 /**
@@ -6,7 +6,8 @@ import { CollectionContribution } from '../../../contributions'
  * Содержит общие props/events (items, trackBy + engine-события).
  * Конкретные коллекции (Tabs, Accordion, ...) наследуют его через `extends`.
  */
-export const CollectionDescriptor = () =>
+export const CollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
 		contribution: CollectionContribution(),
-	})
+	}),
+)

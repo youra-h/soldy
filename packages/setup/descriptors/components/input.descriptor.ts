@@ -5,14 +5,14 @@
  * и добавляет placeholder + плагины input-control, input.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TInput } from '@soldy/core'
 import type { IInputProps, TInputEvents } from '@soldy/core'
 import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
-export const InputDescriptor = () =>
+export const InputDescriptor = defineDescriptor(() =>
 	defineComponent<IInputProps, TInputEvents>()({
 		ctor: TInput,
 
@@ -21,4 +21,5 @@ export const InputDescriptor = () =>
 		contribution: InputContribution(),
 
 		plugins: [InputControlPluginDescriptor(), InputPluginDescriptor()],
-	})
+	}),
+)

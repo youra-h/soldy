@@ -5,17 +5,18 @@
  * и добавляет size, variant.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TStylable } from '@soldy/core'
 import type { IStylableProps, TStylableEvents } from '@soldy/core'
 import { StylableContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const StylableDescriptor = () =>
+export const StylableDescriptor = defineDescriptor(() =>
 	defineComponent<IStylableProps, TStylableEvents>()({
 		ctor: TStylable,
 
 		extends: ComponentViewDescriptor(),
 
 		contribution: StylableContribution(),
-	})
+	}),
+)

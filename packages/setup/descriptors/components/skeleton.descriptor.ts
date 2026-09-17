@@ -7,14 +7,14 @@
  * `TComponentView`, и `size` у него нет.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TSkeleton } from '@soldy/core'
 import type { ISkeletonProps, TSkeletonEvents } from '@soldy/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'
 import { SkeletonContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const SkeletonDescriptor = () =>
+export const SkeletonDescriptor = defineDescriptor(() =>
 	defineComponent<ISkeletonProps, TSkeletonEvents>()({
 		ctor: TSkeleton,
 
@@ -23,4 +23,5 @@ export const SkeletonDescriptor = () =>
 		contribution: SkeletonContribution(),
 
 		plugins: [SkeletonLayoutPluginDescriptor()],
-	})
+	}),
+)

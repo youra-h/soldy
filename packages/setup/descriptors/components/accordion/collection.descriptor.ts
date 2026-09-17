@@ -1,4 +1,4 @@
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordionCollectionFacade, TAccordionItemCollectionFacade } from '@soldy/core'
 import {
 	AccordionCollectionContribution,
@@ -6,17 +6,19 @@ import {
 } from '../../../contributions'
 import { CollectionDescriptor } from '../collection'
 
-export const AccordionCollectionDescriptor = () =>
+export const AccordionCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TAccordionCollectionFacade,
 
 		extends: CollectionDescriptor(),
 
 		contribution: AccordionCollectionContribution(),
-	})
+	}),
+)
 
-export const AccordionCollectionItemDescriptor = () =>
+export const AccordionCollectionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TAccordionItemCollectionFacade,
 		contribution: AccordionCollectionItemContribution(),
-	})
+	}),
+)

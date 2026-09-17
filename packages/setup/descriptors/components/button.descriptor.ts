@@ -5,17 +5,18 @@
  * и добавляет view.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TButton } from '@soldy/core'
 import type { IButtonProps, TButtonEvents } from '@soldy/core'
 import { ButtonContribution, type TButtonSlots } from '../../contributions'
 import { TextableDescriptor } from './textable.descriptor'
 
-export const ButtonDescriptor = () =>
+export const ButtonDescriptor = defineDescriptor(() =>
 	defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
 		ctor: TButton,
 
 		extends: TextableDescriptor(),
 
 		contribution: ButtonContribution(),
-	})
+	}),
+)

@@ -5,14 +5,14 @@
  * и добавляет disabled, focused.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TControl } from '@soldy/core'
 import type { IControlProps, TControlEvents } from '@soldy/core'
 import { ControlContribution } from '../../contributions'
 import { ActionPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
-export const ControlDescriptor = () =>
+export const ControlDescriptor = defineDescriptor(() =>
 	defineComponent<IControlProps, TControlEvents>()({
 		ctor: TControl,
 
@@ -23,4 +23,5 @@ export const ControlDescriptor = () =>
 		// Доступное имя — обязательное свойство любого интерактивного элемента,
 		// а не опция: без него кнопка без текста для скринридера безымянна.
 		plugins: [ActionPluginDescriptor(), AriaPluginDescriptor()],
-	})
+	}),
+)
