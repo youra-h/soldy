@@ -7,7 +7,7 @@
  * проводится через `resolveSlotName` — во всех трёх фреймворках это `children`.
  * Без слотов в наборе `leading={<Icon/>}` доезжал бы до DOM атрибутом.
  *
- * `plugins` и `ctrl` — пропы самого адаптера, в контракте их нет.
+ * `ctrl` съедается всегда: готовый инстанс принимает сам адаптер.
  */
 
 import type { IAccessor, TDescriptorInspector } from '@soldy/accessor'
@@ -25,7 +25,7 @@ export function collectForwardProps<TProps extends object>(
 	inspector: TDescriptorInspector,
 	defaultSlotName: string,
 ): Partial<TProps> {
-	const consumed = new Set<string>([defaultSlotName, 'plugins', 'ctrl'])
+	const consumed = new Set<string>([defaultSlotName, 'ctrl'])
 
 	for (const prop of source.accessor.getProps(true)) {
 		consumed.add(inspector.getExportPropName(prop))

@@ -237,7 +237,6 @@ export function presetForProp(componentId: string, prop: string): Record<string,
  */
 export const NON_EDITABLE = new Set([
 	'ctrl',
-	'plugins',
 	// Коллекционные: состав элементов задаёт само превью, а `trackBy` —
 	// функция. Контрола, которым осмысленно править то и другое, не бывает
 	'items',

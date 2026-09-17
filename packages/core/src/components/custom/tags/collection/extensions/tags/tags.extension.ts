@@ -38,7 +38,7 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *    коллекций, а конкретная пара ролей — знание Tags.
  * 4. **Вид** — `view` берётся у владельца целиком (как `view` у
  *    `TListBoxExtension`) и доезжает до item-адаптера событием: элемент
- *    своего вида не имеет, его `Button` рисуется видом набора.
+ *    своего вида не имеет.
  */
 export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsItem = ITagsItem>
 	extends TBaseOwnerItemExtension<TItem, ITagsItemExtension<TItem>, TTagsExtensionEvents>
@@ -100,7 +100,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
 		// (TTagsItemExtension резолвит closable из item ?? owner). change:view —
-		// вид доезжает до Button каждого тега тем же путём, что у ListBox.
+		// вид доезжает до item-адаптера каждого тега тем же путём, что у ListBox.
 		this.events.relay(this._owner.events, ['change:closable', 'change:view'])
 
 		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined

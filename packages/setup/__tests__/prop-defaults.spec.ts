@@ -18,7 +18,6 @@
 import { describe, it, expect } from 'vitest'
 import type { IPropDeclaration } from '@soldy/accessor'
 import { TFrame } from '@soldy/core'
-import * as exported from '../descriptors'
 import {
 	AnchorPluginDescriptor,
 	AriaPluginDescriptor,
@@ -29,7 +28,7 @@ import {
 	type IComponentDescriptor,
 	type IPluginDefinition,
 } from '../descriptors'
-import { required } from './helpers'
+import { exportedDescriptors, required } from './helpers'
 
 /** Декларация по полному имени: `visible`, `anchor:flip`. */
 function prop(descriptor: Pick<IComponentDescriptor, 'getProps'>, name: string): IPropDeclaration {
@@ -122,28 +121,6 @@ function hasBoolean(type: unknown): boolean {
 /** Пропы, которые Vue приводит к `false` сам: незащищённые, с Boolean в типе. */
 const castByVue = (props: readonly IPropDeclaration[]) =>
 	props.filter((declaration) => !declaration.protected && hasBoolean(declaration.type))
-
-function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
-	return (
-		typeof value === 'object' && value !== null && 'createBundle' in value && 'plugins' in value
-	)
-}
-
-/** Все дескрипторы компонентов из экспорта — не ручным списком: новый попадёт сюда сам. */
-function exportedDescriptors(): Array<[string, IComponentDescriptor]> {
-	const entries: Record<string, unknown> = exported
-	const result: Array<[string, IComponentDescriptor]> = []
-
-	for (const [name, factory] of Object.entries(entries)) {
-		if (!name.endsWith('Descriptor') || typeof factory !== 'function') continue
-
-		const value: unknown = factory()
-
-		if (isComponentDescriptor(value)) result.push([name, value])
-	}
-
-	return result
-}
 
 const NOT_DECLARED = '<умолчание не объявлено>'
 

@@ -984,6 +984,28 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
   ```
 
+- **Состав пропсов записан дважды: в contribution и в типе.** Рантайм собирает
+  дескриптор (`getProps()` — contribution компонента, его предков и плагинов),
+  а типы всех адаптеров выводятся из `DescriptorAllProps`: `TProps`
+  дескриптора и, у плагина, третий аргумент `definePlugin` (`IAriaPluginProps`
+  — только незащищённые пропсы, без неймспейса). Проп без типа шаблон не
+  проверяет, а проп только в типе компилятор пропускает, и в разметке он молча
+  становится атрибутом: так жили `dismiss_enabled` у Select и `variant` у
+  Skeleton.
+
+  Сторож — `packages/setup/__tests__/descriptor-props-types.spec.ts`: по всем
+  дескрипторам экспорта сверяет в обе стороны незащищённые пропсы рантайма с
+  ключами `DescriptorAllProps`, которые читает type checker TypeScript.
+  Коллекционная часть (`SelectCollectionDescriptor`) тип пропсов не объявляет
+  и сверяется в строке владельца: её пропсы входят в его интерфейс
+  (`ISelectProps`). `ctrl` сторож не сверяет: в рантайме проп объявляет
+  `EntityContribution`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
+  поля, которые адаптер дописывает к типу сверх дескриптора, сторож не видит —
+  так в типах адаптеров жил `plugins`, которого в рантайме не было. Защищённые
+  пропсы (выходы) он тоже не сверяет: `DescriptorAllProps` их не несёт, и
+  выход, которому в шаблоне нужен тип, описан рукой — `TDismissPluginProps`
+  для спреда `dismiss_ownerAttribute` у Select.
+
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
 - **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).

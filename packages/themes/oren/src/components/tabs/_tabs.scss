@@ -349,21 +349,6 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		@apply shrink-0 self-stretch h-auto my-1 px-1;
 	}
 
-	// Перед крестиком — зазор строки, после него — паддинг строки: строка, за
-	// которой он стоит, отдаёт ему свой концевой паддинг. Числа — из шкалы
-	// Button, размер у строки и крестика один, `size` таба.
-	@each $size, $scale in button.$sizes {
-		&--size-#{$size} {
-			> :has(+ #{$this}__close) {
-				@apply #{'pe-' + map.get($scale, 'gap')};
-			}
-
-			> #{$this}__close {
-				@apply #{'me-' + map.get($scale, 'px')};
-			}
-		}
-	}
-
 	// Disabled читается из `data-disabled` обёртки: ядро пишет его на любом
 	// теге, а нативный атрибут переехал бы вместе с тегом. Наведение — на весь
 	// таб: наведённый крестик проявляет и строку.

@@ -1,6 +1,10 @@
 import { definePlugin } from '../base'
 import { TDismissPlugin } from '@soldy/plugins'
-import type { IDismissPluginOptions, TDismissPluginEvents } from '@soldy/plugins'
+import type {
+	IDismissPluginOptions,
+	TDismissPluginEvents,
+	IDismissPluginProps,
+} from '@soldy/plugins'
 import { DismissContribution } from '../../contributions'
 
 /**
@@ -12,7 +16,7 @@ import { DismissContribution } from '../../contributions'
  * контроле страницы.
  */
 export const DismissPluginDescriptor = (options?: IDismissPluginOptions) =>
-	definePlugin<'dismiss', TDismissPluginEvents>({
+	definePlugin<'dismiss', TDismissPluginEvents, IDismissPluginProps>({
 		ctor: TDismissPlugin,
 		namespace: 'dismiss',
 		contribution: DismissContribution(),
