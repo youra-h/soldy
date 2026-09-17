@@ -2,10 +2,16 @@ import type { IContribution } from '@soldy/accessor'
 import { PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
- * Пропсы плагина в разметке — с неймспейсом.
+ * Защищённый проп плагина в разметке — с неймспейсом.
+ *
+ * Вход `dismiss_enabled` типизирует дескриптор: `IDismissPluginProps` третьим
+ * аргументом `definePlugin`. Защищённых пропсов `DescriptorAllProps` не несёт,
+ * а шаблон Select раскладывает `dismiss_ownerAttribute` спредом на
+ * телепортированную панель — спреду нужен объектный тип. `layout_styles`
+ * обходится без типа только потому, что уходит в `:style` динамического
+ * `<component :is>`: его атрибуты vue-tsc не проверяет.
  */
 export type TDismissPluginProps = {
-	dismiss_enabled?: boolean
 	dismiss_ownerAttribute?: Record<string, string>
 }
 
