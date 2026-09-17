@@ -1,5 +1,5 @@
 import type { IEntity } from '@soldy/core'
-import type { IComponentDescriptor, DescriptorAllProps, TRegisteredPluginProps } from '@soldy/setup'
+import type { IComponentDescriptor, DescriptorAllProps } from '@soldy/setup'
 
 export type TEmits = readonly string[]
 export type TProps = Readonly<Record<string, unknown>>
@@ -23,8 +23,4 @@ export type TBaseComponentProps<TCoreProps, TInstance extends IEntity = IEntity>
 export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
-> = TBaseComponentProps<
-	// Пропсы плагинов реестра (`usePlugins`) — по типу инстанса, из `IRegisteredPlugins`
-	DescriptorAllProps<TDescriptorFn> & TRegisteredPluginProps<TInstance>,
-	TInstance
->
+> = TBaseComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance>

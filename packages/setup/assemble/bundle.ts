@@ -11,7 +11,6 @@ import { TPluginBundle } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import { resolveRegisteredPlugins } from '../registry'
 import type { IBundleContext, IComponentDescriptor } from '../define/types'
-import { rememberRegisteredPlugins } from './registered'
 
 /** Шина событий инстанса — если она у него есть. */
 function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
@@ -73,9 +72,7 @@ export function assembleBundle(
 	// а не наоборот. Заменить свой плагин внешний не может: набор
 	// компонента — его инвариант (AGENTS.md, «Почему bundle не
 	// принимается снаружи»).
-	const registered = resolveRegisteredPlugins(instance, context)
-
-	for (const plugin of registered) {
+	for (const plugin of resolveRegisteredPlugins(instance, context)) {
 		if (bundle.get(plugin.ctor)) {
 			throw new Error(
 				`${plugin.ctor.name} уже входит в состав ${descriptor.ctor.name}: плагин реестра только добавляет`,
@@ -84,8 +81,6 @@ export function assembleBundle(
 
 		bundle.use(plugin.ctor, plugin.options ?? {})
 	}
-
-	rememberRegisteredPlugins(bundle, instance, registered)
 
 	announceOnMicrotask(bundle, instance)
 

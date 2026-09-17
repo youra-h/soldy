@@ -11,8 +11,6 @@ import type {
 	DescriptorAllEvents,
 	TCallbackEventProps,
 	TSlotProps,
-	TRegisteredPluginEvents,
-	TRegisteredPluginProps,
 } from '@soldy/setup'
 
 /**
@@ -50,13 +48,8 @@ export type UseProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
-> = TSolidComponentProps<
-	DescriptorAllProps<TDescriptorFn> & TRegisteredPluginProps<TInstance>,
-	TInstance
-> &
+> = TSolidComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance> &
 	TEvents &
-	// Плагины реестра (`usePlugins`) — по типу инстанса, из `IRegisteredPlugins`
-	TCallbackEventProps<TRegisteredPluginEvents<TInstance>> &
 	SlotProps<TDescriptorFn>
 
 /** Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с core props. */

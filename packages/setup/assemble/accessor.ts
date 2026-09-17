@@ -1,14 +1,18 @@
 /**
- * Аксессор компонента: units инстанса, плагинов дескриптора и плагинов реестра.
+ * Аксессор компонента: units инстанса и плагинов дескриптора.
  *
  * Unit — `{ instance, props, events }`: свойство читается прямо с инстанса,
  * которому принадлежит, без неймспейса и карты плагинов.
+ *
+ * Плагины реестра units не дают: контракт компонента объявляет дескриптор, а
+ * внешний плагин его не расширяет (AGENTS.md, «Плагины и расширения снаружи»).
+ * Поэтому аксессор один и тот же у владельца набора и у фасада коллекции,
+ * который тот же набор делит.
  */
 
 import { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IComponentDescriptor } from '../define/types'
-import { registeredPluginsOf } from './registered'
 
 export function assembleAccessor(
 	descriptor: Pick<IComponentDescriptor, 'props' | 'events' | 'plugins'>,
@@ -26,16 +30,5 @@ export function assembleAccessor(
 				events: def.events,
 			}))
 			.filter((u) => u.instance != null),
-		// Units плагинов реестра — только у определений с пропсами и событиями.
-		// Декларации адаптера (`getProps`) о них не знают: список статичен, а
-		// реестр пополняется в рантайме. Адаптеры, которые читают пропсы по
-		// аксессору, получают их сами; Vue — из `attrs` (`useSyncProps`).
-		...registeredPluginsOf(bundle, instance)
-			.filter((def) => def.props?.length || def.events?.length)
-			.map((def) => ({
-				instance: bundle?.get(def.ctor),
-				props: [...(def.props ?? [])],
-				events: [...(def.events ?? [])],
-			})),
 	])
 }

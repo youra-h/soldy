@@ -21,8 +21,3 @@ export type {
 	TPluginScope,
 	TRegisteredPlugin,
 } from './types'
-export type {
-	IRegisteredPlugins,
-	TRegisteredPluginEvents,
-	TRegisteredPluginProps,
-} from './plugins.types'
