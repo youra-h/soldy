@@ -39,6 +39,9 @@
     "watch": "vite build --watch",
     "test": "vitest run"
   },
+  "peerDependencies": {
+    "@soldy/core": "*"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
     "postcss": "^8.5.9",

@@ -1,5 +1,60 @@
 /**
- * Пакет отдаёт только CSS. Пустая декларация нужна, чтобы side-effect импорт
- * `import '@soldy/theme-oren'` проходил проверку типов у потребителей.
+ * Значения оформления темы oren — ровно те, под которые у неё есть CSS.
+ *
+ * Библиотека своих значений `variant`, `view`, `shape` и `animation` не
+ * объявляет: её реестры пусты, и тема дополняет их здесь (корневой
+ * `AGENTS.md`, «Оформление: значения объявляет тема»). Подключи тему —
+ * `import '@soldy/theme-oren'` — и пропсы компонентов примут эти имена, а
+ * опечатку отклонит компилятор.
+ *
+ * Значение, которое совпадает с видом блока без модификатора (`normal`,
+ * `filled`, `line`, `rounded`, `pulse`), своего правила в CSS может не иметь,
+ * но объявлено всё равно: его можно задать явно, и `normal` у Spinner — не
+ * база, а нейтраль.
  */
 export {}
+
+declare module '@soldy/core' {
+	/** Смысловой цвет. Без варианта — нейтраль, у Spinner — `accent`. */
+	interface IComponentVariants {
+		normal: true
+		accent: true
+		positive: true
+		negative: true
+		caution: true
+	}
+
+	/** Вид кнопки и строк, которые рисует Button: ListBox, Accordion, Tags. */
+	interface IButtonViews {
+		filled: true
+		plain: true
+		outlined: true
+		none: true
+	}
+
+	/** Вид табов. Без вида — `line`. */
+	interface ITabsViews {
+		line: true
+		contained: true
+		outline: true
+	}
+
+	/** Вид чекбокса. `plain` — без рамки и фона, для плотных списков. */
+	interface ICheckBoxViews {
+		plain: true
+	}
+
+	/** Форма заглушки. Без формы — `rounded`. */
+	interface ISkeletonShapes {
+		rect: true
+		rounded: true
+		circle: true
+	}
+
+	/** Анимация заглушки. Без анимации — `pulse`. */
+	interface ISkeletonAnimations {
+		pulse: true
+		wave: true
+		none: true
+	}
+}

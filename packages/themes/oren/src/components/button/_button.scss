@@ -5,9 +5,9 @@
 
 	@apply flex items-center justify-center;
 	@apply rounded-md cursor-pointer;
-	@apply relative transition-colors duration-200;
+	@apply relative;
+	@include mixines.button-transition;
 	@apply outline-transparent;
-	@apply text-s-component;
 	@apply max-h-full;
 
 	&__text {
@@ -22,11 +22,11 @@
 		@apply opacity-s-component-disabled cursor-default pointer-events-none;
 	}
 
-	&:focus-visible {
-		&:not(#{$this}--a-none) {
-			@apply duration-100;
-			@apply outline-2 outline-offset-2 outline-s-component;
-		}
+	// Кольца нет у вида `none`. Строка таба выглядит как `none` без
+	// модификатора — кольцо с неё снимает `tabs/_tabs.scss`.
+	&:focus-visible:not(#{$this}--view-none) {
+		@apply duration-100;
+		@apply outline-2 outline-offset-2 outline-s-component;
 	}
 
 	svg {
@@ -38,79 +38,22 @@
 			@include mixines.button-size($size);
 		}
 	}
+}
 
-	&--a-filled {
-		@include mixines.button-variant-filled('neutral', 100);
+// Вид блока без модификатора — `filled` с нейтралью. Цвет кнопки целиком в
+// виде, у самого блока его нет.
+//
+// Нулевая специфичность: вид по контексту и модификатор перекрывают базовый
+// вид, не споря с ним. Виды по контексту — у частей, чей вид раньше был зашит
+// в разметку: строки ListBox, Accordion и Select, крестики Tabs и Tags,
+// очистка Select (`plain`), строка таба (`none`). Объявлены в файлах этих
+// компонентов, после Button.
+:where(.s-button) {
+	@include mixines.button-view('filled');
+}
 
-		&.s-button--accent,
-		&.s-button--positive,
-		&.s-button--negative,
-		&.s-button--caution {
-			@apply text-white;
-		}
-
-		&.s-button--accent {
-			@include mixines.button-variant-filled('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-filled('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-filled('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-filled('caution');
-		}
-	}
-
-	&--a-none {
-		@apply bg-transparent;
-	}
-
-	&--a-plain {
-		@apply bg-transparent;
-
-		@include mixines.button-variant-plain('neutral');
-
-		&.s-button--accent {
-			@include mixines.button-variant-plain('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-plain('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-plain('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-plain('caution');
-		}
-	}
-
-	&--a-outlined {
-		@apply bg-transparent border;
-
-		@include mixines.button-variant-outlined('neutral');
-
-		&.s-button--accent {
-			@include mixines.button-variant-outlined('accent');
-		}
-
-		&.s-button--positive {
-			@include mixines.button-variant-outlined('positive');
-		}
-
-		&.s-button--negative {
-			@include mixines.button-variant-outlined('negative');
-		}
-
-		&.s-button--caution {
-			@include mixines.button-variant-outlined('caution');
-		}
+@each $view in mixines.$views {
+	.s-button--view-#{$view} {
+		@include mixines.button-view($view);
 	}
 }

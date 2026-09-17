@@ -53,7 +53,22 @@ $sizes: (
 	@apply #{'gap-' + map.get($scale, 'gap')};
 }
 
-// Базовый миксин: hover + focus + active фон
+// Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
+// вида без варианта цвет тот же — отдельное правило ему не нужно.
+$variants: 'accent', 'positive', 'negative', 'caution';
+
+// Виды кнопки из `index.d.ts`. Без модификатора кнопка выглядит как `filled`.
+$views: 'filled', 'plain', 'outlined', 'none';
+
+// Переход цвета кнопки. Кольцо фокуса его укорачивает, и тот, кто кольцо
+// снимает (строка таба, `tabs/_tabs.scss`), возвращает переход этим же
+// миксином — длительность не расходится с самой кнопкой.
+@mixin button-transition {
+	@apply transition-colors duration-200;
+}
+
+// Фон состояний: hover и подсветка, нажатие и выбор, маска выбранного под
+// подсветкой.
 //
 // Про тёмную схему: блоков `[data-theme=dark] &` со ступенью «−100» здесь
 // нет и не нужно. Номер ступени означает расстояние от поверхности, а не
@@ -63,8 +78,6 @@ $sizes: (
 // размазать одну мысль по пяти файлам.
 @mixin button-state-bg($color, $hover-bg, $active-bg) {
 	&:hover:not([data-disabled='true']),
-	// &:focus:not([data-disabled='true']),
-	// &:focus-visible:not([data-disabled='true']),
 	&[data-highlighted='true']:not([data-disabled='true']) {
 		@apply #{'bg-s-' + $color + '-' + $hover-bg};
 	}
@@ -88,36 +101,78 @@ $sizes: (
 	}
 }
 
-// Filled: сплошной фон, hover/active вычисляются из base
-@mixin button-variant-filled($color, $bg: 500) {
-	@apply #{'bg-s-' + $color + '-' + $bg};
-
-	@include button-state-bg($color, $bg + 100, $bg + 200);
-}
-
-// Plain: прозрачный фон, цвет текста, hover/active фон
-@mixin button-variant-plain($color, $text: 800, $hover-bg: 100) {
-	$active-bg: $hover-bg + 100;
-
-	@apply #{'text-s-' + $color + '-' + $text};
-
-	@include button-state-bg($color, $hover-bg, $active-bg);
-}
-
-// Outlined: прозрачный фон, цвет текста + рамка, hover/active фон + рамка
-@mixin button-variant-outlined($color, $text: 800, $border: 200, $hover-bg: 100) {
-	$active-bg: $hover-bg + 100;
-	$brd-hover: $border + 100;
-
-	@apply #{'text-s-' + $color + '-' + $text};
-	// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-	border-color: var(--s-#{$color}-#{$border});
-
-	@include button-state-bg($color, $hover-bg, $active-bg);
-
+// Те же состояния без фона и без маски — у вида `none`. Селекторы те же, что
+// у `button-state-bg`: `none` обязан погасить то, что нарисовал вид под ним.
+@mixin button-state-none {
 	&:hover:not([data-disabled='true']),
-	&:focus:not([data-disabled='true']),
-	&:focus-visible:not([data-disabled='true']) {
-		border-color: var(--s-#{$color}-#{$brd-hover});
+	&[data-highlighted='true']:not([data-disabled='true']) {
+		@apply bg-transparent;
+	}
+
+	&:active:not([data-disabled='true']),
+	&[data-selected='true']:not([data-disabled='true']) {
+		@apply bg-transparent;
+	}
+
+	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
+		@apply overflow-visible;
+
+		&::after {
+			content: none;
+		}
+	}
+}
+
+// Вид для одного цвета: фон, текст, рамка и фон состояний.
+//
+// Набор селекторов и свойств одинаков у всех видов, у `none` тоже: любой вид
+// перекрывает любой другой целиком. Рамку объявляет только `outlined` — под
+// модификатором вид не стоит никогда, гасить её некому.
+@mixin button-look($view, $color) {
+	@if $view == 'filled' {
+		@if $color == 'neutral' {
+			@apply bg-s-neutral-100 text-s-component;
+			@include button-state-bg('neutral', 200, 300);
+		} @else {
+			@apply #{'bg-s-' + $color + '-500'} text-white;
+			@include button-state-bg($color, 600, 700);
+		}
+	} @else if $view == 'plain' {
+		@apply bg-transparent #{'text-s-' + $color + '-800'};
+		@include button-state-bg($color, 100, 200);
+	} @else if $view == 'outlined' {
+		@apply bg-transparent border #{'text-s-' + $color + '-800'};
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--s-#{$color}-200);
+
+		@include button-state-bg($color, 100, 200);
+
+		&:hover:not([data-disabled='true']),
+		&:focus:not([data-disabled='true']),
+		&:focus-visible:not([data-disabled='true']) {
+			border-color: var(--s-#{$color}-300);
+		}
+	} @else if $view == 'none' {
+		@apply bg-transparent text-s-component;
+		@include button-state-none;
+	} @else {
+		@error 'Неизвестный вид кнопки: #{$view}';
+	}
+}
+
+// Вид целиком: нейтраль и каждый вариант. Один миксин на селектор — у базового
+// вида блока, у вида по контексту (строка списка, крестик) и у модификатора.
+// Матрица «вид × вариант» живёт здесь одна.
+//
+// Кто кого перекрывает, решает специфичность корня: у базового вида и вида по
+// контексту она нулевая (`:where()`), у модификатора — один класс. Базовый вид
+// и контекст равны, и контекст побеждает порядком: он объявлен после Button.
+@mixin button-view($view) {
+	@include button-look($view, 'neutral');
+
+	@each $variant in $variants {
+		&.s-button--variant-#{$variant} {
+			@include button-look($view, $variant);
+		}
 	}
 }

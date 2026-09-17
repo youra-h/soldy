@@ -1,3 +1,5 @@
+@use '../button/mixins' as button;
+
 .s-accordion {
 	@apply flex flex-col gap-1;
 }
@@ -44,4 +46,10 @@
 	&[data-selected='true'] &__content {
 		@apply py-2;
 	}
+}
+
+// Заголовок секции без `view` — вид `plain`, как строка ListBox: умолчания у
+// Accordion нет, заданный `view` доходит до заголовка модификатором.
+:where(.s-accordion-item__header) {
+	@include button.button-view('plain');
 }

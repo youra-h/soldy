@@ -67,23 +67,19 @@
 		@include mixines.switch-size($this, 14);
 	}
 
-	&--normal {
-		@include mixines.switch-variant($this, $color: 'neutral');
-	}
-
-	&--accent {
+	&--variant-accent {
 		@include mixines.switch-variant($this, $color: 'accent');
 	}
 
-	&--positive {
+	&--variant-positive {
 		@include mixines.switch-variant($this, $color: 'positive');
 	}
 
-	&--negative {
+	&--variant-negative {
 		@include mixines.switch-variant($this, $color: 'negative');
 	}
 
-	&--caution {
+	&--variant-caution {
 		@include mixines.switch-variant($this, $color: 'caution');
 	}
 
@@ -103,4 +99,11 @@
 			@apply opacity-60;
 		}
 	}
+}
+
+// Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
+// он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
+// споря с ней.
+:where(.s-switch) {
+	@include mixines.switch-variant('.s-switch', $color: 'neutral');
 }
