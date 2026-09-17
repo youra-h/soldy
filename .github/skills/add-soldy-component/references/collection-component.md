@@ -1,6 +1,6 @@
 # Collection Components Reference
 
-How collection-based components (Tabs, Accordion, List, ListBox, Select, Tags) differ from
+How collection-based components (Tabs, Accordion, ListBox, Select, Tags) differ from
 plain components. Wired **only for Vue** — see `SKILL.md` → «Collection components».
 
 Layers, facade hierarchy, driver access, naming and ARIA rules are covered in `AGENTS.md`
@@ -28,7 +28,7 @@ building blocks every collection composes from:
 - `baseExtensions(itemCtor?)` — `unique`, `meta`, `order`, `plain`, `batch` (+ `factory` if
   `itemCtor` given). Present in every collection.
 - `activationExtensions(itemCtor?)` — base + `activation`. Tabs' model.
-- `selectionExtensions(itemCtor?)` — base + `selection`. Accordion / List / ListBox / Select.
+- `selectionExtensions(itemCtor?)` — base + `selection`. Accordion / ListBox / Select / Tags.
 - `assembleEngine(set, items?)`, `createComponentEngine(...)`, `attachEngine(...)`,
   `resolveEngine(...)` — see below.
 
@@ -64,7 +64,7 @@ whatever a supplied engine is missing.
 
 ```ts
 export function createEngineTabs(
-  options: TCreateEngineOptions & { owner: ITabs },
+  options: TCreateEngineOptions<ITabsItem> & { owner: ITabs },
 ): TTabsCollection {
   return createComponentEngine(
     'createEngineTabs',
@@ -78,16 +78,16 @@ export function createEngineTabs(
 `collection/types.ts` declares the extension map and the engine type:
 
 ```ts
-export type TTabsCollectionExtensions = {
-  factory: TFactoryExtension<ITabsItem>
-  unique: TUniqueExtension<ITabsItem>
-  meta: TMetaExtension<ITabsItem>
-  order: TOrderExtension<ITabsItem>
-  plain: TPlainExtension<ITabsItem>
-  batch: TBatchExtension<ITabsItem>
-  activation: TActivationExtension<ITabsItem>
-  tabs: TTabsExtension<ITabs, ITabsItem>
-  content: TTabsContentExtension<ITabsItem>
+export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
+  factory: TFactoryExtension<TItem>
+  unique: TUniqueExtension<TItem>
+  meta: TMetaExtension<TItem>
+  order: TOrderExtension<TItem>
+  plain: TPlainExtension<TItem>
+  batch: TBatchExtension<TItem>
+  activation: TActivationExtension<TItem>
+  tabs: TTabsExtension<ITabs, TItem>
+  content: TTabsContentExtension<TItem>
 }
 
 export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtensions>
@@ -101,11 +101,11 @@ AGENTS.md → «Иерархия фасадов повторяет состав 
 ```
 TCollectionComponent
 └── TBatchCollectionFacade          batch      → Tabs
-    └── TSelectionCollectionFacade  + selection → Accordion, Select, List → ListBox
+    └── TSelectionCollectionFacade  + selection → Accordion, Select, ListBox, Tags
 
 TCollectionItemComponent
 └── TOrderItemFacade                order      → Tabs.Item
-    └── TSelectionItemFacade        + selected → Accordion/List/Select.Item
+    └── TSelectionItemFacade        + selected → Accordion/ListBox/Select/Tags.Item
 ```
 
 Bases live in `packages/core/src/components/base/collection/facade/<extension>/`, file name
@@ -212,14 +212,17 @@ Owner-level and item-level contributions are separate factories.
 
 - Base `CollectionContribution` (`packages/setup/contributions/components/collection/collection.contribution.ts`):
   `engine`, `items`, `shown` (protected), `trackBy` + engine/collection events
-  (`engine:create`, `item:*`, `change:count`, `reset`, `items:added`, `items:removed`,
-  `change:shown`).
+  (`engine:create`, `item:*` with their `*:before` hooks, `items:clear:before`, `change:count`,
+  `reset`, `items:added`, `items:removed`, `change:shown`).
 - Owner-level `TabsCollectionContribution`: `activeItem` (`protected: true`, triggers
   `change:activation`) + events `item:activated` / `item:deactivated` / `item:close`.
 - Item-level `TabsCollectionItemContribution`: `active`, `order` (protected), `tab_closable`
   (protected, via `get`).
 
 ```ts
+import type { IContribution } from '@soldy/accessor'
+import type { TTabsItemCollectionFacade } from '@soldy/core'
+
 export const TabsCollectionContribution = (): IContribution => ({
   props: { activeItem: { type: Object, protected: true, triggers: ['change:activation'] } },
   events: ['item:activated', 'item:deactivated', 'item:close'],
@@ -232,7 +235,7 @@ export const TabsCollectionItemContribution = (): IContribution => ({
     tab_closable: {
       type: Boolean,
       protected: true,
-      get: (i) => i.closable,
+      get: (item: TTabsItemCollectionFacade) => item.closable,
       triggers: ['change:closable'],
     },
   },
