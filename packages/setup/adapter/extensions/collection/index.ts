@@ -1,5 +1,9 @@
-export * from './collection.extension.class'
-export * from './collection-item.extension.class'
-export * from './tabs-content-binding.extension.class'
-export * from './drag-and-drop.extension.class'
-export * from './drag-and-drop-collection.extension.class'
+export { TCollectionExtension } from './collection.extension.class'
+export { TCollectionItemExtension } from './collection-item.extension.class'
+export { collectDeclaredProps, collectItemProps } from './item-props'
+export type {
+	ICollectionExtensionOptions,
+	ICollectionItemExtensionOptions,
+	TCollectionItemFacade,
+	TCollectionOwner,
+} from './types'

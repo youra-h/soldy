@@ -7,7 +7,7 @@
  * фокусируемый список, см. AGENTS «Граница переиспользования».
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTags } from '@soldy/core'
 import type { ITagsProps, TTagsEvents } from '@soldy/core'
 import { TagsContribution, type TTagsSlots } from '../../../contributions'

@@ -7,7 +7,7 @@
  * клавиатурной навигации списка.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTagsItem } from '@soldy/core'
 import type { ITagsItemProps, TTagsItemEvents } from '@soldy/core'
 import { TagsItemContribution } from '../../../contributions'

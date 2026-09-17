@@ -1,4 +1,4 @@
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TSelectCollectionFacade, TSelectItemCollectionFacade } from '@soldy/core'
 import {
 	SelectCollectionContribution,

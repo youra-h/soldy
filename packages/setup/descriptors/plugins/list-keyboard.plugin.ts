@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TListKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**

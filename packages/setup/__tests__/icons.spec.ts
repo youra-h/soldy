@@ -15,7 +15,7 @@ import {
 	missingIconRoles,
 	resetIcons,
 	setIcons,
-} from '../common/icons'
+} from '../registry/icons'
 import * as material from '@soldy/icons-material'
 
 const anIcon = { viewBox: '0 0 24 24', body: '<path d="M0 0h24v24H0z"/>' }

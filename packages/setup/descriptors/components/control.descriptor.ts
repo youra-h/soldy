@@ -5,7 +5,7 @@
  * и добавляет disabled, focused.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TControl } from '@soldy/core'
 import type { IControlProps, TControlEvents } from '@soldy/core'
 import { ControlContribution } from '../../contributions'

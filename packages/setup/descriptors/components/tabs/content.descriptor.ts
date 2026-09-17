@@ -6,7 +6,7 @@
  * отвечает за props и events, коллекционная часть — за членство в коллекции.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTabsContent, TTabsContentCollectionFacade } from '@soldy/core'
 import type { ITabsContentProps, TTabsContentEvents } from '@soldy/core'
 import {

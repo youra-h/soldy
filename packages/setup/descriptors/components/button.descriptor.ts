@@ -5,7 +5,7 @@
  * и добавляет view.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TButton } from '@soldy/core'
 import type { IButtonProps, TButtonEvents } from '@soldy/core'
 import { ButtonContribution, type TButtonSlots } from '../../contributions'

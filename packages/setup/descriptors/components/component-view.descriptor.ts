@@ -1,4 +1,4 @@
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TComponentView } from '@soldy/core'
 import type { IComponentViewProps, TComponentViewEvents } from '@soldy/core'
 import { ElementPluginDescriptor, ReadyPluginDescriptor } from '../plugins'

@@ -5,7 +5,7 @@
  * и добавляет indeterminate, view + плагин InputBool.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TCheckBox } from '@soldy/core'
 import type { ICheckBoxProps, TCheckBoxEvents } from '@soldy/core'
 import { InputBoolPluginDescriptor } from '../plugins'

@@ -7,7 +7,7 @@
  * `TComponentView`, и `size` у него нет.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TSkeleton } from '@soldy/core'
 import type { ISkeletonProps, TSkeletonEvents } from '@soldy/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'

@@ -1,3 +1,4 @@
+export { createAdapterContext } from './create-adapter-context'
 export type {
 	IAdapterContext,
 	TAdapterEvents,
@@ -5,5 +6,3 @@ export type {
 	IAdapterExtensionCtorNoOpts,
 	TAnyExtensionCtor,
 } from './types'
-export { createAdapterContext } from './createAdapterContext'
-export { toInstanceState, type TInstanceState, type TSnapshotOf } from './state'

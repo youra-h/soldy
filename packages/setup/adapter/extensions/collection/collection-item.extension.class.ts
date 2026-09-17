@@ -6,22 +6,11 @@
  */
 
 import { TItemContextRegistry } from '@soldy/core'
-import type { TItemContext } from '@soldy/core'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
-import { collectItemProps } from '../../../descriptors/base/collect-props'
-
-/** Инстанс, к которому подключается расширение: item-фасад, принимающий контекст элемента. */
-export type TCollectionItemFacade = {
-	setContext(context: TItemContext<any, any>): void
-}
-
-export interface ICollectionItemExtensionOptions {
-	/** Реальный элемент коллекции (инстанс из owner-дескриптора). */
-	item: object
-	elevator: TElevatorFactory
-}
+import { collectItemProps } from './item-props'
+import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './types'
 
 export class TCollectionItemExtension {
 	constructor(

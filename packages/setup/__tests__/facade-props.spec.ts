@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { IComponentDescriptor, TComponentCtor } from '../descriptors'
+import type { IComponentDescriptor, TComponentCtor } from '../define'
 import {
 	AccordionCollectionDescriptor,
 	AccordionCollectionItemDescriptor,

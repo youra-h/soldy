@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TSelectBackspacePlugin } from '@soldy/plugins'
 import type { TSelectBackspacePluginEvents } from '@soldy/plugins'
 import { SelectBackspaceContribution } from '../../contributions'

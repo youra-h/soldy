@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TEditablePlugin } from '@soldy/plugins'
 import type { TEditablePluginEvents } from '@soldy/plugins'
 import { SelectEditableContribution } from '../../contributions'

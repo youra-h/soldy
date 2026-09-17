@@ -1,4 +1,4 @@
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TAccordionCollectionFacade, TAccordionItemCollectionFacade } from '@soldy/core'
 import {
 	AccordionCollectionContribution,

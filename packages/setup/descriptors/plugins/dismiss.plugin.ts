@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TDismissPlugin } from '@soldy/plugins'
 import type {
 	IDismissPluginOptions,

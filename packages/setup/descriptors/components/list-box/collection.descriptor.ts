@@ -1,4 +1,4 @@
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy/core'
 import {
 	ListBoxCollectionContribution,

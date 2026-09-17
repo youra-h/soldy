@@ -1,4 +1,4 @@
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTabsCollectionFacade, TTabsItemCollectionFacade } from '@soldy/core'
 import { TabsCollectionContribution, TabsCollectionItemContribution } from '../../../contributions'
 import { CollectionDescriptor } from '../collection'

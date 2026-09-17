@@ -1,17 +1,12 @@
 /**
- * Абстрактные ключи элеваторов и фабрика.
+ * Ключи элеваторов — единое пространство имён для всех фреймворков.
  *
- * Это единое пространство имён для всех фреймворков.
  * Конкретная реализация IContextElevator (TVueElevator, React.Context, ...)
  * живёт в своём UI-пакете и передаётся сюда через TElevatorFactory.
  */
 
 import type { TCollectionEngine } from '@soldy/core'
-import type { IPluginBundle } from '@soldy/plugins'
-import type { IElevatorKey } from './types'
-
-/** Регистрация элемента в родительской коллекции; возвращает снятие регистрации. */
-export type TCollectionItemRegister = (item: object, bundle: IPluginBundle | null) => () => void
+import type { IElevatorKey, TCollectionItemRegister } from './types'
 
 /** Родительская коллекция. Ребёнок толкает { instance, bundle } наверх. */
 export const COLLECTION_ENGINE_ELEVATOR: IElevatorKey<TCollectionItemRegister> = {

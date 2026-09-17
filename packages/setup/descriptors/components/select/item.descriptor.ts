@@ -9,7 +9,7 @@
  * только пока панель открыта, и в `value` не попадает.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TSelectItem } from '@soldy/core'
 import type { ISelectItemProps, TSelectItemEvents } from '@soldy/core'
 import { SelectItemContribution, type TSelectItemSlots } from '../../../contributions'

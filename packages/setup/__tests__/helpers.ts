@@ -1,7 +1,7 @@
 import { TPluginBundle } from '@soldy/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy/plugins'
 import * as exported from '../descriptors'
-import type { IComponentDescriptor } from '../descriptors'
+import type { IComponentDescriptor } from '../define'
 
 function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
 	return (

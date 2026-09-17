@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TListItemPlugin } from '@soldy/plugins'
 import type { TListItemPluginEvents } from '@soldy/plugins'
 import { ListItemPluginContribution } from '../../contributions'
