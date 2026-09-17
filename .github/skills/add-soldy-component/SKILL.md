@@ -1,25 +1,24 @@
 ---
 name: add-soldy-component
-description: 'Add a new headless UI component to the soldy monorepo. Use when creating a component (Button, Badge, Input, etc.), porting a component from packages/_plugins, or wiring a core model through setup (contribution + descriptor) and the Vue or React adapter with barrel exports and tests. Also covers complex components (Select) and when a part needs its own internal instance rather than markup.'
+description: 'Add a new headless UI component to the soldy monorepo. Use when creating a component (Button, Badge, Input, etc.) or wiring a core model through setup (contribution + descriptor) and the Vue, React or Angular adapter with barrel exports and tests. Also covers complex components (Select) and when a part needs its own internal instance rather than markup.'
 argument-hint: 'component name (e.g. Badge)'
 ---
 
 # Add a Soldy Component
 
-Adds a new headless UI component across the soldy layers: core model → contribution → descriptor → framework adapter (Vue and/or React), with all barrel exports registered.
+Adds a new headless UI component across the soldy layers: core model → contribution → descriptor → framework adapter (Vue, React and/or Angular), with all barrel exports registered.
 
 ## When to Use
 
 - Creating a new component from scratch.
-- Porting a legacy component from `packages/_plugins`.
-- A component exists in `core` but is missing the `setup` / `@soldy/ui-vue` (or `@soldy/ui-react`) wiring.
+- A component exists in `core` but is missing the `setup` / `@soldy/ui-vue` (or `@soldy/ui-react`, `@soldy/ui-angular`) wiring.
 
 ## Ground Rules
 
-- `core`, `accessor`, `setup`, `plugins` must **not** import `vue`, `react`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
+- `core`, `accessor`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
 - Naming: `T` prefix for shared/generic type aliases, `I` prefix for interfaces. Concrete component types (`<Name>Props`, `<Name>EventProps`) have **no** `T` prefix.
 - Contributions and descriptors are **arrow-function factories** (call them, don't pass the reference).
-- The descriptor is the **single source of truth** for props/events types — it must be typed with the curried `defineComponent<TProps, TEvents>()({...})` form so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props`.
+- The descriptor is the **single source of truth** for props/events types — it must be typed with the curried `defineComponent<TProps, TEvents>()({...})` form so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props`. A component with slots passes the slots mirror type as the third argument: `defineComponent<TProps, TEvents, TSlots>()` (`TSlots` defaults to `object`).
 
 ## Procedure
 
@@ -33,7 +32,7 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
   - `I<Name>` interface extends the base component interface: `interface I<Name> extends ITextable<I<Name>Props, T<Name>Events>`.
 - `<name>.class.ts`:
   - `export default class T<Name> extends TBase<...> implements I<Name>`
-  - `static baseClass = 's-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
+  - `static override baseClass = 's-<name>'`, `static defaultValues`, getters/setters that update `_classes` and `events.emit('change:…', value)`, and `getProps()`.
   - `static defaultValues` is typed `typeof TBase.defaultValues & TDefaultValues<I<Name>Props, 'ownKeyA' | 'ownKeyB'>` (own keys only; keys declared as `undefined` go to the third argument), never `Partial<I<Name>Props>`. The constructor then reads `props.x ?? ctor.defaultValues.x` without `!` — `x!` fails `lint:ci`. See AGENTS.md, «Умолчание пропа — в декларации».
 - `index.ts`: `export * from './types'` + `export { default as T<Name> } from './<name>.class'`.
 
@@ -49,7 +48,9 @@ export const <Name>Contribution = (): IContribution => ({
 })
 ```
 
-The `props` key is the prop name. Use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed props.
+The `props` key is the prop name. Use `defineType<T>(ctor)` for phantom-typed props. It is not exported from `@soldy/setup`: it lives in `packages/setup/contributions/defineType.ts`, and contributions import it by a relative path (`import { defineType } from '../defineType'` in `button.ts`).
+
+Slots are declared in the same contribution under `slots`, with a mirror type `T<Name>Slots` next to it (`TButtonSlots` in `button.ts`) — see AGENTS.md, «Слоты — третья категория контракта».
 
 ### 3. Descriptor — `packages/setup/descriptors/components/<name>.descriptor.ts`
 
@@ -60,6 +61,7 @@ import { defineComponent } from '../base'
 import { T<Name> } from '@soldy/core'
 import type { I<Name>Props, T<Name>Events } from '@soldy/core'
 import { <Name>Contribution } from '../../contributions'
+import { <Base>Descriptor } from './<base>.descriptor'
 
 export const <Name>Descriptor = () =>
   defineComponent<I<Name>Props, T<Name>Events>()({
@@ -115,14 +117,14 @@ export default {
 }
 ```
 
-- `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"`.
+- `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"` and the three core attribute sets `v-bind="{ ...attrs, ...aria, ...dataset }"`.
 - `index.ts`: export `Base<Name>`, `props<Name>`, `emits<Name>`, and the `.vue` default.
 
-`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `TBaseComponentProps<DescriptorProps<TDescriptorFn>, TInstance>`.
+`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `TBaseComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance>` — own props plus plugin props (`aria_label`, …).
 
 ### 5. React adapter — `packages/ui/react/src/components/<name>/`
 
-React has **no runtime props declaration** — only types. Three files per component:
+React has **no runtime props declaration** — only types. Four files per component:
 
 - `base.component.ts`: derive the precise props type from the descriptor. Use `UseDomProps` when the component renders a DOM root (it merges `HTMLAttributes<HTMLElement>`); use `UseProps` for headless layers:
 
@@ -154,7 +156,7 @@ export function useSetup<Name>(props: <Name>Props) {
 }
 ```
 
-- `<Name>.tsx`: the view component. Consumes `{ ref, forwardProps, state }` from `useSetup<Name>()`, reads `rendered/visible/tag/classes` from `state`, returns `null` when `!rendered`, and spreads `forwardProps` onto the root element.
+- `<Name>.tsx`: the view component. Consumes `{ ref, forwardProps, state }` from `useSetup<Name>()`, reads `rendered/visible/tag/classes` and the sets `attrs`/`aria`/`dataset` from `state`, returns `null` when `!rendered`, spreads `forwardProps` onto the root element **before** `ref` (in React 19 `ref` is a plain prop, and a consumer's `ref` inside `forwardProps` would override the adapter's) and the sets after it through `toAriaProps`. Slots are rendered with `renderSlot`.
 
 - `index.ts`:
 
@@ -164,12 +166,14 @@ export { useSetup<Name> } from './setup.component'
 export { <Name> } from './<Name>'
 ```
 
-React type helpers live in `packages/ui/react/src/types.ts`: `TReactComponentProps`, `EventProps`, `UseProps`, `UseDomProps`.
+React type helpers live in `packages/ui/react/src/types.ts`: `TReactComponentProps`, `EventProps`, `SlotProps`, `UseProps`, `UseDomProps`.
 
 ### 6. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
-Четыре файла. Отличие от Vue/React: имена inputs/outputs **генерируются заранее**,
-т.к. Angular AOT требует литеральные массивы в декораторе.
+Файлы — как у Button: `manifest.ts`, `base.component.ts`, `setup.component.ts`,
+`<name>.component.ts` с разметкой в `<name>.component.html` и `index.ts`. Отличие
+от Vue/React: имена inputs/outputs **генерируются заранее**, т.к. Angular AOT
+требует литеральные массивы в декораторе.
 
 - `manifest.ts` — вход кодогенератора:
 
@@ -197,55 +201,74 @@ export {
 
 ```ts
 import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
-import type { I<Name>, I<Name>Props } from '@soldy/core'
+import type { I<Name> } from '@soldy/core'
 import { useAdapter } from '../../adapter'
-import type { TAngularBinding } from '../../adapter'
+import type { TBinding } from '../../adapter'
 
-export function setup<Name>(
-  ctrl: I<Name> | undefined,
-  props: Partial<I<Name>Props>,
-): TAngularBinding<I<Name>> {
+export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<I<Name>> {
   const adapter = createAdapterContext(<Name>Descriptor(), { ctrl, props })
 
-  return useAdapter<I<Name>>(adapter)
+  return useAdapter(adapter)
 }
 ```
 
-- `<name>.component.ts` — оболочка. Наследует `TAngularComponentBase`, состояние
-  читается как `state()` (сигнал):
+- `<name>.component.ts` — оболочка. Наследует `TComponentBase`
+  (`packages/ui/angular/src/adapter/runtime/component.base.ts`), состояние
+  читается как `state()` (сигнал). Корень с `TElementPlugin` связывает база:
+  компонент зовёт только `super(<Name>InputNames, <Name>OutputNames)` и
+  реализует `createBinding`:
 
 ```ts
+import { Component, ChangeDetectionStrategy } from '@angular/core'
+import { NgClass, NgTemplateOutlet } from '@angular/common'
+import type { I<Name> } from '@soldy/core'
+import type { TBinding } from '../../adapter'
+import { AriaDirective, TComponentBase } from '../../adapter'
+import { <Name>InputNames, <Name>OutputNames } from './base.component'
+import { setup<Name> } from './setup.component'
+
 @Component({
   selector: 'soldy-<name>',
   standalone: true,
   inputs: [...<Name>InputNames],
   outputs: [...<Name>OutputNames],
-  imports: [NgClass, NgTemplateOutlet],
+  imports: [NgClass, NgTemplateOutlet, AriaDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './<name>.component.html',
 })
-export class T<Name>Component extends TAngularComponentBase<I<Name>> {
-  private readonly _el = viewChild('rootEl', { read: ElementRef })
-
+export class T<Name>Component extends TComponentBase<I<Name>> {
   constructor() {
     super(<Name>InputNames, <Name>OutputNames)
-    this.bindElementFrom(this._el)   // не @ViewChild: узел пересоздаётся
   }
 
-  protected createBinding(ctrl, inputs) {
+  protected createBinding(ctrl: I<Name> | undefined, inputs: object): TBinding<I<Name>> {
     return setup<Name>(ctrl, inputs)
   }
 }
 ```
 
+Хуков жизненного цикла, `signal`, `computed` и `effect` в компоненте нет: они
+живут в адаптерном слое (AGENTS.md, «Механизмы фреймворка — только в адаптерном
+слое»), в `components/**` их ловит
+`packages/setup/__tests__/framework-mechanisms-components.spec.ts`.
+
 Правила разметки:
 
-- корень помечается `#rootEl` и живёт внутри `@if (state()['rendered'])`;
+- корень помечается `#root` и живёт внутри `@if (state()['rendered'])`: при
+  пересоздании узла связь переустанавливает `TComponentBase` (сигнальный
+  `viewChild('root')` в `effect`);
+- наборы ядра раскладываются на корень директивой `AriaDirective`:
+  `[ariaAttrs]="state()['aria']"`, `[attrs]="state()['attrs']"`,
+  `[dataset]="state()['dataset']"`;
 - `<ng-content>` объявляется **ровно один раз** внутри `<ng-template #content>`
   и подставляется через `[ngTemplateOutlet]="content"` — два слота во
   взаимоисключающих ветках теряют содержимое при переключении;
 - если корень — хост-элемент и всегда существует (как у `component-view`),
-  используй `bindElement()` в `ngAfterViewInit` вместо `bindElementFrom`.
+  третьим аргументом передаётся стратегия `'host'`:
+  `super(<Name>InputNames, <Name>OutputNames, 'host')`. База берёт узел из
+  `inject(ElementRef)` один раз и сама раскладывает на него `aria`, `attrs` и
+  `dataset`; классы и видимость хоста — `@HostBinding`
+  (`component-view.component.ts`).
 
 ### 7. Register barrel exports
 
@@ -261,13 +284,22 @@ export class T<Name>Component extends TAngularComponentBase<I<Name>> {
 ```bash
 npm run test:core
 npm run test:setup
-# type checks
+npm run test:vue
+npm run test:react   # if a React adapter was added
+# lint and formatting — the CI job `lint`; eslint blocks soldy/*-components-no-framework live here
+npm run lint
+npx prettier --check .
+# type checks — the same commands as the CI steps «Типы — …»
+npx tsc --noEmit -p packages/core/tsconfig.json
+npx tsc --noEmit -p packages/setup/tsconfig.json
 npm run build:types --workspace=@soldy/ui-vue
-npx tsc -p packages/ui/react/tsconfig.json --noEmit
+npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
+npx tsc --noEmit -p packages/ui/react/tsconfig.json
+# Angular: сборки и ngc нет — tsc не проверяет шаблоны @Component
+npx tsc --noEmit -p packages/ui/angular/tsconfig.json
 # Angular: метаданные не должны разъехаться с дескриптором
 npm run generate --workspace=@soldy/ui-angular
 git diff --exit-code packages/ui/angular/src/generated
-npm run build --workspace=@soldy/ui-angular
 ```
 
 Confirm no framework imports leaked into the framework-agnostic packages.
@@ -286,17 +318,21 @@ Button is the canonical minimal component. Copy its shape:
 ## Общий слой — не дублируй
 
 `packages/setup/common/` содержит поведение, одинаковое для всех адаптеров:
-`defaultPropNaming`, `createInspectorFactory(naming)`, `collectEventBindings`.
+`underscorePropNaming` (имя пропа `ns_name`), `callbackEventNaming` (события
+колбэк-пропами, `element:ready` → `onElementReady`),
+`createInspectorFactory(naming)`, `collectEventBindings`, `collectForwardProps`.
 Плюс `resolveDefaultExtensions` в `adapter/extensions/` (уже применяется по
 умолчанию в `createAdapterContext` — вручную передавать не нужно).
 
-Адаптер реализует **только** стратегию именования событий. Если пишешь что-то в
-`packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в общем слое.
-Починил баг в одном адаптере — проверь остальные адаптеры.
+Адаптер реализует **только** стратегию именования событий, и то не каждый:
+React, Svelte и Solid берут общую `callbackEventNaming`, своя стратегия у Vue и
+Web Components (`element:ready`) и у Angular (`elementReady`). Если пишешь
+что-то в `packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в
+общем слое. Починил баг в одном адаптере — проверь остальные адаптеры.
 
 ## Collection components (Vue only for now)
 
-Collection-based components (Tabs, Accordion, List, ListBox, Select, Tags) are currently
+Collection-based components (Tabs, Accordion, ListBox, Select, Tags) are currently
 wired **only for Vue** — the other five adapters (React, Angular, …) have no collection
 adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`,
 the collection facades (`TTabsCollectionFacade` / `TTabsItemCollectionFacade`), and the
