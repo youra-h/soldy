@@ -34,7 +34,8 @@ Web Components connect that model to a framework and render the markup: BEM clas
   update, remove, move and clear first emits a cancellable `*:before` event, and items come from
   the `items` prop or from markup.
 - **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Accordion, Select and Switch take
-  roles and relations from their APG patterns, and Select implements the Combobox keyboard model.
+  roles and relations from their APG patterns. Select implements the Combobox keyboard model, and
+  Tabs the Tabs one: arrow keys and Home/End with automatic activation, and a single Tab stop.
   ARIA is computed outside the framework and rendered with the markup, so it is in place from the
   first render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `s-*` classes and `data-*`

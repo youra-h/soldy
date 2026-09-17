@@ -116,7 +116,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// расширение общее для всех коллекций, а «выбранность» выражается
 		// по-разному — у таба это `aria-selected`, у заголовка Accordion
 		// `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
-		const activation = ctx.extensions.activation as IActivationExtension<TItem> | undefined
+		const activation = this._activation
 
 		if (activation) {
 			activation.events.on('change:activation', () => this._syncSelectedAria())
@@ -152,6 +152,22 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 			this._syncSelectedAria()
 		}
+
+		// Остановка Tab зависит от активного таба, от состава и порядка списка
+		// и от того, можно ли перейти на каждый таб. `change:items` приходит
+		// один раз на команду — после всех `item:*`, в том числе после
+		// активации соседа закрытого таба
+		ctx.driver.valueOf().forEach((item) => this._watchTab(item))
+		ctx.driver.events.on('item:added', (e) => this._watchTab(e.item as TItem))
+		ctx.driver.events.on('item:removed', (e) => this._unwatchTab(e.item as TItem))
+		ctx.driver.events.on('change:items', () => this._syncTabStop())
+		activation?.events.on('change:activation', () => this._syncTabStop())
+
+		this._syncTabStop()
+	}
+
+	private get _activation(): IActivationExtension<TItem> | undefined {
+		return this._ctx.extensions.activation as IActivationExtension<TItem> | undefined
 	}
 
 	/**
@@ -172,15 +188,62 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 * быть на всех табах набора.
 	 */
 	private _syncSelectedAria(): void {
-		const activation = this._ctx.extensions.activation as
-			| IActivationExtension<TItem>
-			| undefined
+		const activation = this._activation
 
 		if (!activation) return
 
 		this._ctx.driver.valueOf().forEach((item) => {
 			item.aria.add('aria-selected', activation.isActive(item) ? 'true' : 'false')
 		})
+	}
+
+	/**
+	 * Таб, который держит остановку Tab.
+	 *
+	 * Активный — если на него можно перейти, иначе первый такой по порядку:
+	 * активного таба может не быть вовсе (активирует только `meta.active` или
+	 * код), а выключенный активный не получит фокус. Нет ни одного таба, на
+	 * который можно перейти, — нет и остановки.
+	 */
+	get tabStop(): TItem | undefined {
+		const active = this._activation?.activeItem
+
+		if (active && this.isEnabledTab(active)) return active
+
+		return this._ctx.driver.valueOf().find((item) => this.isEnabledTab(item))
+	}
+
+	/**
+	 * Roving tabindex по паттерну APG Tabs: весь список — одна остановка Tab,
+	 * `tabindex="0"` только у `tabStop`, у остальных `-1`. Между табами ходят
+	 * стрелки (`TTabsKeyboardPlugin`), а Tab из списка уводит сразу к панели.
+	 *
+	 * Пишет родительское расширение, а не плагин: атрибут обязан стоять с
+	 * первой отрисовки, включая серверную, а плагин узнаёт о разметке только
+	 * после монтирования.
+	 */
+	private _syncTabStop(): void {
+		const stop = this.tabStop
+
+		this._ctx.driver.valueOf().forEach((item) => {
+			item.aria.add('tabindex', item === stop ? '0' : '-1')
+		})
+	}
+
+	/** Повод пересчитать остановку: сменилось, можно ли перейти на таб. */
+	private readonly _onTabAvailability = (): void => this._syncTabStop()
+
+	private _watchTab(item: TItem): void {
+		item.events.on('change:disabled', this._onTabAvailability)
+		item.events.on('change:visible', this._onTabAvailability)
+		item.events.on('change:rendered', this._onTabAvailability)
+	}
+
+	/** Удалённый таб больше не двигает остановку списка, в котором его нет. */
+	private _unwatchTab(item: TItem): void {
+		item.events.off('change:disabled', this._onTabAvailability)
+		item.events.off('change:visible', this._onTabAvailability)
+		item.events.off('change:rendered', this._onTabAvailability)
 	}
 
 	/**
@@ -192,11 +255,17 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 * @returns true, если есть хотя бы один такой элемент, иначе false
 	 */
 	hasEnabledTabs(): boolean {
-		return this._ctx.driver.valueOf().some((item) => this._isEnabledTab(item))
+		return this._ctx.driver.valueOf().some((item) => this.isEnabledTab(item))
 	}
 
-	/** Таб, на который можно перейти: не disabled, visible и rendered. */
-	private _isEnabledTab(item: TItem): boolean {
+	/**
+	 * Таб, на который можно перейти: не disabled, visible и rendered.
+	 *
+	 * Публичный, потому что правило одно на всех: по нему считаются остановка
+	 * Tab, сосед закрытого таба и навигация с клавиатуры. Копия в плагине
+	 * однажды разошлась бы с остановкой.
+	 */
+	isEnabledTab(item: TItem): boolean {
 		return !item.disabled && item.visible && item.rendered
 	}
 
@@ -208,7 +277,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	private _findNeighbour(siblings: TItem[], removed: TItem): TItem | undefined {
 		const present = new Set(this._ctx.driver.valueOf())
 		const index = siblings.indexOf(removed)
-		const available = (item: TItem) => present.has(item) && this._isEnabledTab(item)
+		const available = (item: TItem) => present.has(item) && this.isEnabledTab(item)
 
 		return (
 			siblings.slice(index + 1).find(available) ??

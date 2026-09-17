@@ -24,9 +24,9 @@ export const TabsContentContribution = (): IContribution => ({
  * Отделены от собственных ровно как у элемента (`TabsCollectionItemContribution`):
  * активность — свойство членства в коллекции, а не панели.
  *
- * ARIA-связки здесь нет: `role`, `id` и `aria-labelledby` пишет прямо в
- * `aria` панели `TTabsContentBindingExtension` — то единственное место, где
- * известно, что панель и таб нашли друг друга.
+ * ARIA-связки здесь нет: `role`, `id`, `aria-labelledby` и `tabindex` пишет
+ * прямо в `aria` панели `TTabsContentBindingExtension` — то единственное
+ * место, где известно, что панель и таб нашли друг друга.
  */
 export const TabsCollectionContentContribution = (): IContribution => ({
 	props: {

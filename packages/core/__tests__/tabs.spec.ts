@@ -672,3 +672,206 @@ describe('Закрытие активного таба: активным ста�
 		expect(activation.activeItem).toBe(b)
 	})
 })
+
+// ============================================================================
+// Клавиатурная модель APG Tabs: что стоит в наборах с первой отрисовки
+// ============================================================================
+
+describe('TTabs · ARIA списка табов', () => {
+	it('набор владельца описывает tablist', () => {
+		expect(new TTabs().aria.get('role')).toBe('tablist')
+	})
+
+	it('aria-orientation объявляет ориентацию, горизонтальную по умолчанию', () => {
+		expect(new TTabs().aria.get('aria-orientation')).toBe('horizontal')
+		expect(new TTabs({ orientation: 'vertical' }).aria.get('aria-orientation')).toBe('vertical')
+	})
+
+	it('aria-orientation следует за сменой ориентации', () => {
+		const tabs = new TTabs()
+
+		tabs.orientation = 'vertical'
+		expect(tabs.aria.get('aria-orientation')).toBe('vertical')
+
+		tabs.orientation = 'horizontal'
+		expect(tabs.aria.get('aria-orientation')).toBe('horizontal')
+	})
+
+	it('ARIA-половину disabled решает список, а не тег корня', () => {
+		// `aria` стоит на `div` списка: своего disabled у него нет при любом `tag`
+		const tabs = new TTabs({ tag: 'fieldset', disabled: true })
+
+		expect(tabs.aria.get('aria-disabled')).toBe('true')
+	})
+})
+
+describe('TTabsItem.closeAria · кнопка закрытия не остановка Tab', () => {
+	it('tabindex="-1": весь список — одна остановка, закрывает Delete на табе', () => {
+		expect(new TTabsItem({ text: 'Почта', closable: true }).closeAria.tabindex).toBe('-1')
+	})
+})
+
+/**
+ * Roving tabindex: `tabindex="0"` ровно у одного таба. Коллекция собрана как у
+ * компонента (`createEngineTabs`), без адаптера: атрибут обязан стоять до
+ * первой отрисовки.
+ */
+describe('остановка Tab — один таб с tabindex="0"', () => {
+	function setup(owner = new TTabs({ closable: true })) {
+		const engine = createEngineTabs({ owner })
+		const a = engine.extensions.plain.push(createTab('A'))
+		const b = engine.extensions.plain.push(createTab('B'))
+		const c = engine.extensions.plain.push(createTab('C'))
+
+		/** `tabindex` табов в порядке списка. */
+		const tabindex = () =>
+			engine.extensions.batch.items.map((item) => item.aria.get('tabindex'))
+
+		return {
+			owner,
+			engine,
+			activation: engine.extensions.activation,
+			tabs: engine.extensions.tabs,
+			tabindex,
+			a,
+			b,
+			c,
+		}
+	}
+
+	it('стоит у активного таба', () => {
+		const { activation, tabs, tabindex, b } = setup()
+
+		activation.activate(b)
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+		expect(tabs.tabStop).toBe(b)
+	})
+
+	it('активного нет — у первого таба, на который можно перейти', () => {
+		const { tabs, tabindex, a } = setup()
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+		expect(tabs.tabStop).toBe(a)
+	})
+
+	it('первый недоступен — у следующего', () => {
+		const { tabindex, a } = setup()
+
+		a.disabled = true
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('активный недоступен — у первого доступного, включили — вернулась к нему', () => {
+		const { activation, tabindex, c } = setup()
+
+		activation.activate(c)
+		c.disabled = true
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+
+		c.disabled = false
+
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+	})
+
+	it('скрытый и неотрисованный табы остановку не держат', () => {
+		const { activation, tabindex, a, b } = setup()
+
+		activation.activate(b)
+		b.visible = false
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+
+		b.visible = true
+		a.rendered = false
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('переезжает вслед за активацией', () => {
+		const { activation, tabindex, a, c } = setup()
+
+		activation.activate(a)
+		activation.activate(c)
+
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+	})
+
+	it('закрыли активный — остановка у соседа, которого он активировал', () => {
+		const { activation, tabs, tabindex, a, b } = setup()
+
+		activation.activate(a)
+		tabs.closeTab(a)
+
+		expect(activation.activeItem).toBe(b)
+		expect(tabindex()).toEqual(['0', '-1'])
+	})
+
+	it('закрыли таб с остановкой без активного — она у нового первого', () => {
+		const { tabs, tabindex, a } = setup()
+
+		tabs.closeTab(a)
+
+		expect(tabindex()).toEqual(['0', '-1'])
+	})
+
+	it('перестановка без активного: остановка у того, кто стал первым', () => {
+		const { engine, tabindex, tabs, a, b } = setup()
+
+		engine.extensions.plain.move(a, 2)
+
+		expect(tabs.tabStop).toBe(b)
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+	})
+
+	it('добавленный таб получает -1, а первым без активного — остановку', () => {
+		const { engine, tabindex } = setup()
+		const added = engine.extensions.plain.insert(createTab('Z'), 0)
+
+		expect(added.aria.get('tabindex')).toBe('0')
+		expect(tabindex()).toEqual(['0', '-1', '-1', '-1'])
+
+		const tail = engine.extensions.plain.push(createTab('Y'))
+
+		expect(tail.aria.get('tabindex')).toBe('-1')
+	})
+
+	it('выключили набор — остановки нет ни у кого, включили — вернулась', () => {
+		const { owner, activation, tabs, tabindex, b } = setup()
+
+		activation.activate(b)
+		owner.disabled = true
+
+		expect(tabs.tabStop).toBeUndefined()
+		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+
+		owner.disabled = false
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('удалённый таб больше не пересчитывает остановку списка', () => {
+		const { engine, activation, b, c } = setup()
+
+		activation.activate(b)
+		engine.extensions.plain.remove(c)
+
+		const add = vi.spyOn(b.aria, 'add')
+
+		c.disabled = true
+		c.visible = false
+
+		expect(add).not.toHaveBeenCalled()
+	})
+
+	it('isEnabledTab — одно правило для остановки и навигации', () => {
+		const { tabs, a, b, c } = setup()
+
+		b.disabled = true
+		c.visible = false
+
+		expect([a, b, c].map((item) => tabs.isEnabledTab(item))).toEqual([true, false, false])
+	})
+})

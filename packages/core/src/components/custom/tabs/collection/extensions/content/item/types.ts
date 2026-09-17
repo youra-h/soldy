@@ -16,6 +16,6 @@ export interface ITabsContentItemExtension<TItem extends object = any> extends I
 > {
 	/** Атрибуты стороны таба: `id` и ссылка на панель. */
 	readonly tabAria: TAriaAttributes
-	/** Атрибуты стороны панели: роль, `id` и ссылка на таб. */
+	/** Атрибуты стороны панели: роль, `id`, ссылка на таб и остановка Tab. */
 	readonly panelAria: TAriaAttributes
 }

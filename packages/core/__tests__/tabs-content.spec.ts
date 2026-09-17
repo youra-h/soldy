@@ -166,6 +166,11 @@ describe('связка ARIA таб ↔ панель', () => {
 		expect(panelAriaFor(createTabs(['a']), 'a').role).toBe('tabpanel')
 	})
 
+	it('панель — следующая остановка Tab после списка табов', () => {
+		// По APG Tab из списка (там одна остановка на все табы) ведёт на панель
+		expect(panelAriaFor(createTabs(['a']), 'a').tabindex).toBe('0')
+	})
+
 	it('id панели берётся от связанного таба, а не от самой панели', () => {
 		const ctx = createTabs(['a'])
 

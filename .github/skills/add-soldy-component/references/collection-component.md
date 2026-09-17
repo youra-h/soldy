@@ -275,6 +275,7 @@ export const TabsDescriptor = () =>
       TabsLayoutPluginDescriptor(),
       TabsActiveTabPluginDescriptor(),
       TabsViewPluginDescriptor(),
+      TabsKeyboardPluginDescriptor(),
       DragPluginDescriptor(),
     ],
   })
