@@ -1,4 +1,4 @@
-import type { ITabs, TTabsCollection, TTabsView } from '@soldy/core'
+import type { ITabs, TTabsCollection } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -7,22 +7,23 @@ import { TTabsActiveTabPlugin } from '../active-tab'
 import type { TActiveTabOffset } from '../active-tab'
 import type { TTabsViewPluginEvents } from './types'
 
-type TViewHandler = (offset: TActiveTabOffset | null) => void
-
 /**
- * TTabsViewPlugin — отрисовка индикатора активного таба (view: line/outline).
+ * TTabsViewPlugin — геометрия активного таба для темы.
  *
- * Слушает TTabsActiveTabPlugin (change:active-tab) и обновляет CSS-переменные
- * на списке табов для позиционирования/размера индикатора.
+ * Слушает TTabsActiveTabPlugin (change:active-tab) и пишет на список табов
+ * CSS-переменные: `--underline-pos`/`--underline-size` — полоса под активным
+ * табом, `--gap-pos`/`--gap-size` — разрыв линии списка под ним. После
+ * монтирования ставит модификатор `--ready-animation`: переходы полосы до него
+ * не нужны, иначе она выезжала бы из угла при первой отрисовке.
+ *
+ * Вид табов плагин не читает. Значения вида объявляет тема (`ITabsViews`), и
+ * вида, которому нужна полоса, библиотека назвать не может: у темы без
+ * модификатора вид по умолчанию, у другой темы — свои имена. Поэтому
+ * переменные пишутся всегда, а какие из них нужны виду, решает тема.
  */
 export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 	private _tabs: ITabs | null = null
 	private _engine: TTabsCollection | null = null
-
-	private readonly _handlers: Partial<Record<TTabsView, TViewHandler>> = {
-		line: (offset) => this._updateLine(offset),
-		outline: (offset) => this._updateOutline(offset),
-	}
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -30,9 +31,7 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 		this._tabs = ctx.getInstance<ITabs>()
 
 		ctx.get(TElementPlugin)?.events.on('ready', () => {
-			if (this._tabs?.view === 'line') {
-				this._tabs.classes.add('--ready-animation')
-			}
+			this._tabs?.classes.add('--ready-animation')
 		})
 
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
@@ -40,8 +39,8 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 		})
 
 		ctx.get(TTabsActiveTabPlugin)?.events.on('change:active-tab', (offset) => {
-			if (!this._tabs) return
-			this._handlers[this._tabs.view]?.(offset)
+			this._updateUnderline(offset)
+			this._updateGap(offset)
 		})
 	}
 
@@ -52,7 +51,8 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 		super.destroy()
 	}
 
-	private _updateLine(offset: TActiveTabOffset | null): void {
+	/** Полоса под активным табом. */
+	private _updateUnderline(offset: TActiveTabOffset | null): void {
 		const tabs = this._tabs
 
 		if (!offset || !this._engine || !tabs) return
@@ -72,7 +72,8 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs, TTabsViewPluginEvents> {
 		}
 	}
 
-	private _updateOutline(offset: TActiveTabOffset | null): void {
+	/** Разрыв линии списка под активным табом. */
+	private _updateGap(offset: TActiveTabOffset | null): void {
 		const tabs = this._tabs
 
 		if (!offset || !this._engine || !tabs) return
