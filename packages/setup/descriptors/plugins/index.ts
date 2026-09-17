@@ -13,6 +13,7 @@ export { CollectionElementsPluginDescriptor } from './collection-elements.plugin
 export { DragPluginDescriptor } from './drag.plugin'
 export { TabsActiveTabPluginDescriptor } from './tabs-active-tab.plugin'
 export { TabsContentWarnPluginDescriptor } from './tabs-content-warn.plugin'
+export { TabsKeyboardPluginDescriptor } from './tabs-keyboard.plugin'
 export { TabsLayoutPluginDescriptor } from './tabs-layout.plugin'
 export { TabsViewPluginDescriptor } from './tabs-view.plugin'
 export { ListItemPluginDescriptor } from './list-item.plugin'

@@ -149,11 +149,18 @@ export default class TTabsItem<
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает сам таб, а это —
 	 * вложенная в него кнопка. Один элемент — один набор.
+	 *
+	 * `tabindex="-1"`: кнопка не остановка Tab. По паттерну APG Tabs весь
+	 * список — одна остановка, а закрывает таб с клавиатуры `Delete` на самом
+	 * табе (`TTabsKeyboardPlugin`). Мышью кнопка нажимается как раньше.
 	 */
 	get closeAria(): TAriaAttributes {
 		const text = this.text.trim()
 
-		return { 'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel }
+		return {
+			'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel,
+			tabindex: '-1',
+		}
 	}
 
 	override getProps(): TProps {

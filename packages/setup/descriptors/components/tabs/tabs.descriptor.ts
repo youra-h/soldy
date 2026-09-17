@@ -18,6 +18,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DragPluginDescriptor,
 	TabsActiveTabPluginDescriptor,
+	TabsKeyboardPluginDescriptor,
 	TabsLayoutPluginDescriptor,
 	TabsViewPluginDescriptor,
 } from '../../plugins'
@@ -38,6 +39,8 @@ export const TabsDescriptor = () =>
 			TabsLayoutPluginDescriptor(),
 			TabsActiveTabPluginDescriptor(),
 			TabsViewPluginDescriptor(),
+			// Клавиатура по APG Tabs: стрелки, Home/End, Delete
+			TabsKeyboardPluginDescriptor(),
 			// Drag-and-drop
 			DragPluginDescriptor(),
 		],

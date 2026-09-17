@@ -41,6 +41,11 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 
 		const ctor = new.target as typeof TTabs
 
+		// Набор `aria` владельца — это список табов: разметка биндит его на
+		// `.s-tabs__list`, а не на корень, где рядом со списком лежат панели.
+		// Туда же доходят имя из `aria_label` и `aria-disabled`.
+		this._aria.add('role', 'tablist')
+
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
 		this._applyAlignment(props.alignment ?? ctor.defaultValues.alignment)
 		this._applyPosition(props.position ?? ctor.defaultValues.position)
@@ -65,7 +70,20 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 			oldClass: `--${oldValue}`,
 			newClass: `--${newValue}`,
 		})
+		// Не для вида: по ориентации скринридер объявляет, какими стрелками
+		// ходить по списку, — у вертикального это ↑/↓ (`TTabsKeyboardPlugin`)
+		this._aria.add('aria-orientation', newValue)
 		this._orientation = newValue
+	}
+
+	/**
+	 * `aria` стоит на списке табов — вложенном `div`, а не на корне. Поэтому
+	 * ARIA-половину правила «нативный атрибут вместо ARIA-дубля» решает тег
+	 * списка, а не `tag`: своего `disabled` у `div` нет, и выключенный список
+	 * сообщает о себе `aria-disabled` при любом теге корня.
+	 */
+	protected override get _ariaTag(): string {
+		return 'div'
 	}
 
 	get alignment(): TTabsAlignment {

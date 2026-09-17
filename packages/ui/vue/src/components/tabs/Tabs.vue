@@ -7,7 +7,12 @@ export default { ...SetupTabs, components: { TabsItem } }
 
 <template>
 	<div ref="rootElement" v-if="rendered" v-show="visible" :class="classes" v-bind="attrs">
-		<div class="s-tabs__list" role="tablist">
+		<!--
+			Набор `aria` владельца — это список табов: `role="tablist"` и
+			`aria-orientation` пишет ядро, имя из `aria_label` — TAriaPlugin.
+			Корень его не получает: там рядом со списком лежат панели.
+		-->
+		<div class="s-tabs__list" v-bind="aria">
 			<div class="s-tabs__list--leading" v-if="$slots.leading">
 				<slot name="leading"></slot>
 			</div>

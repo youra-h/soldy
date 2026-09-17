@@ -1105,7 +1105,7 @@ ListBox, Tabs и Select копий стало бы сорок.
 
 | Компонент | Паттерн                                              | Ключевое                                                                                                                                |
 | --------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Tabs      | Tabs                                                 | `tablist`/`tab`/`tabpanel`, связка `aria-controls` ↔ `aria-labelledby`                                                                  |
+| Tabs      | Tabs                                                 | `tablist`/`tab`/`tabpanel`, связка `aria-controls` ↔ `aria-labelledby`; стрелки и `Home`/`End`, одна остановка Tab                      |
 | Accordion | Accordion                                            | `aria-expanded` на заголовке, `role="region"` у панели; до переименования компонент назывался `Collapse` — имя не совпадало с паттерном |
 | Select    | Combobox (select-only; с `editable` — редактируемый) | `role="combobox"`, `aria-activedescendant`, фокус не уходит с поля                                                                      |
 | Switch    | Switch (на `input[type="checkbox"]`)                 | `role="switch"` на вложенном `<input>`, состояние — нативный `checked`                                                                  |
@@ -1811,13 +1811,13 @@ Key files:
 - `packages/plugins/src/custom/collection/bundles.plugin.ts` — TCollectionBundlesPlugin (+ TBundlesEvents) — реестр item-bundles + ссылка на движок; эмитит `engine:bound` при bindEngine, `bundle:registered` / `bundle:unregistered`
 - `packages/plugins/src/custom/collection/collection-bundles-access.plugin.ts` — TCollectionBundlesAccess (abstract, доступ к bundles по uid/item/index)
 - `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
-- `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin / TTabsViewPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin
+- `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin / TTabsViewPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete)
 - `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine), использует TCollectionElements + TCollectionBundlesPlugin)
 - `packages/setup/adapter/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
 - `packages/setup/adapter/extensions/collection/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
 - `packages/setup/adapter/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
 - `packages/setup/adapter/extensions/collection/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
-- `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsViewPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
+- `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsViewPluginDescriptor, TabsKeyboardPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
 
 ---
 

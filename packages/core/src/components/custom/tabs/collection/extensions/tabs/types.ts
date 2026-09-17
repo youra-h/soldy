@@ -19,8 +19,19 @@ export interface ITabsExtension<TItem extends ITabsItem = ITabsItem>
 	/** Глобальный closable с инстанса TTabs. */
 	readonly closable: boolean
 
+	/**
+	 * Таб, который держит остановку Tab (`tabindex="0"`): активный, если на
+	 * него можно перейти, иначе первый такой по порядку.
+	 */
+	readonly tabStop: TItem | undefined
+
 	/** Проверить, есть ли в коллекции активные табы. */
 	hasEnabledTabs(): boolean
+	/**
+	 * Можно ли перейти на таб: не disabled, visible и rendered. Одно правило
+	 * для остановки Tab и навигации с клавиатуры.
+	 */
+	isEnabledTab(item: TItem): boolean
 	/** Закрыть таб (удалить элемент из коллекции). */
 	closeTab(item: TItem): boolean
 }

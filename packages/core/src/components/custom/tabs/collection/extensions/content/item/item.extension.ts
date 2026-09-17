@@ -29,11 +29,18 @@ export class TTabsContentItemExtension<
 		}
 	}
 
+	/**
+	 * `tabindex="0"` — по паттерну APG Tabs: весь список табов — одна
+	 * остановка Tab, и следующая за ним остановка — панель. Содержимое панели
+	 * ядру неизвестно, поэтому фокусируемой она становится всегда, как в
+	 * примере APG.
+	 */
 	get panelAria(): TAriaAttributes {
 		return {
 			role: 'tabpanel',
 			id: this._parent.panelId(this._item),
 			'aria-labelledby': this._parent.tabId(this._item),
+			tabindex: '0',
 		}
 	}
 }
