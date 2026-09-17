@@ -318,12 +318,14 @@ Button is the canonical minimal component. Copy its shape:
 
 ## Общий слой — не дублируй
 
-`packages/setup/common/` содержит поведение, одинаковое для всех адаптеров:
-`underscorePropNaming` (имя пропа `ns_name`), `callbackEventNaming` (события
-колбэк-пропами, `element:ready` → `onElementReady`),
-`createInspectorFactory(naming)`, `collectEventBindings`, `collectForwardProps`.
-Плюс `resolveDefaultExtensions` в `adapter/extensions/` (уже применяется по
-умолчанию в `createAdapterContext` — вручную передавать не нужно).
+`packages/setup/naming/` и `packages/setup/adapter/common/` содержат поведение,
+одинаковое для всех адаптеров: `underscorePropNaming` (имя пропа `ns_name`),
+`callbackEventNaming` (события колбэк-пропами, `element:ready` →
+`onElementReady`), `createInspectorFactory(naming)`, `collectEventBindings`,
+`collectForwardProps`. Плюс `resolveDefaultExtensions` в
+`adapter/extensions/plugins/` (уже применяется по умолчанию в
+`createAdapterContext` — вручную передавать не нужно). Что где лежит в setup —
+AGENTS.md, «Структура `packages/setup`».
 
 Адаптер реализует **только** стратегию именования событий, и то не каждый:
 React, Svelte и Solid берут общую `callbackEventNaming`, своя стратегия у Vue и

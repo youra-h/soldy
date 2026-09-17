@@ -196,7 +196,7 @@ npm run changeset -- --empty
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
 | `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
-| `packages/setup`    | Build-time metadata: `contributions/`, `descriptors/`, `adapter/`, `common/`.                                                 |
+| `packages/setup`    | What all adapters share: describe, assemble and wire a component — see «Структура `packages/setup`».                          |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
 
@@ -305,7 +305,7 @@ React-компоненты держат adapter-context между рендер�
 
 Реальный случай: диагностика «`Tabs.Content` оказался внутри
 `[role="tablist"]`» сначала легла в `TTabsContentBindingExtension`
-(`setup/adapter/extensions/collection/`) — расширение само брало
+(`setup/adapter/extensions/tabs/`) — расширение само брало
 `TElementPlugin` из bundle и проверяло `el.closest('[role="tablist"]')`.
 Код не импортировал `vue`/`react`/итд, поэтому формально не нарушал главное
 правило границы — но `el.closest(...)` это операция над DOM, а не проводка,
@@ -319,6 +319,93 @@ React-компоненты держат adapter-context между рендер�
 чтение живого DOM-узла — это плагин, а не расширение адаптера. Расширению
 можно передать сам DOM-узел или значение, полученное от плагина, но не
 вычислять факты о нём самостоятельно.
+
+## Структура `packages/setup`
+
+Setup — всё, что у шести адаптеров общее: описание компонента, его сборка на
+монтирование и проводка к фреймворку. Слой разложен по стадиям жизни
+компонента, у каждой стадии свои папки:
+
+1. **Описание** (`contributions/`, `define/`, `descriptors/`) работает с типом
+   компонента, инстанса ещё нет: contribution, дескриптор, определение плагина.
+2. **Сборка** (`assemble/`) — на одно монтирование: инстанс (`ctrl` или
+   `ctor`), признак `embedded`, набор плагинов (свой или общий) и аксессор.
+3. **Связывание** (`adapter/`) — то, что зовут адаптеры: контекст, его
+   расширения, лифт и общие функции.
+
+Рядом со стадиями — `registry/`, регистрации приложения, которые сборка и
+расширения коллекций читают, и `naming/`, имена, нужные и описанию, и
+адаптерам.
+
+| Модуль           | Что в нём                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `naming/`        | Имена публичного API — проп `ns_name` и событие-колбэк `onElementReady` — и их тип-зеркала.      |
+| `contributions/` | Contribution компонентов и плагинов: пропсы, события и слоты, объявленные значением.             |
+| `define/`        | Как строится дескриптор: декларации из contribution и родителя, умолчания, вывод типов.          |
+| `descriptors/`   | Дескрипторы компонентов и определения плагинов библиотеки.                                       |
+| `assemble/`      | Компонент на одно монтирование: инстанс, `embedded`, набор с `bundle:create` и аксессор.         |
+| `registry/`      | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
+| `adapter/`       | Связывание с фреймворком: контекст адаптера, его расширения, лифт и общие функции адаптеров.     |
+
+**Рантайм-импорт между модулями — только по таблице.** `import type` не
+ограничен: связи в рантайме он не создаёт.
+
+| Модуль                                | Импортирует в рантайме           |
+| ------------------------------------- | -------------------------------- |
+| `naming`, `contributions`, `registry` | ничего из setup                  |
+| `assemble`                            | `registry`                       |
+| `define`                              | `assemble`                       |
+| `descriptors`                         | `define`, `contributions`        |
+| `adapter`                             | `assemble`, `registry`, `naming` |
+| `index.ts` пакета                     | всё, кроме `assemble`            |
+
+Почему так:
+
+- `createBundle` и `createAccessor` — методы дескриптора: у адаптера на руках
+  дескриптор. Поэтому описание зовёт сборку, но только из `define/component.ts`,
+  а сборка знает о дескрипторе лишь его контракт — `define/types.ts`.
+- Реестры и тема ни о ком не знают: их зовут сборка набора
+  (`assemble/bundle.ts`) и `TCollectionExtension`. Правило «`instanceof` +
+  `scope` + `embedded`» одно на оба реестра — `createRegistrations`
+  (`registry/registrations.ts`). Какие плагины реестра стоят в наборе — факт о
+  собранном наборе, он в `assemble/registered.ts`.
+- Сборка и `TAdapterContext` наружу не выходят: адаптер получает интерфейс
+  `IAdapterContext`. Публичный интерфейс не наследует внутренний тип сборки —
+  declaration emit Vue его не назовёт.
+- Внутри пакета `@soldy/setup` не импортируется, только относительные пути.
+
+Builder и pipeline для дескриптора не нужны: части дескриптора независимы и
+после создания не меняются. Builder добавил бы изменяемое состояние, pipeline —
+порядок, которого нет; хватает чистых функций (`define/inherit.ts`,
+`assemble/`).
+
+**Файлы.** Предложение о модуле — строка первой таблицы, предложение о файле —
+первая строка его шапки.
+
+- `types.ts` папки — контракты и опции её рантайма, включая опции расширений.
+- `<тема>.types.ts` — типы без рантайма: вывод для адаптеров и тип-зеркала
+  (`naming.types.ts`, `define/inference.types.ts`, `registry/plugins.types.ts`).
+- Файл с рантаймом типов не экспортирует. Исключение — `registry/icons.ts`:
+  его типы выведены из `ICON_ROLES`.
+- Бочка (`index.ts`) перечисляет имена файлов явно, `export *` — только из
+  подпапки.
+- У `contributions/` и `descriptors/` соглашения о файлах свои.
+
+**Куда класть новое:**
+
+- правило построения дескриптора (наследование, умолчание) — `define/`;
+- что происходит с компонентом при монтировании до фреймворка — `assemble/`;
+- регистрация приложения на тип компонента — `registry/`, выбор подходящих —
+  через `createRegistrations`, а не своим циклом по `instanceof`;
+- проводка, общая для всех фреймворков, — расширение в
+  `adapter/extensions/<тема>/`; функция, которую зовут адаптеры, —
+  `adapter/common/`;
+- новая папка верхнего уровня — со строкой в обеих таблицах и в
+  `RUNTIME_IMPORTS` сторожа.
+
+Сторож — `packages/setup/__tests__/setup-structure.spec.ts`: рантайм-импорт вне
+таблицы, папка верхнего уровня без строки, импорт `@soldy/setup` внутри пакета
+и нарушение соглашений о файлах роняют тест.
 
 ## Naming conventions
 
@@ -1063,7 +1150,7 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 ## Пакеты иконок
 
 Пакет иконок — **реализация контракта**, а не мешок SVG. Контракт — список
-ролей в `setup/common/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
+ролей в `setup/registry/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
 `close`, `arrowDown`, `arrowRight`. Ровно как тема реализует классы, которые
 soldy выпускает в разметку.
 
@@ -1292,11 +1379,12 @@ declare module '@soldy/core' {
 
 ## Что общее, а что специфично для фреймворка
 
-`packages/setup/common/` — поведение, одинаковое во всех адаптерах. Прежде чем
-писать что-то в `packages/ui/*/adapter/common/`, проверь, не место ли этому здесь:
+`packages/setup/naming/` и `packages/setup/adapter/common/` — поведение,
+одинаковое во всех адаптерах. Прежде чем писать что-то в
+`packages/ui/*/adapter/common/`, проверь, не место ли этому там:
 
-- `underscorePropNaming` — имя пропа одинаково везде (`ns_name`).
-- `callbackEventNaming` — `element:ready` → `onElementReady`; общая стратегия
+- `underscorePropNaming` (`naming/`) — имя пропа одинаково везде (`ns_name`).
+- `callbackEventNaming` (`naming/`) — `element:ready` → `onElementReady`; общая стратегия
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
   `TCallbackEventProps`. Своё именование событий остаётся только у Vue
   (`element:ready`) и Angular (`elementReady`) — по одному потребителю на каждое,
@@ -1312,7 +1400,7 @@ declare module '@soldy/core' {
   React, Solid и Svelte спредят в атрибуты корня. Съедает пропы, события и
   **слоты** дескриптора (`resolveSlotName`), иначе `leading={<Icon/>}` доезжает
   до DOM атрибутом.
-- `resolveDefaultExtensions` (в `adapter/extensions/`) — уже применяется по
+- `resolveDefaultExtensions` (в `adapter/extensions/plugins/`) — уже применяется по
   умолчанию внутри `createAdapterContext`, передавать его вручную не нужно.
 
 **Правило:** починил баг в одном адаптере — проверь остальные. Исторически
@@ -1393,8 +1481,8 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 
 При внешнем `ctrl` разметка остаётся разметкой: `<Select :ctrl="x"
 placeholder="Выберите">` обязан показать плейсхолдер. Сам по себе это не
-получается — инстанс из props строит конструктор (`createAdapterContext`:
-`options.ctrl ?? new Ctor(props)`), а чужому инстансу стартовые значения
+получается — инстанс из props строит конструктор (сборка компонента,
+`assemble/component.ts`: `ctrl ?? new Ctor(props)`), а чужому инстансу стартовые значения
 никто не пишет: `watch` во vue-адаптере молчит, пока проп не сменится.
 Поэтому `useSyncProps.bindInput` пишет стартовое значение — но **только для
 пропов, написанных в разметке** (`vnode.props`, а не итоговые `props`).
@@ -1501,8 +1589,8 @@ Vue приводит сам. Расхождение чинится значен�
 TPluginBundle`). В список событий дескриптора имя вносит `EntityContribution`
 (setup).
 
-Эмит живёт там же, где плагины создаются, — в `createBundle`
-(`descriptors/base/define-component.ts`). Не заводите для этого отдельный шаг,
+Эмит живёт там же, где плагины создаются, — в сборке набора
+(`setup/assemble/bundle.ts`, её зовёт `createBundle`). Не заводите для этого отдельный шаг,
 который каждый адаптер обязан помнить и вызывать: седьмой адаптер про него
 забудет.
 
@@ -1576,8 +1664,8 @@ useTheme(oren)
 который использует как деталь; элементы своей коллекции (`ListBoxItem` в
 `ListBox`) признака не несут. Проп объявлен у всех компонентов в
 `EntityContribution` рядом с `ctrl`: триггеров нет, в инстанс он не пишется,
-читает его `createAdapterContext` из пропсов — ни один адаптер не обязан
-помнить отдельный шаг.
+читает его сборка компонента (`setup/assemble/component.ts`) из пропсов — ни
+один адаптер не обязан помнить отдельный шаг.
 
 Сторож — `setup/__tests__/embedded-markup.spec.ts`: вложенный компонент soldy в
 `packages/ui/*/src/components/**` без `embedded` роняет тест. Забытый признак
@@ -1665,7 +1753,7 @@ export const ButtonContribution = (): IContribution => ({
 | WebC     | `<span slot="leading">` | ✗ нет механизма               |
 
 Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
-(`resolveSlotName` из `packages/setup/common`). Остальные имена одинаковы везде.
+(`resolveSlotName` из `packages/setup/adapter/common`). Остальные имена одинаковы везде.
 
 Особенности, о которые легко споткнуться:
 
@@ -2133,7 +2221,6 @@ Disabled — так же: тема читает `data-disabled`, которое 
 ## Pitfalls
 
 - `vue-tsc` requires exported, named types for portability. Use `ReadonlyArray<T>` instead of intersection types like `ReadonlyArray<T> & ICollectionStorageDriver<T>` when a type may leak into inferred types.
-- `packages/setup/descriptors/base/compile-contribution.ts` exports `normalizeContribution` (not `compileContribution`) — check imports in specs that reference it.
 - Tailwind `@apply` directives in `.vue` `<style>` blocks may produce CSS-parser warnings — pre-existing, not a code error.
 - Корень шаблона `Frame` — `<teleport>`, и Vue считает корневым узлом именно
   его. Автоматический перенос атрибутов уходит в телепорт и до элемента не
