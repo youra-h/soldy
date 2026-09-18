@@ -684,6 +684,24 @@ describe('набранное в поле и смена списка', () => {
 
 			expect(owner.field.value).toBe('')
 		})
+
+		/** Выбранное в `multiple` показывают теги, поэтому переименование идёт в них, а не в поле. */
+		it('переименование выбранной опции набранное оставляет, а тег обновляет', () => {
+			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b'], {
+				editable: true,
+			})
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+			owner.field.value = 'typed'
+			items[0].text = 'Другое'
+
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('Другое')
+			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+				'Другое',
+			])
+		})
 	})
 
 	/**
@@ -920,6 +938,43 @@ describe('теги в multiple', () => {
 		expect([...tagsEngine(collection).extensions.batch.items].map((item) => item.text)).toEqual(
 			['A', 'B'],
 		)
+	})
+
+	/**
+	 * Тег показывает текст опции, а не снимок на момент выбора: приложение
+	 * переименовывает опции и после выбора — так делает серверный поиск, патчем
+	 * с `trackBy`. Тег обновляется на месте, а не пересоздаётся.
+	 */
+	it('переименовали выбранную опцию — текст её тега сменился на месте', () => {
+		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+		facadeFor(1).choose()
+
+		const batch = tagsEngine(collection).extensions.batch
+		const tag = batch.items[0]
+
+		items[0].text = 'Другое'
+
+		expect(batch.items.map((item) => item.text)).toEqual(['Другое', 'B'])
+		expect(batch.items[0]).toBe(tag)
+	})
+
+	it('переименование невыбранной опции теги не трогает', () => {
+		const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		collection.mode = 'multiple'
+		facadeFor(0).choose()
+
+		const engine = tagsEngine(collection)
+		const changed = vi.fn()
+
+		engine.extensions.plain.events.on('change:items', changed)
+		items[1].text = 'Другое'
+
+		expect(engine.extensions.batch.items.map((item) => item.text)).toEqual(['A'])
+		expect(changed).not.toHaveBeenCalled()
 	})
 
 	it('снятие выбора убирает тег', () => {
