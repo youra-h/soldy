@@ -418,9 +418,6 @@ describe('text — что показывает поле', () => {
  * текстом выбранного, и набранное в `editable` пропадало, стоило приложению
  * обновить тексты опций во время ввода — так делает серверный поиск с
  * `trackBy`: патч переименовывает опции сеттером `text`.
- *
- * Набранный текст задаётся после смены состава: сама смена состава пока
- * переписывает поле.
  */
 describe('переименование опции', () => {
 	/**
@@ -511,6 +508,224 @@ describe('переименование опции', () => {
 		items[0].text = 'Другое'
 
 		expect(owner.field.value).toBe('Другое')
+	})
+})
+
+/**
+ * Поле пишут два пути (AGENTS.md, «Поле — один хранитель, не проп ядра»).
+ * Выбор пользователя — `chooseItem` и `clear` — переписывает поле всегда и шлёт
+ * `choose`. Остальное — смена состава и `value`, переименование выбранной,
+ * снятие выбора закрытием тега — пересчитывает `text`, а поле трогает, только
+ * пока оно показывает текст выбранного. Раньше каждое удаление опции, даже
+ * невыбранной, переписывало поле, и при серверном поиске набранное пропадало
+ * на каждом ответе.
+ *
+ * Набор здесь — запись в `owner.field.value`: так его пишет `TInputPlugin`.
+ */
+describe('набранное в поле и смена списка', () => {
+	/** Editable single: выбрана «A», поверх набран текст. */
+	function typedOverSelected() {
+		const select = createSelect(['a', 'b', 'c'], { editable: true })
+
+		select.facadeFor(0).choose()
+		select.owner.field.value = 'typed'
+
+		return select
+	}
+
+	describe('набранное остаётся, text свежий', () => {
+		it('удалили невыбранную опцию', () => {
+			const { owner, collection, items, select } = typedOverSelected()
+
+			collection.engine.extensions.batch.remove([items[1]])
+
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('A')
+		})
+
+		it('удалили выбранную опцию', () => {
+			const { owner, collection, items, select } = typedOverSelected()
+
+			collection.engine.extensions.batch.remove([items[0]])
+
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('')
+		})
+
+		/**
+		 * Без `trackBy` состав пересобирается через очистку: выбор снимается и
+		 * ставится заново по `value` — тем же `change:selection`, что приходит
+		 * на выбор пользователя.
+		 */
+		it('пересобрали items без trackBy при выставленном value', () => {
+			const { owner, collection, items, select } = typedOverSelected()
+
+			collection.items = [...items]
+
+			expect(owner.value).toBe('a')
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('A')
+		})
+
+		it('переименовали выбранную опцию', () => {
+			const { owner, items, select } = typedOverSelected()
+
+			items[0].text = 'Другое'
+
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('Другое')
+		})
+
+		it('сменили value из кода', () => {
+			const { owner, select } = typedOverSelected()
+
+			owner.value = 'b'
+
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('B')
+		})
+	})
+
+	describe('выбор пользователя набранное переписывает', () => {
+		it('chooseItem — текстом выбранной опции', () => {
+			const { owner, facadeFor } = typedOverSelected()
+
+			facadeFor(1).choose()
+
+			expect(owner.field.value).toBe('B')
+		})
+
+		it('chooseItem уже выбранной опции — её текстом, хотя выбор не изменился', () => {
+			const { owner, facadeFor } = typedOverSelected()
+
+			facadeFor(0).choose()
+
+			expect(owner.field.value).toBe('A')
+		})
+
+		it('clear — пустотой', () => {
+			const { owner, collection } = typedOverSelected()
+
+			collection.clear()
+
+			expect(owner.field.value).toBe('')
+		})
+
+		it('clear пустого поля тоже стирает набранное', () => {
+			const { owner, collection } = createSelect(['a'], { editable: true })
+
+			owner.field.value = 'typed'
+			collection.clear()
+
+			expect(owner.field.value).toBe('')
+		})
+	})
+
+	/** Когда в поле не печатают, оно следует за выбранным, как и прежде. */
+	describe('без набора поле показывает свежий текст выбранного', () => {
+		it('удалили выбранную опцию — поле пусто', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+				editable: true,
+			})
+
+			facadeFor(0).choose()
+			collection.engine.extensions.batch.remove([items[0]])
+
+			expect(owner.field.value).toBe('')
+		})
+
+		it('пересобрали items без trackBy — текст выбранного на месте', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+				editable: true,
+			})
+
+			facadeFor(0).choose()
+			collection.items = [...items]
+
+			expect(owner.field.value).toBe('A')
+		})
+
+		it('сменили value из кода — текст новой', () => {
+			const { owner, facadeFor } = createSelect(['a', 'b'], { editable: true })
+
+			facadeFor(0).choose()
+			owner.value = 'b'
+
+			expect(owner.field.value).toBe('B')
+		})
+	})
+
+	describe('multiple', () => {
+		it('набранное переживает закрытие тега', () => {
+			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b'], {
+				editable: true,
+			})
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+			owner.field.value = 'typed'
+
+			const engine = tagsEngine(collection)
+
+			engine.extensions.tags.closeTag([...engine.extensions.batch.items][0])
+
+			expect(collection.selected).toEqual([items[1]])
+			expect(owner.field.value).toBe('typed')
+			expect(select.text).toBe('B')
+		})
+
+		it('chooseItem набранное стирает', () => {
+			const { owner, collection, facadeFor } = createSelect(['a', 'b'], { editable: true })
+
+			collection.mode = 'multiple'
+			owner.field.value = 'typed'
+			facadeFor(0).choose()
+
+			expect(owner.field.value).toBe('')
+		})
+	})
+
+	/**
+	 * `choose` — факт выбора пользователя. По `change:selection` его не
+	 * отличить: тот приходит и на смену `value` и состава. Слушает
+	 * `TEditablePlugin` — сбрасывает набранное и отбор.
+	 */
+	describe('choose', () => {
+		it('chooseItem и clear шлют его, когда поле уже записано', () => {
+			const { owner, collection, facadeFor, select } = createSelect(['a', 'b'], {
+				editable: true,
+			})
+			const seen: string[] = []
+
+			select.events.on('choose', () => seen.push(owner.field.value))
+
+			owner.field.value = 'typed'
+			facadeFor(1).choose()
+			owner.field.value = 'typed'
+			collection.clear()
+
+			expect(seen).toEqual(['B', ''])
+		})
+
+		it('disabled-опция, смена value и состава, переименование его не шлют', () => {
+			const { owner, collection, items, facadeFor, select } = createSelect(['a', 'b', 'c'], {
+				editable: true,
+			})
+			const choose = vi.fn()
+
+			select.events.on('choose', choose)
+
+			items[2].disabled = true
+			facadeFor(2).choose()
+			owner.value = 'a'
+			items[0].text = 'Другое'
+			collection.engine.extensions.batch.remove([items[1]])
+			collection.items = [items[0], items[2]]
+
+			expect(owner.value).toBe('a')
+			expect(choose).not.toHaveBeenCalled()
+		})
 	})
 })
 

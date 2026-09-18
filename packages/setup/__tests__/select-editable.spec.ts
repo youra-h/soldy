@@ -89,6 +89,17 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		input.dispatchEvent(new Event('input', { bubbles: true }))
 	}
 
+	/**
+	 * Набор целиком, как в рендере: `TInputPlugin` пишет набранное в
+	 * `owner.field.value`, а `TEditablePlugin` слушает `input` того же поля.
+	 * Первого в этом окружении нет, поэтому поле пишет сам тест. Нужен там,
+	 * где важно, что поле показывает набранное, а не текст выбранного.
+	 */
+	const typeInField = (value: string) => {
+		owner.field.value = value
+		type(value)
+	}
+
 	const press = (key: string, init: KeyboardEventInit = {}) =>
 		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
 
@@ -99,7 +110,19 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		)
 	}
 
-	return { owner, facade, items, keyboard, editable, input, root, type, press, blurTo }
+	return {
+		owner,
+		facade,
+		items,
+		keyboard,
+		editable,
+		input,
+		root,
+		type,
+		typeInField,
+		press,
+		blurTo,
+	}
 }
 
 afterEach(() => {
@@ -451,9 +474,9 @@ describe('смена editable/editableMode на лету', () => {
 /**
  * Выбор изменился — текст поля пишет сама `TSelectExtension` (`owner.field`),
  * не этот плагин: `single` показывает выбранное сразу, `multiple` остаётся
- * пустым после каждого выбора, независимо от `editableMode`. Плагину
- * остаётся сбросить то, что относится только к вводу — набранное и отбор
- * (последний тест ниже).
+ * пустым после каждого выбора, независимо от `editableMode`. Плагину на
+ * выбор пользователя (`choose` расширения `select`) остаётся сбросить то, что
+ * относится только к вводу, — набранное и отбор.
  */
 describe('смена выбора', () => {
 	it('single — поле показывает выбранное сразу, не дожидаясь закрытия', async () => {
@@ -491,5 +514,124 @@ describe('смена выбора', () => {
 
 		expect(facade.engine.extensions.filter.query).toBe('')
 		expect(owner.field.value).toBe(items[0].text)
+	})
+
+	it('chooseItem переписывает набранное в поле текстом выбранного', async () => {
+		const { owner, facade, items, editable, typeInField } = await setup(['Москва', 'Тверь'], {
+			editableMode: 'filter',
+		})
+
+		typeInField('мо')
+		facade.engine.extensions.select.chooseItem(items[0])
+
+		expect(owner.field.value).toBe(items[0].text)
+		expect(editable.query).toBe('')
+	})
+
+	it('clear стирает набранное и снимает отбор — это тоже выбор, выбор «ничего»', async () => {
+		const { owner, facade, items, editable, typeInField } = await setup(
+			['Москва', 'Тверь', 'Тула'],
+			{ editableMode: 'filter' },
+		)
+
+		owner.value = items[0].value
+		typeInField('ту')
+		expect(facade.shown.length).toBe(1)
+
+		facade.clear()
+
+		expect(owner.field.value).toBe('')
+		expect(editable.query).toBe('')
+		expect(facade.engine.extensions.filter.query).toBe('')
+		expect(facade.shown.length).toBe(3)
+	})
+})
+
+/**
+ * Набор прерывает только выбор пользователя — то же, что безусловно пишет
+ * поле. Смену `value` из кода и снятие выбора закрытием тега поле во время
+ * набора переживает, и набранное с отбором обязаны пережить их вместе с ним:
+ * сбрось плагин их на `change:selection`, в поле осталось бы набранное, а
+ * список развернулся бы целиком.
+ */
+describe('набранное переживает смену выбора не пользователем', () => {
+	it('filter: value сменили из кода — поле, набранное и отбор на месте', async () => {
+		const { owner, facade, items, editable, typeInField } = await setup(
+			['Москва', 'Тверь', 'Тула'],
+			{ editableMode: 'filter' },
+		)
+
+		owner.value = items[0].value
+		typeInField('ту')
+
+		owner.value = items[1].value
+
+		expect(facade.selected).toEqual([items[1]])
+		expect(owner.field.value).toBe('ту')
+		expect(editable.query).toBe('ту')
+		expect(facade.engine.extensions.filter.query).toBe('ту')
+		expect(facade.shown.map((item) => item.text)).toEqual(['Тула'])
+	})
+
+	it('multiple + filter: выбор снят через selection.deselect — поле, набранное и отбор на месте', async () => {
+		const { owner, facade, items, editable, typeInField } = await setup(
+			['Москва', 'Тверь', 'Тула'],
+			{ editableMode: 'filter' },
+		)
+
+		facade.mode = 'multiple'
+		facade.engine.extensions.select.chooseItem(items[0])
+		typeInField('ту')
+
+		// путь закрытия тега и Backspace
+		facade.engine.extensions.selection.deselect(items[0])
+
+		expect(facade.selected).toEqual([])
+		expect(owner.field.value).toBe('ту')
+		expect(editable.query).toBe('ту')
+		expect(facade.engine.extensions.filter.query).toBe('ту')
+	})
+})
+
+/**
+ * Смена состава и переименование выбранной во время набора поле не трогают,
+ * но `text` пересчитывают — и возврат поля показывает уже его, а не текст,
+ * который был выбран до того, как в поле начали печатать.
+ */
+describe('двойной Escape после смены списка', () => {
+	it('пересобрали список без trackBy — возвращается текст выбранной из нового состава', async () => {
+		const { owner, facade, items, typeInField, press } = await setup(['Москва', 'Тверь'])
+
+		owner.value = items[0].value
+		typeInField('те')
+
+		// ответ сервера без trackBy: те же значения, свежие инстансы
+		facade.items = [
+			new TSelectItem({ value: 'москва', text: 'Москва, центр' }),
+			new TSelectItem({ value: 'тверь', text: 'Тверь' }),
+		]
+
+		expect(owner.field.value).toBe('те')
+
+		press('Escape')
+		press('Escape')
+
+		expect(owner.field.value).toBe('Москва, центр')
+	})
+
+	it('переименовали выбранную — возвращается новое имя', async () => {
+		const { owner, items, typeInField, press } = await setup(['Москва', 'Тверь'])
+
+		owner.value = items[0].value
+		typeInField('те')
+
+		items[0].text = 'Москва, центр'
+
+		expect(owner.field.value).toBe('те')
+
+		press('Escape')
+		press('Escape')
+
+		expect(owner.field.value).toBe('Москва, центр')
 	})
 })

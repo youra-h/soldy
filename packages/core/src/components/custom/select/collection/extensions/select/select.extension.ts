@@ -36,12 +36,30 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * оставить копию значило бы завести две реализации одной мысли.
  *
  * Текст выбранного (`text`) при этом считается здесь — он не про
- * синхронизацию, а про то, что показывать вместо `placeholder`. Он пишется в
+ * синхронизацию, а про то, что показывать вместо `placeholder`. Показывает его
  * `owner.field.value` (экземпляр `TInput`, которым в шаблоне показывается
  * поле, в любом режиме, не только `editable`): в `single` это текст
- * выбранного, в `multiple` всегда пусто — там значение в тегах. Наружу `text`
- * отдаётся только ради возврата поля в `TEditablePlugin`, чтобы формула не
- * копировалась. `owner.field.placeholder` следует тому же
+ * выбранного, в `multiple` всегда пусто — там значение в тегах.
+ *
+ * Поле пишется двумя путями, и путь выбирает то, откуда пришло изменение:
+ *
+ * - **выбор пользователя** (`chooseItem`, `clear`) пишет поле всегда, что бы в
+ *   нём ни было набрано, и сообщает о себе событием `choose` — по нему
+ *   `TEditablePlugin` сбрасывает набранное и отбор;
+ * - **всё остальное** — смена `value`, состава, переименование выбранной
+ *   опции, снятие выбора закрытием тега или `Backspace` — пересчитывает
+ *   `text`, а поле трогает, только пока оно показывает текст выбранного. Не
+ *   показывает — значит, в поле печатают, и набранное доживает до выбора или
+ *   возврата: при серверном поиске приложение меняет список прямо во время
+ *   ввода.
+ *
+ * Признак набора — само поле, а не флаг «печатают» и не копия записанного:
+ * это был бы второй путь к тем же данным. Цена — набранное, совпавшее с
+ * формулой поля (в том числе стёртое до пустого, пока текст выбранного пуст),
+ * от показа выбранного не отличить.
+ *
+ * Наружу `text` отдаётся ради возврата поля в `TEditablePlugin`, чтобы формула
+ * не копировалась. `owner.field.placeholder` следует тому же
  * правилу, что раньше жило в `field_placeholder` фасада: пока в поле есть хоть
  * один тег, плейсхолдер пуст — иначе он проступил бы сквозь них.
  */
@@ -188,7 +206,7 @@ export class TSelectExtension<
 		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
 		this._syncFieldPlaceholder()
-		this._syncFieldValue()
+		this._writeField()
 	}
 
 	/**
@@ -199,6 +217,10 @@ export class TSelectExtension<
 	 *
 	 * Disabled-опция не выбирается: она видна и объявляется скринридером как
 	 * недоступная, но нажатие по ней ничего не делает.
+	 *
+	 * Это выбор пользователя, поэтому поле переписывается, даже если выбор не
+	 * изменился: Enter на уже выбранной опции возвращает её текст вместо
+	 * набранного.
 	 */
 	chooseItem(item: TItem): boolean {
 		const selection = this._selection
@@ -216,12 +238,24 @@ export class TSelectExtension<
 			if (this._owner.closeOnSelect) this._owner.open = false
 		}
 
+		this._commitChoice()
+
 		return true
 	}
 
-	/** Снять выбор целиком — кнопка очистки поля. */
+	/**
+	 * Снять выбор целиком — кнопка очистки поля. Тоже выбор пользователя,
+	 * выбор «ничего»: поле пустеет, даже если выбрано ничего не было, а в нём
+	 * был набран текст.
+	 */
 	clear(): void {
-		this._selection?.resetSelection()
+		const selection = this._selection
+
+		if (!selection) return
+
+		selection.resetSelection()
+
+		this._commitChoice()
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
@@ -274,17 +308,15 @@ export class TSelectExtension<
 
 	/**
 	 * Текст опции входит в текст выбранного (`text`), только пока она выбрана.
-	 * Переименование выбранной обязано дойти и до `text`, и до
-	 * `owner.field.value`, который его показывает. Невыбранная не меняет ни
-	 * того, ни другого, и поле её переименование не трогает: иначе набранное в
-	 * `editable` стиралось бы текстом выбранного — при серверном поиске
-	 * приложение обновляет тексты опций прямо во время ввода.
+	 * Переименование выбранной обязано дойти до `text`, а через него — до
+	 * поля, если оно показывает текст выбранного (`_syncText`). Невыбранная не
+	 * меняет ни того, ни другого: при серверном поиске приложение обновляет
+	 * тексты опций прямо во время ввода.
 	 */
 	private _onItemRenamed(item: TItem): void {
 		if (!this._selection?.isSelected(item)) return
 
 		this._syncText()
-		this._syncFieldValue()
 	}
 
 	/**
@@ -310,23 +342,46 @@ export class TSelectExtension<
 
 	/**
 	 * Выбор изменился — обновляем то, что зависит от него: разметку для
-	 * скринридера и текст поля. Само `value` пишет `TValueSelectionExtension`.
+	 * скринридера, текст выбранного и плейсхолдер. Само `value` пишет
+	 * `TValueSelectionExtension`.
+	 *
+	 * Поле здесь пишется мягко (`_syncText`): `change:selection` приходит на
+	 * любое изменение выбора, а не только на выбор пользователя. Он же
+	 * обработчик `item:removed` — удалённую опцию `TSelectionExtension`
+	 * снимает с выбора молча.
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
 		this._syncText()
-		this._syncFieldValue()
 		this._syncFieldPlaceholder()
 	}
 
 	/**
-	 * Текст в `owner.field` — в любом режиме, не только `editable`: в
-	 * select-only поле тоже показывает выбранное, только не даёт его
-	 * редактировать. `multiple` всегда пуст — значение там в тегах, а не в
-	 * поле.
+	 * Выбор пользователя состоялся: поле показывает его, что бы в нём ни было
+	 * набрано, а подписчики `choose` узнают, что набор прерван. Зовётся после
+	 * изменения выбора — `text` к этому моменту уже пересчитан.
 	 */
-	private _syncFieldValue(): void {
-		this._owner.field.value = this._selection?.multiple ? '' : this._text
+	private _commitChoice(): void {
+		this._writeField()
+		this.events.emit('choose')
+	}
+
+	/**
+	 * Формула поля — что оно показывает, пока в нём не печатают. В любом
+	 * режиме, не только `editable`: в select-only поле тоже показывает
+	 * выбранное, только не даёт его редактировать. `multiple` всегда пуст —
+	 * значение там в тегах, а не в поле.
+	 */
+	private _fieldText(): string {
+		return this._selection?.multiple ? '' : this._text
+	}
+
+	/**
+	 * Безусловная запись поля: набранное, если оно было, пропадает. Так пишут
+	 * только выбор пользователя (`_commitChoice`) и первая запись в `install`.
+	 */
+	private _writeField(): void {
+		this._owner.field.value = this._fieldText()
 	}
 
 	/**
@@ -372,10 +427,20 @@ export class TSelectExtension<
 		})
 	}
 
+	/**
+	 * Пересчитать `text` — мягкая запись поля: оно следует за текстом, только
+	 * пока показывает текст выбранного, то есть в нём не печатают.
+	 *
+	 * Поле сверяется с формулой до пересчёта: после него оно разошлось бы с
+	 * `text` и тогда, когда в нём ничего не набирали. Набранное остаётся на
+	 * месте, а возврат поля (`TEditablePlugin`) покажет уже свежий `text`.
+	 */
 	private _syncText(): void {
+		const showsSelected = this._owner.field.value === this._fieldText()
 		const selected = this._selection?.selected ?? []
-		const text = selected.map((item) => item.text).join(', ')
 
-		this._text = text
+		this._text = selected.map((item) => item.text).join(', ')
+
+		if (showsSelected) this._writeField()
 	}
 }

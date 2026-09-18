@@ -272,7 +272,7 @@ describe('ввод в поле под отбором', () => {
 	 * Баг из ленты задачи: `multiple`, выбор по Enter добавляет тег, но текст
 	 * («Пер») оставался в поле и после перерисовки (открылась панель, появился
 	 * тег) — снова две копии значения. `TSelectExtension` чистит поле на
-	 * `change:selection` сама, независимо от `editableMode`.
+	 * выбор пользователя (`chooseItem`) сама, независимо от `editableMode`.
 	 */
 	it('multiple: Enter добавляет тег и очищает поле, включая перерисовку', async () => {
 		const { wrapper } = await renderSelect({ editable: true, mode: 'multiple' })
