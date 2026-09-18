@@ -10,8 +10,9 @@ import type { ITagsItem } from '../types'
  * Фасад элемента Tags.
  *
  * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — `closable`
- * (резолв «элемент ?? владелец» делает `TTagsItemExtension`, фасад лишь читает
- * готовый результат — как `closable` у `TTabsItemCollectionFacade`).
+ * (резолв «не выключен и (элемент ?? владелец)» делает `TTagsItemExtension`,
+ * фасад лишь читает готовый результат — как `closable` у
+ * `TTabsItemCollectionFacade`).
  */
 export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 	ITagsItem,

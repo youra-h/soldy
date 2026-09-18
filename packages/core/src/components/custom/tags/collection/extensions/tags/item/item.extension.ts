@@ -6,8 +6,9 @@ import type { ITagsExtension } from '../types'
 /**
  * TTagsItemExtension — stateless-делегат элемента тега.
  *
- * Копия `TTabsItemExtension`: closable резолвится из элемента (приоритет) или
- * родительского расширения (fallback на `TTags.closable`).
+ * Копия `TTabsItemExtension`: выключенный тег не закрывается, иначе closable
+ * резолвится из элемента (приоритет) или родительского расширения (fallback
+ * на `TTags.closable`).
  *
  * @template TItem   — тип элемента (ITagsItem или наследник)
  * @template TParent — тип родительского расширения (ITagsExtension или наследник)
@@ -23,15 +24,27 @@ export class TTagsItemExtension<
 		super(item, parent)
 
 		this.events.relay(parent.events, ['change:closable'])
-		this.events.relay(item.events, ['change:closable'])
+		this.events.relay(item.events, [
+			'change:closable',
+			// `disabled` входит в итог `closable` — см. геттер
+			{ from: 'change:disabled', as: 'change:closable' },
+		])
 	}
 
 	/**
 	 * Можно ли закрыть тег.
-	 * Явное значение элемента > глобальное значение из расширения.
+	 *
+	 * Выключенный тег не закрывается. Правило выводится здесь, а не пишется в
+	 * собственный `closable` элемента, поэтому не зависит от того, как тег
+	 * пришёл к «выключен»: со старта, позже или вместе с набором. Итог
+	 * `disabled` уже сочетает своё значение тега и владельца
+	 * (`bindDisabledToOwner`), и `change:disabled` приходит на смену итога.
+	 *
+	 * У включённого — явное значение элемента > глобальное значение из
+	 * расширения.
 	 */
 	get closable(): boolean {
-		return this._item.closable ?? this._parent.closable
+		return !this._item.disabled && (this._item.closable ?? this._parent.closable)
 	}
 
 	/**
