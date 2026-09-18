@@ -49,7 +49,7 @@ TEntity (uid, getProps, assign, toJSON)
 `TComponent` — ради `TFrame`, который нуждался в `visible`, но наследовал
 `TComponent`. Обоснование в `FrameDescriptor` («ComponentViewDescriptor
 приносит size/variant») было ошибочным: `size`/`variant` объявлены ниже, в
-`StylableContribution`. В результате невизуальные компоненты (`TDragAndDrop`,
+`StylableDescriptor`. В результате невизуальные компоненты (`TDragAndDrop`,
 фасады коллекций) получали свойства отображения, которые им не нужны.
 
 Правильное решение — поднять `TFrame` до `TComponentView`: он и так рендерит
@@ -124,7 +124,7 @@ export const ButtonDescriptor = () =>
   defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
     ctor: TButton,
     extends: TextableDescriptor(), // Inherit props/events/slots/plugins
-    contribution: ButtonContribution(),
+    contribution: ButtonDescriptor(),
     plugins: [...], // definePlugin results
   })
 ```
@@ -194,9 +194,12 @@ Organized by inheritance:
 contribution каждого плагина явно:
 
 ```ts
-export const ElementContribution = (): IContribution => ({
-  events: [...PLUGIN_EVENTS, 'ready', 'removed'],
-})
+export const ElementPluginDescriptor = () =>
+  definePlugin({
+    ctor: TElementPlugin,
+    namespace: 'element',
+    contribution: { events: [...PLUGIN_EVENTS, 'ready', 'removed'] },
+  })
 ```
 
 Так плагин остаётся единственным источником истины о собственных событиях.
@@ -462,7 +465,7 @@ hover: в тёмной схеме заливка светлеет.
 
 ### Почему `collectEventBindings` дедуплицирует
 
-Один raw-триггер объявлен у нескольких пропов. `present` в `ComponentContribution` —
+Один raw-триггер объявлен у нескольких пропов. `present` в `ComponentDescriptor` —
 производное от `rendered && visible`, поэтому его `triggers` это
 `['change:rendered', 'change:visible']`, т.е. те же события, что у самих
 `rendered` и `visible`. Наивный обход `getProps(true)` вешал две подписки на
@@ -511,7 +514,7 @@ hover: в тёмной схеме заливка светлеет.
 там же, где плагины и создаются:
 
 1. `bundle:create` на `instance.events` — единственной шине, видимой обеим
-   сторонам. Объявлено в `EntityContribution` рядом с `ctrl`: обе половины
+   сторонам. Объявлено в `EntityDescriptor` рядом с `ctrl`: обе половины
    связки адаптера с инстансом.
 2. `create` на каждом плагине bundle (через `plugin.created()`).
 
@@ -562,7 +565,7 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 осознанное исключение, а не протечка зависимости: шина работает транспортом,
 `packages/core` не импортирует `@soldy/plugins`. Имя события ядро объявляет в
 закрытой карте `TComponentEvents` с аргументом `unknown` — тип бандла ему
-неизвестен, — а в список событий дескриптора его вносит `EntityContribution`
+неизвестен, — а в список событий дескриптора его вносит `EntityDescriptor`
 (слой setup).
 
 Почему в `createBundle`, а не отдельным шагом в каждом адаптере: параллельный
@@ -897,16 +900,21 @@ Vue-шаблонах (41 объявление), и ни один другой с
 Теперь `IContribution` имеет третье поле рядом с `props` и `events`:
 
 ```ts
-// contributions/components/button.ts
+// descriptors/components/button.descriptor.ts
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
-export const ButtonContribution = (): IContribution => ({
-  slots: {
-    leading: { description: 'Перед текстом' },
-    default: { scope: { text: defineType<string>(String) } },
-    trailing: { description: 'После текста' },
-  },
-})
+export const ButtonDescriptor = defineDescriptor(() =>
+  defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
+    // …
+    contribution: {
+      slots: {
+        leading: { description: 'Перед текстом' },
+        default: { scope: { text: defineType<string>(String) } },
+        trailing: { description: 'После текста' },
+      },
+    },
+  }),
+)
 ```
 
 Дескриптор получил четвёртый фантомный параметр `TSlots` (с дефолтом `object`,
@@ -998,7 +1006,7 @@ protected _syncDisabled(): void {
 `aria` по тегу элемента, на котором стоит `aria` (`_ariaTag`), и никогда оба на
 одном элементе. Пересчёт — на `change:disabled` и `change:tag`.
 
-`protected: true` в `ComponentViewContribution`, триггер один — `change:aria`.
+`protected: true` в `ComponentViewDescriptor`, триггер один — `change:aria`.
 За границу core → ui уходит снимок (`valueOf()`), а не ссылка на объект.
 
 **Почему объект, а не вычисляемый геттер.** Сначала было именно так: каждый
@@ -1917,7 +1925,7 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 от `TInputControl` и наследоваться от списка не мог в принципе.
 
 - Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
-- Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/contributions/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
+- Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
 - Collections: `ListBoxFactory`. `TListBoxExtension` (проброс `size`/`variant`/`view`; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).

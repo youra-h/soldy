@@ -10,7 +10,7 @@ import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
 import { AngularProfile } from './profile'
 
 /**
- * `ctrl` объявлен в EntityContribution и потому попадает в поверхность,
+ * `ctrl` объявлен в EntityDescriptor и потому попадает в поверхность,
  * но в Angular он приходит из отдельного `@Input() ctrl` в TComponentBase.
  * Без этого фильтра он был бы объявлен дважды.
  */

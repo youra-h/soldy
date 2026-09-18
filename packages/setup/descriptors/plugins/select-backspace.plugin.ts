@@ -1,7 +1,6 @@
 import { definePlugin } from '../../define'
-import { TSelectBackspacePlugin } from '@soldy/plugins'
+import { TSelectBackspacePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TSelectBackspacePluginEvents } from '@soldy/plugins'
-import { SelectBackspaceContribution } from '../../contributions'
 
 /**
  * Удаление выбранных тегов по `Backspace` в пустом поле Select
@@ -13,5 +12,14 @@ export const SelectBackspacePluginDescriptor = () =>
 	definePlugin<'backspace', TSelectBackspacePluginEvents>({
 		ctor: TSelectBackspacePlugin,
 		namespace: 'backspace',
-		contribution: SelectBackspaceContribution(),
+		/**
+		 * Удаление тегов по `Backspace` в пустом поле Select.
+		 *
+		 * Ничего не отдаёт наружу: включает ли механизм состояние, целиком читается
+		 * через `owner.removeOnBackspace`. Контрибуция нужна лишь для того, чтобы
+		 * `create` попал в события, как и у любого плагина.
+		 */
+		contribution: {
+			events: [...PLUGIN_EVENTS],
+		},
 	})

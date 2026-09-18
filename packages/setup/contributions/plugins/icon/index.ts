@@ -1,1 +1,0 @@
-export { IconLayoutContribution } from './layout'

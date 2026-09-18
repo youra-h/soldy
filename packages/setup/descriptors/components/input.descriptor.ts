@@ -9,7 +9,6 @@ import { defineComponent, defineDescriptor } from '../../define'
 import { TInput } from '@soldy/core'
 import type { IInputProps, TInputEvents } from '@soldy/core'
 import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
-import { InputContribution } from '../../contributions'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const InputDescriptor = defineDescriptor(() =>
@@ -18,7 +17,11 @@ export const InputDescriptor = defineDescriptor(() =>
 
 		extends: InputControlDescriptor(),
 
-		contribution: InputContribution(),
+		contribution: {
+			props: {
+				placeholder: { type: String, triggers: ['change:placeholder'] },
+			},
+		},
 
 		plugins: [InputControlPluginDescriptor(), InputPluginDescriptor()],
 	}),

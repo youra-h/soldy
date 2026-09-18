@@ -15,7 +15,7 @@
 	- disabled → нативный `disabled` (`attrs`) или `aria-disabled` (`aria`) по
 	  тегу, `data-disabled` для темы (`dataset`) — на любом теге
 
-	Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
+	Слоты объявлены в контракте (ButtonDescriptor) и одинаковы во всех
 	адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
 	`trailing`.
 -->

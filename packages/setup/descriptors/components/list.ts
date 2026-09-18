@@ -1,5 +1,5 @@
 import type { IPropDefinition } from '@soldy/accessor'
-import { defineType } from '../defineType'
+import { defineType } from '../../define'
 import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
 
 /**

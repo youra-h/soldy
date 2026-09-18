@@ -8,7 +8,6 @@
 import { defineComponent, defineDescriptor } from '../../define'
 import { TDragAndDrop } from '@soldy/core'
 import type { IDragAndDropProps, TDragAndDropEvents } from '@soldy/core'
-import { DragAndDropContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const DragAndDropDescriptor = defineDescriptor(() =>
@@ -17,6 +16,6 @@ export const DragAndDropDescriptor = defineDescriptor(() =>
 
 		extends: ComponentDescriptor(),
 
-		contribution: DragAndDropContribution(),
+		contribution: {},
 	}),
 )

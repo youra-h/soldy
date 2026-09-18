@@ -11,7 +11,6 @@ import { defineComponent, defineDescriptor } from '../../define'
 import { TSkeleton } from '@soldy/core'
 import type { ISkeletonProps, TSkeletonEvents } from '@soldy/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'
-import { SkeletonContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = defineDescriptor(() =>
@@ -20,7 +19,15 @@ export const SkeletonDescriptor = defineDescriptor(() =>
 
 		extends: ComponentViewDescriptor(),
 
-		contribution: SkeletonContribution(),
+		contribution: {
+			props: {
+				variant: { type: String, triggers: ['change:variant'] },
+				shape: { type: String, triggers: ['change:shape'] },
+				animation: { type: String, triggers: ['change:animation'] },
+				width: { type: [Number, String], triggers: ['change:width'] },
+				height: { type: [Number, String], triggers: ['change:height'] },
+			},
+		},
 
 		plugins: [SkeletonLayoutPluginDescriptor()],
 	}),

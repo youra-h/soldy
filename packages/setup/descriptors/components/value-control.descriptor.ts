@@ -8,7 +8,6 @@
 import { defineComponent, defineDescriptor } from '../../define'
 import { TValueControl } from '@soldy/core'
 import type { IValueControlProps, TValueControlEvents } from '@soldy/core'
-import { ValueControlContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
 export const ValueControlDescriptor = defineDescriptor(() =>
@@ -17,6 +16,15 @@ export const ValueControlDescriptor = defineDescriptor(() =>
 
 		extends: ControlDescriptor(),
 
-		contribution: ValueControlContribution(),
+		contribution: {
+			props: {
+				value: {
+					type: [String, Number, Boolean, Object, Array],
+					triggers: ['change:value'],
+				},
+				name: { type: String, triggers: ['change:name'] },
+			},
+			events: ['input', 'input:value'],
+		},
 	}),
 )

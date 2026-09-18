@@ -1,4 +1,3 @@
-export * from './contributions'
 export * from './define'
 export * from './descriptors'
 export * from './registry'

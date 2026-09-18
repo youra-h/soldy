@@ -8,7 +8,6 @@
 import { defineComponent, defineDescriptor } from '../../define'
 import { TStylable } from '@soldy/core'
 import type { IStylableProps, TStylableEvents } from '@soldy/core'
-import { StylableContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const StylableDescriptor = defineDescriptor(() =>
@@ -17,6 +16,11 @@ export const StylableDescriptor = defineDescriptor(() =>
 
 		extends: ComponentViewDescriptor(),
 
-		contribution: StylableContribution(),
+		contribution: {
+			props: {
+				size: { type: String, triggers: ['change:size'] },
+				variant: { type: String, triggers: ['change:variant'] },
+			},
+		},
 	}),
 )

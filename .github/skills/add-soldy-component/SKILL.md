@@ -17,7 +17,7 @@ Adds a new headless UI component across the soldy layers: core model → contrib
 
 - `core`, `accessor`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
 - Naming: `T` prefix for shared/generic type aliases, `I` prefix for interfaces. Concrete component types (`<Name>Props`, `<Name>EventProps`) have **no** `T` prefix.
-- Contributions and descriptors are **arrow-function factories** (call them, don't pass the reference).
+- Descriptors are **factories wrapped in `defineDescriptor`** (call them, don't pass the reference); the contract is declared inline in `contribution`.
 - The descriptor is the **single source of truth** for props/events types — it must be typed with the curried `defineComponent<TProps, TEvents>()({...})` form so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props`. A component with slots passes the slots mirror type as the third argument: `defineComponent<TProps, TEvents, TSlots>()` (`TSlots` defaults to `object`).
 
 ## Procedure
@@ -37,44 +37,36 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
   - `static defaultValues` is typed `typeof TBase.defaultValues & TDefaultValues<I<Name>Props, 'ownKeyA' | 'ownKeyB'>` (own keys only; keys declared as `undefined` go to the third argument), never `Partial<I<Name>Props>`. The constructor then reads `props.x ?? ctor.defaultValues.x` without `!` — `x!` fails `lint:ci`. See AGENTS.md, «Умолчание пропа — в декларации».
 - `index.ts`: `export * from './types'` + `export { default as T<Name> } from './<name>.class'`.
 
-### 2. Contribution — `packages/setup/contributions/components/<name>.ts`
+### 2. Descriptor — `packages/setup/descriptors/components/<name>.descriptor.ts`
+
+One file per component: inheritance, the public contract (props, events, slots) and plugins. The contract is declared inline in `contribution` — there are no separate contribution files. Wrap the factory in `defineDescriptor` (the descriptor is built once) and always use the **typed curried form** so framework adapters can infer `I<Name>Props` / `T<Name>Events` from the descriptor:
 
 ```ts
-import type { IContribution } from '@soldy/accessor'
-
-export const <Name>Contribution = (): IContribution => ({
-  props: {
-    view: { type: String, triggers: ['change:view'] },
-  },
-})
-```
-
-The `props` key is the prop name. Use `defineType<T>(ctor)` for phantom-typed props. It is not exported from `@soldy/setup`: it lives in `packages/setup/contributions/defineType.ts`, and contributions import it by a relative path (`import { defineType } from '../defineType'` in `button.ts`).
-
-Slots are declared in the same contribution under `slots`, with a mirror type `T<Name>Slots` next to it (`TButtonSlots` in `button.ts`) — see AGENTS.md, «Слоты — третья категория контракта».
-
-### 3. Descriptor — `packages/setup/descriptors/components/<name>.descriptor.ts`
-
-Always use the **typed curried form** so framework adapters can infer `I<Name>Props` / `T<Name>Events` from the descriptor:
-
-```ts
-import { defineComponent } from '../base'
+import { defineComponent, defineDescriptor, defineType } from '../../define'
 import { T<Name> } from '@soldy/core'
 import type { I<Name>Props, T<Name>Events } from '@soldy/core'
-import { <Name>Contribution } from '../../contributions'
 import { <Base>Descriptor } from './<base>.descriptor'
 
-export const <Name>Descriptor = () =>
+export const <Name>Descriptor = defineDescriptor(() =>
   defineComponent<I<Name>Props, T<Name>Events>()({
     ctor: T<Name>,
     extends: <Base>Descriptor(),
-    contribution: <Name>Contribution(),
-  })
+    contribution: {
+      props: {
+        view: { type: String, triggers: ['change:view'] },
+      },
+    },
+  }),
+)
 ```
+
+The `props` key is the prop name. Use `defineType<T>(ctor)` for phantom-typed props — it is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`.
+
+Slots are declared in the same `contribution` under `slots`, with a mirror type `T<Name>Slots` in the same file (`TButtonSlots` in `button.descriptor.ts`) — see AGENTS.md, «Слоты — третья категория контракта». Export the slot type from the descriptors barrel next to the descriptor.
 
 > Generic base layers (`IValueControlProps<T>`, `IInputControlProps<T>`) need an explicit instantiation at the descriptor: `defineComponent<IValueControlProps<any>, TValueControlEvents<any>>()({...})` and `defineComponent<IInputControlProps, TInputControlEvents>()({...})` (default `string`).
 
-### 4. Vue adapter — `packages/ui/vue/src/components/<name>/`
+### 3. Vue adapter — `packages/ui/vue/src/components/<name>/`
 
 - `base.component.ts`: runtime `props`/`emits` from `useProps(<Name>Descriptor())` / `useEmits(<Name>Descriptor())`, **plus** the precise props type derived from the descriptor:
 
@@ -123,7 +115,7 @@ export default {
 
 `UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `TBaseComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance>` — own props plus plugin props (`aria_label`, …).
 
-### 5. React adapter — `packages/ui/react/src/components/<name>/`
+### 4. React adapter — `packages/ui/react/src/components/<name>/`
 
 React has **no runtime props declaration** — only types. Four files per component:
 
@@ -169,7 +161,7 @@ export { <Name> } from './<Name>'
 
 React type helpers live in `packages/ui/react/src/types.ts`: `TReactComponentProps`, `EventProps`, `SlotProps`, `UseProps`, `UseDomProps`.
 
-### 6. Angular adapter — `packages/ui/angular/src/components/<name>/`
+### 5. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
 Файлы — как у Button: `manifest.ts`, `base.component.ts`, `setup.component.ts`,
 `<name>.component.ts` с разметкой в `<name>.component.html` и `index.ts`. Отличие
@@ -271,16 +263,15 @@ export class T<Name>Component extends TComponentBase<I<Name>> {
   `dataset`; классы и видимость хоста — `@HostBinding`
   (`component-view.component.ts`).
 
-### 7. Register barrel exports
+### 6. Register barrel exports
 
 - `packages/core/src/components/custom/index.ts`
-- `packages/setup/contributions/components/index.ts`
 - `packages/setup/descriptors/components/index.ts`
 - `packages/ui/vue/src/components/index.ts`
 - `packages/ui/react/src/components/index.ts` (if a React adapter was added)
 - `packages/ui/angular/src/components/index.ts` (if an Angular adapter was added)
 
-### 8. Validate
+### 7. Validate
 
 ```bash
 npm run test:core
@@ -310,7 +301,6 @@ Confirm no framework imports leaked into the framework-agnostic packages.
 Button is the canonical minimal component. Copy its shape:
 
 - `packages/core/src/components/custom/button/{types.ts,button.class.ts,index.ts}`
-- `packages/setup/contributions/components/button.ts`
 - `packages/setup/descriptors/components/button.descriptor.ts`
 - Vue: `packages/ui/vue/src/components/button/{base.component.ts,setup.component.ts,Button.vue,index.ts}`
 - React: `packages/ui/react/src/components/button/{base.component.ts,setup.component.ts,Button.tsx,index.ts}`

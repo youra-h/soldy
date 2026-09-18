@@ -1,7 +1,6 @@
 import { definePlugin } from '../../define'
-import { TListItemPlugin } from '@soldy/plugins'
+import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TListItemPluginEvents } from '@soldy/plugins'
-import { ListItemPluginContribution } from '../../contributions'
 
 /**
  * Плагин подсветки элемента списка (клавиатурная навигация).
@@ -11,5 +10,13 @@ export const ListItemPluginDescriptor = () =>
 	definePlugin<'listItem', TListItemPluginEvents>({
 		ctor: TListItemPlugin,
 		namespace: 'listItem',
-		contribution: ListItemPluginContribution(),
+		contribution: {
+			events: [...PLUGIN_EVENTS],
+			props: {
+				highlighted: {
+					protected: true,
+					triggers: ['change:highlighted'],
+				},
+			},
+		},
 	})

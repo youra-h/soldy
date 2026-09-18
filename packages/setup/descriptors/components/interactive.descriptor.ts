@@ -8,7 +8,6 @@
 import { defineComponent, defineDescriptor } from '../../define'
 import { TInteractive } from '@soldy/core'
 import type { IInteractiveProps, TInteractiveEvents } from '@soldy/core'
-import { InteractiveContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const InteractiveDescriptor = defineDescriptor(() =>
@@ -17,6 +16,11 @@ export const InteractiveDescriptor = defineDescriptor(() =>
 
 		extends: ComponentViewDescriptor(),
 
-		contribution: InteractiveContribution(),
+		contribution: {
+			props: {
+				disabled: { type: Boolean, triggers: ['change:disabled'] },
+				focused: { type: Boolean, triggers: ['change:focused'] },
+			},
+		},
 	}),
 )

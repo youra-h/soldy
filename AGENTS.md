@@ -326,9 +326,10 @@ Setup — всё, что у шести адаптеров общее: описа
 монтирование и проводка к фреймворку. Слой разложен по стадиям жизни
 компонента, у каждой стадии свои папки:
 
-1. **Описание** (`contributions/`, `define/`, `descriptors/`) работает с типом
-   компонента, инстанса ещё нет: contribution, дескриптор, определение плагина.
-   Дескриптор строится один раз на тип — `defineDescriptor` кэширует фабрику.
+1. **Описание** (`define/`, `descriptors/`) работает с типом компонента,
+   инстанса ещё нет: дескриптор и определение плагина. Один файл на компонент —
+   наследование, пропсы, события, слоты и плагины вместе. Дескриптор строится
+   один раз на тип — `defineDescriptor` кэширует фабрику.
 2. **Сборка** (`assemble/`) — на одно монтирование: инстанс (`ctrl` или
    `ctor`), признак `embedded`, состав компонента, набор плагинов (свой или
    общий), аксессор и начальные значения плагинных пропсов.
@@ -339,26 +340,25 @@ Setup — всё, что у шести адаптеров общее: описа
 расширения коллекций читают, и `naming/`, имена, нужные и описанию, и
 адаптерам.
 
-| Модуль           | Что в нём                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------ |
-| `naming/`        | Имена публичного API — проп `ns_name` и событие-колбэк `onElementReady` — и их тип-зеркала.      |
-| `contributions/` | Contribution компонентов и плагинов: пропсы, события и слоты, объявленные значением.             |
-| `define/`        | Как строится дескриптор: декларации из contribution и родителя, умолчания, вывод типов.          |
-| `descriptors/`   | Дескрипторы компонентов и определения плагинов библиотеки.                                       |
-| `assemble/`      | Компонент на одно монтирование: инстанс, `embedded`, состав, набор с `bundle:create`, аксессор.  |
-| `registry/`      | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
-| `adapter/`       | Связывание с фреймворком: контекст, поверхность и связка, расширения, лифт, общие функции.       |
+| Модуль         | Что в нём                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `naming/`      | Имена публичного API — проп `ns_name` и событие-колбэк `onElementReady` — и их тип-зеркала.      |
+| `define/`      | Как строится дескриптор: декларации, наследование, умолчания, `defineType`, вывод типов.         |
+| `descriptors/` | Дескрипторы компонентов и определения плагинов: объявления прямо в них, по файлу на компонент.   |
+| `assemble/`    | Компонент на одно монтирование: инстанс, `embedded`, состав, набор с `bundle:create`, аксессор.  |
+| `registry/`    | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
+| `adapter/`     | Связывание с фреймворком: контекст, поверхность и связка, расширения, лифт, общие функции.       |
 
 **Рантайм-импорт между модулями — только по таблице.** `import type` не
 ограничен: связи в рантайме он не создаёт.
 
-| Модуль                                          | Импортирует в рантайме           |
-| ----------------------------------------------- | -------------------------------- |
-| `naming`, `contributions`, `registry`, `define` | ничего из setup                  |
-| `assemble`                                      | `registry`, `naming`             |
-| `descriptors`                                   | `define`, `contributions`        |
-| `adapter`                                       | `assemble`, `registry`, `naming` |
-| `index.ts` пакета                               | всё, кроме `assemble`            |
+| Модуль                         | Импортирует в рантайме           |
+| ------------------------------ | -------------------------------- |
+| `naming`, `registry`, `define` | ничего из setup                  |
+| `assemble`                     | `registry`, `naming`             |
+| `descriptors`                  | `define`                         |
+| `adapter`                      | `assemble`, `registry`, `naming` |
+| `index.ts` пакета              | всё, кроме `assemble`            |
 
 Почему так:
 
@@ -398,7 +398,8 @@ Builder и pipeline для дескриптора не нужны: части д
   его типы выведены из `ICON_ROLES`.
 - Бочка (`index.ts`) перечисляет имена файлов явно, `export *` — только из
   подпапки.
-- У `contributions/` и `descriptors/` соглашения о файлах свои.
+- У `descriptors/` соглашения о файлах свои: тип слотов лежит рядом с
+  дескриптором, который их объявляет.
 
 **Куда класть новое:**
 
@@ -541,7 +542,7 @@ bundles.events.on('engine:bound', (engine) => {
 от которой правило и защищает.
 
 **Имена классов, типов, папок и contribution `Collection` сохраняют**:
-`TCollectionEngine`, `TListBoxCollectionFacade`, `CollectionContribution`,
+`TCollectionEngine`, `TListBoxCollectionFacade`, `CollectionDescriptor`,
 `base/collection/`. Там слово стоит на месте — оно называет слой, а не
 конкретный объект в руках.
 
@@ -1064,22 +1065,30 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 ## Project-specific patterns
 
-- **Contributions** are arrow-function factories returning an `IContribution` dictionary:
+- **Один файл на компонент.** Дескриптор объявляет всё, что компонент отдаёт
+  наружу, прямо в `contribution` — словаре `IContribution`; рядом лежит тип
+  слотов. Отдельных файлов contribution нет: их читал только свой дескриптор.
+  Фабрика оборачивается в `defineDescriptor` — дескриптор строится один раз:
 
   ```ts
-  export const ButtonContribution = (): IContribution => ({
-    props: { view: { type: String, triggers: ['change:view'] } },
-    events: ['click'],
-  })
+  export const ButtonDescriptor = defineDescriptor(() =>
+    defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
+      ctor: TButton,
+      extends: TextableDescriptor(),
+      contribution: {
+        props: { view: { type: String, triggers: ['change:view'] } },
+        slots: { leading: {}, default: { scope: { text: defineType<string>(String) } } },
+      },
+    }),
+  )
   ```
 
   `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
+  Плагин объявляется так же — `definePlugin({ ctor, namespace, contribution: { … } })`.
+  Общий фрагмент нескольких компонентов (`LIST_PROPS` у ListBox и Select) —
+  константа рядом с дескрипторами (`descriptors/components/list.ts`).
 
-- **Descriptors** are arrow-function factories too. Call them when used as `extends` / options (do not pass the function reference):
-
-  ```ts
-  export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
-  ```
+- **Descriptors** — фабрики. Call them when used as `extends` / options (do not pass the function reference): `extends: TextableDescriptor()`.
 
 - **Состав пропсов записан дважды: в contribution и в типе.** Рантайм собирает
   дескриптор (`getProps()` — contribution компонента, его предков и плагинов),
@@ -1096,7 +1105,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   Коллекционная часть (`SelectCollectionDescriptor`) тип пропсов не объявляет
   и сверяется в строке владельца: её пропсы входят в его интерфейс
   (`ISelectProps`). `ctrl` сторож не сверяет: в рантайме проп объявляет
-  `EntityContribution`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
+  `EntityDescriptor`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
   поля, которые адаптер дописывает к типу сверх дескриптора, сторож не видит —
   так в типах адаптеров жил `plugins`, которого в рантайме не было. Защищённые
   пропсы (выходы) он тоже не сверяет: `DescriptorAllProps` их не несёт, и
@@ -1602,7 +1611,7 @@ Vue приводит сам. Расхождение чинится значен�
 закрыта, и без имени в ней не скомпилировались бы ни подписка с инстанса, ни
 проп события адаптера, который выводится из той же карты. Тип бандла ядру
 неизвестен, поэтому подписчик сужает аргумент сам (`bundle instanceof
-TPluginBundle`). В список событий дескриптора имя вносит `EntityContribution`
+TPluginBundle`). В список событий дескриптора имя вносит `EntityDescriptor`
 (setup).
 
 Эмит живёт там же, где плагины создаются, — в сборке набора
@@ -1679,7 +1688,7 @@ useTheme(oren)
 `select.field`). Ставит его **разметка библиотеки** на каждый компонент soldy,
 который использует как деталь; элементы своей коллекции (`ListBoxItem` в
 `ListBox`) признака не несут. Проп объявлен у всех компонентов в
-`EntityContribution` рядом с `ctrl`: триггеров нет, в инстанс он не пишется,
+`EntityDescriptor` рядом с `ctrl`: триггеров нет, в инстанс он не пишется,
 читает его сборка компонента (`setup/assemble/component.ts`) из пропсов — ни
 один адаптер не обязан помнить отдельный шаг.
 
@@ -1734,16 +1743,21 @@ Angular — кодогенерацией при сборке, Web Components —
 ```ts
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
-export const ButtonContribution = (): IContribution => ({
-  slots: {
-    leading: { description: 'Перед текстом' },
-    default: { scope: { text: defineType<string>(String) } },
-    trailing: { description: 'После текста' },
-  },
-})
+export const ButtonDescriptor = defineDescriptor(() =>
+  defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
+    // …
+    contribution: {
+      slots: {
+        leading: { description: 'Перед текстом' },
+        default: { scope: { text: defineType<string>(String) } },
+        trailing: { description: 'После текста' },
+      },
+    },
+  }),
+)
 ```
 
-Тип-зеркало лежит рядом с contribution и меняется синхронно с ней — как
+Тип-зеркало лежит в файле дескриптора, рядом с объявлением, и меняется синхронно с ним — как
 `TCallbackEventProps` для событий. Живёт в `setup`, **не в core**: у ядра
 понятия слота нет, оно ничего не рендерит.
 

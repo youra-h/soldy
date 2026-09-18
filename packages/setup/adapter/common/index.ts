@@ -3,3 +3,8 @@ export { toInstanceState } from './state'
 export { withParts } from './parts'
 export type { TSlotProps, TSlotFunctions } from './slots.types'
 export type { TInstanceState, TSnapshotOf } from './state.types'
+export type {
+	DescriptorCallbackEvents,
+	DescriptorComponentProps,
+	TAdapterProps,
+} from './props.types'

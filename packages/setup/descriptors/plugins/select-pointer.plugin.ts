@@ -1,7 +1,6 @@
 import { definePlugin } from '../../define'
-import { TSelectPointerPlugin } from '@soldy/plugins'
+import { TSelectPointerPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TSelectPointerPluginEvents } from '@soldy/plugins'
-import { SelectPointerContribution } from '../../contributions'
 
 /**
  * Клик по полю Select. Select-only тумблит панель кликом по всему полю,
@@ -12,5 +11,14 @@ export const SelectPointerPluginDescriptor = () =>
 	definePlugin<'pointer', TSelectPointerPluginEvents>({
 		ctor: TSelectPointerPlugin,
 		namespace: 'pointer',
-		contribution: SelectPointerContribution(),
+		/**
+		 * Клик по полю Select.
+		 *
+		 * Ничего не отдаёт наружу: и открытость (`open`), и режим (`editable`) уже
+		 * читаются как пропы владельца. Контрибуция нужна лишь для того, чтобы
+		 * `create` попал в события, как и у любого плагина.
+		 */
+		contribution: {
+			events: [...PLUGIN_EVENTS],
+		},
 	})

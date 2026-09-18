@@ -115,3 +115,29 @@ export interface IComponentDescriptor<
 	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
 	getSlots(): ISlotDeclaration[]
 }
+
+/**
+ * Тип пропа в декларации: конструктор для рантайма и фантомный `T` для типов.
+ * Собирает его `defineType`.
+ */
+export type TPropType<T> = {
+	/**
+	 * Фантомное поле: в рантайме его нет, оно только несёт `T` в типе пропа.
+	 * Необязательное, поэтому `defineType` собирает значение без приведения.
+	 */
+	readonly __type?: T
+	/** JS-конструктор, по которому фреймворк проверяет значение: `String`, `Object`, … */
+	readonly ctor: unknown
+}
+
+/**
+ * Scope слота, который ничего не передаёт внутрь.
+ *
+ * Именно `object`, а не `Record<string, never>`: адаптеры отличают слот без
+ * scope по `keyof S extends never` (см. TSnippetSlots в ui/svelte). У
+ * `Record<string, never>` есть индексная сигнатура, поэтому его `keyof` —
+ * это `string`, и проверка ломается: сниппет начинает требовать аргумент.
+ * У `object` же `keyof` пуст, как и у прежнего `{}`, но без его дыры,
+ * пропускавшей `0` и `""`.
+ */
+export type TEmptySlotScope = object

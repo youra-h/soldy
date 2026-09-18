@@ -8,7 +8,6 @@
 import { defineComponent, defineDescriptor } from '../../define'
 import { TTextable } from '@soldy/core'
 import type { ITextableProps, TTextableEvents } from '@soldy/core'
-import { TextableContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
 export const TextableDescriptor = defineDescriptor(() =>
@@ -17,6 +16,10 @@ export const TextableDescriptor = defineDescriptor(() =>
 
 		extends: ControlDescriptor(),
 
-		contribution: TextableContribution(),
+		contribution: {
+			props: {
+				text: { type: String, triggers: ['change:text'] },
+			},
+		},
 	}),
 )
