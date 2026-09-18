@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import type { ComponentProps } from 'solid-js'
+import { createSignal, type ComponentProps } from 'solid-js'
 import { render } from 'solid-js/web'
 import { TButton } from '@soldy/core'
 import { TActionPlugin } from '@soldy/plugins'
@@ -79,6 +79,29 @@ describe('Button · декларативные props', () => {
 
 		const hidden = mount({ visible: false }).firstElementChild as HTMLElement
 		expect(hidden.style.display).toBe('none')
+	})
+})
+
+/**
+ * Проп сняли — он больше не задан, и связка возвращает умолчание декларации.
+ * Раньше `undefined` не доезжал до ядра, и кнопка оставалась с прежним
+ * значением.
+ */
+describe('Button · снятый проп', () => {
+	it('снятый text возвращает умолчание — пустую строку', () => {
+		const [text, setText] = createSignal<string | undefined>('a')
+		const target = document.createElement('div')
+
+		document.body.appendChild(target)
+		disposers.push(render(() => <Button text={text()} />, target))
+
+		const content = () => target.querySelector('.s-button__text')?.textContent
+
+		expect(content()).toBe('a')
+
+		setText(undefined)
+
+		expect(content()).toBe('')
 	})
 })
 

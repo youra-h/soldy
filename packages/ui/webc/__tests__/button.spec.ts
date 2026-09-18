@@ -150,11 +150,52 @@ describe('<soldy-button> · свойства из JS', () => {
 		await flush()
 		expect(root(el).getAttribute('dir')).toBe('rtl')
 
-		// возврат в 'inherit' снимает атрибут (в отличие от undefined это
-		// конкретное значение, которое доходит до ядра)
+		// возврат в 'inherit' снимает атрибут: ядро переводит его в null
 		el.direction = 'inherit'
 		await flush()
 		expect(root(el).hasAttribute('dir')).toBe(false)
+	})
+})
+
+/**
+ * Атрибут сняли или свойство выставили в `undefined` — проп больше не задан, и
+ * связка возвращает умолчание декларации. Раньше `undefined` до ядра не
+ * доезжал, и элемент оставался с прежним значением.
+ *
+ * Элемент отдаёт связке не полный набор пропсов, а то, что поменялось: смена
+ * одного атрибута остальные не трогает.
+ */
+describe('<soldy-button> · снятый проп', () => {
+	it('снятый атрибут возвращает умолчание', async () => {
+		const el = mountButton('<soldy-button text="A" variant="brand"></soldy-button>')
+
+		el.removeAttribute('text')
+		el.removeAttribute('variant')
+		await flush()
+
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('')
+		// Умолчание variant — `undefined`: модификатора нет вовсе
+		expect(root(el).className).not.toMatch(/--variant-/)
+	})
+
+	it('свойство, выставленное в undefined, возвращает умолчание', async () => {
+		const el = mountButton('<soldy-button text="A"></soldy-button>')
+
+		el.text = undefined
+		await flush()
+
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('')
+	})
+
+	it('смена одного атрибута не сбрасывает остальные', async () => {
+		const el = mountButton('<soldy-button text="A" variant="brand"></soldy-button>')
+
+		el.setAttribute('size', 'xl')
+		await flush()
+
+		expect(root(el).querySelector('.s-button__text')?.textContent).toBe('A')
+		expect(root(el).className).toContain('s-button--variant-brand')
+		expect(root(el).className).toContain('s-button--size-xl')
 	})
 })
 

@@ -9,6 +9,13 @@
  * До неё тот же код — подписки на триггеры, дедупликация событий, чтение
  * пропсов по двум именам, guard от записи того же значения — был написан в
  * каждом из шести адаптеров, и различался одной строкой записи.
+ *
+ * Связка помнит, какие пропсы фреймворк задал. Без этой памяти `undefined`
+ * неотличим: «проп не передан» и «проп сняли». Первое должно оставить
+ * состояние инстанса как есть (внешний `ctrl`), второе — вернуть проп к
+ * умолчанию декларации: у трёхзначных пропсов (`closable` элемента Tabs,
+ * `contentFit` элемента ListBox) умолчание `undefined` и значит «как у
+ * владельца», и без сброса к нему компонент оставался с прежним значением.
  */
 
 import type { IEventSource } from '@soldy/core'
@@ -31,6 +38,8 @@ export class TComponentBinding implements IComponentBinding {
 	/** Свойства поверхности, у которых в аксессоре есть владелец. */
 	private readonly _targets = new Map<ISurfaceProp, IAccessorProp>()
 	private readonly _events = new Map<string, IAccessorEvent>()
+	/** Входы, которые фреймворк задал: последнее записанное значение — не `undefined`. */
+	private readonly _assigned = new Set<ISurfaceProp>()
 
 	constructor(context: IAdapterContext, profile: IAdapterProfile) {
 		this.surface = surfaceOf(context.descriptor, profile)
@@ -142,17 +151,32 @@ export class TComponentBinding implements IComponentBinding {
 	}
 
 	write(prop: ISurfaceProp, value: unknown): void {
-		if (value === undefined || prop.protected) return
+		const target = prop.protected ? undefined : this._targets.get(prop)
 
-		const target = this._targets.get(prop)
+		if (!target) return
 
-		if (!target || this._accessor.getValue(target) === value) return
+		if (value === undefined) {
+			this._reset(prop, target)
 
-		this._accessor.setValue(target, value)
+			return
+		}
+
+		// Заданным вход становится до guard'а «то же значение»: на первом проходе
+		// значение уже лежит в инстансе, собранном из тех же пропсов
+		this._assigned.add(prop)
+		this._set(target, value)
 	}
 
 	writeAll(props: object): void {
 		for (const prop of this.surface.inputs) this.write(prop, this.read(prop, props))
+	}
+
+	writeChanged(changes: object): void {
+		for (const prop of this.surface.inputs) {
+			if (Object.hasOwn(changes, prop.exportName) || Object.hasOwn(changes, prop.name.name)) {
+				this.write(prop, this.read(prop, changes))
+			}
+		}
 	}
 
 	forward<TProps extends object>(props: TProps): Partial<TProps> {
@@ -163,6 +187,25 @@ export class TComponentBinding implements IComponentBinding {
 		}
 
 		return rest
+	}
+
+	/**
+	 * Проп сняли — вернуть умолчание декларации.
+	 *
+	 * Не задавали — `undefined` значит «не передан», и состояние инстанса не
+	 * трогается. Умолчания нет (`items`, `mode` фасадов коллекций) — сбрасывать
+	 * не к чему: `undefined` их сеттеры не принимают.
+	 */
+	private _reset(prop: ISurfaceProp, target: IAccessorProp): void {
+		if (!this._assigned.delete(prop) || !Object.hasOwn(prop, 'default')) return
+
+		this._set(target, prop.default)
+	}
+
+	private _set(target: IAccessorProp, value: unknown): void {
+		if (this._accessor.getValue(target) === value) return
+
+		this._accessor.setValue(target, value)
 	}
 }
 

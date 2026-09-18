@@ -134,6 +134,36 @@ describe('кнопка ведёт себя как раньше', () => {
 })
 
 /**
+ * `closable` таба трёхзначен: `undefined` значит «как у набора». Снятый проп
+ * обязан вернуть таб к значению набора — раньше `undefined` не доезжал до
+ * ядра, и таб оставался с последним заданным значением.
+ */
+describe('снятый closable таба возвращает значение набора', () => {
+	const Harness = {
+		components: { Tabs, TabsItem },
+		props: { own: { type: Boolean, default: undefined } },
+		template: `
+			<Tabs closable>
+				<TabsItem value="a" text="A" active :closable="own" />
+			</Tabs>
+		`,
+	}
+
+	it('false у таба прячет кнопку, снятие возвращает её от набора', async () => {
+		const mounted = mount(Harness, { props: { own: false }, attachTo: document.body })
+
+		wrapper = mounted
+		await nextTick()
+
+		expect(item('A').querySelector('.s-tabs-item__close')).toBeNull()
+
+		await mounted.setProps({ own: undefined })
+
+		expect(item('A').querySelector('.s-tabs-item__close')).not.toBeNull()
+	})
+})
+
+/**
  * Выключенный таб не закрывается, и кнопки у него нет — с какого бы пути он
  * ни пришёл к «выключен». Раньше таб, выключенный со старта, рисовал бледную
  * кнопку, которую нельзя нажать, а выключенный позже — никакой.

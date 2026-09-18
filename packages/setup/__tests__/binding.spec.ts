@@ -11,9 +11,11 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { TName } from '@soldy/accessor'
-import { TButton } from '@soldy/core'
+import { TButton, TTabsItem } from '@soldy/core'
+import { TAriaPlugin } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
+	TabsItemDescriptor,
 	bindComponent,
 	createAdapterContext,
 	defineComponent,
@@ -73,6 +75,21 @@ describe('поверхность · умолчание пропа из декл�
 
 		expect(Object.hasOwn(config, 'default')).toBe(true)
 		expect(config.default).toBeUndefined()
+	})
+
+	it('свойство поверхности несёт то же умолчание — к нему связка сбрасывает снятый проп', () => {
+		const surface = surfaceOf(TabsItemDescriptor(), CallbackProfile)
+		const find = (key: string) =>
+			required(
+				surface.props.find((prop) => prop.key === key),
+				`проп ${key}`,
+			)
+
+		expect(find('text').default).toBe('')
+		expect(Object.hasOwn(find('closable'), 'default')).toBe(true)
+		expect(find('closable').default).toBeUndefined()
+		// Умолчания у декларации нет — нет и ключа
+		expect(Object.hasOwn(find('aria:label'), 'default')).toBe(false)
 	})
 
 	it('protected-проп наружу не уходит', () => {
@@ -159,7 +176,7 @@ describe('связка · ядро ↔ фреймворк', () => {
 		expect(write).toHaveBeenCalledTimes(1)
 	})
 
-	it('запись из фреймворка: то же значение и undefined пропускаются', () => {
+	it('запись из фреймворка: то же значение не пишется', () => {
 		const ctrl = new TButton({ text: 'a' })
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const binding = bindComponent(context, CallbackProfile)
@@ -168,7 +185,7 @@ describe('связка · ядро ↔ фреймворк', () => {
 		ctrl.events.on('change:text', changes)
 
 		binding.writeAll({ text: 'a' })
-		binding.writeAll({ text: undefined })
+		binding.writeAll({ text: 'b' })
 		binding.writeAll({ text: 'b' })
 
 		expect(ctrl.text).toBe('b')
@@ -199,5 +216,141 @@ describe('связка · ядро ↔ фреймворк', () => {
 
 		expect(binding.read(label, { aria_label: 'Закрыть' })).toBe('Закрыть')
 		expect(binding.read(label, { label: 'Закрыть' })).toBe('Закрыть')
+	})
+})
+
+/**
+ * `undefined` из фреймворка значит «проп не задан». Проп, который фреймворк
+ * задавал, а потом снял, возвращается к умолчанию декларации; ни разу не
+ * заданный связка не пишет вовсе. Раньше `undefined` пропускался всегда, и
+ * трёхзначный проп (`closable` элемента Tabs) нельзя было вернуть к «как у
+ * владельца».
+ */
+describe('связка · снятый проп', () => {
+	/** Связка над внешним инстансом: снаружи видно, что она в него пишет. */
+	function bindButton(ctrl = new TButton()) {
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+
+		return { ctrl, context, binding: bindComponent(context, CallbackProfile) }
+	}
+
+	it('ни разу не заданный проп не трогает внешний ctrl', () => {
+		const { ctrl, binding } = bindButton(new TButton({ text: 'своё', tag: 'a' }))
+		const changes = vi.fn()
+
+		ctrl.events.on('change:text', changes)
+
+		binding.writeAll({})
+		binding.writeAll({ text: undefined, tag: undefined })
+
+		// Умолчания деклараций — '' и 'button': сброса не было
+		expect(ctrl.text).toBe('своё')
+		expect(ctrl.tag).toBe('a')
+		expect(changes).not.toHaveBeenCalled()
+	})
+
+	it('снятый проп возвращается к умолчанию декларации: text — пустая строка', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+
+		expect(ctrl.text).toBe('a')
+
+		binding.writeAll({ text: undefined })
+
+		expect(ctrl.text).toBe('')
+	})
+
+	it('заданным проп считается и тогда, когда значение уже лежало в инстансе', () => {
+		// Первый проход фреймворка: инстанс собран из тех же пропсов, и запись
+		// того же значения пропускается — но проп всё равно задан
+		const { ctrl, binding } = bindButton(new TButton({ text: 'a' }))
+
+		binding.writeAll({ text: 'a' })
+		binding.writeAll({})
+
+		expect(ctrl.text).toBe('')
+	})
+
+	it('трёхзначный проп возвращается к «как у владельца»: closable элемента Tabs', () => {
+		const ctrl = new TTabsItem()
+		const binding = bindComponent(
+			createAdapterContext(TabsItemDescriptor(), { ctrl }),
+			CallbackProfile,
+		)
+
+		binding.writeAll({ closable: true })
+
+		expect(ctrl.closable).toBe(true)
+
+		binding.writeAll({ closable: undefined })
+
+		expect(ctrl.closable).toBeUndefined()
+	})
+
+	it('после сброса проп снова не задан: повторное снятие ничего не пишет', () => {
+		const { ctrl, binding } = bindButton()
+		const changes = vi.fn()
+
+		binding.writeAll({ text: 'a' })
+		ctrl.events.on('change:text', changes)
+
+		binding.writeAll({})
+		// Ядро поменяло значение само — повторное снятие его не трогает
+		ctrl.text = 'из ядра'
+		binding.writeAll({})
+
+		expect(ctrl.text).toBe('из ядра')
+		expect(changes).toHaveBeenCalledTimes(2)
+	})
+
+	it('без умолчания в декларации сбрасывать не к чему — значение остаётся', () => {
+		class TSample {
+			static defaultValues = { declared: 'умолчание' }
+			declared = 'умолчание'
+			free = 'старт'
+		}
+
+		const ctrl = new TSample()
+		const descriptor = defineComponent({
+			ctor: TSample,
+			contribution: { props: { declared: { type: String }, free: { type: String } } },
+		})
+		const binding = bindComponent(createAdapterContext(descriptor, { ctrl }), CallbackProfile)
+
+		binding.writeAll({ declared: 'задано', free: 'задано' })
+		binding.writeAll({})
+
+		expect(ctrl.declared).toBe('умолчание')
+		expect(ctrl.free).toBe('задано')
+	})
+
+	it('дельта пишет только свои ключи: остальные пропсы не сбрасываются', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeChanged({ text: 'a', tag: 'span' })
+		binding.writeChanged({ tag: 'a' })
+
+		expect(ctrl.text).toBe('a')
+		expect(ctrl.tag).toBe('a')
+
+		// Ключ есть, значение `undefined` — проп сняли
+		binding.writeChanged({ text: undefined })
+
+		expect(ctrl.text).toBe('')
+		expect(ctrl.tag).toBe('a')
+	})
+
+	it('дельта узнаёт проп по обоим именам, как read', () => {
+		const { context, binding } = bindButton()
+		const aria = required(context.bundle?.get(TAriaPlugin), 'плагин aria')
+
+		binding.writeChanged({ aria_label: 'Закрыть' })
+
+		expect(aria.label).toBe('Закрыть')
+
+		binding.writeChanged({ label: 'Открыть' })
+
+		expect(aria.label).toBe('Открыть')
 	})
 })

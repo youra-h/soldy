@@ -214,3 +214,33 @@ describe('кнопка ведёт себя как раньше', () => {
 		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
 	})
 })
+
+/**
+ * `closable` тега трёхзначен: `undefined` значит «как у набора». Снятый проп
+ * обязан вернуть тег к значению набора — раньше `undefined` не доезжал до
+ * ядра, и тег оставался с последним заданным значением.
+ */
+describe('снятый closable тега возвращает значение набора', () => {
+	const Harness = {
+		components: { Tags, TagsItem },
+		props: { own: { type: Boolean, default: undefined } },
+		template: `
+			<Tags closable>
+				<TagsItem value="a" text="A" :closable="own" />
+			</Tags>
+		`,
+	}
+
+	it('false у тега прячет кнопку, снятие возвращает её от набора', async () => {
+		const mounted = mount(Harness, { props: { own: false }, attachTo: document.body })
+
+		wrapper = mounted
+		await nextTick()
+
+		expect(item('A').querySelector('.s-tags-item__close')).toBeNull()
+
+		await mounted.setProps({ own: undefined })
+
+		expect(item('A').querySelector('.s-tags-item__close')).not.toBeNull()
+	})
+})

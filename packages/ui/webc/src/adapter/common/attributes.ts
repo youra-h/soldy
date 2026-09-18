@@ -59,7 +59,8 @@ export function useAttributes(descriptor: IComponentDescriptor): string[] {
  * содержимое, поэтому `disabled=""` и `disabled="false"` оба дают true, а
  * снять флаг можно только удалением атрибута.
  *
- * Возвращает `undefined`, если значение писать не нужно.
+ * `undefined` значит «проп не задан»: атрибут снят или число не разобралось.
+ * Заданный раньше проп связка по нему вернёт к умолчанию декларации.
  */
 export function coerceAttribute(raw: string | null, binding: IAttributeBinding): unknown {
 	if (binding.isBoolean) return raw !== null

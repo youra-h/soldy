@@ -191,11 +191,9 @@ export abstract class TSoldyElement<
 
 		if (!attribute) return
 
-		const next = coerceAttribute(value, attribute)
-
-		if (next === undefined) return
-
-		this._write(attribute.prop, next)
+		// `undefined` тоже пишется: атрибут сняли — проп больше не задан, и
+		// связка вернёт его к умолчанию
+		this._write(attribute.prop, coerceAttribute(value, attribute))
 	}
 
 	/** Установка значения из JS: `el.text = 'x'`. */
