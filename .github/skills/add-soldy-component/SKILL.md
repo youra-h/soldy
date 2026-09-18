@@ -113,7 +113,7 @@ export default {
 - `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"` and the three core attribute sets `v-bind="{ ...attrs, ...aria, ...dataset }"`.
 - `index.ts`: export `Base<Name>`, `props<Name>`, `emits<Name>`, and the `.vue` default.
 
-`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `TBaseComponentProps<DescriptorAllProps<TDescriptorFn>, TInstance>` — own props plus plugin props (`aria_label`, …).
+`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `DescriptorComponentProps<TDescriptorFn, TInstance>` from `@soldy/setup` — own props, plugin props (`aria_label`, …) and the adapter's service props (`ctrl`, `embedded`).
 
 ### 4. React adapter — `packages/ui/react/src/components/<name>/`
 
@@ -159,7 +159,7 @@ export { useSetup<Name> } from './setup.component'
 export { <Name> } from './<Name>'
 ```
 
-React type helpers live in `packages/ui/react/src/types.ts`: `TReactComponentProps`, `EventProps`, `SlotProps`, `UseProps`, `UseDomProps`.
+React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `SlotProps`, `UseProps`, `UseDomProps` — built on `DescriptorComponentProps` and `DescriptorCallbackEvents` from `@soldy/setup`.
 
 ### 5. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
@@ -311,20 +311,31 @@ Button is the canonical minimal component. Copy its shape:
 
 ## Общий слой — не дублируй
 
-`packages/setup/naming/` и `packages/setup/adapter/common/` содержат поведение,
-одинаковое для всех адаптеров: `underscorePropNaming` (имя пропа `ns_name`),
-`callbackEventNaming` (события колбэк-пропами, `element:ready` →
-`onElementReady`), `createInspectorFactory(naming)`, `collectEventBindings`,
-`collectForwardProps`. Плюс `resolveDefaultExtensions` в
-`adapter/extensions/plugins/` (уже применяется по умолчанию в
-`createAdapterContext` — вручную передавать не нужно). Что где лежит в setup —
-AGENTS.md, «Структура `packages/setup`».
+`packages/setup/naming/` и `packages/setup/adapter/` содержат поведение,
+одинаковое для всех адаптеров:
 
-Адаптер реализует **только** стратегию именования событий, и то не каждый:
-React, Svelte и Solid берут общую `callbackEventNaming`, своя стратегия у Vue и
-Web Components (`element:ready`) и у Angular (`elementReady`). Если пишешь
-что-то в `packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в
-общем слое. Починил баг в одном адаптере — проверь остальные адаптеры.
+- `underscorePropNaming` (имя пропа `ns_name`) и `callbackEventNaming` (события
+  колбэк-пропами, `element:ready` → `onElementReady`);
+- профиль фреймворка `IAdapterProfile` — стратегия имён и слот по умолчанию, одна
+  константа на адаптер (`VueProfile`, `ReactProfile`, …);
+- поверхность `surfaceOf(descriptor, profile)` — публичный API компонента в
+  именах фреймворка: из неё берут статический слой и связка;
+- связка `bindComponent(adapter, profile)` — всё, что адаптеры делают с
+  аксессором на монтировании: стартовое состояние, подписки, проброс событий,
+  запись пропсов, спред несъеденных;
+- `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`, метод
+  контекста.
+
+Правила связки — AGENTS.md, «Что общее, а что специфично для фреймворка», что
+где лежит в setup — «Структура `packages/setup`».
+
+Адаптер задаёт **только** профиль, куда писать значение, как отдать событие и в
+какой момент своего цикла это делать; своих циклов по аксессору у него нет.
+Своя стратегия имён событий тоже не у каждого: React, Svelte и Solid берут общую
+`callbackEventNaming`, своя стратегия у Vue и Web Components (`element:ready`) и
+у Angular (`elementReady`). Если пишешь что-то в
+`packages/ui/*/adapter/common/`, сначала проверь, не место ли этому в общем
+слое. Починил баг в одном адаптере — проверь остальные адаптеры.
 
 ## Collection components (Vue only for now)
 

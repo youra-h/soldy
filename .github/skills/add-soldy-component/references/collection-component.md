@@ -341,7 +341,7 @@ export default {
     const collectionAdapter = createVueAdapterContext(
       TabsCollectionDescriptor(),
       { props, options: { owner: adapter.instance, engine: props.engine } },
-      { bundle: adapter.bundle, defaultExtensions: [] },
+      { bundle: adapter.bundle },
     )
       .use(TCollectionExtension, { elevator: VueElevatorFactory })
       .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
@@ -365,14 +365,14 @@ would depend on spread order, which is exactly what broke before this helper exi
 JSDoc on `useCollectionAdapter`).
 
 The item setup mirrors the two-context shape (`TabsItemDescriptor` +
-`TabsCollectionItemDescriptor`, shared bundle, `defaultExtensions: []`,
-`TCollectionItemExtension`), but calls plain `useAdapter` on both sides and spreads the
-item binding before the owner binding — there is no naming collision on the item facade to
-strip.
+`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension`), but calls plain
+`useAdapter` on both sides and spreads the item binding before the owner binding: both
+bindings carry `ctrl` and `rootElement`, and the owner's, spread last, win.
 
-`useAdapter` creates a `rootElement` ref and watches it **only when** the adapter has
-`TPluginsBindingExtension` — the collection facade context (`defaultExtensions: []`) has
-none, so it does not expose a competing `rootElement`.
+`useAdapterParts` creates a `rootElement` ref and watches it **only when** the context's
+bundle has `TElementPlugin`; the watch calls `adapter.bindElement`. A facade context shares
+the component's bundle, so the parts give it a `rootElement` too: `useCollectionAdapter`
+drops it from the result, and in the item setup the owner binding overrides it.
 
 ## Key files
 
