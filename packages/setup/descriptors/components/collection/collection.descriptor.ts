@@ -9,7 +9,7 @@ export const CollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
 		/**
 		 * Общие коллекционные props/events владельца коллекции.
-		 * Переиспользуется в Tabs, Accordion (и далее List, ListBox, ...).
+		 * Переиспользуется во всех пяти коллекциях: Tabs, Accordion, ListBox, Select, Tags.
 		 */
 		contribution: {
 			props: {

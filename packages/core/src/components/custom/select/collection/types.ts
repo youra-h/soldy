@@ -40,7 +40,7 @@ export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem>
 	/** Отбор опций по тексту — сужает `shown`, хранилище не трогает. */
 	filter: TFilterExtension<TItem>
 	selection: TSelectionExtension<TItem>
-	/** Связь `value` поля с выбором коллекции — то же расширение, что у List. */
+	/** Связь `value` поля с выбором коллекции — то же расширение, что у ListBox и Tags. */
 	value: TValueSelectionExtension<any, TItem>
 	select: TSelectExtension<ISelect, TItem>
 	/** Теги в поле при множественном выборе — `null`, пока режим не `multiple`. */
