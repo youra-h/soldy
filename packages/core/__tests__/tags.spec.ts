@@ -16,7 +16,6 @@ import {
 	TTags,
 	TTagsItem,
 	TTagsCollectionFacade,
-	TTagsItemCollectionFacade,
 	TItemContextRegistry,
 	createEngineTags,
 } from '../src'
@@ -31,16 +30,7 @@ function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 
 	const registry = new TItemContextRegistry(collection.engine.getCore())
 
-	/** Фасад элемента — через него разметка читает членство в коллекции. */
-	const facadeFor = (index: number) => {
-		const facade = new TTagsItemCollectionFacade()
-
-		facade.setContext(registry.get(items[index]))
-
-		return facade
-	}
-
-	return { owner, collection, items, registry, facadeFor }
+	return { owner, collection, items, registry }
 }
 
 describe('добавление тегов', () => {
@@ -169,44 +159,50 @@ describe('disabled сбрасывает closable', () => {
 	})
 })
 
-describe('view пробрасывается с Tags на тег', () => {
-	it('без вида у набора вида нет и у тега — как у Button', () => {
-		const { facadeFor } = createTags(['a'])
+/**
+ * Вид набора — модификатор самого `TTags`, и только он: пилюлю каждого тега
+ * тема рисует по классу набора, тегу значение не доставляется. Другого пути
+ * вида к теме нет, поэтому модификатор стережётся здесь.
+ */
+describe('view — модификатор набора', () => {
+	const viewClasses = (classes: string[]) => classes.filter((cls) => cls.includes('--view-'))
 
-		expect(facadeFor(0).view).toBeUndefined()
+	it('без вида модификатора нет — как у Button', () => {
+		const { owner } = createTags(['a'])
+
+		expect(viewClasses(owner.classes.toArray())).toEqual([])
 	})
 
-	it('тег берёт вид владельца', () => {
-		const { facadeFor } = createTags(['a'], { view: 'ghost' })
+	it('вид ставит модификатор s-tags--view-<v> на набор, а не на теги', () => {
+		const { owner, items } = createTags(['a', 'b'], { view: 'ghost' })
 
-		expect(facadeFor(0).view).toBe('ghost')
+		expect(viewClasses(owner.classes.toArray())).toEqual(['s-tags--view-ghost'])
+		expect(items.flatMap((item) => viewClasses(item.classes.toArray()))).toEqual([])
 	})
 
-	/**
-	 * Тот самый релей (см. ListBox: `change:view` — единственное событие,
-	 * которое item-адаптер добавляет к карте родителя). Без него тег узнавал
-	 * бы о смене вида только при пересоздании.
-	 */
-	it('смена вида доходит до тега событием', () => {
-		const { owner, facadeFor } = createTags(['a', 'b'], { view: 'ghost' })
-		const facade = facadeFor(0)
+	it('смена вида меняет модификатор и шлёт change:view', () => {
+		const { owner } = createTags(['a'], { view: 'ghost' })
 		const seen: unknown[] = []
 
-		facade.events.on('change:view', (value: unknown) => seen.push(value))
+		owner.events.on('change:view', (value) => seen.push(value))
 
 		owner.view = 'solid'
 
+		expect(viewClasses(owner.classes.toArray())).toEqual(['s-tags--view-solid'])
 		expect(seen).toEqual(['solid'])
-		expect(facade.view).toBe('solid')
 	})
 
-	it('вид доходит до всех тегов, а не только до первого', () => {
-		const { owner, facadeFor } = createTags(['a', 'b', 'c'], { view: 'ghost' })
-		const facades = [facadeFor(0), facadeFor(1), facadeFor(2)]
+	it('undefined снимает модификатор', () => {
+		const { owner } = createTags(['a'], { view: 'ghost' })
+		const seen: unknown[] = []
 
-		owner.view = 'solid'
+		owner.events.on('change:view', (value) => seen.push(value))
 
-		expect(facades.map((facade) => facade.view)).toEqual(['solid', 'solid', 'solid'])
+		owner.view = undefined
+
+		expect(owner.view).toBeUndefined()
+		expect(viewClasses(owner.classes.toArray())).toEqual([])
+		expect(seen).toEqual([undefined])
 	})
 })
 

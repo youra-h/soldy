@@ -13,14 +13,13 @@ import type {
 } from '../types'
 import type { ITagsItem } from '../../item/types'
 import type { ITags } from '../../types'
-import type { TTagsView } from '../../types'
 
 /**
  * Фасад коллекции Tags.
  *
  * Наследует `TSelectionCollectionFacade`, как ListBox: состав и выбор из
- * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своё сверх базы —
- * `view`, как у ListBox: читает готовое значение у `tags`-расширения.
+ * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своего сверх базы
+ * нет: вид набора — свойство самого `TTags`, а не членство в коллекции.
  */
 export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 	ITagsItem,
@@ -52,9 +51,5 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		)
 
 		this.applyProps(props)
-	}
-
-	get view(): TTagsView | undefined {
-		return this.extensions.tags.view
 	}
 }

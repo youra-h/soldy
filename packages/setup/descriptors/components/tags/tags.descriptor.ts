@@ -56,8 +56,9 @@ export const TagsDescriptor = defineDescriptor(() =>
 			props: {
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				/**
-				 * Внешний вид тегов — вид `Button`, которым рисуется каждый тег
-				 * целиком, вместе с кнопкой закрытия.
+				 * Внешний вид тегов — модификатор набора: по нему тема рисует
+				 * пилюлю каждого тега целиком, вместе с кнопкой закрытия. Тегам
+				 * значение не доставляется.
 				 */
 				view: { type: String, triggers: ['change:view'] },
 			},

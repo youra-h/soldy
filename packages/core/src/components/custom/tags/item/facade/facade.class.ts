@@ -5,15 +5,13 @@ import type {
 	TTagsItemCollectionFacadeEvents,
 } from '../../collection/types'
 import type { ITagsItem } from '../types'
-import type { TTagsView } from '../../types'
 
 /**
  * Фасад элемента Tags.
  *
  * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — `closable`
  * (резолв «элемент ?? владелец» делает `TTagsItemExtension`, фасад лишь читает
- * готовый результат — как `closable` у `TTabsItemCollectionFacade`) и `view`
- * — целиком с набора, как `view` у `TListBoxItemCollectionFacade`.
+ * готовый результат — как `closable` у `TTabsItemCollectionFacade`).
  */
 export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 	ITagsItem,
@@ -30,9 +28,5 @@ export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 
 	get closable(): boolean {
 		return this._context?.adapters.tags.closable ?? false
-	}
-
-	get view(): TTagsView | undefined {
-		return this._context?.adapters.tags.view
 	}
 }
