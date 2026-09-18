@@ -25,6 +25,13 @@ import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './
  * смене состава, направление на старте — от того, у кого есть что сказать.
  * Общим расширением движка связь не стала: потребитель у неё один.
  *
+ * Значение меняет только выбор: радио отметили или сняли отметку с радио,
+ * которое осталось в группе. Ушедшее из группы отмеченное радио значение не
+ * трогает — как удалённый выбранный элемент у ListBox: радио могло уйти на
+ * время (`v-if`, перерисовка состава, размонтирование всей группы), и
+ * значение дождётся его на `item:added`. Иначе повторная запись `items`
+ * (очистка и новый набор) и размонтирование группы стирали бы `v-model`.
+ *
  * Адаптер элемента не нужен: всё, что расширение пишет элементу, пишется в
  * его собственные свойства.
  */
@@ -42,7 +49,7 @@ export class TRadioGroupExtension<
 	/**
 	 * Идёт синхронизация `value` ⇄ активное радио. Флаг, а не сравнение
 	 * значений: сброс активного при значении без радио тоже шлёт
-	 * `change:activation`, и сравнение затёрло бы заданное значение пустым.
+	 * `item:deactivated`, и сравнение затёрло бы заданное значение пустым.
 	 */
 	private _syncing = false
 
@@ -107,7 +114,18 @@ export class TRadioGroupExtension<
 			})
 		})
 
-		this._activation?.events.on('change:activation', () => this._activationToValue())
+		const activation = this._activation
+
+		activation?.events.on('item:activated', () => this._activationToValue())
+
+		// Отметку снимает и активация сама, когда отмеченное радио удалили из
+		// коллекции. Это не выбор «ничего»: радио в группе уже нет
+		activation?.events.on('item:deactivated', (item) => {
+			if (item && !ctx.driver.valueOf().includes(item)) return
+
+			this._activationToValue()
+		})
+
 		this._owner.events.on('change:value', () => this._valueToActivation())
 
 		// Радио могло приехать позже, чем выставили `value`: элементы
@@ -118,7 +136,7 @@ export class TRadioGroupExtension<
 		// Направление на старте — по тому, у кого есть что сказать: значение
 		// задано пропом — главное оно; нет — движок могли собрать снаружи уже с
 		// отмеченным радио (`meta.active`), и его нельзя затереть пустым значением
-		if (hasValue(this._owner.value) || !this._activation?.activeItem) {
+		if (hasValue(this._owner.value) || !activation?.activeItem) {
 			this._valueToActivation()
 		} else {
 			this._activationToValue()

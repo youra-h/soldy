@@ -283,12 +283,49 @@ describe('value ↔ отмеченное радио', () => {
 		expect(valued.value).toBe('a')
 	})
 
-	it('удаление отмеченного радио снимает значение', () => {
+	/**
+	 * Удаление — не выбор: отметку снимает активация, а значение остаётся и
+	 * ждёт своё радио, как у ListBox. Радио уходит и на время — `v-if`,
+	 * размонтирование группы целиком, — и `v-model` стирался бы вместе с ним.
+	 */
+	it('удаление отмеченного радио снимает отметку, но не значение', () => {
 		const { owner, collection, items } = createGroup(['a', 'b', 'c'], { value: 'b' })
 
 		collection.extensions.plain.remove(items[1])
 
 		expect(collection.activeItem).toBeUndefined()
+		expect(owner.value).toBe('b')
+
+		collection.extensions.plain.push(items[1])
+
+		expect(collection.activeItem).toBe(items[1])
+	})
+
+	/**
+	 * Разметка пишет `items` ещё раз после конструктора фасада: без `trackBy`
+	 * запись — очистка и новый набор. Значение переживает её и отмечает радио
+	 * нового набора.
+	 */
+	it('повторная запись состава сохраняет значение', () => {
+		const owner = new TRadioGroup({ value: 'b' })
+		const collection = new TRadioGroupCollectionFacade(
+			{ items: [{ value: 'a' }, { value: 'b' }] },
+			{ owner },
+		)
+
+		collection.items = [{ value: 'a' }, { value: 'b' }]
+
+		expect(owner.value).toBe('b')
+		expect(collection.activeItem?.value).toBe('b')
+		expect(collection.activeItem).toBe(collection.items[1])
+	})
+
+	/** Снять отметку с радио, оставшегося в группе, — это выбор «ничего». */
+	it('снятая с радио отметка обнуляет значение', () => {
+		const { owner, facadeFor } = createGroup(['a', 'b'], { value: 'b' })
+
+		facadeFor(1).active = false
+
 		expect(owner.value).toBeUndefined()
 	})
 
