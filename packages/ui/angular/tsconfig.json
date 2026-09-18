@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "sourceMap": true,
     "declaration": false,
+    "noEmit": true,
     "experimentalDecorators": true,
     "importHelpers": true,
     "moduleResolution": "bundler",

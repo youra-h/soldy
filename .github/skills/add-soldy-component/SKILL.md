@@ -248,8 +248,11 @@ export class T<Name>Component extends TComponentBase<I<Name>> {
 Правила разметки:
 
 - корень помечается `#root` и живёт внутри `@if (state()['rendered'])`: при
-  пересоздании узла связь переустанавливает `TComponentBase` (сигнальный
-  `viewChild('root')` в `effect`);
+  пересоздании узла связь переустанавливает `TComponentBase` (сигнальный запрос
+  `viewChild('root')` — поле базы, `effect` только читает его). Сигнальные
+  инициализаторы `@angular/core` (`viewChild`, `contentChildren`, `input`…)
+  пишутся только в инициализаторе поля: вызов в методе роняет AOT с NG8110 —
+  его ловит `ngc` из «Validate» (в CI — «Типы — Angular»);
 - наборы ядра раскладываются на корень директивой `AriaDirective`:
   `[ariaAttrs]="state()['aria']"`, `[attrs]="state()['attrs']"`,
   `[dataset]="state()['dataset']"`;
@@ -287,8 +290,8 @@ npx tsc --noEmit -p packages/setup/tsconfig.json
 npm run build:types --workspace=@soldy/ui-vue
 npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
 npx tsc --noEmit -p packages/ui/react/tsconfig.json
-# Angular: сборки и ngc нет — tsc не проверяет шаблоны @Component
-npx tsc --noEmit -p packages/ui/angular/tsconfig.json
+# Angular: ngc без эмита — TS, шаблоны @Component (strictTemplates) и ограничения AOT
+npx ngc -p packages/ui/angular/tsconfig.json
 # Angular: метаданные не должны разъехаться с дескриптором
 npm run generate --workspace=@soldy/ui-angular
 git diff --exit-code packages/ui/angular/src/generated

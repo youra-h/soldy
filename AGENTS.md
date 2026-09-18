@@ -32,10 +32,14 @@ CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов 
 `test:plugins`), типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
 «Типы — Plugins», «Типы — Playground», «Типы — React», «Типы — Svelte», «Типы —
 Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
-`packages/ui/angular/src/generated` и сборки. Сборки и AOT-компиляции (`ngc`)
-Angular в CI нет: «Типы — Angular» — это `tsc --noEmit`, шаблоны декораторов
-`@Component` он не проверяет. Линт и форматирование (`prettier --check .`)
-роняют CI отдельной задачей `lint`. Задача `changeset` идёт только на PR и
+`packages/ui/angular/src/generated` и сборки. «Типы — Angular» — это `ngc` без
+эмита, а не `tsc`: кроме TS он проверяет шаблоны `@Component`
+(`strictTemplates`) и ограничения AOT, которых `tsc` не видит (NG8110 и
+подобные). `noEmit` стоит в самом `packages/ui/angular/tsconfig.json`: пакет
+отдаётся исходниками, а без него `ngc -p` писал бы `.js` рядом с исходниками
+`core`, `setup` и `plugins`. Сборки Angular в CI нет — у пакета пока нет
+стенда. Линт и форматирование (`prettier --check .`) роняют CI отдельной
+задачей `lint`. Задача `changeset` идёт только на PR и
 требует changeset от PR, который меняет библиотечный пакет (см. «Версии
 пакетов»). Отступы и ширину строки Prettier берёт из `.editorconfig`, в
 `.prettierrc.json` их не дублировать.
@@ -1350,7 +1354,9 @@ declare module '@soldy/core' {
 - `setup/__tests__/theme-values-markup.spec.ts` — в
   `packages/ui/*/src/components/**` нет литерала `view`, `variant`, `shape` или
   `animation` ни в одной форме записи (`view="…"`, `:view="'…'"`, `view={'…'}`,
-  `[view]="'…'"`, `{ view: '…' }`). Шаблоны Angular типами не проверяются вовсе.
+  `[view]="'…'"`, `{ view: '…' }`). В Angular литерал в шаблоне типами не
+  ловится: «Типы — Angular» (`ngc`) проверяет имя инпута, но не значение —
+  инпуты компонентов объявлены именами в `inputs` декоратора, без типа.
 - `themes/oren/__tests__/theme-values.spec.ts` — каждый модификатор темы в CSS
   объявлен в `index.d.ts`.
 - Стенд сверяет свои списки значений с `index.d.ts` oren (см. «Playground»).
@@ -2242,11 +2248,18 @@ Disabled — так же: тема читает `data-disabled`, которое 
   `markForCheck` не планирует проверку и работал только благодаря Zone.js.
 - Корень компонента живёт внутри `@if`, поэтому DOM-биндинг делает базовый
   `TComponentBase` (`packages/ui/angular/src/adapter/runtime/component.base.ts`):
-  корень в шаблоне помечен `#root`, а сигнальный `viewChild('root')` в `effect`
-  переустанавливает связь при пересоздании узла. Обычный `@ViewChild` читается
-  один раз в `ngAfterViewInit` и после пересоздания узла указывает на мёртвый
-  элемент. Если корень — хост-элемент и живёт всё время, компонент передаёт
-  стратегию `'host'`: узел берётся из `inject(ElementRef)` один раз.
+  корень в шаблоне помечен `#root`, сигнальный запрос `viewChild('root')` —
+  поле базы, а `effect` только читает его и переустанавливает связь при
+  пересоздании узла. Обычный `@ViewChild` читается один раз в `ngAfterViewInit`
+  и после пересоздания узла указывает на мёртвый элемент. Если корень —
+  хост-элемент и живёт всё время, компонент передаёт стратегию `'host'`: узел
+  берётся из `inject(ElementRef)` один раз.
+- Сигнальные инициализаторы `@angular/core` — запросы (`viewChild`,
+  `viewChildren`, `contentChild`, `contentChildren`), `input`, `model`,
+  `output` — пишутся только в инициализаторе поля класса с `@Component` или
+  `@Directive`. Вызов в методе или конструкторе компилятор не распознаёт и
+  роняет AOT с NG8110 (реальный случай — `viewChild('root')` внутри
+  `_bindRoot`). `tsc` этого не видит, сторож — «Типы — Angular» (`ngc`).
 - `<ng-content>` объявляется ровно один раз и подставляется через
   `ngTemplateOutlet`: два слота во взаимоисключающих ветках теряют содержимое.
 
