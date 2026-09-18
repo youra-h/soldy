@@ -58,6 +58,16 @@ export class TSelectExtension<
 	private _text = ''
 	private _batch: IBatchExtension<TItem> | null = null
 
+	/**
+	 * Подписки на переименование опций, которые сейчас в списке.
+	 *
+	 * Обработчик у каждой опции свой: ему нужна опция, а событие несёт только
+	 * значение. Поэтому он хранится до удаления опции — иначе снять подписку
+	 * было бы нечем. `WeakMap` — чтобы запись не удерживала опцию, если движок
+	 * выбросят, не удалив из него опции.
+	 */
+	private readonly _textWatchers = new WeakMap<TItem, () => void>()
+
 	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
 		super(TSelectItemExtension, options)
 
@@ -125,6 +135,11 @@ export class TSelectExtension<
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем опциям `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._onItemAdded(item as TItem))
+
+		// Переименование опции слушается от добавления (`_onItemAdded`) до
+		// удаления. Очистка шлёт `item:removed` каждой опции перед `reset` —
+		// отдельной подписки на неё не нужно
+		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
 
 		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
@@ -227,14 +242,49 @@ export class TSelectExtension<
 
 		item.aria.add('id', this.optionId(item))
 
-		// Текст опции виден в поле, пока она выбрана — переименование выбранной
-		// опции обязано дойти и до текста, и до `owner.field.value`, который его
-		// показывает: раньше здесь пересчитывался только текст, и `field.value`
-		// у уже выбранной опции не замечал переименования.
-		item.events.on('change:text', () => {
-			this._syncText()
-			this._syncFieldValue()
-		})
+		this._watchText(item)
+	}
+
+	/**
+	 * Слушать переименование опции. Повторный вызов для той же опции второй
+	 * подписки не заводит: без `trackBy` состав пересобирается через очистку, и
+	 * те же инстансы добавляются заново.
+	 */
+	private _watchText(item: TItem): void {
+		if (this._textWatchers.has(item)) return
+
+		const watcher = (): void => this._onItemRenamed(item)
+
+		this._textWatchers.set(item, watcher)
+		item.events.on('change:text', watcher)
+	}
+
+	/**
+	 * Удалённую опцию Select больше не слушает: в его тексте её нет, а подписка
+	 * удерживала бы Select, пока жива сама опция.
+	 */
+	private _unwatchText(item: TItem): void {
+		const watcher = this._textWatchers.get(item)
+
+		if (!watcher) return
+
+		item.events.off('change:text', watcher)
+		this._textWatchers.delete(item)
+	}
+
+	/**
+	 * Текст опции входит в текст выбранного (`text`), только пока она выбрана.
+	 * Переименование выбранной обязано дойти и до `text`, и до
+	 * `owner.field.value`, который его показывает. Невыбранная не меняет ни
+	 * того, ни другого, и поле её переименование не трогает: иначе набранное в
+	 * `editable` стиралось бы текстом выбранного — при серверном поиске
+	 * приложение обновляет тексты опций прямо во время ввода.
+	 */
+	private _onItemRenamed(item: TItem): void {
+		if (!this._selection?.isSelected(item)) return
+
+		this._syncText()
+		this._syncFieldValue()
 	}
 
 	/**

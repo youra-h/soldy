@@ -413,6 +413,108 @@ describe('text — что показывает поле', () => {
 })
 
 /**
+ * Переименование опции доходит до поля, только пока она выбрана: текст
+ * невыбранной в поле не виден. Раньше каждый `change:text` переписывал поле
+ * текстом выбранного, и набранное в `editable` пропадало, стоило приложению
+ * обновить тексты опций во время ввода — так делает серверный поиск с
+ * `trackBy`: патч переименовывает опции сеттером `text`.
+ *
+ * Набранный текст задаётся после смены состава: сама смена состава пока
+ * переписывает поле.
+ */
+describe('переименование опции', () => {
+	/**
+	 * Сколько подписок на `change:text` висит на опции — считая с вызова, поэтому
+	 * ставится до того, как опция попадёт в список.
+	 *
+	 * Удаление и возврат проверяются числом подписок, а не итоговым
+	 * `field.value`: переименование опции вне выбора поле не трогает, и утечку
+	 * поле не показало бы.
+	 */
+	function watchTextListeners(item: ISelectItem): () => number {
+		const on = vi.spyOn(item.events, 'on')
+		const off = vi.spyOn(item.events, 'off')
+		const count = (calls: ReadonlyArray<readonly unknown[]>) =>
+			calls.filter(([event]) => event === 'change:text').length
+
+		return () => count(on.mock.calls) - count(off.mock.calls)
+	}
+
+	it('невыбранной — набранный текст остаётся, текст выбранного тоже', () => {
+		const { owner, items, facadeFor, select } = createSelect(['a', 'b'], { editable: true })
+
+		facadeFor(0).choose()
+		owner.field.value = 'typed'
+		items[1].text = 'B2'
+
+		expect(owner.field.value).toBe('typed')
+		expect(select.text).toBe('A')
+	})
+
+	it('когда не выбрано ничего — набранный текст остаётся', () => {
+		const { owner, items } = createSelect(['a', 'b'], { editable: true })
+
+		owner.field.value = 'typed'
+		items[1].text = 'B2'
+
+		expect(owner.field.value).toBe('typed')
+	})
+
+	it('удалённую опцию Select больше не слушает', () => {
+		const { collection, items } = createSelect(['a'])
+		const late = new TSelectItem({ value: 'z', text: 'Z' })
+		const listeners = watchTextListeners(late)
+
+		collection.items = [...items, late]
+
+		expect(listeners()).toBe(1)
+
+		collection.engine.extensions.batch.remove([late])
+
+		expect(listeners()).toBe(0)
+	})
+
+	it('после очистки списка опции не слушаются', () => {
+		const { collection, items } = createSelect(['a'])
+		const late = new TSelectItem({ value: 'z', text: 'Z' })
+		const listeners = watchTextListeners(late)
+
+		collection.items = [...items, late]
+		collection.engine.extensions.batch.clear()
+
+		expect(listeners()).toBe(0)
+	})
+
+	/**
+	 * Без `trackBy` состав пересобирается через очистку: опции уходят и
+	 * возвращаются теми же инстансами. Раньше каждое возвращение добавляло
+	 * опции ещё одну подписку.
+	 */
+	it('возврат в список второй подписки не заводит', () => {
+		const { collection, items } = createSelect(['a'])
+		const late = new TSelectItem({ value: 'z', text: 'Z' })
+		const listeners = watchTextListeners(late)
+		const all = [...items, late]
+
+		collection.items = all
+		collection.items = [...all]
+		collection.items = [...all]
+
+		expect(listeners()).toBe(1)
+	})
+
+	it('выбранная опция, вернувшаяся в список, слушается снова', () => {
+		const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+		collection.items = [...items]
+		items[0].text = 'Другое'
+
+		expect(owner.field.value).toBe('Другое')
+	})
+})
+
+/**
  * `field` — единственный держатель текста и плейсхолдера поля: экземпляр
  * `TInput`, которым владеет Select. Второй копии значения рядом с этим не
  * заводим (см. AGENTS.md, раздел про Select) — писать в `<input>` напрямую
