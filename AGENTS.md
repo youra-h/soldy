@@ -838,7 +838,7 @@ relay и порядок, который расширения выстраива�
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/item.extension.ts         closable = item ?? parent
+    item/item.extension.ts         closable = !disabled && (item ?? parent)
   content/     связка «таб ↔ панель»
     content.extension.ts
     item/item.extension.ts         tabAria и panelAria

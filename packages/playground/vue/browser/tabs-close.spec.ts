@@ -18,7 +18,10 @@ import { Tabs, TabsItem } from '@soldy/ui-vue'
 
 import '@soldy/theme-oren'
 
-/** Табы с крестиком: активный, обычный и выключенный. */
+/**
+ * Набор с крестиком: активный, обычный и выключенный. У выключенного крестика
+ * нет — его не закрыть (см. `ui/vue/__tests__/tabs-close.spec.ts`).
+ */
 const harness = (tabs: Record<string, unknown>, dir: 'ltr' | 'rtl' = 'ltr') =>
 	defineComponent({
 		render() {
@@ -187,14 +190,26 @@ describe('таб покрывает крестик', () => {
 })
 
 describe('прозрачность крестика — прозрачность строки', () => {
-	it('у неактивного, активного и выключенного таба', () => {
+	it('у неактивного и активного таба', () => {
 		render(harness({}))
 
-		for (const value of ['a', 'b', 'c'] as const) {
+		for (const value of ['a', 'b'] as const) {
 			const { item, row, close } = tab(value)
 
 			expect(visibleOpacity(close, item), value).toBeCloseTo(visibleOpacity(row, item), 2)
 		}
+	})
+
+	/** Сравнивать бледность не с чем: выключенный таб не закрывается. */
+	it('у выключенного таба крестика нет', () => {
+		render(harness({}))
+
+		const archive = [...document.querySelectorAll('.s-tabs-item')].find(
+			(item) => item.querySelector('[role="tab"]')?.textContent?.trim() === 'Архив',
+		)
+
+		expect(archive).toBeDefined()
+		expect(archive?.querySelector('.s-tabs-item__close')).toBeNull()
 	})
 
 	it('наведение на крестик проявляет и строку таба', async () => {

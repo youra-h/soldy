@@ -71,16 +71,6 @@ export default class TTabsItem<
 		// добавлении таба. `aria-selected` — тоже не отсюда: его пишет
 		// TTabsExtension по событию активации.
 		this._aria.add('role', 'tab')
-
-		this.events.on('change:disabled', () => {
-			// Если таб стал disabled, убираем возможность закрывать его
-			if (this.disabled) {
-				this._states.closable.value = false
-			} else {
-				// Если таб стал enabled, восстанавливаем closable в исходное значение (или дефолтное)
-				this._states.closable.value = customProps.closable ?? ctor.defaultValues.closable
-			}
-		})
 	}
 
 	/**
@@ -112,12 +102,20 @@ export default class TTabsItem<
 		this._states.text.value = value
 	}
 
+	/**
+	 * Своё значение таба, `undefined` — наследовать от владельца.
+	 *
+	 * `disabled` его не трогает: правило «выключенный таб не закрывается»
+	 * выводит item-адаптер (`TTabsItemExtension.closable`). Раньше оно было
+	 * подпиской на `change:disabled`, которая переписывала это значение, — и
+	 * у таба, выключенного со старта, не срабатывала вовсе: события нет.
+	 */
 	get closable(): boolean | undefined {
 		return this._states.closable.value
 	}
 
 	set closable(value: boolean | undefined) {
-		if (this._states.closable.rawValue === value || this.disabled) return
+		if (this._states.closable.rawValue === value) return
 
 		this._states.closable.value = value
 	}

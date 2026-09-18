@@ -6,8 +6,8 @@ import type { ITabsExtension } from '../types'
 /**
  * TTabsItemExtension — stateless-делегат элемента таба.
  *
- * Предоставляет closable, резолвя его из элемента (приоритет) или
- * родительского расширения (fallback на TTabs.closable).
+ * Предоставляет closable: выключенный таб не закрывается, иначе значение
+ * элемента (приоритет) или родительского расширения (fallback на TTabs.closable).
  *
  * @template TItem   — тип элемента (ITabsItem или наследник)
  * @template TParent — тип родительского расширения (ITabsExtension или наследник)
@@ -23,15 +23,27 @@ export class TTabsItemExtension<
 		super(item, parent)
 
 		this.events.relay(parent.events, ['change:closable'])
-		this.events.relay(item.events, ['change:closable'])
+		this.events.relay(item.events, [
+			'change:closable',
+			// `disabled` входит в итог `closable` — см. геттер
+			{ from: 'change:disabled', as: 'change:closable' },
+		])
 	}
 
 	/**
 	 * Может ли таб быть закрыт.
-	 * Явное значение элемента > глобальное значение из расширения.
+	 *
+	 * Выключенный таб не закрывается. Правило выводится здесь, а не пишется в
+	 * собственный `closable` элемента, поэтому не зависит от того, как таб
+	 * пришёл к «выключен»: со старта, позже или вместе с набором. Итог
+	 * `disabled` уже сочетает своё значение таба и владельца
+	 * (`bindDisabledToOwner`), и `change:disabled` приходит на смену итога.
+	 *
+	 * У включённого — явное значение элемента > глобальное значение из
+	 * расширения.
 	 */
 	get closable(): boolean {
-		return this._item.closable ?? this._parent.closable
+		return !this._item.disabled && (this._item.closable ?? this._parent.closable)
 	}
 
 	/**
