@@ -6,105 +6,112 @@ import { findAvailable } from '../catalog'
 import ScenarioBlock from '../components/ScenarioBlock.vue'
 import { useScenarios } from '../composables/useScenarios'
 
-/** `topic` нет — у адаптера нет ни одной темы, и `/tests` показывает пустое состояние. */
-const props = defineProps<{ topic?: string }>()
+/**
+ * Страница одного компонента в одной теме: `/tests/<тема>/<компонент>`.
+ *
+ * Без `topic` — у адаптера нет ни одной темы, и `/tests` показывает пустое
+ * состояние.
+ */
+const props = defineProps<{ topic?: string; component?: string }>()
 
 const bench = useScenarios()
 
 const topic = computed(() => bench.topics.find((candidate) => candidate.id === props.topic))
+const entry = computed(() => (props.component ? findAvailable(props.component) : undefined))
 
-function scenariosOf(id: string | undefined): readonly TScenario[] {
-	return bench.scenarios.filter((scenario) => scenario.topic === id)
+function scenariosOf(topicId?: string, componentId?: string): readonly TScenario[] {
+	return bench.scenarios.filter(
+		(scenario) => scenario.topic === topicId && scenario.component === componentId,
+	)
 }
 
-const scenarios = computed(() => scenariosOf(props.topic))
+const scenarios = computed(() => scenariosOf(props.topic, props.component))
 
 /**
- * Блоки темы — по компонентам, в порядке реестра сценариев: тема одна, а
- * компонентов в ней много, и искать глазами «что там у Select» проще по
- * заголовку, чем по списку вперемешку.
+ * Автоматические сверху, ручные снизу: первые запускаются пачкой и читаются
+ * по итогу, вторые проходят по одному, по шагам своего блока.
  */
-const groups = computed(() => {
-	const byComponent = new Map<string, TScenario[]>()
+const autos = computed(() => scenarios.value.filter((scenario) => scenario.kind === 'auto'))
+const manuals = computed(() => scenarios.value.filter((scenario) => scenario.kind === 'manual'))
 
-	for (const scenario of scenarios.value) {
-		const group = byComponent.get(scenario.component) ?? []
+const autoSummary = computed(() => summarize(autos.value, bench.states.value))
+const manualSummary = computed(() => summarize(manuals.value, bench.states.value))
 
-		group.push(scenario)
-		byComponent.set(scenario.component, group)
-	}
-
-	return [...byComponent].map(([id, list]) => ({
-		id,
-		label: findAvailable(id)?.label ?? id,
-		scenarios: list,
-	}))
-})
-
-const summary = computed(() => summarize(scenarios.value, bench.states.value))
-
-function runAll(): void {
-	void bench.runner.runAll(scenarios.value.map((scenario) => scenario.id))
+function runAuto(): void {
+	void bench.runner.runAuto(autos.value.map((scenario) => scenario.id))
 }
 
 /**
- * Уход с темы — на другую тему или на страницу свойств — снимает её сцены.
- * Незаконченные прогоны отменяются и возвращаются в «не запускался»:
- * ждать человека на странице, которой он не видит, бессмысленно. Итоги
- * законченных остаются.
+ * Уход со страницы — на другой компонент, другую тему или страницу свойств
+ * — снимает её сцены. Незаконченные прогоны отменяются и возвращаются в «не
+ * запускался»: ждать человека на странице, которой он не видит, бессмысленно.
+ * Итоги законченных остаются.
  */
-function release(id: string | undefined): void {
-	bench.runner.release(scenariosOf(id).map((scenario) => scenario.id))
+function release(topicId?: string, componentId?: string): void {
+	bench.runner.release(scenariosOf(topicId, componentId).map((scenario) => scenario.id))
 }
 
 watch(
-	() => props.topic,
-	(_next, previous) => release(previous),
+	() => [props.topic, props.component] as const,
+	(_next, [previousTopic, previousComponent]) => release(previousTopic, previousComponent),
 )
 
-onUnmounted(() => release(props.topic))
+onUnmounted(() => release(props.topic, props.component))
 </script>
 
 <template>
-	<template v-if="topic">
-		<h1 class="pg__page-title">{{ topic.label }}</h1>
+	<template v-if="topic && entry && scenarios.length">
+		<h1 class="pg__page-title">{{ topic.label }} · {{ entry.label }}</h1>
 		<p class="pg__page-lead">
 			{{ topic.description }} · события идут в консоль браузера с пометкой сценария
 		</p>
 
-		<div class="pg-tests__bar">
-			<Button variant="accent" class="pg-tests__run-all" @action:press="runAll">
-				Запустить все
-			</Button>
+		<section v-if="autos.length" class="pg-tests__section pg-tests__section--auto">
+			<div class="pg-tests__bar">
+				<h2 class="pg-tests__title">Автоматические</h2>
+				<Button
+					variant="accent"
+					size="sm"
+					class="pg-tests__run-all"
+					@action:press="runAuto"
+				>
+					Запустить все
+				</Button>
+				<span class="pg-tests__count">
+					прошли {{ autoSummary.auto.passed }}, упали {{ autoSummary.auto.failed }} из
+					{{ autoSummary.auto.total }}
+				</span>
+				<span v-if="autoSummary.failed" class="pg-badge pg-badge--failed">
+					errors: {{ autoSummary.failed }}
+				</span>
+				<span v-else-if="autoSummary.passed" class="pg-badge pg-badge--passed">✓</span>
+			</div>
 
-			<span class="pg-tests__count">
-				Автоматические: прошли {{ summary.auto.passed }}, упали {{ summary.auto.failed }} из
-				{{ summary.auto.total }}
-			</span>
-			<span v-if="summary.manual.total" class="pg-tests__count">
-				Ручные: прошли {{ summary.manual.passed }}, ждут {{ summary.manual.waiting }}, упали
-				{{ summary.manual.failed }} из {{ summary.manual.total }}
-			</span>
+			<ScenarioBlock v-for="scenario in autos" :key="scenario.id" :scenario="scenario" />
+		</section>
 
-			<span v-if="summary.failed" class="pg-badge pg-badge--failed">
-				errors: {{ summary.failed }}
-			</span>
-			<span v-else-if="summary.passed" class="pg-badge pg-badge--passed" title="Все прошли">
-				✓
-			</span>
-		</div>
+		<section v-if="manuals.length" class="pg-tests__section pg-tests__section--manual">
+			<div class="pg-tests__bar">
+				<h2 class="pg-tests__title">Ручные</h2>
+				<span class="pg-tests__count">
+					прошли {{ manualSummary.manual.passed }}, ждут
+					{{ manualSummary.manual.waiting }}, упали {{ manualSummary.manual.failed }} из
+					{{ manualSummary.manual.total }} · каждый запускается своей кнопкой, шаги — в
+					блоке
+				</span>
+				<span v-if="manualSummary.failed" class="pg-badge pg-badge--failed">
+					errors: {{ manualSummary.failed }}
+				</span>
+				<span v-else-if="manualSummary.passed" class="pg-badge pg-badge--passed">✓</span>
+			</div>
 
-		<template v-for="group in groups" :key="group.id">
-			<h2 class="pg__group">{{ group.label }}</h2>
-			<ScenarioBlock
-				v-for="scenario in group.scenarios"
-				:key="scenario.id"
-				:scenario="scenario"
-			/>
-		</template>
+			<ScenarioBlock v-for="scenario in manuals" :key="scenario.id" :scenario="scenario" />
+		</section>
 	</template>
 
-	<p v-else-if="props.topic" class="pg-empty">Темы «{{ props.topic }}» нет.</p>
+	<p v-else-if="props.topic" class="pg-empty">
+		В теме «{{ props.topic }}» нет сценариев для «{{ props.component ?? '' }}».
+	</p>
 
 	<p v-else class="pg-empty">Сценариев для этого стенда пока нет.</p>
 </template>

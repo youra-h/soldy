@@ -12,12 +12,13 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy/playground-shared'
-import { findAvailable, SCENARIOS, TOPICS } from '../src/catalog'
+import { componentsOf, findAvailable, SCENARIOS, testsPath, TOPICS } from '../src/catalog'
 import { FIXTURES, fixtureOf } from '../src/scenarios/fixtures'
 import { createScenarioBench, SCENARIO_BENCH } from '../src/composables/useScenarios'
 import { router } from '../src/router'
 import TestsPage from '../src/views/TestsPage.vue'
 import AppHeader from '../src/components/AppHeader.vue'
+import TestsSidebar from '../src/components/TestsSidebar.vue'
 
 /**
  * Кнопки страницы слушают DOM с кадра после монтирования: `TElementPlugin`
@@ -72,25 +73,55 @@ describe('каталог сценариев', () => {
 	})
 })
 
-describe('страница темы', () => {
-	it.each(TOPICS.map((topic) => [topic.id] as const))(
-		'%s открывается с блоком на каждый сценарий',
-		async (topic) => {
-			const wrapper = mount(TestsPage, { ...mountOptions, props: { topic } })
+/** Все страницы тестов адаптера: тема × компонент со сценариями в ней. */
+const PAGES = TOPICS.flatMap((topic) =>
+	componentsOf(SCENARIOS, topic.id).map((entry) => [topic.id, entry.id] as const),
+)
 
-			await nextTick()
+describe('страница компонента в теме', () => {
+	it.each(PAGES)('%s/%s открывается с блоком на каждый сценарий', async (topic, component) => {
+		const wrapper = mount(TestsPage, { ...mountOptions, props: { topic, component } })
 
-			const expected = SCENARIOS.filter((scenario) => scenario.topic === topic)
+		await nextTick()
 
-			expect(wrapper.findAll('.pg-scenario')).toHaveLength(expected.length)
-			expect(warnings).toEqual([])
+		const expected = SCENARIOS.filter(
+			(scenario) => scenario.topic === topic && scenario.component === component,
+		)
 
-			wrapper.unmount()
-		},
-	)
+		expect(wrapper.findAll('.pg-scenario')).toHaveLength(expected.length)
+		expect(warnings).toEqual([])
+
+		wrapper.unmount()
+	})
+
+	/** Автоматические запускаются пачкой, ручные — по одному: смешивать их неудобно. */
+	it.each(PAGES)('%s/%s: автоматические сверху, ручные снизу', (topic, component) => {
+		const wrapper = mount(TestsPage, { ...mountOptions, props: { topic, component } })
+		const kindOf = (id: string | undefined) =>
+			SCENARIOS.find((scenario) => scenario.id === id)?.kind
+
+		const auto = wrapper.findAll('.pg-tests__section--auto .pg-scenario')
+		const manual = wrapper.findAll('.pg-tests__section--manual .pg-scenario')
+
+		expect(auto.every((block) => kindOf(block.attributes('data-id')) === 'auto')).toBe(true)
+		expect(manual.every((block) => kindOf(block.attributes('data-id')) === 'manual')).toBe(true)
+		expect(auto.length + manual.length).toBe(wrapper.findAll('.pg-scenario').length)
+
+		// Раздел автоматических, если он есть, — первый
+		if (auto.length) {
+			expect(wrapper.findAll('.pg-tests__section')[0].classes()).toContain(
+				'pg-tests__section--auto',
+			)
+		}
+
+		wrapper.unmount()
+	})
 
 	it('на неизвестную тему отвечает, а не падает', () => {
-		const wrapper = mount(TestsPage, { ...mountOptions, props: { topic: 'нет-такой' } })
+		const wrapper = mount(TestsPage, {
+			...mountOptions,
+			props: { topic: 'нет-такой', component: 'button' },
+		})
 
 		expect(wrapper.find('.pg-empty').exists()).toBe(true)
 
@@ -150,7 +181,7 @@ describe('прогон через хост Vue', () => {
 		const bench = createScenarioBench(scenarios, { timeout: 2000 })
 		const wrapper = mount(TestsPage, {
 			...mountOptions,
-			props: { topic: 'events' },
+			props: { topic: 'events', component: 'button' },
 			global: { ...mountOptions.global, provide: { [SCENARIO_BENCH]: bench } },
 		})
 
@@ -160,19 +191,19 @@ describe('прогон через хост Vue', () => {
 		return { bench, wrapper, block, status }
 	}
 
-	it('«Запустить все»: автоматический проходит, ручные ждут, каждый в своём блоке', async () => {
+	it('«Запустить все» гонит автоматические, ручные не трогает', async () => {
 		const { wrapper, block, status } = setup()
 
 		await rendered()
 		await wrapper.get('.pg-tests__run-all').trigger('click')
 
 		await vi.waitFor(() => expect(status('test/auto')).toBe('passed'))
-		await vi.waitFor(() => expect(status('test/press')).toBe('waiting'))
-		await vi.waitFor(() => expect(status('test/verdict')).toBe('waiting'))
 
+		expect(status('test/press')).toBe('idle')
+		expect(status('test/verdict')).toBe('idle')
 		expect(block('test/auto').findAll('.pg-checks__item--failed')).toHaveLength(0)
 		expect(block('test/auto').findAll('.pg-checks__item')).toHaveLength(3)
-		expect(block('test/press').find('.pg-scenario__scene .s-button').exists()).toBe(true)
+		expect(block('test/press').find('.pg-scenario__scene .s-button').exists()).toBe(false)
 		expect(wrapper.find('.pg-badge--failed').exists()).toBe(false)
 		expect(warnings).toEqual([])
 
@@ -211,7 +242,8 @@ describe('прогон через хост Vue', () => {
 		await nextTick()
 
 		expect(status('test/verdict')).toBe('failed')
-		expect(wrapper.get('.pg-badge--failed').text()).toBe('errors: 1')
+		expect(wrapper.get('.pg-tests__section--manual .pg-badge--failed').text()).toBe('errors: 1')
+		expect(wrapper.find('.pg-tests__section--auto .pg-badge--failed').exists()).toBe(false)
 
 		wrapper.unmount()
 	})
@@ -243,7 +275,7 @@ describe('ссылка в шапке', () => {
 		await link().trigger('click')
 		await flushPromises()
 
-		expect(router.currentRoute.value.path).toBe(`/tests/${TOPICS[0].id}`)
+		expect(router.currentRoute.value.path).toBe(testsPath(SCENARIOS))
 		expect(link().text()).toBe('Свойства')
 
 		await link().trigger('click')
@@ -252,5 +284,59 @@ describe('ссылка в шапке', () => {
 		expect(router.currentRoute.value.path).toBe('/component/button')
 
 		wrapper.unmount()
+	})
+})
+
+describe('меню страницы тестов', () => {
+	const lists = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('.pg__menu')
+
+	it('рядом с темами — компоненты темы, каждый своей страницей', async () => {
+		const [topic] = TOPICS
+		const [first] = componentsOf(SCENARIOS, topic.id)
+
+		await router.push(`/tests/${topic.id}/${first.id}`)
+
+		const wrapper = mount(TestsSidebar, mountOptions)
+
+		await rendered()
+
+		const [topics, components] = lists(wrapper).map((list) =>
+			list.findAll('.s-list-box-item').map((item) => item.text()),
+		)
+
+		expect(topics).toEqual(TOPICS.map((item) => item.label))
+		expect(components).toEqual(componentsOf(SCENARIOS, topic.id).map((entry) => entry.label))
+
+		wrapper.unmount()
+	})
+
+	/** Проверял Button в Events — в Slots открывается тоже Button, а не первый в списке. */
+	it('смена темы оставляет компонент, если в новой теме он есть', async () => {
+		const [from, to] = TOPICS
+		const shared = componentsOf(SCENARIOS, from.id).find((entry) =>
+			componentsOf(SCENARIOS, to.id).some((candidate) => candidate.id === entry.id),
+		)
+
+		if (!shared) throw new Error('нет компонента, общего для двух тем')
+
+		await router.push(`/tests/${from.id}/${shared.id}`)
+
+		const wrapper = mount(TestsSidebar, mountOptions)
+
+		await rendered()
+		await lists(wrapper)[0].findAll('.s-list-box-item .s-button')[1].trigger('click')
+		await flushPromises()
+
+		expect(router.currentRoute.value.path).toBe(`/tests/${to.id}/${shared.id}`)
+
+		wrapper.unmount()
+	})
+
+	it('адрес темы без компонента ведёт на её первый компонент', async () => {
+		const [topic] = TOPICS
+
+		await router.push(`/tests/${topic.id}`)
+
+		expect(router.currentRoute.value.path).toBe(testsPath(SCENARIOS, topic.id))
 	})
 })

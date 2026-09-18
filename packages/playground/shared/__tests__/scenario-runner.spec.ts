@@ -289,8 +289,8 @@ describe('перезапуск', () => {
 	})
 })
 
-describe('runAll', () => {
-	it('гонит автоматические строго по очереди, ручные переводит в waiting', async () => {
+describe('runAuto', () => {
+	it('гонит автоматические строго по очереди, ручные не запускает', async () => {
 		const order: string[] = []
 		const step =
 			(id: string) =>
@@ -302,12 +302,12 @@ describe('runAll', () => {
 
 		const { runner } = setup([auto('a', step('a')), manual('m'), auto('b', step('b'))])
 
-		await runner.runAll(['a', 'm', 'b'])
+		await runner.runAuto(['a', 'm', 'b'])
 
 		expect(order).toEqual(['a:начало', 'a:конец', 'b:начало', 'b:конец'])
 		expect(runner.state('a').status).toBe('passed')
 		expect(runner.state('b').status).toBe('passed')
-		expect(runner.state('m').status).toBe('waiting')
+		expect(runner.state('m').status).toBe('idle')
 	})
 })
 
@@ -367,7 +367,7 @@ describe('release', () => {
 		expect(instances.every((instance) => instance.destroy.mock.calls.length === 1)).toBe(true)
 	})
 
-	it('обрывает runAll: следующие автоматические не стартуют', async () => {
+	it('обрывает runAuto: следующие автоматические не стартуют', async () => {
 		const started: string[] = []
 		let finish = () => {}
 		const { runner } = setup([
@@ -378,7 +378,7 @@ describe('release', () => {
 			auto('b', () => void started.push('b')),
 		])
 
-		const all = runner.runAll(['a', 'b'])
+		const all = runner.runAuto(['a', 'b'])
 
 		await vi.waitFor(() => expect(started).toEqual(['a']))
 		runner.release(['a', 'b'])

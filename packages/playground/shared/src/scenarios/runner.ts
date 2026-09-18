@@ -79,16 +79,6 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 	).finally(() => clearTimeout(timer))
 }
 
-/** Промис с наружным `resolve`: `Promise.withResolvers` в целевой lib ещё нет. */
-function deferred(): { promise: Promise<void>; resolve: () => void } {
-	let resolve: () => void = () => {}
-	const promise = new Promise<void>((done) => {
-		resolve = done
-	})
-
-	return { promise, resolve }
-}
-
 function defaultCreate(scenario: TScenario): TInstance {
 	const entry = findComponent(scenario.component)
 
@@ -144,6 +134,8 @@ export function summarize(
  * - Перезапуск отменяет прежний прогон, снимает его сцену, уничтожает
  *   экземпляр и заводит новый журнал. Запоздавший результат отменённого
  *   прогона статус не меняет.
+ * - Автоматические запускаются и пачкой (`runAuto`), ручные — только по
+ *   одному.
  * - Автоматический сценарий обязан уложиться в `timeout` целиком — иначе
  *   сломанный сценарий «выполнялся» бы вечно. Ручной ждёт человека сколько
  *   угодно.
@@ -161,7 +153,7 @@ export class TScenarioRunner {
 	private readonly _runs = new Map<string, TRun>()
 	private readonly _listeners = new Set<() => void>()
 
-	/** Номер текущего `runAll`: новый запуск или `release` обрывают прежний. */
+	/** Номер текущего `runAuto`: новый запуск или `release` обрывают прежний. */
 	private _batch = 0
 
 	constructor(options: TScenarioRunnerOptions) {
@@ -190,19 +182,39 @@ export class TScenarioRunner {
 
 	/** Запустить сценарий. Разрешается, когда прогон закончен или отменён. */
 	run(id: string): Promise<void> {
-		return this._start(id).done
+		const scenario = this._scenario(id)
+		const previous = this._runs.get(id)
+		const run: TRun = {
+			controller: new AbortController(),
+			journal: new TScenarioJournal(id, this._print),
+			instance: null,
+			settled: false,
+		}
+
+		this._runs.set(id, run)
+
+		if (previous && !previous.settled) this._settle(previous)
+
+		this._states.set(id, { status: 'running', checks: [] })
+		this._emit()
+
+		return this._execute(scenario, run, previous)
 	}
 
 	/**
-	 * Автоматические — строго по очереди: сцены у блоков свои, но фокус и
-	 * консоль на странице одни, и параллельные прогоны мешали бы друг другу.
-	 * Потом ручные — все сразу: они ждут человека, и разрешается `runAll`,
-	 * когда каждый из них готов и ждёт.
+	 * Все автоматические из списка — строго по очереди: сцены у блоков свои,
+	 * но фокус и консоль на странице одни, и параллельные прогоны мешали бы
+	 * друг другу.
+	 *
+	 * Ручные здесь не запускаются, даже если они в списке: человек проходит их
+	 * по одному, по шагам своего блока, и пачка ждущих сразу сцен ему только
+	 * мешает.
 	 */
-	async runAll(ids: readonly string[]): Promise<void> {
+	async runAuto(ids: readonly string[]): Promise<void> {
 		const batch = ++this._batch
-		const scenarios = ids.map((id) => this._scenario(id))
-		const autos = scenarios.filter((scenario) => scenario.kind === 'auto')
+		const autos = ids
+			.map((id) => this._scenario(id))
+			.filter((scenario) => scenario.kind === 'auto')
 
 		// Прежние итоги сбрасываются сразу: сводка во время прогона иначе
 		// показывала бы «всё прошло» по результатам прошлого раза
@@ -219,14 +231,6 @@ export class TScenarioRunner {
 
 			await this.run(scenario.id)
 		}
-
-		if (batch !== this._batch) return
-
-		await Promise.all(
-			scenarios
-				.filter((scenario) => scenario.kind === 'manual')
-				.map((scenario) => this._start(scenario.id).started),
-		)
 	}
 
 	/**
@@ -334,34 +338,10 @@ export class TScenarioRunner {
 		)
 	}
 
-	private _start(id: string): { started: Promise<void>; done: Promise<void> } {
-		const scenario = this._scenario(id)
-		const previous = this._runs.get(id)
-		const run: TRun = {
-			controller: new AbortController(),
-			journal: new TScenarioJournal(id, this._print),
-			instance: null,
-			settled: false,
-		}
-
-		this._runs.set(id, run)
-
-		if (previous && !previous.settled) this._settle(previous)
-
-		this._states.set(id, { status: 'running', checks: [] })
-		this._emit()
-
-		const started = deferred()
-		const done = this._execute(scenario, run, previous, started.resolve)
-
-		return { started: started.promise, done }
-	}
-
 	private async _execute(
 		scenario: TScenario,
 		run: TRun,
 		previous: TRun | undefined,
-		markStarted: () => void,
 	): Promise<void> {
 		const { id } = scenario
 		const { signal } = run.controller
@@ -403,8 +383,6 @@ export class TScenarioRunner {
 				this._print(`[${id}] ⏳ ждёт человека`)
 			}
 
-			markStarted()
-
 			const ctx = this._context(id, run, run.instance, scene, checks)
 
 			// Ручной без `run` ждёт только отметки человека — она его и отменит
@@ -422,7 +400,6 @@ export class TScenarioRunner {
 			})
 		} finally {
 			clearTimeout(timer)
-			markStarted()
 
 			// Конец прогона снимает и нативные слушатели, повешенные с `{ signal }`
 			if (!signal.aborted) run.controller.abort(new Error('прогон закончен'))

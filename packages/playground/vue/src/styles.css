@@ -37,10 +37,11 @@ a {
 
 /* ─── Каркас ─────────────────────────────────────────────── */
 
+/* Ширину колонки задаёт сама панель: у страницы тестов в ней два меню */
 .pg {
 	display: grid;
 	grid-template-rows: auto 1fr;
-	grid-template-columns: 260px 1fr;
+	grid-template-columns: auto 1fr;
 	grid-template-areas:
 		'header header'
 		'sidebar main';
@@ -107,6 +108,7 @@ a {
 
 .pg__sidebar {
 	grid-area: sidebar;
+	width: 260px;
 	overflow-y: auto;
 	padding: 12px;
 	border-right: 1px solid var(--s-neutral-200);
@@ -118,6 +120,21 @@ a {
 .pg__menu {
 	width: 100%;
 	max-width: none;
+}
+
+/* Страница тестов: темы и компоненты темы — двумя колонками */
+.pg__sidebar--tests {
+	display: flex;
+	gap: 8px;
+	width: auto;
+}
+
+.pg__sidebar-column:first-child {
+	width: 130px;
+}
+
+.pg__sidebar-column:last-child {
+	width: 170px;
 }
 
 .pg__sidebar-title {
@@ -326,13 +343,29 @@ a {
 
 /* ─── Страница тестов ────────────────────────────────────── */
 
-/* Запуск всех и сводка темы — одной строкой над блоками */
+/* Разделы страницы: автоматические сверху, ручные снизу */
+.pg-tests__section + .pg-tests__section {
+	margin-top: 32px;
+	padding-top: 16px;
+	border-top: 1px solid var(--s-neutral-200);
+}
+
+/* Заголовок раздела, запуск и сводка — одной строкой над блоками */
 .pg-tests__bar {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
 	gap: 8px 16px;
-	margin-bottom: 24px;
+	margin-bottom: 16px;
+}
+
+.pg-tests__title {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--s-neutral-500);
 }
 
 .pg-tests__count {

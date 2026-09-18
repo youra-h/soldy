@@ -2,6 +2,7 @@ import {
 	COMPONENTS,
 	SCENARIOS as SCENARIO_REGISTRY,
 	TOPICS as TOPIC_REGISTRY,
+	type TComponentEntry,
 	type TScenario,
 	type TTopic,
 } from '@soldy/playground-shared'
@@ -61,3 +62,36 @@ export function topicsOf(scenarios: readonly TScenario[]): readonly TTopic[] {
 }
 
 export const TOPICS = topicsOf(SCENARIOS)
+
+/**
+ * Компоненты, у которых в теме есть сценарии, — по алфавиту, как меню
+ * страницы свойств. Каждый — своя страница: сценариев у компонента десятки,
+ * и все компоненты темы на одной странице искать глазами было бы дольше, чем
+ * открыть нужный.
+ */
+export function componentsOf(
+	scenarios: readonly TScenario[],
+	topic: string,
+): readonly TComponentEntry[] {
+	return AVAILABLE.filter((entry) =>
+		scenarios.some((scenario) => scenario.topic === topic && scenario.component === entry.id),
+	).sort(byLabel)
+}
+
+/**
+ * Адрес страницы тестов. Компонент сохраняется при смене темы, если в новой
+ * теме у него есть сценарии, — иначе первый по алфавиту. Нет ни одной темы
+ * со сценариями — `undefined`.
+ */
+export function testsPath(
+	scenarios: readonly TScenario[],
+	topic: string | undefined = topicsOf(scenarios)[0]?.id,
+	component?: string,
+): string | undefined {
+	if (!topic) return undefined
+
+	const components = componentsOf(scenarios, topic)
+	const target = components.find((entry) => entry.id === component) ?? components[0]
+
+	return target ? `/tests/${topic}/${target.id}` : undefined
+}
