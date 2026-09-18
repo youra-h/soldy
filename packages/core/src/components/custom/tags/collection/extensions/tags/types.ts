@@ -1,5 +1,4 @@
 import type { ITags } from '../../../types'
-import type { TTagsView } from '../../../types'
 import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
@@ -20,9 +19,6 @@ export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
 	/** Глобальный closable с инстанса TTags. */
 	readonly closable: boolean
 
-	/** Внешний вид тегов — со набора целиком, как `view` у `TListBoxExtension`. */
-	readonly view: TTagsView | undefined
-
 	/** Закрыть тег (удалить элемент из коллекции). */
 	closeTag(item: TItem): boolean
 }
@@ -42,8 +38,6 @@ export interface ITagsExtensionOptions<
 export type TTagsExtensionEvents = {
 	'item:close': (item: ITagsItem) => void
 	'change:closable': (value: boolean) => void
-	/** change:view */
-	'change:view': (value: TTagsView | undefined) => void
 }
 
 export type TTagsExtensions<TItem extends ITagsItem> = {

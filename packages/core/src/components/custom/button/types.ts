@@ -9,9 +9,9 @@ import type { TComponentVariant, TThemeRegistry } from '../../../common'
 /**
  * Реестр видов кнопки. Значения объявляет тема (см. `TThemeRegistry`).
  *
- * Один реестр на все строки, которые рисует `Button`: `view` у ListBox,
- * Accordion и Tags — псевдоним `TButtonView`, потому что вид списка и есть вид
- * его строк.
+ * Один реестр на всё, что выглядит кнопкой: `view` у ListBox и Accordion —
+ * псевдоним `TButtonView`, потому что вид списка и есть вид его строк, у Tags —
+ * потому что пилюля тега и есть вид кнопки.
  */
 export interface IButtonViews extends TThemeRegistry {}
 

@@ -1,6 +1,5 @@
-import { defineComponent, defineDescriptor, defineType } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TTagsCollectionFacade, TTagsItemCollectionFacade } from '@soldy/core'
-import type { TButtonView } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'
 
 export const TagsCollectionDescriptor = defineDescriptor(() =>
@@ -41,15 +40,6 @@ export const TagsCollectionItemDescriptor = defineDescriptor(() =>
 					protected: true,
 					get: (item: TTagsItemCollectionFacade) => item.closable,
 					triggers: ['change:closable'],
-				},
-				/**
-				 * Внешний вид тега — со набора целиком, только на чтение (как `view` у
-				 * ListBox): меняется на инстансе Tags, а не на теге.
-				 */
-				view: {
-					type: defineType<TButtonView>(String),
-					protected: true,
-					triggers: ['change:view'],
 				},
 			},
 		},
