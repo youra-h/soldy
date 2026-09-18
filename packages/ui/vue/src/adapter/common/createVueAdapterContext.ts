@@ -5,6 +5,8 @@ import {
 	type IAdapterContextConfig,
 	type IAdapterContextOptions,
 	type IComponentDescriptor,
+	type IPluginDefinition,
+	type TPluginOutputsFrom,
 } from '@soldy/setup'
 
 /**
@@ -30,12 +32,18 @@ function stripTopLevelProxies<T extends object>(value: T): T {
  * Цепочка `.use(...)` остаётся на месте вызова, как и раньше — набора
  * расширений по умолчанию обёртка не собирает (см. AGENTS.md, «Vue collection
  * setup»).
+ *
+ * Тип контекста — тот же, что у `createAdapterContext`: инстанс и выходы
+ * плагинов выводятся из дескриптора.
  */
-export function createVueAdapterContext<TInstance extends object>(
-	descriptor: IComponentDescriptor<any, any, any, any, TInstance>,
+export function createVueAdapterContext<
+	TInstance extends object,
+	TPlugins extends readonly IPluginDefinition[] = readonly [],
+>(
+	descriptor: IComponentDescriptor<any, any, TPlugins, any, TInstance>,
 	options: IVueAdapterContextOptions<TInstance>,
 	config?: IVueAdapterContextConfig,
-): IAdapterContext<TInstance> {
+): IAdapterContext<TInstance, TPluginOutputsFrom<TPlugins>> {
 	return createAdapterContext(
 		descriptor,
 		{

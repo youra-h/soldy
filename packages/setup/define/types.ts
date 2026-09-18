@@ -25,15 +25,25 @@ export type TComponentCtor<TInstance extends object = object> = (new (
 	readonly defaultValues?: Readonly<Record<string, unknown>>
 }
 
-/** Определение плагина в составе дескриптора. */
+/**
+ * Определение плагина в составе дескриптора.
+ *
+ * Три фантомных параметра — типы contribution без неймспейса: карта событий,
+ * входы (незащищённые пропсы, их пишет потребитель) и выходы (защищённые, их
+ * вычисляет плагин, а разметка только читает). Выход — геттер плагина, как
+ * выход компонента — геттер инстанса, поэтому его тип — `Pick` класса
+ * плагина (`Pick<TDismissPlugin, 'ownerAttribute'>`), а не второй интерфейс.
+ */
 export interface IPluginDefinition<
 	N extends string | undefined = string | undefined,
-	// Вытаскиваются через infer в TPluginEventsFrom/TPluginPropsFrom — линтер
-	// сквозь infer их не видит.
+	// Вытаскиваются через infer в TPluginEventsFrom/TPluginPropsFrom/
+	// TPluginOutputsFrom — линтер сквозь infer их не видит.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TEvents extends object = object,
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	TProps extends object = object,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	TOutputs extends object = object,
 > {
 	ctor: IPluginConstructor<any, any, any>
 	/** Нормализованные props из contribution */

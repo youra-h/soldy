@@ -20,18 +20,22 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { ReactProfile } from '../common'
 
-export type TBinding<TInstance = object, TProps extends object = object> = {
+export type TBinding<
+	TInstance = object,
+	TProps extends object = object,
+	TOutputs extends object = object,
+> = {
 	ctrl: TInstance
 	plugins: IPluginBundle | null
 	ref: (el: Element | null) => void
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
-	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
-	state: TInstanceState<TInstance>
+	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
+	state: TAdapterState<TInstance, TOutputs>
 }
 
 type TState = Readonly<Record<string, unknown>>
@@ -44,10 +48,15 @@ function reducer(prev: TState, action: TAction): TState {
 	return { ...prev, [action.name]: action.value }
 }
 
-export function useAdapter<TProps extends object, TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
+/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
+export function useAdapter<
+	TProps extends object,
+	TInstance extends object = object,
+	TOutputs extends object = object,
+>(
+	adapter: IAdapterContext<TInstance, TOutputs>,
 	props: TProps,
-): TBinding<TInstance, TProps> {
+): TBinding<TInstance, TProps, TOutputs> {
 	const binding = useMemo(() => bindComponent(adapter, ReactProfile), [adapter])
 	const [state, dispatch] = useReducer(reducer, undefined, () => binding.state())
 
@@ -91,6 +100,6 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 		plugins: adapter.bundle,
 		ref,
 		forwardProps,
-		state: toInstanceState<TInstance>(state),
+		state: toInstanceState<TInstance, TOutputs>(state),
 	}
 }

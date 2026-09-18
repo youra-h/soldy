@@ -1,4 +1,4 @@
-import { IconDescriptor } from '@soldy/setup'
+import { IconDescriptor, type DescriptorPluginOutputs } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseIcon, { type IconProps } from './base.component'
 import { type IIconProps, type IIcon } from '@soldy/core'
@@ -12,6 +12,11 @@ export default {
 			props,
 		})
 
-		return useAdapter<IIconProps, IIcon>(adapter, props, emit)
+		// Выход `layout_styles` шаблон кладёт в `:style` корня
+		return useAdapter<IIconProps, IIcon, DescriptorPluginOutputs<typeof IconDescriptor>>(
+			adapter,
+			props,
+			emit,
+		)
 	},
 }

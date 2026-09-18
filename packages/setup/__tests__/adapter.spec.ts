@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, expectTypeOf, vi } from 'vitest'
 import { createEngine } from '@soldy/core'
 import type { TCollectionEngine } from '@soldy/core'
-import { TPluginBundle, TDragPlugin, TElementPlugin } from '@soldy/plugins'
+import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy/plugins'
 import {
+	bindComponent,
 	createAdapterContext,
 	defineComponent,
+	toInstanceState,
 	ButtonDescriptor,
 	DragAndDropDescriptor,
+	FrameDescriptor,
 	TElevator,
 	TCollectionExtension,
 	TDragAndDropExtension,
@@ -19,8 +22,9 @@ import {
 	type IElevatorKey,
 	type TElevatorFactory,
 	type IAdapterContext,
+	type TAdapterState,
 } from '@soldy/setup'
-import { required } from './helpers'
+import { CallbackProfile, required } from './helpers'
 
 /** Простая in-memory реализация фабрики элеваторов для тестов. */
 function createElevatorFactory() {
@@ -162,6 +166,32 @@ describe('createAdapterContext', () => {
 
 		expect(destroyed).toBe(true)
 		expect(ctx.get(MyExt)).toBeUndefined()
+	})
+
+	it('тип контекста несёт выходы плагинов дескриптора', () => {
+		// Как `useAdapter` React, Solid и Svelte: инстанс и выходы выводятся из
+		// типа контекста, дженерики не передаются. Проверяет это «Типы — Setup»
+		const stateOf = <TInstance extends object, TOutputs extends object>(
+			adapter: IAdapterContext<TInstance, TOutputs>,
+		): TAdapterState<TInstance, TOutputs> =>
+			toInstanceState<TInstance, TOutputs>(bindComponent(adapter, CallbackProfile).state())
+
+		const frame = createAdapterContext(FrameDescriptor(), {})
+		const state = stateOf(frame)
+
+		expectTypeOf(state.layout_styles).toEqualTypeOf<TFrameLayoutPlugin['styles'] | undefined>()
+		expect(state.layout_styles).toEqual(
+			required(frame.bundle?.get(TFrameLayoutPlugin), 'TFrameLayoutPlugin').styles,
+		)
+
+		// Выходы — свои у каждого дескриптора: у Button их нет
+		const button = createAdapterContext(ButtonDescriptor(), {})
+
+		// @ts-expect-error — `layout_styles` не выход ни одного плагина Button
+		expect(stateOf(button).layout_styles).toBeUndefined()
+
+		frame.destroy()
+		button.destroy()
 	})
 })
 

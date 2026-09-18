@@ -62,7 +62,22 @@ export interface IAdapterContextConfig {
 	bundle?: IPluginBundle | null
 }
 
-export interface IAdapterContext<TInstance extends object = object> {
+/**
+ * Контекст адаптера: собранный компонент и его расширения.
+ *
+ * `TOutputs` — выходы плагинов дескриптора (`DescriptorPluginOutputs`),
+ * фантомный параметр: в теле он не упоминается. Его выводит из состава
+ * плагинов дескриптора `createAdapterContext`, а `useAdapter` React, Solid и
+ * Svelte берёт из типа контекста, как тип инстанса, и отдаёт в типе состояния
+ * (`TAdapterState`).
+ */
+export interface IAdapterContext<
+	TInstance extends object = object,
+	// Выводится из аргумента `useAdapter` адаптеров, в теле его нет — линтер
+	// считает его неиспользованным.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	TOutputs extends object = object,
+> {
 	readonly instance: TInstance
 	readonly bundle: IPluginBundle | null
 	readonly accessor: TAccessor

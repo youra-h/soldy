@@ -9,7 +9,7 @@ import type { TEditablePluginEvents } from '@soldy/plugins'
  * клавиатура, чтобы переиспользовать её `highlightByText`.
  */
 export const SelectEditablePluginDescriptor = () =>
-	definePlugin<'editable', TEditablePluginEvents>({
+	definePlugin<'editable', TEditablePluginEvents, object, Pick<TEditablePlugin, 'query'>>({
 		ctor: TEditablePlugin,
 		namespace: 'editable',
 		/**

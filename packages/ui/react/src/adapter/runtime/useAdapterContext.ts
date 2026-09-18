@@ -7,15 +7,18 @@
  * же объект. Держим через `useRef`, а не `useMemo`: React вправе сбросить кэш
  * `useMemo` и пересоздать значение, а `useAdapter` уничтожит старый adapter-context
  * по зависимости `[adapter]` — второй адаптер за жизнь компонента не предусмотрен.
+ *
+ * Выходы плагинов из типа контекста хук сохраняет: по ним `useAdapter` типизирует
+ * `state`, и потерянные здесь они не дошли бы до разметки.
  */
 
 import { useRef } from 'react'
 import type { IAdapterContext } from '@soldy/setup'
 
-export function useAdapterContext<TInstance extends object>(
-	factory: () => IAdapterContext<TInstance>,
-): IAdapterContext<TInstance> {
-	const ref = useRef<IAdapterContext<TInstance> | null>(null)
+export function useAdapterContext<TInstance extends object, TOutputs extends object = object>(
+	factory: () => IAdapterContext<TInstance, TOutputs>,
+): IAdapterContext<TInstance, TOutputs> {
+	const ref = useRef<IAdapterContext<TInstance, TOutputs> | null>(null)
 
 	if (!ref.current) {
 		ref.current = factory()

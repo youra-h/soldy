@@ -1,5 +1,5 @@
 /**
- * Сторож: состав пропсов в рантайме и в типах совпадает.
+ * Сторож: состав пропсов и выходов плагинов в рантайме и в типах совпадает.
  *
  * Состав пропсов компонента записан дважды. Рантайм собирает дескриптор:
  * `getProps()` — contribution самого компонента, его предков и плагинов. Типы
@@ -10,15 +10,26 @@
  * `variant` у Skeleton был только в типе — компилятор его пропускал, и в
  * разметке он молча становился атрибутом.
  *
- * Сверка в обе стороны, по каждому дескриптору из экспорта:
- * - рантайм — незащищённые пропсы `getProps()` под именем из
- *   `underscorePropNaming`. Защищённые — выходы (`classes`, `layout_styles`),
- *   в тип пропсов они не входят;
- * - тип — ключи `DescriptorAllProps<typeof XDescriptor>`. Их читает type
- *   checker TypeScript по программе с опциями `packages/setup/tsconfig.json`,
- *   корень которой — входной файл в памяти: по псевдониму типа на дескриптор.
- *   Индексная сигнатура тоже ключ: `Record<string, unknown>` принимает любой
- *   проп, и сверять с ним нечего.
+ * Выходы плагинов — защищённые пропсы, которые плагин вычисляет, а разметка
+ * только читает, — записаны так же дважды: в contribution плагина и в
+ * четвёртом аргументе `definePlugin`, откуда их собирает
+ * `DescriptorPluginOutputs`. До него выход без типа читал шаблон Frame
+ * (`layout_styles`), а `dismiss_ownerAttribute` у Select описывал рукописный
+ * тип, который с плагином не сверялся никем.
+ *
+ * Две сверки в обе стороны, по каждому дескриптору из экспорта:
+ * - пропсы: рантайм — незащищённые пропсы `getProps()` под именем из
+ *   `underscorePropNaming`, тип — ключи `DescriptorAllProps<typeof XDescriptor>`.
+ *   Защищённые в тип пропсов не входят: свои выходы компонента (`classes`,
+ *   `aria`) типизирует инстанс, выходы плагинов сверяются отдельно;
+ * - выходы плагинов: рантайм — защищённые пропсы из `props` определений
+ *   `descriptor.plugins` под именем из `underscorePropNaming`, тип — ключи
+ *   `DescriptorPluginOutputs<typeof XDescriptor>`.
+ *
+ * Ключи типов читает type checker TypeScript по программе с опциями
+ * `packages/setup/tsconfig.json`, корень которой — входной файл в памяти: по
+ * псевдониму типа на дескриптор в каждой сверке. Индексная сигнатура тоже
+ * ключ: `Record<string, unknown>` принимает любой проп, и сверять с ним нечего.
  *
  * Поля, которые адаптер дописывает к типу сверх `DescriptorAllProps`, сторож
  * не видит: так в типах всех адаптеров жил `plugins`, которого нет в рантайме.
@@ -36,6 +47,14 @@ const TSCONFIG = resolve(__dirname, '../tsconfig.json')
 /** Входной файл программы. На диске его нет, `../descriptors` разрешается от `__tests__`. */
 const ENTRY = resolve(__dirname, 'descriptor-props-types.entry.ts')
 
+/** Сверка во входном файле: префикс псевдонима и экстрактор из `../define`. */
+type TCheck = { readonly prefix: string; readonly extractor: string }
+
+const PROPS: TCheck = { prefix: 'props_', extractor: 'DescriptorAllProps' }
+const OUTPUTS: TCheck = { prefix: 'outputs_', extractor: 'DescriptorPluginOutputs' }
+
+const aliasOf = (check: TCheck, name: string): string => `${check.prefix}${name}`
+
 /**
  * Коллекционный слой: фасады `<Владелец>Collection<Часть>Descriptor` и их база
  * `CollectionDescriptor`.
@@ -46,14 +65,18 @@ const ENTRY = resolve(__dirname, 'descriptor-props-types.entry.ts')
  * (`base.component.ts` во Vue). Поэтому пропсы части сверяются в строке
  * владельца, а пропсы базы — в строке каждого владельца, чья часть наследует
  * её через `extends`.
+ *
+ * Выходы плагинов у части свои: адаптер создаёт ей отдельный контекст, и тип
+ * выходов приходит из её собственного дескриптора. Поэтому во второй сверке
+ * строка есть у каждого дескриптора, у части и базы тоже.
  */
 const COLLECTION_LAYER = /^(\w*)Collection(\w*)Descriptor$/
 
 /**
  * `ctrl` и `embedded` объявляет `EntityDescriptor`: так адаптер принимает
  * готовый инстанс и имя места пропом. Их типы дописывает сам адаптер поверх
- * `DescriptorAllProps` (`TBaseComponentProps` во Vue): в интерфейсах пропсов
- * ядра инстанса нет.
+ * `DescriptorAllProps` (`TAdapterProps`): в интерфейсах пропсов ядра инстанса
+ * нет.
  */
 const ADAPTER_PROPS = new Set(['ctrl', 'embedded'])
 
@@ -65,19 +88,32 @@ function publicProps(descriptor: IComponentDescriptor): string[] {
 		.filter((name) => !ADAPTER_PROPS.has(name))
 }
 
+/** Выходы плагинов дескриптора: защищённые пропсы из contribution его плагинов. */
+function pluginOutputs(descriptor: IComponentDescriptor): string[] {
+	return descriptor.plugins
+		.flatMap((plugin) => plugin.props)
+		.filter((declaration) => declaration.protected)
+		.map((declaration) => underscorePropNaming(declaration.name))
+}
+
 type TRuntime = {
 	/** Имя дескриптора → незащищённые пропсы его и его коллекционной части. */
-	rows: Map<string, string[]>
+	props: Map<string, string[]>
+	/** Имя дескриптора → выходы его плагинов. */
+	outputs: Map<string, string[]>
 	/** Коллекционные части, чей владелец не экспортирован: их пропсы не сверил бы никто. */
 	orphans: string[]
 }
 
 function collectRuntime(descriptors: ReadonlyArray<[string, IComponentDescriptor]>): TRuntime {
-	const rows = new Map<string, string[]>()
+	const props = new Map<string, string[]>()
+	const outputs = new Map<string, string[]>()
 	const orphans: string[] = []
 
 	for (const [name, descriptor] of descriptors) {
-		if (!COLLECTION_LAYER.test(name)) rows.set(name, publicProps(descriptor))
+		outputs.set(name, pluginOutputs(descriptor))
+
+		if (!COLLECTION_LAYER.test(name)) props.set(name, publicProps(descriptor))
 	}
 
 	for (const [name, descriptor] of descriptors) {
@@ -90,7 +126,7 @@ function collectRuntime(descriptors: ReadonlyArray<[string, IComponentDescriptor
 		// База слоя: её пропсы приходят в каждую часть через `extends`
 		if (!owner && !part) continue
 
-		const row = rows.get(`${owner}${part}Descriptor`)
+		const row = props.get(`${owner}${part}Descriptor`)
 
 		if (row) {
 			row.push(...publicProps(descriptor))
@@ -99,15 +135,19 @@ function collectRuntime(descriptors: ReadonlyArray<[string, IComponentDescriptor
 		}
 	}
 
-	return { rows, orphans }
+	return { props, outputs, orphans }
 }
 
-function entrySource(names: readonly string[]): string {
+/** Псевдонимы типов: по одному на дескриптор в каждой сверке. */
+function entrySource(checks: ReadonlyArray<[TCheck, Iterable<string>]>): string {
 	return [
 		`import type * as descriptors from '../descriptors'`,
-		`import type { DescriptorAllProps } from '../define'`,
-		...names.map(
-			(name) => `export type ${name} = DescriptorAllProps<typeof descriptors.${name}>`,
+		`import type { ${checks.map(([check]) => check.extractor).join(', ')} } from '../define'`,
+		...checks.flatMap(([check, names]) =>
+			[...names].map(
+				(name) =>
+					`export type ${aliasOf(check, name)} = ${check.extractor}<typeof descriptors.${name}>`,
+			),
 		),
 	].join('\n')
 }
@@ -121,17 +161,16 @@ function compilerOptions(): ts.CompilerOptions {
 }
 
 type TTypes = {
-	/** Имя дескриптора → ключи `DescriptorAllProps`. */
+	/** Псевдоним типа → его ключи. */
 	keys: Map<string, string[]>
 	/** Ошибки входного файла: сломанный импорт дал бы пустые ключи, а не падение. */
 	diagnostics: string[]
 }
 
-function collectTypes(names: readonly string[]): TTypes {
+function collectTypes(text: string): TTypes {
 	const options = compilerOptions()
 	const host = ts.createCompilerHost(options)
 	const readSourceFile = host.getSourceFile.bind(host)
-	const text = entrySource(names)
 
 	host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) =>
 		resolve(fileName) === ENTRY
@@ -166,12 +205,28 @@ function collectTypes(names: readonly string[]): TTypes {
 const difference = (from: readonly string[], without: readonly string[]): string[] =>
 	[...new Set(from)].filter((name) => !without.includes(name)).sort()
 
-describe('сторож: состав пропсов в рантайме и в типах совпадает', () => {
-	const { rows, orphans } = collectRuntime(exportedDescriptors())
-	const types = collectTypes([...rows.keys()])
+describe('сторож: состав пропсов и выходов плагинов в рантайме и в типах совпадает', () => {
+	const { props, outputs, orphans } = collectRuntime(exportedDescriptors())
+	const types = collectTypes(
+		entrySource([
+			[PROPS, props.keys()],
+			[OUTPUTS, outputs.keys()],
+		]),
+	)
+
+	/** Ключи типа сверки по дескриптору; нет псевдонима — строка не сверена бы вовсе. */
+	const typeKeys = (check: TCheck, name: string): string[] =>
+		required(types.keys.get(aliasOf(check, name)), aliasOf(check, name))
+
+	const expectSame = (runtime: readonly string[], type: readonly string[]): void => {
+		expect({
+			'только в рантайме': difference(runtime, type),
+			'только в типе': difference(type, runtime),
+		}).toEqual({ 'только в рантайме': [], 'только в типе': [] })
+	}
 
 	it('дескрипторы найдены в экспорте', () => {
-		expect([...rows.keys()]).toEqual(
+		expect([...props.keys()]).toEqual(
 			expect.arrayContaining(['FrameDescriptor', 'SelectDescriptor', 'SkeletonDescriptor']),
 		)
 	})
@@ -184,12 +239,22 @@ describe('сторож: состав пропсов в рантайме и в т
 		expect(orphans).toEqual([])
 	})
 
-	it.each([...rows])('%s', (name, runtime) => {
-		const type = required(types.keys.get(name), name)
+	describe('пропсы', () => {
+		it.each([...props])('%s', (name, runtime) => {
+			expectSame(runtime, typeKeys(PROPS, name))
+		})
+	})
 
-		expect({
-			'только в рантайме': difference(runtime, type),
-			'только в типе': difference(type, runtime),
-		}).toEqual({ 'только в рантайме': [], 'только в типе': [] })
+	describe('выходы плагинов', () => {
+		it('выходы в рантайме найдены: сверка не проходит вхолостую', () => {
+			expect(outputs.get('FrameDescriptor')).toEqual(['layout_styles'])
+			expect(outputs.get('SelectDescriptor')).toEqual(
+				expect.arrayContaining(['dismiss_ownerAttribute']),
+			)
+		})
+
+		it.each([...outputs])('%s', (name, runtime) => {
+			expectSame(runtime, typeKeys(OUTPUTS, name))
+		})
 	})
 })

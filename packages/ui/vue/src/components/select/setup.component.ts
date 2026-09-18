@@ -5,7 +5,7 @@ import type {
 	ISelectCollectionProps,
 	TSelectCollectionFacade,
 } from '@soldy/core'
-import type { TDismissPluginProps } from '@soldy/setup'
+import type { DescriptorPluginOutputs } from '@soldy/setup'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -40,11 +40,13 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter<ISelectComponentProps & TDismissPluginProps, ISelect>(
-			adapter,
-			props,
-			emit,
-		)
+		// Выходы плагинов — третьим аргументом: шаблон раскладывает
+		// `dismiss_ownerAttribute` спредом на телепортированную панель
+		const refs = useAdapter<
+			ISelectComponentProps,
+			ISelect,
+			DescriptorPluginOutputs<typeof SelectDescriptor>
+		>(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			SelectCollectionDescriptor(),
