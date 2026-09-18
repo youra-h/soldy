@@ -5,7 +5,7 @@
  * и добавляет text, arrowPlacement + коллекционные item-пропсы (selected, order, view).
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TAccordionItem } from '@soldy/core'
 import type { IAccordionItemProps, TAccordionItemEvents } from '@soldy/core'
 import { AccordionItemContribution } from '../../../contributions'

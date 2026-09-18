@@ -5,7 +5,7 @@
  * Не добавляет новых props/events — только предоставляет drag-контекст детям.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TDragAndDrop } from '@soldy/core'
 import type { IDragAndDropProps, TDragAndDropEvents } from '@soldy/core'
 import { DragAndDropContribution } from '../../contributions'

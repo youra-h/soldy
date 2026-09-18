@@ -7,7 +7,7 @@
  * Добавляет: view + плагины (коллекция + drag-and-drop).
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TAccordion } from '@soldy/core'
 import type { IAccordionProps, TAccordionEvents } from '@soldy/core'
 import { AccordionContribution, type TAccordionSlots } from '../../../contributions'

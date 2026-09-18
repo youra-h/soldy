@@ -5,7 +5,7 @@
  * и добавляет text.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TTextable } from '@soldy/core'
 import type { ITextableProps, TTextableEvents } from '@soldy/core'
 import { TextableContribution } from '../../contributions'

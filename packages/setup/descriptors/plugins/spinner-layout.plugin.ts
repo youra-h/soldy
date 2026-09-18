@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TSpinnerLayoutPlugin } from '@soldy/plugins'
 import type { TSpinnerLayoutPluginEvents } from '@soldy/plugins'
 import { SpinnerLayoutContribution } from '../../contributions'

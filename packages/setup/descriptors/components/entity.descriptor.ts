@@ -1,4 +1,4 @@
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { EntityContribution } from '../../contributions'
 
 export const EntityDescriptor = () =>

@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TAriaPlugin } from '@soldy/plugins'
 import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
 import { AriaContribution } from '../../contributions'

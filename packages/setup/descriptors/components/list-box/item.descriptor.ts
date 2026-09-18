@@ -6,7 +6,7 @@
  * (клавиатурная навигация).
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TListBoxItem } from '@soldy/core'
 import type { IListBoxItemProps, TListBoxItemEvents } from '@soldy/core'
 import { ListBoxItemContribution } from '../../../contributions'

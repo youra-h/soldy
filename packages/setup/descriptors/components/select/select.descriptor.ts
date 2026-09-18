@@ -6,7 +6,7 @@
  * состояние панели и плагины оверлея.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TSelect } from '@soldy/core'
 import type { ISelectProps, TSelectEvents } from '@soldy/core'
 import { SelectContribution, type TSelectSlots } from '../../../contributions'

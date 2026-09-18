@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TSelectKeyboardPlugin } from '@soldy/plugins'
 import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '@soldy/plugins'
 import { SelectKeyboardContribution } from '../../contributions'

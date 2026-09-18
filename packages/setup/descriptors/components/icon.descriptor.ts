@@ -5,7 +5,7 @@
  * и добавляет size, width, height + плагин IconStyle.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TIcon } from '@soldy/core'
 import type { IIconProps, TIconEvents } from '@soldy/core'
 import { IconLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'

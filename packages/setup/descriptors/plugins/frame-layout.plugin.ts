@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TFrameLayoutPlugin } from '@soldy/plugins'
 import type { TFrameLayoutPluginEvents } from '@soldy/plugins'
 import { FrameLayoutContribution } from '../../contributions'

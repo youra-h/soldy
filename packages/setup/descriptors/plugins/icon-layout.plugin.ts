@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TIconLayoutPlugin } from '@soldy/plugins'
 import type { TIconLayoutPluginEvents } from '@soldy/plugins'
 import { IconLayoutContribution } from '../../contributions'

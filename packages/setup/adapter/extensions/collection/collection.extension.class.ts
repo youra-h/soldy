@@ -10,19 +10,11 @@
 
 import type { TCollectionEngine } from '@soldy/core'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
-import { applyRegisteredExtensions } from '../../../descriptors/base/extension-registry'
+import { applyRegisteredExtensions } from '../../../registry'
 import type { IAdapterContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
-
-/** Инстанс, к которому подключается расширение: фасад, владеющий коллекцией. */
-export type TCollectionOwner = {
-	readonly engine: TCollectionEngine<any, any>
-}
-
-export interface ICollectionExtensionOptions {
-	elevator: TElevatorFactory
-}
+import type { ICollectionExtensionOptions, TCollectionOwner } from './types'
 
 export class TCollectionExtension {
 	constructor(context: IAdapterContext<TCollectionOwner>, options: ICollectionExtensionOptions) {

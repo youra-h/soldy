@@ -1,4 +1,4 @@
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TComponent } from '@soldy/core'
 import type { IComponentProps, TComponentEvents } from '@soldy/core'
 import { ComponentContribution } from '../../contributions'

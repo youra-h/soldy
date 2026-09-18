@@ -5,7 +5,7 @@
  * и добавляет size, variant.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TStylable } from '@soldy/core'
 import type { IStylableProps, TStylableEvents } from '@soldy/core'
 import { StylableContribution } from '../../contributions'

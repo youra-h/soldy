@@ -5,7 +5,7 @@
  * и добавляет value, name.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TValueControl } from '@soldy/core'
 import type { IValueControlProps, TValueControlEvents } from '@soldy/core'
 import { ValueControlContribution } from '../../contributions'

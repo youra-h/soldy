@@ -1,7 +1,11 @@
+/**
+ * Контракт контекста адаптера, его опций и конструкторов расширений.
+ */
+
 import type { TEvented } from '@soldy/core'
 import type { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IComponentDescriptor } from '@soldy/setup'
+import type { IComponentDescriptor } from '../../define'
 
 export type TAdapterEvents = {
 	destroy: () => void

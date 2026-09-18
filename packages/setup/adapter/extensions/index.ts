@@ -1,4 +1,4 @@
+export * from './plugins'
 export * from './collection'
-export * from './plugins-binding.extension.class'
-export * from './plugin-props.extension.class'
-export * from './resolveDefaultExtensions'
+export * from './drag-and-drop'
+export * from './tabs'

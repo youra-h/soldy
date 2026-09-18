@@ -5,7 +5,7 @@
  * и добавляет плагин InputBool.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TSwitch } from '@soldy/core'
 import type { ISwitchProps, TSwitchEvents } from '@soldy/core'
 import { InputBoolPluginDescriptor } from '../plugins'

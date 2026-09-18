@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TSelectPointerPlugin } from '@soldy/plugins'
 import type { TSelectPointerPluginEvents } from '@soldy/plugins'
 import { SelectPointerContribution } from '../../contributions'

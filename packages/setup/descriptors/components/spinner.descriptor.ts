@@ -5,7 +5,7 @@
  * и добавляет size, variant, borderWidth + плагин SpinnerStyle.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TSpinner } from '@soldy/core'
 import type { ISpinnerProps, TSpinnerEvents } from '@soldy/core'
 import { SpinnerLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'

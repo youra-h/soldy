@@ -1,4 +1,9 @@
+/**
+ * Контракт лифта: типизированный ключ, фабрика фреймворка и регистрация элемента коллекции.
+ */
+
 import type { IContextElevator } from '@soldy/accessor'
+import type { IPluginBundle } from '@soldy/plugins'
 
 /**
  * Ключ elevator'а вместе с типом значения — как `InjectionKey<T>` во Vue.
@@ -21,3 +26,6 @@ export interface IElevatorKey<T> {
  * ```
  */
 export type TElevatorFactory = <T>(key: IElevatorKey<T>) => IContextElevator<T>
+
+/** Регистрация элемента в родительской коллекции; возвращает снятие регистрации. */
+export type TCollectionItemRegister = (item: object, bundle: IPluginBundle | null) => () => void

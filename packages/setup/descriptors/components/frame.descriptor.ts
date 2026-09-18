@@ -10,7 +10,7 @@
  * Добавляет x, y, width, height, position, target, zIndex + frame-layout плагин.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TFrame } from '@soldy/core'
 import type { IFrameProps, TFrameEvents } from '@soldy/core'
 import {

@@ -142,9 +142,11 @@ Returns `IComponentDescriptor` with:
 
 ### Key Files
 
-- [base/define-component.ts](../packages/setup/descriptors/base/define-component.ts) - defineComponent factory
-- [base/define-plugin.ts](../packages/setup/descriptors/base/define-plugin.ts) - definePlugin factory
-- [base/compile-contribution.ts](../packages/setup/descriptors/base/compile-contribution.ts) - Contribution merger
+- [define/component.ts](../packages/setup/define/component.ts) - defineComponent factory
+- [define/plugin.ts](../packages/setup/define/plugin.ts) - definePlugin factory
+- [define/inherit.ts](../packages/setup/define/inherit.ts) - Declarations inherited from `extends` (props, events, slots, plugins)
+- [define/contribution.ts](../packages/setup/define/contribution.ts) - Contribution → declarations (`normalizeContribution`)
+- [assemble/bundle.ts](../packages/setup/assemble/bundle.ts) / [assemble/accessor.ts](../packages/setup/assemble/accessor.ts) - What `createBundle` / `createAccessor` build on mount
 - [components/button.descriptor.ts](../packages/setup/descriptors/components/button.descriptor.ts) - Button example
 - Descriptor files (`components/`) for: Entity, Component, ComponentView, Interactive, Stylable, Control, ValueControl, InputControl, Textable, Button, CheckBox, Switch, Input, Icon, Spinner, Skeleton, Frame, DragAndDrop; folders `accordion/`, `collection/`, `list-box/`, `select/`, `tabs/`, `tags/`
 
@@ -262,7 +264,7 @@ get<T>(ExtensionCtor) → T | undefined
 destroy() → void (emits 'destroy' event)
 ```
 
-Расширения регистрируются по самому классу (без `static readonly key = Symbol(...)`) — карта расширений (`extensions` в `createAdapterContext`) ключуется конструктором, как `TPluginBundle` ключуется `IPluginConstructor`.
+Расширения регистрируются по самому классу (без `static readonly key = Symbol(...)`) — карта расширений (`_extensions` в `TAdapterContext`) ключуется конструктором, как `TPluginBundle` ключуется `IPluginConstructor`.
 
 The starting set of extensions is chosen by `resolveDefaultExtensions(descriptor)` unless `defaultExtensions` is passed: `TPluginsBindingExtension` when the descriptor has `TElementPlugin`, `TPluginPropsExtension` when a plugin has non-protected props (see «Почему `resolveDefaultExtensions` стал дефолтом» below)
 
@@ -270,10 +272,8 @@ The starting set of extensions is chosen by `resolveDefaultExtensions(descriptor
 
 #### Context (`createAdapterContext`)
 
-- Creates `instance` (TButton, TCheckBox, etc.)
-- Creates `bundle` (plugin registry)
-- Creates `accessor` (reflection API)
-- Manages extensions registry
+- Assembles the component on mount (`packages/setup/assemble/component.ts`): `instance` (TButton, TCheckBox, etc.), `embedded`, `bundle` (own or shared), `accessor` (reflection API)
+- Holds it in `TAdapterContext` together with the extensions registry
 
 #### Extensions (`packages/setup/adapter/extensions/`)
 
@@ -292,10 +292,11 @@ The starting set of extensions is chosen by `resolveDefaultExtensions(descriptor
 
 ### Key Files
 
-- [context/createAdapterContext.ts](../packages/setup/adapter/context/createAdapterContext.ts) - Factory
+- [context/create-adapter-context.ts](../packages/setup/adapter/context/create-adapter-context.ts) - Factory
+- [context/adapter-context.class.ts](../packages/setup/adapter/context/adapter-context.class.ts) - TAdapterContext: extensions by class, destroy
 - [context/types.ts](../packages/setup/adapter/context/types.ts) - IAdapterContext contract
 - [elevator/elevator.class.ts](../packages/setup/adapter/elevator/elevator.class.ts) - Base elevator
-- [extensions/plugins-binding.extension.class.ts](../packages/setup/adapter/extensions/plugins-binding.extension.class.ts) - DOM binding
+- [extensions/plugins/binding.extension.class.ts](../packages/setup/adapter/extensions/plugins/binding.extension.class.ts) - DOM binding
 - [extensions/collection/collection.extension.class.ts](../packages/setup/adapter/extensions/collection/collection.extension.class.ts) - Collection registry
 
 ### Key Exports
@@ -309,7 +310,7 @@ The starting set of extensions is chosen by `resolveDefaultExtensions(descriptor
 
 ---
 
-## Layer 5b: Общий слой адаптеров (`packages/setup/common`)
+## Layer 5b: Общий слой адаптеров (`packages/setup/naming`, `packages/setup/adapter/common`)
 
 Поведение, которое обязано совпадать во всех фреймворках. Адаптер реализует
 только то, что действительно различается — стратегию именования **событий**.
@@ -319,8 +320,8 @@ The starting set of extensions is chosen by `resolveDefaultExtensions(descriptor
 | `underscorePropNaming(name)`                | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках. |
 | `createInspectorFactory(naming)`            | Адаптер связывает инспектор со своей стратегией один раз.                                                        |
 | `collectEventBindings(accessor, inspector)` | Дедуплицированный список `{ source, rawName, exportName }` для проброса событий.                                 |
-| `resolveDefaultExtensions(descriptor)`      | Живёт в `adapter/extensions/`; применяется по умолчанию внутри `createAdapterContext`.                           |
-| `setIcons` / `getIcon` / `ICON_ROLES`       | Реестр и контракт пакетов иконок.                                                                                |
+| `resolveDefaultExtensions(descriptor)`      | Живёт в `adapter/extensions/plugins/`; применяется по умолчанию внутри `createAdapterContext`.                   |
+| `setIcons` / `getIcon` / `ICON_ROLES`       | Реестр и контракт пакетов иконок; живёт в `registry/`.                                                           |
 
 Таблица не полная: общая стратегия событий-колбэков `callbackEventNaming`, `collectForwardProps` и остальное с правилами — AGENTS.md, «Что общее, а что специфично для фреймворка».
 
@@ -505,8 +506,8 @@ hover: в тёмной схеме заливка светлеет.
 выполняется само; для плагинов — нет, потому что bundle создаёт адаптер, а не
 ядро, и с инстанса до него нет пути.
 
-Эмит живёт в `createBundle`
-([define-component.ts](../packages/setup/descriptors/base/define-component.ts)) —
+Эмит живёт в сборке набора, которую зовёт `createBundle`
+([assemble/bundle.ts](../packages/setup/assemble/bundle.ts)), —
 там же, где плагины и создаются:
 
 1. `bundle:create` на `instance.events` — единственной шине, видимой обеим
@@ -635,7 +636,7 @@ soldy табы — коллекция: владельца в ней предст
 
 #### Точка — основная форма записи
 
-`withParts` ([common/withParts.ts](../packages/setup/common/withParts.ts)) вешает
+`withParts` ([adapter/common/parts.ts](../packages/setup/adapter/common/parts.ts)) вешает
 части на владельца:
 
 ```ts
@@ -1416,7 +1417,7 @@ AGENTS.md, «Возврат поля».
 Оба хелпера остаются Vue-специфичными: `useIcon` строит компонент через
 `defineComponent`/`markRaw`/`h`, `useSplitAttrs` — через `useAttrs`/`computed`.
 Переиспользовать их в других адаптерах напрямую нельзя; общая часть — реестр
-иконок (`setIcons`/`getIcon`) — уже живёт в `packages/setup/common/`, куда
+иконок (`setIcons`/`getIcon`) — уже живёт в `packages/setup/registry/`, куда
 фреймворки не импортируются.
 
 #### Components (`components/`)
@@ -1482,7 +1483,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 - `adapter/common/` — `createInspector` (через `createInspectorFactory(ReactNaming)`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`; `toAriaProps` (HTML-имена атрибутов наборов → имена пропов React: `tabindex` → `tabIndex`); `renderSlot` / `TSlotContent`. `resolveDefaultExtensions` переехал в `@soldy/setup` и применяется по умолчанию
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
-  - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/common` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `TCallbackEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
+  - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/naming` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `TCallbackEventProps<DescriptorAllEvents<typeof XxxDescriptor>>` — `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
 - `adapter/runtime/` — `useAdapterContext(factory)` (держит adapter-context между рендерами), `useAdapter(adapter, props)` (main hook — takes a READY adapter), `useSyncProps` (Core↔React state), `useSyncEvents` (event forwarding)
 - `adapter/elevator/` — `TReactElevator` + `ReactElevatorFactory` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = up to 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook) + view (`*.tsx`)
@@ -1814,9 +1815,9 @@ Key files:
 - `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin / TTabsViewPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete)
 - `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine), использует TCollectionElements + TCollectionBundlesPlugin)
 - `packages/setup/adapter/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
-- `packages/setup/adapter/extensions/collection/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
+- `packages/setup/adapter/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
 - `packages/setup/adapter/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
-- `packages/setup/adapter/extensions/collection/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
+- `packages/setup/adapter/extensions/tabs/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
 - `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsViewPluginDescriptor, TabsKeyboardPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
 
 ---

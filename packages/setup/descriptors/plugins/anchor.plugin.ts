@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TAnchorPlugin } from '@soldy/plugins'
 import type { IAnchorPluginOptions, TAnchorPluginEvents, IAnchorPluginProps } from '@soldy/plugins'
 import { AnchorContribution } from '../../contributions'

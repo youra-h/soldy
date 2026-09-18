@@ -5,7 +5,7 @@
  * и добавляет tag, text, closable + коллекционный плагин (active, order).
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTabsItem } from '@soldy/core'
 import type { ITabsItemProps, TTabsItemEvents } from '@soldy/core'
 import { TabsItemContribution } from '../../../contributions'

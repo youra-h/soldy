@@ -14,7 +14,7 @@
  * реализация у каждого своя, потому что предок занят.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TListBox } from '@soldy/core'
 import type { IListBoxProps, TListBoxEvents } from '@soldy/core'
 import { ListBoxContribution, type TListBoxSlots } from '../../../contributions'

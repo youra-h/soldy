@@ -27,8 +27,8 @@
 import { describe, it, expect } from 'vitest'
 import { dirname, resolve } from 'node:path'
 import * as ts from 'typescript'
-import { underscorePropNaming } from '../common'
-import type { IComponentDescriptor } from '../descriptors'
+import { underscorePropNaming } from '../naming'
+import type { IComponentDescriptor } from '../define'
 import { exportedDescriptors, required } from './helpers'
 
 const TSCONFIG = resolve(__dirname, '../tsconfig.json')
@@ -105,7 +105,7 @@ function collectRuntime(descriptors: ReadonlyArray<[string, IComponentDescriptor
 function entrySource(names: readonly string[]): string {
 	return [
 		`import type * as descriptors from '../descriptors'`,
-		`import type { DescriptorAllProps } from '../descriptors'`,
+		`import type { DescriptorAllProps } from '../define'`,
 		...names.map(
 			(name) => `export type ${name} = DescriptorAllProps<typeof descriptors.${name}>`,
 		),

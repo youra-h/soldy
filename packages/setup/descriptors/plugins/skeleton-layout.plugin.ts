@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TSkeletonLayoutPlugin } from '@soldy/plugins'
 import type { TSkeletonLayoutPluginEvents } from '@soldy/plugins'
 import { SkeletonLayoutContribution } from '../../contributions'

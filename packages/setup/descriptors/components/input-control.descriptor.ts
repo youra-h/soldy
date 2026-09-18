@@ -5,7 +5,7 @@
  * и добавляет readonly, required.
  */
 
-import { defineComponent } from '../base'
+import { defineComponent } from '../../define'
 import { TInputControl } from '@soldy/core'
 import type { IInputControlProps, TInputControlEvents } from '@soldy/core'
 import { InputControlContribution } from '../../contributions'

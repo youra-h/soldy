@@ -7,7 +7,7 @@
  * Добавляет: orientation, alignment, position, view, closable + плагины Tabs.
  */
 
-import { defineComponent } from '../../base'
+import { defineComponent } from '../../../define'
 import { TTabs } from '@soldy/core'
 import type { ITabsProps, TTabsEvents } from '@soldy/core'
 

@@ -24,10 +24,8 @@ import {
 	ComponentViewDescriptor,
 	FrameDescriptor,
 	TabsItemDescriptor,
-	defineComponent,
-	type IComponentDescriptor,
-	type IPluginDefinition,
 } from '../descriptors'
+import { defineComponent, type IComponentDescriptor, type IPluginDefinition } from '../define'
 import { exportedDescriptors, required } from './helpers'
 
 /** Декларация по полному имени: `visible`, `anchor:flip`. */

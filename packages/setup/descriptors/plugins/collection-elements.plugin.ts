@@ -1,4 +1,4 @@
-import { definePlugin } from '../base'
+import { definePlugin } from '../../define'
 import { TCollectionElements, PLUGIN_EVENTS } from '@soldy/plugins'
 
 /**
