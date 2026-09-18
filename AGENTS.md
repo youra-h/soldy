@@ -195,7 +195,7 @@ npm run changeset -- --empty
 | Package             | Responsibility                                                                                                                |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
+| `packages/accessor` | Runtime reflection (`TAccessor`): свойства и события компонента, привязанные к своим владельцам.                              |
 | `packages/setup`    | What all adapters share: describe, assemble and wire a component — see «Структура `packages/setup`».                          |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
@@ -347,7 +347,7 @@ Setup — всё, что у шести адаптеров общее: описа
 | `descriptors/`   | Дескрипторы компонентов и определения плагинов библиотеки.                                       |
 | `assemble/`      | Компонент на одно монтирование: инстанс, `embedded`, состав, набор с `bundle:create`, аксессор.  |
 | `registry/`      | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
-| `adapter/`       | Связывание с фреймворком: контекст адаптера, его расширения, лифт и общие функции адаптеров.     |
+| `adapter/`       | Связывание с фреймворком: контекст, поверхность и связка, расширения, лифт, общие функции.       |
 
 **Рантайм-импорт между модулями — только по таблице.** `import type` не
 ограничен: связи в рантайме он не создаёт.
@@ -407,7 +407,8 @@ Builder и pipeline для дескриптора не нужны: части д
 - регистрация приложения на тип компонента — `registry/`, выбор подходящих —
   через `createRegistrations`, а не своим циклом по `instanceof`;
 - проводка, общая для всех фреймворков, — расширение в
-  `adapter/extensions/<тема>/`; функция, которую зовут адаптеры, —
+  `adapter/extensions/<тема>/`; то, что шесть адаптеров делают с аксессором, —
+  связка `adapter/binding/`; прочая функция, которую зовут адаптеры, —
   `adapter/common/`;
 - новая папка верхнего уровня — со строкой в обеих таблицах и в
   `RUNTIME_IMPORTS` сторожа.
@@ -990,7 +991,7 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 
 Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps` и свойства
 инстанса), и граница у него своя — `toBindingState`
-(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы `useSyncProps` собраны по
+(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы связки собраны по
 тому же дескриптору, связь их имён с типом держит он, поэтому внутри обычный
 `as` из `Readonly<Record<string, unknown>>`. Через неё проходят и `useAdapter`,
 и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement` добавляются к
@@ -1108,7 +1109,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -1388,9 +1389,9 @@ declare module '@soldy/core' {
 
 ## Что общее, а что специфично для фреймворка
 
-`packages/setup/naming/` и `packages/setup/adapter/common/` — поведение,
-одинаковое во всех адаптерах. Прежде чем писать что-то в
-`packages/ui/*/adapter/common/`, проверь, не место ли этому там:
+`packages/setup/naming/` и `packages/setup/adapter/` — поведение, одинаковое во
+всех адаптерах. Прежде чем писать что-то в `packages/ui/*/adapter/`, проверь,
+не место ли этому там:
 
 - `underscorePropNaming` (`naming/`) — имя пропа одинаково везде (`ns_name`).
 - `callbackEventNaming` (`naming/`) — `element:ready` → `onElementReady`; общая стратегия
@@ -1398,17 +1399,25 @@ declare module '@soldy/core' {
   `TCallbackEventProps`. Своё именование событий остаётся только у Vue
   (`element:ready`) и Angular (`elementReady`) — по одному потребителю на каждое,
   поэтому они живут в своих адаптерах.
-- `createInspectorFactory(naming)` — адаптер связывает со своей стратегией один раз.
-- `collectEventBindings(accessor, inspector)` — дедуплицированный список подписок
-  для проброса событий. **Дедупликация обязательна**: один raw-триггер объявлен у
-  нескольких пропов (`present` в `ComponentContribution` повторяет триггеры
-  `rendered` и `visible`), иначе потребитель получает два эмита на одно изменение.
-  Дедуплицировать можно только проброс событий — синхронизацию состояния нельзя,
-  `present` обязан пересчитываться на обоих триггерах.
-- `collectForwardProps(props, adapter, inspector, 'children')` — пропсы, которые
-  React, Solid и Svelte спредят в атрибуты корня. Съедает пропы, события и
-  **слоты** дескриптора (`resolveSlotName`), иначе `leading={<Icon/>}` доезжает
-  до DOM атрибутом.
+- **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
+  умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
+- **Поверхность** — `surfaceOf(descriptor, profile)`: публичный API компонента
+  в именах фреймворка. Считается один раз на пару «дескриптор × профиль» и
+  кэшируется: внешний плагин контракт не расширяет, так что это свойство типа.
+  Из неё берут статический слой (`props`/`emits` Vue, `observedAttributes` и
+  прототип WebC, кодоген Angular) и рантайм.
+- **Связка** — `bindComponent(adapter, profile)` на монтирование: стартовое
+  состояние, подписка на триггеры (`bindOutput`), проброс событий
+  (`bindEvents`), чтение пропа по двум именам (`read`), запись с guard'ом
+  (`write`/`writeAll`) и спред несъеденных пропсов (`forward`). Адаптеру
+  остаётся сказать, куда писать значение и как отдать событие, и решить, в какой
+  момент своего цикла это делать. Своих циклов по аксессору у адаптера нет.
+  **Дедупликация событий обязательна**: один raw-триггер объявлен у нескольких
+  пропов (`present` повторяет триггеры `rendered` и `visible`), иначе
+  потребитель получает два эмита на одно изменение. Синхронизацию состояния
+  дедуплицировать нельзя — `present` обязан пересчитываться на обоих триггерах.
+  `forward` съедает пропы, события и **слоты** дескриптора, иначе
+  `leading={<Icon/>}` доезжает до DOM атрибутом.
 - `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`. Метод
   контекста, а не расширение: её зовут все шесть адаптеров. У компонента без
   этого плагина вызов ничего не делает.
@@ -1494,7 +1503,7 @@ placeholder="Выберите">` обязан показать плейсхол�
 получается — инстанс из props строит конструктор (сборка компонента,
 `assemble/component.ts`: `ctrl ?? new Ctor(props)`), а чужому инстансу стартовые значения
 никто не пишет: `watch` во vue-адаптере молчит, пока проп не сменится.
-Поэтому `useSyncProps.bindInput` пишет стартовое значение — но **только для
+Поэтому Vue-адаптер пишет стартовое значение — но **только для
 пропов, написанных в разметке** (`vnode.props`, а не итоговые `props`).
 Разница принципиальная: `default` пропа приходит из декларации (см. ниже), и
 «записать все props подряд» значило бы затирать чужое состояние своими
@@ -1517,7 +1526,7 @@ placeholder="Выберите">` обязан показать плейсхол�
   `defaultValues` плагина. Опция впереди, иначе Vue при монтировании перетёр
   бы опцию автора дескриптора умолчанием класса.
 
-`TDescriptorInspector.getExportProps()` кладёт `default` в конфиг пропа, Vue
+Поверхность (`surfaceOf(...).exportProps`) кладёт `default` в конфиг пропа, Vue
 (`useProps`) раскладывает его как есть. Остальным адаптерам умолчание не
 нужно: отсутствующий проп у них и так `undefined`, а его не пишут ни в
 инстанс, ни в плагин.
@@ -2245,7 +2254,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
   компонента и части неверное значение стоит под `@vue-expect-error`, рядом
   верное; проверяет «Типы — Vue».
 - Проп без `triggers` адаптер считает pass-through и наружу не отдаёт
-  (`useSyncProps.bindOutput` пропускает такие). Даже у постоянного значения
+  (связка в `bindOutput` пропускает такие). Даже у постоянного значения
   должен быть хотя бы один триггер — для плагинов подходит `create`.
 - `TElementPlugin` эмитит `ready` через `requestAnimationFrame`. В тестах
   ждите кадр, а не `nextTick`. Контракт: одно `ready` на подключение узла,

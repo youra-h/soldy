@@ -9,23 +9,15 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { required } from './helpers'
 import { TButton } from '@soldy/core'
 import { TBasePlugin, TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
 import {
+	bindComponent,
 	createAdapterContext,
-	collectEventBindings,
-	createInspectorFactory,
 	ButtonDescriptor,
 	ComponentDescriptor,
-	callbackEventNaming,
-	underscorePropNaming,
 } from '@soldy/setup'
-
-const createInspector = createInspectorFactory({
-	prop: underscorePropNaming,
-	event: callbackEventNaming,
-})
+import { CallbackProfile, required } from './helpers'
 
 /**
  * createBundle откладывает эмит на микрозадачу — иначе адаптер, который
@@ -183,16 +175,12 @@ describe('<ns>:create — сторона шаблона', () => {
 
 	it('create доходит до потребителя как обычное событие плагина', async () => {
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const inspector = createInspector(context.accessor)
 		const emitted: Array<[string, unknown]> = []
 
 		// Подписка после createAdapterContext — как в настоящем адаптере
-		for (const { source, rawName, exportName } of collectEventBindings(
-			context.accessor,
-			inspector,
-		)) {
-			source.on(rawName, (...args: unknown[]) => emitted.push([exportName, args[0]]))
-		}
+		bindComponent(context, CallbackProfile).bindEvents((exportName, args) =>
+			emitted.push([exportName, args[0]]),
+		)
 
 		await created()
 

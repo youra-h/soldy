@@ -1,4 +1,4 @@
-export { createInspector } from './createInspector'
+export { WebcProfile } from './profile'
 export { WebcNaming } from './naming'
 export {
 	useAttributes,

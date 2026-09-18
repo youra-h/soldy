@@ -3,10 +3,12 @@
  * из Vue/React/Svelte-пакетов).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-слое компонента через
- * createAdapterContext) и связывает его с Solid:
+ * createAdapterContext) и связывает его с Solid через связку `bindComponent`
+ * из setup. Своё здесь — только куда писать значение (`createStore`), как
+ * отдать событие (колбэк-проп) и в какой момент цикла Solid это делать:
  *
- * 1. Core → Solid: подписка на триггеры props (bindOutput)
- * 2. Solid → Core: синхронизация входных props (bindInput)
+ * 1. Core → Solid: подписка на триггеры свойств
+ * 2. Solid → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. DOM-биндинг через callback-ref
  * 5. Очистка при уничтожении компонента (onCleanup)
@@ -16,12 +18,11 @@
  */
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
-import { collectForwardProps, toInstanceState } from '@soldy/setup'
+import { createStore } from 'solid-js/store'
+import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import { createInspector } from '../common'
-import { useSyncProps } from './useSyncProps'
-import { useSyncEvents } from './useSyncEvents'
+import { SolidProfile } from '../common'
 
 export type TBinding<TInstance = object, TProps extends object = object> = {
 	readonly ctrl: TInstance
@@ -38,26 +39,30 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 	adapter: IAdapterContext<TInstance>,
 	props: TProps,
 ): TBinding<TInstance, TProps> {
-	const inspector = createInspector(adapter.accessor)
+	const binding = bindComponent(adapter, SolidProfile)
+	const [state, setState] = createStore<Record<string, unknown>>(binding.state())
 
-	// 1. Реактивность: Core ↔ Solid
-	const { state, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector)
+	// 1. Core → Solid: подписка на всё время жизни, отписка на onCleanup.
+	// Merge-форма, а не setState(key, value): при значении-функции путевая
+	// форма трактовала бы его как updater.
+	onCleanup(binding.bindOutput((prop, value) => setState({ [prop.exportName]: value })))
 
-	// 1.1. Core → Solid: подписка на всё время жизни, отписка на onCleanup
-	onCleanup(bindOutput())
+	// 2. Solid → Core: эффект читает props, поэтому перезапускается при изменении
+	createEffect(() => binding.writeAll(props))
 
-	// 1.2. Solid → Core: эффект читает props, поэтому перезапускается при изменении
-	createEffect(() => bindInput(props))
+	// 3. События
+	onCleanup(
+		binding.bindEvents((exportName, args) => {
+			const callback: unknown = Reflect.get(props, exportName)
 
-	// 2. События
-	onCleanup(useSyncEvents(adapter.accessor, inspector, props))
+			if (typeof callback === 'function') callback(...args)
+		}),
+	)
 
-	// 3. Очистка контекста
+	// 4. Очистка контекста
 	onCleanup(() => adapter.destroy())
 
-	const forwardProps = createMemo(() =>
-		collectForwardProps(props, adapter, inspector, 'children'),
-	)
+	const forwardProps = createMemo(() => binding.forward(props))
 
 	return {
 		ctrl: adapter.instance,

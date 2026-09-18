@@ -8,16 +8,16 @@
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): снятие подписок + adapter.destroy()
  *
- * Об изменениях сообщает колбэк onUpdate: своей реактивности у платформы нет,
- * планировать перерисовку — задача базового класса элемента.
+ * Общее с остальными адаптерами — в связке `bindComponent` из setup. Своё
+ * здесь: реактивности у платформы нет, поэтому состояние — обычный объект, об
+ * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
+ * элемента), а события уходят `CustomEvent` на хосте.
  */
 
-import { toInstanceState } from '@soldy/setup'
+import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import { createInspector } from '../common'
-import { useSyncProps } from './useSyncProps'
-import { useSyncEvents } from './useSyncEvents'
+import { WebcProfile } from '../common'
 
 export type TBinding<TInstance = object> = {
 	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
@@ -34,11 +34,23 @@ export function useAdapter<TInstance extends object = object>(
 	host: HTMLElement,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<TInstance> {
-	const inspector = createInspector(adapter.accessor)
-	const { state, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector, onUpdate)
+	const binding = bindComponent(adapter, WebcProfile)
+	const state = binding.state()
 
-	const unbindOutput = bindOutput()
-	const unbindEvents = useSyncEvents(adapter.accessor, inspector, host)
+	const unbindOutput = binding.bindOutput((prop, value) => {
+		state[prop.exportName] = value
+		onUpdate(prop.exportName, value)
+	})
+
+	const unbindEvents = binding.bindEvents((exportName, args) => {
+		host.dispatchEvent(
+			new CustomEvent(exportName, {
+				detail: args.length > 1 ? args : args[0],
+				bubbles: true,
+				composed: true,
+			}),
+		)
+	})
 
 	return {
 		state: toInstanceState<TInstance>(state),
@@ -46,7 +58,7 @@ export function useAdapter<TInstance extends object = object>(
 		plugins: adapter.bundle,
 
 		syncProps(props: object): void {
-			bindInput(props)
+			binding.writeAll(props)
 		},
 
 		bindElement(el: Element | null): void {

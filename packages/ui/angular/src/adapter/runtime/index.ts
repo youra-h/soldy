@@ -1,7 +1,5 @@
 export { useAdapter } from './useAdapter'
 export type { TBinding } from './useAdapter'
-export { bindOutput, bindInput, buildInitialState } from './useSyncProps'
-export { bindEvents } from './useSyncEvents'
 export { TComponentBase } from './component.base'
 export { AriaDirective } from './aria.directive'
 export { SlotDirective } from './slot.directive'

@@ -1,2 +1,2 @@
-export { createInspector } from './createInspector'
+export { SvelteProfile } from './profile'
 export { SvelteNaming } from './naming'

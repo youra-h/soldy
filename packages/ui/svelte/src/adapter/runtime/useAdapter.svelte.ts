@@ -3,10 +3,12 @@
  * из Vue/React-пакетов).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-слое компонента через
- * createAdapterContext) и связывает его со Svelte:
+ * createAdapterContext) и связывает его со Svelte через связку `bindComponent`
+ * из setup. Своё здесь — только куда писать значение (руна `$state`), как
+ * отдать событие (колбэк-проп) и в какой момент цикла Svelte это делать:
  *
- * 1. Core → Svelte: подписка на триггеры props (bindOutput)
- * 2. Svelte → Core: синхронизация входных props (bindInput)
+ * 1. Core → Svelte: подписка на триггеры свойств
+ * 2. Svelte → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. DOM-биндинг через attachment (аналог callback-ref в React)
  * 5. Очистка при уничтожении компонента
@@ -17,12 +19,10 @@
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
-import { collectForwardProps, toInstanceState } from '@soldy/setup'
+import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import { createInspector } from '../common'
-import { useSyncProps } from './useSyncProps.svelte'
-import { useSyncEvents } from './useSyncEvents'
+import { SvelteProfile } from '../common'
 
 /** Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда. */
 type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl'>
@@ -41,27 +41,35 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 	adapter: IAdapterContext<TInstance>,
 	getProps: () => TProps,
 ): TBinding<TInstance, TProps> {
-	const inspector = createInspector(adapter.accessor)
+	const binding = bindComponent(adapter, SvelteProfile)
+	const state = $state<Record<string, unknown>>(binding.state())
 
-	// 1. Реактивность: Core ↔ Svelte
-	const { state, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector)
-
-	// 1.1. Core → Svelte: подписка живёт всё время жизни компонента,
+	// 1. Core → Svelte: подписка живёт всё время жизни компонента,
 	// возвращённая функция отписки становится cleanup'ом эффекта.
-	$effect(() => bindOutput())
+	$effect(() =>
+		binding.bindOutput((prop, value) => {
+			state[prop.exportName] = value
+		}),
+	)
 
-	// 1.2. Svelte → Core: эффект читает props, поэтому перезапускается при их изменении.
+	// 2. Svelte → Core: эффект читает props, поэтому перезапускается при их изменении.
 	$effect(() => {
-		bindInput(getProps())
+		binding.writeAll(getProps())
 	})
 
-	// 2. События: подписка одна на всё время жизни, props читаются лениво в колбэке.
-	$effect(() => useSyncEvents(adapter.accessor, inspector, getProps))
+	// 3. События: подписка одна на всё время жизни, props читаются лениво в колбэке.
+	$effect(() =>
+		binding.bindEvents((exportName, args) => {
+			const callback: unknown = Reflect.get(getProps(), exportName)
 
-	// 3. Очистка контекста
+			if (typeof callback === 'function') callback(...args)
+		}),
+	)
+
+	// 4. Очистка контекста
 	$effect(() => () => adapter.destroy())
 
-	const forwardProps = $derived(collectForwardProps(getProps(), adapter, inspector, 'children'))
+	const forwardProps = $derived(binding.forward(getProps()))
 
 	return {
 		ctrl: adapter.instance,

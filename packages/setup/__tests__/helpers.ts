@@ -2,6 +2,8 @@ import { TPluginBundle } from '@soldy/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy/plugins'
 import * as exported from '../descriptors'
 import type { IComponentDescriptor } from '../define'
+import type { IAdapterProfile } from '../adapter'
+import { callbackEventNaming, underscorePropNaming } from '../naming'
 
 function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
 	return typeof value === 'object' && value !== null && 'getProps' in value && 'plugins' in value
@@ -121,4 +123,13 @@ export function required<T>(value: T | null | undefined, what: string): T {
 	}
 
 	return value
+}
+
+/**
+ * Профиль фреймворка с событиями-колбэками — как у React, Solid и Svelte:
+ * `aria_label`, `onElementReady`, слот по умолчанию `children`.
+ */
+export const CallbackProfile: IAdapterProfile = {
+	naming: { prop: underscorePropNaming, event: callbackEventNaming },
+	defaultSlot: 'children',
 }

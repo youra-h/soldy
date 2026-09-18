@@ -15,15 +15,8 @@ import { TButton } from '@soldy/core'
 import type { IButton } from '@soldy/core'
 import { TBasePlugin } from '@soldy/plugins'
 import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
-import {
-	ButtonDescriptor,
-	callbackEventNaming,
-	collectEventBindings,
-	createAdapterContext,
-	createInspectorFactory,
-	underscorePropNaming,
-	usePlugins,
-} from '@soldy/setup'
+import { ButtonDescriptor, bindComponent, createAdapterContext, usePlugins } from '@soldy/setup'
+import { CallbackProfile } from './helpers'
 
 type TIntervalEvents = TPluginEvents & {
 	'change:value': (value: number) => void
@@ -49,11 +42,6 @@ class TIntervalPlugin extends TBasePlugin<IButton, TIntervalEvents> {
 	}
 }
 
-const createInspector = createInspectorFactory({
-	prop: underscorePropNaming,
-	event: callbackEventNaming,
-})
-
 let dispose: (() => void) | null = null
 
 afterEach(() => {
@@ -75,10 +63,10 @@ describe('внешний плагин · контракт компонента',
 		dispose = usePlugins(TButton, [TIntervalPlugin])
 
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const bindings = collectEventBindings(context.accessor, createInspector(context.accessor))
+		const { surface } = bindComponent(context, CallbackProfile)
 		const onTick = vi.fn()
 
-		expect(bindings.some((binding) => binding.rawName === 'tick')).toBe(false)
+		expect(surface.events.some((event) => event.raw === 'tick')).toBe(false)
 
 		// Подписка на сам плагин работает: у него своя шина
 		context.bundle?.get(TIntervalPlugin)?.events.on('tick', onTick)

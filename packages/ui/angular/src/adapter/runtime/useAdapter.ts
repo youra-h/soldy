@@ -9,18 +9,19 @@
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): очистка подписок + adapter.destroy()
  *
+ * Общее с остальными адаптерами — в связке `bindComponent` из setup; здесь
+ * только сигнал состояния и эмиттеры.
+ *
  * Состояние — сигнал, а не поле + markForCheck(): markForCheck помечает путь
  * грязным, но не планирует проверку, поэтому работал только благодаря Zone.js.
  * Сигнал уведомляет шаблон сам и одинаково работает в zone- и zoneless-режиме.
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
-import { toInstanceState } from '@soldy/setup'
+import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import { createInspector } from '../common/createInspector'
-import { buildInitialState, bindOutput, bindInput } from './useSyncProps'
-import { bindEvents } from './useSyncEvents'
+import { AngularProfile } from '../common/profile'
 
 export type TBinding<TInstance = any> = {
 	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
@@ -36,11 +37,13 @@ export type TBinding<TInstance = any> = {
 export function useAdapter<TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
 ): TBinding<TInstance> {
-	const inspector = createInspector(adapter.accessor)
-	const values = signal<Record<string, unknown>>(buildInitialState(adapter.accessor, inspector))
+	const binding = bindComponent(adapter, AngularProfile)
+	const values = signal<Record<string, unknown>>(binding.state())
 
-	const unbindOutput = bindOutput(adapter.accessor, inspector, (name, value) => {
-		values.update((prev) => (Object.is(prev[name], value) ? prev : { ...prev, [name]: value }))
+	const unbindOutput = binding.bindOutput(({ exportName }, value) => {
+		values.update((prev) =>
+			Object.is(prev[exportName], value) ? prev : { ...prev, [exportName]: value },
+		)
 	})
 
 	return {
@@ -49,12 +52,16 @@ export function useAdapter<TInstance extends object = object>(
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
+		// ngOnChanges отдаёт только изменившиеся входы: остальные прочитаются
+		// как undefined, и связка их пропустит
 		syncInputs(inputs: object): void {
-			bindInput(adapter.accessor, inspector, inputs)
+			binding.writeAll(inputs)
 		},
 
 		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {
-			return bindEvents(adapter.accessor, inspector, outputs)
+			// Аутпут объявлен кодогенерацией по той же поверхности: у события
+			// без аутпута некому отдать значение
+			return binding.bindEvents((exportName, args) => outputs[exportName]?.emit(args[0]))
 		},
 
 		bindElement(el: Element | null): void {

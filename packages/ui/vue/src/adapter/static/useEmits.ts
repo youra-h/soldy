@@ -5,23 +5,19 @@
  * не имеет сайд-эффектов и не тянет реактивный runtime.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from '../common'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { VueProfile } from '../common'
 
 export function useEmits(descriptor: IComponentDescriptor): string[] {
-	const inspector = createInspector(descriptor)
-	const emits = inspector.getExportEvents()
+	const surface = surfaceOf(descriptor, VueProfile)
 
-	// `getProps()`, а не `props`: второе — только собственные пропы компонента,
-	// без плагинных. А `useSyncEvents` эмитит `update:` по `getProps(false)`,
-	// куда плагинные входят, — и Vue ругался на каждый такой проп, что событие
-	// не объявлено (`update:anchor_anchor` у Frame). Объявление и эмит обязаны
-	// ходить по одному набору; инспектор выше уже собран из `getProps()`.
-	for (const prop of descriptor.getProps()) {
-		if (!prop.protected && prop.triggers && prop.triggers.length > 0) {
-			emits.push(`update:${inspector.getExportPropName(prop)}`)
-		}
-	}
+	// `update:<prop>` — на каждый записываемый проп с триггерами, плагинные
+	// включительно: на них держится `v-model`. Объявление и эмит ходят по
+	// одной поверхности — иначе Vue ругался бы на необъявленное событие
+	// (`update:anchor_anchor` у Frame).
+	const models = surface.inputs
+		.filter((prop) => prop.triggers.length > 0)
+		.map((prop) => `update:${prop.exportName}`)
 
-	return Array.from(new Set(emits))
+	return [...new Set([...surface.exportEvents, ...models])]
 }

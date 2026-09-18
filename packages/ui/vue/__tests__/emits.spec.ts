@@ -34,7 +34,7 @@ import {
 	TabsDescriptor,
 } from '@soldy/setup'
 import type { IComponentDescriptor } from '@soldy/setup'
-import { useEmits, createInspector } from '../src/adapter'
+import { useEmits, VueProfile } from '../src/adapter'
 
 const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [
 	['Accordion', AccordionDescriptor],
@@ -56,15 +56,16 @@ const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [
 describe('useEmits покрывает все update:', () => {
 	it.each(DESCRIPTORS)('%s', (_name, factory) => {
 		const descriptor = factory()
-		const inspector = createInspector(descriptor)
 		const emits = new Set(useEmits(descriptor))
 
-		// Ровно тот набор, по которому `useSyncEvents` вешает эмиттеры:
-		// непротектед-пропы с триггерами, включая плагинные
+		// Ровно тот набор, по которому адаптер эмитит `update:`: непротектед-
+		// пропы с триггерами, включая плагинные — сверка с декларациями, а не с
+		// поверхностью, по которой `useEmits` и строит список
+		const { naming } = VueProfile
 		const expected = descriptor
 			.getProps()
 			.filter((prop) => !prop.protected && (prop.triggers?.length ?? 0) > 0)
-			.map((prop) => `update:${inspector.getExportPropName(prop)}`)
+			.map((prop) => `update:${naming.prop(prop.name)}`)
 
 		expect(expected.filter((name) => !emits.has(name))).toEqual([])
 	})

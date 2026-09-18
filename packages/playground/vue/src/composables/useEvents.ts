@@ -1,12 +1,12 @@
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from '@soldy/ui-vue'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { VueProfile } from '@soldy/ui-vue'
 
 export type TEventSource = 'props' | 'instance'
 
 /**
  * Обработчики всех событий компонента — для вывода в консоль.
  *
- * Список берётся из дескриптора, а не пишется руками: `getExportEvents()` даёт
+ * Список берётся из поверхности компонента, а не пишется руками: `exportEvents` даёт
  * и объявленные события, и триггеры пропов, то есть ровно то, что компонент
  * действительно эмитит наружу. Добавили событие — оно появится на стенде само.
  *
@@ -15,7 +15,7 @@ export type TEventSource = 'props' | 'instance'
  * которым управляют пропом, или того, которым управляют через экземпляр ядра.
  */
 export function useEvents(descriptor: IComponentDescriptor) {
-	const names = createInspector(descriptor).getExportEvents()
+	const names = surfaceOf(descriptor, VueProfile).exportEvents
 
 	return function handlers(source: TEventSource): Record<string, (...args: unknown[]) => void> {
 		const map: Record<string, (...args: unknown[]) => void> = {}
