@@ -8,6 +8,7 @@ import {
 	Icon,
 	Input,
 	ListBox,
+	RadioGroup,
 	Select,
 	Skeleton,
 	Spinner,
@@ -64,6 +65,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'check-box': (bind) => h(CheckBox, bind, { default: () => 'Согласен' }),
 
 	switch: (bind) => h(Switch, bind, { default: () => 'Включено' }),
+
+	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
+	'radio-group': (bind) =>
+		h(RadioGroup as Component, bind, () =>
+			ITEMS.map((item) =>
+				h(RadioGroup.Item, { key: item.value, value: item.value }, () => item.text),
+			),
+		),
 
 	// `editable: true` в дефолте, а не только на строке самого пропа — иначе
 	// строка `editableMode` показывала бы select без ввода вовсе: `editable`

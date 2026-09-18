@@ -11,6 +11,7 @@ import {
 	HTML_TAGS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	RADIO_GROUP_VIEWS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
 	SELECT_EDITABLE_MODES,
@@ -112,6 +113,9 @@ const OWN: Record<string, Record<string, string>> = {
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
 		view: 'Оформление: plain — без рамки и фона, для плотных списков',
 	},
+	'radio-group': {
+		view: 'Отметка выбранного: точка внутри тонкого кольца или утолщённое кольцо. Группа раздаёт вид каждому радио',
+	},
 	select: {
 		open: 'Раскрыта ли панель со списком',
 		placeholder: 'Что показывать, пока ничего не выбрано',
@@ -193,6 +197,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	'check-box': { view: CHECK_BOX_VIEWS },
 	accordion: { view: BUTTON_VIEWS },
 	'list-box': { view: BUTTON_VIEWS },
+	'radio-group': { view: RADIO_GROUP_VIEWS },
 	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
