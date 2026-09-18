@@ -39,7 +39,7 @@ async function clickItem(index: number) {
 	await nextFrame()
 
 	// Кликается кнопка внутри строки, а не обёртка: обработчик выбора висит на
-	// ней (`@click="context.adapters.selection.toggle()"` в ListBoxItem.vue).
+	// ней (`@click="context?.adapters.list.choose()"` в ListBoxItem.vue).
 	// Визуально кнопка занимает строку целиком, поэтому для пользователя это
 	// одно и то же место.
 	const items = wrapper.findAll('.s-list-box-item .s-button')

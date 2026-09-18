@@ -26,4 +26,6 @@ export interface IListBoxItemExtension<
 	readonly view: TListBoxView | undefined
 	/** Где стоит отметка выбранного — значение списка целиком. */
 	readonly indicator: TListIndicator
+	/** Выбор пользователя: переключить выбор, если элемент доступен. */
+	choose(): void
 }
