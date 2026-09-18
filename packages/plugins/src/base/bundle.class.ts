@@ -4,8 +4,14 @@ export class TPluginBundle implements IPluginBundle {
 	private _plugins = new Map<IPluginConstructor<any, any, any>, IPlugin<any, any>>()
 	/** Набор объявлен наружу (`created()`): плагин, поставленный позже, объявляется сразу. */
 	private _created = false
+	/** Набор уничтожен (`destroy()`): объявлять его наружу больше нельзя. */
+	private _destroyed = false
 
 	constructor(private readonly _instance: object) {}
+
+	get destroyed(): boolean {
+		return this._destroyed
+	}
 
 	/** Компонент, которому принадлежит набор. */
 	getInstance<T>(): T | null {
@@ -53,7 +59,9 @@ export class TPluginBundle implements IPluginBundle {
 	}
 
 	created(): void {
-		if (this._created) return
+		// Уничтоженный набор не объявляется: плагин, поставленный в него после
+		// destroy(), остался бы жить — уничтожать его уже некому
+		if (this._created || this._destroyed) return
 
 		this._created = true
 
@@ -61,6 +69,8 @@ export class TPluginBundle implements IPluginBundle {
 	}
 
 	destroy(): void {
+		this._destroyed = true
+
 		// Обратный порядок: плагин ставится после тех, от кого зависит, и
 		// уничтожается раньше них
 		for (const plugin of [...this._plugins.values()].reverse()) plugin.destroy()

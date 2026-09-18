@@ -35,9 +35,18 @@ function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
  * подписаться на плагинный `create`. Объявляет плагины сам набор, а не цикл по
  * составу: плагин, поставленный в обработчике `bundle:create`, объявляется
  * вместе с остальными.
+ *
+ * Набор, уничтоженный раньше микрозадачи, не объявляется вовсе: ни
+ * `bundle:create`, ни `created()` плагинов. Так бывает при синхронном
+ * размонтировании и у React под StrictMode со своим `ctrl` — шина у
+ * уничтоженного и живого контекстов одна, инстанс. Подписчик поставил бы в
+ * уничтоженный набор плагин, который уже некому уничтожить. Что набор
+ * уничтожен, знает он сам — уничтожает себя тоже он.
  */
 function announceOnMicrotask(bundle: IPluginBundle, instance: object): void {
 	Promise.resolve().then(() => {
+		if (bundle.destroyed) return
+
 		const events: unknown = Reflect.get(instance, 'events')
 
 		if (hasEmit(events)) events.emit('bundle:create', bundle)

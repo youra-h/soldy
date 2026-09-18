@@ -303,6 +303,28 @@ describe('повторная установка эффектов · StrictMode',
 		expect(textOf(target)).toBe('из кода')
 		expect(onElementReady).toHaveBeenCalledWith(buttonOf(target))
 	})
+
+	it('с ctrl: onBundleCreate приходит один раз и с живым набором', async () => {
+		// Шина у обоих контекстов одна — инстанс, а первый уничтожен лишним
+		// циклом эффектов раньше, чем его набор объявлен
+		const ctrl = new TButton()
+		const { bundles, props } = probeProps()
+		const target = mount(
+			<StrictMode>
+				<Button ctrl={ctrl} text="Strict" {...props} />
+			</StrictMode>,
+		)
+
+		await nextFrame()
+
+		expect(bundles).toHaveLength(1)
+
+		const bundle = lastBundle(bundles)
+
+		expect(bundle.destroyed).toBe(false)
+		expect(instanceOf(bundle)).toBe(ctrl)
+		expect(bundle.get(TElementPlugin)?.element).toBe(buttonOf(target))
+	})
 })
 
 describe('повторная установка эффектов · <Activity>', () => {

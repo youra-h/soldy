@@ -94,4 +94,19 @@ describe('TPluginBundle — жизненный цикл', () => {
 		expect(log).toEqual(['destroy:late', 'destroy:second', 'destroy:first'])
 		expect(plugins.get(TFirstPlugin)).toBeUndefined()
 	})
+
+	it('created после destroy плагины не объявляет', () => {
+		const plugins = bundle()
+
+		expect(plugins.destroyed).toBe(false)
+
+		plugins.destroy()
+		// use() уничтоженный набор не запрещает, но объявленный после destroy
+		// плагин остался бы жить: уничтожать его уже некому
+		plugins.use(TLatePlugin)
+		plugins.created()
+
+		expect(plugins.destroyed).toBe(true)
+		expect(log.filter((entry) => entry.startsWith('create:'))).toEqual([])
+	})
 })
