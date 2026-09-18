@@ -10,7 +10,10 @@ import type { TPluginEvents } from '../../base'
  * это, `click` оставляет как есть — иначе с инстанса не добраться до правды.
  */
 export type TActionPluginEvents = TPluginEvents & {
-	/** Активация контрола: клик мышью либо Enter/Space. Не приходит на disabled. */
+	/**
+	 * Активация контрола: клик мышью либо Enter/Space с фокусом на корне. Не
+	 * приходит на disabled.
+	 */
 	press: (event: MouseEvent | KeyboardEvent) => void
 
 	/** Сырой DOM-клик, без фильтра по disabled. */
@@ -25,7 +28,7 @@ export type TActionPluginEvents = TPluginEvents & {
 
 export interface IActionPluginOptions {
 	/**
-	 * Клавиши, активирующие контрол на не-нативных тегах.
+	 * Клавиши, активирующие контрол с фокусом на корне не-нативного тега.
 	 * По умолчанию Enter и Space — как требует WAI-ARIA для role="button".
 	 */
 	keys?: readonly string[]

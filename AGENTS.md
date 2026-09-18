@@ -15,7 +15,7 @@ npm run test:setup   # Vitest — @soldy/setup
 npm run test:accessor
 npm run test:vue
 npm run test:theme   # Vitest — инварианты токенов темы oren
-npm run test:layout  # раскладка стенда Vue в настоящем Chromium (сам собирает тему)
+npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier; CI проверяет `prettier --check .` в задаче `lint`
 npm run changeset -- --patch @soldy/core -m "…"  # changeset для PR, см. «Версии пакетов»
@@ -59,6 +59,12 @@ jsdom не считает раскладку (`getBoundingClientRect()` там �
 всё, что зависит от flex, ширин и переносов, проверяется в
 `packages/playground/vue/browser/*.spec.ts` через `@vitest/browser` +
 Playwright (конфиг `vitest.browser.config.ts`).
+
+Туда же идут действия браузера по умолчанию: ввод символа, переключение
+чекбокса, клик из Enter или пробела на `<button>`. jsdom их не выполняет, и
+отменённое действие там не видно: корень контрола глушил Enter и пробел
+вложенных полей и кнопок, а тесты оставались зелёными. Сторожит
+`keyboard-activation.spec.ts`.
 
 - Браузер — **Chromium, который ставит Playwright**, закреплённый ревизией из
   `package-lock.json`. Системный Chrome (`channel: 'chrome'`) не использовать:
@@ -2274,7 +2280,14 @@ Disabled — так же: тема читает `data-disabled`, которое 
 в `TListKeyboardPlugin`).
 
 - `action:press` — нормализованная активация: клик или Enter/Space, не приходит
-  на `disabled`, одинакова на любом теге
+  на `disabled`, одинакова на любом теге. Enter/Space нормализуются, только
+  когда фокус на самом корне. Клавишу из вложенного поля или кнопки корень не
+  отменяет и за свой `press` не выдаёт: что с ней делать, знает сам элемент, а
+  его клик всплывёт в корень и даст `press`, как клик мышью. Раньше корень-`div`
+  отменял и её — в Input не печатался пробел, CheckBox, Switch, секция
+  Accordion и таб не срабатывали с клавиатуры. Сторожат
+  `ui/vue/__tests__/action.spec.ts` и
+  `playground/vue/browser/keyboard-activation.spec.ts`
 - `action:click` — сырой DOM-клик; нужен стороне инстанса, потому что в шаблоне
   DOM-события и так доступны через fallthrough (`<Button @click="...">`)
 - `focused` связан с настоящим фокусом в обе стороны
