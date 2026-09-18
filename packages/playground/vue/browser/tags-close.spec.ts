@@ -20,7 +20,10 @@ import { Select, SelectItem, Tags, TagsItem } from '@soldy/ui-vue'
 
 import '@soldy/theme-oren'
 
-/** Закрываемые теги: обычный, выбранный и выключенный. */
+/**
+ * Набор с крестиком: обычный, выбранный и выключенный тег. У выключенного
+ * крестика нет — его не закрыть (см. `ui/vue/__tests__/tags-close.spec.ts`).
+ */
 const harness = (tags: Record<string, unknown>, dir: 'ltr' | 'rtl' = 'ltr') =>
 	defineComponent({
 		render() {
@@ -60,16 +63,25 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 	return element
 }
 
-/** Элемент тега и его части. */
-const tag = (value: 'a' | 'b' | 'c') => {
-	const items = [...document.querySelectorAll('.s-tags-item')]
-	const item = items[['a', 'b', 'c'].indexOf(value)]
+/** Элемент тега по месту в наборе. */
+const itemOf = (value: 'a' | 'b' | 'c'): HTMLElement => {
+	const item = [...document.querySelectorAll('.s-tags-item')][['a', 'b', 'c'].indexOf(value)]
 
 	if (!(item instanceof HTMLElement)) throw new Error(`тега ${value} нет`)
 
+	return item
+}
+
+/** Строка тега — соседка крестика в элементе. */
+const rowOf = (item: HTMLElement) => find(':scope > .s-button:not(.s-tags-item__close)', item)
+
+/** Закрываемый тег и его части. У выключенного «c» крестика нет. */
+const tag = (value: 'a' | 'b') => {
+	const item = itemOf(value)
+
 	return {
 		item,
-		row: find(':scope > .s-button:not(.s-tags-item__close)', item),
+		row: rowOf(item),
 		text: find('.s-button__text', item),
 		close: find(':scope > .s-tags-item__close', item),
 	}
@@ -260,14 +272,20 @@ describe('рамка и кольцо фокуса — у пилюли', () => {
 })
 
 describe('выключенный тег гаснет целиком', () => {
-	it('пилюля, строка и крестик — с одной прозрачностью, меньше единицы', () => {
+	it('пилюля и строка — с одной прозрачностью, меньше единицы', () => {
 		render(harness({}))
 
-		const { item, row, close } = tag('c')
+		const item = itemOf('c')
 
 		expect(visibleOpacity(item)).toBeLessThan(1)
-		expect(visibleOpacity(row)).toBeCloseTo(visibleOpacity(item), 2)
-		expect(visibleOpacity(close)).toBeCloseTo(visibleOpacity(item), 2)
+		expect(visibleOpacity(rowOf(item))).toBeCloseTo(visibleOpacity(item), 2)
+	})
+
+	/** Сравнивать бледность крестика не с чем: выключенный тег не закрывается. */
+	it('крестика у него нет', () => {
+		render(harness({}))
+
+		expect(itemOf('c').querySelector('.s-tags-item__close')).toBeNull()
 	})
 })
 

@@ -11,8 +11,8 @@ import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from
  * выделить, когда набору задали значение.
  *
  * Закрытие — копия `TTabsItem`: явное значение элемента приоритетнее
- * глобального `closable` компонента, и `disabled`-тег закрыть нельзя — при
- * переходе в `disabled` `closable` сбрасывается в `false`.
+ * глобального `closable` компонента. Что выключенный тег не закрывается,
+ * решает item-адаптер коллекции (`TTagsItemExtension.closable`), а не элемент.
  */
 export default class TTagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
@@ -68,14 +68,6 @@ export default class TTagsItem<
 		// меняется на `option`, когда у коллекции включён выбор — об этом
 		// знает `TTagsExtension`, не элемент.
 		this._aria.add('role', 'listitem')
-
-		this.events.on('change:disabled', () => {
-			if (this.disabled) {
-				this._states.closable.value = false
-			} else {
-				this._states.closable.value = customProps.closable ?? ctor.defaultValues.closable
-			}
-		})
 	}
 
 	/**
@@ -105,12 +97,20 @@ export default class TTagsItem<
 		this._states.text.value = value
 	}
 
+	/**
+	 * Своё значение тега, `undefined` — наследовать от владельца.
+	 *
+	 * `disabled` его не трогает: правило «выключенный тег не закрывается»
+	 * выводит item-адаптер (`TTagsItemExtension.closable`). Раньше оно было
+	 * подпиской на `change:disabled`, которая переписывала это значение, — и
+	 * у тега, выключенного со старта, не срабатывала вовсе: события нет.
+	 */
 	get closable(): boolean | undefined {
 		return this._states.closable.value
 	}
 
 	set closable(value: boolean | undefined) {
-		if (this._states.closable.rawValue === value || this.disabled) return
+		if (this._states.closable.rawValue === value) return
 
 		this._states.closable.value = value
 	}

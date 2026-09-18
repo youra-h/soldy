@@ -30,7 +30,8 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *    сочетается: тег выключен, если выключен сам или выключен набор
  *    (`bindDisabledToOwner`).
  * 2. **Закрытие** — `closeTag`, копия `closeTab` у Tabs: закрывает только
- *    `closable` тег и эмитит `item:close` перед удалением.
+ *    тег, закрываемый по своему item-адаптеру (выключенный — нет), и эмитит
+ *    `item:close` перед удалением.
  * 3. **Роль набора**, когда у коллекции включён выбор. Tags — не список
  *    (`role="list"`/`"listitem"`), а `listbox`/`option` с `aria-selected`,
  *    как только `selection.mode` перестаёт быть `none`. Пишет это
@@ -168,7 +169,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 	/**
 	 * Закрыть тег (удалить элемент из коллекции).
-	 * Если элемент не является closable — ничего не делает.
+	 * Если тег нельзя закрыть — ничего не делает. Решает `closable` его
+	 * item-адаптера, то же, что видит разметка: выключенный тег не закрывается.
 	 */
 	closeTag(item: ITagsItem): boolean {
 		const { tags } = this._itemRegistry.get(item as TItem).adapters

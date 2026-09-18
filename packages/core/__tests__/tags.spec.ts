@@ -16,10 +16,11 @@ import {
 	TTags,
 	TTagsItem,
 	TTagsCollectionFacade,
+	TTagsItemCollectionFacade,
 	TItemContextRegistry,
 	createEngineTags,
 } from '../src'
-import type { ITagsItem, ITagsProps } from '@soldy/core'
+import type { ITagsItem, ITagsItemProps, ITagsProps } from '@soldy/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 	const owner = new TTags(props)
@@ -147,15 +148,168 @@ describe('закрытие тега', () => {
 	})
 })
 
-describe('disabled сбрасывает closable', () => {
-	it('closable становится false при переходе в disabled', () => {
-		const tag = new TTagsItem({ closable: true })
+/**
+ * Правило одно и не зависит от пути к «выключен»: со старта, позже или вместе
+ * с набором. Выводит его item-адаптер — его `closable` читают разметка
+ * (`tag_closable` фасада) и `closeTag`. Раньше правило было подпиской в
+ * `TTagsItem` на `change:disabled`, и тег, выключенный со старта, оставался
+ * закрываемым: события у него не было.
+ *
+ * Коллекция собрана как у компонента (`createEngineTags`).
+ */
+describe('выключенный тег не закрывается', () => {
+	function setup(owner = new TTags({ closable: true })) {
+		const engine = createEngineTags({ owner })
+		const registry = new TItemContextRegistry(engine.getCore())
 
-		expect(tag.closable).toBe(true)
+		/** Можно ли закрыть тег — то, что видит разметка. */
+		const closable = (tag: ITagsItem) => registry.get(tag).adapters.tags.closable
+
+		/** Сообщения адаптера тега о смене `closable`. */
+		const changes = (tag: ITagsItem) => {
+			const handler = vi.fn()
+
+			registry.get(tag).adapters.tags.events.on('change:closable', handler)
+
+			return handler
+		}
+
+		return { owner, engine, tags: engine.extensions.tags, registry, closable, changes }
+	}
+
+	const createTag = (text: string, props: Partial<ITagsItemProps> = {}) =>
+		new TTagsItem({ text, value: text.toLowerCase(), ...props })
+
+	it('выключенный со старта: не закрывается, closeTag его не удаляет', () => {
+		const { engine, tags, registry, closable } = setup()
+		const tag = engine.extensions.plain.push(createTag('Архив', { disabled: true }))
+		const onClose = vi.fn()
+
+		tags.events.on('item:close', onClose)
+
+		expect(closable(tag)).toBe(false)
+		expect(tags.closeTag(tag)).toBe(false)
+
+		registry.get(tag).adapters.tags.close()
+
+		expect(onClose).not.toHaveBeenCalled()
+		expect(engine.extensions.batch.items).toContain(tag)
+	})
+
+	it('выключенный со старта данными (items) — так же', () => {
+		const engine = createEngineTags({
+			owner: new TTags({ closable: true }),
+			items: [{ value: 'archive', text: 'Архив', disabled: true }],
+		})
+		const [tag] = engine.extensions.batch.items
+		const registry = new TItemContextRegistry(engine.getCore())
+
+		expect(registry.get(tag).adapters.tags.closable).toBe(false)
+		expect(engine.extensions.tags.closeTag(tag)).toBe(false)
+		expect(engine.extensions.batch.items).toContain(tag)
+	})
+
+	it('выключили позже — не закрывается, включили — закрывается снова', () => {
+		const { engine, tags, closable, changes } = setup()
+		const tag = engine.extensions.plain.push(createTag('Почта'))
+		const changed = changes(tag)
+
+		expect(closable(tag)).toBe(true)
 
 		tag.disabled = true
 
+		expect(closable(tag)).toBe(false)
+		expect(changed).toHaveBeenCalledOnce()
+		expect(tags.closeTag(tag)).toBe(false)
+
+		tag.disabled = false
+
+		expect(closable(tag)).toBe(true)
+		expect(changed).toHaveBeenCalledTimes(2)
+		expect(tags.closeTag(tag)).toBe(true)
+	})
+
+	it('выключили набор — не закрывается ни один тег, включили — снова закрываются', () => {
+		const { owner, engine, tags, closable, changes } = setup()
+		const a = engine.extensions.plain.push(createTag('Настройки'))
+		const b = engine.extensions.plain.push(createTag('Почта'))
+		const changed = changes(a)
+
+		owner.disabled = true
+
+		expect([a, b].map(closable)).toEqual([false, false])
+		expect(changed).toHaveBeenCalledOnce()
+		expect(tags.closeTag(a)).toBe(false)
+
+		owner.disabled = false
+
+		expect([a, b].map(closable)).toEqual([true, true])
+		expect(changed).toHaveBeenCalledTimes(2)
+	})
+
+	it('включили набор — тег, выключенный сам, по-прежнему не закрывается', () => {
+		const { owner, engine, closable } = setup()
+		const tag = engine.extensions.plain.push(createTag('Архив', { disabled: true }))
+
+		owner.disabled = true
+		owner.disabled = false
+
+		expect(closable(tag)).toBe(false)
+	})
+
+	it('включение возвращает своё значение тега, заданное после создания', () => {
+		const { engine, closable } = setup(new TTags())
+		const tag = engine.extensions.plain.push(createTag('Почта'))
+
+		tag.closable = true
+		tag.disabled = true
+
+		expect(closable(tag)).toBe(false)
+
+		tag.disabled = false
+
+		expect(closable(tag)).toBe(true)
+	})
+
+	it('своё closable, заданное выключенному тегу, действует после включения', () => {
+		const { engine, closable } = setup(new TTags())
+		const tag = engine.extensions.plain.push(createTag('Архив', { disabled: true }))
+
+		tag.closable = true
+
+		expect(closable(tag)).toBe(false)
+
+		tag.disabled = false
+
+		expect(closable(tag)).toBe(true)
+	})
+
+	/** Иначе после включения своё значение тега неоткуда вернуть. */
+	it('disabled не трогает своё closable тега, сеттер пишет и у выключенного', () => {
+		const tag = new TTagsItem({ closable: true })
+
+		tag.disabled = true
+
+		expect(tag.closable).toBe(true)
+
+		tag.closable = false
+
 		expect(tag.closable).toBe(false)
+	})
+
+	it('фасад элемента узнаёт о смене событием — по нему разметка прячет кнопку', () => {
+		const { engine, registry } = setup()
+		const tag = engine.extensions.plain.push(createTag('Почта'))
+		const facade = new TTagsItemCollectionFacade()
+		const changed = vi.fn()
+
+		facade.setContext(registry.get(tag))
+		facade.events.on('change:closable', changed)
+
+		tag.disabled = true
+
+		expect(facade.closable).toBe(false)
+		expect(changed).toHaveBeenCalledOnce()
 	})
 })
 

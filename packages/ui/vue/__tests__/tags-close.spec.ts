@@ -196,22 +196,78 @@ describe('кнопка ведёт себя как раньше', () => {
 		expect(rows()).toHaveLength(3)
 	})
 
-	it('у выключенного тега выключена и кнопка — строка её больше не накрывает', async () => {
-		await render(`
-			<Tags closable>
-				<TagsItem value="a" text="A" />
-				<TagsItem value="b" text="B" disabled />
-			</Tags>
-		`)
-
-		expect(closeOf('B').hasAttribute('disabled')).toBe(true)
-		expect(closeOf('A').hasAttribute('disabled')).toBe(false)
-	})
-
 	it('размер кнопки — размер тега: от него считается кегль иконки', async () => {
 		await render(`<Tags closable size="lg"><TagsItem value="a" text="A" /></Tags>`)
 
 		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+	})
+})
+
+/**
+ * Выключенный тег не закрывается, и кнопки у него нет — с какого бы пути он
+ * ни пришёл к «выключен». Раньше тег, выключенный со старта, рисовал бледную
+ * кнопку, которую нельзя нажать, а выключенный позже — никакой.
+ *
+ * `:disabled` у кнопки в шаблоне остался: он дёшев и защищает, если кнопку
+ * всё же нарисуют.
+ */
+describe('у выключенного тега кнопки закрытия нет', () => {
+	/** «B» выключен со старта, «C» — пропом `tagOff`, весь набор — пропом `setOff`. */
+	const Harness = {
+		components: { Tags, TagsItem },
+		props: { tagOff: Boolean, setOff: Boolean },
+		template: `
+			<Tags closable :disabled="setOff">
+				<TagsItem value="a" text="A" />
+				<TagsItem value="b" text="B" disabled />
+				<TagsItem value="c" text="C" :disabled="tagOff" />
+			</Tags>
+		`,
+	}
+
+	const mountHarness = async () => {
+		const mounted = mount(Harness, { attachTo: document.body })
+
+		wrapper = mounted
+		await nextTick()
+
+		return mounted
+	}
+
+	/** Теги, у которых есть кнопка закрытия, — по тексту строки. */
+	const withClose = () =>
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tags-item__close'))
+
+	it('выключенный со старта', async () => {
+		await mountHarness()
+
+		expect(withClose()).toEqual(['A', 'C'])
+		expect(item('B').children).toHaveLength(1)
+	})
+
+	it('выключили позже — кнопка пропала, включили — вернулась', async () => {
+		const mounted = await mountHarness()
+
+		await mounted.setProps({ tagOff: true })
+
+		expect(withClose()).toEqual(['A'])
+
+		await mounted.setProps({ tagOff: false })
+
+		expect(withClose()).toEqual(['A', 'C'])
+	})
+
+	it('выключили набор — кнопок нет ни у одного тега, включили — вернулись', async () => {
+		const mounted = await mountHarness()
+
+		await mounted.setProps({ setOff: true })
+
+		expect(withClose()).toEqual([])
+
+		await mounted.setProps({ setOff: false })
+
+		// «B» выключен сам: включение набора ему кнопку не возвращает
+		expect(withClose()).toEqual(['A', 'C'])
 	})
 })
 

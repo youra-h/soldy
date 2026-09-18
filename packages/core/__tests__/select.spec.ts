@@ -732,6 +732,11 @@ describe('теги в multiple', () => {
 		expect(collection.selected).toEqual([items[1]])
 	})
 
+	/**
+	 * Закрываемость — то, что видит разметка: `closable` item-адаптера тега.
+	 * Своё `closable` тега выключение не переписывает (см. `tags.spec.ts`,
+	 * «выключенный тег не закрывается»).
+	 */
 	it('disabled поля гасит closable тегов', () => {
 		const { owner, collection, facadeFor } = createSelect(['a'])
 
@@ -739,9 +744,12 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 		owner.disabled = true
 
-		const tag = [...tagsEngine(collection).extensions.batch.items][0]
+		const engine = tagsEngine(collection)
+		const tag = [...engine.extensions.batch.items][0]
+		const registry = new TItemContextRegistry(engine.getCore())
 
-		expect(tag.closable).toBe(false)
+		expect(registry.get(tag).adapters.tags.closable).toBe(false)
+		expect(engine.extensions.tags.closeTag(tag)).toBe(false)
 	})
 
 	it('field.value пуст, пока теги есть, — текст рисуют они', () => {
