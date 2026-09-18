@@ -7,7 +7,7 @@
  * 3. Вызывает adapter.destroy() при анмаунте компонента
  */
 
-import { getCurrentInstance, ref, watch, onUnmounted, type Ref } from 'vue'
+import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { TElementPlugin } from '@soldy/plugins'
 import { bindComponent, type IAdapterContext, type TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
@@ -69,33 +69,6 @@ export function toBindingState<TProps, TInstance, TOutputs extends object = obje
 		TInstanceState<TOutputs>
 }
 
-/** `some-prop` → `someProp`: в разметке проп могли написать через дефис. */
-function camelize(name: string): string {
-	return name.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
-}
-
-/**
- * Имена, под которыми проп реально написан в разметке.
- *
- * `vnode.props` — то, что автор передал, без подставленных Vue значений по
- * умолчанию. Разница видна только при внешнем `ctrl`: сам компонент строит
- * инстанс из props и стартовые значения уже получил, а чужому инстансу
- * стартовые значения не доезжали вовсе — `watch` без `immediate` молчит, пока
- * проп не сменится. Отсюда и `<Select :ctrl="x" placeholder="…">` без
- * плейсхолдера.
- *
- * Подставленные Vue значения по умолчанию писать нельзя: `default` пропа
- * приходит из декларации (у пропа ядра setup собирает его из `defaultValues`
- * класса), и отсутствующий в разметке `editable` пришёл бы как `false` — то
- * есть монтирование затирало бы состояние чужого инстанса своими умолчаниями.
- * Ровно то, ради чего этот инстанс и передают.
- */
-function passedNames(): Set<string> {
-	const raw = getCurrentInstance()?.vnode.props ?? {}
-
-	return new Set(Object.keys(raw).map((name) => camelize(name)))
-}
-
 /**
  * Общая часть `useAdapter` и `useCollectionAdapter`: подписки, DOM-биндинг и
  * очистка. Отдаёт то, из чего каждый хук собирает свой результат.
@@ -123,16 +96,15 @@ export function useAdapterParts<TInstance extends object>(
 
 	// 2. Vue → Core: `watch` на каждый входной проп, а не на весь объект —
 	// иначе смена любого пропа переписала бы в ядро и те, что ядро с тех пор
-	// поменяло само (открытый по клику список закрылся бы от смены placeholder)
-	const passed = passedNames()
-
+	// поменяло само (открытый по клику список закрылся бы от смены placeholder).
+	// Начальные значения применила сборка контекста, здесь — только изменения
 	for (const prop of binding.surface.inputs) {
-		const read = (): unknown => binding.read(prop, props)
-
-		// Стартовое значение — только для написанного в разметке
-		if (passed.has(prop.exportName) || passed.has(prop.name.name)) binding.write(prop, read())
-
-		offs.push(watch(read, (value) => binding.write(prop, value)))
+		offs.push(
+			watch(
+				() => binding.read(prop, props),
+				(value) => binding.write(prop, value),
+			),
+		)
 	}
 
 	// 3. Эмиты: события ядра, затем `update:<prop>` для v-model. Значение

@@ -57,8 +57,8 @@ export function useAdapter<TInstance extends object = object>(
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
-		// Элемент отдаёт не полный набор, а то, что задано: при подключении —
-		// выставленное до него, дальше — по одному атрибуту или свойству.
+		// Элемент отдаёт не полный набор, а то, что задано: по одному атрибуту или
+		// свойству. Выставленное до подключения применила сборка контекста.
 		// Поэтому `writeChanged`: `writeAll` сбросил бы к умолчанию остальные
 		syncProps(props: object): void {
 			binding.writeChanged(props)

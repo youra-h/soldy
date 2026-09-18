@@ -4,8 +4,8 @@
  * Принимает ГОТОВЫЙ adapter-context и возвращает TBinding:
  *
  * - state: сигнал с текущими значениями props из Core
- * - syncInputs(inputs): Angular → Core, только переданные входы (вызывается из
- *   ngOnInit и ngOnChanges)
+ * - syncInputs(inputs): Angular → Core, только изменившиеся входы (вызывается из
+ *   ngOnChanges)
  * - syncEvents(outputs): подписывает Angular EventEmitter'ы на Core-события
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): очистка подписок + adapter.destroy()

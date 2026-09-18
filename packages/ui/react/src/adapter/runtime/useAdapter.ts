@@ -15,8 +15,9 @@
  * 4. DOM-биндинг через контекст (TElementPlugin)
  *
  * Контекст может смениться: useAdapterContext пересобирает его, когда React
- * заново устанавливает эффекты (StrictMode, `<Activity>`). Связка нового
- * контекста продолжает память прошлой, а состояние заполняется заново из неё.
+ * заново устанавливает эффекты (StrictMode, `<Activity>`). Пересборка — такое
+ * же монтирование: пропсы применяет сборка, у нового контекста своя связка, и
+ * состояние заполняется заново из неё.
  *
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
  */
@@ -56,17 +57,17 @@ type TStore = Readonly<{
 type TAction =
 	/** Ядро сообщило новое значение свойства. */
 	| { type: 'output'; name: string; value: unknown }
-	/** Контекст пересобран — связать новый, продолжив память прошлой связки. */
+	/** Контекст пересобран — связать новый. */
 	| { type: 'rebind'; adapter: IAdapterContext }
 
-function bind(adapter: IAdapterContext, previous?: IComponentBinding): TStore {
-	const binding = bindComponent(adapter, ReactProfile, previous)
+function bind(adapter: IAdapterContext): TStore {
+	const binding = bindComponent(adapter, ReactProfile)
 
 	return { adapter, binding, state: binding.state() }
 }
 
 function reducer(prev: TStore, action: TAction): TStore {
-	if (action.type === 'rebind') return bind(action.adapter, prev.binding)
+	if (action.type === 'rebind') return bind(action.adapter)
 
 	// То же значение — тот же объект состояния: React не перерисует компонент зря
 	if (Object.is(prev.state[action.name], action.value)) return prev
@@ -85,9 +86,8 @@ export function useAdapter<
 ): TBinding<TInstance, TProps, TOutputs> {
 	const [store, dispatch] = useReducer(reducer, adapter, bind)
 
-	// Контекст пересобран: у нового инстанса и плагинов свои значения, а связка
-	// продолжает память прошлой — пропсы с тех пор фреймворк заново не задавал.
-	// Обновление во время рендера React применяет сразу, не отрисовав прошлое
+	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
+	// связка. Обновление во время рендера React применяет сразу, не отрисовав прошлое
 	if (store.adapter !== adapter) dispatch({ type: 'rebind', adapter })
 
 	const { binding, state } = store

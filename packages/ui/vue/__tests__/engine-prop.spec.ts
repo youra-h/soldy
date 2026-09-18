@@ -128,3 +128,35 @@ describe('уровень движка компоненту не важен', () 
 		expect(ready.extensions.activation).toBe(activation)
 	})
 })
+
+/**
+ * Фасад собирается конструктором из тех же пропсов, и `items` он уже записал.
+ * Раньше адаптер писал разметку второй раз, а сеттер `items` значения не
+ * сверяет: без `trackBy` это `clear()` + `set()`. Коллекция очищалась при
+ * монтировании, и активация сбрасывалась. Теперь начальные значения применяет
+ * только сборка контекста.
+ */
+describe.each([
+	['ListBox', ListBox],
+	['Tabs', Tabs],
+	['Accordion', Accordion],
+] as const)('%s: состав из пропа items пишется один раз', (_, Component) => {
+	it('при монтировании нет очистки и повторного добавления', async () => {
+		const engine = createEngine<TItem>()
+		let resets = 0
+		let added = 0
+
+		engine.extensions.plain.events.on('reset', () => resets++)
+		engine.extensions.plain.events.on('item:added', () => added++)
+
+		wrapper = mount(Component, {
+			props: { engine, items: ITEMS },
+			attachTo: document.body,
+		})
+
+		await nextTick()
+
+		expect(resets).toBe(0)
+		expect(added).toBe(ITEMS.length)
+	})
+})

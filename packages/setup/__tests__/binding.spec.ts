@@ -23,7 +23,7 @@ import {
 	defineComponent,
 	surfaceOf,
 } from '@soldy/setup'
-import type { IAdapterProfile, IComponentBinding } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy/setup'
 import { CallbackProfile, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
@@ -266,14 +266,22 @@ describe('связка · снятый проп', () => {
 	})
 
 	it('заданным проп считается и тогда, когда значение уже лежало в инстансе', () => {
-		// Первый проход фреймворка: инстанс собран из тех же пропсов, и запись
-		// того же значения пропускается — но проп всё равно задан
+		// Ядро уже держит то же значение, и запись пропускается — но проп задан
 		const { ctrl, binding } = bindButton(new TButton({ text: 'a' }))
 
 		binding.writeAll({ text: 'a' })
 		binding.writeAll({})
 
 		expect(ctrl.text).toBe('')
+	})
+
+	it('проп, с которым собран контекст, тоже задан: снятый, он сбрасывается', () => {
+		const context = createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } })
+		const binding = bindComponent(context, CallbackProfile)
+
+		binding.writeAll({})
+
+		expect(context.instance.text).toBe('')
 	})
 
 	it('трёхзначный проп возвращается к «как у владельца»: closable элемента Tabs', () => {
@@ -454,15 +462,6 @@ describe('связка · повторённый проп', () => {
 		expect(ctrl.text).toBe('')
 	})
 
-	it('первый набор пишет все заданные: внешний ctrl получает разметку', () => {
-		const { ctrl, binding } = bindButton(new TButton({ text: 'своё', tag: 'a' }))
-
-		binding.writeAll({ text: 'из разметки' })
-
-		expect(ctrl.text).toBe('из разметки')
-		expect(ctrl.tag).toBe('a')
-	})
-
 	it('дельта с прошлым значением не сверяется: ключ в ней — уже изменение', () => {
 		const { ctrl, binding } = bindButton()
 
@@ -476,71 +475,107 @@ describe('связка · повторённый проп', () => {
 })
 
 /**
- * React пересобирает контекст, когда заново устанавливает эффекты того же
- * компонента (StrictMode, `<Activity>`). Связка нового контекста продолжает
- * память прошлой: для фреймворка это та же жизнь компонента, и пропсы он
- * заново не задавал. Без продолжения первый набор новой связки записал бы
- * разметку во внешний `ctrl` поверх того, что с тех пор поменял код.
+ * Начальные значения пропсов применяет сборка контекста — одна точка для всех
+ * шести адаптеров. Раньше их дописывал первый проход каждого адаптера, и у
+ * каждого своим способом: Vue отдельной записью перед `watch`, React, Solid и
+ * Svelte первым `writeAll`, Angular и Web Components первой дельтой.
  */
-describe('связка · продолжение прошлой', () => {
-	/** Связка нового контекста на том же `ctrl`, продолжающая `previous`. */
-	function continueOn(ctrl: TButton, previous?: IComponentBinding): IComponentBinding {
-		return bindComponent(
-			createAdapterContext(ButtonDescriptor(), { ctrl }),
-			CallbackProfile,
-			previous,
-		)
-	}
+describe('сборка · начальные значения пропсов', () => {
+	it('внешний ctrl получает то, что отличается от умолчания', () => {
+		const ctrl = new TButton({ text: 'своё', tag: 'a' })
 
-	it('проп, повторённый с прошлого набора, не пишется: значение из кода остаётся', () => {
-		const { ctrl, binding } = bindButton()
-
-		binding.writeAll({ text: 'из разметки' })
-		ctrl.text = 'из кода'
-		continueOn(ctrl, binding).writeAll({ text: 'из разметки' })
-
-		expect(ctrl.text).toBe('из кода')
-	})
-
-	it('сменившийся проп пишется', () => {
-		const { ctrl, binding } = bindButton()
-
-		binding.writeAll({ text: 'a' })
-		ctrl.text = 'из кода'
-		continueOn(ctrl, binding).writeAll({ text: 'b' })
-
-		expect(ctrl.text).toBe('b')
-	})
-
-	it('снятый проп сбрасывается к умолчанию', () => {
-		const { ctrl, binding } = bindButton()
-
-		binding.writeAll({ text: 'a' })
-		ctrl.text = 'из кода'
-		continueOn(ctrl, binding).writeAll({})
-
-		expect(ctrl.text).toBe('')
-	})
-
-	it('без прошлой связки первый набор, как и раньше, пишет все заданные пропсы', () => {
-		const { ctrl, binding } = bindButton()
-
-		binding.writeAll({ text: 'из разметки' })
-		ctrl.text = 'из кода'
-		continueOn(ctrl).writeAll({ text: 'из разметки' })
+		// `tag: 'button'` — умолчание декларации: ничего не задаёт
+		createAdapterContext(ButtonDescriptor(), {
+			ctrl,
+			props: { text: 'из разметки', tag: 'button' },
+		})
 
 		expect(ctrl.text).toBe('из разметки')
+		expect(ctrl.tag).toBe('a')
 	})
 
-	it('прошлая связка не меняется: от неё продолжают и второй раз', () => {
-		const { ctrl, binding } = bindButton()
+	it('запись идёт сеттером: ядро эмитит триггер', () => {
+		const ctrl = new TButton()
+		const changes = vi.fn()
 
-		binding.writeAll({ text: 'a' })
-		// Первое продолжение снимает проп — в свою память, не в прошлую
-		continueOn(ctrl, binding).writeAll({})
+		ctrl.events.on('change:text', changes)
+		createAdapterContext(ButtonDescriptor(), { ctrl, props: { text: 'a' } })
+
+		expect(changes).toHaveBeenCalledTimes(1)
+	})
+
+	it('непереданный проп внешний ctrl не трогает', () => {
+		const ctrl = new TButton({ text: 'своё' })
+
+		createAdapterContext(ButtonDescriptor(), { ctrl, props: { text: undefined } })
+
+		expect(ctrl.text).toBe('своё')
+	})
+
+	it('проп плагина доходит и до плагина внешнего ctrl', () => {
+		const ctrl = new TButton()
+
+		createAdapterContext(ButtonDescriptor(), { ctrl, props: { aria_label: 'Закрыть' } })
+
+		expect(ctrl.aria.get('aria-label')).toBe('Закрыть')
+	})
+
+	it('свой инстанс получил пропсы ядра конструктором — второй раз их не пишут', () => {
+		// Геттер отдаёт копию, как `items` фасада коллекции: сверка «то же
+		// значение» не узнала бы его, и сеттер пересоздал бы элементы
+		class TSample {
+			static defaultValues = { items: [] }
+			sets = 0
+			private _items: string[]
+
+			constructor(props: { items?: string[] } = {}) {
+				this._items = [...(props.items ?? [])]
+			}
+
+			get items(): string[] {
+				return [...this._items]
+			}
+
+			set items(value: string[]) {
+				this.sets++
+				this._items = [...value]
+			}
+		}
+
+		const descriptor = defineComponent({
+			ctor: TSample,
+			contribution: { props: { items: { type: Array } } },
+		})
+		const context = createAdapterContext(descriptor, { props: { items: ['a'] } })
+
+		expect(context.instance.items).toEqual(['a'])
+		expect(context.instance.sets).toBe(0)
+	})
+
+	it('память связки начинается с тех же пропсов: повтор не откатывает код', () => {
+		const ctrl = new TButton()
+		const context = createAdapterContext(ButtonDescriptor(), {
+			ctrl,
+			props: { text: 'из разметки' },
+		})
+		const binding = bindComponent(context, CallbackProfile)
+
 		ctrl.text = 'из кода'
-		continueOn(ctrl, binding).writeAll({ text: 'a' })
+		binding.writeAll({ text: 'из разметки' })
 
 		expect(ctrl.text).toBe('из кода')
+	})
+
+	it('пересборка на том же ctrl — снова инициализация', () => {
+		// React пересобирает контекст, заново устанавливая эффекты
+		// (StrictMode, `<Activity>`): это такое же монтирование
+		const ctrl = new TButton()
+		const props = { text: 'из разметки' }
+
+		createAdapterContext(ButtonDescriptor(), { ctrl, props }).destroy()
+		ctrl.text = 'из кода'
+		createAdapterContext(ButtonDescriptor(), { ctrl, props })
+
+		expect(ctrl.text).toBe('из разметки')
 	})
 })
