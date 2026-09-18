@@ -10,8 +10,8 @@ import type { TListKeyboardPluginEvents } from './types'
  * чем список отличается: набор клавиш и смысл активации.
  *
  * `ListBox` фокусируется сам (`tabindex="0"` на корне), поэтому `keydown`
- * слушается на нём же. Enter и Space переключают выбор через
- * selection-расширение коллекции.
+ * слушается на нём же. Enter и Space переключают выбор подсвеченного через
+ * расширение списка (`list.chooseItem`), как и клик по строке.
  */
 export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPluginEvents> {
 	/**
@@ -55,11 +55,16 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 		}
 	}
 
+	/**
+	 * Выбор идёт через расширение списка, тем же путём, что клик по строке:
+	 * выключенному элементу оно отказывает. `selection.toggle` выключенность
+	 * не проверяет — выбрать выключенный элемент из кода вправе приложение.
+	 */
 	private _toggleHighlighted(): void {
 		if (this._highlightedUid == null) return
 
 		const item = this.itemByUid(this._highlightedUid)
 
-		if (item) this._engine?.extensions.selection.toggle(item)
+		if (item) this._engine?.extensions.list.chooseItem(item)
 	}
 }

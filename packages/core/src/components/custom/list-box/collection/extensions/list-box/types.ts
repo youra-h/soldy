@@ -13,7 +13,8 @@ import type { IListBoxItem } from '../../../item/types'
  * Контракт расширения списка.
  *
  * Используется как тип `TParent` в `TListBoxItemExtension` — через него
- * item-адаптер типизированно достаёт `view` владельца.
+ * item-адаптер типизированно достаёт `view` владельца и передаёт списку
+ * выбор своего элемента.
  */
 export interface IListBoxExtension<
 	TItem extends IListBoxItem = IListBoxItem,
@@ -26,6 +27,11 @@ export interface IListBoxExtension<
 	readonly view: TListBoxView | undefined
 	/** Где стоит отметка выбранного — свойство списка, не элемента. */
 	readonly indicator: TListIndicator
+	/**
+	 * Выбор пользователя: переключить выбор элемента.
+	 * Возвращает `false`, если элемент недоступен.
+	 */
+	chooseItem(item: TItem): boolean
 }
 
 /** Опции конструктора: ссылка на инстанс списка. */

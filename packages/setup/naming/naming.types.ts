@@ -10,7 +10,8 @@
  *   TCallbackEventProps<DescriptorAllEvents<typeof ComponentViewDescriptor>>
  *     → { onShow?, onChangeVisible?, onElementReady?, ... }
  *
- * Используется React- и Svelte-адаптерами: в обоих события — колбэк-пропы.
+ * Используется React-, Svelte- и Solid-адаптерами: во всех трёх события —
+ * колбэк-пропы.
  */
 
 /** Split<'show:before', '-' | ':'> → ['show', 'before'] */

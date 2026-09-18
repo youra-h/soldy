@@ -8,7 +8,8 @@ import type { TListIndicator } from '../../../../../list'
 /**
  * TListBoxItemExtension — stateless-делегат элемента ListBox.
  *
- * Отдаёт `view` и `indicator` владельца. Раньше между ним и базой стоял
+ * Отдаёт `view` и `indicator` владельца, выбор своего элемента передаёт
+ * родительскому расширению (`choose`). Раньше между ним и базой стоял
  * `TListItemExtension`, резолвивший `wordWrap` как «значение элемента поверх
  * значения списка»; теперь такую пару — `contentFit` — разрешает родительский
  * `TListBoxExtension`, записывая элементу `data-content-fit`.
@@ -38,5 +39,13 @@ export class TListBoxItemExtension<
 	/** Сторона отметки — тоже целиком со списка: у элемента своей нет. */
 	get indicator(): TListIndicator {
 		return this._parent.indicator
+	}
+
+	/**
+	 * Выбор пользователя. Решает список: выключенному элементу он откажет, а
+	 * проверка должна быть одна на клик и на клавиатуру.
+	 */
+	choose(): void {
+		this._parent.chooseItem(this._item)
 	}
 }

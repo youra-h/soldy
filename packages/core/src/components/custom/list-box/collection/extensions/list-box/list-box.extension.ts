@@ -1,4 +1,8 @@
-import type { IExtension, IExtensionContext } from '../../../../../base/collection'
+import type {
+	IExtension,
+	IExtensionContext,
+	ISelectionExtension,
+} from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
@@ -19,6 +23,9 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
  * свойства лежат на инстансе списка по контракту `IList`.
+ *
+ * Через него идёт выбор пользователя (`chooseItem`): и клик по строке, и
+ * клавиатура списка. Выключенному элементу он отказывает.
  *
  * Раньше между ним и базой стоял `TListExtension` — ровно тот же код минус
  * `view`. Слой исчез вместе с компонентом `TList`: наследник у него был один.
@@ -109,6 +116,31 @@ export class TListBoxExtension<
 
 		// Внешний вид и сторона отметки доезжают до item-адаптеров
 		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
+	}
+
+	/**
+	 * Выбор пользователя — клик по строке или Enter и пробел на подсвеченном
+	 * элементе: переключить выбор элемента.
+	 *
+	 * Выключенный элемент не выбирается: он виден и объявляется скринридером
+	 * как недоступный, но нажатие по нему ничего не делает. `item.disabled` —
+	 * итог, в нём учтён и выключенный список.
+	 *
+	 * Проверка здесь, а не в `TSelectionExtension`: выбрать выключенный элемент
+	 * из кода (`select`, `toggle`) — право приложения.
+	 */
+	chooseItem(item: TItem): boolean {
+		const selection = this._selection
+
+		if (!selection || item.disabled) return false
+
+		selection.toggle(item)
+
+		return true
+	}
+
+	private get _selection(): ISelectionExtension<TItem> | undefined {
+		return this._ctx?.extensions.selection as ISelectionExtension<TItem> | undefined
 	}
 
 	/**

@@ -6,6 +6,10 @@
  *
  * Angular-специфика: имена @Output должны быть валидными TS-идентификаторами,
  * поэтому двоеточия схлопываются в camelCase, а `on`-префикс не добавляется.
+ *
+ * В camelCase переводится `TName.getName()`: своей копии формата
+ * `namespace:name` здесь нет — её пришлось бы менять вместе с `getName()`.
+ * Базу имени так же берут Vue и Web Components, только отдают её как есть.
  */
 
 import type { INamingStrategy } from '@soldy/accessor'
@@ -22,9 +26,5 @@ function toCamelCase(input: string): string {
 export const AngularNaming: INamingStrategy = {
 	prop: underscorePropNaming,
 
-	event: (name) => {
-		const base = name.namespace ? `${name.namespace}:${name.name}` : name.name
-
-		return toCamelCase(base)
-	},
+	event: (name) => toCamelCase(name.getName()),
 }
