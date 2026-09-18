@@ -1,7 +1,7 @@
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView, TDefaultValues } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import type { IAriaPluginOptions, TAriaPluginEvents } from './types'
+import type { IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './types'
 
 /**
  * TAriaPlugin — доступное имя и описание компонента.
@@ -20,10 +20,27 @@ import type { IAriaPluginOptions, TAriaPluginEvents } from './types'
  * шаблон, синхронно.
  */
 export class TAriaPlugin extends TBasePlugin<any, TAriaPluginEvents> {
+	/**
+	 * Умолчания пропов — «имени нет». Объявлены ключами без значения, как
+	 * `closable` у элемента Tabs: значим ключ, а не значение. Снятый из разметки
+	 * проп связка возвращает к умолчанию декларации, и без ключа у компонента
+	 * оставалось бы прежнее имя. В декларацию их кладёт `definePlugin` — см.
+	 * `TAnchorPlugin.defaultValues`.
+	 */
+	static defaultValues: TDefaultValues<
+		IAriaPluginProps,
+		never,
+		'label' | 'labelledBy' | 'describedBy'
+	> = {
+		label: undefined,
+		labelledBy: undefined,
+		describedBy: undefined,
+	}
+
 	private _instance: IComponentView | null = null
-	private _label: string | undefined
-	private _labelledBy: string | undefined
-	private _describedBy: string | undefined
+	private _label = TAriaPlugin.defaultValues.label
+	private _labelledBy = TAriaPlugin.defaultValues.labelledBy
+	private _describedBy = TAriaPlugin.defaultValues.describedBy
 	private _role: string | undefined
 
 	override install(ctx: IPluginContext, options?: IAriaPluginOptions): void {

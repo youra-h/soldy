@@ -19,12 +19,19 @@ export default class TIcon
 {
 	static override baseClass = 's-icon'
 
-	static defaultValues: typeof TComponentView.defaultValues & TDefaultValues<IIconProps, 'size'> =
-		{
-			...TComponentView.defaultValues,
-			size: 'normal',
-			tag: 'error',
-		}
+	/**
+	 * `width` и `height` объявлены ключами без значения: незаданный размер даёт
+	 * `size`, и снятый из разметки проп обязан вернуть иконку к нему, а не
+	 * оставить прежний (см. AGENTS.md, «Умолчание пропа — в декларации»).
+	 */
+	static defaultValues: typeof TComponentView.defaultValues &
+		TDefaultValues<IIconProps, 'size', 'width' | 'height'> = {
+		...TComponentView.defaultValues,
+		size: 'normal',
+		tag: 'error',
+		width: undefined,
+		height: undefined,
+	}
 
 	protected _width: string | number | undefined
 	protected _height: string | number | undefined
@@ -50,8 +57,8 @@ export default class TIcon
 
 		this._classes.add(`--size-${this._states.size.value}`, true)
 
-		this._width = props.width
-		this._height = props.height
+		this._width = props.width ?? ctor.defaultValues.width
+		this._height = props.height ?? ctor.defaultValues.height
 
 		// Иконка декоративна: она стоит рядом с текстом и дублирует его —
 		// «стрелка Развернуть» вместо «Развернуть».

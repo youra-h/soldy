@@ -4,7 +4,7 @@ import type {
 	TCollectionFacadeProps,
 	TBatchCollectionFacadeEvents,
 } from '../types'
-import type { IComponentProps } from '../../../component'
+import type { IComponentProps, TDefaultValues } from '../../../component'
 import type { IExtension, TCollectionEngineItemSource } from '../../engine'
 import type { TBatchExtension, TPlainExtension } from '../../engine'
 
@@ -44,6 +44,22 @@ export abstract class TBatchCollectionFacade<
 	} & Record<string, IExtension<any>>,
 	TEvents extends TBatchCollectionFacadeEvents<TItem> = TBatchCollectionFacadeEvents<TItem>,
 > extends TCollectionComponent<TItem, TExtensions, TEvents> {
+	/**
+	 * `trackBy` объявлен ключом без значения — «не задан»: снятый из разметки
+	 * проп связка возвращает к умолчанию декларации, и без ключа коллекция
+	 * сверяла бы элементы прежней функцией. Своих умолчаний у конкретных
+	 * фасадов нет: ключ они наследуют отсюда.
+	 *
+	 * У `items` и `mode` (`TSelectionCollectionFacade`) умолчания нет
+	 * намеренно: их сеттеры «не задано» не принимают, и снятый проп остаётся с
+	 * прежним значением.
+	 */
+	static defaultValues: typeof TCollectionComponent.defaultValues &
+		TDefaultValues<TCollectionFacadeProps, never, 'trackBy'> = {
+		...TCollectionComponent.defaultValues,
+		trackBy: undefined,
+	}
+
 	constructor(
 		props: Partial<IComponentProps> = {},
 		options: ICollectionComponentOptions<TItem, TExtensions>,
