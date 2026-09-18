@@ -8,20 +8,22 @@
  * (`bindDisabledToOwner`): своё значение лежит в `rawValue`, итог отдаёт
  * резольвер, и расширения `item.disabled` не пишут.
  *
- * Сценарий один на все пять коллекций: забытая коллекция иначе прошла бы мимо.
+ * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
- * общая сигнатура пяти движков стёрла бы их типы.
+ * общая сигнатура движков стёрла бы их типы.
  */
 
 import { describe, it, expect, vi } from 'vitest'
 import {
 	createEngineAccordion,
 	createEngineListBox,
+	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTabs,
 	createEngineTags,
 	TAccordion,
 	TListBox,
+	TRadioGroup,
 	TSelect,
 	TTabs,
 	TTags,
@@ -31,7 +33,7 @@ import type { TDataset } from '@soldy/core'
 /** Источник элемента — то, что приходит в `items`. */
 type TSource = { value: string; disabled?: boolean }
 
-/** То, что сценарий трогает у элемента: у всех пяти коллекций оно общее. */
+/** То, что сценарий трогает у элемента: у всех коллекций оно общее. */
 type TItemProbe = {
 	disabled: boolean
 	readonly dataset: TDataset
@@ -126,6 +128,23 @@ const cases: TCase[] = [
 		build: ({ disabled, items }) => {
 			const owner = new TTags({ disabled })
 			const { batch, plain } = createEngineTags({ owner, items }).extensions
+
+			return {
+				owner,
+				item: (value) => found(batch.items, value),
+				push: (source) => plain.push(source),
+				patch: (sources) => {
+					batch.trackBy = (item) => item.value
+					batch.patch(sources)
+				},
+			}
+		},
+	},
+	{
+		name: 'RadioGroup',
+		build: ({ disabled, items }) => {
+			const owner = new TRadioGroup({ disabled })
+			const { batch, plain } = createEngineRadioGroup({ owner, items }).extensions
 
 			return {
 				owner,

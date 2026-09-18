@@ -19,7 +19,7 @@ export interface IActivationItemExtension<TItem extends object = any> extends II
 
 /**
  * Item-level props элемента от activation-расширения. Зеркало пропа `active` в
- * `TabsCollectionItemDescriptor` (setup).
+ * `TabsCollectionItemDescriptor` и `RadioGroupCollectionItemDescriptor` (setup).
  * Выводится из контракта адаптера — поля совпадают, но опциональны.
  */
 export type IActivationCollectionItemProps = Partial<Pick<IActivationItemExtension, 'active'>>
