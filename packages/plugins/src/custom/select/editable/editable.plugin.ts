@@ -61,12 +61,18 @@ import type { TEditablePluginEvents } from './types'
  *   умной логики (что оставить, а что сбросить) для этого редкого перехода
  *   нет намеренно: сбрасывается всё, как при обычном возврате поля.
  *
- * `change:selection` сюда не входит: текст выбранного (`single`) и очистку
- * поля (`multiple`) на смену выбора пишет сама `TSelectExtension` —
- * `owner.field.value` меняется реактивно, и вложенный `Input` перерисуется
- * сам. Этому плагину на смену выбора остаётся сбросить то, что относится
- * только к вводу: набранное (`query`) и отбор (`filter`) — иначе после
- * выбора в `multiple` панель осталась бы сужена прежним запросом.
+ * Выбор сюда не входит: текст выбранного (`single`) и очистку поля
+ * (`multiple`) пишет сама `TSelectExtension` — `owner.field.value` меняется
+ * реактивно, и вложенный `Input` перерисуется сам. Этому плагину на выбор
+ * остаётся сбросить то, что относится только к вводу: набранное (`query`) и
+ * отбор (`filter`) — иначе после выбора в `multiple` панель осталась бы
+ * сужена прежним запросом.
+ *
+ * Слушает он для этого событие `choose` расширения `select`, а не
+ * `change:selection`. Набор прерывает то же, что безусловно пишет поле, —
+ * выбор пользователя (`chooseItem`, `clear`). Смена `value` или состава,
+ * закрытие тега во время ввода поле не трогают, и сброс на
+ * `change:selection` оставил бы набранное в поле, развернув список целиком.
  *
  * Реакция на сам ввод (`_handleInput`) слушает DOM-событие `input`
  * вложенного `<input>`, а не `change:value` у `field`: `_returnField` тоже
@@ -114,11 +120,13 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
 			this._engine = engine
 
-			// Текст поля на смену выбора пишет `TSelectExtension` сама
+			// Текст поля на выбор пишет `TSelectExtension` сама
 			// (`owner.field.value`). Плагину остаётся то, что относится
 			// только к вводу: набранное и отбор — иначе выбор в `multiple`
-			// оставил бы панель суженной прежним запросом.
-			this._selectionExtension?.events.on('change:selection', () => {
+			// оставил бы панель суженной прежним запросом. Именно на выбор
+			// пользователя (`choose`), а не на любую смену выбора: её поле
+			// переживает, пока в нём печатают, и отбор обязан пережить тоже.
+			this._selectExtension?.events.on('choose', () => {
 				if (this._owner?.editable) this._resetQuery()
 			})
 		})
@@ -316,6 +324,10 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		return this._engine?.extensions?.selection as ISelectionExtension<ISelectItem> | undefined
 	}
 
+	private get _selectExtension(): ISelectExtension | undefined {
+		return this._engine?.extensions?.select as ISelectExtension | undefined
+	}
+
 	/**
 	 * Текст, который встаёт в поле при возврате. `multiple` всегда пуст —
 	 * значение там показывают теги, а не текст поля; `single` — текст
@@ -328,8 +340,6 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	}
 
 	private _selectedText(): string {
-		const select = this._engine?.extensions?.select as ISelectExtension | undefined
-
-		return select?.text ?? ''
+		return this._selectExtension?.text ?? ''
 	}
 }
