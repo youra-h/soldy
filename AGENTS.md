@@ -1161,7 +1161,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
-- **Branded prop types**: use `defineType<T>(ctor)` from `@soldy/setup` for phantom-typed contribution props (e.g. `defineType<TSelectionMode>(String)`).
+- **Branded prop types**: use `defineType<T>(ctor)` for phantom-typed contribution props (e.g. `defineType<TButtonView>(String)`). It is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors inside the package import it from `define/` by a relative path, never from `@soldy/setup` — see «Структура `packages/setup`».
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
@@ -1461,9 +1461,9 @@ declare module '@soldy/core' {
 - `underscorePropNaming` (`naming/`) — имя пропа одинаково везде (`ns_name`).
 - `callbackEventNaming` (`naming/`) — `element:ready` → `onElementReady`; общая стратегия
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
-  `TCallbackEventProps`. Своё именование событий остаётся только у Vue
-  (`element:ready`) и Angular (`elementReady`) — по одному потребителю на каждое,
-  поэтому они живут в своих адаптерах.
+  `TCallbackEventProps`. Остальные адаптеры именуют события в своём
+  `adapter/common/naming.ts`: Vue и Web Components отдают имя ядра как есть
+  (`element:ready`), Angular — camelCase (`elementReady`).
 - **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
   умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
 - **Поверхность** — `surfaceOf(descriptor, profile)`: публичный API компонента

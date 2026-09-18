@@ -9,7 +9,7 @@ export type TSelectionValue = string | number | (string | number)[] | undefined
  * Минимальный контракт вместо `IValueControl`: расширению безразличны
  * `disabled`, `size` и прочее — ему нужны значение и возможность узнать о его
  * смене. Узкий тип позволяет подключить его и к Select, который растёт от
- * `TInputControl`, и к List, который от `TValueControl`.
+ * `TInputControl`, и к ListBox и Tags, которые от `TValueControl`.
  */
 export interface IValueSelectionOwner {
 	value: TSelectionValue
