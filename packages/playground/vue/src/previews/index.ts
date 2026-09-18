@@ -14,6 +14,7 @@ import {
 	Switch,
 	Tabs,
 	Tags,
+	useIcon,
 } from '@soldy/ui-vue'
 
 /**
@@ -36,6 +37,16 @@ const ITEMS = [
 	{ value: 'b', text: 'Второй' },
 	{ value: 'c', text: 'Третий' },
 ]
+
+/**
+ * Иконка превью Icon.
+ *
+ * `tag` у Icon — корень: тег или компонент, и глиф рисует компонент
+ * `useIcon(роль)`. Строка с ролью (`tag: 'arrowDown'`) давала пустой
+ * элемент `<arrowdown>`, и ячейка Icon на витрине была пустой. Компонент
+ * строится один раз: новый на каждый рендер Vue пересоздавал бы узел.
+ */
+const ARROW_DOWN = useIcon('arrowDown')
 
 /** Слои наследования: у них нет своей разметки, показываем пустую коробку. */
 const layer =
@@ -99,7 +110,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 			),
 		),
 
-	icon: (bind) => h(Icon, { tag: 'arrowDown', ...bind }),
+	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
 	spinner: (bind) => h(Spinner, bind),
 
