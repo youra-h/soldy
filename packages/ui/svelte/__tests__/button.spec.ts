@@ -105,6 +105,34 @@ describe('Button · снятый проп', () => {
 	})
 })
 
+/**
+ * Родитель сменил другой проп — эффект перечитал все пропсы, но повторённый в
+ * ядро не пишется. Раньше связка писала их заново: текст, сменённый через
+ * инстанс, откатывался к разметке.
+ */
+describe('Button · перерисовка родителя', () => {
+	it('text, сменённый через инстанс, переживает смену другого пропа', () => {
+		const ctrl = new TButton()
+		const props = reactiveProps<ComponentProps<typeof Button>>({
+			ctrl,
+			text: 'a',
+			disabled: false,
+		})
+		const root = render(props)
+		const el = () => root.firstElementChild as HTMLElement
+		const content = () => root.querySelector('.s-button__text')?.textContent?.trim()
+
+		expect(content()).toBe('a')
+
+		ctrl.text = 'из кода'
+		props.disabled = true
+		flushSync()
+
+		expect(el().getAttribute('data-disabled')).toBe('true')
+		expect(content()).toBe('из кода')
+	})
+})
+
 describe('Button · внешний ctrl', () => {
 	it('отражает состояние переданного инстанса', () => {
 		const ctrl = new TButton({ text: 'FromCtrl', variant: 'brand', view: 'solid' })

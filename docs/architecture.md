@@ -1541,7 +1541,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useSetupXxx(props)` hook doesn't hold the adapter-context itself: it passes the factory `() => createAdapterContext(XxxDescriptor(), { ctrl: props.ctrl, props })` to `useAdapterContext` (`adapter/runtime/`), which calls it once on the first render and returns the same context afterwards (`__tests__/adapter-context.spec.tsx`), then hands the context to `useAdapter`. Components call no React hooks of their own — AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
-- The binding is wired by effects: `useEffect(() => binding.bindOutput(…), [binding])` = Core → React through `useReducer` (the same value keeps the same state object, so nothing re-renders), `useEffect(() => binding.writeAll(props), [props, binding])` = React → Core, the full props set on every parent render
+- The binding is wired by effects: `useEffect(() => binding.bindOutput(…), [binding])` = Core → React through `useReducer` (the same value keeps the same state object, so nothing re-renders), `useEffect(() => binding.writeAll(props), [props, binding])` = React → Core: the effect gets the full props set on every parent render, and `writeAll` writes only the props whose value changed since the previous set (`Object.is`), so a repeated prop doesn't roll back what the core or code through the instance changed since
 - Events: `binding.bindEvents` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
@@ -1568,7 +1568,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 ### ⚠️ React pitfall: infinite loop via `visible` setter (fixed in core)
 
 - The `visible` setter calls `show()`/`hide()` (now in `TComponentView`). `show()` used to emit `show:before` before its own «already visible» check (`hide()` checked first), so writing `instance.visible = sameValue` still emitted events, and event-logging demos re-rendered forever. Fixed in core: the check comes before the emit — see Layer 5b, «Контракт границы», and the `change:*` invariant in AGENTS.md, «Контракт границы core → ui».
-- The binding's `write` still skips unchanged values (`accessor.getValue(prop) === value`) before `setValue`: `writeAll` runs on every `props` change, and a setter doesn't need to see a value it already holds.
+- The binding's `write` still skips values the core already holds (`accessor.getValue(prop) === value`) before `setValue`: a setter doesn't need to see a value it already holds. `writeAll`, which runs on every `props` change, skips even earlier — every prop whose value is the same as in the previous set.
 
 ---
 

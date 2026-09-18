@@ -56,7 +56,8 @@ export function useAdapter<
 	// форма трактовала бы его как updater.
 	onCleanup(binding.bindOutput((prop, value) => setState({ [prop.exportName]: value })))
 
-	// 2. Solid → Core: эффект читает props, поэтому перезапускается при изменении
+	// 2. Solid → Core: эффект читает все props и перезапускается при смене любого,
+	// а связка пишет из них только сменившиеся с прошлого раза
 	createEffect(() => binding.writeAll(props))
 
 	// 3. События

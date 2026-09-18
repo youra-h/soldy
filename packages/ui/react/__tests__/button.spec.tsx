@@ -136,3 +136,27 @@ describe('Button · снятый проп', () => {
 		expect(text()).toBe('')
 	})
 })
+
+/**
+ * Родитель перерисовался из-за другого пропа — повторённый проп в ядро не
+ * пишется. Раньше связка получала все пропсы на каждом рендере и писала их
+ * заново: текст, сменённый через инстанс, откатывался к разметке.
+ */
+describe('Button · перерисовка родителя', () => {
+	it('text, сменённый через инстанс, переживает смену другого пропа', () => {
+		const ctrl = new TButton()
+		const { target, render } = mountRoot({ ctrl, text: 'a' })
+		const text = () => root(target).querySelector('.s-button__text')?.textContent
+
+		expect(text()).toBe('a')
+
+		act(() => {
+			ctrl.text = 'из кода'
+		})
+
+		render({ ctrl, text: 'a', disabled: true })
+
+		expect(root(target).getAttribute('data-disabled')).toBe('true')
+		expect(text()).toBe('из кода')
+	})
+})
