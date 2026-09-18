@@ -115,10 +115,13 @@ a {
 	background: var(--s-neutral-50);
 }
 
-/* Меню занимает панель целиком: у темы `.s-list-box` есть max-width, а
-   проп `auto-width` жал бы список по содержимому */
+/* Меню занимает колонку целиком — ровно её: у темы `.s-list-box` есть и
+   max-width, и min-width (160px), а проп `auto-width` жал бы список по
+   содержимому. Без снятого минимума список узкой колонки тем вылезал на
+   соседнюю (browser/tests-sidebar.spec.ts) */
 .pg__menu {
 	width: 100%;
+	min-width: 0;
 	max-width: none;
 }
 
@@ -127,6 +130,11 @@ a {
 	display: flex;
 	gap: 8px;
 	width: auto;
+}
+
+/* Ширины не сжимаются: колонка — flex-элемент панели */
+.pg__sidebar-column {
+	flex: none;
 }
 
 .pg__sidebar-column:first-child {
