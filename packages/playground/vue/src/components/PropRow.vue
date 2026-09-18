@@ -155,7 +155,7 @@ const propBind = computed(() => ({
 
 const instanceBind = computed(() => ({
 	// Пресет разметкой, рядом с `ctrl`: адаптер пишет написанные пропы и в
-	// инстанс, и в фасад коллекции (`passedNames` в `useAdapter`), а `mode`
+	// инстанс, и в фасад коллекции (`useSyncProps.passedNames`), а `mode`
 	// у компонентной строки иначе записать некуда — своего движка у неё нет
 	...props.control.preset,
 	ctrl: instance.value,
