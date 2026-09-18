@@ -25,6 +25,12 @@
  * закрылся бы от смены плейсхолдера. Vue, Angular и Web Components сообщают
  * только об изменившемся, так что во всех шести адаптерах в ядро пишется лишь
  * то, что поменял фреймворк.
+ *
+ * Память входов принадлежит компоненту фреймворка, а не контексту. Обычно их
+ * жизни совпадают, но фреймворк вправе пересобрать контекст в пределах одной
+ * жизни компонента — например, React, заново устанавливая эффекты. Тогда новая
+ * связка продолжает память прошлой: начинает с её копии, иначе первый набор
+ * снова записал бы разметку во внешний `ctrl`. Прошлая связка не меняется.
  */
 
 import type { IEventSource } from '@soldy/core'
@@ -51,11 +57,13 @@ export class TComponentBinding implements IComponentBinding {
 	 * Входы, которые фреймворк задал, и последнее значение каждого — не
 	 * `undefined`. Нет ключа — вход не задан: не передавали или сняли.
 	 */
-	private readonly _assigned = new Map<ISurfaceProp, unknown>()
+	private readonly _assigned: Map<ISurfaceProp, unknown>
 
-	constructor(context: IAdapterContext, profile: IAdapterProfile) {
+	constructor(context: IAdapterContext, profile: IAdapterProfile, previous?: TComponentBinding) {
 		this.surface = surfaceOf(context.descriptor, profile)
 		this._accessor = context.accessor
+		// Копия, а не общая карта: прошлая связка остаётся какой была
+		this._assigned = new Map(previous?._assigned)
 
 		// Свойство плагина, которого нет в наборе (фасад на чужом наборе),
 		// аксессор не собрал: связка его пропускает
@@ -230,10 +238,25 @@ export class TComponentBinding implements IComponentBinding {
 	}
 }
 
-/** Связать контекст адаптера с фреймворком профиля. */
+/**
+ * Связать контекст адаптера с фреймворком профиля.
+ *
+ * `previous` — связка прошлого контекста того же компонента, если фреймворк
+ * пересобрал контекст в пределах одной жизни компонента. Новая связка
+ * продолжает её память входов: проп, который фреймворк с тех пор не менял, не
+ * пишется заново. Прошлая связка не меняется, поэтому продолжений от неё может
+ * быть несколько — фреймворк вправе собрать контекст повторно.
+ */
 export function bindComponent(
 	context: IAdapterContext,
 	profile: IAdapterProfile,
+	previous?: IComponentBinding,
 ): IComponentBinding {
-	return new TComponentBinding(context, profile)
+	// Память входов наружу не выставлена: продолжить можно только связку,
+	// которую вернула эта функция
+	return new TComponentBinding(
+		context,
+		profile,
+		previous instanceof TComponentBinding ? previous : undefined,
+	)
 }

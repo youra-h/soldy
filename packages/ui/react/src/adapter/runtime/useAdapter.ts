@@ -1,7 +1,7 @@
 /**
  * useAdapter — основной React-хук связывания (аналог useAdapter из Vue-пакета).
- * Держание adapter-context между рендерами — отдельный хук, useAdapterContext
- * из этого же файла-баррела (см. `useAdapterContext.ts`).
+ * Держание adapter-context между рендерами и его уничтожение — отдельный хук,
+ * useAdapterContext из этого же файла-баррела (см. `useAdapterContext.ts`).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
  * createAdapterContext + useAdapterContext) и связывает его с React через
@@ -13,14 +13,17 @@
  * 2. React → Core: входные пропсы, сменившиеся с прошлого рендера родителя
  * 3. События → колбэк-пропы
  * 4. DOM-биндинг через контекст (TElementPlugin)
- * 5. Очистка (adapter.destroy) при размонтировании
+ *
+ * Контекст может смениться: useAdapterContext пересобирает его, когда React
+ * заново устанавливает эффекты (StrictMode, `<Activity>`). Связка нового
+ * контекста продолжает память прошлой, а состояние заполняется заново из неё.
  *
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TAdapterState } from '@soldy/setup'
+import type { IAdapterContext, IComponentBinding, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { ReactProfile } from '../common'
 
@@ -39,13 +42,36 @@ export type TBinding<
 }
 
 type TState = Readonly<Record<string, unknown>>
-type TAction = { name: string; value: unknown }
 
-/** То же значение — тот же объект состояния: React не перерисует компонент зря. */
-function reducer(prev: TState, action: TAction): TState {
-	if (Object.is(prev[action.name], action.value)) return prev
+/**
+ * Связка контекста и её состояние — одно целое: состояние заполняется из
+ * `state()` своей связки и дальше пишется её подпиской на триггеры.
+ */
+type TStore = Readonly<{
+	adapter: IAdapterContext
+	binding: IComponentBinding
+	state: TState
+}>
 
-	return { ...prev, [action.name]: action.value }
+type TAction =
+	/** Ядро сообщило новое значение свойства. */
+	| { type: 'output'; name: string; value: unknown }
+	/** Контекст пересобран — связать новый, продолжив память прошлой связки. */
+	| { type: 'rebind'; adapter: IAdapterContext }
+
+function bind(adapter: IAdapterContext, previous?: IComponentBinding): TStore {
+	const binding = bindComponent(adapter, ReactProfile, previous)
+
+	return { adapter, binding, state: binding.state() }
+}
+
+function reducer(prev: TStore, action: TAction): TStore {
+	if (action.type === 'rebind') return bind(action.adapter, prev.binding)
+
+	// То же значение — тот же объект состояния: React не перерисует компонент зря
+	if (Object.is(prev.state[action.name], action.value)) return prev
+
+	return { ...prev, state: { ...prev.state, [action.name]: action.value } }
 }
 
 /** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
@@ -57,12 +83,21 @@ export function useAdapter<
 	adapter: IAdapterContext<TInstance, TOutputs>,
 	props: TProps,
 ): TBinding<TInstance, TProps, TOutputs> {
-	const binding = useMemo(() => bindComponent(adapter, ReactProfile), [adapter])
-	const [state, dispatch] = useReducer(reducer, undefined, () => binding.state())
+	const [store, dispatch] = useReducer(reducer, adapter, bind)
+
+	// Контекст пересобран: у нового инстанса и плагинов свои значения, а связка
+	// продолжает память прошлой — пропсы с тех пор фреймворк заново не задавал.
+	// Обновление во время рендера React применяет сразу, не отрисовав прошлое
+	if (store.adapter !== adapter) dispatch({ type: 'rebind', adapter })
+
+	const { binding, state } = store
 
 	// 1. Core → React
 	useEffect(
-		() => binding.bindOutput((prop, value) => dispatch({ name: prop.exportName, value })),
+		() =>
+			binding.bindOutput((prop, value) =>
+				dispatch({ type: 'output', name: prop.exportName, value }),
+			),
 		[binding],
 	)
 
@@ -90,9 +125,6 @@ export function useAdapter<
 
 	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
 	const ref = useCallback((el: Element | null) => adapter.bindElement(el), [adapter])
-
-	// 5. Очистка: destroy эмитит 'destroy', расширения отписываются сами.
-	useEffect(() => () => adapter.destroy(), [adapter])
 
 	const forwardProps = useMemo(() => binding.forward(props), [props, binding])
 
