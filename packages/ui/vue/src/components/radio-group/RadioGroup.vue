@@ -1,3 +1,10 @@
+<script lang="ts">
+import { RadioGroupItem } from './item'
+import SetupRadioGroup from './setup.component'
+
+export default { ...SetupRadioGroup, components: { RadioGroupItem } }
+</script>
+
 <template>
 	<!--
 		Контейнер группы. Набор `aria` владельца — здесь: `role="radiogroup"`
@@ -7,17 +14,24 @@
 		одной группы стоят где угодно внутри контейнера — в строках списка, в
 		ячейках таблицы, — и раскладку задаёт потребитель.
 	-->
-	<div class="s-radio-group">
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
 		<slot>
 			<!--
 				Запасное содержимое — радио из пропа `items`, по одному на
-				элемент (перебор `shown`, как в ListBox.vue). Слот элемента
-				статический и получает элемент через scope (`item`), как у
+				элемент (перебор `shown`, как в ListBox.vue). Слот подписи
+				статический и получает радио через scope (`item`), как у
 				остальных коллекций: динамические имена резолвит только Vue.
 			-->
-			<RadioGroupItem>
-				<slot name="item" />
+			<RadioGroupItem v-for="item in shown" :key="item.uid" :ctrl="item">
+				<slot name="item" :item="item" />
 			</RadioGroupItem>
 		</slot>
-	</div>
+	</component>
 </template>

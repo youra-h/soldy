@@ -17,6 +17,8 @@ import {
 	ListBoxItem,
 	Accordion,
 	AccordionItem,
+	RadioGroup,
+	RadioGroupItem,
 } from '@soldy/ui-vue'
 import Harness from './Parts.test.vue'
 
@@ -32,6 +34,10 @@ describe('точка и плоское имя — один компонент', 
 
 	it('Accordion.Item === AccordionItem', () => {
 		expect(Accordion.Item).toBe(AccordionItem)
+	})
+
+	it('RadioGroup.Item === RadioGroupItem', () => {
+		expect(RadioGroup.Item).toBe(RadioGroupItem)
 	})
 })
 
