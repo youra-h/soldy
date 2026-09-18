@@ -3,9 +3,8 @@
  */
 
 import type { IExtension } from '@soldy/core'
-import type { IPropDeclaration, TName } from '@soldy/accessor'
 import type { IPluginConstructor } from '@soldy/plugins'
-import type { IBundleContext, IPluginDefinition } from '../define'
+import type { IBundleContext } from '../define'
 
 /**
  * Тип компонента — класс ядра. Сравнение через `instanceof`: объект
@@ -44,23 +43,22 @@ export interface IRegistrations<TEntry> {
 }
 
 /**
- * Плагин регистрации: класс, класс с опциями установки или определение
- * `definePlugin`. Только у определения есть пропсы и события — наружу
- * компонента они выходят так же, как у плагинов дескриптора (`timer_interval`,
- * `@timer:tick`).
+ * Плагин регистрации: класс или класс с опциями установки.
+ *
+ * Определение `definePlugin` сюда не принимается: контракт компонента —
+ * пропсы, события и слоты — объявляет только дескриптор, один и тот же во всех
+ * шести адаптерах. Настраивают внешний плагин опциями регистрации, а
+ * обращаются к нему через его собственный API: из `bundle:create` или по
+ * ссылке, которую он сам о себе оставил.
  */
 export type TRegisteredPlugin =
 	| IPluginConstructor<any, any, any>
 	| { readonly ctor: IPluginConstructor<any, any, any>; readonly options?: object }
-	| IPluginDefinition
 
 /** Плагин, который компонент получает из реестра. */
 export interface IResolvedPlugin {
 	readonly ctor: IPluginConstructor<any, any, any>
 	readonly options?: object
-	/** Пропсы определения (`definePlugin`); у класса без определения их нет. */
-	readonly props?: readonly IPropDeclaration[]
-	readonly events?: readonly TName[]
 }
 
 /** Фабрика расширения: владелец коллекции → расширение для его движка. */

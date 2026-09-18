@@ -6,9 +6,9 @@
  * результат этого вызова сериализуется в generated/*.metadata.ts на этапе сборки.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from './createInspector'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { AngularProfile } from './profile'
 
 export function useOutputs(descriptor: IComponentDescriptor): string[] {
-	return createInspector(descriptor).getExportEvents()
+	return [...surfaceOf(descriptor, AngularProfile).exportEvents]
 }

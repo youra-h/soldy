@@ -22,11 +22,7 @@ describe('createVueAdapterContext', () => {
 
 		expect(proxied).not.toBe(raw)
 
-		const ctx = createVueAdapterContext(
-			defineComponent({ ctor: Simple }),
-			{ ctrl: proxied },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createVueAdapterContext(defineComponent({ ctor: Simple }), { ctrl: proxied })
 
 		expect(ctx.instance).toBe(raw)
 	})
@@ -36,11 +32,7 @@ describe('createVueAdapterContext', () => {
 			value = 1
 		}
 
-		const ctx = createVueAdapterContext(
-			defineComponent({ ctor: Simple }),
-			{},
-			{ defaultExtensions: [] },
-		)
+		const ctx = createVueAdapterContext(defineComponent({ ctor: Simple }), {})
 
 		expect(ctx.instance).toBeInstanceOf(Simple)
 	})
@@ -59,11 +51,9 @@ describe('createVueAdapterContext', () => {
 
 		expect(proxiedEngine).not.toBe(engine)
 
-		const ctx = createVueAdapterContext(
-			defineComponent({ ctor: TEngineOwner }),
-			{ options: { engine: proxiedEngine } },
-			{ defaultExtensions: [] },
-		)
+		const ctx = createVueAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			options: { engine: proxiedEngine },
+		})
 
 		expect(ctx.instance.engine).toBe(engine)
 	})

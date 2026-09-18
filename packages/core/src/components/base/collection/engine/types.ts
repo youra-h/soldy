@@ -235,7 +235,7 @@ export interface ICollectionEngineCore<TItem, TExtensions extends Record<string,
 }
 
 /**
- * Pass-through проп готовой коллекции. Зеркало CollectionContribution.
+ * Pass-through проп готовой коллекции. Зеркало CollectionDescriptor.
  * Аналог `ctrl` для компонентов: если задан — используется вместо создания новой коллекции.
  */
 export interface ICollectionProps<TCollectionEngine = unknown> {

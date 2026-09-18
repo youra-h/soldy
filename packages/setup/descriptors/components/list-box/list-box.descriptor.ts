@@ -14,10 +14,9 @@
  * реализация у каждого своя, потому что предок занят.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TListBox } from '@soldy/core'
-import type { IListBoxProps, TListBoxEvents } from '@soldy/core'
-import { ListBoxContribution, type TListBoxSlots } from '../../../contributions'
+import type { IListBoxProps, TListBoxEvents, IListBoxItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -27,14 +26,57 @@ import {
 	ListKeyboardPluginDescriptor,
 	ListScrollPluginDescriptor,
 } from '../../plugins'
+import { LIST_PROPS } from '../list'
+import type { TEmptySlotScope } from '../../../define'
 
-export const ListBoxDescriptor = () =>
+/**
+ * Слоты ListBox.
+ *
+ * Панели у списка нет: выбор элемента не раскрывает содержимое, поэтому части
+ * `Content` здесь не существует — в отличие от Tabs и от слота `item-content`
+ * у Accordion.
+ *
+ * Слоты элементов статические и получают элемент через scope (см. Accordion).
+ */
+export type TListBoxSlots = {
+	default: TEmptySlotScope
+	header: TEmptySlotScope
+	footer: TEmptySlotScope
+	item: { item: IListBoxItem }
+	'item-leading': { item: IListBoxItem }
+	'item-trailing': { item: IListBoxItem }
+}
+
+export const ListBoxDescriptor = defineDescriptor(() =>
 	defineComponent<IListBoxProps, TListBoxEvents, TListBoxSlots>()({
 		ctor: TListBox,
 
 		extends: ValueControlDescriptor(),
 
-		contribution: ListBoxContribution(),
+		contribution: {
+			slots: {
+				default: { description: 'Элементы коллекции' },
+				header: { description: 'Над списком' },
+				footer: { description: 'Под списком' },
+				item: {
+					scope: { item: defineType<IListBoxItem>(Object) },
+					description: 'Содержимое элемента при работе через проп items',
+				},
+				'item-leading': {
+					scope: { item: defineType<IListBoxItem>(Object) },
+					description: 'Перед содержимым элемента',
+				},
+				'item-trailing': {
+					scope: { item: defineType<IListBoxItem>(Object) },
+					description: 'После содержимого элемента',
+				},
+			},
+			props: {
+				view: { type: String, triggers: ['change:view'] },
+				// Общие с Select — объявлены один раз в `components/list.ts`
+				...LIST_PROPS,
+			},
+		},
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
@@ -49,4 +91,5 @@ export const ListBoxDescriptor = () =>
 			// Drag-and-drop
 			DragPluginDescriptor(),
 		],
-	})
+	}),
+)

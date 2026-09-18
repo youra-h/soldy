@@ -5,17 +5,22 @@
  * и добавляет text, arrowPlacement + коллекционные item-пропсы (selected, order, view).
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordionItem } from '@soldy/core'
 import type { IAccordionItemProps, TAccordionItemEvents } from '@soldy/core'
-import { AccordionItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
-export const AccordionItemDescriptor = () =>
+export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent<IAccordionItemProps, TAccordionItemEvents>()({
 		ctor: TAccordionItem,
 
 		extends: ValueControlDescriptor(),
 
-		contribution: AccordionItemContribution(),
-	})
+		contribution: {
+			props: {
+				text: { type: String, triggers: ['change:text'] },
+				arrowPlacement: { type: String, triggers: ['change:arrowPlacement'] },
+			},
+		},
+	}),
+)

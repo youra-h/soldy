@@ -4,25 +4,25 @@
  * из этого же файла-баррела (см. `useAdapterContext.ts`).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
- * createAdapterContext + useAdapterContext) и связывает его с React:
+ * createAdapterContext + useAdapterContext) и связывает его с React через
+ * связку `bindComponent` из setup. Своё здесь — только куда писать значение
+ * (`useReducer`), как отдать событие (колбэк-проп) и в какой момент цикла
+ * React это делать:
  *
- * 1. Core → React: подписка на триггеры props (bindOutput)
- * 2. React → Core: синхронизация входных props (bindInput)
- * 3. События (Core → React колбэки-пропсы)
- * 4. DOM-биндинг через TElementPlugin / TPluginsBindingExtension
+ * 1. Core → React: подписка на триггеры свойств
+ * 2. React → Core: входные пропсы на каждом рендере родителя
+ * 3. События → колбэк-пропы
+ * 4. DOM-биндинг через контекст (TElementPlugin)
  * 5. Очистка (adapter.destroy) при размонтировании
  *
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
-import { TPluginsBindingExtension, collectForwardProps, toInstanceState } from '@soldy/setup'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
+import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TInstanceState } from '@soldy/setup'
-import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
-import { createInspector } from '../common'
-import { useSyncProps } from './useSyncProps'
-import { useSyncEvents } from './useSyncEvents'
+import { ReactProfile } from '../common'
 
 export type TBinding<TInstance = object, TProps extends object = object> = {
 	ctrl: TInstance
@@ -34,48 +34,57 @@ export type TBinding<TInstance = object, TProps extends object = object> = {
 	state: TInstanceState<TInstance>
 }
 
+type TState = Readonly<Record<string, unknown>>
+type TAction = { name: string; value: unknown }
+
+/** То же значение — тот же объект состояния: React не перерисует компонент зря. */
+function reducer(prev: TState, action: TAction): TState {
+	if (Object.is(prev[action.name], action.value)) return prev
+
+	return { ...prev, [action.name]: action.value }
+}
+
 export function useAdapter<TProps extends object, TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
 	props: TProps,
 ): TBinding<TInstance, TProps> {
-	const inspector = useMemo(() => createInspector(adapter.accessor), [adapter])
+	const binding = useMemo(() => bindComponent(adapter, ReactProfile), [adapter])
+	const [state, dispatch] = useReducer(reducer, undefined, () => binding.state())
 
-	// 1. Реактивность: Core ↔ React (output + input)
-	const { state, bindOutput, bindInput } = useSyncProps(adapter.accessor, inspector)
-
-	// 1.1. Core → React (Output): подписаться на триггеры и перечитывать значения
-	useEffect(() => bindOutput(), [adapter, inspector])
-
-	// 1.2. React → Core (Input): синхронизация входных props
-	useEffect(() => {
-		bindInput(props)
-	}, [props, adapter, inspector])
-
-	// 2. События (Core → React колбэки-пропсы)
-	useSyncEvents(adapter.accessor, inspector, props)
-
-	// 3. DOM-биндинг: привязываем элемент напрямую к TElementPlugin,
-	// чтобы работало и после destroy (StrictMode remount).
-	const ref = useCallback(
-		(el: Element | null) => {
-			const plugin = adapter.bundle?.get(TElementPlugin)
-
-			if (plugin) {
-				plugin.element = el
-			} else {
-				adapter.get(TPluginsBindingExtension)?.bindElement(el ?? null)
-			}
-		},
-		[adapter],
+	// 1. Core → React
+	useEffect(
+		() => binding.bindOutput((prop, value) => dispatch({ name: prop.exportName, value })),
+		[binding],
 	)
 
-	// 4. Очистка: destroy эмитит 'destroy', расширения отписываются сами.
+	// 2. React → Core: эффект получает все props на каждом рендере родителя,
+	// то же значение связка не пишет
+	useEffect(() => {
+		binding.writeAll(props)
+	}, [props, binding])
+
+	// 3. События. useLayoutEffect: подписка до первой отрисовки, чтобы не
+	// пропустить события, привязанные к DOM (`ready` из TElementPlugin через rAF)
+	const propsRef = useRef(props)
+	propsRef.current = props
+
+	useLayoutEffect(
+		() =>
+			binding.bindEvents((exportName, args) => {
+				const callback: unknown = Reflect.get(propsRef.current, exportName)
+
+				if (typeof callback === 'function') callback(...args)
+			}),
+		[binding],
+	)
+
+	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
+	const ref = useCallback((el: Element | null) => adapter.bindElement(el), [adapter])
+
+	// 5. Очистка: destroy эмитит 'destroy', расширения отписываются сами.
 	useEffect(() => () => adapter.destroy(), [adapter])
 
-	const forwardProps = useMemo(
-		() => collectForwardProps(props, adapter, inspector, 'children'),
-		[props, adapter, inspector],
-	)
+	const forwardProps = useMemo(() => binding.forward(props), [props, binding])
 
 	return {
 		ctrl: adapter.instance,

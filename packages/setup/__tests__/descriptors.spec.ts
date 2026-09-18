@@ -45,7 +45,17 @@ import {
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
+import type { IComponentDescriptor } from '@soldy/setup'
+import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
 import { required } from './helpers'
+
+/** Собрать компонент так же, как это делает монтирование: состав → набор → аксессор. */
+const assemble = (descriptor: IComponentDescriptor<any, any, any, any, any>, instance: object) => {
+	const composition = resolveComposition(descriptor, instance, {})
+	const bundle = assembleBundle(composition, instance)
+
+	return { bundle, accessor: assembleAccessor(descriptor, composition, instance, bundle) }
+}
 
 const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
 	d.props.map((p) => p.name.name)
@@ -84,7 +94,7 @@ describe('дескрипторы компонентов (наследовани�
 	it('ButtonDescriptor создаёт бандл с Element и Ready плагинами', () => {
 		const d = ButtonDescriptor()
 		const instance = new TButton()
-		const bundle = d.createBundle(instance)
+		const { bundle } = assemble(d, instance)
 
 		expect(bundle).not.toBeNull()
 		expect(required(bundle, 'бандл Button').get(TElementPlugin)).toBeInstanceOf(TElementPlugin)
@@ -94,8 +104,7 @@ describe('дескрипторы компонентов (наследовани�
 	it('ButtonDescriptor accessor привязывает собственные props к instance', () => {
 		const d = ButtonDescriptor()
 		const instance = new TButton()
-		const bundle = d.createBundle(instance)
-		const accessor = d.createAccessor(instance, bundle)
+		const { accessor } = assemble(d, instance)
 
 		const viewProp = required(
 			accessor.getProps().find((p) => p.name.name === 'view'),
@@ -127,14 +136,14 @@ describe('дескрипторы компонентов (наследовани�
 
 	it('ComponentViewDescriptor содержит Element/Ready, DragAndDropDescriptor — нет', () => {
 		const cv = ComponentViewDescriptor()
-		const cvBundle = cv.createBundle(new TComponentView())
+		const { bundle: cvBundle } = assemble(cv, new TComponentView())
 		expect(required(cvBundle, 'бандл ComponentView').get(TElementPlugin)).toBeInstanceOf(
 			TElementPlugin,
 		)
 
 		const dd = DragAndDropDescriptor()
 		expect(dd.ctor).toBe(TDragAndDrop)
-		expect(dd.createBundle(new TDragAndDrop())).toBeNull()
+		expect(assemble(dd, new TDragAndDrop()).bundle).toBeNull()
 	})
 
 	it('ListBoxDescriptor наследует ValueControl и добавляет view + Drag-плагин', () => {
@@ -365,13 +374,11 @@ describe('Select', () => {
 		const owner = new TSelect()
 		const descriptor = SelectDescriptor()
 
-		expect(() => descriptor.createAccessor(owner, descriptor.createBundle(owner))).not.toThrow()
+		expect(() => assemble(descriptor, owner)).not.toThrow()
 
 		const item = new TSelectItem()
 		const itemDescriptor = SelectItemDescriptor()
 
-		expect(() =>
-			itemDescriptor.createAccessor(item, itemDescriptor.createBundle(item)),
-		).not.toThrow()
+		expect(() => assemble(itemDescriptor, item)).not.toThrow()
 	})
 })

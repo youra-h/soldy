@@ -54,10 +54,12 @@ export interface IAdapterContextOptions<TInstance extends object = object> {
 }
 
 export interface IAdapterContextConfig {
-	/** Готовый бандл плагинов. Если не передан — создаётся из descriptor. */
+	/**
+	 * Готовый набор плагинов: его передаёт тот, кто его собрал (адаптер
+	 * коллекции делит набор компонента с фасадом). Без него набор собирается по
+	 * составу — плагины дескриптора плюс регистрации приложения.
+	 */
 	bundle?: IPluginBundle | null
-	/** Стартовый набор расширений (по умолчанию TPluginsBindingExtension). */
-	defaultExtensions?: Array<TAnyExtensionCtor>
 }
 
 export interface IAdapterContext<TInstance extends object = object> {
@@ -77,6 +79,12 @@ export interface IAdapterContext<TInstance extends object = object> {
 
 	/** Получить зарегистрированное расширение по его классу */
 	get<T>(ctor: new (...args: any[]) => T): T | undefined
+
+	/**
+	 * Связать корневой узел разметки с `TElementPlugin` набора; `null` —
+	 * отвязать. У компонента без этого плагина вызов ничего не делает.
+	 */
+	bindElement(element: Element | null): void
 
 	/** Запустить уничтожение контекста */
 	destroy(): void

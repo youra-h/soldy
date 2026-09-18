@@ -8,4 +8,3 @@
 export * from './contract'
 export type { IAccessor } from './accessor.interface'
 export { TAccessor } from './accessor.class'
-export { TDescriptorInspector } from './descriptor-inspector.class'

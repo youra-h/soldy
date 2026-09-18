@@ -1,3 +1,3 @@
-export { TagsDescriptor } from './tags.descriptor'
-export { TagsItemDescriptor } from './item.descriptor'
+export { TagsDescriptor, type TTagsSlots } from './tags.descriptor'
+export { TagsItemDescriptor, type TTagsItemSlots } from './item.descriptor'
 export * from './collection.descriptor'

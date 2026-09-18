@@ -5,17 +5,32 @@
  * и добавляет tag, text, closable + коллекционный плагин (active, order).
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsItem } from '@soldy/core'
 import type { ITabsItemProps, TTabsItemEvents } from '@soldy/core'
-import { TabsItemContribution } from '../../../contributions'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
-export const TabsItemDescriptor = () =>
+export const TabsItemDescriptor = defineDescriptor(() =>
 	defineComponent<ITabsItemProps, TTabsItemEvents>()({
 		ctor: TTabsItem,
 
 		extends: ValueControlDescriptor(),
 
-		contribution: TabsItemContribution(),
-	})
+		contribution: {
+			props: {
+				text: { type: String, triggers: ['change:text'] },
+				closable: { type: Boolean, triggers: ['change:closable'] },
+				closeLabel: { type: String, triggers: ['change:closeLabel'] },
+				/**
+				 * Имя кнопки закрытия. Отдельный набор, а не часть `aria`: `aria`
+				 * описывает сам таб, а это кнопка рядом с ним.
+				 */
+				closeAria: {
+					type: Object,
+					protected: true,
+					triggers: ['change:closeLabel', 'change:text'],
+				},
+			},
+		},
+	}),
+)

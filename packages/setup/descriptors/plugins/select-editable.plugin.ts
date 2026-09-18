@@ -1,7 +1,6 @@
 import { definePlugin } from '../../define'
-import { TEditablePlugin } from '@soldy/plugins'
+import { TEditablePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TEditablePluginEvents } from '@soldy/plugins'
-import { SelectEditableContribution } from '../../contributions'
 
 /**
  * Реакция на ввод текста в поле Select при `editable: true` — три состояния
@@ -13,5 +12,17 @@ export const SelectEditablePluginDescriptor = () =>
 	definePlugin<'editable', TEditablePluginEvents>({
 		ctor: TEditablePlugin,
 		namespace: 'editable',
-		contribution: SelectEditableContribution(),
+		/**
+		 * Ввод текста в поле Select при `editable: true`.
+		 *
+		 * Наружу отдаётся только `query` — то, что сейчас набрано. Реакция
+		 * (подсветка через `TSelectKeyboardPlugin`) видна снаружи уже через её
+		 * собственный `highlightedUid`, повторять её здесь незачем.
+		 */
+		contribution: {
+			events: [...PLUGIN_EVENTS, 'change:query'],
+			props: {
+				query: { protected: true, triggers: ['change:query'] },
+			},
+		},
 	})

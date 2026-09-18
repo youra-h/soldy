@@ -21,7 +21,8 @@ export interface ISelectionItemExtension<TItem extends object = any> extends IIt
 }
 
 /**
- * Item-level props элемента от selection-расширения. Зеркало SelectionItemExtensionContribution.
+ * Item-level props элемента от selection-расширения. Зеркало пропа `selected` в
+ * дескрипторах элементов коллекций с выбором (`ListBoxCollectionItemDescriptor` и соседи, setup).
  * Выводится из контракта адаптера — поля совпадают, но опциональны.
  */
 export type ISelectionCollectionItemProps = Partial<Pick<ISelectionItemExtension, 'selected'>>

@@ -117,7 +117,7 @@ activation base; the single implementation lives directly in `TTabsCollectionFac
 
 ## Engine supplied from outside — `resolveEngine`
 
-`CollectionContribution` (`packages/setup/contributions/components/collection/collection.contribution.ts`)
+`CollectionDescriptor` (`packages/setup/descriptors/components/collection/collection.descriptor.ts`)
 declares `engine: { type: Object }` — a plain, non-triggering input, the collection
 equivalent of `ctrl` for a regular component. A caller may pass an already-assembled
 engine; if not, the facade builds its own.
@@ -206,82 +206,76 @@ export class TTabsItemCollectionFacade extends TOrderItemFacade<
 }
 ```
 
-## Contributions
+## Descriptors
 
-Owner-level and item-level contributions are separate factories.
+Collection descriptors are regular `defineComponent` factories wrapped in
+`defineDescriptor` — there is **no** `defineCollection` / `defineExtension`. `ctor`
+points at the facade; `extends` reuses the base `CollectionDescriptor`. The contract is
+declared inline in `contribution`; owner-level and item-level descriptors are separate.
 
-- Base `CollectionContribution` (`packages/setup/contributions/components/collection/collection.contribution.ts`):
+- Base `CollectionDescriptor` (`packages/setup/descriptors/components/collection/collection.descriptor.ts`):
   `engine`, `items`, `shown` (protected), `trackBy` + engine/collection events
   (`engine:create`, `item:*` with their `*:before` hooks, `items:clear:before`, `change:count`,
   `reset`, `items:added`, `items:removed`, `change:shown`).
-- Owner-level `TabsCollectionContribution`: `activeItem` (`protected: true`, triggers
+- Owner-level `TabsCollectionDescriptor`: `activeItem` (`protected: true`, triggers
   `change:activation`) + events `item:activated` / `item:deactivated` / `item:close`.
-- Item-level `TabsCollectionItemContribution`: `active`, `order` (protected), `tab_closable`
+- Item-level `TabsCollectionItemDescriptor`: `active`, `order` (protected), `tab_closable`
   (protected, via `get`).
 
 ```ts
-import type { IContribution } from '@soldy/accessor'
-import type { TTabsItemCollectionFacade } from '@soldy/core'
-
-export const TabsCollectionContribution = (): IContribution => ({
-  props: { activeItem: { type: Object, protected: true, triggers: ['change:activation'] } },
-  events: ['item:activated', 'item:deactivated', 'item:close'],
-})
-
-export const TabsCollectionItemContribution = (): IContribution => ({
-  props: {
-    active: { type: Boolean, triggers: ['change:active'] },
-    order: { type: Number, protected: true, triggers: ['change:order'] },
-    tab_closable: {
-      type: Boolean,
-      protected: true,
-      get: (item: TTabsItemCollectionFacade) => item.closable,
-      triggers: ['change:closable'],
-    },
-  },
-})
-```
-
-## Descriptors
-
-Collection descriptors are regular `defineComponent` factories — there is **no**
-`defineCollection` / `defineExtension`. `ctor` points at the facade; `extends` reuses the
-base `CollectionDescriptor`.
-
-```ts
-export const TabsCollectionDescriptor = () =>
+export const TabsCollectionDescriptor = defineDescriptor(() =>
   defineComponent({
     ctor: TTabsCollectionFacade,
     extends: CollectionDescriptor(),
-    contribution: TabsCollectionContribution(),
-  })
+    contribution: {
+      props: { activeItem: { type: Object, protected: true, triggers: ['change:activation'] } },
+      events: ['item:activated', 'item:deactivated', 'item:close'],
+    },
+  }),
+)
 
-export const TabsCollectionItemDescriptor = () =>
+export const TabsCollectionItemDescriptor = defineDescriptor(() =>
   defineComponent({
     ctor: TTabsItemCollectionFacade,
-    contribution: TabsCollectionItemContribution(),
-  })
+    contribution: {
+      props: {
+        active: { type: Boolean, triggers: ['change:active'] },
+        order: { type: Number, protected: true, triggers: ['change:order'] },
+        tab_closable: {
+          type: Boolean,
+          protected: true,
+          get: (item: TTabsItemCollectionFacade) => item.closable,
+          triggers: ['change:closable'],
+        },
+      },
+    },
+  }),
+)
 ```
 
 The owner component descriptor (`TabsDescriptor`) additionally wires the collection
 plugins:
 
 ```ts
-export const TabsDescriptor = () =>
+export const TabsDescriptor = defineDescriptor(() =>
   defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
     ctor: TTabs,
     extends: ControlDescriptor(),
-    contribution: TabsContribution(),
+    contribution: {
+      props: {
+        /* orientation, alignment, position, view, closable */
+      },
+    },
     plugins: [
       CollectionBundlesPluginDescriptor(),
       CollectionElementsPluginDescriptor(),
       TabsLayoutPluginDescriptor(),
       TabsActiveTabPluginDescriptor(),
-      TabsViewPluginDescriptor(),
       TabsKeyboardPluginDescriptor(),
       DragPluginDescriptor(),
     ],
-  })
+  }),
+)
 ```
 
 ## Plugins (collection access)
@@ -391,10 +385,6 @@ none, so it does not expose a competing `rootElement`.
   `TCollectionItemComponent`, and the `batch`/`order`/`selection` facade bases.
 - `packages/core/src/components/custom/tabs/collection/{types.ts,factory.ts,create.ts,facade/facade.class.ts}`
   and `tabs/item/facade/facade.class.ts`.
-- `packages/setup/contributions/components/collection/collection.contribution.ts` — base
-  `CollectionContribution`.
-- `packages/setup/contributions/components/tabs/collection.contribution.ts` — owner + item
-  contributions.
 - `packages/setup/descriptors/components/collection/collection.descriptor.ts` — base
   `CollectionDescriptor`.
 - `packages/setup/descriptors/components/tabs/collection.descriptor.ts` — concrete Tabs

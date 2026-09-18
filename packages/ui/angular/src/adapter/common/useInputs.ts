@@ -6,18 +6,18 @@
  * результат этого вызова сериализуется в generated/*.metadata.ts на этапе сборки.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from './createInspector'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { AngularProfile } from './profile'
 
 /**
- * `ctrl` объявлен в EntityContribution и потому попадает в getExportProps(),
+ * `ctrl` объявлен в EntityDescriptor и потому попадает в поверхность,
  * но в Angular он приходит из отдельного `@Input() ctrl` в TComponentBase.
  * Без этого фильтра он был бы объявлен дважды.
  */
 const SERVICE_INPUTS = new Set(['ctrl'])
 
 export function useInputs(descriptor: IComponentDescriptor): string[] {
-	return Object.keys(createInspector(descriptor).getExportProps()).filter(
+	return Object.keys(surfaceOf(descriptor, AngularProfile).exportProps).filter(
 		(name) => !SERVICE_INPUTS.has(name),
 	)
 }

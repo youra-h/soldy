@@ -62,8 +62,8 @@ export interface IPropDeclaration {
 	 * В contribution (`IPropDefinition`) этого поля нет: умолчание принадлежит
 	 * классу, а не метаданным. Заполняет его setup при сборке дескриптора — из
 	 * `defaultValues` класса ядра, а у пропа плагина из опции дескриптора или
-	 * `defaultValues` плагина. Адаптер берёт его отсюда
-	 * (`TDescriptorInspector.getExportProps`) и сам не ищет.
+	 * `defaultValues` плагина. Адаптер берёт его отсюда — из поверхности
+	 * компонента (`surfaceOf` в `@soldy/setup`) — и сам не ищет.
 	 *
 	 * **Объявлено — значит, ключ есть, даже со значением `undefined`.**
 	 * `closable: undefined` у `TTabsItem`/`TTagsItem` держит наследование от

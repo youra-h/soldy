@@ -1,7 +1,7 @@
 import type { IExtension } from '../types'
 import type { TCollectionEngineItemSource } from '../../types'
 
-/** Owner-level props коллекции от batch-расширения (input). Зеркало BatchExtensionContribution. */
+/** Owner-level props коллекции от batch-расширения (input). Зеркало `CollectionDescriptor` (setup). */
 export interface IBatchCollectionProps<TItemProps = any, TItem = any> {
 	/** Данные для наполнения коллекции: сырые props (+ meta `_`) или готовые инстансы. */
 	items?: (TCollectionEngineItemSource<TItemProps> | TItem)[]

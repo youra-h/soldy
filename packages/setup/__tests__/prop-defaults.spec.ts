@@ -1,3 +1,4 @@
+import { assembleBundle, resolveComposition } from '../assemble'
 // @vitest-environment jsdom
 
 /**
@@ -147,7 +148,10 @@ describe('сторож: Boolean-проп объявляет умолчание, 
 		if (own.length === 0 && fromPlugins.length === 0) return
 
 		const instance = new descriptor.ctor()
-		const bundle = fromPlugins.length > 0 ? descriptor.createBundle(instance) : null
+		const bundle =
+			fromPlugins.length > 0
+				? assembleBundle(resolveComposition(descriptor, instance, {}), instance)
+				: null
 
 		const declared: Record<string, unknown> = {}
 		const fresh: Record<string, unknown> = {}

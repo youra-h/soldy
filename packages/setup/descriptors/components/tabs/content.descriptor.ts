@@ -6,31 +6,58 @@
  * отвечает за props и events, коллекционная часть — за членство в коллекции.
  */
 
-import { defineComponent } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsContent, TTabsContentCollectionFacade } from '@soldy/core'
 import type { ITabsContentProps, TTabsContentEvents } from '@soldy/core'
-import {
-	TabsContentContribution,
-	TabsCollectionContentContribution,
-	type TTabsContentSlots,
-} from '../../../contributions'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
 import { TabsContentWarnPluginDescriptor } from '../../plugins'
+import type { TEmptySlotScope } from '../../../define'
 
-export const TabsContentDescriptor = () =>
+/**
+ * Панель таба. Слот один — содержимое; частей у неё нет.
+ */
+export type TTabsContentSlots = {
+	default: TEmptySlotScope
+}
+
+export const TabsContentDescriptor = defineDescriptor(() =>
 	defineComponent<ITabsContentProps, TTabsContentEvents, TTabsContentSlots>()({
 		ctor: TTabsContent,
 
 		extends: ComponentViewDescriptor(),
 
-		contribution: TabsContentContribution(),
+		/** Собственные props панели (выводятся классом TTabsContent). */
+		contribution: {
+			props: {
+				value: { type: [String, Number], triggers: ['change:value'] },
+			},
+			slots: {
+				default: { description: 'Содержимое панели' },
+			},
+		},
 
 		plugins: [TabsContentWarnPluginDescriptor()],
-	})
+	}),
+)
 
-export const TabsCollectionContentDescriptor = () =>
+export const TabsCollectionContentDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TTabsContentCollectionFacade,
 
-		contribution: TabsCollectionContentContribution(),
-	})
+		/**
+		 * Коллекционные props панели (выводятся фасадом TTabsContentCollectionFacade).
+		 *
+		 * Отделены от собственных ровно как у элемента (`TabsCollectionItemDescriptor`):
+		 * активность — свойство членства в коллекции, а не панели.
+		 *
+		 * ARIA-связки здесь нет: `role`, `id`, `aria-labelledby` и `tabindex` пишет
+		 * прямо в `aria` панели `TTabsContentBindingExtension` — то единственное
+		 * место, где известно, что панель и таб нашли друг друга.
+		 */
+		contribution: {
+			props: {
+				active: { type: Boolean, protected: true, triggers: ['change:active'] },
+			},
+		},
+	}),
+)

@@ -1,18 +1,12 @@
 /**
  * Контракт дескриптора компонента и определения плагина.
  *
- * Дескриптор отдаёт декларации (props, events, slots, plugins) и собирает по
- * ним набор и аксессор: Unit аксессора = { instance, props, events }.
+ * Дескриптор отдаёт декларации: props, events, slots и состав плагинов
+ * библиотеки. Собирает по ним компонент сборка (`assemble/`).
  */
 
-import type {
-	IContribution,
-	IPropDeclaration,
-	ISlotDeclaration,
-	TAccessor,
-	TName,
-} from '@soldy/accessor'
-import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+import type { IContribution, IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
+import type { IPluginConstructor } from '@soldy/plugins'
 
 /**
  * Конструктор инстанса компонента.
@@ -120,12 +114,30 @@ export interface IComponentDescriptor<
 	getEvents(): TName[]
 	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
 	getSlots(): ISlotDeclaration[]
-
-	/**
-	 * Собирает набор: плагины дескриптора, затем плагины реестра
-	 * (`usePlugins`), подходящие компоненту по типу и `context.embedded`.
-	 */
-	createBundle(instance: TInstance, context?: IBundleContext): IPluginBundle | null
-	/** Создаёт TAccessor: Unit'ы из instance и plugin instances */
-	createAccessor(instance: TInstance, bundle: IPluginBundle | null): TAccessor
 }
+
+/**
+ * Тип пропа в декларации: конструктор для рантайма и фантомный `T` для типов.
+ * Собирает его `defineType`.
+ */
+export type TPropType<T> = {
+	/**
+	 * Фантомное поле: в рантайме его нет, оно только несёт `T` в типе пропа.
+	 * Необязательное, поэтому `defineType` собирает значение без приведения.
+	 */
+	readonly __type?: T
+	/** JS-конструктор, по которому фреймворк проверяет значение: `String`, `Object`, … */
+	readonly ctor: unknown
+}
+
+/**
+ * Scope слота, который ничего не передаёт внутрь.
+ *
+ * Именно `object`, а не `Record<string, never>`: адаптеры отличают слот без
+ * scope по `keyof S extends never` (см. TSnippetSlots в ui/svelte). У
+ * `Record<string, never>` есть индексная сигнатура, поэтому его `keyof` —
+ * это `string`, и проверка ломается: сниппет начинает требовать аргумент.
+ * У `object` же `keyof` пуст, как и у прежнего `{}`, но без его дыры,
+ * пропускавшей `0` и `""`.
+ */
+export type TEmptySlotScope = object

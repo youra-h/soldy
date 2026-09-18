@@ -1,17 +1,24 @@
 /**
- * Аксессор компонента: units инстанса, плагинов дескриптора и плагинов реестра.
+ * Аксессор компонента: units инстанса и плагинов состава.
  *
  * Unit — `{ instance, props, events }`: свойство читается прямо с инстанса,
  * которому принадлежит, без неймспейса и карты плагинов.
+ *
+ * Units дают только те записи состава, у которых есть декларации, то есть
+ * плагины дескриптора: внешний плагин контракт компонента не расширяет
+ * (AGENTS.md, «Внешний плагин не расширяет контракт компонента»). Поэтому
+ * фасад коллекции, делящий набор с компонентом, строит аксессор по тем же
+ * правилам, что и владелец набора.
  */
 
 import { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IComponentDescriptor } from '../define/types'
-import { registeredPluginsOf } from './registered'
+import type { ICompositionEntry } from './types'
 
 export function assembleAccessor(
-	descriptor: Pick<IComponentDescriptor, 'props' | 'events' | 'plugins'>,
+	descriptor: Pick<IComponentDescriptor, 'props' | 'events'>,
+	composition: readonly ICompositionEntry[],
 	instance: object,
 	bundle: IPluginBundle | null,
 ): TAccessor {
@@ -19,23 +26,13 @@ export function assembleAccessor(
 		// Unit компонента: все наследуемые + собственные props/events
 		{ instance, props: descriptor.props, events: descriptor.events },
 		// Units плагинов
-		...descriptor.plugins
-			.map((def) => ({
-				instance: bundle?.get(def.ctor),
-				props: def.props,
-				events: def.events,
+		...composition
+			.filter((entry) => entry.props?.length || entry.events?.length)
+			.map((entry) => ({
+				instance: bundle?.get(entry.ctor),
+				props: [...(entry.props ?? [])],
+				events: [...(entry.events ?? [])],
 			}))
-			.filter((u) => u.instance != null),
-		// Units плагинов реестра — только у определений с пропсами и событиями.
-		// Декларации адаптера (`getProps`) о них не знают: список статичен, а
-		// реестр пополняется в рантайме. Адаптеры, которые читают пропсы по
-		// аксессору, получают их сами; Vue — из `attrs` (`useSyncProps`).
-		...registeredPluginsOf(bundle, instance)
-			.filter((def) => def.props?.length || def.events?.length)
-			.map((def) => ({
-				instance: bundle?.get(def.ctor),
-				props: [...(def.props ?? [])],
-				events: [...(def.events ?? [])],
-			})),
+			.filter((unit) => unit.instance != null),
 	])
 }

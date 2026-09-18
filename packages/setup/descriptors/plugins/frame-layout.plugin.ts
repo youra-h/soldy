@@ -1,11 +1,18 @@
 import { definePlugin } from '../../define'
-import { TFrameLayoutPlugin } from '@soldy/plugins'
+import { TFrameLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TFrameLayoutPluginEvents } from '@soldy/plugins'
-import { FrameLayoutContribution } from '../../contributions'
 
 export const FrameLayoutPluginDescriptor = () =>
 	definePlugin<'layout', TFrameLayoutPluginEvents>({
 		ctor: TFrameLayoutPlugin,
 		namespace: 'layout',
-		contribution: FrameLayoutContribution(),
+		contribution: {
+			events: [...PLUGIN_EVENTS],
+			props: {
+				styles: {
+					protected: true,
+					triggers: ['change:styles'],
+				},
+			},
+		},
 	})

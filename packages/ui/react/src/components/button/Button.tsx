@@ -11,7 +11,7 @@ import type { ButtonProps } from './base.component'
  *   (`attrs`), иначе `aria-disabled` (`aria`) — оба набора считает ядро;
  *   `data-disabled` для темы (`dataset`) стоит на любом теге
  *
- * Слоты объявлены в контракте (ButtonContribution) и одинаковы во всех
+ * Слоты объявлены в контракте (ButtonDescriptor) и одинаковы во всех
  * адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
  * `trailing`.
  */

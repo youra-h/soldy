@@ -1,7 +1,6 @@
 import { definePlugin } from '../../define'
-import { TAriaPlugin } from '@soldy/plugins'
+import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
-import { AriaContribution } from '../../contributions'
 
 /**
  * Доступное имя компонента: `aria_label`, `aria_labelledBy`,
@@ -20,6 +19,22 @@ export const AriaPluginDescriptor = (options?: IAriaPluginOptions) =>
 	definePlugin<'aria', TAriaPluginEvents, IAriaPluginProps>({
 		ctor: TAriaPlugin,
 		namespace: 'aria',
-		contribution: AriaContribution(),
+		/**
+		 * Единственный плагин, чьи пропсы пишутся снаружи, а не только читаются: имя
+		 * задаёт потребитель, вычислить его неоткуда.
+		 *
+		 * Вычисленного набора здесь нет: плагин пишет свою часть в общий `aria`
+		 * компонента, а тот уже объявлен в `ComponentViewDescriptor`. Отдельный
+		 * `aria_attributes` заставлял бы разметку складывать два набора спредом — от
+		 * этого и уходили.
+		 */
+		contribution: {
+			events: [...PLUGIN_EVENTS],
+			props: {
+				label: { type: String, triggers: ['change:label'] },
+				labelledBy: { type: String, triggers: ['change:labelledBy'] },
+				describedBy: { type: String, triggers: ['change:describedBy'] },
+			},
+		},
 		options,
 	})

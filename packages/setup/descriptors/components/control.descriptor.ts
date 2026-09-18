@@ -5,22 +5,29 @@
  * и добавляет disabled, focused.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TControl } from '@soldy/core'
 import type { IControlProps, TControlEvents } from '@soldy/core'
-import { ControlContribution } from '../../contributions'
 import { ActionPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
-export const ControlDescriptor = () =>
+export const ControlDescriptor = defineDescriptor(() =>
 	defineComponent<IControlProps, TControlEvents>()({
 		ctor: TControl,
 
 		extends: StylableDescriptor(),
 
-		contribution: ControlContribution(),
+		contribution: {
+			props: {
+				disabled: { type: Boolean, triggers: ['change:disabled'] },
+				focused: { type: Boolean, triggers: ['change:focused'] },
+				// `aria` объявлен в ComponentViewDescriptor — набор нужен и
+				// неинтерактивным слоям, а второе объявление accessor не примет.
+			},
+		},
 
 		// Доступное имя — обязательное свойство любого интерактивного элемента,
 		// а не опция: без него кнопка без текста для скринридера безымянна.
 		plugins: [ActionPluginDescriptor(), AriaPluginDescriptor()],
-	})
+	}),
+)

@@ -1,13 +1,12 @@
 /**
- * defineComponent — дескриптор компонента: унаследованные декларации и сборка по ним.
+ * defineComponent — дескриптор компонента: унаследованные декларации.
  *
- * Декларации собирает `inherit.ts`. Набор и аксессор на монтирование дескриптор
- * отдаёт сборке (`assemble/`): методы `createBundle`/`createAccessor` — вход в
- * неё для тех, у кого на руках только дескриптор.
+ * Дескриптор — описание типа и только оно: что компонент объявляет наружу и из
+ * каких плагинов состоит. Собирает по нему компонент сборка (`assemble/`),
+ * дескриптор о ней не знает.
  */
 
 import type { IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
-import { assembleAccessor, assembleBundle } from '../assemble'
 import type { TResolveInstance } from './inference.types'
 import { inheritDeclarations } from './inherit'
 import type {
@@ -38,14 +37,6 @@ function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
 
 		getSlots(): ISlotDeclaration[] {
 			return [...slots]
-		},
-
-		createBundle(instance, context = {}) {
-			return assembleBundle(descriptor, instance, context)
-		},
-
-		createAccessor(instance, bundle) {
-			return assembleAccessor(descriptor, instance, bundle)
 		},
 	}
 

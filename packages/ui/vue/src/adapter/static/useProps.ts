@@ -6,8 +6,8 @@
  */
 
 import type { PropType } from 'vue'
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from '../common'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { VueProfile } from '../common'
 
 /** Тип пропа для Vue: конструктор из `defineType(…)` или сам конструктор. */
 function resolveVueType(rawType: unknown): PropType<unknown> | undefined {
@@ -20,13 +20,13 @@ function resolveVueType(rawType: unknown): PropType<unknown> | undefined {
 }
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, unknown> {
-	// Умолчание — поле декларации пропа: его собирает setup, адаптер только
-	// раскладывает (см. AGENTS.md, «Умолчание пропа — в декларации»)
-	const rawProps = createInspector(descriptor).getExportProps()
-
 	const vueProps: Record<string, unknown> = {}
 
-	for (const [propName, config] of Object.entries(rawProps)) {
+	// Умолчание — поле декларации пропа: его собирает setup, адаптер только
+	// раскладывает (см. AGENTS.md, «Умолчание пропа — в декларации»)
+	for (const [propName, config] of Object.entries(
+		surfaceOf(descriptor, VueProfile).exportProps,
+	)) {
 		vueProps[propName] = {
 			...config,
 			// Адаптируем тип под рантайм и TS-систему Vue

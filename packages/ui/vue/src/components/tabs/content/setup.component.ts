@@ -30,7 +30,7 @@ export default {
 		const contentAdapter = createVueAdapterContext(
 			TabsCollectionContentDescriptor(),
 			{ props },
-			{ bundle: adapter.bundle, defaultExtensions: [] },
+			{ bundle: adapter.bundle },
 		).use(TTabsContentBindingExtension, {
 			content: adapter.instance,
 			elevator: VueElevatorFactory,

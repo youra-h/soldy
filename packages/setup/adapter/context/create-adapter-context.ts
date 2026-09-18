@@ -1,13 +1,12 @@
 /**
- * createAdapterContext — контекст адаптера: сборка компонента, контекст, стартовые расширения.
+ * createAdapterContext — контекст адаптера: собранный компонент и его расширения.
  *
- * Инстанс, набор и аксессор собирает `assemble/`; контекст держит собранное и
- * расширения адаптера (`TAdapterContext`).
+ * Инстанс, состав, набор и аксессор собирает `assemble/`; контекст держит
+ * собранное и расширения адаптера (`TAdapterContext`).
  */
 
 import { assembleComponent } from '../../assemble'
 import type { IComponentDescriptor } from '../../define'
-import { resolveDefaultExtensions } from '../extensions/plugins'
 import { TAdapterContext } from './adapter-context.class'
 import type { IAdapterContext, IAdapterContextConfig, IAdapterContextOptions } from './types'
 
@@ -17,16 +16,6 @@ export function createAdapterContext<TInstance extends object>(
 	config: IAdapterContextConfig = {},
 ): IAdapterContext<TInstance> {
 	const component = assembleComponent(descriptor, { ...options, bundle: config.bundle })
-	const context = new TAdapterContext(descriptor, component, options.props ?? {})
 
-	// Применяем стартовый набор расширений. По умолчанию — только те, что
-	// применимы к дескриптору: TPluginsBindingExtension требует TElementPlugin
-	// и бросает исключение, если его нет (headless-слои).
-	const defaultExtensions = config.defaultExtensions ?? resolveDefaultExtensions(descriptor)
-
-	for (const Ext of defaultExtensions) {
-		context.use(Ext)
-	}
-
-	return context
+	return new TAdapterContext(descriptor, component, options.props ?? {})
 }

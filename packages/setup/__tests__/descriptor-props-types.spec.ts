@@ -50,7 +50,7 @@ const ENTRY = resolve(__dirname, 'descriptor-props-types.entry.ts')
 const COLLECTION_LAYER = /^(\w*)Collection(\w*)Descriptor$/
 
 /**
- * `ctrl` и `embedded` объявляет `EntityContribution`: так адаптер принимает
+ * `ctrl` и `embedded` объявляет `EntityDescriptor`: так адаптер принимает
  * готовый инстанс и имя места пропом. Их типы дописывает сам адаптер поверх
  * `DescriptorAllProps` (`TBaseComponentProps` во Vue): в интерфейсах пропсов
  * ядра инстанса нет.

@@ -195,7 +195,7 @@ npm run changeset -- --empty
 | Package             | Responsibility                                                                                                                |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`     | Headless, framework-agnostic component models (`TEntity`, `TComponent`, `TCollectionEngine`, collection facades, extensions). |
-| `packages/accessor` | Runtime reflection (`TAccessor`, `TDescriptorInspector`).                                                                     |
+| `packages/accessor` | Runtime reflection (`TAccessor`): свойства и события компонента, привязанные к своим владельцам.                              |
 | `packages/setup`    | What all adapters share: describe, assemble and wire a component — see «Структура `packages/setup`».                          |
 | `packages/plugins`  | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`     | Framework adapters — the **only** place framework imports are allowed.                                                        |
@@ -326,10 +326,13 @@ Setup — всё, что у шести адаптеров общее: описа
 монтирование и проводка к фреймворку. Слой разложен по стадиям жизни
 компонента, у каждой стадии свои папки:
 
-1. **Описание** (`contributions/`, `define/`, `descriptors/`) работает с типом
-   компонента, инстанса ещё нет: contribution, дескриптор, определение плагина.
+1. **Описание** (`define/`, `descriptors/`) работает с типом компонента,
+   инстанса ещё нет: дескриптор и определение плагина. Один файл на компонент —
+   наследование, пропсы, события, слоты и плагины вместе. Дескриптор строится
+   один раз на тип — `defineDescriptor` кэширует фабрику.
 2. **Сборка** (`assemble/`) — на одно монтирование: инстанс (`ctrl` или
-   `ctor`), признак `embedded`, набор плагинов (свой или общий) и аксессор.
+   `ctor`), признак `embedded`, состав компонента, набор плагинов (свой или
+   общий), аксессор и начальные значения плагинных пропсов.
 3. **Связывание** (`adapter/`) — то, что зовут адаптеры: контекст, его
    расширения, лифт и общие функции.
 
@@ -337,38 +340,44 @@ Setup — всё, что у шести адаптеров общее: описа
 расширения коллекций читают, и `naming/`, имена, нужные и описанию, и
 адаптерам.
 
-| Модуль           | Что в нём                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------ |
-| `naming/`        | Имена публичного API — проп `ns_name` и событие-колбэк `onElementReady` — и их тип-зеркала.      |
-| `contributions/` | Contribution компонентов и плагинов: пропсы, события и слоты, объявленные значением.             |
-| `define/`        | Как строится дескриптор: декларации из contribution и родителя, умолчания, вывод типов.          |
-| `descriptors/`   | Дескрипторы компонентов и определения плагинов библиотеки.                                       |
-| `assemble/`      | Компонент на одно монтирование: инстанс, `embedded`, набор с `bundle:create` и аксессор.         |
-| `registry/`      | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
-| `adapter/`       | Связывание с фреймворком: контекст адаптера, его расширения, лифт и общие функции адаптеров.     |
+| Модуль         | Что в нём                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `naming/`      | Имена публичного API — проп `ns_name` и событие-колбэк `onElementReady` — и их тип-зеркала.      |
+| `define/`      | Как строится дескриптор: декларации, наследование, умолчания, `defineType`, вывод типов.         |
+| `descriptors/` | Дескрипторы компонентов и определения плагинов: объявления прямо в них, по файлу на компонент.   |
+| `assemble/`    | Компонент на одно монтирование: инстанс, `embedded`, состав, набор с `bundle:create`, аксессор.  |
+| `registry/`    | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки. |
+| `adapter/`     | Связывание с фреймворком: контекст, поверхность и связка, расширения, лифт, общие функции.       |
 
 **Рантайм-импорт между модулями — только по таблице.** `import type` не
 ограничен: связи в рантайме он не создаёт.
 
-| Модуль                                | Импортирует в рантайме           |
-| ------------------------------------- | -------------------------------- |
-| `naming`, `contributions`, `registry` | ничего из setup                  |
-| `assemble`                            | `registry`                       |
-| `define`                              | `assemble`                       |
-| `descriptors`                         | `define`, `contributions`        |
-| `adapter`                             | `assemble`, `registry`, `naming` |
-| `index.ts` пакета                     | всё, кроме `assemble`            |
+| Модуль                         | Импортирует в рантайме           |
+| ------------------------------ | -------------------------------- |
+| `naming`, `registry`, `define` | ничего из setup                  |
+| `assemble`                     | `registry`, `naming`             |
+| `descriptors`                  | `define`                         |
+| `adapter`                      | `assemble`, `registry`, `naming` |
+| `index.ts` пакета              | всё, кроме `assemble`            |
 
 Почему так:
 
-- `createBundle` и `createAccessor` — методы дескриптора: у адаптера на руках
-  дескриптор. Поэтому описание зовёт сборку, но только из `define/component.ts`,
-  а сборка знает о дескрипторе лишь его контракт — `define/types.ts`.
-- Реестры и тема ни о ком не знают: их зовут сборка набора
-  (`assemble/bundle.ts`) и `TCollectionExtension`. Правило «`instanceof` +
+- **Описание не знает о сборке.** Дескриптор — декларации и состав библиотеки,
+  и только они; собирает по нему компонент `assemble/`, а сборка знает о
+  дескрипторе лишь его контракт (`define/types.ts`). Методов `createBundle` и
+  `createAccessor` у дескриптора нет: их звала одна сборка, а описание из-за
+  них зависело от неё.
+- **Состав — один список на монтирование** (`assemble/composition.ts`): плагины
+  дескриптора, затем регистрации приложения. По нему строятся набор, units
+  аксессора и начальные значения плагинных пропсов — каждый из них больше не
+  выясняет состав сам.
+- Реестры и тема ни о ком не знают: их зовут сборка состава
+  (`assemble/composition.ts`) и `TCollectionExtension`. Правило «`instanceof` +
   `scope` + `embedded`» одно на оба реестра — `createRegistrations`
-  (`registry/registrations.ts`). Какие плагины реестра стоят в наборе — факт о
-  собранном наборе, он в `assemble/registered.ts`.
+  (`registry/registrations.ts`).
+- **Регистрации действуют там, где набор создаётся.** Пришедший в конфиге набор
+  собран по составу своего владельца, и второй раз состав не пересматривается:
+  так фасад коллекции, делящий набор с компонентом, не получает его дважды.
 - Сборка и `TAdapterContext` наружу не выходят: адаптер получает интерфейс
   `IAdapterContext`. Публичный интерфейс не наследует внутренний тип сборки —
   declaration emit Vue его не назовёт.
@@ -389,7 +398,8 @@ Builder и pipeline для дескриптора не нужны: части д
   его типы выведены из `ICON_ROLES`.
 - Бочка (`index.ts`) перечисляет имена файлов явно, `export *` — только из
   подпапки.
-- У `contributions/` и `descriptors/` соглашения о файлах свои.
+- У `descriptors/` соглашения о файлах свои: тип слотов лежит рядом с
+  дескриптором, который их объявляет.
 
 **Куда класть новое:**
 
@@ -398,7 +408,8 @@ Builder и pipeline для дескриптора не нужны: части д
 - регистрация приложения на тип компонента — `registry/`, выбор подходящих —
   через `createRegistrations`, а не своим циклом по `instanceof`;
 - проводка, общая для всех фреймворков, — расширение в
-  `adapter/extensions/<тема>/`; функция, которую зовут адаптеры, —
+  `adapter/extensions/<тема>/`; то, что шесть адаптеров делают с аксессором, —
+  связка `adapter/binding/`; прочая функция, которую зовут адаптеры, —
   `adapter/common/`;
 - новая папка верхнего уровня — со строкой в обеих таблицах и в
   `RUNTIME_IMPORTS` сторожа.
@@ -531,7 +542,7 @@ bundles.events.on('engine:bound', (engine) => {
 от которой правило и защищает.
 
 **Имена классов, типов, папок и contribution `Collection` сохраняют**:
-`TCollectionEngine`, `TListBoxCollectionFacade`, `CollectionContribution`,
+`TCollectionEngine`, `TListBoxCollectionFacade`, `CollectionDescriptor`,
 `base/collection/`. Там слово стоит на месте — оно называет слой, а не
 конкретный объект в руках.
 
@@ -981,7 +992,7 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 
 Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps` и свойства
 инстанса), и граница у него своя — `toBindingState`
-(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы `useSyncProps` собраны по
+(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы связки собраны по
 тому же дескриптору, связь их имён с типом держит он, поэтому внутри обычный
 `as` из `Readonly<Record<string, unknown>>`. Через неё проходят и `useAdapter`,
 и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement` добавляются к
@@ -1054,22 +1065,30 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 ## Project-specific patterns
 
-- **Contributions** are arrow-function factories returning an `IContribution` dictionary:
+- **Один файл на компонент.** Дескриптор объявляет всё, что компонент отдаёт
+  наружу, прямо в `contribution` — словаре `IContribution`; рядом лежит тип
+  слотов. Отдельных файлов contribution нет: их читал только свой дескриптор.
+  Фабрика оборачивается в `defineDescriptor` — дескриптор строится один раз:
 
   ```ts
-  export const ButtonContribution = (): IContribution => ({
-    props: { view: { type: String, triggers: ['change:view'] } },
-    events: ['click'],
-  })
+  export const ButtonDescriptor = defineDescriptor(() =>
+    defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
+      ctor: TButton,
+      extends: TextableDescriptor(),
+      contribution: {
+        props: { view: { type: String, triggers: ['change:view'] } },
+        slots: { leading: {}, default: { scope: { text: defineType<string>(String) } } },
+      },
+    }),
+  )
   ```
 
   `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
+  Плагин объявляется так же — `definePlugin({ ctor, namespace, contribution: { … } })`.
+  Общий фрагмент нескольких компонентов (`LIST_PROPS` у ListBox и Select) —
+  константа рядом с дескрипторами (`descriptors/components/list.ts`).
 
-- **Descriptors** are arrow-function factories too. Call them when used as `extends` / options (do not pass the function reference):
-
-  ```ts
-  export const ButtonDescriptor = () => defineComponent({ extends: TextableDescriptor(), ... })
-  ```
+- **Descriptors** — фабрики. Call them when used as `extends` / options (do not pass the function reference): `extends: TextableDescriptor()`.
 
 - **Состав пропсов записан дважды: в contribution и в типе.** Рантайм собирает
   дескриптор (`getProps()` — contribution компонента, его предков и плагинов),
@@ -1086,7 +1105,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   Коллекционная часть (`SelectCollectionDescriptor`) тип пропсов не объявляет
   и сверяется в строке владельца: её пропсы входят в его интерфейс
   (`ISelectProps`). `ctrl` сторож не сверяет: в рантайме проп объявляет
-  `EntityContribution`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
+  `EntityDescriptor`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
   поля, которые адаптер дописывает к типу сверх дескриптора, сторож не видит —
   так в типах адаптеров жил `plugins`, которого в рантайме не было. Защищённые
   пропсы (выходы) он тоже не сверяет: `DescriptorAllProps` их не несёт, и
@@ -1099,7 +1118,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle, defaultExtensions: [] }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -1379,9 +1398,9 @@ declare module '@soldy/core' {
 
 ## Что общее, а что специфично для фреймворка
 
-`packages/setup/naming/` и `packages/setup/adapter/common/` — поведение,
-одинаковое во всех адаптерах. Прежде чем писать что-то в
-`packages/ui/*/adapter/common/`, проверь, не место ли этому там:
+`packages/setup/naming/` и `packages/setup/adapter/` — поведение, одинаковое во
+всех адаптерах. Прежде чем писать что-то в `packages/ui/*/adapter/`, проверь,
+не место ли этому там:
 
 - `underscorePropNaming` (`naming/`) — имя пропа одинаково везде (`ns_name`).
 - `callbackEventNaming` (`naming/`) — `element:ready` → `onElementReady`; общая стратегия
@@ -1389,19 +1408,28 @@ declare module '@soldy/core' {
   `TCallbackEventProps`. Своё именование событий остаётся только у Vue
   (`element:ready`) и Angular (`elementReady`) — по одному потребителю на каждое,
   поэтому они живут в своих адаптерах.
-- `createInspectorFactory(naming)` — адаптер связывает со своей стратегией один раз.
-- `collectEventBindings(accessor, inspector)` — дедуплицированный список подписок
-  для проброса событий. **Дедупликация обязательна**: один raw-триггер объявлен у
-  нескольких пропов (`present` в `ComponentContribution` повторяет триггеры
-  `rendered` и `visible`), иначе потребитель получает два эмита на одно изменение.
-  Дедуплицировать можно только проброс событий — синхронизацию состояния нельзя,
-  `present` обязан пересчитываться на обоих триггерах.
-- `collectForwardProps(props, adapter, inspector, 'children')` — пропсы, которые
-  React, Solid и Svelte спредят в атрибуты корня. Съедает пропы, события и
-  **слоты** дескриптора (`resolveSlotName`), иначе `leading={<Icon/>}` доезжает
-  до DOM атрибутом.
-- `resolveDefaultExtensions` (в `adapter/extensions/plugins/`) — уже применяется по
-  умолчанию внутри `createAdapterContext`, передавать его вручную не нужно.
+- **Профиль фреймворка** (`IAdapterProfile`) — стратегия имён и слот по
+  умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).
+- **Поверхность** — `surfaceOf(descriptor, profile)`: публичный API компонента
+  в именах фреймворка. Считается один раз на пару «дескриптор × профиль» и
+  кэшируется: внешний плагин контракт не расширяет, так что это свойство типа.
+  Из неё берут статический слой (`props`/`emits` Vue, `observedAttributes` и
+  прототип WebC, кодоген Angular) и рантайм.
+- **Связка** — `bindComponent(adapter, profile)` на монтирование: стартовое
+  состояние, подписка на триггеры (`bindOutput`), проброс событий
+  (`bindEvents`), чтение пропа по двум именам (`read`), запись с guard'ом
+  (`write`/`writeAll`) и спред несъеденных пропсов (`forward`). Адаптеру
+  остаётся сказать, куда писать значение и как отдать событие, и решить, в какой
+  момент своего цикла это делать. Своих циклов по аксессору у адаптера нет.
+  **Дедупликация событий обязательна**: один raw-триггер объявлен у нескольких
+  пропов (`present` повторяет триггеры `rendered` и `visible`), иначе
+  потребитель получает два эмита на одно изменение. Синхронизацию состояния
+  дедуплицировать нельзя — `present` обязан пересчитываться на обоих триггерах.
+  `forward` съедает пропы, события и **слоты** дескриптора, иначе
+  `leading={<Icon/>}` доезжает до DOM атрибутом.
+- `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`. Метод
+  контекста, а не расширение: её зовут все шесть адаптеров. У компонента без
+  этого плагина вызов ничего не делает.
 
 **Правило:** починил баг в одном адаптере — проверь остальные. Исторически
 исправления уезжали в React/Angular и не возвращались во Vue.
@@ -1484,7 +1512,7 @@ placeholder="Выберите">` обязан показать плейсхол�
 получается — инстанс из props строит конструктор (сборка компонента,
 `assemble/component.ts`: `ctrl ?? new Ctor(props)`), а чужому инстансу стартовые значения
 никто не пишет: `watch` во vue-адаптере молчит, пока проп не сменится.
-Поэтому `useSyncProps.bindInput` пишет стартовое значение — но **только для
+Поэтому Vue-адаптер пишет стартовое значение — но **только для
 пропов, написанных в разметке** (`vnode.props`, а не итоговые `props`).
 Разница принципиальная: `default` пропа приходит из декларации (см. ниже), и
 «записать все props подряд» значило бы затирать чужое состояние своими
@@ -1507,7 +1535,7 @@ placeholder="Выберите">` обязан показать плейсхол�
   `defaultValues` плагина. Опция впереди, иначе Vue при монтировании перетёр
   бы опцию автора дескриптора умолчанием класса.
 
-`TDescriptorInspector.getExportProps()` кладёт `default` в конфиг пропа, Vue
+Поверхность (`surfaceOf(...).exportProps`) кладёт `default` в конфиг пропа, Vue
 (`useProps`) раскладывает его как есть. Остальным адаптерам умолчание не
 нужно: отсутствующий проп у них и так `undefined`, а его не пишут ни в
 инстанс, ни в плагин.
@@ -1547,14 +1575,14 @@ Partial<IXProps>` вместо аннотации не годится: он ос
 **Почему не адаптер.** Раньше `useProps` во Vue сам читал `defaultValues` ядра
 рефлексией и искал в карте по имени без неймспейса. Пропы плагинов умолчаний
 не получали: отсутствующему Boolean Vue ставил `false`, а
-`TPluginPropsExtension` писал его в плагин. У `dismiss_enabled` и
+сборка писала его в плагин. У `dismiss_enabled` и
 `anchor_matchWidth` умолчание и так `false`, поэтому этого не было видно;
 `anchor_flip` с умолчанием `true` молча выключил бы flip у всех Frame.
 
 Сторож — `packages/setup/__tests__/prop-defaults.spec.ts`. По всем
 дескрипторам экспорта у незащищённого пропа с `Boolean` в типе (сам, в
 массиве, в `defineType`) умолчание объявлено и равно стартовому значению: у
-свежего инстанса или у плагина из `createBundle`. Это ровно те пропы, которые
+свежего инстанса или у плагина из собранного набора. Это ровно те пропы, которые
 Vue приводит сам. Расхождение чинится значением в `defaultValues`, а не
 исключением в стороже.
 
@@ -1572,12 +1600,9 @@ Vue приводит сам. Расхождение чинится значен�
 возможность собрать компонент, который не заведётся, и перестаём отвечать за
 его работоспособность.
 
-Инвариант зафиксирован в коде: `TPluginsBindingExtension` **бросает
-исключение**, если в bundle нет `TElementPlugin`. То же самое было бы с
-`engine` у коллекций.
-
-Поэтому bundle всегда собирается внутри (`createBundle`), а наружу отдаётся
-доступ к **уже созданному** — через `bundle:create` и `<ns>:create`.
+Инвариант зафиксирован в коде: набор собирает только сборка, по составу
+(`assemble/composition.ts`), и наружу отдаётся доступ к **уже созданному** —
+через `bundle:create` и `<ns>:create`. То же самое с `engine` у коллекций.
 
 Цена решения: `bundle:create` идёт по шине core, хотя плагины — слой над core.
 Это осознанное исключение, а не протечка. Шина используется как транспорт, не
@@ -1586,11 +1611,11 @@ Vue приводит сам. Расхождение чинится значен�
 закрыта, и без имени в ней не скомпилировались бы ни подписка с инстанса, ни
 проп события адаптера, который выводится из той же карты. Тип бандла ядру
 неизвестен, поэтому подписчик сужает аргумент сам (`bundle instanceof
-TPluginBundle`). В список событий дескриптора имя вносит `EntityContribution`
+TPluginBundle`). В список событий дескриптора имя вносит `EntityDescriptor`
 (setup).
 
 Эмит живёт там же, где плагины создаются, — в сборке набора
-(`setup/assemble/bundle.ts`, её зовёт `createBundle`). Не заводите для этого отдельный шаг,
+(`setup/assemble/bundle.ts`). Не заводите для этого отдельный шаг,
 который каждый адаптер обязан помнить и вызывать: седьмой адаптер про него
 забудет.
 
@@ -1640,7 +1665,7 @@ useTheme(oren)
 монтировании, компонент адаптера у каждого фреймворка свой, а класс один.
 
 - Плагины реестра ставятся после плагинов дескриптора, до `bundle:create`
-  (`createBundle`). Один класс — один экземпляр, опции последней регистрации.
+  (состав монтирования). Один класс — один экземпляр, опции последней регистрации.
 - Внешний плагин только добавляет: класс из состава компонента — ошибка
   сборки. Это и есть граница с «Почему bundle не принимается снаружи»: набор
   компонента остаётся инвариантом, реестр его дополняет.
@@ -1663,7 +1688,7 @@ useTheme(oren)
 `select.field`). Ставит его **разметка библиотеки** на каждый компонент soldy,
 который использует как деталь; элементы своей коллекции (`ListBoxItem` в
 `ListBox`) признака не несут. Проп объявлен у всех компонентов в
-`EntityContribution` рядом с `ctrl`: триггеров нет, в инстанс он не пишется,
+`EntityDescriptor` рядом с `ctrl`: триггеров нет, в инстанс он не пишется,
 читает его сборка компонента (`setup/assemble/component.ts`) из пропсов — ни
 один адаптер не обязан помнить отдельный шаг.
 
@@ -1675,37 +1700,39 @@ useTheme(oren)
 (`select.tags`), но его собственные теги для реестра `TTagsItem` — обычные
 элементы.
 
-### Пропсы и события плагина реестра
+### Внешний плагин не расширяет контракт компонента (критично)
 
-Определение `definePlugin` в `usePlugins` выходит наружу компонента так же,
-как плагины дескриптора: `<Button interval_value="500" @interval:tick="…">`.
-Набор запоминает поставленные плагины реестра, и аксессор **владельца набора**
-добавляет их units — фасад коллекции на том же наборе их не получает, иначе
-событие ушло бы наружу дважды.
-
-- React, Solid и Svelte читают пропсы по аксессору и получают их сами.
-- Vue объявляет пропсы при импорте компонента, раньше регистрации, поэтому
-  проп плагина реестра приходит в `attrs`. `useSyncProps` читает его оттуда и
-  перечитывает в `onBeforeUpdate`: `attrs` не реактивны.
-- Angular и Web Components объявляют входы статически (генерация, прототип).
-  Плагину реестра там доступны только `bundle:create` и API самого плагина.
-
-Типы регистрация не меняет — их объявляет дополнение модуля, как реестры
-значений темы:
+Пропсы, события и слоты компонента объявляет **только дескриптор** — один и
+тот же во всех шести адаптерах. Плагин из реестра живёт в наборе и работает, но
+наружу не добавляет ничего: ни пропа, ни события. Поэтому `usePlugins`
+принимает класс или класс с опциями, а определение `definePlugin` — нет.
 
 ```ts
-declare module '@soldy/setup' {
-  interface IRegisteredPlugins {
-    interval: { type: IButton; plugin: ReturnType<typeof IntervalPluginDescriptor> }
-  }
-}
+usePlugins(TButton, [TTimerPlugin]) // просто класс
+usePlugins(TButton, [{ ctor: TTimerPlugin, options: { ms: 500 } }]) // с настройкой
 ```
 
-`TRegisteredPluginProps<TInstance>` / `TRegisteredPluginEvents<TInstance>`
-берут записи, чей `type` подходит инстансу, и входят в `UseProps` Vue, React,
-Solid и Svelte. Тесты: `setup/__tests__/plugin-registry.spec.ts`,
-`extension-registry.spec.ts`, `registered-plugin-props.spec.ts`,
-`ui/vue/__tests__/external-plugin.spec.ts`.
+Настраивают такой плагин опциями регистрации, а разговаривают с ним через его
+собственный API: из `bundle:create` или по ссылке, которую он сам о себе
+оставил.
+
+Почему так. Статический слой адаптера объявляет пропсы раньше, чем приложение
+успевает что-либо зарегистрировать: Vue — при импорте модуля компонента,
+Angular — кодогенерацией при сборке, Web Components — на прототипе элемента.
+Регистрация происходит в точке входа приложения, то есть позже. Пропы
+внешнего плагина в этих трёх адаптерах в объявление не попадут никогда, и
+единственный способ «дотянуть» их — обход мимо объявления (во Vue это было
+чтение `attrs`). Тогда публичная поверхность компонента начинает зависеть от
+того, на каком фреймворке его собрали, а этого проект не допускает нигде
+больше.
+
+Прошлая попытка (реестр с `definePlugin`, пропсы через `attrs` во Vue,
+дополнение типов `IRegisteredPlugins`) снята вместе с её механикой: аксессору
+больше не нужен боковой канал «какие плагины реестра стоят в наборе», а фасад
+коллекции, делящий набор с компонентом, получает ровно те же units, что и он.
+
+Тесты: `setup/__tests__/plugin-registry.spec.ts`, `extension-registry.spec.ts`,
+`registered-plugin-contract.spec.ts`, `ui/vue/__tests__/external-plugin.spec.ts`.
 
 ## Слоты — третья категория контракта
 
@@ -1716,16 +1743,21 @@ Solid и Svelte. Тесты: `setup/__tests__/plugin-registry.spec.ts`,
 ```ts
 export type TButtonSlots = { leading: {}; default: { text: string }; trailing: {} }
 
-export const ButtonContribution = (): IContribution => ({
-  slots: {
-    leading: { description: 'Перед текстом' },
-    default: { scope: { text: defineType<string>(String) } },
-    trailing: { description: 'После текста' },
-  },
-})
+export const ButtonDescriptor = defineDescriptor(() =>
+  defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({
+    // …
+    contribution: {
+      slots: {
+        leading: { description: 'Перед текстом' },
+        default: { scope: { text: defineType<string>(String) } },
+        trailing: { description: 'После текста' },
+      },
+    },
+  }),
+)
 ```
 
-Тип-зеркало лежит рядом с contribution и меняется синхронно с ней — как
+Тип-зеркало лежит в файле дескриптора, рядом с объявлением, и меняется синхронно с ним — как
 `TCallbackEventProps` для событий. Живёт в `setup`, **не в core**: у ядра
 понятия слота нет, оно ничего не рендерит.
 
@@ -2136,8 +2168,8 @@ Disabled-элементы пропускаются при навигации с 
 
 Пропсы, которые пишутся снаружи, есть не только у него: ещё у `TAnchorPlugin`
 (`anchor_*`) и `TDismissPlugin` (`dismiss_enabled`). Начальные значения
-доносит `TPluginPropsExtension` — ядро получает пропсы через конструктор,
-плагины нет.
+доносит шаг сборки `applyInitialPluginProps` — ядро получает пропсы через
+конструктор, плагины нет.
 
 ### Языка интерфейса библиотека не знает
 
@@ -2236,7 +2268,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
   компонента и части неверное значение стоит под `@vue-expect-error`, рядом
   верное; проверяет «Типы — Vue».
 - Проп без `triggers` адаптер считает pass-through и наружу не отдаёт
-  (`useSyncProps.bindOutput` пропускает такие). Даже у постоянного значения
+  (связка в `bindOutput` пропускает такие). Даже у постоянного значения
   должен быть хотя бы один триггер — для плагинов подходит `create`.
 - `TElementPlugin` эмитит `ready` через `requestAnimationFrame`. В тестах
   ждите кадр, а не `nextTick`. Контракт: одно `ready` на подключение узла,

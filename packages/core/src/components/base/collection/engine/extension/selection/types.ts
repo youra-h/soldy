@@ -3,7 +3,10 @@ import type { ISelectionItemExtension } from './item/types'
 
 export type TSelectionMode = 'none' | 'single' | 'multiple'
 
-/** Owner-level props коллекции от selection-расширения (input). Зеркало SelectionExtensionContribution. */
+/**
+ * Owner-level props коллекции от selection-расширения (input). Зеркало пропа `mode` в
+ * дескрипторах коллекций с выбором (`ListBoxCollectionDescriptor` и соседи, setup).
+ */
 export interface ISelectionCollectionProps {
 	/** Режим выделения. */
 	mode?: TSelectionMode

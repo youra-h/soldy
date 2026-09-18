@@ -5,17 +5,17 @@
  * Не добавляет новых props/events — только предоставляет drag-контекст детям.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TDragAndDrop } from '@soldy/core'
 import type { IDragAndDropProps, TDragAndDropEvents } from '@soldy/core'
-import { DragAndDropContribution } from '../../contributions'
 import { ComponentDescriptor } from './component.descriptor'
 
-export const DragAndDropDescriptor = () =>
+export const DragAndDropDescriptor = defineDescriptor(() =>
 	defineComponent<IDragAndDropProps, TDragAndDropEvents>()({
 		ctor: TDragAndDrop,
 
 		extends: ComponentDescriptor(),
 
-		contribution: DragAndDropContribution(),
-	})
+		contribution: {},
+	}),
+)

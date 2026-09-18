@@ -1,4 +1,4 @@
-export { createInspector } from './createInspector'
+export { VueProfile } from './profile'
 export { VueNaming } from './naming'
 export * from './useIcon'
 export * from './useSplitAttrs'

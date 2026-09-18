@@ -29,13 +29,13 @@
  */
 
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
-import { DEFAULT_SLOT, type IComponentDescriptor, type TInstanceState } from '@soldy/setup'
 import {
-	buildAttributeMap,
-	coerceAttribute,
-	createInspector,
-	type IAttributeBinding,
-} from '../common'
+	DEFAULT_SLOT,
+	surfaceOf,
+	type IComponentDescriptor,
+	type TInstanceState,
+} from '@soldy/setup'
+import { buildAttributeMap, coerceAttribute, type IAttributeBinding, WebcProfile } from '../common'
 import {
 	applyAttributeSet,
 	type ITemplate,
@@ -101,7 +101,7 @@ export abstract class TSoldyElement<
 	 * у него своя пара ниже: читать его нужно из буфера, а не из state.
 	 */
 	static defineProps(descriptor: IComponentDescriptor): void {
-		for (const prop of Object.keys(createInspector(descriptor).getExportProps())) {
+		for (const prop of Object.keys(surfaceOf(descriptor, WebcProfile).exportProps)) {
 			if (prop === 'ctrl') continue
 			if (Object.prototype.hasOwnProperty.call(this.prototype, prop)) continue
 

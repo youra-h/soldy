@@ -28,7 +28,7 @@ export default {
 		const itemAdapter = createVueAdapterContext(
 			TagsCollectionItemDescriptor(),
 			{ props },
-			{ bundle: adapter.bundle, defaultExtensions: [] },
+			{ bundle: adapter.bundle },
 		).use(TCollectionItemExtension, {
 			item: adapter.instance,
 			elevator: VueElevatorFactory,

@@ -5,17 +5,26 @@
  * и добавляет value, name.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TValueControl } from '@soldy/core'
 import type { IValueControlProps, TValueControlEvents } from '@soldy/core'
-import { ValueControlContribution } from '../../contributions'
 import { ControlDescriptor } from './control.descriptor'
 
-export const ValueControlDescriptor = () =>
+export const ValueControlDescriptor = defineDescriptor(() =>
 	defineComponent<IValueControlProps<any>, TValueControlEvents<any>>()({
 		ctor: TValueControl,
 
 		extends: ControlDescriptor(),
 
-		contribution: ValueControlContribution(),
-	})
+		contribution: {
+			props: {
+				value: {
+					type: [String, Number, Boolean, Object, Array],
+					triggers: ['change:value'],
+				},
+				name: { type: String, triggers: ['change:name'] },
+			},
+			events: ['input', 'input:value'],
+		},
+	}),
+)

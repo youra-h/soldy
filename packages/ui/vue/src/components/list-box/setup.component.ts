@@ -36,7 +36,7 @@ export default {
 				// Не дали — соберёт свою. Развилка в `resolveEngine`
 				options: { owner: adapter.instance, engine: props.engine },
 			},
-			{ bundle: adapter.bundle, defaultExtensions: [] },
+			{ bundle: adapter.bundle },
 		)
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })

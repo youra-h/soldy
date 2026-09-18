@@ -4,17 +4,16 @@
 
 import type { IPropDeclaration } from '@soldy/accessor'
 
-// временно, до https://app.clickup.com/t/869f3mvk5
-
 /**
  * Собрать значения входных (не protected) пропсов, объявленных в `decls`,
- * из набора `props`. Ключ результата — сырое имя пропса (decl.name.name).
+ * из набора `props`. Ключ результата — сырое имя пропса (`decl.name.name`).
  *
- * Базовый примитив: отделяет объявленные пропсы конкретного уровня
- * (item-level или owner-level) от остального набора props.
+ * Потребитель один — `TCollectionItemExtension`, поэтому наружу пакета функция
+ * не выходит: разметка передала элементу `active`/`selected`, и расширение
+ * кладёт их в `meta` движка, где состав элемента и живёт.
  */
-export function collectDeclaredProps(
-	decls: IPropDeclaration[],
+export function collectItemProps(
+	decls: readonly IPropDeclaration[],
 	props: object,
 ): Record<string, unknown> {
 	const result: Record<string, unknown> = {}
@@ -22,22 +21,10 @@ export function collectDeclaredProps(
 	for (const decl of decls) {
 		if (decl.protected) continue
 
-		const key = decl.name.name
+		const value: unknown = Reflect.get(props, decl.name.name)
 
-		const value: unknown = Reflect.get(props, key)
-
-		if (value !== undefined) {
-			result[key] = value
-		}
+		if (value !== undefined) result[decl.name.name] = value
 	}
 
 	return result
-}
-
-/** Item-level пропсы коллекции (active, selected, ...). */
-export function collectItemProps(
-	itemProps: IPropDeclaration[],
-	props: object,
-): Record<string, unknown> {
-	return collectDeclaredProps(itemProps, props)
 }

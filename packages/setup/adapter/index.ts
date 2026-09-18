@@ -1,4 +1,5 @@
 export * from './context'
+export * from './binding'
 export * from './common'
 export * from './extensions'
 export * from './elevator'

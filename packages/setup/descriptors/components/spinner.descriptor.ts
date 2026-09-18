@@ -5,22 +5,26 @@
  * и добавляет size, variant, borderWidth + плагин SpinnerStyle.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TSpinner } from '@soldy/core'
 import type { ISpinnerProps, TSpinnerEvents } from '@soldy/core'
 import { SpinnerLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
-import { SpinnerContribution } from '../../contributions'
 import { StylableDescriptor } from './stylable.descriptor'
 
-export const SpinnerDescriptor = () =>
+export const SpinnerDescriptor = defineDescriptor(() =>
 	defineComponent<ISpinnerProps, TSpinnerEvents>()({
 		ctor: TSpinner,
 
 		extends: StylableDescriptor(),
 
-		contribution: SpinnerContribution(),
+		contribution: {
+			props: {
+				borderWidth: { type: [Number, String], triggers: ['change:borderWidth'] },
+			},
+		},
 
 		// Спиннер объявляет себя как `role="status"`; без имени и содержимого
 		// эта живая область молчит, поэтому имя ему нужно.
 		plugins: [SpinnerLayoutPluginDescriptor(), AriaPluginDescriptor()],
-	})
+	}),
+)

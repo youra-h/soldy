@@ -6,8 +6,8 @@
  * адаптеров: там props приходят уже типизированными.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
-import { createInspector } from './createInspector'
+import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { WebcProfile } from './profile'
 
 export interface IAttributeBinding {
 	/** Имя пропа (по общему underscorePropNaming) */
@@ -34,12 +34,9 @@ function typesOf(type: unknown): unknown[] {
 export function buildAttributeMap(
 	descriptor: IComponentDescriptor,
 ): Map<string, IAttributeBinding> {
-	const inspector = createInspector(descriptor)
 	const map = new Map<string, IAttributeBinding>()
 
-	for (const [prop, config] of Object.entries(inspector.getExportProps())) {
-		const type = (config as { type?: unknown }).type
-
+	for (const [prop, { type }] of Object.entries(surfaceOf(descriptor, WebcProfile).exportProps)) {
 		map.set(toAttributeName(prop), {
 			prop,
 			type,

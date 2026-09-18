@@ -6,11 +6,13 @@
  * момент, начиная с которого плагин существует и на него можно подписаться.
  *
  * Список объявлен здесь, а не собирается где-то в setup, чтобы у плагина
- * был один источник истины о собственных событиях. Каждая plugin-contribution
- * подмешивает его явно:
+ * был один источник истины о собственных событиях. Каждое определение плагина
+ * подмешивает его в свои события явно:
  *
- *   export const ElementContribution = (): IContribution => ({
- *     events: [...PLUGIN_EVENTS, 'ready', 'removed'],
+ *   definePlugin({
+ *     ctor: TElementPlugin,
+ *     namespace: 'element',
+ *     contribution: { events: [...PLUGIN_EVENTS, 'ready', 'removed'] },
  *   })
  */
 export const PLUGIN_EVENTS = ['create'] as const

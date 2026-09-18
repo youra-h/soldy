@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { createPluginContext } from './helpers'
-import { TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
+import { TAriaPlugin, TIconLayoutPlugin, TSkeletonLayoutPlugin } from '@soldy/plugins'
 import { TButton, TIcon, TSkeleton } from '@soldy/core'
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import {
@@ -21,7 +21,7 @@ import {
 	SkeletonDescriptor,
 	FrameDescriptor,
 } from '../descriptors'
-import { createAdapterContext, resolveDefaultExtensions, TPluginPropsExtension } from '../adapter'
+import { createAdapterContext } from '../adapter'
 
 const install = (
 	instance: IComponentView<IComponentViewProps, any>,
@@ -227,17 +227,20 @@ describe('кому плагин подключён', () => {
 
 describe('начальные значения плагинных пропсов', () => {
 	/**
-	 * Ядро получает пропсы через конструктор, плагины — нет. Разницу
-	 * закрывает TPluginPropsExtension: без него `<Button aria_label="…">`
+	 * Ядро получает пропсы через конструктор, плагины — нет. Разницу закрывает
+	 * шаг сборки `applyInitialPluginProps`: без него `<Button aria_label="…">`
 	 * при монтировании имени не получал бы, а только со второго изменения.
 	 */
-	it('подключается там, где у плагина есть пропсы, пишущиеся снаружи', () => {
-		expect(resolveDefaultExtensions(ButtonDescriptor())).toContain(TPluginPropsExtension)
-	})
+	it('пропсы, вычисляемые плагином, снаружи не переписываются', () => {
+		// У Skeleton только layout-плагин, его `styles` protected: значение
+		// плагин считает сам, и сборка его не трогает
+		const context = createAdapterContext(SkeletonDescriptor(), {
+			props: { layout_styles: { color: 'red' } },
+		})
 
-	it('не подключается там, где все плагинные пропсы protected', () => {
-		// У Skeleton только layout-плагин, его `styles` вычисляется внутри
-		expect(resolveDefaultExtensions(SkeletonDescriptor())).not.toContain(TPluginPropsExtension)
+		expect(context.bundle?.get(TSkeletonLayoutPlugin)?.styles).not.toMatchObject({
+			color: 'red',
+		})
 	})
 
 	it('доносит значение до плагина под именем с неймспейсом', () => {

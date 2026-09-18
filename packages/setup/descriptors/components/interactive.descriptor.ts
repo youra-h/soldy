@@ -5,17 +5,22 @@
  * и добавляет disabled, focused.
  */
 
-import { defineComponent } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { TInteractive } from '@soldy/core'
 import type { IInteractiveProps, TInteractiveEvents } from '@soldy/core'
-import { InteractiveContribution } from '../../contributions'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
-export const InteractiveDescriptor = () =>
+export const InteractiveDescriptor = defineDescriptor(() =>
 	defineComponent<IInteractiveProps, TInteractiveEvents>()({
 		ctor: TInteractive,
 
 		extends: ComponentViewDescriptor(),
 
-		contribution: InteractiveContribution(),
-	})
+		contribution: {
+			props: {
+				disabled: { type: Boolean, triggers: ['change:disabled'] },
+				focused: { type: Boolean, triggers: ['change:focused'] },
+			},
+		},
+	}),
+)

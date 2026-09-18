@@ -1,16 +1,21 @@
 /**
- * Компонент на одно монтирование: инстанс, признак `embedded`, набор (свой или общий) и аксессор.
+ * Компонент на одно монтирование: инстанс, признак `embedded`, состав, набор и аксессор.
  *
- * Набор и аксессор строят методы дескриптора (`createBundle`,
- * `createAccessor`): о дескрипторе сборка знает только его контракт.
+ * Состав собирается один раз и дальше отвечает на все вопросы «из чего собран
+ * этот компонент»: из него строится набор, по нему же — units аксессора и
+ * начальные значения плагинных пропсов.
  */
 
 import type { IComponentDescriptor } from '../define/types'
+import { assembleAccessor } from './accessor'
+import { assembleBundle } from './bundle'
+import { resolveComposition } from './composition'
+import { applyInitialPluginProps } from './plugin-props'
 import type { IAssembledComponent, IAssemblyInput } from './types'
 
 /**
  * Имя места вложенного компонента: из входа, а без него — из пропсов фреймворка.
- * Проп `embedded` объявлен у всех компонентов (`EntityContribution`), и читает
+ * Проп `embedded` объявлен у всех компонентов (`EntityDescriptor`), и читает
  * его setup, а не каждый адаптер: шаг, который шесть адаптеров обязаны помнить,
  * седьмой забудет.
  */
@@ -31,8 +36,18 @@ export function assembleComponent<TInstance extends object>(
 	// коллекции делит bundle компонента) — уничтожает его он же.
 	const ownsBundle = input.bundle === undefined
 	const embedded = embeddedOf(input)
-	const bundle = input.bundle ?? descriptor.createBundle(instance, { embedded })
-	const accessor = descriptor.createAccessor(instance, bundle)
+
+	// Регистрации приложения действуют там, где набор создаётся: пришедший
+	// набор уже собран по составу своего владельца, и второй раз его состав не
+	// пересматривают.
+	const composition = ownsBundle
+		? resolveComposition(descriptor, instance, { embedded })
+		: descriptor.plugins
+
+	const bundle = ownsBundle ? assembleBundle(composition, instance) : (input.bundle ?? null)
+	const accessor = assembleAccessor(descriptor, composition, instance, bundle)
+
+	if (ownsBundle) applyInitialPluginProps(composition, bundle, input.props)
 
 	return { instance, embedded, bundle, ownsBundle, accessor }
 }

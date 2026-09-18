@@ -13,9 +13,9 @@
  *   относительными путями;
  * - файл модуля нарушает соглашения раздела: нет шапки, рантайм в `types.ts`
  *   или `*.types.ts`, экспорт типов из файла с рантаймом, `export *` из файла
- *   в бочке. У `contributions/` и `descriptors/` соглашения свои.
+ *   в бочке. У `descriptors/` соглашения свои.
  *
- * Разбор проверяет себя на известной связи `define → assemble`: сломайся он —
+ * Разбор проверяет себя на известной связи `assemble → registry`: сломайся он —
  * импортов не нашлось бы, и сторож проходил бы вхолостую.
  */
 
@@ -40,13 +40,12 @@ const ENTRY = 'index.ts'
  */
 const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 	naming: [],
-	contributions: [],
 	registry: [],
-	assemble: ['registry'],
-	define: ['assemble'],
-	descriptors: ['define', 'contributions'],
+	assemble: ['registry', 'naming'],
+	define: [],
+	descriptors: ['define'],
 	adapter: ['assemble', 'registry', 'naming'],
-	[ENTRY]: ['contributions', 'define', 'descriptors', 'registry', 'adapter', 'naming'],
+	[ENTRY]: ['define', 'descriptors', 'registry', 'adapter', 'naming'],
 }
 
 type TImport = {
@@ -211,8 +210,8 @@ describe('разбор импортов', () => {
 	})
 })
 
-/** Модули со своими соглашениями о файлах: contribution и дескрипторы. */
-const OWN_CONVENTIONS = new Set(['contributions', 'descriptors'])
+/** Модули со своими соглашениями о файлах: дескрипторы — объявления вместе с типами слотов. */
+const OWN_CONVENTIONS = new Set(['descriptors'])
 
 /** Файлы с рантаймом, которым можно экспортировать типы: типы выведены из их значений. */
 const RUNTIME_WITH_TYPES = new Set(['registry/icons.ts'])
@@ -364,8 +363,10 @@ describe('структура packages/setup', () => {
 		return to === undefined || to === from ? [] : [{ file, specifier, from, to }]
 	})
 
-	it('разбор находит известную рантайм-связь define → assemble', () => {
-		expect(crossings.some(({ from, to }) => from === 'define' && to === 'assemble')).toBe(true)
+	it('разбор находит известную рантайм-связь assemble → registry', () => {
+		expect(crossings.some(({ from, to }) => from === 'assemble' && to === 'registry')).toBe(
+			true,
+		)
 	})
 
 	it('у каждой папки и файла верхнего уровня есть строка в таблице', () => {
