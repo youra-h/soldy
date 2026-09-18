@@ -21,7 +21,7 @@ import {
 	defineComponent,
 	surfaceOf,
 } from '@soldy/setup'
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile, IComponentBinding } from '@soldy/setup'
 import { CallbackProfile, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
@@ -414,5 +414,75 @@ describe('связка · повторённый проп', () => {
 		binding.writeChanged({ text: 'a' })
 
 		expect(ctrl.text).toBe('a')
+	})
+})
+
+/**
+ * React пересобирает контекст, когда заново устанавливает эффекты того же
+ * компонента (StrictMode, `<Activity>`). Связка нового контекста продолжает
+ * память прошлой: для фреймворка это та же жизнь компонента, и пропсы он
+ * заново не задавал. Без продолжения первый набор новой связки записал бы
+ * разметку во внешний `ctrl` поверх того, что с тех пор поменял код.
+ */
+describe('связка · продолжение прошлой', () => {
+	/** Связка нового контекста на том же `ctrl`, продолжающая `previous`. */
+	function continueOn(ctrl: TButton, previous?: IComponentBinding): IComponentBinding {
+		return bindComponent(
+			createAdapterContext(ButtonDescriptor(), { ctrl }),
+			CallbackProfile,
+			previous,
+		)
+	}
+
+	it('проп, повторённый с прошлого набора, не пишется: значение из кода остаётся', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'из разметки' })
+		ctrl.text = 'из кода'
+		continueOn(ctrl, binding).writeAll({ text: 'из разметки' })
+
+		expect(ctrl.text).toBe('из кода')
+	})
+
+	it('сменившийся проп пишется', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+		ctrl.text = 'из кода'
+		continueOn(ctrl, binding).writeAll({ text: 'b' })
+
+		expect(ctrl.text).toBe('b')
+	})
+
+	it('снятый проп сбрасывается к умолчанию', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+		ctrl.text = 'из кода'
+		continueOn(ctrl, binding).writeAll({})
+
+		expect(ctrl.text).toBe('')
+	})
+
+	it('без прошлой связки первый набор, как и раньше, пишет все заданные пропсы', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'из разметки' })
+		ctrl.text = 'из кода'
+		continueOn(ctrl).writeAll({ text: 'из разметки' })
+
+		expect(ctrl.text).toBe('из разметки')
+	})
+
+	it('прошлая связка не меняется: от неё продолжают и второй раз', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+		// Первое продолжение снимает проп — в свою память, не в прошлую
+		continueOn(ctrl, binding).writeAll({})
+		ctrl.text = 'из кода'
+		continueOn(ctrl, binding).writeAll({ text: 'a' })
+
+		expect(ctrl.text).toBe('из кода')
 	})
 })
