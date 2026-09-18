@@ -2338,8 +2338,11 @@ Disabled — так же: тема читает `data-disabled`, которое 
   отменяет и за свой `press` не выдаёт: что с ней делать, знает сам элемент, а
   его клик всплывёт в корень и даст `press`, как клик мышью. Раньше корень-`div`
   отменял и её — в Input не печатался пробел, CheckBox, Switch, секция
-  Accordion и таб не срабатывали с клавиатуры. Сторожат
-  `ui/vue/__tests__/action.spec.ts` и
+  Accordion и таб не срабатывали с клавиатуры. Строка элемента на `div`,
+  которая сама держит фокус (`Tags.Item`), выбирает по `press`, а не по
+  `click` — в любом адаптере: клика из Enter и пробела на `div` браузер не
+  делает, и на `click` тег выбирался только мышью. Сторожат
+  `ui/vue/__tests__/action.spec.ts`, `ui/vue/__tests__/tags-select.spec.ts` и
   `playground/vue/browser/keyboard-activation.spec.ts`
 - `action:click` — сырой DOM-клик; нужен стороне инстанса, потому что в шаблоне
   DOM-события и так доступны через fallthrough (`<Button @click="...">`)

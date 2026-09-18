@@ -25,6 +25,8 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
 /** Теги из слота — строковым шаблоном: точка в нём не работает, берём плоские имена. */
 const render = async (template: string) => {
 	wrapper = mount({ components: { Tags, TagsItem }, template }, { attachTo: document.body })
@@ -189,6 +191,9 @@ describe('кнопка ведёт себя как раньше', () => {
 
 	it('клик по строке по-прежнему выбирает тег', async () => {
 		await mountItems()
+		// Строка выбирает по `press`, а слушатели `TActionPlugin` цепляются
+		// через кадр после монтирования (`element:ready`)
+		await nextFrame()
 		;(rowOf('B') as HTMLElement).click()
 		await nextTick()
 
