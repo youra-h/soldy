@@ -7,29 +7,25 @@ import type {
 } from '@soldy/plugins'
 
 /**
- * Защищённый проп плагина в разметке — с неймспейсом.
- *
- * Вход `dismiss_enabled` типизирует дескриптор: `IDismissPluginProps` третьим
- * аргументом `definePlugin`. Защищённых пропсов `DescriptorAllProps` не несёт,
- * а шаблон Select раскладывает `dismiss_ownerAttribute` спредом на
- * телепортированную панель — спреду нужен объектный тип. `layout_styles`
- * обходится без типа только потому, что уходит в `:style` динамического
- * `<component :is>`: его атрибуты vue-tsc не проверяет.
- */
-export type TDismissPluginProps = {
-	dismiss_ownerAttribute?: Record<string, string>
-}
-
-/**
  * «Нажали мимо» — общий слой для всего, что открывается поверх страницы:
  * Select, Menu, Popover, Tooltip.
  *
  * Подключается адресно, а не к `ControlDescriptor`: у обычной кнопки или поля
  * закрывать нечего, а глобальный слушатель на документе стоил бы на каждом
  * контроле страницы.
+ *
+ * Оба пропа типизирует дескриптор: вход `dismiss_enabled` — третий аргумент
+ * `definePlugin`, выход `dismiss_ownerAttribute` — четвёртый, геттер класса
+ * плагина. Выход шаблон Select раскладывает спредом на телепортированную
+ * панель, а спреду нужен объектный тип.
  */
 export const DismissPluginDescriptor = (options?: IDismissPluginOptions) =>
-	definePlugin<'dismiss', TDismissPluginEvents, IDismissPluginProps>({
+	definePlugin<
+		'dismiss',
+		TDismissPluginEvents,
+		IDismissPluginProps,
+		Pick<TDismissPlugin, 'ownerAttribute'>
+	>({
 		ctor: TDismissPlugin,
 		namespace: 'dismiss',
 		/**

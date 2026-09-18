@@ -3,7 +3,7 @@ import { TIconLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TIconLayoutPluginEvents } from '@soldy/plugins'
 
 export const IconLayoutPluginDescriptor = () =>
-	definePlugin<'layout', TIconLayoutPluginEvents>({
+	definePlugin<'layout', TIconLayoutPluginEvents, object, Pick<TIconLayoutPlugin, 'styles'>>({
 		ctor: TIconLayoutPlugin,
 		namespace: 'layout',
 		contribution: {

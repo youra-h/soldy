@@ -20,25 +20,34 @@
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { SolidProfile } from '../common'
 
-export type TBinding<TInstance = object, TProps extends object = object> = {
+export type TBinding<
+	TInstance = object,
+	TProps extends object = object,
+	TOutputs extends object = object,
+> = {
 	readonly ctrl: TInstance
 	readonly plugins: IPluginBundle | null
-	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: TInstanceState<TInstance>
+	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
+	readonly state: TAdapterState<TInstance, TOutputs>
 	/** Мемо: DOM-атрибуты, не съеденные компонентом */
 	forwardProps: () => Partial<TProps>
 	/** callback-ref для корневого элемента */
 	ref: (el: Element) => void
 }
 
-export function useAdapter<TProps extends object, TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
+/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
+export function useAdapter<
+	TProps extends object,
+	TInstance extends object = object,
+	TOutputs extends object = object,
+>(
+	adapter: IAdapterContext<TInstance, TOutputs>,
 	props: TProps,
-): TBinding<TInstance, TProps> {
+): TBinding<TInstance, TProps, TOutputs> {
 	const binding = bindComponent(adapter, SolidProfile)
 	const [state, setState] = createStore<Record<string, unknown>>(binding.state())
 
@@ -67,7 +76,7 @@ export function useAdapter<TProps extends object, TInstance extends object = obj
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
-		state: toInstanceState<TInstance>(state),
+		state: toInstanceState<TInstance, TOutputs>(state),
 		forwardProps,
 
 		ref(el: Element) {

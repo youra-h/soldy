@@ -1,4 +1,4 @@
-import { SkeletonDescriptor } from '@soldy/setup'
+import { SkeletonDescriptor, type DescriptorPluginOutputs } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseSkeleton, { type SkeletonProps } from './base.component'
 import { type ISkeletonProps, type ISkeleton } from '@soldy/core'
@@ -12,6 +12,11 @@ export default {
 			props,
 		})
 
-		return useAdapter<ISkeletonProps, ISkeleton>(adapter, props, emit)
+		// Выход `layout_styles` шаблон кладёт в `:style` корня
+		return useAdapter<
+			ISkeletonProps,
+			ISkeleton,
+			DescriptorPluginOutputs<typeof SkeletonDescriptor>
+		>(adapter, props, emit)
 	},
 }

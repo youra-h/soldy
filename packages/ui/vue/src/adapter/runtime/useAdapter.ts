@@ -9,7 +9,7 @@
 
 import { getCurrentInstance, ref, watch, onUnmounted, type Ref } from 'vue'
 import { TElementPlugin } from '@soldy/plugins'
-import { bindComponent, type IAdapterContext } from '@soldy/setup'
+import { bindComponent, type IAdapterContext, type TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { VueProfile } from '../common'
 
@@ -37,28 +37,36 @@ export type TUnwrapRefs<T> = {
  * - plugins: бандл плагинов
  * - rootElement: ссылка на DOM-узел
  * - refs: динамические пропсы компонента
+ * - выходы плагинов `TOutputs` (`DescriptorPluginOutputs`) — того же вида, что
+ *   у остальных адаптеров (`TInstanceState`): снимок, только чтение,
+ *   необязательный ключ
  */
-export type TBinding<TProps, TInstance> = {
+export type TBinding<TProps, TInstance, TOutputs extends object = object> = {
 	ctrl: TInstance
 	plugins: IPluginBundle | null
 	rootElement?: Ref<Element | null>
 } & TUnwrapRefs<TProps> &
-	TExtractControllerState<TInstance>
+	TExtractControllerState<TInstance> &
+	TInstanceState<TOutputs>
 
 /**
- * Типизированный вид на рефы адаптера: пропы `TProps` и свойства инстанса.
+ * Типизированный вид на рефы адаптера: пропы `TProps`, свойства инстанса и
+ * выходы плагинов `TOutputs`.
  *
  * Граница между рантаймом и типом, одна на `useAdapter` и
  * `useCollectionAdapter` — как `toInstanceState` у остальных адаптеров. Рефы
- * `useSyncProps` собраны по дескриптору из того же инстанса, что описывает
- * `TInstance`, но по именам свойств — эту связь держит дескриптор, TypeScript
- * её не видит. В значениях лежат `Ref`, а тип уже развёрнут: рефы из
- * результата `setup()` шаблон разворачивает сам.
+ * связки собраны по дескриптору из того же инстанса, что описывает
+ * `TInstance`, и из плагинов, чьи выходы описывает `TOutputs`, но по именам
+ * свойств — эту связь держит дескриптор, TypeScript её не видит. В значениях
+ * лежат `Ref`, а тип уже развёрнут: рефы из результата `setup()` шаблон
+ * разворачивает сам.
  */
-export function toBindingState<TProps, TInstance>(
+export function toBindingState<TProps, TInstance, TOutputs extends object = object>(
 	refs: Readonly<Record<string, unknown>>,
-): TUnwrapRefs<TProps> & TExtractControllerState<TInstance> {
-	return refs as TUnwrapRefs<TProps> & TExtractControllerState<TInstance>
+): TUnwrapRefs<TProps> & TExtractControllerState<TInstance> & TInstanceState<TOutputs> {
+	return refs as TUnwrapRefs<TProps> &
+		TExtractControllerState<TInstance> &
+		TInstanceState<TOutputs>
 }
 
 /** `some-prop` → `someProp`: в разметке проп могли написать через дефис. */
@@ -159,20 +167,26 @@ export function useAdapterParts<TInstance extends object>(
 	return { refs, rootElement }
 }
 
+/**
+ * Компоненты передают дженерики явно, поэтому выходы плагинов из типа контекста
+ * не выводятся: их передаёт третьим аргументом компонент, чей шаблон читает
+ * выход, — `DescriptorPluginOutputs<typeof XDescriptor>`.
+ */
 export function useAdapter<
 	TProps extends Record<string, any> = Record<string, any>,
 	TInstance extends object = object,
+	TOutputs extends object = object,
 >(
-	adapter: IAdapterContext<TInstance>,
+	adapter: IAdapterContext<TInstance, TOutputs>,
 	props: TProps,
 	emit?: (event: string, ...args: unknown[]) => void,
-): TBinding<TProps, TInstance> {
+): TBinding<TProps, TInstance, TOutputs> {
 	const { refs, rootElement } = useAdapterParts(adapter, props, emit)
 
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		...(rootElement ? { rootElement } : {}),
-		...toBindingState<TProps, TInstance>(refs),
+		...toBindingState<TProps, TInstance, TOutputs>(refs),
 	}
 }

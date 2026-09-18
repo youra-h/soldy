@@ -7,7 +7,7 @@ import type { TListItemPluginEvents } from '@soldy/plugins'
  * Устанавливается на item-компоненте (ListBoxItem).
  */
 export const ListItemPluginDescriptor = () =>
-	definePlugin<'listItem', TListItemPluginEvents>({
+	definePlugin<'listItem', TListItemPluginEvents, object, Pick<TListItemPlugin, 'highlighted'>>({
 		ctor: TListItemPlugin,
 		namespace: 'listItem',
 		contribution: {

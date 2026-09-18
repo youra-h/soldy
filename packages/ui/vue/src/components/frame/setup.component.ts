@@ -1,4 +1,4 @@
-import { FrameDescriptor } from '@soldy/setup'
+import { FrameDescriptor, type DescriptorPluginOutputs } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseFrame, { type FrameProps } from './base.component'
 import { type IFrameProps, type IFrame } from '@soldy/core'
@@ -12,6 +12,11 @@ export default {
 			props,
 		})
 
-		return useAdapter<IFrameProps, IFrame>(adapter, props, emit)
+		// Выход `layout_styles` шаблон кладёт в `:style` корня
+		return useAdapter<IFrameProps, IFrame, DescriptorPluginOutputs<typeof FrameDescriptor>>(
+			adapter,
+			props,
+			emit,
+		)
 	},
 }

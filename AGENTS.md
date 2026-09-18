@@ -990,13 +990,34 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 поэтому граница с типом одна, `toInstanceState`, и приведений в разметке
 компонентов нет. Тип инстанса несёт дескриптор (`IAdapterContext<TInstance>`).
 
-Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps` и свойства
-инстанса), и граница у него своя — `toBindingState`
-(`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы связки собраны по
-тому же дескриптору, связь их имён с типом держит он, поэтому внутри обычный
-`as` из `Readonly<Record<string, unknown>>`. Через неё проходят и `useAdapter`,
-и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement` добавляются к
-результату без приведения.
+Выходы плагинов (см. «Состав пропсов записан дважды») идут в состояние тем же
+путём. Второй параметр контекста, `IAdapterContext<TInstance, TOutputs>`, —
+фантомный: `createAdapterContext` выводит его из состава плагинов дескриптора.
+`useAdapter` React, Solid и Svelte берёт его из типа контекста и отдаёт `state`
+типа `TAdapterState<TInstance, TOutputs>`: к свойствам инстанса добавлены
+выходы того же вида — снимок, только чтение, необязательный ключ. Граница та
+же, `toInstanceState` со вторым параметром. У Angular и webc состояние
+шаблону отдаёт базовый класс, и компонента, который читает выход, там нет:
+параметр понадобится вместе с портом Frame или Select.
+
+Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps`, свойства
+инстанса и выходы плагинов `TOutputs`), и граница у него своя —
+`toBindingState` (`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы связки
+собраны по тому же дескриптору, связь их имён с типом держит он, поэтому
+внутри обычный `as` из `Readonly<Record<string, unknown>>`. Через неё проходят
+и `useAdapter`, и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement`
+добавляются к результату без приведения. Дженерики `useAdapter` компоненты Vue
+передают явно, поэтому выходы из контекста не выводятся: третьим аргументом
+`DescriptorPluginOutputs<typeof XDescriptor>` их передаёт компонент, чей
+шаблон читает выход (Select, Frame, Icon, Spinner, Skeleton). С контекстом
+этот аргумент TypeScript не сверяет — параметр фантомный, — поэтому дескриптор
+в нём тот же, что в `createVueAdapterContext` строкой выше. В `TProps` выходы
+не кладутся: это не пропсы.
+
+Тип выхода в шаблоне Vue и в контексте `createVueAdapterContext` сторожит
+`ui/vue/__tests__/plugin-outputs.spec.ts`, в контексте `createAdapterContext` —
+`setup/__tests__/adapter.spec.ts`. Проверки там — `expectTypeOf`: их ловят шаги
+«Типы — Vue» и «Типы — Setup», а не vitest.
 
 ### Логику, которой нужен элемент, кладите в item-адаптер
 
@@ -1099,18 +1120,34 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   становится атрибутом: так жили `dismiss_enabled` у Select и `variant` у
   Skeleton.
 
+  Выходы плагинов — защищённые пропсы, которые плагин вычисляет, а разметка
+  только читает, — записаны дважды так же. Тип выхода — четвёртый аргумент
+  `definePlugin`, `Pick` геттера класса плагина
+  (`Pick<TDismissPlugin, 'ownerAttribute'>`): выход — геттер плагина, как
+  выход компонента — геттер инстанса, и второй записи того же типа
+  интерфейсом не нужно. Входов нет — на месте третьего аргумента `object`.
+  `DescriptorPluginOutputs` собирает выходы плагинов дескриптора с
+  неймспейсом (`dismiss_ownerAttribute`, `layout_styles`). Свои выходы
+  компонента (`classes`, `aria`) в него не входят: их тип даёт инстанс. До
+  адаптера тип выходов доходит через контекст, как тип инстанса (см. «`any`:
+  где он честный»). Раньше `dismiss_ownerAttribute` описывал рукописный тип,
+  который с плагином никто не сверял, а `layout_styles` шаблоны читали без типа
+  — проходило это лишь потому, что vue-tsc не проверяет атрибуты
+  `<component :is>`.
+
   Сторож — `packages/setup/__tests__/descriptor-props-types.spec.ts`: по всем
-  дескрипторам экспорта сверяет в обе стороны незащищённые пропсы рантайма с
-  ключами `DescriptorAllProps`, которые читает type checker TypeScript.
-  Коллекционная часть (`SelectCollectionDescriptor`) тип пропсов не объявляет
-  и сверяется в строке владельца: её пропсы входят в его интерфейс
-  (`ISelectProps`). `ctrl` сторож не сверяет: в рантайме проп объявляет
-  `EntityDescriptor`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
-  поля, которые адаптер дописывает к типу сверх дескриптора, сторож не видит —
-  так в типах адаптеров жил `plugins`, которого в рантайме не было. Защищённые
-  пропсы (выходы) он тоже не сверяет: `DescriptorAllProps` их не несёт, и
-  выход, которому в шаблоне нужен тип, описан рукой — `TDismissPluginProps`
-  для спреда `dismiss_ownerAttribute` у Select.
+  дескрипторам экспорта две сверки в обе стороны, ключи типов читает type
+  checker TypeScript.
+  - Незащищённые пропсы рантайма — с ключами `DescriptorAllProps`.
+    Коллекционная часть (`SelectCollectionDescriptor`) тип пропсов не
+    объявляет и сверяется в строке владельца: её пропсы входят в его интерфейс
+    (`ISelectProps`). `ctrl` сторож не сверяет: в рантайме проп объявляет
+    `EntityDescriptor`, а тип `ctrl?: TInstance` дописывает адаптер. Прочие
+    поля, которые адаптер дописывает к типу сверх дескриптора, сторож не видит
+    — так в типах адаптеров жил `plugins`, которого в рантайме не было.
+  - Защищённые пропсы из contribution плагинов дескриптора — с ключами
+    `DescriptorPluginOutputs`. Строка своя у каждого дескриптора, у
+    коллекционной части тоже: адаптер создаёт ей отдельный контекст.
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 

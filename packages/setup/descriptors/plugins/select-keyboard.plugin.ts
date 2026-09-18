@@ -13,7 +13,12 @@ import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '
  * правдой: адаптер его не пробрасывает.
  */
 export const SelectKeyboardPluginDescriptor = (options?: ISelectKeyboardPluginOptions) =>
-	definePlugin<'keyboard', TListNavigationPluginEvents>({
+	definePlugin<
+		'keyboard',
+		TListNavigationPluginEvents,
+		object,
+		Pick<TSelectKeyboardPlugin, 'highlightedUid'>
+	>({
 		ctor: TSelectKeyboardPlugin,
 		namespace: 'keyboard',
 		/**

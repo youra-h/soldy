@@ -1,5 +1,5 @@
 /**
- * Вывод типов из дескриптора для адаптеров: пропсы, события, плагины и слоты компонента.
+ * Вывод типов из дескриптора для адаптеров: пропсы, события, плагины, их выходы и слоты компонента.
  *
  * Фабрика дескриптора — единственный источник типов: адаптер не импортирует
  * интерфейсы пропсов и карты событий из ядра, а выводит их отсюда.
@@ -98,3 +98,28 @@ export type TPluginPropsFrom<P extends readonly IPluginDefinition[]> = P extends
 
 /** Все пропсы дескриптора (свои + плагинные, namespaced): DescriptorAllProps<typeof ButtonDescriptor> → IButtonProps & { aria_label?: ... } */
 export type DescriptorAllProps<T> = DescriptorProps<T> & TPluginPropsFrom<DescriptorPlugins<T>>
+
+/** Выходы всех плагинов дескриптора (namespaced): { dismiss_ownerAttribute: ..., layout_styles: ... } */
+export type TPluginOutputsFrom<P extends readonly IPluginDefinition[]> = P extends readonly [
+	infer Head,
+	...infer Tail,
+]
+	? Head extends IPluginDefinition<infer N, any, any, infer PO>
+		? N extends string
+			? Tail extends readonly IPluginDefinition[]
+				? NamespacedProps<PO, N> & TPluginOutputsFrom<Tail>
+				: NamespacedProps<PO, N>
+			: Tail extends readonly IPluginDefinition[]
+				? TPluginOutputsFrom<Tail>
+				: object
+		: object
+	: object
+
+/**
+ * Выходы плагинов дескриптора — защищённые пропсы, которые плагины отдают
+ * разметке: DescriptorPluginOutputs<typeof FrameDescriptor> → { layout_styles: ... }
+ *
+ * Только плагинные, без «All»: свои выходы компонента (`classes`, `aria`) —
+ * геттеры инстанса, и их тип адаптер берёт у него (`TInstanceState`).
+ */
+export type DescriptorPluginOutputs<T> = TPluginOutputsFrom<DescriptorPlugins<T>>

@@ -1,5 +1,5 @@
 /**
- * Состояние адаптера в типах: свойства инстанса так, как их видит разметка.
+ * Состояние адаптера в типах: свойства инстанса и выходы плагинов так, как их видит разметка.
  */
 
 /**
@@ -29,3 +29,15 @@ export type TSnapshotOf<T> = T extends object
 export type TInstanceState<TInstance> = {
 	readonly [K in keyof TInstance]?: TSnapshotOf<TInstance[K]>
 }
+
+/**
+ * Состояние адаптера целиком: свойства инстанса и выходы плагинов дескриптора.
+ *
+ * Выход — защищённый проп плагина (`dismiss_ownerAttribute`, `layout_styles`),
+ * то есть геттер плагина, как свойство инстанса — геттер инстанса. Поэтому и
+ * вид у него тот же: снимок `valueOf()`, только чтение, необязательный ключ.
+ * Тип выходов выводит дескриптор (`DescriptorPluginOutputs`), до адаптера он
+ * доходит через контекст (`IAdapterContext<TInstance, TOutputs>`).
+ */
+export type TAdapterState<TInstance, TOutputs extends object = object> = TInstanceState<TInstance> &
+	TInstanceState<TOutputs>
