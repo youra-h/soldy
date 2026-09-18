@@ -79,6 +79,32 @@ describe('bundle:create — сторона инстанса', () => {
 		expect(seen[0]).not.toBe(seen[1])
 	})
 
+	it('набор контекста, уничтоженного до микрозадачи, не объявляется', async () => {
+		const ctrl = new TButton()
+		const seen: unknown[] = []
+
+		ctrl.events.on('bundle:create', (bundle: unknown) => seen.push(bundle))
+
+		// Размонтирование раньше объявления: так React под StrictMode уничтожает
+		// первый контекст и собирает второй с тем же ctrl
+		const destroyed = createAdapterContext(ButtonDescriptor(), { ctrl })
+		const onElementCreate = vi.fn()
+
+		required(destroyed.bundle?.get(TElementPlugin), 'TElementPlugin').events.on(
+			'create',
+			onElementCreate,
+		)
+		destroyed.destroy()
+
+		const live = createAdapterContext(ButtonDescriptor(), { ctrl })
+
+		await created()
+
+		// Подписчик поставил бы в уничтоженный набор плагин, который уже некому уничтожить
+		expect(seen).toEqual([live.bundle])
+		expect(onElementCreate).not.toHaveBeenCalled()
+	})
+
 	it('не эмитится, если у дескриптора нет плагинов', async () => {
 		const context = createAdapterContext(ComponentDescriptor(), {})
 		const handler = vi.fn()
