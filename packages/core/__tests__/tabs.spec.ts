@@ -3,6 +3,7 @@ import {
 	TTabs,
 	TTabsItem,
 	TTabsExtension,
+	TTabsItemCollectionFacade,
 	TItemContextRegistry,
 	TCollectionEngine,
 	TPlainExtension,
@@ -155,12 +156,19 @@ describe('TTabsItem (чистый класс)', () => {
 		expect(onChange).toHaveBeenCalledWith({ oldValue: 'a', newValue: 'b' })
 	})
 
-	it('disabled таб не может быть closable', () => {
+	/**
+	 * «Выключенный таб не закрывается» выводит item-адаптер (см. describe
+	 * «выключенный таб не закрывается»), а своё значение таба `disabled` не
+	 * трогает: иначе после включения его неоткуда вернуть.
+	 */
+	it('disabled не трогает своё closable, сеттер пишет и у выключенного', () => {
 		const tab = new TTabsItem({ closable: true })
+
+		tab.disabled = true
 
 		expect(tab.closable).toBe(true)
 
-		tab.disabled = true
+		tab.closable = false
 
 		expect(tab.closable).toBe(false)
 	})
@@ -533,6 +541,162 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		expect(onClose).not.toHaveBeenCalled()
 		expect(collection.getCore().driver.valueOf().length).toBe(1)
+	})
+})
+
+// ============================================================================
+// Выключенный таб не закрывается
+// ============================================================================
+
+/**
+ * Правило одно и не зависит от пути к «выключен»: со старта, позже или вместе
+ * с набором. Выводит его item-адаптер — его `closable` читают разметка
+ * (`tab_closable` фасада) и `closeTab`. Раньше правило было подпиской в
+ * `TTabsItem` на `change:disabled`, и таб, выключенный со старта, оставался
+ * закрываемым: события у него не было.
+ *
+ * Коллекция собрана как у компонента (`createEngineTabs`).
+ */
+describe('выключенный таб не закрывается', () => {
+	function setup(owner = new TTabs({ closable: true })) {
+		const engine = createEngineTabs({ owner })
+		const registry = new TItemContextRegistry(engine.getCore())
+
+		/** Можно ли закрыть таб — то, что видит разметка. */
+		const closable = (tab: ITabsItem) => registry.get(tab).adapters.tabs.closable
+
+		/** Сообщения адаптера таба о смене `closable`. */
+		const changes = (tab: ITabsItem) => {
+			const handler = vi.fn()
+
+			registry.get(tab).adapters.tabs.events.on('change:closable', handler)
+
+			return handler
+		}
+
+		return { owner, engine, tabs: engine.extensions.tabs, registry, closable, changes }
+	}
+
+	const disabledTab = (text: string, props: { closable?: boolean } = {}) =>
+		new TTabsItem({ text, value: text.toLowerCase(), disabled: true, ...props })
+
+	it('выключенный со старта: не закрывается, closeTab его не удаляет', () => {
+		const { engine, tabs, registry, closable } = setup()
+		const tab = engine.extensions.plain.push(disabledTab('B'))
+		const onClose = vi.fn()
+
+		tabs.events.on('item:close', onClose)
+
+		expect(closable(tab)).toBe(false)
+		expect(tabs.closeTab(tab)).toBe(false)
+
+		registry.get(tab).adapters.tabs.close()
+
+		expect(onClose).not.toHaveBeenCalled()
+		expect(engine.extensions.batch.items).toContain(tab)
+	})
+
+	it('выключенный со старта данными (items) — так же', () => {
+		const engine = createEngineTabs({
+			owner: new TTabs({ closable: true }),
+			items: [{ value: 'b', text: 'B', disabled: true }],
+		})
+		const [tab] = engine.extensions.batch.items
+		const registry = new TItemContextRegistry(engine.getCore())
+
+		expect(registry.get(tab).adapters.tabs.closable).toBe(false)
+		expect(engine.extensions.tabs.closeTab(tab)).toBe(false)
+		expect(engine.extensions.batch.items).toContain(tab)
+	})
+
+	it('выключили позже — не закрывается, включили — закрывается снова', () => {
+		const { engine, tabs, closable, changes } = setup()
+		const tab = engine.extensions.plain.push(createTab('C'))
+		const changed = changes(tab)
+
+		expect(closable(tab)).toBe(true)
+
+		tab.disabled = true
+
+		expect(closable(tab)).toBe(false)
+		expect(changed).toHaveBeenCalledOnce()
+		expect(tabs.closeTab(tab)).toBe(false)
+
+		tab.disabled = false
+
+		expect(closable(tab)).toBe(true)
+		expect(changed).toHaveBeenCalledTimes(2)
+		expect(tabs.closeTab(tab)).toBe(true)
+	})
+
+	it('выключили набор — не закрывается ни один таб, включили — снова закрываются', () => {
+		const { owner, engine, tabs, closable, changes } = setup()
+		const a = engine.extensions.plain.push(createTab('A'))
+		const b = engine.extensions.plain.push(createTab('B'))
+		const changed = changes(a)
+
+		owner.disabled = true
+
+		expect([a, b].map(closable)).toEqual([false, false])
+		expect(changed).toHaveBeenCalledOnce()
+		expect(tabs.closeTab(a)).toBe(false)
+
+		owner.disabled = false
+
+		expect([a, b].map(closable)).toEqual([true, true])
+		expect(changed).toHaveBeenCalledTimes(2)
+	})
+
+	it('включили набор — таб, выключенный сам, по-прежнему не закрывается', () => {
+		const { owner, engine, closable } = setup()
+		const tab = engine.extensions.plain.push(disabledTab('A'))
+
+		owner.disabled = true
+		owner.disabled = false
+
+		expect(closable(tab)).toBe(false)
+	})
+
+	it('включение возвращает своё значение таба, заданное после создания', () => {
+		const { engine, closable } = setup(new TTabs())
+		const tab = engine.extensions.plain.push(createTab('A'))
+
+		tab.closable = true
+		tab.disabled = true
+
+		expect(closable(tab)).toBe(false)
+
+		tab.disabled = false
+
+		expect(closable(tab)).toBe(true)
+	})
+
+	it('своё closable, заданное выключенному табу, действует после включения', () => {
+		const { engine, closable } = setup(new TTabs())
+		const tab = engine.extensions.plain.push(disabledTab('A'))
+
+		tab.closable = true
+
+		expect(closable(tab)).toBe(false)
+
+		tab.disabled = false
+
+		expect(closable(tab)).toBe(true)
+	})
+
+	it('фасад элемента узнаёт о смене событием — по нему разметка прячет кнопку', () => {
+		const { engine, registry } = setup()
+		const tab = engine.extensions.plain.push(createTab('A'))
+		const facade = new TTabsItemCollectionFacade()
+		const changed = vi.fn()
+
+		facade.setContext(registry.get(tab))
+		facade.events.on('change:closable', changed)
+
+		tab.disabled = true
+
+		expect(facade.closable).toBe(false)
+		expect(changed).toHaveBeenCalledOnce()
 	})
 })
 

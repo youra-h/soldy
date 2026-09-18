@@ -298,7 +298,8 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 	/**
 	 * Закрыть таб (удалить элемент из коллекции).
-	 * Если элемент не является closable — ничего не делает.
+	 * Если таб нельзя закрыть — ничего не делает. Решает `closable` его
+	 * item-адаптера, то же, что видит разметка: выключенный таб не закрывается.
 	 * @param item
 	 * @returns true, если элемент был удалён, иначе false
 	 */

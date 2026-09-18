@@ -126,21 +126,77 @@ describe('кнопка ведёт себя как раньше', () => {
 		expect(item('A').querySelector('[role="tab"]')?.getAttribute('aria-selected')).toBe('true')
 	})
 
-	it('у выключенного таба выключена и кнопка — строка её больше не накрывает', async () => {
-		await render(`
-			<Tabs closable>
-				<TabsItem value="a" text="A" active />
-				<TabsItem value="b" text="B" disabled />
-			</Tabs>
-		`)
-
-		expect(closeOf('B').hasAttribute('disabled')).toBe(true)
-		expect(closeOf('A').hasAttribute('disabled')).toBe(false)
-	})
-
 	it('размер кнопки — размер таба: от него считается кегль иконки', async () => {
 		await render(`<Tabs closable size="lg"><TabsItem value="a" text="A" active /></Tabs>`)
 
 		expect(closeOf('A').classList.contains('s-button--size-lg')).toBe(true)
+	})
+})
+
+/**
+ * Выключенный таб не закрывается, и кнопки у него нет — с какого бы пути он
+ * ни пришёл к «выключен». Раньше таб, выключенный со старта, рисовал бледную
+ * кнопку, которую нельзя нажать, а выключенный позже — никакой.
+ *
+ * `:disabled` у кнопки в шаблоне остался: он дёшев и защищает, если кнопку
+ * всё же нарисуют.
+ */
+describe('у выключенного таба кнопки закрытия нет', () => {
+	/** «B» выключен со старта, «C» — пропом `tabOff`, весь набор — пропом `setOff`. */
+	const Harness = {
+		components: { Tabs, TabsItem },
+		props: { tabOff: Boolean, setOff: Boolean },
+		template: `
+			<Tabs closable :disabled="setOff">
+				<TabsItem value="a" text="A" active />
+				<TabsItem value="b" text="B" disabled />
+				<TabsItem value="c" text="C" :disabled="tabOff" />
+			</Tabs>
+		`,
+	}
+
+	const mountHarness = async () => {
+		const mounted = mount(Harness, { attachTo: document.body })
+
+		wrapper = mounted
+		await nextTick()
+
+		return mounted
+	}
+
+	/** Табы, у которых есть кнопка закрытия, — по тексту строки. */
+	const withClose = () =>
+		['A', 'B', 'C'].filter((text) => item(text).querySelector('.s-tabs-item__close'))
+
+	it('выключенный со старта', async () => {
+		await mountHarness()
+
+		expect(withClose()).toEqual(['A', 'C'])
+		expect(item('B').children).toHaveLength(1)
+	})
+
+	it('выключили позже — кнопка пропала, включили — вернулась', async () => {
+		const mounted = await mountHarness()
+
+		await mounted.setProps({ tabOff: true })
+
+		expect(withClose()).toEqual(['A'])
+
+		await mounted.setProps({ tabOff: false })
+
+		expect(withClose()).toEqual(['A', 'C'])
+	})
+
+	it('выключили набор — кнопок нет ни у одного таба, включили — вернулись', async () => {
+		const mounted = await mountHarness()
+
+		await mounted.setProps({ setOff: true })
+
+		expect(withClose()).toEqual([])
+
+		await mounted.setProps({ setOff: false })
+
+		// «B» выключен сам: включение набора ему кнопку не возвращает
+		expect(withClose()).toEqual(['A', 'C'])
 	})
 })
