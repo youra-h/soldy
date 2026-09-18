@@ -619,18 +619,22 @@ class TTabsContentCollectionFacade extends TCollectionItemComponent {
 
 ```
 TCollectionComponent
-└── TBatchCollectionFacade          batch      → Tabs
-    └── TSelectionCollectionFacade  + selection → Accordion, Select, ListBox, Tags
+└── TBatchCollectionFacade           batch
+    ├── TSelectionCollectionFacade   + selection  → Accordion, Select, ListBox, Tags
+    └── TActivationCollectionFacade  + activation → Tabs, RadioGroup
 
 TCollectionItemComponent
-└── TOrderItemFacade                order      → Tabs.Item
-    └── TSelectionItemFacade        + selected → Accordion/ListBox/Select/Tags.Item
+└── TOrderItemFacade                 order
+    ├── TSelectionItemFacade         + selected → Accordion/ListBox/Select/Tags.Item
+    └── TActivationItemFacade        + active   → Tabs.Item, RadioGroup.Item
 ```
 
-У табов активность, а не выбор — поэтому они наследуют только `batch` и
-`order`. Базы под активацию нет: реализация одна, и заводить её под
-единственного потребителя значило бы подстраиваться под неизвестное
-требование. Появится второй — подъём стоит пятнадцать строк.
+У табов и радио активность, а не выбор: активный элемент один, и снять его, не
+выбрав другой, пользователь не может. Поэтому база у них своя, соседняя с
+выбором, а не ниже неё. Пока потребитель был один (Tabs), её не заводили —
+подстраиваться под неизвестное требование дороже, чем поднять пятнадцать
+строк; вторым стал RadioGroup. Своё у фасадов Tabs — только закрытие вкладок,
+у фасадов RadioGroup своего нет вовсе.
 
 Правило держится не на честном слове: дженерик базы сужен до расширения,
 которое она потребляет (`TExtensions extends { selection: TSelectionExtension<any> }`),
@@ -739,7 +743,8 @@ type TFacadeEvents = Pick<TBatchEvents<TItem>, 'items:added' | 'items:removed'>
 
 Базы — в `base/collection/facade/<расширение>/`, файл повторяет имя папки:
 `batch/batch.facade.ts`, `selection/selection.facade.ts`,
-`selection/item/selection-item.facade.ts`.
+`selection/item/selection-item.facade.ts`, `activation/activation.facade.ts`,
+`activation/item/activation-item.facade.ts`.
 
 ### К `driver` обращается только расширение коллекции (критично)
 
@@ -901,10 +906,11 @@ class TListBoxItemExtension extends TBaseItemExtension<TItem, TParent, TListBoxI
 `engine:create(engine)`, куда движок передаёт себя, поэтому `TExtensions`
 движка тоже инвариантен: `TCollectionEngine<T, A>` не принимает движок с другой
 картой расширений, будь то набор другого уровня, `Partial<...>` или объединение.
-Опция `engine` фасадов (`tabs`, `list-box`, `select`, `accordion`, `tags`)
-принимает движок любого уровня и сама достраивает недостающее, поэтому она
-объявлена как `TCollectionEngine<any, any>`. Это констрейнт. Точный тип ставится
-там, где движок создаётся (`createEngine*`, `TTabsCollection` и соседи).
+Опция `engine` фасадов (`tabs`, `list-box`, `select`, `accordion`, `tags`,
+`radio-group`) принимает движок любого уровня и сама достраивает недостающее,
+поэтому она объявлена как `TCollectionEngine<any, any>`. Это констрейнт. Точный
+тип ставится там, где движок создаётся (`createEngine*`, `TTabsCollection` и
+соседи).
 
 Проверяется двумя слоями: `vue-tsc` в CI ходит по исходникам ядра транзитивно
 (сузь констрейнт обратно — сборка падает; опечатка в имени события тоже), а
@@ -1078,7 +1084,7 @@ Accordion и у Select — унаследованный `aria`: они и вын
 списке итога не меняет, но обязано записаться, иначе пропадёт при включении
 списка.
 
-Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: пять
+Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: шесть
 `createEngine*` — свой `disabled` из `items`, переключения владельца,
 `batch.patch` и число `change:disabled` у элементов.
 
@@ -1165,7 +1171,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Branded prop types**: use `defineType<T>(ctor)` for phantom-typed contribution props (e.g. `defineType<TButtonView>(String)`). It is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors inside the package import it from `define/` by a relative path, never from `@soldy/setup` — see «Структура `packages/setup`».
 
-- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
+- **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
 - **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
@@ -1316,9 +1322,9 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 
 **Критерий.** Свойство принадлежит теме, если значение описывает только вид, а
 набор значений — решение дизайна: `variant`, `view` у Button, Tabs, ListBox,
-Accordion и Tags, `view` у CheckBox, `shape` и `animation` у Skeleton.
-Свойство принадлежит библиотеке, если значение читают ядро, плагин или
-разметка либо смысл у него один в любой теме: `size` (шкалу читает
+Accordion и Tags, `view` у CheckBox и RadioGroup, `shape` и `animation` у
+Skeleton. Свойство принадлежит библиотеке, если значение читают ядро, плагин
+или разметка либо смысл у него один в любой теме: `size` (шкалу читает
 `shiftSize`), `orientation`, `alignment` и `position` у Tabs, `indicator`,
 `contentFit`, `placement`. Такие остаются union'ами ядра. Булев флаг на месте
 вида — тоже значение темы: `plain` у CheckBox стал `view`, флаг не давал теме
@@ -1333,8 +1339,8 @@ export type TButtonView = Extract<keyof IButtonViews, string>
 ```
 
 Реестры: `IComponentVariants`, `IButtonViews`, `ITabsViews`, `ICheckBoxViews`,
-`ISkeletonShapes`, `ISkeletonAnimations`. Тема дополняет модуль в своём
-`index.d.ts`:
+`IRadioGroupViews`, `ISkeletonShapes`, `ISkeletonAnimations`. Тема дополняет
+модуль в своём `index.d.ts`:
 
 ```ts
 declare module '@soldy/core' {
@@ -2108,6 +2114,18 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   чекбоксе он дубль `checked`. «Выбрано частично» у CheckBox — DOM-свойство
   `indeterminate` вложенного `<input>`, его проводит разметка, как `checked`,
   а не `aria-checked="mixed"`.
+- **Radio Group** — Radio Group pattern, вариант на нативных
+  `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
+  `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
+  раздаёт каждому радио `TRadioGroupExtension`, а без имени группы строит от её
+  `uid`. Одну остановку Tab, стрелки по кругу с пропуском выключенных и пробел
+  даёт браузер, поэтому клавиатурного плагина и `tabindex` у группы нет. Браузер
+  ходит по радио в порядке DOM, а не регистрации в коллекции, — так радио одной
+  группы могут стоять где угодно в разметке, чего roving tabindex, как у Tabs,
+  не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
+  у нативного радио это `checked` и `disabled`. Сторожат
+  `ui/vue/__tests__/radio-group.spec.ts` и
+  `playground/vue/browser/radio-group.spec.ts`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only
