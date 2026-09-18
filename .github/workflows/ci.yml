@@ -94,9 +94,11 @@ jobs:
       - name: Типы — Web Components
         run: npx tsc --noEmit -p packages/ui/webc/tsconfig.json
 
-      # Без сборки и ngc: шаблоны @Component здесь не проверяются, только TS.
+      # ngc, а не tsc: кроме TS проверяет шаблоны @Component (strictTemplates) и
+      # ограничения AOT — например, сигнальный viewChild() вне инициализатора
+      # поля (NG8110). Эмита нет: noEmit стоит в tsconfig пакета.
       - name: Типы — Angular
-        run: npx tsc --noEmit -p packages/ui/angular/tsconfig.json
+        run: npx ngc -p packages/ui/angular/tsconfig.json
 
       # Сгенерированные метаданные закоммичены: Angular AOT требует статические
       # массивы inputs/outputs. Если дескриптор изменили, а generate не запускали,
