@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, posix, resolve } from 'node:path'
 import { readChangesets } from '@changesets/read'
 
 /**
  * Сторож раздела «Версии пакетов» (см. AGENTS.md). Версии ведёт changesets:
  * библиотечные пакеты `@soldy/*` — одна группа `fixed` и потому одна версия,
  * стенд — в `ignore`. Библиотечный пакет несёт метаданные: описание, лицензию и
- * путь в репозитории.
+ * путь в репозитории, — а его точки входа ведут на файлы.
  *
  * Список пакетов не хардкодится: он раскрывается из `workspaces` корневого
  * манифеста, поэтому новый пакет попадает под проверку сам. Список стенда —
@@ -140,6 +141,74 @@ function selectLibrary(
 	return packages.filter(({ manifest }) => !ignored.has(manifest.name))
 }
 
+/** Поля манифеста, чьи цели — файлы пакета. */
+const ENTRY_FIELDS = ['main', 'types', 'style', 'exports'] as const
+
+/**
+ * Игнорирует ли git путь от корня репозитория. Код 0 — игнорирует, 1 — нет;
+ * любой другой исход (git не запустился, корень не репозиторий) — сбой, и он
+ * роняет сторож, а не читается как «не игнорирует».
+ */
+function isGitIgnored(path: string): boolean {
+	const { status, error, stderr } = spawnSync('git', ['check-ignore', '--quiet', '--', path], {
+		cwd: ROOT,
+		encoding: 'utf-8',
+	})
+
+	if (status !== 0 && status !== 1) {
+		throw new Error(`git check-ignore ${path}: ${error?.message ?? stderr}`)
+	}
+
+	return status === 0
+}
+
+/**
+ * Нарушения точек входа: цель `main`, `types`, `style` и `exports` — файл пакета.
+ * `exports` разбирается вглубь: строка — цель, объект — условия или подпути.
+ *
+ * Цели, которую игнорирует git, в чистом клоне нет — это выход сборки, и он
+ * допустим, только если у пакета есть скрипт `build`. Ответ не зависит от того,
+ * собран ли пакет на этой машине. Куда пишет сборщик, сторож не читает: это
+ * привязало бы его к одному сборщику.
+ */
+function checkEntryPoints({ dir, manifest }: TWorkspacePackage): string[] {
+	const { scripts } = manifest
+	const buildable = isRecord(scripts) && typeof scripts.build === 'string'
+
+	const checkTarget = (field: string, value: unknown): string[] => {
+		if (value === undefined) {
+			return []
+		}
+
+		if (isRecord(value)) {
+			return Object.entries(value).flatMap(([key, nested]) =>
+				checkTarget(`${field}[${JSON.stringify(key)}]`, nested),
+			)
+		}
+
+		if (typeof value !== 'string') {
+			throw new Error(
+				`${dir}: ${field} ${JSON.stringify(value)} — сторож понимает только путь и объект условий`,
+			)
+		}
+
+		const declared = `${field} ${JSON.stringify(value)}`
+		const path = posix.join(dir, value)
+
+		if (isGitIgnored(path)) {
+			return buildable
+				? []
+				: [`${declared} — выход сборки (игнорируется git), а скрипта build у пакета нет`]
+		}
+
+		return statSync(join(ROOT, path), { throwIfNoEntry: false })?.isFile()
+			? []
+			: [`${declared} — нет такого файла`]
+	}
+
+	return ENTRY_FIELDS.flatMap((field) => checkTarget(field, manifest[field]))
+}
+
 /** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
 function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	const violations: string[] = []
@@ -164,6 +233,8 @@ function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	if (typeof version !== 'string' || version === '') {
 		violations.push(`version ${JSON.stringify(version)}, ожидается строка версии`)
 	}
+
+	violations.push(...checkEntryPoints({ dir, manifest }))
 
 	return violations.map((violation) => `${dir}: ${violation}`)
 }
@@ -373,6 +444,45 @@ describe('сторож манифестов', () => {
 
 		expect(checkLibraryPackage(library({ description: undefined }))).toEqual(expected)
 		expect(checkLibraryPackage(library({ description: '  ' }))).toEqual(expected)
+	})
+
+	it('цель точки входа без файла — нарушение с путём', () => {
+		const entries = {
+			main: './index.ts',
+			exports: {
+				'.': './index.ts',
+				'./contributions': { default: './contributions/index.ts' },
+			},
+		}
+
+		expect(checkLibraryPackage(library(entries))).toEqual([
+			'packages/example: main "./index.ts" — нет такого файла',
+			'packages/example: exports["."] "./index.ts" — нет такого файла',
+			'packages/example: exports["./contributions"]["default"] "./contributions/index.ts" — нет такого файла',
+		])
+	})
+
+	// `dist/` — в корневом .gitignore: сборки в чистом клоне нет.
+	it('цель в выходе сборки — без нарушений со скриптом build, без него — нарушение', () => {
+		const entries = {
+			style: './dist/index.css',
+			exports: { '.': { default: './dist/index.css' } },
+		}
+		const notBuilt = '— выход сборки (игнорируется git), а скрипта build у пакета нет'
+
+		expect(
+			checkLibraryPackage(library({ ...entries, scripts: { build: 'vite build' } })),
+		).toEqual([])
+		expect(checkLibraryPackage(library(entries))).toEqual([
+			`packages/example: style "./dist/index.css" ${notBuilt}`,
+			`packages/example: exports["."]["default"] "./dist/index.css" ${notBuilt}`,
+		])
+	})
+
+	it('цель не путь и не объект условий — сторож падает, а не пропускает её', () => {
+		expect(() => checkLibraryPackage(library({ exports: { '.': ['./index.ts'] } }))).toThrow(
+			'packages/example: exports["."] ["./index.ts"] — сторож понимает только путь и объект условий',
+		)
 	})
 
 	it('repository.directory не совпадает с путём пакета — нарушение', () => {
