@@ -1,7 +1,7 @@
 {
   "name": "@soldy/setup",
   "version": "0.1.0",
-  "description": "Метаданные компонентов: contributions, дескрипторы, адаптерный контекст и общее для всех адаптеров",
+  "description": "Общее для всех адаптеров: дескрипторы компонентов, их сборка на монтирование и связывание с фреймворком",
   "keywords": [
     "soldy",
     "headless",
@@ -23,8 +23,7 @@
   "type": "module",
   "main": "./index.ts",
   "exports": {
-    ".": "./index.ts",
-    "./contributions": "./contributions/index.ts"
+    ".": "./index.ts"
   },
   "dependencies": {
     "@soldy/core": "*",
