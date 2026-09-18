@@ -1,0 +1,140 @@
+@use './mixins' as mixines;
+
+// Стилизуется только элемент. У контейнера группы стилей нет намеренно
+// (решение владельца): радио одной группы могут стоять где угодно в разметке —
+// в строках списка, в ячейках таблицы, — и раскладку задаёт потребитель.
+.s-radio-group-item {
+	$this: &;
+
+	// Контрол и подпись в строку. `inline-flex`, как у нативной пары «радио +
+	// подпись»: ширина по содержимому, и клик мимо текста радио не выбирает.
+	// Ни одного `left`/`right` — только `gap` и логические отступы, поэтому в
+	// RTL контрол сам встаёт справа: `dir` приходит на корень.
+	@apply relative inline-flex items-start;
+	@apply text-s-component;
+	@apply cursor-pointer select-none;
+
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.radio-size($size);
+		}
+	}
+
+	// Нативное радио — визуально скрыто, но остаётся в дереве доступности и в
+	// порядке фокуса: группировку по `name`, стрелки и один Tab-стоп даёт
+	// браузер. Клик по корню-`label` доходит до него сам.
+	&__input {
+		@apply sr-only;
+	}
+
+	// Кольцо. Цвет рамки и отметки задаёт вариант (`radio-variant`).
+	&__control {
+		@apply inline-flex shrink-0 items-center justify-center;
+		@apply rounded-full border;
+		@apply bg-s-component-surface;
+		@apply transition-[border-color,border-width,background-color] duration-150;
+		width: var(--radio-control-size);
+		height: var(--radio-control-size);
+	}
+
+	// Точка — отметка вида по умолчанию. Стоит всегда, у невыбранного сжата в
+	// ноль: так она проявляется из центра, а не возникает скачком.
+	&__indicator {
+		@apply rounded-full bg-current;
+		@apply scale-0 transition-transform duration-150;
+		width: calc(var(--radio-control-size) / 2);
+		height: calc(var(--radio-control-size) / 2);
+	}
+
+	// Подпись. Её может не быть: радио без текста — законный случай, подпись
+	// тогда лежит в соседнем элементе. Пустая обёртка места не занимает, иначе
+	// зазор `gap` остался бы рядом с одиноким кольцом.
+	//
+	// `baseline` делает первую строку подписи базовой линией всего элемента:
+	// в строке формы рядом с чужим текстом подпись встаёт с ним на одну линию.
+	// Положение подписи внутри элемента от этого не меняется.
+	&__text {
+		@apply self-baseline;
+		// Контрол выше строки (крупный размер при плотном интерлиньяже) —
+		// подпись опускается к его середине.
+		margin-block-start: max(0px, (var(--radio-control-size) - 1lh) / 2);
+
+		&:empty {
+			@apply hidden;
+		}
+	}
+
+	// Многострочная подпись: контрол стоит у первой строки, а не посередине
+	// всего текста — опускается к середине строки высотой `1lh`. Без подписи
+	// сдвига нет: одинокое радио ровно в размер коробки CheckBox.
+	&:has(> #{$this}__text:not(:empty)) > #{$this}__control {
+		margin-block-start: max(0px, (1lh - var(--radio-control-size)) / 2);
+	}
+
+	// Фокус — на скрытом нативном радио, кольцо фокуса рисует контрол рядом.
+	&__input:focus-visible + #{$this}__control {
+		@apply outline-2 outline-offset-2 outline-s-component;
+	}
+
+	// Выбранное — `data-selected` корня: его пишет расширение активации, как у
+	// таба и опции. Вид по умолчанию (`dot`) отмечает выбор точкой внутри
+	// тонкого кольца — как отметкой внутри коробки CheckBox.
+	&[data-selected='true'] > #{$this}__control > #{$this}__indicator {
+		@apply scale-100;
+	}
+
+	// Вид `ring`: выбор отмечает само кольцо — утолщается внутрь и берёт цвет
+	// отметки. Точки у этого вида нет. Толщина — четверть стороны: просвет
+	// внутри равен точке вида `dot`, и кольцо читается кольцом, а не залитым
+	// кругом с проколом.
+	&--view-ring {
+		> #{$this}__control > #{$this}__indicator {
+			@apply hidden;
+		}
+
+		&[data-selected='true'] > #{$this}__control {
+			border-color: currentColor;
+			border-width: calc(var(--radio-control-size) / 4);
+		}
+	}
+
+	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
+	// теге. Гаснет элемент целиком — и контрол, и подпись.
+	&[data-disabled='true'] {
+		@apply opacity-s-component-disabled cursor-default;
+	}
+
+	&--variant-accent {
+		@include mixines.radio-variant($this, $color: 'accent');
+	}
+
+	&--variant-positive {
+		@include mixines.radio-variant($this, $color: 'positive');
+	}
+
+	&--variant-negative {
+		@include mixines.radio-variant($this, $color: 'negative');
+	}
+
+	&--variant-caution {
+		@include mixines.radio-variant($this, $color: 'caution');
+	}
+}
+
+// Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
+// он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
+// споря с ней.
+:where(.s-radio-group-item) {
+	@include mixines.radio-variant('.s-radio-group-item', $color: 'neutral');
+}
+
+// Принудительные цвета (высокий контраст Windows): браузер заменяет фон
+// системным цветом поверхности, и точка пропала бы вместе с ним, а нативное
+// радио скрыто — выбор видно только по ней. Рамку он перекрашивает, но не
+// убирает, поэтому толстое кольцо вида `ring` видно и так.
+@media (forced-colors: active) {
+	.s-radio-group-item__indicator {
+		forced-color-adjust: none;
+		background-color: CanvasText;
+	}
+}
