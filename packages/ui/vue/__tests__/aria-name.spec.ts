@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { h, nextTick, ref } from 'vue'
 import { Button, Icon, Input, Spinner } from '@soldy/ui-vue'
 
 describe('Button', () => {
@@ -42,6 +42,21 @@ describe('Button', () => {
 		await nextTick()
 
 		expect(wrapper.attributes('aria-label')).toBe('Закрыть')
+	})
+
+	it('снятое из разметки имя убирает атрибут', async () => {
+		// Проп пропадает из разметки целиком, а не получает новое значение
+		const named = ref(true)
+		const wrapper = mount({
+			render: () => h(Button, named.value ? { aria_label: 'Закрыть' } : {}),
+		})
+
+		expect(wrapper.attributes('aria-label')).toBe('Закрыть')
+
+		named.value = false
+		await nextTick()
+
+		expect(wrapper.attributes('aria-label')).toBeUndefined()
 	})
 })
 

@@ -10,23 +10,35 @@ import { assembleBundle, resolveComposition } from '../assemble'
  * класса, проп плагина — из опции дескриптора, иначе из `defaultValues`
  * плагина.
  *
- * Сторож внизу идёт по всем дескрипторам из экспорта. Boolean-пропы — ровно те,
- * которые Vue приводит сам: отсутствующему Boolean без `default` он ставит
- * `false` и пишет его в инстанс или плагин. С умолчаниями это совпадало
+ * Сторожа внизу идут по всем дескрипторам из экспорта. Первый — Boolean-пропы:
+ * ровно те, которые Vue приводит сам. Отсутствующему Boolean без `default` он
+ * ставит `false` и пишет его в инстанс или плагин. С умолчаниями это совпадало
  * случайно — пока у плагина якоря не появился `flip: true`.
+ *
+ * Второй — любой проп, который пишет разметка: снятый, он возвращается к
+ * умолчанию декларации, и проп без него оставался с прежним значением во всех
+ * адаптерах.
  */
 
 import { describe, it, expect } from 'vitest'
 import type { IPropDeclaration } from '@soldy/accessor'
-import { TFrame } from '@soldy/core'
+import { TCollectionComponent, TFrame } from '@soldy/core'
+import { TBasePlugin } from '@soldy/plugins'
 import {
 	AnchorPluginDescriptor,
 	AriaPluginDescriptor,
 	ComponentViewDescriptor,
 	FrameDescriptor,
+	IconDescriptor,
+	ListBoxCollectionDescriptor,
 	TabsItemDescriptor,
 } from '../descriptors'
-import { defineComponent, type IComponentDescriptor, type IPluginDefinition } from '../define'
+import {
+	defineComponent,
+	definePlugin,
+	type IComponentDescriptor,
+	type IPluginDefinition,
+} from '../define'
 import { exportedDescriptors, required } from './helpers'
 
 /** Декларация по полному имени: `visible`, `anchor:flip`. */
@@ -44,6 +56,10 @@ function pluginProp(definition: IPluginDefinition, name: string): IPropDeclarati
 		name,
 	)
 }
+
+/** Умолчание объявлено ключом без значения — «не задано». */
+const declaredUnset = (declaration: IPropDeclaration): boolean =>
+	Object.hasOwn(declaration, 'default') && declaration.default === undefined
 
 describe('умолчание своего и унаследованного пропа — из defaultValues класса', () => {
 	it('у ComponentView visible — true, у Frame — false', () => {
@@ -64,6 +80,13 @@ describe('умолчание своего и унаследованного пр
 
 		expect(Object.hasOwn(closable, 'default')).toBe(true)
 		expect(closable.default).toBeUndefined()
+	})
+
+	it('«не задано» объявлено: width и height у Icon, trackBy у фасада коллекции', () => {
+		expect(declaredUnset(prop(IconDescriptor(), 'width'))).toBe(true)
+		expect(declaredUnset(prop(IconDescriptor(), 'height'))).toBe(true)
+		// Своих умолчаний у фасада нет: ключ он получает от базы `TBatchCollectionFacade`
+		expect(declaredUnset(prop(ListBoxCollectionDescriptor(), 'trackBy'))).toBe(true)
 	})
 
 	it('нет ключа в defaultValues — нет и поля', () => {
@@ -99,13 +122,35 @@ describe('умолчание пропа плагина', () => {
 		expect(pluginProp(AnchorPluginDescriptor({ flip: undefined }), 'flip').default).toBe(true)
 	})
 
+	it('якорь по умолчанию не задан: anchor — null', () => {
+		expect(prop(FrameDescriptor(), 'anchor:anchor').default).toBeNull()
+	})
+
+	it('имени по умолчанию нет: пропсы aria объявлены ключами без значения', () => {
+		const aria = AriaPluginDescriptor()
+
+		expect(declaredUnset(pluginProp(aria, 'label'))).toBe(true)
+		expect(declaredUnset(pluginProp(aria, 'labelledBy'))).toBe(true)
+		expect(declaredUnset(pluginProp(aria, 'describedBy'))).toBe(true)
+	})
+
 	it('у плагина без defaultValues поля нет', () => {
-		expect(Object.hasOwn(pluginProp(AriaPluginDescriptor(), 'label'), 'default')).toBe(false)
+		class TWithoutDefaultsPlugin extends TBasePlugin {
+			free = 'старт'
+		}
+
+		const definition = definePlugin({
+			ctor: TWithoutDefaultsPlugin,
+			namespace: 'sample',
+			contribution: { props: { free: { type: String } } },
+		})
+
+		expect(Object.hasOwn(pluginProp(definition, 'free'), 'default')).toBe(false)
 	})
 })
 
 /* -------------------------------------------------------------------------- */
-/* Сторож                                                                      */
+/* Сторожа                                                                     */
 /* -------------------------------------------------------------------------- */
 
 /** Boolean в типе пропа: сам, в массиве или внутри `defineType`. */
@@ -169,5 +214,55 @@ describe('сторож: Boolean-проп объявляет умолчание, 
 		}
 
 		expect(declared).toEqual(fresh)
+	})
+})
+
+/**
+ * Пропы фасадов коллекций, у которых умолчания нет намеренно: их сеттеры «не
+ * задано» не принимают — `items` ждёт состав, `mode` — режим выбора. Снятый из
+ * разметки такой проп сбрасывать не к чему, и значение остаётся. Проп попадает
+ * сюда, только если его сеттер не принимает ни `undefined`, ни `null`;
+ * остальным объявляют умолчание в `defaultValues` класса.
+ */
+const COLLECTION_PROPS_WITHOUT_DEFAULT: ReadonlySet<string> = new Set(['items', 'mode'])
+
+/** Пропы, которые пишет разметка: незащищённые, с триггерами. */
+const writtenByMarkup = (props: readonly IPropDeclaration[]) =>
+	props.filter((declaration) => !declaration.protected && !!declaration.triggers?.length)
+
+describe('сторож: проп, который пишет разметка, объявляет умолчание', () => {
+	// У дескриптора без своего класса (`CollectionDescriptor`) умолчаний нет:
+	// их пересчитывает от своего класса наследник
+	const descriptors = exportedDescriptors().filter(([, descriptor]) => descriptor.ctor !== Object)
+
+	it('дескрипторы найдены, а дескриптор без своего класса отсеян', () => {
+		const names = descriptors.map(([name]) => name)
+
+		expect(names).toEqual(
+			expect.arrayContaining([
+				'FrameDescriptor',
+				'IconDescriptor',
+				'ListBoxCollectionDescriptor',
+			]),
+		)
+		expect(names).not.toContain('CollectionDescriptor')
+	})
+
+	it.each(descriptors)('%s', (_name, descriptor) => {
+		const exempt: ReadonlySet<string> =
+			descriptor.ctor.prototype instanceof TCollectionComponent
+				? COLLECTION_PROPS_WITHOUT_DEFAULT
+				: new Set()
+
+		const missing = [
+			...writtenByMarkup(descriptor.props),
+			...descriptor.plugins.flatMap((definition) => writtenByMarkup(definition.props)),
+		]
+			.filter((declaration) => !Object.hasOwn(declaration, 'default'))
+			.map((declaration) => declaration.name.getName())
+			.filter((name) => !exempt.has(name))
+
+		// Значим ключ, а не значение: «не задано» объявляется ключом без значения
+		expect(missing).toEqual([])
 	})
 })

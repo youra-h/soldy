@@ -1,8 +1,13 @@
-import type { IFrame } from '@soldy/core'
+import type { IFrame, TDefaultValues } from '@soldy/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
-import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from './types'
+import type {
+	IAnchorPluginOptions,
+	IAnchorPluginProps,
+	TAnchorPluginEvents,
+	TFramePlacement,
+} from './types'
 
 /**
  * TAnchorPlugin — привязка Frame к чужому элементу.
@@ -43,14 +48,21 @@ import type { IAnchorPluginOptions, TAnchorPluginEvents, TFramePlacement } from 
  */
 export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
-	 * Умолчания опций, объявленных пропами. Из них стартуют поля плагина, и их
-	 * же `definePlugin` кладёт в декларации пропов: значение живёт в одном
-	 * месте. `flip: true` в приватном поле адаптер не увидел бы и отдал бы
-	 * Frame без `anchor_flip` своё `false`.
+	 * Умолчания пропов плагина. Из них стартуют поля плагина, и их же
+	 * `definePlugin` кладёт в декларации пропов: значение живёт в одном месте.
+	 * `flip: true` в приватном поле адаптер не увидел бы и отдал бы Frame без
+	 * `anchor_flip` своё `false`.
+	 *
+	 * `anchor: null` — «панель ни к чему не привязана». Якорь не опция, его
+	 * задаёт только разметка, но умолчание объявлено и ему: снятый из разметки
+	 * проп связка возвращает к умолчанию декларации, и без него панель
+	 * оставалась бы привязанной к прежнему элементу.
 	 */
-	static defaultValues: Required<
-		Pick<IAnchorPluginOptions, 'placement' | 'matchWidth' | 'flip' | 'offset'>
+	static defaultValues: TDefaultValues<
+		IAnchorPluginProps,
+		'anchor' | 'placement' | 'matchWidth' | 'flip' | 'offset'
 	> = {
+		anchor: null,
 		placement: 'bottom-start',
 		matchWidth: false,
 		flip: true,
@@ -60,7 +72,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _frame: IFrame | null = null
 	private _element: Element | null = null
 	/** Якорю нужны только `getBoundingClientRect()` и `parentElement` — хватает `Element`. */
-	private _anchor: Element | null = null
+	private _anchor: Element | null = TAnchorPlugin.defaultValues.anchor
 	private _placement: TFramePlacement = TAnchorPlugin.defaultValues.placement
 	private _matchWidth = TAnchorPlugin.defaultValues.matchWidth
 	private _flip = TAnchorPlugin.defaultValues.flip

@@ -11,10 +11,12 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { TName } from '@soldy/accessor'
-import { TButton, TTabsItem } from '@soldy/core'
-import { TAriaPlugin } from '@soldy/plugins'
+import { TButton, TFrame, TIcon, TTabsItem } from '@soldy/core'
+import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
 import {
 	ButtonDescriptor,
+	FrameDescriptor,
+	IconDescriptor,
 	TabsItemDescriptor,
 	bindComponent,
 	createAdapterContext,
@@ -22,7 +24,7 @@ import {
 	surfaceOf,
 } from '@soldy/setup'
 import type { IAdapterProfile, IComponentBinding } from '@soldy/setup'
-import { CallbackProfile, required } from './helpers'
+import { CallbackProfile, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
 const single = (prop: Record<string, unknown>) =>
@@ -53,12 +55,13 @@ describe('поверхность', () => {
 })
 
 describe('поверхность · умолчание пропа из декларации', () => {
-	it('без ключа в декларации default в конфиге нет', () => {
-		const config = surfaceOf(single({ name: 'text', type: String }), CallbackProfile)
-			.exportProps.text
+	it('без ключа в декларации default нет ни в конфиге, ни в свойстве поверхности', () => {
+		const surface = surfaceOf(single({ name: 'text', type: String }), CallbackProfile)
+		const config = surface.exportProps.text
 
 		expect(config).toEqual({ type: String })
 		expect(Object.hasOwn(config, 'default')).toBe(false)
+		expect(Object.hasOwn(required(surface.props[0], 'проп text'), 'default')).toBe(false)
 	})
 
 	it('ключ со значением undefined сохраняется', () => {
@@ -88,8 +91,9 @@ describe('поверхность · умолчание пропа из декл�
 		expect(find('text').default).toBe('')
 		expect(Object.hasOwn(find('closable'), 'default')).toBe(true)
 		expect(find('closable').default).toBeUndefined()
-		// Умолчания у декларации нет — нет и ключа
-		expect(Object.hasOwn(find('aria:label'), 'default')).toBe(false)
+		// Проп плагина — так же: «имени нет» объявлено ключом без значения
+		expect(Object.hasOwn(find('aria:label'), 'default')).toBe(true)
+		expect(find('aria:label').default).toBeUndefined()
 	})
 
 	it('protected-проп наружу не уходит', () => {
@@ -286,6 +290,60 @@ describe('связка · снятый проп', () => {
 		binding.writeAll({ closable: undefined })
 
 		expect(ctrl.closable).toBeUndefined()
+	})
+
+	/*
+	 * «Не задано» — тоже умолчание, и объявлено ключом. Пока у пропсов ниже
+	 * ключа не было, снятый проп оставался с прежним значением во всех адаптерах.
+	 */
+
+	it('снятое имя убирает aria-label: у плагина имени по умолчанию нет', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ aria_label: 'Закрыть' })
+
+		expect(ctrl.aria.get('aria-label')).toBe('Закрыть')
+
+		binding.writeAll({})
+
+		expect(ctrl.aria.has('aria-label')).toBe(false)
+	})
+
+	it('снятые width и height иконки уходят из стилей: размер снова даёт size', () => {
+		const ctrl = new TIcon()
+		const context = createAdapterContext(IconDescriptor(), { ctrl })
+		const binding = bindComponent(context, CallbackProfile)
+		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
+
+		binding.writeAll({ width: 24, height: '2em' })
+
+		expect(layout.styles).toEqual({ width: '24px', height: '2em' })
+
+		binding.writeAll({})
+
+		expect(ctrl.width).toBeUndefined()
+		expect(ctrl.height).toBeUndefined()
+		// Пустое значение снимает инлайновый стиль, остаётся класс `--size-*`
+		expect(layout.styles).toEqual({ width: '', height: '' })
+	})
+
+	it('снятый якорь отвязывает панель Frame', () => {
+		// Привязка следит за размером якоря, а jsdom `ResizeObserver` не знает
+		installResizeObserverStub()
+
+		const ctrl = new TFrame()
+		const context = createAdapterContext(FrameDescriptor(), { ctrl })
+		const binding = bindComponent(context, CallbackProfile)
+		const anchor = required(context.bundle?.get(TAnchorPlugin), 'плагин anchor')
+		const element = document.createElement('button')
+
+		binding.writeAll({ anchor_anchor: element })
+
+		expect(anchor.anchor).toBe(element)
+
+		binding.writeAll({})
+
+		expect(anchor.anchor).toBeNull()
 	})
 
 	it('после сброса проп снова не задан: повторное снятие ничего не пишет', () => {
