@@ -1,15 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Select, Switch } from '@soldy/ui-vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
+import { propertiesRoute, TESTS_ROUTE } from '../router'
 
 const { theme, dark, themes } = useTheme()
 const { pack, packs, apply } = useIconPack()
+
+const route = useRoute()
+
+/**
+ * Переход между страницей свойств и страницей тестов. Со страницы тестов —
+ * обратно на ту страницу свойств, с которой ушли.
+ */
+const counterpart = computed(() =>
+	route.path.startsWith(TESTS_ROUTE)
+		? { to: propertiesRoute.value, label: 'Свойства' }
+		: { to: TESTS_ROUTE, label: 'Тесты' },
+)
 </script>
 
 <template>
 	<header class="pg__header">
 		<div class="pg__brand">soldy <span>· playground</span></div>
+		<RouterLink :to="counterpart.to" class="pg__switch">{{ counterpart.label }}</RouterLink>
 
 		<div class="pg__control">
 			<span class="pg__control-label">Тема</span>

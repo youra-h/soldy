@@ -1,5 +1,12 @@
-import { COMPONENTS } from '@soldy/playground-shared'
+import {
+	COMPONENTS,
+	SCENARIOS as SCENARIO_REGISTRY,
+	TOPICS as TOPIC_REGISTRY,
+	type TScenario,
+	type TTopic,
+} from '@soldy/playground-shared'
 import { PREVIEW_COMPONENTS } from './previews'
+import { fixtureOf } from './scenarios/fixtures'
 
 /**
  * Что этот адаптер умеет показать.
@@ -34,3 +41,23 @@ export const LAYERS = AVAILABLE.filter((entry) => !entry.showcase).sort(byLabel)
 export function findAvailable(id: string) {
 	return AVAILABLE.find((entry) => entry.id === id)
 }
+
+/**
+ * Сценарии страницы тестов, которые этот адаптер может нарисовать.
+ *
+ * То же пересечение, что у меню: реестр сценариев — каталог всей библиотеки,
+ * а показывается только то, для чего у адаптера есть и компонент, и
+ * фикстура. React с двумя компонентами покажет их сценарии, а не пустые блоки.
+ */
+export const SCENARIOS = SCENARIO_REGISTRY.filter(
+	(scenario) => findAvailable(scenario.component) && fixtureOf(scenario),
+)
+
+/** Темы, в которых есть что запустить, — в порядке меню. */
+export function topicsOf(scenarios: readonly TScenario[]): readonly TTopic[] {
+	return TOPIC_REGISTRY.filter((topic) =>
+		scenarios.some((scenario) => scenario.topic === topic.id),
+	)
+}
+
+export const TOPICS = topicsOf(SCENARIOS)
