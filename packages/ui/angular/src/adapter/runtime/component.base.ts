@@ -76,6 +76,25 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	/** Состояние Core. Сигнал, т.к. binding появляется только в ngOnInit. */
 	readonly state = computed<TInstanceState<TInstance>>(() => this._binding()?.state() ?? {})
 
+	/**
+	 * Корень шаблона, помеченный `#root`. Читает его только стратегия `'view'`
+	 * (см. `_bindRoot`): у `'host'` корень — сам хост, и `#root` в шаблоне нет.
+	 *
+	 * Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
+	 * один раз в ngAfterViewInit и после пересоздания узла (смена `tag`,
+	 * переключение `rendered`) указывает на мёртвый элемент.
+	 *
+	 * Поле, а не вызов в `_bindRoot`: сигнальные запросы компилятор Angular
+	 * распознаёт только в инициализаторе поля, вызов в методе роняет AOT с
+	 * NG8110. Поле инициализируется до тела конструктора, откуда зовётся
+	 * `_bindRoot`.
+	 *
+	 * Параметры заданы явно: первый — тип локатора, здесь строка, второй —
+	 * то, что отдаёт `read`. Без него `nativeElement` был бы `any`, и
+	 * несовпадение с узлом `TElementPlugin` не было бы видно.
+	 */
+	private readonly _root = viewChild<unknown, ElementRef<Element>>('root', { read: ElementRef })
+
 	/** Объявленные потребителем `<ng-template slot="...">`. */
 	private readonly _slots = contentChildren(SlotDirective)
 
@@ -181,18 +200,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 			return
 		}
 
-		// Сигнальный viewChild(), а не @ViewChild: обычный запрос читается
-		// один раз в ngAfterViewInit и после пересоздания узла (смена `tag`,
-		// переключение `rendered`) указывает на мёртвый элемент.
-		//
-		// Параметры заданы явно: первый — тип локатора, здесь строка, второй —
-		// то, что отдаёт `read`. Без него `nativeElement` был бы `any`, и
-		// несовпадение с узлом `TElementPlugin` не было бы видно.
-		const root = viewChild<unknown, ElementRef<Element>>('root', { read: ElementRef })
-
 		effect(() => {
 			const binding = this._binding()
-			const ref = root()
+			const ref = this._root()
 
 			if (!binding) return
 
