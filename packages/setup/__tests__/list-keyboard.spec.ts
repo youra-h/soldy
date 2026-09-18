@@ -161,6 +161,57 @@ describe('выбор', () => {
 	})
 })
 
+/**
+ * Enter и пробел выбирают через расширение списка (`list.chooseItem`), тем же
+ * путём, что клик по строке, и оно отказывает выключенному элементу.
+ * `selection.toggle`, который плагин звал раньше, выключенность не проверяет.
+ *
+ * Выключается элемент уже после подсветки: так проверка не зависит от того,
+ * останавливается ли навигация на выключенных.
+ */
+describe('выключенный элемент не выбирается', () => {
+	type TListBoxSetup = Awaited<ReturnType<typeof setup>>
+
+	/** Как выключить подсвеченный первый элемент и как включить обратно. */
+	const WAYS: ReadonlyArray<readonly [string, (listBox: TListBoxSetup, off: boolean) => void]> = [
+		[
+			'выключен сам',
+			({ items }, off) => {
+				items[0].disabled = off
+			},
+		],
+		[
+			'выключен список',
+			({ owner }, off) => {
+				owner.disabled = off
+			},
+		],
+	]
+
+	const KEYS = [
+		['Enter', 'Enter'],
+		['пробел', ' '],
+	] as const
+
+	describe.each(WAYS)('%s', (_way, switchOff) => {
+		it.each(KEYS)('%s не выбирает, после включения — выбирает', async (_name, key) => {
+			const listBox = await setup(['Один', 'Два'])
+			const { facade, press, items } = listBox
+
+			press('ArrowDown')
+			switchOff(listBox, true)
+			press(key)
+
+			expect(facade.selected).toEqual([])
+
+			switchOff(listBox, false)
+			press(key)
+
+			expect(facade.selected).toEqual([items[0]])
+		})
+	})
+})
+
 describe('подсветка следует за выбором', () => {
 	it('встаёт на выбранный элемент при появлении коллекции', async () => {
 		// Позиция запоминается без визуальной отметки: навигация ещё не началась

@@ -44,6 +44,13 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`tag` — тег корня (`TComponentView`), и рисует по нему корень
 			`<component :is>` выше. Под фиксированный тег строки написан и
 			`TListBoxItem._ariaTag` — он решает, писать ли `aria-disabled`.
+
+			Клик выбирает через `adapters.list.choose()`, а не
+			`selection.toggle()`: выключенному элементу отказывает список, тем же
+			путём, что и Enter с пробелом у клавиатуры. `click`, а не
+			`action:press`: у строки `tabindex="-1"`, фокус после клика остаётся
+			на ней, и Enter дал бы два переключения — `press` строки и клавиатура
+			корня.
 		-->
 		<Button
 			embedded="list-box.row"
@@ -53,7 +60,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			:size="size"
 			:variant="variant"
 			:aria-selected="String(selected)"
-			@click="context?.adapters.selection.toggle()"
+			@click="context?.adapters.list.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>

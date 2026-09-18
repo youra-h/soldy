@@ -45,7 +45,7 @@ function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor }
+	return { owner, collection, items, facadeFor, registry }
 }
 
 describe('view пробрасывается со списка на элемент', () => {
@@ -165,6 +165,90 @@ describe('value ↔ выбор', () => {
 
 		expect(owner.value).toBe('b')
 		expect(changes).toBeLessThan(5)
+	})
+})
+
+/**
+ * Выбор пользователя — `chooseItem` расширения `list`. Через него идут и клик
+ * по строке (`choose` item-адаптера), и Enter с пробелом клавиатуры списка.
+ *
+ * Выключенному элементу он отказывает — выключен ли элемент сам или весь
+ * список: `item.disabled` — итог обоих. `TSelectionExtension` выключенность
+ * не проверяет, и раньше строка, звавшая `selection.toggle()` напрямую,
+ * выбирала выключенный элемент кликом.
+ */
+describe('выбор пользователя: выключенный элемент не выбирается', () => {
+	it('переключает выбор доступного элемента', () => {
+		const { collection, items } = createListBox(['a', 'b'])
+		const list = collection.engine.extensions.list
+
+		collection.mode = 'multiple'
+
+		expect(list.chooseItem(items[1])).toBe(true)
+		expect(collection.selected).toEqual([items[1]])
+
+		expect(list.chooseItem(items[1])).toBe(true)
+		expect(collection.selected).toEqual([])
+	})
+
+	/** Как выключить элемент и как включить обратно. */
+	const WAYS: ReadonlyArray<
+		readonly [string, (owner: TListBox, item: IListBoxItem, off: boolean) => void]
+	> = [
+		[
+			'выключен сам',
+			(_owner, item, off) => {
+				item.disabled = off
+			},
+		],
+		[
+			'выключен список',
+			(owner, _item, off) => {
+				owner.disabled = off
+			},
+		],
+	]
+
+	describe.each(WAYS)('%s', (_way, switchOff) => {
+		it('chooseItem отказывает, после включения — выбирает', () => {
+			const { owner, collection, items } = createListBox(['a', 'b'])
+			const list = collection.engine.extensions.list
+
+			switchOff(owner, items[1], true)
+
+			expect(list.chooseItem(items[1])).toBe(false)
+			expect(collection.selected).toEqual([])
+
+			switchOff(owner, items[1], false)
+
+			expect(list.chooseItem(items[1])).toBe(true)
+			expect(collection.selected).toEqual([items[1]])
+		})
+
+		it('choose item-адаптера идёт тем же путём', () => {
+			const { owner, collection, items, registry } = createListBox(['a', 'b'])
+			const adapter = registry.get(items[1]).adapters.list
+
+			switchOff(owner, items[1], true)
+			adapter.choose()
+
+			expect(collection.selected).toEqual([])
+
+			switchOff(owner, items[1], false)
+			adapter.choose()
+
+			expect(collection.selected).toEqual([items[1]])
+		})
+	})
+
+	/** Отказ — только выбору пользователя: из кода выбрать выключенный вправе приложение. */
+	it('selection.select выключенный элемент выбирает', () => {
+		const { collection, items } = createListBox(['a', 'b'])
+
+		items[1].disabled = true
+		collection.engine.extensions.selection.select(items[1])
+
+		expect(collection.selected).toEqual([items[1]])
 	})
 })
 
