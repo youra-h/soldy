@@ -209,9 +209,15 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
  * Что ещё выставить превью на строке пропа, чтобы сам проп было видно.
  *
  * Строка правит одно свойство, остальные остаются по умолчанию. Большинству
- * пропов этого хватает, но не тем, что работают только в сочетании:
- * `removeOnBackspace` без `editable` и `multiple` не делает ничего, и строка
- * показала бы переключатель, который ни на что не влияет.
+ * пропов этого хватает, но не тем, что раскрываются только в сочетании. Таких
+ * случаев два:
+ *
+ * - без сочетания проп не делает ничего: `removeOnBackspace` без `editable` и
+ *   `multiple` — строка показала бы переключатель, который ни на что не
+ *   влияет;
+ * - проп работает и сам, но зачем он нужен, видно только в сочетании:
+ *   `indicator` у ListBox ставит отметку и при одиночном выборе, а смысл у неё
+ *   там, где выбрано несколько элементов.
  *
  * Пресет — только для своей строки. Глобальный дефолт превью (как `editable`
  * у Select) перевёл бы в `multiple` и все соседние строки, а `closeOnSelect`
@@ -220,6 +226,9 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = {
 	select: {
 		removeOnBackspace: { editable: true, mode: 'multiple' },
+	},
+	'list-box': {
+		indicator: { mode: 'multiple' },
 	},
 }
 

@@ -317,14 +317,38 @@ describe('свойства плагинов', () => {
 })
 
 /**
- * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`.
+ * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`,
+ * `indicator` у ListBox нужен там, где выбрано несколько элементов.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
  * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
- * есть чему не сработать. Признаки — теги (есть только в `multiple`) и
- * снятый `readonly` у поля (снимает только `editable`).
+ * есть чему не сработать. Признаки Select — теги (есть только в `multiple`) и
+ * снятый `readonly` у поля (снимает только `editable`). У ListBox режим в DOM
+ * не выведен, и признак — поведение: после кликов по двум разным элементам
+ * оба остаются выбранными только в `multiple`.
  */
 describe('пресет строки', () => {
+	/**
+	 * Клики по двум разным элементам в каждой колонке строки ListBox — те же,
+	 * что в проверке строки `mode`. Результат — число выбранных по колонкам,
+	 * а не общий счёт по строке: упавшая проверка сразу показывает, в какой
+	 * колонке режим не доехал.
+	 */
+	async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<number[]> {
+		const stages = row.findAll('.pg-col__stage')
+
+		for (const stage of stages) {
+			const items = stage.findAll('.s-list-box-item .s-button')
+
+			await items[0].trigger('click')
+			await items[1].trigger('click')
+		}
+
+		await nextTick()
+
+		return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
+	}
+
 	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
 
@@ -352,6 +376,28 @@ describe('пресет строки', () => {
 		for (const stage of rowOf(wrapper, 'closeOnSelect').findAll('.pg-col__stage')) {
 			expect(stage.find('.s-select__tags').exists()).toBe(false)
 		}
+
+		wrapper.unmount()
+	})
+
+	it('indicator рисует ListBox в multiple в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+
+		await nextTick()
+		await nextFrame()
+
+		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'indicator'))).toEqual([2, 2])
+
+		wrapper.unmount()
+	})
+
+	it('соседние строки ListBox пресет не получают', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+
+		await nextTick()
+		await nextFrame()
+
+		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
 
 		wrapper.unmount()
 	})
