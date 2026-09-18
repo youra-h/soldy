@@ -2,7 +2,7 @@
  * `anchor_flip` у Frame, который объявлен разметкой.
  *
  * Vue превращает отсутствующий Boolean-проп без `default` в `false`, а
- * `TPluginPropsExtension` пропускает только `undefined`. У плагина якоря flip
+ * `applyInitialPluginProps` пропускает только `undefined`. У плагина якоря flip
  * по умолчанию включён, поэтому Frame, в разметке которого `anchor_flip` не
  * написан, обязан оставить flip включённым. Иначе проп молча выключил бы flip у
  * всех Frame.

@@ -4,8 +4,8 @@
  * Отсутствующий Boolean-проп без `default` Vue превращает в `false`. Ключ
  * `default` со значением `undefined` это отключает, поэтому умолчание
  * объявляется ключом, а не значением (см. `IPropDeclaration.default`).
- * Проверка `default !== undefined` в setup или инспекторе сломала бы оба
- * случая ниже молча.
+ * Проверка `default !== undefined` при сборке декларации или в поверхности
+ * (`surfaceOf`) сломала бы оба случая ниже молча.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'

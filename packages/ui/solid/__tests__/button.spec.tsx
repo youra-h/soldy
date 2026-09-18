@@ -267,7 +267,7 @@ describe('Button · aria и доступ к плагинам', () => {
 			onActionCreate: (p: unknown) => seen.push(['action', p]),
 		})
 
-		// createBundle откладывает эмит на микрозадачу — см. setup/assemble/bundle.ts
+		// assembleBundle откладывает эмит на микрозадачу — см. setup/assemble/bundle.ts
 		await Promise.resolve()
 
 		expect(seen.map(([kind]) => kind)).toEqual(['bundle', 'action'])

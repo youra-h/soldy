@@ -20,7 +20,7 @@ const CAST = 'declare const value: object\nexport const x = value as unknown as 
 const NON_NULL = 'declare const value: string | undefined\nexport const x = value!'
 
 const OUTSIDE_CORE = [
-	'packages/setup/contributions/__fixture__.ts',
+	'packages/setup/descriptors/__fixture__.ts',
 	'packages/accessor/contract/__fixture__.ts',
 	'packages/ui/vue/src/adapter/runtime/__fixture__.ts',
 	'packages/ui/angular/src/components/__fixture__/__fixture__.component.ts',

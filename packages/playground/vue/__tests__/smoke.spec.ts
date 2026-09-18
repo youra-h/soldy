@@ -31,7 +31,7 @@ import PropControl from '../src/components/PropControl.vue'
  * поэтому единственное, где такие предупреждения вообще всплывают. Первый же
  * запуск дал «emitted event "update:anchor_anchor" but it is neither declared
  * in the emits option»: `useEmits` перечислял только собственные пропы, а
- * `useSyncEvents` эмитил и плагинные.
+ * `useAdapter` эмитил `update:` и по плагинным.
  *
  * Ошибка тихая — в консоли, но не в тестах. Поэтому здесь она превращается в
  * падение: любое предупреждение Vue при отрисовке страницы означает, что
