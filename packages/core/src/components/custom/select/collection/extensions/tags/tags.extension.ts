@@ -26,6 +26,13 @@ import type {
  * по совпадению `value` (теги → владелец); эти два пути не должны разойтись,
  * поэтому оба живут здесь.
  *
+ * Текст тега следует и за переименованием выбранной опции, хотя
+ * `change:selection` на него не приходит. Переименование слушает
+ * `TSelectExtension` — подписка на опцию у Select одна — и просит теги
+ * пересобраться (`syncTags`), а пишет в коллекцию тегов по-прежнему только
+ * это расширение. Патч по `value` меняет текст существующего тега на месте,
+ * а не пересоздаёт тег.
+ *
  * Инстанс `TTags` существует только в `multiple` — у `single`/`none` в поле
  * показывается текст, а не теги, второй набор был бы лишним состоянием.
  */
@@ -78,7 +85,7 @@ export class TSelectTagsExtension<
 		if (!selection) return
 
 		selection.events.on('change:mode', () => this._syncMode())
-		selection.events.on('change:selection', () => this._syncTags())
+		selection.events.on('change:selection', () => this.syncTags())
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
 			if (this._tags) this._tags.disabled = value
@@ -130,7 +137,7 @@ export class TSelectTagsExtension<
 		this._tags = tags
 		this._engine = engine
 
-		this._syncTags()
+		this.syncTags()
 
 		this.events.emit('change:tags', tags)
 	}
@@ -144,8 +151,14 @@ export class TSelectTagsExtension<
 		this.events.emit('change:tags', null)
 	}
 
-	/** Выбор Select → набор тегов. Источник истины — коллекция Select. */
-	private _syncTags(): void {
+	/**
+	 * Выбор Select → набор тегов. Источник истины — коллекция Select.
+	 *
+	 * Публичный ради переименования выбранной опции: его слушает
+	 * `TSelectExtension`, а не это расширение (см. описание класса). Вне
+	 * `multiple` коллекции тегов нет, и вызов ничего не делает.
+	 */
+	syncTags(): void {
 		const selection = this._selection
 		const engine = this._engine
 
