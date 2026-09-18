@@ -20,7 +20,11 @@ const NATIVE_ACTIVATION = new Set(['button', 'input', 'select', 'textarea'])
  *
  * 1. Нормализует активацию. `press` приходит и на клик, и на Enter/Space,
  *    и не приходит на disabled — независимо от того, `<button>` под
- *    компонентом или `<div>`.
+ *    компонентом или `<div>`. Enter/Space нормализуются, только когда фокус
+ *    на самом корне: вложенные поле, чекбокс или кнопка знают, что с ними
+ *    делать, сами, а их клик всплывёт в корень и даст `press`, как клик
+ *    мышью. Отмени корень их keydown — в Input не напечатается пробел,
+ *    чекбокс не переключится, кнопка не нажмётся.
  *
  * 2. Связывает `focused` с настоящим фокусом. До этого плагина `focused` был
  *    булевым флагом, который никто не выставлял и который ничего не делал.
@@ -118,9 +122,13 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	/**
-	 * Сам ли браузер сделает click из Enter/Space.
+	 * Сам ли браузер сделает click из Enter/Space на корне.
 	 * Для `<a href>` — только Enter, но Space на ссылке и не должен активировать,
 	 * поэтому весь тег целиком отдаём нативному поведению.
+	 *
+	 * Смотрит на тег корня, а не цели события: клавиши из вложенных элементов
+	 * до этой проверки не доходят — `_onKeyDown` нормализует только нажатия с
+	 * фокусом на корне.
 	 */
 	private get _nativeActivation(): boolean {
 		const element = this._element
@@ -144,6 +152,9 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
 		if (!this._keys.includes(event.key)) return
+
+		// Клавиша всплыла из вложенного элемента: он обработает её сам
+		if (event.target !== this._element) return
 
 		// Иначе на <button> press придёт дважды: от keydown и от порождённого click
 		if (this._nativeActivation) return
