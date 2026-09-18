@@ -34,11 +34,11 @@ function toPascalCase(input: string): string {
 /**
  * `element:ready` → `onElementReady`.
  *
- * Общая стратегия для фреймворков, где события — это колбэк-пропы: React и
- * Svelte 5. Тип-зеркало живёт в naming.types.ts и обязано меняться синхронно.
+ * Общая стратегия для фреймворков, где события — это колбэк-пропы: React,
+ * Svelte 5 и Solid. Колбэк строится из `TName.getName()`: своей копии формата
+ * `namespace:name` здесь нет. Тип-зеркало живёт в naming.types.ts и обязано
+ * меняться синхронно.
  */
 export function callbackEventNaming(name: TName): string {
-	const base = name.namespace ? `${name.namespace}:${name.name}` : name.name
-
-	return `on${toPascalCase(base)}`
+	return `on${toPascalCase(name.getName())}`
 }
