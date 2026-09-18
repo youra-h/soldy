@@ -219,6 +219,13 @@ describe('связка · ядро ↔ фреймворк', () => {
 	})
 })
 
+/** Связка над внешним инстансом: снаружи видно, что она в него пишет. */
+function bindButton(ctrl = new TButton()) {
+	const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+
+	return { ctrl, context, binding: bindComponent(context, CallbackProfile) }
+}
+
 /**
  * `undefined` из фреймворка значит «проп не задан». Проп, который фреймворк
  * задавал, а потом снял, возвращается к умолчанию декларации; ни разу не
@@ -227,13 +234,6 @@ describe('связка · ядро ↔ фреймворк', () => {
  * владельца».
  */
 describe('связка · снятый проп', () => {
-	/** Связка над внешним инстансом: снаружи видно, что она в него пишет. */
-	function bindButton(ctrl = new TButton()) {
-		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
-
-		return { ctrl, context, binding: bindComponent(context, CallbackProfile) }
-	}
-
 	it('ни разу не заданный проп не трогает внешний ctrl', () => {
 		const { ctrl, binding } = bindButton(new TButton({ text: 'своё', tag: 'a' }))
 		const changes = vi.fn()
@@ -352,5 +352,67 @@ describe('связка · снятый проп', () => {
 		binding.writeChanged({ label: 'Открыть' })
 
 		expect(aria.label).toBe('Открыть')
+	})
+})
+
+/**
+ * React, Solid и Svelte отдают связке полный набор пропсов на каждом проходе,
+ * а не только изменившиеся. Раньше связка писала в ядро каждый заданный проп,
+ * и смена любого другого откатывала к разметке то, что поменяли ядро или код
+ * через инстанс. Теперь `writeAll` пишет лишь то, что сменилось с прошлого
+ * набора, — как Vue, Angular и Web Components, которые сообщают только об
+ * изменении.
+ */
+describe('связка · повторённый проп', () => {
+	it('повторённый набор не откатывает то, что поменяло ядро', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a', tag: 'span' })
+		ctrl.text = 'из ядра'
+		// Родитель перерисовался: сменился другой проп
+		binding.writeAll({ text: 'a', tag: 'a' })
+
+		expect(ctrl.text).toBe('из ядра')
+		expect(ctrl.tag).toBe('a')
+	})
+
+	it('сменившееся в наборе значение пишется поверх ядра', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+		ctrl.text = 'из ядра'
+		binding.writeAll({ text: 'b' })
+
+		expect(ctrl.text).toBe('b')
+	})
+
+	it('снятый проп сбрасывается к умолчанию, даже если ядро его меняло', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeAll({ text: 'a' })
+		ctrl.text = 'из ядра'
+		binding.writeAll({})
+
+		expect(ctrl.text).toBe('')
+	})
+
+	it('первый набор пишет все заданные: внешний ctrl получает разметку', () => {
+		const { ctrl, binding } = bindButton(new TButton({ text: 'своё', tag: 'a' }))
+
+		binding.writeAll({ text: 'из разметки' })
+
+		expect(ctrl.text).toBe('из разметки')
+		expect(ctrl.tag).toBe('a')
+	})
+
+	it('дельта с прошлым значением не сверяется: ключ в ней — уже изменение', () => {
+		const { ctrl, binding } = bindButton()
+
+		binding.writeChanged({ text: 'a' })
+		ctrl.text = 'из ядра'
+		// Web Components: `el.text = 'a'` ещё раз — запись, а не повтор набора
+		binding.writeChanged({ text: 'a' })
+
+		expect(ctrl.text).toBe('a')
 	})
 })

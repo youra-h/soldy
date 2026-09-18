@@ -10,12 +10,21 @@
  * пропсов по двум именам, guard от записи того же значения — был написан в
  * каждом из шести адаптеров, и различался одной строкой записи.
  *
- * Связка помнит, какие пропсы фреймворк задал. Без этой памяти `undefined`
- * неотличим: «проп не передан» и «проп сняли». Первое должно оставить
- * состояние инстанса как есть (внешний `ctrl`), второе — вернуть проп к
- * умолчанию декларации: у трёхзначных пропсов (`closable` элемента Tabs,
- * `contentFit` элемента ListBox) умолчание `undefined` и значит «как у
- * владельца», и без сброса к нему компонент оставался с прежним значением.
+ * Связка помнит, какие пропсы фреймворк задал, и последнее значение каждого.
+ * Без этой памяти `undefined` неотличим: «проп не передан» и «проп сняли».
+ * Первое должно оставить состояние инстанса как есть (внешний `ctrl`), второе
+ * — вернуть проп к умолчанию декларации: у трёхзначных пропсов (`closable`
+ * элемента Tabs, `contentFit` элемента ListBox) умолчание `undefined` и значит
+ * «как у владельца», и без сброса к нему компонент оставался с прежним
+ * значением.
+ *
+ * По той же памяти `writeAll` отличает сменившийся проп от повторённого.
+ * React, Solid и Svelte отдают полный набор пропсов на каждом проходе, и
+ * запись каждого откатила бы к разметке то, что с тех пор поменяли ядро или
+ * код через инстанс: список, открытый кликом при переданном `open={false}`,
+ * закрылся бы от смены плейсхолдера. Vue, Angular и Web Components сообщают
+ * только об изменившемся, так что во всех шести адаптерах в ядро пишется лишь
+ * то, что поменял фреймворк.
  */
 
 import type { IEventSource } from '@soldy/core'
@@ -38,8 +47,11 @@ export class TComponentBinding implements IComponentBinding {
 	/** Свойства поверхности, у которых в аксессоре есть владелец. */
 	private readonly _targets = new Map<ISurfaceProp, IAccessorProp>()
 	private readonly _events = new Map<string, IAccessorEvent>()
-	/** Входы, которые фреймворк задал: последнее записанное значение — не `undefined`. */
-	private readonly _assigned = new Set<ISurfaceProp>()
+	/**
+	 * Входы, которые фреймворк задал, и последнее значение каждого — не
+	 * `undefined`. Нет ключа — вход не задан: не передавали или сняли.
+	 */
+	private readonly _assigned = new Map<ISurfaceProp, unknown>()
 
 	constructor(context: IAdapterContext, profile: IAdapterProfile) {
 		this.surface = surfaceOf(context.descriptor, profile)
@@ -163,12 +175,21 @@ export class TComponentBinding implements IComponentBinding {
 
 		// Заданным вход становится до guard'а «то же значение»: на первом проходе
 		// значение уже лежит в инстансе, собранном из тех же пропсов
-		this._assigned.add(prop)
+		this._assigned.set(prop, value)
 		this._set(target, value)
 	}
 
 	writeAll(props: object): void {
-		for (const prop of this.surface.inputs) this.write(prop, this.read(prop, props))
+		for (const prop of this.surface.inputs) {
+			const value = this.read(prop, props)
+
+			// Прошлое значение повторилось — проп не менялся: запись откатила бы
+			// то, что с тех пор поменяли ядро или код через инстанс. У незаданного
+			// входа прошлое значение — `undefined`: снова не передан, снова не пишется
+			if (Object.is(this._assigned.get(prop), value)) continue
+
+			this.write(prop, value)
+		}
 	}
 
 	writeChanged(changes: object): void {
