@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { propControls } from '@soldy/playground-shared'
 import { findAvailable } from '../catalog'
 import PropRow from '../components/PropRow.vue'
-import { useEvents } from '../composables/useEvents'
+import { useEvents, type TEventSource } from '../composables/useEvents'
 import { useIconPack } from '../composables/useIconPack'
 
 const props = defineProps<{ id: string }>()
@@ -11,8 +11,6 @@ const props = defineProps<{ id: string }>()
 const { version } = useIconPack()
 
 const entry = computed(() => findAvailable(props.id))
-
-const descriptor = computed(() => entry.value?.descriptor())
 
 /**
  * Свойства разведены по владельцу, а не свалены в один список.
@@ -27,7 +25,15 @@ const descriptor = computed(() => entry.value?.descriptor())
  */
 const groups = computed(() => (entry.value ? propControls(entry.value) : null))
 
-const handlers = computed(() => (descriptor.value ? useEvents(descriptor.value) : () => ({})))
+/** События обеих колонок — в консоль, с пометкой колонки. */
+const handlers = computed(() => {
+	if (!entry.value) return () => ({})
+
+	const events = useEvents(entry.value)
+
+	return (source: TEventSource) =>
+		events((name, args) => console.log(`[${source}] ${name}`, ...args))
+})
 </script>
 
 <template>

@@ -14,6 +14,7 @@ import {
 	Switch,
 	Tabs,
 	Tags,
+	useIcon,
 } from '@soldy/ui-vue'
 
 /**
@@ -37,6 +38,16 @@ const ITEMS = [
 	{ value: 'c', text: 'Третий' },
 ]
 
+/**
+ * Иконка превью Icon.
+ *
+ * `tag` у Icon — корень: тег или компонент, и глиф рисует компонент
+ * `useIcon(роль)`. Строка с ролью (`tag: 'arrowDown'`) давала пустой
+ * элемент `<arrowdown>`, и ячейка Icon на витрине была пустой. Компонент
+ * строится один раз: новый на каждый рендер Vue пересоздавал бы узел.
+ */
+const ARROW_DOWN = useIcon('arrowDown')
+
 /** Слои наследования: у них нет своей разметки, показываем пустую коробку. */
 const layer =
 	(label: string): TPreview =>
@@ -44,7 +55,9 @@ const layer =
 		h(ComponentView, bind, { default: () => label })
 
 export const PREVIEWS: Record<string, TPreview> = {
-	button: (bind) => h(Button, bind, { default: () => 'Кнопка' }),
+	// Подпись — пропом `text`, а не слотом: заданный слот `default` перекрывает
+	// проп, и строка `text` на странице свойств не меняла бы ничего видимого
+	button: (bind) => h(Button, { text: 'Кнопка', ...bind }),
 
 	input: (bind) => h(Input, { placeholder: 'Введите текст', ...bind }),
 
@@ -97,7 +110,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 			),
 		),
 
-	icon: (bind) => h(Icon, { tag: 'arrowDown', ...bind }),
+	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
 	spinner: (bind) => h(Spinner, bind),
 
@@ -123,18 +136,24 @@ export const PREVIEWS: Record<string, TPreview> = {
 }
 
 /**
- * Те же превью, но как компоненты — их принимает `<component :is>`.
+ * Функции отрисовки как компоненты — их принимает `<component :is>`.
  *
  * Обёртки строятся один раз при загрузке модуля, а не на каждый рендер: новая
  * функция на каждом обращении — это новый тип компонента, и Vue пересоздавал бы
- * поддерево вместо обновления, теряя состояние и ломая анимации.
+ * поддерево вместо обновления, теряя состояние и ломая анимации. Так же
+ * обёрнуты и фикстуры сценариев.
  *
  * Пропы не объявлены намеренно: всё, что передали, попадает в `attrs`, и превью
  * получает набор целиком — от `size` до `ctrl`.
  */
-export const PREVIEW_COMPONENTS: Record<string, Component> = Object.fromEntries(
-	Object.entries(PREVIEWS).map(([id, render]) => [
-		id,
-		(_props: unknown, { attrs }: { attrs: Record<string, unknown> }) => render(attrs),
-	]),
-)
+export function toComponents(previews: Record<string, TPreview>): Record<string, Component> {
+	return Object.fromEntries(
+		Object.entries(previews).map(([id, render]) => [
+			id,
+			(_props: unknown, { attrs }: { attrs: Record<string, unknown> }) => render(attrs),
+		]),
+	)
+}
+
+/** Превью как компоненты. */
+export const PREVIEW_COMPONENTS: Record<string, Component> = toComponents(PREVIEWS)

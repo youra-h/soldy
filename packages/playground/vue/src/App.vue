@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import AppHeader from './components/AppHeader.vue'
-import AppSidebar from './components/AppSidebar.vue'
 </script>
 
 <template>
 	<div class="pg">
 		<AppHeader />
-		<AppSidebar />
+		<!-- Левая панель своя у каждой страницы: меню компонентов или тем -->
+		<RouterView name="sidebar" />
 		<main class="pg__main">
 			<RouterView />
 		</main>

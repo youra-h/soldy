@@ -2,15 +2,17 @@
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
 import { createEngineSelection, isEventSource } from '@soldy/core'
 import { TPluginBundle } from '@soldy/plugins'
-import type { TComponentEntry, TPropControl } from '@soldy/playground-shared'
+import {
+	createInstance,
+	type TComponentEntry,
+	type TInstance,
+	type TPropControl,
+} from '@soldy/playground-shared'
 import { PREVIEW_COMPONENTS } from '../previews'
 import { propSnippet, instanceSnippet } from '../snippet'
 import PropControl from './PropControl.vue'
 import CodeView from './CodeView.vue'
 import type { TEventSource } from '../composables/useEvents'
-
-/** Экземпляр ядра со стороны стенда: пишем свойства, зовём `destroy`. */
-type TInstance = Record<string, unknown> & { destroy?: () => void }
 
 const props = defineProps<{
 	entry: TComponentEntry
@@ -34,7 +36,7 @@ const preview = computed(() => PREVIEW_COMPONENTS[props.entry.id])
  * экземпляр склеил бы соседние строки — правка `size` меняла бы и превью
  * `variant`.
  */
-const instance = shallowRef(createInstance())
+const instance = shallowRef(createInstance(props.entry))
 
 const isCollectionRow = props.control.scope === 'collection'
 
@@ -86,17 +88,6 @@ function createFacade(withEngine: unknown): TInstance {
 	const Ctor = collectionDescriptor().ctor as new (props: object, options: object) => TInstance
 
 	return new Ctor({}, { engine: withEngine, owner: instance.value })
-}
-
-/**
- * `ctor` в дескрипторе объявлен как `any` — точнее его там не выразить: это
- * класс любого компонента ядра. Сужаем до «конструктор объекта со свойствами»,
- * чего для записи пропа достаточно.
- */
-function createInstance(): TInstance {
-	const Ctor = props.entry.descriptor().ctor as new () => TInstance
-
-	return new Ctor()
 }
 
 /**

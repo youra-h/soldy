@@ -37,10 +37,11 @@ a {
 
 /* ─── Каркас ─────────────────────────────────────────────── */
 
+/* Ширину колонки задаёт сама панель: у страницы тестов в ней два меню */
 .pg {
 	display: grid;
 	grid-template-rows: auto 1fr;
-	grid-template-columns: 260px 1fr;
+	grid-template-columns: auto 1fr;
 	grid-template-areas:
 		'header header'
 		'sidebar main';
@@ -60,7 +61,21 @@ a {
 .pg__brand {
 	font-weight: 600;
 	letter-spacing: 0.02em;
+}
+
+/* Переход между свойствами и тестами — сразу за названием, контролы темы справа */
+.pg__switch {
 	margin-right: auto;
+	padding: 2px 10px;
+	border: 1px solid var(--s-neutral-200);
+	border-radius: 999px;
+	font-size: 12px;
+	color: var(--s-neutral-600);
+}
+
+.pg__switch:hover {
+	border-color: var(--s-accent-400);
+	color: var(--s-component-text);
 }
 
 .pg__brand span {
@@ -93,17 +108,41 @@ a {
 
 .pg__sidebar {
 	grid-area: sidebar;
+	width: 260px;
 	overflow-y: auto;
 	padding: 12px;
 	border-right: 1px solid var(--s-neutral-200);
 	background: var(--s-neutral-50);
 }
 
-/* Меню занимает панель целиком: у темы `.s-list-box` есть max-width, а
-   проп `auto-width` жал бы список по содержимому */
+/* Меню занимает колонку целиком — ровно её: у темы `.s-list-box` есть и
+   max-width, и min-width (160px), а проп `auto-width` жал бы список по
+   содержимому. Без снятого минимума список узкой колонки тем вылезал на
+   соседнюю (browser/tests-sidebar.spec.ts) */
 .pg__menu {
 	width: 100%;
+	min-width: 0;
 	max-width: none;
+}
+
+/* Страница тестов: темы и компоненты темы — двумя колонками */
+.pg__sidebar--tests {
+	display: flex;
+	gap: 8px;
+	width: auto;
+}
+
+/* Ширины не сжимаются: колонка — flex-элемент панели */
+.pg__sidebar-column {
+	flex: none;
+}
+
+.pg__sidebar-column:first-child {
+	width: 130px;
+}
+
+.pg__sidebar-column:last-child {
+	width: 170px;
 }
 
 .pg__sidebar-title {
@@ -308,6 +347,183 @@ a {
 .pg-col__status {
 	font-size: 12px;
 	color: var(--s-neutral-500);
+}
+
+/* ─── Страница тестов ────────────────────────────────────── */
+
+/* Разделы страницы: автоматические сверху, ручные снизу */
+.pg-tests__section + .pg-tests__section {
+	margin-top: 32px;
+	padding-top: 16px;
+	border-top: 1px solid var(--s-neutral-200);
+}
+
+/* Заголовок раздела, запуск и сводка — одной строкой над блоками */
+.pg-tests__bar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	margin-bottom: 16px;
+}
+
+.pg-tests__title {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--s-neutral-500);
+}
+
+.pg-tests__count {
+	font-size: 12px;
+	color: var(--s-neutral-500);
+}
+
+.pg-badge {
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.pg-badge--passed {
+	color: var(--s-positive-700);
+	background: var(--s-positive-100);
+}
+
+.pg-badge--failed {
+	color: var(--s-negative-700);
+	background: var(--s-negative-100);
+}
+
+.pg-scenario {
+	margin-bottom: 16px;
+	padding: 14px 16px;
+	border: 1px solid var(--s-neutral-200);
+	border-left-width: 3px;
+	border-radius: 8px;
+	background: var(--s-component-surface);
+}
+
+/* Итог виден краем блока — пролистывая тему, глазами ищут красное */
+.pg-scenario[data-status='passed'] {
+	border-left-color: var(--s-positive-500);
+}
+
+.pg-scenario[data-status='failed'] {
+	border-left-color: var(--s-negative-500);
+}
+
+.pg-scenario[data-status='waiting'] {
+	border-left-color: var(--s-caution-500);
+}
+
+.pg-scenario__head {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.pg-scenario__title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.pg-scenario__actions {
+	display: flex;
+	gap: 4px;
+	margin-left: auto;
+}
+
+.pg-chip {
+	padding: 0 6px;
+	border: 1px solid var(--s-neutral-300);
+	border-radius: 4px;
+	font-size: 11px;
+	color: var(--s-neutral-500);
+}
+
+.pg-status {
+	font-size: 12px;
+	color: var(--s-neutral-500);
+}
+
+.pg-status--passed {
+	color: var(--s-positive-700);
+}
+
+.pg-status--failed {
+	color: var(--s-negative-700);
+}
+
+.pg-status--waiting {
+	color: var(--s-caution-700);
+}
+
+.pg-scenario__note {
+	margin: 6px 0 8px;
+	font-size: 12px;
+	color: var(--s-neutral-500);
+}
+
+/* Номера шагов — явно: preflight темы снимает маркеры списков */
+.pg-scenario__steps {
+	margin: 0 0 8px;
+	padding-left: 20px;
+	list-style: decimal;
+	font-size: 13px;
+}
+
+.pg-checks {
+	margin: 0 0 8px;
+	padding: 0;
+	list-style: none;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 12px;
+}
+
+.pg-checks__item {
+	color: var(--s-positive-700);
+}
+
+.pg-checks__item--failed {
+	color: var(--s-negative-700);
+}
+
+.pg-scenario__error {
+	margin: 0 0 8px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 12px;
+	color: var(--s-negative-700);
+}
+
+/*
+ * Сцена тянется мышью за правый нижний угол. `resize` работает только при
+ * `overflow`, отличном от `visible`; ширину сцене задаёт и сценарий.
+ */
+.pg-scenario__scene {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	max-width: 100%;
+	min-width: 80px;
+	min-height: 64px;
+	padding: 12px;
+	overflow: auto;
+	resize: horizontal;
+	border: 1px dashed var(--s-neutral-300);
+	border-radius: 6px;
+	background: var(--s-neutral-50);
+}
+
+.pg-scenario__placeholder {
+	font-size: 12px;
+	color: var(--s-neutral-400);
 }
 
 /* ─── Код ────────────────────────────────────────────────── */
