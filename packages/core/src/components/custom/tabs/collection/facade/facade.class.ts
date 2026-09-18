@@ -1,4 +1,4 @@
-import { TBatchCollectionFacade } from '../../../../base/collection'
+import { TActivationCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
 import { TabsFactory, TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
@@ -14,12 +14,11 @@ import type { ITabs } from '../../types'
 /**
  * Фасад коллекции табов.
  *
- * Наследует только `TBatchCollectionFacade`: у табов не выбор, а активация,
- * и расширения `selection` в наборе нет. Базы под активацию пока нет —
- * реализация одна, и заводить её под единственного потребителя значило бы
- * подстраиваться под ещё неизвестное требование.
+ * Состав и активный таб приходят из `TActivationCollectionFacade`: у табов не
+ * выбор, а активация, и расширения `selection` в наборе нет. Своё — только
+ * закрытие вкладок.
  */
-export class TTabsCollectionFacade extends TBatchCollectionFacade<
+export class TTabsCollectionFacade extends TActivationCollectionFacade<
 	ITabsItem,
 	TTabsCollectionExtensions,
 	TTabsCollectionFacadeEvents
@@ -44,23 +43,13 @@ export class TTabsCollectionFacade extends TBatchCollectionFacade<
 			},
 		)
 
-		this.events.relayAll(this.extensions.activation.events)
-
 		this.events.relayAll(this.extensions.tabs.events)
 
 		this.applyProps(props)
 	}
 
-	get activeItem(): ITabsItem | undefined {
-		return this.extensions.activation.activeItem
-	}
-
 	get closable(): boolean {
 		return this.extensions.tabs.closable
-	}
-
-	activate(item: ITabsItem): void {
-		this.extensions.activation.activate(item)
 	}
 
 	closeTab(item: ITabsItem): void {

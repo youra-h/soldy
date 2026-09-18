@@ -18,10 +18,9 @@ import type { ITabs } from '../types'
 import type { ITabsItem } from '../item/types'
 import type { ITabsItemProps } from '../item/types'
 import type {
-	TActivationEvents,
 	TActivationItemEventsExtension,
-	TBatchCollectionFacadeEvents,
-	TOrderItemFacadeEvents,
+	TActivationCollectionFacadeEvents,
+	TActivationItemFacadeEvents,
 } from '../../../base/collection'
 import type { TTabsExtensionEvents, TTabsItemEventsExtension } from './extensions'
 import type { TComponentEvents } from '../../../base/component'
@@ -79,15 +78,12 @@ export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabs
  */
 export interface ITabsCollectionItemProps extends IActivationCollectionItemProps {}
 
-/** События фасада коллекции табов: набор `batch`-базы плюс активация и закрытие. */
-export type TTabsCollectionFacadeEvents = TBatchCollectionFacadeEvents<ITabsItem> &
-	TActivationEvents<ITabsItem> &
+/** События фасада коллекции табов: набор базы активации плюс закрытие. */
+export type TTabsCollectionFacadeEvents = TActivationCollectionFacadeEvents<ITabsItem> &
 	TTabsExtensionEvents
 
-/** События фасада элемента таба: порядок из базы плюс активность и закрытие. */
-export type TTabsItemCollectionFacadeEvents = TOrderItemFacadeEvents &
-	TActivationItemEventsExtension &
-	TTabsItemEventsExtension
+/** События фасада элемента таба: порядок и активность из базы плюс закрытие. */
+export type TTabsItemCollectionFacadeEvents = TActivationItemFacadeEvents & TTabsItemEventsExtension
 
 /**
  * События фасада панели таба.
