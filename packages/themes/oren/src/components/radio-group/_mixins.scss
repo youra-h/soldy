@@ -1,0 +1,81 @@
+@use 'sass:map';
+
+// Шкала размеров — ступени утилит Tailwind.
+//
+// Сторона контрола — шкала коробки CheckBox (`check-box/_check-box.scss`):
+// радио и чекбокс одного размера стоят в форме рядом, и кольцо обязано совпасть
+// с коробкой. Кегль подписи — шкала Button и Input. Зазор до подписи на
+// полступени шире зазора Button: там он отделяет иконку внутри кнопки, здесь —
+// самостоятельный контрол от текста.
+$sizes: (
+	'sm': (
+		'control': 4,
+		'text': 'text-sm',
+		'gap': 1.5,
+	),
+	'normal': (
+		'control': 5,
+		'text': null,
+		'gap': 2,
+	),
+	'lg': (
+		'control': 6,
+		'text': 'text-lg',
+		'gap': 2.5,
+	),
+	'xl': (
+		'control': 7,
+		'text': 'text-xl',
+		'gap': 3,
+	),
+	'2xl': (
+		'control': 8,
+		'text': 'text-2xl',
+		'gap': 3.5,
+	),
+);
+
+// Размер по шкале `$sizes`.
+//
+// Сторона контрола уходит в переменную, а не в `size-*`: от неё считаются
+// точка, толщина кольца у вида `ring` и выравнивание по первой строке подписи.
+// Одно число на размер вместо четырёх правил на каждый.
+@mixin radio-size($size) {
+	$scale: map.get($sizes, $size);
+
+	@if map.get($scale, 'text') {
+		@apply #{map.get($scale, 'text')};
+	}
+
+	@apply #{'gap-' + map.get($scale, 'gap')};
+
+	--radio-control-size: calc(var(--spacing) * #{map.get($scale, 'control')});
+}
+
+// Цвет варианта.
+//
+// Кольцо — ступень рамки, как у коробки CheckBox. Отметка выбранного — `color`
+// контрола: точку и толстое кольцо вид рисует через `currentColor`. Поэтому
+// вид решает только геометрию отметки, вариант — только её цвет, и матрицы
+// «вид × вариант» нет.
+@mixin radio-variant($this, $color: 'neutral', $ring: 300, $mark: 500, $bg-disabled: 50) {
+	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
+	$ring-hover: $ring + 100;
+
+	> #{$this}__control {
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--s-#{$color}-#{$ring});
+		color: var(--s-#{$color}-#{$mark});
+	}
+
+	// Наведение — только там, где клик что-то сделает: выбранное радио
+	// повторным кликом не снимается. Наводить можно и на подпись — клик по ней
+	// тоже выбирает.
+	&:hover:not([data-selected='true'], [data-disabled='true']) > #{$this}__control {
+		border-color: var(--s-#{$color}-#{$ring-hover});
+	}
+
+	&[data-disabled='true'] > #{$this}__control {
+		@apply #{'bg-s-' + $color + '-' + $bg-disabled};
+	}
+}

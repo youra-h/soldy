@@ -7,6 +7,7 @@ import type {
 	TCheckBoxView,
 	TComponentVariant,
 	TListBoxView,
+	TRadioGroupView,
 	TSkeletonAnimation,
 	TSkeletonShape,
 	TTabsView,
@@ -32,6 +33,7 @@ describe('реестры значений оформления', () => {
 			buttonView: true satisfies TExact<TButtonView, 'solid' | 'ghost'>,
 			tabsView: true satisfies TExact<TTabsView, 'pills' | 'cards'>,
 			checkBoxView: true satisfies TExact<TCheckBoxView, 'bare' | 'boxed'>,
+			radioGroupView: true satisfies TExact<TRadioGroupView, 'pip' | 'halo'>,
 			skeletonShape: true satisfies TExact<TSkeletonShape, 'square' | 'pill'>,
 			skeletonAnimation: true satisfies TExact<TSkeletonAnimation, 'shimmer' | 'blink'>,
 		}

@@ -1,0 +1,6 @@
+export * from './item/types'
+export { default as TRadioGroupItem } from './item/item.class'
+export { TRadioGroupItemCollectionFacade } from './item/facade'
+export * from './types'
+export { TRadioGroup } from './radio-group.class'
+export * from './collection'

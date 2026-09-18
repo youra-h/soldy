@@ -7,8 +7,10 @@ import type {
 	TPlainEvents,
 	TBatchEvents,
 	TSelectionEvents,
+	TActivationEvents,
 	TOrderItemEventsExtension,
 	TSelectionItemEventsExtension,
+	TActivationItemEventsExtension,
 } from '../engine'
 
 /**
@@ -41,6 +43,10 @@ export type TBatchCollectionFacadeEvents<TItem extends object> = TCollectionComp
 export type TSelectionCollectionFacadeEvents<TItem extends object> =
 	TBatchCollectionFacadeEvents<TItem> & TSelectionEvents<TItem>
 
+/** События фасада коллекции с расширением `activation`: набор `batch` плюс карта `activation`. */
+export type TActivationCollectionFacadeEvents<TItem extends object> =
+	TBatchCollectionFacadeEvents<TItem> & TActivationEvents<TItem>
+
 /**
  * События фасада элемента с расширением `order` — карта его адаптера.
  *
@@ -52,6 +58,9 @@ export type TOrderItemFacadeEvents = TComponentEvents & TOrderItemEventsExtensio
 
 /** События фасада элемента, который можно выбрать: порядок плюс выбор. */
 export type TSelectionItemFacadeEvents = TOrderItemFacadeEvents & TSelectionItemEventsExtension
+
+/** События фасада элемента, который можно сделать активным: порядок плюс активность. */
+export type TActivationItemFacadeEvents = TOrderItemFacadeEvents & TActivationItemEventsExtension
 
 /**
  * Опции конструктора фасада владельца коллекции.

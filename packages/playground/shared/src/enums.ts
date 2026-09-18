@@ -5,6 +5,7 @@ import type {
 	TComponentVariant,
 	TButtonView,
 	TCheckBoxView,
+	TRadioGroupView,
 	TAccordionArrowPlacement,
 	TListContentFit,
 	TListIndicator,
@@ -86,6 +87,9 @@ export const COMPONENT_VARIANTS = enumOf<TComponentVariant>()([
 export const BUTTON_VIEWS = enumOf<TButtonView>()(['filled', 'plain', 'outlined', 'none'])
 
 export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['plain'])
+
+/** Чем отмечено выбранное радио: точкой внутри кольца или утолщённым кольцом. */
+export const RADIO_GROUP_VIEWS = enumOf<TRadioGroupView>()(['dot', 'ring'])
 
 export const ACCORDION_ARROW_PLACEMENTS = enumOf<TAccordionArrowPlacement>()(['start', 'end'])
 

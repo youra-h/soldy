@@ -33,6 +33,11 @@ declare module '@soldy/core' {
 		boxed: true
 	}
 
+	interface IRadioGroupViews {
+		pip: true
+		halo: true
+	}
+
 	interface ISkeletonShapes {
 		square: true
 		pill: true

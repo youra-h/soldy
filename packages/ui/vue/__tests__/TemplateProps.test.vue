@@ -25,6 +25,7 @@ import {
 	Icon,
 	Input,
 	ListBox,
+	RadioGroup,
 	Select,
 	Skeleton,
 	Spinner,
@@ -94,6 +95,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<ListBox.Item :selected="'yes'" />
 	<ListBox.Item selected />
+
+	<!-- @vue-expect-error — вида `stars` у радио нет -->
+	<RadioGroup view="stars" />
+	<RadioGroup view="halo" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<RadioGroup.Item :active="'yes'" />
+	<RadioGroup.Item active />
 
 	<!-- @vue-expect-error — стороны `left` у панели нет -->
 	<Select placement="left" />

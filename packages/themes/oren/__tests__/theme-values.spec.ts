@@ -34,6 +34,7 @@ const REGISTRIES: Record<string, { modifier: string; blocks: readonly string[] |
 	IButtonViews: { modifier: 'view', blocks: ['s-button', 's-list-box', 's-accordion', 's-tags'] },
 	ITabsViews: { modifier: 'view', blocks: ['s-tabs'] },
 	ICheckBoxViews: { modifier: 'view', blocks: ['s-check-box'] },
+	IRadioGroupViews: { modifier: 'view', blocks: ['s-radio-group-item'] },
 	ISkeletonShapes: { modifier: 'shape', blocks: ['s-skeleton'] },
 	ISkeletonAnimations: { modifier: 'animation', blocks: ['s-skeleton'] },
 }
