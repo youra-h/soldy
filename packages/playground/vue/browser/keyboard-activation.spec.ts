@@ -13,6 +13,12 @@
  * jsdom их не выполняет, и баг проходил там зелёным. Что корень не отменяет
  * чужую клавишу и не выдаёт её за свой `press`, проверяет
  * `ui/vue/__tests__/action.spec.ts`.
+ *
+ * Обратная сторона — клавиша на самом корне-`div`: клика из неё браузер не
+ * делает, активацию даёт только `press`. Так устроена строка тега — `div` с
+ * `tabindex="0"`, которая сама держит фокус. Пока выбор тега висел на
+ * `click`, Enter и пробел на строке не делали ничего; теперь он идёт по
+ * `press` строки (`ui/vue/__tests__/tags-select.spec.ts`).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -231,5 +237,34 @@ describe.each(['div', 'button'] as const)('Button с корнем <%s>: press н
 		await nextFrame()
 
 		expect(press).toHaveBeenCalledTimes(1)
+	})
+})
+
+/**
+ * Строка тега — корень-`div` своего `Button`: клика из клавиши браузер тут не
+ * сделает, тег выбирает `press` строки.
+ */
+describe('строка тега: клавиша переключает выбор', () => {
+	it.each(KEYS)('%s выбирает тег, повтор снимает выбор', async (_name, key) => {
+		await show(() =>
+			h(Tags, {
+				mode: 'multiple',
+				items: [
+					{ value: 'settings', text: 'Настройки' },
+					{ value: 'mail', text: 'Почта' },
+				],
+			}),
+		)
+
+		const row = byText('[role="option"]', 'Почта')
+
+		row.focus()
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => row.getAttribute('aria-selected')).toBe('true')
+
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => row.getAttribute('aria-selected')).toBe('false')
 	})
 })

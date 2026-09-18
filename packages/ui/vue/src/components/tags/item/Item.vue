@@ -33,6 +33,14 @@ import SetupTagsItem from './setup.component'
  * `tag` — тег корня (`TComponentView`), и рисует по нему корень
  * `<component :is>`. Под фиксированный тег строки написан и
  * `TTagsItem._ariaTag` — он решает, писать ли `aria-disabled`.
+ *
+ * Выбор — по `action:press` строки, а не по `click`. Строка — `div` с
+ * `tabindex="0"`, фокус держит она сама, а клика из Enter и пробела на `div`
+ * браузер не делает: на `click` тег выбирался только мышью. `press` её
+ * `TActionPlugin` приходит и на клик, и на клавишу и не приходит на
+ * выключенный тег. `TSelectionExtension.toggle` выключенность не проверяет —
+ * программный выбор выключенного элемента остаётся правом приложения, — и на
+ * `click` выключенный тег выбирался.
  */
 export default { ...SetupTagsItem, components: { Icon, Button } }
 </script>
@@ -54,7 +62,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			@click="context?.adapters.selection.toggle()"
+			@action:press="context?.adapters.selection.toggle()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
 			<template #leading>
