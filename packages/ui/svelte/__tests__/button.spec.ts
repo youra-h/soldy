@@ -3,6 +3,7 @@ import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import { TButton } from '@soldy/core'
 import { TActionPlugin } from '@soldy/plugins'
 import { Button } from '@soldy/ui-svelte'
+import { reactiveProps } from './reactive-props.svelte'
 
 let target: HTMLElement
 const mounted: ReturnType<typeof mount>[] = []
@@ -81,6 +82,26 @@ describe('Button · декларативные props', () => {
 
 		const hidden = render({ visible: false }).firstElementChild as HTMLElement
 		expect(hidden.style.display).toBe('none')
+	})
+})
+
+/**
+ * Проп сняли — он больше не задан, и связка возвращает умолчание декларации.
+ * Раньше `undefined` не доезжал до ядра, и кнопка оставалась с прежним
+ * значением.
+ */
+describe('Button · снятый проп', () => {
+	it('снятый text возвращает умолчание — пустую строку', () => {
+		const props = reactiveProps<ComponentProps<typeof Button>>({ text: 'a' })
+		const root = render(props)
+		const content = () => root.querySelector('.s-button__text')?.textContent?.trim()
+
+		expect(content()).toBe('a')
+
+		props.text = undefined
+		flushSync()
+
+		expect(content()).toBe('')
 	})
 })
 

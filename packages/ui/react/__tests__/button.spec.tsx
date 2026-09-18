@@ -16,7 +16,11 @@ import { Button, type ButtonProps } from '@soldy/ui-react'
 
 const roots: Root[] = []
 
-function mount(props: ButtonProps = {}): HTMLElement {
+/** Монтирование и перерисовка тем же корнем — так родитель меняет пропсы. */
+function mountRoot(props: ButtonProps = {}): {
+	target: HTMLElement
+	render: (next: ButtonProps) => void
+} {
 	const target = document.createElement('div')
 
 	document.body.appendChild(target)
@@ -25,11 +29,19 @@ function mount(props: ButtonProps = {}): HTMLElement {
 
 	roots.push(reactRoot)
 
-	act(() => {
-		reactRoot.render(<Button {...props} />)
-	})
+	const render = (next: ButtonProps) => {
+		act(() => {
+			reactRoot.render(<Button {...next} />)
+		})
+	}
 
-	return target
+	render(props)
+
+	return { target, render }
+}
+
+function mount(props: ButtonProps = {}): HTMLElement {
+	return mountRoot(props).target
 }
 
 afterEach(() => {
@@ -104,5 +116,23 @@ describe('Button · disabled', () => {
 		})
 
 		expect(root(target).getAttribute('data-disabled')).toBe('false')
+	})
+})
+
+/**
+ * Родитель перестал передавать проп — проп больше не задан, и связка
+ * возвращает умолчание декларации. Раньше `undefined` не доезжал до ядра, и
+ * кнопка оставалась с прежним значением.
+ */
+describe('Button · снятый проп', () => {
+	it('снятый text возвращает умолчание — пустую строку', () => {
+		const { target, render } = mountRoot({ text: 'a' })
+		const text = () => root(target).querySelector('.s-button__text')?.textContent
+
+		expect(text()).toBe('a')
+
+		render({})
+
+		expect(text()).toBe('')
 	})
 })

@@ -4,7 +4,8 @@
  * Принимает ГОТОВЫЙ adapter-context и возвращает TBinding:
  *
  * - state: сигнал с текущими значениями props из Core
- * - syncInputs(inputs): Angular → Core (вызывается из ngOnChanges / ngOnInit)
+ * - syncInputs(inputs): Angular → Core, только переданные входы (вызывается из
+ *   ngOnInit и ngOnChanges)
  * - syncEvents(outputs): подписывает Angular EventEmitter'ы на Core-события
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): очистка подписок + adapter.destroy()
@@ -52,10 +53,10 @@ export function useAdapter<TInstance extends object = object>(
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
-		// ngOnChanges отдаёт только изменившиеся входы: остальные прочитаются
-		// как undefined, и связка их пропустит
+		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
+		// `writeChanged`: `writeAll` сбросил бы к умолчанию все остальные
 		syncInputs(inputs: object): void {
-			binding.writeAll(inputs)
+			binding.writeChanged(inputs)
 		},
 
 		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {

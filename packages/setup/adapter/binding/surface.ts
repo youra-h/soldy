@@ -21,14 +21,20 @@ import type {
 
 const surfaces = new WeakMap<IComponentDescriptor, WeakMap<IAdapterProfile, ISurface>>()
 
+/**
+ * Умолчание, если декларация его объявила. Значим ключ, а не значение (см.
+ * `IPropDeclaration.default`): без ключа поля нет и в результате.
+ */
+function declaredDefault(declaration: IPropDeclaration): { default?: unknown } {
+	return Object.hasOwn(declaration, 'default') ? { default: declaration.default } : {}
+}
+
 /** Проп для статического слоя: тип и умолчание, если декларация его объявила. */
 function exportConfig(declaration: IPropDeclaration): TSurfacePropConfig {
-	const config: TSurfacePropConfig = {}
-
-	if (declaration.type !== undefined) config.type = declaration.type
-	if (Object.hasOwn(declaration, 'default')) config.default = declaration.default
-
-	return config
+	return {
+		...(declaration.type !== undefined ? { type: declaration.type } : {}),
+		...declaredDefault(declaration),
+	}
 }
 
 function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile): ISurface {
@@ -44,6 +50,7 @@ function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile
 			raw: trigger.name,
 			exportName: naming.event(trigger),
 		})),
+		...declaredDefault(declaration),
 	}))
 
 	const events: ISurfaceEvent[] = descriptor.getEvents().map((name) => ({
