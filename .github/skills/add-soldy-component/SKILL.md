@@ -113,7 +113,7 @@ export default {
 - `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"` and the three core attribute sets `v-bind="{ ...attrs, ...aria, ...dataset }"`.
 - `index.ts`: export `Base<Name>`, `props<Name>`, `emits<Name>`, and the `.vue` default.
 
-`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `DescriptorComponentProps<TDescriptorFn, TInstance>` from `@soldy/setup` — own props, plugin props (`aria_label`, …) and the adapter's service props (`ctrl`, `embedded`).
+`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `DescriptorComponentProps<TDescriptorFn, TInstance>` from `@soldy/setup` — own props, plugin props (`aria_label`, …) and the adapter's service props (`ctrl`, `embedded`, `pluginProps` — values for plugins installed from outside).
 
 ### 4. React adapter — `packages/ui/react/src/components/<name>/`
 
