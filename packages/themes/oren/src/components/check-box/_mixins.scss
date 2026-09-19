@@ -1,3 +1,9 @@
+// Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
+// блока без варианта цвет тот же — отдельное правило ему не нужно.
+$variants: 'accent', 'positive', 'negative', 'caution';
+
+// Цвет варианта у вида по умолчанию (`outlined`): рамка, отметка и фон
+// выключенной коробки. Отметку этим цветом рисует и `plain`.
 @mixin checkbox-variant($this, $color: 'neutral', $border: 300, $mark: 500, $bg-disabled: 50) {
 	#{$this}__container {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
@@ -20,6 +26,76 @@
 
 		&:disabled + #{$this}__container {
 			@apply #{'bg-s-' + $color + '-' + $bg-disabled};
+		}
+	}
+}
+
+// Вид `filled` для одного цвета: коробка залита цветом варианта.
+//
+// Не отмечена — светлая ступень `$tint`, как выключенная дорожка Switch.
+// Отмечена — насыщенная `$fill`, как включённая, и отметка на ней белая, как
+// подпись вида `filled` у Button: середина хроматических шкал насыщенная в
+// обеих схемах, а `500` нейтрали — точка симметрии. Между ступенями три шага,
+// поэтому светлая коробка без отметки отмеченной не читается.
+//
+// Кромка `$edge` — ступень рамки, как у всех контролов темы. Без неё коробка
+// пропадала: в тёмной схеме поверхность контрола — та же `neutral-200`, и на
+// ней (панель Select) неотмеченная нейтральная коробка сливалась с фоном. У
+// отмеченной кромка в цвет заливки.
+@mixin checkbox-filled($this, $color, $tint: 200, $edge: 300, $fill: 500) {
+	// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
+	$tint-hover: $tint + 100;
+	$edge-hover: $edge + 100;
+	$fill-hover: $fill + 100;
+
+	// Отмечено — в коробке стоит отметка: галка отмеченного поля или черта
+	// частичного выбора при любом значении.
+	$on: '&:is(#{$this}--indeterminate, :has(> input:checked))';
+
+	// Выключенная коробка залита так же, гасит её прозрачность блока. Без
+	// второго селектора её перекрасил бы выключенный фон вида по умолчанию.
+	#{$this}__container,
+	input:disabled + #{$this}__container {
+		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
+		border-color: var(--s-#{$color}-#{$edge});
+		@apply #{'bg-s-' + $color + '-' + $tint};
+	}
+
+	input:hover:not(:disabled) + #{$this}__container {
+		border-color: var(--s-#{$color}-#{$edge-hover});
+		@apply #{'bg-s-' + $color + '-' + $tint-hover};
+	}
+
+	// Специфичность — как у выключенной коробки выше, и побеждает порядок:
+	// отмеченная выключенная коробка остаётся залитой.
+	#{$on} #{$this}__container {
+		border-color: var(--s-#{$color}-#{$fill});
+		@apply #{'bg-s-' + $color + '-' + $fill} text-white;
+
+		// Белый — цветом текста, а не в `fill`. В режиме принудительных цветов
+		// браузер заменяет фон коробки системным, а `fill` не трогает: белая
+		// отметка пропала бы на белом системном фоне. Цвет текста он заменяет
+		// тоже, и отметка через `currentColor` идёт за ним.
+		svg {
+			fill: currentColor;
+		}
+	}
+
+	#{$on} input:hover:not(:disabled) + #{$this}__container {
+		border-color: var(--s-#{$color}-#{$fill-hover});
+		@apply #{'bg-s-' + $color + '-' + $fill-hover};
+	}
+}
+
+// Вид `filled` целиком: нейтраль и каждый вариант, одним включением на
+// селектор, как `button-view` у Button. Матрица «вид × вариант» живёт здесь
+// одна.
+@mixin checkbox-filled-view($this) {
+	@include checkbox-filled($this, 'neutral');
+
+	@each $variant in $variants {
+		&#{$this}--variant-#{$variant} {
+			@include checkbox-filled($this, $variant);
 		}
 	}
 }
