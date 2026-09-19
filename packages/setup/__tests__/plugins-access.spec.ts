@@ -20,8 +20,9 @@ import {
 import { CallbackProfile, required } from './helpers'
 
 /**
- * createBundle откладывает эмит на микрозадачу — иначе адаптер, который
- * получает bundle из createAdapterContext, не успел бы подписаться.
+ * Сборка набора (`assembleBundle`) откладывает эмит на микрозадачу — иначе
+ * адаптер, который получает bundle из createAdapterContext, не успел бы
+ * подписаться.
  */
 const created = () => Promise.resolve()
 
