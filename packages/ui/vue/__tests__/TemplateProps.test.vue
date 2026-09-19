@@ -24,6 +24,7 @@ import {
 	Frame,
 	Icon,
 	Input,
+	Label,
 	ListBox,
 	RadioGroup,
 	Select,
@@ -87,6 +88,10 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — плейсхолдер строкой -->
 	<Input :placeholder="42" />
 	<Input placeholder="Поиск" />
+
+	<!-- @vue-expect-error — стороны `left` у подписи нет: стороны логические -->
+	<Label position="left" />
+	<Label position="start" />
 
 	<!-- @vue-expect-error — индикатора `middle` нет -->
 	<ListBox indicator="middle" />

@@ -1,5 +1,5 @@
 import { h, type Component } from 'vue'
-import { Button, Icon, useIcon } from '@soldy/ui-vue'
+import { Button, CheckBox, Icon, Label, RadioGroup, Switch, useIcon } from '@soldy/ui-vue'
 import type { TScenario } from '@soldy/playground-shared'
 import { PREVIEW_COMPONENTS, toComponents, type TPreview } from '../previews'
 
@@ -36,6 +36,19 @@ export const FIXTURES: Record<string, TPreview> = {
 			leading: () => h(Icon, { tag: CHECK }),
 			trailing: () => h(Icon, { tag: ARROW_RIGHT }),
 		}),
+
+	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
+	// слоте `default`
+	'label-check-box': (bind) => h(Label, bind, () => h(CheckBox)),
+
+	'label-switch': (bind) => h(Label, bind, () => h(Switch)),
+
+	// Корень радио — `label`, а `label` в `label` HTML запрещает: внутри
+	// подписи радио рисуется с `tag="span"`. Группа вокруг — ради общего `name`
+	'label-radio': (bind) =>
+		h(RadioGroup as Component, null, () =>
+			h(Label, bind, () => h(RadioGroup.Item, { value: 'a', tag: 'span' })),
+		),
 }
 
 const FIXTURE_COMPONENTS = toComponents(FIXTURES)

@@ -36,8 +36,10 @@
 		}
 	}
 
+	// Блочная при любом теге: размер дорожки задаёт `switch-size`, и у
+	// строчного `span` без `display` он схлопнулся бы.
 	&__track {
-		@apply relative;
+		@apply block relative;
 		@apply rounded-full;
 		@apply transition-colors duration-200;
 

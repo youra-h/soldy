@@ -3,7 +3,9 @@
 .s-check-box {
 	$this: &;
 
-	@apply w-5 h-5;
+	// Блочный при любом теге: корень рисуется по `tag`, и у строчного `span`
+	// размер коробки без `display` схлопнулся бы.
+	@apply block w-5 h-5;
 	@apply relative select-none;
 
 	input {

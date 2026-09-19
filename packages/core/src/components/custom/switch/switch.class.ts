@@ -14,6 +14,9 @@ import type { ISwitch, ISwitchProps, TSwitchEvents } from './types'
  * `checked`, который проводит разметка, и APG для switch на
  * `input[type="checkbox"]` требует именно его: `aria-checked` рядом был бы
  * дублем того же состояния вторым путём.
+ *
+ * Корень — `span` (`tag`): переключатель кладут в подпись `Label`, а внутри
+ * `label` HTML разрешает только строчную разметку. Размер дорожке задаёт тема.
  */
 export default class TSwitch
 	extends TInputControl<boolean | undefined, ISwitchProps, TSwitchEvents>
@@ -23,6 +26,7 @@ export default class TSwitch
 
 	static defaultValues: typeof TInputControl.defaultValues & TDefaultValues<ISwitchProps> = {
 		...TInputControl.defaultValues,
+		tag: 'span',
 		value: false,
 	}
 

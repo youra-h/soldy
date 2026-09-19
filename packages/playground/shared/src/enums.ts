@@ -5,6 +5,7 @@ import type {
 	TComponentVariant,
 	TButtonView,
 	TCheckBoxView,
+	TLabelPosition,
 	TRadioGroupView,
 	TAccordionArrowPlacement,
 	TListContentFit,
@@ -88,6 +89,9 @@ export const BUTTON_VIEWS = enumOf<TButtonView>()(['filled', 'plain', 'outlined'
 
 export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['plain'])
 
+/** С какой стороны от контрола стоит текст подписи. */
+export const LABEL_POSITIONS = enumOf<TLabelPosition>()(['start', 'end', 'top', 'bottom'])
+
 /** Чем отмечено выбранное радио: точкой внутри кольца или утолщённым кольцом. */
 export const RADIO_GROUP_VIEWS = enumOf<TRadioGroupView>()(['dot', 'ring'])
 
@@ -136,5 +140,9 @@ export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
 	'top-end',
 ])
 
-/** Теги, которыми осмысленно подменять корень компонента через `tag`. */
-export const HTML_TAGS = ['div', 'span', 'button', 'a', 'section', 'li'] as const
+/**
+ * Теги, которыми осмысленно подменять корень компонента через `tag`. `label` —
+ * умолчание корня подписи Label: без него строка `tag` на её странице не
+ * нашла бы умолчания среди значений.
+ */
+export const HTML_TAGS = ['div', 'span', 'label', 'button', 'a', 'section', 'li'] as const

@@ -7,6 +7,7 @@ import {
 	DragAndDrop,
 	Icon,
 	Input,
+	Label,
 	ListBox,
 	RadioGroup,
 	Select,
@@ -62,9 +63,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	input: (bind) => h(Input, { placeholder: 'Введите текст', ...bind }),
 
-	'check-box': (bind) => h(CheckBox, bind, { default: () => 'Согласен' }),
+	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
+	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
+	'check-box': (bind) => h(Label, { text: 'Согласен' }, () => h(CheckBox, bind)),
 
-	switch: (bind) => h(Switch, bind, { default: () => 'Включено' }),
+	switch: (bind) => h(Label, { text: 'Включено' }, () => h(Switch, bind)),
+
+	// Подпись — пропом `text`, контрол — слотом. Строки страницы правят саму
+	// подпись: сторону, размер текста, вариант
+	label: (bind) => h(Label, { text: 'Согласен', ...bind }, () => h(CheckBox)),
 
 	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
 	'radio-group': (bind) =>

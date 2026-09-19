@@ -8,6 +8,9 @@
  * с состоянием чекбокса: `checked` и `indeterminate` — свойства `<input>`, без
  * `aria-checked`.
  *
+ * CheckBox и Switch подписывает обёртка `Label`, поэтому их корень — `span`,
+ * а декор скрыт `aria-hidden`: всё внутри `label` входит в имя поля.
+ *
  * Что ядро пишет в какой набор, проверяет `core/__tests__/aria.spec.ts`;
  * здесь — что наборы доехали до своих элементов.
  */
@@ -54,13 +57,43 @@ describe('Input', () => {
 	})
 })
 
-/** CheckBox и Switch устроены одинаково: корень-обёртка и `<input type="checkbox">`. */
+/**
+ * CheckBox и Switch устроены одинаково: корень-обёртка, `<input type="checkbox">`
+ * и декоративная часть — коробка с отметкой или дорожка с ручкой.
+ */
 const CHECKABLES = [
-	['CheckBox', (props: Record<string, unknown>) => mount(CheckBox, { props })],
-	['Switch', (props: Record<string, unknown>) => mount(Switch, { props })],
+	[
+		'CheckBox',
+		(props: Record<string, unknown>) => mount(CheckBox, { props }),
+		'.s-check-box__container',
+	],
+	['Switch', (props: Record<string, unknown>) => mount(Switch, { props }), '.s-switch__track'],
 ] as const
 
-describe.each(CHECKABLES)('%s', (_name, render) => {
+describe.each(CHECKABLES)('%s', (_name, render, decor) => {
+	/**
+	 * Контрол кладут в подпись `Label`, а внутри `label` HTML разрешает только
+	 * строчную разметку: `div` там невалиден.
+	 */
+	it('корень — span по умолчанию, и всё внутри — не div', () => {
+		const wrapper = render({})
+
+		expect(wrapper.element.localName).toBe('span')
+		expect(wrapper.findAll('div')).toHaveLength(0)
+	})
+
+	it('корень рисуется по tag', () => {
+		expect(render({ tag: 'div' }).element.localName).toBe('div')
+	})
+
+	/**
+	 * Имя контролу даёт подпись вокруг, и в него вошёл бы весь текст внутри
+	 * `label`, включая слоты иконок и `on`/`off`. Декор из имени убран.
+	 */
+	it('декор скрыт от скринридера — aria-hidden', () => {
+		expect(render({ value: true }).get(decor).attributes('aria-hidden')).toBe('true')
+	})
+
 	it('disabled и required — нативные атрибуты <input>, без ARIA-дублей', () => {
 		const input = render({ disabled: true, required: true }).find('input')
 
