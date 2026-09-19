@@ -1,17 +1,20 @@
-import { definePlugin } from '../../define'
-import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
-
 /**
- * Доступное имя компонента: `aria_label`, `aria_labelledBy`,
- * `aria_describedBy` и вычисленный из них `aria_attributes`.
+ * Определение TAriaPlugin (namespace `aria`) — доступное имя компонента.
+ *
+ * Пропсы — `aria_label`, `aria_labelledBy`, `aria_describedBy`.
  *
  * Подключается адресно, а не всем подряд. Подключён к ControlDescriptor —
  * у интерактивного элемента имя обязано быть всегда, это первое правило
  * доступности, и отдельно вспоминать про него для каждой новой кнопки нельзя.
  * Неинтерактивным (Icon, Spinner, Frame) добавляется поштучно там, где имя
  * осмысленно; Skeleton его не получает — заглушка декоративна.
- *
+ */
+
+import { definePlugin } from '../../define'
+import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
+
+/**
  * @param options.role Роль, которую элемент принимает, получив имя.
  *                     Нужна только там, где без имени он декоративен (Icon).
  */

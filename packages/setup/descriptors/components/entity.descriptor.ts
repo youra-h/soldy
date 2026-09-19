@@ -1,3 +1,10 @@
+/**
+ * Дескриптор Entity — корень цепочки: пропсы и события адаптера у всех компонентов.
+ *
+ * Класса ядра у него нет: `ctrl`, `embedded`, `pluginProps`, `bundle:create` и
+ * `plugin:event` принадлежат связке адаптера с инстансом, а не самому инстансу.
+ */
+
 import { defineComponent, defineDescriptor } from '../../define'
 
 export const EntityDescriptor = defineDescriptor(() =>

@@ -1,1 +1,1 @@
-export * from './collection.descriptor'
+export { CollectionDescriptor } from './collection.descriptor'

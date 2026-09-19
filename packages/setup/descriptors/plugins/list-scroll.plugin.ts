@@ -1,9 +1,10 @@
+/**
+ * Определение TListScrollPlugin (namespace `scroll`) — прокрутка списка к выделенному.
+ */
+
 import { definePlugin } from '../../define'
 import { TListScrollPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Плагин автоматической прокрутки списка к выделенному элементу.
- */
 export const ListScrollPluginDescriptor = () =>
 	definePlugin({
 		ctor: TListScrollPlugin,

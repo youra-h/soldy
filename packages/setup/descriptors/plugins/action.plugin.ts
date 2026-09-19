@@ -1,12 +1,15 @@
+/**
+ * Определение TActionPlugin (namespace `action`) — взаимодействие с пользователем.
+ *
+ * Подключён к ControlDescriptor: DOM-события и фокус нужны интерактивным
+ * компонентам, а Frame/Icon/Skeleton наследуются от ComponentView/Stylable и
+ * лишнего не получают.
+ */
+
 import { definePlugin } from '../../define'
 import { TActionPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TActionPluginEvents } from '@soldy/plugins'
 
-/**
- * Плагин взаимодействия с пользователем. Подключён к ControlDescriptor:
- * DOM-события и фокус нужны интерактивным компонентам, а Frame/Icon/Skeleton
- * наследуются от ComponentView/Stylable и лишнего не получают.
- */
 export const ActionPluginDescriptor = () =>
 	definePlugin<'action', TActionPluginEvents>({
 		ctor: TActionPlugin,

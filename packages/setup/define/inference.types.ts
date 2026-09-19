@@ -2,17 +2,68 @@
  * Вывод типов из дескриптора для адаптеров: пропсы, события, плагины, их выходы и слоты компонента.
  *
  * Фабрика дескриптора — единственный источник типов: адаптер не импортирует
- * интерфейсы пропсов и карты событий из ядра, а выводит их отсюда.
+ * интерфейсы пропсов и карты событий из ядра, а выводит их отсюда. Сам
+ * дескриптор их тоже не повторяет: `defineComponent` берёт пропсы и события у
+ * класса ядра (`ctor`), а слоты — из их объявления.
  */
 
+import type { IEntity, TEvented } from '@soldy/core'
 import type { TPluginInternalEvents } from '@soldy/plugins'
 import type { TUnderscorePropName } from '../naming'
-import type { IComponentDescriptor, IPluginDefinition } from './types'
+import type {
+	IComponentDescriptor,
+	IPluginDefinition,
+	TEmptySlotScope,
+	TPropType,
+	TSlotDefinitions,
+} from './types'
 
-/** Инстанс дескриптора: из своего `ctor`, а без него — унаследованный от `extends`. */
-export type TResolveInstance<TOwn extends object, TParent extends object> = [TOwn] extends [never]
-	? TParent
-	: TOwn
+/* -------------------------------------------------------------------------- */
+/* Вывод в defineComponent: типы дескриптора из его опций                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Пропсы инстанса — параметр `TProps` его сущности ядра (`IEntity<TProps>`):
+ * интерфейс, который класс принимает конструктором и отдаёт `getProps()`.
+ * Класс не из ядра — словарь без типа, как у дескриптора без `ctor` и `extends`.
+ *
+ * У дженерик-класса на месте параметра стоит его констрейнт, а не дефолт, как
+ * и у самого инстанса: `IValueControlProps<unknown>` у `TValueControl`.
+ */
+export type TInstanceProps<TInstance> =
+	TInstance extends IEntity<infer P extends object> ? P : Record<string, unknown>
+
+/** События инстанса — карта его шины (`events: TEvented<TEvents>`); шины нет — событий нет. */
+export type TInstanceEvents<TInstance> = TInstance extends {
+	readonly events: TEvented<infer E>
+}
+	? E
+	: object
+
+/** Scope слота из объявления: `defineType<T>` даёт `T`, слот без scope — `TEmptySlotScope`. */
+type TSlotScopeOf<TSlot> = TSlot extends {
+	readonly scope: infer TScope extends Record<string, TPropType<unknown>>
+}
+	? { [K in keyof TScope]: TScope[K] extends TPropType<infer T> ? T : never }
+	: TEmptySlotScope
+
+/** Слоты из объявления `contribution.slots`: имя слота → его scope. */
+export type TSlotsOf<TSlots extends TSlotDefinitions> = {
+	[K in keyof TSlots]: TSlotScopeOf<TSlots[K]>
+}
+
+/**
+ * Слоты наследника: родительские, перекрытые одноимёнными своими, — как
+ * `mergeSlots` в рантайме (`inherit.ts`). Так Button уточняет `default`,
+ * объявленный у ComponentView: добавляет scope `text`.
+ */
+export type TMergeSlots<TParent extends object, TOwn extends object> = {
+	[K in keyof TParent | keyof TOwn]: K extends keyof TOwn
+		? TOwn[K]
+		: K extends keyof TParent
+			? TParent[K]
+			: never
+}
 
 /* -------------------------------------------------------------------------- */
 /* Extractors: вывод типов из фабрики дескриптора (единственный source of truth) */
@@ -33,7 +84,10 @@ export type DescriptorEvents<T> =
 export type DescriptorPlugins<T> =
 	TDescriptorInstance<T> extends IComponentDescriptor<any, any, infer P, any> ? P : readonly []
 
-/** Слоты дескриптора: DescriptorSlots<typeof ButtonDescriptor> → TButtonSlots */
+/**
+ * Слоты дескриптора, имя → scope:
+ * DescriptorSlots<typeof ButtonDescriptor> → { leading: TEmptySlotScope; default: { text: string }; trailing: TEmptySlotScope }
+ */
 export type DescriptorSlots<T> =
 	TDescriptorInstance<T> extends IComponentDescriptor<any, any, any, infer S> ? S : object
 

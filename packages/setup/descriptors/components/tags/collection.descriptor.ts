@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части Tags — фасады владельца и тега.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`TagsDescriptor`, `TagsItemDescriptor`): адаптер собирает компонент из обоих
+ * рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TTagsCollectionFacade, TTagsItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'

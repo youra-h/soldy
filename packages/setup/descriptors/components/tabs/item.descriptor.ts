@@ -7,11 +7,10 @@
 
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsItem } from '@soldy/core'
-import type { ITabsItemProps, TTabsItemEvents } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const TabsItemDescriptor = defineDescriptor(() =>
-	defineComponent<ITabsItemProps, TTabsItemEvents>()({
+	defineComponent({
 		ctor: TTabsItem,
 
 		extends: ValueControlDescriptor(),

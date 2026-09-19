@@ -10,25 +10,10 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TTagsItem } from '@soldy/core'
-import type { ITagsItemProps, TTagsItemEvents } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты элемента Tags.
- *
- * `close-icon` — подмена иконки закрытия в одном месте; по умолчанию берётся
- * из пакета иконок по роли `close` (см. `ICON_ROLES`).
- */
-export type TTagsItemSlots = {
-	leading: TEmptySlotScope
-	default: { text: string; selected: boolean }
-	trailing: TEmptySlotScope
-	'close-icon': TEmptySlotScope
-}
 
 export const TagsItemDescriptor = defineDescriptor(() =>
-	defineComponent<ITagsItemProps, TTagsItemEvents>()({
+	defineComponent({
 		ctor: TTagsItem,
 
 		extends: ValueControlDescriptor(),
@@ -44,6 +29,8 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 					description: 'Содержимое тега. Задано — переопределяет проп text',
 				},
 				trailing: { description: 'После текста тега' },
+				// Подмена иконки закрытия в одном месте; по умолчанию она берётся из
+				// пакета иконок по роли `close` (см. `ICON_ROLES`)
 				'close-icon': { description: 'Иконка кнопки закрытия' },
 			},
 			props: {

@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TCheckBox } from '@soldy/core'
-import type { ICheckBoxProps, TCheckBoxEvents } from '@soldy/core'
 import { InputBoolPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const CheckBoxDescriptor = defineDescriptor(() =>
-	defineComponent<ICheckBoxProps, TCheckBoxEvents>()({
+	defineComponent({
 		ctor: TCheckBox,
 
 		extends: InputControlDescriptor(),

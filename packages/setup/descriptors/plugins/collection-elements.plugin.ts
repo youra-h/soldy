@@ -1,10 +1,12 @@
+/**
+ * Определение TCollectionElements (namespace `elements`) — DOM-узлы элементов коллекции.
+ *
+ * Зависит от CollectionBundlesPlugin (регистрируется в том же bundle).
+ */
+
 import { definePlugin } from '../../define'
 import { TCollectionElements, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Плагин доступа к DOM-элементам элементов коллекции.
- * Зависит от CollectionBundlesPlugin (регистрируется в том же bundle).
- */
 export const CollectionElementsPluginDescriptor = () =>
 	definePlugin({
 		ctor: TCollectionElements,

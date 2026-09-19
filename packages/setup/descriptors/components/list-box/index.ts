@@ -1,3 +1,6 @@
-export { ListBoxDescriptor, type TListBoxSlots } from './list-box.descriptor'
-export { ListBoxItemDescriptor, type TListBoxItemSlots } from './item.descriptor'
-export * from './collection.descriptor'
+export { ListBoxDescriptor } from './list-box.descriptor'
+export { ListBoxItemDescriptor } from './item.descriptor'
+export {
+	ListBoxCollectionDescriptor,
+	ListBoxCollectionItemDescriptor,
+} from './collection.descriptor'

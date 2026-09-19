@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части Accordion — фасады владельца и элемента.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`AccordionDescriptor`, `AccordionItemDescriptor`): адаптер собирает компонент
+ * из обоих рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordionCollectionFacade, TAccordionItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'

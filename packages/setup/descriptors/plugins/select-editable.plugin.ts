@@ -1,13 +1,16 @@
+/**
+ * Определение TEditablePlugin (namespace `editable`) — ввод текста в поле Select.
+ *
+ * Реакция на ввод при `editable: true` — три состояния задаёт `editableMode`
+ * (см. `TSelect`). Подключается после `SelectKeyboardPluginDescriptor()`:
+ * плагину нужна уже установленная клавиатура, чтобы переиспользовать её
+ * `highlightByText`.
+ */
+
 import { definePlugin } from '../../define'
 import { TEditablePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TEditablePluginEvents } from '@soldy/plugins'
 
-/**
- * Реакция на ввод текста в поле Select при `editable: true` — три состояния
- * задаёт `editableMode` (см. `TSelect`). Подключается после
- * `SelectKeyboardPluginDescriptor()`: плагину нужна уже установленная
- * клавиатура, чтобы переиспользовать её `highlightByText`.
- */
 export const SelectEditablePluginDescriptor = () =>
 	definePlugin<'editable', TEditablePluginEvents, object, Pick<TEditablePlugin, 'query'>>({
 		ctor: TEditablePlugin,

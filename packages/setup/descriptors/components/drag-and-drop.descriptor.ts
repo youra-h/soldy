@@ -7,11 +7,10 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TDragAndDrop } from '@soldy/core'
-import type { IDragAndDropProps, TDragAndDropEvents } from '@soldy/core'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const DragAndDropDescriptor = defineDescriptor(() =>
-	defineComponent<IDragAndDropProps, TDragAndDropEvents>()({
+	defineComponent({
 		ctor: TDragAndDrop,
 
 		extends: ComponentDescriptor(),

@@ -1,7 +1,3 @@
-import type { IPropDefinition } from '@soldy/accessor'
-import { defineType } from '../../define'
-import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
-
 /**
  * Списочные props — общие для ListBox и Select.
  *
@@ -13,6 +9,11 @@ import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/co
  * декларации в двух файлах тоже незачем. Что копии не разойдутся с ядром,
  * проверяет `core/__tests__/list-contract.spec.ts`.
  */
+
+import type { IPropDefinition } from '@soldy/accessor'
+import { defineType } from '../../define'
+import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
+
 export const LIST_PROPS: Record<string, IPropDefinition> = {
 	maxRows: {
 		type: Number,

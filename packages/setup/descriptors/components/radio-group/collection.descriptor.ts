@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части RadioGroup — фасады владельца и радио.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`RadioGroupDescriptor`, `RadioGroupItemDescriptor`): адаптер собирает
+ * компонент из обоих рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TRadioGroupCollectionFacade, TRadioGroupItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'

@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части Tabs — фасады владельца и таба.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`TabsDescriptor`, `TabsItemDescriptor`): адаптер собирает компонент из обоих
+ * рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsCollectionFacade, TTabsItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'

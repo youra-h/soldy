@@ -9,25 +9,17 @@
 
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TRadioGroupItem } from '@soldy/core'
-import type { IRadioGroupItemProps, TRadioGroupItemEvents } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты радио. Один — подпись: она лежит внутри корня-`label`, поэтому клик
- * по ней выбирает радио, а текст становится его доступным именем.
- */
-export type TRadioGroupItemSlots = {
-	default: TEmptySlotScope
-}
 
 export const RadioGroupItemDescriptor = defineDescriptor(() =>
-	defineComponent<IRadioGroupItemProps, TRadioGroupItemEvents, TRadioGroupItemSlots>()({
+	defineComponent({
 		ctor: TRadioGroupItem,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: {
+			// Слот один — подпись: она лежит внутри корня-`label`, поэтому клик по
+			// ней выбирает радио, а текст становится его доступным именем
 			slots: {
 				default: { description: 'Подпись радио' },
 			},

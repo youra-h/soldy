@@ -1,9 +1,10 @@
+/**
+ * Определение TListKeyboardPlugin (namespace `keyboard`) — клавиатурная навигация по списку.
+ */
+
 import { definePlugin } from '../../define'
 import { TListKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Плагин клавиатурной навигации по списку.
- */
 export const ListKeyboardPluginDescriptor = () =>
 	definePlugin({
 		ctor: TListKeyboardPlugin,

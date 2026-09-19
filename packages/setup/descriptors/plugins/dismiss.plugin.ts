@@ -1,3 +1,17 @@
+/**
+ * Определение TDismissPlugin (namespace `dismiss`) — «нажали мимо».
+ *
+ * Общий слой для всего, что открывается поверх страницы: Select, Menu, Popover,
+ * Tooltip. Подключается адресно, а не к `ControlDescriptor`: у обычной кнопки или
+ * поля закрывать нечего, а глобальный слушатель на документе стоил бы на каждом
+ * контроле страницы.
+ *
+ * Оба пропа типизирует дескриптор: вход `dismiss_enabled` — третий аргумент
+ * `definePlugin`, выход `dismiss_ownerAttribute` — четвёртый, геттер класса
+ * плагина. Выход шаблон Select раскладывает спредом на телепортированную
+ * панель, а спреду нужен объектный тип.
+ */
+
 import { definePlugin } from '../../define'
 import { TDismissPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type {
@@ -6,19 +20,6 @@ import type {
 	IDismissPluginProps,
 } from '@soldy/plugins'
 
-/**
- * «Нажали мимо» — общий слой для всего, что открывается поверх страницы:
- * Select, Menu, Popover, Tooltip.
- *
- * Подключается адресно, а не к `ControlDescriptor`: у обычной кнопки или поля
- * закрывать нечего, а глобальный слушатель на документе стоил бы на каждом
- * контроле страницы.
- *
- * Оба пропа типизирует дескриптор: вход `dismiss_enabled` — третий аргумент
- * `definePlugin`, выход `dismiss_ownerAttribute` — четвёртый, геттер класса
- * плагина. Выход шаблон Select раскладывает спредом на телепортированную
- * панель, а спреду нужен объектный тип.
- */
 export const DismissPluginDescriptor = (options?: IDismissPluginOptions) =>
 	definePlugin<
 		'dismiss',

@@ -1,3 +1,9 @@
+/**
+ * Определение TFrameLayoutPlugin (namespace `layout`) — раскладка Frame.
+ *
+ * Выход `layout_styles` — стили из собственных пропсов Frame, их вешает шаблон.
+ */
+
 import { definePlugin } from '../../define'
 import { TFrameLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TFrameLayoutPluginEvents } from '@soldy/plugins'

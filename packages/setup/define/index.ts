@@ -5,12 +5,15 @@ export { defineDescriptor } from './descriptor'
 export { defineType } from './prop-type'
 export type {
 	IBundleContext,
+	IComponentContribution,
 	IComponentDefinitionOptions,
 	IComponentDescriptor,
+	IComponentSlotDefinition,
 	IPluginDefinition,
 	TComponentCtor,
 	TEmptySlotScope,
 	TPropType,
+	TSlotDefinitions,
 } from './types'
 export type {
 	DescriptorAllEvents,
@@ -22,8 +25,11 @@ export type {
 	DescriptorSlots,
 	NamespacedEvents,
 	TDescriptorInstance,
+	TInstanceEvents,
+	TInstanceProps,
+	TMergeSlots,
 	TPluginEventsFrom,
 	TPluginOutputsFrom,
 	TPluginPropsFrom,
-	TResolveInstance,
+	TSlotsOf,
 } from './inference.types'

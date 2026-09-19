@@ -1,15 +1,13 @@
 /**
- * Тип-зеркало объявления слотов — та же роль, что у naming.types.ts для событий.
+ * Слоты дескриптора в типах адаптеров: как пропсы компонента и как функции.
  *
- * Контракт объявлен значением (`slots` в contribution), а тип нужен на уровне
- * типов, поэтому состав слотов дублируется отдельным типом рядом с
- * contribution. Оба обязаны меняться СИНХРОННО; расхождение ловит
- * conformance-тест.
+ * Тип слотов дескриптора выводится из самого объявления (`slots` в
+ * contribution, scope — через `defineType`), второй записи у него нет:
  *
- *   type TButtonSlots = {
- *     leading: {}                  // без scope
+ *   DescriptorSlots<typeof ButtonDescriptor> → {
+ *     leading: TEmptySlotScope     // без scope
  *     default: { text: string }    // scoped
- *     trailing: {}
+ *     trailing: TEmptySlotScope
  *   }
  *
  * `TNode` подставляет адаптер: `ReactNode`, `JSX.Element`, `Snippet`, `VNode`.
@@ -26,7 +24,7 @@ type TSlotValue<TScope extends object, TNode> = keyof TScope extends never
  * Слоты как props компонента (React, Solid, Svelte).
  * `default` превращается в `children` — так его называют все три.
  *
- *   TSlotProps<TButtonSlots, ReactNode>
+ *   TSlotProps<DescriptorSlots<typeof ButtonDescriptor>, ReactNode>
  *     → { leading?: ReactNode; children?: ReactNode | ((s: { text: string }) => ReactNode); trailing?: ReactNode }
  */
 export type TSlotProps<TSlots extends object, TNode> = {
@@ -38,7 +36,7 @@ export type TSlotProps<TSlots extends object, TNode> = {
 /**
  * Слоты как функции (Vue `defineSlots`): имена сохраняются, включая `default`.
  *
- *   TSlotFunctions<TButtonSlots, any>
+ *   TSlotFunctions<DescriptorSlots<typeof ButtonDescriptor>, any>
  *     → { leading?: () => any; default?: (scope: { text: string }) => any; trailing?: () => any }
  */
 export type TSlotFunctions<TSlots extends object, TNode> = {

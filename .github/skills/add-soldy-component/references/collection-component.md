@@ -258,7 +258,7 @@ plugins:
 
 ```ts
 export const TabsDescriptor = defineDescriptor(() =>
-  defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
+  defineComponent({
     ctor: TTabs,
     extends: ControlDescriptor(),
     contribution: {

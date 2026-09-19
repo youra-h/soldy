@@ -1,8 +1,6 @@
-import { definePlugin } from '../../define'
-import { TSelectKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '@soldy/plugins'
-
 /**
+ * Определение TSelectKeyboardPlugin (namespace `keyboard`) — клавиатура Select.
+ *
  * Клавиатурная модель APG Combobox (select-only): открытие, навигация с
  * пропуском недоступных опций, Home/End, Escape, набор по буквам.
  *
@@ -12,6 +10,11 @@ import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '
  * карты строятся типы дескриптора, и `keyboard:escape` в них не было бы
  * правдой: адаптер его не пробрасывает.
  */
+
+import { definePlugin } from '../../define'
+import { TSelectKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '@soldy/plugins'
+
 export const SelectKeyboardPluginDescriptor = (options?: ISelectKeyboardPluginOptions) =>
 	definePlugin<
 		'keyboard',

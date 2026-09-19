@@ -1,3 +1,14 @@
+/**
+ * Определение TAnchorPlugin (namespace `anchor`) — привязка Frame к чужому элементу.
+ *
+ * Пропсы — `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`,
+ * `anchor_flip`, `anchor_offset`. Подключён к `FrameDescriptor`, то есть есть у
+ * каждого Frame. Без якоря плагин ничего не делает и ни на что не подписан,
+ * поэтому диалогу по центру или тосту в углу он не стоит ничего. Зато привязку
+ * можно задать в разметке одним пропом — иначе пришлось бы доставать плагин из
+ * bundle.
+ */
+
 import { definePlugin, defineType } from '../../define'
 import { TAnchorPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type {
@@ -7,15 +18,6 @@ import type {
 	TFramePlacement,
 } from '@soldy/plugins'
 
-/**
- * Привязка Frame к чужому элементу: `anchor_anchor`, `anchor_placement`,
- * `anchor_matchWidth`, `anchor_flip`, `anchor_offset`.
- *
- * Подключён к `FrameDescriptor`, то есть есть у каждого Frame. Без якоря
- * плагин ничего не делает и ни на что не подписан, поэтому диалогу по центру
- * или тосту в углу он не стоит ничего. Зато привязку можно задать в разметке
- * одним пропом — иначе пришлось бы доставать плагин из bundle.
- */
 export const AnchorPluginDescriptor = (options?: IAnchorPluginOptions) =>
 	definePlugin<'anchor', TAnchorPluginEvents, IAnchorPluginProps>({
 		ctor: TAnchorPlugin,

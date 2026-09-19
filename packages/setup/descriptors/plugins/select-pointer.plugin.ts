@@ -1,12 +1,15 @@
+/**
+ * Определение TSelectPointerPlugin (namespace `pointer`) — клик по полю Select.
+ *
+ * Select-only тумблит панель кликом по всему полю, editable — только кликом по
+ * стрелке; выбор поведения переключается по `change:editable`, см.
+ * `TSelectPointerPlugin`.
+ */
+
 import { definePlugin } from '../../define'
 import { TSelectPointerPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 import type { TSelectPointerPluginEvents } from '@soldy/plugins'
 
-/**
- * Клик по полю Select. Select-only тумблит панель кликом по всему полю,
- * editable — только кликом по стрелке; выбор поведения переключается по
- * `change:editable`, см. `TSelectPointerPlugin`.
- */
 export const SelectPointerPluginDescriptor = () =>
 	definePlugin<'pointer', TSelectPointerPluginEvents>({
 		ctor: TSelectPointerPlugin,

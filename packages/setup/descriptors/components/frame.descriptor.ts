@@ -12,7 +12,6 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TFrame } from '@soldy/core'
-import type { IFrameProps, TFrameEvents } from '@soldy/core'
 import {
 	FrameLayoutPluginDescriptor,
 	AnchorPluginDescriptor,
@@ -21,7 +20,7 @@ import {
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const FrameDescriptor = defineDescriptor(() =>
-	defineComponent<IFrameProps, TFrameEvents>()({
+	defineComponent({
 		ctor: TFrame,
 
 		extends: ComponentViewDescriptor(),

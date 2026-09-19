@@ -7,11 +7,10 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TInputControl } from '@soldy/core'
-import type { IInputControlProps, TInputControlEvents } from '@soldy/core'
 import { ValueControlDescriptor } from './value-control.descriptor'
 
 export const InputControlDescriptor = defineDescriptor(() =>
-	defineComponent<IInputControlProps, TInputControlEvents>()({
+	defineComponent({
 		ctor: TInputControl,
 
 		extends: ValueControlDescriptor(),
