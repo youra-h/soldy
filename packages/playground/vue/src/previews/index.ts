@@ -1,4 +1,5 @@
 import { h, type Component } from 'vue'
+import type { DescriptorSlots, PopoverDescriptor } from '@soldy/setup'
 import {
 	Accordion,
 	Button,
@@ -9,6 +10,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Popover,
 	RadioGroup,
 	Select,
 	Skeleton,
@@ -33,6 +35,9 @@ import {
  * — только `ctrl` с экземпляром ядра.
  */
 export type TPreview = (bind: Record<string, unknown>) => unknown
+
+/** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
+type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 const ITEMS = [
 	{ value: 'a', text: 'Первый' },
@@ -89,6 +94,26 @@ export const PREVIEWS: Record<string, TPreview> = {
 	select: (bind) =>
 		h(Select as Component, { placeholder: 'Выберите', editable: true, ...bind }, () =>
 			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
+		),
+
+	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
+	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус
+	popover: (bind) =>
+		h(
+			Popover as Component,
+			{ aria_label: 'Пример поповера', ...bind },
+			{
+				trigger: ({ triggerAria, triggerDataset }: TPopoverTriggerScope) =>
+					h(Button, { text: 'Открыть', ...triggerAria, ...triggerDataset }),
+				default: () => [
+					h(
+						'p',
+						{ style: 'margin:0 0 8px' },
+						'Произвольное содержимое: текст, поля, кнопки',
+					),
+					h(Button, { text: 'Действие' }),
+				],
+			},
 		),
 
 	'list-box': (bind) =>

@@ -22,6 +22,7 @@ import type {
 	TSelectionMode,
 	TSelectEditableMode,
 	TSelectPlacement,
+	TPopoverPlacement,
 } from '@soldy/core'
 import type { TFramePlacement } from '@soldy/plugins'
 
@@ -128,6 +129,17 @@ export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'sea
 
 /** С какой стороны поля Select открывается панель. */
 export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bottom'])
+
+/**
+ * Сторона и выравнивание панели Popover у триггера. Значения те же, что у
+ * `anchor_placement`, но тип свой — ядра: проп принадлежит поповеру.
+ */
+export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
+	'bottom-start',
+	'bottom-end',
+	'top-start',
+	'top-end',
+])
 
 /**
  * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не

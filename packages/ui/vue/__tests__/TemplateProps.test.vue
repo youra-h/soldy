@@ -26,6 +26,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Popover,
 	RadioGroup,
 	Select,
 	Skeleton,
@@ -100,6 +101,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<ListBox.Item :selected="'yes'" />
 	<ListBox.Item selected />
+
+	<!-- @vue-expect-error — стороны `left` у поповера нет: сторона и выравнивание -->
+	<Popover placement="left" />
+	<Popover placement="top-end" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Popover :lazyMount="'yes'" />
+	<Popover lazyMount />
 
 	<!-- @vue-expect-error — вида `stars` у радио нет -->
 	<RadioGroup view="stars" />

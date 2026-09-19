@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { TFrame } from '@soldy/core'
+import { TFrame, FRAME_LAYER_ATTRIBUTE } from '@soldy/core'
 
 describe('TFrame', () => {
 	beforeEach(() => {
@@ -223,6 +223,55 @@ describe('TFrame', () => {
 			target: '#portal',
 		})
 		expect(frame.toJSON()).toEqual(props)
+	})
+
+	/**
+	 * Слой — для плагинов оверлея: панели телепортированы в `body` соседями, и
+	 * вложенность «список Select в поповере» видна только по номеру слоя.
+	 */
+	describe('data-layer', () => {
+		it('после show() равен zIndex', () => {
+			const frame = new TFrame()
+
+			frame.show()
+
+			expect(frame.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(frame.zIndex))
+			expect(frame.dataset.toObject()).toHaveProperty('data-layer', String(frame.zIndex))
+		})
+
+		it('пока не показан — слоя нет', () => {
+			expect(new TFrame().dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
+		})
+
+		it('повторный show() поднимает слой выше показанных после него', () => {
+			const lower = new TFrame()
+			const upper = new TFrame()
+
+			lower.show()
+			upper.show()
+			lower.hide()
+			lower.show()
+
+			expect(Number(lower.dataset.get(FRAME_LAYER_ATTRIBUTE))).toBeGreaterThan(
+				Number(upper.dataset.get(FRAME_LAYER_ATTRIBUTE)),
+			)
+		})
+
+		it('созданный видимым получает слой сразу — show для него не придёт', () => {
+			const frame = new TFrame({ visible: true })
+
+			expect(frame.zIndex).toBeGreaterThan(0)
+			expect(frame.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(frame.zIndex))
+		})
+
+		it('показанный после созданного видимым — слоем выше', () => {
+			const open = new TFrame({ visible: true })
+			const later = new TFrame()
+
+			later.show()
+
+			expect(later.zIndex).toBeGreaterThan(open.zIndex)
+		})
 	})
 
 	it('nextZIndex и resetZIndexCounter работают', () => {

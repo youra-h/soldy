@@ -14,6 +14,7 @@ import {
 	LabelDescriptor,
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
+	PopoverDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
 	SelectDescriptor,
@@ -101,6 +102,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 2,
 		description: 'Поле выбора: input плюс список в оверлее, паттерн Combobox',
+	},
+	{
+		id: 'popover',
+		label: 'Popover',
+		descriptor: PopoverDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Панель у триггера с произвольным содержимым: немодальный диалог',
 	},
 	{
 		id: 'list-box',
