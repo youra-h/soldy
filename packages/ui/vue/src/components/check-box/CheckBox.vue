@@ -6,13 +6,19 @@ export default { ...SetupCheckBox, components: { Icon } }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
 		v-bind="{ ...attrs, ...containerAttrs }"
 	>
+		<!--
+			Корень рисуется по `tag`, по умолчанию `span`: чекбокс кладут в
+			подпись `Label`, а внутри `label` HTML разрешает только строчную
+			разметку. Поэтому и всё внутри — `span`.
+		-->
 		<input
 			type="checkbox"
 			:id="id"
@@ -23,7 +29,12 @@ export default { ...SetupCheckBox, components: { Icon } }
 			:required="required"
 			v-bind="{ ...aria, ...controlAttrs }"
 		/>
-		<div class="s-check-box__container">
+		<!--
+			Коробка с отметкой — декор: состояние скринридеру сообщают
+			нативные `checked` и `indeterminate`. `aria-hidden` не пускает
+			иконки слотов в доступное имя, которое чекбоксу даёт подпись.
+		-->
+		<span class="s-check-box__container" aria-hidden="true">
 			<!-- Слот для checked иконки -->
 			<slot
 				v-if="value && !indeterminate"
@@ -46,6 +57,6 @@ export default { ...SetupCheckBox, components: { Icon } }
 					:size="size"
 				/>
 			</slot>
-		</div>
-	</div>
+		</span>
+	</component>
 </template>

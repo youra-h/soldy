@@ -2,6 +2,12 @@ import { TInputControl } from '../../base/input-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents, TCheckBoxView } from './types'
 
+/**
+ * Чекбокс — нативный `input[type="checkbox"]` внутри корня.
+ *
+ * Корень — `span` (`tag`): чекбокс кладут в подпись `Label`, а внутри `label`
+ * HTML разрешает только строчную разметку. Размер корню задаёт тема.
+ */
 export default class TCheckBox
 	extends TInputControl<boolean | undefined, ICheckBoxProps, TCheckBoxEvents>
 	implements ICheckBox
@@ -11,6 +17,7 @@ export default class TCheckBox
 	static defaultValues: typeof TInputControl.defaultValues &
 		TDefaultValues<ICheckBoxProps, 'indeterminate', 'view'> = {
 		...TInputControl.defaultValues,
+		tag: 'span',
 		value: false,
 		indeterminate: false,
 		view: undefined,

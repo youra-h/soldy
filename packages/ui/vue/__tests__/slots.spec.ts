@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
-import { ButtonDescriptor, ComponentViewDescriptor } from '@soldy/setup'
+import { ButtonDescriptor, ComponentViewDescriptor, LabelDescriptor } from '@soldy/setup'
 import { Button, ComponentView } from '@soldy/ui-vue'
 
 /** Имена слотов, реально объявленные в разметке .vue-файла. */
@@ -40,6 +40,15 @@ describe('соответствие контракту', () => {
 	it('ComponentView: то же для одного слота по умолчанию', () => {
 		expect(templateSlots('src/components/component-view/ComponentView.vue')).toEqual(
 			ComponentViewDescriptor()
+				.getSlots()
+				.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Label: контрол в default и текст в text', () => {
+		expect(templateSlots('src/components/label/Label.vue')).toEqual(
+			LabelDescriptor()
 				.getSlots()
 				.map((slot) => slot.name)
 				.sort(),
