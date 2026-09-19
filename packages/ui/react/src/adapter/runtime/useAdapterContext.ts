@@ -24,15 +24,15 @@
  */
 
 import { useEffect, useEffectEvent, useReducer, useRef } from 'react'
-import type { IAdapterContext } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract } from '@soldy/setup'
 
 /** Счётчик версий: его смена перерисовывает компонент с новым контекстом. */
 const nextVersion = (version: number) => version + 1
 
-export function useAdapterContext<TInstance extends object, TOutputs extends object = object>(
-	factory: () => IAdapterContext<TInstance, TOutputs>,
-): IAdapterContext<TInstance, TOutputs> {
-	const ref = useRef<IAdapterContext<TInstance, TOutputs> | null>(null)
+export function useAdapterContext<C extends IComponentContract>(
+	factory: () => IAdapterContext<C>,
+): IAdapterContext<C> {
+	const ref = useRef<IAdapterContext<C> | null>(null)
 	// Контекст в `ref` уничтожен очисткой эффекта; признак — хука, не контекста
 	const destroyed = useRef(false)
 	const [, rerender] = useReducer(nextVersion, 0)

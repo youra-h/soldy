@@ -9,9 +9,9 @@
 import type { IPropDeclaration, ISlotDeclaration } from '@soldy/accessor'
 import type {
 	IComponentDescriptor,
+	IComponentOptions,
 	IPluginDefinition,
 	TComponentCtor,
-	TDefinitionOptions,
 } from './types'
 import { normalizeContribution } from './contribution'
 import { withClassDefault } from './defaults'
@@ -43,7 +43,7 @@ function mergeSlots(
 }
 
 export function inheritDeclarations(
-	options: TDefinitionOptions,
+	options: IComponentOptions,
 ): Pick<IComponentDescriptor, 'ctor' | 'props' | 'events' | 'slots' | 'plugins'> {
 	const parent = options.extends
 	const ctor: TComponentCtor = options.ctor ?? parent?.ctor ?? Object

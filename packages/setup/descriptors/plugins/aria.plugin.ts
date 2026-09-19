@@ -12,14 +12,14 @@
 
 import { definePlugin } from '../../define'
 import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { IAriaPluginOptions, TAriaPluginEvents, IAriaPluginProps } from '@soldy/plugins'
+import type { IAriaPluginOptions } from '@soldy/plugins'
 
 /**
  * @param options.role Роль, которую элемент принимает, получив имя.
  *                     Нужна только там, где без имени он декоративен (Icon).
  */
 export const AriaPluginDescriptor = (options?: IAriaPluginOptions) =>
-	definePlugin<'aria', TAriaPluginEvents, IAriaPluginProps>({
+	definePlugin({
 		ctor: TAriaPlugin,
 		namespace: 'aria',
 		/**

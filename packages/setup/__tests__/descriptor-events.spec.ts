@@ -146,9 +146,9 @@ describe('имя события сверяется с картой класса 
 
 /** Имена, которые дескриптор публикует, а карта его класса не знает: сужение выбросило бы их из типа. */
 type TLostEventName<TDescriptor> =
-	TDescriptor extends IComponentDescriptor<any, any, any, any, infer I, infer N>
-		? I extends { readonly events: unknown }
-			? Exclude<N, keyof TInstanceEvents<I>>
+	TDescriptor extends IComponentDescriptor<infer C>
+		? C['instance'] extends { readonly events: unknown }
+			? Exclude<C['eventName'], keyof TInstanceEvents<C['instance']>>
 			: never
 		: never
 

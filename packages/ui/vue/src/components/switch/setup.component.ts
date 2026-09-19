@@ -6,7 +6,6 @@ import {
 	type SetupContext,
 } from '../../adapter'
 import BaseSwitch, { type SwitchProps } from './base.component'
-import { type ISwitchProps, type ISwitch } from '@soldy/core'
 
 export default {
 	name: '_Switch',
@@ -18,6 +17,6 @@ export default {
 			props,
 		})
 
-		return { ...useAdapter<ISwitchProps, ISwitch>(adapter, props, emit), ...useSplitAttrs() }
+		return { ...useAdapter(adapter, props, emit), ...useSplitAttrs() }
 	},
 }

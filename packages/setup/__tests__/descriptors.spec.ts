@@ -57,7 +57,7 @@ import { assembleAccessor, assembleBundle, resolveComposition } from '../assembl
 import { required } from './helpers'
 
 /** Собрать компонент так же, как это делает монтирование: состав → набор → аксессор. */
-const assemble = (descriptor: IComponentDescriptor<any, any, any, any, any>, instance: object) => {
+const assemble = (descriptor: IComponentDescriptor, instance: object) => {
 	const composition = resolveComposition(descriptor, instance, {})
 	const bundle = assembleBundle(composition, instance)
 

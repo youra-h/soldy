@@ -21,7 +21,7 @@
 
 import { onDestroy } from 'svelte'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TAdapterState } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { SvelteProfile } from '../common'
 
@@ -29,28 +29,23 @@ import { SvelteProfile } from '../common'
 type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl'>
 
 export type TBinding<
-	TInstance = object,
+	C extends IComponentContract = IComponentContract,
 	TProps extends object = object,
-	TOutputs extends object = object,
 > = {
-	readonly ctrl: TInstance
+	readonly ctrl: C['instance']
 	readonly plugins: IPluginBundle | null
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
-	readonly state: TAdapterState<TInstance, TOutputs>
+	readonly state: TAdapterState<C>
 	readonly forwardProps: TForwardProps<TProps>
 	/** Svelte-attachment: `<div {@attach binding.attachElement}>` */
 	attachElement: (node: Element) => (() => void) | void
 }
 
-/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
-export function useAdapter<
-	TProps extends object,
-	TInstance extends object = object,
-	TOutputs extends object = object,
->(
-	adapter: IAdapterContext<TInstance, TOutputs>,
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
 	getProps: () => TProps,
-): TBinding<TInstance, TProps, TOutputs> {
+): TBinding<C, TProps> {
 	const binding = bindComponent(adapter, SvelteProfile)
 	const state = $state<Record<string, unknown>>({})
 
@@ -88,7 +83,7 @@ export function useAdapter<
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
-		state: toInstanceState<TInstance, TOutputs>(state),
+		state: toInstanceState<C>(state),
 
 		get forwardProps() {
 			return forwardProps

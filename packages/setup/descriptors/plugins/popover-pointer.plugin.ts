@@ -7,10 +7,9 @@
 
 import { definePlugin } from '../../define'
 import { TPopoverPointerPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TPopoverPointerPluginEvents } from '@soldy/plugins'
 
 export const PopoverPointerPluginDescriptor = () =>
-	definePlugin<'pointer', TPopoverPointerPluginEvents>({
+	definePlugin({
 		ctor: TPopoverPointerPlugin,
 		namespace: 'pointer',
 		/**

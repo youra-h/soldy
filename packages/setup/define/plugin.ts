@@ -4,8 +4,10 @@
  * props/events нормализуются в TName с namespace из options.namespace. Пропы
  * получают умолчание — значение, с которым плагин стартует (`withPluginDefault`).
  *
- * Типы contribution — аргументы после неймспейса: карта событий, входы и выходы
- * (`IPluginDefinition`). Нет входов, а выходы есть — на месте входов `object`.
+ * Типы руками не пишутся: `definePlugin` выводит контракт плагина из его класса
+ * и contribution (`TPluginContractFrom`). Входы — незащищённые пропсы, выходы —
+ * защищённые, тип значения — у одноимённого свойства класса или у `get`;
+ * события — карта класса, суженная до `events` и триггеров пропсов.
  *
  * Контракт плагина — свойство его класса, а не места, где его поставили.
  * Плагин дескриптора объявляет пропсы и события через дескриптор. Плагин,
@@ -17,27 +19,32 @@
  */
 
 import type { IContribution } from '@soldy/accessor'
-import type { IPluginConstructor } from '@soldy/plugins'
-import type { IPluginDefinition } from './types'
+import type { TPluginContractFrom } from './inference.types'
+import type { IPluginDefinition, TPluginCtor } from './types'
 import { normalizeContribution } from './contribution'
 import { withPluginDefault } from './defaults'
 
-const contracts = new WeakMap<IPluginConstructor<any, any, any>, IPluginDefinition>()
+const contracts = new WeakMap<TPluginCtor, IPluginDefinition>()
 
+/**
+ * Параметры типа выводятся из опций, явно их не передают. Неймспейс и
+ * contribution — `const`: из их литералов складываются имена в контракте.
+ */
 export function definePlugin<
-	N extends string | undefined = undefined,
-	TEvents extends object = object,
-	TProps extends object = object,
-	TOutputs extends object = object,
+	TCtor extends TPluginCtor,
+	const N extends string | undefined = undefined,
+	const TContribution extends IContribution = IContribution,
 >(options: {
-	ctor: IPluginConstructor<any, any, any>
+	ctor: TCtor
 	namespace?: N
-	contribution?: IContribution
+	contribution?: TContribution
 	options?: object
-}): IPluginDefinition<N, TEvents, TProps, TOutputs> {
+}): IPluginDefinition<TPluginContractFrom<InstanceType<TCtor>, N, TContribution>> {
 	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
-	const definition: IPluginDefinition<N, TEvents, TProps, TOutputs> = {
+	const definition: IPluginDefinition<
+		TPluginContractFrom<InstanceType<TCtor>, N, TContribution>
+	> = {
 		ctor: options.ctor,
 		props: props.map((prop) => withPluginDefault(prop, options.ctor, options.options)),
 		events,
@@ -51,8 +58,6 @@ export function definePlugin<
 }
 
 /** Контракт плагина — последнее его определение `definePlugin`; нет — пропсов и событий у плагина нет. */
-export function pluginContractOf(
-	ctor: IPluginConstructor<any, any, any>,
-): IPluginDefinition | undefined {
+export function pluginContractOf(ctor: TPluginCtor): IPluginDefinition | undefined {
 	return contracts.get(ctor)
 }

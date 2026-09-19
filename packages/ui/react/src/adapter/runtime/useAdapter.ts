@@ -32,22 +32,26 @@ import {
 	useSyncExternalStore,
 } from 'react'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, IComponentBinding, TAdapterState } from '@soldy/setup'
+import type {
+	IAdapterContext,
+	IComponentBinding,
+	IComponentContract,
+	TAdapterState,
+} from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { ReactProfile } from '../common'
 
 export type TBinding<
-	TInstance = object,
+	C extends IComponentContract = IComponentContract,
 	TProps extends object = object,
-	TOutputs extends object = object,
 > = {
-	ctrl: TInstance
+	ctrl: C['instance']
 	plugins: IPluginBundle | null
 	ref: (el: Element | null) => void
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
-	state: TAdapterState<TInstance, TOutputs>
+	state: TAdapterState<C>
 }
 
 /** Связка своего контекста: контекст пересобран — связка новая. */
@@ -64,15 +68,11 @@ function rebind(_: TStore, adapter: IAdapterContext): TStore {
 	return bind(adapter)
 }
 
-/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
-export function useAdapter<
-	TProps extends object,
-	TInstance extends object = object,
-	TOutputs extends object = object,
->(
-	adapter: IAdapterContext<TInstance, TOutputs>,
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
 	props: TProps,
-): TBinding<TInstance, TProps, TOutputs> {
+): TBinding<C, TProps> {
 	const [store, dispatch] = useReducer(rebind, adapter, bind)
 
 	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
@@ -118,6 +118,6 @@ export function useAdapter<
 		plugins: adapter.bundle,
 		ref,
 		forwardProps,
-		state: toInstanceState<TInstance, TOutputs>(state),
+		state: toInstanceState<C>(state),
 	}
 }

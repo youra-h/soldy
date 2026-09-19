@@ -3,12 +3,6 @@ import {
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
 } from '@soldy/setup'
-import type {
-	IRadioGroup,
-	IRadioGroupCollectionProps,
-	IRadioGroupComponentProps,
-	TRadioGroupCollectionFacade,
-} from '@soldy/core'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -32,7 +26,7 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter<IRadioGroupComponentProps, IRadioGroup>(adapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			RadioGroupCollectionDescriptor(),
@@ -46,10 +40,7 @@ export default {
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<
-			IRadioGroupCollectionProps,
-			TRadioGroupCollectionFacade
-		>(collectionAdapter, props, emit)
+		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
 		return { ...refs, ...refsCollection }
 	},

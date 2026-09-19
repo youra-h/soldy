@@ -8,7 +8,7 @@
  * на монтирование и одинаково во всех адаптерах.
  */
 
-import type { IComponentDescriptor } from '../define/types'
+import type { IComponentContract, IComponentDescriptor } from '../define/types'
 import { assembleAccessor } from './accessor'
 import { assembleBundle } from './bundle'
 import { resolveComposition } from './composition'
@@ -29,10 +29,10 @@ function embeddedOf(input: IAssemblyInput): string | undefined {
 	return typeof value === 'string' ? value : undefined
 }
 
-export function assembleComponent<TInstance extends object>(
-	descriptor: IComponentDescriptor<any, any, any, any, TInstance>,
-	input: IAssemblyInput<TInstance>,
-): IAssembledComponent<TInstance> {
+export function assembleComponent<C extends IComponentContract>(
+	descriptor: IComponentDescriptor<C>,
+	input: IAssemblyInput<C['instance']>,
+): IAssembledComponent<C['instance']> {
 	const instance = input.ctrl ?? new descriptor.ctor(input.props ?? {}, input.options ?? {})
 	// Набор, пришедший на вход, принадлежит тому, кто его передал (адаптер
 	// коллекции делит bundle компонента) — уничтожает его он же.

@@ -15,7 +15,7 @@
  */
 
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TInstanceState } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { WebcProfile } from '../common'
 
@@ -29,11 +29,11 @@ export type TBinding<TInstance = object> = {
 	destroy(): void
 }
 
-export function useAdapter<TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
+export function useAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
 	host: HTMLElement,
 	onUpdate: (name: string, value: unknown) => void,
-): TBinding<TInstance> {
+): TBinding<C['instance']> {
 	const binding = bindComponent(adapter, WebcProfile)
 	const state: Record<string, unknown> = {}
 
@@ -55,7 +55,7 @@ export function useAdapter<TInstance extends object = object>(
 	})
 
 	return {
-		state: toInstanceState<TInstance>(state),
+		state: toInstanceState<C>(state),
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 

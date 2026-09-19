@@ -9,10 +9,9 @@
 
 import { definePlugin } from '../../define'
 import { TPopoverFocusPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TPopoverFocusPluginEvents } from '@soldy/plugins'
 
 export const PopoverFocusPluginDescriptor = () =>
-	definePlugin<'focus', TPopoverFocusPluginEvents>({
+	definePlugin({
 		ctor: TPopoverFocusPlugin,
 		namespace: 'focus',
 		/**

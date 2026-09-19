@@ -9,10 +9,9 @@
 
 import { definePlugin } from '../../define'
 import { TSelectBackspacePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TSelectBackspacePluginEvents } from '@soldy/plugins'
 
 export const SelectBackspacePluginDescriptor = () =>
-	definePlugin<'backspace', TSelectBackspacePluginEvents>({
+	definePlugin({
 		ctor: TSelectBackspacePlugin,
 		namespace: 'backspace',
 		/**

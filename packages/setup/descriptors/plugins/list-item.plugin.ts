@@ -7,10 +7,9 @@
 
 import { definePlugin } from '../../define'
 import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TListItemPluginEvents } from '@soldy/plugins'
 
 export const ListItemPluginDescriptor = () =>
-	definePlugin<'listItem', TListItemPluginEvents, object, Pick<TListItemPlugin, 'highlighted'>>({
+	definePlugin({
 		ctor: TListItemPlugin,
 		namespace: 'listItem',
 		contribution: {

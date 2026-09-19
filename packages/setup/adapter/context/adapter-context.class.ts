@@ -21,13 +21,13 @@ import type { TAccessor } from '@soldy/accessor'
 import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IAssembledComponent } from '../../assemble'
-import type { IComponentDescriptor } from '../../define'
+import type { IComponentContract, IComponentDescriptor } from '../../define'
 import { PLUGIN_PROPS } from '../../naming'
 import { TExternalPlugins } from './external-plugins.class'
 import type { IAdapterContext, TAdapterEvents, TAnyExtensionCtor } from './types'
 
-export class TAdapterContext<TInstance extends object> implements IAdapterContext<TInstance> {
-	readonly instance: TInstance
+export class TAdapterContext<C extends IComponentContract> implements IAdapterContext<C> {
+	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
 	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
@@ -42,7 +42,7 @@ export class TAdapterContext<TInstance extends object> implements IAdapterContex
 
 	constructor(
 		descriptor: IComponentDescriptor,
-		component: IAssembledComponent<TInstance>,
+		component: IAssembledComponent<C['instance']>,
 		props: object,
 	) {
 		this.instance = component.instance

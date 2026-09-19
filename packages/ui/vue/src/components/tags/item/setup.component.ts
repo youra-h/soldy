@@ -3,8 +3,6 @@ import {
 	TagsItemDescriptor,
 	TagsCollectionItemDescriptor,
 } from '@soldy/setup'
-import { TTagsItemCollectionFacade } from '@soldy/core'
-import type { ITagsItemProps, ITagsItem } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -34,12 +32,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<TagsItemProps, TTagsItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<ITagsItemProps, ITagsItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

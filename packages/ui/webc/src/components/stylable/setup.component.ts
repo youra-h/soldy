@@ -18,5 +18,5 @@ export function setupStylable(
 ): TBinding<IStylable> {
 	const adapter = createAdapterContext(StylableDescriptor(), { ctrl, props })
 
-	return useAdapter<IStylable>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

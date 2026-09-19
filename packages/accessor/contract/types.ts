@@ -43,7 +43,11 @@ export interface INamingStrategy {
 export interface IPropDefinition {
 	type?: unknown
 	protected?: boolean
-	triggers?: string[]
+	/**
+	 * Только для чтения: объявление — литерал, и setup выводит из него имена
+	 * событий дескриптора (`const`-параметр даёт `readonly`-кортеж).
+	 */
+	triggers?: readonly string[]
 	/** Нетривиальное чтение: вместо instance[name] */
 	get?(instance: object): unknown
 	/** Нетривиальная запись: вместо instance[name] = value */
@@ -113,11 +117,16 @@ export interface ISlotDeclaration {
 	description?: string
 }
 
-/** Contribution: словарь props (имя → декларация) + events (raw строки) + slots. */
+/**
+ * Contribution: словарь props (имя → декларация) + events (raw строки) + slots.
+ *
+ * Только для чтения, как и `IPropDefinition.triggers`: объявление после записи
+ * не меняется, а его литеральный тип — источник типов дескриптора в setup.
+ */
 export interface IContribution {
-	props?: Record<string, IPropDefinition>
-	events?: string[]
-	slots?: Record<string, ISlotDefinition>
+	readonly props?: Readonly<Record<string, IPropDefinition>>
+	readonly events?: readonly string[]
+	readonly slots?: Readonly<Record<string, ISlotDefinition>>
 }
 
 /**

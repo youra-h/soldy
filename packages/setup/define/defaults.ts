@@ -9,7 +9,7 @@
  */
 
 import type { IPropDeclaration } from '@soldy/accessor'
-import type { IPluginConstructor } from '@soldy/plugins'
+import type { TPluginCtor } from './types'
 
 /**
  * Декларация с умолчанием из `defaultValues` класса.
@@ -44,7 +44,7 @@ export function withClassDefault(
  */
 export function withPluginDefault(
 	prop: IPropDeclaration,
-	ctor: IPluginConstructor<any, any, any>,
+	ctor: TPluginCtor,
 	options: object | undefined,
 ): IPropDeclaration {
 	const option: unknown = options ? Reflect.get(options, prop.name.name) : undefined

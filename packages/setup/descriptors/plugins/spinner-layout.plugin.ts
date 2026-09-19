@@ -6,15 +6,9 @@
 
 import { definePlugin } from '../../define'
 import { TSpinnerLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TSpinnerLayoutPluginEvents } from '@soldy/plugins'
 
 export const SpinnerLayoutPluginDescriptor = () =>
-	definePlugin<
-		'layout',
-		TSpinnerLayoutPluginEvents,
-		object,
-		Pick<TSpinnerLayoutPlugin, 'styles'>
-	>({
+	definePlugin({
 		ctor: TSpinnerLayoutPlugin,
 		namespace: 'layout',
 		contribution: {

@@ -5,7 +5,12 @@
  * добавляет только своё — слоты своим механизмом и атрибуты DOM.
  */
 
-import type { DescriptorAllEvents, DescriptorAllProps, IComponentDescriptor } from '../../define'
+import type {
+	DescriptorAllEvents,
+	DescriptorAllProps,
+	DescriptorInstance,
+	IComponentDescriptor,
+} from '../../define'
 import type { TCallbackEventProps } from '../../naming'
 
 /** Служебные пропсы, которые принимает сам адаптер, а не инстанс ядра. */
@@ -43,10 +48,14 @@ export interface IExternalPluginProps {}
 /** `pluginProps`: известные ключи с их типами, остальные — как есть. */
 export type TExternalPluginProps = IExternalPluginProps & Readonly<Record<string, unknown>>
 
-/** Пропсы компонента из дескриптора: свои, плагинов дескриптора и служебные адаптера. */
+/**
+ * Пропсы компонента из дескриптора: свои, плагинов дескриптора и служебные
+ * адаптера. `ctrl` — инстанс дескриптора; вторым параметром адаптер сужает его
+ * до интерфейса ядра (`IButton`), если отдаёт наружу его, а не класс.
+ */
 export type DescriptorComponentProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
-	TInstance,
+	TInstance = DescriptorInstance<TDescriptorFn>,
 > = DescriptorAllProps<TDescriptorFn> & TAdapterProps<TInstance>
 
 /** События компонента колбэк-пропами — у React, Solid и Svelte: `onElementReady`. */

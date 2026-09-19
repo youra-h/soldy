@@ -11,10 +11,10 @@
 
 import { definePlugin } from '../../define'
 import { TAnchorPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { IAnchorPluginOptions, TAnchorPluginEvents, IAnchorPluginProps } from '@soldy/plugins'
+import type { IAnchorPluginOptions } from '@soldy/plugins'
 
 export const AnchorPluginDescriptor = (options?: IAnchorPluginOptions) =>
-	definePlugin<'anchor', TAnchorPluginEvents, IAnchorPluginProps>({
+	definePlugin({
 		ctor: TAnchorPlugin,
 		namespace: 'anchor',
 		/**

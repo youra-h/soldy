@@ -1,7 +1,6 @@
-import { PopoverDescriptor, type DescriptorPluginOutputs } from '@soldy/setup'
+import { PopoverDescriptor } from '@soldy/setup'
 import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BasePopover, { type PopoverProps } from './base.component'
-import { type IPopoverProps, type IPopover } from '@soldy/core'
 
 /**
  * Логики здесь нет: клик по триггеру — `TPopoverPointerPlugin`, нажатие и
@@ -19,11 +18,7 @@ export default {
 
 		return {
 			// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
-			...useAdapter<
-				IPopoverProps,
-				IPopover,
-				DescriptorPluginOutputs<typeof PopoverDescriptor>
-			>(adapter, props, emit),
+			...useAdapter(adapter, props, emit),
 			/**
 			 * Инстанс — для кнопки закрытия: она только ставит ему `open = false`.
 			 * Возврат фокуса — забота плагина, разметка о нём не знает.

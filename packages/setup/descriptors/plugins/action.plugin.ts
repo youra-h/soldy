@@ -8,10 +8,9 @@
 
 import { definePlugin } from '../../define'
 import { TActionPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TActionPluginEvents } from '@soldy/plugins'
 
 export const ActionPluginDescriptor = () =>
-	definePlugin<'action', TActionPluginEvents>({
+	definePlugin({
 		ctor: TActionPlugin,
 		namespace: 'action',
 		/**

@@ -13,15 +13,10 @@
 
 import { definePlugin } from '../../define'
 import { TSelectKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { ISelectKeyboardPluginOptions, TListNavigationPluginEvents } from '@soldy/plugins'
+import type { ISelectKeyboardPluginOptions } from '@soldy/plugins'
 
 export const SelectKeyboardPluginDescriptor = (options?: ISelectKeyboardPluginOptions) =>
-	definePlugin<
-		'keyboard',
-		TListNavigationPluginEvents,
-		object,
-		Pick<TSelectKeyboardPlugin, 'highlightedUid'>
-	>({
+	definePlugin({
 		ctor: TSelectKeyboardPlugin,
 		namespace: 'keyboard',
 		/**

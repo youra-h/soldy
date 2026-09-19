@@ -20,34 +20,29 @@
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TAdapterState } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { SolidProfile } from '../common'
 
 export type TBinding<
-	TInstance = object,
+	C extends IComponentContract = IComponentContract,
 	TProps extends object = object,
-	TOutputs extends object = object,
 > = {
-	readonly ctrl: TInstance
+	readonly ctrl: C['instance']
 	readonly plugins: IPluginBundle | null
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
-	readonly state: TAdapterState<TInstance, TOutputs>
+	readonly state: TAdapterState<C>
 	/** Мемо: DOM-атрибуты, не съеденные компонентом */
 	forwardProps: () => Partial<TProps>
 	/** callback-ref для корневого элемента */
 	ref: (el: Element) => void
 }
 
-/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
-export function useAdapter<
-	TProps extends object,
-	TInstance extends object = object,
-	TOutputs extends object = object,
->(
-	adapter: IAdapterContext<TInstance, TOutputs>,
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
 	props: TProps,
-): TBinding<TInstance, TProps, TOutputs> {
+): TBinding<C, TProps> {
 	const binding = bindComponent(adapter, SolidProfile)
 	const [state, setState] = createStore<Record<string, unknown>>({})
 
@@ -78,7 +73,7 @@ export function useAdapter<
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
-		state: toInstanceState<TInstance, TOutputs>(state),
+		state: toInstanceState<C>(state),
 		forwardProps,
 
 		ref(el: Element) {

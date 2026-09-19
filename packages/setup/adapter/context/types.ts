@@ -5,11 +5,30 @@
 import type { TEvented } from '@soldy/core'
 import type { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IComponentDescriptor } from '../../define'
+import type { IComponentContract, IComponentDescriptor, IPluginContract } from '../../define'
 
 export type TAdapterEvents = {
 	destroy: () => void
 }
+
+/**
+ * Контракт контекста: инстанс и плагины названы, остальное — как у любого
+ * компонента. По нему `createAdapterContext` сводит инстанс из двух
+ * источников — `ctor` дескриптора и переданного `ctrl`.
+ */
+export type TContextContract<
+	TInstance extends object,
+	TPlugins extends IPluginContract = IPluginContract,
+> = IComponentContract & { instance: TInstance; plugins: TPlugins }
+
+/**
+ * Контекст компонента, про который известен только инстанс. Так расширение
+ * объявляет, с чем оно работает: `TInstanceContext<TCollectionOwner>` — с
+ * любым компонентом, у инстанса которого есть `engine`.
+ */
+export type TInstanceContext<TInstance extends object> = IAdapterContext<
+	TContextContract<TInstance>
+>
 
 /**
  * Конструктор расширения с опциями.
@@ -24,12 +43,12 @@ export interface IAdapterExtensionCtor<
 	TOpts = unknown,
 	TInstance extends object = object,
 > {
-	new (context: IAdapterContext<TInstance>, options: TOpts): T
+	new (context: TInstanceContext<TInstance>, options: TOpts): T
 }
 
 /** Конструктор расширения без опций. */
 export interface IAdapterExtensionCtorNoOpts<T = unknown, TInstance extends object = object> {
-	new (context: IAdapterContext<TInstance>): T
+	new (context: TInstanceContext<TInstance>): T
 }
 
 /** Любой конструктор расширения — ключ реестра и элемент стартового набора. */
@@ -65,20 +84,15 @@ export interface IAdapterContextConfig {
 /**
  * Контекст адаптера: собранный компонент и его расширения.
  *
- * `TOutputs` — выходы плагинов дескриптора (`DescriptorPluginOutputs`),
- * фантомный параметр: в теле он не упоминается. Его выводит из состава
- * плагинов дескриптора `createAdapterContext`, а `useAdapter` React, Solid и
- * Svelte берёт из типа контекста, как тип инстанса, и отдаёт в типе состояния
- * (`TAdapterState`).
+ * Параметр — контракт дескриптора, по которому контекст собран
+ * (`IComponentContract`). Его выводит `createAdapterContext`, а `useAdapter`
+ * адаптеров берёт из него тип инстанса и выходы плагинов для типа состояния
+ * (`TAdapterState`) — дженерики в компоненте не пишут.
  */
-export interface IAdapterContext<
-	TInstance extends object = object,
-	// Выводится из аргумента `useAdapter` адаптеров, в теле его нет — линтер
-	// считает его неиспользованным.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	TOutputs extends object = object,
-> {
-	readonly instance: TInstance
+export interface IAdapterContext<C extends IComponentContract = IComponentContract> {
+	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
+	readonly __contract?: C
+	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
 	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
@@ -88,9 +102,12 @@ export interface IAdapterContext<
 	readonly events: TEvented<TAdapterEvents>
 
 	/** Подключить расширение БЕЗ опций */
-	use<T>(ExtensionCtor: IAdapterExtensionCtorNoOpts<T, TInstance>): this
+	use<T>(ExtensionCtor: IAdapterExtensionCtorNoOpts<T, C['instance']>): this
 	/** Подключить расширение С обязательными опциями */
-	use<T, TOpts>(ExtensionCtor: IAdapterExtensionCtor<T, TOpts, TInstance>, options: TOpts): this
+	use<T, TOpts>(
+		ExtensionCtor: IAdapterExtensionCtor<T, TOpts, C['instance']>,
+		options: TOpts,
+	): this
 
 	/** Получить зарегистрированное расширение по его классу */
 	get<T>(ctor: new (...args: any[]) => T): T | undefined

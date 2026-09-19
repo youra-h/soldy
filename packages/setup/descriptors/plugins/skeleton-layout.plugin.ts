@@ -6,15 +6,9 @@
 
 import { definePlugin } from '../../define'
 import { TSkeletonLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TSkeletonLayoutPluginEvents } from '@soldy/plugins'
 
 export const SkeletonLayoutPluginDescriptor = () =>
-	definePlugin<
-		'layout',
-		TSkeletonLayoutPluginEvents,
-		object,
-		Pick<TSkeletonLayoutPlugin, 'styles'>
-	>({
+	definePlugin({
 		ctor: TSkeletonLayoutPlugin,
 		namespace: 'layout',
 		contribution: {

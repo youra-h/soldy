@@ -3,7 +3,6 @@ import {
 	SelectItemDescriptor,
 	SelectCollectionItemDescriptor,
 } from '@soldy/setup'
-import type { ISelectItemProps, ISelectItem, TSelectItemCollectionFacade } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -40,12 +39,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<SelectItemProps, TSelectItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<ISelectItemProps, ISelectItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

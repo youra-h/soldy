@@ -9,7 +9,12 @@
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { TElementPlugin } from '@soldy/plugins'
-import { bindComponent, type IAdapterContext, type TInstanceState } from '@soldy/setup'
+import {
+	bindComponent,
+	type IAdapterContext,
+	type IComponentContract,
+	type TInstanceState,
+} from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { VueProfile } from '../common'
 
@@ -38,44 +43,42 @@ export type TUnwrapRefs<T> = {
  * - plugins: бандл плагинов
  * - rootElement: ссылка на DOM-узел
  * - refs: динамические пропсы компонента
- * - выходы плагинов `TOutputs` (`DescriptorPluginOutputs`) — того же вида, что
- *   у остальных адаптеров (`TInstanceState`): снимок, только чтение,
- *   необязательный ключ
+ * - выходы плагинов из контракта `C` — того же вида, что у остальных
+ *   адаптеров (`TInstanceState`): снимок, только чтение, необязательный ключ
  */
-export type TBinding<TProps, TInstance, TOutputs extends object = object> = {
-	ctrl: TInstance
+export type TBinding<C extends IComponentContract, TProps> = {
+	ctrl: C['instance']
 	plugins: IPluginBundle | null
 	rootElement?: Ref<Element | null>
-} & TUnwrapRefs<TProps> &
-	TExtractControllerState<TInstance> &
-	TInstanceState<TOutputs>
+} & TBindingState<C, TProps>
+
+/** Рефы адаптера в типах: пропы `TProps`, свойства инстанса и выходы плагинов контракта. */
+export type TBindingState<C extends IComponentContract, TProps> = TUnwrapRefs<TProps> &
+	TExtractControllerState<C['instance']> &
+	TInstanceState<C['plugins']['outputs']>
 
 /**
- * Типизированный вид на рефы адаптера: пропы `TProps`, свойства инстанса и
- * выходы плагинов `TOutputs`.
+ * Типизированный вид на рефы адаптера (`TBindingState`).
  *
  * Граница между рантаймом и типом, одна на `useAdapter` и
  * `useCollectionAdapter` — как `toInstanceState` у остальных адаптеров. Рефы
- * связки собраны по дескриптору из того же инстанса, что описывает
- * `TInstance`, и из плагинов, чьи выходы описывает `TOutputs`, но по именам
- * свойств — эту связь держит дескриптор, TypeScript её не видит. В значениях
- * лежат `Ref`, а тип уже развёрнут: рефы из результата `setup()` шаблон
- * разворачивает сам.
+ * связки собраны по дескриптору из того же инстанса и тех же плагинов, что
+ * описывает контракт `C`, но по именам свойств — эту связь держит дескриптор,
+ * TypeScript её не видит. В значениях лежат `Ref`, а тип уже развёрнут: рефы
+ * из результата `setup()` шаблон разворачивает сам.
  */
-export function toBindingState<TProps, TInstance, TOutputs extends object = object>(
+export function toBindingState<C extends IComponentContract, TProps>(
 	refs: Readonly<Record<string, unknown>>,
-): TUnwrapRefs<TProps> & TExtractControllerState<TInstance> & TInstanceState<TOutputs> {
-	return refs as TUnwrapRefs<TProps> &
-		TExtractControllerState<TInstance> &
-		TInstanceState<TOutputs>
+): TBindingState<C, TProps> {
+	return refs as TBindingState<C, TProps>
 }
 
 /**
  * Общая часть `useAdapter` и `useCollectionAdapter`: подписки, DOM-биндинг и
  * очистка. Отдаёт то, из чего каждый хук собирает свой результат.
  */
-export function useAdapterParts<TInstance extends object>(
-	adapter: IAdapterContext<TInstance>,
+export function useAdapterParts(
+	adapter: IAdapterContext,
 	props: object,
 	emit?: (event: string, ...args: unknown[]) => void,
 ): { refs: Readonly<Record<string, Ref<unknown>>>; rootElement: Ref<Element | null> | null } {
@@ -136,25 +139,20 @@ export function useAdapterParts<TInstance extends object>(
 }
 
 /**
- * Компоненты передают дженерики явно, поэтому выходы плагинов из типа контекста
- * не выводятся: их передаёт третьим аргументом компонент, чей шаблон читает
- * выход, — `DescriptorPluginOutputs<typeof XDescriptor>`.
+ * Дженерики компонент не пишет: инстанс и выходы плагинов — из контракта в типе
+ * контекста (его выводит `createVueAdapterContext`), пропы — из самих `props`.
  */
-export function useAdapter<
-	TProps extends Record<string, any> = Record<string, any>,
-	TInstance extends object = object,
-	TOutputs extends object = object,
->(
-	adapter: IAdapterContext<TInstance, TOutputs>,
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
 	props: TProps,
 	emit?: (event: string, ...args: unknown[]) => void,
-): TBinding<TProps, TInstance, TOutputs> {
+): TBinding<C, TProps> {
 	const { refs, rootElement } = useAdapterParts(adapter, props, emit)
 
 	return {
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		...(rootElement ? { rootElement } : {}),
-		...toBindingState<TProps, TInstance, TOutputs>(refs),
+		...toBindingState<C, TProps>(refs),
 	}
 }

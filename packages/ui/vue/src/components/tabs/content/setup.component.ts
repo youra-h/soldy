@@ -3,8 +3,6 @@ import {
 	TabsContentDescriptor,
 	TabsCollectionContentDescriptor,
 } from '@soldy/setup'
-import type { ITabsContent, ITabsContentProps } from '@soldy/core'
-import type { TTabsContentCollectionFacade } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -36,12 +34,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const collectionBinding = useAdapter<TabsContentProps, TTabsContentCollectionFacade>(
-			contentAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<ITabsContentProps, ITabsContent>(adapter, props, emit)
+		const collectionBinding = useAdapter(contentAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return { ...collectionBinding, ...ownerBinding }
 	},

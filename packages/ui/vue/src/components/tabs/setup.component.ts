@@ -4,8 +4,6 @@ import {
 	TabsDescriptor,
 	TabsCollectionDescriptor,
 } from '@soldy/setup'
-import { TTabsCollectionFacade } from '@soldy/core'
-import type { ITabsCollectionProps } from '@soldy/core'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -14,7 +12,6 @@ import {
 	type SetupContext,
 } from '../../adapter'
 import BaseTabs, { type TabsProps } from './base.component'
-import { type ITabsComponentProps, type ITabs } from '@soldy/core'
 
 export default {
 	name: '_Tabs',
@@ -25,7 +22,7 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			TabsCollectionDescriptor(),
@@ -41,11 +38,7 @@ export default {
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(
-			collectionAdapter,
-			props,
-			emit,
-		)
+		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
 		return { ...refs, ...refsCollection }
 	},

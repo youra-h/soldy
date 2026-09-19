@@ -22,6 +22,7 @@ import {
 	type IElevatorKey,
 	type TElevatorFactory,
 	type IAdapterContext,
+	type IComponentContract,
 	type TAdapterState,
 } from '@soldy/setup'
 import { CallbackProfile, required } from './helpers'
@@ -169,14 +170,12 @@ describe('createAdapterContext', () => {
 	})
 
 	it('тип контекста несёт выходы плагинов дескриптора', () => {
-		// Как `useAdapter` React, Solid и Svelte: инстанс и выходы выводятся из
-		// типа контекста, дженерики не передаются. Проверяет это «Типы — Setup»
-		const stateOf = <TInstance extends object, TOutputs extends object>(
-			adapter: IAdapterContext<TInstance, TOutputs>,
-		): TAdapterState<TInstance, TOutputs> =>
-			toInstanceState<TInstance, TOutputs>(
-				bindComponent(adapter, CallbackProfile).getSnapshot(),
-			)
+		// Как `useAdapter` адаптеров: инстанс и выходы выводятся из контракта в
+		// типе контекста, дженерики не передаются. Проверяет это «Типы — Setup»
+		const stateOf = <C extends IComponentContract>(
+			adapter: IAdapterContext<C>,
+		): TAdapterState<C> =>
+			toInstanceState<C>(bindComponent(adapter, CallbackProfile).getSnapshot())
 
 		const frame = createAdapterContext(FrameDescriptor(), {})
 		const state = stateOf(frame)

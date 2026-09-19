@@ -6,13 +6,12 @@
  */
 
 import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
-import type { IButton } from '@soldy/core'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { ButtonProps } from './base.component'
 
 export function useSetupButton(props: ButtonProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapter = useAdapterContext<IButton>(() =>
+	const adapter = useAdapterContext(() =>
 		createAdapterContext(ButtonDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

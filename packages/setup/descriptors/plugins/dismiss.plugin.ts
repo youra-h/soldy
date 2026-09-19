@@ -6,27 +6,18 @@
  * поля закрывать нечего, а глобальный слушатель на документе стоил бы на каждом
  * контроле страницы.
  *
- * Оба пропа типизирует дескриптор: вход `dismiss_enabled` — третий аргумент
- * `definePlugin`, выход `dismiss_ownerAttribute` — четвёртый, геттер класса
- * плагина. Выход шаблон Select раскладывает спредом на телепортированную
+ * Оба пропа типизирует класс плагина: вход `dismiss_enabled` и выход
+ * `dismiss_ownerAttribute` — его одноимённые свойства, `definePlugin` выводит
+ * их типы сам. Выход шаблон Select раскладывает спредом на телепортированную
  * панель, а спреду нужен объектный тип.
  */
 
 import { definePlugin } from '../../define'
 import { TDismissPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type {
-	IDismissPluginOptions,
-	TDismissPluginEvents,
-	IDismissPluginProps,
-} from '@soldy/plugins'
+import type { IDismissPluginOptions } from '@soldy/plugins'
 
 export const DismissPluginDescriptor = (options?: IDismissPluginOptions) =>
-	definePlugin<
-		'dismiss',
-		TDismissPluginEvents,
-		IDismissPluginProps,
-		Pick<TDismissPlugin, 'ownerAttribute'>
-	>({
+	definePlugin({
 		ctor: TDismissPlugin,
 		namespace: 'dismiss',
 		/**

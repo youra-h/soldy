@@ -9,10 +9,9 @@
 
 import { definePlugin } from '../../define'
 import { TEditablePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TEditablePluginEvents } from '@soldy/plugins'
 
 export const SelectEditablePluginDescriptor = () =>
-	definePlugin<'editable', TEditablePluginEvents, object, Pick<TEditablePlugin, 'query'>>({
+	definePlugin({
 		ctor: TEditablePlugin,
 		namespace: 'editable',
 		/**

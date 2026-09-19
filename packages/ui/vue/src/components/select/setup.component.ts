@@ -1,11 +1,4 @@
 import { TCollectionExtension, SelectDescriptor, SelectCollectionDescriptor } from '@soldy/setup'
-import type {
-	ISelectComponentProps,
-	ISelect,
-	ISelectCollectionProps,
-	TSelectCollectionFacade,
-} from '@soldy/core'
-import type { DescriptorPluginOutputs } from '@soldy/setup'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -42,11 +35,7 @@ export default {
 
 		// Выходы плагинов — третьим аргументом: шаблон раскладывает
 		// `dismiss_ownerAttribute` спредом на телепортированную панель
-		const refs = useAdapter<
-			ISelectComponentProps,
-			ISelect,
-			DescriptorPluginOutputs<typeof SelectDescriptor>
-		>(adapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			SelectCollectionDescriptor(),
@@ -60,10 +49,7 @@ export default {
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<
-			ISelectCollectionProps,
-			TSelectCollectionFacade
-		>(collectionAdapter, props, emit)
+		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
 		return {
 			...refs,

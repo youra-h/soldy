@@ -8,10 +8,9 @@
 
 import { definePlugin } from '../../define'
 import { TSelectPointerPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TSelectPointerPluginEvents } from '@soldy/plugins'
 
 export const SelectPointerPluginDescriptor = () =>
-	definePlugin<'pointer', TSelectPointerPluginEvents>({
+	definePlugin({
 		ctor: TSelectPointerPlugin,
 		namespace: 'pointer',
 		/**

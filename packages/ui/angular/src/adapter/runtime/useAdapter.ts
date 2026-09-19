@@ -20,7 +20,12 @@
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TBindingSnapshot, TInstanceState } from '@soldy/setup'
+import type {
+	IAdapterContext,
+	IComponentContract,
+	TBindingSnapshot,
+	TInstanceState,
+} from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { AngularProfile } from '../common/profile'
 
@@ -35,9 +40,9 @@ export type TBinding<TInstance = any> = {
 	destroy(): void
 }
 
-export function useAdapter<TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
-): TBinding<TInstance> {
+export function useAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+): TBinding<C['instance']> {
 	const binding = bindComponent(adapter, AngularProfile)
 	const values = signal<TBindingSnapshot>({})
 
@@ -47,7 +52,7 @@ export function useAdapter<TInstance extends object = object>(
 	const unsubscribe = binding.subscribe(() => values.set(binding.getSnapshot()))
 
 	return {
-		state: computed(() => toInstanceState<TInstance>(values())),
+		state: computed(() => toInstanceState<C>(values())),
 
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
