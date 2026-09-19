@@ -8,7 +8,6 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TListBoxItem } from '@soldy/core'
-import type { TListItemContentFit } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
@@ -42,10 +41,7 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				text: { type: String, triggers: ['change:text'] },
-				contentFit: {
-					type: defineType<TListItemContentFit>(String),
-					triggers: ['change:contentFit'],
-				},
+				contentFit: { type: String, triggers: ['change:contentFit'] },
 			},
 		},
 

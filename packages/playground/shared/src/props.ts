@@ -283,19 +283,14 @@ export function optionsForProp(componentId: string, prop: string): readonly stri
 /**
  * Имя конструктора пропа.
  *
- * В декларации `type` встречается в трёх видах: сам конструктор (`String`),
- * массив конструкторов (`tag: [String, Object]`) и обёртка `{ ctor }` от
- * `defineType`. Разбирать приходится все три — унифицировать это в контракте
- * не стали, потому что каждая форма зачем-то нужна: массив описывает
- * объединение, обёртка носит фантомный тип для TS.
+ * В декларации `type` встречается в двух видах: сам конструктор (`String`) и
+ * массив конструкторов (`tag: [String, Object]`) — массив описывает
+ * объединение. Обёртки `defineType` у пропа нет: она несёт тип данных scope
+ * слота, а тип значения пропа даёт интерфейс ядра.
  */
 function firstCtorName(type: unknown): string | undefined {
 	if (!type) return undefined
 	if (Array.isArray(type)) return firstCtorName(type[0])
-
-	if (typeof type === 'object' && 'ctor' in type) {
-		return firstCtorName((type as { ctor: unknown }).ctor)
-	}
 
 	return (type as { name?: string }).name
 }

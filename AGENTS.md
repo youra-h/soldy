@@ -1182,7 +1182,17 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 
-- **Branded prop types**: use `defineType<T>(ctor)` for phantom-typed contribution props (e.g. `defineType<TButtonView>(String)`). It is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors inside the package import it from `define/` by a relative path, never from `@soldy/setup` — see «Структура `packages/setup`».
+- **`defineType<T>(ctor)` — тип данных scope слота, а не пропа.** Из `T`
+  выводится scope (`DescriptorSlots`, см. «Слоты — третья категория
+  контракта»). У пропа тип значения даёт интерфейс пропсов ядра (`TProps`
+  класса `ctor`), а `type` в contribution — только конструктор для рантайма:
+  `view: { type: String, … }`. Обёртка `defineType` в пропе была бы второй
+  записью типа, которую никто не сверяет с ядром, а Vue проверял бы её как
+  `Object`. Сторож — `setup/__tests__/prop-defaults.spec.ts`, «тип пропа —
+  конструктор рантайма». `defineType` экспортируется из `@soldy/setup` и живёт
+  в `packages/setup/define/prop-type.ts`; дескрипторы внутри пакета
+  импортируют его из `define/` относительным путём, не из `@soldy/setup` — см.
+  «Структура `packages/setup`».
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
@@ -1737,11 +1747,13 @@ Partial<IXProps>` вместо аннотации не годится: он ос
 `anchor_flip` с умолчанием `true` молча выключил бы flip у всех Frame.
 
 Сторож — `packages/setup/__tests__/prop-defaults.spec.ts`. По всем
-дескрипторам экспорта у незащищённого пропа с `Boolean` в типе (сам, в
-массиве, в `defineType`) умолчание объявлено и равно стартовому значению: у
-свежего инстанса или у плагина из собранного набора. Это ровно те пропы, которые
-Vue приводит сам. Расхождение чинится значением в `defaultValues`, а не
-исключением в стороже.
+дескрипторам экспорта у незащищённого пропа с `Boolean` в типе (сам или в
+массиве) умолчание объявлено и равно стартовому значению: у свежего инстанса
+или у плагина из собранного набора. Это ровно те пропы, которые Vue приводит
+сам. Расхождение чинится значением в `defaultValues`, а не исключением в
+стороже. Других форм типа он не разбирает: что тип пропа — конструктор или
+массив конструкторов, без обёртки `defineType`, стережёт первый сторож того же
+файла.
 
 Второй сторож там же, «проп, который пишет разметка, объявляет умолчание»: у
 каждого незащищённого пропа с триггерами, своего и плагинного, ключ `default`

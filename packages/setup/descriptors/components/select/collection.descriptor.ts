@@ -6,10 +6,9 @@
  * обоих рантайм-списков.
  */
 
-import { defineComponent, defineDescriptor, defineType } from '../../../define'
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TSelectCollectionFacade, TSelectItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'
-import type { TListIndicator } from '@soldy/core'
 
 export const SelectCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -66,7 +65,7 @@ export const SelectCollectionItemDescriptor = defineDescriptor(() =>
 				 * список и живёт на поле — как `view` у элемента ListBox.
 				 */
 				indicator: {
-					type: defineType<TListIndicator>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:indicator'],
 				},

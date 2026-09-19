@@ -9,14 +9,9 @@
  * bundle.
  */
 
-import { definePlugin, defineType } from '../../define'
+import { definePlugin } from '../../define'
 import { TAnchorPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type {
-	IAnchorPluginOptions,
-	TAnchorPluginEvents,
-	IAnchorPluginProps,
-	TFramePlacement,
-} from '@soldy/plugins'
+import type { IAnchorPluginOptions, TAnchorPluginEvents, IAnchorPluginProps } from '@soldy/plugins'
 
 export const AnchorPluginDescriptor = (options?: IAnchorPluginOptions) =>
 	definePlugin<'anchor', TAnchorPluginEvents, IAnchorPluginProps>({
@@ -46,7 +41,7 @@ export const AnchorPluginDescriptor = (options?: IAnchorPluginOptions) =>
 					},
 				},
 				placement: {
-					type: defineType<TFramePlacement>(String),
+					type: String,
 					triggers: ['change:placement'],
 				},
 				matchWidth: {

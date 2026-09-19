@@ -42,7 +42,7 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
 One file per component: inheritance, the public contract (props, events, slots) and plugins. The contract is declared inline in `contribution` — there are no separate contribution files. Wrap the factory in `defineDescriptor` (the descriptor is built once). The types come from `ctor`: framework adapters infer `I<Name>Props` / `T<Name>Events` from the descriptor, and no type arguments are passed:
 
 ```ts
-import { defineComponent, defineDescriptor, defineType } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { T<Name> } from '@soldy/core'
 import { <Base>Descriptor } from './<base>.descriptor'
 
@@ -59,9 +59,9 @@ export const <Name>Descriptor = defineDescriptor(() =>
 )
 ```
 
-The `props` key is the prop name. Use `defineType<T>(ctor)` for phantom-typed props — it is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`.
+The `props` key is the prop name, and `type` is only the runtime constructor (`String`, `Boolean`, `[String, Object]`): the value type comes from `I<Name>Props`, so a prop never takes `defineType` — Vue would check the wrapper as `Object`.
 
-Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` too (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
+Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
 
 > A generic core class gets its type parameters' constraints, not their defaults: `ValueControlDescriptor` has `IValueControlProps<unknown>`, `InputControlDescriptor` — `IInputControlProps<unknown>`. A concrete component fixes the value type in its own class (`TInput extends TInputControl<string, …>`), and its descriptor gets exactly that.
 
