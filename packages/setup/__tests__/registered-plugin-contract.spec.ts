@@ -1,31 +1,45 @@
 // @vitest-environment jsdom
 
 /**
- * Внешний плагин не расширяет контракт компонента.
+ * Плагин, поставленный снаружи: пропсы через `pluginProps`, события через `plugin:event`.
  *
- * Пропсы, события и слоты объявляет только дескриптор — один и тот же во всех
- * шести адаптерах. Плагин из реестра живёт в наборе и работает, но наружу
- * компонента ничего не добавляет: ни пропа в аксессоре, ни события в
- * привязках. Настраивают его опциями регистрации, а разговаривают через его
- * собственный API.
+ * Поверхность компонента объявляет только дескриптор, и она одна на тип: Vue,
+ * Angular и Web Components объявляют её раньше, чем приложение регистрирует
+ * плагины, а поставить плагин можно и позже — в `bundle:create`. Поэтому у
+ * каждого компонента один проп на все внешние плагины — `pluginProps`
+ * (`{ interval_value: 250 }`) — и одно событие-конверт — `plugin:event`
+ * (`{ name, args }`). Какие пропсы и события у плагина, говорит его контракт:
+ * `definePlugin` записывает его за классом.
+ *
+ * Раньше у внешнего плагина пропсов и событий не было вовсе: настраивали его
+ * опциями регистрации, а разговаривали через его API.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TButton } from '@soldy/core'
 import type { IButton } from '@soldy/core'
-import { TBasePlugin } from '@soldy/plugins'
+import { TAriaPlugin, TBasePlugin } from '@soldy/plugins'
 import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
-import { ButtonDescriptor, bindComponent, createAdapterContext, usePlugins } from '@soldy/setup'
-import { CallbackProfile } from './helpers'
+import {
+	ButtonDescriptor,
+	bindComponent,
+	createAdapterContext,
+	definePlugin,
+	usePlugins,
+} from '@soldy/setup'
+import type { TEventEmitter } from '@soldy/setup'
+import { CallbackProfile, required } from './helpers'
 
 type TIntervalEvents = TPluginEvents & {
 	'change:value': (value: number) => void
 	tick: (count: number) => void
 }
 
-/** Плагин со своим свойством и событием — ни то, ни другое наружу не выходит. */
+/** Плагин со своим свойством и событием. */
 class TIntervalPlugin extends TBasePlugin<IButton, TIntervalEvents> {
-	private _value = 1000
+	static defaultValues = { value: 1000 }
+
+	private _value = TIntervalPlugin.defaultValues.value
 
 	override install(ctx: IPluginContext, options?: { value?: number }): void {
 		super.install(ctx, options)
@@ -37,10 +51,29 @@ class TIntervalPlugin extends TBasePlugin<IButton, TIntervalEvents> {
 		return this._value
 	}
 
+	set value(value: number) {
+		if (value === this._value) return
+
+		this._value = value
+		this.events.emit('change:value', value)
+	}
+
 	tick(count: number): void {
 		this.events.emit('tick', count)
 	}
 }
+
+/** Плагин без контракта: `definePlugin` для него не звали. */
+class TSilentPlugin extends TBasePlugin<IButton> {}
+
+definePlugin({
+	ctor: TIntervalPlugin,
+	namespace: 'interval',
+	contribution: {
+		props: { value: { type: Number, triggers: ['change:value'] } },
+		events: ['tick'],
+	},
+})
 
 let dispose: (() => void) | null = null
 
@@ -49,37 +82,210 @@ afterEach(() => {
 	dispose = null
 })
 
-describe('внешний плагин · контракт компонента', () => {
-	it('плагин стоит в наборе, а его свойство в аксессор не попадает', () => {
+/** Плагин из набора контекста — он там обязан быть. */
+function plugin(context: ReturnType<typeof createAdapterContext>): TIntervalPlugin {
+	return required(context.bundle?.get(TIntervalPlugin), 'TIntervalPlugin')
+}
+
+describe('внешний плагин · поверхность', () => {
+	it('поверхность одна на тип: пропа плагина в ней нет, есть `pluginProps` и `plugin:event`', () => {
 		dispose = usePlugins(TButton, [TIntervalPlugin])
 
-		const context = createAdapterContext(ButtonDescriptor(), {})
+		const { surface } = bindComponent(
+			createAdapterContext(ButtonDescriptor(), {}),
+			CallbackProfile,
+		)
 
-		expect(context.bundle?.get(TIntervalPlugin)).toBeInstanceOf(TIntervalPlugin)
-		expect(context.accessor.getProps(true).some((p) => p.name.name === 'value')).toBe(false)
+		expect(surface.exportProps).not.toHaveProperty('interval_value')
+		expect(surface.exportProps).toHaveProperty('pluginProps')
+		expect(surface.exportEvents).toContain('onPluginEvent')
 	})
 
-	it('событие плагина в привязках компонента не объявлено', () => {
-		dispose = usePlugins(TButton, [TIntervalPlugin])
-
-		const context = createAdapterContext(ButtonDescriptor(), {})
-		const { surface } = bindComponent(context, CallbackProfile)
-		const onTick = vi.fn()
-
-		expect(surface.events.some((event) => event.raw === 'tick')).toBe(false)
-
-		// Подписка на сам плагин работает: у него своя шина
-		context.bundle?.get(TIntervalPlugin)?.events.on('tick', onTick)
-		context.bundle?.get(TIntervalPlugin)?.tick(3)
-
-		expect(onTick).toHaveBeenCalledWith(3)
-	})
-
-	it('настройка плагина — опции регистрации', () => {
+	it('настройка опциями регистрации по-прежнему работает', () => {
 		dispose = usePlugins(TButton, [{ ctor: TIntervalPlugin, options: { value: 250 } }])
 
-		const context = createAdapterContext(ButtonDescriptor(), {})
+		expect(plugin(createAdapterContext(ButtonDescriptor(), {})).value).toBe(250)
+	})
+})
 
-		expect(context.bundle?.get(TIntervalPlugin)?.value).toBe(250)
+describe('внешний плагин · pluginProps', () => {
+	it('значение доходит до плагина реестра при сборке', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 250 } },
+		})
+
+		expect(plugin(context).value).toBe(250)
+	})
+
+	it('значение, равное умолчанию, ничего не задаёт — как у сборки', () => {
+		dispose = usePlugins(TButton, [{ ctor: TIntervalPlugin, options: { value: 250 } }])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 1000 } },
+		})
+
+		expect(plugin(context).value).toBe(250)
+	})
+
+	it('плагин, поставленный позже, получает ждавшее его значение', () => {
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 250 } },
+		})
+
+		context.bundle?.use(TIntervalPlugin)
+
+		expect(plugin(context).value).toBe(250)
+	})
+
+	it('значение, пришедшее до плагина, ждёт его установки', () => {
+		const context = createAdapterContext(ButtonDescriptor(), {})
+		const binding = bindComponent(context, CallbackProfile)
+
+		binding.writeAll({ pluginProps: { interval_value: 500 } })
+		context.bundle?.use(TIntervalPlugin)
+
+		expect(plugin(context).value).toBe(500)
+	})
+
+	it('смена значения пишется в плагин, пропавший ключ — возвращает умолчание', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 250 } },
+		})
+		const binding = bindComponent(context, CallbackProfile)
+
+		binding.writeAll({ pluginProps: { interval_value: 500 } })
+
+		expect(plugin(context).value).toBe(500)
+
+		binding.writeAll({ pluginProps: {} })
+
+		expect(plugin(context).value).toBe(1000)
+	})
+
+	it('снятый `pluginProps` целиком возвращает умолчания', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 250 } },
+		})
+
+		bindComponent(context, CallbackProfile).writeAll({})
+
+		expect(plugin(context).value).toBe(1000)
+	})
+
+	it('внешний ctrl: значения доходят до его плагинов так же', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			ctrl: new TButton(),
+			props: { pluginProps: { interval_value: 250 } },
+		})
+
+		expect(plugin(context).value).toBe(250)
+	})
+
+	it('плагин дескриптора через `pluginProps` не пишется — его пропсы в поверхности', () => {
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { aria_label: 'Закрыть' } },
+		})
+
+		expect(required(context.bundle?.get(TAriaPlugin), 'TAriaPlugin').label).toBeUndefined()
+	})
+
+	it('плагин без контракта значений не получает и не ломает сборку', () => {
+		dispose = usePlugins(TButton, [TSilentPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { silent_value: 1 } },
+		})
+
+		expect(context.bundle?.get(TSilentPlugin)).toBeInstanceOf(TSilentPlugin)
+	})
+
+	it('снятый плагин значения больше не получает', () => {
+		const context = createAdapterContext(ButtonDescriptor(), {})
+		const binding = bindComponent(context, CallbackProfile)
+
+		context.bundle?.use(TIntervalPlugin)
+
+		const removed = plugin(context)
+
+		context.bundle?.remove(TIntervalPlugin)
+		binding.writeAll({ pluginProps: { interval_value: 500 } })
+
+		expect(removed.value).toBe(1000)
+	})
+})
+
+describe('внешний плагин · plugin:event', () => {
+	/** Конверты, пришедшие в связку под именем фреймворка. */
+	function envelopes(emit: ReturnType<typeof vi.fn<TEventEmitter>>): unknown[] {
+		return emit.mock.calls
+			.filter(([name]) => name === 'onPluginEvent')
+			.map(([, args]) => args[0])
+	}
+
+	it('событие плагина уходит конвертом с полным именем', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {})
+		const emit = vi.fn<TEventEmitter>()
+
+		bindComponent(context, CallbackProfile).bindEvents(emit)
+		plugin(context).tick(3)
+
+		expect(envelopes(emit)).toEqual([{ name: 'interval:tick', args: [3] }])
+	})
+
+	it('триггер пропа плагина — тоже событие', () => {
+		dispose = usePlugins(TButton, [TIntervalPlugin])
+
+		const context = createAdapterContext(ButtonDescriptor(), {})
+		const emit = vi.fn<TEventEmitter>()
+
+		bindComponent(context, CallbackProfile).bindEvents(emit)
+		plugin(context).value = 42
+
+		expect(envelopes(emit)).toEqual([{ name: 'interval:change:value', args: [42] }])
+	})
+
+	it("конверт виден и с инстанса: `ctrl.events.on('plugin:event')`", () => {
+		const ctrl = new TButton()
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+		const onEvent = vi.fn()
+
+		ctrl.events.on('plugin:event', onEvent)
+		context.bundle?.use(TIntervalPlugin)
+		plugin(context).tick(1)
+
+		expect(onEvent).toHaveBeenCalledWith({ name: 'interval:tick', args: [1] })
+	})
+
+	it('после снятия плагина и уничтожения контекста конвертов нет', () => {
+		const ctrl = new TButton()
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+		const onEvent = vi.fn()
+
+		ctrl.events.on('plugin:event', onEvent)
+		context.bundle?.use(TIntervalPlugin)
+
+		const installed = plugin(context)
+
+		context.bundle?.remove(TIntervalPlugin)
+		installed.tick(1)
+
+		context.bundle?.use(TIntervalPlugin)
+
+		const second = plugin(context)
+
+		context.destroy()
+		second.tick(2)
+
+		expect(onEvent).not.toHaveBeenCalled()
 	})
 })

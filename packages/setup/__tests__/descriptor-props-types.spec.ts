@@ -73,12 +73,12 @@ const aliasOf = (check: TCheck, name: string): string => `${check.prefix}${name}
 const COLLECTION_LAYER = /^(\w*)Collection(\w*)Descriptor$/
 
 /**
- * `ctrl` и `embedded` объявляет `EntityDescriptor`: так адаптер принимает
+ * `ctrl`, `embedded` и `pluginProps` объявляет `EntityDescriptor`: так адаптер принимает
  * готовый инстанс и имя места пропом. Их типы дописывает сам адаптер поверх
  * `DescriptorAllProps` (`TAdapterProps`): в интерфейсах пропсов ядра инстанса
  * нет.
  */
-const ADAPTER_PROPS = new Set(['ctrl', 'embedded'])
+const ADAPTER_PROPS = new Set(['ctrl', 'embedded', 'pluginProps'])
 
 function publicProps(descriptor: IComponentDescriptor): string[] {
 	return descriptor

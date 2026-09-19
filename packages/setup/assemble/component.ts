@@ -60,5 +60,5 @@ export function assembleComponent<TInstance extends object>(
 		input.props,
 	)
 
-	return { instance, embedded, bundle, ownsBundle, accessor }
+	return { instance, embedded, bundle, ownsBundle, accessor, composition }
 }

@@ -24,10 +24,25 @@ import type { TAnyEvents } from '../../../common'
  * **Тип бандла ядро не знает** и не объявляет: `@soldy/plugins` оно не
  * импортирует. Поэтому аргумент `unknown`, а подписчик сужает его сам
  * (`bundle instanceof TPluginBundle`).
+ *
+ * **`plugin:event` — по той же причине.** Событие плагина, поставленного
+ * снаружи (`usePlugins` или `bundle.use` в `bundle:create`), наружу компонента
+ * не объявлено — дескриптор этого плагина не знает. Setup пересылает такие
+ * события одним конвертом на шину инстанса: `@plugin:event`,
+ * `onPluginEvent`, `(pluginEvent)` — одинаково во всех адаптерах.
  */
 export type TComponentEvents = {
 	/** Плагины компонента созданы при монтировании; аргумент — их bundle. */
 	'bundle:create': (bundle: unknown) => void
+	/** Событие внешнего плагина: полное имя (`timer:tick`) и аргументы. */
+	'plugin:event': (event: TPluginEvent) => void
+}
+
+/** Конверт события внешнего плагина. */
+export type TPluginEvent = {
+	/** Полное имя события плагина: `timer:tick`. */
+	readonly name: string
+	readonly args: readonly unknown[]
 }
 
 // Корень иерархии пропсов: пустой намеренно — от него наследуются типы

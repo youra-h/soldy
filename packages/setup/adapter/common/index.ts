@@ -6,5 +6,7 @@ export type { TAdapterState, TInstanceState, TSnapshotOf } from './state.types'
 export type {
 	DescriptorCallbackEvents,
 	DescriptorComponentProps,
+	IExternalPluginProps,
 	TAdapterProps,
+	TExternalPluginProps,
 } from './props.types'

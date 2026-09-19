@@ -17,10 +17,10 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { TActionPlugin, TBasePlugin, TPluginBundle } from '@soldy/plugins'
-import type { IPluginContext } from '@soldy/plugins'
+import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
 import type { IExtension, IExtensionContext } from '@soldy/core'
 import { TButton, TCollectionEngine, TEvented, TTags } from '@soldy/core'
-import { useExtensions, usePlugins } from '@soldy/setup'
+import { definePlugin, useExtensions, usePlugins } from '@soldy/setup'
 import { Button, ListBox, Select, SelectItem, Tags, TagsItem } from '@soldy/ui-vue'
 
 /** Слушатели нажатия появляются по `element:ready`, а он приходит через кадр. */
@@ -297,6 +297,114 @@ describe('расширение на тип · useExtensions', () => {
 
 		expect(extendedOwners).toHaveLength(2)
 		expect(extendedOwners.every((owner) => owner instanceof TTags)).toBe(true)
+
+		wrapper.unmount()
+	})
+})
+
+type TStepEvents = TPluginEvents & {
+	'change:size': (size: number) => void
+	step: (value: number) => void
+}
+
+/** Плагин со своим пропом и событием: пропсы — через `pluginProps`, события — конвертом. */
+class TStepPlugin extends TBasePlugin<TButton, TStepEvents> {
+	static defaultValues = { size: 1 }
+
+	private _size = TStepPlugin.defaultValues.size
+
+	get size(): number {
+		return this._size
+	}
+
+	set size(value: number) {
+		if (value === this._size) return
+
+		this._size = value
+		this.events.emit('change:size', value)
+	}
+
+	step(): void {
+		this.events.emit('step', this._size)
+	}
+}
+
+definePlugin({
+	ctor: TStepPlugin,
+	namespace: 'step',
+	contribution: {
+		props: { size: { type: Number, triggers: ['change:size'] } },
+		events: ['step'],
+	},
+})
+
+describe('плагин снаружи · pluginProps и plugin:event', () => {
+	let dispose: (() => void) | null = null
+
+	afterEach(() => {
+		dispose?.()
+		dispose = null
+	})
+
+	/** Монтирует кнопку и ловит её набор из `@bundle:create`. */
+	const mountStep = async (props: Record<string, unknown>, install = false) => {
+		const received: { bundle?: TPluginBundle } = {}
+
+		const wrapper = mount(Button, {
+			props: {
+				...props,
+				'onBundle:create': (bundle: unknown) => {
+					if (!(bundle instanceof TPluginBundle)) return
+
+					if (install) bundle.use(TStepPlugin)
+					received.bundle = bundle
+				},
+			},
+		})
+
+		await nextTick()
+
+		const plugin = received.bundle?.get(TStepPlugin)
+
+		if (!plugin) throw new Error('плагин не поставлен')
+
+		return { wrapper, plugin }
+	}
+
+	it('плагин реестра получает значение и его смену', async () => {
+		dispose = usePlugins(TButton, [TStepPlugin])
+
+		const { wrapper, plugin } = await mountStep({ pluginProps: { step_size: 5 } })
+
+		expect(plugin.size).toBe(5)
+
+		await wrapper.setProps({ pluginProps: { step_size: 7 } })
+
+		expect(plugin.size).toBe(7)
+
+		await wrapper.setProps({ pluginProps: {} })
+
+		expect(plugin.size).toBe(1)
+
+		wrapper.unmount()
+	})
+
+	it('плагин из `@bundle:create` получает ждавшее его значение', async () => {
+		const { wrapper, plugin } = await mountStep({ pluginProps: { step_size: 3 } }, true)
+
+		expect(plugin.size).toBe(3)
+
+		wrapper.unmount()
+	})
+
+	it('событие плагина приходит в `@plugin:event` конвертом', async () => {
+		dispose = usePlugins(TButton, [TStepPlugin])
+
+		const { wrapper, plugin } = await mountStep({ pluginProps: { step_size: 2 } })
+
+		plugin.step()
+
+		expect(wrapper.emitted('plugin:event')).toEqual([[{ name: 'step:step', args: [2] }]])
 
 		wrapper.unmount()
 	})

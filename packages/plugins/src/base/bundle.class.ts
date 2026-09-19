@@ -1,6 +1,9 @@
-import type { IPlugin, IPluginBundle, IPluginConstructor } from './types'
+import { TEvented } from '@soldy/core'
+import type { IPlugin, IPluginBundle, IPluginConstructor, TPluginBundleEvents } from './types'
 
 export class TPluginBundle implements IPluginBundle {
+	readonly events = new TEvented<TPluginBundleEvents>()
+
 	private _plugins = new Map<IPluginConstructor<any, any, any>, IPlugin<any, any>>()
 	/** Набор объявлен наружу (`created()`): плагин, поставленный позже, объявляется сразу. */
 	private _created = false
@@ -43,6 +46,8 @@ export class TPluginBundle implements IPluginBundle {
 		// циклу, что и плагины дескриптора.
 		if (this._created) plugin.created()
 
+		this.events.emit('use', PluginCtor, plugin)
+
 		return this
 	}
 
@@ -53,7 +58,10 @@ export class TPluginBundle implements IPluginBundle {
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void {
 		const plugin = this._plugins.get(PluginCtor)
 
-		plugin?.destroy()
+		if (!plugin) return
+
+		this.events.emit('remove', PluginCtor, plugin)
+		plugin.destroy()
 
 		this._plugins.delete(PluginCtor)
 	}

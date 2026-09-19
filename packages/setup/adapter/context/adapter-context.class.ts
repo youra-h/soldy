@@ -10,6 +10,10 @@
  * все шесть адаптеров, поэтому она метод контекста, а не расширение, которое
  * каждый из них обязан помнить и подключать. У компонента без `TElementPlugin`
  * (headless-слои) вызов ничего не делает.
+ *
+ * Плагины, поставленные снаружи, ведёт `TExternalPlugins`: их пропсы из
+ * `pluginProps`, их события — конвертом `plugin:event`. Только у контекста,
+ * который собрал свой набор: чужой набор ведёт его владелец.
  */
 
 import { TEvented } from '@soldy/core'
@@ -18,6 +22,8 @@ import { TElementPlugin } from '@soldy/plugins'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IAssembledComponent } from '../../assemble'
 import type { IComponentDescriptor } from '../../define'
+import { PLUGIN_PROPS } from '../../naming'
+import { TExternalPlugins } from './external-plugins.class'
 import type { IAdapterContext, TAdapterEvents, TAnyExtensionCtor } from './types'
 
 export class TAdapterContext<TInstance extends object> implements IAdapterContext<TInstance> {
@@ -32,6 +38,7 @@ export class TAdapterContext<TInstance extends object> implements IAdapterContex
 	private readonly _extensions = new Map<TAnyExtensionCtor, unknown>()
 	/** Набор собран для этого контекста; пришедший в конфиге уничтожает тот, кто его передал. */
 	private readonly _ownsBundle: boolean
+	private readonly _external: TExternalPlugins | null
 
 	constructor(
 		descriptor: IComponentDescriptor,
@@ -45,6 +52,16 @@ export class TAdapterContext<TInstance extends object> implements IAdapterContex
 		this.props = props
 		this.embedded = component.embedded
 		this._ownsBundle = component.ownsBundle
+		this._external =
+			component.ownsBundle && component.bundle
+				? new TExternalPlugins(
+						component.bundle,
+						component.instance,
+						new Set(descriptor.plugins.map((plugin) => plugin.ctor)),
+						component.composition.map((entry) => entry.ctor),
+						Reflect.get(props, PLUGIN_PROPS),
+					)
+				: null
 	}
 
 	use(ExtensionCtor: TAnyExtensionCtor, options?: unknown): this {
@@ -65,9 +82,14 @@ export class TAdapterContext<TInstance extends object> implements IAdapterContex
 		if (plugin) plugin.element = element
 	}
 
+	writePluginProps(values: unknown): void {
+		this._external?.write(values)
+	}
+
 	destroy(): void {
 		this.events.emit('destroy')
 		this._extensions.clear()
+		this._external?.destroy()
 
 		// Узел отвязывается до уничтожения набора: плагины успевают получить
 		// `removed`. Чужой набор не трогаем — его узел привязывал владелец.
