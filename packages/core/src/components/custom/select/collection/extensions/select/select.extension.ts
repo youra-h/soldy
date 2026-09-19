@@ -205,7 +205,13 @@ export class TSelectExtension<
 		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
 		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
-		this._syncFieldPlaceholder()
+		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
+		// движка, собранного снаружи, применяет `selection` при установке, а
+		// `value` из пропа — расширение `value`, которое в
+		// `SELECT_OWNER_EXTENSIONS` стоит раньше нас. Их `change:selection` до
+		// нас не дошёл, поэтому `aria-selected`, текст выбранного и плейсхолдер
+		// считаем по текущему выбору тем же обработчиком
+		this._onSelectionChanged()
 		this._writeField()
 	}
 
@@ -352,7 +358,7 @@ export class TSelectExtension<
 	 * Поле здесь пишется мягко (`_syncText`): `change:selection` приходит на
 	 * любое изменение выбора, а не только на выбор пользователя. Он же
 	 * обработчик `item:removed` — удалённую опцию `TSelectionExtension`
-	 * снимает с выбора молча.
+	 * снимает с выбора молча — и догон выбора, сделанного до `install`.
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
