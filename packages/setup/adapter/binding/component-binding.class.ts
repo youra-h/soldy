@@ -42,7 +42,7 @@
  */
 
 import type { IEventSource } from '@soldy/core'
-import type { IAccessorEvent, IAccessorProp, TAccessor } from '@soldy/accessor'
+import type { IAccessorEvent, TAccessor, TProperty } from '@soldy/accessor'
 import { PLUGIN_PROPS } from '../../naming'
 import type { IAdapterContext } from '../context'
 import { surfaceOf } from './surface'
@@ -89,12 +89,12 @@ export class TComponentBinding implements IComponentBinding {
 	private readonly _context: IAdapterContext
 	private readonly _accessor: TAccessor
 	/** Свойства поверхности, у которых в аксессоре есть владелец. */
-	private readonly _targets = new Map<ISurfaceProp, IAccessorProp>()
+	private readonly _targets = new Map<ISurfaceProp, TProperty>()
 	/**
 	 * Состояние для фреймворка — свойства с триггерами. Без триггеров свойство
 	 * pass-through (`ctrl`): следить за ним нечем.
 	 */
-	private readonly _state = new Map<ISurfaceProp, IAccessorProp>()
+	private readonly _state = new Map<ISurfaceProp, TProperty>()
 	private readonly _events = new Map<string, IAccessorEvent>()
 	/**
 	 * Заданные входы — пропсами сборки или фреймворком после неё — и последнее
@@ -138,7 +138,7 @@ export class TComponentBinding implements IComponentBinding {
 			if (prop.triggers.length === 0) continue
 
 			this._state.set(prop, target)
-			snapshot[prop.exportName] = this._accessor.getValue(target)
+			snapshot[prop.exportName] = target.value
 		}
 
 		this._snapshot = snapshot
@@ -206,7 +206,7 @@ export class TComponentBinding implements IComponentBinding {
 
 		// 1. Триггеры свойств, protected включительно — они тоже сигнализируют наружу
 		for (const [prop, target] of this._targets) {
-			const source = this._accessor.getEventSource(target)
+			const source = target.source
 
 			if (!source) continue
 
@@ -215,8 +215,7 @@ export class TComponentBinding implements IComponentBinding {
 
 		// 2. Явные события
 		for (const event of this.surface.events) {
-			const target = this._events.get(event.key)
-			const source = target ? this._accessor.getEventSource(target) : undefined
+			const source = this._events.get(event.key)?.source
 
 			if (source) listen(source, event.raw, event.exportName)
 		}
@@ -224,16 +223,8 @@ export class TComponentBinding implements IComponentBinding {
 		// 3. Модель: новое значение свойства — после события ядра
 		for (const model of this.surface.models) {
 			const target = this._targets.get(model.prop)
-			const source = target ? this._accessor.getEventSource(target) : undefined
 
-			if (!target || !source) continue
-
-			const handler = () => emit(model.exportName, [this._accessor.getValue(target)])
-
-			for (const trigger of model.prop.triggers) {
-				source.on(trigger.raw, handler)
-				offs.push(() => source.off(trigger.raw, handler))
-			}
+			if (target) offs.push(target.watch(() => emit(model.exportName, [target.value])))
 		}
 
 		return () => offs.forEach((off) => off())
@@ -244,8 +235,8 @@ export class TComponentBinding implements IComponentBinding {
 	}
 
 	write(prop: ISurfaceProp, value: unknown): void {
-		// Значения для плагинов снаружи разбирает контекст: он знает, какие
-		// плагины сейчас в наборе, а связка — только поверхность компонента
+		// Значения для плагинов снаружи разбирают плагины монтирования: они
+		// знают, что сейчас в наборе, а связка — только поверхность компонента
 		if (prop.key === PLUGIN_PROPS) {
 			if (value === undefined) this._assigned.delete(prop)
 			else this._assigned.set(prop, value)
@@ -260,15 +251,17 @@ export class TComponentBinding implements IComponentBinding {
 		if (!target) return
 
 		if (value === undefined) {
-			this._reset(prop, target)
+			// Не задавали — `undefined` значит «не передан», и состояние инстанса
+			// не трогается. Задавали — проп сняли: вернуть умолчание декларации
+			if (this._assigned.delete(prop)) target.reset()
 
 			return
 		}
 
-		// Заданным вход становится до guard'а «то же значение»: значение может уже
-		// лежать в ядре, а снятый потом проп всё равно должен вернуться к умолчанию
+		// Заданным вход становится до записи: значение может уже лежать в ядре, а
+		// снятый потом проп всё равно должен вернуться к умолчанию
 		this._assigned.set(prop, value)
-		this._set(target, value)
+		target.assign(value)
 	}
 
 	writeAll(props: object): void {
@@ -302,41 +295,11 @@ export class TComponentBinding implements IComponentBinding {
 		return rest
 	}
 
-	/**
-	 * Проп сняли — вернуть умолчание декларации.
-	 *
-	 * Не задавали — `undefined` значит «не передан», и состояние инстанса не
-	 * трогается. Умолчания нет (`items`, `mode` фасадов коллекций) — сбрасывать
-	 * не к чему: `undefined` их сеттеры не принимают.
-	 */
-	private _reset(prop: ISurfaceProp, target: IAccessorProp): void {
-		if (!this._assigned.delete(prop) || !Object.hasOwn(prop, 'default')) return
-
-		this._set(target, prop.default)
-	}
-
-	private _set(target: IAccessorProp, value: unknown): void {
-		if (this._accessor.getValue(target) === value) return
-
-		this._accessor.setValue(target, value)
-	}
-
 	/** Подписка на триггеры состояния: на каждый — перечитать своё свойство. */
 	private _connect(): () => void {
 		const offs: Array<() => void> = []
 
-		for (const [prop, target] of this._state) {
-			const source = this._accessor.getEventSource(target)
-
-			if (!source) continue
-
-			const handler = () => this._refresh(prop)
-
-			for (const trigger of prop.triggers) {
-				source.on(trigger.raw, handler)
-				offs.push(() => source.off(trigger.raw, handler))
-			}
-		}
+		for (const [prop, target] of this._state) offs.push(target.watch(() => this._refresh(prop)))
 
 		return () => offs.forEach((off) => off())
 	}
@@ -359,7 +322,7 @@ export class TComponentBinding implements IComponentBinding {
 		if (!target) return
 
 		const name = prop.exportName
-		const value = this._accessor.getValue(target)
+		const value = target.value
 		const changed = !sameValue(this._snapshot[name], value)
 
 		if (changed) this._snapshot = { ...this._snapshot, [name]: value }

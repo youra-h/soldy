@@ -1,8 +1,9 @@
 /**
- * Компонент на одно монтирование: инстанс, признак `embedded`, состав, набор и аксессор.
+ * Компонент на одно монтирование: инстанс, признак `embedded`, плагины и аксессор.
  *
- * Состав собирается один раз и дальше отвечает на все вопросы «из чего собран
- * этот компонент»: из него строится набор, по нему же — units аксессора.
+ * Плагины — свои или владельца (`IComponentPlugins`): развилка одна, здесь, и
+ * дальше о ней не знает никто. Состав набора отвечает на все вопросы «из чего
+ * собран этот компонент»: по нему строится набор, по нему же — units аксессора.
  *
  * Здесь же пропсы получают начальные значения (`applyInitialProps`) — один раз
  * на монтирование и одинаково во всех адаптерах.
@@ -10,9 +11,9 @@
 
 import type { IComponentContract, IComponentDescriptor } from '../define/types'
 import { assembleAccessor } from './accessor'
-import { assembleBundle } from './bundle'
-import { resolveComposition } from './composition'
 import { applyInitialProps } from './initial-props'
+import { TOwnPlugins } from './own-plugins.class'
+import { TSharedPlugins } from './shared-plugins.class'
 import type { IAssembledComponent, IAssemblyInput } from './types'
 
 /**
@@ -34,31 +35,30 @@ export function assembleComponent<C extends IComponentContract>(
 	input: IAssemblyInput<C['instance']>,
 ): IAssembledComponent<C['instance']> {
 	const instance = input.ctrl ?? new descriptor.ctor(input.props ?? {}, input.options ?? {})
-	// Набор, пришедший на вход, принадлежит тому, кто его передал (адаптер
-	// коллекции делит bundle компонента) — уничтожает его он же.
-	const ownsBundle = input.bundle === undefined
 	const embedded = embeddedOf(input)
 
-	// Регистрации приложения действуют там, где набор создаётся: пришедший
-	// набор уже собран по составу своего владельца, и второй раз его состав не
-	// пересматривают.
-	const composition = ownsBundle
-		? resolveComposition(descriptor, instance, { embedded })
-		: descriptor.plugins
+	// Набор на входе принадлежит тому, кто его передал: адаптер коллекции делит
+	// набор компонента с фасадом
+	const plugins =
+		input.bundle === undefined
+			? new TOwnPlugins(descriptor, instance, { embedded })
+			: new TSharedPlugins(descriptor, input.bundle)
 
-	const bundle = ownsBundle ? assembleBundle(composition, instance) : (input.bundle ?? null)
-	const accessor = assembleAccessor(descriptor, composition, instance, bundle)
+	const accessor = assembleAccessor(descriptor, plugins.composition, instance, plugins.bundle)
+	const properties = accessor.getProps()
 
-	applyInitialProps(
-		{
-			accessor,
-			declarations: descriptor.getProps(),
-			instance,
-			constructed: !input.ctrl,
-			ownsBundle,
-		},
+	// Свой инстанс получил пропсы ядра конструктором, внешний `ctrl` — нет
+	if (input.ctrl) {
+		applyInitialProps(
+			properties.filter((property) => property.instance === instance),
+			input.props,
+		)
+	}
+
+	plugins.initialize(
+		properties.filter((property) => property.instance !== instance),
 		input.props,
 	)
 
-	return { instance, embedded, bundle, ownsBundle, accessor, composition }
+	return { instance, embedded, plugins, accessor }
 }

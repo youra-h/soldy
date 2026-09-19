@@ -6,6 +6,6 @@ export { applyInitialProps } from './initial-props'
 export type {
 	IAssembledComponent,
 	IAssemblyInput,
+	IComponentPlugins,
 	ICompositionEntry,
-	IInitialPropsTarget,
 } from './types'

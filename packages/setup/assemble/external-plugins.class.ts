@@ -12,33 +12,24 @@
  *
  * Путь один, когда бы плагин ни встал: при сборке (`usePlugins`) или позже
  * (`bundle.use`) — набор сообщает `use`, и плагин подключается одинаково.
- * Значения, пришедшие раньше плагина, ждут его. Начальное значение пишется по
- * правилу сборки: только отличное от умолчания декларации
- * (`applyInitialProps`). Ключ пропал из `pluginProps` — проп возвращается к
- * умолчанию, как снятый проп компонента.
+ * Значения, пришедшие раньше плагина, ждут его. Пишет значение само свойство
+ * (`TProperty`), по тому же правилу, что и проп компонента: начальное, равное
+ * умолчанию декларации, ничего не задаёт, а ключ, пропавший из `pluginProps`,
+ * возвращает проп к умолчанию.
  *
  * Конверт уходит на шину инстанса, как и `bundle:create`: это канал, видимый
  * и адаптеру (`@plugin:event`, `onPluginEvent`), и тому, у кого на руках
  * только `ctrl`.
  */
 
-import { TAccessor } from '@soldy/accessor'
-import type { IAccessorProp, IPropDeclaration, TName } from '@soldy/accessor'
+import { TProperty } from '@soldy/accessor'
+import type { TName } from '@soldy/accessor'
 import { isEventSource } from '@soldy/core'
 import type { IEventEmitter, TPluginEvent } from '@soldy/core'
-import type { IPlugin, IPluginBundle, IPluginConstructor } from '@soldy/plugins'
-import { pluginContractOf } from '../../define'
-import type { IPluginDefinition } from '../../define'
-import { underscorePropNaming } from '../../naming'
-
-type TPluginCtor = IPluginConstructor<any, any, any>
-
-/** Проп внешнего плагина: где он живёт и какое у него умолчание. */
-type TExternalProp = Readonly<{
-	accessor: TAccessor
-	prop: IAccessorProp
-	declaration: IPropDeclaration
-}>
+import type { IPlugin, IPluginBundle } from '@soldy/plugins'
+import { pluginContractOf } from '../define'
+import type { IPluginDefinition, TPluginCtor } from '../define'
+import { underscorePropNaming } from '../naming'
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 	return typeof value === 'object' && value !== null
@@ -58,7 +49,7 @@ export class TExternalPlugins {
 	/** Текущие значения `pluginProps`. */
 	private _values: Readonly<Record<string, unknown>>
 	/** Ключ `pluginProps` (`timer_ms`) → проп подключённого плагина. */
-	private readonly _props = new Map<string, TExternalProp>()
+	private readonly _props = new Map<string, TProperty>()
 	/** Подключённый плагин → его ключи и отписка от его событий. */
 	private readonly _attached = new Map<TPluginCtor, { keys: string[]; off: () => void }>()
 	private readonly _off: () => void
@@ -102,15 +93,12 @@ export class TExternalPlugins {
 
 			if (Object.is(this._values[key], value)) continue
 
-			const target = this._props.get(key)
+			const property = this._props.get(key)
 
-			if (!target) continue
+			if (!property) continue
 
-			if (value !== undefined) {
-				this._set(target, value)
-			} else if (Object.hasOwn(target.declaration, 'default')) {
-				this._set(target, target.declaration.default)
-			}
+			if (value === undefined) property.reset()
+			else property.assign(value)
 		}
 
 		this._values = next
@@ -129,29 +117,18 @@ export class TExternalPlugins {
 
 		if (!contract) return
 
-		const accessor = new TAccessor([
-			{ instance: plugin, props: contract.props, events: contract.events },
-		])
-		const declarations = new Map(contract.props.map((d) => [d.name.getName(), d]))
 		const keys: string[] = []
 
-		for (const prop of accessor.getProps()) {
-			const declaration = declarations.get(prop.name.getName())
+		for (const declaration of contract.props) {
+			if (declaration.protected) continue
 
-			if (!declaration) continue
+			const key = underscorePropNaming(declaration.name)
+			const property = new TProperty(declaration, plugin)
 
-			const key = underscorePropNaming(prop.name)
-			const target: TExternalProp = { accessor, prop, declaration }
-
-			this._props.set(key, target)
+			this._props.set(key, property)
 			keys.push(key)
 
-			// Правило сборки: значение, равное умолчанию, ничего не задаёт
-			const value = this._values[key]
-			const isDefault =
-				Object.hasOwn(declaration, 'default') && Object.is(value, declaration.default)
-
-			if (value !== undefined && !isDefault) this._set(target, value)
+			property.initialize(this._values[key])
 		}
 
 		this._attached.set(ctor, { keys, off: this._forward(plugin, contract) })
@@ -204,11 +181,5 @@ export class TExternalPlugins {
 		}
 
 		return () => offs.forEach((off) => off())
-	}
-
-	private _set(target: TExternalProp, value: unknown): void {
-		if (Object.is(target.accessor.getValue(target.prop), value)) return
-
-		target.accessor.setValue(target.prop, value)
 	}
 }

@@ -6,6 +6,8 @@
  * Никаких namespace, pluginsMap, collection в accessor.
  */
 
+import type { IEventSource } from '@soldy/core'
+
 /**
  * Квалифицированное имя: raw name + опциональный namespace.
  * - name      — как обращаться к instance (instance[name], events.on(name))
@@ -140,22 +142,12 @@ export interface IAccessorUnit {
 	events?: readonly TName[]
 }
 
-/** Скомпилированное свойство: привязано к своему instance */
-export interface IAccessorProp {
-	name: TName
-	/** Объект-владелец: instance[name] = значение, instance.events = источник событий */
-	instance: object
-	type?: unknown
-	protected: boolean
-	triggers: TName[]
-	get?(instance: object): unknown
-	set?(instance: object, value: unknown): void
-}
-
-/** Скомпилированное событие: привязано к своему instance */
+/** Событие, привязанное к своему instance. Свойство — `TProperty`. */
 export interface IAccessorEvent {
 	name: TName
 	instance: object
+	/** Шина владельца: `instance.events`, а без неё сам владелец; не шина — слушать нечего. */
+	source: IEventSource | undefined
 }
 
 /** Elevator: DI-абстракция для передачи значений от родителя к детям */

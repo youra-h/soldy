@@ -23,6 +23,15 @@ export function underscorePropNaming(name: TName): string {
 	return `${namespace}_${name.name}`
 }
 
+/**
+ * Значение пропа в пропсах фреймворка: по имени во фреймворке (`aria_label`),
+ * а без него — по сырому (`label`), для headless-кода и тестов. Имя пропа во
+ * всех фреймворках одно, поэтому правило чтения одно на сборку и связку.
+ */
+export function propValueOf(props: object, name: TName): unknown {
+	return Reflect.get(props, underscorePropNaming(name)) ?? Reflect.get(props, name.name)
+}
+
 function toPascalCase(input: string): string {
 	return input
 		.split(/[-:]/)

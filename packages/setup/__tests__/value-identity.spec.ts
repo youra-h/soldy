@@ -22,12 +22,10 @@ import { createAdapterContext, type IAdapterContext } from '../adapter'
 
 /** Читает значение пропа так же, как это делает адаптер. */
 function read(ctx: IAdapterContext, name: string): unknown {
-	const prop = required(
+	return required(
 		ctx.accessor.getProps(true).find((p) => p.name.name === name),
 		`проп ${name}`,
-	)
-
-	return ctx.accessor.getValue(prop)
+	).value
 }
 
 describe('Составные props меняют идентичность при изменении', () => {

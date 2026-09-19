@@ -2,21 +2,23 @@
  * TAccessor — единый accessor для любых объектов.
  *
  * Принимает IAccessorUnit[] (каждый unit = {instance, props, events}).
- * Из каждого unit'а создаёт IAccessorProp[] и IAccessorEvent[] с прямой
- * ссылкой на instance — никакого namespace, pluginsMap или collection.
+ * Из каждого unit'а создаёт свойства (`TProperty`) и события с прямой ссылкой
+ * на instance — никакого namespace, pluginsMap или collection. Читает, пишет и
+ * следит за свойством оно само; аксессор знает только, какие свойства и
+ * события у компонента есть.
  *
  * Дублирующиеся имена props/events выбрасывают ошибку при создании.
  */
 
-import { isEventSource, type IEventSource } from '@soldy/core'
 import type { IAccessor } from './accessor.interface'
-import type { IAccessorProp, IAccessorEvent, IAccessorUnit } from './contract'
+import type { IAccessorEvent, IAccessorUnit } from './contract'
+import { TProperty, eventSourceOf } from './property.class'
 
 export class TAccessor implements IAccessor {
-	private readonly _props: IAccessorProp[] = []
+	private readonly _props: TProperty[] = []
 	private readonly _events: IAccessorEvent[] = []
 
-	constructor(units: IAccessorUnit[]) {
+	constructor(units: readonly IAccessorUnit[]) {
 		const seenProps = new Set<string>()
 		const seenEvents = new Set<string>()
 
@@ -25,22 +27,14 @@ export class TAccessor implements IAccessor {
 
 			if (!instance) continue
 
-			for (const decl of unit.props ?? []) {
-				if (seenProps.has(decl.name.getName())) {
-					throw new Error(`[TAccessor] Duplicate prop "${decl.name.getName()}"`)
+			for (const declaration of unit.props ?? []) {
+				if (seenProps.has(declaration.name.getName())) {
+					throw new Error(`[TAccessor] Duplicate prop "${declaration.name.getName()}"`)
 				}
 
-				seenProps.add(decl.name.getName())
+				seenProps.add(declaration.name.getName())
 
-				this._props.push({
-					name: decl.name,
-					instance,
-					type: decl.type,
-					protected: !!decl.protected,
-					triggers: decl.triggers ?? [],
-					get: decl.get,
-					set: decl.set,
-				})
+				this._props.push(new TProperty(declaration, instance))
 			}
 
 			for (const name of unit.events ?? []) {
@@ -50,51 +44,16 @@ export class TAccessor implements IAccessor {
 
 				seenEvents.add(name.getName())
 
-				this._events.push({ name, instance })
+				this._events.push({ name, instance, source: eventSourceOf(instance) })
 			}
 		}
 	}
 
-	getProps(includeProtected = false): IAccessorProp[] {
-		return includeProtected ? this._props : this._props.filter((p) => !p.protected)
+	getProps(includeProtected = false): TProperty[] {
+		return includeProtected ? this._props : this._props.filter((prop) => !prop.protected)
 	}
 
 	getEvents(): IAccessorEvent[] {
 		return this._events
-	}
-
-	/** prop.get(instance) если задан, иначе instance[name] (со снимком через valueOf) */
-	getValue(prop: IAccessorProp): unknown {
-		if (prop.get) return prop.get(prop.instance)
-
-		const value: unknown = Reflect.get(prop.instance, prop.name.name)
-
-		if (typeof value === 'object' && value !== null && typeof value.valueOf === 'function') {
-			return value.valueOf() ?? value
-		}
-
-		return value
-	}
-
-	/** prop.set(instance, value) если задан, иначе instance[name] = value */
-	setValue(prop: IAccessorProp, value: unknown): void {
-		if (prop.protected) return
-
-		if (prop.set) {
-			prop.set(prop.instance, value)
-			return
-		}
-
-		if (prop.name.name in prop.instance) {
-			Reflect.set(prop.instance, prop.name.name, value)
-		}
-	}
-
-	/** instance.events (или сам instance, если events отсутствуют) */
-	getEventSource(item: IAccessorProp | IAccessorEvent): IEventSource | undefined {
-		const events: unknown = Reflect.get(item.instance, 'events')
-		const source = events ?? item.instance
-
-		return isEventSource(source) ? source : undefined
 	}
 }

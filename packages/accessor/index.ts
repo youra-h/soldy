@@ -8,3 +8,4 @@
 export * from './contract'
 export type { IAccessor } from './accessor.interface'
 export { TAccessor } from './accessor.class'
+export { TProperty } from './property.class'

@@ -41,10 +41,10 @@ const ENTRY = 'index.ts'
 const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 	naming: [],
 	registry: [],
-	assemble: ['registry', 'naming'],
+	assemble: ['registry', 'naming', 'define'],
 	define: [],
 	descriptors: ['define'],
-	adapter: ['assemble', 'registry', 'naming', 'define'],
+	adapter: ['assemble', 'registry', 'naming'],
 	[ENTRY]: ['define', 'descriptors', 'registry', 'adapter', 'naming'],
 }
 

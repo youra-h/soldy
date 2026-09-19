@@ -6,7 +6,6 @@ export type {
 	ISlotDefinition,
 	IContribution,
 	IAccessorUnit,
-	IAccessorProp,
 	IAccessorEvent,
 	INamingStrategy,
 	IContextElevator,
