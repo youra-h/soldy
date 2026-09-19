@@ -3,6 +3,7 @@ export type {
 	IPluginContext,
 	IPluginConstructor,
 	IPluginBundle,
+	TPluginBundleEvents,
 	TPluginEvents,
 	TPluginPublicEventName,
 	TPluginInternalEvents,

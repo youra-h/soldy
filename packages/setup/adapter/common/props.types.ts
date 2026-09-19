@@ -21,7 +21,27 @@ export type TAdapterProps<TInstance> = {
 	 * `usePlugins` со `scope: 'own'` пропускает вложенный компонент.
 	 */
 	embedded?: string
+	/**
+	 * Значения пропсов плагинов, поставленных снаружи (`usePlugins`,
+	 * `bundle.use`), по имени пропа: `{ timer_ms: 500 }`. Типы ключей
+	 * приложение дописывает в `IExternalPluginProps`.
+	 */
+	pluginProps?: TExternalPluginProps
 }
+
+/**
+ * Пропсы внешних плагинов, которые знает приложение. Пустой намеренно: его
+ * дополняют рядом с `definePlugin` плагина —
+ *
+ *   declare module '@soldy/setup' {
+ *     interface IExternalPluginProps { timer_ms?: number }
+ *   }
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface IExternalPluginProps {}
+
+/** `pluginProps`: известные ключи с их типами, остальные — как есть. */
+export type TExternalPluginProps = IExternalPluginProps & Readonly<Record<string, unknown>>
 
 /** Пропсы компонента из дескриптора: свои, плагинов дескриптора и служебные адаптера. */
 export type DescriptorComponentProps<

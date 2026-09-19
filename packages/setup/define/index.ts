@@ -1,5 +1,5 @@
 export { normalizeContribution } from './contribution'
-export { definePlugin } from './plugin'
+export { definePlugin, pluginContractOf } from './plugin'
 export { defineComponent } from './component'
 export { defineDescriptor } from './descriptor'
 export { defineType } from './prop-type'

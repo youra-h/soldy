@@ -42,3 +42,11 @@ function toPascalCase(input: string): string {
 export function callbackEventNaming(name: TName): string {
 	return `on${toPascalCase(name.getName())}`
 }
+
+/**
+ * Проп со значениями для пропсов плагинов, поставленных снаружи:
+ * `{ timer_ms: 500 }`. Один на все компоненты и одинаковый во всех адаптерах —
+ * статический слой Vue, Angular и Web Components объявляет его заранее, а
+ * пропсы внешнего плагина узнаются только в рантайме.
+ */
+export const PLUGIN_PROPS = 'pluginProps'

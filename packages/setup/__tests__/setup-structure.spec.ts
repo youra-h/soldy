@@ -44,7 +44,7 @@ const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 	assemble: ['registry', 'naming'],
 	define: [],
 	descriptors: ['define'],
-	adapter: ['assemble', 'registry', 'naming'],
+	adapter: ['assemble', 'registry', 'naming', 'define'],
 	[ENTRY]: ['define', 'descriptors', 'registry', 'adapter', 'naming'],
 }
 

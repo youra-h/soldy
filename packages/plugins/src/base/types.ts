@@ -81,7 +81,21 @@ export interface IPluginConstructor<
 /**
  * Контейнер плагинов.
  */
+/**
+ * События набора: плагин встал и плагин снят — в любой момент жизни
+ * компонента, не только при сборке. По ним setup подхватывает контракт
+ * плагина, поставленного снаружи (`pluginProps`, `plugin:event`).
+ */
+export type TPluginBundleEvents = {
+	/** Плагин установлен: после `install`. */
+	use: (ctor: IPluginConstructor<any, any, any>, plugin: IPlugin<any, any>) => void
+	/** Плагин снимается: до его `destroy`. */
+	remove: (ctor: IPluginConstructor<any, any, any>, plugin: IPlugin<any, any>) => void
+}
+
 export interface IPluginBundle {
+	/** Шина набора: `use`, `remove` (`TPluginBundleEvents`). */
+	readonly events: TEvented<TPluginBundleEvents>
 	/**
 	 * Компонент, которому принадлежит набор.
 	 *

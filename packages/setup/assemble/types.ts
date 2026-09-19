@@ -8,9 +8,9 @@ import type { IPluginBundle, IPluginConstructor } from '@soldy/plugins'
 /**
  * Запись состава: какой плагин ставить, с чем и что он объявляет наружу.
  *
- * Декларации есть только у плагинов дескриптора: внешний плагин контракт
- * компонента не расширяет (AGENTS.md, «Внешний плагин не расширяет контракт
- * компонента»).
+ * Декларации есть только у плагинов дескриптора: контракт внешнего плагина
+ * ведёт контекст через `pluginProps`
+ * (AGENTS.md, «Внешний плагин: пропсы — `pluginProps`, события — `plugin:event`»).
  */
 export interface ICompositionEntry {
 	readonly ctor: IPluginConstructor<any, any, any>
@@ -49,6 +49,8 @@ export interface IAssembledComponent<TInstance extends object = object> {
 	 */
 	readonly ownsBundle: boolean
 	readonly accessor: TAccessor
+	/** Из чего собран набор: плагины дескриптора, затем реестра. */
+	readonly composition: readonly ICompositionEntry[]
 }
 
 /** Куда сборка пишет начальные значения пропсов (`applyInitialProps`). */

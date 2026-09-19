@@ -43,6 +43,7 @@
 
 import type { IEventSource } from '@soldy/core'
 import type { IAccessorEvent, IAccessorProp, TAccessor } from '@soldy/accessor'
+import { PLUGIN_PROPS } from '../../naming'
 import type { IAdapterContext } from '../context'
 import { surfaceOf } from './surface'
 import type {
@@ -85,6 +86,7 @@ function sameValue(a: unknown, b: unknown): boolean {
 export class TComponentBinding implements IComponentBinding {
 	readonly surface: ISurface
 
+	private readonly _context: IAdapterContext
 	private readonly _accessor: TAccessor
 	/** Свойства поверхности, у которых в аксессоре есть владелец. */
 	private readonly _targets = new Map<ISurfaceProp, IAccessorProp>()
@@ -107,6 +109,7 @@ export class TComponentBinding implements IComponentBinding {
 
 	constructor(context: IAdapterContext, profile: IAdapterProfile) {
 		this.surface = surfaceOf(context.descriptor, profile)
+		this._context = context
 		this._accessor = context.accessor
 
 		for (const prop of this.surface.inputs) {
@@ -241,6 +244,17 @@ export class TComponentBinding implements IComponentBinding {
 	}
 
 	write(prop: ISurfaceProp, value: unknown): void {
+		// Значения для плагинов снаружи разбирает контекст: он знает, какие
+		// плагины сейчас в наборе, а связка — только поверхность компонента
+		if (prop.key === PLUGIN_PROPS) {
+			if (value === undefined) this._assigned.delete(prop)
+			else this._assigned.set(prop, value)
+
+			this._context.writePluginProps(value)
+
+			return
+		}
+
 		const target = prop.protected ? undefined : this._targets.get(prop)
 
 		if (!target) return
