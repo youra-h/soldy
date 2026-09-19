@@ -34,25 +34,6 @@
 		@apply transition-colors duration-150;
 	}
 
-	&--view-plain {
-		input {
-			&:focus-visible + #{$this}__container {
-				@apply outline-0;
-			}
-		}
-
-		#{$this}__container {
-			@apply border-0;
-			@apply bg-transparent;
-		}
-	}
-
-	// Коробка залита цветом варианта, отмеченная — насыщенным. Цвет по
-	// состояниям и вариантам — `checkbox-filled-view`.
-	&--view-filled {
-		@include mixines.checkbox-filled-view($this);
-	}
-
 	&--required {
 		#{$this}__container::after {
 			@include required.required-indicator();
@@ -89,6 +70,32 @@
 
 	&--variant-caution {
 		@include mixines.checkbox-variant($this, $color: 'caution');
+	}
+
+	// Виды — после вариантов, не переставлять: вид ложится поверх цвета
+	// варианта, и с правилом варианта правило вида бывает равно по
+	// специфичности — тогда побеждает порядок.
+	&--view-plain {
+		input {
+			&:focus-visible + #{$this}__container {
+				@apply outline-0;
+			}
+		}
+
+		// Без рамки и фона — и выключенная: ей фон задаёт вид по умолчанию
+		// (`checkbox-variant`). Его правило у нейтрали слабее второго
+		// селектора, у варианта равно ему и уступает порядком.
+		#{$this}__container,
+		input:disabled + #{$this}__container {
+			@apply border-0;
+			@apply bg-transparent;
+		}
+	}
+
+	// Коробка залита цветом варианта, отмеченная — насыщенным. Цвет по
+	// состояниям и вариантам — `checkbox-filled-view`.
+	&--view-filled {
+		@include mixines.checkbox-filled-view($this);
 	}
 }
 

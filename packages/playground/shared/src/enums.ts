@@ -87,7 +87,7 @@ export const COMPONENT_VARIANTS = enumOf<TComponentVariant>()([
  */
 export const BUTTON_VIEWS = enumOf<TButtonView>()(['filled', 'plain', 'outlined', 'none'])
 
-export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['plain'])
+export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['outlined', 'filled', 'plain'])
 
 /** С какой стороны от контрола стоит текст подписи. */
 export const LABEL_POSITIONS = enumOf<TLabelPosition>()(['start', 'end', 'top', 'bottom'])
