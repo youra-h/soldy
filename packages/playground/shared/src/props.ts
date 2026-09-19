@@ -12,6 +12,7 @@ import {
 	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	POPOVER_PLACEMENTS,
 	RADIO_GROUP_VIEWS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
@@ -98,7 +99,7 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select его ведёт сам плагин по open',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select и Popover его ведёт сам плагин по open',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -134,6 +135,15 @@ const OWN: Record<string, Record<string, string>> = {
 			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 		placement:
 			'С какой стороны открывается панель: auto — снизу, у края окна сверху; top и bottom — всегда там',
+	},
+	popover: {
+		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
+		closable: 'Показывать ли кнопку закрытия в углу панели',
+		closeLabel: 'Имя кнопки закрытия для скринридера',
+		lazyMount:
+			'Не монтировать содержимое, пока панель не открывали. Потом закрытие только прячет её',
+		placement:
+			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -205,6 +215,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	'list-box': { view: BUTTON_VIEWS },
 	'radio-group': { view: RADIO_GROUP_VIEWS },
 	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
+	popover: { placement: POPOVER_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
