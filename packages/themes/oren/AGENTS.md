@@ -127,15 +127,15 @@ hover: в тёмной схеме заливка светлеет.
 мёртвый CSS: потребитель не сможет задать такое значение, компилятор его не
 пропустит. Сверяет `__tests__/theme-values.spec.ts`. Обратное не требуется:
 значению, которое совпадает с видом по умолчанию, правило не нужно
-(`--view-line` у Tabs, `--shape-rounded`, `--animation-pulse`,
-`--variant-normal` у всех, кроме Spinner).
+(`--view-line` у Tabs, `--view-outlined` у CheckBox, `--shape-rounded`,
+`--animation-pulse`, `--variant-normal` у всех, кроме Spinner).
 
 **Вид по умолчанию — на самом блоке.** У компонента без значения модификатора
 нет, и блок выглядит прежним умолчанием: Button — `filled` с нейтралью,
 Spinner — `accent`, Tabs — `line`, Skeleton — `rounded` и `pulse`, элемент
-RadioGroup — `dot` с нейтралью, Input, CheckBox и Switch — нейтраль. Корень
-базового вида — `:where(.s-<блок>)`, нулевая специфичность: модификатор
-перекрывает базу, не споря с ней.
+RadioGroup — `dot` с нейтралью, CheckBox — `outlined` с нейтралью, Input и
+Switch — нейтраль. Корень базового вида — `:where(.s-<блок>)`, нулевая
+специфичность: модификатор перекрывает базу, не споря с ней.
 
 **Вид по контексту.** Раньше строки ListBox, Accordion и Select, крестики Tabs
 и Tags и очистку Select разметка рисовала с `view="plain"`, строку таба — с
