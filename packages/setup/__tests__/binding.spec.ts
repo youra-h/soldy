@@ -55,13 +55,12 @@ describe('поверхность', () => {
 })
 
 describe('поверхность · умолчание пропа из декларации', () => {
-	it('без ключа в декларации default нет ни в конфиге, ни в свойстве поверхности', () => {
+	it('без ключа в декларации default нет и в конфиге статического слоя', () => {
 		const surface = surfaceOf(single({ name: 'text', type: String }), CallbackProfile)
 		const config = surface.exportProps.text
 
 		expect(config).toEqual({ type: String })
 		expect(Object.hasOwn(config, 'default')).toBe(false)
-		expect(Object.hasOwn(required(surface.props[0], 'проп text'), 'default')).toBe(false)
 	})
 
 	it('ключ со значением undefined сохраняется', () => {
@@ -78,22 +77,6 @@ describe('поверхность · умолчание пропа из декл�
 
 		expect(Object.hasOwn(config, 'default')).toBe(true)
 		expect(config.default).toBeUndefined()
-	})
-
-	it('свойство поверхности несёт то же умолчание — к нему связка сбрасывает снятый проп', () => {
-		const surface = surfaceOf(TabsItemDescriptor(), CallbackProfile)
-		const find = (key: string) =>
-			required(
-				surface.props.find((prop) => prop.key === key),
-				`проп ${key}`,
-			)
-
-		expect(find('text').default).toBe('')
-		expect(Object.hasOwn(find('closable'), 'default')).toBe(true)
-		expect(find('closable').default).toBeUndefined()
-		// Проп плагина — так же: «имени нет» объявлено ключом без значения
-		expect(Object.hasOwn(find('aria:label'), 'default')).toBe(true)
-		expect(find('aria:label').default).toBeUndefined()
 	})
 
 	it('protected-проп наружу не уходит', () => {

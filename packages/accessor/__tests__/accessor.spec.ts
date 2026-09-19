@@ -11,6 +11,7 @@ import { TEvented } from '@soldy/core'
 import { TAccessor } from '../accessor.class'
 import { TName } from '../contract'
 import type { IPropDeclaration } from '../contract'
+import { TEventRelay } from '../event-relay.class'
 import { TProperty } from '../property.class'
 
 describe('TAccessor', () => {
@@ -203,5 +204,53 @@ describe('TProperty · правило записи', () => {
 
 		expect(property.source).toBeUndefined()
 		expect(property.watch(() => {})).toBeTypeOf('function')
+	})
+})
+
+describe('TEventRelay', () => {
+	it('одна пара «источник, имя» слушается один раз', () => {
+		const events = new TEvented<{ 'change:visible': (value: boolean) => void }>()
+		const relay = new TEventRelay()
+		const handler = vi.fn()
+
+		// `change:visible` объявлен триггером и у `visible`, и у `present`
+		relay.listen(events, 'change:visible', handler)
+		relay.listen(events, 'change:visible', handler)
+
+		events.emit('change:visible', true)
+
+		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler).toHaveBeenCalledWith(true)
+	})
+
+	it('то же имя у другого источника — другое событие', () => {
+		const component = new TEvented<{ create: () => void }>()
+		const plugin = new TEvented<{ create: () => void }>()
+		const relay = new TEventRelay()
+		const handler = vi.fn()
+
+		relay.listen(component, 'create', handler)
+		relay.listen(plugin, 'create', handler)
+
+		component.emit('create')
+		plugin.emit('create')
+
+		expect(handler).toHaveBeenCalledTimes(2)
+	})
+
+	it('stop снимает и свои подписки, и добавленные отписки', () => {
+		const events = new TEvented<{ ready: () => void }>()
+		const relay = new TEventRelay()
+		const handler = vi.fn()
+		const off = vi.fn()
+
+		relay.listen(events, 'ready', handler)
+		relay.add(off)
+		relay.stop()
+
+		events.emit('ready')
+
+		expect(handler).not.toHaveBeenCalled()
+		expect(off).toHaveBeenCalledTimes(1)
 	})
 })

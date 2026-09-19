@@ -22,8 +22,7 @@
  * только `ctrl`.
  */
 
-import { TProperty } from '@soldy/accessor'
-import type { TName } from '@soldy/accessor'
+import { TEventRelay, TProperty } from '@soldy/accessor'
 import { isEventSource } from '@soldy/core'
 import type { IEventEmitter, TPluginEvent } from '@soldy/core'
 import type { IPlugin, IPluginBundle } from '@soldy/plugins'
@@ -148,7 +147,8 @@ export class TExternalPlugins {
 
 	/**
 	 * События плагина — явные и триггеры его пропсов — одним конвертом на шину
-	 * инстанса. Один сырой триггер у двух пропсов пересылается один раз.
+	 * инстанса. Один сырой триггер у двух пропсов пересылается один раз
+	 * (`TEventRelay`).
 	 */
 	private _forward(plugin: IPlugin<any, any>, contract: IPluginDefinition): () => void {
 		const bus: unknown = Reflect.get(this._instance, 'events')
@@ -156,30 +156,20 @@ export class TExternalPlugins {
 
 		if (!hasEmit(bus) || !isEventSource(source)) return () => {}
 
-		const offs: Array<() => void> = []
-		const seen = new Set<string>()
+		const relay = new TEventRelay()
+		const names = [
+			...contract.events,
+			...contract.props.flatMap((declaration) => declaration.triggers ?? []),
+		]
 
-		const forward = (name: TName): void => {
-			if (seen.has(name.name)) return
-
-			seen.add(name.name)
-
-			const handler = (...args: unknown[]) => {
+		for (const name of names) {
+			relay.listen(source, name.name, (...args) => {
 				const event: TPluginEvent = { name: name.getName(), args }
 
 				bus.emit('plugin:event', event)
-			}
-
-			source.on(name.name, handler)
-			offs.push(() => source.off(name.name, handler))
+			})
 		}
 
-		for (const name of contract.events) forward(name)
-
-		for (const declaration of contract.props) {
-			for (const trigger of declaration.triggers ?? []) forward(trigger)
-		}
-
-		return () => offs.forEach((off) => off())
+		return () => relay.stop()
 	}
 }
