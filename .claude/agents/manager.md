@@ -43,6 +43,10 @@ tools: Read, mcp__clickup__clickup_list_by_status, mcp__clickup__clickup_get_tas
 задача в работе учитывается: при столкновении уступает не она, а другая, и
 связь «A ждёт B» ставится со стороны A.
 
+**`packages/setup/**` — строгий запрет владельца.\*\* Задачу, чей план или
+описание требует правки в setup, в IN PROGRESS не выпускаешь: переставь её в
+OVERVIEW с комментарием «план правит setup — нужен владелец».
+
 ## Порядок работы
 
 1. `clickup_list_by_status` по `in progress`, `planning` и `overview`. В каждой
