@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TSpinner } from '@soldy/core'
-import type { ISpinnerProps, TSpinnerEvents } from '@soldy/core'
 import { SpinnerLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const SpinnerDescriptor = defineDescriptor(() =>
-	defineComponent<ISpinnerProps, TSpinnerEvents>()({
+	defineComponent({
 		ctor: TSpinner,
 
 		extends: StylableDescriptor(),

@@ -1,9 +1,10 @@
+/**
+ * Определение TTabsLayoutPlugin (namespace `layout`) — размеры табов (ResizeObserver).
+ */
+
 import { definePlugin } from '../../define'
 import { TTabsLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Плагин отслеживания изменения размеров табов (ResizeObserver).
- */
 export const TabsLayoutPluginDescriptor = () =>
 	definePlugin({
 		ctor: TTabsLayoutPlugin,

@@ -1,13 +1,16 @@
-import { definePlugin } from '../../define'
-import { TSelectBackspacePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TSelectBackspacePluginEvents } from '@soldy/plugins'
-
 /**
+ * Определение TSelectBackspacePlugin (namespace `backspace`) — удаление тегов Select.
+ *
  * Удаление выбранных тегов по `Backspace` в пустом поле Select
  * (`editable` + `multiple`, `removeOnBackspace`). Подключается после
  * `SelectEditablePluginDescriptor()` — тем же порядком, что и остальные
  * реакции на клавиатуру и ввод, хотя от них не зависит.
  */
+
+import { definePlugin } from '../../define'
+import { TSelectBackspacePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import type { TSelectBackspacePluginEvents } from '@soldy/plugins'
+
 export const SelectBackspacePluginDescriptor = () =>
 	definePlugin<'backspace', TSelectBackspacePluginEvents>({
 		ctor: TSelectBackspacePlugin,

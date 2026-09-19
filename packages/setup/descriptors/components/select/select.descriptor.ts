@@ -9,8 +9,6 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TSelect } from '@soldy/core'
 import type {
-	ISelectProps,
-	TSelectEvents,
 	IInput,
 	ISelectItem,
 	TSelectEditableMode,
@@ -29,42 +27,29 @@ import {
 	SelectPointerPluginDescriptor,
 } from '../../plugins'
 import { LIST_PROPS } from '../list'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты Select.
- *
- * `field` и `clear` отделены от `default` структурно, а не по вкусу:
- * `default` кладётся внутрь `[role=listbox]`, и всё, что туда попадёт,
- * скринридер сочтёт опцией. Поле и кнопка очистки живут снаружи панели.
- *
- * `empty` показывается вместо списка, когда опций нет: пустой `listbox` для
- * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
- *
- * `field` отдаёт сам `field` — экземпляр `TInput`, единственный держатель
- * текста, плейсхолдера и ARIA поля (тем же приёмом, что `:ctrl="field"` у
- * встроенной разметки, см. `TSelect.field`, `TSelectExtension`). Второго пути
- * к тем же данным больше нет: раньше слот отдавал `text`/`placeholder`
- * отдельными пропами, а они дублировали то, что уже есть у `field`, и
- * `placeholder` при этом расходился с ним — не учитывал теги.
- */
-export type TSelectSlots = {
-	field: { field: IInput }
-	leading: TEmptySlotScope
-	clear: TEmptySlotScope
-	'arrow-icon': TEmptySlotScope
-	trailing: TEmptySlotScope
-	default: TEmptySlotScope
-	empty: TEmptySlotScope
-}
 
 export const SelectDescriptor = defineDescriptor(() =>
-	defineComponent<ISelectProps, TSelectEvents, TSelectSlots>()({
+	defineComponent({
 		ctor: TSelect,
 
 		extends: InputControlDescriptor(),
 
 		contribution: {
+			/**
+			 * `field` и `clear` отделены от `default` структурно, а не по вкусу:
+			 * `default` кладётся внутрь `[role=listbox]`, и всё, что туда попадёт,
+			 * скринридер сочтёт опцией. Поле и кнопка очистки живут снаружи панели.
+			 *
+			 * `empty` показывается вместо списка, когда опций нет: пустой `listbox`
+			 * для скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
+			 *
+			 * `field` отдаёт сам `field` — экземпляр `TInput`, единственный держатель
+			 * текста, плейсхолдера и ARIA поля (тем же приёмом, что `:ctrl="field"` у
+			 * встроенной разметки, см. `TSelect.field`, `TSelectExtension`). Второго
+			 * пути к тем же данным больше нет: раньше слот отдавал `text`/`placeholder`
+			 * отдельными пропами, а они дублировали то, что уже есть у `field`, и
+			 * `placeholder` при этом расходился с ним — не учитывал теги.
+			 */
 			slots: {
 				field: {
 					scope: { field: defineType<IInput>(Object) },

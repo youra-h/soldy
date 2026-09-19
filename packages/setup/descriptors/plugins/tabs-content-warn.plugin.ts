@@ -1,10 +1,13 @@
+/**
+ * Определение TTabsContentWarnPlugin (namespace `contentWarn`) — диагностика слота панели.
+ *
+ * Предупреждает, если панель Tabs.Content оказалась внутри [role="tablist"]
+ * (положена в default вместо content).
+ */
+
 import { definePlugin } from '../../define'
 import { TTabsContentWarnPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Диагностика неверного слота: предупреждает, если панель Tabs.Content
- * оказалась внутри [role="tablist"] (положена в default вместо content).
- */
 export const TabsContentWarnPluginDescriptor = () =>
 	definePlugin({
 		ctor: TTabsContentWarnPlugin,

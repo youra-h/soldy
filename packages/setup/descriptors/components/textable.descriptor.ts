@@ -7,11 +7,10 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TTextable } from '@soldy/core'
-import type { ITextableProps, TTextableEvents } from '@soldy/core'
 import { ControlDescriptor } from './control.descriptor'
 
 export const TextableDescriptor = defineDescriptor(() =>
-	defineComponent<ITextableProps, TTextableEvents>()({
+	defineComponent({
 		ctor: TTextable,
 
 		extends: ControlDescriptor(),

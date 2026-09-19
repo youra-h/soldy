@@ -9,41 +9,31 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TAccordion } from '@soldy/core'
-import type { IAccordionProps, TAccordionEvents, IAccordionItem } from '@soldy/core'
+import type { IAccordionItem } from '@soldy/core'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DragPluginDescriptor,
 } from '../../plugins'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты Accordion.
- *
- * Слоты элементов статические и получают элемент через scope: динамические
- * имена вида `item:<value>:leading` резолвит только Vue. Адресация конкретного
- * элемента — условием внутри слота по `item.value`.
- *
- * Панель отдельным компонентом не стала: она лежит внутри элемента и отдельно
- * от него не существует, поэтому осталась слотом `item-content`. Сравни с
- * Tabs, где панель — сосед списка, пишется отдельно и связывается по `value`.
- */
-export type TAccordionSlots = {
-	default: TEmptySlotScope
-	item: { item: IAccordionItem }
-	'item-leading': { item: IAccordionItem }
-	'item-trailing': { item: IAccordionItem }
-	'item-content': { item: IAccordionItem }
-}
 
 export const AccordionDescriptor = defineDescriptor(() =>
-	defineComponent<IAccordionProps, TAccordionEvents, TAccordionSlots>()({
+	defineComponent({
 		ctor: TAccordion,
 
 		extends: ControlDescriptor(),
 
 		contribution: {
+			/**
+			 * Слоты элементов статические и получают элемент через scope:
+			 * динамические имена вида `item:<value>:leading` резолвит только Vue.
+			 * Адресация конкретного элемента — условием внутри слота по `item.value`.
+			 *
+			 * Панель отдельным компонентом не стала: она лежит внутри элемента и
+			 * отдельно от него не существует, поэтому осталась слотом `item-content`.
+			 * Сравни с Tabs, где панель — сосед списка, пишется отдельно и
+			 * связывается по `value`.
+			 */
 			slots: {
 				default: { description: 'Элементы коллекции' },
 				item: {

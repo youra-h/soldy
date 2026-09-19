@@ -9,35 +9,25 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TTags } from '@soldy/core'
-import type { ITagsProps, TTagsEvents, ITagsItem } from '@soldy/core'
+import type { ITagsItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 } from '../../plugins'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты Tags.
- *
- * Tags — не список: заголовка/подвала ListBox здесь нет, потому что у задачи
- * нет потребителя для них. Слоты элементов статические и получают элемент
- * через scope (см. ListBox).
- */
-export type TTagsSlots = {
-	default: TEmptySlotScope
-	item: { item: ITagsItem }
-	'item-leading': { item: ITagsItem }
-	'item-trailing': { item: ITagsItem }
-}
 
 export const TagsDescriptor = defineDescriptor(() =>
-	defineComponent<ITagsProps, TTagsEvents, TTagsSlots>()({
+	defineComponent({
 		ctor: TTags,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: {
+			/**
+			 * Tags — не список: заголовка и подвала ListBox здесь нет, потому что у
+			 * задачи нет потребителя для них. Слоты элементов статические и
+			 * получают элемент через scope (см. ListBox).
+			 */
 			slots: {
 				default: { description: 'Теги — элементы коллекции' },
 				item: {

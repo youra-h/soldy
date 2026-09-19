@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части Select — фасады владельца и опции.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`SelectDescriptor`, `SelectItemDescriptor`): адаптер собирает компонент из
+ * обоих рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TSelectCollectionFacade, TSelectItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'

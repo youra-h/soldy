@@ -16,7 +16,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TListBox } from '@soldy/core'
-import type { IListBoxProps, TListBoxEvents, IListBoxItem } from '@soldy/core'
+import type { IListBoxItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -27,33 +27,20 @@ import {
 	ListScrollPluginDescriptor,
 } from '../../plugins'
 import { LIST_PROPS } from '../list'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты ListBox.
- *
- * Панели у списка нет: выбор элемента не раскрывает содержимое, поэтому части
- * `Content` здесь не существует — в отличие от Tabs и от слота `item-content`
- * у Accordion.
- *
- * Слоты элементов статические и получают элемент через scope (см. Accordion).
- */
-export type TListBoxSlots = {
-	default: TEmptySlotScope
-	header: TEmptySlotScope
-	footer: TEmptySlotScope
-	item: { item: IListBoxItem }
-	'item-leading': { item: IListBoxItem }
-	'item-trailing': { item: IListBoxItem }
-}
 
 export const ListBoxDescriptor = defineDescriptor(() =>
-	defineComponent<IListBoxProps, TListBoxEvents, TListBoxSlots>()({
+	defineComponent({
 		ctor: TListBox,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: {
+			/**
+			 * Панели у списка нет: выбор элемента не раскрывает содержимое, поэтому
+			 * части `Content` здесь не существует — в отличие от Tabs и от слота
+			 * `item-content` у Accordion. Слоты элементов статические и получают
+			 * элемент через scope (см. Accordion).
+			 */
 			slots: {
 				default: { description: 'Элементы коллекции' },
 				header: { description: 'Над списком' },

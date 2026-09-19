@@ -5,7 +5,13 @@
  * библиотеки. Собирает по ним компонент сборка (`assemble/`).
  */
 
-import type { IContribution, IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
+import type {
+	IContribution,
+	IPropDeclaration,
+	ISlotDeclaration,
+	ISlotDefinition,
+	TName,
+} from '@soldy/accessor'
 import type { IPluginConstructor } from '@soldy/plugins'
 
 /**
@@ -13,7 +19,8 @@ import type { IPluginConstructor } from '@soldy/plugins'
  *
  * Параметры стёрты: пропсы и опции приходят от фреймворка в рантайме, и сверять
  * их здесь не с чем. Тип инстанса не стёрт — его дескриптор несёт дальше, в
- * `IAdapterContext<TInstance>` (см. AGENTS.md, «`any`: где он честный»).
+ * `IAdapterContext<TInstance>` (см. AGENTS.md, «`any`: где он честный»), и из
+ * него же выводит типы пропсов и событий (`TInstanceProps`, `TInstanceEvents`).
  *
  * `defaultValues` — статика класса ядра (`TComponentView.defaultValues`): из неё
  * `defineComponent` собирает умолчания пропов в декларации. Объявлена в типе,
@@ -56,27 +63,60 @@ export interface IPluginDefinition<
 	namespace?: N
 }
 
-/** Опции для defineComponent(). */
+/**
+ * Объявление слота в опциях `defineComponent`.
+ *
+ * Уже `ISlotDefinition` аксессора: там scope — любой словарь, рантайму нужен
+ * только состав ключей. Здесь значение scope — `defineType<T>`, и из него
+ * выводится тип данных слота (`DescriptorSlots`). Значение без типа (`String`)
+ * поэтому не компилируется, а не превращается в `unknown` в типах адаптеров.
+ */
+export interface IComponentSlotDefinition extends ISlotDefinition {
+	scope?: Record<string, TPropType<unknown>>
+}
+
+/** Слоты в опциях `defineComponent`: имя слота — ключ словаря, как у `slots` в `IContribution`. */
+export type TSlotDefinitions = Record<string, IComponentSlotDefinition>
+
+/** Contribution компонента: то же, что `IContribution`, но у слотов scope с типами. */
+export interface IComponentContribution<
+	TSlots extends TSlotDefinitions = TSlotDefinitions,
+> extends IContribution {
+	slots?: TSlots
+}
+
+/**
+ * Опции для defineComponent().
+ *
+ * Параметры руками не передаются — их выводит `defineComponent` из самих
+ * опций: кортеж плагинов из `plugins`, объявление слотов из
+ * `contribution.slots`, плагины, слоты и инстанс родителя из `extends`, свой
+ * инстанс из `ctor`. Без `ctor` инстанс — родительский (дефолт `TInstance`).
+ */
 export interface IComponentDefinitionOptions<
 	TPlugins extends readonly IPluginDefinition[] = readonly [],
+	TSlots extends TSlotDefinitions = Record<never, never>,
 	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
-	TInstance extends object = never,
+	TParentSlots extends object = object,
 	TParentInstance extends object = object,
+	TInstance extends object = TParentInstance,
 > {
 	/** Конструктор core-компонента. Без него инстанс наследуется от `extends`. */
 	ctor?: TComponentCtor<TInstance>
 	/** Родительский дескриптор (наследование props, events, slots, plugins) */
-	extends?: IComponentDescriptor<any, any, TParentPlugins, any, TParentInstance>
+	extends?: IComponentDescriptor<any, any, TParentPlugins, TParentSlots, TParentInstance>
 	/** Собственная контрибуция компонента */
-	contribution?: IContribution
+	contribution?: IComponentContribution<TSlots>
 	/** Плагины (каждый — результат definePlugin) */
 	plugins?: readonly [...TPlugins]
 }
 
-/** Опции без привязки к конкретному составу плагинов и инстансу — для реализации. */
+/** Опции без привязки к конкретному составу плагинов, слотов и инстансу — для реализации. */
 export type TDefinitionOptions = IComponentDefinitionOptions<
 	readonly IPluginDefinition[],
+	TSlotDefinitions,
 	readonly IPluginDefinition[],
+	object,
 	object,
 	object
 >
@@ -90,9 +130,11 @@ export interface IBundleContext {
 /**
  * Дескриптор компонента — единственный источник истины.
  *
- * TProps/TEvents — phantom-параметры: в рантайме не используются, но позволяют
- * адаптерам выводить типы props/events прямо из фабрики дескриптора
- * (DescriptorProps<typeof ButtonDescriptor> → IButtonProps).
+ * TProps/TEvents/TPlugins/TSlots — фантомные параметры: в рантайме не
+ * используются, но позволяют адаптерам выводить типы прямо из фабрики
+ * дескриптора (DescriptorProps<typeof ButtonDescriptor> → IButtonProps). Руками
+ * их не задают: `defineComponent` выводит пропсы и события из класса ядра
+ * (`ctor`), слоты — из объявления `slots`, кортеж — из `plugins`.
  */
 export interface IComponentDescriptor<
 	/*

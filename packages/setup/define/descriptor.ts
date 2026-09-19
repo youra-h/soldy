@@ -8,7 +8,7 @@
  * класса ядра, и ничего из этого после сборки не меняется.
  *
  *   export const ButtonDescriptor = defineDescriptor(() =>
- *     defineComponent<IButtonProps, TButtonEvents, TButtonSlots>()({ … }),
+ *     defineComponent({ ctor: TButton, extends: TextableDescriptor(), … }),
  *   )
  *
  * До этого `ButtonDescriptor()` на каждом монтировании пересобирал всю цепочку

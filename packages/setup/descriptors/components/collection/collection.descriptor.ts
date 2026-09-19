@@ -1,10 +1,12 @@
-import { defineComponent, defineDescriptor } from '../../../define'
-
 /**
  * Базовый дескриптор владельца коллекции.
- * Содержит общие props/events (items, trackBy + engine-события).
- * Конкретные коллекции (Tabs, Accordion, ...) наследуют его через `extends`.
+ *
+ * Содержит общие props/events (items, trackBy + engine-события). Конкретные
+ * коллекции (Tabs, Accordion, ...) наследуют его через `extends`.
  */
+
+import { defineComponent, defineDescriptor } from '../../../define'
+
 export const CollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
 		/**

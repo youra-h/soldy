@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TControl } from '@soldy/core'
-import type { IControlProps, TControlEvents } from '@soldy/core'
 import { ActionPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 
 export const ControlDescriptor = defineDescriptor(() =>
-	defineComponent<IControlProps, TControlEvents>()({
+	defineComponent({
 		ctor: TControl,
 
 		extends: StylableDescriptor(),

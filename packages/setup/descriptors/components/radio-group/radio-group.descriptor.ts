@@ -13,29 +13,21 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TRadioGroup } from '@soldy/core'
-import type { IRadioGroupProps, TRadioGroupEvents, IRadioGroupItem } from '@soldy/core'
+import type { IRadioGroupItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты RadioGroup.
- *
- * `default` — радио группы: `RadioGroup.Item` где угодно внутри, хоть в
- * строках чужого списка. `item` — подпись радио, когда их задали пропом
- * `items`; слот статический и получает радио через scope.
- */
-export type TRadioGroupSlots = {
-	default: TEmptySlotScope
-	item: { item: IRadioGroupItem }
-}
 
 export const RadioGroupDescriptor = defineDescriptor(() =>
-	defineComponent<IRadioGroupProps, TRadioGroupEvents, TRadioGroupSlots>()({
+	defineComponent({
 		ctor: TRadioGroup,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: {
+			/**
+			 * `default` — радио группы: `RadioGroup.Item` где угодно внутри, хоть в
+			 * строках чужого списка. `item` — подпись радио, когда их задали пропом
+			 * `items`; слот статический и получает радио через scope.
+			 */
 			slots: {
 				default: { description: 'Радио группы — компоненты RadioGroup.Item' },
 				item: {

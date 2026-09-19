@@ -7,11 +7,10 @@
 
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordionItem } from '@soldy/core'
-import type { IAccordionItemProps, TAccordionItemEvents } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
-	defineComponent<IAccordionItemProps, TAccordionItemEvents>()({
+	defineComponent({
 		ctor: TAccordionItem,
 
 		extends: ValueControlDescriptor(),

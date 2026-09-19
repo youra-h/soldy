@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TIcon } from '@soldy/core'
-import type { IIconProps, TIconEvents } from '@soldy/core'
 import { IconLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const IconDescriptor = defineDescriptor(() =>
-	defineComponent<IIconProps, TIconEvents>()({
+	defineComponent({
 		ctor: TIcon,
 
 		extends: ComponentViewDescriptor(),

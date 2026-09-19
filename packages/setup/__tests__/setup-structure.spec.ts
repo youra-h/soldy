@@ -13,7 +13,7 @@
  *   относительными путями;
  * - файл модуля нарушает соглашения раздела: нет шапки, рантайм в `types.ts`
  *   или `*.types.ts`, экспорт типов из файла с рантаймом, `export *` из файла
- *   в бочке. У `descriptors/` соглашения свои.
+ *   в бочке.
  *
  * Разбор проверяет себя на известной связи `assemble → registry`: сломайся он —
  * импортов не нашлось бы, и сторож проходил бы вхолостую.
@@ -210,9 +210,6 @@ describe('разбор импортов', () => {
 	})
 })
 
-/** Модули со своими соглашениями о файлах: дескрипторы — объявления вместе с типами слотов. */
-const OWN_CONVENTIONS = new Set(['descriptors'])
-
 /** Файлы с рантаймом, которым можно экспортировать типы: типы выведены из их значений. */
 const RUNTIME_WITH_TYPES = new Set(['registry/icons.ts'])
 
@@ -265,8 +262,6 @@ function exportsType(node: ts.Statement): boolean {
  * реэкспортирует целиком только папку.
  */
 function conventionViolations(file: string, text: string): string[] {
-	if (OWN_CONVENTIONS.has(moduleOfFile(file))) return []
-
 	const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest)
 	const violations = new Set<string>()
 
@@ -339,7 +334,11 @@ describe('соглашения о файлах', () => {
 			"export * from './types'\n",
 			["define/index.ts: export * из файла './types' — нужен список имён"],
 		],
-		['descriptors/button.descriptor.ts', 'export type T = 1\nexport const a: T = 1\n', []],
+		[
+			'descriptors/components/button.descriptor.ts',
+			`${header}export type T = 1\nexport const a: T = 1\n`,
+			['descriptors/components/button.descriptor.ts: файл с рантаймом экспортирует типы'],
+		],
 	])('%s: %j', (file, text, expected) => {
 		expect(conventionViolations(file, text)).toEqual(expected)
 	})

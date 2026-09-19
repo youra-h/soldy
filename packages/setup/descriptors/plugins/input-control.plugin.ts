@@ -1,3 +1,9 @@
+/**
+ * Определение TInputControlPlugin (namespace `input-control`) — клик по полю Input.
+ *
+ * Глушит клик по вложенному `<input>`, пока поле `readonly` или `disabled`.
+ */
+
 import { definePlugin } from '../../define'
 import { TInputControlPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 

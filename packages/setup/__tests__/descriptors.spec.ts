@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import {
 	TButton,
 	TComponentView,
@@ -44,8 +44,15 @@ import {
 	SelectItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
+	defineComponent,
 } from '@soldy/setup'
-import type { IComponentDescriptor } from '@soldy/setup'
+import type { DescriptorEvents, DescriptorProps, IComponentDescriptor } from '@soldy/setup'
+import type {
+	IButtonProps,
+	IComponentViewProps,
+	TButtonEvents,
+	TComponentViewEvents,
+} from '@soldy/core'
 import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
 import { required } from './helpers'
 
@@ -380,5 +387,37 @@ describe('Select', () => {
 		const itemDescriptor = SelectItemDescriptor()
 
 		expect(() => assemble(itemDescriptor, item)).not.toThrow()
+	})
+})
+
+/**
+ * Типы пропсов и событий дескриптор не повторяет: `defineComponent` берёт их у
+ * класса ядра. Проверки — `expectTypeOf`, их ловит шаг CI «Типы — Setup».
+ */
+describe('типы пропсов и событий выводятся из класса ядра', () => {
+	it('Button — интерфейсы TButton', () => {
+		expectTypeOf<DescriptorProps<typeof ButtonDescriptor>>().toEqualTypeOf<IButtonProps>()
+		expectTypeOf<DescriptorEvents<typeof ButtonDescriptor>>().toEqualTypeOf<TButtonEvents>()
+	})
+
+	it('дженерик-база ComponentView — её интерфейсы: на месте параметров класса констрейнты', () => {
+		expectTypeOf<
+			DescriptorProps<typeof ComponentViewDescriptor>
+		>().toEqualTypeOf<IComponentViewProps>()
+		expectTypeOf<
+			DescriptorEvents<typeof ComponentViewDescriptor>
+		>().toEqualTypeOf<TComponentViewEvents>()
+	})
+
+	it('без своего ctor — от extends, без обоих — словарь без типа', () => {
+		const child = defineComponent({ extends: ButtonDescriptor() })
+		const bare = defineComponent({})
+
+		expect(child.ctor).toBe(TButton)
+		expect(bare.ctor).toBe(Object)
+		expectTypeOf<DescriptorProps<() => typeof child>>().toEqualTypeOf<IButtonProps>()
+		expectTypeOf<DescriptorEvents<() => typeof child>>().toEqualTypeOf<TButtonEvents>()
+		expectTypeOf<DescriptorProps<() => typeof bare>>().toEqualTypeOf<Record<string, unknown>>()
+		expectTypeOf<DescriptorEvents<() => typeof bare>>().toEqualTypeOf<object>()
 	})
 })

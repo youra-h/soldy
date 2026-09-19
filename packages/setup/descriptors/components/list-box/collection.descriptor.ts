@@ -1,3 +1,11 @@
+/**
+ * Дескрипторы коллекционной части ListBox — фасады владельца и элемента.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`ListBoxDescriptor`, `ListBoxItemDescriptor`): адаптер собирает компонент из
+ * обоих рантайм-списков.
+ */
+
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TListBoxCollectionFacade, TListBoxItemCollectionFacade, TButtonView } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'
