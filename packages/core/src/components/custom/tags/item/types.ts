@@ -4,7 +4,7 @@ import type {
 	TValueControlEvents,
 	TValueControlStates,
 } from '../../../base/value-control'
-import type { IStateUnit, TValuePayload, TAriaAttributes } from '../../../../common'
+import type { IStateUnit, TValuePayload, TAria, TAriaAttributes } from '../../../../common'
 import type { IComponentOptions } from '../../../base/component'
 import type { ITagsCollectionItemProps } from '../collection/types'
 
@@ -15,6 +15,8 @@ export type TTagsItemEvents = TValueControlEvents<string | number> & {
 	'change:closable': (value: boolean | undefined) => void
 	/** change:closeLabel */
 	'change:closeLabel': (value: string) => void
+	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
+	'change:closeAria': (value: TAriaAttributes) => void
 }
 
 export interface ITagsItemProps
@@ -43,8 +45,11 @@ export interface ITagsItem<
 	closable?: boolean | undefined
 	/** Слово для кнопки закрытия; к нему добавляется текст тега */
 	closeLabel: string
-	/** Имя кнопки закрытия целиком: `closeLabel` + текст тега */
-	readonly closeAria: TAriaAttributes
+	/**
+	 * Атрибуты кнопки закрытия — живой набор, как `aria` строки: имя
+	 * (`closeLabel` + текст тега) пишет тег, `tabindex` — коллекция
+	 */
+	readonly closeAria: TAria
 }
 
 export type TTagsItemOptions = IComponentOptions<TTagsItemStates>

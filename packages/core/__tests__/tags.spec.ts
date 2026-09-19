@@ -8,7 +8,9 @@
  *
  * Роль набора и тегов зависит от режима: `list`/`listitem`, пока
  * `mode === 'none'`, иначе `listbox`/`option` с `aria-selected` — знание
- * коллекции (`TTagsExtension`), не элемента.
+ * коллекции (`TTagsExtension`), не элемента. От режима же — модель Tab: с
+ * выбором весь набор — одна остановка, крестик из порядка Tab выведен; в
+ * `none` строки остановок не держат, а крестик держит.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -360,16 +362,429 @@ describe('view — модификатор набора', () => {
 	})
 })
 
+/**
+ * Атрибуты кнопки закрытия — живой набор: имя пишет тег, `tabindex` —
+ * коллекция по режиму выбора. За границу уходит снимок (`valueOf()`), об
+ * изменении набор сообщает `change:closeAria` — это триггер пропа.
+ */
 describe('closeAria', () => {
 	it('содержит текст тега вместе с closeLabel', () => {
 		const tag = new TTagsItem({ text: 'Настройки' })
 
-		expect(tag.closeAria).toEqual({ 'aria-label': 'Close Настройки' })
+		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Close Настройки' })
 	})
 
 	it('closeLabel переопределяется пропом', () => {
 		const tag = new TTagsItem({ text: 'Настройки', closeLabel: 'Удалить' })
 
-		expect(tag.closeAria).toEqual({ 'aria-label': 'Удалить Настройки' })
+		expect(tag.closeAria.valueOf()).toEqual({ 'aria-label': 'Удалить Настройки' })
+	})
+
+	it('без текста имя — одно слово кнопки', () => {
+		expect(new TTagsItem().closeAria.get('aria-label')).toBe('Close')
+	})
+
+	it('имя следует за текстом и словом кнопки, набор сообщает change:closeAria', () => {
+		const tag = new TTagsItem({ text: 'Настройки' })
+		const seen: unknown[] = []
+
+		tag.events.on('change:closeAria', (value) => seen.push(value))
+
+		tag.text = 'Почта'
+		tag.closeLabel = 'Удалить'
+
+		expect(tag.closeAria.get('aria-label')).toBe('Удалить Почта')
+		expect(seen).toEqual([{ 'aria-label': 'Close Почта' }, { 'aria-label': 'Удалить Почта' }])
+	})
+
+	it('к change:text и change:closeLabel имя уже новое', () => {
+		const tag = new TTagsItem({ text: 'Настройки' })
+		const names: unknown[] = []
+		const read = () => names.push(tag.closeAria.get('aria-label'))
+
+		tag.events.on('change:text', read)
+		tag.events.on('change:closeLabel', read)
+
+		tag.text = 'Почта'
+		tag.closeLabel = 'Удалить'
+
+		expect(names).toEqual(['Close Почта', 'Удалить Почта'])
+	})
+
+	/**
+	 * Внутри listbox второй остановки Tab быть не должно: крестик выведен из
+	 * порядка Tab, тег закрывает `Delete`. В `none` нативная кнопка —
+	 * единственный путь закрыть тег с клавиатуры.
+	 */
+	describe('tabindex — по режиму выбора коллекции', () => {
+		const tabindexes = (items: ITagsItem[]) =>
+			items.map((item) => item.closeAria.get('tabindex'))
+
+		it('в none снят: кнопка — нативная остановка', () => {
+			const { items } = createTags(['a', 'b'], { closable: true })
+
+			expect(tabindexes(items)).toEqual([undefined, undefined])
+		})
+
+		it.each(['single', 'multiple'] as const)('в %s — -1', (mode) => {
+			const { collection, items } = createTags(['a', 'b'], { closable: true })
+
+			collection.mode = mode
+
+			expect(tabindexes(items)).toEqual(['-1', '-1'])
+		})
+
+		it('выбор снова none — снят, набор сообщает об этом', () => {
+			const { collection, items } = createTags(['a'], { closable: true })
+			const seen: unknown[] = []
+
+			collection.mode = 'multiple'
+			items[0].events.on('change:closeAria', (value) => seen.push(value))
+			collection.mode = 'none'
+
+			expect(tabindexes(items)).toEqual([undefined])
+			expect(seen).toEqual([{ 'aria-label': 'Close a' }])
+		})
+
+		it('тег, добавленный в режиме выбора, получает -1 сразу', () => {
+			const { collection } = createTags(['a'])
+
+			collection.mode = 'single'
+
+			const added = collection.engine.extensions.plain.push(
+				new TTagsItem({ value: 'b', text: 'b' }),
+			)
+
+			expect(added.closeAria.get('tabindex')).toBe('-1')
+		})
+	})
+})
+
+/**
+ * Набор с выбором — APG Listbox. Кроме роли он объявляет то, что знает только
+ * он: теги идут в ряд, а в `multiple` выбрать можно несколько.
+ */
+describe('ARIA набора по режиму', () => {
+	const attributes = (owner: TTags) => ({
+		orientation: owner.aria.get('aria-orientation'),
+		multiselectable: owner.aria.get('aria-multiselectable'),
+	})
+
+	it('в none — ни ориентации, ни множественного выбора: это list', () => {
+		const { owner } = createTags(['a'])
+
+		expect(attributes(owner)).toEqual({ orientation: undefined, multiselectable: undefined })
+	})
+
+	it('в single — горизонтальный listbox без множественного выбора', () => {
+		const { owner, collection } = createTags(['a'])
+
+		collection.mode = 'single'
+
+		expect(attributes(owner)).toEqual({ orientation: 'horizontal', multiselectable: undefined })
+	})
+
+	it('в multiple — aria-multiselectable', () => {
+		const { owner, collection } = createTags(['a'])
+
+		collection.mode = 'multiple'
+
+		expect(attributes(owner)).toEqual({ orientation: 'horizontal', multiselectable: 'true' })
+	})
+
+	it('multiple → single снимает множественный выбор, → none — и ориентацию', () => {
+		const { owner, collection } = createTags(['a'])
+
+		collection.mode = 'multiple'
+		collection.mode = 'single'
+
+		expect(attributes(owner).multiselectable).toBeUndefined()
+
+		collection.mode = 'none'
+
+		expect(attributes(owner)).toEqual({ orientation: undefined, multiselectable: undefined })
+	})
+})
+
+/**
+ * Roving tabindex: пока выбор включён, весь набор — одна остановка Tab,
+ * `tabindex="0"` ровно у одного тега. Фокус и выбор расходятся (стрелка
+ * переносит фокус, пробел выбирает), поэтому остановка помнит тег под
+ * фокусом — о нём сообщает плагин клавиатуры (`notifyFocus`), а стартовое
+ * правило «первый выбранный, иначе первый» — только запасное.
+ *
+ * Коллекция собрана как у компонента (`createEngineTags`), без адаптера:
+ * атрибут обязан стоять до первой отрисовки.
+ */
+describe('остановка Tab — один тег с tabindex="0"', () => {
+	const createTag = (text: string, props: Partial<ITagsItemProps> = {}) =>
+		new TTagsItem({ text, value: text.toLowerCase(), ...props })
+
+	function setup(owner = new TTags({ closable: true })) {
+		const engine = createEngineTags({ owner })
+		const a = engine.extensions.plain.push(createTag('A'))
+		const b = engine.extensions.plain.push(createTag('B'))
+		const c = engine.extensions.plain.push(createTag('C'))
+
+		/** `tabindex` строк в порядке набора. */
+		const tabindex = () =>
+			engine.extensions.batch.items.map((item) => item.aria.get('tabindex'))
+
+		return {
+			owner,
+			engine,
+			selection: engine.extensions.selection,
+			tags: engine.extensions.tags,
+			tabindex,
+			a,
+			b,
+			c,
+		}
+	}
+
+	it('в none остановки нет: у всех строк -1', () => {
+		const { tags, tabindex } = setup()
+
+		expect(tags.tabStop).toBeUndefined()
+		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+	})
+
+	it('без выбранного — у первого тега', () => {
+		const { selection, tags, tabindex, a } = setup()
+
+		selection.mode = 'single'
+
+		expect(tags.tabStop).toBe(a)
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+	})
+
+	it('с выбранным — у первого выбранного по порядку набора, а не выбора', () => {
+		const { selection, tags, tabindex, b, c } = setup()
+
+		selection.mode = 'multiple'
+		selection.select(c)
+		selection.select(b)
+
+		expect(tags.tabStop).toBe(b)
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('выбранный недоступен — у первого доступного', () => {
+		const { selection, tabindex, b } = setup()
+
+		selection.mode = 'single'
+		selection.select(b)
+		b.disabled = true
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+	})
+
+	it('переходит к тегу, о фокусе на котором сообщили', () => {
+		const { selection, tags, tabindex, b, c } = setup()
+
+		selection.mode = 'multiple'
+		selection.select(b)
+		tags.notifyFocus(c)
+
+		expect(tags.tabStop).toBe(c)
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+	})
+
+	it('выбор пробелом не уводит остановку с тега под фокусом', () => {
+		const { selection, tags, tabindex, a, c } = setup()
+
+		selection.mode = 'multiple'
+		tags.notifyFocus(c)
+		selection.toggle(c)
+		selection.toggle(a)
+
+		expect(tags.tabStop).toBe(c)
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+	})
+
+	it('без фокуса остановка следует за выбором', () => {
+		const { selection, tabindex, a, c } = setup()
+
+		selection.mode = 'single'
+		selection.select(c)
+
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+
+		selection.select(a)
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+	})
+
+	it('недоступный тег остановку не забирает', () => {
+		const { selection, tags, tabindex, a, b, c } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(c)
+		b.disabled = true
+		tags.notifyFocus(b)
+
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+
+		a.visible = false
+		tags.notifyFocus(a)
+
+		expect(tags.tabStop).toBe(c)
+	})
+
+	it('тег не из набора не запоминается', () => {
+		const { selection, tags, tabindex } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(createTag('Z'))
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+	})
+
+	it('тег под фокусом выключили — остановка у запасного, включили — вернулась', () => {
+		const { selection, tags, tabindex, a, c } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(c)
+		c.disabled = true
+
+		expect(tags.tabStop).toBe(a)
+
+		c.disabled = false
+
+		expect(tabindex()).toEqual(['-1', '-1', '0'])
+	})
+
+	it('скрытый и неотрисованный теги остановку не держат', () => {
+		const { selection, tags, tabindex, a, b } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(b)
+		b.visible = false
+
+		expect(tabindex()).toEqual(['0', '-1', '-1'])
+
+		b.visible = true
+		tags.notifyFocus(a)
+		a.rendered = false
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('удалённый тег под фокусом забывается — остановка у первого выбранного', () => {
+		const { engine, selection, tags, tabindex, b, c } = setup()
+
+		selection.mode = 'multiple'
+		selection.select(c)
+		tags.notifyFocus(b)
+		engine.extensions.plain.remove(b)
+
+		expect(tags.tabStop).toBe(c)
+		expect(tabindex()).toEqual(['-1', '0'])
+
+		// Вернули тот же инстанс — фокуса на нём нет, остановка не у него
+		engine.extensions.plain.insert(b, 0)
+
+		expect(tags.tabStop).toBe(c)
+	})
+
+	it('закрыли тег под фокусом через closeTag — так же', () => {
+		const { selection, tags, tabindex, a } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(a)
+		tags.closeTag(a)
+
+		expect(tabindex()).toEqual(['0', '-1'])
+	})
+
+	it('очистка набора забывает тег под фокусом', () => {
+		const { engine, selection, tags, a } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(a)
+		engine.extensions.batch.clear()
+		engine.extensions.plain.push(a)
+		const b = engine.extensions.plain.push(createTag('B'))
+
+		selection.select(b)
+
+		expect(tags.tabStop).toBe(b)
+	})
+
+	it('перестановка без фокуса: остановка у того, кто стал первым', () => {
+		const { engine, selection, tags, a, b } = setup()
+
+		selection.mode = 'single'
+		engine.extensions.plain.move(a, 2)
+
+		expect(tags.tabStop).toBe(b)
+	})
+
+	it('добавленный тег получает -1, а первым без выбора и фокуса — остановку', () => {
+		const { engine, selection, tabindex } = setup()
+
+		selection.mode = 'single'
+
+		const added = engine.extensions.plain.insert(createTag('Z'), 0)
+
+		expect(added.aria.get('tabindex')).toBe('0')
+		expect(tabindex()).toEqual(['0', '-1', '-1', '-1'])
+
+		const tail = engine.extensions.plain.push(createTag('Y'))
+
+		expect(tail.aria.get('tabindex')).toBe('-1')
+	})
+
+	it('смена режима: в none остановка уходит, в выборе — возвращается к тегу под фокусом', () => {
+		const { selection, tags, tabindex, b } = setup()
+
+		selection.mode = 'multiple'
+		tags.notifyFocus(b)
+		selection.mode = 'none'
+
+		expect(tags.tabStop).toBeUndefined()
+		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+
+		selection.mode = 'single'
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('выключили набор — остановки нет ни у кого, включили — вернулась', () => {
+		const { owner, selection, tags, tabindex, b } = setup()
+
+		selection.mode = 'single'
+		tags.notifyFocus(b)
+		owner.disabled = true
+
+		expect(tags.tabStop).toBeUndefined()
+		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+
+		owner.disabled = false
+
+		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('удалённый тег больше не пересчитывает остановку набора', () => {
+		const { engine, selection, b, c } = setup()
+
+		selection.mode = 'single'
+		engine.extensions.plain.remove(c)
+
+		const add = vi.spyOn(b.aria, 'add')
+
+		c.disabled = true
+		c.visible = false
+
+		expect(add).not.toHaveBeenCalled()
+	})
+
+	it('isEnabledTag — одно правило для остановки и навигации', () => {
+		const { tags, a, b, c } = setup()
+
+		b.disabled = true
+		c.rendered = false
+
+		expect([a, b, c].map((item) => tags.isEnabledTag(item))).toEqual([true, false, false])
 	})
 })
