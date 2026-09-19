@@ -16,16 +16,33 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 		const icon = ctx.getInstance<IIcon>()
 		if (!icon) return
 
+		// Размер, с которым иконку собрали, приходит в инстанс без события —
+		// конструктором или готовым `ctrl`, — поэтому стартовые стили плагин
+		// берёт у инстанса сам. Без эмита: подписчиков у плагина ещё нет, а
+		// связка прочитает `styles` при подписке.
+		this._styles = {
+			width: this._toCss(icon.width),
+			height: this._toCss(icon.height),
+		}
+
 		icon.events.on('change:width', (value) => {
-			this._patch('width', value != null ? toCssValue(value) : '')
+			this._patch('width', this._toCss(value))
 		})
 		icon.events.on('change:height', (value) => {
-			this._patch('height', value != null ? toCssValue(value) : '')
+			this._patch('height', this._toCss(value))
 		})
 	}
 
 	get styles(): Record<string, string | number> {
 		return this._styles
+	}
+
+	/**
+	 * Размер → значение инлайнового стиля. Незаданный размер даёт пустую
+	 * строку: она снимает стиль, и размер иконки снова задаёт `size`.
+	 */
+	private _toCss(value: number | string | undefined): string {
+		return value != null ? toCssValue(value) : ''
 	}
 
 	/**

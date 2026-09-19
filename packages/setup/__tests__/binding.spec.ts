@@ -699,4 +699,35 @@ describe('сборка · начальные значения пропсов', (
 
 		expect(ctrl.text).toBe('из разметки')
 	})
+
+	/*
+	 * Значение, пришедшее в инстанс без события, плагин берёт у инстанса сам:
+	 * свой инстанс получает размер конструктором, а внешнему `ctrl` сборка не
+	 * пишет то, что в нём уже лежит. Раньше плагин раскладки иконки только
+	 * следил за сменой размера, и заданный в разметке размер появлялся в стилях
+	 * лишь после первой смены.
+	 */
+
+	it('размер иконки из пропсов виден в стилях сразу', () => {
+		const context = createAdapterContext(IconDescriptor(), {
+			props: { width: 24, height: '2em' },
+		})
+		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
+
+		expect(layout.styles).toEqual({ width: '24px', height: '2em' })
+		// Фреймворк получает то же подпиской на связку
+		expect(bindComponent(context, CallbackProfile).getSnapshot().layout_styles).toEqual({
+			width: '24px',
+			height: '2em',
+		})
+	})
+
+	it('внешний ctrl с размером — тоже: запись пропа пропущена, стиль уже есть', () => {
+		const ctrl = new TIcon({ width: 24 })
+		const context = createAdapterContext(IconDescriptor(), { ctrl, props: { width: 24 } })
+		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
+
+		// Незаданная высота стиля не ставит: её даёт `size`
+		expect(layout.styles).toEqual({ width: '24px', height: '' })
+	})
 })
