@@ -19,8 +19,9 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * TSelectKeyboardPlugin — клавиатура поля выбора по паттерну APG Combobox.
  *
  * Общая механика — подписка на `keydown`, привязка к коллекции, учёт
- * подсветки, циклический сдвиг — в `TListNavigationPlugin`. Что делают
- * конкретные клавиши, решает выбранная стратегия (`strategies/`):
+ * подсветки, циклический сдвиг, пропуск недоступных опций — в
+ * `TListNavigationPlugin`. Что делают конкретные клавиши, решает выбранная
+ * стратегия (`strategies/`):
  * `TSelectOnlyKeyboardStrategy` и `TEditableKeyboardStrategy` — обе поверх
  * общей части `TSelectKeyboardStrategy`. Плагин сам не проверяет
  * `owner.editable` нигде — режим выражен подпиской на `change:editable`,
@@ -92,14 +93,6 @@ export class TSelectKeyboardPlugin
 		this._strategy = this._owner?.editable
 			? new TEditableKeyboardStrategy()
 			: new TSelectOnlyKeyboardStrategy()
-	}
-
-	/**
-	 * Недоступные опции пропускаются: подсветить то, что нельзя выбрать,
-	 * значит завести пользователя в тупик.
-	 */
-	protected override items(): IControl[] {
-		return super.items().filter((item) => !item.disabled && item.rendered && item.visible)
 	}
 
 	/**

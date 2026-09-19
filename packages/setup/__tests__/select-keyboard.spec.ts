@@ -246,6 +246,19 @@ describe('открытая панель — навигация', () => {
 		expect(keyboard.highlightedUid).toBe(items[2].uid)
 	})
 
+	it('опцию выключили под подсветкой — стрелка ведёт к её соседу, а не на край', async () => {
+		// Шаг — от места подсветки среди показанных опций: среди доступных
+		// выключенной нет
+		const { keyboard, press, items } = await setup(['Москва', 'Тверь', 'Тула', 'Клин'])
+
+		press('ArrowDown')
+		press('ArrowDown')
+		items[1].disabled = true
+		press('ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+	})
+
 	it('подсветка помечает опцию через её плагин', async () => {
 		const { press, items, itemPlugins } = await setup(['Москва', 'Тверь'])
 

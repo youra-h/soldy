@@ -150,18 +150,116 @@ describe('навигация', () => {
 		expect(required(itemPlugins.get(items[0].uid), 'плагин элемента').highlighted).toBe(false)
 		expect(required(itemPlugins.get(items[1].uid), 'плагин элемента').highlighted).toBe(true)
 	})
+})
 
-	it('недоступные элементы не пропускаются — в отличие от Select', async () => {
-		// ListBox не combobox: выбор здесь может быть заблокирован самим
-		// элементом, но навигация по списку остаётся сплошной
-		const { keyboard, press, items } = await setup(['Один', 'Два', 'Три'])
+/**
+ * Недоступный элемент навигация пропускает, как у Select, Tabs и Tags:
+ * подсветить то, что нельзя выбрать, значит завести пользователя в тупик.
+ * Раньше ListBox ходил и по выключенным — навигация по списку считалась
+ * сплошной, а выбор блокировал сам элемент.
+ */
+describe('недоступные элементы пропускаются', () => {
+	/** Как сделать элемент недоступным: выключить, скрыть, не рисовать. */
+	const WAYS: ReadonlyArray<readonly [string, (item: TListBoxItem) => void]> = [
+		[
+			'выключен',
+			(item) => {
+				item.disabled = true
+			},
+		],
+		[
+			'скрыт',
+			(item) => {
+				item.visible = false
+			},
+		],
+		[
+			'не нарисован',
+			(item) => {
+				item.rendered = false
+			},
+		],
+	]
 
-		items[1].disabled = true
+	describe.each(WAYS)('элемент %s', (_way, makeUnavailable) => {
+		it('стрелки перескакивают его', async () => {
+			const { keyboard, press, items } = await setup(['Один', 'Два', 'Три'])
+
+			makeUnavailable(items[1])
+
+			press('ArrowDown')
+			press('ArrowDown')
+
+			expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+			press('ArrowUp')
+
+			expect(keyboard.highlightedUid).toBe(items[0].uid)
+		})
+
+		it('с пустой подсветки и по кругу — тоже', async () => {
+			const { keyboard, press, items } = await setup(['Один', 'Два', 'Три', 'Четыре'])
+
+			makeUnavailable(items[0])
+			makeUnavailable(items[3])
+
+			// С пустой подсветки — на первый доступный
+			press('ArrowDown')
+
+			expect(keyboard.highlightedUid).toBe(items[1].uid)
+
+			// Вверх с первого доступного — на последний доступный
+			press('ArrowUp')
+
+			expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+			// Вниз с последнего доступного — на первый доступный
+			press('ArrowDown')
+
+			expect(keyboard.highlightedUid).toBe(items[1].uid)
+		})
+	})
+
+	it('список выключен — подсвечивать нечего', async () => {
+		const { owner, keyboard, press } = await setup(['Один', 'Два'])
+
+		owner.disabled = true
 
 		press('ArrowDown')
-		press('ArrowDown')
 
-		expect(keyboard.highlightedUid).toBe(items[1].uid)
+		expect(keyboard.highlightedUid).toBeNull()
+	})
+
+	/**
+	 * Шаг отсчитывается от места подсветки среди показанных, а не среди
+	 * доступных. Подсвеченный элемент могли выключить, а позиция навигации
+	 * встаёт и на выбранный элемент — выбрать выключенный из кода вправе
+	 * приложение. Среди доступных такого нет, и стрелка уводила бы на край.
+	 */
+	describe.each([
+		['вниз', 'ArrowDown', 2],
+		['вверх', 'ArrowUp', 0],
+	] as const)('стрелка %s с выключенного элемента — к его соседу', (_dir, key, neighbour) => {
+		it('элемент выключили под подсветкой', async () => {
+			const { keyboard, press, items } = await setup(['Один', 'Два', 'Три', 'Четыре'])
+
+			press('ArrowDown')
+			press('ArrowDown')
+			items[1].disabled = true
+			press(key)
+
+			expect(keyboard.highlightedUid).toBe(items[neighbour].uid)
+		})
+
+		it('выключен выбранный элемент', async () => {
+			const { facade, keyboard, press, items } = await setup(['Один', 'Два', 'Три', 'Четыре'])
+
+			items[1].disabled = true
+			facade.engine.extensions.selection.select(items[1] as IListBoxItem)
+			press(key)
+
+			expect(keyboard.highlightedUid).toBe(items[neighbour].uid)
+		})
 	})
 })
 
@@ -207,9 +305,11 @@ describe('выбор', () => {
  * Enter и пробел выбирают через расширение списка (`list.chooseItem`), тем же
  * путём, что клик по строке, и оно отказывает выключенному элементу.
  * `selection.toggle`, который плагин звал раньше, выключенность не проверяет.
+ * Подсвеченный элемент плагин к тому же ищет среди доступных, и выключенный
+ * до расширения не доходит.
  *
- * Выключается элемент уже после подсветки: так проверка не зависит от того,
- * останавливается ли навигация на выключенных.
+ * Выключается элемент уже после подсветки: навигация на выключенном не
+ * останавливается, и иначе до Enter дело бы не дошло.
  */
 describe('выключенный элемент не выбирается', () => {
 	/** Как выключить подсвеченный первый элемент и как включить обратно. */
@@ -351,6 +451,43 @@ describe.each([
 		keydown(targetOf(listBox), 'ArrowDown')
 
 		const event = keydown(targetOf(listBox), key)
+
+		expect(facade.selected).toEqual([items[0]])
+		expect(event.defaultPrevented).toBe(true)
+	})
+})
+
+/**
+ * Строка выключенного элемента — тоже строка списка. Навигация элемент
+ * пропускает, но фокус на его строке бывает: элемент могли выключить, пока
+ * фокус на ней, а если тема не глушит мышь на выключенной строке, фокус на неё
+ * ставит и клик. Если бы плагин искал строку только среди доступных, стрелки с
+ * неё не работали бы.
+ */
+describe('клавиша со строки выключенного элемента — списка', () => {
+	it('стрелки двигают подсветку мимо него и отменяются', async () => {
+		const { keyboard, items, rows } = await setup(['Один', 'Два', 'Три'])
+
+		items[1].disabled = true
+
+		const down = keydown(rows[1], 'ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+		expect(down.defaultPrevented).toBe(true)
+
+		const next = keydown(rows[1], 'ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+		expect(next.defaultPrevented).toBe(true)
+	})
+
+	it.each(ACTIVATION_KEYS)('%s выбирает подсвеченное и отменяется', async (_name, key) => {
+		const { facade, items, rows } = await setup(['Один', 'Два', 'Три'])
+
+		items[1].disabled = true
+		keydown(rows[1], 'ArrowDown')
+
+		const event = keydown(rows[1], key)
 
 		expect(facade.selected).toEqual([items[0]])
 		expect(event.defaultPrevented).toBe(true)
