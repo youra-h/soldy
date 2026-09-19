@@ -2,9 +2,13 @@
  * Дескриптор Tags (TTags).
  *
  * Наследует `ValueControlDescriptor` и добавляет `closable` плюс плагины
- * коллекции. В отличие от ListBox здесь нет списочных плагинов (высота,
- * клавиатура, прокрутка) и drag-and-drop: теги — ряд кнопок, а не
- * фокусируемый список, см. AGENTS «Граница переиспользования».
+ * коллекции и клавиатуру. Списочных плагинов ListBox (высота, подсветка,
+ * прокрутка) и drag-and-drop здесь нет: у ListBox фокус на контейнере, а у
+ * Tags с выбором он ходит по самим тегам — у каждого свой крестик. Модель —
+ * APG Listbox на roving tabindex, как у Tabs: весь набор — одна остановка
+ * Tab, стрелки между тегами (`TagsKeyboardPluginDescriptor`). Без выбора
+ * (`mode="none"`) набор — список без действия у строк, и клавиатура молчит.
+ * См. AGENTS, «Граница переиспользования» и «Готовые паттерны».
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
@@ -14,6 +18,7 @@ import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
+	TagsKeyboardPluginDescriptor,
 } from '../../plugins'
 import type { TEmptySlotScope } from '../../../define'
 
@@ -68,6 +73,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 			// Коллекция: реестр bundles + доступ к DOM-элементам
 			CollectionBundlesPluginDescriptor(),
 			CollectionElementsPluginDescriptor(),
+			// Клавиатура по APG Listbox, пока выбор включён: стрелки, Home/End, Delete
+			TagsKeyboardPluginDescriptor(),
 		],
 	}),
 )

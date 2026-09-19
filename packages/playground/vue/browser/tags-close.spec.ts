@@ -256,10 +256,14 @@ describe('рамка и кольцо фокуса — у пилюли', () => {
 		expect(style(item).borderTopColor).not.toBe(idle)
 	})
 
+	/**
+	 * С выбором набор — одна остановка Tab, и вход в него — на выбранный тег
+	 * («Почта»), а не на первый (`browser/tags-keyboard.spec.ts`).
+	 */
 	it('кольцо фокуса обводит пилюлю вместе с крестиком, а не строку', async () => {
 		render(harness({}))
 
-		const { item, row } = tag('a')
+		const { item, row } = tag('b')
 
 		await userEvent.keyboard('{Tab}')
 		await settled(item)
