@@ -24,7 +24,8 @@ export type TExtractControllerState<TInstance> = {
 }
 
 /**
- * Тип реактивных рефов, которые генерация useSyncProps возвращает в ...refs.
+ * Тип реактивных рефов, которые `useAdapter` собирает по связке `bindComponent`
+ * и возвращает в ...refs.
  * Во Vue setup() автоматизирует unref для всех Ref в шаблоне.
  */
 export type TUnwrapRefs<T> = {

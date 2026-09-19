@@ -246,7 +246,7 @@ describe('Button · события видимости и готовности', 
 	})
 })
 
-/** createBundle откладывает эмит на микрозадачу — см. setup/assemble/bundle.ts */
+/** assembleBundle откладывает эмит на микрозадачу — см. setup/assemble/bundle.ts */
 const created = () => Promise.resolve()
 
 describe('Button · доступ к плагинам', () => {
