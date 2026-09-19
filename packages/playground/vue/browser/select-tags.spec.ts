@@ -9,7 +9,9 @@
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
  * стерегут, лежат в `themes/oren/src/components/select/_select.scss`, а
  * сжатие тега, которому не хватает места в поле, — в
- * `themes/oren/src/components/tags/_tags.scss`.
+ * `themes/oren/src/components/tags/_tags.scss`. Геометрия строки поля —
+ * высота размера и строка слота, в которую встают теги, очистка и стрелка, —
+ * в `themes/oren/src/components/input/_input.scss`.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -106,17 +108,17 @@ const verticalOverlap = (a: DOMRect, b: DOMRect) =>
 	Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
 
 /**
- * Стоит ли ввод в одной строке с первым рядом тегов.
+ * Стоит ли часть поля — ввод, стрелка — в одной строке с первым рядом тегов.
  *
  * Порог — половина высоты тега, а не просто «перекрытие больше нуля»:
  * съехавший ввод начинается ровно там, где ряд тегов кончается, то есть
  * перекрытие у него не отрицательное, а нулевое. Строгое `> 0` баг ловит, но
  * без запаса, и субпиксельное округление могло бы это перевернуть.
  */
-const expectInputInTagRow = () => {
+const expectInFirstTagRow = (element: Element, what: string) => {
 	const tag = box(tags()[0])
 
-	expect(verticalOverlap(box(input()), tag)).toBeGreaterThan(tag.height / 2)
+	expect(verticalOverlap(box(element), tag), what).toBeGreaterThan(tag.height / 2)
 }
 
 /**
@@ -161,7 +163,34 @@ describe('поле с тегами', () => {
 		// Поле выравнивает содержимое по верху (`items-start`), поэтому ввод
 		// стоит рядом с ПЕРВЫМ рядом тегов — независимо от того, перенеслись ли
 		// остальные. Съехавший ввод оказался бы целиком ниже этого ряда.
-		expectInputInTagRow()
+		expectInFirstTagRow(input(), 'ввод')
+	})
+
+	/**
+	 * Пока высота поля с тегами была постоянной, перенесённые теги рисовались
+	 * под полем, поверх того, что ниже. Поле растёт по строкам тегов, а стрелка,
+	 * как и ввод, остаётся на первой строке, а не встаёт посередине выросшего
+	 * поля.
+	 */
+	it('поле растёт по строкам тегов, стрелка — на первой строке', async () => {
+		await addTags(OPTIONS.length)
+
+		const all = tags().map(box)
+		const first = all[0]
+		const last = all[all.length - 1]
+		const field = box(find('.s-select__field'))
+
+		// Без переноса проверять нечего: строк должно быть несколько
+		expect(last.top, 'последний тег — ниже первой строки').toBeGreaterThan(first.bottom)
+
+		expect(last.top, 'последний тег: верх').toBeGreaterThanOrEqual(field.top)
+		expect(last.bottom, 'последний тег: низ').toBeLessThanOrEqual(field.bottom)
+
+		all.forEach((tag, index) => {
+			expect(tag.height, `тег ${index}: высота`).toBeCloseTo(first.height, 1)
+		})
+
+		expectInFirstTagRow(arrow(), 'стрелка')
 	})
 
 	it('ввод сжимается по мере роста числа тегов', async () => {
@@ -184,7 +213,7 @@ describe('поле с тегами', () => {
 
 		// Допуск на субпиксельное округление — граница задана ровно в 4rem.
 		expect(box(input()).width).toBeGreaterThanOrEqual(MIN_INPUT_WIDTH - 0.5)
-		expectInputInTagRow()
+		expectInFirstTagRow(input(), 'ввод')
 	})
 })
 
@@ -226,5 +255,56 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 		const { text } = await renderTag(FIELD_WIDTH)
 
 		expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth)
+	})
+})
+
+/**
+ * Поле с тегами растёт по строкам, но одна строка тегов — ровно высота
+ * размера, как у поля без тегов, и корень Select — ровно по полю. Лишние
+ * пиксели вернуть легко: ввод с размерным `leading-*` раздувает строку на
+ * рамку и оба просвета, паддинг поля шире просвета слота (прежний `py-1`) — на
+ * разницу между ними.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: высота поля с одним тегом', (size) => {
+	/**
+	 * Два Select одного размера и режима, по контейнеру на каждый: с одним
+	 * тегом и без выбора. Разница между ними — только тег.
+	 */
+	const pairHarness = defineComponent({
+		render() {
+			const select = (value?: string[]) =>
+				h('div', { style: `width: ${FIELD_WIDTH}px` }, [
+					h(
+						Select,
+						{ mode: 'multiple', editable: true, clearable: true, value, size },
+						{
+							default: () => [
+								h(SelectItem, { key: '0', value: '0', text: 'Москва' }),
+							],
+						},
+					),
+				])
+
+			return h('div', [select(['0']), select()])
+		},
+	})
+
+	it('та же, что у поля без выбора, а корень — ровно по полю', async () => {
+		render(pairHarness)
+
+		await expect.poll(() => tags().length).toBe(1)
+
+		const roots = [...document.querySelectorAll('.s-select')]
+
+		expect(roots).toHaveLength(2)
+
+		const [tagged, empty] = roots.map((root) => ({
+			root: box(root),
+			field: box(find('.s-select__field', root)),
+		}))
+
+		expect(tagged.field.height, 'поле с тегом').toBeCloseTo(empty.field.height, 1)
+		expect(tagged.root.height, 'корень с тегом').toBeCloseTo(tagged.field.height, 1)
+		expect(empty.root.height, 'корень без выбора').toBeCloseTo(empty.field.height, 1)
 	})
 })
