@@ -7,6 +7,7 @@ import type {
 	TCollectionEngine,
 } from '@soldy/core'
 import type { IPluginContext } from '../../../base'
+import { TElementPlugin } from '../../element'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { TListEdge } from '../../list/navigation'
@@ -29,12 +30,22 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * `keydown` слушается на корне Select, а не на списке, и панель может быть
  * телепортирована куда угодно — на навигацию это не влияет. Подсветку для
  * скринридера передаёт `aria-activedescendant` на поле.
+ *
+ * Слушатель висит на корне, но клавишу комбобокс берёт только с `<input>`
+ * поля. До корня всплывают и клавиши кнопки очистки, крестиков тегов и
+ * содержимого слотов — что с ними делать, эти элементы знают сами: кнопка
+ * делает из Enter и пробела клик. Правило отвечает на вопрос «чья клавиша», а
+ * не «какая», исключений нет: с кнопки очистки не работают ни стрелки, ни
+ * `Escape`. Проверка цели — здесь, а не в `TListNavigationPlugin`: база общая
+ * с ListBox, у которого фокус на самом списке.
  */
 export class TSelectKeyboardPlugin
 	extends TListNavigationPlugin<TSelectKeyboardPluginEvents>
 	implements ISelectKeyboardHost
 {
 	private _owner: ISelect | null = null
+	/** `<input>` поля — единственный источник клавиш комбобокса. */
+	private _input: HTMLInputElement | null = null
 	private _elements: TCollectionElements | null = null
 	private _list: IList | null = null
 	private _strategy: ISelectKeyboardStrategy = new TSelectOnlyKeyboardStrategy()
@@ -50,6 +61,16 @@ export class TSelectKeyboardPlugin
 		this._elements = ctx.get(TCollectionElements) ?? null
 		this._list = ctx.getInstance<IList>()
 
+		// Поле ищется так же, как в `TEditablePlugin` и `TSelectBackspacePlugin`
+		const elementPlugin = ctx.get(TElementPlugin)
+
+		elementPlugin?.events.on('ready', (element: Element) => {
+			this._input = element.querySelector('input')
+		})
+		elementPlugin?.events.on('removed', () => {
+			this._input = null
+		})
+
 		this._syncStrategy()
 		this._owner?.events.on('change:editable', () => this._syncStrategy())
 
@@ -59,6 +80,7 @@ export class TSelectKeyboardPlugin
 
 	override destroy(): void {
 		this._owner = null
+		this._input = null
 		this._elements = null
 		this._list = null
 
@@ -150,6 +172,9 @@ export class TSelectKeyboardPlugin
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {
+		// Клавиша всплыла с другого элемента под корнем: она не комбобокса
+		if (e.target !== this._input) return
+
 		const owner = this._owner
 
 		if (!owner) return

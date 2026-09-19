@@ -164,7 +164,7 @@ describe('опции', () => {
 		const wrapper = render()
 
 		await nextFrame()
-		await wrapper.find('.s-select').trigger('keydown', { key: 'ArrowDown' })
+		await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
 		await nextTick()
 
 		const id = wrapper.find('input').attributes('aria-activedescendant')

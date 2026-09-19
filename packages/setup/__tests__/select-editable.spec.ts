@@ -100,8 +100,9 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		type(value)
 	}
 
+	/** Клавиша с поля: клавиатура комбобокса берёт клавиши только с него. */
 	const press = (key: string, init: KeyboardEventInit = {}) =>
-		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
+		input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
 
 	/** Фокус ушёл с поля — на произвольный узел или, если не задан, вникуда. */
 	const blurTo = (target?: Element) => {

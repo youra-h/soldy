@@ -2190,7 +2190,12 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` на список и
   `aria-activedescendant` на подсвеченную опцию. **DOM-фокус никогда не
   уходит с поля** — отсюда и `keydown` на поле, а не на списке, и подсветка
-  через `aria-activedescendant`, а не через настоящий фокус.
+  через `aria-activedescendant`, а не через настоящий фокус. Клавиши
+  комбобокса `TSelectKeyboardPlugin` берёт только с `<input>` поля, а клавиши
+  кнопки очистки, крестиков тегов и содержимого слотов, всплывшие до корня, не
+  трогает: что с ними делать, эти элементы знают сами. Сторожат
+  `setup/__tests__/select-keyboard.spec.ts` и
+  `playground/vue/browser/keyboard-activation.spec.ts`.
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
