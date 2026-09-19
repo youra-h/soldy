@@ -1347,6 +1347,55 @@ describe('смена mode на лету', () => {
 		expect(collection.selected).toHaveLength(1)
 		expect(collection.selected[0].value).toBe('a')
 	})
+
+	/**
+	 * `single -> multiple` выбор не трогает, и `change:selection` не приходит —
+	 * поле пересчитывает сама смена режима. Раньше в нём оставался текст
+	 * выбранного рядом с его тегом, пока не сменится выбор.
+	 */
+	it('single -> multiple с выбором — поле пусто, выбранное показывает тег', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+
+		collection.mode = 'multiple'
+
+		expect(owner.field.value).toBe('')
+		expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+			'A',
+		])
+	})
+
+	/** Смена режима — не выбор пользователя: поле пишется мягко. */
+	it('single -> multiple с набранным текстом — набранное на месте', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { editable: true })
+
+		facadeFor(0).choose()
+		owner.field.value = 'typed'
+
+		collection.mode = 'multiple'
+
+		expect(owner.field.value).toBe('typed')
+	})
+
+	/**
+	 * Оставшийся в поле текст выбранного мягкая запись принимала за набранный:
+	 * закрытие тега его не стирало, он уходил только с выбором опции, очисткой
+	 * или возвратом поля.
+	 */
+	it('после single -> multiple закрытие тега не оставляет в поле текст выбранного', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+		collection.mode = 'multiple'
+
+		const engine = tagsEngine(collection)
+
+		engine.extensions.tags.closeTag(engine.extensions.batch.items[0])
+
+		expect(collection.selected).toEqual([])
+		expect(owner.field.value).toBe('')
+	})
 })
 
 describe('removeOnBackspace — удаление тегов по Backspace', () => {
