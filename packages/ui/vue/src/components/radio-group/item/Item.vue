@@ -5,12 +5,6 @@ export default { ...SetupRadioGroupItem }
 </script>
 
 <template>
-	<!--
-		Корень — `label` (`tag` радио по умолчанию): клик по подписи выбирает
-		радио, а подпись становится его доступным именем. На корне — `dataset`
-		(`data-selected`, `data-disabled`), `attrs` (`dir`) и модификаторы
-		размера, варианта и вида в `classes`: тема читает всё отсюда.
-	-->
 	<component
 		ref="rootElement"
 		:is="tag"
@@ -19,6 +13,12 @@ export default { ...SetupRadioGroupItem }
 		:class="classes"
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
+		<!--
+			Корень — `label` (`tag` радио по умолчанию): клик по подписи выбирает
+			радио, а подпись становится его доступным именем. На корне — `dataset`
+			(`data-selected`, `data-disabled`), `attrs` (`dir`) и модификаторы
+			размера, варианта и вида в `classes`: тема читает всё отсюда.
+		-->
 		<!--
 			Нативное радио. Группировку по общему `name`, стрелки по кругу,
 			пропуск выключенных, пробел, один Tab-стоп на группу и участие в

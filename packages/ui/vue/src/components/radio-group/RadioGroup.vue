@@ -6,14 +6,6 @@ export default { ...SetupRadioGroup, components: { RadioGroupItem } }
 </script>
 
 <template>
-	<!--
-		Контейнер группы. Набор `aria` владельца — здесь: `role="radiogroup"`
-		пишет ядро, имя из `aria_label` / `aria_labelledBy` — TAriaPlugin.
-
-		В теме oren стилей у `.s-radio-group` нет (решение владельца): радио
-		одной группы стоят где угодно внутри контейнера — в строках списка, в
-		ячейках таблицы, — и раскладку задаёт потребитель.
-	-->
 	<component
 		ref="rootElement"
 		:is="tag"
@@ -22,6 +14,14 @@ export default { ...SetupRadioGroup, components: { RadioGroupItem } }
 		:class="classes"
 		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
+		<!--
+			Контейнер группы. Набор `aria` владельца — здесь: `role="radiogroup"`
+			пишет ядро, имя из `aria_label` / `aria_labelledBy` — TAriaPlugin.
+
+			В теме oren стилей у `.s-radio-group` нет (решение владельца): радио
+			одной группы стоят где угодно внутри контейнера — в строках списка, в
+			ячейках таблицы, — и раскладку задаёт потребитель.
+		-->
 		<slot>
 			<!--
 				Запасное содержимое — радио из пропа `items`, по одному на
