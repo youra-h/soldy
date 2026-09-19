@@ -8,12 +8,19 @@ import { TListItemPlugin } from '../item'
 import type { TListEdge, TListNavigationPluginEvents } from './types'
 
 /**
+ * Можно ли подсветить элемент: он доступен и виден. Подсветить то, что нельзя
+ * выбрать, значит завести пользователя в тупик. `disabled` — итог, в нём учтён
+ * и выключенный владелец.
+ */
+const isNavigable = (item: IControl): boolean => !item.disabled && item.rendered && item.visible
+
+/**
  * TListNavigationPlugin — общая механика навигации по коллекции с клавиатуры.
  *
  * Здесь всё, что не зависит от роли элемента и модели фокуса: подписка на
- * `keydown`, привязка к движку коллекции, учёт подсвеченного элемента и
- * циклический сдвиг по индексу. Что делают конкретные клавиши и что означает
- * активация — дело наследника.
+ * `keydown`, привязка к движку коллекции, учёт подсвеченного элемента,
+ * циклический сдвиг и пропуск недоступных элементов. Что делают конкретные
+ * клавиши и что означает активация — дело наследника.
  *
  * Граница проведена именно так не из аккуратности. `ListBox` — самостоятельный
  * фокусируемый виджет с roving tabindex, `Select` — combobox, у которого фокус
@@ -110,21 +117,29 @@ export abstract class TListNavigationPlugin<
 	protected onHighlightChanged(_uid: string | number | null): void {}
 
 	/**
-	 * Элементы, по которым идёт навигация.
-	 *
-	 * `shown`, а не `items`: ходить стрелками по тому, чего не видно, нельзя.
-	 * Наследник сужает дальше: у Select недоступные опции пропускаются —
-	 * подсветить то, что нельзя выбрать, значит завести пользователя в тупик.
+	 * Показанные элементы — `batch.shown`, а не `batch.items`: ходить
+	 * стрелками по тому, что отбор скрыл, нельзя. Среди них и недоступные: по
+	 * ним наследник узнаёт, с чьей строки пришла клавиша, а `move` — откуда
+	 * шагать.
 	 *
 	 * Тип — `IControl`, а не элемент конкретного списка: навигации нужны только
 	 * `uid`, `disabled`, `rendered` и `visible`. Элементы ListBox и опции Select
 	 * общего предка ниже `IControl` не имеют, и раньше здесь стоял `IListItem`
 	 * от несуществующего теперь компонента `TList`.
 	 */
-	protected items(): IControl[] {
+	protected shown(): IControl[] {
 		const batch = this._engine?.extensions.batch as IBatchExtension<IControl> | undefined
 
 		return (batch?.shown ?? []) as IControl[]
+	}
+
+	/**
+	 * Элементы, по которым идёт навигация: показанные и доступные. Недоступные
+	 * пропускаются у ListBox и у Select одинаково — правило не зависит ни от
+	 * роли элемента, ни от модели фокуса.
+	 */
+	protected items(): IControl[] {
+		return this.shown().filter(isNavigable)
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -146,25 +161,38 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
-	 * Сдвигает подсветку. Навигация зациклена: с последнего элемента `↓`
-	 * уводит на первый — так принято в списках и так делают Ark и Radix.
+	 * Сдвигает подсветку к ближайшему доступному элементу в направлении шага.
+	 * Навигация зациклена: с последнего элемента `↓` уводит на первый — так
+	 * принято в списках и так делают Ark и Radix.
+	 *
+	 * Шаг отсчитывается от места подсветки среди показанных, а не среди
+	 * доступных: подсвеченный элемент могли выключить, а ListBox ставит позицию
+	 * и на выбранный элемент, который бывает выключен. Среди доступных такого
+	 * нет, и стрелка увела бы на край списка. Так же ищут соседа
+	 * `TTabsKeyboardPlugin` и `TTagsKeyboardPlugin`. Подсветки нет или её
+	 * элемент не показан — шаг начинается с края.
 	 */
 	protected move(step: number): void {
-		const items = this.items()
+		const shown = this.shown()
+		const from = shown.findIndex((item) => item.uid === this._highlightedUid)
 
-		if (items.length === 0) return
-
-		const current = this.indexOf(this._highlightedUid)
-
-		if (current === -1) {
-			this.highlight(items[step > 0 ? 0 : items.length - 1].uid)
+		if (from === -1) {
+			this.highlightEdge(step > 0 ? 'first' : 'last')
 
 			return
 		}
 
-		const next = (current + step + items.length) % items.length
+		const count = shown.length
 
-		this.highlight(items[next].uid)
+		for (let offset = 1; offset <= count; offset++) {
+			const candidate = shown[(((from + step * offset) % count) + count) % count]
+
+			if (isNavigable(candidate)) {
+				this.highlight(candidate.uid)
+
+				return
+			}
+		}
 	}
 
 	protected highlightEdge(edge: TListEdge): void {
