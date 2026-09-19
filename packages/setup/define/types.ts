@@ -8,6 +8,7 @@
 import type {
 	IContribution,
 	IPropDeclaration,
+	IPropDefinition,
 	ISlotDeclaration,
 	ISlotDefinition,
 	TName,
@@ -78,10 +79,32 @@ export interface IComponentSlotDefinition extends ISlotDefinition {
 /** Слоты в опциях `defineComponent`: имя слота — ключ словаря, как у `slots` в `IContribution`. */
 export type TSlotDefinitions = Record<string, IComponentSlotDefinition>
 
-/** Contribution компонента: то же, что `IContribution`, но у слотов scope с типами. */
+/**
+ * Проп в contribution компонента: то же, что `IPropDefinition`, но триггер —
+ * имя события, которое дескриптор публикует.
+ *
+ * Триггеры адаптер пробрасывает наружу — и у protected-пропа тоже, — поэтому
+ * их имена вместе с `events` и составляют события компонента в типах
+ * (`DescriptorEvents`). Сверяет их `defineComponent`: у дескриптора с классом
+ * ядра имя вне его карты событий не компилируется.
+ */
+export interface IComponentPropDefinition<
+	TEventName extends string = string,
+> extends IPropDefinition {
+	triggers?: TEventName[]
+}
+
+/**
+ * Contribution компонента: то же, что `IContribution`, но у слотов scope с
+ * типами, а события и триггеры пропсов — имена, которые `defineComponent`
+ * запоминает в типе дескриптора (`TEventName`).
+ */
 export interface IComponentContribution<
 	TSlots extends TSlotDefinitions = TSlotDefinitions,
+	TEventName extends string = string,
 > extends IContribution {
+	props?: Record<string, IComponentPropDefinition<TEventName>>
+	events?: TEventName[]
 	slots?: TSlots
 }
 
@@ -90,7 +113,8 @@ export interface IComponentContribution<
  *
  * Параметры руками не передаются — их выводит `defineComponent` из самих
  * опций: кортеж плагинов из `plugins`, объявление слотов из
- * `contribution.slots`, плагины, слоты и инстанс родителя из `extends`, свой
+ * `contribution.slots`, имена событий из `contribution.events` и триггеров
+ * пропсов, плагины, слоты, инстанс и имена событий родителя из `extends`, свой
  * инстанс из `ctor`. Без `ctor` инстанс — родительский (дефолт `TInstance`).
  */
 export interface IComponentDefinitionOptions<
@@ -100,25 +124,36 @@ export interface IComponentDefinitionOptions<
 	TParentSlots extends object = object,
 	TParentInstance extends object = object,
 	TInstance extends object = TParentInstance,
+	TParentEventName extends string = never,
+	TEventName extends string = never,
 > {
 	/** Конструктор core-компонента. Без него инстанс наследуется от `extends`. */
 	ctor?: TComponentCtor<TInstance>
 	/** Родительский дескриптор (наследование props, events, slots, plugins) */
-	extends?: IComponentDescriptor<any, any, TParentPlugins, TParentSlots, TParentInstance>
+	extends?: IComponentDescriptor<
+		any,
+		any,
+		TParentPlugins,
+		TParentSlots,
+		TParentInstance,
+		TParentEventName
+	>
 	/** Собственная контрибуция компонента */
-	contribution?: IComponentContribution<TSlots>
+	contribution?: IComponentContribution<TSlots, TEventName>
 	/** Плагины (каждый — результат definePlugin) */
 	plugins?: readonly [...TPlugins]
 }
 
-/** Опции без привязки к конкретному составу плагинов, слотов и инстансу — для реализации. */
+/** Опции без привязки к конкретному составу плагинов, слотов, инстансу и именам событий — для реализации. */
 export type TDefinitionOptions = IComponentDefinitionOptions<
 	readonly IPluginDefinition[],
 	TSlotDefinitions,
 	readonly IPluginDefinition[],
 	object,
 	object,
-	object
+	object,
+	string,
+	string
 >
 
 /** Контекст сборки набора: что знает о компоненте тот, кто его собирает. */
@@ -130,11 +165,12 @@ export interface IBundleContext {
 /**
  * Дескриптор компонента — единственный источник истины.
  *
- * TProps/TEvents/TPlugins/TSlots — фантомные параметры: в рантайме не
- * используются, но позволяют адаптерам выводить типы прямо из фабрики
+ * TProps/TEvents/TPlugins/TSlots/TEventName — фантомные параметры: в рантайме
+ * не используются, но позволяют адаптерам выводить типы прямо из фабрики
  * дескриптора (DescriptorProps<typeof ButtonDescriptor> → IButtonProps). Руками
- * их не задают: `defineComponent` выводит пропсы и события из класса ядра
- * (`ctor`), слоты — из объявления `slots`, кортеж — из `plugins`.
+ * их не задают: `defineComponent` выводит пропсы из класса ядра (`ctor`),
+ * события — из его карты, суженной до опубликованных имён, слоты — из
+ * объявления `slots`, кортеж — из `plugins`.
  */
 export interface IComponentDescriptor<
 	/*
@@ -151,6 +187,15 @@ export interface IComponentDescriptor<
 	/* eslint-enable @typescript-eslint/no-unused-vars */
 	/** Тип инстанса, который строит `ctor`; уходит в `IAdapterContext<TInstance>`. */
 	TInstance extends object = object,
+	/**
+	 * Опубликованные имена событий — `events` и триггеры пропсов, свои и
+	 * `extends`. Их читает `defineComponent` наследника: его карту событий он
+	 * сужает до них вместе со своими. Нужны отдельно от `TEvents`, потому что у
+	 * дескриптора без класса ядра (`EntityDescriptor`, `CollectionDescriptor`)
+	 * карты нет, а имена есть. Не задан — имена неизвестны, то есть любые.
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	TEventName extends string = string,
 > {
 	ctor: TComponentCtor<TInstance>
 	/** Own component props (excluding plugin props). */

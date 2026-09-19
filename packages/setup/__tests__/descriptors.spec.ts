@@ -392,21 +392,26 @@ describe('Select', () => {
 
 /**
  * Типы пропсов и событий дескриптор не повторяет: `defineComponent` берёт их у
- * класса ядра. Проверки — `expectTypeOf`, их ловит шаг CI «Типы — Setup».
+ * класса ядра. События — его карта, суженная до опубликованных имён: у
+ * визуальных классов в неё не входит `change:present` (см.
+ * `descriptor-events.spec.ts`). Проверки — `expectTypeOf`, их ловит шаг CI
+ * «Типы — Setup».
  */
 describe('типы пропсов и событий выводятся из класса ядра', () => {
 	it('Button — интерфейсы TButton', () => {
 		expectTypeOf<DescriptorProps<typeof ButtonDescriptor>>().toEqualTypeOf<IButtonProps>()
-		expectTypeOf<DescriptorEvents<typeof ButtonDescriptor>>().toEqualTypeOf<TButtonEvents>()
+		expectTypeOf<DescriptorEvents<typeof ButtonDescriptor>>().toEqualTypeOf<
+			Omit<TButtonEvents, 'change:present'>
+		>()
 	})
 
 	it('дженерик-база ComponentView — её интерфейсы: на месте параметров класса констрейнты', () => {
 		expectTypeOf<
 			DescriptorProps<typeof ComponentViewDescriptor>
 		>().toEqualTypeOf<IComponentViewProps>()
-		expectTypeOf<
-			DescriptorEvents<typeof ComponentViewDescriptor>
-		>().toEqualTypeOf<TComponentViewEvents>()
+		expectTypeOf<DescriptorEvents<typeof ComponentViewDescriptor>>().toEqualTypeOf<
+			Omit<TComponentViewEvents, 'change:present'>
+		>()
 	})
 
 	it('без своего ctor — от extends, без обоих — словарь без типа', () => {
@@ -416,7 +421,9 @@ describe('типы пропсов и событий выводятся из кл
 		expect(child.ctor).toBe(TButton)
 		expect(bare.ctor).toBe(Object)
 		expectTypeOf<DescriptorProps<() => typeof child>>().toEqualTypeOf<IButtonProps>()
-		expectTypeOf<DescriptorEvents<() => typeof child>>().toEqualTypeOf<TButtonEvents>()
+		expectTypeOf<DescriptorEvents<() => typeof child>>().toEqualTypeOf<
+			DescriptorEvents<typeof ButtonDescriptor>
+		>()
 		expectTypeOf<DescriptorProps<() => typeof bare>>().toEqualTypeOf<Record<string, unknown>>()
 		expectTypeOf<DescriptorEvents<() => typeof bare>>().toEqualTypeOf<object>()
 	})

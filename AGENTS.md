@@ -1115,10 +1115,11 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 - **Один файл на компонент.** Дескриптор объявляет всё, что компонент отдаёт
   наружу, прямо в `contribution` — словаре `IContribution`. Отдельных файлов
   contribution нет: их читал только свой дескриптор. Типы дескриптора руками
-  не пишутся — `defineComponent` выводит их сам: пропсы и события из класса
-  ядра (`ctor`, без него — от `extends`), слоты из объявления `slots`, кортеж
-  плагинов из `plugins`. Фабрика оборачивается в `defineDescriptor` —
-  дескриптор строится один раз:
+  не пишутся — `defineComponent` выводит их сам: пропсы из класса ядра
+  (`ctor`, без него — от `extends`), события из его карты, суженной до
+  опубликованных имён, слоты из объявления `slots`, кортеж плагинов из
+  `plugins`. Фабрика оборачивается в `defineDescriptor` — дескриптор строится
+  один раз:
 
   ```ts
   export const ButtonDescriptor = defineDescriptor(() =>
@@ -1133,10 +1134,12 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   )
   ```
 
-  `props` is a `Record<string, IPropDefinition>` — the prop name is the dictionary key, not a field.
+  `props` is a `Record<string, IComponentPropDefinition>` — the prop name is the dictionary key, not a field.
   Плагин объявляется так же — `definePlugin({ ctor, namespace, contribution: { … } })`.
   Общий фрагмент нескольких компонентов (`LIST_PROPS` у ListBox и Select) —
-  константа рядом с дескрипторами (`descriptors/components/list.ts`).
+  константа рядом с дескрипторами (`descriptors/components/list.ts`), и
+  объявляется она через `satisfies`, а не аннотацией словарём (см. «Состав
+  событий записан один раз»).
 
 - **Descriptors** — фабрики. Call them when used as `extends` / options (do not pass the function reference): `extends: TextableDescriptor()`.
 
@@ -1179,6 +1182,27 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   - Защищённые пропсы из contribution плагинов дескриптора — с ключами
     `DescriptorPluginOutputs`. Строка своя у каждого дескриптора, у
     коллекционной части тоже: адаптер создаёт ей отдельный контекст.
+
+- **Состав событий записан один раз — в contribution.** Тип событий
+  дескриптора (`DescriptorEvents`, из него колбэк-пропы React, Solid и Svelte)
+  — карта событий класса ядра, суженная до опубликованных имён: `events` и
+  триггеры пропсов, свои и `extends` (`TPublishedEvents`). Ровно их адаптер и
+  пробрасывает (`exportEvents` поверхности), поэтому отдельной сверки, как у
+  пропсов, нет: тип выведен из тех же литералов, что рантайм. Раньше тип брал
+  карту целиком и обещал колбэки, которые не срабатывали никогда: ядро шлёт
+  `change:present`, но `present` объявлен с триггерами `change:rendered` и
+  `change:visible`, и `onChangePresent` у кнопки молчал. Имя сверяет
+  `defineComponent`: у дескриптора с классом ядра (своим или от `extends`) имя
+  в `events` или `triggers` вне карты класса — ошибка компиляции, и опечатка в
+  триггере больше не проходит молча. У дескриптора без класса
+  (`EntityDescriptor`, `CollectionDescriptor`) имена копятся без сверки, карту
+  даёт наследник. Общий фрагмент contribution (`LIST_PROPS`) объявляется через
+  `satisfies`: с аннотацией `Record<string, …>` спред в `props` теряет ключи в
+  типах, и триггеры фрагмента молча выпадают из событий. Сторож —
+  `setup/__tests__/descriptor-events.spec.ts`: те же имена в типах и в
+  пробросе, ошибка компиляции на имени вне карты и ни одного имени, которое
+  сужение выбросило бы у дескрипторов экспорта (так пропало бы имя родителя
+  без класса, которого нет в карте наследника).
 
 - **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
 

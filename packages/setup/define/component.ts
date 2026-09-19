@@ -6,14 +6,22 @@
  * дескриптор о ней не знает.
  *
  * Типы дескриптора руками не пишутся — `defineComponent` выводит их из опций.
- * Пропсы и события — у класса ядра: его инстанс и есть схема для типов
- * (`TInstanceProps`, `TInstanceEvents`), без своего `ctor` — у родительского.
- * Слоты — из объявления `slots` поверх слотов `extends`, кортеж плагинов — из
- * `plugins`. Второй записи пропсов, событий или слотов рядом с объявлением нет.
+ * Пропсы — у класса ядра: его инстанс и есть схема для типов
+ * (`TInstanceProps`), без своего `ctor` — у родительского. События — карта того
+ * же класса, суженная до имён, которые дескриптор публикует: `events` и
+ * триггеры пропсов, свои и `extends` (`TPublishedEvents`). Слоты — из
+ * объявления `slots` поверх слотов `extends`, кортеж плагинов — из `plugins`.
+ * Второй записи пропсов, событий или слотов рядом с объявлением нет.
  */
 
 import type { IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
-import type { TInstanceEvents, TInstanceProps, TMergeSlots, TSlotsOf } from './inference.types'
+import type {
+	TInstanceEventName,
+	TInstanceProps,
+	TMergeSlots,
+	TPublishedEvents,
+	TSlotsOf,
+} from './inference.types'
 import { inheritDeclarations } from './inherit'
 import type {
 	IComponentDefinitionOptions,
@@ -27,6 +35,14 @@ import type {
  * Параметры типа выводятся из опций, явно их не передают. Кортеж плагинов —
  * `const`: иначе `plugins` вывелся бы массивом, и неймспейсы плагинов пропали
  * бы из типов адаптеров.
+ *
+ * Имена событий (`TEventName`) — из `events` и триггеров своих пропсов, их
+ * констрейнт — ключи карты событий инстанса (`TInstanceEventName`): опечатка в
+ * триггере или событие, которого класс не шлёт, — ошибка компиляции
+ * дескриптора. Имена родителя (`TParentEventName`) приходят из `extends`
+ * готовыми: их сверил родитель, если у него был класс ядра. У родителя без
+ * класса (`EntityDescriptor`, `CollectionDescriptor`) их сверить было не с чем,
+ * и карту к ним прикладывает наследник.
  */
 export function defineComponent<
 	const TPlugins extends readonly IPluginDefinition[] = readonly [],
@@ -35,6 +51,8 @@ export function defineComponent<
 	TParentSlots extends object = object,
 	TParentInstance extends object = object,
 	TInstance extends object = TParentInstance,
+	TParentEventName extends string = never,
+	TEventName extends TInstanceEventName<TInstance> = never,
 >(
 	options: IComponentDefinitionOptions<
 		TPlugins,
@@ -42,14 +60,17 @@ export function defineComponent<
 		TParentPlugins,
 		TParentSlots,
 		TParentInstance,
-		TInstance
+		TInstance,
+		TParentEventName,
+		TEventName
 	>,
 ): IComponentDescriptor<
 	TInstanceProps<TInstance>,
-	TInstanceEvents<TInstance>,
+	TPublishedEvents<TInstance, TParentEventName | TEventName>,
 	readonly [...TParentPlugins, ...TPlugins],
 	TMergeSlots<TParentSlots, TSlotsOf<TSlots>>,
-	TInstance
+	TInstance,
+	TParentEventName | TEventName
 >
 
 /**
