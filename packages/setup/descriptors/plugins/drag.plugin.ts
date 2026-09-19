@@ -5,9 +5,8 @@
 import { definePlugin } from '../../define'
 import { TDragPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const DragPluginDescriptor = () =>
-	definePlugin({
-		ctor: TDragPlugin,
-		namespace: 'drag',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const DragPluginDescriptor = definePlugin({
+	ctor: TDragPlugin,
+	namespace: 'drag',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

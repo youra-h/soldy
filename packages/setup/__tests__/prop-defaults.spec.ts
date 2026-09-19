@@ -115,7 +115,7 @@ describe('умолчание пропа плагина', () => {
 	})
 
 	it('опция дескриптора сильнее defaultValues плагина', () => {
-		const definition = AnchorPluginDescriptor({ flip: false, placement: 'top-end' })
+		const definition = AnchorPluginDescriptor.with({ flip: false, placement: 'top-end' })
 
 		expect(pluginProp(definition, 'flip').default).toBe(false)
 		expect(pluginProp(definition, 'placement').default).toBe('top-end')
@@ -123,7 +123,9 @@ describe('умолчание пропа плагина', () => {
 	})
 
 	it('опция undefined считается незаданной — как её читает сам плагин', () => {
-		expect(pluginProp(AnchorPluginDescriptor({ flip: undefined }), 'flip').default).toBe(true)
+		expect(pluginProp(AnchorPluginDescriptor.with({ flip: undefined }), 'flip').default).toBe(
+			true,
+		)
 	})
 
 	it('якорь по умолчанию не задан: anchor — null', () => {
@@ -131,7 +133,7 @@ describe('умолчание пропа плагина', () => {
 	})
 
 	it('имени по умолчанию нет: пропсы aria объявлены ключами без значения', () => {
-		const aria = AriaPluginDescriptor()
+		const aria = AriaPluginDescriptor
 
 		expect(declaredUnset(pluginProp(aria, 'label'))).toBe(true)
 		expect(declaredUnset(pluginProp(aria, 'labelledBy'))).toBe(true)

@@ -1,15 +1,15 @@
 /**
- * Умолчание пропа в декларации: из класса, а у плагина заданная опция впереди.
+ * Умолчание пропа в декларации — из `defaultValues` класса, которому проп принадлежит.
  *
  * Источник у умолчания один: класс, которому принадлежит проп, — его
  * `static defaultValues`. Setup переносит значение в декларацию при сборке
  * дескриптора, адаптер берёт его уже оттуда (`surfaceOf(…).exportProps`) и сам ничего не
  * ищет. Раньше Vue читал `defaultValues` ядра рефлексией в адаптере, и пропы
- * плагинов умолчаний не получали вовсе.
+ * плагинов умолчаний не получали вовсе. У пропа плагина впереди класса идёт
+ * опция установки — это знает определение плагина (`TPluginDefinition`).
  */
 
 import type { IPropDeclaration } from '@soldy/accessor'
-import type { TPluginCtor } from './types'
 
 /**
  * Декларация с умолчанием из `defaultValues` класса.
@@ -31,25 +31,4 @@ export function withClassDefault(
 	if (!defaults || !Object.hasOwn(defaults, name)) return declaration
 
 	return { ...declaration, default: defaults[name] }
-}
-
-/**
- * Умолчание пропа плагина: заданная опция дескриптора, иначе `defaultValues`
- * плагина.
- *
- * Опция впереди: плагин стартует с неё, и отдай адаптеру умолчание класса — Vue
- * при монтировании перетёр бы им опцию автора дескриптора. Опция считается
- * заданной, если она не `undefined`: так её читает сам плагин
- * (`options?.flip ?? …`). У `defaultValues` значим ключ — см. `withClassDefault`.
- */
-export function withPluginDefault(
-	prop: IPropDeclaration,
-	ctor: TPluginCtor,
-	options: object | undefined,
-): IPropDeclaration {
-	const option: unknown = options ? Reflect.get(options, prop.name.name) : undefined
-
-	if (option === undefined) return withClassDefault(prop, ctor.defaultValues)
-
-	return { ...prop, default: option }
 }

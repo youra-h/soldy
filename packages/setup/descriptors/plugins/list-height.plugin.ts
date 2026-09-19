@@ -8,9 +8,8 @@
 import { definePlugin } from '../../define'
 import { TListHeightPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const ListHeightPluginDescriptor = () =>
-	definePlugin({
-		ctor: TListHeightPlugin,
-		namespace: 'height',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const ListHeightPluginDescriptor = definePlugin({
+	ctor: TListHeightPlugin,
+	namespace: 'height',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

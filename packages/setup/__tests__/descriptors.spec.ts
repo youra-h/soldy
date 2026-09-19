@@ -64,10 +64,9 @@ const assemble = (descriptor: IComponentDescriptor, instance: object) => {
 	return { bundle, accessor: assembleAccessor(descriptor, composition, instance, bundle) }
 }
 
-const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
-	d.props.map((p) => p.name.name)
+const propNames = (d: Pick<IComponentDescriptor, 'props'>) => d.props.map((p) => p.name.name)
 
-const eventNames = (d: { events: Array<{ name: string }> }) => d.events.map((e) => e.name)
+const eventNames = (d: Pick<IComponentDescriptor, 'events'>) => d.events.map((e) => e.name)
 
 describe('дескрипторы компонентов (наследование)', () => {
 	it('ButtonDescriptor наследует цепочку Entity → Component → ComponentView → Stylable → Control → Textable', () => {

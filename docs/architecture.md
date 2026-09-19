@@ -140,10 +140,12 @@ The descriptor's types are not written by hand: `defineComponent` infers them fr
 Returns `IComponentDescriptor` with:
 
 - `ctor` - Core class the instance is built from
-- `props: IPropDeclaration[]` / `events: TName[]` - Own + inherited declarations, without plugin ones
-- `slots: ISlotDeclaration[]` - Own + inherited, overridden by name
-- `plugins: IPluginDefinition[]` - Own + inherited plugin definitions
-- `getProps()` / `getEvents()` - Full lists: component + plugins; `getSlots()`
+- `props: readonly IPropDeclaration[]` / `events: readonly TName[]` - Own + inherited declarations, without plugin ones
+- `slots: readonly ISlotDeclaration[]` - Own + inherited, overridden by name. Плагины слотов не имеют, поэтому «полного» списка у слотов нет
+- `plugins: readonly IPluginDefinition[]` - Own + inherited plugin definitions, overridden by plugin class
+- `getProps()` / `getEvents()` - Full lists: component + plugins
+
+Декларации заморожены: дескриптор строится один раз на тип и один на все монтирования.
 
 The descriptor has no assembly methods: a component for one mount is assembled from it by `assemble/` (Layer 5), which knows only the descriptor's contract (`define/types.ts`).
 
@@ -152,7 +154,8 @@ The descriptor has no assembly methods: a component for one mount is assembled f
 - [define/descriptor.ts](../packages/setup/define/descriptor.ts) - defineDescriptor: the descriptor is built once per type
 - [define/component.ts](../packages/setup/define/component.ts) - defineComponent factory
 - [define/plugin.ts](../packages/setup/define/plugin.ts) - definePlugin factory
-- [define/inherit.ts](../packages/setup/define/inherit.ts) - Declarations inherited from `extends` (props, events, slots, plugins)
+- [define/component-descriptor.class.ts](../packages/setup/define/component-descriptor.class.ts) - `TComponentDescriptor`: own declaration over the one inherited from `extends` (props, events, slots, plugins)
+- [define/plugin-definition.class.ts](../packages/setup/define/plugin-definition.class.ts) - `TPluginDefinition`: plugin contract plus install options of the place it is used in — `with(options)`
 - [define/contribution.ts](../packages/setup/define/contribution.ts) - Contribution → declarations (`normalizeContribution`)
 - [define/inference.types.ts](../packages/setup/define/inference.types.ts) - Types for adapters inferred from the descriptor (extractors below)
 - [assemble/component.ts](../packages/setup/assemble/component.ts) - What is built from the descriptor on mount: instance, composition, bundle, accessor (Layer 5)
@@ -206,12 +209,11 @@ Organized by inheritance:
 contribution каждого плагина явно:
 
 ```ts
-export const ElementPluginDescriptor = () =>
-  definePlugin({
-    ctor: TElementPlugin,
-    namespace: 'element',
-    contribution: { events: [...PLUGIN_EVENTS, 'ready', 'removed'] },
-  })
+export const ElementPluginDescriptor = definePlugin({
+  ctor: TElementPlugin,
+  namespace: 'element',
+  contribution: { events: [...PLUGIN_EVENTS, 'ready', 'removed'] },
+})
 ```
 
 Так плагин остаётся единственным источником истины о собственных событиях.
@@ -978,7 +980,7 @@ export const ButtonDescriptor = defineDescriptor(() =>
 ```
 
 Дескриптор несёт слоты в контракте (`IComponentContract.slots`), отдаёт их
-`getSlots()`, а тип — extractor `DescriptorSlots<T>`. Слоты наследуются с перекрытием по имени:
+полем `slots`, а тип — extractor `DescriptorSlots<T>`. Слоты наследуются с перекрытием по имени:
 `ComponentView` объявляет `default`, а `Button` уточняет его, добавляя scope.
 
 Тип слотов `defineComponent` выводит из самого объявления: свои слоты поверх
@@ -1854,7 +1856,7 @@ Shadow DOM, куда её пришлось бы вносить через `adopt
 ### Static (Build Time)
 
 ```
-definePlugin({ ctor, namespace, contribution, options })
+definePlugin({ ctor, namespace, contribution })   — контракт плагина, один раз; опции — .with(options) в дескрипторе
   ↓
 defineDescriptor(() => defineComponent({ ctor, extends, contribution, plugins }))
   ↓

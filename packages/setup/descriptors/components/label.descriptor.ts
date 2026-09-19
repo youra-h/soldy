@@ -33,6 +33,6 @@ export const LabelDescriptor = defineDescriptor(() =>
 		},
 
 		// `label` в `label` HTML запрещает, а корень радио — `label`
-		plugins: [LabelNestedWarnPluginDescriptor()],
+		plugins: [LabelNestedWarnPluginDescriptor],
 	}),
 )

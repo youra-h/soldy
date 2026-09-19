@@ -9,9 +9,8 @@
 import { definePlugin } from '../../define'
 import { TTagsKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const TagsKeyboardPluginDescriptor = () =>
-	definePlugin({
-		ctor: TTagsKeyboardPlugin,
-		namespace: 'keyboard',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const TagsKeyboardPluginDescriptor = definePlugin({
+	ctor: TTagsKeyboardPlugin,
+	namespace: 'keyboard',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

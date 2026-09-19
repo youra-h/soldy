@@ -23,6 +23,6 @@ export const CheckBoxDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [InputBoolPluginDescriptor()],
+		plugins: [InputBoolPluginDescriptor],
 	}),
 )

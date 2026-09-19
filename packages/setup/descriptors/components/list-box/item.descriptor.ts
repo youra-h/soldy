@@ -45,6 +45,6 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [ListItemPluginDescriptor()],
+		plugins: [ListItemPluginDescriptor],
 	}),
 )

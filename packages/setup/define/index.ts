@@ -13,6 +13,7 @@ export type {
 	IComponentSlotDefinition,
 	IPluginContract,
 	IPluginDefinition,
+	IPluginsContract,
 	TComponentCtor,
 	TEmptySlotScope,
 	TPluginCtor,

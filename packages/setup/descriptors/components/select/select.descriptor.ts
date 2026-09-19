@@ -134,24 +134,24 @@ export const SelectDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам опций
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Высота панели по `maxRows`. Тот же плагин, что у ListBox: свойство
 			// объявлено общим контрактом `IList`, а инстанс у каждого свой
-			ListHeightPluginDescriptor(),
+			ListHeightPluginDescriptor,
 			// Закрытие по нажатию мимо. Общий слой оверлея, им же потом
 			// воспользуются Menu и Popover
-			DismissPluginDescriptor(),
+			DismissPluginDescriptor,
 			// Клик по полю: тумблер в select-only, только стрелка в editable
-			SelectPointerPluginDescriptor(),
+			SelectPointerPluginDescriptor,
 			// Клавиатура APG Combobox: открытие, навигация, Escape, набор по буквам
-			SelectKeyboardPluginDescriptor(),
+			SelectKeyboardPluginDescriptor,
 			// Ввод текста при editable: search/filter подсвечивают совпадение
 			// через клавиатурный плагин выше — подключается после него
-			SelectEditablePluginDescriptor(),
+			SelectEditablePluginDescriptor,
 			// Удаление тегов по Backspace в пустом поле — editable + multiple,
 			// включается свойством removeOnBackspace
-			SelectBackspacePluginDescriptor(),
+			SelectBackspacePluginDescriptor,
 		],
 	}),
 )

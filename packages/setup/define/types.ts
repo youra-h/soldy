@@ -42,13 +42,11 @@ export type TComponentCtor<TInstance extends object = object> = (new (
 export type TPluginCtor = IPluginConstructor<any, any, any>
 
 /**
- * Контракт плагина в типах — то, что он добавляет компоненту, уже под именами
- * с неймспейсом: `aria_label`, `element:ready`, `layout_styles`.
- *
- * Выводит его `definePlugin` из класса плагина и его contribution; руками
- * контракт не пишут.
+ * Что плагины добавляют компоненту в типах, уже под именами с неймспейсом:
+ * `aria_label`, `element:ready`, `layout_styles`. У одного плагина это часть
+ * его контракта, у компонента — сумма по всем плагинам дескриптора.
  */
-export interface IPluginContract {
+export interface IPluginsContract {
 	/** Входы — незащищённые пропсы, их пишет потребитель. */
 	props: object
 	/** События, которые плагин публикует: `events` и триггеры пропсов. */
@@ -57,19 +55,40 @@ export interface IPluginContract {
 	outputs: object
 }
 
-/** Определение плагина в составе дескриптора. */
+/**
+ * Контракт плагина в типах. Выводит его `definePlugin` из класса плагина и его
+ * contribution; руками контракт не пишут.
+ */
+export interface IPluginContract extends IPluginsContract {
+	/** Опции установки — второй параметр `install()` класса плагина. */
+	options: object
+}
+
+/**
+ * Определение плагина: его контракт и, в составе дескриптора, опции установки.
+ *
+ * Контракт — свойство класса плагина, и объявляют его один раз, константой.
+ * Опции — свойство места, где плагин поставили: дескриптор берёт определение
+ * как есть или с опциями — `DismissPluginDescriptor.with({ focusOutside: true })`.
+ */
 export interface IPluginDefinition<C extends IPluginContract = IPluginContract> {
 	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
 	readonly __contract?: C
-	ctor: TPluginCtor
-	/** Нормализованные props из contribution */
-	props: IPropDeclaration[]
+	readonly ctor: TPluginCtor
+	/** Нормализованные props из contribution, с умолчаниями. */
+	readonly props: readonly IPropDeclaration[]
 	/** Нормализованные events из contribution */
-	events: TName[]
+	readonly events: readonly TName[]
 	/** Опции, передаваемые в plugin.install(ctx, options) */
-	options?: object
+	readonly options?: object
 	/** Namespace плагина. */
-	namespace?: string
+	readonly namespace?: string
+	/**
+	 * То же определение с опциями установки. Исходное не меняется: его делят
+	 * все дескрипторы, которые плагин ставят. Умолчания пропсов пересчитываются —
+	 * заданная опция идёт впереди `defaultValues` класса.
+	 */
+	with(options: C['options']): IPluginDefinition<C>
 }
 
 /**
@@ -155,7 +174,7 @@ export interface IComponentContract {
 	/** Слоты, имя → scope: свои поверх `extends`. */
 	slots: object
 	/** Сумма контрактов плагинов — своих и `extends`. */
-	plugins: IPluginContract
+	plugins: IPluginsContract
 }
 
 /**
@@ -168,20 +187,21 @@ export interface IComponentContract {
 export interface IComponentDescriptor<C extends IComponentContract = IComponentContract> {
 	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
 	readonly __contract?: C
-	ctor: TComponentCtor<C['instance']>
+	readonly ctor: TComponentCtor<C['instance']>
 	/** Own component props (excluding plugin props). */
-	props: IPropDeclaration[]
+	readonly props: readonly IPropDeclaration[]
 	/** Own component events (excluding plugin events). */
-	events: TName[]
-	/** Слоты: свои + унаследованные. Плагины слотов не имеют. */
-	slots: ISlotDeclaration[]
-	plugins: IPluginDefinition[]
+	readonly events: readonly TName[]
+	/**
+	 * Слоты: свои + унаследованные. Плагины слотов не имеют, поэтому отдельного
+	 * «полного» списка, как у пропсов и событий, у слотов нет.
+	 */
+	readonly slots: readonly ISlotDeclaration[]
+	readonly plugins: readonly IPluginDefinition[]
 	/** All props: own + all plugin props (flat). */
 	getProps(): IPropDeclaration[]
 	/** All events: own + all plugin events (flat). */
 	getEvents(): TName[]
-	/** Слоты компонента. Отдельного «плагинного» источника у них нет. */
-	getSlots(): ISlotDeclaration[]
 }
 
 /**

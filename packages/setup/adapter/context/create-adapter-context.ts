@@ -6,7 +6,7 @@
  */
 
 import { assembleComponent } from '../../assemble'
-import type { IComponentDescriptor, IPluginContract } from '../../define'
+import type { IComponentDescriptor, IPluginsContract } from '../../define'
 import { TAdapterContext } from './adapter-context.class'
 import type {
 	IAdapterContext,
@@ -24,7 +24,7 @@ import type {
  * любая его реализация. `ctrl` чужого компонента не компилируется — класс
  * дескриптора его тип не реализует.
  */
-export function createAdapterContext<TInstance extends object, TPlugins extends IPluginContract>(
+export function createAdapterContext<TInstance extends object, TPlugins extends IPluginsContract>(
 	descriptor: IComponentDescriptor<TContextContract<TInstance, TPlugins>>,
 	options: IAdapterContextOptions<TInstance>,
 	config: IAdapterContextConfig = {},

@@ -135,8 +135,9 @@ export interface IContribution {
  */
 export interface IAccessorUnit {
 	instance: object | null | undefined
-	props?: IPropDeclaration[]
-	events?: TName[]
+	/** Только для чтения: декларации принадлежат дескриптору, аксессор их не меняет. */
+	props?: readonly IPropDeclaration[]
+	events?: readonly TName[]
 }
 
 /** Скомпилированное свойство: привязано к своему instance */

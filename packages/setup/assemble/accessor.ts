@@ -31,8 +31,8 @@ export function assembleAccessor(
 			.filter((entry) => entry.props?.length || entry.events?.length)
 			.map((entry) => ({
 				instance: bundle?.get(entry.ctor),
-				props: [...(entry.props ?? [])],
-				events: [...(entry.events ?? [])],
+				props: entry.props,
+				events: entry.events,
 			}))
 			.filter((unit) => unit.instance != null),
 	])

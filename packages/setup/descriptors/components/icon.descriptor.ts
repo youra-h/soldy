@@ -26,6 +26,6 @@ export const IconDescriptor = defineDescriptor(() =>
 
 		// Иконка декоративна, пока ей не дали имя; с именем она обязана стать
 		// `role="img"` — эту роль и передаём плагину.
-		plugins: [IconLayoutPluginDescriptor(), AriaPluginDescriptor({ role: 'img' })],
+		plugins: [IconLayoutPluginDescriptor, AriaPluginDescriptor.with({ role: 'img' })],
 	}),
 )

@@ -15,8 +15,8 @@ import type { TPluginInternalEvents } from '@soldy/plugins'
 import type { TUnderscorePropName } from '../naming'
 import type {
 	IComponentDescriptor,
-	IPluginContract,
 	IPluginDefinition,
+	IPluginsContract,
 	TEmptySlotScope,
 	TPropType,
 } from './types'
@@ -132,6 +132,13 @@ type TNamespacedEvents<T, N extends string | undefined> = {
  */
 type TPublicPluginEvents<TInstance> = Omit<TInstanceEvents<TInstance>, keyof TPluginInternalEvents>
 
+/** Опции установки — второй параметр `install()` класса; не объявлен — любой объект. */
+type TPluginOptions<TInstance> = TInstance extends {
+	install(ctx: never, options?: infer TOptions extends object): void
+}
+	? TOptions
+	: object
+
 /**
  * Контракт плагина: состав — из contribution, типы — из класса.
  *
@@ -140,6 +147,7 @@ type TPublicPluginEvents<TInstance> = Omit<TInstanceEvents<TInstance>, keyof TPl
  * Второй записи пропсов и событий рядом с объявлением нет.
  */
 export type TPluginContractFrom<TInstance, N extends string | undefined, TContribution> = {
+	options: TPluginOptions<TInstance>
 	props: TNamespacedProps<
 		{
 			-readonly [K in Exclude<
@@ -211,8 +219,8 @@ type TDeclaredSlots<TContribution> = TContribution extends { readonly slots: inf
 	: object
 
 /**
- * Слоты наследника: родительские, перекрытые одноимёнными своими, — как
- * `mergeSlots` в рантайме (`inherit.ts`). Так Button уточняет `default`,
+ * Слоты наследника: родительские, перекрытые одноимёнными своими, — как в
+ * рантайме (`TComponentDescriptor`). Так Button уточняет `default`,
  * объявленный у ComponentView: добавляет scope `text`.
  */
 type TMergeSlots<TParent extends object, TOwn extends object> = {
@@ -231,7 +239,7 @@ type TIntersection<TUnion> = (TUnion extends unknown ? (part: TUnion) => void : 
 	: never
 
 /** Одна часть контракта (`props`, `events`, `outputs`) у всех плагинов списка разом. */
-type TPluginsPart<TPlugin, K extends keyof IPluginContract> = [TPlugin] extends [never]
+type TPluginsPart<TPlugin, K extends keyof IPluginsContract> = [TPlugin] extends [never]
 	? object
 	: TIntersection<
 				TPlugin extends IPluginDefinition<infer C> ? C[K] : never

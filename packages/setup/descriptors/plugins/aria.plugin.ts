@@ -12,32 +12,30 @@
 
 import { definePlugin } from '../../define'
 import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { IAriaPluginOptions } from '@soldy/plugins'
 
 /**
- * @param options.role Роль, которую элемент принимает, получив имя.
- *                     Нужна только там, где без имени он декоративен (Icon).
+ * Опция `role` (`AriaPluginDescriptor.with({ role: 'img' })`) — роль, которую
+ * элемент принимает, получив имя. Нужна только там, где без имени он
+ * декоративен (Icon).
  */
-export const AriaPluginDescriptor = (options?: IAriaPluginOptions) =>
-	definePlugin({
-		ctor: TAriaPlugin,
-		namespace: 'aria',
-		/**
-		 * Единственный плагин, чьи пропсы пишутся снаружи, а не только читаются: имя
-		 * задаёт потребитель, вычислить его неоткуда.
-		 *
-		 * Вычисленного набора здесь нет: плагин пишет свою часть в общий `aria`
-		 * компонента, а тот уже объявлен в `ComponentViewDescriptor`. Отдельный
-		 * `aria_attributes` заставлял бы разметку складывать два набора спредом — от
-		 * этого и уходили.
-		 */
-		contribution: {
-			events: [...PLUGIN_EVENTS],
-			props: {
-				label: { type: String, triggers: ['change:label'] },
-				labelledBy: { type: String, triggers: ['change:labelledBy'] },
-				describedBy: { type: String, triggers: ['change:describedBy'] },
-			},
+export const AriaPluginDescriptor = definePlugin({
+	ctor: TAriaPlugin,
+	namespace: 'aria',
+	/**
+	 * Единственный плагин, чьи пропсы пишутся снаружи, а не только читаются: имя
+	 * задаёт потребитель, вычислить его неоткуда.
+	 *
+	 * Вычисленного набора здесь нет: плагин пишет свою часть в общий `aria`
+	 * компонента, а тот уже объявлен в `ComponentViewDescriptor`. Отдельный
+	 * `aria_attributes` заставлял бы разметку складывать два набора спредом — от
+	 * этого и уходили.
+	 */
+	contribution: {
+		events: [...PLUGIN_EVENTS],
+		props: {
+			label: { type: String, triggers: ['change:label'] },
+			labelledBy: { type: String, triggers: ['change:labelledBy'] },
+			describedBy: { type: String, triggers: ['change:describedBy'] },
 		},
-		options,
-	})
+	},
+})

@@ -114,7 +114,7 @@ describe('defineComponent', () => {
 		// Повторный ctor переопределяет родительский
 		const childOverride = defineComponent({
 			extends: parent,
-			plugins: [definePlugin({ ctor: PluginA, options: { x: 1 } })],
+			plugins: [definePlugin({ ctor: PluginA }).with({ x: 1 })],
 		})
 
 		expect(childOverride.plugins).toHaveLength(1)
@@ -187,7 +187,7 @@ describe('defineComponent', () => {
 })
 
 describe('definePlugin', () => {
-	it('нормализует contribution с namespace и сохраняет options', () => {
+	it('нормализует contribution с namespace; опции задаёт with()', () => {
 		class P {}
 
 		const plugin = definePlugin({
@@ -197,12 +197,20 @@ describe('definePlugin', () => {
 				props: { v: { type: Number } },
 				events: ['go'],
 			},
-			options: { a: 1 },
 		})
 
 		expect(plugin.ctor).toBe(P)
 		expect(plugin.props.map((p) => p.name.getName())).toEqual(['x:v'])
 		expect(plugin.events.map((e) => e.getName())).toEqual(['x:go'])
-		expect(plugin.options).toEqual({ a: 1 })
+		expect(plugin.options).toBeUndefined()
+
+		const used = plugin.with({ a: 1 })
+
+		expect(used.ctor).toBe(P)
+		expect(used.props.map((p) => p.name.getName())).toEqual(['x:v'])
+		expect(used.events.map((e) => e.getName())).toEqual(['x:go'])
+		expect(used.options).toEqual({ a: 1 })
+		// Исходное определение делят все дескрипторы — with() его не меняет
+		expect(plugin.options).toBeUndefined()
 	})
 })

@@ -96,7 +96,7 @@ function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile
 
 	for (const event of events) consumed.add(event.exportName)
 
-	for (const slot of descriptor.getSlots()) {
+	for (const slot of descriptor.slots) {
 		consumed.add(defaultSlot ? resolveSlotName(slot.name, defaultSlot) : slot.name)
 	}
 

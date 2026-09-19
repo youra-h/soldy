@@ -1,13 +1,22 @@
 /**
- * definePlugin — создаёт определение плагина и записывает его контракт за классом.
+ * definePlugin — объявляет плагин: его контракт, один раз на класс.
  *
- * props/events нормализуются в TName с namespace из options.namespace. Пропы
- * получают умолчание — значение, с которым плагин стартует (`withPluginDefault`).
+ *   export const DismissPluginDescriptor = definePlugin({
+ *     ctor: TDismissPlugin,
+ *     namespace: 'dismiss',
+ *     contribution: { … },
+ *   })
+ *
+ *   plugins: [AriaPluginDescriptor, DismissPluginDescriptor.with({ focusOutside: true })]
+ *
+ * props/events нормализуются в TName с namespace. Опций у объявления нет: они —
+ * свойство места, где плагин поставили, и задаёт их `with()` (`TPluginDefinition`).
  *
  * Типы руками не пишутся: `definePlugin` выводит контракт плагина из его класса
  * и contribution (`TPluginContractFrom`). Входы — незащищённые пропсы, выходы —
  * защищённые, тип значения — у одноимённого свойства класса или у `get`;
- * события — карта класса, суженная до `events` и триггеров пропсов.
+ * события — карта класса, суженная до `events` и триггеров пропсов; опции —
+ * второй параметр `install()`.
  *
  * Контракт плагина — свойство его класса, а не места, где его поставили.
  * Плагин дескриптора объявляет пропсы и события через дескриптор. Плагин,
@@ -15,14 +24,15 @@
  * момент жизни компонента), своих пропсов в поверхности компонента не имеет:
  * их значения приходят в `pluginProps`, а события уходят конвертом
  * `plugin:event`. Какие у него пропсы и события, контекст узнаёт здесь —
- * `pluginContractOf(ctor)`. Определение, созданное позже, заменяет прежнее.
+ * `pluginContractOf(ctor)`. Записывает контракт только `definePlugin`:
+ * `with()` его не трогает, опции одного дескриптора чужому не видны.
  */
 
 import type { IContribution } from '@soldy/accessor'
 import type { TPluginContractFrom } from './inference.types'
 import type { IPluginDefinition, TPluginCtor } from './types'
 import { normalizeContribution } from './contribution'
-import { withPluginDefault } from './defaults'
+import { TPluginDefinition } from './plugin-definition.class'
 
 const contracts = new WeakMap<TPluginCtor, IPluginDefinition>()
 
@@ -38,26 +48,19 @@ export function definePlugin<
 	ctor: TCtor
 	namespace?: N
 	contribution?: TContribution
-	options?: object
 }): IPluginDefinition<TPluginContractFrom<InstanceType<TCtor>, N, TContribution>> {
 	const { props, events } = normalizeContribution(options.contribution, options.namespace)
 
-	const definition: IPluginDefinition<
+	const definition = new TPluginDefinition<
 		TPluginContractFrom<InstanceType<TCtor>, N, TContribution>
-	> = {
-		ctor: options.ctor,
-		props: props.map((prop) => withPluginDefault(prop, options.ctor, options.options)),
-		events,
-		options: options.options,
-		namespace: options.namespace,
-	}
+	>(options.ctor, options.namespace, props, events)
 
 	contracts.set(options.ctor, definition)
 
 	return definition
 }
 
-/** Контракт плагина — последнее его определение `definePlugin`; нет — пропсов и событий у плагина нет. */
+/** Контракт плагина — его объявление `definePlugin`; нет — пропсов и событий у плагина нет. */
 export function pluginContractOf(ctor: TPluginCtor): IPluginDefinition | undefined {
 	return contracts.get(ctor)
 }

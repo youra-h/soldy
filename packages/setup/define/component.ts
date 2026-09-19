@@ -1,9 +1,9 @@
 /**
- * defineComponent — дескриптор компонента: унаследованные декларации.
+ * defineComponent — дескриптор компонента из его объявления.
  *
  * Дескриптор — описание типа и только оно: что компонент объявляет наружу и из
- * каких плагинов состоит. Собирает по нему компонент сборка (`assemble/`),
- * дескриптор о ней не знает.
+ * каких плагинов состоит (`TComponentDescriptor`). Собирает по нему компонент
+ * сборка (`assemble/`), дескриптор о ней не знает.
  *
  * Типы дескриптора руками не пишутся — `defineComponent` выводит их из опций
  * (`TContractFrom`). Пропсы — у класса ядра: его инстанс и есть схема для типов,
@@ -14,9 +14,8 @@
  * нет.
  */
 
-import type { IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
+import { TComponentDescriptor } from './component-descriptor.class'
 import type { TCheckedEventNames, TContractFrom } from './inference.types'
-import { inheritDeclarations } from './inherit'
 import type { IComponentDescriptor, IComponentOptions } from './types'
 
 /**
@@ -30,32 +29,7 @@ export function defineComponent<const TOptions extends IComponentOptions>(
 	options: TOptions & TCheckedEventNames<TOptions>,
 ): IComponentDescriptor<TContractFrom<TOptions>>
 
-/**
- * Тело — под сигнатурой без типов: контракт рантайму не нужен, а `ctor` без
- * своего и без родителя — `Object`, и связать его с выведенным инстансом можно
- * только в типах.
- */
+/** Тело — под сигнатурой без контракта: рантайму он не нужен (см. `TComponentDescriptor`). */
 export function defineComponent(options: IComponentOptions): IComponentDescriptor {
-	const { ctor, props, events, slots, plugins } = inheritDeclarations(options)
-
-	return {
-		ctor,
-
-		props,
-		events,
-		slots,
-		plugins,
-
-		getProps(): IPropDeclaration[] {
-			return [...props, ...plugins.flatMap((p) => p.props ?? [])]
-		},
-
-		getEvents(): TName[] {
-			return [...events, ...plugins.flatMap((p) => p.events ?? [])]
-		},
-
-		getSlots(): ISlotDeclaration[] {
-			return [...slots]
-		},
-	}
+	return new TComponentDescriptor(options)
 }

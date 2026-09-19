@@ -5,7 +5,7 @@
 import type { TEvented } from '@soldy/core'
 import type { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IComponentContract, IComponentDescriptor, IPluginContract } from '../../define'
+import type { IComponentContract, IComponentDescriptor, IPluginsContract } from '../../define'
 
 export type TAdapterEvents = {
 	destroy: () => void
@@ -18,7 +18,7 @@ export type TAdapterEvents = {
  */
 export type TContextContract<
 	TInstance extends object,
-	TPlugins extends IPluginContract = IPluginContract,
+	TPlugins extends IPluginsContract = IPluginsContract,
 > = IComponentContract & { instance: TInstance; plugins: TPlugins }
 
 /**

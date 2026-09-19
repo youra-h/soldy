@@ -27,7 +27,7 @@ export const TabsContentDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [TabsContentWarnPluginDescriptor()],
+		plugins: [TabsContentWarnPluginDescriptor],
 	}),
 )
 

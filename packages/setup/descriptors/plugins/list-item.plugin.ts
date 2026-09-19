@@ -8,17 +8,16 @@
 import { definePlugin } from '../../define'
 import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const ListItemPluginDescriptor = () =>
-	definePlugin({
-		ctor: TListItemPlugin,
-		namespace: 'listItem',
-		contribution: {
-			events: [...PLUGIN_EVENTS],
-			props: {
-				highlighted: {
-					protected: true,
-					triggers: ['change:highlighted'],
-				},
+export const ListItemPluginDescriptor = definePlugin({
+	ctor: TListItemPlugin,
+	namespace: 'listItem',
+	contribution: {
+		events: [...PLUGIN_EVENTS],
+		props: {
+			highlighted: {
+				protected: true,
+				triggers: ['change:highlighted'],
 			},
 		},
-	})
+	},
+})

@@ -8,9 +8,8 @@
 import { definePlugin } from '../../define'
 import { TLabelNestedWarnPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const LabelNestedWarnPluginDescriptor = () =>
-	definePlugin({
-		ctor: TLabelNestedWarnPlugin,
-		namespace: 'nestedWarn',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const LabelNestedWarnPluginDescriptor = definePlugin({
+	ctor: TLabelNestedWarnPlugin,
+	namespace: 'nestedWarn',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

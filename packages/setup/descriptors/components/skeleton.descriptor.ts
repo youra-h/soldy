@@ -28,6 +28,6 @@ export const SkeletonDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [SkeletonLayoutPluginDescriptor()],
+		plugins: [SkeletonLayoutPluginDescriptor],
 	}),
 )

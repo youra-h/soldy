@@ -60,10 +60,10 @@ export const AccordionDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Drag-and-drop
-			DragPluginDescriptor(),
+			DragPluginDescriptor,
 		],
 	}),
 )

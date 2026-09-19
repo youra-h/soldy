@@ -9,16 +9,15 @@
 import { definePlugin } from '../../define'
 import { TActionPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const ActionPluginDescriptor = () =>
-	definePlugin({
-		ctor: TActionPlugin,
-		namespace: 'action',
-		/**
-		 * `press` — нормализованная активация (клик или Enter/Space, не приходит на
-		 * disabled), `click` — сырой DOM-клик как есть. Оба нужны: первое одинаково
-		 * работает на любом теге, второе даёт правду для стороны инстанса.
-		 */
-		contribution: {
-			events: [...PLUGIN_EVENTS, 'press', 'click', 'focus', 'blur'],
-		},
-	})
+export const ActionPluginDescriptor = definePlugin({
+	ctor: TActionPlugin,
+	namespace: 'action',
+	/**
+	 * `press` — нормализованная активация (клик или Enter/Space, не приходит на
+	 * disabled), `click` — сырой DOM-клик как есть. Оба нужны: первое одинаково
+	 * работает на любом теге, второе даёт правду для стороны инстанса.
+	 */
+	contribution: {
+		events: [...PLUGIN_EVENTS, 'press', 'click', 'focus', 'blur'],
+	},
+})

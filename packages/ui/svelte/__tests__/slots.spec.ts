@@ -34,8 +34,7 @@ describe('соответствие контракту', () => {
 		// children — это `default` контракта в терминах Svelte
 		expect(
 			ButtonDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		).toEqual(['default', 'leading', 'trailing'])
 	})

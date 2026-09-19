@@ -7,9 +7,8 @@
 import { definePlugin } from '../../define'
 import { TCollectionBundlesPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const CollectionBundlesPluginDescriptor = () =>
-	definePlugin({
-		ctor: TCollectionBundlesPlugin,
-		namespace: 'bundles',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const CollectionBundlesPluginDescriptor = definePlugin({
+	ctor: TCollectionBundlesPlugin,
+	namespace: 'bundles',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})
