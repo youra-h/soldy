@@ -20,7 +20,7 @@
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
 import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TBindingSnapshot, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { AngularProfile } from '../common/profile'
 
@@ -39,13 +39,12 @@ export function useAdapter<TInstance extends object = object>(
 	adapter: IAdapterContext<TInstance>,
 ): TBinding<TInstance> {
 	const binding = bindComponent(adapter, AngularProfile)
-	const values = signal<Record<string, unknown>>(binding.state())
+	const values = signal<TBindingSnapshot>({})
 
-	const unbindOutput = binding.bindOutput(({ exportName }, value) => {
-		values.update((prev) =>
-			Object.is(prev[exportName], value) ? prev : { ...prev, [exportName]: value },
-		)
-	})
+	// Снимок связки неизменяемый и заменяется на каждое изменение: сигнал
+	// получает его целиком. Подписка сразу отдаёт каждое свойство тем же
+	// вызовом, что и триггер: так сигнал и заполняется
+	const unsubscribe = binding.subscribe(() => values.set(binding.getSnapshot()))
 
 	return {
 		state: computed(() => toInstanceState<TInstance>(values())),
@@ -70,7 +69,7 @@ export function useAdapter<TInstance extends object = object>(
 		},
 
 		destroy(): void {
-			unbindOutput()
+			unsubscribe()
 			adapter.destroy()
 		},
 	}

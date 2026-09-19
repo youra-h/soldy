@@ -23,7 +23,7 @@ import {
 	defineComponent,
 	surfaceOf,
 } from '@soldy/setup'
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile, TEventEmitter, TOutputWriter } from '@soldy/setup'
 import { CallbackProfile, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
@@ -156,28 +156,30 @@ describe('связка · проброс пропсов в корень', () => 
 })
 
 describe('связка · ядро ↔ фреймворк', () => {
-	it('стартовое состояние — свойства с триггерами', () => {
+	it('состояние — свойства с триггерами', () => {
 		const context = createAdapterContext(ButtonDescriptor(), { props: { text: 'hi' } })
-		const state = bindComponent(context, CallbackProfile).state()
+		const state = bindComponent(context, CallbackProfile).getSnapshot()
 
 		expect(state.text).toBe('hi')
 		expect('ctrl' in state).toBe(false)
 	})
 
-	it('изменение в ядре приходит в запись под именем фреймворка', () => {
+	it('изменение в ядре приходит подписчику под именем фреймворка', () => {
 		const ctrl = new TButton()
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const write = vi.fn()
-		const off = bindComponent(context, CallbackProfile).bindOutput(write)
+		const off = bindComponent(context, CallbackProfile).subscribe(write)
 
+		write.mockClear()
 		ctrl.text = 'новый'
 
 		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'новый')
 
 		off()
+		write.mockClear()
 		ctrl.text = 'после отписки'
 
-		expect(write).toHaveBeenCalledTimes(1)
+		expect(write).not.toHaveBeenCalled()
 	})
 
 	it('запись из фреймворка: то же значение не пишется', () => {
@@ -220,6 +222,125 @@ describe('связка · ядро ↔ фреймворк', () => {
 
 		expect(binding.read(label, { aria_label: 'Закрыть' })).toBe('Закрыть')
 		expect(binding.read(label, { label: 'Закрыть' })).toBe('Закрыть')
+	})
+})
+
+/**
+ * Состояние для фреймворка — хранилище: `subscribe` и `getSnapshot`. Путь у
+ * значения из ядра один — перечитать свойство и отдать подписчику: на
+ * срабатывание триггера и при монтировании, для каждого свойства. Порядок —
+ * сначала подписка на триггеры, потом чтение — держит связка. Раньше адаптер
+ * брал снимок и подписывался сам, и React со Svelte подписывались в эффекте:
+ * изменение ядра между рендером и эффектом до них не доходило.
+ */
+describe('связка · состояние для фреймворка', () => {
+	it('подписка отдаёт каждое свойство тем же вызовом, что и триггер', () => {
+		const binding = bindComponent(
+			createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } }),
+			CallbackProfile,
+		)
+		const write = vi.fn<TOutputWriter>()
+
+		binding.subscribe(write)
+
+		const names = write.mock.calls.map(([prop]) => prop.exportName)
+
+		expect(names.sort()).toEqual(Object.keys(binding.getSnapshot()).sort())
+		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'a')
+	})
+
+	it('изменение между созданием связки и подпиской не теряется', () => {
+		// Так у React: рендер по снимку, подписка — при коммите
+		const ctrl = new TButton({ text: 'a' })
+		const binding = bindComponent(
+			createAdapterContext(ButtonDescriptor(), { ctrl }),
+			CallbackProfile,
+		)
+		const rendered = binding.getSnapshot()
+		const write = vi.fn()
+
+		ctrl.text = 'b'
+
+		expect(binding.getSnapshot()).toBe(rendered)
+
+		binding.subscribe(write)
+
+		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'b')
+		expect(binding.getSnapshot()).not.toBe(rendered)
+		expect(binding.getSnapshot().text).toBe('b')
+	})
+
+	it('снимок тот же, пока ничего не сменилось: составные свойства сверяются по содержимому', () => {
+		// `classes`, `aria`, `attrs`, `dataset` отдают новый объект на каждое
+		// чтение — по ссылке каждое монтирование выглядело бы изменением
+		const binding = bindComponent(createAdapterContext(ButtonDescriptor(), {}), CallbackProfile)
+		const rendered = binding.getSnapshot()
+
+		binding.subscribe(() => {})
+
+		expect(binding.getSnapshot()).toBe(rendered)
+	})
+
+	it('второй подписчик получает всё состояние, первый — только изменения', () => {
+		const ctrl = new TButton()
+		const binding = bindComponent(
+			createAdapterContext(ButtonDescriptor(), { ctrl }),
+			CallbackProfile,
+		)
+		const first = vi.fn()
+		const second = vi.fn()
+
+		binding.subscribe(first)
+		first.mockClear()
+		binding.subscribe(second)
+
+		expect(first).not.toHaveBeenCalled()
+		expect(second).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), '')
+	})
+
+	it('после отписки всех — новая подписка снова перечитывает ядро', () => {
+		// StrictMode: подписка, отписка и снова подписка
+		const ctrl = new TButton()
+		const binding = bindComponent(
+			createAdapterContext(ButtonDescriptor(), { ctrl }),
+			CallbackProfile,
+		)
+		const write = vi.fn()
+
+		binding.subscribe(() => {})()
+		ctrl.text = 'пока без подписчиков'
+		binding.subscribe(write)
+
+		expect(write).toHaveBeenCalledWith(
+			expect.objectContaining({ exportName: 'text' }),
+			'пока без подписчиков',
+		)
+	})
+
+	it('модель: `update:<prop>` после события ядра и только на изменение', () => {
+		const profile: IAdapterProfile = {
+			naming: CallbackProfile.naming,
+			model: (name) => `update:${name}`,
+		}
+		const ctrl = new TButton()
+		const binding = bindComponent(createAdapterContext(ButtonDescriptor(), { ctrl }), profile)
+		const emit = vi.fn<TEventEmitter>()
+
+		expect(binding.surface.exportEvents).toContain('update:text')
+		// Защищённое свойство снаружи не пишут — модели у него нет
+		expect(binding.surface.exportEvents).not.toContain('update:present')
+
+		binding.subscribe(() => {})
+		binding.bindEvents(emit)
+
+		expect(emit).not.toHaveBeenCalled()
+
+		ctrl.text = 'b'
+
+		const names = emit.mock.calls.map(([name]) => name)
+
+		expect(names).toEqual(['onChangeText', 'update:text'])
+		expect(emit).toHaveBeenLastCalledWith('update:text', ['b'])
 	})
 })
 

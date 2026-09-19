@@ -81,16 +81,17 @@ export function useAdapterParts<TInstance extends object>(
 	const binding = bindComponent(adapter, VueProfile)
 	const offs: Array<() => void> = []
 
-	// 1. Core → Vue: реф на каждое свойство с триггерами
+	// 1. Core → Vue: реф на каждое свойство с триггерами. Подписка сразу отдаёт
+	// значение каждого — тем же вызовом, что и срабатывание триггера: так рефы
+	// и заводятся
 	const refs: Record<string, Ref<unknown>> = {}
 
-	for (const [name, value] of Object.entries(binding.state())) refs[name] = ref(value)
-
 	offs.push(
-		binding.bindOutput((prop, value) => {
+		binding.subscribe((prop, value) => {
 			const target = refs[prop.exportName]
 
 			if (target) target.value = value
+			else refs[prop.exportName] = ref(value)
 		}),
 	)
 
@@ -107,16 +108,10 @@ export function useAdapterParts<TInstance extends object>(
 		)
 	}
 
-	// 3. Эмиты: события ядра, затем `update:<prop>` для v-model. Значение
-	// перечитывается связкой, а не берётся из аргумента события: у производных
-	// триггеров полезная нагрузка может не совпадать со значением свойства.
+	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его связка
+	// эмитит по профилю, после события ядра
 	if (emit) {
 		offs.push(binding.bindEvents((exportName, args) => emit(exportName, ...args)))
-		offs.push(
-			binding.bindOutput((prop, value) => {
-				if (!prop.protected) emit(`update:${prop.exportName}`, value)
-			}),
-		)
 	}
 
 	// 4. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда

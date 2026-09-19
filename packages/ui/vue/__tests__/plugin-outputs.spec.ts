@@ -48,7 +48,7 @@ type TTemplate<TSetup extends { setup: (...args: never[]) => unknown }> = Return
 function stateOf<TInstance extends object, TOutputs extends object>(
 	adapter: IAdapterContext<TInstance, TOutputs>,
 ): TAdapterState<TInstance, TOutputs> {
-	return toInstanceState<TInstance, TOutputs>(bindComponent(adapter, VueProfile).state())
+	return toInstanceState<TInstance, TOutputs>(bindComponent(adapter, VueProfile).getSnapshot())
 }
 
 describe('выходы плагинов в шаблоне Vue', () => {

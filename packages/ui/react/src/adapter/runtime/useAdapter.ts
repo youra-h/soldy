@@ -6,10 +6,10 @@
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
  * createAdapterContext + useAdapterContext) и связывает его с React через
  * связку `bindComponent` из setup. Своё здесь — только куда писать значение
- * (`useReducer`), как отдать событие (колбэк-проп) и в какой момент цикла
- * React это делать:
+ * (связка — внешнее хранилище для `useSyncExternalStore`), как отдать событие
+ * (колбэк-проп) и в какой момент цикла React это делать:
  *
- * 1. Core → React: подписка на триггеры свойств
+ * 1. Core → React: подписка на состояние связки
  * 2. React → Core: входные пропсы, сменившиеся с прошлого рендера родителя
  * 3. События → колбэк-пропы
  * 4. DOM-биндинг через контекст (TElementPlugin)
@@ -22,7 +22,15 @@
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useReducer,
+	useRef,
+	useSyncExternalStore,
+} from 'react'
 import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, IComponentBinding, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
@@ -42,37 +50,18 @@ export type TBinding<
 	state: TAdapterState<TInstance, TOutputs>
 }
 
-type TState = Readonly<Record<string, unknown>>
-
-/**
- * Связка контекста и её состояние — одно целое: состояние заполняется из
- * `state()` своей связки и дальше пишется её подпиской на триггеры.
- */
+/** Связка своего контекста: контекст пересобран — связка новая. */
 type TStore = Readonly<{
 	adapter: IAdapterContext
 	binding: IComponentBinding
-	state: TState
 }>
 
-type TAction =
-	/** Ядро сообщило новое значение свойства. */
-	| { type: 'output'; name: string; value: unknown }
-	/** Контекст пересобран — связать новый. */
-	| { type: 'rebind'; adapter: IAdapterContext }
-
 function bind(adapter: IAdapterContext): TStore {
-	const binding = bindComponent(adapter, ReactProfile)
-
-	return { adapter, binding, state: binding.state() }
+	return { adapter, binding: bindComponent(adapter, ReactProfile) }
 }
 
-function reducer(prev: TStore, action: TAction): TStore {
-	if (action.type === 'rebind') return bind(action.adapter)
-
-	// То же значение — тот же объект состояния: React не перерисует компонент зря
-	if (Object.is(prev.state[action.name], action.value)) return prev
-
-	return { ...prev, state: { ...prev.state, [action.name]: action.value } }
+function rebind(_: TStore, adapter: IAdapterContext): TStore {
+	return bind(adapter)
 }
 
 /** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
@@ -84,22 +73,18 @@ export function useAdapter<
 	adapter: IAdapterContext<TInstance, TOutputs>,
 	props: TProps,
 ): TBinding<TInstance, TProps, TOutputs> {
-	const [store, dispatch] = useReducer(reducer, adapter, bind)
+	const [store, dispatch] = useReducer(rebind, adapter, bind)
 
 	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
 	// связка. Обновление во время рендера React применяет сразу, не отрисовав прошлое
-	if (store.adapter !== adapter) dispatch({ type: 'rebind', adapter })
+	if (store.adapter !== adapter) dispatch(adapter)
 
-	const { binding, state } = store
+	const { binding } = store
 
-	// 1. Core → React
-	useEffect(
-		() =>
-			binding.bindOutput((prop, value) =>
-				dispatch({ type: 'output', name: prop.exportName, value }),
-			),
-		[binding],
-	)
+	// 1. Core → React. Рендер идёт по снимку, подписка — при коммите, и React
+	// сам сверяет снимок после подписки: изменение ядра между ними не теряется.
+	// Подписка перечитывает каждое свойство тем же путём, что и триггер
+	const state = useSyncExternalStore(binding.subscribe, binding.getSnapshot, binding.getSnapshot)
 
 	// 2. React → Core: эффект получает все props на каждом рендере родителя, а
 	// связка пишет из них только сменившиеся с прошлого раза — иначе повтор

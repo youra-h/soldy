@@ -15,6 +15,7 @@ import type {
 	IAdapterProfile,
 	ISurface,
 	ISurfaceEvent,
+	ISurfaceModel,
 	ISurfaceProp,
 	TSurfacePropConfig,
 } from './types'
@@ -38,7 +39,7 @@ function exportConfig(declaration: IPropDeclaration): TSurfacePropConfig {
 }
 
 function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile): ISurface {
-	const { naming, defaultSlot } = profile
+	const { naming, defaultSlot, model } = profile
 	const declarations = descriptor.getProps()
 
 	const props: ISurfaceProp[] = declarations.map((declaration) => ({
@@ -65,11 +66,19 @@ function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile
 		if (!prop.protected) exportProps[prop.exportName] = exportConfig(declarations[index])
 	}
 
+	// Модель — у записываемого свойства, за которым есть чем следить
+	const models: ISurfaceModel[] = model
+		? props
+				.filter((prop) => !prop.protected && prop.triggers.length > 0)
+				.map((prop) => ({ prop, exportName: model(prop.exportName) }))
+		: []
+
 	// Порядок — как у объявления: сгенерированные метаданные Angular его хранят
 	const exportEvents = [
 		...new Set([
 			...events.map((event) => event.exportName),
 			...props.flatMap((prop) => prop.triggers.map((trigger) => trigger.exportName)),
+			...models.map((model) => model.exportName),
 		]),
 	]
 
@@ -97,6 +106,7 @@ function buildSurface(descriptor: IComponentDescriptor, profile: IAdapterProfile
 		props,
 		inputs: props.filter((prop) => !prop.protected),
 		events,
+		models,
 		exportProps,
 		exportEvents,
 		consumed,

@@ -16,6 +16,19 @@ export interface IAdapterProfile {
 	 * пропсы в корень: `children` у React, Solid и Svelte.
 	 */
 	readonly defaultSlot?: string
+	/**
+	 * Событие двусторонней привязки для записываемого свойства с триггерами —
+	 * у тех, чья привязка держится на событии: `update:text` для `v-model` у
+	 * Vue. Нет — у фреймворка такого события нет.
+	 */
+	readonly model?: (exportName: string) => string
+}
+
+/** Событие двусторонней привязки: свойство и имя события во фреймворке. */
+export interface ISurfaceModel {
+	readonly prop: ISurfaceProp
+	/** `update:text` */
+	readonly exportName: string
 }
 
 /** Триггер свойства: как его слушать на шине владельца и как он зовётся наружу. */
@@ -70,13 +83,15 @@ export interface ISurface {
 	/** Свойства, которые пишутся снаружи. */
 	readonly inputs: readonly ISurfaceProp[]
 	readonly events: readonly ISurfaceEvent[]
+	/** События двусторонней привязки — если профиль их объявляет (`IAdapterProfile.model`). */
+	readonly models: readonly ISurfaceModel[]
 	/**
 	 * Пропсы для статического объявления (Vue `props`, `observedAttributes`,
 	 * inputs Angular): без protected. `default` есть, только если его объявила
 	 * декларация — значим ключ, а не значение (см. `IPropDeclaration.default`).
 	 */
 	readonly exportProps: Readonly<Record<string, TSurfacePropConfig>>
-	/** События для статического объявления: явные и триггеры свойств, без повторов. */
+	/** События для статического объявления: явные, триггеры свойств и модели, без повторов. */
 	readonly exportEvents: readonly string[]
 	/**
 	 * Имена, которые компонент съедает сам: пропы и их триггеры, события,
@@ -87,6 +102,13 @@ export interface ISurface {
 
 /** Запись значения из ядра во фреймворк: свойство и его свежее значение. */
 export type TOutputWriter = (prop: ISurfaceProp, value: unknown) => void
+
+/**
+ * Состояние компонента для фреймворка: имя во фреймворке → значение
+ * свойства с триггерами. Неизменяемое: на изменение заменяется новым
+ * объектом, поэтому его можно сравнивать по ссылке.
+ */
+export type TBindingSnapshot = Readonly<Record<string, unknown>>
 
 /** Проброс события ядра наружу: имя во фреймворке и аргументы события. */
 export type TEventEmitter = (exportName: string, args: readonly unknown[]) => void
@@ -109,11 +131,26 @@ export type TEventEmitter = (exportName: string, args: readonly unknown[]) => vo
  */
 export interface IComponentBinding {
 	readonly surface: ISurface
-	/** Стартовые значения свойств с триггерами: имя во фреймворке → значение. */
-	state(): Record<string, unknown>
-	/** Ядро → фреймворк: подписка на триггеры свойств. Возвращает отписку. */
-	bindOutput(write: TOutputWriter): () => void
-	/** Ядро → фреймворк: события, без повторов по источнику. Возвращает отписку. */
+	/**
+	 * Ядро → фреймворк: подписка на состояние. Возвращает отписку.
+	 *
+	 * Подписчик сразу получает значение каждого свойства с триггерами — тем же
+	 * вызовом, что и на срабатывание триггера. Это и есть инициализация:
+	 * адаптер заводит своё состояние в этом колбэке, отдельного снимка ему не
+	 * нужно. Дальше колбэк зовётся, когда значение свойства сменилось.
+	 *
+	 * Связка подписывается на триггеры ядра с первым подписчиком и отписывается
+	 * с последним: сначала подписка, потом чтение, поэтому изменение между
+	 * монтированием и подпиской не теряется.
+	 */
+	subscribe(listener: TOutputWriter): () => void
+	/**
+	 * Текущее состояние целиком — для фреймворков, которые рисуют по снимку
+	 * (`useSyncExternalStore` у React). Тот же объект, пока ничего не
+	 * сменилось; до первой подписки — прочитанный при создании связки.
+	 */
+	getSnapshot(): TBindingSnapshot
+	/** Ядро → фреймворк: события, без повторов по источнику, и модели. Возвращает отписку. */
 	bindEvents(emit: TEventEmitter): () => void
 	/** Значение свойства в пропсах фреймворка: по имени во фреймворке, затем по сырому. */
 	read(prop: ISurfaceProp, props: object): unknown

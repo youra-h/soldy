@@ -7,7 +7,7 @@
  * из setup. Своё здесь — только куда писать значение (руна `$state`), как
  * отдать событие (колбэк-проп) и в какой момент цикла Svelte это делать:
  *
- * 1. Core → Svelte: подписка на триггеры свойств
+ * 1. Core → Svelte: подписка на состояние связки
  * 2. Svelte → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. DOM-биндинг через attachment (аналог callback-ref в React)
@@ -19,6 +19,7 @@
  * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
  */
 
+import { onDestroy } from 'svelte'
 import { bindComponent, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
@@ -51,12 +52,15 @@ export function useAdapter<
 	getProps: () => TProps,
 ): TBinding<TInstance, TProps, TOutputs> {
 	const binding = bindComponent(adapter, SvelteProfile)
-	const state = $state<Record<string, unknown>>(binding.state())
+	const state = $state<Record<string, unknown>>({})
 
-	// 1. Core → Svelte: подписка живёт всё время жизни компонента,
-	// возвращённая функция отписки становится cleanup'ом эффекта.
-	$effect(() =>
-		binding.bindOutput((prop, value) => {
+	// 1. Core → Svelte: подписка сразу, при инициализации компонента, а не в
+	// эффекте — иначе изменение ядра до эффекта не дошло бы. Она же отдаёт
+	// значение каждого свойства тем же вызовом, что и триггер: так состояние и
+	// заполняется. onDestroy, а не cleanup эффекта: эффект на сервере не
+	// выполняется, а отписаться нужно и там
+	onDestroy(
+		binding.subscribe((prop, value) => {
 			state[prop.exportName] = value
 		}),
 	)
