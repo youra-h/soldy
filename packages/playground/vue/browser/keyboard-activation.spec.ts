@@ -8,6 +8,11 @@
  * не переключал CheckBox и Switch, не нажимал заголовок Accordion, таб и
  * крестик тега.
  *
+ * Кнопку очистки и крестик тега в поле Select глушила ещё и клавиатура Select:
+ * она слушает свой корень и на их Enter и пробел открывала панель. Теперь она
+ * берёт клавиши только с поля, в jsdom это сторожит
+ * `setup/__tests__/select-keyboard.spec.ts`.
+ *
  * Спек браузерный, потому что проверяет действия браузера по умолчанию: ввод
  * символа, переключение чекбокса, клик из Enter или пробела на `<button>`.
  * jsdom их не выполняет, и баг проходил там зелёным. Что корень не отменяет
@@ -220,6 +225,47 @@ describe('вложенная кнопка нажимается', () => {
 
 		await expect.poll(tagTexts).toEqual(['Настройки'])
 	})
+
+	it.each(KEYS)('%s на кнопке очистки очищает Select, панель закрыта', async (_name, key) => {
+		await show(() =>
+			h(Select, { clearable: true, value: 'msk' }, () => [
+				h(SelectItem, { value: 'msk', text: 'Москва' }),
+				h(SelectItem, { value: 'spb', text: 'Петербург' }),
+			]),
+		)
+
+		const input = field('.s-select__field input')
+
+		// Без значения пустое поле ниже ничего бы не доказало
+		await expect.poll(() => input.value).toBe('Москва')
+
+		find('.s-select__clear').focus()
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => input.value).toBe('')
+		expect(find('.s-select').dataset.open).not.toBe('true')
+	})
+
+	it.each(KEYS)(
+		'%s на крестике тега в поле Select закрывает тег, панель закрыта',
+		async (_name, key) => {
+			await show(() =>
+				h(Select, { mode: 'multiple', value: ['msk', 'spb'] }, () => [
+					h(SelectItem, { value: 'msk', text: 'Москва' }),
+					h(SelectItem, { value: 'spb', text: 'Петербург' }),
+				]),
+			)
+
+			// Теги в поле появляются, когда опции зарегистрировались
+			await expect.poll(tagTexts).toEqual(['Москва', 'Петербург'])
+
+			find('.s-tags-item__close[aria-label="Close Петербург"]').focus()
+			await userEvent.keyboard(key)
+
+			await expect.poll(tagTexts).toEqual(['Москва'])
+			expect(find('.s-select').dataset.open).not.toBe('true')
+		},
+	)
 })
 
 /**

@@ -225,14 +225,14 @@ describe('ввод в поле под отбором', () => {
 		await type(wrapper, 'тре')
 		expect(texts()).toEqual(['Третий'])
 
-		await wrapper.trigger('keydown', { key: 'Escape' })
+		await wrapper.find('input').trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
 		expect(engine.extensions.filter.query).toBe('тре')
 		expect(texts()).toEqual(['Третий'])
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('тре')
 
-		await wrapper.trigger('keydown', { key: 'Escape' })
+		await wrapper.find('input').trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
 		expect(engine.extensions.filter.query).toBe('')
@@ -255,14 +255,14 @@ describe('ввод в поле под отбором', () => {
 		await nextFrame()
 		await type(wrapper, 'несуществующий текст')
 
-		await wrapper.trigger('keydown', { key: 'Escape' })
+		await wrapper.find('input').trigger('keydown', { key: 'Escape' })
 		await nextTick()
-		await wrapper.trigger('keydown', { key: 'Escape' })
+		await wrapper.find('input').trigger('keydown', { key: 'Escape' })
 		await nextTick()
 
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
 
-		await wrapper.trigger('keydown', { key: 'ArrowDown' })
+		await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
 		await nextTick()
 
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
@@ -281,7 +281,7 @@ describe('ввод в поле под отбором', () => {
 		await type(wrapper, 'Пер')
 		await nextTick()
 
-		await wrapper.trigger('keydown', { key: 'Enter' })
+		await wrapper.find('input').trigger('keydown', { key: 'Enter' })
 		await nextTick()
 		await nextTick()
 
@@ -301,7 +301,7 @@ describe('ввод в поле под отбором', () => {
 		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Третий')
 
 		await type(wrapper, 'Тре')
-		await wrapper.trigger('keydown', { key: 'Enter' })
+		await wrapper.find('input').trigger('keydown', { key: 'Enter' })
 		await nextTick()
 
 		expect(engine.extensions.selection.selectedCount).toBe(1)
