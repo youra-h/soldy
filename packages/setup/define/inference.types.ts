@@ -3,8 +3,9 @@
  *
  * Фабрика дескриптора — единственный источник типов: адаптер не импортирует
  * интерфейсы пропсов и карты событий из ядра, а выводит их отсюда. Сам
- * дескриптор их тоже не повторяет: `defineComponent` берёт пропсы и события у
- * класса ядра (`ctor`), а слоты — из их объявления.
+ * дескриптор их тоже не повторяет: `defineComponent` берёт пропсы у класса
+ * ядра (`ctor`), события — из его карты, суженной до имён, которые дескриптор
+ * публикует, а слоты — из их объявления.
  */
 
 import type { IEntity, TEvented } from '@soldy/core'
@@ -38,6 +39,32 @@ export type TInstanceEvents<TInstance> = TInstance extends {
 	readonly events: TEvented<infer E>
 }
 	? E
+	: object
+
+/**
+ * Имя, которое дескриптор может объявить в `events` и `triggers`, — ключ карты
+ * событий инстанса. Шины нет (`EntityDescriptor` и `CollectionDescriptor` без
+ * класса ядра) — сверять не с чем, и имя любое: карту даст наследник.
+ */
+export type TInstanceEventName<TInstance> = TInstance extends {
+	readonly events: TEvented<infer E>
+}
+	? Extract<keyof E, string>
+	: string
+
+/**
+ * События, которые дескриптор публикует: карта инстанса, суженная до имён из
+ * `events` и триггеров пропсов — своих и `extends`.
+ *
+ * Наружу адаптер пробрасывает только эти имена (`exportEvents` поверхности), а
+ * карта класса шире: `change:present` у ComponentView ядро шлёт, но ни в
+ * `events`, ни в триггерах его нет. Тип, выведенный из всей карты, обещал бы
+ * колбэк, который адаптер не вызовет никогда. Шины нет — событий нет.
+ */
+export type TPublishedEvents<TInstance, TName extends string> = TInstance extends {
+	readonly events: TEvented<infer E>
+}
+	? Pick<E, Extract<TName, keyof E>>
 	: object
 
 /** Scope слота из объявления: `defineType<T>` даёт `T`, слот без scope — `TEmptySlotScope`. */
@@ -76,7 +103,11 @@ export type TDescriptorInstance<T> = T extends (...args: any[]) => infer R ? R :
 export type DescriptorProps<T> =
 	TDescriptorInstance<T> extends IComponentDescriptor<infer P, any, any, any> ? P : never
 
-/** Собственные события компонента (БЕЗ плагинных): DescriptorEvents<typeof ButtonDescriptor> → TButtonEvents */
+/**
+ * Собственные события компонента (БЕЗ плагинных) — только опубликованные:
+ * DescriptorEvents<typeof ButtonDescriptor> → Pick<TButtonEvents, 'change:text' | 'show' | …>.
+ * Событие класса, которого нет ни в `events`, ни в триггерах (`change:present`), сюда не входит.
+ */
 export type DescriptorEvents<T> =
 	TDescriptorInstance<T> extends IComponentDescriptor<any, infer E, any, any> ? E : never
 
@@ -126,7 +157,11 @@ export type TPluginEventsFrom<P extends readonly IPluginDefinition[]> = P extend
 		: object
 	: object
 
-/** Все события дескриптора (свои + плагинные, namespaced): DescriptorAllEvents<typeof ButtonDescriptor> → TButtonEvents & { 'element:ready': ... } */
+/**
+ * Все события дескриптора — свои опубликованные и плагинные (namespaced):
+ * DescriptorAllEvents<typeof ButtonDescriptor> → DescriptorEvents<…> & { 'element:ready': ... }.
+ * Из неё React, Solid и Svelte выводят колбэк-пропы, поэтому в ней только то, что адаптер пробрасывает.
+ */
 export type DescriptorAllEvents<T> = DescriptorEvents<T> & TPluginEventsFrom<DescriptorPlugins<T>>
 
 /** NamespacedProps<{ label: ... }, 'aria'> → { aria_label: ... } (naming — как в underscorePropNaming) */
