@@ -1,15 +1,19 @@
-import { isEventSource } from '@soldy/core'
+import { FRAME_LAYER_ATTRIBUTE, isEventSource } from '@soldy/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
 import type { IDismissPluginOptions, TDismissPendingPress, TDismissPluginEvents } from './types'
 
+/** Атрибут, которым панель помечается владельцем (`ownerAttribute`). */
+const OWNER_ATTRIBUTE = 'data-owner'
+
 /**
  * TDismissPlugin — «нажали мимо».
  *
  * Общий для всего, что открывается поверх страницы: Select, Menu, Popover,
- * Tooltip. Сам ничего не закрывает — только сообщает событием `dismiss`.
- * Решение принимает владелец: у него может быть причина остаться открытым.
+ * Tooltip. Сообщает событием `dismiss`, а владельца, чью открытость ведёт
+ * (`property`), закрывает уже после этого — подписчики застают его открытым и
+ * знают причину закрытия. Без привязки (`property: null`) только сообщает.
  *
  * Почему `pointerdown`, а не `click`. Клик приходит после отпускания кнопки,
  * и до него успевает произойти смена фокуса — панель закрывается уже после
@@ -46,6 +50,17 @@ import type { IDismissPluginOptions, TDismissPendingPress, TDismissPluginEvents 
  * `data-owner="<uid владельца>"`, и плагин проверяет обе границы. Это чистый
  * DOM: работает одинаково во всех шести адаптерах и не требует проводки
  * между компонентами.
+ *
+ * Третья граница — слои. Список Select в поповере, поповер в поповере — это
+ * тоже панели в `body`, соседи панели владельца, а не её потомки. Нажатие в
+ * них — нажатие внутри: слой открыт поверх панели владельца, из неё. Порядок
+ * слоёв ведёт `TFrame` (`data-layer`, номер растёт с каждым показом), и
+ * нажатие в панель, чей слой выше слоя своей, мимо не считается. Слой ниже
+ * или узел без слоя — мимо: так закрывается вложенный слой нажатием во
+ * внешний.
+ *
+ * С `focusOutside` то же правило решает и уход фокуса: `focusin` мимо
+ * владельца, его панели и слоёв выше даёт `dismiss`.
  */
 export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	/** Умолчания опций, объявленных пропами, — см. `TAnchorPlugin.defaultValues`. */
@@ -57,7 +72,10 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	private _owner: string | null = null
 	private _instance: object | null = null
 	private _property: string | null = 'open'
+	/** Ведёт ли плагин открытость владельца: тогда `dismiss` его и закрывает. */
+	private _bound = false
 	private _enabled = TDismissPlugin.defaultValues.enabled
+	private _focusOutside = false
 	private _listening = false
 	/** Нажатие мимо, которое ждёт решения, — касание или перо (см. `_onPointerDown`). */
 	private _pending: TDismissPendingPress | null = null
@@ -84,6 +102,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		this._property = options?.property === undefined ? this._property : options.property
 		this._enabled = options?.enabled ?? this._enabled
+		this._focusOutside = options?.focusOutside ?? this._focusOutside
 
 		this._bindOpenState(options?.event ?? `change:${this._property}`)
 	}
@@ -93,6 +112,10 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 *
 	 * Логика простая, но повторять её в шаблоне каждого адаптера нельзя:
 	 * поменяешь в одном — забудешь в пяти остальных.
+	 *
+	 * Закрывает владельца `_dismiss`, после подписчиков `dismiss`, а не первый
+	 * подписчик: иначе остальные узнавали бы о нажатии мимо уже закрытыми и не
+	 * отличали бы его от закрытия по другой причине.
 	 */
 	private _bindOpenState(event: string): void {
 		const instance = this._instance
@@ -108,14 +131,23 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 			})
 		}
 
-		this.events.on('dismiss', () => {
-			Reflect.set(instance, property, false)
-		})
-
+		this._bound = true
 		this.enabled = !!Reflect.get(instance, property)
 	}
 
-	/** Следит ли плагин за нажатиями. Владелец включает его на открытии. */
+	/** Сообщает о нажатии или фокусе мимо, потом закрывает владельца. */
+	private _dismiss(event: MouseEvent | FocusEvent): void {
+		this.events.emit('dismiss', event)
+
+		if (this._bound && this._instance && this._property) {
+			Reflect.set(this._instance, this._property, false)
+		}
+	}
+
+	/**
+	 * Следит ли плагин за нажатиями (с `focusOutside` — и за фокусом).
+	 * Владелец включает его на открытии.
+	 */
 	get enabled(): boolean {
 		return this._enabled
 	}
@@ -134,7 +166,25 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 * нажатием мимо.
 	 */
 	get ownerAttribute(): Record<string, string> {
-		return this._owner ? { 'data-owner': this._owner } : {}
+		return this._owner ? { [OWNER_ATTRIBUTE]: this._owner } : {}
+	}
+
+	/**
+	 * Панель владельца — узел с его `ownerAttribute` в документе корня. `null`,
+	 * пока корень не объявлен или панели в документе нет.
+	 *
+	 * Панель телепортирована, и ссылки на неё у плагинов нет: разметка отдаёт
+	 * им только корень. Поэтому её находят по той же пометке, по которой
+	 * плагин отличает нажатие в неё. Нужна и соседям по набору: плагин фокуса
+	 * Popover уводит фокус в панель и слушает на ней клавиши.
+	 */
+	findPanel(): Element | null {
+		if (!this._owner) return null
+
+		return (
+			this._element?.ownerDocument.querySelector(`[${OWNER_ATTRIBUTE}="${this._owner}"]`) ??
+			null
+		)
 	}
 
 	override destroy(): void {
@@ -146,13 +196,30 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		super.destroy()
 	}
 
-	/** Пришлось ли нажатие внутрь владельца или его панели. */
+	/** Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше неё. */
 	private _isInside(target: EventTarget | null): boolean {
 		if (!(target instanceof Element)) return false
 
 		if (this._element?.contains(target)) return true
 
-		return !!this._owner && !!target.closest(`[data-owner="${this._owner}"]`)
+		if (this._owner && target.closest(`[${OWNER_ATTRIBUTE}="${this._owner}"]`)) return true
+
+		return this._isAboveOwnLayer(target)
+	}
+
+	/**
+	 * Лежит ли узел в слое выше панели владельца — в панели, открытой поверх
+	 * неё (см. шапку). Слой узла — ближайший предок с `data-layer`: панели
+	 * лежат в `body` соседями и друг в друга не вложены.
+	 */
+	private _isAboveOwnLayer(target: Element): boolean {
+		const layer = layerOf(target.closest(`[${FRAME_LAYER_ATTRIBUTE}]`))
+
+		if (layer === null) return false
+
+		const own = layerOf(this.findPanel())
+
+		return own !== null && layer > own
 	}
 
 	/**
@@ -179,7 +246,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		if (this._isInside(event.target)) return
 
-		this.events.emit('dismiss', event)
+		this._dismiss(event)
 	}
 
 	/** Касание ничего не закрывает — только запоминается, если пришлось мимо. */
@@ -209,7 +276,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		if (event.pointerId !== this._pending?.pointerId) return
 
 		this._pending = null
-		this.events.emit('dismiss', event)
+		this._dismiss(event)
 	}
 
 	/** Браузер забрал касание или перо под прокрутку или жест — закрывать нечего. */
@@ -233,7 +300,18 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		if (this._pending?.pointerType !== 'pen') return
 
 		this._pending = null
-		this.events.emit('dismiss', event)
+		this._dismiss(event)
+	}
+
+	/**
+	 * Фокус ушёл мимо — с `focusOutside`. Слушатель на документе, в фазе
+	 * перехвата, как у нажатий: `focusin` всплывает, и остановить его до
+	 * документа содержимое не может.
+	 */
+	private readonly _onFocusIn = (event: FocusEvent): void => {
+		if (this._isInside(event.target)) return
+
+		this._dismiss(event)
 	}
 
 	/** Слушатели на документе живут, только пока они нужны. */
@@ -251,15 +329,29 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 			doc.addEventListener('pointerup', this._onPointerUp, true)
 			doc.addEventListener('pointercancel', this._onPointerCancel, true)
 			doc.addEventListener('mousedown', this._onMouseDown, true)
+
+			if (this._focusOutside) doc.addEventListener('focusin', this._onFocusIn, true)
 		} else {
 			doc.removeEventListener('pointerdown', this._onPointerDown, true)
 			doc.removeEventListener('pointerup', this._onPointerUp, true)
 			doc.removeEventListener('pointercancel', this._onPointerCancel, true)
 			doc.removeEventListener('mousedown', this._onMouseDown, true)
+			doc.removeEventListener('focusin', this._onFocusIn, true)
 			// Нажатие, начатое до снятия, к следующему открытию не относится
 			this._pending = null
 		}
 
 		this._listening = shouldListen
 	}
+}
+
+/** Номер слоя узла (`data-layer`); `null` — узла нет или слоя у него нет. */
+function layerOf(element: Element | null): number | null {
+	const value = element?.getAttribute(FRAME_LAYER_ATTRIBUTE)
+
+	if (value === null || value === undefined) return null
+
+	const layer = Number(value)
+
+	return Number.isFinite(layer) ? layer : null
 }

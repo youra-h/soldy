@@ -8,6 +8,20 @@ import type { IStateUnit } from '../../../common'
 
 export type TFramePosition = 'fixed' | 'absolute'
 
+/**
+ * Атрибут слоя: показанный Frame пишет в `dataset` тот же номер, что в
+ * `zIndex`. Больше номер — выше слой, открытый позже.
+ *
+ * По нему плагины оверлея узнают вложенность в DOM, где её нет: панели
+ * телепортированы в `body` и лежат там соседями. Нажатие и фокус в панели
+ * слоя выше своей `TDismissPlugin` считает нажатием внутри — так список
+ * Select в поповере или поповер в поповере не закрывают внешний слой.
+ *
+ * Имя с префиксом `data-`: по нему ищут в DOM, а `dataset` принимает имя с
+ * префиксом как есть.
+ */
+export const FRAME_LAYER_ATTRIBUTE = 'data-layer'
+
 export interface IFrameProps extends IComponentViewProps {
 	/** Позиция по оси X (px) */
 	x?: number

@@ -10,7 +10,12 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
-import { ButtonDescriptor, ComponentViewDescriptor, LabelDescriptor } from '@soldy/setup'
+import {
+	ButtonDescriptor,
+	ComponentViewDescriptor,
+	LabelDescriptor,
+	PopoverDescriptor,
+} from '@soldy/setup'
 import { Button, ComponentView } from '@soldy/ui-vue'
 
 /** Имена слотов, реально объявленные в разметке .vue-файла. */
@@ -49,6 +54,15 @@ describe('соответствие контракту', () => {
 	it('Label: контрол в default и текст в text', () => {
 		expect(templateSlots('src/components/label/Label.vue')).toEqual(
 			LabelDescriptor()
+				.getSlots()
+				.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Popover: триггер, содержимое панели и иконка крестика', () => {
+		expect(templateSlots('src/components/popover/Popover.vue')).toEqual(
+			PopoverDescriptor()
 				.getSlots()
 				.map((slot) => slot.name)
 				.sort(),

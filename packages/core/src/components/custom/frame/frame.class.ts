@@ -2,6 +2,7 @@ import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../common'
+import { FRAME_LAYER_ATTRIBUTE } from './types'
 import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
 
 /**
@@ -11,7 +12,10 @@ import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } 
  * видимостью и z-index стеком. Не имеет привязки к DOM — только логика.
  *
  * Каждый показанный Frame получает уникальный возрастающий z-index
- * через статический счётчик {@link TFrame.nextZIndex}.
+ * через статический счётчик {@link TFrame.nextZIndex} — и тот же номер в
+ * `data-layer` (`FRAME_LAYER_ATTRIBUTE`): по нему плагины оверлея отличают
+ * слой, открытый позже, от открытого раньше. Frame, созданный видимым, слой
+ * получает сразу: `show` для него не придёт, а на экране он уже есть.
  *
  * @example
  * const frame = new TFrame({ x: 100, y: 200, width: 300, height: 'auto' })
@@ -95,11 +99,20 @@ export default class TFrame
 			this.events.emit('change:height', payload.newValue)
 		})
 
-		// При show() — присваиваем z-index
-		this.events.on('show', () => {
-			this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
-			this.events.emit('change:zIndex', this._zIndex)
-		})
+		// Показ поднимает Frame над всеми, кто показан раньше
+		this.events.on('show', () => this._raise())
+
+		// Созданный видимым уже на экране, а `show` для него не придёт. Без слоя
+		// он стоял бы с `z-index: 0` под всеми, и нажатие в панель, открытую
+		// поверх него, плагин оверлея счёл бы нажатием мимо
+		if (this.visible) this._raise()
+	}
+
+	/** Новый z-index — выше всех выданных — и тот же номер в `data-layer`. */
+	private _raise(): void {
+		this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
+		this._dataset.add(FRAME_LAYER_ATTRIBUTE, this._zIndex)
+		this.events.emit('change:zIndex', this._zIndex)
 	}
 
 	get x(): number {
