@@ -9,6 +9,7 @@ import {
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
+	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
 	RADIO_GROUP_VIEWS,
@@ -113,6 +114,10 @@ const OWN: Record<string, Record<string, string>> = {
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
 		view: 'Оформление: plain — без рамки и фона, для плотных списков',
 	},
+	label: {
+		text: 'Текст подписи — доступное имя контрола. Слот text его переопределяет',
+		position: 'С какой стороны от контрола стоит текст. start и end меняются местами в RTL',
+	},
 	'radio-group': {
 		view: 'Отметка выбранного: точка внутри тонкого кольца или утолщённое кольцо. Группа раздаёт вид каждому радио',
 	},
@@ -195,6 +200,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	button: { view: BUTTON_VIEWS },
 	'check-box': { view: CHECK_BOX_VIEWS },
+	label: { position: LABEL_POSITIONS },
 	accordion: { view: BUTTON_VIEWS },
 	'list-box': { view: BUTTON_VIEWS },
 	'radio-group': { view: RADIO_GROUP_VIEWS },

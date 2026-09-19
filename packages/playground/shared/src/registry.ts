@@ -11,6 +11,7 @@ import {
 	InputDescriptor,
 	InputControlDescriptor,
 	InteractiveDescriptor,
+	LabelDescriptor,
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
 	RadioGroupDescriptor,
@@ -74,6 +75,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Переключатель — то же значение, другая метафора',
+	},
+	{
+		id: 'label',
+		label: 'Label',
+		descriptor: LabelDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Подпись контрола: клик по тексту переключает его, текст — его имя',
 	},
 	{
 		id: 'radio-group',
