@@ -8,13 +8,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TSelect } from '@soldy/core'
-import type {
-	IInput,
-	ISelectItem,
-	TSelectEditableMode,
-	TSelectPanelPlacement,
-	TSelectPlacement,
-} from '@soldy/core'
+import type { IInput, ISelectItem } from '@soldy/core'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -87,15 +81,9 @@ export const SelectDescriptor = defineDescriptor(() =>
 				clearable: { type: Boolean, triggers: ['change:clearable'] },
 				clearLabel: { type: String, triggers: ['change:clearLabel'] },
 				editable: { type: Boolean, triggers: ['change:editable'] },
-				editableMode: {
-					type: defineType<TSelectEditableMode>(String),
-					triggers: ['change:editableMode'],
-				},
+				editableMode: { type: String, triggers: ['change:editableMode'] },
 				removeOnBackspace: { type: Boolean, triggers: ['change:removeOnBackspace'] },
-				placement: {
-					type: defineType<TSelectPlacement>(String),
-					triggers: ['change:placement'],
-				},
+				placement: { type: String, triggers: ['change:placement'] },
 				/**
 				 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 				 * описывает само поле, а это соседняя кнопка.
@@ -129,7 +117,7 @@ export const SelectDescriptor = defineDescriptor(() =>
 				 * шаблон только пробрасывает в `anchor_placement` и `anchor_flip`.
 				 */
 				panelPlacement: {
-					type: defineType<TSelectPanelPlacement>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:placement'],
 				},

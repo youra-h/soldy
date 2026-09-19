@@ -11,12 +11,14 @@ import { assembleBundle, resolveComposition } from '../assemble'
  * класса, проп плагина — из опции дескриптора, иначе из `defaultValues`
  * плагина.
  *
- * Сторожа внизу идут по всем дескрипторам из экспорта. Первый — Boolean-пропы:
- * ровно те, которые Vue приводит сам. Отсутствующему Boolean без `default` он
- * ставит `false` и пишет его в инстанс или плагин. С умолчаниями это совпадало
- * случайно — пока у плагина якоря не появился `flip: true`.
+ * Сторожа внизу идут по всем дескрипторам из экспорта. Первый — форма типа
+ * пропа: конструктор или массив конструкторов, без обёртки `defineType`. На
+ * него опирается второй — Boolean-пропы: ровно те, которые Vue приводит сам.
+ * Отсутствующему Boolean без `default` он ставит `false` и пишет его в инстанс
+ * или плагин. С умолчаниями это совпадало случайно — пока у плагина якоря не
+ * появился `flip: true`.
  *
- * Второй — любой проп, который пишет разметка: снятый, он возвращается к
+ * Третий — любой проп, который пишет разметка: снятый, он возвращается к
  * умолчанию декларации, и проп без него оставался с прежним значением во всех
  * адаптерах.
  */
@@ -37,6 +39,7 @@ import {
 import {
 	defineComponent,
 	definePlugin,
+	defineType,
 	type IComponentDescriptor,
 	type IPluginDefinition,
 } from '../define'
@@ -154,11 +157,39 @@ describe('умолчание пропа плагина', () => {
 /* Сторожа                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Boolean в типе пропа: сам, в массиве или внутри `defineType`. */
+/**
+ * Тип пропа — конструктор рантайма (`String`) или массив конструкторов: его
+ * как есть получают Vue (`useProps`) и приведение атрибутов Web Components.
+ * `defineType` — тип данных scope слота, у пропа его нет: тип значения даёт
+ * интерфейс пропсов ядра. Обёртку Vue проверял бы как `Object`, а Boolean в
+ * ней не увидел бы сторож умолчаний ниже.
+ */
+const isRuntimeType = (type: unknown): boolean =>
+	typeof type === 'function' ||
+	(Array.isArray(type) && type.every((item) => typeof item === 'function'))
+
+describe('сторож: тип пропа — конструктор рантайма, а не defineType', () => {
+	it('обёртку defineType сторож не пропускает', () => {
+		expect(isRuntimeType(defineType<boolean>(Boolean))).toBe(false)
+		expect(isRuntimeType([String, Object])).toBe(true)
+	})
+
+	it.each(exportedDescriptors())('%s', (_name, descriptor) => {
+		const wrapped = descriptor
+			.getProps()
+			.filter(
+				(declaration) => declaration.type !== undefined && !isRuntimeType(declaration.type),
+			)
+			.map((declaration) => declaration.name.getName())
+
+		expect(wrapped).toEqual([])
+	})
+})
+
+/** Boolean в типе пропа: сам или в массиве — других форм у типа пропа нет. */
 function hasBoolean(type: unknown): boolean {
 	if (type === Boolean) return true
 	if (Array.isArray(type)) return type.some(hasBoolean)
-	if (typeof type === 'object' && type !== null && 'ctor' in type) return hasBoolean(type.ctor)
 
 	return false
 }

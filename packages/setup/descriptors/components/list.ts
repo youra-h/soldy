@@ -11,8 +11,6 @@
  */
 
 import type { IPropDefinition } from '@soldy/accessor'
-import { defineType } from '../../define'
-import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
 
 export const LIST_PROPS: Record<string, IPropDefinition> = {
 	maxRows: {
@@ -20,15 +18,15 @@ export const LIST_PROPS: Record<string, IPropDefinition> = {
 		triggers: ['change:maxRows'],
 	},
 	contentFit: {
-		type: defineType<TListContentFit>(String),
+		type: String,
 		triggers: ['change:contentFit'],
 	},
 	scrollBehavior: {
-		type: defineType<TScrollBehavior>(String),
+		type: String,
 		triggers: ['change:scrollBehavior'],
 	},
 	indicator: {
-		type: defineType<TListIndicator>(String),
+		type: String,
 		triggers: ['change:indicator'],
 	},
 }
