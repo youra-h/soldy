@@ -2,15 +2,17 @@
  * Компонент на одно монтирование: инстанс, признак `embedded`, состав, набор и аксессор.
  *
  * Состав собирается один раз и дальше отвечает на все вопросы «из чего собран
- * этот компонент»: из него строится набор, по нему же — units аксессора и
- * начальные значения плагинных пропсов.
+ * этот компонент»: из него строится набор, по нему же — units аксессора.
+ *
+ * Здесь же пропсы получают начальные значения (`applyInitialProps`) — один раз
+ * на монтирование и одинаково во всех адаптерах.
  */
 
 import type { IComponentDescriptor } from '../define/types'
 import { assembleAccessor } from './accessor'
 import { assembleBundle } from './bundle'
 import { resolveComposition } from './composition'
-import { applyInitialPluginProps } from './plugin-props'
+import { applyInitialProps } from './initial-props'
 import type { IAssembledComponent, IAssemblyInput } from './types'
 
 /**
@@ -47,7 +49,16 @@ export function assembleComponent<TInstance extends object>(
 	const bundle = ownsBundle ? assembleBundle(composition, instance) : (input.bundle ?? null)
 	const accessor = assembleAccessor(descriptor, composition, instance, bundle)
 
-	if (ownsBundle) applyInitialPluginProps(composition, bundle, input.props)
+	applyInitialProps(
+		{
+			accessor,
+			declarations: descriptor.getProps(),
+			instance,
+			constructed: !input.ctrl,
+			ownsBundle,
+		},
+		input.props,
+	)
 
 	return { instance, embedded, bundle, ownsBundle, accessor }
 }

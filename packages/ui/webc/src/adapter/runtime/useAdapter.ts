@@ -35,9 +35,11 @@ export function useAdapter<TInstance extends object = object>(
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<TInstance> {
 	const binding = bindComponent(adapter, WebcProfile)
-	const state = binding.state()
+	const state: Record<string, unknown> = {}
 
-	const unbindOutput = binding.bindOutput((prop, value) => {
+	// Подписка сразу отдаёт значение каждого свойства — тем же вызовом, что и
+	// триггер: так состояние и заполняется, а элемент помечает его к отрисовке
+	const unsubscribe = binding.subscribe((prop, value) => {
 		state[prop.exportName] = value
 		onUpdate(prop.exportName, value)
 	})
@@ -57,8 +59,8 @@ export function useAdapter<TInstance extends object = object>(
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 
-		// Элемент отдаёт не полный набор, а то, что задано: при подключении —
-		// выставленное до него, дальше — по одному атрибуту или свойству.
+		// Элемент отдаёт не полный набор, а то, что задано: по одному атрибуту или
+		// свойству. Выставленное до подключения применила сборка контекста.
 		// Поэтому `writeChanged`: `writeAll` сбросил бы к умолчанию остальные
 		syncProps(props: object): void {
 			binding.writeChanged(props)
@@ -69,7 +71,7 @@ export function useAdapter<TInstance extends object = object>(
 		},
 
 		destroy(): void {
-			unbindOutput()
+			unsubscribe()
 			unbindEvents()
 			adapter.destroy()
 		},

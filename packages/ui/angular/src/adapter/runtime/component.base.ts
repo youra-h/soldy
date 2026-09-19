@@ -6,8 +6,8 @@
  * - constructor: создаёт EventEmitter'ы для всех имён из outputNames и
  *   связывает корневой DOM-элемент с TElementPlugin (см. `_bindRoot`)
  * - state: сигнал состояния Core (шаблон подписывается сам, без ChangeDetectorRef)
- * - ngOnInit: создаёт binding (createBinding), пишет в Core заданные inputs
- *   (syncInputs) и подписывает outputs
+ * - ngOnInit: создаёт binding (createBinding) из заданных inputs
+ *   и подписывает outputs
  * - ngOnChanges: пробрасывает изменённые inputs в Core (syncInputs)
  * - ngOnDestroy: очищает подписки и adapter.destroy()
  *
@@ -125,15 +125,9 @@ export abstract class TComponentBase<TInstance extends IEntity>
 	}
 
 	ngOnInit(): void {
-		const inputs = this.collectInputs()
-		const binding = this.createBinding(this.ctrl, inputs)
-
-		// Первый ngOnChanges пришёл раньше связки и ничего не записал. Без этой
-		// записи связка не узнает, какие входы заданы при монтировании, и снятый
-		// потом вход не вернётся к умолчанию. Заодно разметка доезжает до
-		// внешнего `ctrl`, как во Vue. До подписки на события — стартовые
-		// значения наружу не эмитятся.
-		binding.syncInputs(inputs)
+		// Первый ngOnChanges пришёл раньше связки и ничего не записал: заданные
+		// при монтировании входы применяет сборка контекста
+		const binding = this.createBinding(this.ctrl, this.collectInputs())
 
 		this._eventsCleanup = binding.syncEvents(this._collectOutputs())
 

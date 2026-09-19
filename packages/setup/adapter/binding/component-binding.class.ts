@@ -26,11 +26,19 @@
  * только об изменившемся, так что во всех шести адаптерах в ядро пишется лишь
  * то, что поменял фреймворк.
  *
- * Память входов принадлежит компоненту фреймворка, а не контексту. Обычно их
- * жизни совпадают, но фреймворк вправе пересобрать контекст в пределах одной
- * жизни компонента — например, React, заново устанавливая эффекты. Тогда новая
- * связка продолжает память прошлой: начинает с её копии, иначе первый набор
- * снова записал бы разметку во внешний `ctrl`. Прошлая связка не меняется.
+ * Начальные значения пишет не связка, а сборка контекста (`applyInitialProps`).
+ * Память начинается с пропсов, с которыми контекст собран: первый проход
+ * фреймворка сверяется с ними и пишет только сменившееся с тех пор.
+ *
+ * Обратное направление — хранилище: `subscribe` и `getSnapshot`. Путь у
+ * значения из ядра один. Сработал триггер — связка перечитывает свойство и
+ * отдаёт его подписчикам. Подписался фреймворк при монтировании — связка
+ * делает то же самое для каждого свойства: перечитывает и отдаёт. Отдельного
+ * «стартового состояния» у адаптера нет, и порядок — сначала подписка на
+ * триггеры, потом чтение — держит связка, а не цикл фреймворка. Раньше
+ * адаптер сам брал снимок и сам выбирал, когда подписаться: React и Svelte
+ * подписывались в эффекте, и изменение ядра между рендером и эффектом до них
+ * не доходило.
  */
 
 import type { IEventSource } from '@soldy/core'
@@ -42,9 +50,37 @@ import type {
 	IComponentBinding,
 	ISurface,
 	ISurfaceProp,
+	TBindingSnapshot,
 	TEventEmitter,
 	TOutputWriter,
 } from './types'
+
+/** Простой объект или массив — снимок составного свойства (`valueOf()`), а не инстанс. */
+function isPlain(value: unknown): value is Record<string, unknown> {
+	if (typeof value !== 'object' || value === null) return false
+
+	const proto: unknown = Object.getPrototypeOf(value)
+
+	return proto === Object.prototype || proto === Array.prototype || proto === null
+}
+
+/**
+ * То же значение для фреймворка. Составные свойства отдают новый снимок на
+ * каждое чтение (`TClasses`, наборы `aria`/`attrs`/`dataset`, состав
+ * коллекции), поэтому их сверяем поверхностно: иначе каждое чтение выглядело
+ * бы изменением, и монтирование перерисовывало бы компонент впустую.
+ */
+function sameValue(a: unknown, b: unknown): boolean {
+	if (Object.is(a, b)) return true
+	if (!isPlain(a) || !isPlain(b) || Array.isArray(a) !== Array.isArray(b)) return false
+
+	const keys = Object.keys(a)
+
+	return (
+		keys.length === Object.keys(b).length &&
+		keys.every((key) => Object.hasOwn(b, key) && Object.is(a[key], b[key]))
+	)
+}
 
 export class TComponentBinding implements IComponentBinding {
 	readonly surface: ISurface
@@ -52,18 +88,32 @@ export class TComponentBinding implements IComponentBinding {
 	private readonly _accessor: TAccessor
 	/** Свойства поверхности, у которых в аксессоре есть владелец. */
 	private readonly _targets = new Map<ISurfaceProp, IAccessorProp>()
+	/**
+	 * Состояние для фреймворка — свойства с триггерами. Без триггеров свойство
+	 * pass-through (`ctrl`): следить за ним нечем.
+	 */
+	private readonly _state = new Map<ISurfaceProp, IAccessorProp>()
 	private readonly _events = new Map<string, IAccessorEvent>()
 	/**
-	 * Входы, которые фреймворк задал, и последнее значение каждого — не
-	 * `undefined`. Нет ключа — вход не задан: не передавали или сняли.
+	 * Заданные входы — пропсами сборки или фреймворком после неё — и последнее
+	 * значение каждого, не `undefined`. Нет ключа — вход не задан: не
+	 * передавали или сняли.
 	 */
-	private readonly _assigned: Map<ISurfaceProp, unknown>
+	private readonly _assigned = new Map<ISurfaceProp, unknown>()
+	private readonly _listeners = new Set<TOutputWriter>()
+	private _snapshot: TBindingSnapshot = {}
+	/** Отписка от триггеров ядра; есть, пока есть подписчики. */
+	private _disconnect: (() => void) | null = null
 
-	constructor(context: IAdapterContext, profile: IAdapterProfile, previous?: TComponentBinding) {
+	constructor(context: IAdapterContext, profile: IAdapterProfile) {
 		this.surface = surfaceOf(context.descriptor, profile)
 		this._accessor = context.accessor
-		// Копия, а не общая карта: прошлая связка остаётся какой была
-		this._assigned = new Map(previous?._assigned)
+
+		for (const prop of this.surface.inputs) {
+			const value = this.read(prop, context.props)
+
+			if (value !== undefined) this._assigned.set(prop, value)
+		}
 
 		// Свойство плагина, которого нет в наборе (фасад на чужом наборе),
 		// аксессор не собрал: связка его пропускает
@@ -71,58 +121,63 @@ export class TComponentBinding implements IComponentBinding {
 			this._accessor.getProps(true).map((prop) => [prop.name.getName(), prop]),
 		)
 
+		// Снимок до подписки нужен тем, кто рисует раньше, чем подписывается:
+		// React рендерит по нему, а подписка сверит его с ядром
+		const snapshot: Record<string, unknown> = {}
+
 		for (const prop of this.surface.props) {
 			const target = props.get(prop.key)
 
-			if (target) this._targets.set(prop, target)
+			if (!target) continue
+
+			this._targets.set(prop, target)
+
+			if (prop.triggers.length === 0) continue
+
+			this._state.set(prop, target)
+			snapshot[prop.exportName] = this._accessor.getValue(target)
 		}
+
+		this._snapshot = snapshot
 
 		for (const event of this._accessor.getEvents()) {
 			this._events.set(event.name.getName(), event)
 		}
 	}
 
-	state(): Record<string, unknown> {
-		const state: Record<string, unknown> = {}
+	/** Стрелка, а не метод: фреймворк передаёт её дальше без `this` (`useSyncExternalStore`). */
+	readonly getSnapshot = (): TBindingSnapshot => this._snapshot
 
-		for (const [prop, target] of this._targets) {
-			// Свойство без триггеров — pass-through (`ctrl`): следить за ним нечем
-			if (prop.triggers.length > 0) state[prop.exportName] = this._accessor.getValue(target)
+	/** Стрелка, а не метод — по той же причине, что `getSnapshot`. */
+	readonly subscribe = (listener: TOutputWriter): (() => void) => {
+		// Сначала подписка на триггеры, потом чтение: изменение между ними не теряется
+		this._disconnect ??= this._connect()
+		this._listeners.add(listener)
+
+		// Монтирование — то же, что срабатывание триггера у каждого свойства
+		for (const prop of this._state.keys()) this._refresh(prop, listener)
+
+		return () => {
+			this._listeners.delete(listener)
+
+			if (this._listeners.size > 0) return
+
+			this._disconnect?.()
+			this._disconnect = null
 		}
-
-		return state
-	}
-
-	bindOutput(write: TOutputWriter): () => void {
-		const offs: Array<() => void> = []
-
-		for (const [prop, target] of this._targets) {
-			if (prop.triggers.length === 0) continue
-
-			const source = this._accessor.getEventSource(target)
-
-			if (!source) continue
-
-			for (const trigger of prop.triggers) {
-				// Свежесть значения — ответственность ядра: составные свойства
-				// отдают снимок через valueOf() (TClasses, драйвер коллекции)
-				// либо заменяются целиком (layout-плагины). Связка не угадывает.
-				const handler = () => write(prop, this._accessor.getValue(target))
-
-				source.on(trigger.raw, handler)
-				offs.push(() => source.off(trigger.raw, handler))
-			}
-		}
-
-		return () => offs.forEach((off) => off())
 	}
 
 	/**
 	 * Дедупликация — по паре «источник, сырое имя»: один триггер объявлен у
 	 * нескольких свойств (`present` повторяет триггеры `rendered` и
 	 * `visible`), и без неё потребитель получал бы два эмита на одно изменение.
-	 * Дедуплицировать можно только проброс событий: синхронизация состояния
-	 * (`bindOutput`) обязана пересчитать каждое свойство.
+	 * Дедуплицировать можно только проброс событий: состояние (`subscribe`)
+	 * обязано пересчитать каждое свойство.
+	 *
+	 * Событие модели (`update:<prop>` у Vue, `ISurface.models`) — после
+	 * событий ядра: на один триггер сначала уходит событие, потом новое
+	 * значение для `v-model`. Как и событие, наружу оно уходит только на
+	 * изменение, а не при монтировании.
 	 */
 	bindEvents(emit: TEventEmitter): () => void {
 		const offs: Array<() => void> = []
@@ -163,6 +218,21 @@ export class TComponentBinding implements IComponentBinding {
 			if (source) listen(source, event.raw, event.exportName)
 		}
 
+		// 3. Модель: новое значение свойства — после события ядра
+		for (const model of this.surface.models) {
+			const target = this._targets.get(model.prop)
+			const source = target ? this._accessor.getEventSource(target) : undefined
+
+			if (!target || !source) continue
+
+			const handler = () => emit(model.exportName, [this._accessor.getValue(target)])
+
+			for (const trigger of model.prop.triggers) {
+				source.on(trigger.raw, handler)
+				offs.push(() => source.off(trigger.raw, handler))
+			}
+		}
+
 		return () => offs.forEach((off) => off())
 	}
 
@@ -181,8 +251,8 @@ export class TComponentBinding implements IComponentBinding {
 			return
 		}
 
-		// Заданным вход становится до guard'а «то же значение»: на первом проходе
-		// значение уже лежит в инстансе, собранном из тех же пропсов
+		// Заданным вход становится до guard'а «то же значение»: значение может уже
+		// лежать в ядре, а снятый потом проп всё равно должен вернуться к умолчанию
 		this._assigned.set(prop, value)
 		this._set(target, value)
 	}
@@ -236,27 +306,64 @@ export class TComponentBinding implements IComponentBinding {
 
 		this._accessor.setValue(target, value)
 	}
+
+	/** Подписка на триггеры состояния: на каждый — перечитать своё свойство. */
+	private _connect(): () => void {
+		const offs: Array<() => void> = []
+
+		for (const [prop, target] of this._state) {
+			const source = this._accessor.getEventSource(target)
+
+			if (!source) continue
+
+			const handler = () => this._refresh(prop)
+
+			for (const trigger of prop.triggers) {
+				source.on(trigger.raw, handler)
+				offs.push(() => source.off(trigger.raw, handler))
+			}
+		}
+
+		return () => offs.forEach((off) => off())
+	}
+
+	/**
+	 * Перечитать свойство из ядра и отдать подписчикам — один путь на триггер и
+	 * на монтирование.
+	 *
+	 * Свежесть значения — ответственность ядра: составные свойства отдают
+	 * снимок через valueOf() (TClasses, драйвер коллекции) либо заменяются
+	 * целиком (layout-плагины). Связка не угадывает.
+	 *
+	 * Сменилось значение — снимок заменяется новым объектом и узнают все
+	 * подписчики. `mounting` — новый подписчик: он получает значение в любом
+	 * случае, это его начальное состояние.
+	 */
+	private _refresh(prop: ISurfaceProp, mounting?: TOutputWriter): void {
+		const target = this._state.get(prop)
+
+		if (!target) return
+
+		const name = prop.exportName
+		const value = this._accessor.getValue(target)
+		const changed = !sameValue(this._snapshot[name], value)
+
+		if (changed) this._snapshot = { ...this._snapshot, [name]: value }
+
+		const current = this._snapshot[name]
+
+		if (changed) {
+			for (const listener of this._listeners) listener(prop, current)
+		} else {
+			mounting?.(prop, current)
+		}
+	}
 }
 
-/**
- * Связать контекст адаптера с фреймворком профиля.
- *
- * `previous` — связка прошлого контекста того же компонента, если фреймворк
- * пересобрал контекст в пределах одной жизни компонента. Новая связка
- * продолжает её память входов: проп, который фреймворк с тех пор не менял, не
- * пишется заново. Прошлая связка не меняется, поэтому продолжений от неё может
- * быть несколько — фреймворк вправе собрать контекст повторно.
- */
+/** Связать контекст адаптера с фреймворком профиля. */
 export function bindComponent(
 	context: IAdapterContext,
 	profile: IAdapterProfile,
-	previous?: IComponentBinding,
 ): IComponentBinding {
-	// Память входов наружу не выставлена: продолжить можно только связку,
-	// которую вернула эта функция
-	return new TComponentBinding(
-		context,
-		profile,
-		previous instanceof TComponentBinding ? previous : undefined,
-	)
+	return new TComponentBinding(context, profile)
 }

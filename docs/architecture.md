@@ -264,7 +264,7 @@ export const ElementPluginDescriptor = () =>
 
 **Headless runtime container** that:
 
-1. Assembles the component for one mount (`assemble/`): instance, composition, plugin bundle, accessor, initial values of plugin props
+1. Assembles the component for one mount (`assemble/`): instance, composition, plugin bundle, accessor, initial values of props
 2. Holds the assembled component together with the adapter extensions
 3. Binds the root DOM node to `TElementPlugin` and tears everything down on `destroy()`
 
@@ -294,7 +294,7 @@ destroy() → void (emits 'destroy', forgets extensions, destroys its own bundle
 - composition (`resolveComposition`) — descriptor plugins, then app registrations (`usePlugins`, `useTheme`); the single list the bundle, the accessor and the plugin props are built from
 - `bundle` (`assembleBundle`) — own, built by the composition, or shared (`config.bundle`: a collection facade shares the component's bundle, and its composition is not resolved again); `bundle:create` and the plugins' `create` go out on a microtask
 - `accessor` (`assembleAccessor`) — units of the instance and of the descriptor plugins
-- initial values of plugin props (`applyInitialPluginProps`) — the core gets its props through the constructor, plugins don't
+- initial values of props (`applyInitialProps`) — the one place they are applied, the same for all six adapters: an own instance got the core props through the constructor and they are not written again, an external `ctrl` and the plugins get through the setter (which emits the trigger) every prop that differs from the declared default
 
 The assembly doesn't leave `@soldy/setup`: adapters get `IAdapterContext` — AGENTS.md, «Структура `packages/setup`».
 
@@ -346,16 +346,16 @@ The assembly doesn't leave `@soldy/setup`: adapters get `IAdapterContext` — AG
 слот по умолчанию), куда писать значение, как отдать событие и в какой момент
 своего цикла это делать. Своих циклов по аксессору у адаптеров нет.
 
-| Что                                          | Назначение                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `underscorePropNaming(name)`                 | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках.                                                                                                                                                                                                                                                                                                                  |
-| `callbackEventNaming(name)`                  | Событие колбэк-пропом: `element:ready` → `onElementReady` — у React, Svelte и Solid. Тип-зеркало — `TCallbackEventProps`.                                                                                                                                                                                                                                                                                                         |
-| `IAdapterProfile`                            | Профиль фреймворка: стратегия имён и слот по умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).                                                                                                                                                                                                                                                                                                              |
-| `surfaceOf(descriptor, profile)`             | Поверхность — публичный API компонента в именах фреймворка: пропы, события, умолчания, съеденные имена. Одна на пару «дескриптор × профиль»; из неё берут статический слой (`props`/`emits` Vue, `observedAttributes` Web Components, кодоген Angular) и связка.                                                                                                                                                                  |
-| `bindComponent(adapter, profile, previous?)` | Связка на монтирование: стартовое состояние (`state`), подписка на триггеры (`bindOutput`), проброс событий (`bindEvents`), чтение пропа (`read`), запись (`write`/`writeAll`/`writeChanged`), спред несъеденных пропсов (`forward`). `previous` — связка прошлого контекста того же компонента: новая продолжает её память входов, прошлая не меняется. Нужна React, который пересобирает контекст, заново устанавливая эффекты. |
-| `adapter.bindElement(el)`                    | Корневой узел ↔ `TElementPlugin`; метод контекста (Layer 5).                                                                                                                                                                                                                                                                                                                                                                      |
-| `toInstanceState` / `TAdapterState`          | Граница рантайма и типа для `state` адаптеров: свойства инстанса и выходы плагинов после `valueOf()`.                                                                                                                                                                                                                                                                                                                             |
-| `setIcons` / `getIcon` / `ICON_ROLES`        | Реестр и контракт пакетов иконок; живёт в `registry/`.                                                                                                                                                                                                                                                                                                                                                                            |
+| Что                                   | Назначение                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `underscorePropNaming(name)`          | Имя пропа: `ns_name`. Одинаково везде — публичный API компонентов должен читаться одинаково на всех фреймворках.                                                                                                                                                                                                                                                                                                                       |
+| `callbackEventNaming(name)`           | Событие колбэк-пропом: `element:ready` → `onElementReady` — у React, Svelte и Solid. Тип-зеркало — `TCallbackEventProps`.                                                                                                                                                                                                                                                                                                              |
+| `IAdapterProfile`                     | Профиль фреймворка: стратегия имён и слот по умолчанию, одна константа на адаптер (`VueProfile`, `ReactProfile`, …).                                                                                                                                                                                                                                                                                                                   |
+| `surfaceOf(descriptor, profile)`      | Поверхность — публичный API компонента в именах фреймворка: пропы, события, умолчания, съеденные имена. Одна на пару «дескриптор × профиль»; из неё берут статический слой (`props`/`emits` Vue, `observedAttributes` Web Components, кодоген Angular) и связка.                                                                                                                                                                       |
+| `bindComponent(adapter, profile)`     | Связка на монтирование: состояние для фреймворка (`subscribe` / `getSnapshot` — подписка сразу отдаёт каждое свойство тем же вызовом, что и триггер), проброс событий и моделей (`bindEvents`), чтение пропа (`read`), запись изменений (`write`/`writeAll`/`writeChanged`), спред несъеденных пропсов (`forward`). Начальные значения не пишет — их применила сборка; память входов начинается с пропсов, с которыми собран контекст. |
+| `adapter.bindElement(el)`             | Корневой узел ↔ `TElementPlugin`; метод контекста (Layer 5).                                                                                                                                                                                                                                                                                                                                                                           |
+| `toInstanceState` / `TAdapterState`   | Граница рантайма и типа для `state` адаптеров: свойства инстанса и выходы плагинов после `valueOf()`.                                                                                                                                                                                                                                                                                                                                  |
+| `setIcons` / `getIcon` / `ICON_ROLES` | Реестр и контракт пакетов иконок; живёт в `registry/`.                                                                                                                                                                                                                                                                                                                                                                                 |
 
 Таблица не полная: слоты (`resolveSlotName`, `DEFAULT_SLOT`), `withParts` и правила связки — AGENTS.md, «Что общее, а что специфично для фреймворка».
 
@@ -509,7 +509,7 @@ hover: в тёмной схеме заливка светлеет.
 имя» один раз — одинаково во всех адаптерах.
 
 Дедуплицировать можно **только проброс событий**. Синхронизацию состояния
-(`bindOutput`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
+(`subscribe`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
 
 ### Контракт границы: значение, а не ручка на живое состояние
 
@@ -1182,7 +1182,7 @@ ListBox, Tabs и Select копий стало бы сорок.
 у `TAnchorPlugin` (`anchor_anchor`, `anchor_placement`, `anchor_matchWidth`,
 `anchor_flip`) и `TDismissPlugin` (`dismiss_enabled`). Ядро получает
 пропсы через конструктор, плагины — нет, поэтому начальные значения доносит
-шаг сборки `applyInitialPluginProps` (`setup/assemble/plugin-props.ts`): пропсы
+сборка (`applyInitialProps`, `setup/assemble/initial-props.ts`): пропсы
 плагинов — часть состава, и пишет их тот, кто состав собрал.
 
 ### CSS не стилизуется по `aria-*`
@@ -1415,15 +1415,15 @@ AGENTS.md, «Возврат поля».
 Both read the surface `surfaceOf(descriptor, VueProfile)` at module import (Layer 5b):
 
 - `useProps(descriptor)` - Vue props config: type and declared default of every non-protected prop
-- `useEmits(descriptor)` - Vue emits: the surface's events + `update:<prop>` for every writable prop with triggers
+- `useEmits(descriptor)` - Vue emits: the surface's `exportEvents`, which already hold `update:<prop>` for every writable prop with triggers (`VueProfile.model`)
 
 #### Runtime Layer (`adapter/runtime/`)
 
 - `useAdapter<TProps, TInstance, TOutputs>(adapter, props, emit)` - Main hook over the binding `bindComponent(adapter, VueProfile)`
   - Returns `TBinding`: `ctrl`, `plugins`, props refs and plugin outputs; `rootElement` — only when the bundle has `TElementPlugin`
-  - Core → Vue: a ref per property with triggers, updated by `bindOutput`
-  - Vue → core: `watch` per input prop → `binding.write`. The starting value is written only for props written in the markup (`vnode.props`), not for Vue defaults — AGENTS.md, «Две поверхности управления»
-  - Events: `bindEvents` → `emit`, plus `update:<prop>` for `v-model`
+  - Core → Vue: a ref per property with triggers. `binding.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
+  - Vue → core: `watch` per input prop → `binding.write`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
+  - Events: `bindEvents` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
 - `useCollectionAdapter()` - То же для контекста фасада коллекции; `ctrl` и `rootElement` не отдаёт — они принадлежат владельцу (AGENTS.md, «Vue collection setup»)
@@ -1437,11 +1437,11 @@ Both read the surface `surfaceOf(descriptor, VueProfile)` at module import (Laye
 **Отписка обязательна.** `adapter.destroy()` работает только с собственным
 `TEvented` адаптера и не трогает `instance.events`. При внешнем `ctrl`,
 переживающем компонент (документированный сценарий), хендлеры копились бы с
-каждым монтированием. Отписки отдаёт связка (`bindOutput`, `bindEvents`),
+каждым монтированием. Отписки отдаёт связка (`subscribe`, `bindEvents`),
 `useAdapter` зовёт их на `onUnmounted`.
 
-**`v-model`.** `useEmits` объявляет `update:<prop>` для каждого записываемого
-свойства с триггерами, `useAdapter` их эмитит из `bindOutput` связки (значение
+**`v-model`.** Профиль Vue объявляет модель (`update:<prop>`) для каждого записываемого
+свойства с триггерами, поверхность кладёт её в `exportEvents`, связка эмитит в `bindEvents` (значение
 перечитывается связкой, а не берётся из аргумента события: у производных
 триггеров полезная нагрузка может не совпадать со свойством).
 
@@ -1546,7 +1546,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
-- The binding is wired by effects: `useEffect(() => binding.bindOutput(…), [binding])` = Core → React through `useReducer` (the same value keeps the same state object, so nothing re-renders), `useEffect(() => binding.writeAll(props), [props, binding])` = React → Core: the effect gets the full props set on every parent render, and `writeAll` writes only the props whose value changed since the previous set (`Object.is`), so a repeated prop doesn't roll back what the core or code through the instance changed since. When the context is rebuilt, `useAdapter` binds the new one as a continuation of the previous binding (`bindComponent(adapter, ReactProfile, previous)`) and refills the state from the new binding's `state()`: the memory of inputs carries over, so the first `writeAll` of the new binding doesn't write the markup into an external `ctrl` again — for React it is the same life of the component
+- Core → React: `useSyncExternalStore(binding.subscribe, binding.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => binding.writeAll(props), [props, binding])` = React → Core: the effect gets the full props set on every parent render, and `writeAll` writes only the props whose value changed since the previous set (`Object.is`), so a repeated prop doesn't roll back what the core or code through the instance changed since. The binding's memory starts from the props the context was assembled with, so the first `writeAll` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`bindComponent(adapter, ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
 - Events: `binding.bindEvents` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
@@ -1587,7 +1587,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `bindComponent(adapter, AngularProfile)`: `state` (сигнал), `syncInputs`
   (`writeChanged` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
-  заданные при монтировании пишет `ngOnInit`), `syncEvents` (`bindEvents` →
+  заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents` (`bindEvents` →
   `EventEmitter` аутпутов), `bindElement`, `destroy`; `TComponentBase` (общий
   жизненный цикл), `AriaDirective` (`[ariaAttrs]`, `[attrs]`, `[dataset]` —
   раскладка наборов ядра), `SlotDirective` (`<ng-template slot>`).
@@ -1750,8 +1750,8 @@ static get observedAttributes() { return useAttributes(ButtonDescriptor()) }
 ### Чем сложнее всех остальных
 
 **Готового примитива реактивности нет.** У пяти других адаптеров есть `ref`,
-`useReducer`, `signal`, `$state` или `createStore`. Здесь `useAdapter` держит
-обычный объект — стартовое состояние связки — и на каждое изменение зовёт
+`useSyncExternalStore`, `signal`, `$state` или `createStore`. Здесь `useAdapter` держит
+обычный объект, который заполняет подписка на связку, — и на каждое изменение зовёт
 колбэк `onUpdate`.
 
 Но информация об изменениях есть: `onUpdate(name, value)` сообщает, КАКОЙ проп
@@ -1783,8 +1783,8 @@ export const buttonTemplate: ITemplate<IButton> = {
 
 **Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
 для JS) — оба кормят `syncProps` адаптера, а тот — `writeChanged` связки:
-элемент отдаёт не полный набор пропсов, а то, что задано, — при подключении
-выставленное до него, дальше по одному атрибуту или свойству. Атрибут
+элемент отдаёт не полный набор пропсов, а то, что задано, — по одному атрибуту
+или свойству. Выставленное до подключения уходит в сборку контекста. Атрибут
 приводится к типу декларации; для Boolean действует HTML-семантика: значимо
 наличие атрибута, поэтому `disabled="false"` это `true`, а снять флаг можно
 только его удалением. Снятый атрибут другого типа приходит `undefined`, и
@@ -1841,14 +1841,14 @@ setup(props, { emit }) {
      - composition: descriptor plugins + app registrations (resolveComposition)
      - bundle (TPluginBundle); bundle:create and plugin create on a microtask
      - accessor (TAccessor)
-     - initial values of plugin props (applyInitialPluginProps)
+     - initial values of props (applyInitialProps)
      ↓
   2. useAdapter(adapter, props, emit)
      ↓
      - bindComponent(adapter, VueProfile): the binding
-     - state → refs; bindOutput: core → Vue refs
-     - watch per input prop → binding.write (start value only for props in markup)
-     - bindEvents → emit; bindOutput → update:<prop> for v-model
+     - binding.subscribe: every property, then each change → Vue refs
+     - watch per input prop → binding.write (changes only)
+     - bindEvents → emit, update:<prop> for v-model included
      - rootElement watch → adapter.bindElement → TElementPlugin
      - onUnmounted: unsubscribe, adapter.destroy()
      ↓

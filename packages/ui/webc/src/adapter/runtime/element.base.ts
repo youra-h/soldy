@@ -172,10 +172,10 @@ export abstract class TSoldyElement<
 		// Снимаем свет ДО первой отрисовки: дальше он живёт внутри корня
 		this._light = groupBySlot(Array.from(this.childNodes))
 
+		// Выставленное до подключения применяет сборка контекста
 		this.binding = this.setup(this._ctrl, this._pending, (name, value) =>
 			this._onUpdate(name, value),
 		)
-		this.binding.syncProps(this._pending)
 
 		this._flush(true)
 	}

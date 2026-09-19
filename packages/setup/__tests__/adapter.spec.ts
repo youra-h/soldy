@@ -174,7 +174,9 @@ describe('createAdapterContext', () => {
 		const stateOf = <TInstance extends object, TOutputs extends object>(
 			adapter: IAdapterContext<TInstance, TOutputs>,
 		): TAdapterState<TInstance, TOutputs> =>
-			toInstanceState<TInstance, TOutputs>(bindComponent(adapter, CallbackProfile).state())
+			toInstanceState<TInstance, TOutputs>(
+				bindComponent(adapter, CallbackProfile).getSnapshot(),
+			)
 
 		const frame = createAdapterContext(FrameDescriptor(), {})
 		const state = stateOf(frame)

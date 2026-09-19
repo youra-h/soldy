@@ -8,16 +8,11 @@
 import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
 import { VueProfile } from '../common'
 
+/**
+ * События ядра, триггеры свойств и `update:<prop>` для `v-model` — всё из
+ * поверхности: объявление и эмит ходят по ней одной, иначе Vue ругался бы на
+ * необъявленное событие.
+ */
 export function useEmits(descriptor: IComponentDescriptor): string[] {
-	const surface = surfaceOf(descriptor, VueProfile)
-
-	// `update:<prop>` — на каждый записываемый проп с триггерами, плагинные
-	// включительно: на них держится `v-model`. Объявление и эмит ходят по
-	// одной поверхности — иначе Vue ругался бы на необъявленное событие
-	// (`update:anchor_anchor` у Frame).
-	const models = surface.inputs
-		.filter((prop) => prop.triggers.length > 0)
-		.map((prop) => `update:${prop.exportName}`)
-
-	return [...new Set([...surface.exportEvents, ...models])]
+	return [...surfaceOf(descriptor, VueProfile).exportEvents]
 }

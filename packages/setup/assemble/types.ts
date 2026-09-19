@@ -50,3 +50,15 @@ export interface IAssembledComponent<TInstance extends object = object> {
 	readonly ownsBundle: boolean
 	readonly accessor: TAccessor
 }
+
+/** Куда сборка пишет начальные значения пропсов (`applyInitialProps`). */
+export interface IInitialPropsTarget {
+	readonly accessor: TAccessor
+	/** Декларации всех пропсов компонента — ядра и плагинов, с умолчаниями. */
+	readonly declarations: readonly IPropDeclaration[]
+	readonly instance: object
+	/** Инстанс собран конструктором из тех же пропсов. */
+	readonly constructed: boolean
+	/** Набор собран этой сборкой; пришедший инициализировал его владелец. */
+	readonly ownsBundle: boolean
+}

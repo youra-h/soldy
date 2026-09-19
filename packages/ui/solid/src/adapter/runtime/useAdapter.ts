@@ -7,7 +7,7 @@
  * из setup. Своё здесь — только куда писать значение (`createStore`), как
  * отдать событие (колбэк-проп) и в какой момент цикла Solid это делать:
  *
- * 1. Core → Solid: подписка на триггеры свойств
+ * 1. Core → Solid: подписка на состояние связки
  * 2. Solid → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
  * 4. DOM-биндинг через callback-ref
@@ -49,12 +49,13 @@ export function useAdapter<
 	props: TProps,
 ): TBinding<TInstance, TProps, TOutputs> {
 	const binding = bindComponent(adapter, SolidProfile)
-	const [state, setState] = createStore<Record<string, unknown>>(binding.state())
+	const [state, setState] = createStore<Record<string, unknown>>({})
 
 	// 1. Core → Solid: подписка на всё время жизни, отписка на onCleanup.
-	// Merge-форма, а не setState(key, value): при значении-функции путевая
-	// форма трактовала бы его как updater.
-	onCleanup(binding.bindOutput((prop, value) => setState({ [prop.exportName]: value })))
+	// Подписка сразу отдаёт значение каждого свойства — тем же вызовом, что и
+	// триггер: так стор и заполняется. Merge-форма, а не setState(key, value):
+	// при значении-функции путевая форма трактовала бы его как updater.
+	onCleanup(binding.subscribe((prop, value) => setState({ [prop.exportName]: value })))
 
 	// 2. Solid → Core: эффект читает все props и перезапускается при смене любого,
 	// а связка пишет из них только сменившиеся с прошлого раза

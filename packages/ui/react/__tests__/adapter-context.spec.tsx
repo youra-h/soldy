@@ -436,7 +436,7 @@ describe('повторная установка эффектов · <Activity>',
 		expect(textOf(target)).toBe('b')
 	})
 
-	it('с ctrl: текст, выставленный через инстанс, переживает скрытие и показ', () => {
+	it('с ctrl: показ — новое монтирование, разметка снова ложится в инстанс', () => {
 		const ctrl = new TButton()
 		const view = (mode: 'visible' | 'hidden') => (
 			<Activity mode={mode}>
@@ -452,7 +452,8 @@ describe('повторная установка эффектов · <Activity>',
 		render(view('hidden'))
 		render(view('visible'))
 
-		expect(ctrl.text).toBe('из кода')
-		expect(textOf(target)).toBe('из кода')
+		// Пересобранный контекст применяет пропсы, как любая сборка
+		expect(ctrl.text).toBe('из разметки')
+		expect(textOf(target)).toBe('из разметки')
 	})
 })
