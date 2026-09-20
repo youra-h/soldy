@@ -55,6 +55,41 @@ function tagsEngine(collection: TSelectCollectionFacade) {
 	return engine
 }
 
+/** Новая выдача вместо прежней — так приложение отдаёт результат поиска. */
+function patchOptions(
+	collection: TSelectCollectionFacade,
+	sources: { value: string; text: string }[],
+) {
+	const batch = collection.extensions.batch
+
+	batch.trackBy = (item) => item.value
+	batch.patch(sources)
+}
+
+/**
+ * Три способа убрать первую опцию из списка. Для расширения тегов они
+ * различаются только тем, какие события приходят по пути, — результат обязан
+ * быть один.
+ */
+const REMOVE_FIRST_OPTION: [
+	string,
+	(collection: TSelectCollectionFacade, items: ISelectItem[]) => void,
+][] = [
+	['удалением', (collection, items) => collection.extensions.batch.remove([items[0]])],
+	[
+		'патчем без новых опций',
+		(collection) => patchOptions(collection, [{ value: 'b', text: 'B' }]),
+	],
+	[
+		'патчем с новой опцией',
+		(collection) =>
+			patchOptions(collection, [
+				{ value: 'b', text: 'B' },
+				{ value: 'c', text: 'C' },
+			]),
+	],
+]
+
 describe('TSelect — собственные props', () => {
 	it('о коллекции ничего не знает', () => {
 		const select = new TSelect()
@@ -1029,6 +1064,65 @@ describe('теги в multiple', () => {
 		facadeFor(0).choose()
 
 		expect(owner.field.value).toBe('')
+	})
+
+	/**
+	 * Приложение убирает выбранную опцию из списка — так делает серверный
+	 * поиск, вернувший выдачу без неё. Способов три, и раньше они давали три
+	 * разных исхода: тег то оставался (закрыть его было нечем — опции, с
+	 * которой снимать выбор, в списке уже нет), то пропадал, смотря сколько
+	 * опций выбрано и появились ли в выдаче новые. Правило одно: тег следует
+	 * за выбором, а выбор удалённая опция покидает. `value` её помнит и ждёт
+	 * возвращения — как текст выбранного в `single`.
+	 */
+	describe.each(REMOVE_FIRST_OPTION)('опцию убрали из списка %s', (_name, removeFirst) => {
+		it('выбрана была она одна — тега нет, плейсхолдер вернулся, value её помнит', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+				placeholder: 'Выберите',
+			})
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+
+			removeFirst(collection, items)
+
+			expect(tagsEngine(collection).extensions.batch.items).toHaveLength(0)
+			expect(owner.field.placeholder).toBe('Выберите')
+			expect(owner.value).toEqual(['a'])
+		})
+
+		it('выбраны были две — остаётся тег оставшейся', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+
+			removeFirst(collection, items)
+
+			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+				'B',
+			])
+			expect(owner.value).toEqual(['a', 'b'])
+		})
+
+		it('опция вернулась в выдачу — вернулись и выбор, и её тег', () => {
+			const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+
+			removeFirst(collection, items)
+			patchOptions(collection, [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B' },
+			])
+
+			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+				'A',
+			])
+			expect(collection.selected.map((item) => item.value)).toEqual(['a'])
+		})
 	})
 })
 
