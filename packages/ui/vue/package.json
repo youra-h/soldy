@@ -32,7 +32,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons-material": "*",
     "@soldy/plugins": "*",

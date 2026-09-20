@@ -19,6 +19,26 @@ export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
 	/** Глобальный closable с инстанса TTags. */
 	readonly closable: boolean
 
+	/**
+	 * Тег, который держит остановку Tab (`tabindex="0"`), пока выбор включён:
+	 * тег под фокусом, если на него можно перейти, иначе первый выбранный из
+	 * таких, иначе первый такой по порядку. В `none` — `undefined`.
+	 */
+	readonly tabStop: TItem | undefined
+
+	/**
+	 * Сообщить, что фокус на теге: остановка Tab переходит к нему. Тег, на
+	 * который нельзя перейти, её не забирает.
+	 */
+	notifyFocus(item: TItem): void
+
+	/**
+	 * Можно ли перейти на тег: не disabled, visible, rendered и стоит в ряду,
+	 * а не в панели переполнения. Одно правило для остановки Tab и навигации
+	 * с клавиатуры.
+	 */
+	isEnabledTag(item: TItem): boolean
+
 	/** Закрыть тег (удалить элемент из коллекции). */
 	closeTag(item: TItem): boolean
 }

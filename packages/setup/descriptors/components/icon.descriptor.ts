@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TIcon } from '@soldy/core'
-import type { IIconProps, TIconEvents } from '@soldy/core'
 import { IconLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const IconDescriptor = defineDescriptor(() =>
-	defineComponent<IIconProps, TIconEvents>()({
+	defineComponent({
 		ctor: TIcon,
 
 		extends: ComponentViewDescriptor(),
@@ -27,6 +26,6 @@ export const IconDescriptor = defineDescriptor(() =>
 
 		// Иконка декоративна, пока ей не дали имя; с именем она обязана стать
 		// `role="img"` — эту роль и передаём плагину.
-		plugins: [IconLayoutPluginDescriptor(), AriaPluginDescriptor({ role: 'img' })],
+		plugins: [IconLayoutPluginDescriptor, AriaPluginDescriptor.with({ role: 'img' })],
 	}),
 )

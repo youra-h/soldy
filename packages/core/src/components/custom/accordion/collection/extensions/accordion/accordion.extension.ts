@@ -10,16 +10,18 @@ import type {
 } from './types'
 import { TAccordionItemExtension, type IAccordionItemExtension } from './item'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TAccordionExtension — расширение коллекции для управления элементами accordion.
  *
- * Получает ссылку на инстанс TAccordion через options.owner и автоматически
- * пробрасывает свойства (size, variant, view) на добавляемые элементы, а также
- * подписывается на изменения владельца для синхронизации. `disabled` не
- * пробрасывается, а сочетается: секция выключена, если выключена сама или
- * выключен accordion (`bindDisabledToOwner`).
+ * Получает ссылку на инстанс TAccordion через options.owner. `view` секция
+ * читает с него, `size` и `variant` получает резольвером
+ * (`bindStyleToOwner`): их диктует accordion, своё значение секции остаётся в
+ * `rawValue` и на вид не влияет. `disabled` не диктуется, а сочетается:
+ * секция выключена, если выключена сама или выключен accordion
+ * (`bindDisabledToOwner`).
  *
  * @template TOwner — тип владельца (TAccordion или наследник)
  * @template TItem  — тип элемента (IAccordionItem или наследник)
@@ -71,19 +73,16 @@ export class TAccordionExtension<
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
-		// При изменении свойств владельца — пробрасываем на все элементы
+		// `size` и `variant` секции тоже отдаёт резольвер — сообщаем прежний
+		// итог, по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -93,12 +92,14 @@ export class TAccordionExtension<
 	}
 
 	/**
-	 * Свойства владельца, которые элемент получает от него, а не задаёт сам, —
-	 * кроме `disabled`: его элемент сочетает со своим.
+	 * Свойства владельца, которые секция получает от него, а не задаёт сама.
+	 *
+	 * Расширение их не пишет: `size` и `variant` диктует accordion
+	 * (`bindStyleToOwner`), `disabled` секция сочетает со своим
+	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
 	 */
 	private _applyOwner(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 	}
 }

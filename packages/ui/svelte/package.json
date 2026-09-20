@@ -31,7 +31,6 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons-material": "*",
     "@soldy/plugins": "*",

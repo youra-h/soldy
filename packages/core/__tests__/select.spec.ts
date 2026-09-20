@@ -55,6 +55,41 @@ function tagsEngine(collection: TSelectCollectionFacade) {
 	return engine
 }
 
+/** Новая выдача вместо прежней — так приложение отдаёт результат поиска. */
+function patchOptions(
+	collection: TSelectCollectionFacade,
+	sources: { value: string; text: string }[],
+) {
+	const batch = collection.extensions.batch
+
+	batch.trackBy = (item) => item.value
+	batch.patch(sources)
+}
+
+/**
+ * Три способа убрать первую опцию из списка. Для расширения тегов они
+ * различаются только тем, какие события приходят по пути, — результат обязан
+ * быть один.
+ */
+const REMOVE_FIRST_OPTION: [
+	string,
+	(collection: TSelectCollectionFacade, items: ISelectItem[]) => void,
+][] = [
+	['удалением', (collection, items) => collection.extensions.batch.remove([items[0]])],
+	[
+		'патчем без новых опций',
+		(collection) => patchOptions(collection, [{ value: 'b', text: 'B' }]),
+	],
+	[
+		'патчем с новой опцией',
+		(collection) =>
+			patchOptions(collection, [
+				{ value: 'b', text: 'B' },
+				{ value: 'c', text: 'C' },
+			]),
+	],
+]
+
 describe('TSelect — собственные props', () => {
 	it('о коллекции ничего не знает', () => {
 		const select = new TSelect()
@@ -1030,6 +1065,65 @@ describe('теги в multiple', () => {
 
 		expect(owner.field.value).toBe('')
 	})
+
+	/**
+	 * Приложение убирает выбранную опцию из списка — так делает серверный
+	 * поиск, вернувший выдачу без неё. Способов три, и раньше они давали три
+	 * разных исхода: тег то оставался (закрыть его было нечем — опции, с
+	 * которой снимать выбор, в списке уже нет), то пропадал, смотря сколько
+	 * опций выбрано и появились ли в выдаче новые. Правило одно: тег следует
+	 * за выбором, а выбор удалённая опция покидает. `value` её помнит и ждёт
+	 * возвращения — как текст выбранного в `single`.
+	 */
+	describe.each(REMOVE_FIRST_OPTION)('опцию убрали из списка %s', (_name, removeFirst) => {
+		it('выбрана была она одна — тега нет, плейсхолдер вернулся, value её помнит', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'], {
+				placeholder: 'Выберите',
+			})
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+
+			removeFirst(collection, items)
+
+			expect(tagsEngine(collection).extensions.batch.items).toHaveLength(0)
+			expect(owner.field.placeholder).toBe('Выберите')
+			expect(owner.value).toEqual(['a'])
+		})
+
+		it('выбраны были две — остаётся тег оставшейся', () => {
+			const { owner, collection, items, facadeFor } = createSelect(['a', 'b'])
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+
+			removeFirst(collection, items)
+
+			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+				'B',
+			])
+			expect(owner.value).toEqual(['a', 'b'])
+		})
+
+		it('опция вернулась в выдачу — вернулись и выбор, и её тег', () => {
+			const { collection, items, facadeFor } = createSelect(['a', 'b'])
+
+			collection.mode = 'multiple'
+			facadeFor(0).choose()
+
+			removeFirst(collection, items)
+			patchOptions(collection, [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B' },
+			])
+
+			expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+				'A',
+			])
+			expect(collection.selected.map((item) => item.value)).toEqual(['a'])
+		})
+	})
 })
 
 describe('editable — ввод текста в поле', () => {
@@ -1346,6 +1440,55 @@ describe('смена mode на лету', () => {
 
 		expect(collection.selected).toHaveLength(1)
 		expect(collection.selected[0].value).toBe('a')
+	})
+
+	/**
+	 * `single -> multiple` выбор не трогает, и `change:selection` не приходит —
+	 * поле пересчитывает сама смена режима. Раньше в нём оставался текст
+	 * выбранного рядом с его тегом, пока не сменится выбор.
+	 */
+	it('single -> multiple с выбором — поле пусто, выбранное показывает тег', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+
+		collection.mode = 'multiple'
+
+		expect(owner.field.value).toBe('')
+		expect(tagsEngine(collection).extensions.batch.items.map((item) => item.text)).toEqual([
+			'A',
+		])
+	})
+
+	/** Смена режима — не выбор пользователя: поле пишется мягко. */
+	it('single -> multiple с набранным текстом — набранное на месте', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'], { editable: true })
+
+		facadeFor(0).choose()
+		owner.field.value = 'typed'
+
+		collection.mode = 'multiple'
+
+		expect(owner.field.value).toBe('typed')
+	})
+
+	/**
+	 * Оставшийся в поле текст выбранного мягкая запись принимала за набранный:
+	 * закрытие тега его не стирало, он уходил только с выбором опции, очисткой
+	 * или возвратом поля.
+	 */
+	it('после single -> multiple закрытие тега не оставляет в поле текст выбранного', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+
+		facadeFor(0).choose()
+		collection.mode = 'multiple'
+
+		const engine = tagsEngine(collection)
+
+		engine.extensions.tags.closeTag(engine.extensions.batch.items[0])
+
+		expect(collection.selected).toEqual([])
+		expect(owner.field.value).toBe('')
 	})
 })
 

@@ -1,25 +1,25 @@
+/**
+ * Дескриптор ComponentView (TComponentView) — визуальный слой.
+ *
+ * Наследует ComponentDescriptor и добавляет видимость, тег, направление, наборы
+ * `classes`, `aria`, `dataset`, `attrs` и плагины element/ready.
+ */
+
 import { defineComponent, defineDescriptor } from '../../define'
 import { TComponentView } from '@soldy/core'
-import type { IComponentViewProps, TComponentViewEvents } from '@soldy/core'
 import { ElementPluginDescriptor, ReadyPluginDescriptor } from '../plugins'
 import { ComponentDescriptor } from './component.descriptor'
-import type { TEmptySlotScope } from '../../define'
-
-/**
- * Слот по умолчанию есть у любого визуального слоя, поэтому объявлен здесь и
- * наследуется всеми потомками. Button его переопределяет, добавляя scope.
- */
-export type TComponentViewSlots = {
-	default: TEmptySlotScope
-}
 
 export const ComponentViewDescriptor = defineDescriptor(() =>
-	defineComponent<IComponentViewProps, TComponentViewEvents, TComponentViewSlots>()({
+	defineComponent({
 		ctor: TComponentView,
 
 		extends: ComponentDescriptor(),
 
 		contribution: {
+			// Слот по умолчанию есть у любого визуального слоя, поэтому объявлен
+			// здесь и наследуется всеми потомками. Button его переопределяет,
+			// добавляя scope.
 			slots: {
 				default: { description: 'Содержимое компонента' },
 			},
@@ -91,6 +91,6 @@ export const ComponentViewDescriptor = defineDescriptor(() =>
 			],
 		},
 
-		plugins: [ElementPluginDescriptor(), ReadyPluginDescriptor()],
+		plugins: [ElementPluginDescriptor, ReadyPluginDescriptor],
 	}),
 )

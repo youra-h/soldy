@@ -5,8 +5,6 @@
     "paths": {
       "@soldy/core": ["../core/src"],
       "@soldy/plugins": ["../plugins/src"],
-      "@soldy/accessor": ["../accessor"],
-      "@soldy/accessor/*": ["../accessor/*"],
       "@soldy/setup": ["."],
       "@soldy/setup/*": ["./*"]
     }

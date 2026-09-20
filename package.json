@@ -15,7 +15,6 @@
   "scripts": {
     "watch:theme": "npm run watch --workspace=@soldy/theme-oren",
     "dev:vue": "concurrently -k -n theme,vue -c blue,green \"npm run watch:theme\" \"npm run dev --workspace=@soldy/playground-vue\"",
-    "test:accessor": "npm run test --workspace=@soldy/accessor",
     "test:setup": "npm run test --workspace=@soldy/setup",
     "test:core": "npm run test --workspace=@soldy/core",
     "test:theme": "npm run test --workspace=@soldy/theme-oren",

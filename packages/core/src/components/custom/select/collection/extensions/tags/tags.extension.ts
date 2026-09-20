@@ -5,7 +5,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { TTags, createEngineTags } from '../../../../tags'
-import type { ITags, TTagsCollection, ITagsItem } from '../../../../tags'
+import type { ITags, TTagsCollection, ITagsItem, TTagsOverflow } from '../../../../tags'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
@@ -22,9 +22,19 @@ import type {
  * должна жить в одном месте, а не повторяться в шести адаптерах.
  *
  * Источник истины один — выбор Select. Тег появляется и пропадает вслед за
- * `change:selection` (владелец → теги), закрытие тега снимает выбор с опции
- * по совпадению `value` (теги → владелец); эти два пути не должны разойтись,
- * поэтому оба живут здесь.
+ * `change:selection` и `item:removed` (владелец → теги), закрытие тега снимает
+ * выбор с опции по совпадению `value` (теги → владелец); эти два пути не
+ * должны разойтись, поэтому оба живут здесь.
+ *
+ * `item:removed` слушается отдельно, потому что выбранную опцию, убранную из
+ * списка, `TSelectionExtension` снимает с выбора молча, без
+ * `change:selection`. Тот же приём у `TSelectExtension`. Иначе тег убранной
+ * опции то оставался, то пропадал — в зависимости от того, сколько опций
+ * выбрано и появились ли в выдаче новые: `change:selection` доходил случайно,
+ * побочным эффектом сброса выбора в `TValueSelectionExtension`. Оставшийся тег
+ * было нечем закрыть: `value` опцию помнит, а в списке её нет, и снимать выбор
+ * не с кого. `value` ждёт возвращения опции — так же, как текст выбранного в
+ * `single`; вернётся опция в выдачу — вернётся и её тег.
  *
  * Текст тега следует и за переименованием выбранной опции, хотя
  * `change:selection` на него не приходит. Переименование слушает
@@ -48,11 +58,33 @@ export class TSelectTagsExtension<
 	private readonly _owner: TOwner
 	private _tags: ITags | null = null
 	private _engine: TTagsCollection | null = null
+	/**
+	 * Режим переполнения ряда тегов — свойство поля, а не самих тегов: инстанс
+	 * `TTags` приходит и уходит вместе с `multiple`, а выбор потребителя
+	 * остаётся. Тот же приём, что у `size` и `variant`, только источник —
+	 * разметка, а не владелец.
+	 */
+	private _overflow: TTagsOverflow = 'wrap'
 
 	constructor(options: ISelectTagsExtensionOptions<TOwner>) {
 		super()
 
 		this._owner = options.owner
+	}
+
+	/** Что делать с тегами, которым не хватило строки поля. */
+	get overflow(): TTagsOverflow {
+		return this._overflow
+	}
+
+	set overflow(value: TTagsOverflow) {
+		if (this._overflow === value) return
+
+		this._overflow = value
+
+		if (this._tags) this._tags.overflow = value
+
+		this.events.emit('change:overflow', value)
 	}
 
 	/** Инстанс `TTags`, пока режим `multiple`; иначе `null`. */
@@ -86,6 +118,13 @@ export class TSelectTagsExtension<
 
 		selection.events.on('change:mode', () => this._syncMode())
 		selection.events.on('change:selection', () => this.syncTags())
+
+		// Удалённую опцию `TSelectionExtension` снимает с выбора молча, поэтому
+		// удаление слушаем сами. Его подписка заведена раньше нашей — `selection`
+		// стоит в составе до `tags`, — значит к этому моменту выбор уже без
+		// удалённой опции. `select` стоит после нас и плейсхолдер считает по уже
+		// пересобранным тегам
+		ctx.driver.events.on('item:removed', () => this.syncTags())
 
 		this._owner.events.on('change:disabled', (value: boolean) => {
 			if (this._tags) this._tags.disabled = value
@@ -128,6 +167,7 @@ export class TSelectTagsExtension<
 			disabled: this._owner.disabled,
 			size: this._owner.size,
 			variant: this._owner.variant,
+			overflow: this._overflow,
 		})
 
 		const engine = createEngineTags({ owner: tags })

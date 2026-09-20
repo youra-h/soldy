@@ -4,7 +4,8 @@ import type { TValuePayload } from '../../common'
 export type TStateUnitValueEvents<TValue> = {
 	/**
 	 * Сменилось `value` — разрешённое значение. `newValue`/`oldValue` тоже
-	 * разрешённые; `notify()` шлёт оба равными текущему.
+	 * разрешённые; `notify(oldValue)` шлёт ту же пару и молчит, когда итог не
+	 * сменился.
 	 */
 	change: (payload: TValuePayload<TValue>) => void
 }
@@ -36,7 +37,10 @@ export interface IStateUnit<
 	 */
 	setResolver(resolver: ((value: TValue) => TValue) | undefined): void
 	/**
-	 * Принудительно оповещает подписчиков, что resolved-значение могло измениться.
+	 * Оповестить подписчиков, что итог мог смениться из-за внешних данных
+	 * резольвера. `oldValue` — итог до их смены: подписчику нужна настоящая
+	 * пара «было/стало», а совпадение с текущим значит, что менять нечего, — и
+	 * события не будет.
 	 */
-	notify(): void
+	notify(oldValue: TValue): void
 }

@@ -45,8 +45,7 @@ describe('соответствие контракту', () => {
 	it('дескриптор объявляет leading, default, trailing', () => {
 		expect(
 			ButtonDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		).toEqual(['default', 'leading', 'trailing'])
 	})

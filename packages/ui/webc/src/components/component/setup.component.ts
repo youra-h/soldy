@@ -18,5 +18,5 @@ export function setupComponent(
 ): TBinding<IComponent> {
 	const adapter = createAdapterContext(ComponentDescriptor(), { ctrl, props })
 
-	return useAdapter<IComponent>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

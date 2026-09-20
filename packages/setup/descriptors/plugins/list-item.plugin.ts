@@ -1,22 +1,23 @@
+/**
+ * Определение TListItemPlugin (namespace `listItem`) — подсветка элемента списка.
+ *
+ * Клавиатурная навигация: устанавливается на item-компоненте (ListBoxItem,
+ * SelectItem), выход — `listItem_highlighted`.
+ */
+
 import { definePlugin } from '../../define'
 import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TListItemPluginEvents } from '@soldy/plugins'
 
-/**
- * Плагин подсветки элемента списка (клавиатурная навигация).
- * Устанавливается на item-компоненте (ListBoxItem).
- */
-export const ListItemPluginDescriptor = () =>
-	definePlugin<'listItem', TListItemPluginEvents, object, Pick<TListItemPlugin, 'highlighted'>>({
-		ctor: TListItemPlugin,
-		namespace: 'listItem',
-		contribution: {
-			events: [...PLUGIN_EVENTS],
-			props: {
-				highlighted: {
-					protected: true,
-					triggers: ['change:highlighted'],
-				},
+export const ListItemPluginDescriptor = definePlugin({
+	ctor: TListItemPlugin,
+	namespace: 'listItem',
+	contribution: {
+		events: [...PLUGIN_EVENTS],
+		props: {
+			highlighted: {
+				protected: true,
+				triggers: ['change:highlighted'],
 			},
 		},
-	})
+	},
+})

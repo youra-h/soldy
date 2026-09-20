@@ -1,5 +1,6 @@
 /**
- * Раскладка поля Select в режиме `multiple`.
+ * Раскладка поля Select: теги в режиме `multiple` и минимальная ширина поля в
+ * обоих режимах, `single` и `multiple`, на каждом размере.
  *
  * Проверяем не разметку, а посчитанные размеры, поэтому тест браузерный:
  * в jsdom `getBoundingClientRect()` возвращает нули, и любое утверждение о
@@ -7,15 +8,15 @@
  *
  * Стенд, а не пакет адаптера: здесь единственное место, где настоящие
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
- * стерегут, лежат в `themes/oren/src/components/select/_select.scss`, а
- * сжатие тега, которому не хватает места в поле, — в
- * `themes/oren/src/components/tags/_tags.scss`. Геометрия строки поля —
- * высота размера и строка слота, в которую встают теги, очистка и стрелка, —
- * в `themes/oren/src/components/input/_input.scss`.
+ * стерегут, — раскладка поля с тегами и его минимальная ширина — лежат в
+ * `themes/oren/src/components/select/_select.scss`, а сжатие тега, которому
+ * не хватает места в поле, — в `themes/oren/src/components/tags/_tags.scss`.
+ * Геометрия строки поля — высота размера и строка слота, в которую встают
+ * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render } from 'vitest-browser-vue'
+import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy/playground-shared'
@@ -60,18 +61,32 @@ const Harness = {
  */
 const NARROW_WIDTH = 0
 
+/** Режимы выбора: минимальная ширина поля у каждого своя. */
+const MODES = ['single', 'multiple'] as const
+
 /**
- * Select с одним выбранным тегом в контейнере заданной ширины. `clearable` —
- * справа стоят и очистка, и стрелка, и слоту с тегом остаётся меньше всего
- * места.
+ * Select заданного размера и режима в контейнере заданной ширины. В обоих
+ * режимах `clearable`: справа стоят и очистка, и стрелка — худший случай для
+ * минимума поля.
+ *
+ * - `multiple` — один выбранный тег: слоту с тегом остаётся меньше всего
+ *   места.
+ * - `single` — без значения: очистку рисует уже `clearable`, и на крупных
+ *   размерах стрелка выходила за поле и без выбора.
  */
-const tagHarness = (size: (typeof COMPONENT_SIZES)[number], width: number) =>
+const sizedHarness = (
+	size: (typeof COMPONENT_SIZES)[number],
+	mode: (typeof MODES)[number],
+	width: number,
+) =>
 	defineComponent({
 		render() {
 			return h('div', { style: `width: ${width}px` }, [
 				h(
 					Select,
-					{ mode: 'multiple', editable: true, clearable: true, value: ['0'], size },
+					mode === 'multiple'
+						? { mode, editable: true, clearable: true, value: ['0'], size }
+						: { mode, clearable: true, size },
 					{ default: () => [h(SelectItem, { key: '0', value: '0', text: 'Москва' })] },
 				),
 			])
@@ -93,6 +108,19 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 }
 
 const box = (element: Element) => element.getBoundingClientRect()
+
+/** Вычисленное значение свойства в пикселях: ширина рамки, отступ. */
+const px = (element: Element, property: string) =>
+	parseFloat(getComputedStyle(element).getPropertyValue(property))
+
+/** Прямоугольник внутри рамки — место, которое элемент отдаёт своим частям. */
+const insideBorder = (element: Element) => {
+	const { x, y, width, height } = box(element)
+	const left = px(element, 'border-left-width')
+	const right = px(element, 'border-right-width')
+
+	return new DOMRect(x + left, y, width - left - right, height)
+}
 
 /** Лежит ли прямоугольник по горизонтали внутри другого. */
 const expectWithin = (inner: DOMRect, outer: DOMRect, what: string) => {
@@ -218,6 +246,34 @@ describe('поле с тегами', () => {
 })
 
 /**
+ * Очистка, стрелка и пилюля тега растут с размером, а общий минимум ширины
+ * `.s-select` — нет: на `2xl` стрелка выходила за правый край поля и без
+ * выбора. Поэтому минимум поля растёт с размером; в `multiple` он держит ещё
+ * и пилюлю тега — это проверяет блок ниже.
+ *
+ * Проверяется слот очистки и стрелки, а не сами части: отступ стрелки от рамки
+ * — паддинг слота, своего у неё нет. Бокс стрелки лежит внутри поля и тогда,
+ * когда она съела этот отступ и легла вплотную к рамке, и минимум, подобранный
+ * по такой проверке, вышел бы уже нужного.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: минимальная ширина поля', (size) => {
+	it.each(MODES)('%s: очистка и стрелка помещаются в поле', async (mode) => {
+		await render(sizedHarness(size, mode, NARROW_WIDTH))
+
+		// В `multiple` значение становится тегом не сразу: опция сначала
+		// регистрируется в коллекции. Минимум поля считается вместе с тегом.
+		await expect.poll(() => tags().length).toBe(mode === 'multiple' ? 1 : 0)
+
+		const field = find('.s-select__field')
+		const slot = find('.s-input__trailing', field)
+
+		// Худший случай для минимума — в слоте и очистка, и стрелка.
+		expect(slot.querySelectorAll('.s-select__clear, .s-select__arrow')).toHaveLength(2)
+		expectWithin(box(slot), insideBorder(field), 'очистка и стрелка с отступом')
+	})
+})
+
+/**
  * Слоту с тегами снят минимум ширины, чтобы вводу доставался остаток строки,
  * и в узком поле слот сжимается уже тега. Один тег переносить некуда, и пока
  * он не сжимался сам, он переполнял слот, а центровка слота делила
@@ -229,7 +285,7 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 	 * тегом, отдаёт поле и части тега.
 	 */
 	const renderTag = async (width: number) => {
-		render(tagHarness(size, width))
+		await render(sizedHarness(size, 'multiple', width))
 
 		await expect.poll(() => tags().length).toBe(1)
 
@@ -243,12 +299,35 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 		}
 	}
 
-	it('на минимальной ширине поля тег и крестик внутри поля, текст обрезан', async () => {
-		const { field, item, text, close } = await renderTag(NARROW_WIDTH)
+	/**
+	 * Поле под теги больше не расширяется: лестница минимумов под пилюлю с
+	 * крестиком снята — правило, которое зависит от того, сколько тегов и
+	 * какие они, неверно по построению. Вместо неё слот берёт остаток строки
+	 * и обрезает лишнее, поэтому проверяется слот: он и есть граница, за
+	 * которую ничего не нарисуется.
+	 */
+	it('на минимальной ширине поля ряд обрезает слот, а не выносит за поле', async () => {
+		const { field, text } = await renderTag(NARROW_WIDTH)
 
-		expectWithin(box(item), box(field), 'тег')
-		expectWithin(box(close), box(field), 'крестик')
+		expectWithin(box(find('.s-input__leading', field)), insideBorder(field), 'слот тегов')
 		expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
+	})
+
+	/**
+	 * То, ради чего лестница и снята: поле под теги не расширяется. Минимум
+	 * его ширины одинаков с тегами и без них — правило, которое зависит от
+	 * того, сколько тегов и какие они, неверно по построению.
+	 */
+	it('минимум поля не зависит от того, есть ли в нём теги', async () => {
+		await render(sizedHarness(size, 'single', NARROW_WIDTH))
+
+		const single = box(find('.s-select')).width
+
+		cleanup()
+		await render(sizedHarness(size, 'multiple', NARROW_WIDTH))
+		await expect.poll(() => tags().length).toBe(1)
+
+		expect(box(find('.s-select')).width).toBeCloseTo(single, 1)
 	})
 
 	it('в широком поле текст тега не обрезан', async () => {

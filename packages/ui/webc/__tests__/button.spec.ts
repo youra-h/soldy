@@ -371,8 +371,7 @@ describe('<soldy-button> · слоты', () => {
 		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
 		expect(Object.keys(targets).sort()).toEqual(
 			ButtonDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		)
 	})

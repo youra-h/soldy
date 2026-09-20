@@ -1,4 +1,4 @@
-import type { IPropDeclaration } from '@soldy/accessor'
+import type { TPropSpec } from '@soldy/setup'
 import { underscorePropNaming } from '@soldy/setup'
 import {
 	COMPONENT_SIZES,
@@ -9,8 +9,10 @@ import {
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
+	LABEL_POSITIONS,
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
+	POPOVER_PLACEMENTS,
 	RADIO_GROUP_VIEWS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
@@ -22,6 +24,7 @@ import {
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
 	TABS_VIEWS,
+	TAGS_OVERFLOWS,
 } from './enums'
 import type {
 	TComponentEntry,
@@ -97,7 +100,7 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select его ведёт сам плагин по open',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select и Popover его ведёт сам плагин по open',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -111,7 +114,11 @@ const OWN: Record<string, Record<string, string>> = {
 	'check-box': {
 		indeterminate:
 			'Третье состояние: выбрано частично. Ставится извне, клик снимает его и отмечает чекбокс',
-		view: 'Оформление: plain — без рамки и фона, для плотных списков',
+		view: 'Оформление: рамка (по умолчанию), заливка или без рамки и фона',
+	},
+	label: {
+		text: 'Текст подписи — доступное имя контрола. Слот text его переопределяет',
+		position: 'С какой стороны от контрола стоит текст. start и end меняются местами в RTL',
 	},
 	'radio-group': {
 		view: 'Отметка выбранного: точка внутри тонкого кольца или утолщённое кольцо. Группа раздаёт вид каждому радио',
@@ -129,6 +136,17 @@ const OWN: Record<string, Record<string, string>> = {
 			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 		placement:
 			'С какой стороны открывается панель: auto — снизу, у края окна сверху; top и bottom — всегда там',
+		tags_overflow:
+			'Что делать с тегами в поле, когда они не помещаются в строку. Нужен множественный выбор',
+	},
+	popover: {
+		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
+		closable: 'Показывать ли кнопку закрытия в углу панели',
+		closeLabel: 'Имя кнопки закрытия для скринридера',
+		lazyMount:
+			'Не монтировать содержимое, пока панель не открывали. Потом закрытие только прячет её',
+		placement:
+			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -143,6 +161,9 @@ const OWN: Record<string, Record<string, string>> = {
 	tags: {
 		view: 'Оформление тегов — вид набора, тема применяет его к каждому тегу',
 		closable: 'Показывать ли у тегов кнопку закрытия',
+		overflow:
+			'Что делать с тегами, которым не хватило ширины: переносить, прокручивать или убрать хвост в панель за кнопкой «…»',
+		moreLabel: 'Имя кнопки «…» для скринридера',
 	},
 	accordion: {
 		view: 'Оформление секций',
@@ -195,17 +216,23 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	button: { view: BUTTON_VIEWS },
 	'check-box': { view: CHECK_BOX_VIEWS },
+	label: { position: LABEL_POSITIONS },
 	accordion: { view: BUTTON_VIEWS },
 	'list-box': { view: BUTTON_VIEWS },
 	'radio-group': { view: RADIO_GROUP_VIEWS },
-	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
+	select: {
+		editableMode: SELECT_EDITABLE_MODES,
+		placement: SELECT_PLACEMENTS,
+		tags_overflow: TAGS_OVERFLOWS,
+	},
+	popover: { placement: POPOVER_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
 		alignment: TABS_ALIGNMENTS,
 		position: TABS_POSITIONS,
 	},
-	tags: { view: BUTTON_VIEWS },
+	tags: { view: BUTTON_VIEWS, overflow: TAGS_OVERFLOWS },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }
@@ -277,19 +304,14 @@ export function optionsForProp(componentId: string, prop: string): readonly stri
 /**
  * Имя конструктора пропа.
  *
- * В декларации `type` встречается в трёх видах: сам конструктор (`String`),
- * массив конструкторов (`tag: [String, Object]`) и обёртка `{ ctor }` от
- * `defineType`. Разбирать приходится все три — унифицировать это в контракте
- * не стали, потому что каждая форма зачем-то нужна: массив описывает
- * объединение, обёртка носит фантомный тип для TS.
+ * В декларации `type` встречается в двух видах: сам конструктор (`String`) и
+ * массив конструкторов (`tag: [String, Object]`) — массив описывает
+ * объединение. Обёртки `defineType` у пропа нет: она несёт тип данных scope
+ * слота, а тип значения пропа даёт интерфейс ядра.
  */
 function firstCtorName(type: unknown): string | undefined {
 	if (!type) return undefined
 	if (Array.isArray(type)) return firstCtorName(type[0])
-
-	if (typeof type === 'object' && 'ctor' in type) {
-		return firstCtorName((type as { ctor: unknown }).ctor)
-	}
 
 	return (type as { name?: string }).name
 }
@@ -300,7 +322,7 @@ function firstCtorName(type: unknown): string | undefined {
  * Порядок важен: список значений сильнее типа. `view` объявлен как `String`,
  * но редактировать его текстовым полем бессмысленно — вариантов четыре.
  */
-export function controlKind(componentId: string, prop: IPropDeclaration): TControlKind {
+export function controlKind(componentId: string, prop: TPropSpec): TControlKind {
 	if (optionsForProp(componentId, underscorePropNaming(prop.name))) return 'select'
 
 	const ctor = firstCtorName(prop.type)
@@ -331,7 +353,7 @@ export function controlKind(componentId: string, prop: IPropDeclaration): TContr
  */
 export function propControl(
 	componentId: string,
-	prop: IPropDeclaration,
+	prop: TPropSpec,
 	owner: TPropOwner = { scope: 'component' },
 ): TPropControl {
 	const name = underscorePropNaming(prop.name)
@@ -357,7 +379,7 @@ export function propControl(
  * `present`, `styles` плагинов раскладки): аксессор их не пишет вовсе, и
  * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки.
  */
-function isEditable(prop: IPropDeclaration): boolean {
+function isEditable(prop: TPropSpec): boolean {
 	return !prop.protected && !NON_EDITABLE.has(underscorePropNaming(prop.name))
 }
 

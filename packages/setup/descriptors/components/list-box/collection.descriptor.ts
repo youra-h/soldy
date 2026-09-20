@@ -1,7 +1,14 @@
-import { defineComponent, defineDescriptor, defineType } from '../../../define'
-import { TListBoxCollectionFacade, TListBoxItemCollectionFacade, TButtonView } from '@soldy/core'
+/**
+ * Дескрипторы коллекционной части ListBox — фасады владельца и элемента.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`ListBoxDescriptor`, `ListBoxItemDescriptor`): адаптер собирает компонент из
+ * обоих рантайм-списков.
+ */
+
+import { defineComponent, defineDescriptor } from '../../../define'
+import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'
-import type { TListIndicator } from '@soldy/core'
 
 export const ListBoxCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -40,7 +47,7 @@ export const ListBoxCollectionItemDescriptor = defineDescriptor(() =>
 				selected: { type: Boolean, triggers: ['change:selected'] },
 				order: { type: Number, protected: true, triggers: ['change:order'] },
 				view: {
-					type: defineType<TButtonView>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:view'],
 				},
@@ -49,7 +56,7 @@ export const ListBoxCollectionItemDescriptor = defineDescriptor(() =>
 				 * одно на весь список и меняется на его инстансе.
 				 */
 				indicator: {
-					type: defineType<TListIndicator>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:indicator'],
 				},

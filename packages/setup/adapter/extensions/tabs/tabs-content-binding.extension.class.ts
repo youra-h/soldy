@@ -26,7 +26,7 @@
 
 import { TItemContextRegistry } from '@soldy/core'
 import type { ITabsItem, TAria, TAriaAttributes, TTabsCollection } from '@soldy/core'
-import type { IAdapterContext } from '../../context'
+import type { TInstanceContext } from '../../context'
 import { ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import type { TCollectionItemFacade } from '../collection'
 import type { ITabsContentBindingOptions } from './types'
@@ -56,7 +56,7 @@ function clearAria(aria: TAria, attributes: TAriaAttributes): void {
 
 export class TTabsContentBindingExtension {
 	constructor(
-		context: IAdapterContext<TCollectionItemFacade>,
+		context: TInstanceContext<TCollectionItemFacade>,
 		options: ITabsContentBindingOptions,
 	) {
 		const { content, elevator } = options

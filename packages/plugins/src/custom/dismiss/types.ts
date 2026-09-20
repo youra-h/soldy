@@ -17,6 +17,17 @@ export interface IDismissPluginOptions {
 
 	/** Слушать ли документ сразу после установки. */
 	enabled?: boolean
+
+	/**
+	 * Закрывать ли и уходом фокуса: `focusin` вне владельца, его панели и
+	 * слоёв выше неё даёт `dismiss`, как нажатие мимо. По умолчанию выключено.
+	 *
+	 * Нужно тому, в чью панель уходит фокус (Popover): фокус, ушедший из
+	 * панели на страницу — Tab, программный `focus()`, — иначе оставлял бы её
+	 * открытой над тем, с чем пользователь уже работает. Select не включает:
+	 * фокус у него не покидает поле, а уход с поля он обрабатывает сам.
+	 */
+	focusOutside?: boolean
 }
 
 /**
@@ -35,9 +46,13 @@ export type TDismissPluginEvents = TPluginEvents & {
 	 * это решило: у мыши — `pointerdown`; у касания — `pointerup`, прокрутка
 	 * пальцем не закрывает; у пера — то, что пришло первым: `pointerup`
 	 * (стилус на экране) или совместимый `mousedown` (перо графического
-	 * планшета). Отсюда тип `MouseEvent`: `PointerEvent` — его подтип.
+	 * планшета). Отсюда `MouseEvent`: `PointerEvent` — его подтип. С
+	 * `focusOutside` — ещё и `focusin` фокуса, ушедшего мимо: `FocusEvent`.
+	 *
+	 * Приходит до закрытия владельца: подписчик застаёт его открытым и знает
+	 * причину закрытия (плагин фокуса Popover по ней не возвращает фокус).
 	 */
-	dismiss: (event: MouseEvent) => void
+	dismiss: (event: MouseEvent | FocusEvent) => void
 	/** change:enabled */
 	'change:enabled': (value: boolean) => void
 }

@@ -1,10 +1,16 @@
+/**
+ * Дескриптор Component (TComponent) — невизуальная база.
+ *
+ * Наследует EntityDescriptor и ничего не добавляет: видимость объявлена в
+ * ComponentViewDescriptor.
+ */
+
 import { defineComponent, defineDescriptor } from '../../define'
 import { TComponent } from '@soldy/core'
-import type { IComponentProps, TComponentEvents } from '@soldy/core'
 import { EntityDescriptor } from './entity.descriptor'
 
 export const ComponentDescriptor = defineDescriptor(() =>
-	defineComponent<IComponentProps, TComponentEvents>()({
+	defineComponent({
 		ctor: TComponent,
 
 		extends: EntityDescriptor(),

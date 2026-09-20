@@ -13,7 +13,7 @@
  *   - TAngularElevator extends TElevator (DI: InjectionToken)
  */
 
-import type { IContextElevator } from '@soldy/accessor'
+import type { IContextElevator } from './types'
 
 /** Кэш: строковый ключ → уникальный символ */
 const KEY_MAP = new Map<string | symbol, symbol>()

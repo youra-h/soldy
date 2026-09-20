@@ -10,7 +10,6 @@ export default defineConfig({
 			'@soldy/core': path.resolve(__dirname, '../../core/src'),
 			'@soldy/icons-material': path.resolve(__dirname, '../../icons/material/src'),
 			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
-			'@soldy/accessor': path.resolve(__dirname, '../../accessor/index.ts'),
 			'@soldy/setup': path.resolve(__dirname, '../../setup/index.ts'),
 		},
 	},

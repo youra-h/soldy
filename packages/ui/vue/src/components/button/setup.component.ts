@@ -1,7 +1,6 @@
 import { ButtonDescriptor } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseButton, { type ButtonProps } from './base.component'
-import { type IButtonProps, type IButton } from '@soldy/core'
 
 export default {
 	name: '_Button',
@@ -12,6 +11,6 @@ export default {
 			props,
 		})
 
-		return useAdapter<IButtonProps, IButton>(adapter, props, emit)
+		return useAdapter(adapter, props, emit)
 	},
 }

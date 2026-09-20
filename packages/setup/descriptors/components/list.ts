@@ -1,7 +1,3 @@
-import type { IPropDefinition } from '@soldy/accessor'
-import { defineType } from '../../define'
-import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/core'
-
 /**
  * Списочные props — общие для ListBox и Select.
  *
@@ -12,22 +8,32 @@ import type { TListContentFit, TListIndicator, TScrollBehavior } from '@soldy/co
  * `TInputControl`), поэтому наследовать нечего — но повторять четыре
  * декларации в двух файлах тоже незачем. Что копии не разойдутся с ядром,
  * проверяет `core/__tests__/list-contract.spec.ts`.
+ *
+ * `satisfies`, а не аннотация словарём: с аннотацией `Record<string, …>` спред
+ * в `props` терял свои ключи в типах, и `defineComponent` не видел триггеров
+ * списка — события `change:maxRows` и соседей выпали бы из событий ListBox и
+ * Select. Триггеры сверяются с общей картой `TListEvents`: обе карты
+ * компонентов её содержат.
  */
-export const LIST_PROPS: Record<string, IPropDefinition> = {
+
+import type { TListEvents } from '@soldy/core'
+import type { IComponentPropDefinition } from '../../define'
+
+export const LIST_PROPS = {
 	maxRows: {
 		type: Number,
 		triggers: ['change:maxRows'],
 	},
 	contentFit: {
-		type: defineType<TListContentFit>(String),
+		type: String,
 		triggers: ['change:contentFit'],
 	},
 	scrollBehavior: {
-		type: defineType<TScrollBehavior>(String),
+		type: String,
 		triggers: ['change:scrollBehavior'],
 	},
 	indicator: {
-		type: defineType<TListIndicator>(String),
+		type: String,
 		triggers: ['change:indicator'],
 	},
-}
+} satisfies Record<string, IComponentPropDefinition<keyof TListEvents>>

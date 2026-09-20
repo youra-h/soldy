@@ -8,15 +8,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TSelect } from '@soldy/core'
-import type {
-	ISelectProps,
-	TSelectEvents,
-	IInput,
-	ISelectItem,
-	TSelectEditableMode,
-	TSelectPanelPlacement,
-	TSelectPlacement,
-} from '@soldy/core'
+import type { IInput, ISelectItem } from '@soldy/core'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -29,42 +21,29 @@ import {
 	SelectPointerPluginDescriptor,
 } from '../../plugins'
 import { LIST_PROPS } from '../list'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты Select.
- *
- * `field` и `clear` отделены от `default` структурно, а не по вкусу:
- * `default` кладётся внутрь `[role=listbox]`, и всё, что туда попадёт,
- * скринридер сочтёт опцией. Поле и кнопка очистки живут снаружи панели.
- *
- * `empty` показывается вместо списка, когда опций нет: пустой `listbox` для
- * скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
- *
- * `field` отдаёт сам `field` — экземпляр `TInput`, единственный держатель
- * текста, плейсхолдера и ARIA поля (тем же приёмом, что `:ctrl="field"` у
- * встроенной разметки, см. `TSelect.field`, `TSelectExtension`). Второго пути
- * к тем же данным больше нет: раньше слот отдавал `text`/`placeholder`
- * отдельными пропами, а они дублировали то, что уже есть у `field`, и
- * `placeholder` при этом расходился с ним — не учитывал теги.
- */
-export type TSelectSlots = {
-	field: { field: IInput }
-	leading: TEmptySlotScope
-	clear: TEmptySlotScope
-	'arrow-icon': TEmptySlotScope
-	trailing: TEmptySlotScope
-	default: TEmptySlotScope
-	empty: TEmptySlotScope
-}
 
 export const SelectDescriptor = defineDescriptor(() =>
-	defineComponent<ISelectProps, TSelectEvents, TSelectSlots>()({
+	defineComponent({
 		ctor: TSelect,
 
 		extends: InputControlDescriptor(),
 
 		contribution: {
+			/**
+			 * `field` и `clear` отделены от `default` структурно, а не по вкусу:
+			 * `default` кладётся внутрь `[role=listbox]`, и всё, что туда попадёт,
+			 * скринридер сочтёт опцией. Поле и кнопка очистки живут снаружи панели.
+			 *
+			 * `empty` показывается вместо списка, когда опций нет: пустой `listbox`
+			 * для скринридера — тупик, а сообщение хотя бы объясняет, что происходит.
+			 *
+			 * `field` отдаёт сам `field` — экземпляр `TInput`, единственный держатель
+			 * текста, плейсхолдера и ARIA поля (тем же приёмом, что `:ctrl="field"` у
+			 * встроенной разметки, см. `TSelect.field`, `TSelectExtension`). Второго
+			 * пути к тем же данным больше нет: раньше слот отдавал `text`/`placeholder`
+			 * отдельными пропами, а они дублировали то, что уже есть у `field`, и
+			 * `placeholder` при этом расходился с ним — не учитывал теги.
+			 */
 			slots: {
 				field: {
 					scope: { field: defineType<IInput>(Object) },
@@ -102,15 +81,9 @@ export const SelectDescriptor = defineDescriptor(() =>
 				clearable: { type: Boolean, triggers: ['change:clearable'] },
 				clearLabel: { type: String, triggers: ['change:clearLabel'] },
 				editable: { type: Boolean, triggers: ['change:editable'] },
-				editableMode: {
-					type: defineType<TSelectEditableMode>(String),
-					triggers: ['change:editableMode'],
-				},
+				editableMode: { type: String, triggers: ['change:editableMode'] },
 				removeOnBackspace: { type: Boolean, triggers: ['change:removeOnBackspace'] },
-				placement: {
-					type: defineType<TSelectPlacement>(String),
-					triggers: ['change:placement'],
-				},
+				placement: { type: String, triggers: ['change:placement'] },
 				/**
 				 * Имя кнопки очистки. Отдельный набор, а не часть `aria`: `aria`
 				 * описывает само поле, а это соседняя кнопка.
@@ -144,7 +117,7 @@ export const SelectDescriptor = defineDescriptor(() =>
 				 * шаблон только пробрасывает в `anchor_placement` и `anchor_flip`.
 				 */
 				panelPlacement: {
-					type: defineType<TSelectPanelPlacement>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:placement'],
 				},
@@ -161,24 +134,24 @@ export const SelectDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам опций
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Высота панели по `maxRows`. Тот же плагин, что у ListBox: свойство
 			// объявлено общим контрактом `IList`, а инстанс у каждого свой
-			ListHeightPluginDescriptor(),
+			ListHeightPluginDescriptor,
 			// Закрытие по нажатию мимо. Общий слой оверлея, им же потом
 			// воспользуются Menu и Popover
-			DismissPluginDescriptor(),
+			DismissPluginDescriptor,
 			// Клик по полю: тумблер в select-only, только стрелка в editable
-			SelectPointerPluginDescriptor(),
+			SelectPointerPluginDescriptor,
 			// Клавиатура APG Combobox: открытие, навигация, Escape, набор по буквам
-			SelectKeyboardPluginDescriptor(),
+			SelectKeyboardPluginDescriptor,
 			// Ввод текста при editable: search/filter подсвечивают совпадение
 			// через клавиатурный плагин выше — подключается после него
-			SelectEditablePluginDescriptor(),
+			SelectEditablePluginDescriptor,
 			// Удаление тегов по Backspace в пустом поле — editable + multiple,
 			// включается свойством removeOnBackspace
-			SelectBackspacePluginDescriptor(),
+			SelectBackspacePluginDescriptor,
 		],
 	}),
 )

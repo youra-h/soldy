@@ -1,13 +1,14 @@
+/**
+ * Определение TCollectionBundlesPlugin (namespace `bundles`) — реестр bundles элементов.
+ *
+ * Устанавливается на owner-компоненте коллекции (например, Tabs).
+ */
+
 import { definePlugin } from '../../define'
 import { TCollectionBundlesPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-/**
- * Плагин-реестр bundles элементов коллекции.
- * Устанавливается на owner-компоненте коллекции (например, Tabs).
- */
-export const CollectionBundlesPluginDescriptor = () =>
-	definePlugin({
-		ctor: TCollectionBundlesPlugin,
-		namespace: 'bundles',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const CollectionBundlesPluginDescriptor = definePlugin({
+	ctor: TCollectionBundlesPlugin,
+	namespace: 'bundles',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

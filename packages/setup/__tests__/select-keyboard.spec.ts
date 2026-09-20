@@ -3,10 +3,12 @@
 /**
  * Клавиатура Select — паттерн APG Combobox, вариант select-only.
  *
- * Ключевое свойство: DOM-фокус никогда не уходит с поля. Поэтому `keydown`
- * ловит корень Select, а подсветка опции передаётся скринридеру через
- * `aria-activedescendant`. Проверяется вся модель целиком: она и есть то, чем
- * доступный выпадающий список отличается от недоступного.
+ * Ключевое свойство: DOM-фокус никогда не уходит с поля. Поэтому клавиши
+ * комбобокс берёт только с `<input>` поля, а подсветка опции передаётся
+ * скринридеру через `aria-activedescendant`. Слушатель висит на корне Select,
+ * и до него всплывают клавиши кнопки очистки и крестиков тегов — их плагин не
+ * трогает. Проверяется вся модель целиком: она и есть то, чем доступный
+ * выпадающий список отличается от недоступного.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -26,8 +28,23 @@ import {
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 /**
+ * keydown, как его шлёт браузер: всплывает и отменяется. Без `cancelable`
+ * `preventDefault()` ничего не делает, и `defaultPrevented` не прочитать.
+ */
+const keydown = (target: Element, key: string, init: KeyboardEventInit = {}) => {
+	const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init })
+
+	target.dispatchEvent(event)
+
+	return event
+}
+
+/**
  * Собирает Select с коллекцией и клавиатурой вручную: без адаптера
  * фреймворка, чтобы проверять именно модель, а не проводку Vue.
+ *
+ * `<input>` поля — первый потомок корня, как в разметке: плагин находит его
+ * по `ready` корня (`querySelector('input')`), и `press` шлёт клавишу с него.
  *
  * `layoutProps` — списочные свойства поля: клавиатура читает `scrollBehavior`
  * прямо у инстанса.
@@ -44,7 +61,9 @@ async function setup(
 	facade.items = items as ISelectItem[]
 
 	const root = document.createElement('div')
+	const input = document.createElement('input')
 
+	root.appendChild(input)
 	document.body.appendChild(root)
 
 	const rootElement = new TElementPlugin()
@@ -93,8 +112,8 @@ async function setup(
 	rootElement.element = root
 	await nextFrame()
 
-	const press = (key: string, init: KeyboardEventInit = {}) =>
-		root.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
+	/** Клавиша с поля — там, где по APG живёт фокус комбобокса. */
+	const press = (key: string, init: KeyboardEventInit = {}) => keydown(input, key, init)
 
 	const registry = new TItemContextRegistry(facade.engine.getCore())
 
@@ -222,6 +241,19 @@ describe('открытая панель — навигация', () => {
 		items[1].disabled = true
 
 		press('ArrowDown')
+		press('ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+	})
+
+	it('опцию выключили под подсветкой — стрелка ведёт к её соседу, а не на край', async () => {
+		// Шаг — от места подсветки среди показанных опций: среди доступных
+		// выключенной нет
+		const { keyboard, press, items } = await setup(['Москва', 'Тверь', 'Тула', 'Клин'])
+
+		press('ArrowDown')
+		press('ArrowDown')
+		items[1].disabled = true
 		press('ArrowDown')
 
 		expect(keyboard.highlightedUid).toBe(items[2].uid)
@@ -619,5 +651,86 @@ describe('editable — печатные клавиши принадлежат т
 		press('Escape')
 
 		expect(owner.open).toBe(false)
+	})
+})
+
+/**
+ * Слушатель висит на корне Select, и до него всплывают клавиши всего, что лежит
+ * под корнем: кнопки очистки, крестиков тегов в поле, содержимого слотов.
+ * Комбобокс берёт клавишу только с поля, а что делать с остальными, эти
+ * элементы знают сами: `<button>` делает из Enter и пробела клик. Раньше
+ * Enter и пробел на кнопке очистки открывали панель, и клика не было.
+ *
+ * Правило отвечает на вопрос «чья клавиша», а не «какая»: с кнопки не
+ * работают ни стрелки, ни буквы. Клика из клавиши jsdom не делает — что
+ * кнопка очищает поле и закрывает тег, проверяет
+ * `playground/vue/browser/keyboard-activation.spec.ts`.
+ */
+describe('клавиша другого элемента под корнем — не комбобокса', () => {
+	/** Кнопка под корнем: так лежат кнопка очистки и крестик тега в поле. */
+	const buttonIn = (root: Element) => {
+		const button = document.createElement('button')
+
+		root.appendChild(button)
+
+		return button
+	}
+
+	const CLOSED_KEYS = [
+		['Enter', 'Enter'],
+		['пробел', ' '],
+		['стрелка вниз', 'ArrowDown'],
+		['буква', 'т'],
+	] as const
+
+	it.each(CLOSED_KEYS)('%s с поля открывает панель и отменяется', async (_name, key) => {
+		const { owner, press } = await setup(['Москва', 'Тверь'])
+
+		const event = press(key)
+
+		expect(owner.open).toBe(true)
+		expect(event.defaultPrevented).toBe(true)
+	})
+
+	it.each(CLOSED_KEYS)(
+		'%s с кнопки не открывает закрытую панель и не отменяется',
+		async (_name, key) => {
+			const { owner, root } = await setup(['Москва', 'Тверь'])
+
+			const event = keydown(buttonIn(root), key)
+
+			expect(owner.open).toBe(false)
+			expect(event.defaultPrevented).toBe(false)
+		},
+	)
+
+	it.each([
+		['Enter', 'Enter'],
+		['пробел', ' '],
+	] as const)(
+		'%s с кнопки при открытой панели не выбирает подсвеченное и не закрывает',
+		async (_name, key) => {
+			const { owner, keyboard, press, root, items } = await setup(['Москва', 'Тверь'])
+
+			// Открыть и подсветить — с поля
+			press('ArrowDown')
+			expect(keyboard.highlightedUid).toBe(items[0].uid)
+
+			const event = keydown(buttonIn(root), key)
+
+			expect(owner.value).toBeUndefined()
+			expect(owner.open).toBe(true)
+			expect(event.defaultPrevented).toBe(false)
+		},
+	)
+
+	/** Проверка стоит до выбора стратегии: режим `editable` правила не меняет. */
+	it('в editable Enter с кнопки тоже не открывает панель', async () => {
+		const { owner, root } = await setup(['Москва'], { editable: true })
+
+		const event = keydown(buttonIn(root), 'Enter')
+
+		expect(owner.open).toBe(false)
+		expect(event.defaultPrevented).toBe(false)
 	})
 })

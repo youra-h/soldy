@@ -7,12 +7,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TInput } from '@soldy/core'
-import type { IInputProps, TInputEvents } from '@soldy/core'
 import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
 export const InputDescriptor = defineDescriptor(() =>
-	defineComponent<IInputProps, TInputEvents>()({
+	defineComponent({
 		ctor: TInput,
 
 		extends: InputControlDescriptor(),
@@ -23,6 +22,6 @@ export const InputDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [InputControlPluginDescriptor(), InputPluginDescriptor()],
+		plugins: [InputControlPluginDescriptor, InputPluginDescriptor],
 	}),
 )

@@ -3,18 +3,26 @@
  *
  *   usePlugins(TButton, [TTimerPlugin])                    // кнопки пользователя
  *   usePlugins(TButton, [TRipplePlugin], { scope: 'all' }) // и вложенные тоже
+ *   usePlugins(TButton, [AnchorPluginDescriptor])          // определением — см. ниже
  *
  * Кому достаётся регистрация — тип, `scope` и признак `embedded`, — решает
  * общий список регистраций (`registrations.ts`).
  *
  * Плагины регистрации ставятся после плагинов дескриптора, в порядке
- * регистрации, до `bundle:create` (`assemble/bundle.ts`). Внешний плагин
+ * регистрации, до `bundle:create` (`TOwnBundle`). Внешний плагин
  * только добавляет — заменить плагин из состава компонента он не может.
  *
  * Поверхность компонента реестр не меняет. Пропсы и события внешнего плагина —
  * по его контракту (`definePlugin`), через `pluginProps` и `plugin:event`
  * (AGENTS.md, «Внешний плагин: пропсы — `pluginProps`, события — `plugin:event`»). Настраивается
  * он и опциями регистрации.
+ *
+ * **Плагин с объявленным контрактом ставьте определением, а не классом.**
+ * Контракт записывает вызов `definePlugin` при импорте модуля определения, а
+ * пакет объявлен `sideEffects: false`: модуль, из которого ничего не взяли,
+ * сборщик выбрасывает — вместе с записью контракта. Поставленный по классу,
+ * такой плагин работал бы, но `pluginProps` до него молча не доходили бы, и
+ * только в продакшен-сборке. Импорт определения держит модуль в бандле.
  */
 
 import type { IPluginConstructor } from '@soldy/plugins'
@@ -36,7 +44,10 @@ export function usePlugins(
 ): () => void {
 	return registrations.add(
 		type,
-		plugins.map((plugin) => ('ctor' in plugin ? plugin : { ctor: plugin })),
+		// Из определения берутся только класс и опции: контракт остаётся свойством класса
+		plugins.map((plugin) =>
+			'ctor' in plugin ? { ctor: plugin.ctor, options: plugin.options } : { ctor: plugin },
+		),
 		options,
 	)
 }

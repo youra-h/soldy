@@ -18,5 +18,5 @@ export function setupTextable(
 ): TBinding<ITextable> {
 	const adapter = createAdapterContext(TextableDescriptor(), { ctrl, props })
 
-	return useAdapter<ITextable>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

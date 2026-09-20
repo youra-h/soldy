@@ -1,38 +1,41 @@
 /**
- * normalizeContribution — contribution в декларации {props, events, slots}.
+ * normalizeContribution — contribution в описания: пропсы (`TPropSpec`), события (`TName`) и слоты.
  *
- * Строки конвертируются в TName; namespace применяется к каждому имени пропа,
- * триггера и события. Слоты namespace не получают: они принадлежат компоненту, а не плагину.
- * У плагинов слотов нет вовсе — плагин не рендерит.
+ * Неймспейс применяется к каждому имени пропа, триггера и события. Слоты
+ * неймспейса не получают: они принадлежат компоненту, а у плагинов слотов нет
+ * вовсе — плагин не рендерит.
+ *
+ * Умолчаний у описаний здесь ещё нет: умолчание принадлежит классу владельца, и
+ * приставляет его тот, кто класс знает, — дескриптор (`TPropSpec.rebase`) или
+ * определение плагина.
  */
 
-import {
-	TName,
-	type IContribution,
-	type IPropDeclaration,
-	type ISlotDeclaration,
-} from '@soldy/accessor'
+import type { IContribution } from './contribution.types'
+import { TName } from './name.class'
+import { TPropSpec } from './prop-spec.class'
+import { TSlotDeclaration } from './slot-declaration.class'
 
 export function normalizeContribution(
 	contribution?: IContribution,
 	namespace?: string,
-): { props: IPropDeclaration[]; events: TName[]; slots: ISlotDeclaration[] } {
+): { props: TPropSpec[]; events: TName[]; slots: TSlotDeclaration[] } {
 	if (!contribution) return { props: [], events: [], slots: [] }
 
 	return {
-		props: Object.entries(contribution.props ?? {}).map(([name, def]) => ({
-			name: new TName(name, namespace),
-			type: def.type,
-			protected: !!def.protected,
-			triggers: (def.triggers ?? []).map((t) => new TName(t, namespace)),
-			get: def.get,
-			set: def.set,
-		})),
-		events: (contribution.events ?? []).map((e) => new TName(e, namespace)),
-		slots: Object.entries(contribution.slots ?? {}).map(([name, def]) => ({
-			name,
-			scope: def.scope,
-			description: def.description,
-		})),
+		props: Object.entries(contribution.props ?? {}).map(
+			([name, definition]) =>
+				new TPropSpec(
+					new TName(name, namespace),
+					Object.freeze(
+						(definition.triggers ?? []).map((trigger) => new TName(trigger, namespace)),
+					),
+					definition,
+				),
+		),
+		events: (contribution.events ?? []).map((event) => new TName(event, namespace)),
+		slots: Object.entries(contribution.slots ?? {}).map(
+			([name, definition]) =>
+				new TSlotDeclaration(name, definition.scope, definition.description),
+		),
 	}
 }

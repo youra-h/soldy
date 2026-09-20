@@ -30,6 +30,7 @@ import {
 	TListBox,
 	TListBoxCollectionFacade,
 	TSelect,
+	TSelectCollectionFacade,
 	TAccordion,
 } from '../src'
 
@@ -215,6 +216,47 @@ describe('догон накопленного при привязке', () => {
 		const facade = new TListBoxCollectionFacade({}, { owner, engine })
 
 		expect(facade.selected.map((item) => item.value)).toEqual(['a'])
+	})
+
+	/**
+	 * У Select выбор складывается раньше, чем `select` подписывается на
+	 * `change:selection`: `_.selected` применяет `selection` при установке,
+	 * `value` из пропа — расширение `value`, стоящее раньше `select`. Текст
+	 * выбранного и `aria-selected` `select` догоняет сам, иначе поле пусто, а
+	 * опции без `aria-selected` до следующей смены выбора.
+	 */
+	it('_.selected у Select доезжает до поля и до aria-selected опций', () => {
+		const engine = createEngine({
+			items: [
+				{ value: 'a', text: 'A', _: { selected: true } },
+				{ value: 'b', text: 'B' },
+			],
+		})
+
+		const owner = new TSelect()
+		const facade = new TSelectCollectionFacade({}, { owner, engine })
+
+		expect(owner.field.value).toBe('A')
+		expect(facade.engine.extensions.select.text).toBe('A')
+		expect(facade.items.map((item) => item.aria.get('aria-selected'))).toEqual([
+			'true',
+			'false',
+		])
+	})
+
+	it('value Select доезжает до поля, когда опции пришли с движком', () => {
+		const engine = createEngine({
+			items: [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B' },
+			],
+		})
+
+		const owner = new TSelect({ value: 'b' })
+
+		new TSelectCollectionFacade({}, { owner, engine })
+
+		expect(owner.field.value).toBe('B')
 	})
 })
 

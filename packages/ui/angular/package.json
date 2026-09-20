@@ -28,13 +28,12 @@
   },
   "scripts": {
     "generate": "tsx src/codegen/generate.ts",
-    "test": "vitest run --passWithNoTests"
+    "test": "ng test --no-watch"
   },
   "dependencies": {
     "@angular/compiler": "^22.1.5",
     "@angular/core": "^22.1.5",
     "@angular/platform-browser": "^22.1.5",
-    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons-material": "*",
     "@soldy/plugins": "*",

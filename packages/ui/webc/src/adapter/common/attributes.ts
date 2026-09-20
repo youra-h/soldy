@@ -6,7 +6,7 @@
  * адаптеров: там props приходят уже типизированными.
  */
 
-import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy/setup'
 import { WebcProfile } from './profile'
 
 export interface IAttributeBinding {
@@ -36,7 +36,9 @@ export function buildAttributeMap(
 ): Map<string, IAttributeBinding> {
 	const map = new Map<string, IAttributeBinding>()
 
-	for (const [prop, { type }] of Object.entries(surfaceOf(descriptor, WebcProfile).exportProps)) {
+	for (const [prop, { type }] of Object.entries(
+		TSurface.of(descriptor, WebcProfile).exportProps,
+	)) {
 		map.set(toAttributeName(prop), {
 			prop,
 			type,

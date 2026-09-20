@@ -5,7 +5,7 @@
  * не имеет сайд-эффектов и не тянет реактивный runtime.
  */
 
-import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy/setup'
 import { VueProfile } from '../common'
 
 /**
@@ -14,5 +14,5 @@ import { VueProfile } from '../common'
  * необъявленное событие.
  */
 export function useEmits(descriptor: IComponentDescriptor): string[] {
-	return [...surfaceOf(descriptor, VueProfile).exportEvents]
+	return [...TSurface.of(descriptor, VueProfile).exportEvents]
 }

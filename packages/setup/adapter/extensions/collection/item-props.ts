@@ -2,7 +2,7 @@
  * Входные пропсы элемента коллекции, объявленные его дескриптором, — для `meta` движка.
  */
 
-import type { IPropDeclaration } from '@soldy/accessor'
+import type { TPropSpec } from '../../../define'
 
 /**
  * Собрать значения входных (не protected) пропсов, объявленных в `decls`,
@@ -13,7 +13,7 @@ import type { IPropDeclaration } from '@soldy/accessor'
  * кладёт их в `meta` движка, где состав элемента и живёт.
  */
 export function collectItemProps(
-	decls: readonly IPropDeclaration[],
+	decls: readonly TPropSpec[],
 	props: object,
 ): Record<string, unknown> {
 	const result: Record<string, unknown> = {}

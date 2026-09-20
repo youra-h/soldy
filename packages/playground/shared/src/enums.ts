@@ -5,6 +5,7 @@ import type {
 	TComponentVariant,
 	TButtonView,
 	TCheckBoxView,
+	TLabelPosition,
 	TRadioGroupView,
 	TAccordionArrowPlacement,
 	TListContentFit,
@@ -21,6 +22,8 @@ import type {
 	TSelectionMode,
 	TSelectEditableMode,
 	TSelectPlacement,
+	TTagsOverflow,
+	TPopoverPlacement,
 } from '@soldy/core'
 import type { TFramePlacement } from '@soldy/plugins'
 
@@ -86,7 +89,10 @@ export const COMPONENT_VARIANTS = enumOf<TComponentVariant>()([
  */
 export const BUTTON_VIEWS = enumOf<TButtonView>()(['filled', 'plain', 'outlined', 'none'])
 
-export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['plain'])
+export const CHECK_BOX_VIEWS = enumOf<TCheckBoxView>()(['outlined', 'filled', 'plain'])
+
+/** С какой стороны от контрола стоит текст подписи. */
+export const LABEL_POSITIONS = enumOf<TLabelPosition>()(['start', 'end', 'top', 'bottom'])
 
 /** Чем отмечено выбранное радио: точкой внутри кольца или утолщённым кольцом. */
 export const RADIO_GROUP_VIEWS = enumOf<TRadioGroupView>()(['dot', 'ring'])
@@ -111,6 +117,9 @@ export const TABS_POSITIONS = enumOf<TTabsPosition>()(['start', 'end'])
 
 export const TABS_VIEWS = enumOf<TTabsView>()(['line', 'contained', 'outline'])
 
+/** Что делать с тегами, которым не хватило ширины ряда. */
+export const TAGS_OVERFLOWS = enumOf<TTagsOverflow>()(['wrap', 'scroll', 'popover'])
+
 export const FRAME_POSITIONS = enumOf<TFramePosition>()(['fixed', 'absolute'])
 
 export const DIRECTIONS = enumOf<TDirection>()(['ltr', 'rtl', 'inherit'])
@@ -126,6 +135,17 @@ export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'sea
 export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bottom'])
 
 /**
+ * Сторона и выравнивание панели Popover у триггера. Значения те же, что у
+ * `anchor_placement`, но тип свой — ядра: проп принадлежит поповеру.
+ */
+export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
+	'bottom-start',
+	'bottom-end',
+	'top-start',
+	'top-end',
+])
+
+/**
  * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не
  * ядро, а `TAnchorPlugin`: проп принадлежит плагину.
  */
@@ -136,5 +156,9 @@ export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
 	'top-end',
 ])
 
-/** Теги, которыми осмысленно подменять корень компонента через `tag`. */
-export const HTML_TAGS = ['div', 'span', 'button', 'a', 'section', 'li'] as const
+/**
+ * Теги, которыми осмысленно подменять корень компонента через `tag`. `label` —
+ * умолчание корня подписи Label: без него строка `tag` на её странице не
+ * нашла бы умолчания среди значений.
+ */
+export const HTML_TAGS = ['div', 'span', 'label', 'button', 'a', 'section', 'li'] as const

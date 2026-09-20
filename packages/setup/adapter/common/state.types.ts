@@ -2,11 +2,13 @@
  * Состояние адаптера в типах: свойства инстанса и выходы плагинов так, как их видит разметка.
  */
 
+import type { IComponentContract } from '../../define'
+
 /**
  * Значение свойства инстанса так, как его видит разметка.
  *
  * Составной объект со своим `valueOf()` отдаёт снимок (`TClasses` → `string[]`,
- * `TAria` → набор атрибутов) — ровно так значение читает `TAccessor.getValue`.
+ * `TAria` → набор атрибутов) — ровно так значение читает `TProperty.value`.
  * У объекта без своего `valueOf` (унаследованный вернул бы сам объект) снимка
  * нет, остаётся тип свойства. Примитивы не трогаются, чтобы не расширять
  * литеральные типы вроде `'ltr' | 'rtl'`.
@@ -36,8 +38,8 @@ export type TInstanceState<TInstance> = {
  * Выход — защищённый проп плагина (`dismiss_ownerAttribute`, `layout_styles`),
  * то есть геттер плагина, как свойство инстанса — геттер инстанса. Поэтому и
  * вид у него тот же: снимок `valueOf()`, только чтение, необязательный ключ.
- * Тип выходов выводит дескриптор (`DescriptorPluginOutputs`), до адаптера он
- * доходит через контекст (`IAdapterContext<TInstance, TOutputs>`).
+ * И инстанс, и выходы — из контракта дескриптора; до адаптера он доходит типом
+ * контекста (`IAdapterContext<C>`).
  */
-export type TAdapterState<TInstance, TOutputs extends object = object> = TInstanceState<TInstance> &
-	TInstanceState<TOutputs>
+export type TAdapterState<C extends IComponentContract> = TInstanceState<C['instance']> &
+	TInstanceState<C['plugins']['outputs']>

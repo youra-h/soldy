@@ -1,3 +1,10 @@
+/**
+ * Дескриптор Entity — корень цепочки: пропсы и события адаптера у всех компонентов.
+ *
+ * Класса ядра у него нет: `ctrl`, `embedded`, `pluginProps`, `bundle:create` и
+ * `plugin:event` принадлежат связке адаптера с инстансом, а не самому инстансу.
+ */
+
 import { defineComponent, defineDescriptor } from '../../define'
 
 export const EntityDescriptor = defineDescriptor(() =>
@@ -16,8 +23,8 @@ export const EntityDescriptor = defineDescriptor(() =>
 		 * `{ timer_ms: 500 }` и их события одним конвертом `{ name, args }`.
 		 * Объявлены здесь, у всех компонентов: статический слой адаптеров знает их
 		 * заранее, а контракт внешнего плагина — только в рантайме
-		 * (`pluginContractOf`). Проп адаптера: в инстанс не пишется, разбирает его
-		 * контекст.
+		 * (`pluginContractOf`). Проп адаптера: в инстанс не пишется, разбирают его
+		 * плагины монтирования (`TExternalPlugins`).
 		 */
 		contribution: {
 			props: {

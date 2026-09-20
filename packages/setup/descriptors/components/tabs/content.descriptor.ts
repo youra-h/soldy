@@ -8,20 +8,11 @@
 
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsContent, TTabsContentCollectionFacade } from '@soldy/core'
-import type { ITabsContentProps, TTabsContentEvents } from '@soldy/core'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
 import { TabsContentWarnPluginDescriptor } from '../../plugins'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Панель таба. Слот один — содержимое; частей у неё нет.
- */
-export type TTabsContentSlots = {
-	default: TEmptySlotScope
-}
 
 export const TabsContentDescriptor = defineDescriptor(() =>
-	defineComponent<ITabsContentProps, TTabsContentEvents, TTabsContentSlots>()({
+	defineComponent({
 		ctor: TTabsContent,
 
 		extends: ComponentViewDescriptor(),
@@ -36,7 +27,7 @@ export const TabsContentDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [TabsContentWarnPluginDescriptor()],
+		plugins: [TabsContentWarnPluginDescriptor],
 	}),
 )
 

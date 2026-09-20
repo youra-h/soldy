@@ -1,15 +1,13 @@
 import { TCollectionExtension, TagsDescriptor, TagsCollectionDescriptor } from '@soldy/setup'
-import { TTagsCollectionFacade } from '@soldy/core'
-import type { ITagsCollectionProps } from '@soldy/core'
 import {
 	useAdapter,
 	useCollectionAdapter,
 	VueElevatorFactory,
+	useIcon,
 	createVueAdapterContext,
 	type SetupContext,
 } from '../../adapter'
 import BaseTags, { type TagsProps } from './base.component'
-import { type ITagsComponentProps, type ITags } from '@soldy/core'
 
 export default {
 	name: '_Tags',
@@ -20,7 +18,7 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter<ITagsComponentProps, ITags>(adapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			TagsCollectionDescriptor(),
@@ -34,12 +32,8 @@ export default {
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<ITagsCollectionProps, TTagsCollectionFacade>(
-			collectionAdapter,
-			props,
-			emit,
-		)
+		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection }
+		return { ...refs, ...refsCollection, moreIconTag: useIcon('moreHoriz') }
 	},
 }

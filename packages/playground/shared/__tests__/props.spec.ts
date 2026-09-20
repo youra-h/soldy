@@ -3,13 +3,13 @@
  *
  * Раньше стенд снимал карту `ctor.defaultValues` с компонентного дескриптора и
  * подставлял её по имени — и той же картой накрывал пропы фасада коллекции, у
- * которого свой класс. Поле `IPropDeclaration.default` сделало второй путь
+ * которого свой класс. Поле `TPropSpec.default` сделало второй путь
  * лишним, а проверка ниже держит выбранную семантику: значим ключ, а не
  * значение, иначе объявленное `undefined` молча стало бы «умолчания нет».
  */
 
 import { describe, it, expect } from 'vitest'
-import { TName, type IPropDeclaration } from '@soldy/accessor'
+import { TName, TPropSpec } from '@soldy/setup'
 import { TAnchorPlugin } from '@soldy/plugins'
 import { ButtonDescriptor } from '@soldy/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
@@ -17,8 +17,11 @@ import { propControl, propControls } from '../src/props'
 import { findComponent } from '../src/registry'
 
 /** Проп `button`, которого нет ни в списках значений, ни в пресетах. */
-function declaration(rest: Partial<IPropDeclaration> = {}): IPropDeclaration {
-	return { name: new TName('text'), type: String, ...rest }
+function declaration(rest: { default?: unknown } = {}): TPropSpec {
+	// Умолчание принадлежит классу владельца: описание берёт его из `defaultValues`, и значим ключ
+	const defaults = 'default' in rest ? { text: rest.default } : undefined
+
+	return new TPropSpec(new TName('text'), [], { type: String }, defaults)
 }
 
 describe('propControl: умолчание', () => {

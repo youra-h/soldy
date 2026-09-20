@@ -3,13 +3,17 @@
 $row: ':not(.s-tabs-item__close)';
 
 // Миксин для view="line"
-// $color       — название цвета (sky, emerald, rose, amber, neutral)
-// $text    — индекс цвета текста при hover/active (как текст вида `outlined` у Button)
-// $border  — индекс цвета линии под списком (как рамка вида `outlined` у Button)
-//                indicator = border + 400 (как рамка вида `outlined` у Button при наведении)
-@mixin tabs-line-variant($color, $text: 800, $border: 200) {
-	$indicator: $border + 400;
-
+// $color     — семейство цвета (neutral, accent, positive, negative, caution)
+// $text      — ступень текста при наведении и у активного таба (как текст
+//              вида `outlined` у Button)
+// $border    — ступень линии под списком: 300, та же пара, что у рамки
+//              `outlined` у Button и у границы поля. Ступень 200 — роль
+//              поверхности, а не границы, и в тёмной схеме она равна
+//              `--s-component-surface`: линия пропадала на панели.
+// $indicator — ступень полосы под активным табом. Отдельным умолчанием, а не
+//              арифметикой от рамки: это насыщенная заливка, у неё своё место
+//              на шкале, и от ступени линии она не зависит.
+@mixin tabs-line-variant($color, $text: 800, $border: 300, $indicator: 600) {
 	// Цвет разделительной линии и индикатора
 	.s-tabs__list {
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
@@ -60,7 +64,13 @@ $row: ':not(.s-tabs-item__close)';
 // Неактивные: серый фон, бордер со всех сторон.
 // Активная: белый фон, бордер только сверху/слева/справа (нет снизу).
 // Только цвет бордера и текста зависят от варианта.
-@mixin tabs-outline-variant($color, $text: 800, $border: 200) {
+// $color  — семейство цвета (neutral, accent, positive, negative, caution)
+// $text   — ступень текста при наведении и у активного таба
+// $border — ступень рамки таба и линии списка (`::before`/`::after`): 300 —
+//           роль «слабая граница», та же пара, что у рамки `outlined` у
+//           Button. На ступени 200 (роль поверхности) рамка в тёмной схеме
+//           совпадала с `--s-component-surface`, и вид пропадал на панели.
+@mixin tabs-outline-variant($color, $text: 800, $border: 300) {
 	.s-tabs__list {
 		&::before,
 		&::after {

@@ -1,75 +1,34 @@
 /**
- * Декларации дескриптора из родителя и опций: ctor, props, events, слоты, плагины.
+ * inheritDeclarations — свои объявления поверх родительских, одним правилом на все категории.
  *
- * Наследник получает всё, что объявил `extends`, и добавляет своё. Перекрытие у
- * каждой части своё: плагин того же класса и слот того же имени встают на место
- * родительских, умолчания пропов пересчитываются от итогового `ctor`.
+ * Правило: объявление с тем же ключом ложится на родительское и остаётся на
+ * его месте, остальные встают следом. `Map.set` позицию ключа не меняет, и
+ * порядок объявлений публичен — его хранят сгенерированные метаданные Angular.
+ *
+ * Что значит «поверх», решает само объявление (`IDeclaration.inheritFrom`), а
+ * не эта функция: проп переобъявляет написанные факты, слот и плагин встают
+ * целиком. Поэтому здесь нет ни ветки на категорию, ни функции извлечения
+ * ключа, а новая категория объявлений приносит своё правило с собой.
+ *
+ * Двух объявлений с одним ключом на выходе не бывает — по ключу их ровно одно.
+ * Столкновение разных источников (проп компонента и проп плагина) этим не
+ * прячется: у них разные списки, и сводит их дескриптор (`getProps`), сообщая
+ * о дубле.
  */
 
-import type { IPropDeclaration, ISlotDeclaration } from '@soldy/accessor'
-import type {
-	IComponentDescriptor,
-	IPluginDefinition,
-	TComponentCtor,
-	TDefinitionOptions,
-} from './types'
-import { normalizeContribution } from './contribution'
-import { withClassDefault } from './defaults'
+import type { IDeclaration } from './types'
 
-/** Плагины по классу: повторный класс заменяет определение, оставаясь на месте первого. */
-function createPluginCollector() {
-	const map = new Map<IPluginDefinition['ctor'], IPluginDefinition>()
+export function inheritDeclarations<T extends IDeclaration<T>>(
+	parent: readonly T[],
+	own: readonly T[],
+): T[] {
+	const byKey = new Map<unknown, T>()
 
-	return {
-		add(plugins: readonly IPluginDefinition[]): void {
-			for (const p of plugins) map.set(p.ctor, p)
-		},
-		toArray(): IPluginDefinition[] {
-			return [...map.values()]
-		},
+	for (const declaration of [...parent, ...own]) {
+		const base = byKey.get(declaration.key)
+
+		byKey.set(declaration.key, base ? declaration.inheritFrom(base) : declaration)
 	}
-}
 
-/** Слоты наследника перекрывают одноимённые родительские, порядок сохраняется. */
-function mergeSlots(
-	parent: readonly ISlotDeclaration[],
-	own: readonly ISlotDeclaration[],
-): ISlotDeclaration[] {
-	const map = new Map<string, ISlotDeclaration>()
-
-	for (const slot of [...parent, ...own]) map.set(slot.name, slot)
-
-	return [...map.values()]
-}
-
-export function inheritDeclarations(
-	options: TDefinitionOptions,
-): Pick<IComponentDescriptor, 'ctor' | 'props' | 'events' | 'slots' | 'plugins'> {
-	const parent = options.extends
-	const ctor: TComponentCtor = options.ctor ?? parent?.ctor ?? Object
-
-	const collector = createPluginCollector()
-
-	collector.add(parent?.plugins ?? [])
-	collector.add(options.plugins ?? [])
-
-	const plugins = collector.toArray()
-
-	const own = normalizeContribution(options.contribution)
-
-	// Статические props/events: свои + наследуемые (без плагинов — они в plugins[],
-	// умолчания им уже дал definePlugin). Умолчание — от итогового ctor и
-	// пересчётом, а не копией родительского: наследник вправе поменять значение
-	// (у Frame `visible: false`, у ComponentView — `true`).
-	const props: IPropDeclaration[] = [...(parent?.props ?? []), ...own.props].map((prop) =>
-		withClassDefault(prop, ctor.defaultValues),
-	)
-
-	const events = [...(parent?.events ?? []), ...own.events]
-
-	// Слоты наследуются с перекрытием по имени: наследник вправе уточнить scope
-	// (например, ListBoxItem добавляет `selected` к слоту, объявленному выше).
-	const slots: ISlotDeclaration[] = mergeSlots(parent?.slots ?? [], own.slots)
-
-	return { ctor, props, events, slots, plugins }
+	return [...byKey.values()]
 }

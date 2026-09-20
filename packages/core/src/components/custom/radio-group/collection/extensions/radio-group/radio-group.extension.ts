@@ -5,6 +5,7 @@ import type {
 	IExtensionContext,
 } from '../../../../../base/collection'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { IRadioGroupItem } from '../../../item/types'
 import type { IRadioGroup, TRadioGroupValue, TRadioGroupView } from '../../../types'
@@ -13,11 +14,13 @@ import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './
 /**
  * TRadioGroupExtension — то, что радио знает благодаря своей группе.
  *
- * **Свойства группы на радио.** `size`, `variant`, `view` и общий `name`
- * группа раздаёт каждому радио — при добавлении, догоном и на смену своего
- * значения. `disabled` не раздаётся, а сочетается: радио выключено, если
- * выключено само или выключена группа (`bindDisabledToOwner`). Тема читает
- * модификаторы с корня радио, потому что у контейнера группы стилей нет.
+ * **Свойства группы на радио.** `view` и общий `name` группа раздаёт каждому
+ * радио — при добавлении, догоном и на смену своего значения. `size` и
+ * `variant` она диктует резольвером (`bindStyleToOwner`): своё значение радио
+ * остаётся в `rawValue` и на вид не влияет. `disabled` не диктуется, а
+ * сочетается: радио выключено, если выключено само или выключена группа
+ * (`bindDisabledToOwner`). Тема читает модификаторы с корня радио, потому что
+ * у контейнера группы стилей нет.
  *
  * **Связь `value` ⇄ активное радио.** Коллекция хранит отмеченное радио
  * **элементом**, наружу нужен ответ в **значении**. Держится по образцу
@@ -85,18 +88,16 @@ export class TRadioGroupExtension<
 		// Итог `disabled` радио отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// `size` и `variant` радио тоже отдаёт резольвер — сообщаем прежний итог,
+		// по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -147,11 +148,16 @@ export class TRadioGroupExtension<
 		return this._ctx.extensions.activation as IActivationExtension<TItem> | undefined
 	}
 
-	/** Свойства группы, которые радио получает от неё, а не задаёт само. */
+	/**
+	 * Свойства группы, которые радио получает от неё, а не задаёт само.
+	 *
+	 * `size` и `variant` расширение не пишет: их диктует группа резольвером
+	 * (`bindStyleToOwner`), как и `disabled` радио сочетает со своим
+	 * (`bindDisabledToOwner`).
+	 */
 	private _applyOwner(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 		item.view = this._owner.view
 		item.name = this.groupName
 	}

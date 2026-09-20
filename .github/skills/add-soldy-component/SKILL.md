@@ -15,10 +15,10 @@ Adds a new headless UI component across the soldy layers: core model → contrib
 
 ## Ground Rules
 
-- `core`, `accessor`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
+- `core`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
 - Naming: `T` prefix for shared/generic type aliases, `I` prefix for interfaces. Concrete component types (`<Name>Props`, `<Name>EventProps`) have **no** `T` prefix.
 - Descriptors are **factories wrapped in `defineDescriptor`** (call them, don't pass the reference); the contract is declared inline in `contribution`.
-- The descriptor is the **single source of truth** for props/events types — it must be typed with the curried `defineComponent<TProps, TEvents>()({...})` form so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props`. A component with slots passes the slots mirror type as the third argument: `defineComponent<TProps, TEvents, TSlots>()` (`TSlots` defaults to `object`).
+- The descriptor is the **single source of truth** for props/events/slots types, and none of them is written by hand: `defineComponent({...})` takes no type arguments. Props and events are inferred from the core class (`ctor`), so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props` — the `TProps` of `T<Name>`; slots are inferred from the `slots` declaration.
 
 ## Procedure
 
@@ -39,16 +39,15 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
 
 ### 2. Descriptor — `packages/setup/descriptors/components/<name>.descriptor.ts`
 
-One file per component: inheritance, the public contract (props, events, slots) and plugins. The contract is declared inline in `contribution` — there are no separate contribution files. Wrap the factory in `defineDescriptor` (the descriptor is built once) and always use the **typed curried form** so framework adapters can infer `I<Name>Props` / `T<Name>Events` from the descriptor:
+One file per component: inheritance, the public contract (props, events, slots) and plugins. The contract is declared inline in `contribution` — there are no separate contribution files. Wrap the factory in `defineDescriptor` (the descriptor is built once). The types come from `ctor`: framework adapters infer `I<Name>Props` / `T<Name>Events` from the descriptor, and no type arguments are passed:
 
 ```ts
-import { defineComponent, defineDescriptor, defineType } from '../../define'
+import { defineComponent, defineDescriptor } from '../../define'
 import { T<Name> } from '@soldy/core'
-import type { I<Name>Props, T<Name>Events } from '@soldy/core'
 import { <Base>Descriptor } from './<base>.descriptor'
 
 export const <Name>Descriptor = defineDescriptor(() =>
-  defineComponent<I<Name>Props, T<Name>Events>()({
+  defineComponent({
     ctor: T<Name>,
     extends: <Base>Descriptor(),
     contribution: {
@@ -60,11 +59,11 @@ export const <Name>Descriptor = defineDescriptor(() =>
 )
 ```
 
-The `props` key is the prop name. Use `defineType<T>(ctor)` for phantom-typed props — it is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`.
+The `props` key is the prop name, and `type` is only the runtime constructor (`String`, `Boolean`, `[String, Object]`): the value type comes from `I<Name>Props`, so a prop never takes `defineType` — Vue would check the wrapper as `Object`.
 
-Slots are declared in the same `contribution` under `slots`, with a mirror type `T<Name>Slots` in the same file (`TButtonSlots` in `button.descriptor.ts`) — see AGENTS.md, «Слоты — третья категория контракта». Export the slot type from the descriptors barrel next to the descriptor.
+Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
 
-> Generic base layers (`IValueControlProps<T>`, `IInputControlProps<T>`) need an explicit instantiation at the descriptor: `defineComponent<IValueControlProps<any>, TValueControlEvents<any>>()({...})` and `defineComponent<IInputControlProps, TInputControlEvents>()({...})` (default `string`).
+> A generic core class gets its type parameters' constraints, not their defaults: `ValueControlDescriptor` has `IValueControlProps<unknown>`, `InputControlDescriptor` — `IInputControlProps<unknown>`. A concrete component fixes the value type in its own class (`TInput extends TInputControl<string, …>`), and its descriptor gets exactly that.
 
 ### 3. Vue adapter — `packages/ui/vue/src/components/<name>/`
 

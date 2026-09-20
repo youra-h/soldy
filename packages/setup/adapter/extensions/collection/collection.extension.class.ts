@@ -11,13 +11,13 @@
 import type { TCollectionEngine } from '@soldy/core'
 import { TCollectionBundlesPlugin } from '@soldy/plugins'
 import { applyRegisteredExtensions } from '../../../registry'
-import type { IAdapterContext } from '../../context'
+import type { TInstanceContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import type { ICollectionExtensionOptions, TCollectionOwner } from './types'
 
 export class TCollectionExtension {
-	constructor(context: IAdapterContext<TCollectionOwner>, options: ICollectionExtensionOptions) {
+	constructor(context: TInstanceContext<TCollectionOwner>, options: ICollectionExtensionOptions) {
 		const { elevator } = options
 
 		// Фасад-режим: инстанс сам владеет коллекцией (context.instance — фасад).
@@ -39,7 +39,7 @@ export class TCollectionExtension {
 	 * @param engine Коллекция, которую необходимо настроить.
 	 */
 	private _wire(
-		context: IAdapterContext<TCollectionOwner>,
+		context: TInstanceContext<TCollectionOwner>,
 		elevator: TElevatorFactory,
 		engine: TCollectionEngine<any, any>,
 	): void {

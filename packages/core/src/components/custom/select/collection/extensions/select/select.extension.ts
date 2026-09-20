@@ -7,6 +7,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -26,9 +27,10 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  *    `aria-controls` в `owner.field.aria` и `id` списка, на
  *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
  *    разойдутся.
- * 2. **Проброс `size`/`variant`** с поля на опции — как у ListBox. `disabled`
- *    не пробрасывается, а сочетается: опция выключена, если выключена сама
- *    или выключено поле (`bindDisabledToOwner`).
+ * 2. **Размер и вид** опции диктует Select (`bindStyleToOwner`) — как у
+ *    ListBox: своё значение опции остаётся в `rawValue` и на вид не влияет.
+ *    `disabled` не диктуется, а сочетается: опция выключена, если выключена
+ *    сама или выключено поле (`bindDisabledToOwner`).
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
  * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
@@ -46,12 +48,12 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  * - **выбор пользователя** (`chooseItem`, `clear`) пишет поле всегда, что бы в
  *   нём ни было набрано, и сообщает о себе событием `choose` — по нему
  *   `TEditablePlugin` сбрасывает набранное и отбор;
- * - **всё остальное** — смена `value`, состава, переименование выбранной
- *   опции, снятие выбора закрытием тега или `Backspace` — пересчитывает
- *   `text`, а поле трогает, только пока оно показывает текст выбранного. Не
- *   показывает — значит, в поле печатают, и набранное доживает до выбора или
- *   возврата: при серверном поиске приложение меняет список прямо во время
- *   ввода.
+ * - **всё остальное** — смена `value`, состава и режима выбора,
+ *   переименование выбранной опции, снятие выбора закрытием тега или
+ *   `Backspace` — пересчитывает `text` или формулу поля, а поле трогает,
+ *   только пока оно показывает текст выбранного. Не показывает — значит, в
+ *   поле печатают, и набранное доживает до выбора или возврата: при серверном
+ *   поиске приложение меняет список прямо во время ввода.
  *
  * Признак набора — само поле, а не флаг «печатают» и не копия записанного:
  * это был бы второй путь к тем же данным. Цена — набранное, совпавшее с
@@ -162,18 +164,16 @@ export class TSelectExtension<
 		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
+		// по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -192,6 +192,7 @@ export class TSelectExtension<
 
 		if (selection) {
 			selection.events.on('change:selection', () => this._onSelectionChanged())
+			selection.events.on('change:mode', () => this._onModeChanged())
 
 			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
 			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
@@ -205,7 +206,13 @@ export class TSelectExtension<
 		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
 		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
-		this._syncFieldPlaceholder()
+		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
+		// движка, собранного снаружи, применяет `selection` при установке, а
+		// `value` из пропа — расширение `value`, которое в
+		// `SELECT_OWNER_EXTENSIONS` стоит раньше нас. Их `change:selection` до
+		// нас не дошёл, поэтому `aria-selected`, текст выбранного и плейсхолдер
+		// считаем по текущему выбору тем же обработчиком
+		this._onSelectionChanged()
 		this._writeField()
 	}
 
@@ -268,8 +275,7 @@ export class TSelectExtension<
 
 	private _onItemAdded(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 
 		this._applyContentFit(item)
 		this._applyIndicator(item)
@@ -352,12 +358,33 @@ export class TSelectExtension<
 	 * Поле здесь пишется мягко (`_syncText`): `change:selection` приходит на
 	 * любое изменение выбора, а не только на выбор пользователя. Он же
 	 * обработчик `item:removed` — удалённую опцию `TSelectionExtension`
-	 * снимает с выбора молча.
+	 * снимает с выбора молча — и догон выбора, сделанного до `install`.
 	 */
 	private _onSelectionChanged(): void {
 		this._syncSelectedAria()
 		this._syncText()
 		this._syncFieldPlaceholder()
+	}
+
+	/**
+	 * Режим выбора сменился — вместе с ним формула поля: в `multiple` оно пусто,
+	 * в остальных режимах показывает `text`. `single -> multiple` выбор не
+	 * трогает, и `change:selection` не приходит, поэтому без этой подписки в
+	 * поле оставался текст выбранного рядом с его тегом, а мягкая запись
+	 * принимала его за набранный.
+	 *
+	 * Смена режима — не выбор пользователя, и поле пишется мягко: только если
+	 * показывало формулу прежнего режима. `_syncText` не годится — его
+	 * `_fieldText()` читает уже новый режим. Прежняя формула к этому событию
+	 * всегда равна `text`: из `single` и `none` это сам `text`, а из
+	 * `multiple` `TSelectionExtension.mode` выходит, сняв выбор до
+	 * `change:mode`, — `text` уже пуст, как и формула `multiple`. Сверка
+	 * держится на этом порядке сброса: оставь `TSelectionExtension` выбор при
+	 * выходе из `multiple`, и поле, показывавшее пустую формулу, не получило бы
+	 * текст выбранного.
+	 */
+	private _onModeChanged(): void {
+		if (this._owner.field.value === this._text) this._writeField()
 	}
 
 	/**

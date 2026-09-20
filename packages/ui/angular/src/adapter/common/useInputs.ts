@@ -6,7 +6,7 @@
  * результат этого вызова сериализуется в generated/*.metadata.ts на этапе сборки.
  */
 
-import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy/setup'
 import { AngularProfile } from './profile'
 
 /**
@@ -17,7 +17,7 @@ import { AngularProfile } from './profile'
 const SERVICE_INPUTS = new Set(['ctrl'])
 
 export function useInputs(descriptor: IComponentDescriptor): string[] {
-	return Object.keys(surfaceOf(descriptor, AngularProfile).exportProps).filter(
+	return Object.keys(TSurface.of(descriptor, AngularProfile).exportProps).filter(
 		(name) => !SERVICE_INPUTS.has(name),
 	)
 }

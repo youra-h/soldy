@@ -1,10 +1,12 @@
 /**
- * defineType — тип пропа в декларации: конструктор для рантайма, `T` для типов.
+ * defineType — значение scope слота: конструктор для рантайма, `T` — тип данных слота.
  *
- *   view: { type: defineType<TButtonView>(String), triggers: ['change:view'] }
+ *   default: { scope: { text: defineType<string>(String) } }
  *
- * Фреймворку нужен конструктор (`String`), адаптерам в типах — точный тип
- * значения (`TButtonView`). Один вызов несёт оба.
+ * Из `T` выводится scope слота (`DescriptorSlots`), значение без него не
+ * компилируется. У пропа второй записи типа нет: тип значения даёт интерфейс
+ * пропсов ядра (`TProps` класса `ctor`), а `type` в contribution — голый
+ * конструктор для рантайма (`type: String`).
  */
 
 import type { TPropType } from './types'

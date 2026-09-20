@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import {
 	TButton,
 	TComponentView,
@@ -44,23 +44,29 @@ import {
 	SelectItemDescriptor,
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
+	defineComponent,
+	CommonProfile,
+	createAdapterContext,
 } from '@soldy/setup'
-import type { IComponentDescriptor } from '@soldy/setup'
-import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
+import type { DescriptorEvents, DescriptorProps, IComponentDescriptor } from '@soldy/setup'
+import type {
+	IButtonProps,
+	IComponentViewProps,
+	TButtonEvents,
+	TComponentViewEvents,
+} from '@soldy/core'
 import { required } from './helpers'
 
-/** Собрать компонент так же, как это делает монтирование: состав → набор → аксессор. */
-const assemble = (descriptor: IComponentDescriptor<any, any, any, any, any>, instance: object) => {
-	const composition = resolveComposition(descriptor, instance, {})
-	const bundle = assembleBundle(composition, instance)
+/** Собрать компонент так же, как это делает монтирование. */
+const assemble = (descriptor: IComponentDescriptor, instance: object) => {
+	const context = createAdapterContext(descriptor, { ctrl: instance })
 
-	return { bundle, accessor: assembleAccessor(descriptor, composition, instance, bundle) }
+	return { bundle: context.bundle, lines: context.connect(CommonProfile).lines }
 }
 
-const propNames = (d: { props: Array<{ name: { name: string } }> }) =>
-	d.props.map((p) => p.name.name)
+const propNames = (d: Pick<IComponentDescriptor, 'props'>) => d.props.map((p) => p.name.name)
 
-const eventNames = (d: { events: Array<{ name: string }> }) => d.events.map((e) => e.name)
+const eventNames = (d: Pick<IComponentDescriptor, 'events'>) => d.events.map((e) => e.name)
 
 describe('дескрипторы компонентов (наследование)', () => {
 	it('ButtonDescriptor наследует цепочку Entity → Component → ComponentView → Stylable → Control → Textable', () => {
@@ -101,19 +107,19 @@ describe('дескрипторы компонентов (наследовани�
 		expect(required(bundle, 'бандл Button').get(TReadyPlugin)).toBeInstanceOf(TReadyPlugin)
 	})
 
-	it('ButtonDescriptor accessor привязывает собственные props к instance', () => {
+	it('ButtonDescriptor: линия привязывает собственный проп к instance', () => {
 		const d = ButtonDescriptor()
 		const instance = new TButton()
-		const { accessor } = assemble(d, instance)
+		const { lines } = assemble(d, instance)
 
 		const viewProp = required(
-			accessor.getProps().find((p) => p.name.name === 'view'),
+			lines.find((line) => line.spec.name.name === 'view'),
 			'prop view',
 		)
-		expect(viewProp.instance).toBe(instance)
+		expect(viewProp.owner).toBe(instance)
 
 		// Плагины дают события с namespace
-		expect(accessor.getEvents().some((e) => e.name.getName() === 'element:ready')).toBe(true)
+		expect(d.getEvents().some((event) => event.getName() === 'element:ready')).toBe(true)
 	})
 
 	it('ButtonDescriptor.getProps/getEvents агрегируют собственные и плагинные объявления', () => {
@@ -368,9 +374,9 @@ describe('Select', () => {
 		expect(names).not.toContain('text')
 	})
 
-	it('accessor собирается — значит одноимённых пропсов нет', () => {
-		// TAccessor бросает на дубль имени; собрать его — единственный способ
-		// поймать столкновение между компонентом, коллекцией и плагинами
+	it('компонент собирается — значит одноимённых пропсов нет', () => {
+		// О дубле полного имени дескриптор сообщает в консоль при построении;
+		// собрать компонент — заодно проверить фасады и плагины
 		const owner = new TSelect()
 		const descriptor = SelectDescriptor()
 
@@ -380,5 +386,44 @@ describe('Select', () => {
 		const itemDescriptor = SelectItemDescriptor()
 
 		expect(() => assemble(itemDescriptor, item)).not.toThrow()
+	})
+})
+
+/**
+ * Типы пропсов и событий дескриптор не повторяет: `defineComponent` берёт их у
+ * класса ядра. События — его карта, суженная до опубликованных имён: у
+ * визуальных классов в неё не входит `change:present` (см.
+ * `descriptor-events.spec.ts`). Проверки — `expectTypeOf`, их ловит шаг CI
+ * «Типы — Setup».
+ */
+describe('типы пропсов и событий выводятся из класса ядра', () => {
+	it('Button — интерфейсы TButton', () => {
+		expectTypeOf<DescriptorProps<typeof ButtonDescriptor>>().toEqualTypeOf<IButtonProps>()
+		expectTypeOf<DescriptorEvents<typeof ButtonDescriptor>>().toEqualTypeOf<
+			Omit<TButtonEvents, 'change:present'>
+		>()
+	})
+
+	it('дженерик-база ComponentView — её интерфейсы: на месте параметров класса констрейнты', () => {
+		expectTypeOf<
+			DescriptorProps<typeof ComponentViewDescriptor>
+		>().toEqualTypeOf<IComponentViewProps>()
+		expectTypeOf<DescriptorEvents<typeof ComponentViewDescriptor>>().toEqualTypeOf<
+			Omit<TComponentViewEvents, 'change:present'>
+		>()
+	})
+
+	it('без своего ctor — от extends, без обоих — словарь без типа', () => {
+		const child = defineComponent({ extends: ButtonDescriptor() })
+		const bare = defineComponent({})
+
+		expect(child.ctor).toBe(TButton)
+		expect(bare.ctor).toBe(Object)
+		expectTypeOf<DescriptorProps<() => typeof child>>().toEqualTypeOf<IButtonProps>()
+		expectTypeOf<DescriptorEvents<() => typeof child>>().toEqualTypeOf<
+			DescriptorEvents<typeof ButtonDescriptor>
+		>()
+		expectTypeOf<DescriptorProps<() => typeof bare>>().toEqualTypeOf<Record<string, unknown>>()
+		expectTypeOf<DescriptorEvents<() => typeof bare>>().toEqualTypeOf<object>()
 	})
 })

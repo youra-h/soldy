@@ -10,7 +10,6 @@ export default defineConfig({
 		// в тестах подключится server-рантайм без DOM.
 		conditions: ['development', 'browser'],
 		alias: {
-			'@soldy/accessor': path.resolve(__dirname, '../../accessor'),
 			'@soldy/core': path.resolve(__dirname, '../../core/src'),
 			'@soldy/icons-material': path.resolve(__dirname, '../../icons/material/src'),
 			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),

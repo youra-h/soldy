@@ -18,8 +18,8 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { SelectDescriptor, bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TAdapterState } from '@soldy/setup'
+import { SelectDescriptor, toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import { TDismissPlugin } from '@soldy/plugins'
 import type {
 	TEditablePlugin,
@@ -43,12 +43,11 @@ type TTemplate<TSetup extends { setup: (...args: never[]) => unknown }> = Return
 
 /**
  * Состояние так, как его типизирует `useAdapter` React, Solid и Svelte:
- * инстанс и выходы выводятся из типа контекста, дженерики не передаются.
+ * инстанс и выходы выводятся из контракта в типе контекста, дженерики не
+ * передаются.
  */
-function stateOf<TInstance extends object, TOutputs extends object>(
-	adapter: IAdapterContext<TInstance, TOutputs>,
-): TAdapterState<TInstance, TOutputs> {
-	return toInstanceState<TInstance, TOutputs>(bindComponent(adapter, VueProfile).getSnapshot())
+function stateOf<C extends IComponentContract>(adapter: IAdapterContext<C>): TAdapterState<C> {
+	return toInstanceState<C>(adapter.connect(VueProfile).state.getSnapshot())
 }
 
 describe('выходы плагинов в шаблоне Vue', () => {

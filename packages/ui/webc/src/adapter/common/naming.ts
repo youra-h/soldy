@@ -9,7 +9,7 @@
  * перевода. То же решение, что во Vue.
  */
 
-import type { INamingStrategy } from '@soldy/accessor'
+import type { INamingStrategy } from '@soldy/setup'
 import { underscorePropNaming } from '@soldy/setup'
 
 export const WebcNaming: INamingStrategy = {

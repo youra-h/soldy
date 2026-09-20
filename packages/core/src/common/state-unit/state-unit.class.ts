@@ -50,15 +50,20 @@ export class TStateUnit<
 	}
 
 	/**
-	 * Принудительно оповещает подписчиков, что resolved-значение могло измениться,
-	 * даже если хранимое `_value` не менялось.
-	 * Полезно когда резольвер зависит от внешних данных, которые изменились без прямой записи в этот state-unit.
+	 * Оповестить подписчиков, что итог мог смениться из-за внешних данных
+	 * резольвера, — хранимое `_value` при этом не менялось.
+	 *
+	 * `oldValue` — итог **до** смены этих данных: сам state-unit его не помнит,
+	 * а подписчику нужна настоящая пара «было/стало». По ней, например,
+	 * `TStylable` снимает старый класс `--size-*`. Совпал с текущим — ничего не
+	 * менялось, события нет.
+	 *
+	 * @example
+	 * // владелец сменил размер: прежний итог элемента — прежний размер владельца
+	 * item.states.size.notify(payload.oldValue)
 	 */
-	notify(): void {
-		const resolved = this.value
-		const payload: TValuePayload<TValue> = { newValue: resolved, oldValue: resolved }
-
-		this._sink.emit('change', payload)
+	notify(oldValue: TValue): void {
+		this._emitIfChanged(oldValue)
 	}
 
 	/**

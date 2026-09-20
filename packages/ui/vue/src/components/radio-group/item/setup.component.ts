@@ -3,11 +3,6 @@ import {
 	RadioGroupItemDescriptor,
 	RadioGroupCollectionItemDescriptor,
 } from '@soldy/setup'
-import type {
-	IRadioGroupItem,
-	IRadioGroupItemProps,
-	TRadioGroupItemCollectionFacade,
-} from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -40,12 +35,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<RadioGroupItemProps, TRadioGroupItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<IRadioGroupItemProps, IRadioGroupItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

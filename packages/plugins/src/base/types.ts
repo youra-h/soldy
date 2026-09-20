@@ -36,8 +36,8 @@ export type TPluginPublicEventName = (typeof PLUGIN_EVENTS)[number]
 /**
  * Внутренние события базы — `TPluginEvents` без опубликованных: `install` и
  * `destroy`. Эмиттер плагина их шлёт, это рабочая механика bundle, но наружу
- * они не уходят, поэтому `TPluginEventsFrom` в `@soldy/setup` снимает их с
- * карты плагина.
+ * они не уходят, поэтому вывод контракта плагина в `@soldy/setup`
+ * (`TPluginContractFrom`) снимает их с карты плагина.
  */
 export type TPluginInternalEvents = Omit<TPluginEvents, TPluginPublicEventName>
 

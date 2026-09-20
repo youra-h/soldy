@@ -1,96 +1,35 @@
 /**
- * defineComponent — дескриптор компонента: унаследованные декларации.
+ * defineComponent — дескриптор компонента из его объявления.
  *
  * Дескриптор — описание типа и только оно: что компонент объявляет наружу и из
- * каких плагинов состоит. Собирает по нему компонент сборка (`assemble/`),
- * дескриптор о ней не знает.
- */
-
-import type { IPropDeclaration, ISlotDeclaration, TName } from '@soldy/accessor'
-import type { TResolveInstance } from './inference.types'
-import { inheritDeclarations } from './inherit'
-import type {
-	IComponentDefinitionOptions,
-	IComponentDescriptor,
-	IPluginDefinition,
-	TDefinitionOptions,
-} from './types'
-
-function buildDescriptor(options: TDefinitionOptions): IComponentDescriptor {
-	const { ctor, props, events, slots, plugins } = inheritDeclarations(options)
-
-	const descriptor: IComponentDescriptor = {
-		ctor,
-
-		props,
-		events,
-		slots,
-		plugins,
-
-		getProps(): IPropDeclaration[] {
-			return [...props, ...plugins.flatMap((p) => p.props ?? [])]
-		},
-
-		getEvents(): TName[] {
-			return [...events, ...plugins.flatMap((p) => p.events ?? [])]
-		},
-
-		getSlots(): ISlotDeclaration[] {
-			return [...slots]
-		},
-	}
-
-	return descriptor
-}
-
-/**
- * Одноразовая форма (без явных type-аргументов): кортеж плагинов выводится из
- * options.plugins. Используется дескрипторами без явного типа props/events.
- */
-export function defineComponent<
-	const TPlugins extends readonly IPluginDefinition[] = readonly [],
-	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
-	TInstance extends object = never,
-	TParentInstance extends object = object,
->(
-	options: IComponentDefinitionOptions<TPlugins, TParentPlugins, TInstance, TParentInstance>,
-): IComponentDescriptor<
-	Record<string, unknown>,
-	object,
-	readonly [...TParentPlugins, ...TPlugins],
-	object,
-	TResolveInstance<TInstance, TParentInstance>
->
-
-/**
- * Curried-форма: явные TProps/TEvents/TSlots на первом вызове, кортеж плагинов
- * и тип инстанса выводятся на втором. Используется типизированными дескрипторами.
+ * каких плагинов состоит (`TComponentDescriptor`). Собирает по нему компонент
+ * сборка (`assemble/`), дескриптор о ней не знает.
  *
- * TSlots с дефолтом `{}` — дескрипторы без слотов не переписываются.
+ * Типы дескриптора руками не пишутся — `defineComponent` выводит их из опций
+ * (`TContractFrom`). Пропсы — у класса ядра: его инстанс и есть схема для типов,
+ * без своего `ctor` — у родительского. События — карта того же класса, суженная
+ * до имён, которые дескриптор публикует: `events` и триггеры пропсов, свои и
+ * `extends`. Слоты — из объявления `slots` поверх слотов `extends`, плагины —
+ * из `plugins`. Второй записи пропсов, событий или слотов рядом с объявлением
+ * нет.
  */
-export function defineComponent<
-	TProps extends object,
-	TEvents extends object,
-	TSlots extends object = object,
->(): <
-	const TPlugins extends readonly IPluginDefinition[] = readonly [],
-	TParentPlugins extends readonly IPluginDefinition[] = readonly [],
-	TInstance extends object = never,
-	TParentInstance extends object = object,
->(
-	options: IComponentDefinitionOptions<TPlugins, TParentPlugins, TInstance, TParentInstance>,
-) => IComponentDescriptor<
-	TProps,
-	TEvents,
-	readonly [...TParentPlugins, ...TPlugins],
-	TSlots,
-	TResolveInstance<TInstance, TParentInstance>
->
 
-export function defineComponent(
-	options?: TDefinitionOptions,
-): IComponentDescriptor | ((options: TDefinitionOptions) => IComponentDescriptor) {
-	if (options) return buildDescriptor(options)
+import { TComponentDescriptor } from './component-descriptor.class'
+import type { TCheckedEventNames, TContractFrom } from './inference.types'
+import type { IComponentDescriptor, IComponentOptions } from './types'
 
-	return (curried: TDefinitionOptions) => buildDescriptor(curried)
+/**
+ * Параметр типа один — сами опции, и явно его не передают. `const`: опции
+ * запоминаются литералом, иначе имена событий, триггеров и слотов вывелись бы
+ * `string`, а неймспейсы плагинов пропали бы из типов адаптеров.
+ *
+ * Имена событий сверяются с картой событий инстанса (`TCheckedEventNames`).
+ */
+export function defineComponent<const TOptions extends IComponentOptions>(
+	options: TOptions & TCheckedEventNames<TOptions>,
+): IComponentDescriptor<TContractFrom<TOptions>>
+
+/** Тело — под сигнатурой без контракта: рантайму он не нужен (см. `TComponentDescriptor`). */
+export function defineComponent(options: IComponentOptions): IComponentDescriptor {
+	return new TComponentDescriptor(options)
 }

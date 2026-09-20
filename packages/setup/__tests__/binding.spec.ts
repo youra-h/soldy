@@ -10,7 +10,6 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TName } from '@soldy/accessor'
 import { TButton, TFrame, TIcon, TTabsItem } from '@soldy/core'
 import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
 import {
@@ -18,12 +17,12 @@ import {
 	FrameDescriptor,
 	IconDescriptor,
 	TabsItemDescriptor,
-	bindComponent,
 	createAdapterContext,
 	defineComponent,
-	surfaceOf,
+	TName,
+	TSurface,
 } from '@soldy/setup'
-import type { IAdapterProfile, TEventEmitter, TOutputWriter } from '@soldy/setup'
+import type { IAdapterProfile, TEventSink, TStateListener } from '@soldy/setup'
 import { CallbackProfile, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
@@ -34,18 +33,18 @@ describe('поверхность', () => {
 	it('одна на пару «дескриптор × профиль»', () => {
 		const other: IAdapterProfile = { naming: CallbackProfile.naming }
 
-		expect(surfaceOf(ButtonDescriptor(), CallbackProfile)).toBe(
-			surfaceOf(ButtonDescriptor(), CallbackProfile),
+		expect(TSurface.of(ButtonDescriptor(), CallbackProfile)).toBe(
+			TSurface.of(ButtonDescriptor(), CallbackProfile),
 		)
-		expect(surfaceOf(ButtonDescriptor(), other)).not.toBe(
-			surfaceOf(ButtonDescriptor(), CallbackProfile),
+		expect(TSurface.of(ButtonDescriptor(), other)).not.toBe(
+			TSurface.of(ButtonDescriptor(), CallbackProfile),
 		)
 	})
 
 	it('имена — по стратегии профиля', () => {
-		const surface = surfaceOf(ButtonDescriptor(), CallbackProfile)
+		const surface = TSurface.of(ButtonDescriptor(), CallbackProfile)
 		const label = required(
-			surface.props.find((prop) => prop.key === 'aria:label'),
+			surface.props.find((prop) => prop.spec.name.getName() === 'aria:label'),
 			'проп aria:label',
 		)
 
@@ -55,13 +54,12 @@ describe('поверхность', () => {
 })
 
 describe('поверхность · умолчание пропа из декларации', () => {
-	it('без ключа в декларации default нет ни в конфиге, ни в свойстве поверхности', () => {
-		const surface = surfaceOf(single({ name: 'text', type: String }), CallbackProfile)
+	it('без ключа в декларации default нет и в конфиге статического слоя', () => {
+		const surface = TSurface.of(single({ name: 'text', type: String }), CallbackProfile)
 		const config = surface.exportProps.text
 
 		expect(config).toEqual({ type: String })
 		expect(Object.hasOwn(config, 'default')).toBe(false)
-		expect(Object.hasOwn(required(surface.props[0], 'проп text'), 'default')).toBe(false)
 	})
 
 	it('ключ со значением undefined сохраняется', () => {
@@ -74,36 +72,19 @@ describe('поверхность · умолчание пропа из декл�
 			ctor: TWithUndefined,
 			contribution: { props: { closable: { type: Boolean } } },
 		})
-		const config = surfaceOf(descriptor, CallbackProfile).exportProps.closable
+		const config = TSurface.of(descriptor, CallbackProfile).exportProps.closable
 
 		expect(Object.hasOwn(config, 'default')).toBe(true)
 		expect(config.default).toBeUndefined()
 	})
 
-	it('свойство поверхности несёт то же умолчание — к нему связка сбрасывает снятый проп', () => {
-		const surface = surfaceOf(TabsItemDescriptor(), CallbackProfile)
-		const find = (key: string) =>
-			required(
-				surface.props.find((prop) => prop.key === key),
-				`проп ${key}`,
-			)
-
-		expect(find('text').default).toBe('')
-		expect(Object.hasOwn(find('closable'), 'default')).toBe(true)
-		expect(find('closable').default).toBeUndefined()
-		// Проп плагина — так же: «имени нет» объявлено ключом без значения
-		expect(Object.hasOwn(find('aria:label'), 'default')).toBe(true)
-		expect(find('aria:label').default).toBeUndefined()
-	})
-
 	it('protected-проп наружу не уходит', () => {
-		const surface = surfaceOf(
+		const surface = TSurface.of(
 			single({ name: 'present', type: Boolean, protected: true }),
 			CallbackProfile,
 		)
 
 		expect(surface.exportProps).toEqual({})
-		expect(surface.inputs).toEqual([])
 		expect(surface.props).toHaveLength(1)
 	})
 
@@ -119,7 +100,7 @@ describe('поверхность · умолчание пропа из декл�
 			},
 		})
 
-		expect(surfaceOf(descriptor, CallbackProfile).exportEvents).toEqual([
+		expect(TSurface.of(descriptor, CallbackProfile).exportEvents).toEqual([
 			'onShow',
 			'onChangeRendered',
 		])
@@ -131,7 +112,7 @@ describe('связка · проброс пропсов в корень', () => 
 		const context = createAdapterContext(ButtonDescriptor(), { props })
 
 		try {
-			return bindComponent(context, CallbackProfile).forward(props)
+			return context.connect(CallbackProfile).forward(props)
 		} finally {
 			context.destroy()
 		}
@@ -158,7 +139,7 @@ describe('связка · проброс пропсов в корень', () => 
 describe('связка · ядро ↔ фреймворк', () => {
 	it('состояние — свойства с триггерами', () => {
 		const context = createAdapterContext(ButtonDescriptor(), { props: { text: 'hi' } })
-		const state = bindComponent(context, CallbackProfile).getSnapshot()
+		const state = context.connect(CallbackProfile).state.getSnapshot()
 
 		expect(state.text).toBe('hi')
 		expect('ctrl' in state).toBe(false)
@@ -168,12 +149,12 @@ describe('связка · ядро ↔ фреймворк', () => {
 		const ctrl = new TButton()
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const write = vi.fn()
-		const off = bindComponent(context, CallbackProfile).subscribe(write)
+		const off = context.connect(CallbackProfile).state.subscribe(write)
 
 		write.mockClear()
 		ctrl.text = 'новый'
 
-		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'новый')
+		expect(write).toHaveBeenCalledWith('text', 'новый')
 
 		off()
 		write.mockClear()
@@ -185,14 +166,14 @@ describe('связка · ядро ↔ фреймворк', () => {
 	it('запись из фреймворка: то же значение не пишется', () => {
 		const ctrl = new TButton({ text: 'a' })
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 		const changes = vi.fn()
 
 		ctrl.events.on('change:text', changes)
 
-		binding.writeAll({ text: 'a' })
-		binding.writeAll({ text: 'b' })
-		binding.writeAll({ text: 'b' })
+		binding.inputs.full({ text: 'a' })
+		binding.inputs.full({ text: 'b' })
+		binding.inputs.full({ text: 'b' })
 
 		expect(ctrl.text).toBe('b')
 		expect(changes).toHaveBeenCalledTimes(1)
@@ -204,7 +185,7 @@ describe('связка · ядро ↔ фреймворк', () => {
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const emit = vi.fn()
 
-		bindComponent(context, CallbackProfile).bindEvents(emit)
+		context.connect(CallbackProfile).events.listen(emit)
 		ctrl.rendered = false
 
 		expect(emit.mock.calls.filter(([name]) => name === 'onChangeRendered')).toHaveLength(1)
@@ -212,16 +193,16 @@ describe('связка · ядро ↔ фреймворк', () => {
 
 	it('проп читается по имени фреймворка и по сырому имени', () => {
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 		const label = required(
-			binding.surface.inputs.find(
-				(prop) => prop.name.getName() === new TName('label', 'aria').getName(),
+			[...binding.inputs].find(
+				(input) => input.line.spec.name.getName() === new TName('label', 'aria').getName(),
 			),
 			'проп aria:label',
 		)
 
-		expect(binding.read(label, { aria_label: 'Закрыть' })).toBe('Закрыть')
-		expect(binding.read(label, { label: 'Закрыть' })).toBe('Закрыть')
+		expect(label.pick({ aria_label: 'Закрыть' })).toBe('Закрыть')
+		expect(label.pick({ label: 'Закрыть' })).toBe('Закрыть')
 	})
 })
 
@@ -235,86 +216,73 @@ describe('связка · ядро ↔ фреймворк', () => {
  */
 describe('связка · состояние для фреймворка', () => {
 	it('подписка отдаёт каждое свойство тем же вызовом, что и триггер', () => {
-		const binding = bindComponent(
-			createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } }),
+		const binding = createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } }).connect(
 			CallbackProfile,
 		)
-		const write = vi.fn<TOutputWriter>()
+		const write = vi.fn<TStateListener>()
 
-		binding.subscribe(write)
+		binding.state.subscribe(write)
 
-		const names = write.mock.calls.map(([prop]) => prop.exportName)
+		const names = write.mock.calls.map(([name]) => name)
 
-		expect(names.sort()).toEqual(Object.keys(binding.getSnapshot()).sort())
-		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'a')
+		expect(names.sort()).toEqual(Object.keys(binding.state.getSnapshot()).sort())
+		expect(write).toHaveBeenCalledWith('text', 'a')
 	})
 
 	it('изменение между созданием связки и подпиской не теряется', () => {
 		// Так у React: рендер по снимку, подписка — при коммите
 		const ctrl = new TButton({ text: 'a' })
-		const binding = bindComponent(
-			createAdapterContext(ButtonDescriptor(), { ctrl }),
-			CallbackProfile,
-		)
-		const rendered = binding.getSnapshot()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(CallbackProfile)
+		const rendered = binding.state.getSnapshot()
 		const write = vi.fn()
 
 		ctrl.text = 'b'
 
-		expect(binding.getSnapshot()).toBe(rendered)
+		expect(binding.state.getSnapshot()).toBe(rendered)
 
-		binding.subscribe(write)
+		binding.state.subscribe(write)
 
-		expect(write).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), 'b')
-		expect(binding.getSnapshot()).not.toBe(rendered)
-		expect(binding.getSnapshot().text).toBe('b')
+		expect(write).toHaveBeenCalledWith('text', 'b')
+		expect(binding.state.getSnapshot()).not.toBe(rendered)
+		expect(binding.state.getSnapshot().text).toBe('b')
 	})
 
 	it('снимок тот же, пока ничего не сменилось: составные свойства сверяются по содержимому', () => {
 		// `classes`, `aria`, `attrs`, `dataset` отдают новый объект на каждое
 		// чтение — по ссылке каждое монтирование выглядело бы изменением
-		const binding = bindComponent(createAdapterContext(ButtonDescriptor(), {}), CallbackProfile)
-		const rendered = binding.getSnapshot()
+		const binding = createAdapterContext(ButtonDescriptor(), {}).connect(CallbackProfile)
+		const rendered = binding.state.getSnapshot()
 
-		binding.subscribe(() => {})
+		binding.state.subscribe(() => {})
 
-		expect(binding.getSnapshot()).toBe(rendered)
+		expect(binding.state.getSnapshot()).toBe(rendered)
 	})
 
 	it('второй подписчик получает всё состояние, первый — только изменения', () => {
 		const ctrl = new TButton()
-		const binding = bindComponent(
-			createAdapterContext(ButtonDescriptor(), { ctrl }),
-			CallbackProfile,
-		)
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(CallbackProfile)
 		const first = vi.fn()
 		const second = vi.fn()
 
-		binding.subscribe(first)
+		binding.state.subscribe(first)
 		first.mockClear()
-		binding.subscribe(second)
+		binding.state.subscribe(second)
 
 		expect(first).not.toHaveBeenCalled()
-		expect(second).toHaveBeenCalledWith(expect.objectContaining({ exportName: 'text' }), '')
+		expect(second).toHaveBeenCalledWith('text', '')
 	})
 
 	it('после отписки всех — новая подписка снова перечитывает ядро', () => {
 		// StrictMode: подписка, отписка и снова подписка
 		const ctrl = new TButton()
-		const binding = bindComponent(
-			createAdapterContext(ButtonDescriptor(), { ctrl }),
-			CallbackProfile,
-		)
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(CallbackProfile)
 		const write = vi.fn()
 
-		binding.subscribe(() => {})()
+		binding.state.subscribe(() => {})()
 		ctrl.text = 'пока без подписчиков'
-		binding.subscribe(write)
+		binding.state.subscribe(write)
 
-		expect(write).toHaveBeenCalledWith(
-			expect.objectContaining({ exportName: 'text' }),
-			'пока без подписчиков',
-		)
+		expect(write).toHaveBeenCalledWith('text', 'пока без подписчиков')
 	})
 
 	it('модель: `update:<prop>` после события ядра и только на изменение', () => {
@@ -323,15 +291,15 @@ describe('связка · состояние для фреймворка', () =>
 			model: (name) => `update:${name}`,
 		}
 		const ctrl = new TButton()
-		const binding = bindComponent(createAdapterContext(ButtonDescriptor(), { ctrl }), profile)
-		const emit = vi.fn<TEventEmitter>()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(profile)
+		const emit = vi.fn<TEventSink>()
 
 		expect(binding.surface.exportEvents).toContain('update:text')
 		// Защищённое свойство снаружи не пишут — модели у него нет
 		expect(binding.surface.exportEvents).not.toContain('update:present')
 
-		binding.subscribe(() => {})
-		binding.bindEvents(emit)
+		binding.state.subscribe(() => {})
+		binding.events.listen(emit)
 
 		expect(emit).not.toHaveBeenCalled()
 
@@ -348,7 +316,7 @@ describe('связка · состояние для фреймворка', () =>
 function bindButton(ctrl = new TButton()) {
 	const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 
-	return { ctrl, context, binding: bindComponent(context, CallbackProfile) }
+	return { ctrl, context, binding: context.connect(CallbackProfile) }
 }
 
 /**
@@ -365,8 +333,8 @@ describe('связка · снятый проп', () => {
 
 		ctrl.events.on('change:text', changes)
 
-		binding.writeAll({})
-		binding.writeAll({ text: undefined, tag: undefined })
+		binding.inputs.full({})
+		binding.inputs.full({ text: undefined, tag: undefined })
 
 		// Умолчания деклараций — '' и 'button': сброса не было
 		expect(ctrl.text).toBe('своё')
@@ -377,11 +345,11 @@ describe('связка · снятый проп', () => {
 	it('снятый проп возвращается к умолчанию декларации: text — пустая строка', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeAll({ text: 'a' })
+		binding.inputs.full({ text: 'a' })
 
 		expect(ctrl.text).toBe('a')
 
-		binding.writeAll({ text: undefined })
+		binding.inputs.full({ text: undefined })
 
 		expect(ctrl.text).toBe('')
 	})
@@ -390,33 +358,32 @@ describe('связка · снятый проп', () => {
 		// Ядро уже держит то же значение, и запись пропускается — но проп задан
 		const { ctrl, binding } = bindButton(new TButton({ text: 'a' }))
 
-		binding.writeAll({ text: 'a' })
-		binding.writeAll({})
+		binding.inputs.full({ text: 'a' })
+		binding.inputs.full({})
 
 		expect(ctrl.text).toBe('')
 	})
 
 	it('проп, с которым собран контекст, тоже задан: снятый, он сбрасывается', () => {
 		const context = createAdapterContext(ButtonDescriptor(), { props: { text: 'a' } })
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(context.instance.text).toBe('')
 	})
 
 	it('трёхзначный проп возвращается к «как у владельца»: closable элемента Tabs', () => {
 		const ctrl = new TTabsItem()
-		const binding = bindComponent(
-			createAdapterContext(TabsItemDescriptor(), { ctrl }),
+		const binding = createAdapterContext(TabsItemDescriptor(), { ctrl }).connect(
 			CallbackProfile,
 		)
 
-		binding.writeAll({ closable: true })
+		binding.inputs.full({ closable: true })
 
 		expect(ctrl.closable).toBe(true)
 
-		binding.writeAll({ closable: undefined })
+		binding.inputs.full({ closable: undefined })
 
 		expect(ctrl.closable).toBeUndefined()
 	})
@@ -429,11 +396,11 @@ describe('связка · снятый проп', () => {
 	it('снятое имя убирает aria-label: у плагина имени по умолчанию нет', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeAll({ aria_label: 'Закрыть' })
+		binding.inputs.full({ aria_label: 'Закрыть' })
 
 		expect(ctrl.aria.get('aria-label')).toBe('Закрыть')
 
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(ctrl.aria.has('aria-label')).toBe(false)
 	})
@@ -441,14 +408,14 @@ describe('связка · снятый проп', () => {
 	it('снятые width и height иконки уходят из стилей: размер снова даёт size', () => {
 		const ctrl = new TIcon()
 		const context = createAdapterContext(IconDescriptor(), { ctrl })
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
 
-		binding.writeAll({ width: 24, height: '2em' })
+		binding.inputs.full({ width: 24, height: '2em' })
 
 		expect(layout.styles).toEqual({ width: '24px', height: '2em' })
 
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(ctrl.width).toBeUndefined()
 		expect(ctrl.height).toBeUndefined()
@@ -462,15 +429,15 @@ describe('связка · снятый проп', () => {
 
 		const ctrl = new TFrame()
 		const context = createAdapterContext(FrameDescriptor(), { ctrl })
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 		const anchor = required(context.bundle?.get(TAnchorPlugin), 'плагин anchor')
 		const element = document.createElement('button')
 
-		binding.writeAll({ anchor_anchor: element })
+		binding.inputs.full({ anchor_anchor: element })
 
 		expect(anchor.anchor).toBe(element)
 
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(anchor.anchor).toBeNull()
 	})
@@ -479,13 +446,13 @@ describe('связка · снятый проп', () => {
 		const { ctrl, binding } = bindButton()
 		const changes = vi.fn()
 
-		binding.writeAll({ text: 'a' })
+		binding.inputs.full({ text: 'a' })
 		ctrl.events.on('change:text', changes)
 
-		binding.writeAll({})
+		binding.inputs.full({})
 		// Ядро поменяло значение само — повторное снятие его не трогает
 		ctrl.text = 'из ядра'
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(ctrl.text).toBe('из ядра')
 		expect(changes).toHaveBeenCalledTimes(2)
@@ -503,10 +470,10 @@ describe('связка · снятый проп', () => {
 			ctor: TSample,
 			contribution: { props: { declared: { type: String }, free: { type: String } } },
 		})
-		const binding = bindComponent(createAdapterContext(descriptor, { ctrl }), CallbackProfile)
+		const binding = createAdapterContext(descriptor, { ctrl }).connect(CallbackProfile)
 
-		binding.writeAll({ declared: 'задано', free: 'задано' })
-		binding.writeAll({})
+		binding.inputs.full({ declared: 'задано', free: 'задано' })
+		binding.inputs.full({})
 
 		expect(ctrl.declared).toBe('умолчание')
 		expect(ctrl.free).toBe('задано')
@@ -515,14 +482,14 @@ describe('связка · снятый проп', () => {
 	it('дельта пишет только свои ключи: остальные пропсы не сбрасываются', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeChanged({ text: 'a', tag: 'span' })
-		binding.writeChanged({ tag: 'a' })
+		binding.inputs.delta({ text: 'a', tag: 'span' })
+		binding.inputs.delta({ tag: 'a' })
 
 		expect(ctrl.text).toBe('a')
 		expect(ctrl.tag).toBe('a')
 
 		// Ключ есть, значение `undefined` — проп сняли
-		binding.writeChanged({ text: undefined })
+		binding.inputs.delta({ text: undefined })
 
 		expect(ctrl.text).toBe('')
 		expect(ctrl.tag).toBe('a')
@@ -532,11 +499,11 @@ describe('связка · снятый проп', () => {
 		const { context, binding } = bindButton()
 		const aria = required(context.bundle?.get(TAriaPlugin), 'плагин aria')
 
-		binding.writeChanged({ aria_label: 'Закрыть' })
+		binding.inputs.delta({ aria_label: 'Закрыть' })
 
 		expect(aria.label).toBe('Закрыть')
 
-		binding.writeChanged({ label: 'Открыть' })
+		binding.inputs.delta({ label: 'Открыть' })
 
 		expect(aria.label).toBe('Открыть')
 	})
@@ -554,10 +521,10 @@ describe('связка · повторённый проп', () => {
 	it('повторённый набор не откатывает то, что поменяло ядро', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeAll({ text: 'a', tag: 'span' })
+		binding.inputs.full({ text: 'a', tag: 'span' })
 		ctrl.text = 'из ядра'
 		// Родитель перерисовался: сменился другой проп
-		binding.writeAll({ text: 'a', tag: 'a' })
+		binding.inputs.full({ text: 'a', tag: 'a' })
 
 		expect(ctrl.text).toBe('из ядра')
 		expect(ctrl.tag).toBe('a')
@@ -566,9 +533,9 @@ describe('связка · повторённый проп', () => {
 	it('сменившееся в наборе значение пишется поверх ядра', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeAll({ text: 'a' })
+		binding.inputs.full({ text: 'a' })
 		ctrl.text = 'из ядра'
-		binding.writeAll({ text: 'b' })
+		binding.inputs.full({ text: 'b' })
 
 		expect(ctrl.text).toBe('b')
 	})
@@ -576,9 +543,9 @@ describe('связка · повторённый проп', () => {
 	it('снятый проп сбрасывается к умолчанию, даже если ядро его меняло', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeAll({ text: 'a' })
+		binding.inputs.full({ text: 'a' })
 		ctrl.text = 'из ядра'
-		binding.writeAll({})
+		binding.inputs.full({})
 
 		expect(ctrl.text).toBe('')
 	})
@@ -586,10 +553,10 @@ describe('связка · повторённый проп', () => {
 	it('дельта с прошлым значением не сверяется: ключ в ней — уже изменение', () => {
 		const { ctrl, binding } = bindButton()
 
-		binding.writeChanged({ text: 'a' })
+		binding.inputs.delta({ text: 'a' })
 		ctrl.text = 'из ядра'
 		// Web Components: `el.text = 'a'` ещё раз — запись, а не повтор набора
-		binding.writeChanged({ text: 'a' })
+		binding.inputs.delta({ text: 'a' })
 
 		expect(ctrl.text).toBe('a')
 	})
@@ -679,10 +646,10 @@ describe('сборка · начальные значения пропсов', (
 			ctrl,
 			props: { text: 'из разметки' },
 		})
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 
 		ctrl.text = 'из кода'
-		binding.writeAll({ text: 'из разметки' })
+		binding.inputs.full({ text: 'из разметки' })
 
 		expect(ctrl.text).toBe('из кода')
 	})
@@ -698,5 +665,36 @@ describe('сборка · начальные значения пропсов', (
 		createAdapterContext(ButtonDescriptor(), { ctrl, props })
 
 		expect(ctrl.text).toBe('из разметки')
+	})
+
+	/*
+	 * Значение, пришедшее в инстанс без события, плагин берёт у инстанса сам:
+	 * свой инстанс получает размер конструктором, а внешнему `ctrl` сборка не
+	 * пишет то, что в нём уже лежит. Раньше плагин раскладки иконки только
+	 * следил за сменой размера, и заданный в разметке размер появлялся в стилях
+	 * лишь после первой смены.
+	 */
+
+	it('размер иконки из пропсов виден в стилях сразу', () => {
+		const context = createAdapterContext(IconDescriptor(), {
+			props: { width: 24, height: '2em' },
+		})
+		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
+
+		expect(layout.styles).toEqual({ width: '24px', height: '2em' })
+		// Фреймворк получает то же подпиской на связку
+		expect(context.connect(CallbackProfile).state.getSnapshot().layout_styles).toEqual({
+			width: '24px',
+			height: '2em',
+		})
+	})
+
+	it('внешний ctrl с размером — тоже: запись пропа пропущена, стиль уже есть', () => {
+		const ctrl = new TIcon({ width: 24 })
+		const context = createAdapterContext(IconDescriptor(), { ctrl, props: { width: 24 } })
+		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
+
+		// Незаданная высота стиля не ставит: её даёт `size`
+		expect(layout.styles).toEqual({ width: '24px', height: '' })
 	})
 })

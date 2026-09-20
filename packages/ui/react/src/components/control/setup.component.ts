@@ -6,13 +6,12 @@
  */
 
 import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
-import type { IControl } from '@soldy/core'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { ControlProps } from './base.component'
 
 export function useSetupControl(props: ControlProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapter = useAdapterContext<IControl>(() =>
+	const adapter = useAdapterContext(() =>
 		createAdapterContext(ControlDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

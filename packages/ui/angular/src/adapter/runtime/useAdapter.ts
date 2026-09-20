@@ -10,7 +10,7 @@
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): очистка подписок + adapter.destroy()
  *
- * Общее с остальными адаптерами — в связке `bindComponent` из setup; здесь
+ * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup; здесь
  * только сигнал состояния и эмиттеры.
  *
  * Состояние — сигнал, а не поле + markForCheck(): markForCheck помечает путь
@@ -19,8 +19,13 @@
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
-import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TBindingSnapshot, TInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
+import type {
+	IAdapterContext,
+	IComponentContract,
+	TStateSnapshot,
+	TInstanceState,
+} from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { AngularProfile } from '../common/profile'
 
@@ -35,19 +40,19 @@ export type TBinding<TInstance = any> = {
 	destroy(): void
 }
 
-export function useAdapter<TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
-): TBinding<TInstance> {
-	const binding = bindComponent(adapter, AngularProfile)
-	const values = signal<TBindingSnapshot>({})
+export function useAdapter<C extends IComponentContract>(
+	adapter: IAdapterContext<C>,
+): TBinding<C['instance']> {
+	const binding = adapter.connect(AngularProfile)
+	const values = signal<TStateSnapshot>({})
 
 	// Снимок связки неизменяемый и заменяется на каждое изменение: сигнал
 	// получает его целиком. Подписка сразу отдаёт каждое свойство тем же
 	// вызовом, что и триггер: так сигнал и заполняется
-	const unsubscribe = binding.subscribe(() => values.set(binding.getSnapshot()))
+	const unsubscribe = binding.state.subscribe(() => values.set(binding.state.getSnapshot()))
 
 	return {
-		state: computed(() => toInstanceState<TInstance>(values())),
+		state: computed(() => toInstanceState<C>(values())),
 
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
@@ -55,13 +60,13 @@ export function useAdapter<TInstance extends object = object>(
 		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
 		// `writeChanged`: `writeAll` сбросил бы к умолчанию все остальные
 		syncInputs(inputs: object): void {
-			binding.writeChanged(inputs)
+			binding.inputs.delta(inputs)
 		},
 
 		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {
 			// Аутпут объявлен кодогенерацией по той же поверхности: у события
 			// без аутпута некому отдать значение
-			return binding.bindEvents((exportName, args) => outputs[exportName]?.emit(args[0]))
+			return binding.events.listen((exportName, args) => outputs[exportName]?.emit(args[0]))
 		},
 
 		bindElement(el: Element | null): void {

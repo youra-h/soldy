@@ -1,5 +1,5 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type { TSelectionFacadeProps } from '../../../../base/collection'
+
 import { SelectFactory, SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from '../factory'
 import { resolveEngine } from '../../../../base/collection/create/internal'
 import type {
@@ -11,7 +11,9 @@ import type { TSelectCollectionFacadeEvents } from '../types'
 import type { ISelect } from '../../types'
 import type { ISelectItem } from '../../item/types'
 import type { TSelectExtension, TSelectTagsExtension } from '../extensions'
-import type { ITags, TTagsCollection } from '../../../tags'
+import type { ITags, TTagsCollection, TTagsOverflow } from '../../../tags'
+import type { ISelectCollectionProps, TSelectCollectionFacadeProps } from '../types'
+import type { TDefaultValues } from '../../../../base/component'
 
 /**
  * Фасад коллекции Select.
@@ -24,8 +26,18 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	TSelectCollectionExtensions,
 	TSelectCollectionFacadeEvents
 > {
+	/**
+	 * Своё умолчание у фасада одно — режим переполнения ряда тегов: снятый из
+	 * разметки проп связка возвращает к нему. Остальные ключи приходят от баз.
+	 */
+	static override defaultValues: typeof TSelectionCollectionFacade.defaultValues &
+		TDefaultValues<ISelectCollectionProps, 'tags_overflow'> = {
+		...TSelectionCollectionFacade.defaultValues,
+		tags_overflow: 'wrap',
+	}
+
 	constructor(
-		props: TSelectionFacadeProps<ISelectItem> = {},
+		props: TSelectCollectionFacadeProps = {},
 		options: TSelectCollectionFacadeOptions = {},
 	) {
 		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
@@ -49,6 +61,12 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		this.applyProps(props)
 	}
 
+	protected override applyProps(props: TSelectCollectionFacadeProps): void {
+		if (props.tags_overflow) this.tags_overflow = props.tags_overflow
+
+		super.applyProps(props)
+	}
+
 	/**
 	 * Инстанс тегов — только в `multiple`, иначе `null`. Связка «опция ⇄ тег»
 	 * целиком в `TSelectTagsExtension`, фасад лишь читает готовый результат.
@@ -60,6 +78,19 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	/** Коллекция инстанса тегов — то, что `<Tags :engine="...">` берёт готовым. */
 	get tags_engine(): TTagsCollection | null {
 		return this._tags.engine
+	}
+
+	/**
+	 * Что делать с тегами, которым не хватило строки поля: переносить,
+	 * прокручивать или убирать хвост в панель. Хранит значение расширение —
+	 * инстанс тегов живёт только в `multiple`, а выбор потребителя остаётся.
+	 */
+	get tags_overflow(): TTagsOverflow {
+		return this._tags.overflow
+	}
+
+	set tags_overflow(value: TTagsOverflow) {
+		this._tags.overflow = value
 	}
 
 	/**

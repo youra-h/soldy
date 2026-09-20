@@ -3,12 +3,11 @@
  */
 
 import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
-import type { ITextable } from '@soldy/core'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { TextableProps } from './base.component'
 
 export function useSetupTextable(props: TextableProps) {
-	const adapter = useAdapterContext<ITextable>(() =>
+	const adapter = useAdapterContext(() =>
 		createAdapterContext(TextableDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

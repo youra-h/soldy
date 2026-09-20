@@ -1,7 +1,14 @@
-import { defineComponent, defineDescriptor, defineType } from '../../../define'
+/**
+ * Дескрипторы коллекционной части Select — фасады владельца и опции.
+ *
+ * Членство в коллекции отделено от собственных пропсов компонента
+ * (`SelectDescriptor`, `SelectItemDescriptor`): адаптер собирает компонент из
+ * обоих рантайм-списков.
+ */
+
+import { defineComponent, defineDescriptor } from '../../../define'
 import { TSelectCollectionFacade, TSelectItemCollectionFacade } from '@soldy/core'
 import { CollectionDescriptor } from '../collection'
-import type { TListIndicator } from '@soldy/core'
 
 export const SelectCollectionDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -34,6 +41,12 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 				tags: { type: Object, protected: true, triggers: ['change:tags'] },
 				/** Коллекция тегов — то, что `<Tags :engine="...">` берёт готовым. */
 				tags_engine: { type: Object, protected: true, triggers: ['change:tags'] },
+				/**
+				 * Что делать с тегами, которым не хватило строки поля. Передаётся
+				 * своему `TTags` так же, как `size` и `variant`; по умолчанию
+				 * `wrap` — поведение поля не меняется, пока режим не задали.
+				 */
+				tags_overflow: { type: String, triggers: ['change:overflow'] },
 			},
 		},
 	}),
@@ -58,7 +71,7 @@ export const SelectCollectionItemDescriptor = defineDescriptor(() =>
 				 * список и живёт на поле — как `view` у элемента ListBox.
 				 */
 				indicator: {
-					type: defineType<TListIndicator>(String),
+					type: String,
 					protected: true,
 					triggers: ['change:indicator'],
 				},

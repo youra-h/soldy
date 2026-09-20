@@ -1,6 +1,7 @@
 import { findComponent } from '../registry'
 import { BUTTON_EVENTS } from './button/events'
 import { BUTTON_SLOTS } from './button/slots'
+import { LABEL_SLOTS } from './label/slots'
 import { eventsPoll } from './events-poll'
 import type { TScenario } from './types'
 
@@ -31,4 +32,5 @@ export const SCENARIOS: readonly TScenario[] = [
 	...BUTTON_EVENTS,
 	...POLLED.flatMap((id) => eventsPoll(polled(id))),
 	...BUTTON_SLOTS,
+	...LABEL_SLOTS,
 ]

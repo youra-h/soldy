@@ -7,17 +7,19 @@
 
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TTabsItem } from '@soldy/core'
-import type { ITabsItemProps, TTabsItemEvents } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 
 export const TabsItemDescriptor = defineDescriptor(() =>
-	defineComponent<ITabsItemProps, TTabsItemEvents>()({
+	defineComponent({
 		ctor: TTabsItem,
 
 		extends: ValueControlDescriptor(),
 
 		contribution: {
 			props: {
+				// Размер и вид таба задаёт набор: входы сняты
+				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },

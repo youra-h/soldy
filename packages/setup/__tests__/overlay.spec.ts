@@ -22,7 +22,8 @@ import {
 	triggerResize,
 } from './helpers'
 import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy/plugins'
-import { TFrame } from '@soldy/core'
+import type { IDismissPluginOptions } from '@soldy/plugins'
+import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy/core'
 
 /** Якорь с заданным прямоугольником: jsdom сам ничего не раскладывает. */
 function anchorAt(rect: Partial<DOMRect>): HTMLElement {
@@ -550,7 +551,7 @@ describe('пауза наблюдения панели на уведомлени
 })
 
 describe('нажатие мимо', () => {
-	const setup = async (uid: number) => {
+	const setup = async (uid: number, options?: IDismissPluginOptions) => {
 		const element = document.createElement('div')
 
 		document.body.appendChild(element)
@@ -558,7 +559,7 @@ describe('нажатие мимо', () => {
 		const elementPlugin = new TElementPlugin()
 		const dismiss = new TDismissPlugin()
 
-		dismiss.install(createPluginContext({ uid }, [elementPlugin]))
+		dismiss.install(createPluginContext({ uid }, [elementPlugin]), options)
 
 		elementPlugin.element = element
 		await nextFrame()
@@ -708,7 +709,7 @@ describe('нажатие мимо', () => {
 		// здесь нет `open`, слушатели после закрытия не снимаются, и второе
 		// закрытие на mousedown было бы видно
 		const { dismiss } = await setup(8)
-		const handler = vi.fn<(event: MouseEvent) => void>()
+		const handler = vi.fn<(event: MouseEvent | FocusEvent) => void>()
 
 		dismiss.events.on('dismiss', handler)
 		dismiss.enabled = true
@@ -858,7 +859,7 @@ describe('нажатие мимо', () => {
 			// Перо планшета шлёт mousedown, а с ним и смену фокуса, сразу за
 			// pointerdown: панель закрывается на нём, до смены фокуса
 			const { dismiss } = await setup(18)
-			const handler = vi.fn<(event: MouseEvent) => void>()
+			const handler = vi.fn<(event: MouseEvent | FocusEvent) => void>()
 
 			dismiss.events.on('dismiss', handler)
 			dismiss.enabled = true
@@ -873,7 +874,7 @@ describe('нажатие мимо', () => {
 		it('экран: pointerup закрывает, совместимый mousedown после него не повторяет', async () => {
 			// Стилусу на экране совместимые события мыши приходят только после отпускания
 			const { dismiss } = await setup(19)
-			const handler = vi.fn<(event: MouseEvent) => void>()
+			const handler = vi.fn<(event: MouseEvent | FocusEvent) => void>()
 
 			dismiss.events.on('dismiss', handler)
 			dismiss.enabled = true
@@ -951,6 +952,232 @@ describe('нажатие мимо', () => {
 			pen('pointerup', document.body)
 
 			expect(handler).not.toHaveBeenCalled()
+		})
+	})
+
+	/** Панель владельца так, как её рисует разметка: пометка владельцем и слой Frame. */
+	const ownPanel = (dismiss: TDismissPlugin, layer: number | null): HTMLElement => {
+		const panel = document.createElement('div')
+
+		for (const [name, value] of Object.entries(dismiss.ownerAttribute)) {
+			panel.setAttribute(name, value)
+		}
+
+		if (layer !== null) panel.setAttribute(FRAME_LAYER_ATTRIBUTE, String(layer))
+
+		document.body.appendChild(panel)
+
+		return panel
+	}
+
+	/** Чужая панель — соседка своей в `body`, со своим слоем. Отдаёт узел внутри неё. */
+	const layerAt = (layer: number): HTMLElement => {
+		const panel = document.createElement('div')
+		const inner = document.createElement('button')
+
+		panel.setAttribute(FRAME_LAYER_ATTRIBUTE, String(layer))
+		panel.appendChild(inner)
+		document.body.appendChild(panel)
+
+		return inner
+	}
+
+	/** `focusin` так, как его шлёт браузер: всплывает от получившего фокус. */
+	const focusIn = (target: Element) =>
+		target.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+
+	/**
+	 * Панели телепортированы в `body` соседями: вложенность «список Select в
+	 * поповере» видна только по номеру слоя Frame.
+	 */
+	describe('слои', () => {
+		it('нажатие в панель слоя выше своей — внутри', async () => {
+			const { dismiss } = await setup(30)
+			const handler = vi.fn()
+
+			ownPanel(dismiss, 1001)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			press(layerAt(1002))
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('нажатие в панель слоя ниже своей — мимо', async () => {
+			const { dismiss } = await setup(31)
+			const handler = vi.fn()
+
+			ownPanel(dismiss, 1002)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			press(layerAt(1001))
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+
+		it('нажатие в узел без слоя — мимо', async () => {
+			const { dismiss } = await setup(32)
+			const handler = vi.fn()
+			const plain = document.createElement('button')
+
+			document.body.appendChild(plain)
+			ownPanel(dismiss, 1001)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			press(plain)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+
+		it('у своей панели слоя нет — чужой слой не в счёт, нажатие мимо', async () => {
+			const { dismiss } = await setup(33)
+			const handler = vi.fn()
+
+			ownPanel(dismiss, null)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			press(layerAt(1002))
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('уход фокуса', () => {
+		it('focusOutside по умолчанию выключен: фокус мимо не закрывает', async () => {
+			const { dismiss } = await setup(40)
+			const handler = vi.fn()
+			const outside = document.createElement('button')
+
+			document.body.appendChild(outside)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			focusIn(outside)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('с focusOutside фокус мимо даёт dismiss с FocusEvent', async () => {
+			const { dismiss } = await setup(41, { focusOutside: true })
+			const handler = vi.fn<(event: MouseEvent | FocusEvent) => void>()
+			const outside = document.createElement('button')
+
+			document.body.appendChild(outside)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			focusIn(outside)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+			expect(handler.mock.lastCall?.[0]).toBeInstanceOf(FocusEvent)
+		})
+
+		it('фокус внутрь владельца и в его панель — не мимо', async () => {
+			const { dismiss, element } = await setup(42, { focusOutside: true })
+			const handler = vi.fn()
+			const inner = document.createElement('button')
+			const panel = ownPanel(dismiss, 1001)
+			const inPanel = document.createElement('button')
+
+			element.appendChild(inner)
+			panel.appendChild(inPanel)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			focusIn(inner)
+			focusIn(inPanel)
+			focusIn(panel)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('фокус в слой выше своей панели — внутри, в слой ниже — мимо', async () => {
+			const { dismiss } = await setup(43, { focusOutside: true })
+			const handler = vi.fn()
+
+			ownPanel(dismiss, 1002)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			focusIn(layerAt(1003))
+
+			expect(handler).not.toHaveBeenCalled()
+
+			focusIn(layerAt(1001))
+
+			expect(handler).toHaveBeenCalledTimes(1)
+		})
+
+		it('выключенный фокус не слушает', async () => {
+			const { dismiss } = await setup(44, { focusOutside: true })
+			const handler = vi.fn()
+			const outside = document.createElement('button')
+
+			document.body.appendChild(outside)
+			dismiss.events.on('dismiss', handler)
+			dismiss.enabled = true
+			dismiss.enabled = false
+			focusIn(outside)
+
+			expect(handler).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('панель владельца', () => {
+		it('findPanel находит узел с ownerAttribute в документе корня', async () => {
+			const { dismiss } = await setup(50)
+			const panel = ownPanel(dismiss, 1001)
+
+			expect(dismiss.findPanel()).toBe(panel)
+		})
+
+		it('до объявления корня панели нет', () => {
+			const dismiss = new TDismissPlugin()
+
+			dismiss.install(createPluginContext({ uid: 51 }, [new TElementPlugin()]))
+			ownPanel(dismiss, 1001)
+
+			expect(dismiss.findPanel()).toBeNull()
+		})
+	})
+
+	/**
+	 * Владельца закрывает сам плагин — после подписчиков `dismiss`. Иначе они
+	 * узнавали бы о нажатии мимо уже закрытыми и не отличали его от закрытия
+	 * по другой причине: плагин фокуса Popover по нему не возвращает фокус.
+	 */
+	describe('порядок: сообщить, потом закрыть', () => {
+		const bound = async () => {
+			const owner = new TPopover({ open: true })
+			const element = document.createElement('div')
+			const elementPlugin = new TElementPlugin()
+			const dismiss = new TDismissPlugin()
+
+			document.body.appendChild(element)
+			dismiss.install(createPluginContext(owner, [elementPlugin]))
+			elementPlugin.element = element
+			await nextFrame()
+
+			return { owner, dismiss }
+		}
+
+		it('подписчик dismiss застаёт владельца открытым, закрывается владелец после', async () => {
+			const { owner, dismiss } = await bound()
+			const seen: boolean[] = []
+
+			dismiss.events.on('dismiss', () => seen.push(owner.open))
+			press(document.body)
+
+			expect(seen).toEqual([true])
+			expect(owner.open).toBe(false)
+		})
+
+		it('закрытый владелец снимает слушателя: второе нажатие ничего не шлёт', async () => {
+			const { dismiss } = await bound()
+			const handler = vi.fn()
+
+			dismiss.events.on('dismiss', handler)
+			press(document.body)
+			press(document.body)
+
+			expect(handler).toHaveBeenCalledTimes(1)
+			expect(dismiss.enabled).toBe(false)
 		})
 	})
 })

@@ -3,6 +3,7 @@ import { required } from './helpers'
 import { TComponentView, TSpinner, TButton, TCollectionEngine, TBatchExtension } from '@soldy/core'
 import { SpinnerDescriptor, ButtonDescriptor } from '../descriptors'
 import { createAdapterContext, type IAdapterContext } from '../adapter'
+import { CommonProfile } from '../naming'
 
 /**
  * Контракт границы core → ui.
@@ -22,12 +23,10 @@ import { createAdapterContext, type IAdapterContext } from '../adapter'
 
 /** Читает значение пропа так же, как это делает адаптер. */
 function read(ctx: IAdapterContext, name: string): unknown {
-	const prop = required(
-		ctx.accessor.getProps(true).find((p) => p.name.name === name),
+	return required(
+		ctx.connect(CommonProfile).lines.find((line) => line.spec.name.name === name),
 		`проп ${name}`,
-	)
-
-	return ctx.accessor.getValue(prop)
+	).read()
 }
 
 describe('Составные props меняют идентичность при изменении', () => {

@@ -16,7 +16,6 @@
     "lib": ["ES2022", "dom"],
     "types": ["node"],
     "paths": {
-      "@soldy/accessor": ["../../accessor"],
       "@soldy/core": ["../../core/src"],
       "@soldy/icons-material": ["../../icons/material/src"],
       "@soldy/plugins": ["../../plugins/src"],

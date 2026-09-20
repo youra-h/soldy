@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { TBasePlugin } from '@soldy/plugins'
-import { normalizeContribution, defineComponent, definePlugin } from '@soldy/setup'
-import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
+import {
+	CommonProfile,
+	createAdapterContext,
+	normalizeContribution,
+	defineComponent,
+	definePlugin,
+} from '@soldy/setup'
 import { required } from './helpers'
 
 describe('normalizeContribution', () => {
@@ -114,23 +119,73 @@ describe('defineComponent', () => {
 		// Повторный ctor переопределяет родительский
 		const childOverride = defineComponent({
 			extends: parent,
-			plugins: [definePlugin({ ctor: PluginA, options: { x: 1 } })],
+			plugins: [definePlugin({ ctor: PluginA }).with({ x: 1 })],
 		})
 
 		expect(childOverride.plugins).toHaveLength(1)
 		expect(childOverride.plugins[0].options).toEqual({ x: 1 })
 	})
 
-	it('состав без плагинов набора не создаёт', () => {
-		const descriptor = defineComponent({ ctor: class {} })
-		const instance = new descriptor.ctor()
-		const composition = resolveComposition(descriptor, instance, {})
+	it('имя пропа у наследника — переобъявление, а имя события — дубль', () => {
+		class TOwner {}
 
-		expect(composition).toEqual([])
-		expect(assembleBundle(composition, instance)).toBeNull()
+		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const parent = defineComponent({
+			ctor: TOwner,
+			contribution: { props: { text: { type: String } }, events: ['click'] },
+		})
+
+		expect(report).not.toHaveBeenCalled()
+
+		// Проп наследника ложится на родительский (см. «переобъявление пропа»),
+		// а событие так не складывается: дубль — на совести автора, слой
+		// сообщает о нём и работает дальше
+		const child = defineComponent({
+			extends: parent,
+			contribution: { props: { text: { type: String } }, events: ['click'] },
+		})
+
+		expect(child.props.map((prop) => prop.name.name)).toEqual(['text'])
+		expect(report.mock.calls.map(([message]) => message)).toEqual([
+			'TOwner: событие «click» объявлено дважды — полное имя обязано быть одно',
+		])
+		expect(() => createAdapterContext(child, {}).connect(CommonProfile)).not.toThrow()
+
+		report.mockRestore()
 	})
 
-	it('аксессор привязывает props/events к instance', () => {
+	it('своё имя пропа и имя пропа плагина — по-прежнему дубль', () => {
+		class TOwner {}
+		class PluginWithText extends TBasePlugin {
+			text = ''
+		}
+
+		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		// Имена плагинов разводит неймспейс; без него столкновение остаётся,
+		// и слияние деклараций наследника его не прячет
+		defineComponent({
+			ctor: TOwner,
+			contribution: { props: { text: { type: String } } },
+			plugins: [
+				definePlugin({ ctor: PluginWithText, contribution: { props: { text: {} } } }),
+			],
+		})
+
+		expect(report.mock.calls.map(([message]) => message)).toEqual([
+			'TOwner: свойство «text» объявлено дважды — полное имя обязано быть одно',
+		])
+
+		report.mockRestore()
+	})
+
+	it('компоненту без плагинов набор не создаётся', () => {
+		const descriptor = defineComponent({ ctor: class {} })
+
+		expect(createAdapterContext(descriptor, {}).bundle).toBeNull()
+	})
+
+	it('линия привязывает проп к инстансу', () => {
 		const descriptor = defineComponent({
 			ctor: class {},
 			contribution: {
@@ -139,19 +194,16 @@ describe('defineComponent', () => {
 			},
 		})
 
-		const instance = new descriptor.ctor()
-		const accessor = assembleAccessor(descriptor, [], instance, null)
+		const context = createAdapterContext(descriptor, {})
+		const { lines } = context.connect(CommonProfile)
 
-		expect(accessor.getProps()).toHaveLength(1)
-		expect(accessor.getProps()[0].instance).toBe(instance)
-		expect(accessor.getProps()[0].name.name).toBe('text')
-
-		expect(accessor.getEvents()).toHaveLength(1)
-		expect(accessor.getEvents()[0].instance).toBe(instance)
-		expect(accessor.getEvents()[0].name.name).toBe('click')
+		expect(lines).toHaveLength(1)
+		expect(lines[0].owner).toBe(context.instance)
+		expect(lines[0].spec.name.name).toBe('text')
+		expect(descriptor.getEvents().map((event) => event.name)).toEqual(['click'])
 	})
 
-	it('аксессор добавляет Unit плагина с его props/events', () => {
+	it('плагин дескриптора — участник обмена со своими пропсами и событиями', () => {
 		class PluginWithProps extends TBasePlugin {
 			active = false
 		}
@@ -170,24 +222,22 @@ describe('defineComponent', () => {
 			plugins: [plugin],
 		})
 
-		const instance = new descriptor.ctor()
-		const composition = resolveComposition(descriptor, instance, {})
-		const bundle = assembleBundle(composition, instance)
-		const accessor = assembleAccessor(descriptor, composition, instance, bundle)
-
-		const activeProp = required(
-			accessor.getProps().find((prop) => prop.name.getName() === 'p:active'),
-			'prop p:active',
+		const context = createAdapterContext(descriptor, {})
+		const active = required(
+			context
+				.connect(CommonProfile)
+				.lines.find((line) => line.spec.name.getName() === 'p:active'),
+			'линия p:active',
 		)
-		expect(activeProp).toBeDefined()
-		expect(activeProp.instance).toBe(required(bundle, 'бандл').get(PluginWithProps))
 
-		expect(accessor.getEvents().some((e) => e.name.getName() === 'p:toggle')).toBe(true)
+		expect(active.name).toBe('p_active')
+		expect(active.owner).toBe(required(context.bundle, 'бандл').get(PluginWithProps))
+		expect(descriptor.getEvents().some((event) => event.getName() === 'p:toggle')).toBe(true)
 	})
 })
 
 describe('definePlugin', () => {
-	it('нормализует contribution с namespace и сохраняет options', () => {
+	it('нормализует contribution с namespace; опции задаёт with()', () => {
 		class P {}
 
 		const plugin = definePlugin({
@@ -197,12 +247,20 @@ describe('definePlugin', () => {
 				props: { v: { type: Number } },
 				events: ['go'],
 			},
-			options: { a: 1 },
 		})
 
 		expect(plugin.ctor).toBe(P)
 		expect(plugin.props.map((p) => p.name.getName())).toEqual(['x:v'])
 		expect(plugin.events.map((e) => e.getName())).toEqual(['x:go'])
-		expect(plugin.options).toEqual({ a: 1 })
+		expect(plugin.options).toBeUndefined()
+
+		const used = plugin.with({ a: 1 })
+
+		expect(used.ctor).toBe(P)
+		expect(used.props.map((p) => p.name.getName())).toEqual(['x:v'])
+		expect(used.events.map((e) => e.getName())).toEqual(['x:go'])
+		expect(used.options).toEqual({ a: 1 })
+		// Исходное определение делят все дескрипторы — with() его не меняет
+		expect(plugin.options).toBeUndefined()
 	})
 })

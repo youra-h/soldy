@@ -1,6 +1,5 @@
 import { ComponentViewDescriptor } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
-import { type IComponentViewProps, type IComponentView } from '@soldy/core'
 import BaseComponentView, { type ComponentViewProps } from './base.component'
 
 export default {
@@ -12,6 +11,6 @@ export default {
 			props,
 		})
 
-		return useAdapter<IComponentViewProps, IComponentView>(adapter, props, emit)
+		return useAdapter(adapter, props, emit)
 	},
 }

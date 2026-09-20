@@ -8,6 +8,16 @@
  * не переключал CheckBox и Switch, не нажимал заголовок Accordion, таб и
  * крестик тега.
  *
+ * Кнопку очистки и крестик тега в поле Select глушила ещё и клавиатура Select:
+ * она слушает свой корень и на их Enter и пробел открывала панель. Теперь она
+ * берёт клавиши только с поля, в jsdom это сторожит
+ * `setup/__tests__/select-keyboard.spec.ts`.
+ *
+ * Так же клавиатура ListBox глушила поле и кнопку из шапки и подвала списка:
+ * пробел не печатался, кнопка не нажималась, стрелки из поля двигали подсветку.
+ * Теперь она берёт клавиши только с корня и со строки элемента, в jsdom это
+ * сторожит `setup/__tests__/list-keyboard.spec.ts`.
+ *
  * Спек браузерный, потому что проверяет действия браузера по умолчанию: ввод
  * символа, переключение чекбокса, клик из Enter или пробела на `<button>`.
  * jsdom их не выполняет, и баг проходил там зелёным. Что корень не отменяет
@@ -15,8 +25,9 @@
  * `ui/vue/__tests__/action.spec.ts`.
  *
  * Обратная сторона — клавиша на самом корне-`div`: клика из неё браузер не
- * делает, активацию даёт только `press`. Так устроена строка тега — `div` с
- * `tabindex="0"`, которая сама держит фокус. Пока выбор тега висел на
+ * делает, активацию даёт только `press`. Так устроена строка тега — `div`,
+ * которая сама держит фокус (с выбором набор — одна остановка Tab, по тегам
+ * ходят стрелки: `browser/tags-keyboard.spec.ts`). Пока выбор тега висел на
  * `click`, Enter и пробел на строке не делали ничего; теперь он идёт по
  * `press` строки (`ui/vue/__tests__/tags-select.spec.ts`).
  */
@@ -32,6 +43,8 @@ import {
 	Button,
 	CheckBox,
 	Input,
+	ListBox,
+	ListBoxItem,
 	Select,
 	SelectItem,
 	Switch,
@@ -220,6 +233,47 @@ describe('вложенная кнопка нажимается', () => {
 
 		await expect.poll(tagTexts).toEqual(['Настройки'])
 	})
+
+	it.each(KEYS)('%s на кнопке очистки очищает Select, панель закрыта', async (_name, key) => {
+		await show(() =>
+			h(Select, { clearable: true, value: 'msk' }, () => [
+				h(SelectItem, { value: 'msk', text: 'Москва' }),
+				h(SelectItem, { value: 'spb', text: 'Петербург' }),
+			]),
+		)
+
+		const input = field('.s-select__field input')
+
+		// Без значения пустое поле ниже ничего бы не доказало
+		await expect.poll(() => input.value).toBe('Москва')
+
+		find('.s-select__clear').focus()
+		await userEvent.keyboard(key)
+
+		await expect.poll(() => input.value).toBe('')
+		expect(find('.s-select').dataset.open).not.toBe('true')
+	})
+
+	it.each(KEYS)(
+		'%s на крестике тега в поле Select закрывает тег, панель закрыта',
+		async (_name, key) => {
+			await show(() =>
+				h(Select, { mode: 'multiple', value: ['msk', 'spb'] }, () => [
+					h(SelectItem, { value: 'msk', text: 'Москва' }),
+					h(SelectItem, { value: 'spb', text: 'Петербург' }),
+				]),
+			)
+
+			// Теги в поле появляются, когда опции зарегистрировались
+			await expect.poll(tagTexts).toEqual(['Москва', 'Петербург'])
+
+			find('.s-tags-item__close[aria-label="Close Петербург"]').focus()
+			await userEvent.keyboard(key)
+
+			await expect.poll(tagTexts).toEqual(['Москва'])
+			expect(find('.s-select').dataset.open).not.toBe('true')
+		},
+	)
 })
 
 /**
@@ -266,5 +320,87 @@ describe('строка тега: клавиша переключает выбо�
 		await userEvent.keyboard(key)
 
 		await expect.poll(() => row.getAttribute('aria-selected')).toBe('false')
+	})
+})
+
+/**
+ * Клавиатура ListBox слушает свой корень, а в шапке и подвале списка лежат
+ * слоты потребителя. Их клавиши — не списка: поле печатает, кнопка нажимается,
+ * стрелка из поля подсветку не двигает. Своя клавиша списка приходит с корня
+ * или со строки элемента, на которой фокус остаётся после клика.
+ */
+describe('ListBox: клавиша списка — только с корня и со строки элемента', () => {
+	const cities = () => [
+		h(ListBoxItem, { value: 'msk', text: 'Москва' }),
+		h(ListBoxItem, { value: 'spb', text: 'Петербург' }),
+	]
+
+	/** Подсвеченный элемент — по `data-highlighted`, его пишет `TListItemPlugin`. */
+	const highlighted = () => document.querySelector('.s-list-box-item[data-highlighted="true"]')
+
+	/** Строка элемента по тексту: на ней `tabindex="-1"` и `aria-selected`. */
+	const rowOf = (text: string) => byText('.s-list-box-item .s-button', text)
+
+	it('пробел печатается в Input из шапки, стрелка из него ничего не подсвечивает', async () => {
+		await show(() => h(ListBox, null, { header: () => h(Input), default: cities }))
+
+		const input = field('.s-list-box .s-input input')
+
+		input.focus()
+		await userEvent.keyboard('a b')
+
+		expect(input.value).toBe('a b')
+
+		await userEvent.keyboard('{ArrowDown}')
+		await nextFrame()
+
+		expect(highlighted()).toBeNull()
+
+		// Та же стрелка с корня подсвечивает: проверка выше не пустая
+		find('.s-list-box').focus()
+		await userEvent.keyboard('{ArrowDown}')
+
+		await expect.poll(highlighted).not.toBeNull()
+	})
+
+	it.each(KEYS)(
+		'%s нажимает Button из подвала: один press, выбор прежний',
+		async (_name, key) => {
+			const press = vi.fn()
+
+			await show(() =>
+				h(
+					ListBox,
+					{ value: 'msk' },
+					{
+						default: cities,
+						footer: () => h(Button, { text: 'Готово', 'onAction:press': press }),
+					},
+				),
+			)
+
+			// Подсветка списка стоит на выбранном, и Enter, перехваченный списком,
+			// снял бы с него выбор: без выбора проверка «прежний» ничего бы не
+			// доказала
+			await expect.poll(() => rowOf('Москва').getAttribute('aria-selected')).toBe('true')
+
+			byText('.s-button', 'Готово').focus()
+			await userEvent.keyboard(key)
+			await nextFrame()
+
+			expect(press).toHaveBeenCalledTimes(1)
+			expect(rowOf('Москва').getAttribute('aria-selected')).toBe('true')
+		},
+	)
+
+	it('стрелка и Enter со строки элемента выбирают его', async () => {
+		await show(() => h(ListBox, null, { default: cities }))
+
+		// Фокус на строке — как после клика. Строку плагин узнаёт по разметке
+		// `Item.vue`: разойдись они — клавиши со строки пропали бы молча
+		rowOf('Москва').focus()
+		await userEvent.keyboard('{ArrowDown}{Enter}')
+
+		await expect.poll(() => rowOf('Москва').getAttribute('aria-selected')).toBe('true')
 	})
 })

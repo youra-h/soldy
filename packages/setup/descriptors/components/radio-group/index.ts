@@ -1,3 +1,6 @@
-export { RadioGroupDescriptor, type TRadioGroupSlots } from './radio-group.descriptor'
-export { RadioGroupItemDescriptor, type TRadioGroupItemSlots } from './item.descriptor'
-export * from './collection.descriptor'
+export { RadioGroupDescriptor } from './radio-group.descriptor'
+export { RadioGroupItemDescriptor } from './item.descriptor'
+export {
+	RadioGroupCollectionDescriptor,
+	RadioGroupCollectionItemDescriptor,
+} from './collection.descriptor'

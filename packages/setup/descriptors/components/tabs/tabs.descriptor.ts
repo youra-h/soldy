@@ -9,7 +9,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TTabs } from '@soldy/core'
-import type { ITabsProps, TTabsEvents, ITabsItem } from '@soldy/core'
+import type { ITabsItem } from '@soldy/core'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
@@ -19,30 +19,21 @@ import {
 	TabsKeyboardPluginDescriptor,
 	TabsLayoutPluginDescriptor,
 } from '../../plugins'
-import type { TEmptySlotScope } from '../../../define'
-
-/**
- * Слоты Tabs.
- *
- * `content` отделён от `default` не по вкусу, а структурно: `default` кладётся
- * внутрь `[role=tablist]`, и панель, попав туда, оказалась бы в списке табов.
- * Раньше панели уходили в динамический слот `panel:${value}`, который резолвил
- * только Vue; теперь это статический слот с компонентами `TabsContent`.
- */
-export type TTabsSlots = {
-	leading: TEmptySlotScope
-	default: TEmptySlotScope
-	trailing: TEmptySlotScope
-	content: TEmptySlotScope
-}
 
 export const TabsDescriptor = defineDescriptor(() =>
-	defineComponent<ITabsProps, TTabsEvents, TTabsSlots>()({
+	defineComponent({
 		ctor: TTabs,
 
 		extends: ControlDescriptor(),
 
 		contribution: {
+			/**
+			 * `content` отделён от `default` не по вкусу, а структурно: `default`
+			 * кладётся внутрь `[role=tablist]`, и панель, попав туда, оказалась бы в
+			 * списке табов. Раньше панели уходили в динамический слот
+			 * `panel:${value}`, который резолвил только Vue; теперь это статический
+			 * слот с компонентами `TabsContent`.
+			 */
 			slots: {
 				leading: { description: 'Перед списком табов' },
 				default: { description: 'Табы — элементы коллекции' },
@@ -81,15 +72,15 @@ export const TabsDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Tabs-специфичные
-			TabsLayoutPluginDescriptor(),
-			TabsActiveTabPluginDescriptor(),
+			TabsLayoutPluginDescriptor,
+			TabsActiveTabPluginDescriptor,
 			// Клавиатура по APG Tabs: стрелки, Home/End, Delete
-			TabsKeyboardPluginDescriptor(),
+			TabsKeyboardPluginDescriptor,
 			// Drag-and-drop
-			DragPluginDescriptor(),
+			DragPluginDescriptor,
 		],
 	}),
 )

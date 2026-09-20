@@ -18,5 +18,5 @@ export function setupControl(
 ): TBinding<IControl> {
 	const adapter = createAdapterContext(ControlDescriptor(), { ctrl, props })
 
-	return useAdapter<IControl>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

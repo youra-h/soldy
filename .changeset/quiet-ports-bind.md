@@ -1,6 +1,5 @@
 ---
 '@soldy/setup': minor
-'@soldy/accessor': minor
 '@soldy/ui-vue': minor
 '@soldy/ui-react': minor
 '@soldy/ui-solid': minor

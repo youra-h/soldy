@@ -1,214 +1,123 @@
 /**
- * TExternalPlugins — плагины, поставленные снаружи: их пропсы из `pluginProps` и события конвертом `plugin:event`.
+ * TExternalPlugins — плагины, поставленные снаружи: владелец пропа `pluginProps` и источник `plugin:event`.
  *
- * Плагин дескриптора объявляет пропсы и события через поверхность компонента.
- * Плагин снаружи — нет: статический слой Vue, Angular и Web Components
- * объявляет поверхность раньше, чем приложение его регистрирует, а поставить
- * его можно и позже, в `bundle:create`. Поэтому у каждого компонента один
- * проп на все такие плагины — `pluginProps` (`{ timer_ms: 500 }`) — и одно
- * событие — `plugin:event` (`{ name: 'timer:tick', args }`). Какие пропсы и
- * события у плагина, говорит его контракт (`pluginContractOf`), записанный
- * `definePlugin` за классом.
+ * Поверхность компонента объявляет только дескриптор, и внешний плагин в неё
+ * не попадает: статический слой объявляет её раньше регистрации, а поставить
+ * плагин можно и после монтирования. Поэтому на все внешние плагины у
+ * компонента один проп (`pluginProps`) и одно событие (`plugin:event`).
  *
- * Путь один, когда бы плагин ни встал: при сборке (`usePlugins`) или позже
- * (`bundle.use`) — набор сообщает `use`, и плагин подключается одинаково.
- * Значения, пришедшие раньше плагина, ждут его. Начальное значение пишется по
- * правилу сборки: только отличное от умолчания декларации
- * (`applyInitialProps`). Ключ пропал из `pluginProps` — проп возвращается к
- * умолчанию, как снятый проп компонента.
+ * Своих правил записи, сброса и проброса у класса нет. На каждый пришедший
+ * плагин с контрактом он заводит тот же `TExchange`, что обслуживает компонент,
+ * — только «фреймворком» для него служит мешок `pluginProps` (общий профиль
+ * имён), а приёмником событий — конверт на шине инстанса. Поэтому «правила
+ * записи — те же, что у пропсов компонента» выполняется не дисциплиной, а тем,
+ * что код один: «ключ пропал из мешка — проп вернулся к умолчанию» — обычное
+ * поведение полного набора.
  *
- * Конверт уходит на шину инстанса, как и `bundle:create`: это канал, видимый
- * и адаптеру (`@plugin:event`, `onPluginEvent`), и тому, у кого на руках
- * только `ctrl`.
+ * Путь один, когда бы плагин ни встал: реестр ставит плагины через
+ * `bundle.use` уже после того, как этот класс подписался на набор, и они
+ * приходят тем же событием `use`, что и плагин из обработчика `bundle:create`.
+ *
+ * Для обмена компонента этот объект — обычный участник: у него есть свойство
+ * `pluginProps`, и линия пишет в него обычным сеттером. Ветки «а если это
+ * pluginProps» в порту входов нет.
  */
 
-import { TAccessor } from '@soldy/accessor'
-import type { IAccessorProp, IPropDeclaration, TName } from '@soldy/accessor'
-import { isEventSource } from '@soldy/core'
 import type { IEventEmitter, TPluginEvent } from '@soldy/core'
-import type { IPlugin, IPluginBundle, IPluginConstructor } from '@soldy/plugins'
+import type { IPluginBundle, TPluginBundleEvents } from '@soldy/plugins'
 import { pluginContractOf } from '../../define'
-import type { IPluginDefinition } from '../../define'
-import { underscorePropNaming } from '../../naming'
+import type { TPluginCtor } from '../../define'
+import { CommonProfile } from '../../naming'
+import { TCell } from '../exchange/cell.class'
+import { TExchange } from '../exchange/exchange.class'
+import { TMember } from '../exchange/member.class'
+import { sameValue } from '../exchange/value'
+import { TSurface } from '../surface'
 
-type TPluginCtor = IPluginConstructor<any, any, any>
-
-/** Проп внешнего плагина: где он живёт и какое у него умолчание. */
-type TExternalProp = Readonly<{
-	accessor: TAccessor
-	prop: IAccessorProp
-	declaration: IPropDeclaration
-}>
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-	return typeof value === 'object' && value !== null
-}
-
-/** Значения `pluginProps`: не объект — значит, ничего не задано. */
-function valuesOf(values: unknown): Readonly<Record<string, unknown>> {
-	return isRecord(values) ? values : {}
-}
-
-/** Шина событий инстанса — если она у него есть. */
 function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
-	return isRecord(value) && 'emit' in value && typeof value.emit === 'function'
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		'emit' in value &&
+		typeof value.emit === 'function'
+	)
 }
 
 export class TExternalPlugins {
-	/** Текущие значения `pluginProps`. */
-	private _values: Readonly<Record<string, unknown>>
-	/** Ключ `pluginProps` (`timer_ms`) → проп подключённого плагина. */
-	private readonly _props = new Map<string, TExternalProp>()
-	/** Подключённый плагин → его ключи и отписка от его событий. */
-	private readonly _attached = new Map<TPluginCtor, { keys: string[]; off: () => void }>()
-	private readonly _off: () => void
+	/** Умолчание `pluginProps`: снятый проп возвращает плагины к их умолчаниям. */
+	static readonly defaultValues = { pluginProps: {} }
+
+	private readonly _bag = new TCell<object>({}, sameValue)
+	private readonly _detach = new Map<TPluginCtor, () => void>()
 
 	/**
-	 * @param own плагины дескриптора: их контракт уже в поверхности компонента
-	 * @param installed плагины, поставленные при сборке, в порядке установки
+	 * @param _own плагины дескриптора: через `pluginProps` они не пишутся — их пропсы уже в поверхности
 	 */
 	constructor(
-		bundle: IPluginBundle,
+		private readonly _bundle: IPluginBundle,
 		private readonly _instance: object,
 		private readonly _own: ReadonlySet<TPluginCtor>,
-		installed: readonly TPluginCtor[],
-		values: unknown,
 	) {
-		this._values = valuesOf(values)
-
-		for (const ctor of installed) {
-			const plugin = bundle.get(ctor)
-
-			if (plugin) this._attach(ctor, plugin)
-		}
-
-		const onUse = (ctor: TPluginCtor, plugin: IPlugin<any, any>) => this._attach(ctor, plugin)
-		const onRemove = (ctor: TPluginCtor) => this._detach(ctor)
-
-		bundle.events.on('use', onUse)
-		bundle.events.on('remove', onRemove)
-
-		this._off = () => {
-			bundle.events.off('use', onUse)
-			bundle.events.off('remove', onRemove)
-		}
+		_bundle.events.on('use', this._onUse)
+		_bundle.events.on('remove', this._onRemove)
 	}
 
-	write(values: unknown): void {
-		const next = valuesOf(values)
+	get pluginProps(): object {
+		return this._bag.value
+	}
 
-		for (const key of new Set([...Object.keys(this._values), ...Object.keys(next)])) {
-			const value = next[key]
-
-			if (Object.is(this._values[key], value)) continue
-
-			const target = this._props.get(key)
-
-			if (!target) continue
-
-			if (value !== undefined) {
-				this._set(target, value)
-			} else if (Object.hasOwn(target.declaration, 'default')) {
-				this._set(target, target.declaration.default)
-			}
-		}
-
-		this._values = next
+	set pluginProps(bag: object) {
+		this._bag.set(bag)
 	}
 
 	destroy(): void {
-		this._off()
+		this._bundle.events.off('use', this._onUse)
+		this._bundle.events.off('remove', this._onRemove)
 
-		for (const ctor of [...this._attached.keys()]) this._detach(ctor)
+		for (const detach of this._detach.values()) detach()
+
+		this._detach.clear()
 	}
 
-	private _attach(ctor: TPluginCtor, plugin: IPlugin<any, any>): void {
-		if (this._own.has(ctor) || this._attached.has(ctor)) return
+	private readonly _onUse: TPluginBundleEvents['use'] = (ctor, plugin) => {
+		if (this._own.has(ctor)) return
+
+		this._detach.get(ctor)?.()
 
 		const contract = pluginContractOf(ctor)
 
+		// Плагин без объявленного контракта работает, но значений не получает и событий не шлёт
 		if (!contract) return
 
-		const accessor = new TAccessor([
-			{ instance: plugin, props: contract.props, events: contract.events },
-		])
-		const declarations = new Map(contract.props.map((d) => [d.name.getName(), d]))
-		const keys: string[] = []
+		const member = new TMember(plugin, contract.props, contract.events)
 
-		for (const prop of accessor.getProps()) {
-			const declaration = declarations.get(prop.name.getName())
+		// Значения, пришедшие раньше плагина, ждали его в мешке: для него это пропсы сборки
+		const exchange = new TExchange(
+			[member],
+			TSurface.of(contract, CommonProfile),
+			this._bag.value,
+		)
 
-			if (!declaration) continue
+		exchange.inputs.seed(plugin)
 
-			const key = underscorePropNaming(prop.name)
-			const target: TExternalProp = { accessor, prop, declaration }
+		const offBag = this._bag.listen((bag) => exchange.inputs.full(bag))
+		const offEvents = exchange.events.listen((name, args) => this._announce({ name, args }))
 
-			this._props.set(key, target)
-			keys.push(key)
-
-			// Правило сборки: значение, равное умолчанию, ничего не задаёт
-			const value = this._values[key]
-			const isDefault =
-				Object.hasOwn(declaration, 'default') && Object.is(value, declaration.default)
-
-			if (value !== undefined && !isDefault) this._set(target, value)
-		}
-
-		this._attached.set(ctor, { keys, off: this._forward(plugin, contract) })
+		this._detach.set(ctor, () => {
+			offBag()
+			offEvents()
+		})
 	}
 
-	private _detach(ctor: TPluginCtor): void {
-		const attached = this._attached.get(ctor)
-
-		if (!attached) return
-
-		attached.off()
-
-		for (const key of attached.keys) this._props.delete(key)
-
-		this._attached.delete(ctor)
+	private readonly _onRemove: TPluginBundleEvents['remove'] = (ctor) => {
+		this._detach.get(ctor)?.()
+		this._detach.delete(ctor)
 	}
 
-	/**
-	 * События плагина — явные и триггеры его пропсов — одним конвертом на шину
-	 * инстанса. Один сырой триггер у двух пропсов пересылается один раз.
-	 */
-	private _forward(plugin: IPlugin<any, any>, contract: IPluginDefinition): () => void {
+	/** Конверт — на шину инстанса: его видят и адаптер, и тот, у кого на руках только `ctrl`. */
+	private _announce(event: TPluginEvent): void {
 		const bus: unknown = Reflect.get(this._instance, 'events')
-		const source: unknown = plugin.events
 
-		if (!hasEmit(bus) || !isEventSource(source)) return () => {}
-
-		const offs: Array<() => void> = []
-		const seen = new Set<string>()
-
-		const forward = (name: TName): void => {
-			if (seen.has(name.name)) return
-
-			seen.add(name.name)
-
-			const handler = (...args: unknown[]) => {
-				const event: TPluginEvent = { name: name.getName(), args }
-
-				bus.emit('plugin:event', event)
-			}
-
-			source.on(name.name, handler)
-			offs.push(() => source.off(name.name, handler))
-		}
-
-		for (const name of contract.events) forward(name)
-
-		for (const declaration of contract.props) {
-			for (const trigger of declaration.triggers ?? []) forward(trigger)
-		}
-
-		return () => offs.forEach((off) => off())
-	}
-
-	private _set(target: TExternalProp, value: unknown): void {
-		if (Object.is(target.accessor.getValue(target.prop), value)) return
-
-		target.accessor.setValue(target.prop, value)
+		if (hasEmit(bus)) bus.emit('plugin:event', event)
 	}
 }

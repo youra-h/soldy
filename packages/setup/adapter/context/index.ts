@@ -4,6 +4,8 @@ export type {
 	IAdapterContextConfig,
 	IAdapterContextOptions,
 	TAdapterEvents,
+	TContextContract,
+	TInstanceContext,
 	IAdapterExtensionCtor,
 	IAdapterExtensionCtorNoOpts,
 	TAnyExtensionCtor,

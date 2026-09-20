@@ -1,7 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TStateUnit } from '../../../../common'
-import type { TValuePayload, TAriaAttributes, TEventSink } from '../../../../common'
+import { TAria, TStateUnit } from '../../../../common'
+import type { TValuePayload, TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from './types'
 
 /**
@@ -13,6 +13,11 @@ import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from
  * Закрытие — копия `TTabsItem`: явное значение элемента приоритетнее
  * глобального `closable` компонента. Что выключенный тег не закрывается,
  * решает item-адаптер коллекции (`TTagsItemExtension.closable`), а не элемент.
+ *
+ * Кнопка закрытия, в отличие от таба, — живой набор `closeAria`, а не
+ * вычисляемый снимок: её `tabindex` зависит от режима выбора коллекции, о
+ * котором тег не знает. Имя пишет тег, `tabindex` — `TTagsExtension`, как
+ * у `aria` строки роль пишет тег, а `aria-selected` — коллекция.
  */
 export default class TTagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
@@ -34,6 +39,7 @@ export default class TTagsItem<
 	}
 
 	protected _closeLabel!: string
+	protected _closeAria: TAria
 
 	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TTagsItemStates> = {}) {
 		super(props, options)
@@ -53,7 +59,16 @@ export default class TTagsItem<
 				initial: customProps.closable ?? ctor.defaultValues.closable,
 			})
 
+		this._closeAria = new TAria()
+
+		this._closeAria.events.on('change', () =>
+			this._sink.emit('change:closeAria', this._closeAria.toObject()),
+		)
+
+		this._syncCloseName()
+
 		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
+			this._syncCloseName()
 			this._sink.emit('change:text', payload)
 		})
 
@@ -127,17 +142,30 @@ export default class TTagsItem<
 		if (this._closeLabel === value) return
 
 		this._closeLabel = value
+		this._syncCloseName()
 		this._sink.emit('change:closeLabel', value)
+	}
+
+	/**
+	 * Атрибуты кнопки закрытия — отдельный набор, а не часть `aria`: `aria`
+	 * описывает сам тег, а это кнопка рядом с ним. Один элемент — один набор.
+	 *
+	 * Живой, как `aria`, потому что пишут в него двое: имя — тег, `tabindex` —
+	 * `TTagsExtension` по режиму выбора. За границу core → ui уходит снимок
+	 * (`valueOf()`), об изменении набор сообщает `change:closeAria`.
+	 */
+	get closeAria(): TAria {
+		return this._closeAria
 	}
 
 	/**
 	 * Имя кнопки закрытия — вместе с текстом тега: «Close Настройки». Без
 	 * текста все кнопки набора назывались бы одинаково.
 	 */
-	get closeAria(): TAriaAttributes {
+	private _syncCloseName(): void {
 		const text = this.text.trim()
 
-		return { 'aria-label': text ? `${this._closeLabel} ${text}` : this._closeLabel }
+		this._closeAria.add('aria-label', text ? `${this._closeLabel} ${text}` : this._closeLabel)
 	}
 
 	override getProps(): TProps {

@@ -31,7 +31,7 @@
 import type { IComponentView, IComponentViewProps } from '@soldy/core'
 import {
 	DEFAULT_SLOT,
-	surfaceOf,
+	TSurface,
 	type IComponentDescriptor,
 	type TInstanceState,
 } from '@soldy/setup'
@@ -101,7 +101,7 @@ export abstract class TSoldyElement<
 	 * у него своя пара ниже: читать его нужно из буфера, а не из state.
 	 */
 	static defineProps(descriptor: IComponentDescriptor): void {
-		for (const prop of Object.keys(surfaceOf(descriptor, WebcProfile).exportProps)) {
+		for (const prop of Object.keys(TSurface.of(descriptor, WebcProfile).exportProps)) {
 			if (prop === 'ctrl') continue
 			if (Object.prototype.hasOwnProperty.call(this.prototype, prop)) continue
 

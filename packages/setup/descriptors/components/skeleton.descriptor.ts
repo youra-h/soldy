@@ -9,12 +9,11 @@
 
 import { defineComponent, defineDescriptor } from '../../define'
 import { TSkeleton } from '@soldy/core'
-import type { ISkeletonProps, TSkeletonEvents } from '@soldy/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const SkeletonDescriptor = defineDescriptor(() =>
-	defineComponent<ISkeletonProps, TSkeletonEvents>()({
+	defineComponent({
 		ctor: TSkeleton,
 
 		extends: ComponentViewDescriptor(),
@@ -29,6 +28,6 @@ export const SkeletonDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [SkeletonLayoutPluginDescriptor()],
+		plugins: [SkeletonLayoutPluginDescriptor],
 	}),
 )
