@@ -21,6 +21,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy/playground-shared'
 import { Select, SelectItem } from '@soldy/ui-vue'
+import type { TTagsOverflow } from '@soldy/core'
 
 import '@soldy/theme-oren'
 
@@ -38,6 +39,9 @@ const FIELD_WIDTH = 420
  * выбирает их все и проверяет, что ввод упёрся в минимум, а не схлопнулся.
  */
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара', 'Омск', 'Пермь', 'Сочи']
+
+/** Значения всех опций сразу — выбор, который в одну строку не помещается. */
+const ALL_VALUES = OPTIONS.map((_, index) => String(index))
 
 const Harness = {
 	render: () =>
@@ -93,10 +97,57 @@ const sizedHarness = (
 		},
 	})
 
+/**
+ * Пара Select одного размера и режима, по контейнеру на каждый: с выбором и
+ * без него. Разница между ними — только теги, поэтому высоты полей сравнимы
+ * напрямую.
+ */
+const pairHarness = (options: {
+	/** Значения выбранного Select — по одному на каждую опцию из `texts`. */
+	value: string[]
+	texts: readonly string[]
+	size?: (typeof COMPONENT_SIZES)[number]
+	overflow?: TTagsOverflow
+}) =>
+	defineComponent({
+		render() {
+			const select = (value?: string[]) =>
+				h('div', { style: `width: ${FIELD_WIDTH}px` }, [
+					h(
+						Select,
+						{
+							mode: 'multiple',
+							editable: true,
+							clearable: true,
+							size: options.size,
+							tags_overflow: options.overflow,
+							value,
+						},
+						{
+							default: () =>
+								options.texts.map((text, index) =>
+									h(SelectItem, { key: text, value: String(index), text }),
+								),
+						},
+					),
+				])
+
+			return h('div', [select(options.value), select()])
+		},
+	})
+
 const input = () => document.querySelector('.s-select__field input') as HTMLInputElement
 const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
 const tags = () => [...document.querySelectorAll('.s-tags-item')]
 const options = () => [...document.querySelectorAll('[role="option"]')] as HTMLElement[]
+
+/**
+ * Теги, оставшиеся в самом поле: в `popover` хвост ряда уезжает в панель, а
+ * она телепортирована в `body` и в поле уже не лежит.
+ */
+const fieldTags = (root: ParentNode = document) => [
+	...root.querySelectorAll('.s-select__field .s-tags-item'),
+]
 
 /** Узел по селектору внутри корня; нет его — тест падает здесь, а не на чтении свойства. */
 const find = (selector: string, root: ParentNode = document): HTMLElement => {
@@ -345,31 +396,8 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
  * разницу между ними.
  */
 describe.each(COMPONENT_SIZES)('размер %s: высота поля с одним тегом', (size) => {
-	/**
-	 * Два Select одного размера и режима, по контейнеру на каждый: с одним
-	 * тегом и без выбора. Разница между ними — только тег.
-	 */
-	const pairHarness = defineComponent({
-		render() {
-			const select = (value?: string[]) =>
-				h('div', { style: `width: ${FIELD_WIDTH}px` }, [
-					h(
-						Select,
-						{ mode: 'multiple', editable: true, clearable: true, value, size },
-						{
-							default: () => [
-								h(SelectItem, { key: '0', value: '0', text: 'Москва' }),
-							],
-						},
-					),
-				])
-
-			return h('div', [select(['0']), select()])
-		},
-	})
-
 	it('та же, что у поля без выбора, а корень — ровно по полю', async () => {
-		render(pairHarness)
+		render(pairHarness({ value: ['0'], texts: ['Москва'], size }))
 
 		await expect.poll(() => tags().length).toBe(1)
 
@@ -385,5 +413,69 @@ describe.each(COMPONENT_SIZES)('размер %s: высота поля с одн
 		expect(tagged.field.height, 'поле с тегом').toBeCloseTo(empty.field.height, 1)
 		expect(tagged.root.height, 'корень с тегом').toBeCloseTo(tagged.field.height, 1)
 		expect(empty.root.height, 'корень без выбора').toBeCloseTo(empty.field.height, 1)
+	})
+})
+
+/**
+ * Режимы, в которых ряд не переносится, и признак того, что раскладка улеглась.
+ *
+ * - `scroll` — все теги остаются в ряду, уезжать им некуда.
+ * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём
+ *   кнопку «…».
+ */
+const SINGLE_ROW_MODES = [
+	{
+		overflow: 'scroll',
+		settled: () => fieldTags().length === OPTIONS.length,
+	},
+	{
+		overflow: 'popover',
+		settled: () => document.querySelector('.s-tags__more') !== null,
+	},
+] as const
+
+/**
+ * Рост поля привязан к `wrap` — умолчанию, в котором ряд переносится по
+ * строкам. В `scroll` и `popover` переносить нечего: ряд стоит одной строкой
+ * (`tags/_tags.scss`), и поле обязано остаться высоты размера. Иначе выходит,
+ * что его растит сам факт тегов, а не перенос.
+ *
+ * Это сторож условия `data-overflow='wrap'` в правиле роста
+ * (`select/_select.scss`): без него в `popover` слот вытягивается по кнопке
+ * «…» и тянет за собой поле.
+ *
+ * Сколько тегов осталось в ряду, а сколько уехало в панель, проверяет
+ * `tags-overflow.spec.ts` — здесь важны строка и высота.
+ */
+describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled }) => {
+	it('ряд — одна строка, а поле не выше поля без выбора', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
+
+		await expect.poll(settled).toBe(true)
+
+		const roots = [...document.querySelectorAll('.s-select')]
+
+		expect(roots).toHaveLength(2)
+
+		const [tagged, empty] = roots
+		const field = box(find('.s-select__field', tagged))
+
+		// Части ряда в поле: теги и, в `popover`, кнопка «…». Своя высота у
+		// кнопки — размерная высота Button, то есть высота всего поля, и без
+		// строки поля она вылезала за рамку.
+		const parts = [...fieldTags(tagged), ...tagged.querySelectorAll('.s-tags__more')].map(box)
+
+		expect(parts.length, 'частей ряда в поле').toBeGreaterThan(0)
+		expect(new Set(parts.map((part) => Math.round(part.top))).size, 'строк в ряду').toBe(1)
+
+		parts.forEach((part, index) => {
+			expect(part.height, `часть ряда ${index}: высота`).toBeCloseTo(parts[0].height, 1)
+			expect(part.bottom, `часть ряда ${index}: низ`).toBeLessThanOrEqual(field.bottom)
+		})
+
+		expect(field.height, 'поле с тегами').toBeCloseTo(
+			box(find('.s-select__field', empty)).height,
+			1,
+		)
 	})
 })
