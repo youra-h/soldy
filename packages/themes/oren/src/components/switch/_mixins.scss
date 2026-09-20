@@ -1,3 +1,5 @@
+@use '../../mixins/hover';
+
 @mixin switch-size($this, $tw) {
 	$th: $tw * 0.5 + 1;
 	$ts: $th - 1;
@@ -26,7 +28,8 @@
 		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 		$bg-hover: $bg + 100;
 
-		&:hover:not(:disabled):not(:checked) + #{$this}__track {
+		// Наведено — курсор на переключателе или на подписи `Label` вокруг него
+		&:is(#{hover.$hovered}):not(:disabled):not(:checked) + #{$this}__track {
 			@apply #{'bg-s-' + $color + '-' + $bg-hover};
 		}
 	}
