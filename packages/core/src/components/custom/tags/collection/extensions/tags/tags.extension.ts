@@ -17,6 +17,7 @@ import type {
 	ITagsExtension,
 } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
+import type { ITagsOverflowExtension } from '../overflow'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
 import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
@@ -137,6 +138,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		ctx.driver.events.on('change:items', () => this._syncTabStop())
 		selection?.events.on('change:mode', () => this._syncTabStop())
 		selection?.events.on('change:selection', () => this._syncTabStop())
+		// Тег, уехавший в панель, из порядка обхода выбывает
+		this._overflow?.events.on('change:fit', () => this._syncTabStop())
 
 		this._syncTabStop()
 	}
@@ -155,6 +158,10 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
 		return this._ctx.extensions.selection as ISelectionExtension<TItem> | undefined
+	}
+
+	private get _overflow(): ITagsOverflowExtension<TItem> | undefined {
+		return this._ctx.extensions.overflow as ITagsOverflowExtension<TItem> | undefined
 	}
 
 	/**
@@ -261,14 +268,25 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Тег, на который можно перейти: не disabled, visible и rendered.
+	 * Тег, на который можно перейти: не disabled, visible, rendered и стоит в
+	 * ряду.
 	 *
 	 * Публичный, потому что правило одно на всех: по нему считаются остановка
 	 * Tab и навигация с клавиатуры. Копия в плагине однажды разошлась бы с
 	 * остановкой.
+	 *
+	 * Тег, уехавший в панель переполнения, фокус принять не может: панель
+	 * закрыта, а открытая — отдельный диалог со своей моделью фокуса
+	 * (`TPopoverFocusPlugin`). Ряд и панель — две стороны одного набора, и
+	 * стрелки ходят по той, на которой стоит фокус.
 	 */
 	isEnabledTag(item: TItem): boolean {
-		return !item.disabled && item.visible && item.rendered
+		return (
+			!item.disabled &&
+			item.visible &&
+			item.rendered &&
+			!(this._overflow?.overflowed.includes(item) ?? false)
+		)
 	}
 
 	/**

@@ -16,6 +16,7 @@ import type {
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 	TCollectionFacadeOptions,
+	TSelectionFacadeProps,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 } from '../../../base/collection'
@@ -29,6 +30,7 @@ import type {
 } from '../../../base/collection'
 import type { TSelectTagsExtensionEvents } from './extensions'
 import type { TSelectItemEventsExtension } from './extensions/select/item/types'
+import type { TTagsOverflow } from '../../tags'
 
 export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem> = {
 	factory: TFactoryExtension<TItem>
@@ -85,7 +87,14 @@ export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = I
 	extends
 		ICollectionProps<TSelectCollectionFacadeEngine>,
 		IBatchCollectionProps<TItemProps, TItem>,
-		ISelectionCollectionProps {}
+		ISelectionCollectionProps {
+	/**
+	 * Что делать с тегами поля, когда они не помещаются в строку. Передаётся
+	 * своему `TTags` так же, как `size` и `variant`; по умолчанию `wrap` —
+	 * поведение поля не меняется, пока режим не задали.
+	 */
+	tags_overflow?: TTagsOverflow
+}
 
 /** Item-level props опции. */
 export interface ISelectCollectionItemProps extends ISelectionCollectionItemProps {}
@@ -94,6 +103,13 @@ export type TSelectCollectionFacadeOptions = TCollectionFacadeOptions<
 	TSelectCollectionFacadeEngine,
 	ISelect<any, any, any>
 >
+
+/**
+ * Входные props фасада коллекции Select: состав и режим из базы плюс своё —
+ * режим переполнения ряда тегов.
+ */
+export type TSelectCollectionFacadeProps = TSelectionFacadeProps<ISelectItem> &
+	Pick<ISelectCollectionProps, 'tags_overflow'>
 
 /** Item-адаптеры коллекции Select — типизированный доступ к `context.adapters`. */
 export type TSelectAdapters = {

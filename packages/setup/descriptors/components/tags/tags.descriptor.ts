@@ -19,6 +19,7 @@ import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
+	TagsOverflowPluginDescriptor,
 } from '../../plugins'
 
 export const TagsDescriptor = defineDescriptor(() =>
@@ -56,6 +57,27 @@ export const TagsDescriptor = defineDescriptor(() =>
 				 * значение не доставляется.
 				 */
 				view: { type: String, triggers: ['change:view'] },
+				/**
+				 * Что делать с тегами, которым не хватило ширины ряда: переносить
+				 * (`wrap`, по умолчанию), прокручивать (`scroll`) или убирать хвост
+				 * в панель за кнопкой «…» (`popover`). Само значение уезжает в тему
+				 * через `data-overflow`.
+				 */
+				overflow: { type: String, triggers: ['change:overflow'] },
+				/** Имя кнопки «…» для скринридера. */
+				moreLabel: { type: String, triggers: ['change:moreLabel'] },
+				/**
+				 * Имя кнопки «…» готовым набором: своего экземпляра у неё нет, она
+				 * — содержимое слота `trigger` у панели.
+				 */
+				moreAria: { type: Object, protected: true, triggers: ['change:moreLabel'] },
+				/**
+				 * Классы панели: теги в ней телепортированы, и селекторы вида до них
+				 * не достают. Считает это ядро, а не шаблон каждого адаптера.
+				 */
+				panelClasses: { type: Array, protected: true, triggers: ['change:classes'] },
+				/** ARIA панели: роль повторяет роль ряда. */
+				panelAria: { type: Object, protected: true, triggers: ['change:aria'] },
 			},
 		},
 
@@ -65,6 +87,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 			CollectionElementsPluginDescriptor,
 			// Клавиатура по APG Listbox, пока выбор включён: стрелки, Home/End, Delete
 			TagsKeyboardPluginDescriptor,
+			// Замер ряда: сколько тегов помещается в строку в режиме `popover`
+			TagsOverflowPluginDescriptor,
 		],
 	}),
 )

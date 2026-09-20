@@ -10,20 +10,24 @@ import type {
 	TTagsCollection,
 	TTagsCollectionExtensions,
 	TTagsCollectionFacadeEngine,
+	TTagsCollectionFacadeEvents,
 } from '../types'
 import type { ITagsItem } from '../../item/types'
 import type { ITags } from '../../types'
+import type { IPopover } from '../../../popover'
 
 /**
  * Фасад коллекции Tags.
  *
  * Наследует `TSelectionCollectionFacade`, как ListBox: состав и выбор из
- * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своего сверх базы
- * нет: вид набора — свойство самого `TTags`, а не членство в коллекции.
+ * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своё сверх базы —
+ * деление показанного на ряд и панель (`overflow`): вид набора остаётся
+ * свойством самого `TTags`, а вот кто где нарисован — членство в коллекции.
  */
 export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 	ITagsItem,
-	TTagsCollectionExtensions
+	TTagsCollectionExtensions,
+	TTagsCollectionFacadeEvents
 > {
 	constructor(
 		props: TSelectionFacadeProps<ITagsItem> = {},
@@ -50,6 +54,27 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 			},
 		)
 
+		this.events.relayAll(this.extensions.overflow.events)
+
 		this.applyProps(props)
+	}
+
+	/** Теги ряда. Вне `popover` — всё показанное. */
+	get fitted(): ITagsItem[] {
+		return this.extensions.overflow.fitted
+	}
+
+	/** Теги панели. Вне `popover` — пусто. */
+	get overflowed(): ITagsItem[] {
+		return this.extensions.overflow.overflowed
+	}
+
+	/**
+	 * Инстанс панели с непоместившимися тегами — то, что `<Popover :ctrl>`
+	 * берёт готовым. Создаёт его расширение, а не разметка: закрытие
+	 * опустевшей панели тогда решается один раз в ядре.
+	 */
+	get panel(): IPopover | null {
+		return this.extensions.overflow.panel
 	}
 }
