@@ -3,7 +3,7 @@
  * из Vue/React/Svelte-пакетов).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-слое компонента через
- * createAdapterContext) и связывает его с Solid через связку `bindComponent`
+ * createAdapterContext) и связывает его с Solid через обмен `adapter.connect()`
  * из setup. Своё здесь — только куда писать значение (`createStore`), как
  * отдать событие (колбэк-проп) и в какой момент цикла Solid это делать:
  *
@@ -19,7 +19,7 @@
 
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { bindComponent, toInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { SolidProfile } from '../common'
@@ -43,22 +43,22 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 ): TBinding<C, TProps> {
-	const binding = bindComponent(adapter, SolidProfile)
+	const binding = adapter.connect(SolidProfile)
 	const [state, setState] = createStore<Record<string, unknown>>({})
 
 	// 1. Core → Solid: подписка на всё время жизни, отписка на onCleanup.
 	// Подписка сразу отдаёт значение каждого свойства — тем же вызовом, что и
 	// триггер: так стор и заполняется. Merge-форма, а не setState(key, value):
 	// при значении-функции путевая форма трактовала бы его как updater.
-	onCleanup(binding.subscribe((prop, value) => setState({ [prop.exportName]: value })))
+	onCleanup(binding.state.subscribe((name, value) => setState({ [name]: value })))
 
 	// 2. Solid → Core: эффект читает все props и перезапускается при смене любого,
 	// а связка пишет из них только сменившиеся с прошлого раза
-	createEffect(() => binding.writeAll(props))
+	createEffect(() => binding.inputs.full(props))
 
 	// 3. События
 	onCleanup(
-		binding.bindEvents((exportName, args) => {
+		binding.events.listen((exportName, args) => {
 			const callback: unknown = Reflect.get(props, exportName)
 
 			if (typeof callback === 'function') callback(...args)

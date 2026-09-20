@@ -20,14 +20,8 @@ import { TButton } from '@soldy/core'
 import type { IButton } from '@soldy/core'
 import { TAriaPlugin, TBasePlugin } from '@soldy/plugins'
 import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
-import {
-	ButtonDescriptor,
-	bindComponent,
-	createAdapterContext,
-	definePlugin,
-	usePlugins,
-} from '@soldy/setup'
-import type { TEventEmitter } from '@soldy/setup'
+import { ButtonDescriptor, createAdapterContext, definePlugin, usePlugins } from '@soldy/setup'
+import type { TEventSink } from '@soldy/setup'
 import { CallbackProfile, required } from './helpers'
 
 type TIntervalEvents = TPluginEvents & {
@@ -66,7 +60,7 @@ class TIntervalPlugin extends TBasePlugin<IButton, TIntervalEvents> {
 /** Плагин без контракта: `definePlugin` для него не звали. */
 class TSilentPlugin extends TBasePlugin<IButton> {}
 
-definePlugin({
+const IntervalPluginDescriptor = definePlugin({
 	ctor: TIntervalPlugin,
 	namespace: 'interval',
 	contribution: {
@@ -91,10 +85,7 @@ describe('внешний плагин · поверхность', () => {
 	it('поверхность одна на тип: пропа плагина в ней нет, есть `pluginProps` и `plugin:event`', () => {
 		dispose = usePlugins(TButton, [TIntervalPlugin])
 
-		const { surface } = bindComponent(
-			createAdapterContext(ButtonDescriptor(), {}),
-			CallbackProfile,
-		)
+		const { surface } = createAdapterContext(ButtonDescriptor(), {}).connect(CallbackProfile)
 
 		expect(surface.exportProps).not.toHaveProperty('interval_value')
 		expect(surface.exportProps).toHaveProperty('pluginProps')
@@ -119,6 +110,22 @@ describe('внешний плагин · pluginProps', () => {
 		expect(plugin(context).value).toBe(250)
 	})
 
+	/**
+	 * Пакет объявлен `sideEffects: false`: модуль определения, из которого ничего не
+	 * взяли, сборщик выбрасывает вместе с записью контракта. Регистрация
+	 * определением держит модуль в бандле.
+	 */
+	it('плагин ставится и определением — с опциями `with()`', () => {
+		dispose = usePlugins(TButton, [IntervalPluginDescriptor.with({ value: 250 })])
+
+		const context = createAdapterContext(ButtonDescriptor(), {
+			props: { pluginProps: { interval_value: 500 } },
+		})
+
+		expect(plugin(context).value).toBe(500)
+		expect(plugin(createAdapterContext(ButtonDescriptor(), {})).value).toBe(250)
+	})
+
 	it('значение, равное умолчанию, ничего не задаёт — как у сборки', () => {
 		dispose = usePlugins(TButton, [{ ctor: TIntervalPlugin, options: { value: 250 } }])
 
@@ -141,9 +148,9 @@ describe('внешний плагин · pluginProps', () => {
 
 	it('значение, пришедшее до плагина, ждёт его установки', () => {
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 
-		binding.writeAll({ pluginProps: { interval_value: 500 } })
+		binding.inputs.full({ pluginProps: { interval_value: 500 } })
 		context.bundle?.use(TIntervalPlugin)
 
 		expect(plugin(context).value).toBe(500)
@@ -155,13 +162,13 @@ describe('внешний плагин · pluginProps', () => {
 		const context = createAdapterContext(ButtonDescriptor(), {
 			props: { pluginProps: { interval_value: 250 } },
 		})
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 
-		binding.writeAll({ pluginProps: { interval_value: 500 } })
+		binding.inputs.full({ pluginProps: { interval_value: 500 } })
 
 		expect(plugin(context).value).toBe(500)
 
-		binding.writeAll({ pluginProps: {} })
+		binding.inputs.full({ pluginProps: {} })
 
 		expect(plugin(context).value).toBe(1000)
 	})
@@ -173,7 +180,7 @@ describe('внешний плагин · pluginProps', () => {
 			props: { pluginProps: { interval_value: 250 } },
 		})
 
-		bindComponent(context, CallbackProfile).writeAll({})
+		context.connect(CallbackProfile).inputs.full({})
 
 		expect(plugin(context).value).toBe(1000)
 	})
@@ -209,14 +216,14 @@ describe('внешний плагин · pluginProps', () => {
 
 	it('снятый плагин значения больше не получает', () => {
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const binding = bindComponent(context, CallbackProfile)
+		const binding = context.connect(CallbackProfile)
 
 		context.bundle?.use(TIntervalPlugin)
 
 		const removed = plugin(context)
 
 		context.bundle?.remove(TIntervalPlugin)
-		binding.writeAll({ pluginProps: { interval_value: 500 } })
+		binding.inputs.full({ pluginProps: { interval_value: 500 } })
 
 		expect(removed.value).toBe(1000)
 	})
@@ -224,7 +231,7 @@ describe('внешний плагин · pluginProps', () => {
 
 describe('внешний плагин · plugin:event', () => {
 	/** Конверты, пришедшие в связку под именем фреймворка. */
-	function envelopes(emit: ReturnType<typeof vi.fn<TEventEmitter>>): unknown[] {
+	function envelopes(emit: ReturnType<typeof vi.fn<TEventSink>>): unknown[] {
 		return emit.mock.calls
 			.filter(([name]) => name === 'onPluginEvent')
 			.map(([, args]) => args[0])
@@ -234,9 +241,9 @@ describe('внешний плагин · plugin:event', () => {
 		dispose = usePlugins(TButton, [TIntervalPlugin])
 
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const emit = vi.fn<TEventEmitter>()
+		const emit = vi.fn<TEventSink>()
 
-		bindComponent(context, CallbackProfile).bindEvents(emit)
+		context.connect(CallbackProfile).events.listen(emit)
 		plugin(context).tick(3)
 
 		expect(envelopes(emit)).toEqual([{ name: 'interval:tick', args: [3] }])
@@ -246,9 +253,9 @@ describe('внешний плагин · plugin:event', () => {
 		dispose = usePlugins(TButton, [TIntervalPlugin])
 
 		const context = createAdapterContext(ButtonDescriptor(), {})
-		const emit = vi.fn<TEventEmitter>()
+		const emit = vi.fn<TEventSink>()
 
-		bindComponent(context, CallbackProfile).bindEvents(emit)
+		context.connect(CallbackProfile).events.listen(emit)
 		plugin(context).value = 42
 
 		expect(envelopes(emit)).toEqual([{ name: 'interval:change:value', args: [42] }])

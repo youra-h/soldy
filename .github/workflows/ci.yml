@@ -49,7 +49,6 @@ jobs:
           npm run test:core
           npm run test:eslint
           npm run test:setup
-          npm run test:accessor
           npm run test:plugins
           npm run test:vue
           npm run test:react

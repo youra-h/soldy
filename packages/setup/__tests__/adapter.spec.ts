@@ -5,7 +5,6 @@ import { createEngine } from '@soldy/core'
 import type { TCollectionEngine } from '@soldy/core'
 import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy/plugins'
 import {
-	bindComponent,
 	createAdapterContext,
 	defineComponent,
 	toInstanceState,
@@ -88,7 +87,7 @@ describe('createAdapterContext', () => {
 		expect(ctx.instance).toBe(ctrl)
 	})
 
-	it('передаёт props в конструктор и хранит accessor/descriptor', () => {
+	it('передаёт props в конструктор и хранит descriptor', () => {
 		class WithProps {
 			text: string
 			constructor(props: { text?: string }) {
@@ -101,7 +100,6 @@ describe('createAdapterContext', () => {
 
 		expect(ctx.instance.text).toBe('hi')
 		expect(ctx.descriptor).toBe(descriptor)
-		expect(ctx.accessor).toBeDefined()
 	})
 
 	it('bindElement кладёт не-HTML узел в плагин как есть', () => {
@@ -175,7 +173,7 @@ describe('createAdapterContext', () => {
 		const stateOf = <C extends IComponentContract>(
 			adapter: IAdapterContext<C>,
 		): TAdapterState<C> =>
-			toInstanceState<C>(bindComponent(adapter, CallbackProfile).getSnapshot())
+			toInstanceState<C>(adapter.connect(CallbackProfile).state.getSnapshot())
 
 		const frame = createAdapterContext(FrameDescriptor(), {})
 		const state = stateOf(frame)

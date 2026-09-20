@@ -3,9 +3,11 @@
  */
 
 import type { TEvented } from '@soldy/core'
-import type { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
 import type { IComponentContract, IComponentDescriptor, IPluginsContract } from '../../define'
+import type { IAdapterProfile } from '../../naming'
+import type { TExchange } from '../exchange/exchange.class'
+import type { TMember } from '../exchange/member.class'
 
 export type TAdapterEvents = {
 	destroy: () => void
@@ -94,7 +96,6 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	readonly __contract?: C
 	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
-	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
 	readonly props: object
 	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
@@ -119,14 +120,29 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	bindElement(element: Element | null): void
 
 	/**
-	 * Значения пропсов плагинов, поставленных снаружи (`pluginProps`):
-	 * `{ timer_ms: 500 }`. Ключ пропал — проп возвращается к умолчанию
-	 * декларации; плагина ещё нет — значение ждёт его установки. Зовёт связка;
-	 * у контекста на чужом наборе (фасад коллекции) вызов ничего не делает —
-	 * набор ведёт его владелец.
+	 * Обмен значениями с фреймворком в именах его профиля: состояние, входы,
+	 * события. Память входов начинается с пропсов сборки; начальные значения уже
+	 * применила сборка.
 	 */
-	writePluginProps(values: unknown): void
+	connect(profile: IAdapterProfile): TExchange
 
 	/** Запустить уничтожение контекста */
+	destroy(): void
+}
+
+/**
+ * Владение набором плагинов: свой (`TOwnBundle`) или не свой (`TSharedBundle`).
+ *
+ * «Свой набор или чужой» — не флаг, который проверяет каждый, кто с набором
+ * работает: всё, что от этого зависит, делает один из двух объектов.
+ */
+export interface IBundleTenancy {
+	readonly bundle: IPluginBundle | null
+	/** Участники обмена от набора: плагины дескриптора, а у своего набора — ещё и связка. */
+	readonly members: readonly TMember[]
+	/** Кому из них эта сборка пишет начальные значения. */
+	readonly seeded: readonly TMember[]
+	/** Завершить сборку после начальных значений: плагины реестра и объявление набора наружу. */
+	complete(): void
 	destroy(): void
 }

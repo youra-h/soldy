@@ -1,7 +1,7 @@
 /**
  * useAdapter — единственный Vue-хук на весь проект.
  *
- * 1. Связывает компонент с Vue через связку `bindComponent` из setup: рефы
+ * 1. Связывает компонент с Vue через обмен `adapter.connect()` из setup: рефы
  *    свойств, входные пропсы, события и `update:<prop>` для v-model
  * 2. Привязывает DOM-элемент корня к TElementPlugin через контекст
  * 3. Вызывает adapter.destroy() при анмаунте компонента
@@ -9,12 +9,7 @@
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import { TElementPlugin } from '@soldy/plugins'
-import {
-	bindComponent,
-	type IAdapterContext,
-	type IComponentContract,
-	type TInstanceState,
-} from '@soldy/setup'
+import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { VueProfile } from '../common'
 
@@ -29,7 +24,7 @@ export type TExtractControllerState<TInstance> = {
 }
 
 /**
- * Тип реактивных рефов, которые `useAdapter` собирает по связке `bindComponent`
+ * Тип реактивных рефов, которые `useAdapter` собирает по обмену `adapter.connect()`
  * и возвращает в ...refs.
  * Во Vue setup() автоматизирует unref для всех Ref в шаблоне.
  */
@@ -82,7 +77,7 @@ export function useAdapterParts(
 	props: object,
 	emit?: (event: string, ...args: unknown[]) => void,
 ): { refs: Readonly<Record<string, Ref<unknown>>>; rootElement: Ref<Element | null> | null } {
-	const binding = bindComponent(adapter, VueProfile)
+	const link = adapter.connect(VueProfile)
 	const offs: Array<() => void> = []
 
 	// 1. Core → Vue: реф на каждое свойство с триггерами. Подписка сразу отдаёт
@@ -91,31 +86,30 @@ export function useAdapterParts(
 	const refs: Record<string, Ref<unknown>> = {}
 
 	offs.push(
-		binding.subscribe((prop, value) => {
-			const target = refs[prop.exportName]
+		link.state.subscribe((name, value) => {
+			const target = refs[name]
 
 			if (target) target.value = value
-			else refs[prop.exportName] = ref(value)
+			else refs[name] = ref(value)
 		}),
 	)
 
-	// 2. Vue → Core: `watch` на каждый входной проп, а не на весь объект —
-	// иначе смена любого пропа переписала бы в ядро и те, что ядро с тех пор
-	// поменяло само (открытый по клику список закрылся бы от смены placeholder).
-	// Начальные значения применила сборка контекста, здесь — только изменения
-	for (const prop of binding.surface.inputs) {
+	// 2. Vue → Core: `watch` на каждый входной проп, а не на весь объект — Vue
+	// отдаёт пропсы по одному, когда проп сменился. Начальные значения применила
+	// сборка контекста, здесь — только изменения
+	for (const input of link.inputs) {
 		offs.push(
 			watch(
-				() => binding.read(prop, props),
-				(value) => binding.write(prop, value),
+				() => input.pick(props),
+				(value) => input.offer(value),
 			),
 		)
 	}
 
-	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его связка
-	// эмитит по профилю, после события ядра
+	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его обмен шлёт по
+	// профилю, сразу после события ядра
 	if (emit) {
-		offs.push(binding.bindEvents((exportName, args) => emit(exportName, ...args)))
+		offs.push(link.events.listen((name, args) => emit(name, ...args)))
 	}
 
 	// 4. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда

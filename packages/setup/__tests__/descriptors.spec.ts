@@ -45,6 +45,8 @@ import {
 	SelectCollectionDescriptor,
 	SelectCollectionItemDescriptor,
 	defineComponent,
+	CommonProfile,
+	createAdapterContext,
 } from '@soldy/setup'
 import type { DescriptorEvents, DescriptorProps, IComponentDescriptor } from '@soldy/setup'
 import type {
@@ -53,15 +55,13 @@ import type {
 	TButtonEvents,
 	TComponentViewEvents,
 } from '@soldy/core'
-import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
 import { required } from './helpers'
 
-/** Собрать компонент так же, как это делает монтирование: состав → набор → аксессор. */
+/** Собрать компонент так же, как это делает монтирование. */
 const assemble = (descriptor: IComponentDescriptor, instance: object) => {
-	const composition = resolveComposition(descriptor, instance, {})
-	const bundle = assembleBundle(composition, instance)
+	const context = createAdapterContext(descriptor, { ctrl: instance })
 
-	return { bundle, accessor: assembleAccessor(descriptor, composition, instance, bundle) }
+	return { bundle: context.bundle, lines: context.connect(CommonProfile).lines }
 }
 
 const propNames = (d: Pick<IComponentDescriptor, 'props'>) => d.props.map((p) => p.name.name)
@@ -107,19 +107,19 @@ describe('дескрипторы компонентов (наследовани�
 		expect(required(bundle, 'бандл Button').get(TReadyPlugin)).toBeInstanceOf(TReadyPlugin)
 	})
 
-	it('ButtonDescriptor accessor привязывает собственные props к instance', () => {
+	it('ButtonDescriptor: линия привязывает собственный проп к instance', () => {
 		const d = ButtonDescriptor()
 		const instance = new TButton()
-		const { accessor } = assemble(d, instance)
+		const { lines } = assemble(d, instance)
 
 		const viewProp = required(
-			accessor.getProps().find((p) => p.name.name === 'view'),
+			lines.find((line) => line.spec.name.name === 'view'),
 			'prop view',
 		)
-		expect(viewProp.instance).toBe(instance)
+		expect(viewProp.owner).toBe(instance)
 
 		// Плагины дают события с namespace
-		expect(accessor.getEvents().some((e) => e.name.getName() === 'element:ready')).toBe(true)
+		expect(d.getEvents().some((event) => event.getName() === 'element:ready')).toBe(true)
 	})
 
 	it('ButtonDescriptor.getProps/getEvents агрегируют собственные и плагинные объявления', () => {
@@ -374,9 +374,9 @@ describe('Select', () => {
 		expect(names).not.toContain('text')
 	})
 
-	it('accessor собирается — значит одноимённых пропсов нет', () => {
-		// TAccessor бросает на дубль имени; собрать его — единственный способ
-		// поймать столкновение между компонентом, коллекцией и плагинами
+	it('компонент собирается — значит одноимённых пропсов нет', () => {
+		// О дубле полного имени дескриптор сообщает в консоль при построении;
+		// собрать компонент — заодно проверить фасады и плагины
 		const owner = new TSelect()
 		const descriptor = SelectDescriptor()
 

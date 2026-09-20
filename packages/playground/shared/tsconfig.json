@@ -4,7 +4,6 @@
     "types": ["node"],
     "noEmit": true,
     "paths": {
-      "@soldy/accessor": ["../../accessor"],
       "@soldy/core": ["../../core/src"],
       "@soldy/plugins": ["../../plugins/src"],
       "@soldy/setup": ["../../setup/index.ts"]

@@ -1,4 +1,3 @@
-import { assembleBundle, resolveComposition } from '../assemble'
 // @vitest-environment jsdom
 
 /**
@@ -24,7 +23,6 @@ import { assembleBundle, resolveComposition } from '../assemble'
  */
 
 import { describe, it, expect } from 'vitest'
-import type { IPropDeclaration } from '@soldy/accessor'
 import { TCollectionComponent, TFrame } from '@soldy/core'
 import { TBasePlugin } from '@soldy/plugins'
 import {
@@ -42,11 +40,13 @@ import {
 	defineType,
 	type IComponentDescriptor,
 	type IPluginDefinition,
+	type TPropSpec,
 } from '../define'
+import { createAdapterContext } from '../adapter'
 import { exportedDescriptors, required } from './helpers'
 
 /** Декларация по полному имени: `visible`, `anchor:flip`. */
-function prop(descriptor: Pick<IComponentDescriptor, 'getProps'>, name: string): IPropDeclaration {
+function prop(descriptor: Pick<IComponentDescriptor, 'getProps'>, name: string): TPropSpec {
 	return required(
 		descriptor.getProps().find((declaration) => declaration.name.getName() === name),
 		name,
@@ -54,7 +54,7 @@ function prop(descriptor: Pick<IComponentDescriptor, 'getProps'>, name: string):
 }
 
 /** Декларация пропа в определении плагина — по имени без неймспейса. */
-function pluginProp(definition: IPluginDefinition, name: string): IPropDeclaration {
+function pluginProp(definition: IPluginDefinition, name: string): TPropSpec {
 	return required(
 		definition.props.find((declaration) => declaration.name.name === name),
 		name,
@@ -62,7 +62,7 @@ function pluginProp(definition: IPluginDefinition, name: string): IPropDeclarati
 }
 
 /** Умолчание объявлено ключом без значения — «не задано». */
-const declaredUnset = (declaration: IPropDeclaration): boolean =>
+const declaredUnset = (declaration: TPropSpec): boolean =>
 	Object.hasOwn(declaration, 'default') && declaration.default === undefined
 
 describe('умолчание своего и унаследованного пропа — из defaultValues класса', () => {
@@ -197,15 +197,15 @@ function hasBoolean(type: unknown): boolean {
 }
 
 /** Пропы, которые Vue приводит к `false` сам: незащищённые, с Boolean в типе. */
-const castByVue = (props: readonly IPropDeclaration[]) =>
+const castByVue = (props: readonly TPropSpec[]) =>
 	props.filter((declaration) => !declaration.protected && hasBoolean(declaration.type))
 
 const NOT_DECLARED = '<умолчание не объявлено>'
 
-const declaredDefault = (declaration: IPropDeclaration): unknown =>
+const declaredDefault = (declaration: TPropSpec): unknown =>
 	Object.hasOwn(declaration, 'default') ? declaration.default : NOT_DECLARED
 
-const freshValue = (declaration: IPropDeclaration, owner: object): unknown =>
+const freshValue = (declaration: TPropSpec, owner: object): unknown =>
 	declaration.get ? declaration.get(owner) : Reflect.get(owner, declaration.name.name)
 
 describe('сторож: Boolean-проп объявляет умолчание, равное стартовому значению', () => {
@@ -229,7 +229,7 @@ describe('сторож: Boolean-проп объявляет умолчание, 
 		const instance = new descriptor.ctor()
 		const bundle =
 			fromPlugins.length > 0
-				? assembleBundle(resolveComposition(descriptor, instance, {}), instance)
+				? createAdapterContext(descriptor, { ctrl: instance }).bundle
 				: null
 
 		const declared: Record<string, unknown> = {}
@@ -261,7 +261,7 @@ describe('сторож: Boolean-проп объявляет умолчание, 
 const COLLECTION_PROPS_WITHOUT_DEFAULT: ReadonlySet<string> = new Set(['items', 'mode'])
 
 /** Пропы, которые пишет разметка: незащищённые, с триггерами. */
-const writtenByMarkup = (props: readonly IPropDeclaration[]) =>
+const writtenByMarkup = (props: readonly TPropSpec[]) =>
 	props.filter((declaration) => !declaration.protected && !!declaration.triggers?.length)
 
 describe('сторож: проп, который пишет разметка, объявляет умолчание', () => {

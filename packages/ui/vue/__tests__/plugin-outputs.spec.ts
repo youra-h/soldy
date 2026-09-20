@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { SelectDescriptor, bindComponent, toInstanceState } from '@soldy/setup'
+import { SelectDescriptor, toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import { TDismissPlugin } from '@soldy/plugins'
 import type {
@@ -47,7 +47,7 @@ type TTemplate<TSetup extends { setup: (...args: never[]) => unknown }> = Return
  * передаются.
  */
 function stateOf<C extends IComponentContract>(adapter: IAdapterContext<C>): TAdapterState<C> {
-	return toInstanceState<C>(bindComponent(adapter, VueProfile).getSnapshot())
+	return toInstanceState<C>(adapter.connect(VueProfile).state.getSnapshot())
 }
 
 describe('выходы плагинов в шаблоне Vue', () => {

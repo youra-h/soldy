@@ -3,7 +3,7 @@
  * из Vue/React-пакетов).
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-слое компонента через
- * createAdapterContext) и связывает его со Svelte через связку `bindComponent`
+ * createAdapterContext) и связывает его со Svelte через обмен `adapter.connect()`
  * из setup. Своё здесь — только куда писать значение (руна `$state`), как
  * отдать событие (колбэк-проп) и в какой момент цикла Svelte это делать:
  *
@@ -20,7 +20,7 @@
  */
 
 import { onDestroy } from 'svelte'
-import { bindComponent, toInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { SvelteProfile } from '../common'
@@ -46,7 +46,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	getProps: () => TProps,
 ): TBinding<C, TProps> {
-	const binding = bindComponent(adapter, SvelteProfile)
+	const binding = adapter.connect(SvelteProfile)
 	const state = $state<Record<string, unknown>>({})
 
 	// 1. Core → Svelte: подписка сразу, при инициализации компонента, а не в
@@ -55,20 +55,20 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	// заполняется. onDestroy, а не cleanup эффекта: эффект на сервере не
 	// выполняется, а отписаться нужно и там
 	onDestroy(
-		binding.subscribe((prop, value) => {
-			state[prop.exportName] = value
+		binding.state.subscribe((name, value) => {
+			state[name] = value
 		}),
 	)
 
 	// 2. Svelte → Core: эффект читает все props и перезапускается при смене любого,
 	// а связка пишет из них только сменившиеся с прошлого раза
 	$effect(() => {
-		binding.writeAll(getProps())
+		binding.inputs.full(getProps())
 	})
 
 	// 3. События: подписка одна на всё время жизни, props читаются лениво в колбэке.
 	$effect(() =>
-		binding.bindEvents((exportName, args) => {
+		binding.events.listen((exportName, args) => {
 			const callback: unknown = Reflect.get(getProps(), exportName)
 
 			if (typeof callback === 'function') callback(...args)

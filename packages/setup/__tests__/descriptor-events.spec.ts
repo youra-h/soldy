@@ -23,7 +23,7 @@ import {
 	SelectDescriptor,
 	TabsCollectionDescriptor,
 	defineComponent,
-	surfaceOf,
+	TSurface,
 	underscorePropNaming,
 } from '@soldy/setup'
 import type * as setup from '@soldy/setup'
@@ -47,7 +47,7 @@ function published(
 	descriptor: IComponentDescriptor,
 	profile: IAdapterProfile = RawProfile,
 ): readonly string[] {
-	return surfaceOf(descriptor, profile).exportEvents
+	return TSurface.of(descriptor, profile).exportEvents
 }
 
 type TButtonEventName = keyof DescriptorAllEvents<typeof ButtonDescriptor>

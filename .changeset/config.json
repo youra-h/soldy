@@ -8,7 +8,6 @@
   "ignore": ["@soldy/playground-shared", "@soldy/playground-vue"],
   "fixed": [
     [
-      "@soldy/accessor",
       "@soldy/core",
       "@soldy/icons-material",
       "@soldy/plugins",

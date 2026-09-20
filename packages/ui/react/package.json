@@ -30,7 +30,6 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy/accessor": "*",
     "@soldy/core": "*",
     "@soldy/icons-material": "*",
     "@soldy/plugins": "*",

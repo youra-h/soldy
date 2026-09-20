@@ -21,14 +21,14 @@
   },
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "main": "./index.ts",
   "exports": {
     ".": "./index.ts"
   },
   "dependencies": {
     "@soldy/core": "*",
-    "@soldy/plugins": "*",
-    "@soldy/accessor": "*"
+    "@soldy/plugins": "*"
   },
   "scripts": {
     "test": "vitest run"

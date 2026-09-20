@@ -7,7 +7,7 @@
  * API компонентов должен читаться одинаково на всех фреймворках.
  */
 
-import type { TName } from '@soldy/accessor'
+import type { TName } from '../define/name.class'
 
 /**
  * `styles` @ ns `icon-styles` → `iconStyles_styles`; без namespace — как есть.
@@ -21,15 +21,6 @@ export function underscorePropNaming(name: TName): string {
 	const namespace = name.namespace.replace(/-(\w)/g, (_, char: string) => char.toUpperCase())
 
 	return `${namespace}_${name.name}`
-}
-
-/**
- * Значение пропа в пропсах фреймворка: по имени во фреймворке (`aria_label`),
- * а без него — по сырому (`label`), для headless-кода и тестов. Имя пропа во
- * всех фреймворках одно, поэтому правило чтения одно на сборку и связку.
- */
-export function propValueOf(props: object, name: TName): unknown {
-	return Reflect.get(props, underscorePropNaming(name)) ?? Reflect.get(props, name.name)
 }
 
 function toPascalCase(input: string): string {

@@ -8,13 +8,13 @@
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): снятие подписок + adapter.destroy()
  *
- * Общее с остальными адаптерами — в связке `bindComponent` из setup. Своё
+ * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup. Своё
  * здесь: реактивности у платформы нет, поэтому состояние — обычный объект, об
  * изменении сообщает колбэк onUpdate (перерисовку планирует базовый класс
  * элемента), а события уходят `CustomEvent` на хосте.
  */
 
-import { bindComponent, toInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
 import type { IAdapterContext, IComponentContract, TInstanceState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { WebcProfile } from '../common'
@@ -34,17 +34,17 @@ export function useAdapter<C extends IComponentContract>(
 	host: HTMLElement,
 	onUpdate: (name: string, value: unknown) => void,
 ): TBinding<C['instance']> {
-	const binding = bindComponent(adapter, WebcProfile)
+	const binding = adapter.connect(WebcProfile)
 	const state: Record<string, unknown> = {}
 
 	// Подписка сразу отдаёт значение каждого свойства — тем же вызовом, что и
 	// триггер: так состояние и заполняется, а элемент помечает его к отрисовке
-	const unsubscribe = binding.subscribe((prop, value) => {
-		state[prop.exportName] = value
-		onUpdate(prop.exportName, value)
+	const unsubscribe = binding.state.subscribe((name, value) => {
+		state[name] = value
+		onUpdate(name, value)
 	})
 
-	const unbindEvents = binding.bindEvents((exportName, args) => {
+	const unbindEvents = binding.events.listen((exportName, args) => {
 		host.dispatchEvent(
 			new CustomEvent(exportName, {
 				detail: args.length > 1 ? args : args[0],
@@ -63,7 +63,7 @@ export function useAdapter<C extends IComponentContract>(
 		// свойству. Выставленное до подключения применила сборка контекста.
 		// Поэтому `writeChanged`: `writeAll` сбросил бы к умолчанию остальные
 		syncProps(props: object): void {
-			binding.writeChanged(props)
+			binding.inputs.delta(props)
 		},
 
 		bindElement(el: Element | null): void {

@@ -15,7 +15,7 @@
  *   или `*.types.ts`, экспорт типов из файла с рантаймом, `export *` из файла
  *   в бочке.
  *
- * Разбор проверяет себя на известной связи `assemble → registry`: сломайся он —
+ * Разбор проверяет себя на известной связи `adapter → registry`: сломайся он —
  * импортов не нашлось бы, и сторож проходил бы вхолостую.
  */
 
@@ -35,16 +35,15 @@ const ENTRY = 'index.ts'
 /**
  * Модуль → модули, которые он вправе импортировать в рантайме.
  *
- * Корень отдаёт наружу всё, кроме сборки: `assemble` зовут только дескриптор
- * и контекст адаптера.
+ * Модулей-стадий четыре: описание типа (`define`), имена (`naming`), реестры
+ * приложения (`registry`) и всё, что живёт на время монтирования (`adapter`).
  */
 const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 	naming: [],
 	registry: [],
-	assemble: ['registry', 'naming', 'define'],
 	define: [],
 	descriptors: ['define'],
-	adapter: ['assemble', 'registry', 'naming'],
+	adapter: ['registry', 'naming', 'define'],
 	[ENTRY]: ['define', 'descriptors', 'registry', 'adapter', 'naming'],
 }
 
@@ -362,10 +361,8 @@ describe('структура packages/setup', () => {
 		return to === undefined || to === from ? [] : [{ file, specifier, from, to }]
 	})
 
-	it('разбор находит известную рантайм-связь assemble → registry', () => {
-		expect(crossings.some(({ from, to }) => from === 'assemble' && to === 'registry')).toBe(
-			true,
-		)
+	it('разбор находит известную рантайм-связь adapter → registry', () => {
+		expect(crossings.some(({ from, to }) => from === 'adapter' && to === 'registry')).toBe(true)
 	})
 
 	it('у каждой папки и файла верхнего уровня есть строка в таблице', () => {
@@ -386,6 +383,29 @@ describe('структура packages/setup', () => {
 			violations,
 			`Рантайм-импорт вне таблицы (см. AGENTS.md, «Структура packages/setup»):\n${violations.join('\n')}`,
 		).toEqual([])
+	})
+
+	/**
+	 * Ядро обмена (`adapter/exchange`) — ячейки, линии и порты — знает только
+	 * описание свойства и поверхность. Узнай оно о наборе плагинов, реестрах или
+	 * контексте, правила записи снова расползлись бы по сборке: именно эта
+	 * граница держит «одно правило — одно место».
+	 */
+	it('ядро обмена не импортирует сборку, реестры, дескрипторы и плагины', () => {
+		const FORBIDDEN = ['../context', '../extensions', '../../registry', '../../descriptors']
+
+		const violations = imports
+			.filter(({ file }) => file.startsWith('adapter/exchange/'))
+			.filter(
+				({ specifier }) =>
+					specifier === '@soldy/plugins' ||
+					FORBIDDEN.some(
+						(prefix) => specifier === prefix || specifier.startsWith(`${prefix}/`),
+					),
+			)
+			.map(({ file, specifier }) => `${file}: '${specifier}'`)
+
+		expect(violations, `Ядро обмена знает лишнее:\n${violations.join('\n')}`).toEqual([])
 	})
 
 	it('код пакета не импортирует @soldy/setup', () => {

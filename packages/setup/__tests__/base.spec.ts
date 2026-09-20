@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { TBasePlugin } from '@soldy/plugins'
-import { normalizeContribution, defineComponent, definePlugin } from '@soldy/setup'
-import { assembleAccessor, assembleBundle, resolveComposition } from '../assemble'
+import {
+	CommonProfile,
+	createAdapterContext,
+	normalizeContribution,
+	defineComponent,
+	definePlugin,
+} from '@soldy/setup'
 import { required } from './helpers'
 
 describe('normalizeContribution', () => {
@@ -121,16 +126,39 @@ describe('defineComponent', () => {
 		expect(childOverride.plugins[0].options).toEqual({ x: 1 })
 	})
 
-	it('состав без плагинов набора не создаёт', () => {
-		const descriptor = defineComponent({ ctor: class {} })
-		const instance = new descriptor.ctor()
-		const composition = resolveComposition(descriptor, instance, {})
+	it('два объявления с одним полным именем — сообщение в консоль, дескриптор строится', () => {
+		class TOwner {}
 
-		expect(composition).toEqual([])
-		expect(assembleBundle(composition, instance)).toBeNull()
+		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const parent = defineComponent({
+			ctor: TOwner,
+			contribution: { props: { text: { type: String } }, events: ['click'] },
+		})
+
+		expect(report).not.toHaveBeenCalled()
+
+		// Дубль — на совести автора: слой сообщает о нём и работает дальше
+		const child = defineComponent({
+			extends: parent,
+			contribution: { props: { text: { type: String } }, events: ['click'] },
+		})
+
+		expect(report.mock.calls.map(([message]) => message)).toEqual([
+			'TOwner: свойство «text» объявлено дважды — полное имя обязано быть одно',
+			'TOwner: событие «click» объявлено дважды — полное имя обязано быть одно',
+		])
+		expect(() => createAdapterContext(child, {}).connect(CommonProfile)).not.toThrow()
+
+		report.mockRestore()
 	})
 
-	it('аксессор привязывает props/events к instance', () => {
+	it('компоненту без плагинов набор не создаётся', () => {
+		const descriptor = defineComponent({ ctor: class {} })
+
+		expect(createAdapterContext(descriptor, {}).bundle).toBeNull()
+	})
+
+	it('линия привязывает проп к инстансу', () => {
 		const descriptor = defineComponent({
 			ctor: class {},
 			contribution: {
@@ -139,19 +167,16 @@ describe('defineComponent', () => {
 			},
 		})
 
-		const instance = new descriptor.ctor()
-		const accessor = assembleAccessor(descriptor, [], instance, null)
+		const context = createAdapterContext(descriptor, {})
+		const { lines } = context.connect(CommonProfile)
 
-		expect(accessor.getProps()).toHaveLength(1)
-		expect(accessor.getProps()[0].instance).toBe(instance)
-		expect(accessor.getProps()[0].name.name).toBe('text')
-
-		expect(accessor.getEvents()).toHaveLength(1)
-		expect(accessor.getEvents()[0].instance).toBe(instance)
-		expect(accessor.getEvents()[0].name.name).toBe('click')
+		expect(lines).toHaveLength(1)
+		expect(lines[0].owner).toBe(context.instance)
+		expect(lines[0].spec.name.name).toBe('text')
+		expect(descriptor.getEvents().map((event) => event.name)).toEqual(['click'])
 	})
 
-	it('аксессор добавляет Unit плагина с его props/events', () => {
+	it('плагин дескриптора — участник обмена со своими пропсами и событиями', () => {
 		class PluginWithProps extends TBasePlugin {
 			active = false
 		}
@@ -170,19 +195,17 @@ describe('defineComponent', () => {
 			plugins: [plugin],
 		})
 
-		const instance = new descriptor.ctor()
-		const composition = resolveComposition(descriptor, instance, {})
-		const bundle = assembleBundle(composition, instance)
-		const accessor = assembleAccessor(descriptor, composition, instance, bundle)
-
-		const activeProp = required(
-			accessor.getProps().find((prop) => prop.name.getName() === 'p:active'),
-			'prop p:active',
+		const context = createAdapterContext(descriptor, {})
+		const active = required(
+			context
+				.connect(CommonProfile)
+				.lines.find((line) => line.spec.name.getName() === 'p:active'),
+			'линия p:active',
 		)
-		expect(activeProp).toBeDefined()
-		expect(activeProp.instance).toBe(required(bundle, 'бандл').get(PluginWithProps))
 
-		expect(accessor.getEvents().some((e) => e.name.getName() === 'p:toggle')).toBe(true)
+		expect(active.name).toBe('p_active')
+		expect(active.owner).toBe(required(context.bundle, 'бандл').get(PluginWithProps))
+		expect(descriptor.getEvents().some((event) => event.getName() === 'p:toggle')).toBe(true)
 	})
 })
 
