@@ -48,6 +48,9 @@ export const TagsDescriptor = defineDescriptor(() =>
 					scope: { item: defineType<ITagsItem>(Object) },
 					description: 'После содержимого тега',
 				},
+				// Подмена значка кнопки «…» в одном месте; по умолчанию он берётся из
+				// пакета иконок по роли `moreHoriz` (см. `ICON_ROLES`)
+				'more-icon': { description: 'Значок кнопки «…» в режиме overflow="popover"' },
 			},
 			props: {
 				closable: { type: Boolean, triggers: ['change:closable'] },

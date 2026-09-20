@@ -1,10 +1,11 @@
 <script lang="ts">
 import { Button } from '../button'
+import { Icon } from '../icon'
 import { Popover } from '../popover'
 import { TagsItem } from './item'
 import SetupTags from './setup.component'
 
-export default { ...SetupTags, components: { Button, Popover, TagsItem } }
+export default { ...SetupTags, components: { Button, Icon, Popover, TagsItem } }
 </script>
 
 <template>
@@ -69,9 +70,10 @@ export default { ...SetupTags, components: { Button, Popover, TagsItem } }
 				<template #trigger="{ triggerAria, triggerDataset }">
 					<!--
 						Кнопка «…». Вида у неё нет: значения вида объявляет тема, и
-						красит она кнопку по контексту (`.s-tags__more`). Содержимое —
-						символ многоточия: роли иконки под него в контракте пакетов
-						иконок пока нет.
+						красит она кнопку по контексту (`.s-tags__more`). Значок —
+						иконка роли `moreHoriz` из подключённого пакета, как крестик
+						тега, а не символ многоточия текстом: кегль у трёх точек свой на
+						каждом шрифте, и подменить их в одном месте было нечем.
 
 						Связку с панелью (`aria-haspopup`, `aria-expanded`,
 						`aria-controls`) и вид «нажат» кнопка получает из scope слота,
@@ -84,7 +86,9 @@ export default { ...SetupTags, components: { Button, Popover, TagsItem } }
 						:disabled="disabled"
 						v-bind="{ ...triggerAria, ...triggerDataset, ...moreAria }"
 					>
-						…
+						<slot name="more-icon">
+							<Icon embedded="tags.more-icon" :tag="moreIconTag" :size="size" />
+						</slot>
 					</Button>
 				</template>
 

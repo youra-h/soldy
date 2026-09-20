@@ -381,8 +381,8 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 Иконки устроены как темы: библиотека объявляет, что ей нужно, а пакет это
 реализует. Контракт — закрытый список ролей `ICON_ROLES`
-(`check`, `checkIndeterminate`, `close`, `arrowDown`, `arrowRight`); пакет
-обязан закрыть их все, это проверяет conformance-тест.
+(`check`, `checkIndeterminate`, `close`, `arrowDown`, `arrowRight`,
+`moreHoriz`); пакет обязан закрыть их все, это проверяет conformance-тест.
 
 Иконка приходит **данными**, не разметкой:
 
