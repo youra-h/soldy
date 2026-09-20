@@ -41,6 +41,12 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 				tags: { type: Object, protected: true, triggers: ['change:tags'] },
 				/** Коллекция тегов — то, что `<Tags :engine="...">` берёт готовым. */
 				tags_engine: { type: Object, protected: true, triggers: ['change:tags'] },
+				/**
+				 * Что делать с тегами, которым не хватило строки поля. Передаётся
+				 * своему `TTags` так же, как `size` и `variant`; по умолчанию
+				 * `wrap` — поведение поля не меняется, пока режим не задали.
+				 */
+				tags_overflow: { type: String, triggers: ['change:overflow'] },
 			},
 		},
 	}),

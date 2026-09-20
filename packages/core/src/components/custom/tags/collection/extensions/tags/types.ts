@@ -33,8 +33,9 @@ export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
 	notifyFocus(item: TItem): void
 
 	/**
-	 * Можно ли перейти на тег: не disabled, visible и rendered. Одно правило
-	 * для остановки Tab и навигации с клавиатуры.
+	 * Можно ли перейти на тег: не disabled, visible, rendered и стоит в ряду,
+	 * а не в панели переполнения. Одно правило для остановки Tab и навигации
+	 * с клавиатуры.
 	 */
 	isEnabledTag(item: TItem): boolean
 

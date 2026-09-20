@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render } from 'vitest-browser-vue'
+import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy/playground-shared'
@@ -118,15 +118,6 @@ const insideBorder = (element: Element) => {
 	const right = px(element, 'border-right-width')
 
 	return new DOMRect(x + left, y, width - left - right, height)
-}
-
-/** Прямоугольник вместе с внешними отступами по горизонтали — место части в ряду. */
-const withMargins = (element: Element) => {
-	const { x, y, width, height } = box(element)
-	const left = px(element, 'margin-left')
-	const right = px(element, 'margin-right')
-
-	return new DOMRect(x - left, y, width + left + right, height)
 }
 
 /** Лежит ли прямоугольник по горизонтали внутри другого. */
@@ -279,25 +270,35 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 		}
 	}
 
-	it('на минимальной ширине поля тег и крестик внутри поля, текст обрезан', async () => {
-		const { field, item, text, close } = await renderTag(NARROW_WIDTH)
+	/**
+	 * Поле под теги больше не расширяется: лестница минимумов под пилюлю с
+	 * крестиком снята — правило, которое зависит от того, сколько тегов и
+	 * какие они, неверно по построению. Вместо неё слот берёт остаток строки
+	 * и обрезает лишнее, поэтому проверяется слот: он и есть граница, за
+	 * которую ничего не нарисуется.
+	 */
+	it('на минимальной ширине поля ряд обрезает слот, а не выносит за поле', async () => {
+		const { field, text } = await renderTag(NARROW_WIDTH)
 
-		expectWithin(box(item), box(field), 'тег')
-		expectWithin(box(close), box(field), 'крестик')
+		expectWithin(box(find('.s-input__leading', field)), insideBorder(field), 'слот тегов')
 		expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
 	})
 
 	/**
-	 * Тег сжимается до ширины слота, но уже пилюли с одним крестиком ему
-	 * сжиматься некуда: крестик выходит за пилюлю и заезжает на ввод. Этого не
-	 * даёт минимум поля. Крестик — вместе с отступом: отступ и есть концевой
-	 * паддинг пилюли (`tags/_tags.scss`), и без него проверку прошёл бы
-	 * крестик, прижатый к краю пилюли.
+	 * То, ради чего лестница и снята: поле под теги не расширяется. Минимум
+	 * его ширины одинаков с тегами и без них — правило, которое зависит от
+	 * того, сколько тегов и какие они, неверно по построению.
 	 */
-	it('на минимальной ширине поля крестик с отступом внутри пилюли', async () => {
-		const { item, close } = await renderTag(NARROW_WIDTH)
+	it('минимум поля не зависит от того, есть ли в нём теги', async () => {
+		await render(sizedHarness(size, 'single', NARROW_WIDTH))
 
-		expectWithin(withMargins(close), insideBorder(item), 'крестик с отступом')
+		const single = box(find('.s-select')).width
+
+		cleanup()
+		await render(sizedHarness(size, 'multiple', NARROW_WIDTH))
+		await expect.poll(() => tags().length).toBe(1)
+
+		expect(box(find('.s-select')).width).toBeCloseTo(single, 1)
 	})
 
 	it('в широком поле текст тега не обрезан', async () => {

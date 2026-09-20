@@ -24,6 +24,7 @@ import {
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
 	TABS_VIEWS,
+	TAGS_OVERFLOWS,
 } from './enums'
 import type {
 	TComponentEntry,
@@ -135,6 +136,8 @@ const OWN: Record<string, Record<string, string>> = {
 			'Удалять выбранные теги по Backspace в пустом поле. Нужны editable и множественный выбор',
 		placement:
 			'С какой стороны открывается панель: auto — снизу, у края окна сверху; top и bottom — всегда там',
+		tags_overflow:
+			'Что делать с тегами в поле, когда они не помещаются в строку. Нужен множественный выбор',
 	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
@@ -158,6 +161,9 @@ const OWN: Record<string, Record<string, string>> = {
 	tags: {
 		view: 'Оформление тегов — вид набора, тема применяет его к каждому тегу',
 		closable: 'Показывать ли у тегов кнопку закрытия',
+		overflow:
+			'Что делать с тегами, которым не хватило ширины: переносить, прокручивать или убрать хвост в панель за кнопкой «…»',
+		moreLabel: 'Имя кнопки «…» для скринридера',
 	},
 	accordion: {
 		view: 'Оформление секций',
@@ -214,7 +220,11 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	accordion: { view: BUTTON_VIEWS },
 	'list-box': { view: BUTTON_VIEWS },
 	'radio-group': { view: RADIO_GROUP_VIEWS },
-	select: { editableMode: SELECT_EDITABLE_MODES, placement: SELECT_PLACEMENTS },
+	select: {
+		editableMode: SELECT_EDITABLE_MODES,
+		placement: SELECT_PLACEMENTS,
+		tags_overflow: TAGS_OVERFLOWS,
+	},
 	popover: { placement: POPOVER_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
@@ -222,7 +232,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		alignment: TABS_ALIGNMENTS,
 		position: TABS_POSITIONS,
 	},
-	tags: { view: BUTTON_VIEWS },
+	tags: { view: BUTTON_VIEWS, overflow: TAGS_OVERFLOWS },
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }

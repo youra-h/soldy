@@ -5,7 +5,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { TTags, createEngineTags } from '../../../../tags'
-import type { ITags, TTagsCollection, ITagsItem } from '../../../../tags'
+import type { ITags, TTagsCollection, ITagsItem, TTagsOverflow } from '../../../../tags'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
@@ -58,11 +58,33 @@ export class TSelectTagsExtension<
 	private readonly _owner: TOwner
 	private _tags: ITags | null = null
 	private _engine: TTagsCollection | null = null
+	/**
+	 * Режим переполнения ряда тегов — свойство поля, а не самих тегов: инстанс
+	 * `TTags` приходит и уходит вместе с `multiple`, а выбор потребителя
+	 * остаётся. Тот же приём, что у `size` и `variant`, только источник —
+	 * разметка, а не владелец.
+	 */
+	private _overflow: TTagsOverflow = 'wrap'
 
 	constructor(options: ISelectTagsExtensionOptions<TOwner>) {
 		super()
 
 		this._owner = options.owner
+	}
+
+	/** Что делать с тегами, которым не хватило строки поля. */
+	get overflow(): TTagsOverflow {
+		return this._overflow
+	}
+
+	set overflow(value: TTagsOverflow) {
+		if (this._overflow === value) return
+
+		this._overflow = value
+
+		if (this._tags) this._tags.overflow = value
+
+		this.events.emit('change:overflow', value)
 	}
 
 	/** Инстанс `TTags`, пока режим `multiple`; иначе `null`. */
@@ -145,6 +167,7 @@ export class TSelectTagsExtension<
 			disabled: this._owner.disabled,
 			size: this._owner.size,
 			variant: this._owner.variant,
+			overflow: this._overflow,
 		})
 
 		const engine = createEngineTags({ owner: tags })

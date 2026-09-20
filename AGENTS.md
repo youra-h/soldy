@@ -2441,6 +2441,22 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/tags-keyboard.spec.ts` и
   `playground/vue/browser/tags-keyboard.spec.ts`.
+  **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
+  `overflow`** (`wrap` по умолчанию, `scroll`, `popover`): пара свойств
+  («переносить» + «чем листать») давала бы состояния, которых не бывает. В
+  теме оно состоянием, `data-overflow`. В `popover` ряд стоит в одну строку, а
+  хвост уезжает в панель Popover за кнопкой «…»: кто в ряду, а кто в панели,
+  держит расширение коллекции `overflow` (`fitted` / `overflowed`), сколько
+  помещается — считает `TTagsOverflowPlugin` и сообщает числом
+  (`notifyFit`), как клавиатура сообщает тег под фокусом. **Каждый тег
+  отрисован ровно один раз**: вторая отрисовка перетёрла бы его запись в
+  реестре bundles. Тег в панели из порядка обхода ряда выбывает — то же
+  правило `isEnabledTag`, — а панель закрывается сама, когда из неё закрыли
+  последний тег. Сторожат `core/__tests__/tags-overflow.spec.ts`,
+  `plugins/__tests__/tags-overflow.plugin.spec.ts`,
+  `ui/vue/__tests__/tags-overflow.spec.ts` и
+  `playground/vue/browser/tags-overflow.spec.ts`. Листания стрелками в
+  перечислении нет: ленте со стрелками нужен свой компонент.
 - **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
   `role="region"` у панели. Компонент назывался `Collapse` и переименован ровно
   ради этого совпадения: «collapse» — поведение одной секции, а набор секций с

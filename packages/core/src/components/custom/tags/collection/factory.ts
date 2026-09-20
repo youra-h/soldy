@@ -1,5 +1,5 @@
 import { TTagsCollection } from './types'
-import { TTagsExtension } from './extensions'
+import { TTagsExtension, TTagsOverflowExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { TSelectionExtension } from './../../../base/collection'
 import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
@@ -35,6 +35,9 @@ export const TAGS_EXTENSIONS = (): TBaseExtensionSet<ITagsItem> => ({
 export const TAGS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITagsItem, ITags> = {
 	// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
 	value: (owner) => new TValueSelectionExtension({ owner }),
+	// Деление на ряд и панель: режим держит владелец, состав — коллекция.
+	// До `tags`: остановку Tab тот считает по тегам ряда и слушает деление
+	overflow: (owner) => new TTagsOverflowExtension({ owner }),
 	tags: (owner) => new TTagsExtension({ owner }),
 }
 

@@ -1,5 +1,5 @@
 import type { IExtension } from '../../../../../base/collection'
-import type { ITags, TTagsCollection } from '../../../../tags'
+import type { ITags, TTagsCollection, TTagsOverflow } from '../../../../tags'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 
@@ -17,6 +17,8 @@ export interface ISelectTagsExtension<TItem extends ISelectItem = ISelectItem> e
 	readonly tags: ITags | null
 	/** Коллекция тегов — та, что рисует `tags` своими элементами. */
 	readonly engine: TTagsCollection | null
+	/** Что делать с тегами, которым не хватило строки поля. */
+	overflow: TTagsOverflow
 }
 
 export interface ISelectTagsExtensionOptions<TOwner extends ISelect = ISelect> {
@@ -26,4 +28,6 @@ export interface ISelectTagsExtensionOptions<TOwner extends ISelect = ISelect> {
 export type TSelectTagsExtensionEvents = {
 	/** change:tags — сменился инстанс тегов (появился/пропал при смене режима) */
 	'change:tags': (value: ITags | null) => void
+	/** change:overflow — сменился режим переполнения ряда тегов */
+	'change:overflow': (value: TTagsOverflow) => void
 }
