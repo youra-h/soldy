@@ -6,7 +6,6 @@ import {
 	type SetupContext,
 } from '../../adapter'
 import BaseDragAndDrop, { type DragAndDropProps } from './base.component'
-import { type IDragAndDropProps } from '@soldy/core'
 
 export default {
 	name: '_DragAndDrop',
@@ -17,6 +16,6 @@ export default {
 			props,
 		}).use(TDragAndDropExtension, { elevator: VueElevatorFactory })
 
-		return useAdapter<IDragAndDropProps>(adapter, props, emit)
+		return useAdapter(adapter, props, emit)
 	},
 }

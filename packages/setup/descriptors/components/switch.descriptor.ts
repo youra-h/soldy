@@ -16,6 +16,6 @@ export const SwitchDescriptor = defineDescriptor(() =>
 
 		extends: InputControlDescriptor(),
 
-		plugins: [InputBoolPluginDescriptor()],
+		plugins: [InputBoolPluginDescriptor],
 	}),
 )

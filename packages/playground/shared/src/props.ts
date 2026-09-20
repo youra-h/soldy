@@ -1,4 +1,4 @@
-import type { IPropDeclaration } from '@soldy/accessor'
+import type { TPropSpec } from '@soldy/setup'
 import { underscorePropNaming } from '@soldy/setup'
 import {
 	COMPONENT_SIZES,
@@ -312,7 +312,7 @@ function firstCtorName(type: unknown): string | undefined {
  * Порядок важен: список значений сильнее типа. `view` объявлен как `String`,
  * но редактировать его текстовым полем бессмысленно — вариантов четыре.
  */
-export function controlKind(componentId: string, prop: IPropDeclaration): TControlKind {
+export function controlKind(componentId: string, prop: TPropSpec): TControlKind {
 	if (optionsForProp(componentId, underscorePropNaming(prop.name))) return 'select'
 
 	const ctor = firstCtorName(prop.type)
@@ -343,7 +343,7 @@ export function controlKind(componentId: string, prop: IPropDeclaration): TContr
  */
 export function propControl(
 	componentId: string,
-	prop: IPropDeclaration,
+	prop: TPropSpec,
 	owner: TPropOwner = { scope: 'component' },
 ): TPropControl {
 	const name = underscorePropNaming(prop.name)
@@ -369,7 +369,7 @@ export function propControl(
  * `present`, `styles` плагинов раскладки): аксессор их не пишет вовсе, и
  * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки.
  */
-function isEditable(prop: IPropDeclaration): boolean {
+function isEditable(prop: TPropSpec): boolean {
 	return !prop.protected && !NON_EDITABLE.has(underscorePropNaming(prop.name))
 }
 

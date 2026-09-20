@@ -24,6 +24,6 @@ export const SpinnerDescriptor = defineDescriptor(() =>
 
 		// Спиннер объявляет себя как `role="status"`; без имени и содержимого
 		// эта живая область молчит, поэтому имя ему нужно.
-		plugins: [SpinnerLayoutPluginDescriptor(), AriaPluginDescriptor()],
+		plugins: [SpinnerLayoutPluginDescriptor, AriaPluginDescriptor],
 	}),
 )

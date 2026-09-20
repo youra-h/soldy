@@ -5,7 +5,6 @@ import { createEngine } from '@soldy/core'
 import type { TCollectionEngine } from '@soldy/core'
 import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy/plugins'
 import {
-	bindComponent,
 	createAdapterContext,
 	defineComponent,
 	toInstanceState,
@@ -22,6 +21,7 @@ import {
 	type IElevatorKey,
 	type TElevatorFactory,
 	type IAdapterContext,
+	type IComponentContract,
 	type TAdapterState,
 } from '@soldy/setup'
 import { CallbackProfile, required } from './helpers'
@@ -87,7 +87,7 @@ describe('createAdapterContext', () => {
 		expect(ctx.instance).toBe(ctrl)
 	})
 
-	it('передаёт props в конструктор и хранит accessor/descriptor', () => {
+	it('передаёт props в конструктор и хранит descriptor', () => {
 		class WithProps {
 			text: string
 			constructor(props: { text?: string }) {
@@ -100,7 +100,6 @@ describe('createAdapterContext', () => {
 
 		expect(ctx.instance.text).toBe('hi')
 		expect(ctx.descriptor).toBe(descriptor)
-		expect(ctx.accessor).toBeDefined()
 	})
 
 	it('bindElement кладёт не-HTML узел в плагин как есть', () => {
@@ -169,14 +168,12 @@ describe('createAdapterContext', () => {
 	})
 
 	it('тип контекста несёт выходы плагинов дескриптора', () => {
-		// Как `useAdapter` React, Solid и Svelte: инстанс и выходы выводятся из
-		// типа контекста, дженерики не передаются. Проверяет это «Типы — Setup»
-		const stateOf = <TInstance extends object, TOutputs extends object>(
-			adapter: IAdapterContext<TInstance, TOutputs>,
-		): TAdapterState<TInstance, TOutputs> =>
-			toInstanceState<TInstance, TOutputs>(
-				bindComponent(adapter, CallbackProfile).getSnapshot(),
-			)
+		// Как `useAdapter` адаптеров: инстанс и выходы выводятся из контракта в
+		// типе контекста, дженерики не передаются. Проверяет это «Типы — Setup»
+		const stateOf = <C extends IComponentContract>(
+			adapter: IAdapterContext<C>,
+		): TAdapterState<C> =>
+			toInstanceState<C>(adapter.connect(CallbackProfile).state.getSnapshot())
 
 		const frame = createAdapterContext(FrameDescriptor(), {})
 		const state = stateOf(frame)

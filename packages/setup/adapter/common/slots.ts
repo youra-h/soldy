@@ -32,7 +32,7 @@ export function isScopedSlot(scope: Record<string, unknown> | undefined): boolea
  * `defaultName` подставляется вместо `default`, если адаптеру это нужно.
  */
 export function slotNames(descriptor: IComponentDescriptor, defaultName?: string): string[] {
-	return descriptor
-		.getSlots()
-		.map((slot) => (defaultName ? resolveSlotName(slot.name, defaultName) : slot.name))
+	return descriptor.slots.map((slot) =>
+		defaultName ? resolveSlotName(slot.name, defaultName) : slot.name,
+	)
 }

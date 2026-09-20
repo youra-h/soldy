@@ -27,6 +27,6 @@ export const ControlDescriptor = defineDescriptor(() =>
 
 		// Доступное имя — обязательное свойство любого интерактивного элемента,
 		// а не опция: без него кнопка без текста для скринридера безымянна.
-		plugins: [ActionPluginDescriptor(), AriaPluginDescriptor()],
+		plugins: [ActionPluginDescriptor, AriaPluginDescriptor],
 	}),
 )

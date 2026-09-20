@@ -3,13 +3,34 @@
  */
 
 import type { TEvented } from '@soldy/core'
-import type { TAccessor } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
-import type { IComponentDescriptor } from '../../define'
+import type { IComponentContract, IComponentDescriptor, IPluginsContract } from '../../define'
+import type { IAdapterProfile } from '../../naming'
+import type { TExchange } from '../exchange/exchange.class'
+import type { TMember } from '../exchange/member.class'
 
 export type TAdapterEvents = {
 	destroy: () => void
 }
+
+/**
+ * Контракт контекста: инстанс и плагины названы, остальное — как у любого
+ * компонента. По нему `createAdapterContext` сводит инстанс из двух
+ * источников — `ctor` дескриптора и переданного `ctrl`.
+ */
+export type TContextContract<
+	TInstance extends object,
+	TPlugins extends IPluginsContract = IPluginsContract,
+> = IComponentContract & { instance: TInstance; plugins: TPlugins }
+
+/**
+ * Контекст компонента, про который известен только инстанс. Так расширение
+ * объявляет, с чем оно работает: `TInstanceContext<TCollectionOwner>` — с
+ * любым компонентом, у инстанса которого есть `engine`.
+ */
+export type TInstanceContext<TInstance extends object> = IAdapterContext<
+	TContextContract<TInstance>
+>
 
 /**
  * Конструктор расширения с опциями.
@@ -24,12 +45,12 @@ export interface IAdapterExtensionCtor<
 	TOpts = unknown,
 	TInstance extends object = object,
 > {
-	new (context: IAdapterContext<TInstance>, options: TOpts): T
+	new (context: TInstanceContext<TInstance>, options: TOpts): T
 }
 
 /** Конструктор расширения без опций. */
 export interface IAdapterExtensionCtorNoOpts<T = unknown, TInstance extends object = object> {
-	new (context: IAdapterContext<TInstance>): T
+	new (context: TInstanceContext<TInstance>): T
 }
 
 /** Любой конструктор расширения — ключ реестра и элемент стартового набора. */
@@ -65,22 +86,16 @@ export interface IAdapterContextConfig {
 /**
  * Контекст адаптера: собранный компонент и его расширения.
  *
- * `TOutputs` — выходы плагинов дескриптора (`DescriptorPluginOutputs`),
- * фантомный параметр: в теле он не упоминается. Его выводит из состава
- * плагинов дескриптора `createAdapterContext`, а `useAdapter` React, Solid и
- * Svelte берёт из типа контекста, как тип инстанса, и отдаёт в типе состояния
- * (`TAdapterState`).
+ * Параметр — контракт дескриптора, по которому контекст собран
+ * (`IComponentContract`). Его выводит `createAdapterContext`, а `useAdapter`
+ * адаптеров берёт из него тип инстанса и выходы плагинов для типа состояния
+ * (`TAdapterState`) — дженерики в компоненте не пишут.
  */
-export interface IAdapterContext<
-	TInstance extends object = object,
-	// Выводится из аргумента `useAdapter` адаптеров, в теле его нет — линтер
-	// считает его неиспользованным.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	TOutputs extends object = object,
-> {
-	readonly instance: TInstance
+export interface IAdapterContext<C extends IComponentContract = IComponentContract> {
+	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
+	readonly __contract?: C
+	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
-	readonly accessor: TAccessor
 	readonly descriptor: IComponentDescriptor
 	readonly props: object
 	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
@@ -88,9 +103,12 @@ export interface IAdapterContext<
 	readonly events: TEvented<TAdapterEvents>
 
 	/** Подключить расширение БЕЗ опций */
-	use<T>(ExtensionCtor: IAdapterExtensionCtorNoOpts<T, TInstance>): this
+	use<T>(ExtensionCtor: IAdapterExtensionCtorNoOpts<T, C['instance']>): this
 	/** Подключить расширение С обязательными опциями */
-	use<T, TOpts>(ExtensionCtor: IAdapterExtensionCtor<T, TOpts, TInstance>, options: TOpts): this
+	use<T, TOpts>(
+		ExtensionCtor: IAdapterExtensionCtor<T, TOpts, C['instance']>,
+		options: TOpts,
+	): this
 
 	/** Получить зарегистрированное расширение по его классу */
 	get<T>(ctor: new (...args: any[]) => T): T | undefined
@@ -102,14 +120,29 @@ export interface IAdapterContext<
 	bindElement(element: Element | null): void
 
 	/**
-	 * Значения пропсов плагинов, поставленных снаружи (`pluginProps`):
-	 * `{ timer_ms: 500 }`. Ключ пропал — проп возвращается к умолчанию
-	 * декларации; плагина ещё нет — значение ждёт его установки. Зовёт связка;
-	 * у контекста на чужом наборе (фасад коллекции) вызов ничего не делает —
-	 * набор ведёт его владелец.
+	 * Обмен значениями с фреймворком в именах его профиля: состояние, входы,
+	 * события. Память входов начинается с пропсов сборки; начальные значения уже
+	 * применила сборка.
 	 */
-	writePluginProps(values: unknown): void
+	connect(profile: IAdapterProfile): TExchange
 
 	/** Запустить уничтожение контекста */
+	destroy(): void
+}
+
+/**
+ * Владение набором плагинов: свой (`TOwnBundle`) или не свой (`TSharedBundle`).
+ *
+ * «Свой набор или чужой» — не флаг, который проверяет каждый, кто с набором
+ * работает: всё, что от этого зависит, делает один из двух объектов.
+ */
+export interface IBundleTenancy {
+	readonly bundle: IPluginBundle | null
+	/** Участники обмена от набора: плагины дескриптора, а у своего набора — ещё и связка. */
+	readonly members: readonly TMember[]
+	/** Кому из них эта сборка пишет начальные значения. */
+	readonly seeded: readonly TMember[]
+	/** Завершить сборку после начальных значений: плагины реестра и объявление набора наружу. */
+	complete(): void
 	destroy(): void
 }

@@ -37,6 +37,6 @@ export const FrameDescriptor = defineDescriptor(() =>
 			events: ['change:zIndex'],
 		},
 
-		plugins: [FrameLayoutPluginDescriptor(), AnchorPluginDescriptor(), AriaPluginDescriptor()],
+		plugins: [FrameLayoutPluginDescriptor, AnchorPluginDescriptor, AriaPluginDescriptor],
 	}),
 )

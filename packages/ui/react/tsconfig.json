@@ -7,8 +7,6 @@
     "strict": true,
     "noEmit": true,
     "paths": {
-      "@soldy/accessor": ["../../accessor"],
-      "@soldy/accessor/*": ["../../accessor/*"],
       "@soldy/core": ["../../core/src"],
       "@soldy/core/*": ["../../core/src/*"],
       "@soldy/icons-material": ["../../icons/material/src"],

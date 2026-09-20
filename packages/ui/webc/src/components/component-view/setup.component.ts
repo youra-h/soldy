@@ -18,5 +18,5 @@ export function setupComponentView(
 ): TBinding<IComponentView> {
 	const adapter = createAdapterContext(ComponentViewDescriptor(), { ctrl, props })
 
-	return useAdapter<IComponentView>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

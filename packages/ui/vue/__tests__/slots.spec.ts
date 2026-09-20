@@ -36,8 +36,7 @@ describe('соответствие контракту', () => {
 	it('Button: разметка объявляет ровно слоты дескриптора', () => {
 		expect(templateSlots('src/components/button/Button.vue')).toEqual(
 			ButtonDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		)
 	})
@@ -45,8 +44,7 @@ describe('соответствие контракту', () => {
 	it('ComponentView: то же для одного слота по умолчанию', () => {
 		expect(templateSlots('src/components/component-view/ComponentView.vue')).toEqual(
 			ComponentViewDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		)
 	})
@@ -54,8 +52,7 @@ describe('соответствие контракту', () => {
 	it('Label: контрол в default и текст в text', () => {
 		expect(templateSlots('src/components/label/Label.vue')).toEqual(
 			LabelDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		)
 	})
@@ -63,8 +60,7 @@ describe('соответствие контракту', () => {
 	it('Popover: триггер, содержимое панели и иконка крестика', () => {
 		expect(templateSlots('src/components/popover/Popover.vue')).toEqual(
 			PopoverDescriptor()
-				.getSlots()
-				.map((slot) => slot.name)
+				.slots.map((slot) => slot.name)
 				.sort(),
 		)
 	})

@@ -5,7 +5,7 @@
  *
  * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
  * createAdapterContext + useAdapterContext) и связывает его с React через
- * связку `bindComponent` из setup. Своё здесь — только куда писать значение
+ * обмен `adapter.connect()` из setup. Своё здесь — только куда писать значение
  * (связка — внешнее хранилище для `useSyncExternalStore`), как отдать событие
  * (колбэк-проп) и в какой момент цикла React это делать:
  *
@@ -31,48 +31,43 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from 'react'
-import { bindComponent, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, IComponentBinding, TAdapterState } from '@soldy/setup'
+import { toInstanceState } from '@soldy/setup'
+import type { IAdapterContext, TExchange, IComponentContract, TAdapterState } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
 import { ReactProfile } from '../common'
 
 export type TBinding<
-	TInstance = object,
+	C extends IComponentContract = IComponentContract,
 	TProps extends object = object,
-	TOutputs extends object = object,
 > = {
-	ctrl: TInstance
+	ctrl: C['instance']
 	plugins: IPluginBundle | null
 	ref: (el: Element | null) => void
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
-	state: TAdapterState<TInstance, TOutputs>
+	state: TAdapterState<C>
 }
 
 /** Связка своего контекста: контекст пересобран — связка новая. */
 type TStore = Readonly<{
 	adapter: IAdapterContext
-	binding: IComponentBinding
+	binding: TExchange
 }>
 
 function bind(adapter: IAdapterContext): TStore {
-	return { adapter, binding: bindComponent(adapter, ReactProfile) }
+	return { adapter, binding: adapter.connect(ReactProfile) }
 }
 
 function rebind(_: TStore, adapter: IAdapterContext): TStore {
 	return bind(adapter)
 }
 
-/** Выходы плагинов берутся из типа контекста — его выводит `createAdapterContext`. */
-export function useAdapter<
-	TProps extends object,
-	TInstance extends object = object,
-	TOutputs extends object = object,
->(
-	adapter: IAdapterContext<TInstance, TOutputs>,
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
 	props: TProps,
-): TBinding<TInstance, TProps, TOutputs> {
+): TBinding<C, TProps> {
 	const [store, dispatch] = useReducer(rebind, adapter, bind)
 
 	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
@@ -84,13 +79,17 @@ export function useAdapter<
 	// 1. Core → React. Рендер идёт по снимку, подписка — при коммите, и React
 	// сам сверяет снимок после подписки: изменение ядра между ними не теряется.
 	// Подписка перечитывает каждое свойство тем же путём, что и триггер
-	const state = useSyncExternalStore(binding.subscribe, binding.getSnapshot, binding.getSnapshot)
+	const state = useSyncExternalStore(
+		binding.state.subscribe,
+		binding.state.getSnapshot,
+		binding.state.getSnapshot,
+	)
 
 	// 2. React → Core: эффект получает все props на каждом рендере родителя, а
 	// связка пишет из них только сменившиеся с прошлого раза — иначе повтор
 	// откатил бы то, что с тех пор поменяли ядро или код через инстанс
 	useEffect(() => {
-		binding.writeAll(props)
+		binding.inputs.full(props)
 	}, [props, binding])
 
 	// 3. События. useLayoutEffect: подписка до первой отрисовки, чтобы не
@@ -100,7 +99,7 @@ export function useAdapter<
 
 	useLayoutEffect(
 		() =>
-			binding.bindEvents((exportName, args) => {
+			binding.events.listen((exportName, args) => {
 				const callback: unknown = Reflect.get(propsRef.current, exportName)
 
 				if (typeof callback === 'function') callback(...args)
@@ -118,6 +117,6 @@ export function useAdapter<
 		plugins: adapter.bundle,
 		ref,
 		forwardProps,
-		state: toInstanceState<TInstance, TOutputs>(state),
+		state: toInstanceState<C>(state),
 	}
 }

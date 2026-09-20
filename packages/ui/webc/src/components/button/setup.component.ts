@@ -18,5 +18,5 @@ export function setupButton(
 ): TBinding<IButton> {
 	const adapter = createAdapterContext(ButtonDescriptor(), { ctrl, props })
 
-	return useAdapter<IButton>(adapter, host, onUpdate)
+	return useAdapter(adapter, host, onUpdate)
 }

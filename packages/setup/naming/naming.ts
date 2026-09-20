@@ -7,7 +7,7 @@
  * API компонентов должен читаться одинаково на всех фреймворках.
  */
 
-import type { TName } from '@soldy/accessor'
+import type { TName } from '../define/name.class'
 
 /**
  * `styles` @ ns `icon-styles` → `iconStyles_styles`; без namespace — как есть.

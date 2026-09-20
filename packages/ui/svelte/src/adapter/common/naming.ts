@@ -8,7 +8,7 @@
  * та же, что у React. Тип-зеркало — `TCallbackEventProps` из @soldy/setup.
  */
 
-import type { INamingStrategy } from '@soldy/accessor'
+import type { INamingStrategy } from '@soldy/setup'
 import { underscorePropNaming, callbackEventNaming } from '@soldy/setup'
 
 export const SvelteNaming: INamingStrategy = {

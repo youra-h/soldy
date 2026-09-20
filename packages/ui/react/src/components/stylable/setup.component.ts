@@ -3,12 +3,11 @@
  */
 
 import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
-import type { IStylable } from '@soldy/core'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { StylableProps } from './base.component'
 
 export function useSetupStylable(props: StylableProps) {
-	const adapter = useAdapterContext<IStylable>(() =>
+	const adapter = useAdapterContext(() =>
 		createAdapterContext(StylableDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

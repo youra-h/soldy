@@ -3,8 +3,6 @@ import {
 	ListBoxItemDescriptor,
 	ListBoxCollectionItemDescriptor,
 } from '@soldy/setup'
-import { TListBoxItemCollectionFacade } from '@soldy/core'
-import type { IListBoxItemProps, IListBoxItem } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -34,12 +32,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<ListBoxItemProps, TListBoxItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<IListBoxItemProps, IListBoxItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

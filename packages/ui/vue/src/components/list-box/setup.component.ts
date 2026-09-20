@@ -4,8 +4,6 @@ import {
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
 } from '@soldy/setup'
-import { TListBoxCollectionFacade } from '@soldy/core'
-import type { IListBoxCollectionProps } from '@soldy/core'
 import {
 	useAdapter,
 	useCollectionAdapter,
@@ -14,7 +12,6 @@ import {
 	type SetupContext,
 } from '../../adapter'
 import BaseListBox, { type ListBoxProps } from './base.component'
-import { type IListBoxComponentProps, type IListBox } from '@soldy/core'
 
 export default {
 	name: '_ListBox',
@@ -25,7 +22,7 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter<IListBoxComponentProps, IListBox>(adapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		const collectionAdapter = createVueAdapterContext(
 			ListBoxCollectionDescriptor(),
@@ -41,10 +38,7 @@ export default {
 			.use(TCollectionExtension, { elevator: VueElevatorFactory })
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-		const refsCollection = useCollectionAdapter<
-			IListBoxCollectionProps,
-			TListBoxCollectionFacade
-		>(collectionAdapter, props, emit)
+		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
 		return { ...refs, ...refsCollection }
 	},

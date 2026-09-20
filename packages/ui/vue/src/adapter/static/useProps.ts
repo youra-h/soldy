@@ -5,7 +5,7 @@
  * не имеет сайд-эффектов и не тянет реактивный runtime.
  */
 
-import { surfaceOf, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy/setup'
 import { VueProfile } from '../common'
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, unknown> {
@@ -16,7 +16,7 @@ export function useProps(descriptor: IComponentDescriptor): Record<string, unkno
 	// AGENTS.md, «Умолчание пропа — в декларации»). Копия — чтобы опции
 	// компонента не делили объекты с закэшированной поверхностью
 	for (const [propName, config] of Object.entries(
-		surfaceOf(descriptor, VueProfile).exportProps,
+		TSurface.of(descriptor, VueProfile).exportProps,
 	)) {
 		vueProps[propName] = { ...config }
 	}

@@ -71,14 +71,14 @@ export const PopoverDescriptor = defineDescriptor(() =>
 		plugins: [
 			// Имя диалога: у панели `role="dialog"`, и без имени скринридер
 			// объявит безымянный диалог
-			AriaPluginDescriptor(),
+			AriaPluginDescriptor,
 			// Нажатие мимо и уход фокуса мимо: фокус у поповера уходит в панель,
 			// и без `focusOutside` Tab со страницы оставлял бы её открытой
-			DismissPluginDescriptor({ focusOutside: true }),
+			DismissPluginDescriptor.with({ focusOutside: true }),
 			// Клик по триггеру переключает панель
-			PopoverPointerPluginDescriptor(),
+			PopoverPointerPluginDescriptor,
 			// Фокус, Escape и Tab. После dismiss: берёт у него панель и `dismiss`
-			PopoverFocusPluginDescriptor(),
+			PopoverFocusPluginDescriptor,
 		],
 	}),
 )

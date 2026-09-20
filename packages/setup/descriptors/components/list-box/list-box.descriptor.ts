@@ -67,16 +67,16 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Высота по `maxRows` — единственное списочное свойство, которому
 			// нужен плагин: остальные ядро применяет само
-			ListHeightPluginDescriptor(),
+			ListHeightPluginDescriptor,
 			// Клавиатура и прокрутка (последняя читает `scrollBehavior`)
-			ListKeyboardPluginDescriptor(),
-			ListScrollPluginDescriptor(),
+			ListKeyboardPluginDescriptor,
+			ListScrollPluginDescriptor,
 			// Drag-and-drop
-			DragPluginDescriptor(),
+			DragPluginDescriptor,
 		],
 	}),
 )

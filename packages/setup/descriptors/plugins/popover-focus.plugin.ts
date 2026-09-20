@@ -9,18 +9,16 @@
 
 import { definePlugin } from '../../define'
 import { TPopoverFocusPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
-import type { TPopoverFocusPluginEvents } from '@soldy/plugins'
 
-export const PopoverFocusPluginDescriptor = () =>
-	definePlugin<'focus', TPopoverFocusPluginEvents>({
-		ctor: TPopoverFocusPlugin,
-		namespace: 'focus',
-		/**
-		 * Ничего не отдаёт наружу: фокус — операция над DOM, а не значение.
-		 * Контрибуция нужна лишь для того, чтобы `create` попал в события, как у
-		 * любого плагина.
-		 */
-		contribution: {
-			events: [...PLUGIN_EVENTS],
-		},
-	})
+export const PopoverFocusPluginDescriptor = definePlugin({
+	ctor: TPopoverFocusPlugin,
+	namespace: 'focus',
+	/**
+	 * Ничего не отдаёт наружу: фокус — операция над DOM, а не значение.
+	 * Контрибуция нужна лишь для того, чтобы `create` попал в события, как у
+	 * любого плагина.
+	 */
+	contribution: {
+		events: [...PLUGIN_EVENTS],
+	},
+})

@@ -91,6 +91,6 @@ export const ComponentViewDescriptor = defineDescriptor(() =>
 			],
 		},
 
-		plugins: [ElementPluginDescriptor(), ReadyPluginDescriptor()],
+		plugins: [ElementPluginDescriptor, ReadyPluginDescriptor],
 	}),
 )

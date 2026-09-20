@@ -2,8 +2,13 @@
  * Контракт лифта: типизированный ключ, фабрика фреймворка и регистрация элемента коллекции.
  */
 
-import type { IContextElevator } from '@soldy/accessor'
 import type { IPluginBundle } from '@soldy/plugins'
+
+/** Лифт: значения от родителя к детям поверх механизма фреймворка (`provide`/`inject`, React Context, DI Angular). */
+export interface IContextElevator<T = any> {
+	down(value: T): void
+	up(): T | undefined
+}
 
 /**
  * Ключ elevator'а вместе с типом значения — как `InjectionKey<T>` во Vue.

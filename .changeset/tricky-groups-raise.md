@@ -1,7 +1,6 @@
 ---
 '@soldy/setup': minor
 '@soldy/ui-vue': minor
-'@soldy/accessor': minor
 ---
 
 Тип значения пропа задаёт только интерфейс пропсов ядра. `defineType<T>(ctor)` остаётся для scope слотов, а `type` пропа в дескрипторах теперь голый конструктор (`type: String`): так объявлены строковые пропы ListBox, Select, их частей и `anchor_placement` у Frame. `T` из обёртки у пропа не читал никто, и она могла молча разойтись с ядром.

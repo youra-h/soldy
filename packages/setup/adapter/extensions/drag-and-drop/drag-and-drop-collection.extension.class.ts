@@ -9,14 +9,14 @@
  */
 
 import { TDragPlugin } from '@soldy/plugins'
-import type { IAdapterContext } from '../../context'
+import type { TInstanceContext } from '../../context'
 import { DRAG_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import type { TCollectionOwner } from '../collection'
 import type { IDragAndDropCollectionExtensionOptions } from './types'
 
 export class TDragAndDropCollectionExtension {
 	constructor(
-		context: IAdapterContext<TCollectionOwner>,
+		context: TInstanceContext<TCollectionOwner>,
 		options: IDragAndDropCollectionExtensionOptions,
 	) {
 		const { elevator } = options

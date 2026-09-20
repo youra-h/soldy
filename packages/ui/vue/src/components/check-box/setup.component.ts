@@ -7,7 +7,6 @@ import {
 	type SetupContext,
 } from '../../adapter'
 import BaseCheckBox, { type CheckBoxProps } from './base.component'
-import { type ICheckBoxProps, type ICheckBox } from '@soldy/core'
 
 export default {
 	name: '_CheckBox',
@@ -20,7 +19,7 @@ export default {
 		})
 
 		return {
-			...useAdapter<ICheckBoxProps, ICheckBox>(adapter, props, emit),
+			...useAdapter(adapter, props, emit),
 			defaultIconTag: useIcon('check'),
 			defaultIndeterminateIconTag: useIcon('checkIndeterminate'),
 			...useSplitAttrs(),

@@ -1,27 +1,21 @@
-import type { IAdapterContext } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract } from '@soldy/setup'
 import type { IPluginBundle } from '@soldy/plugins'
-import {
-	toBindingState,
-	useAdapterParts,
-	type TExtractControllerState,
-	type TUnwrapRefs,
-} from './useAdapter'
+import { toBindingState, useAdapterParts, type TBindingState } from './useAdapter'
 
 /**
  * То же, что `TBinding`, но без `ctrl` и `rootElement`.
  *
- * Оба параметра настоящие: `TProps` — контракт коллекционных пропов компонента
- * (`IListBoxCollectionProps` и его соседи), `TInstance` — фасад. Из них шаблон
- * и получает типы `items`, `list_aria` и прочего, что отдаёт коллекция.
+ * `TProps` — пропсы компонента, среди них коллекционные; инстанс контракта
+ * `C` — фасад. Из них шаблон и получает типы `items`, `list_aria` и прочего,
+ * что отдаёт коллекция.
  *
  * Собрано пересечением, а не через `Omit<TBinding, …>`: `Omit` схлопывает
  * пересечение в плоский тип, и `items` из объявленного пропа перестаёт
  * совмещаться с `items` фасада — шаблон видит union, у которого нет `uid`.
  */
-export type TCollectionBinding<TProps, TInstance> = {
+export type TCollectionBinding<C extends IComponentContract, TProps> = {
 	plugins: IPluginBundle | null
-} & TUnwrapRefs<TProps> &
-	TExtractControllerState<TInstance>
+} & TBindingState<C, TProps>
 
 /**
  * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
@@ -49,15 +43,15 @@ export type TCollectionBinding<TProps, TInstance> = {
  * изменился: убрать лишние ключи в источнике надёжнее, чем помнить про порядок
  * в каждом новом коллекционном компоненте.
  */
-export function useCollectionAdapter<TProps extends object, TInstance extends object = object>(
-	adapter: IAdapterContext<TInstance>,
-	props: object,
+export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
 	emit?: (event: string, ...args: unknown[]) => void,
-): TCollectionBinding<TProps, TInstance> {
+): TCollectionBinding<C, TProps> {
 	const { refs } = useAdapterParts(adapter, props, emit)
 
 	return {
 		plugins: adapter.bundle,
-		...toBindingState<TProps, TInstance>(refs),
+		...toBindingState<C, TProps>(refs),
 	}
 }

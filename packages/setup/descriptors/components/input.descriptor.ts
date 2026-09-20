@@ -22,6 +22,6 @@ export const InputDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [InputControlPluginDescriptor(), InputPluginDescriptor()],
+		plugins: [InputControlPluginDescriptor, InputPluginDescriptor],
 	}),
 )

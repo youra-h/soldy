@@ -1,7 +1,6 @@
 import { LabelDescriptor } from '@soldy/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseLabel, { type LabelProps } from './base.component'
-import { type ILabelProps, type ILabel } from '@soldy/core'
 
 export default {
 	name: '_Label',
@@ -12,6 +11,6 @@ export default {
 			props,
 		})
 
-		return useAdapter<ILabelProps, ILabel>(adapter, props, emit)
+		return useAdapter(adapter, props, emit)
 	},
 }

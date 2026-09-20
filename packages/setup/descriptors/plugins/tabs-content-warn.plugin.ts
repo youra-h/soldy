@@ -8,9 +8,8 @@
 import { definePlugin } from '../../define'
 import { TTabsContentWarnPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const TabsContentWarnPluginDescriptor = () =>
-	definePlugin({
-		ctor: TTabsContentWarnPlugin,
-		namespace: 'contentWarn',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const TabsContentWarnPluginDescriptor = definePlugin({
+	ctor: TTabsContentWarnPlugin,
+	namespace: 'contentWarn',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

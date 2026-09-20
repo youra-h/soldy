@@ -44,6 +44,6 @@ export const SelectItemDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [ListItemPluginDescriptor()],
+		plugins: [ListItemPluginDescriptor],
 	}),
 )

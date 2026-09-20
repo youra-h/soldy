@@ -61,10 +61,10 @@ export const TagsDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Клавиатура по APG Listbox, пока выбор включён: стрелки, Home/End, Delete
-			TagsKeyboardPluginDescriptor(),
+			TagsKeyboardPluginDescriptor,
 		],
 	}),
 )

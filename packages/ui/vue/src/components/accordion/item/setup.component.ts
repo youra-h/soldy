@@ -3,8 +3,6 @@ import {
 	AccordionItemDescriptor,
 	AccordionCollectionItemDescriptor,
 } from '@soldy/setup'
-import { TAccordionItemCollectionFacade } from '@soldy/core'
-import type { IAccordionItemProps, IAccordionItem } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -34,12 +32,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<AccordionItemProps, TAccordionItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<IAccordionItemProps, IAccordionItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

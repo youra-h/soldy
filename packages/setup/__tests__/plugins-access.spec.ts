@@ -11,12 +11,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { TButton } from '@soldy/core'
 import { TBasePlugin, TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
-import {
-	bindComponent,
-	createAdapterContext,
-	ButtonDescriptor,
-	ComponentDescriptor,
-} from '@soldy/setup'
+import { createAdapterContext, ButtonDescriptor, ComponentDescriptor } from '@soldy/setup'
 import { CallbackProfile, required } from './helpers'
 
 /**
@@ -205,9 +200,9 @@ describe('<ns>:create — сторона шаблона', () => {
 		const emitted: Array<[string, unknown]> = []
 
 		// Подписка после createAdapterContext — как в настоящем адаптере
-		bindComponent(context, CallbackProfile).bindEvents((exportName, args) =>
-			emitted.push([exportName, args[0]]),
-		)
+		context
+			.connect(CallbackProfile)
+			.events.listen((exportName, args) => emitted.push([exportName, args[0]]))
 
 		await created()
 

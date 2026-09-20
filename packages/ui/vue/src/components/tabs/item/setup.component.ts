@@ -3,8 +3,6 @@ import {
 	TabsItemDescriptor,
 	TabsCollectionItemDescriptor,
 } from '@soldy/setup'
-import { TTabsItemCollectionFacade } from '@soldy/core'
-import type { ITabsItemProps, ITabsItem } from '@soldy/core'
 import {
 	useAdapter,
 	VueElevatorFactory,
@@ -34,12 +32,8 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter<TabsItemProps, TTabsItemCollectionFacade>(
-			itemAdapter,
-			props,
-			emit,
-		)
-		const ownerBinding = useAdapter<ITabsItemProps, ITabsItem>(adapter, props, emit)
+		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const ownerBinding = useAdapter(adapter, props, emit)
 
 		return {
 			...itemBinding,

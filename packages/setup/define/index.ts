@@ -3,16 +3,28 @@ export { definePlugin, pluginContractOf } from './plugin'
 export { defineComponent } from './component'
 export { defineDescriptor } from './descriptor'
 export { defineType } from './prop-type'
+export { TName } from './name.class'
+export { TPropSpec } from './prop-spec.class'
+export type {
+	IContribution,
+	IPropDefinition,
+	ISlotDeclaration,
+	ISlotDefinition,
+} from './contribution.types'
 export type {
 	IBundleContext,
+	IComponentContract,
 	IComponentContribution,
-	IComponentDefinitionOptions,
 	IComponentDescriptor,
+	IComponentOptions,
 	IComponentPropDefinition,
 	IComponentSlotDefinition,
+	IPluginContract,
 	IPluginDefinition,
+	IPluginsContract,
 	TComponentCtor,
 	TEmptySlotScope,
+	TPluginCtor,
 	TPropType,
 	TSlotDefinitions,
 } from './types'
@@ -20,19 +32,10 @@ export type {
 	DescriptorAllEvents,
 	DescriptorAllProps,
 	DescriptorEvents,
+	DescriptorInstance,
 	DescriptorPluginOutputs,
-	DescriptorPlugins,
 	DescriptorProps,
 	DescriptorSlots,
-	NamespacedEvents,
-	TDescriptorInstance,
-	TInstanceEventName,
+	TContractOf,
 	TInstanceEvents,
-	TInstanceProps,
-	TMergeSlots,
-	TPluginEventsFrom,
-	TPluginOutputsFrom,
-	TPluginPropsFrom,
-	TPublishedEvents,
-	TSlotsOf,
 } from './inference.types'

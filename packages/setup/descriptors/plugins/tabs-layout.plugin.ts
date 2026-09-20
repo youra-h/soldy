@@ -5,9 +5,8 @@
 import { definePlugin } from '../../define'
 import { TTabsLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const TabsLayoutPluginDescriptor = () =>
-	definePlugin({
-		ctor: TTabsLayoutPlugin,
-		namespace: 'layout',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const TabsLayoutPluginDescriptor = definePlugin({
+	ctor: TTabsLayoutPlugin,
+	namespace: 'layout',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

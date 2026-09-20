@@ -8,9 +8,8 @@
 import { definePlugin } from '../../define'
 import { TTabsKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
 
-export const TabsKeyboardPluginDescriptor = () =>
-	definePlugin({
-		ctor: TTabsKeyboardPlugin,
-		namespace: 'keyboard',
-		contribution: { events: [...PLUGIN_EVENTS] },
-	})
+export const TabsKeyboardPluginDescriptor = definePlugin({
+	ctor: TTabsKeyboardPlugin,
+	namespace: 'keyboard',
+	contribution: { events: [...PLUGIN_EVENTS] },
+})

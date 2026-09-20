@@ -6,7 +6,7 @@
  */
 
 import { TItemContextRegistry } from '@soldy/core'
-import type { IAdapterContext } from '../../context'
+import type { TInstanceContext } from '../../context'
 import type { TElevatorFactory } from '../../elevator'
 import { COLLECTION_ENGINE_ELEVATOR, ITEM_CONTEXT_ELEVATOR } from '../../elevator/keys'
 import { collectItemProps } from './item-props'
@@ -14,7 +14,7 @@ import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './t
 
 export class TCollectionItemExtension {
 	constructor(
-		context: IAdapterContext<TCollectionItemFacade>,
+		context: TInstanceContext<TCollectionItemFacade>,
 		options: ICollectionItemExtensionOptions,
 	) {
 		const { item, elevator } = options
@@ -36,7 +36,7 @@ export class TCollectionItemExtension {
 	}
 
 	private _register(
-		context: IAdapterContext<TCollectionItemFacade>,
+		context: TInstanceContext<TCollectionItemFacade>,
 		item: object,
 		elevator: TElevatorFactory,
 	): void {

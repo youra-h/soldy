@@ -69,8 +69,8 @@ describe('наследование слотов', () => {
 			contribution: { slots: { default: { scope: { text: defineType<string>(String) } } } },
 		})
 
-		expect(child.getSlots()).toHaveLength(1)
-		expect(child.getSlots()[0].scope).toEqual({ text: defineType<string>(String) })
+		expect(child.slots).toHaveLength(1)
+		expect(child.slots[0].scope).toEqual({ text: defineType<string>(String) })
 		// В типе — так же: scope наследника вместо пустого родительского
 		expectTypeOf<DescriptorSlots<() => typeof child>>().toEqualTypeOf<{
 			default: { text: string }
@@ -78,11 +78,9 @@ describe('наследование слотов', () => {
 	})
 
 	it('Button уточняет унаследованный default, добавляя scope', () => {
-		const inherited = ComponentViewDescriptor().getSlots()[0]
+		const inherited = ComponentViewDescriptor().slots[0]
 		const refined = required(
-			ButtonDescriptor()
-				.getSlots()
-				.find((slot) => slot.name === 'default'),
+			ButtonDescriptor().slots.find((slot) => slot.name === 'default'),
 			'слот default у Button',
 		)
 
@@ -92,16 +90,15 @@ describe('наследование слотов', () => {
 	})
 
 	it('невизуальный слой слотов не имеет', () => {
-		expect(ComponentDescriptor().getSlots()).toEqual([])
+		expect(ComponentDescriptor().slots).toEqual([])
 	})
 
-	it('getSlots отдаёт копию, а не внутренний массив', () => {
+	it('слоты дескриптора заморожены: он один на все монтирования', () => {
 		const descriptor = ButtonDescriptor()
-		const first = descriptor.getSlots()
 
-		first.length = 0
-
-		expect(descriptor.getSlots()).toHaveLength(3)
+		// Тип правку не пропускает (`readonly`), рантайм — тоже
+		expect(Reflect.set(descriptor.slots, 'length', 0)).toBe(false)
+		expect(descriptor.slots).toHaveLength(3)
 	})
 })
 
@@ -149,7 +146,7 @@ describe('тип слотов выводится из объявления', () 
 		})
 
 		// В рантайме слоту хватает состава ключей: ошибка только в типах
-		expect(isScopedSlot(descriptor.getSlots()[0].scope)).toBe(true)
+		expect(isScopedSlot(descriptor.slots[0].scope)).toBe(true)
 	})
 })
 

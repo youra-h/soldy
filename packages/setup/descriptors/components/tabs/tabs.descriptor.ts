@@ -72,15 +72,15 @@ export const TabsDescriptor = defineDescriptor(() =>
 
 		plugins: [
 			// Коллекция: реестр bundles + доступ к DOM-элементам
-			CollectionBundlesPluginDescriptor(),
-			CollectionElementsPluginDescriptor(),
+			CollectionBundlesPluginDescriptor,
+			CollectionElementsPluginDescriptor,
 			// Tabs-специфичные
-			TabsLayoutPluginDescriptor(),
-			TabsActiveTabPluginDescriptor(),
+			TabsLayoutPluginDescriptor,
+			TabsActiveTabPluginDescriptor,
 			// Клавиатура по APG Tabs: стрелки, Home/End, Delete
-			TabsKeyboardPluginDescriptor(),
+			TabsKeyboardPluginDescriptor,
 			// Drag-and-drop
-			DragPluginDescriptor(),
+			DragPluginDescriptor,
 		],
 	}),
 )
