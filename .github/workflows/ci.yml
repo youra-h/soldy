@@ -55,6 +55,7 @@ jobs:
           npm run test:svelte
           npm run test:solid
           npm run test:webc
+          npm run test:angular
           npm run test:theme
           npm run test:playground
           npm run test:layout

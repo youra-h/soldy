@@ -13,6 +13,7 @@ npm run dev:vue      # Vue demo (Vite)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
 npm run test:vue
+npm run test:angular # спеки Angular — билдером @angular/build:unit-test, см. «Angular-специфика»
 npm run test:theme   # Vitest — инварианты токенов темы oren
 npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
 npm run lint         # ESLint (auto-fix)
@@ -36,9 +37,12 @@ Solid», «Типы — Web Components», «Типы — Angular», провер
 (`strictTemplates`) и ограничения AOT, которых `tsc` не видит (NG8110 и
 подобные). `noEmit` стоит в самом `packages/ui/angular/tsconfig.json`: пакет
 отдаётся исходниками, а без него `ngc -p` писал бы `.js` рядом с исходниками
-`core`, `setup` и `plugins`. Сборки Angular в CI нет — у пакета пока нет
-стенда. Линт и форматирование (`prettier --check .`) роняют CI отдельной
-задачей `lint`. Задача `changeset` идёт только на PR и
+`core`, `setup` и `plugins`. `include` у этого конфига нет, поэтому под ту же
+проверку попадают и спеки `packages/ui/angular/__tests__` вместе с шаблонами
+своих хост-компонентов. Рантайм-спеки Angular гоняет `npm run test:angular` в
+шаге «Тесты» — как это устроено, см. «Angular-специфика». Сборки Angular в CI
+нет — у пакета пока нет стенда. Линт и форматирование (`prettier --check .`)
+роняют CI отдельной задачей `lint`. Задача `changeset` идёт только на PR и
 требует changeset от PR, который меняет библиотечный пакет (см. «Версии
 пакетов»). Отступы и ширину строки Prettier берёт из `.editorconfig`, в
 `.prettierrc.json` их не дублировать.
@@ -2774,6 +2778,24 @@ Disabled — так же: тема читает `data-disabled`, которое 
   `_bindRoot`). `tsc` этого не видит, сторож — «Типы — Angular» (`ngc`).
 - `<ng-content>` объявляется ровно один раз и подставляется через
   `ngTemplateOutlet`: два слота во взаимоисключающих ветках теряют содержимое.
+- Спеки (`packages/ui/angular/__tests__/*.spec.ts`) гоняет официальный билдер
+  `@angular/build:unit-test` с раннером vitest — цель `test` в
+  `packages/ui/angular/angular.json`. Своего vitest-конфига у пакета нет и быть
+  не должно: раннер строит его сам и поиск файла отключает, положенный рядом
+  молча не применится. Спеки собираются тем же AOT-конвейером, что проверяет
+  `ngc`, поэтому `tsconfig.spec.json` снимает `noEmit` пакетного конфига: с ним
+  программа TS ничего не эмитит и сборка падает на «File '…spec.ts' not found
+  in TypeScript compilation». Входы задаются `componentRef.setInput()`: имена
+  пропсов объявлены генерированным массивом `inputs`, полей класса под них нет.
+  Цель `build` рядом с `test` — только носитель опций сборки, приложения у
+  пакета нет; `buildTarget` у `test` указан явно, иначе билдер ищет
+  конфигурацию `development` и падает на её отсутствии.
+- Прогон идёт **без Zone.js**: у цели `build` в `angular.json` пустой массив
+  `polyfills`, и билдер не подгружает ни `zone.js`, ни `zone.js/testing` —
+  TestBed остаётся zoneless, то есть в том режиме, на который рассчитан
+  адаптер (состояние — сигнал, а не поле + `markForCheck()`). Пустой список
+  обязателен: `zone.js` у пакета в зависимостях, и без него билдер подтянет
+  Zone сам, а спеки станут проверять не тот режим.
 
 ## Pitfalls
 
