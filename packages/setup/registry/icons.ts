@@ -41,6 +41,7 @@ export const ICON_ROLES = [
 	'close',
 	'arrowDown',
 	'arrowRight',
+	'moreHoriz',
 ] as const
 
 export type TIconRole = (typeof ICON_ROLES)[number]

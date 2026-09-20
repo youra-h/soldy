@@ -1425,8 +1425,8 @@ ListBox, список Select, Popover и будущий Menu выглядят о
 
 Пакет иконок — **реализация контракта**, а не мешок SVG. Контракт — список
 ролей в `setup/registry/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
-`close`, `arrowDown`, `arrowRight`. Ровно как тема реализует классы, которые
-soldy выпускает в разметку.
+`close`, `arrowDown`, `arrowRight`, `moreHoriz`. Ровно как тема реализует
+классы, которые soldy выпускает в разметку.
 
 Добавили иконку в новый компонент — добавьте роль в `ICON_ROLES`, и
 conformance-тест сразу покажет, какие пакеты её ещё не закрыли.

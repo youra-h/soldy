@@ -15,6 +15,7 @@ import {
 	ComponentViewDescriptor,
 	LabelDescriptor,
 	PopoverDescriptor,
+	TagsDescriptor,
 } from '@soldy/setup'
 import { Button, ComponentView } from '@soldy/ui-vue'
 
@@ -60,6 +61,14 @@ describe('соответствие контракту', () => {
 	it('Popover: триггер, содержимое панели и иконка крестика', () => {
 		expect(templateSlots('src/components/popover/Popover.vue')).toEqual(
 			PopoverDescriptor()
+				.slots.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Tags: слоты тегов и значок кнопки «…»', () => {
+		expect(templateSlots('src/components/tags/Tags.vue')).toEqual(
+			TagsDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),
 		)

@@ -17,6 +17,7 @@ import { nextTick } from 'vue'
 import { TTags, createEngineTags } from '@soldy/core'
 import type { TTagsCollection, TTagsOverflow } from '@soldy/core'
 import { Tags } from '@soldy/ui-vue'
+import * as material from '@soldy/icons-material'
 
 let wrapper: ReturnType<typeof mount> | null = null
 
@@ -130,6 +131,45 @@ describe('режим popover', () => {
 
 		expect(panel()?.classList.contains('s-tags')).toBe(true)
 		expect(panel()?.getAttribute('role')).toBe('list')
+	})
+})
+
+describe('значок кнопки «…»', () => {
+	it('иконка роли moreHoriz из пакета, а не символ многоточия текстом', async () => {
+		const { engine } = await mountTags('popover')
+
+		engine.extensions.overflow.notifyFit(1)
+		await nextTick()
+
+		const icon = more()?.querySelector('svg.s-icon')
+
+		// Путь сверяется с пакетом: jsdom дописывает закрывающий тег, поэтому
+		// строки `body` целиком сравнивать нечем
+		const path = /d="([^"]+)"/.exec(material.moreHoriz.body)?.[1]
+
+		expect(icon?.getAttribute('viewBox')).toBe(material.moreHoriz.viewBox)
+		expect(icon?.querySelector('path')?.getAttribute('d')).toBe(path)
+		// Текста у кнопки нет вовсе: имя ей даёт `aria-label`
+		expect(more()?.textContent?.trim()).toBe('')
+	})
+
+	it('слот more-icon подменяет значок, панель и деление остаются', async () => {
+		const { ctrl, engine } = createTags('popover')
+
+		wrapper = mount(Tags, {
+			props: { ctrl, engine },
+			slots: { 'more-icon': '<i class="own-icon" />' },
+			attachTo: document.body,
+		})
+
+		await nextTick()
+
+		engine.extensions.overflow.notifyFit(1)
+		await nextTick()
+
+		expect(more()?.querySelector('.own-icon')).not.toBeNull()
+		expect(more()?.querySelector('svg.s-icon')).toBeNull()
+		expect(textsIn(row())).toEqual(['Москва'])
 	})
 })
 

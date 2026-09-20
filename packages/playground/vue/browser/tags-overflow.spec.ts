@@ -117,6 +117,22 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 		expect(button.right).toBeLessThanOrEqual(box.right + 0.5)
 	})
 
+	it('значок кнопки — иконка с ненулевым боксом', async () => {
+		// Ряд не переносится и не сжимается: иконка без размера от темы
+		// схлопнулась бы здесь в 0×0, как крестики Tabs и Tags на `xl`
+		await expect.poll(() => more()).not.toBeNull()
+
+		const icon = document.querySelector('.s-tags__more svg.s-icon')
+
+		// Не `find`: у `svg` свой интерфейс, HTML-узлом он не является
+		if (!(icon instanceof SVGElement)) throw new Error('значка у кнопки «…» нет')
+
+		const box = icon.getBoundingClientRect()
+
+		expect(box.width).toBeGreaterThan(0)
+		expect(box.height).toBeGreaterThan(0)
+	})
+
 	it('в панели — ровно непоместившиеся, и каждый тег отрисован один раз', async () => {
 		await expect.poll(() => more()).not.toBeNull()
 
