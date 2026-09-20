@@ -55,7 +55,6 @@ export default defineConfig({
 				import.meta.dirname,
 				'../../themes/oren/dist/index.css',
 			),
-			'@soldy/accessor': path.resolve(import.meta.dirname, '../../accessor'),
 			'@soldy/core': path.resolve(import.meta.dirname, '../../core/src'),
 			'@soldy/icons-material': path.resolve(import.meta.dirname, '../../icons/material/src'),
 			'@soldy/plugins': path.resolve(import.meta.dirname, '../../plugins/src'),

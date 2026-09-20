@@ -12,7 +12,6 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 npm run dev:vue      # Vue demo (Vite)
 npm run test:core    # Vitest — @soldy/core
 npm run test:setup   # Vitest — @soldy/setup
-npm run test:accessor
 npm run test:vue
 npm run test:theme   # Vitest — инварианты токенов темы oren
 npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
@@ -98,10 +97,10 @@ notifications`. Фильтра по тексту в стороже нет и б�
 
 ## Версии пакетов
 
-Библиотечные пакеты `@soldy/*` — ядро, `accessor`, `setup`, `plugins`,
-адаптеры `ui-*`, тема и иконки — идут **одной версией**. Адаптеры жёстко
-привязаны к контракту `core` и `setup`: отдельные версии пакетов дали бы только
-таблицу совместимости.
+Библиотечные пакеты `@soldy/*` — ядро, `setup`, `plugins`, адаптеры `ui-*`,
+тема и иконки — идут **одной версией**. Адаптеры жёстко привязаны к контракту
+`core` и `setup`: отдельные версии пакетов дали бы только таблицу
+совместимости.
 
 Версии и `CHANGELOG.md` ведёт [changesets](https://changesets.dev), конфиг —
 `.changeset/config.json`:
@@ -211,7 +210,7 @@ npm run changeset -- --empty
 | `packages/plugins` | Runtime behavior extenders installed into `TPluginBundle`.                                                                    |
 | `packages/ui/*`    | Framework adapters — the **only** place framework imports are allowed.                                                        |
 
-**Rule:** `core`, `accessor`, `setup`, and `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, or `PropType`. Framework-specific code belongs only in `packages/ui/*`.
+**Rule:** `core`, `setup`, and `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, or `PropType`. Framework-specific code belongs only in `packages/ui/*`.
 
 ### В адаптере не должно быть логики (критично)
 
@@ -2795,7 +2794,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
 
 ## Docs
 
-- `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins/accessor, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
+- `docs/architecture.md` — full adapter architecture overview (layers, descriptors/plugins, collection pattern, per-framework notes). Read it before touching adapter/descriptor/plugin code.
 - `.github/skills/add-soldy-component/references/complex-component.md` —
   разбор Select как эталона сложного компонента: анатомия по слоям и критерий
   «внутренний экземпляр или разметка».

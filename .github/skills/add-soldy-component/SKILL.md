@@ -15,7 +15,7 @@ Adds a new headless UI component across the soldy layers: core model → contrib
 
 ## Ground Rules
 
-- `core`, `accessor`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
+- `core`, `setup`, `plugins` must **not** import `vue`, `react`, `solid`, `svelte`, `@angular/*`, `Ref`, `PropType`. Framework imports live only in `packages/ui/*`.
 - Naming: `T` prefix for shared/generic type aliases, `I` prefix for interfaces. Concrete component types (`<Name>Props`, `<Name>EventProps`) have **no** `T` prefix.
 - Descriptors are **factories wrapped in `defineDescriptor`** (call them, don't pass the reference); the contract is declared inline in `contribution`.
 - The descriptor is the **single source of truth** for props/events/slots types, and none of them is written by hand: `defineComponent({...})` takes no type arguments. Props and events are inferred from the core class (`ctor`), so `DescriptorProps<typeof <Name>Descriptor>` resolves to `I<Name>Props` — the `TProps` of `T<Name>`; slots are inferred from the `slots` declaration.
