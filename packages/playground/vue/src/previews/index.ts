@@ -39,10 +39,18 @@ export type TPreview = (bind: Record<string, unknown>) => unknown
 /** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
+/**
+ * Содержимое коллекций стенда.
+ *
+ * Пять строк, а не три: на трёх нечем проверить свойства, которые начинаются
+ * с переполнения — `overflow` у Tags, предел строк у списка, перенос вкладок.
+ */
 const ITEMS = [
 	{ value: 'a', text: 'Первый' },
 	{ value: 'b', text: 'Второй' },
 	{ value: 'c', text: 'Третий' },
+	{ value: 'd', text: 'Четвёртый' },
+	{ value: 'e', text: 'Пятый' },
 ]
 
 /**
