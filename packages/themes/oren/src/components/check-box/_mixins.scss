@@ -22,8 +22,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 		$border-hover: $border + 100;
 
-		// Наведено — курсор на коробке или на подписи `Label` вокруг неё
-		&:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
+		// Наведено — курсор на коробке или на подписи `Label` вокруг неё.
+		// Выключенную и readonly-коробку клик не переключает — их не красим
+		&:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)}) + #{$this}__container {
 			border-color: var(--s-#{$color}-#{$border-hover});
 		}
 
@@ -64,8 +65,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		@apply #{'bg-s-' + $color + '-' + $tint};
 	}
 
-	// Наведено — курсор на коробке или на подписи `Label` вокруг неё
-	input:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
+	// Наведено — курсор на коробке или на подписи `Label` вокруг неё.
+	// Выключенную и readonly-коробку клик не переключает — их не красим
+	input:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)}) + #{$this}__container {
 		border-color: var(--s-#{$color}-#{$edge-hover});
 		@apply #{'bg-s-' + $color + '-' + $tint-hover};
 	}
@@ -85,7 +87,9 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		}
 	}
 
-	#{$on} input:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
+	#{$on}
+		input:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)})
+		+ #{$this}__container {
 		border-color: var(--s-#{$color}-#{$fill-hover});
 		@apply #{'bg-s-' + $color + '-' + $fill-hover};
 	}

@@ -28,8 +28,12 @@
 		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 		$bg-hover: $bg + 100;
 
-		// Наведено — курсор на переключателе или на подписи `Label` вокруг него
-		&:is(#{hover.$hovered}):not(:disabled):not(:checked) + #{$this}__track {
+		// Наведено — курсор на переключателе или на подписи `Label` вокруг
+		// него. Выключенный и readonly клик не переключает — их не красим.
+		// Прямое наведение у readonly гасит и `pointer-events: none` поля, а
+		// наведение подписи до поля доходит и без него
+		&:is(#{hover.$hovered}):not(:disabled, #{hover.readonly($this)}):not(:checked)
+			+ #{$this}__track {
 			@apply #{'bg-s-' + $color + '-' + $bg-hover};
 		}
 	}
