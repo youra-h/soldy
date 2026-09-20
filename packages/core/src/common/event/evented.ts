@@ -263,7 +263,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *     from: 'item:added',
 	 *     as: 'tab:added',
 	 *     then: ({ item }) => {
-	 *       item.size = this.size
+	 *       item.aria.add('tabindex', '-1')
 	 *     },
 	 *   },
 	 *   'item:deleted',

@@ -18,6 +18,7 @@ import type {
 } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -25,9 +26,10 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *
  * Четыре обязанности:
  *
- * 1. **Проброс** `size`/`variant` с владельца на теги — как у
- *    `TListBoxExtension`/`TTabsExtension`. `disabled` не пробрасывается, а
- *    сочетается: тег выключен, если выключен сам или выключен набор
+ * 1. **Размер и вид** тега диктует набор (`bindStyleToOwner`) — как у
+ *    `TListBoxExtension`/`TTabsExtension`: своё значение тега остаётся в
+ *    `rawValue` и на вид не влияет. `disabled` не диктуется, а сочетается:
+ *    тег выключен, если выключен сам или выключен набор
  *    (`bindDisabledToOwner`).
  * 2. **Закрытие** — `closeTag`, копия `closeTab` у Tabs: закрывает только
  *    тег, закрываемый по своему item-адаптеру (выключенный — нет), и эмитит
@@ -97,18 +99,16 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Итог `disabled` тегу отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// `size` и `variant` тегу тоже отдаёт резольвер — сообщаем прежний итог,
+		// по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -142,13 +142,15 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Свойства владельца, которые тег получает от него, а не задаёт сам, —
-	 * кроме `disabled`: его тег сочетает со своим.
+	 * Свойства владельца, которые тег получает от него, а не задаёт сам.
+	 *
+	 * Расширение их не пишет: `size` и `variant` диктует набор
+	 * (`bindStyleToOwner`), `disabled` тег сочетает со своим
+	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
 	 */
 	private _applyOwner(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {

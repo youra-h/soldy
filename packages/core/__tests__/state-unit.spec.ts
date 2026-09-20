@@ -93,6 +93,35 @@ describe('TStateUnit', () => {
 		expect(s.value).toBe(true)
 	})
 
+	/**
+	 * Внешние данные резольвера сменились мимо state-unit: прежний итог знает
+	 * только тот, кто их менял, и передаёт его сам. Иначе подписчик получил бы
+	 * `oldValue === newValue` — а по `oldValue` снимается старый CSS-класс.
+	 */
+	it('notify шлёт пару «было/стало» с переданным прежним итогом', () => {
+		const owner = { size: 'lg' }
+		const s = new TStateUnit({ initial: 'sm', resolver: () => owner.size })
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		owner.size = 'xl'
+		s.notify('lg')
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith({ newValue: 'xl', oldValue: 'lg' })
+	})
+
+	it('notify без смены итога молчит', () => {
+		const owner = { size: 'lg' }
+		const s = new TStateUnit({ initial: 'sm', resolver: () => owner.size })
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		s.notify('lg')
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+
 	it('setResolver эмитит change, только если сменилось value', () => {
 		const s = new TStateUnit({ initial: 5 })
 		const handler = vi.fn()

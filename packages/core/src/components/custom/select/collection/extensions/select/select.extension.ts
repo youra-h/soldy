@@ -7,6 +7,7 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -26,9 +27,10 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  *    `aria-controls` в `owner.field.aria` и `id` списка, на
  *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
  *    разойдутся.
- * 2. **Проброс `size`/`variant`** с поля на опции — как у ListBox. `disabled`
- *    не пробрасывается, а сочетается: опция выключена, если выключена сама
- *    или выключено поле (`bindDisabledToOwner`).
+ * 2. **Размер и вид** опции диктует Select (`bindStyleToOwner`) — как у
+ *    ListBox: своё значение опции остаётся в `rawValue` и на вид не влияет.
+ *    `disabled` не диктуется, а сочетается: опция выключена, если выключена
+ *    сама или выключено поле (`bindDisabledToOwner`).
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
  * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
@@ -162,18 +164,16 @@ export class TSelectExtension<
 		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
+		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
+		// по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -275,8 +275,7 @@ export class TSelectExtension<
 
 	private _onItemAdded(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 
 		this._applyContentFit(item)
 		this._applyIndicator(item)
