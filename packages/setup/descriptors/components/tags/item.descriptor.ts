@@ -11,6 +11,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TTagsItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 
 export const TagsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -34,6 +35,8 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 				'close-icon': { description: 'Иконка кнопки закрытия' },
 			},
 			props: {
+				// Размер и вид тега задаёт набор: входы сняты
+				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				closable: { type: Boolean, triggers: ['change:closable'] },
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },

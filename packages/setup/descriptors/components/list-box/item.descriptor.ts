@@ -9,6 +9,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TListBoxItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
 export const ListBoxItemDescriptor = defineDescriptor(() =>
@@ -40,6 +41,8 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 				},
 			},
 			props: {
+				// Размер и вид элемента задаёт список: входы сняты
+				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				contentFit: { type: String, triggers: ['change:contentFit'] },
 			},

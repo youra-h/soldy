@@ -5,6 +5,7 @@ export { defineDescriptor } from './descriptor'
 export { defineType } from './prop-type'
 export { TName } from './name.class'
 export { TPropSpec } from './prop-spec.class'
+export { TSlotDeclaration } from './slot-declaration.class'
 export type {
 	IContribution,
 	IPropDefinition,
@@ -19,6 +20,7 @@ export type {
 	IComponentOptions,
 	IComponentPropDefinition,
 	IComponentSlotDefinition,
+	IDeclaration,
 	IPluginContract,
 	IPluginDefinition,
 	IPluginsContract,

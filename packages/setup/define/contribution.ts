@@ -10,14 +10,15 @@
  * определение плагина.
  */
 
-import type { IContribution, ISlotDeclaration } from './contribution.types'
+import type { IContribution } from './contribution.types'
 import { TName } from './name.class'
 import { TPropSpec } from './prop-spec.class'
+import { TSlotDeclaration } from './slot-declaration.class'
 
 export function normalizeContribution(
 	contribution?: IContribution,
 	namespace?: string,
-): { props: TPropSpec[]; events: TName[]; slots: ISlotDeclaration[] } {
+): { props: TPropSpec[]; events: TName[]; slots: TSlotDeclaration[] } {
 	if (!contribution) return { props: [], events: [], slots: [] }
 
 	return {
@@ -32,12 +33,9 @@ export function normalizeContribution(
 				),
 		),
 		events: (contribution.events ?? []).map((event) => new TName(event, namespace)),
-		slots: Object.entries(contribution.slots ?? {}).map(([name, definition]) =>
-			Object.freeze({
-				name,
-				scope: definition.scope,
-				description: definition.description,
-			}),
+		slots: Object.entries(contribution.slots ?? {}).map(
+			([name, definition]) =>
+				new TSlotDeclaration(name, definition.scope, definition.description),
 		),
 	}
 }

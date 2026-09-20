@@ -10,14 +10,10 @@
  * при этом не меняются.
  */
 
-import type {
-	IContribution,
-	IPropDefinition,
-	ISlotDeclaration,
-	ISlotDefinition,
-} from './contribution.types'
+import type { IContribution, IPropDefinition, ISlotDefinition } from './contribution.types'
 import type { TName } from './name.class'
 import type { TPropSpec } from './prop-spec.class'
+import type { TSlotDeclaration } from './slot-declaration.class'
 import type { IPluginConstructor } from '@soldy/plugins'
 
 /**
@@ -40,6 +36,26 @@ export type TComponentCtor<TInstance extends object = object> = (new (
 
 /** Класс плагина. Параметры стёрты по той же причине, что у `TComponentCtor`. */
 export type TPluginCtor = IPluginConstructor<any, any, any>
+
+/**
+ * Объявление, которое наследуется: проп, слот и определение плагина.
+ *
+ * Наследование у всех трёх одно: своё объявление ложится на одноимённое
+ * родительское и остаётся на его месте (`inheritDeclarations`). Различается
+ * только смысл слова «поверх», и знает его само объявление, а не тот, кто
+ * складывает списки: проп переобъявляет написанные факты
+ * (`TPropSpec.inheritFrom`), слот и плагин встают целиком — scope объявляют
+ * одним местом, опции задаёт место установки.
+ *
+ * Поэтому у дескриптора нет ни ветки на категорию, ни функции извлечения
+ * ключа: новая категория объявлений приносит своё правило с собой.
+ */
+export interface IDeclaration<T> {
+	/** Одно объявление на ключ: полное имя пропа, имя слота, класс плагина. */
+	readonly key: unknown
+	/** Своё поверх родительского. Результат — новое объявление; оба исходных не меняются. */
+	inheritFrom(base: T): T
+}
 
 /**
  * Что плагины добавляют компоненту в типах, уже под именами с неймспейсом:
@@ -71,10 +87,14 @@ export interface IPluginContract extends IPluginsContract {
  * Опции — свойство места, где плагин поставили: дескриптор берёт определение
  * как есть или с опциями — `DismissPluginDescriptor.with({ focusOutside: true })`.
  */
-export interface IPluginDefinition<C extends IPluginContract = IPluginContract> {
+export interface IPluginDefinition<
+	C extends IPluginContract = IPluginContract,
+> extends IDeclaration<IPluginDefinition<C>> {
 	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
 	readonly __contract?: C
 	readonly ctor: TPluginCtor
+	/** Ключ наследования — класс плагина: дважды один класс компоненту не ставят. */
+	readonly key: TPluginCtor
 	/** Нормализованные props из contribution, с умолчаниями. */
 	readonly props: readonly TPropSpec[]
 	/** Нормализованные events из contribution */
@@ -174,6 +194,14 @@ export interface IComponentContract {
 	 * прикладывает наследник. `string` — имена неизвестны, то есть любые.
 	 */
 	eventName: string
+	/**
+	 * Имена защищённых пропсов — свои поверх `extends`, как и в рантайме:
+	 * наследник переобъявляет унаследованный проп в обе стороны, поэтому
+	 * `protected: true` имя сюда добавляет, а объявление без него — убирает.
+	 * Из пропсов компонента эти имена вычитаются (`DescriptorProps`): значение
+	 * вычисляет владелец, входа у разметки нет.
+	 */
+	protectedName: string
 	/** Слоты, имя → scope: свои поверх `extends`. */
 	slots: object
 	/** Сумма контрактов плагинов — своих и `extends`. */
@@ -199,7 +227,7 @@ export interface IComponentDescriptor<C extends IComponentContract = IComponentC
 	 * Слоты: свои + унаследованные. Плагины слотов не имеют, поэтому отдельного
 	 * «полного» списка, как у пропсов и событий, у слотов нет.
 	 */
-	readonly slots: readonly ISlotDeclaration[]
+	readonly slots: readonly TSlotDeclaration[]
 	readonly plugins: readonly IPluginDefinition[]
 	/** All props: own + all plugin props (flat). */
 	getProps(): readonly TPropSpec[]

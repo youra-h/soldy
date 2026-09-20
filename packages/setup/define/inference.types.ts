@@ -91,14 +91,28 @@ type TDeclaredEventName<TContribution> =
 				: never
 	  }[keyof TDeclaredProps<TContribution>]
 
+/**
+ * Имена, объявленные защищёнными: у плагина это его выходы, у компонента —
+ * то, что из пропсов уходит (`protected` значит «значение вычисляет владелец,
+ * разметка только читает»).
+ */
+type TProtectedKey<TProps> = Extract<
+	{
+		[K in keyof TProps]: TProps[K] extends { readonly protected: true } ? K : never
+	}[keyof TProps],
+	string
+>
+
+/**
+ * Имена, объявленные входами: ключ в объявлении есть, а `protected: true` в
+ * нём нет. Переобъявление наследника ходит в обе стороны, поэтому у
+ * защищённого пропа родителя такое имя возвращает вход.
+ */
+type TInputKey<TProps> = Extract<Exclude<keyof TProps, TProtectedKey<TProps>>, string>
+
 /* -------------------------------------------------------------------------- */
 /* Вывод в definePlugin: контракт плагина из класса и contribution             */
 /* -------------------------------------------------------------------------- */
-
-/** Ключи защищённых пропсов объявления — выходы плагина. */
-type TOutputKey<TProps> = {
-	[K in keyof TProps]: TProps[K] extends { readonly protected: true } ? K : never
-}[keyof TProps]
 
 /**
  * Тип значения пропа плагина: что отдаёт его `get`, а без него — одноимённое
@@ -152,7 +166,7 @@ export type TPluginContractFrom<TInstance, N extends string | undefined, TContri
 		{
 			-readonly [K in Exclude<
 				keyof TDeclaredProps<TContribution>,
-				TOutputKey<TDeclaredProps<TContribution>>
+				TProtectedKey<TDeclaredProps<TContribution>>
 			>]?: TPluginPropValue<TInstance, TDeclaredProps<TContribution>[K], K>
 		},
 		N
@@ -166,7 +180,7 @@ export type TPluginContractFrom<TInstance, N extends string | undefined, TContri
 	>
 	outputs: TNamespacedProps<
 		{
-			readonly [K in TOutputKey<TDeclaredProps<TContribution>>]: TPluginPropValue<
+			readonly [K in TProtectedKey<TDeclaredProps<TContribution>>]: TPluginPropValue<
 				TInstance,
 				TDeclaredProps<TContribution>[K],
 				K
@@ -184,6 +198,7 @@ export type TPluginContractFrom<TInstance, N extends string | undefined, TContri
 type TRootContract = {
 	instance: object
 	eventName: never
+	protectedName: never
 	slots: object
 	plugins: { props: object; events: object; outputs: object }
 }
@@ -262,6 +277,12 @@ export type TContractFrom<TOptions> = {
 	eventName:
 		| TParentContract<TOptions>['eventName']
 		| TDeclaredEventName<TOptionsContribution<TOptions>>
+	protectedName:
+		| Exclude<
+				TParentContract<TOptions>['protectedName'],
+				TInputKey<TDeclaredProps<TOptionsContribution<TOptions>>>
+		  >
+		| TProtectedKey<TDeclaredProps<TOptionsContribution<TOptions>>>
 	slots: TMergeSlots<
 		TParentContract<TOptions>['slots'],
 		TDeclaredSlots<TOptionsContribution<TOptions>>
@@ -307,8 +328,31 @@ export type TContractOf<T> = T extends (...args: any[]) => IComponentDescriptor<
 /** Инстанс дескриптора: DescriptorInstance<typeof ButtonDescriptor> → TButton */
 export type DescriptorInstance<T> = TContractOf<T>['instance']
 
-/** Props компонента из дескриптора: DescriptorProps<typeof ButtonDescriptor> → IButtonProps */
-export type DescriptorProps<T> = TInstanceProps<DescriptorInstance<T>>
+/**
+ * Интерфейс пропсов без защищённых имён.
+ *
+ * Вычитать нечего — тип остаётся тем же самым, а не структурной копией: у
+ * подавляющего большинства компонентов защищённый проп в интерфейс пропсов
+ * ядра и не входит (`classes`, `aria` — геттеры инстанса), и `Omit` там
+ * заменил бы именованный интерфейс перечислением ключей в declaration emit.
+ */
+type TOmitProtected<TProps, TName extends string> = [Extract<keyof TProps, TName>] extends [never]
+	? TProps
+	: Omit<TProps, TName>
+
+/**
+ * Props компонента из дескриптора: DescriptorProps<typeof ButtonDescriptor> → IButtonProps
+ *
+ * Защищённое имя из пропсов уходит: `protected` значит «значение вычисляет
+ * владелец», и входа у разметки нет ни в рантайме (`exportProps` поверхности),
+ * ни в типе. Так переобъявление `size: { protected: true }` у элемента
+ * коллекции снимает вход, оставляя `size` в интерфейсе ядра: из данных и от
+ * владельца значение по-прежнему приходит.
+ */
+export type DescriptorProps<T> = TOmitProtected<
+	TInstanceProps<DescriptorInstance<T>>,
+	TContractOf<T>['protectedName']
+>
 
 /**
  * Собственные события компонента (БЕЗ плагинных) — только опубликованные:

@@ -17,10 +17,17 @@
  * дескриптора и `with()` плагина получают своё описание — `rebase` и
  * `withDefault` возвращают новый объект, исходный не меняется: его делят
  * родитель и все, кто от него наследуется.
+ *
+ * По той же разнице «ключ есть / ключа нет» описание переобъявляется:
+ * `inheritFrom` кладёт объявление наследника на родительское, и написанные
+ * факты побеждают, а ненаписанные остаются родительскими. Это правило самого
+ * описания — общий контракт наследования (`IDeclaration`) у него с слотом и
+ * определением плагина, а складывает списки `inheritDeclarations`.
  */
 
 import type { IPropDefinition } from './contribution.types'
 import type { TName } from './name.class'
+import type { IDeclaration } from './types'
 
 /** Составное значение пересекает границу снимком: свой `valueOf()` даёт новый простой объект. */
 function snapshotOf(value: unknown): unknown {
@@ -29,7 +36,7 @@ function snapshotOf(value: unknown): unknown {
 	return value.valueOf === Object.prototype.valueOf ? value : value.valueOf()
 }
 
-export class TPropSpec {
+export class TPropSpec implements IDeclaration<TPropSpec> {
 	readonly type: unknown
 	readonly protected: boolean
 	/** Ключ есть, только если умолчание объявлено. */
@@ -55,6 +62,11 @@ export class TPropSpec {
 
 	get hasDefault(): boolean {
 		return Object.hasOwn(this, 'default')
+	}
+
+	/** Ключ наследования — полное имя: по нему свойство находят и во фреймворке, и в ядре. */
+	get key(): string {
+		return this.name.getName()
 	}
 
 	/** Свои `get`/`set` объявления — для интроспекции; читать и писать надо через `read`/`assign`. */
@@ -84,6 +96,26 @@ export class TPropSpec {
 	/** То же описание с умолчанием от другого класса: наследник пересчитывает, а не копирует. */
 	rebase(defaults: Readonly<Record<string, unknown>> | undefined): TPropSpec {
 		return new TPropSpec(this.name, this.triggers, this._definition, defaults)
+	}
+
+	/**
+	 * Своё описание поверх одноимённого родительского: переобъявлены ровно те
+	 * факты, которые автор написал, остальные — родительские.
+	 *
+	 * Значим ключ объявления, а не значение, как у умолчания: `protected: true`
+	 * у элемента коллекции снимает вход, а `type` и `triggers` остаются
+	 * объявленными один раз, у того, кто проп завёл. Ключ `protected: false`
+	 * поэтому тоже переобъявление — им наследник возвращает вход.
+	 *
+	 * Новое описание, исходные не меняются: родительское делят все наследники.
+	 * Умолчание не переносится — его пересчитывает `rebase` от итогового класса.
+	 */
+	inheritFrom(base: TPropSpec): TPropSpec {
+		return new TPropSpec(
+			this.name,
+			Object.hasOwn(this._definition, 'triggers') ? this.triggers : base.triggers,
+			{ ...base._definition, ...this._definition },
+		)
 	}
 
 	/** То же описание с заданным умолчанием: опция `with()` плагина идёт впереди умолчания класса. */

@@ -8,6 +8,7 @@
 import { defineComponent, defineDescriptor } from '../../../define'
 import { TAccordionItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -17,6 +18,8 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			props: {
+				// Размер и вид секции задаёт аккордеон: входы сняты
+				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				arrowPlacement: { type: String, triggers: ['change:arrowPlacement'] },
 			},

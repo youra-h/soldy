@@ -1,11 +1,19 @@
 /**
  * TComponentDescriptor — дескриптор компонента: своё объявление поверх родительского.
  *
- * Наследник получает всё, что объявил `extends`, и добавляет своё. Перекрытие
- * одно на плагины и слоты: плагин того же класса и слот того же имени встают на
- * место родительских. Так наследник меняет опции плагина
- * (`DismissPluginDescriptor.with(…)`) и уточняет scope слота (ListBoxItem
- * добавляет `selected` к слоту, объявленному выше).
+ * Наследник получает всё, что объявил `extends`, и добавляет своё. Правило
+ * одно на все три категории объявлений: своё с тем же ключом ложится на
+ * родительское и остаётся на его месте (`inheritDeclarations`). Что значит
+ * «поверх», дескриптор не решает — это знает само объявление
+ * (`IDeclaration`): плагин того же класса и слот того же имени встают
+ * целиком, а проп переобъявляет ровно те факты, которые наследник написал.
+ * Так `size` у элемента коллекции становится защищённым — входом он быть
+ * перестаёт, — а тип и триггеры остаются объявленными один раз, у того, кто
+ * проп завёл.
+ *
+ * События — не объявления, а имена: фактов, которые можно переобъявить, у них
+ * нет, и повтор имени — дубль, а не уточнение. Поэтому они копятся списком, и
+ * о повторе дескриптор сообщает (`reportDuplicateNames`).
  *
  * Умолчание пропа — от итогового `ctor` и пересчётом, а не копией
  * родительского: наследник вправе поменять значение (у Frame
@@ -23,9 +31,10 @@
  */
 
 import { normalizeContribution } from './contribution'
-import type { ISlotDeclaration } from './contribution.types'
+import { inheritDeclarations } from './inherit'
 import type { TName } from './name.class'
 import type { TPropSpec } from './prop-spec.class'
+import type { TSlotDeclaration } from './slot-declaration.class'
 import type {
 	IComponentDescriptor,
 	IComponentOptions,
@@ -33,14 +42,23 @@ import type {
 	TComponentCtor,
 } from './types'
 
-/** Последний с тем же ключом заменяет прежнего, оставаясь на его месте: `Map.set` позицию ключа не меняет. */
-function overrideBy<T>(items: readonly T[], keyOf: (item: T) => unknown): T[] {
-	const byKey = new Map<unknown, T>()
-
-	for (const item of items) byKey.set(keyOf(item), item)
-
-	return [...byKey.values()]
-}
+/**
+ * Корень цепочки наследования: дескриптор без объявлений.
+ *
+ * Пустой родитель отвечает на те же вопросы, что настоящий, поэтому «родителя
+ * нет» — не развилка в сборке: без него `parent?.x ?? []` стояло бы у каждой
+ * категории, и следующая добавила бы ещё одно. Наружу не выходит: у
+ * дескриптора без `extends` родителем остаётся он.
+ */
+const ROOT: IComponentDescriptor = Object.freeze({
+	ctor: Object,
+	props: [],
+	events: [],
+	slots: [],
+	plugins: [],
+	getProps: () => [],
+	getEvents: () => [],
+})
 
 /**
  * Полное имя уникально в составе компонента: по нему проп и событие находят и
@@ -76,32 +94,29 @@ export class TComponentDescriptor implements IComponentDescriptor {
 	readonly ctor: TComponentCtor
 	readonly props: readonly TPropSpec[]
 	readonly events: readonly TName[]
-	readonly slots: readonly ISlotDeclaration[]
+	readonly slots: readonly TSlotDeclaration[]
 	readonly plugins: readonly IPluginDefinition[]
 
 	private readonly _allProps: readonly TPropSpec[]
 	private readonly _allEvents: readonly TName[]
 
 	constructor(options: IComponentOptions) {
-		const parent = options.extends
+		const parent = options.extends ?? ROOT
 		// Плагины сюда не входят: у плагинов contribution свой, в `plugins`
 		const own = normalizeContribution(options.contribution)
-		const ctor: TComponentCtor = options.ctor ?? parent?.ctor ?? Object
+		const ctor: TComponentCtor = options.ctor ?? parent.ctor
 
 		this.ctor = ctor
+		// Умолчание пересчитывается от итогового класса, и только оно: остальное
+		// объявление уже сложено наследованием
 		this.props = Object.freeze(
-			[...(parent?.props ?? []), ...own.props].map((prop) => prop.rebase(ctor.defaultValues)),
-		)
-		this.events = Object.freeze([...(parent?.events ?? []), ...own.events])
-		this.slots = Object.freeze(
-			overrideBy([...(parent?.slots ?? []), ...own.slots], (slot) => slot.name),
-		)
-		this.plugins = Object.freeze(
-			overrideBy(
-				[...(parent?.plugins ?? []), ...(options.plugins ?? [])],
-				(plugin) => plugin.ctor,
+			inheritDeclarations(parent.props, own.props).map((prop) =>
+				prop.rebase(ctor.defaultValues),
 			),
 		)
+		this.events = Object.freeze([...parent.events, ...own.events])
+		this.slots = Object.freeze(inheritDeclarations(parent.slots, own.slots))
+		this.plugins = Object.freeze(inheritDeclarations(parent.plugins, options.plugins ?? []))
 
 		this._allProps = Object.freeze([
 			...this.props,

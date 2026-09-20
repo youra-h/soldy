@@ -36,6 +36,21 @@ export class TPluginDefinition<C extends IPluginContract> implements IPluginDefi
 		this.props = Object.freeze(_specs.map((spec) => this._withDefault(spec)))
 	}
 
+	/** Ключ наследования — класс плагина: дважды один класс компоненту не ставят. */
+	get key(): TPluginCtor {
+		return this.ctor
+	}
+
+	/**
+	 * Родительское определение не читается: определение наследника заменяет его
+	 * целиком. Опции — свойство места установки, а не накопленная сумма: у
+	 * `DismissPluginDescriptor.with({ focusOutside: true })` наследник объявляет
+	 * их заново, и наполовину родительских опций не бывает.
+	 */
+	inheritFrom(): IPluginDefinition<C> {
+		return this
+	}
+
 	/** Полный список пропсов — как у дескриптора: определение плагина тоже источник поверхности. */
 	getProps(): readonly TPropSpec[] {
 		return this.props

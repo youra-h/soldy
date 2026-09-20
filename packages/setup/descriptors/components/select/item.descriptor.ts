@@ -12,6 +12,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../define'
 import { TSelectItem } from '@soldy/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'
 
 export const SelectItemDescriptor = defineDescriptor(() =>
@@ -40,6 +41,8 @@ export const SelectItemDescriptor = defineDescriptor(() =>
 				trailing: { description: 'После текста опции' },
 			},
 			props: {
+				// Размер и вид опции задаёт список: входы сняты
+				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 			},
 		},

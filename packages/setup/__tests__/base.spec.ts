@@ -126,7 +126,7 @@ describe('defineComponent', () => {
 		expect(childOverride.plugins[0].options).toEqual({ x: 1 })
 	})
 
-	it('два объявления с одним полным именем — сообщение в консоль, дескриптор строится', () => {
+	it('имя пропа у наследника — переобъявление, а имя события — дубль', () => {
 		class TOwner {}
 
 		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -137,17 +137,44 @@ describe('defineComponent', () => {
 
 		expect(report).not.toHaveBeenCalled()
 
-		// Дубль — на совести автора: слой сообщает о нём и работает дальше
+		// Проп наследника ложится на родительский (см. «переобъявление пропа»),
+		// а событие так не складывается: дубль — на совести автора, слой
+		// сообщает о нём и работает дальше
 		const child = defineComponent({
 			extends: parent,
 			contribution: { props: { text: { type: String } }, events: ['click'] },
 		})
 
+		expect(child.props.map((prop) => prop.name.name)).toEqual(['text'])
 		expect(report.mock.calls.map(([message]) => message)).toEqual([
-			'TOwner: свойство «text» объявлено дважды — полное имя обязано быть одно',
 			'TOwner: событие «click» объявлено дважды — полное имя обязано быть одно',
 		])
 		expect(() => createAdapterContext(child, {}).connect(CommonProfile)).not.toThrow()
+
+		report.mockRestore()
+	})
+
+	it('своё имя пропа и имя пропа плагина — по-прежнему дубль', () => {
+		class TOwner {}
+		class PluginWithText extends TBasePlugin {
+			text = ''
+		}
+
+		const report = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		// Имена плагинов разводит неймспейс; без него столкновение остаётся,
+		// и слияние деклараций наследника его не прячет
+		defineComponent({
+			ctor: TOwner,
+			contribution: { props: { text: { type: String } } },
+			plugins: [
+				definePlugin({ ctor: PluginWithText, contribution: { props: { text: {} } } }),
+			],
+		})
+
+		expect(report.mock.calls.map(([message]) => message)).toEqual([
+			'TOwner: свойство «text» объявлено дважды — полное имя обязано быть одно',
+		])
 
 		report.mockRestore()
 	})
