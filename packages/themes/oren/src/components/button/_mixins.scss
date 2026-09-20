@@ -1,5 +1,6 @@
 @use 'sass:list';
 @use 'sass:map';
+@use '../../mixins/veil';
 
 // Шкала размеров: кегль, горизонтальный паддинг, высота и зазор между частями
 // строки — ступени утилит Tailwind (`text-*`, `px-*`, `h-*`, `gap-*`).
@@ -143,58 +144,20 @@ $self-focus: ('&:focus', '&:focus-visible');
 	}
 }
 
-// Слой вуали: полупрозрачный слой ступени 500 своего семейства поверх того,
-// что под кнопкой. Плотность — проценты из `--s-component-*` (`tokens.css`),
-// там же счёт.
-//
-// Зачем не ступень. Ступень отсчитывается от страницы, а кнопка без своего
-// фона стоит где угодно: на поверхности контрола (панель Select и Popover,
-// слоты Input, карточка активного таба), на подложке 100 (контейнер списка
-// табов, пилюля тега), на странице. Поверхность контрола в светлой схеме
-// белая, то есть ОТ текста дальше страницы, а в тёмной — на две ступени
-// БЛИЖЕ к нему: одна и та же ступень 100 в светлой уводила от поверхности, а
-// в тёмной возвращала за неё, и выбор (ступень 200) в тёмной схеме совпадал
-// с самой поверхностью — выбранная опция Select сливалась с панелью.
-//
-// Вуаль считает не от страницы, а от того, что реально под кнопкой, поэтому
-// список поверхностей ей не нужен — в том числе для кнопки потребителя внутри
-// поповера, которой в этом списке быть и не могло. Работает это на ступени
-// 500: она единственная симметрична в схемах, и слой из неё сам темнит
-// светлую подложку и светлит тёмную.
-//
-// Слой — сам `background-color`, не отдельный узел: перекрывать его у кнопки
-// некому, а переход цвета (`button-transition`) достаётся ему даром.
-// Единственное, чего вуаль не осилит, — подложка той же ступени 500, то есть
-// насыщенная заливка `filled`: там она невидима в обеих схемах. Вид с такой
-// заливкой состояния и берёт ступенями, у `button-state-bg` выше.
-@mixin button-veil($color, $density) {
-	background-color: color-mix(in oklab, var(--s-#{$color}-500) $density, transparent);
-}
-
-// Плотность состояния поверх своей заливки. Состояние отходит от того, на чём
-// кнопка стоит, на одну и ту же величину — и когда под ним чужая поверхность
-// (`plain`, `outlined`: $fill равен null), и когда своя вуаль-заливка
-// (`filled` с нейтралью): во втором случае плотности складываются, потому что
-// обе считаются от одной и той же подложки.
-@function veil-density($state, $fill) {
-	@if $fill == null {
-		@return $state;
-	}
-
-	@return calc(#{$fill} + #{$state});
-}
-
 // Фон состояний вуалью — наведение и подсветка, нажатие и выбор, выбор под
 // подсветкой. `$fill` — плотность собственной заливки вида, если она есть.
+//
+// Сама вуаль — приём темы, а не Button: им же красится дорожка Switch, и живёт
+// он в `mixins/_veil.scss`, там же объяснение, зачем он вместо ступени.
 @mixin button-state-veil($color, $fill: null) {
 	&:hover:not([data-disabled='true']),
 	&[data-highlighted='true']:not([data-disabled='true']) {
-		@include button-veil($color, veil-density(var(--s-component-state-hover), $fill));
+		@include veil.veil($color, veil.density(var(--s-component-state-hover), $fill));
 	}
 
 	&:active:not([data-disabled='true']),
 	&[data-selected='true']:not([data-disabled='true']) {
-		@include button-veil($color, veil-density(var(--s-component-state-active), $fill));
+		@include veil.veil($color, veil.density(var(--s-component-state-active), $fill));
 	}
 
 	// Выбор под клавиатурной подсветкой — два состояния сразу, и вуаль у него
@@ -202,7 +165,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 	// вторым устройством для той же мысли: у заливки слой поверх фона —
 	// единственный способ его изменить, у вуали фон и есть слой.
 	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
-		@include button-veil($color, veil-density(var(--s-component-state-active-hover), $fill));
+		@include veil.veil($color, veil.density(var(--s-component-state-active-hover), $fill));
 	}
 }
 
@@ -249,7 +212,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 			// наведение (200) с панелью совпадало. Поэтому заливка — та же
 			// вуаль, что у состояний, только своей плотности, а состояния
 			// считаются от неё же и складываются с ней.
-			@include button-veil($color, var(--s-component-fill));
+			@include veil.veil($color, var(--s-component-fill));
 			@apply text-s-component;
 			@include button-state-veil($color, var(--s-component-fill));
 		} @else {

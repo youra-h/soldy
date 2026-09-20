@@ -14,6 +14,8 @@
  * тест берёт у самого текста кнопки — в светлой схеме уйти от поверхности
  * значит потемнеть, в тёмной посветлеть, — поэтому ни одного числа темы и ни
  * одной ветки под схему здесь нет. В jsdom цвета не вычисляются вовсе.
+ *
+ * Чем меряется — `./colors`: счёт светлоты общий с `switch-view.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -21,6 +23,8 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Button, Tags, TagsItem } from '@soldy/ui-vue'
+
+import { find, opacity, settled, shift, style } from './colors'
 
 import '@soldy/theme-oren'
 
@@ -50,76 +54,6 @@ const VISIBLE_BORDER = 0.04
 
 /** Разброс, в котором вуаль считается отошедшей одинаково на всех подложках. */
 const SAME = 0.02
-
-const style = (element: Element) => getComputedStyle(element)
-
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
-const find = (selector: string, root: ParentNode = document): HTMLElement => {
-	const element = root.querySelector(selector)
-
-	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
-
-	return element
-}
-
-/**
- * Переход цвета доигрывает, прежде чем цвет читают: у Button он длится 200 мс,
- * и кадр сразу после наведения застаёт цвет в начале пути.
- */
-const settled = (element: Element) =>
-	Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished))
-
-/**
- * Цвет поверх подложки — тем же холстом, которым его кладёт браузер.
- *
- * Разбирать строку вычисленного стиля самим нельзя: `getComputedStyle` отдаёт
- * цвет в том пространстве, в котором он объявлен, и у темы это `oklch()` у
- * ступеней и `oklab()` у вуали, а не `rgb()`. Канва принимает любую из этих
- * записей, кладёт слой на слой ровно так же, как страница, и отдаёт
- * получившиеся байты sRGB.
- */
-const paint = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
-
-function pixel(colors: string[]): Uint8ClampedArray {
-	if (!paint) throw new Error('канвы нет')
-
-	paint.clearRect(0, 0, 1, 1)
-
-	for (const color of colors) {
-		paint.fillStyle = color
-		paint.fillRect(0, 0, 1, 1)
-	}
-
-	return paint.getImageData(0, 0, 1, 1).data
-}
-
-/** Непрозрачность цвета: у вуали она меньше единицы, у ступени равна ей. */
-const opacity = (color: string): number => pixel([color])[3] / 255
-
-/**
- * Светлота OKLab — единственная мера, сравнимая между схемами: шкала темы
- * инвертирована по ролям, и одинаковый на глаз шаг у тёмных цветов меньше по
- * sRGB, чем у светлых (`tokens-dark.css`).
- */
-function lightness(colors: string[]): number {
-	const [red, green, blue] = pixel(colors)
-	const linear = (value: number) => {
-		const unit = value / 255
-
-		return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
-	}
-
-	const [r, g, b] = [linear(red), linear(green), linear(blue)]
-	const long = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
-	const medium = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
-	const short = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-
-	return 0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short
-}
-
-/** Насколько цвет отошёл от подложки — со знаком: плюс светлее, минус темнее. */
-const shift = (color: string, backdrop: string): number =>
-	lightness([backdrop, color]) - lightness([backdrop])
 
 /** Сцена: обе подложки, на каждой — оба вида кнопки и пилюля тега. */
 const scene = defineComponent({
