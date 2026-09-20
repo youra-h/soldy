@@ -15,6 +15,10 @@
  * здешний Chromium наведение полю отдаёт сам, и без правила темы прогон остался
  * бы зелёным.
  *
+ * Обратная сторона того же договора — в конце файла: контрол только для чтения
+ * клик не меняет, и наведение на него не красит ничего и не показывает руки ни
+ * на контроле, ни на тексте подписи.
+ *
  * Проверяются три контрола, которые подписывает Label: CheckBox, Switch и
  * радио. Радио внутри подписи — с `tag="span"`: его корень — тоже `label`.
  */
@@ -138,6 +142,21 @@ function paintOf(selector: string): Record<string, string> {
 	const style = getComputedStyle(find(selector))
 
 	return { background: style.backgroundColor, border: style.borderTopColor }
+}
+
+/**
+ * Курсор, который пользователь видит над узлом. Берётся не с самого узла, а с
+ * того, что лежит в его середине сверху: поле CheckBox перекрывает коробку, а
+ * поле readonly-Switch не участвует в попадании (`pointer-events: none`), и
+ * курсор там показывает уже дорожка.
+ */
+function cursorAt(selector: string): string {
+	const { left, top, width, height } = find(selector).getBoundingClientRect()
+	const target = document.elementFromPoint(left + width / 2, top + height / 2)
+
+	if (!target) throw new Error(`${selector}: в середине узла никого`)
+
+	return getComputedStyle(target).cursor
 }
 
 /** Поле контрола в подписи. */
@@ -385,5 +404,49 @@ describe.each(HOVER)('$name в подписи: наведение', ({ paint, pr
 		await hover('.s-label__text')
 
 		expect(paintOf(paint)).toEqual(rest)
+	})
+})
+
+/**
+ * Контрол только для чтения. Радио сюда не входит: `readonly` у него нет — оно
+ * не наследник `TInputControl`.
+ */
+const READONLY: readonly THoverCase[] = HOVER.filter(({ name }) => !name.startsWith('RadioGroup'))
+
+/**
+ * Клик по readonly-контролу его не меняет — `TInputBoolPlugin` отменяет сам
+ * клик, — поэтому отклика на наведение у него быть не должно: ни подсветки, ни
+ * руки. Иначе пользователь видит отклик, жмёт и не получает ничего.
+ *
+ * Прямое наведение и наведение на текст подписи проверяются порознь: у Switch
+ * поле readonly не участвует в попадании (`pointer-events: none`), и с самого
+ * контрола подсветка не приходила и раньше, а через подпись — приходит.
+ */
+describe.each(READONLY)('$name только для чтения', ({ paint, props, tree }) => {
+	it('наведение не красит его ни с контрола, ни с текста подписи', async () => {
+		await show(() => tree({ ...props, readonly: true }))
+
+		const rest = paintOf(paint)
+
+		await hover(CONTROL)
+
+		expect(paintOf(paint), 'наведение на контрол').toEqual(rest)
+
+		await hover('.s-label__text')
+
+		expect(paintOf(paint), 'наведение на текст подписи').toEqual(rest)
+	})
+
+	it('курсор обычный и на контроле, и на тексте подписи', async () => {
+		await show(() => tree(props))
+
+		expect(cursorAt(CONTROL), 'изменяемый контрол — рука').toBe('pointer')
+		expect(cursorAt('.s-label__text'), 'его подпись — рука').toBe('pointer')
+
+		cleanup()
+		await show(() => tree({ ...props, readonly: true }))
+
+		expect(cursorAt(CONTROL), 'readonly-контрол').toBe('default')
+		expect(cursorAt('.s-label__text'), 'подпись readonly-контрола').toBe('default')
 	})
 })
