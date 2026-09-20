@@ -223,7 +223,7 @@
 	}
 
 	// Фон hover/подсветки/выбора рисует `.s-button` сама, через общий
-	// `button-state-bg` (см. `button/_mixins.scss`) — опция передаёт ему
+	// `button-state-veil` (см. `button/_mixins.scss`) — опция передаёт ему
 	// `data-highlighted` / `data-selected` (см. `Item.vue`). Здесь остаётся
 	// только то, что миксин не даёт: начертание выбранной опции.
 	&[data-selected='true'] {
@@ -237,7 +237,7 @@
 // Строка опции и кнопка очистки — вид `plain`. Раньше его задавала разметка;
 // значение темы разметка больше не передаёт, и вид даёт контекст. Строке
 // опции нужен вид с фоном состояний: подсветку и выбор рисует он
-// (`button-state-bg`), у `none` их нет.
+// (`button-state-veil`), у `none` их нет.
 :where(.s-select-item > .s-button),
 :where(.s-select__clear) {
 	@include button.button-view('plain');

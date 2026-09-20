@@ -102,8 +102,9 @@ $self-focus: ('&:focus', '&:focus-visible');
 
 // Фон состояний ступенью: hover и подсветка, нажатие и выбор, маска выбранного
 // под подсветкой. Ступень отсчитывается от поверхности СТРАНИЦЫ, поэтому этот
-// набор годится заливке, у которой фон свой и непрозрачный, — виду `filled`.
-// Тому, у кого фона нет, состояния даёт `button-state-veil` ниже.
+// набор годится только заливке, у которой своё место на шкале есть, —
+// насыщенной заливке `filled` с вариантом. Всем остальным, чей цвет значит
+// «на шаг от своей поверхности», состояния даёт `button-state-veil` ниже.
 //
 // Про тёмную схему: блоков `[data-theme=dark] &` со ступенью «−100» здесь
 // нет и не нужно. Номер ступени означает расстояние от поверхности, а не
@@ -142,9 +143,9 @@ $self-focus: ('&:focus', '&:focus-visible');
 	}
 }
 
-// Фон состояний вуалью: полупрозрачный слой ступени 500 своего семейства
-// поверх того, что под кнопкой. Плотность — в токенах
-// `--s-component-state-*` (`tokens.css`), там же счёт.
+// Слой вуали: полупрозрачный слой ступени 500 своего семейства поверх того,
+// что под кнопкой. Плотность — проценты из `--s-component-*` (`tokens.css`),
+// там же счёт.
 //
 // Зачем не ступень. Ступень отсчитывается от страницы, а кнопка без своего
 // фона стоит где угодно: на поверхности контрола (панель Select и Popover,
@@ -161,28 +162,39 @@ $self-focus: ('&:focus', '&:focus-visible');
 // 500: она единственная симметрична в схемах, и слой из неё сам темнит
 // светлую подложку и светлит тёмную.
 //
-// Слой — сам `background-color`, не отдельный узел: у вида без фона его никто
-// не перекрывает, а переход цвета (`button-transition`) достаётся ему даром.
+// Слой — сам `background-color`, не отдельный узел: перекрывать его у кнопки
+// некому, а переход цвета (`button-transition`) достаётся ему даром.
 // Единственное, чего вуаль не осилит, — подложка той же ступени 500, то есть
 // насыщенная заливка `filled`: там она невидима в обеих схемах. Вид с такой
 // заливкой состояния и берёт ступенями, у `button-state-bg` выше.
-@mixin button-state-veil($color) {
+@mixin button-veil($color, $density) {
+	background-color: color-mix(in oklab, var(--s-#{$color}-500) $density, transparent);
+}
+
+// Плотность состояния поверх своей заливки. Состояние отходит от того, на чём
+// кнопка стоит, на одну и ту же величину — и когда под ним чужая поверхность
+// (`plain`, `outlined`: $fill равен null), и когда своя вуаль-заливка
+// (`filled` с нейтралью): во втором случае плотности складываются, потому что
+// обе считаются от одной и той же подложки.
+@function veil-density($state, $fill) {
+	@if $fill == null {
+		@return $state;
+	}
+
+	@return calc(#{$fill} + #{$state});
+}
+
+// Фон состояний вуалью — наведение и подсветка, нажатие и выбор, выбор под
+// подсветкой. `$fill` — плотность собственной заливки вида, если она есть.
+@mixin button-state-veil($color, $fill: null) {
 	&:hover:not([data-disabled='true']),
 	&[data-highlighted='true']:not([data-disabled='true']) {
-		background-color: color-mix(
-			in oklab,
-			var(--s-#{$color}-500) var(--s-component-state-hover),
-			transparent
-		);
+		@include button-veil($color, veil-density(var(--s-component-state-hover), $fill));
 	}
 
 	&:active:not([data-disabled='true']),
 	&[data-selected='true']:not([data-disabled='true']) {
-		background-color: color-mix(
-			in oklab,
-			var(--s-#{$color}-500) var(--s-component-state-active),
-			transparent
-		);
+		@include button-veil($color, veil-density(var(--s-component-state-active), $fill));
 	}
 
 	// Выбор под клавиатурной подсветкой — два состояния сразу, и вуаль у него
@@ -190,11 +202,7 @@ $self-focus: ('&:focus', '&:focus-visible');
 	// вторым устройством для той же мысли: у заливки слой поверх фона —
 	// единственный способ его изменить, у вуали фон и есть слой.
 	&[data-selected='true'][data-highlighted='true']:not([data-disabled='true']) {
-		background-color: color-mix(
-			in oklab,
-			var(--s-#{$color}-500) var(--s-component-state-active-hover),
-			transparent
-		);
+		@include button-veil($color, veil-density(var(--s-component-state-active-hover), $fill));
 	}
 }
 
@@ -233,9 +241,21 @@ $self-focus: ('&:focus', '&:focus-visible');
 @mixin button-look($view, $color, $focused: $self-focus) {
 	@if $view == 'filled' {
 		@if $color == 'neutral' {
-			@apply bg-s-neutral-100 text-s-component;
-			@include button-state-bg('neutral', 200, 300);
+			// Нейтральная заливка — не точка шкалы, а «на шаг над своей
+			// поверхностью»: своё место на шкале есть только у насыщенной
+			// (ниже). Ступенью это не выражается — она отсчитана от страницы,
+			// а кнопка стоит и на поверхности контрола, где в тёмной схеме
+			// ступень 100 уходила ЗА поверхность (заливка темнее панели), а
+			// наведение (200) с панелью совпадало. Поэтому заливка — та же
+			// вуаль, что у состояний, только своей плотности, а состояния
+			// считаются от неё же и складываются с ней.
+			@include button-veil($color, var(--s-component-fill));
+			@apply text-s-component;
+			@include button-state-veil($color, var(--s-component-fill));
 		} @else {
+			// Насыщенная заливка стоит на шкале сама: ступень 500 симметрична
+			// в схемах и от поверхности под кнопкой не зависит, на ней держится
+			// `text-white`. Состояния она и берёт ступенями.
 			@apply #{'bg-s-' + $color + '-500'} text-white;
 			@include button-state-bg($color, 600, 700);
 		}
@@ -246,15 +266,23 @@ $self-focus: ('&:focus', '&:focus-visible');
 		@apply bg-transparent #{'text-s-' + $color + '-800'};
 		@include button-state-veil($color);
 	} @else if $view == 'outlined' {
+		// Рамка — та же пара ступеней, что у границы поля (`input-variant`):
+		// 300 «слабая граница», под наведением и фокусом 400 «граница».
+		// Раньше здесь стояли 200 и 300 — роль ступени 200 не граница, а
+		// поверхность, и в тёмной схеме поверхность контрола это она и есть:
+		// рамка на панели Select и Popover совпадала с самой панелью.
 		@apply bg-transparent border #{'text-s-' + $color + '-800'};
 		// Обычное объявление, не `@apply border-s-…` — почему, см. input/_mixins.scss
-		border-color: var(--s-#{$color}-200);
+		border-color: var(--s-#{$color}-300);
 
-		@include button-state-bg($color, 100, 200);
+		// Своего фона у `outlined` нет, значит состояния он берёт вуалью — по
+		// той же причине, что и `plain`: ступенями они отсчитывались от
+		// страницы, а кнопка стоит на панели.
+		@include button-state-veil($color);
 
 		#{list.join(('&:hover',), $focused)} {
 			&:not([data-disabled='true']) {
-				border-color: var(--s-#{$color}-300);
+				border-color: var(--s-#{$color}-400);
 			}
 		}
 	} @else if $view == 'none' {
