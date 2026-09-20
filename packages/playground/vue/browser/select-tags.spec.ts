@@ -11,6 +11,8 @@
  * стерегут, — раскладка поля с тегами и его минимальная ширина — лежат в
  * `themes/oren/src/components/select/_select.scss`, а сжатие тега, которому
  * не хватает места в поле, — в `themes/oren/src/components/tags/_tags.scss`.
+ * Геометрия строки поля — высота размера и строка слота, в которую встают
+ * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -19,6 +21,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy/playground-shared'
 import { Select, SelectItem } from '@soldy/ui-vue'
+import type { TTagsOverflow } from '@soldy/core'
 
 import '@soldy/theme-oren'
 
@@ -36,6 +39,9 @@ const FIELD_WIDTH = 420
  * выбирает их все и проверяет, что ввод упёрся в минимум, а не схлопнулся.
  */
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара', 'Омск', 'Пермь', 'Сочи']
+
+/** Значения всех опций сразу — выбор, который в одну строку не помещается. */
+const ALL_VALUES = OPTIONS.map((_, index) => String(index))
 
 const Harness = {
 	render: () =>
@@ -91,10 +97,57 @@ const sizedHarness = (
 		},
 	})
 
+/**
+ * Пара Select одного размера и режима, по контейнеру на каждый: с выбором и
+ * без него. Разница между ними — только теги, поэтому высоты полей сравнимы
+ * напрямую.
+ */
+const pairHarness = (options: {
+	/** Значения выбранного Select — по одному на каждую опцию из `texts`. */
+	value: string[]
+	texts: readonly string[]
+	size?: (typeof COMPONENT_SIZES)[number]
+	overflow?: TTagsOverflow
+}) =>
+	defineComponent({
+		render() {
+			const select = (value?: string[]) =>
+				h('div', { style: `width: ${FIELD_WIDTH}px` }, [
+					h(
+						Select,
+						{
+							mode: 'multiple',
+							editable: true,
+							clearable: true,
+							size: options.size,
+							tags_overflow: options.overflow,
+							value,
+						},
+						{
+							default: () =>
+								options.texts.map((text, index) =>
+									h(SelectItem, { key: text, value: String(index), text }),
+								),
+						},
+					),
+				])
+
+			return h('div', [select(options.value), select()])
+		},
+	})
+
 const input = () => document.querySelector('.s-select__field input') as HTMLInputElement
 const arrow = () => document.querySelector('.s-select__arrow') as HTMLElement
 const tags = () => [...document.querySelectorAll('.s-tags-item')]
 const options = () => [...document.querySelectorAll('[role="option"]')] as HTMLElement[]
+
+/**
+ * Теги, оставшиеся в самом поле: в `popover` хвост ряда уезжает в панель, а
+ * она телепортирована в `body` и в поле уже не лежит.
+ */
+const fieldTags = (root: ParentNode = document) => [
+	...root.querySelectorAll('.s-select__field .s-tags-item'),
+]
 
 /** Узел по селектору внутри корня; нет его — тест падает здесь, а не на чтении свойства. */
 const find = (selector: string, root: ParentNode = document): HTMLElement => {
@@ -134,17 +187,17 @@ const verticalOverlap = (a: DOMRect, b: DOMRect) =>
 	Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
 
 /**
- * Стоит ли ввод в одной строке с первым рядом тегов.
+ * Стоит ли часть поля — ввод, стрелка — в одной строке с первым рядом тегов.
  *
  * Порог — половина высоты тега, а не просто «перекрытие больше нуля»:
  * съехавший ввод начинается ровно там, где ряд тегов кончается, то есть
  * перекрытие у него не отрицательное, а нулевое. Строгое `> 0` баг ловит, но
  * без запаса, и субпиксельное округление могло бы это перевернуть.
  */
-const expectInputInTagRow = () => {
+const expectInFirstTagRow = (element: Element, what: string) => {
 	const tag = box(tags()[0])
 
-	expect(verticalOverlap(box(input()), tag)).toBeGreaterThan(tag.height / 2)
+	expect(verticalOverlap(box(element), tag), what).toBeGreaterThan(tag.height / 2)
 }
 
 /**
@@ -189,7 +242,34 @@ describe('поле с тегами', () => {
 		// Поле выравнивает содержимое по верху (`items-start`), поэтому ввод
 		// стоит рядом с ПЕРВЫМ рядом тегов — независимо от того, перенеслись ли
 		// остальные. Съехавший ввод оказался бы целиком ниже этого ряда.
-		expectInputInTagRow()
+		expectInFirstTagRow(input(), 'ввод')
+	})
+
+	/**
+	 * Пока высота поля с тегами была постоянной, перенесённые теги рисовались
+	 * под полем, поверх того, что ниже. Поле растёт по строкам тегов, а стрелка,
+	 * как и ввод, остаётся на первой строке, а не встаёт посередине выросшего
+	 * поля.
+	 */
+	it('поле растёт по строкам тегов, стрелка — на первой строке', async () => {
+		await addTags(OPTIONS.length)
+
+		const all = tags().map(box)
+		const first = all[0]
+		const last = all[all.length - 1]
+		const field = box(find('.s-select__field'))
+
+		// Без переноса проверять нечего: строк должно быть несколько
+		expect(last.top, 'последний тег — ниже первой строки').toBeGreaterThan(first.bottom)
+
+		expect(last.top, 'последний тег: верх').toBeGreaterThanOrEqual(field.top)
+		expect(last.bottom, 'последний тег: низ').toBeLessThanOrEqual(field.bottom)
+
+		all.forEach((tag, index) => {
+			expect(tag.height, `тег ${index}: высота`).toBeCloseTo(first.height, 1)
+		})
+
+		expectInFirstTagRow(arrow(), 'стрелка')
 	})
 
 	it('ввод сжимается по мере роста числа тегов', async () => {
@@ -212,7 +292,7 @@ describe('поле с тегами', () => {
 
 		// Допуск на субпиксельное округление — граница задана ровно в 4rem.
 		expect(box(input()).width).toBeGreaterThanOrEqual(MIN_INPUT_WIDTH - 0.5)
-		expectInputInTagRow()
+		expectInFirstTagRow(input(), 'ввод')
 	})
 })
 
@@ -305,5 +385,97 @@ describe.each(COMPONENT_SIZES)('размер %s: тег, которому не �
 		const { text } = await renderTag(FIELD_WIDTH)
 
 		expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth)
+	})
+})
+
+/**
+ * Поле с тегами растёт по строкам, но одна строка тегов — ровно высота
+ * размера, как у поля без тегов, и корень Select — ровно по полю. Лишние
+ * пиксели вернуть легко: ввод с размерным `leading-*` раздувает строку на
+ * рамку и оба просвета, паддинг поля шире просвета слота (прежний `py-1`) — на
+ * разницу между ними.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: высота поля с одним тегом', (size) => {
+	it('та же, что у поля без выбора, а корень — ровно по полю', async () => {
+		render(pairHarness({ value: ['0'], texts: ['Москва'], size }))
+
+		await expect.poll(() => tags().length).toBe(1)
+
+		const roots = [...document.querySelectorAll('.s-select')]
+
+		expect(roots).toHaveLength(2)
+
+		const [tagged, empty] = roots.map((root) => ({
+			root: box(root),
+			field: box(find('.s-select__field', root)),
+		}))
+
+		expect(tagged.field.height, 'поле с тегом').toBeCloseTo(empty.field.height, 1)
+		expect(tagged.root.height, 'корень с тегом').toBeCloseTo(tagged.field.height, 1)
+		expect(empty.root.height, 'корень без выбора').toBeCloseTo(empty.field.height, 1)
+	})
+})
+
+/**
+ * Режимы, в которых ряд не переносится, и признак того, что раскладка улеглась.
+ *
+ * - `scroll` — все теги остаются в ряду, уезжать им некуда.
+ * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём
+ *   кнопку «…».
+ */
+const SINGLE_ROW_MODES = [
+	{
+		overflow: 'scroll',
+		settled: () => fieldTags().length === OPTIONS.length,
+	},
+	{
+		overflow: 'popover',
+		settled: () => document.querySelector('.s-tags__more') !== null,
+	},
+] as const
+
+/**
+ * Рост поля привязан к `wrap` — умолчанию, в котором ряд переносится по
+ * строкам. В `scroll` и `popover` переносить нечего: ряд стоит одной строкой
+ * (`tags/_tags.scss`), и поле обязано остаться высоты размера. Иначе выходит,
+ * что его растит сам факт тегов, а не перенос.
+ *
+ * Это сторож условия `data-overflow='wrap'` в правиле роста
+ * (`select/_select.scss`): без него в `popover` слот вытягивается по кнопке
+ * «…» и тянет за собой поле.
+ *
+ * Сколько тегов осталось в ряду, а сколько уехало в панель, проверяет
+ * `tags-overflow.spec.ts` — здесь важны строка и высота.
+ */
+describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled }) => {
+	it('ряд — одна строка, а поле не выше поля без выбора', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
+
+		await expect.poll(settled).toBe(true)
+
+		const roots = [...document.querySelectorAll('.s-select')]
+
+		expect(roots).toHaveLength(2)
+
+		const [tagged, empty] = roots
+		const field = box(find('.s-select__field', tagged))
+
+		// Части ряда в поле: теги и, в `popover`, кнопка «…». Своя высота у
+		// кнопки — размерная высота Button, то есть высота всего поля, и без
+		// строки поля она вылезала за рамку.
+		const parts = [...fieldTags(tagged), ...tagged.querySelectorAll('.s-tags__more')].map(box)
+
+		expect(parts.length, 'частей ряда в поле').toBeGreaterThan(0)
+		expect(new Set(parts.map((part) => Math.round(part.top))).size, 'строк в ряду').toBe(1)
+
+		parts.forEach((part, index) => {
+			expect(part.height, `часть ряда ${index}: высота`).toBeCloseTo(parts[0].height, 1)
+			expect(part.bottom, `часть ряда ${index}: низ`).toBeLessThanOrEqual(field.bottom)
+		})
+
+		expect(field.height, 'поле с тегами').toBeCloseTo(
+			box(find('.s-select__field', empty)).height,
+			1,
+		)
 	})
 })
