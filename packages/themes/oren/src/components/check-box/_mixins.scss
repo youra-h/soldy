@@ -1,3 +1,5 @@
+@use '../../mixins/hover';
+
 // Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
 // блока без варианта цвет тот же — отдельное правило ему не нужно.
 $variants: 'accent', 'positive', 'negative', 'caution';
@@ -20,7 +22,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		// Одна ветка на обе схемы — см. комментарий в button/_mixins.scss
 		$border-hover: $border + 100;
 
-		&:hover:not(:disabled) + #{$this}__container {
+		// Наведено — курсор на коробке или на подписи `Label` вокруг неё
+		&:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
 			border-color: var(--s-#{$color}-#{$border-hover});
 		}
 
@@ -61,7 +64,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		@apply #{'bg-s-' + $color + '-' + $tint};
 	}
 
-	input:hover:not(:disabled) + #{$this}__container {
+	// Наведено — курсор на коробке или на подписи `Label` вокруг неё
+	input:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
 		border-color: var(--s-#{$color}-#{$edge-hover});
 		@apply #{'bg-s-' + $color + '-' + $tint-hover};
 	}
@@ -81,7 +85,7 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 		}
 	}
 
-	#{$on} input:hover:not(:disabled) + #{$this}__container {
+	#{$on} input:is(#{hover.$hovered}):not(:disabled) + #{$this}__container {
 		border-color: var(--s-#{$color}-#{$fill-hover});
 		@apply #{'bg-s-' + $color + '-' + $fill-hover};
 	}

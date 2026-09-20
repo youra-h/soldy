@@ -1,11 +1,19 @@
 /**
- * Label в настоящем браузере: связь подписи с контролом и её раскладка.
+ * Label в настоящем браузере: связь подписи с контролом, её раскладка и
+ * подсветка контрола при наведении на текст.
  *
  * Подпись связана с контролом вложением, без `for` и `id`: контрол — первый
  * labelable-потомок `label`. Клик по тексту браузер доводит до поля, а имя
  * поля собирает из всего текста внутри `label`. Ни то ни другое jsdom честно
  * не выполняет, и раскладку сторон и выравнивание по первой строке он не
  * считает вовсе — поэтому спек браузерный.
+ *
+ * Наведение тем более: в jsdom нет ни указателя, ни каскада. Здесь и проверяется
+ * сам договор — с текста подписи контрол выглядит так же, как под курсором, — а
+ * держит его правило темы: наведение на подпись подписанному полю отдают не все
+ * браузеры. Что правило на месте, сторожит `themes/oren/__tests__/label-hover.spec.ts`:
+ * здешний Chromium наведение полю отдаёт сам, и без правила темы прогон остался
+ * бы зелёным.
  *
  * Проверяются три контрола, которые подписывает Label: CheckBox, Switch и
  * радио. Радио внутри подписи — с `tag="span"`: его корень — тоже `label`.
@@ -75,16 +83,28 @@ const CASES: readonly TCase[] = [
 	},
 ]
 
-/** Смонтировать разметку и дождаться кадра: слушатели поля плагины вешают по `ready`. */
+/** Место, куда уводится указатель: наведение красит контрол, и сцены монтируются на одном месте. */
+const AWAY = '.s-test-away'
+
+/**
+ * Смонтировать разметку и дождаться кадра: слушатели поля плагины вешают по
+ * `ready`. Указатель уводится с подписи: он остаётся там, где его бросил
+ * предыдущий тест, и над подписью красил бы контрол ещё до наведения.
+ */
 async function show(content: () => VNode, width?: number): Promise<void> {
 	render(
 		defineComponent({
-			render: () => h('div', { style: width ? `width: ${width}px` : undefined }, [content()]),
+			render: () =>
+				h('div', { style: width ? `width: ${width}px` : undefined }, [
+					h('div', { class: 's-test-away', style: 'height: 24px' }),
+					content(),
+				]),
 		}),
 	)
 
 	await nextTick()
 	await nextFrame()
+	await hover(AWAY)
 }
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
@@ -94,6 +114,30 @@ function find(selector: string): Element {
 	if (!element) throw new Error(`${selector}: узла нет`)
 
 	return element
+}
+
+/**
+ * Переход цвета контрола доигрывает, прежде чем цвет читают.
+ * `getAnimations()` сам пересчитывает стили, поэтому переход, запущенный
+ * наведением, в списке уже есть.
+ */
+const settled = (element: Element) =>
+	Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished))
+
+/** Навести указатель и дождаться, пока цвет перестанет меняться. */
+async function hover(selector: string): Promise<void> {
+	await userEvent.hover(find(selector))
+	// Кадр — чтобы браузер успел разобрать движение указателя: ввод он
+	// обрабатывает до отрисовки, а перехода до этого ещё нет.
+	await nextFrame()
+	await settled(document.body)
+}
+
+/** Чем покрашена часть контрола: наведение меняет рамку, фон или и то и другое. */
+function paintOf(selector: string): Record<string, string> {
+	const style = getComputedStyle(find(selector))
+
+	return { background: style.backgroundColor, border: style.borderTopColor }
 }
 
 /** Поле контрола в подписи. */
@@ -246,4 +290,100 @@ describe.each(CASES)('$name в подписи', ({ role, box, picked, tree }) =>
 			expect(placed[side]).toBe(true)
 		},
 	)
+})
+
+type THoverCase = {
+	name: string
+	/** Часть контрола, которую красит наведение. */
+	paint: string
+	/** Состояние контрола: в разных состояниях красят разные правила темы. */
+	props: TProps
+	/** Разметка: подпись с текстом и контрол с этими пропами. */
+	tree: (control: TProps) => VNode
+}
+
+/** Подпись с коробкой: вид и отметку задают пропы случая. */
+const checkBox = (control: TProps): VNode => h(Label, { text: TEXT }, () => h(CheckBox, control))
+
+/**
+ * Корень контрола: наводим на него, а не на крашеную часть. Поле CheckBox и
+ * Switch лежит поверх коробки и дорожки, и на перекрытый узел указатель не
+ * встанет.
+ */
+const CONTROL = '.s-label__control > *'
+
+const HOVER: readonly THoverCase[] = [
+	{ name: 'CheckBox', paint: '.s-check-box__container', props: {}, tree: checkBox },
+	{
+		name: 'CheckBox filled',
+		paint: '.s-check-box__container',
+		props: { view: 'filled' },
+		tree: checkBox,
+	},
+	{
+		// Отмеченную коробку `filled` красит своё правило, а не то же самое
+		name: 'CheckBox filled отмеченный',
+		paint: '.s-check-box__container',
+		props: { view: 'filled', value: true },
+		tree: checkBox,
+	},
+	{
+		name: 'Switch',
+		paint: '.s-switch__track',
+		props: {},
+		tree: (control) => h(Label, { text: TEXT }, () => h(Switch, control)),
+	},
+	{
+		// Выключает радио и группа: `disabled` случая уходит на неё
+		name: 'RadioGroup.Item',
+		paint: '.s-radio-group-item__control',
+		props: {},
+		tree: (control) =>
+			h(RadioGroup as Component, control, () =>
+				h(Label, { text: TEXT }, () => h(RadioGroup.Item, { value: 'a', tag: 'span' })),
+			),
+	},
+]
+
+/**
+ * Клик по тексту подписи контрол переключает, поэтому и курсор на тексте
+ * обязан выглядеть как курсор на самом контроле. Браузеры здесь расходятся:
+ * Firefox отдаёт наведение подписи подписанному полю, Chromium — нет, и
+ * подсветка держится на контексте наведённой подписи в теме.
+ *
+ * Цвета тест не знает — их решает дизайн (`themes/oren/AGENTS.md`, «Что тестом
+ * не проверяется»). Знает отношения: с текста и с контрола цвет один, а без
+ * указателя другой.
+ */
+describe.each(HOVER)('$name в подписи: наведение', ({ paint, props, tree }) => {
+	it('на текст красит контрол так же, как на сам контрол', async () => {
+		await show(() => tree(props))
+
+		const rest = paintOf(paint)
+
+		await hover(CONTROL)
+
+		const hovered = paintOf(paint)
+
+		expect(hovered, 'наведение на контрол его красит').not.toEqual(rest)
+
+		await hover(AWAY)
+
+		expect(paintOf(paint), 'без указателя цвет возвращается').toEqual(rest)
+
+		await hover('.s-label__text')
+
+		expect(paintOf(paint)).toEqual(hovered)
+	})
+
+	/** Выключенный контрол кликом не переключить — и красить его нечем. */
+	it('на текст не красит выключенный контрол', async () => {
+		await show(() => tree({ ...props, disabled: true }))
+
+		const rest = paintOf(paint)
+
+		await hover('.s-label__text')
+
+		expect(paintOf(paint)).toEqual(rest)
+	})
 })
