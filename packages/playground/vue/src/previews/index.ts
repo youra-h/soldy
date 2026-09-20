@@ -145,10 +145,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 				),
 		}),
 
+	/**
+	 * Состав — пропом `items`, а не разметкой, и ряд ограничен по ширине.
+	 *
+	 * Разметкой: объявленный потребителем ряд принадлежит ему, и коллекция его
+	 * не делит — `overflow="popover"` тогда не даёт ни кнопки «…», ни панели,
+	 * теги просто обрезает (см. запасное содержимое в `Tags.vue`). Делит она
+	 * только свой состав, то есть пришедший пропом.
+	 *
+	 * Ширина: `overflow` виден исключительно на переполнении. В ряду во всю
+	 * ячейку пять тегов помещаются, и все три режима выглядели бы одинаково.
+	 */
 	tags: (bind) =>
-		h(Tags as Component, bind, () =>
-			ITEMS.map((item) => h(Tags.Item, { key: item.value, ...item })),
-		),
+		h('div', { style: 'width:260px' }, [
+			h(Tags as Component, { items: ITEMS, ...bind }),
+		]),
 
 	accordion: (bind) =>
 		h(Accordion as Component, bind, () =>
