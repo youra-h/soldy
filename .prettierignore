@@ -7,6 +7,10 @@
 # а CI сверяет его вывод с закоммиченным. Второго писателя у этих файлов быть не должно.
 packages/ui/angular/src/generated
 
+# Кэш сборки Angular (`npm run test:angular` пишет туда и отчёт vitest в JSON).
+# Он же в .gitignore пакета; у eslint исключён в globalIgnores.
+**/.angular/**
+
 # Лок-файл пишет npm.
 package-lock.json
 
