@@ -1,6 +1,6 @@
 /**
  * Чем меряются цвета в настоящем браузере — общее для спеков, которые смотрят
- * на тему (`button-view.spec.ts`, `switch-view.spec.ts`).
+ * на тему (`button-view.spec.ts`, `switch-view.spec.ts`, `tabs-view.spec.ts`).
  *
  * Цвета вида решает дизайн, и спеки их не знают (`themes/oren/AGENTS.md`, «Что
  * тестом не проверяется»). Знают они отношение: насколько цвет ушёл от
@@ -8,7 +8,13 @@
  * слоя тут неочевидные, и разъехаться двум копиям было бы нечему помешать.
  */
 
-export const style = (element: Element): CSSStyleDeclaration => getComputedStyle(element)
+/**
+ * Вычисленный стиль узла или его псевдоэлемента. Псевдоэлемент нужен не ради
+ * красоты: линию под списком табов и полосу под активным табом тема рисует
+ * `::before` и `::after`, своего узла у них нет вовсе.
+ */
+export const style = (element: Element, pseudo?: string): CSSStyleDeclaration =>
+	getComputedStyle(element, pseudo)
 
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
 export const find = (selector: string, root: ParentNode = document): HTMLElement => {
