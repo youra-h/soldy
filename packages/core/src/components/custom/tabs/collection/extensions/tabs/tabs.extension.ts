@@ -19,15 +19,16 @@ import type {
 } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
 import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TTabsExtension — расширение коллекции для управления табами.
  *
- * Получает ссылку на инстанс TTabs через options.owner и автоматически
- * пробрасывает свойства (size, variant) на добавляемые элементы, а также
- * подписывается на изменения владельца для синхронизации. `disabled` не
- * пробрасывается, а сочетается: таб выключен, если выключен сам или выключен
+ * Получает ссылку на инстанс TTabs через options.owner. `size` и `variant`
+ * таб получает резольвером (`bindStyleToOwner`): их диктует набор, своё
+ * значение таба остаётся в `rawValue` и на вид не влияет. `disabled` не
+ * диктуется, а сочетается: таб выключен, если выключен сам или выключен
  * набор (`bindDisabledToOwner`).
  *
  * @template TOwner — тип владельца (TTabs или наследник)
@@ -95,19 +96,16 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
 		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
-		// При изменении свойств владельца — пробрасываем на все элементы
+		// `size` и `variant` табу тоже отдаёт резольвер — сообщаем прежний итог,
+		// по нему снимается старый класс
 		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.size = payload.newValue
-			})
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
 		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				ctx.driver.valueOf().forEach((item) => {
-					item.variant = payload.newValue
-				})
+				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
@@ -174,13 +172,15 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	/**
-	 * Свойства владельца, которые элемент получает от него, а не задаёт сам, —
-	 * кроме `disabled`: его элемент сочетает со своим.
+	 * Свойства владельца, которые таб получает от него, а не задаёт сам.
+	 *
+	 * Расширение их не пишет: `size` и `variant` диктует набор
+	 * (`bindStyleToOwner`), `disabled` таб сочетает со своим
+	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
 	 */
 	private _applyOwner(item: TItem): void {
 		bindDisabledToOwner(item, this._owner)
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+		bindStyleToOwner(item, this._owner)
 	}
 
 	/**

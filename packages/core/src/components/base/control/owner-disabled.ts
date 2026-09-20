@@ -32,9 +32,15 @@ export function bindDisabledToOwner(item: IDisabledItem, owner: IDisabledOwner):
  *
  * Это только элементы со своим `false`: у выключенных самих по себе итог
  * `true` при любом владельце, и событие было бы ложным.
+ *
+ * Прежний итог таких элементов противоположен нынешнему: он равен прежнему
+ * `disabled` владельца, а тот только что сменился. Своего значения владельца
+ * функция не получает — `change:disabled` несёт одно новое значение.
  */
 export function notifyOwnerDisabled(items: Iterable<IDisabledItem>): void {
 	for (const item of items) {
-		if (!item.states.disabled.rawValue) item.states.disabled.notify()
+		const state = item.states.disabled
+
+		if (!state.rawValue) state.notify(!state.value)
 	}
 }

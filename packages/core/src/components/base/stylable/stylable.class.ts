@@ -12,6 +12,9 @@ import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
  *
  * `size` — шкала библиотеки: её читает `shiftSize`. `variant` — значение темы
  * (`IComponentVariants`): по умолчанию его нет, и модификатора нет тоже.
+ *
+ * У элемента коллекции оба итога диктует владелец (`bindStyleToOwner`): своё
+ * значение остаётся в `rawValue` и на вид не влияет.
  */
 export default class TStylable<
 	TProps extends IStylableProps = IStylableProps,
@@ -77,22 +80,30 @@ export default class TStylable<
 		return this.events
 	}
 
+	/** Итог: у элемента коллекции — размер владельца (`bindStyleToOwner`), у остальных — свой. */
 	get size(): TComponentSize {
 		return this._states.size.value
 	}
 
+	/**
+	 * Пишет своё значение. Сравнивает со своим (`rawValue`), а не с итогом:
+	 * у элемента коллекции итог — размер владельца, и своё иначе не доехало бы
+	 * даже до `rawValue`.
+	 */
 	set size(value: TComponentSize) {
-		if (value === this._states.size.value) return
+		if (value === this._states.size.rawValue) return
 
 		this._states.size.value = value
 	}
 
+	/** Итог: у элемента коллекции — вид владельца (`bindStyleToOwner`), у остальных — свой. */
 	get variant(): TComponentVariant | undefined {
 		return this._states.variant.value
 	}
 
+	/** Пишет своё значение, сравнивая со своим (`rawValue`), — как `size`. */
 	set variant(value: TComponentVariant | undefined) {
-		if (value === this._states.variant.value) return
+		if (value === this._states.variant.rawValue) return
 
 		this._states.variant.value = value
 	}
