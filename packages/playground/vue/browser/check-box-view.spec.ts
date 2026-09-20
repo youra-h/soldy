@@ -175,29 +175,58 @@ describe.each(COLORS)('filled, $name: заливка идёт за отметк�
 		expect(boxes.mixedOn).toEqual(boxes.on)
 	})
 
-	/** Выключенную гасит прозрачность блока, а не другая заливка. */
-	it('выключенная сохраняет заливку своего состояния — отмеченная и нет', () => {
+	/** Выключенную отмеченную гасит прозрачность блока, а не другая заливка. */
+	it('выключенная отмеченная сохраняет заливку отмеченной', () => {
 		const boxes = looks('filled')
 
-		expect(Number(boxes.offDisabled.opacity)).toBeLessThan(1)
-		expect(fill(boxes.offDisabled)).toEqual(fill(boxes.off))
+		expect(Number(boxes.onDisabled.opacity)).toBeLessThan(1)
 		expect(fill(boxes.onDisabled)).toEqual(fill(boxes.on))
 	})
 })
 
-describe('filled — заливка цвета варианта', () => {
-	it.each(COLORED)('%s: и у отмеченной, и у неотмеченной — не нейтраль', async (variant) => {
+/**
+ * Своего цвета у неотмеченной коробки нет: её целиком рисует вид по
+ * умолчанию — поверхность контрола, рамка варианта, у выключенной своя
+ * ступень. `filled` её не красит вовсе, иначе выключенной она выглядит
+ * всегда: заливка неотмеченной совпадала со ступенью выключенной.
+ */
+describe('filled — неотмеченная коробка такая же, как у outlined', () => {
+	it.each(COLORS)('$name: и в покое, и выключенная', async ({ variant }) => {
 		await show({
-			...cases('neutral', { view: 'filled' }),
-			...cases(variant, { variant, view: 'filled' }),
+			...cases('outlined', { variant, view: 'outlined' }),
+			...cases('filled', { variant, view: 'filled' }),
 		})
 
-		const neutral = looks('neutral')
-		const colored = looks(variant)
+		const outlined = looks('outlined')
+		const filled = looks('filled')
 
-		expect(colored.on.background).not.toBe(neutral.on.background)
-		expect(colored.off.background).not.toBe(neutral.off.background)
+		expect(filled.off).toEqual(outlined.off)
+		expect(filled.offDisabled).toEqual(outlined.offDisabled)
 	})
+})
+
+/**
+ * Заливка `filled` — только у отмеченной коробки, поэтому цвет варианта
+ * различается там заливкой, а у неотмеченной — рамкой вида по умолчанию:
+ * фон у неё общий, поверхность контрола.
+ */
+describe('filled — цвет варианта', () => {
+	it.each(COLORED)(
+		'%s: отмеченная отличается от нейтрали заливкой, неотмеченная — рамкой',
+		async (variant) => {
+			await show({
+				...cases('neutral', { view: 'filled' }),
+				...cases(variant, { variant, view: 'filled' }),
+			})
+
+			const neutral = looks('neutral')
+			const colored = looks(variant)
+
+			expect(colored.on.background).not.toBe(neutral.on.background)
+			expect(colored.off.background).toBe(neutral.off.background)
+			expect(colored.off.border).not.toBe(neutral.off.border)
+		},
+	)
 })
 
 /**
