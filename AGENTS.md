@@ -2462,10 +2462,19 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   логический (`margin-inline-start`) — в RTL концом строки становится левый
   край, и кнопка уезжает туда сама. В поле Select отступ снят контекстом:
   ширина ряда там — доля строки поля, а не его содержимое, и кнопка у «края»
-  повисала бы посреди поля. Сторожат `core/__tests__/tags-overflow.spec.ts`,
+  повисала бы посреди поля. **Размер панели хвоста держит панель Popover** —
+  её потолки ширины и высоты и её прокрутка
+  (`themes/oren/src/components/popover/_popover.scss`): хвост выше потолка
+  прокручивается внутри панели, а не уезжает за край окна. Своего потолка у
+  ряда тегов нет и не заводится — это был бы второй путь к тому же числу.
+  **Тег в панели остаётся натуральной ширины**: по ней замер и помнит, сколько
+  тег занимает в ряду, поэтому длинному тегу панель отвечает прокруткой вбок,
+  а не многоточием, как поле Select. Сторожат
+  `core/__tests__/tags-overflow.spec.ts`,
   `plugins/__tests__/tags-overflow.plugin.spec.ts`,
-  `ui/vue/__tests__/tags-overflow.spec.ts` и
-  `playground/vue/browser/tags-overflow.spec.ts`. Листания стрелками в
+  `ui/vue/__tests__/tags-overflow.spec.ts`,
+  `playground/vue/browser/tags-overflow.spec.ts` и
+  `playground/vue/browser/select-tags.spec.ts`. Листания стрелками в
   перечислении нет: ленте со стрелками нужен свой компонент.
 - **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
   `role="region"` у панели. Компонент назывался `Collapse` и переименован ровно

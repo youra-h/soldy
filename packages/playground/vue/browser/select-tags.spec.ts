@@ -23,6 +23,8 @@ import { COMPONENT_SIZES } from '@soldy/playground-shared'
 import { Select, SelectItem } from '@soldy/ui-vue'
 import type { TTagsOverflow } from '@soldy/core'
 
+import { expectInsideWindow } from './viewport'
+
 import '@soldy/theme-oren'
 
 /** Нижняя граница ширины ввода — `min-w-16` из `_input.scss`, в пикселях. */
@@ -42,6 +44,21 @@ const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Са
 
 /** Значения всех опций сразу — выбор, который в одну строку не помещается. */
 const ALL_VALUES = OPTIONS.map((_, index) => String(index))
+
+/**
+ * Опций столько, что хвост не помещается и в панель: она упирается в свой
+ * потолок высоты и обязана прокручивать содержимое, а не расти за край окна.
+ *
+ * Последняя — заведомо шире панели: на ней и видно, что тег в панели не
+ * сжимается. Стоит она в конце, чтобы в поле помещались первые, обычные: ряд,
+ * в который не влез ни один тег, — случай не этого спека.
+ */
+const MANY_OPTIONS = [
+	...Array.from({ length: 23 }, (_, index) => `Екатеринбург-${index + 1}`),
+	'Петропавловск-Камчатский, улица Ленинградская, 24',
+]
+
+const MANY_VALUES = MANY_OPTIONS.map((_, index) => String(index))
 
 const Harness = {
 	render: () =>
@@ -208,6 +225,31 @@ const expectInFirstTagRow = (element: Element, what: string) => {
  */
 const ensureOpen = async () => {
 	if (input().getAttribute('aria-expanded') !== 'true') await userEvent.click(arrow())
+}
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/**
+ * Открывает панель хвоста за кнопкой «…» и отдаёт её узлы, когда раскладка
+ * улеглась.
+ *
+ * Координаты панели пишет `TAnchorPlugin`, и первый расчёт идёт по ещё
+ * нулевому размеру скрытой панели: сторону он объявляет сразу
+ * (`data-placement`), а поправку по настоящему размеру приносит
+ * `ResizeObserver` кадром позже — отсюда два кадра ожидания.
+ */
+const openTailPanel = async () => {
+	await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+	await userEvent.click(find('.s-tags__more'))
+	await expect.poll(() => document.querySelector('.s-tags__panel')).not.toBeNull()
+
+	const frame = find('.s-popover__panel')
+
+	await expect.poll(() => frame.dataset.placement).toBeDefined()
+	await nextFrame()
+	await nextFrame()
+
+	return { frame, content: find('.s-popover__content'), tail: find('.s-tags__panel') }
 }
 
 /** Добавляет `count` тегов к уже выбранным — выбором опций, как это делает человек. */
@@ -525,5 +567,58 @@ describe('кнопка «…» в поле', () => {
 
 		// Ровно зазор ряда, а не остаток строки: допуск на субпиксели
 		expect(gap, 'зазор между тегом и кнопкой').toBeLessThan(12)
+	})
+})
+
+/**
+ * Случай из задачи: выбрано столько тегов, что хвост в панели не помещается.
+ *
+ * Размер панели держит панель Popover — её потолки ширины и высоты и её
+ * прокрутка (`popover/_popover.scss`). Своего потолка у ряда тегов нет и быть
+ * не должно: это был бы второй путь к тому же числу. Здесь проверяется, что
+ * потолки работают и в поле, где ряд тегов — доля строки, а не контейнер.
+ *
+ * Сколько тегов осталось в ряду, а сколько уехало в панель, проверяет
+ * `tags-overflow.spec.ts` — здесь важны границы окна и прокрутка.
+ */
+describe('панель хвоста в поле', () => {
+	it('помещается в окно и прокручивает хвост внутри себя', async () => {
+		render(pairHarness({ value: MANY_VALUES, texts: MANY_OPTIONS, overflow: 'popover' }))
+
+		const { frame, content } = await openTailPanel()
+
+		expectInsideWindow(frame, 'панель хвоста')
+
+		// Хвост выше панели — иначе прокручивать нечего, и сторож пуст
+		expect(content.scrollHeight, 'высота хвоста').toBeGreaterThan(content.clientHeight)
+	})
+
+	/**
+	 * Тег поля сжимается и обрезает текст многоточием — слот отдаёт ему долю
+	 * строки. В панели так нельзя: ширину тега по его узлу помнит замер
+	 * `TTagsOverflowPlugin`, и в открытой панели тоже, — сожмись тег по месту,
+	 * замер погнался бы за собственным результатом.
+	 */
+	it('тег в панели остаётся натуральной ширины, а панель листает его вбок', async () => {
+		render(pairHarness({ value: MANY_VALUES, texts: MANY_OPTIONS, overflow: 'popover' }))
+
+		const { content, tail } = await openTailPanel()
+
+		const texts = [
+			...tail.querySelectorAll('.s-button:not(.s-tags-item__close) .s-button__text'),
+		]
+
+		expect(texts.length, 'тегов в панели').toBeGreaterThan(0)
+
+		texts.forEach((text, index) => {
+			expect(text.scrollWidth, `тег ${index}: текст обрезан`).toBeLessThanOrEqual(
+				text.clientWidth,
+			)
+		})
+
+		// Самый длинный тег шире панели — на то он и заведён. Сожмись он по
+		// месту, панели было бы нечего листать, и проверка выше прошла бы
+		// вхолостую: обрезать нечего, когда обрезать некуда.
+		expect(content.scrollWidth, 'ширина хвоста').toBeGreaterThan(content.clientWidth)
 	})
 })
