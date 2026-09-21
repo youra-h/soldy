@@ -462,6 +462,8 @@ describe.each(COMPONENT_SIZES)('размер %s: высота поля с одн
  * Режимы, в которых ряд не переносится, и признак того, что раскладка улеглась.
  *
  * - `scroll` — все теги остаются в ряду, уезжать им некуда.
+ * - `arrows` — тоже все, только внутри вьюпорта ленты: ждём, пока она поймёт,
+ *   что листать есть куда.
  * - `popover` — хвост уезжает в панель, и это занимает кадры замера: ждём
  *   кнопку «…».
  */
@@ -469,6 +471,13 @@ const SINGLE_ROW_MODES = [
 	{
 		overflow: 'scroll',
 		settled: () => fieldTags().length === OPTIONS.length,
+	},
+	{
+		overflow: 'arrows',
+		settled: () =>
+			document
+				.querySelector('.s-select__field .s-scroller')
+				?.getAttribute('data-can-next') === 'true',
 	},
 	{
 		overflow: 'popover',
@@ -539,6 +548,26 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 		// С тегами слот — доля строки; без тегов он не должен быть даже её
 		// четвертью, иначе доля включилась по пустому ряду
 		expect(emptySlot, 'пустой слот').toBeLessThan(taggedSlot / 4)
+	})
+
+	/**
+	 * Доля — это именно доля. Без неё база слота равна ширине всего ряда, и
+	 * при шринке флексбокса всё сжатие достаётся слоту, а ввод садится на свой
+	 * минимум (`min-w-16` из `_input.scss`) при любом числе тегов.
+	 *
+	 * Сторож правила `flex-1` в `select/_select.scss` — того, чей список
+	 * режимов легко забыть пополнить: каждый новый однострочный режим обязан в
+	 * него попасть.
+	 */
+	it('ряд берёт долю строки, а не всю её', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
+
+		await expect.poll(settled).toBe(true)
+
+		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const slot = box(find('.s-input__leading', tagged)).width
+
+		expect(slot, 'слот тегов').toBeLessThan(FIELD_WIDTH * 0.6)
 	})
 })
 

@@ -37,14 +37,13 @@ export type TTagsView = TButtonView
  * - `wrap` — теги переносятся на новую строку. Умолчание: так ряд ведёт себя
  *   в теме (`flex-wrap`), и смена поведения по умолчанию была бы ломающей.
  * - `scroll` — одна строка с нативной прокруткой.
+ * - `arrows` — одна строка, которую листают кнопки: ряд заворачивается в
+ *   ленту (`Scroller`), и рядом становится её вьюпорт. Роль ряда уезжает
+ *   туда же (`rowAria`): внутри `role="listbox"` кнопкам листания места нет.
  * - `popover` — одна строка, в конце кнопка «…» с панелью, где лежат
  *   непоместившиеся теги.
- *
- * Листание стрелками (`arrows`) сюда не входит: ленте со стрелками нужен свой
- * компонент, и значение в перечислении без реализации было бы документацией
- * авансом.
  */
-export type TTagsOverflow = 'wrap' | 'scroll' | 'popover'
+export type TTagsOverflow = 'wrap' | 'scroll' | 'arrows' | 'popover'
 
 export type TTagsEvents = TValueControlEvents<TTagsValue> &
 	TCollectionStorageDriverEvents<ITagsItem> & {
@@ -56,6 +55,12 @@ export type TTagsEvents = TValueControlEvents<TTagsValue> &
 		'change:overflow': (value: TTagsOverflow) => void
 		/** change:moreLabel */
 		'change:moreLabel': (value: string) => void
+		/** change:prevLabel */
+		'change:prevLabel': (value: string | undefined) => void
+		/** change:nextLabel */
+		'change:nextLabel': (value: string | undefined) => void
+		/** change:rowAria — набор атрибутов ряда изменился */
+		'change:rowAria': (value: TAriaAttributes) => void
 	}
 
 /** Пропсы самого компонента (без коллекционной части). */
@@ -68,6 +73,16 @@ export interface ITagsComponentProps extends IValueControlProps<TTagsValue> {
 	overflow?: TTagsOverflow
 	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
 	moreLabel?: string
+	/**
+	 * Имя кнопки «назад» у ленты в режиме `arrows`.
+	 *
+	 * Своего умолчания у Tags нет: кнопки принадлежат ленте, и английские
+	 * дефолты держит она. Не задано — доезжает `undefined`, и лента остаётся
+	 * при своём.
+	 */
+	prevLabel?: string
+	/** Имя кнопки «вперёд» у ленты в режиме `arrows`; умолчание держит лента */
+	nextLabel?: string
 }
 
 /** Полный набор пропсов Tags: компонентные + коллекция (engine, items, mode). */
@@ -89,6 +104,22 @@ export interface ITags<
 	overflow: TTagsOverflow
 	/** Имя кнопки «…», открывающей панель с непоместившимися тегами */
 	moreLabel: string
+	/** Имя кнопки «назад» у ленты; `undefined` — умолчание держит лента */
+	prevLabel: string | undefined
+	/** Имя кнопки «вперёд» у ленты; `undefined` — умолчание держит лента */
+	nextLabel: string | undefined
+	/** Ряд завёрнут в ленту со стрелками — то есть режим переполнения `arrows` */
+	readonly arrows: boolean
+	/**
+	 * Атрибуты ряда, когда рядом стал не корень: в `arrows` ряд — вьюпорт
+	 * ленты, и роль набора уезжает туда. Вне `arrows` набор пуст
+	 */
+	readonly rowAria: TAriaAttributes
+	/**
+	 * Записать атрибут ряда. Куда он ляжет — на корень или во вьюпорт ленты —
+	 * решает режим переполнения, а не тот, кто пишет; `null` снимает атрибут
+	 */
+	setRowAria(name: string, value: string | null): void
 	/** Имя кнопки «…»: `moreLabel`. Своего экземпляра у кнопки нет */
 	readonly moreAria: TAriaAttributes
 	/** Классы ряда плюс свой класс панели: теги в ней — не потомки корня */

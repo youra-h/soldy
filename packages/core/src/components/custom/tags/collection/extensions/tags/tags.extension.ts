@@ -39,7 +39,9 @@ import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../
  *    (`role="list"`/`"listitem"`), а `listbox`/`option` с `aria-selected`,
  *    как только `selection.mode` перестаёт быть `none`. Пишет это
  *    расширение, а не элемент и не `TSelectionExtension`: тот общий для всех
- *    коллекций, а конкретная пара ролей — знание Tags.
+ *    коллекций, а конкретная пара ролей — знание Tags. Куда роль ложится,
+ *    решает режим переполнения: в `arrows` ряд — вьюпорт ленты (`rowAria`),
+ *    в остальных — сам корень.
  * 4. **Остановка Tab** — roving tabindex по паттерну APG Listbox, пока выбор
  *    включён: весь набор — одна остановка, между тегами ходят стрелки
  *    (`TTagsKeyboardPlugin`). Кнопка закрытия из порядка Tab выведена — тег
@@ -172,6 +174,12 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * (`aria-orientation="horizontal"` — умолчание listbox вертикальное), и в
 	 * `multiple` выбрать можно несколько (`aria-multiselectable`). У `list`
 	 * таких атрибутов нет — оба снимаются.
+	 *
+	 * Все три — атрибуты **ряда**, а не корня, поэтому пишутся через
+	 * `setRowAria`: в `arrows` рядом становится вьюпорт ленты, и место
+	 * выбирает Tags. Он же переносит их на смене режима — подписываться на неё
+	 * расширению не нужно. Что написал потребитель (`aria-label`), не трогаем:
+	 * это его знание о корне.
 	 */
 	private _applyMode(): void {
 		const selection = this._selection
@@ -180,9 +188,9 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 		const selecting = selection.mode !== 'none'
 
-		this._owner.aria.add('role', selecting ? 'listbox' : 'list')
-		this._owner.aria.add('aria-orientation', selecting ? 'horizontal' : null)
-		this._owner.aria.add('aria-multiselectable', selection.multiple ? 'true' : null)
+		this._owner.setRowAria('role', selecting ? 'listbox' : 'list')
+		this._owner.setRowAria('aria-orientation', selecting ? 'horizontal' : null)
+		this._owner.setRowAria('aria-multiselectable', selection.multiple ? 'true' : null)
 
 		this._ctx.driver.valueOf().forEach((item) => this._applyItemRole(item, selection))
 	}

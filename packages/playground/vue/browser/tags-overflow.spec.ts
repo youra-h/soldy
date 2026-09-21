@@ -7,6 +7,10 @@
  * состав расширение коллекции, а раскладку ряда — одна строка, обрезанный
  * хвост — держит `themes/oren/src/components/tags/_tags.scss`.
  *
+ * В `arrows` делить нечего: ряд целиком уезжает во вьюпорт ленты, и проверять
+ * там надо другое — что раскладка ряда переехала вместе с ним и что лента не
+ * отобрала у тегов стрелки клавиатуры.
+ *
  * Сторож ошибок окна (`browser/setup.ts`) здесь работает как второй тест:
  * замер, который гоняется за собственным результатом, уронил бы прогон
  * сообщением `ResizeObserver loop completed with undelivered notifications`.
@@ -369,5 +373,147 @@ describe('ряд меняет ширину', () => {
 
 		await settled(TAGS.length)
 		await expect.poll(() => more()).toBeNull()
+	})
+})
+
+/**
+ * Режим `arrows`: ряд завёрнут в ленту, и рядом стал её вьюпорт.
+ *
+ * Делить состав здесь некому — все теги остаются в ряду, — поэтому проверяется
+ * другое. Первое: раскладка ряда переехала во вьюпорт, а не осталась на корне,
+ * иначе строка и зазор пропали бы вместе с ней. Второе: лента не отобрала у
+ * тегов стрелки клавиатуры — по набору с выбором ходят они, а листают кнопки.
+ */
+describe('режим arrows: ряд листают кнопки', () => {
+	const arrows = (props: Record<string, unknown> = {}) =>
+		harness(NARROW, { overflow: 'arrows', ...props })
+
+	const scroller = () => find('.s-scroller')
+	const viewport = () => find('.s-scroller__viewport')
+	const prev = () => find('.s-scroller__prev')
+	const next = () => find('.s-scroller__next')
+
+	/** Строка тега по тексту — носитель роли и остановки Tab. */
+	const line = (text: string): HTMLElement => {
+		const found = [...document.querySelectorAll('.s-tags-item > .s-button:first-child')].find(
+			(candidate) => candidate.textContent?.trim() === text,
+		)
+
+		if (!(found instanceof HTMLElement)) throw new Error(`строки тега «${text}» нет`)
+
+		return found
+	}
+
+	/** Замер ленты идёт кадрами: ждём, пока она поймёт, что листать есть куда. */
+	const scrollable = () => expect.poll(() => scroller().dataset.canNext).toBe('true')
+
+	it('все теги стоят одной строкой внутри вьюпорта, и делить их некому', async () => {
+		render(arrows())
+
+		await scrollable()
+
+		const items = [...viewport().querySelectorAll(':scope > .s-tags-item')]
+
+		expect(items.map((item) => item.textContent?.trim())).toEqual(TAGS)
+		expect(
+			new Set(items.map((item) => Math.round(item.getBoundingClientRect().top))).size,
+		).toBe(1)
+		expect(more()).toBeNull()
+		expect(panel()).toBeNull()
+	})
+
+	/** Зазор ряда переехал во вьюпорт вместе с рядом: без него теги слиплись бы. */
+	it('между тегами остался зазор набора', async () => {
+		render(arrows())
+
+		await scrollable()
+
+		const items = [...viewport().querySelectorAll(':scope > .s-tags-item')].map((item) =>
+			item.getBoundingClientRect(),
+		)
+
+		expect(items[1].left - items[0].right).toBeGreaterThan(1)
+	})
+
+	it('кнопка «вперёд» двигает ряд на видимую ширину, а на краю гаснет', async () => {
+		render(arrows())
+
+		await scrollable()
+
+		// В начале строки листать назад некуда
+		expect(prev().hasAttribute('disabled')).toBe(true)
+
+		const page = viewport().clientWidth
+
+		await userEvent.click(next())
+		await expect.poll(() => viewport().scrollLeft).toBeGreaterThan(page / 2)
+
+		viewport().scrollLeft = viewport().scrollWidth
+
+		await expect.poll(() => scroller().dataset.canNext).toBe('false')
+
+		expect(next().hasAttribute('disabled')).toBe(true)
+		expect(prev().hasAttribute('disabled')).toBe(false)
+	})
+
+	it('сужение ряда пересчитывает состояние кнопок', async () => {
+		render(harness(WIDE, { overflow: 'arrows' }))
+
+		await expect.poll(() => scroller().dataset.canNext).toBe('false')
+
+		host().style.width = `${NARROW}px`
+
+		await scrollable()
+	})
+
+	it('роль ряда стоит на вьюпорте, а корень её не несёт', async () => {
+		render(arrows({ mode: 'multiple' }))
+
+		await scrollable()
+
+		expect(viewport().getAttribute('role')).toBe('listbox')
+		expect(viewport().getAttribute('aria-orientation')).toBe('horizontal')
+		expect(row().hasAttribute('role')).toBe(false)
+
+		// Остановка Tab — у тегов (roving tabindex), и лента своей не добавляет
+		expect(viewport().hasAttribute('tabindex')).toBe(false)
+	})
+
+	/**
+	 * Главный риск режима: стрелки у набора с выбором уже заняты — ими ходят
+	 * по тегам. Своего плагина клавиатуры у ленты нет, и отбирать их не у
+	 * кого, но проверить это надо там, где фокус настоящий.
+	 */
+	it('стрелки ходят по тегам, а не листают ленту', async () => {
+		render(arrows({ mode: 'multiple' }))
+
+		await scrollable()
+
+		line(TAGS[0]).focus()
+		await userEvent.keyboard('{ArrowRight}')
+
+		expect(document.activeElement).toBe(line(TAGS[1]))
+	})
+
+	/** Фокус за краем ленту подтягивает сам — это делает браузер. */
+	it('фокус на теге за краем подтягивает его в зону видимости', async () => {
+		render(arrows({ mode: 'multiple' }))
+
+		await scrollable()
+
+		line(TAGS[0]).focus()
+		await userEvent.keyboard('{End}')
+
+		const last = line(TAGS.at(-1) ?? '')
+
+		expect(document.activeElement).toBe(last)
+
+		await expect.poll(() => viewport().scrollLeft).toBeGreaterThan(0)
+
+		const box = last.getBoundingClientRect()
+		const area = viewport().getBoundingClientRect()
+
+		expect(box.right).toBeLessThanOrEqual(area.right + 0.5)
+		expect(box.left).toBeGreaterThanOrEqual(area.left - 0.5)
 	})
 })

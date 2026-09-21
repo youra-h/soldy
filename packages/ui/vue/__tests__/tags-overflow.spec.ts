@@ -15,7 +15,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { TTags, createEngineTags } from '@soldy/core'
-import type { TTagsCollection, TTagsOverflow } from '@soldy/core'
+import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy/core'
 import { Tags } from '@soldy/ui-vue'
 import * as material from '@soldy/icons-material'
 
@@ -30,8 +30,8 @@ afterEach(() => {
 const TEXTS = ['Москва', 'Тверь', 'Тула']
 
 /** Набор тегов, собранный снаружи: замер потом подставляется в его коллекцию. */
-const createTags = (overflow: TTagsOverflow) => {
-	const ctrl = new TTags({ overflow, closable: true })
+const createTags = (overflow: TTagsOverflow, props: Partial<ITagsProps> = {}) => {
+	const ctrl = new TTags({ overflow, closable: true, ...props })
 	const engine = createEngineTags({
 		owner: ctrl,
 		items: TEXTS.map((text) => ({ value: text, text })),
@@ -40,8 +40,8 @@ const createTags = (overflow: TTagsOverflow) => {
 	return { ctrl, engine: engine as TTagsCollection }
 }
 
-const mountTags = async (overflow: TTagsOverflow) => {
-	const { ctrl, engine } = createTags(overflow)
+const mountTags = async (overflow: TTagsOverflow, props: Partial<ITagsProps> = {}) => {
+	const { ctrl, engine } = createTags(overflow, props)
 
 	wrapper = mount(Tags, { props: { ctrl, engine }, attachTo: document.body })
 
@@ -82,6 +82,122 @@ describe('режим wrap и scroll: панели нет', () => {
 		await mountTags('scroll')
 
 		expect(row().dataset.overflow).toBe('scroll')
+	})
+
+	it('ленты в этих режимах нет вовсе', async () => {
+		await mountTags('wrap')
+
+		expect(document.querySelector('.s-scroller')).toBeNull()
+	})
+})
+
+/**
+ * Режим `arrows`: ряд заворачивается в ленту, и рядом становится её вьюпорт.
+ *
+ * Здесь важна проводка — куда уехали теги, роль и состояния. Раскладку и само
+ * листание проверяет `playground/vue/browser/tags-overflow.spec.ts`: в jsdom у
+ * вьюпорта нет ни ширины, ни прокрутки.
+ */
+describe('режим arrows', () => {
+	const viewport = (): HTMLElement => {
+		const element = document.querySelector('.s-scroller__viewport')
+
+		if (!(element instanceof HTMLElement)) throw new Error('вьюпорта ленты нет')
+
+		return element
+	}
+
+	it('теги лежат во вьюпорте ленты, а не прямыми детьми корня', async () => {
+		await mountTags('arrows')
+
+		expect(textsIn(viewport())).toEqual(TEXTS)
+		expect(row().querySelectorAll(':scope > .s-tags-item')).toHaveLength(0)
+		// Каждый тег отрисован ровно один раз: второй перетёр бы запись в реестре
+		expect(textsIn(document.body)).toEqual(TEXTS)
+	})
+
+	it('делить нечего: ни панели, ни кнопки «…»', async () => {
+		await mountTags('arrows')
+
+		expect(more()).toBeNull()
+		expect(panel()).toBeNull()
+		expect(row().dataset.overflow).toBe('arrows')
+	})
+
+	it('роль ряда стоит на вьюпорте, а корень её не несёт', async () => {
+		const { engine } = await mountTags('arrows')
+
+		expect(viewport().getAttribute('role')).toBe('list')
+		expect(row().hasAttribute('role')).toBe(false)
+
+		engine.extensions.selection.mode = 'multiple'
+		await nextTick()
+
+		expect(viewport().getAttribute('role')).toBe('listbox')
+		expect(viewport().getAttribute('aria-orientation')).toBe('horizontal')
+		expect(viewport().getAttribute('aria-multiselectable')).toBe('true')
+		expect(row().hasAttribute('role')).toBe(false)
+	})
+
+	it('кнопки листания в разметке, и выключенность набора до них доезжает', async () => {
+		const { ctrl } = await mountTags('arrows')
+
+		const buttons = ['.s-scroller__prev', '.s-scroller__next'].map((selector) =>
+			document.querySelector(selector),
+		)
+
+		expect(buttons.every((button) => button !== null)).toBe(true)
+
+		ctrl.disabled = true
+		await nextTick()
+
+		expect(buttons.map((button) => button?.hasAttribute('disabled'))).toEqual([true, true])
+	})
+
+	/**
+	 * Кнопки принадлежат ленте, и английские умолчания держит она: своих строк
+	 * у Tags нет, а незаданный проп доезжает `undefined` и её дефолт не
+	 * перетирает.
+	 */
+	it('имена кнопок не заданы — остаются умолчания ленты', async () => {
+		await mountTags('arrows')
+
+		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
+			'Scroll back',
+		)
+		expect(document.querySelector('.s-scroller__next')?.getAttribute('aria-label')).toBe(
+			'Scroll forward',
+		)
+	})
+
+	it('заданные Tags имена доезжают до кнопок и обновляются', async () => {
+		const { ctrl } = await mountTags('arrows', { prevLabel: 'Назад', nextLabel: 'Вперёд' })
+
+		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
+			'Назад',
+		)
+		expect(document.querySelector('.s-scroller__next')?.getAttribute('aria-label')).toBe(
+			'Вперёд',
+		)
+
+		ctrl.prevLabel = 'К началу'
+		await nextTick()
+
+		expect(document.querySelector('.s-scroller__prev')?.getAttribute('aria-label')).toBe(
+			'К началу',
+		)
+	})
+
+	it('смена режима возвращает ряд на корень', async () => {
+		const { ctrl, engine } = await mountTags('arrows')
+
+		engine.extensions.selection.mode = 'multiple'
+		ctrl.overflow = 'wrap'
+		await nextTick()
+
+		expect(document.querySelector('.s-scroller')).toBeNull()
+		expect(row().getAttribute('role')).toBe('listbox')
+		expect(textsIn(row())).toEqual(TEXTS)
 	})
 })
 
