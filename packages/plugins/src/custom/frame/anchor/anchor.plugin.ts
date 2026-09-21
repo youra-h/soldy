@@ -22,11 +22,13 @@ import type {
  * заводить в одном плагине два повода меняться.
  *
  * Поверх выбора потребителя (`placement`) плагин сам решает две вещи:
- * **flip** — если панель не влезает по высоте окна с выбранной стороны, а с
+ * **flip** — если панель не влезает по высоте с выбранной стороны, а с
  * противоположной места больше, показывает её там; **shift** — сдвигает
- * панель по горизонтали, чтобы она не вылезала за левый и правый край окна.
- * Оба работают внутри тех же четырёх вариантов `placement`: flip переключает
- * `top`/`bottom`, shift не меняет `placement`, а только ограничивает `x`.
+ * панель по горизонтали, чтобы она не вылезала за левый и правый край.
+ * Границей обоим служит видимая область окна, без классической полосы
+ * прокрутки (см. `_viewport`). Оба работают внутри тех же четырёх вариантов
+ * `placement`: flip переключает `top`/`bottom`, shift не меняет `placement`, а
+ * только ограничивает `x`.
  * Flip выключается свойством `flip` (по умолчанию включён): панель остаётся на
  * стороне потребителя, даже если там не влезает. Shift от него не зависит.
  * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
@@ -237,21 +239,43 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/**
+	 * Размер видимой области — граница и для flip, и для shift.
+	 *
+	 * Берём `window.visualViewport`: он знает область без классической полосы
+	 * прокрутки, а `innerWidth`/`innerHeight` считают полосу своей, и панель у
+	 * самого края окна уезжала под неё полоской примерно в 15px. Тот же выбор
+	 * границы у Floating UI для стратегии `fixed`, на которой только и работает
+	 * привязка.
+	 *
+	 * Объекта нет (jsdom, старые браузеры) — остаётся окно.
+	 * `document.documentElement.clientWidth` не берём: в jsdom он нулевой, и
+	 * юнит-тесты панелей пришлось бы подпирать.
+	 *
+	 * Смещение видимой области при pinch-zoom (`offsetLeft`/`offsetTop`) не
+	 * учитываем — координаты панели отсчитываются от окна. Это осознанная
+	 * граница, а не недоделка: сдвинутую лупой область пришлось бы учитывать и
+	 * в `y`, и в подписке на её собственные scroll/resize.
+	 */
+	private get _viewport(): { readonly width: number; readonly height: number } {
+		return window.visualViewport ?? { width: window.innerWidth, height: window.innerHeight }
+	}
+
+	/**
 	 * Сторона (`top`/`bottom`) с учётом flip.
 	 *
 	 * Выбор потребителя в `_placement` не перетирается — flip живёт только
 	 * здесь, в вычислении фактической стороны. Переключаемся на
 	 * противоположную, только если на выбранной панель не влезает по высоте
-	 * окна, а на противоположной места больше; если не влезает нигде, остаёмся
-	 * на стороне потребителя. С выключенным `flip` сторона потребителя
-	 * отдаётся сразу.
+	 * видимой области, а на противоположной места больше; если не влезает
+	 * нигде, остаёмся на стороне потребителя. С выключенным `flip` сторона
+	 * потребителя отдаётся сразу.
 	 */
 	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
 		const wants = this._placement.startsWith('top-') ? 'top' : 'bottom'
 
 		if (!this._flip) return wants
 		const spaceTop = rect.top
-		const spaceBottom = window.innerHeight - rect.bottom
+		const spaceBottom = this._viewport.height - rect.bottom
 		const needed = panelHeight + this._offset
 		const spaceWanted = wants === 'top' ? spaceTop : spaceBottom
 		const spaceOpposite = wants === 'top' ? spaceBottom : spaceTop
@@ -265,9 +289,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * Левый край панели с учётом выравнивания, RTL и shift.
 	 *
 	 * В LTR `-start` выравнивает панель по левому краю якоря, `-end` — по
-	 * правому; в RTL наоборот. После выравнивания `x` сдвигается внутрь окна
-	 * по горизонтали, чтобы панель не вылезала ни слева, ни справа — если
-	 * панель шире окна, прижимается к левому краю.
+	 * правому; в RTL наоборот. После выравнивания `x` сдвигается внутрь видимой
+	 * области по горизонтали, чтобы панель не вылезала ни слева, ни справа —
+	 * если панель шире области, прижимается к левому краю.
 	 */
 	private _resolveX(
 		rect: DOMRect,
@@ -277,7 +301,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	): number {
 		const alignRight = rtl ? alignment === 'start' : alignment === 'end'
 		const x = alignRight ? rect.right - panelWidth : rect.left
-		const maxX = Math.max(0, window.innerWidth - panelWidth)
+		const maxX = Math.max(0, this._viewport.width - panelWidth)
 
 		return Math.min(Math.max(x, 0), maxX)
 	}
