@@ -1,4 +1,5 @@
 export { toCssValue } from './toCssValue'
 export { isMeasurableElement } from './isMeasurableElement'
 export { isFocusableElement } from './isFocusableElement'
+export { tabStops } from './tabStops'
 export type { IDomEventTarget } from './types'

@@ -140,6 +140,10 @@ const OWN: Record<string, Record<string, string>> = {
 		tags_overflow:
 			'Что делать с тегами в поле, когда они не помещаются в строку. Нужен множественный выбор',
 	},
+	scroller: {
+		prevLabel: 'Имя кнопки «назад» для скринридера',
+		nextLabel: 'Имя кнопки «вперёд» для скринридера',
+	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
 		closable: 'Показывать ли кнопку закрытия в углу панели',
@@ -302,6 +306,9 @@ export const NON_EDITABLE = new Set([
 	'engine',
 	// Якорь — DOM-элемент, как `ctrl` и `engine`: вводить в контрол нечего
 	'anchor_anchor',
+	// Атрибуты вьюпорта ленты от потребителя — набор, а не значение: роль ряда
+	// приносит тот, кто ленту применяет, и текстовым полем его не задать
+	'viewportAria',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

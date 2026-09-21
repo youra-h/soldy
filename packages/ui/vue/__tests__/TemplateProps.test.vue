@@ -28,6 +28,7 @@ import {
 	ListBox,
 	Popover,
 	RadioGroup,
+	Scroller,
 	Select,
 	Skeleton,
 	Spinner,
@@ -109,6 +110,10 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Popover :lazyMount="'yes'" />
 	<Popover lazyMount />
+
+	<!-- @vue-expect-error — имя кнопки ленты строкой -->
+	<Scroller :prevLabel="42" />
+	<Scroller prevLabel="Назад" />
 
 	<!-- @vue-expect-error — вида `stars` у радио нет -->
 	<RadioGroup view="stars" />
