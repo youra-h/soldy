@@ -108,6 +108,31 @@ describe('режим popover', () => {
 		expect(textsIn(opened ?? document.createElement('div'))).toEqual(['Тверь', 'Тула'])
 	})
 
+	/**
+	 * Ряд — флексбокс, и тег несёт свой номер в коллекции стилем (`order`):
+	 * перестановка не переписывает разметку. Кнопка элементом коллекции не
+	 * является, и без такого же номера она встала бы нулевой — то есть сразу
+	 * за первым тегом, а не в конец ряда. Раскладку сторожит браузерный
+	 * `playground/vue/browser/tags-overflow.spec.ts`, здесь — сам номер.
+	 */
+	it('кнопка «…» встаёт на место первого не поместившегося тега', async () => {
+		const { engine } = await mountTags('popover')
+
+		engine.extensions.overflow.notifyFit(2)
+		await nextTick()
+
+		const wrapper = document.querySelector('.s-tags__overflow')
+
+		expect(wrapper?.getAttribute('style')).toContain('order: 2')
+
+		engine.extensions.overflow.notifyFit(1)
+		await nextTick()
+
+		expect(document.querySelector('.s-tags__overflow')?.getAttribute('style')).toContain(
+			'order: 1',
+		)
+	})
+
 	it('кнопка «…» несёт связку с панелью и своё имя', async () => {
 		const { ctrl, engine } = await mountTags('popover')
 

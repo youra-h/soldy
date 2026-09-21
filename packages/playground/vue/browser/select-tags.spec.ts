@@ -479,3 +479,31 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 		)
 	})
 })
+
+/**
+ * Кнопка «…» в поле стоит вплотную за тегами, а не в конце ряда.
+ *
+ * В самостоятельном наборе её прижимает к краю автоотступ (`tags/_tags.scss`):
+ * ряд там занимает контейнер целиком, и конец ряда — это конец строки. В поле
+ * ширина ряда — доля строки, а не его содержимое (`flex-1`), и тот же отступ
+ * оставлял бы дыру между последним тегом и кнопкой, за которой сразу шёл бы
+ * ввод. Отступ снят контекстом в `select/_select.scss`.
+ */
+describe('кнопка «…» в поле', () => {
+	it('стоит сразу за последним тегом, а не у края ряда', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
+
+		await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+
+		const tagged = find('.s-select')
+		const parts = fieldTags(tagged)
+		const last = parts[parts.length - 1]
+
+		expect(parts.length, 'тегов в поле').toBeGreaterThan(0)
+
+		const gap = box(find('.s-tags__more', tagged)).left - box(last).right
+
+		// Ровно зазор ряда, а не остаток строки: допуск на субпиксели
+		expect(gap, 'зазор между тегом и кнопкой').toBeLessThan(12)
+	})
+})

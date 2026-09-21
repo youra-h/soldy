@@ -38,6 +38,12 @@ export const TagsCollectionDescriptor = defineDescriptor(() =>
 				 * в ядре, а не привязкой в шаблоне каждого адаптера.
 				 */
 				panel: { type: Object, protected: true, triggers: ['change:panel'] },
+				/**
+				 * Место кнопки «…» в ряду. Тег несёт свой номер в коллекции стилем
+				 * (`order`), и кнопке нужен свой: без него она встаёт нулевой, то
+				 * есть сразу за первым тегом, а не в конец ряда.
+				 */
+				moreOrder: { type: Number, protected: true, triggers: ['change:fit'] },
 			},
 			events: [],
 		},

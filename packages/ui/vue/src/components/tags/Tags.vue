@@ -57,6 +57,12 @@ export default { ...SetupTags, components: { Button, Icon, Popover, TagsItem } }
 				Кнопки нет, пока хвоста нет: помещаются все теги — и места под
 				неё в ряду не занято (замер считает так же).
 
+				Место в ряду — номером, как у тега (`order` у Item.vue): ряд —
+				флексбокс, и порядок в нём задаёт коллекция, а не разметка.
+				Считает номер она же (`moreOrder` — место первого тега, который
+				не поместился); без него кнопка встаёт нулевой и оказывается
+				сразу за первым тегом.
+
 				Имя панели — то же, что у кнопки: диалог без имени скринридер
 				объявит безымянным.
 			-->
@@ -64,6 +70,7 @@ export default { ...SetupTags, components: { Button, Icon, Popover, TagsItem } }
 				v-if="panel && overflowed.length > 0"
 				embedded="tags.more"
 				class="s-tags__overflow"
+				:style="{ order: moreOrder }"
 				:ctrl="panel"
 				:aria_label="moreLabel"
 			>

@@ -1,5 +1,10 @@
 import { TBaseExtension } from '../../../../../base/collection'
-import type { IExtension, IExtensionContext, TBatchExtension } from '../../../../../base/collection'
+import type {
+	IExtension,
+	IExtensionContext,
+	TBatchExtension,
+	TOrderExtension,
+} from '../../../../../base/collection'
 import { TPopover } from '../../../../popover'
 import type { IPopover } from '../../../../popover'
 import type { ITags } from '../../../types'
@@ -87,6 +92,24 @@ export class TTagsOverflowExtension<
 	}
 
 	/**
+	 * Место кнопки «…» в ряду — номер первого не поместившегося тега.
+	 *
+	 * Свой номер в коллекции тег несёт стилем (`order` у ряда-флексбокса):
+	 * порядок элементов — знание коллекции, и перестановка не должна
+	 * переписывать разметку. Кнопка элементом коллекции не является, и без
+	 * своего номера она встаёт нулевой — то есть сразу за первым тегом, а не
+	 * в конец ряда. Её место — место первого тега, который не поместился: он
+	 * и весь хвост за ним уехали в панель.
+	 *
+	 * Без хвоста — `0`: кнопки в ряду нет, и ставить нечего.
+	 */
+	get moreOrder(): number {
+		const [first] = this.overflowed
+
+		return first ? (this._order?.getItemOrder(first) ?? 0) : 0
+	}
+
+	/**
 	 * Результат замера: сколько первых показанных тегов помещается в ряд.
 	 *
 	 * Замер идёт без обратной связи — тег в `popover` не сжимается, ширина у
@@ -104,6 +127,10 @@ export class TTagsOverflowExtension<
 
 	private get _batch(): TBatchExtension<TItem> | undefined {
 		return this._ctx?.extensions.batch as TBatchExtension<TItem> | undefined
+	}
+
+	private get _order(): TOrderExtension<TItem> | undefined {
+		return this._ctx?.extensions.order as TOrderExtension<TItem> | undefined
 	}
 
 	/** То, что рисует ряд, — состав после отбора, как в разметке. */

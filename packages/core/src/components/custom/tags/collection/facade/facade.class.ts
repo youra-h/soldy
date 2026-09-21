@@ -77,4 +77,13 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 	get panel(): IPopover | null {
 		return this.extensions.overflow.panel
 	}
+
+	/**
+	 * Место кнопки «…» в ряду — номер первого не поместившегося тега. Тег
+	 * несёт свой номер стилем, и без такого же номера кнопка встаёт не в
+	 * конец ряда, а сразу за первым тегом.
+	 */
+	get moreOrder(): number {
+		return this.extensions.overflow.moreOrder
+	}
 }

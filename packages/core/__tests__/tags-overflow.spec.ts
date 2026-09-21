@@ -142,6 +142,31 @@ describe('деление на ряд и панель', () => {
 		expect(collection.overflowed).toEqual([])
 	})
 
+	/**
+	 * Порядок в ряду задаёт коллекция: тег несёт свой номер стилем, потому что
+	 * перестановка не должна переписывать разметку. Кнопка «…» элементом
+	 * коллекции не является, и без номера она встала бы нулевой — сразу за
+	 * первым тегом. Её номер — номер первого тега, который не поместился.
+	 */
+	it('кнопка «…» встаёт на место первого не поместившегося тега', () => {
+		const { collection } = createTags(['a', 'b', 'c'], { overflow: 'popover' })
+
+		collection.engine.extensions.overflow.notifyFit(2)
+
+		expect(collection.moreOrder).toBe(2)
+
+		collection.engine.extensions.overflow.notifyFit(1)
+
+		expect(collection.moreOrder).toBe(1)
+	})
+
+	it('без хвоста кнопки в ряду нет — и места ей не нужно', () => {
+		const { collection } = createTags(['a', 'b'], { overflow: 'popover' })
+
+		expect(collection.overflowed).toEqual([])
+		expect(collection.moreOrder).toBe(0)
+	})
+
 	it('новый тег встаёт в ряд, а не в закрытую панель: там его не измерить', () => {
 		const { collection } = createTags(['a', 'b'], { overflow: 'popover' })
 

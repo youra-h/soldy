@@ -21,6 +21,11 @@ export interface ITagsOverflowExtension<TItem extends ITagsItem = ITagsItem> ext
 	readonly overflowed: TItem[]
 	/** Инстанс панели, пока режим `popover`; иначе `null`. */
 	readonly panel: IPopover | null
+	/**
+	 * Место кнопки «…» в ряду — номер первого не поместившегося тега. Без
+	 * хвоста — `0`: кнопки в ряду нет.
+	 */
+	readonly moreOrder: number
 
 	/**
 	 * Сообщить результат замера: сколько первых показанных тегов помещается в

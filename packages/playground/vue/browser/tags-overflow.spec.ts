@@ -29,7 +29,13 @@ const WIDE = 900
 /** Ширина, на которой их помещается меньше половины. */
 const NARROW = 260
 
-const harness = (width: number) =>
+/**
+ * Ширина, на которой в ряду остаётся не один тег, а несколько: на одном
+ * порядок ряда не проверить — кнопке не с чем стоять рядом.
+ */
+const SEVERAL = 560
+
+const harness = (width: number, props: Record<string, unknown> = {}) =>
 	defineComponent({
 		render() {
 			return h('div', { class: 's-host', style: `width: ${width}px` }, [
@@ -37,6 +43,7 @@ const harness = (width: number) =>
 					overflow: 'popover',
 					closable: true,
 					items: TAGS.map((text) => ({ value: text, text })),
+					...props,
 				}),
 			])
 		},
@@ -157,6 +164,76 @@ describe('узкий ряд: хвост уезжает в панель', () => {
 		}
 
 		await expect.poll(() => panel()).toBeNull()
+	})
+})
+
+describe('в ряду несколько тегов', () => {
+	beforeEach(() => {
+		render(harness(SEVERAL))
+	})
+
+	/**
+	 * Порядок в ряду задаёт коллекция, а не разметка: тег несёт свой номер
+	 * стилем (`order`), и кнопке нужен свой. Без него она вставала нулевой —
+	 * то есть сразу за первым тегом, хотя в разметке стоит после всех.
+	 * Здесь это и видно: в DOM порядок был верным всегда, врала раскладка.
+	 */
+	it('кнопка «…» стоит за всеми тегами ряда, а не между ними', async () => {
+		await expect.poll(() => more()).not.toBeNull()
+
+		const button = find('.s-tags__more').getBoundingClientRect()
+
+		// Иначе сравнивать нечего: с одним тегом кнопка окажется второй и при
+		// сломанном порядке, и проверка молча перестанет что-либо сторожить
+		expect(inRow().length).toBeGreaterThan(1)
+
+		for (const item of row().querySelectorAll('.s-tags-item')) {
+			expect(item.getBoundingClientRect().right).toBeLessThanOrEqual(button.left + 0.5)
+		}
+	})
+
+	/**
+	 * И не вплотную за последним тегом, а у края: свободное место забирает
+	 * автоотступ кнопки. Иначе её край прыгал бы с каждым закрытым тегом.
+	 */
+	it('кнопка «…» прижата к концу строки', async () => {
+		await expect.poll(() => more()).not.toBeNull()
+
+		const box = row().getBoundingClientRect()
+		const button = find('.s-tags__more').getBoundingClientRect()
+		const last = [...row().querySelectorAll('.s-tags-item')].pop()
+
+		if (!last) throw new Error('в ряду не осталось тегов')
+
+		// Место между последним тегом и кнопкой есть — значит, она не «едет» за
+		// тегами, а стоит у края
+		expect(button.left - last.getBoundingClientRect().right).toBeGreaterThan(1)
+		expect(box.right - button.right).toBeLessThan(2)
+	})
+})
+
+describe('ряд справа налево', () => {
+	/**
+	 * Отступ логический, поэтому в RTL концом строки становится левый край:
+	 * теги идут справа, кнопка уезжает влево — за ними, а не перед ними.
+	 * Направление ряду задаёт проп `direction`, он пишет корню `dir`.
+	 */
+	it('в RTL кнопка уезжает к левому краю, а теги остаются справа', async () => {
+		render(harness(SEVERAL, { direction: 'rtl' }))
+
+		await expect.poll(() => more()).not.toBeNull()
+
+		// Направление дошло до корня — иначе проверка ниже сторожит LTR
+		expect(row().getAttribute('dir')).toBe('rtl')
+
+		const box = row().getBoundingClientRect()
+		const button = find('.s-tags__more').getBoundingClientRect()
+
+		expect(button.left - box.left).toBeLessThan(2)
+
+		for (const item of row().querySelectorAll('.s-tags-item')) {
+			expect(item.getBoundingClientRect().left).toBeGreaterThanOrEqual(button.right - 0.5)
+		}
 	})
 })
 

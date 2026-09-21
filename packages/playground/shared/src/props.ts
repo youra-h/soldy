@@ -262,6 +262,12 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 	'list-box': {
 		indicator: { mode: 'multiple' },
 	},
+	tags: {
+		// Хвост уезжает в панель, и проверять его там нечем: закрытие тега из
+		// панели — отдельное правило («закрыли последний — панель закрылась»),
+		// а крестика у тега по умолчанию нет
+		overflow: { closable: true },
+	},
 }
 
 export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
