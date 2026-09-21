@@ -147,7 +147,9 @@ What each adapter implements so far:
 packages/
   core/             headless component models: components, collection engine, facades, extensions
   accessor/         runtime reflection: instance props and events, named for each framework
-  setup/            metadata: contributions, descriptors, adapter context, code shared by adapters
+  setup/            code shared by adapters, in two layers:
+    protected/      mechanics: define, naming, registry, adapter context and exchange
+    content/        what fills the library up: descriptors, adapter extensions, icon roles
   plugins/          runtime behavior installed into TPluginBundle: DOM, focus, keyboard, overlay
   ui/
     vue/            Vue adapter

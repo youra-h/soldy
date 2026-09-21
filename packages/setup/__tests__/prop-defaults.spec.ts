@@ -33,7 +33,7 @@ import {
 	IconDescriptor,
 	ListBoxCollectionDescriptor,
 	TabsItemDescriptor,
-} from '../descriptors'
+} from '../content/descriptors'
 import {
 	defineComponent,
 	definePlugin,
@@ -41,8 +41,8 @@ import {
 	type IComponentDescriptor,
 	type IPluginDefinition,
 	type TPropSpec,
-} from '../define'
-import { createAdapterContext } from '../adapter'
+} from '../protected/define'
+import { createAdapterContext } from '../protected/adapter'
 import { exportedDescriptors, required } from './helpers'
 
 /** Декларация по полному имени: `visible`, `anchor:flip`. */

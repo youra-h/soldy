@@ -1,22 +1,29 @@
 /**
- * Сторож структуры `packages/setup`: модули верхнего уровня и рантайм-импорты между ними.
+ * Сторож структуры `packages/setup`: два слоя, их модули и рантайм-импорты между ними.
  *
- * Слой разложен по стадиям жизни компонента (AGENTS.md, «Структура
- * `packages/setup`»), и рантайм-импорт из модуля в модуль идёт только по
- * таблице ниже. `import type` не ограничен: связи в рантайме он не создаёт.
+ * Пакет разложен по двум слоям (AGENTS.md, «Структура `packages/setup`»):
+ * `protected/` — механика, одинаковая для всех компонентов, `content/` —
+ * наполнение, которое растёт вместе с библиотекой. Внутри слоёв модули
+ * повторяют стадии жизни компонента, и рантайм-импорт из модуля в модуль идёт
+ * только по таблице ниже. `import type` не ограничен: связи в рантайме он не
+ * создаёт. Зависимость между слоями односторонняя: наполнение знает механику,
+ * механика о наполнении не знает вовсе — ни в рантайме, ни типом.
  *
  * Падает, если:
  * - рантайм-импорт между модулями не записан в таблице — в том числе импорт
  *   корня пакета изнутри модуля;
- * - у папки или файла верхнего уровня нет строки в таблице (кроме `__tests__`);
+ * - `protected/` импортирует что-нибудь из `content/`;
+ * - на верхнем уровне пакета заведена папка мимо двух слоёв;
+ * - у модуля слоя нет строки в таблице (кроме `__tests__`);
  * - код пакета вне тестов импортирует `@soldy/setup`: себя пакет видит только
  *   относительными путями;
  * - файл модуля нарушает соглашения раздела: нет шапки, рантайм в `types.ts`
  *   или `*.types.ts`, экспорт типов из файла с рантаймом, `export *` из файла
  *   в бочке.
  *
- * Разбор проверяет себя на известной связи `adapter → registry`: сломайся он —
- * импортов не нашлось бы, и сторож проходил бы вхолостую.
+ * Разбор проверяет себя на известной связи `protected/adapter →
+ * protected/registry`: сломайся он — импортов не нашлось бы, и сторож
+ * проходил бы вхолостую.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -32,19 +39,28 @@ const SKIPPED = new Set(['__tests__', 'node_modules'])
 /** Корень пакета — точка входа `@soldy/setup`. */
 const ENTRY = 'index.ts'
 
+/** Слои пакета: механика и наполнение. */
+const LAYERS = ['protected', 'content'] as const
+
 /**
  * Модуль → модули, которые он вправе импортировать в рантайме.
  *
- * Модулей-стадий четыре: описание типа (`define`), имена (`naming`), реестры
- * приложения (`registry`) и всё, что живёт на время монтирования (`adapter`).
+ * В механике стадий четыре: описание типа (`define`), имена (`naming`),
+ * реестры приложения (`registry`) и всё, что живёт на время монтирования
+ * (`adapter`). Наполнение — дескрипторы, расширения и роли иконок: оно
+ * импортирует механику, обратных строк в таблице нет и быть не может.
  */
 const RUNTIME_IMPORTS: Readonly<Record<string, readonly string[]>> = {
-	naming: [],
-	registry: [],
-	define: [],
-	descriptors: ['define'],
-	adapter: ['registry', 'naming', 'define'],
-	[ENTRY]: ['define', 'descriptors', 'registry', 'adapter', 'naming'],
+	'protected/naming': [],
+	'protected/registry': [],
+	'protected/define': [],
+	'protected/adapter': ['protected/registry', 'protected/naming', 'protected/define'],
+	protected: ['protected/define', 'protected/naming', 'protected/registry', 'protected/adapter'],
+	'content/descriptors': ['protected/define'],
+	'content/extensions': ['protected/adapter', 'protected/registry', 'protected/define'],
+	'content/icons': [],
+	content: ['content/descriptors', 'content/extensions', 'content/icons'],
+	[ENTRY]: ['protected', 'content'],
 }
 
 type TImport = {
@@ -59,12 +75,37 @@ function packagePath(file: string): string {
 	return relative(SETUP, file).split(sep).join('/')
 }
 
-/** Папки и `.ts`-файлы верхнего уровня — модули пакета. */
-function topLevelEntries(): string[] {
+/** Папки верхнего уровня пакета: должны быть только слоями. */
+function topLevelFolders(): string[] {
 	return readdirSync(SETUP, { withFileTypes: true })
-		.filter((entry) => !SKIPPED.has(entry.name) && !entry.name.startsWith('.'))
-		.filter((entry) => entry.isDirectory() || entry.name.endsWith('.ts'))
+		.filter((entry) => entry.isDirectory() && !SKIPPED.has(entry.name))
+		.filter((entry) => !entry.name.startsWith('.'))
 		.map((entry) => entry.name)
+}
+
+/** Модули пакета: сами слои, их папки и `.ts`-файлы верхнего уровня. */
+function packageModules(): string[] {
+	const modules: string[] = []
+
+	for (const entry of readdirSync(SETUP, { withFileTypes: true })) {
+		if (SKIPPED.has(entry.name) || entry.name.startsWith('.')) continue
+
+		if (!entry.isDirectory()) {
+			if (entry.name.endsWith('.ts')) modules.push(entry.name)
+			continue
+		}
+
+		modules.push(entry.name)
+
+		for (const inner of readdirSync(join(SETUP, entry.name), { withFileTypes: true })) {
+			if (inner.name.startsWith('.') || inner.name === 'index.ts') continue
+			if (inner.isDirectory() || inner.name.endsWith('.ts')) {
+				modules.push(`${entry.name}/${inner.name}`)
+			}
+		}
+	}
+
+	return modules
 }
 
 function sourceFiles(dir: string = SETUP, files: string[] = []): string[] {
@@ -154,63 +195,86 @@ function collectImports(file: string, text: string): TImport[] {
 	return imports
 }
 
-/** Модуль файла пакета: первая папка пути, у файла верхнего уровня — сам файл. */
-function moduleOfFile(file: string): string {
-	return file.split('/')[0]
+/**
+ * Модуль по пути внутри пакета: папка слоя (`protected/define`), сам слой —
+ * его бочка (`protected`), корень пакета — `index.ts`. Путь без расширения —
+ * папка, если она есть на диске, иначе `.ts`-файл.
+ */
+function moduleOfPath(path: string): string {
+	if (path === '') return ENTRY
+
+	const segments = path.split('/')
+	const layer = LAYERS.includes(segments[0] as (typeof LAYERS)[number])
+		? (segments.shift() as string)
+		: ''
+	const [name, ...rest] = segments
+
+	if (name === undefined || name === 'index' || name === 'index.ts') {
+		return layer === '' ? ENTRY : layer
+	}
+
+	const folder = join(SETUP, layer, name)
+	const isFolder = rest.length > 0 || (existsSync(folder) && statSync(folder).isDirectory())
+	const module = isFolder || name.endsWith('.ts') ? name : `${name}.ts`
+
+	return layer === '' ? module : `${layer}/${module}`
 }
 
-/**
- * Модуль, в который ведёт относительный импорт; вне пакета — `undefined`.
- * Путь без расширения на верхнем уровне — папка, иначе `.ts`-файл: `'..'` и
- * `'../index'` ведут в корень пакета.
- */
+/** Модуль, которому принадлежит файл пакета. */
+function moduleOfFile(file: string): string {
+	return moduleOfPath(file)
+}
+
+/** Модуль, в который ведёт относительный импорт; вне пакета — `undefined`. */
 function moduleOfTarget(file: string, specifier: string): string | undefined {
 	const target = packagePath(resolve(SETUP, dirname(file), specifier))
 
 	if (target.startsWith('..')) return undefined
-	if (target === '') return ENTRY
 
-	const [first, ...rest] = target.split('/')
-	const folder = join(SETUP, first)
-
-	if (rest.length > 0 || (existsSync(folder) && statSync(folder).isDirectory())) return first
-
-	return `${first}.ts`
+	return moduleOfPath(target)
 }
 
 describe('разбор импортов', () => {
+	const FILE = 'content/descriptors/components/button.descriptor.ts'
+	const SPEC = '../../../protected/define'
+
 	it.each([
-		["import type { A } from '../define'", true],
-		["import { type A, type B } from '../define'", true],
-		["import { a, type B } from '../define'", false],
-		["import * as define from '../define'", false],
-		["import '../define'", false],
-		["export type { A } from '../define'", true],
-		["export { a } from '../define'", false],
-		["export * from '../define'", false],
-		["const lazy = () => import('../define')", false],
+		[`import type { A } from '${SPEC}'`, true],
+		[`import { type A, type B } from '${SPEC}'`, true],
+		[`import { a, type B } from '${SPEC}'`, false],
+		[`import * as define from '${SPEC}'`, false],
+		[`import '${SPEC}'`, false],
+		[`export type { A } from '${SPEC}'`, true],
+		[`export { a } from '${SPEC}'`, false],
+		[`export * from '${SPEC}'`, false],
+		[`const lazy = () => import('${SPEC}')`, false],
 	])('%s — только тип: %s', (text, typeOnly) => {
-		expect(collectImports('assemble/bundle.ts', text)).toEqual([
-			{ file: 'assemble/bundle.ts', specifier: '../define', typeOnly },
-		])
+		expect(collectImports(FILE, text)).toEqual([{ file: FILE, specifier: SPEC, typeOnly }])
 	})
 
 	it.each([
-		['assemble/bundle.ts', '../define', 'define'],
-		['assemble/bundle.ts', '../define/types', 'define'],
-		['assemble/bundle.ts', './registered', 'assemble'],
-		['adapter/context/types.ts', '../../define', 'define'],
-		['define/component.ts', '..', ENTRY],
-		['define/component.ts', '../index', ENTRY],
-		[ENTRY, './adapter', 'adapter'],
-		['define/component.ts', '../../core/src', undefined],
+		[FILE, SPEC, 'protected/define'],
+		[FILE, '../../../protected/define/types', 'protected/define'],
+		[FILE, './list', 'content/descriptors'],
+		['protected/adapter/context/types.ts', '../../define', 'protected/define'],
+		[
+			'content/extensions/tabs/index.ts',
+			'../../../protected/adapter/elevator',
+			'protected/adapter',
+		],
+		['protected/define/component.ts', '..', 'protected'],
+		['protected/define/component.ts', '../index', 'protected'],
+		['protected/define/component.ts', '../..', ENTRY],
+		[ENTRY, './protected', 'protected'],
+		[ENTRY, './content/icons', 'content/icons'],
+		['protected/define/component.ts', '../../../core/src', undefined],
 	])('%s: %s ведёт в %s', (file, specifier, expected) => {
 		expect(moduleOfTarget(file, specifier)).toBe(expected)
 	})
 })
 
 /** Файлы с рантаймом, которым можно экспортировать типы: типы выведены из их значений. */
-const RUNTIME_WITH_TYPES = new Set(['registry/icons.ts'])
+const RUNTIME_WITH_TYPES = new Set(['content/icons/roles.ts'])
 
 function isBarrel(file: string): boolean {
 	return file === ENTRY || file.endsWith('/index.ts')
@@ -327,16 +391,22 @@ describe('соглашения о файлах', () => {
 			`${header}import { a } from './inherit'\nexport type T = typeof a\n`,
 			['define/inference.types.ts: рантайм в файле типов'],
 		],
-		['define/index.ts', "export * from '../naming'\nexport type { T } from './types'\n", []],
+		[
+			'define/index.ts',
+			"export * from '../protected/naming'\nexport type { T } from './types'\n",
+			[],
+		],
 		[
 			'define/index.ts',
 			"export * from './types'\n",
 			["define/index.ts: export * из файла './types' — нужен список имён"],
 		],
 		[
-			'descriptors/components/button.descriptor.ts',
+			'content/descriptors/components/button.descriptor.ts',
 			`${header}export type T = 1\nexport const a: T = 1\n`,
-			['descriptors/components/button.descriptor.ts: файл с рантаймом экспортирует типы'],
+			[
+				'content/descriptors/components/button.descriptor.ts: файл с рантаймом экспортирует типы',
+			],
 		],
 	])('%s: %j', (file, text, expected) => {
 		expect(conventionViolations(file, text)).toEqual(expected)
@@ -361,16 +431,51 @@ describe('структура packages/setup', () => {
 		return to === undefined || to === from ? [] : [{ file, specifier, from, to }]
 	})
 
-	it('разбор находит известную рантайм-связь adapter → registry', () => {
-		expect(crossings.some(({ from, to }) => from === 'adapter' && to === 'registry')).toBe(true)
+	it('разбор находит известную рантайм-связь protected/adapter → protected/registry', () => {
+		expect(
+			crossings.some(
+				({ from, to }) => from === 'protected/adapter' && to === 'protected/registry',
+			),
+		).toBe(true)
 	})
 
-	it('у каждой папки и файла верхнего уровня есть строка в таблице', () => {
-		const missing = topLevelEntries().filter((name) => !Object.hasOwn(RUNTIME_IMPORTS, name))
+	it('на верхнем уровне пакета только слои', () => {
+		const stray = topLevelFolders().filter(
+			(name) => !LAYERS.includes(name as (typeof LAYERS)[number]),
+		)
+
+		expect(
+			stray,
+			`Папка мимо слоёв: механика — в protected/, наполнение — в content/ (см. AGENTS.md, «Структура packages/setup»):\n${stray.join('\n')}`,
+		).toEqual([])
+	})
+
+	it('у каждого модуля слоя есть строка в таблице', () => {
+		const missing = packageModules().filter((name) => !Object.hasOwn(RUNTIME_IMPORTS, name))
 
 		expect(
 			missing,
 			`Модуль без строки в таблице импортов (см. AGENTS.md, «Структура packages/setup»):\n${missing.join('\n')}`,
+		).toEqual([])
+	})
+
+	/**
+	 * Наполнение знает механику, механика о наполнении не знает вовсе — иначе
+	 * защищённый слой пришлось бы править ради каждого нового компонента, и
+	 * граница держалась бы только на договорённости.
+	 */
+	it('защищённый слой не импортирует наполнение — ни в рантайме, ни типом', () => {
+		const violations = imports
+			.filter(({ file, specifier }) => {
+				if (!file.startsWith('protected/') || !specifier.startsWith('.')) return false
+
+				return moduleOfTarget(file, specifier)?.startsWith('content') === true
+			})
+			.map(({ file, specifier }) => `${file}: '${specifier}'`)
+
+		expect(
+			violations,
+			`protected/ знает о content/ (см. AGENTS.md, «Структура packages/setup»):\n${violations.join('\n')}`,
 		).toEqual([])
 	})
 
@@ -386,16 +491,17 @@ describe('структура packages/setup', () => {
 	})
 
 	/**
-	 * Ядро обмена (`adapter/exchange`) — ячейки, линии и порты — знает только
-	 * описание свойства и поверхность. Узнай оно о наборе плагинов, реестрах или
-	 * контексте, правила записи снова расползлись бы по сборке: именно эта
-	 * граница держит «одно правило — одно место».
+	 * Ядро обмена (`protected/adapter/exchange`) — ячейки, линии и порты — знает
+	 * только описание свойства и поверхность. Узнай оно о наборе плагинов,
+	 * реестрах или контексте, правила записи снова расползлись бы по сборке:
+	 * именно эта граница держит «одно правило — одно место». Наполнение ему
+	 * недоступно и так — его не пускает граница слоёв.
 	 */
-	it('ядро обмена не импортирует сборку, реестры, дескрипторы и плагины', () => {
-		const FORBIDDEN = ['../context', '../extensions', '../../registry', '../../descriptors']
+	it('ядро обмена не импортирует сборку, реестры и плагины', () => {
+		const FORBIDDEN = ['../context', '../elevator', '../../registry']
 
 		const violations = imports
-			.filter(({ file }) => file.startsWith('adapter/exchange/'))
+			.filter(({ file }) => file.startsWith('protected/adapter/exchange/'))
 			.filter(
 				({ specifier }) =>
 					specifier === '@soldy/plugins' ||

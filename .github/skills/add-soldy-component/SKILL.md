@@ -37,12 +37,12 @@ Do the layers in order. Replace `<Name>`/`<name>` with the component name.
   - `static defaultValues` is typed `typeof TBase.defaultValues & TDefaultValues<I<Name>Props, 'ownKeyA' | 'ownKeyB'>` (own keys only; keys declared as `undefined` go to the third argument), never `Partial<I<Name>Props>`. The constructor then reads `props.x ?? ctor.defaultValues.x` without `!` — `x!` fails `lint:ci`. See AGENTS.md, «Умолчание пропа — в декларации».
 - `index.ts`: `export * from './types'` + `export { default as T<Name> } from './<name>.class'`.
 
-### 2. Descriptor — `packages/setup/descriptors/components/<name>.descriptor.ts`
+### 2. Descriptor — `packages/setup/content/descriptors/components/<name>.descriptor.ts`
 
 One file per component: inheritance, the public contract (props, events, slots) and plugins. The contract is declared inline in `contribution` — there are no separate contribution files. Wrap the factory in `defineDescriptor` (the descriptor is built once). The types come from `ctor`: framework adapters infer `I<Name>Props` / `T<Name>Events` from the descriptor, and no type arguments are passed:
 
 ```ts
-import { defineComponent, defineDescriptor } from '../../define'
+import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { T<Name> } from '@soldy/core'
 import { <Base>Descriptor } from './<base>.descriptor'
 
@@ -61,7 +61,7 @@ export const <Name>Descriptor = defineDescriptor(() =>
 
 The `props` key is the prop name, and `type` is only the runtime constructor (`String`, `Boolean`, `[String, Object]`): the value type comes from `I<Name>Props`, so a prop never takes `defineType` — Vue would check the wrapper as `Object`.
 
-Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy/setup` and lives in `packages/setup/define/prop-type.ts`; descriptors import it from `'../../define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
+Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy/setup` and lives in `packages/setup/protected/define/prop-type.ts`; descriptors import it from `'../../../protected/define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
 
 > A generic core class gets its type parameters' constraints, not their defaults: `ValueControlDescriptor` has `IValueControlProps<unknown>`, `InputControlDescriptor` — `IInputControlProps<unknown>`. A concrete component fixes the value type in its own class (`TInput extends TInputControl<string, …>`), and its descriptor gets exactly that.
 
@@ -268,7 +268,7 @@ export class T<Name>Component extends TComponentBase<I<Name>> {
 ### 6. Register barrel exports
 
 - `packages/core/src/components/custom/index.ts`
-- `packages/setup/descriptors/components/index.ts`
+- `packages/setup/content/descriptors/components/index.ts`
 - `packages/ui/vue/src/components/index.ts`
 - `packages/ui/react/src/components/index.ts` (if a React adapter was added)
 - `packages/ui/angular/src/components/index.ts` (if an Angular adapter was added)
@@ -303,14 +303,14 @@ Confirm no framework imports leaked into the framework-agnostic packages.
 Button is the canonical minimal component. Copy its shape:
 
 - `packages/core/src/components/custom/button/{types.ts,button.class.ts,index.ts}`
-- `packages/setup/descriptors/components/button.descriptor.ts`
+- `packages/setup/content/descriptors/components/button.descriptor.ts`
 - Vue: `packages/ui/vue/src/components/button/{base.component.ts,setup.component.ts,Button.vue,index.ts}`
 - React: `packages/ui/react/src/components/button/{base.component.ts,setup.component.ts,Button.tsx,index.ts}`
 - Angular: `packages/ui/angular/src/components/button/{manifest.ts,base.component.ts,setup.component.ts,button.component.ts,button.component.html,index.ts}`
 
 ## Общий слой — не дублируй
 
-`packages/setup/naming/` и `packages/setup/adapter/` содержат поведение,
+`packages/setup/protected/naming/` и `packages/setup/protected/adapter/` содержат поведение,
 одинаковое для всех адаптеров:
 
 - `underscorePropNaming` (имя пропа `ns_name`) и `callbackEventNaming` (события
@@ -341,7 +341,7 @@ Button is the canonical minimal component. Copy its shape:
 
 Collection-based components (Tabs, Accordion, ListBox, Select, Tags) are currently
 wired **only for Vue** — the other five adapters (React, Angular, …) have no collection
-adapter yet. For Vue, follow the Tabs shape: `packages/setup/descriptors/components/tabs/`,
+adapter yet. For Vue, follow the Tabs shape: `packages/setup/content/descriptors/components/tabs/`,
 the collection facades (`TTabsCollectionFacade` / `TTabsItemCollectionFacade`), and the
 two-context setup (`TabsDescriptor` + `TabsCollectionDescriptor` sharing one bundle).
 Details: [Collection components reference](./references/collection-component.md).

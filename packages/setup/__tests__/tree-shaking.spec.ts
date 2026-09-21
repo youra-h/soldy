@@ -56,13 +56,13 @@ describe('tree-shaking @soldy/setup', () => {
 		)
 
 		// Разбор не вхолостую: сама кнопка в бандле есть
-		expect(modules).toContain('setup/descriptors/components/button.descriptor.ts')
+		expect(modules).toContain('setup/content/descriptors/components/button.descriptor.ts')
 
 		const ours = modules.filter(
 			(file) => file.startsWith('setup/') || file.startsWith('plugins/'),
 		)
 
 		expect(ours.filter((file) => file.includes('select'))).toEqual([])
-		expect(modules.filter((file) => file.startsWith('setup/adapter/'))).toEqual([])
+		expect(modules.filter((file) => file.startsWith('setup/protected/adapter/'))).toEqual([])
 	})
 })

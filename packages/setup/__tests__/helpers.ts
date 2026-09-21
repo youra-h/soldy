@@ -1,9 +1,9 @@
 import { TPluginBundle } from '@soldy/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy/plugins'
-import * as exported from '../descriptors'
-import type { IComponentDescriptor } from '../define'
-import { callbackEventNaming, underscorePropNaming } from '../naming'
-import type { IAdapterProfile } from '../naming'
+import * as exported from '../content/descriptors'
+import type { IComponentDescriptor } from '../protected/define'
+import { callbackEventNaming, underscorePropNaming } from '../protected/naming'
+import type { IAdapterProfile } from '../protected/naming'
 
 function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
 	return typeof value === 'object' && value !== null && 'getProps' in value && 'plugins' in value

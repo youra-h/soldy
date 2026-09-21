@@ -38,8 +38,8 @@
 import { describe, it, expect } from 'vitest'
 import { dirname, resolve } from 'node:path'
 import * as ts from 'typescript'
-import { underscorePropNaming } from '../naming'
-import type { IComponentDescriptor } from '../define'
+import { underscorePropNaming } from '../protected/naming'
+import type { IComponentDescriptor } from '../protected/define'
 import { exportedDescriptors, required } from './helpers'
 
 const TSCONFIG = resolve(__dirname, '../tsconfig.json')
@@ -141,8 +141,8 @@ function collectRuntime(descriptors: ReadonlyArray<[string, IComponentDescriptor
 /** Псевдонимы типов: по одному на дескриптор в каждой сверке. */
 function entrySource(checks: ReadonlyArray<[TCheck, Iterable<string>]>): string {
 	return [
-		`import type * as descriptors from '../descriptors'`,
-		`import type { ${checks.map(([check]) => check.extractor).join(', ')} } from '../define'`,
+		`import type * as descriptors from '../content/descriptors'`,
+		`import type { ${checks.map(([check]) => check.extractor).join(', ')} } from '../protected/define'`,
 		...checks.flatMap(([check, names]) =>
 			[...names].map(
 				(name) =>
