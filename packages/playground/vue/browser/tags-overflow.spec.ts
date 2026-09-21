@@ -18,10 +18,27 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy/ui-vue'
 
+import { expectInsideWindow } from './viewport'
+
 import '@soldy/theme-oren'
 
 /** Тегов заведомо больше, чем влезает в узкий ряд. */
 const TAGS = ['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Новосибирск', 'Владивосток']
+
+/**
+ * Тегов столько, что хвост не помещается и в панель: она упирается в свой
+ * потолок высоты и обязана прокручивать содержимое, а не расти за край окна.
+ * Тексты одной длины — от них зависит, сколько строк займёт хвост.
+ */
+const MANY = Array.from({ length: 24 }, (_, index) => `Екатеринбург-${index + 1}`)
+
+/**
+ * Потолок ширины панели — `20rem` из `popover/_popover.scss`, в пикселях. На
+ * окне прогона работает именно он: вторая ветка потолка (`100vw - 1rem`)
+ * больше, и тест, который поймал бы её, сторожил бы не то. Это проверяется
+ * отдельным утверждением.
+ */
+const PANEL_MAX_WIDTH = 320
 
 /** Ширина, на которой помещаются все теги. */
 const WIDE = 900
@@ -49,6 +66,30 @@ const harness = (width: number, props: Record<string, unknown> = {}) =>
 		},
 	})
 
+/**
+ * Тот же ряд, но с `MANY` и у края окна: `align` решает, к какому.
+ *
+ * У правого края панель держит в окне только сдвиг `TAnchorPlugin`, а её
+ * ширину — `w-max` у `.s-popover__content`: без него панели, позиционированной
+ * `left`, досталось бы место лишь до края окна.
+ */
+const panelHarness = (align: 'start' | 'end') =>
+	defineComponent({
+		render() {
+			return h('div', { style: `display: flex; justify-content: flex-${align}` }, [
+				h('div', { class: 's-host', style: `width: ${NARROW}px` }, [
+					h(Tags, {
+						overflow: 'popover',
+						closable: true,
+						items: MANY.map((text) => ({ value: text, text })),
+					}),
+				]),
+			])
+		},
+	})
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
 /** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
 const find = (selector: string, root: ParentNode = document): HTMLElement => {
 	const element = root.querySelector(selector)
@@ -71,6 +112,28 @@ const inRow = () => textsIn(row())
 
 /** Сколько тегов осталось в ряду: замер идёт кадрами, поэтому через poll. */
 const settled = (count: number) => expect.poll(() => inRow().length).toBe(count)
+
+/**
+ * Открывает панель хвоста и отдаёт её узлы, когда раскладка улеглась.
+ *
+ * Координаты панели пишет `TAnchorPlugin`, и первый расчёт идёт по ещё
+ * нулевому размеру скрытой панели: сторону он объявляет сразу
+ * (`data-placement`), а поправку по настоящему размеру приносит
+ * `ResizeObserver` кадром позже — отсюда два кадра ожидания.
+ */
+const openPanel = async () => {
+	await expect.poll(() => more()).not.toBeNull()
+	await userEvent.click(find('.s-tags__more'))
+	await expect.poll(() => panel()).not.toBeNull()
+
+	const frame = find('.s-popover__panel')
+
+	await expect.poll(() => frame.dataset.placement).toBeDefined()
+	await nextFrame()
+	await nextFrame()
+
+	return { frame, content: find('.s-popover__content') }
+}
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`.
@@ -234,6 +297,60 @@ describe('ряд справа налево', () => {
 		for (const item of row().querySelectorAll('.s-tags-item')) {
 			expect(item.getBoundingClientRect().left).toBeGreaterThanOrEqual(button.right - 0.5)
 		}
+	})
+})
+
+/**
+ * Размер панели хвоста держит панель Popover: ширина — `20rem`, высота —
+ * половина окна (`popover/_popover.scss`), а длинное содержимое прокручивает
+ * `.s-popover__content`. Своего потолка у `_tags.scss` нет и быть не должно —
+ * это был бы второй путь к тому же числу.
+ *
+ * Сторожить это надо здесь: без теста потолок снимается из темы незаметно, а
+ * снаружи хвост из двух десятков тегов читается ровно как «панель уехала за
+ * экран».
+ */
+describe('панель хвоста: потолки и прокрутка', () => {
+	it('панель помещается в окно, а хвост прокручивается внутри неё', async () => {
+		render(panelHarness('start'))
+
+		const { frame, content } = await openPanel()
+
+		expectInsideWindow(frame, 'панель')
+
+		// Иначе работала бы вторая ветка потолка, и утверждение ниже сторожило
+		// бы размер окна прогона, а не `20rem` темы
+		expect(window.innerWidth, 'окно прогона уже потолка').toBeGreaterThan(PANEL_MAX_WIDTH + 16)
+		expect(frame.getBoundingClientRect().width, 'ширина панели').toBeLessThanOrEqual(
+			PANEL_MAX_WIDTH + 0.5,
+		)
+
+		// Хвост выше панели — иначе прокручивать нечего, и сторож пуст
+		expect(content.scrollHeight, 'высота хвоста').toBeGreaterThan(content.clientHeight)
+	})
+
+	/**
+	 * У правого края окна панель сдвигает `TAnchorPlugin`, и она обязана
+	 * остаться той же ширины. Это сторож `w-max` у `.s-popover__content`:
+	 * панель позиционирована `left`, и с шириной по содержимому места под текст
+	 * у неё — от `left` до края окна. У якоря справа такого места почти нет, и
+	 * без `w-max` панель сложилась бы в узкий столбец, а сдвигу нечего было бы
+	 * сдвигать.
+	 */
+	it('у правого края окна панель не уходит за край и не сжимается в столбец', async () => {
+		render(panelHarness('end'))
+
+		const { frame, content } = await openPanel()
+
+		// Якорь действительно у края — иначе проверка ниже сторожит обычный случай
+		expect(
+			window.innerWidth - find('.s-tags__more').getBoundingClientRect().right,
+		).toBeLessThan(PANEL_MAX_WIDTH / 2)
+
+		expectInsideWindow(frame, 'панель у края')
+
+		expect(frame.getBoundingClientRect().width, 'ширина панели').toBeCloseTo(PANEL_MAX_WIDTH, 0)
+		expect(content.scrollHeight, 'высота хвоста').toBeGreaterThan(content.clientHeight)
 	})
 })
 
