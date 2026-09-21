@@ -17,6 +17,7 @@ import {
 	PopoverDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
+	ScrollerDescriptor,
 	SelectDescriptor,
 	SelectCollectionDescriptor,
 	SkeletonDescriptor,
@@ -110,6 +111,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Панель у триггера с произвольным содержимым: немодальный диалог',
+	},
+	{
+		id: 'scroller',
+		label: 'Scroller',
+		descriptor: ScrollerDescriptor,
+		showcase: true,
+		span: 2,
+		description: 'Лента произвольного содержимого в одну строку: листают две кнопки',
 	},
 	{
 		id: 'list-box',

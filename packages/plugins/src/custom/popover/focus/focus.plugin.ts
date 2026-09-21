@@ -4,7 +4,8 @@ import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TDismissPlugin } from '../../dismiss'
 import type { IDomEventTarget } from '../../../utils'
-import { focusFirst, tabStops, tabStopsAfter } from './tab-stops'
+import { tabStops } from '../../../utils'
+import { focusFirst, tabStopsAfter } from './tab-stops'
 import type { TPopoverFocusPluginEvents } from './types'
 
 /**

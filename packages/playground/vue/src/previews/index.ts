@@ -13,6 +13,7 @@ import {
 	ListBox,
 	Popover,
 	RadioGroup,
+	Scroller,
 	Select,
 	Skeleton,
 	Spinner,
@@ -116,6 +117,29 @@ export const PREVIEWS: Record<string, TPreview> = {
 				],
 			},
 		),
+
+	/**
+	 * Содержимое ленты — просто разметка: коллекции у неё нет, и делить ей
+	 * нечего. Каждый элемент — прямой ребёнок вьюпорта: по ним тема ставит
+	 * точки снапа, а плагин считает края.
+	 *
+	 * Обёртка — граница ширины, та же ловушка, что у превью Tags: сцена ячейки
+	 * флексбокс, у флекс-элемента автоминимум равен содержимому, и лента с
+	 * шириной по содержимому вылезла бы за колонку целиком — листать стало бы
+	 * нечего.
+	 */
+	scroller: (bind) =>
+		h('div', { style: 'width:100%' }, [
+			h(Scroller as Component, bind, () =>
+				ITEMS.map((item) =>
+					h(
+						'span',
+						{ key: item.value, style: 'padding:4px 12px; white-space:nowrap' },
+						`${item.text} пункт ленты`,
+					),
+				),
+			),
+		]),
 
 	'list-box': (bind) =>
 		h(ListBox as Component, bind, () =>

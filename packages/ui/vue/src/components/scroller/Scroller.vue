@@ -1,28 +1,60 @@
-<template>
-	<!--
-		Scroller — лента произвольного содержимого в одну строку, которую
-		двигают две кнопки. Разметка статическая: состояния (`data-can-prev`,
-		`data-can-next`, `dir`, `tabindex` вьюпорта), размер, `disabled` кнопок
-		и обработчики приходят кодом, здесь только состав и имена классов.
+<script lang="ts">
+import { Button } from '../button'
+import { Icon } from '../icon'
+import SetupScroller from './setup.component'
 
-		Корень — ряд из трёх мест: кнопка «назад», вьюпорт, кнопка «вперёд».
-		Кнопки стоят СНАРУЖИ вьюпорта намеренно: роль ряда у первого
-		потребителя (`role="listbox"` у тегов) приходит на вьюпорт, а листбокс
-		владеет только опциями — кнопке внутри него места нет.
-	-->
-	<div class="s-scroller">
+export default { ...SetupScroller, components: { Button, Icon } }
+</script>
+
+<template>
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
+		<!--
+			Scroller — лента произвольного содержимого в одну строку, которую
+			двигают две кнопки. Корень — ряд из трёх мест: кнопка «назад»,
+			вьюпорт, кнопка «вперёд».
+
+			Кнопки стоят СНАРУЖИ вьюпорта намеренно: роль ряда у первого
+			потребителя (`role="listbox"` у тегов) приходит на вьюпорт, а
+			листбокс владеет только опциями — кнопке внутри него места нет.
+
+			Обработчиков нажатия здесь нет: клики ловит плагин слушателем на
+			корне и зовёт команды ядра. Связка «нажали ⇄ листаем» иначе
+			повторилась бы в каждом из шести адаптеров.
+
+			`data-can-prev` и `data-can-next` приезжают в `dataset` — по ним
+			тема гасит подсказку у края и снимает обе кнопки, когда листать
+			нечего. `dir` приходит в `attrs` сам.
+		-->
+
 		<!--
 			Кнопка «назад». Вида разметка ей не передаёт: значения вида
 			объявляет тема, и красит она кнопку по контексту
 			(`:where(.s-scroller__prev)`), как крестики и кнопку «…» у Tags.
 
+			Выключенность считает ядро — «выключена лента или упёрлись в
+			начало»: тема корень не гасит, и `disabled` обязан доехать до
+			кнопок разметкой.
+
 			Значок — иконка роли `arrowRight`, та же, что у «вперёд»: своей
 			роли для «влево» в контракте иконок нет, и стрелку «назад»
 			зеркалит тема. В RTL зеркалится вторая — это тоже её дело.
 		-->
-		<Button class="s-scroller__prev">
+		<Button
+			embedded="scroller.prev"
+			class="s-scroller__prev"
+			:size="size"
+			:disabled="prevDisabled"
+			v-bind="prevAria"
+		>
 			<slot name="prev-icon">
-				<Icon />
+				<Icon embedded="scroller.prev-icon" :tag="arrowIconTag" :size="size" />
 			</slot>
 		</Button>
 
@@ -32,19 +64,28 @@
 			строка содержимого и носитель роли от потребителя; лишний узел
 			отрезал бы элементы от этой роли.
 
+			`viewportAria` идёт ПОСЛЕ `tabindex`: значение потребителя сильнее
+			нашего — ряд с roving tabindex сам решает, кому быть остановкой.
+
 			Содержимое — слот по умолчанию, его элементы становятся прямыми
 			детьми вьюпорта: по ним тема расставляет точки снапа
 			(`scroll-snap-align`), а плагин считает края.
 		-->
-		<div class="s-scroller__viewport">
+		<div class="s-scroller__viewport" :tabindex="viewportTabIndex" v-bind="viewportAria">
 			<slot />
 		</div>
 
 		<!-- Кнопка «вперёд» — зеркальная пара «назад», см. комментарий выше. -->
-		<Button class="s-scroller__next">
+		<Button
+			embedded="scroller.next"
+			class="s-scroller__next"
+			:size="size"
+			:disabled="nextDisabled"
+			v-bind="nextAria"
+		>
 			<slot name="next-icon">
-				<Icon />
+				<Icon embedded="scroller.next-icon" :tag="arrowIconTag" :size="size" />
 			</slot>
 		</Button>
-	</div>
+	</component>
 </template>
