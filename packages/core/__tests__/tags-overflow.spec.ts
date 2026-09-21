@@ -1,11 +1,15 @@
 /**
  * Переполнение ряда тегов: что делать с теми, кому не хватило ширины.
  *
- * Свойство одно, перечислением (`wrap | scroll | popover`), и оно у самого
- * набора — раскладку по нему делает тема. Знание «какие теги остались в ряду,
- * а какие уехали в панель» — о составе, поэтому оно в расширении коллекции:
- * ряд рисует `fitted`, панель — `overflowed`, и каждый тег отрисован ровно
- * один раз.
+ * Свойство одно, перечислением (`wrap | scroll | arrows | popover`), и оно у
+ * самого набора — раскладку по нему делает тема. Знание «какие теги остались в
+ * ряду, а какие уехали в панель» — о составе, поэтому оно в расширении
+ * коллекции: ряд рисует `fitted`, панель — `overflowed`, и каждый тег
+ * отрисован ровно один раз.
+ *
+ * `arrows` делит состав не больше, чем `wrap`: ряд там заворачивается в ленту
+ * целиком. Своё у режима одно — ряд перестаёт быть корнем, и атрибуты ряда
+ * уезжают в отдельный набор (`rowAria`), который разметка отдаёт вьюпорту.
  *
  * Сколько тегов помещается, знает только DOM, поэтому здесь замер
  * подставляется руками (`notifyFit`) — ровно так же, как это делает плагин.
@@ -66,6 +70,140 @@ describe('свойство overflow', () => {
 		expect(new TTags().moreAria).toEqual({ 'aria-label': 'More' })
 		expect(new TTags({ moreLabel: 'Ещё' }).moreAria).toEqual({ 'aria-label': 'Ещё' })
 	})
+
+	it('arrows — признак режима, а не сравнение строки в шести разметках', () => {
+		const tags = new TTags()
+
+		expect(tags.arrows).toBe(false)
+
+		tags.overflow = 'arrows'
+
+		expect(tags.arrows).toBe(true)
+		expect(tags.dataset.get('data-overflow')).toBe('arrows')
+	})
+})
+
+/**
+ * Кнопки листания принадлежат ленте, и английские умолчания держит она. У
+ * Tags своих строк нет: второй экземпляр тех же слов однажды разошёлся бы с
+ * первым, а `undefined` доезжает до ленты и оставляет её при своём.
+ */
+describe('имена кнопок листания', () => {
+	it('не заданы — их нет вовсе, дефолт держит лента', () => {
+		const tags = new TTags()
+
+		expect(tags.prevLabel).toBeUndefined()
+		expect(tags.nextLabel).toBeUndefined()
+	})
+
+	it('заданные доезжают и сообщают об изменении', () => {
+		const tags = new TTags({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
+		const changed = vi.fn()
+
+		expect(tags.prevLabel).toBe('Назад')
+		expect(tags.nextLabel).toBe('Вперёд')
+
+		tags.events.on('change:prevLabel', changed)
+
+		tags.prevLabel = 'К началу'
+		tags.prevLabel = 'К началу'
+
+		expect(changed).toHaveBeenCalledExactlyOnceWith('К началу')
+	})
+})
+
+describe('ряд в arrows — вьюпорт ленты, а не корень', () => {
+	/** Атрибуты, которые описывают ряд: их пишет коллекция через `setRowAria`. */
+	const ROW = ['role', 'aria-orientation', 'aria-multiselectable'] as const
+
+	/** Атрибуты ряда из корня: `aria` — живой набор, `rowAria` — снимок. */
+	const onRoot = (tags: TTags) => ROW.map((name) => tags.aria.get(name) ?? null)
+	const onRow = (tags: TTags) => ROW.map((name) => tags.rowAria[name] ?? null)
+
+	it('в arrows все три атрибута ряда стоят в rowAria, а корень их не несёт', () => {
+		const { owner, collection } = createTags(['a', 'b'], { overflow: 'arrows' })
+
+		collection.mode = 'multiple'
+
+		expect(onRow(owner)).toEqual(['listbox', 'horizontal', 'true'])
+		expect(onRoot(owner)).toEqual([null, null, null])
+	})
+
+	it('вне arrows они на корне, а rowAria пуст', () => {
+		const { owner, collection } = createTags(['a', 'b'])
+
+		collection.mode = 'multiple'
+
+		expect(onRoot(owner)).toEqual(['listbox', 'horizontal', 'true'])
+		expect(owner.rowAria).toEqual({})
+	})
+
+	it('смена режима перевозит атрибуты туда и обратно', () => {
+		const { owner, collection } = createTags(['a', 'b'])
+
+		collection.mode = 'single'
+		owner.overflow = 'arrows'
+
+		expect(onRow(owner)).toEqual(['listbox', 'horizontal', null])
+		expect(owner.aria.get('role')).toBeUndefined()
+
+		owner.overflow = 'wrap'
+
+		expect(onRoot(owner)).toEqual(['listbox', 'horizontal', null])
+		expect(owner.rowAria).toEqual({})
+	})
+
+	/** Переезд — дело самого Tags: без коллекции роль он всё равно унесёт. */
+	it('набор без коллекции переезжает так же', () => {
+		const tags = new TTags()
+
+		expect(tags.aria.get('role')).toBe('list')
+
+		tags.overflow = 'arrows'
+
+		expect(tags.rowAria).toEqual({ role: 'list' })
+		expect(tags.aria.get('role')).toBeUndefined()
+	})
+
+	it('смена mode в arrows пишет роль туда же, а не на корень', () => {
+		const { owner, collection } = createTags(['a'], { overflow: 'arrows' })
+
+		expect(owner.rowAria.role).toBe('list')
+
+		collection.mode = 'single'
+
+		expect(owner.rowAria.role).toBe('listbox')
+
+		collection.mode = 'none'
+
+		expect(owner.rowAria.role).toBe('list')
+		expect(owner.aria.get('role')).toBeUndefined()
+	})
+
+	it('набор сообщает об изменении своим событием', () => {
+		const { owner, collection } = createTags(['a'], { overflow: 'arrows' })
+		const changed = vi.fn()
+
+		owner.events.on('change:rowAria', changed)
+		collection.mode = 'multiple'
+
+		expect(changed).toHaveBeenCalled()
+		expect(changed.mock.lastCall?.[0]).toMatchObject({ role: 'listbox' })
+	})
+
+	/**
+	 * Переезжает только то, что объявили атрибутом ряда. Имя набора — знание
+	 * потребителя о корне, и переезд роли его не касается.
+	 */
+	it('aria-label потребителя остаётся на корне', () => {
+		const { owner, collection } = createTags(['a'], { overflow: 'arrows' })
+
+		owner.aria.add('aria-label', 'Города')
+		collection.mode = 'multiple'
+
+		expect(owner.aria.get('aria-label')).toBe('Города')
+		expect(owner.rowAria['aria-label']).toBeUndefined()
+	})
 })
 
 describe('наборы панели', () => {
@@ -88,8 +226,8 @@ describe('наборы панели', () => {
 })
 
 describe('деление на ряд и панель', () => {
-	it('в wrap и scroll делить нечего: панели нет, всё в ряду', () => {
-		for (const overflow of ['wrap', 'scroll'] as const) {
+	it('в wrap, scroll и arrows делить нечего: панели нет, всё в ряду', () => {
+		for (const overflow of ['wrap', 'scroll', 'arrows'] as const) {
 			const { collection } = createTags(['a', 'b'], { overflow })
 
 			expect(collection.panel).toBeNull()

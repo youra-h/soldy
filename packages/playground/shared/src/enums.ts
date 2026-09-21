@@ -118,7 +118,7 @@ export const TABS_POSITIONS = enumOf<TTabsPosition>()(['start', 'end'])
 export const TABS_VIEWS = enumOf<TTabsView>()(['line', 'contained', 'outline'])
 
 /** Что делать с тегами, которым не хватило ширины ряда. */
-export const TAGS_OVERFLOWS = enumOf<TTagsOverflow>()(['wrap', 'scroll', 'popover'])
+export const TAGS_OVERFLOWS = enumOf<TTagsOverflow>()(['wrap', 'scroll', 'arrows', 'popover'])
 
 export const FRAME_POSITIONS = enumOf<TFramePosition>()(['fixed', 'absolute'])
 

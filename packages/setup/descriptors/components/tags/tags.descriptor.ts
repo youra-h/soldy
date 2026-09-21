@@ -62,13 +62,30 @@ export const TagsDescriptor = defineDescriptor(() =>
 				view: { type: String, triggers: ['change:view'] },
 				/**
 				 * Что делать с тегами, которым не хватило ширины ряда: переносить
-				 * (`wrap`, по умолчанию), прокручивать (`scroll`) или убирать хвост
-				 * в панель за кнопкой «…» (`popover`). Само значение уезжает в тему
-				 * через `data-overflow`.
+				 * (`wrap`, по умолчанию), прокручивать (`scroll`), листать
+				 * кнопками (`arrows`) или убирать хвост в панель за кнопкой «…»
+				 * (`popover`). Само значение уезжает в тему через `data-overflow`.
 				 */
 				overflow: { type: String, triggers: ['change:overflow'] },
+				/**
+				 * Ряд завёрнут в ленту со стрелками — режим `arrows`. Признаком, а
+				 * не сравнением строки: иначе оно повторилось бы в шести разметках.
+				 */
+				arrows: { type: Boolean, protected: true, triggers: ['change:overflow'] },
+				/**
+				 * Атрибуты ряда, когда ряд — вьюпорт ленты: разметка отдаёт их
+				 * ленте (`viewportAria`). Вне `arrows` набор пуст.
+				 */
+				rowAria: { type: Object, protected: true, triggers: ['change:rowAria'] },
 				/** Имя кнопки «…» для скринридера. */
 				moreLabel: { type: String, triggers: ['change:moreLabel'] },
+				/**
+				 * Имена кнопок листания: Tags отдаёт их ленте как есть — языка
+				 * интерфейса библиотека не знает. Своих умолчаний нет, английские
+				 * держит лента.
+				 */
+				prevLabel: { type: String, triggers: ['change:prevLabel'] },
+				nextLabel: { type: String, triggers: ['change:nextLabel'] },
 				/**
 				 * Имя кнопки «…» готовым набором: своего экземпляра у неё нет, она
 				 * — содержимое слота `trigger` у панели.
