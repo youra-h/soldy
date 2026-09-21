@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { IComponentDescriptor, TComponentCtor } from '../define'
+import type { IComponentDescriptor, TComponentCtor } from '../protected/define'
 import {
 	AccordionCollectionDescriptor,
 	AccordionCollectionItemDescriptor,
@@ -32,7 +32,7 @@ import {
 	TabsCollectionItemDescriptor,
 	TagsCollectionDescriptor,
 	TagsCollectionItemDescriptor,
-} from '../descriptors'
+} from '../content/descriptors'
 
 /** Ищет сеттер по всей цепочке прототипов — свойство может прийти из базы. */
 function hasSetter(ctor: TComponentCtor, name: string): boolean {

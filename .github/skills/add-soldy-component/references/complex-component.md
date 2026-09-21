@@ -30,7 +30,7 @@ Select — самый сложный компонент в проекте: в н
     `TTags` в режиме `multiple`, синхронизация «выбор → теги» и «закрытие
     тега → снять выбор».
 - **Плагины**, подключены в
-  `packages/setup/descriptors/components/select/select.descriptor.ts`:
+  `packages/setup/content/descriptors/components/select/select.descriptor.ts`:
   - `CollectionBundlesPluginDescriptor` / `CollectionElementsPluginDescriptor`
     — реестр bundles опций и доступ к их DOM-элементам;
   - `ListHeightPluginDescriptor` — высота панели по `maxRows` (общий с

@@ -20,8 +20,8 @@ import {
 	SpinnerDescriptor,
 	SkeletonDescriptor,
 	FrameDescriptor,
-} from '../descriptors'
-import { createAdapterContext } from '../adapter'
+} from '../content/descriptors'
+import { createAdapterContext } from '../protected/adapter'
 
 const install = (
 	instance: IComponentView<IComponentViewProps, any>,

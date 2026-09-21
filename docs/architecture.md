@@ -5,6 +5,13 @@
 Multi-package monorepo with framework adapters for Vue, React, Angular, Svelte, Solid и Web Components.
 Core business logic is **framework-agnostic** in `packages/core/src`.
 
+`packages/setup` разложен на два слоя: `protected/` — механика (`define`,
+`naming`, `registry`, `adapter`), одна на шесть адаптеров; `content/` —
+наполнение (`descriptors`, `extensions`, `icons`), которым библиотека растёт.
+Наполнение знает механику, механика о наполнении не знает. Правка `protected/`
+идёт только с разрешения владельца, `content/` свободен — см. AGENTS.md,
+«Структура `packages/setup`».
+
 ---
 
 ## Layer 1: Core Components (`packages/core/src`)
@@ -73,7 +80,7 @@ TEntity (uid, getProps, assign, toJSON)
 
 ---
 
-## Layer 2: Exchange kernel (`packages/setup/adapter/exchange`)
+## Layer 2: Exchange kernel (`packages/setup/protected/adapter/exchange`)
 
 ### Role
 
@@ -99,24 +106,24 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 
 ### Key Files
 
-- [exchange/cell.class.ts](../packages/setup/adapter/exchange/cell.class.ts) - TCell
-- [exchange/line.class.ts](../packages/setup/adapter/exchange/line.class.ts) - TLine: чтение, запись и слежение за одним свойством
-- [exchange/member.class.ts](../packages/setup/adapter/exchange/member.class.ts) - TMember
-- [exchange/state-store.class.ts](../packages/setup/adapter/exchange/state-store.class.ts), [input-port.class.ts](../packages/setup/adapter/exchange/input-port.class.ts), [event-relay.class.ts](../packages/setup/adapter/exchange/event-relay.class.ts) - the three ports
-- [exchange/exchange.class.ts](../packages/setup/adapter/exchange/exchange.class.ts) - TExchange
-- [exchange/value.ts](../packages/setup/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf`
+- [exchange/cell.class.ts](../packages/setup/protected/adapter/exchange/cell.class.ts) - TCell
+- [exchange/line.class.ts](../packages/setup/protected/adapter/exchange/line.class.ts) - TLine: чтение, запись и слежение за одним свойством
+- [exchange/member.class.ts](../packages/setup/protected/adapter/exchange/member.class.ts) - TMember
+- [exchange/state-store.class.ts](../packages/setup/protected/adapter/exchange/state-store.class.ts), [input-port.class.ts](../packages/setup/protected/adapter/exchange/input-port.class.ts), [event-relay.class.ts](../packages/setup/protected/adapter/exchange/event-relay.class.ts) - the three ports
+- [exchange/exchange.class.ts](../packages/setup/protected/adapter/exchange/exchange.class.ts) - TExchange
+- [exchange/value.ts](../packages/setup/protected/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf`
 
 ### Key Exports
 
 - `TExchange`, `TMember` - the exchange and its participants
-- `TName` - Qualified name: raw name + optional namespace (`define/name.class.ts`)
-- `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`define/prop-spec.class.ts`)
-- `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`define/contribution.types.ts`)
-- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular
+- `TName` - Qualified name: raw name + optional namespace (`protected/define/name.class.ts`)
+- `TPropSpec` - Immutable property spec with `read(owner)` / `assign(owner, value)`, `hasDefault`, `rebase`, `withDefault` (`protected/define/prop-spec.class.ts`)
+- `IContribution`, `IPropDefinition`, `ISlotDefinition` / `ISlotDeclaration` - What a descriptor declares (`protected/define/contribution.types.ts`)
+- `INamingStrategy`, `IAdapterProfile`, `CommonProfile` - Prop/event naming rules (`protected/naming/`). Props are `ns_name` everywhere (`underscorePropNaming`); events: `element:ready` in Vue and Web Components, `onElementReady` in React/Svelte/Solid (`callbackEventNaming`), `elementReady` in Angular
 
 ---
 
-## Layer 3: Setup & Descriptors (`packages/setup/define`, `packages/setup/descriptors`)
+## Layer 3: Setup & Descriptors (`packages/setup/protected/define`, `packages/setup/content/descriptors`)
 
 ### Role
 
@@ -158,20 +165,20 @@ Returns `IComponentDescriptor` with:
 
 Декларации заморожены: дескриптор строится один раз на тип и один на все монтирования.
 
-The descriptor has no assembly methods: a component for one mount is assembled from it by `createAdapterContext` (Layer 5), which knows only the descriptor's contract (`define/types.ts`).
+The descriptor has no assembly methods: a component for one mount is assembled from it by `createAdapterContext` (Layer 5), which knows only the descriptor's contract (`protected/define/types.ts`).
 
 ### Key Files
 
-- [define/descriptor.ts](../packages/setup/define/descriptor.ts) - defineDescriptor: the descriptor is built once per type
-- [define/component.ts](../packages/setup/define/component.ts) - defineComponent factory
-- [define/plugin.ts](../packages/setup/define/plugin.ts) - definePlugin factory
-- [define/component-descriptor.class.ts](../packages/setup/define/component-descriptor.class.ts) - `TComponentDescriptor`: own declaration over the one inherited from `extends` (props, events, slots, plugins)
-- [define/plugin-definition.class.ts](../packages/setup/define/plugin-definition.class.ts) - `TPluginDefinition`: plugin contract plus install options of the place it is used in — `with(options)`
-- [define/contribution.ts](../packages/setup/define/contribution.ts) - Contribution → declarations (`normalizeContribution`)
-- [define/inference.types.ts](../packages/setup/define/inference.types.ts) - Types for adapters inferred from the descriptor (extractors below)
-- [define/prop-spec.class.ts](../packages/setup/define/prop-spec.class.ts) - `TPropSpec`: immutable property spec with `read` / `assign`, `rebase`, `withDefault`
-- [adapter/context/create-adapter-context.ts](../packages/setup/adapter/context/create-adapter-context.ts) - What is built from the descriptor on mount (Layer 5)
-- [components/button.descriptor.ts](../packages/setup/descriptors/components/button.descriptor.ts) - Button example
+- [define/descriptor.ts](../packages/setup/protected/define/descriptor.ts) - defineDescriptor: the descriptor is built once per type
+- [define/component.ts](../packages/setup/protected/define/component.ts) - defineComponent factory
+- [define/plugin.ts](../packages/setup/protected/define/plugin.ts) - definePlugin factory
+- [define/component-descriptor.class.ts](../packages/setup/protected/define/component-descriptor.class.ts) - `TComponentDescriptor`: own declaration over the one inherited from `extends` (props, events, slots, plugins)
+- [define/plugin-definition.class.ts](../packages/setup/protected/define/plugin-definition.class.ts) - `TPluginDefinition`: plugin contract plus install options of the place it is used in — `with(options)`
+- [define/contribution.ts](../packages/setup/protected/define/contribution.ts) - Contribution → declarations (`normalizeContribution`)
+- [define/inference.types.ts](../packages/setup/protected/define/inference.types.ts) - Types for adapters inferred from the descriptor (extractors below)
+- [define/prop-spec.class.ts](../packages/setup/protected/define/prop-spec.class.ts) - `TPropSpec`: immutable property spec with `read` / `assign`, `rebase`, `withDefault`
+- [adapter/context/create-adapter-context.ts](../packages/setup/protected/adapter/context/create-adapter-context.ts) - What is built from the descriptor on mount (Layer 5)
+- [components/button.descriptor.ts](../packages/setup/content/descriptors/components/button.descriptor.ts) - Button example
 - Descriptor files (`components/`) for: Entity, Component, ComponentView, Interactive, Stylable, Control, ValueControl, InputControl, Textable, Button, CheckBox, Switch, Input, Icon, Spinner, Skeleton, Frame, DragAndDrop; folders `accordion/`, `collection/`, `list-box/`, `select/`, `tabs/`, `tags/`
 
 ### Key Exports
@@ -276,7 +283,7 @@ export const ElementPluginDescriptor = definePlugin({
 
 ---
 
-## Layer 5: Adapter Context (`packages/setup/adapter/context`)
+## Layer 5: Adapter Context (`packages/setup/protected/adapter/context`)
 
 ### Role
 
@@ -321,14 +328,14 @@ Six steps, top to bottom, in one function:
 
 Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or relay rules of its own: for every arriving plugin with a contract (`pluginContractOf`) it creates the same `TExchange` that serves the component — with the common profile, the bag as its «framework props» and the envelope on the instance bus as its event sink. It subscribes to the bundle after the descriptor plugins and before the registry ones, so a registry plugin and a plugin installed later from `bundle:create` arrive by the same `use` event.
 
-#### Extensions (`packages/setup/adapter/extensions/`)
+#### Extensions (`packages/setup/content/extensions/`)
 
 - `TCollectionExtension` - Provides child registration via elevator
 - `TCollectionItemExtension` - Child registers itself with parent
 - `TDragAndDropExtension` / `TDragAndDropCollectionExtension` - Drag/drop context and `TDragPlugin` activation
 - `TTabsContentBindingExtension` - Binds `Tabs.Content` to its tab by `value`
 
-#### Elevator (`packages/setup/adapter/elevator/`)
+#### Elevator (`packages/setup/protected/adapter/elevator/`)
 
 - **TElevator** (base) - Caches string/symbol keys to unique symbols
 - **Pattern**: Abstracts parent-child context passing
@@ -336,14 +343,14 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 ### Key Files
 
-- [context/create-adapter-context.ts](../packages/setup/adapter/context/create-adapter-context.ts) - Factory: the six assembly steps
-- [context/adapter-context.class.ts](../packages/setup/adapter/context/adapter-context.class.ts) - TAdapterContext: `connect`, extensions by class, `bindElement`, destroy
-- [context/own-bundle.class.ts](../packages/setup/adapter/context/own-bundle.class.ts) / [context/shared-bundle.class.ts](../packages/setup/adapter/context/shared-bundle.class.ts) - Bundle tenancy (`IBundleTenancy`)
-- [context/external-plugins.class.ts](../packages/setup/adapter/context/external-plugins.class.ts) - `TExternalPlugins`: `pluginProps` and `plugin:event` of plugins installed from outside
-- [context/types.ts](../packages/setup/adapter/context/types.ts) - IAdapterContext contract
-- [surface/surface.class.ts](../packages/setup/adapter/surface/surface.class.ts) - `TSurface` (Layer 5b)
-- [elevator/elevator.class.ts](../packages/setup/adapter/elevator/elevator.class.ts) - Base elevator
-- [extensions/collection/collection.extension.class.ts](../packages/setup/adapter/extensions/collection/collection.extension.class.ts) - Collection registry
+- [context/create-adapter-context.ts](../packages/setup/protected/adapter/context/create-adapter-context.ts) - Factory: the six assembly steps
+- [context/adapter-context.class.ts](../packages/setup/protected/adapter/context/adapter-context.class.ts) - TAdapterContext: `connect`, extensions by class, `bindElement`, destroy
+- [context/own-bundle.class.ts](../packages/setup/protected/adapter/context/own-bundle.class.ts) / [context/shared-bundle.class.ts](../packages/setup/protected/adapter/context/shared-bundle.class.ts) - Bundle tenancy (`IBundleTenancy`)
+- [context/external-plugins.class.ts](../packages/setup/protected/adapter/context/external-plugins.class.ts) - `TExternalPlugins`: `pluginProps` and `plugin:event` of plugins installed from outside
+- [context/types.ts](../packages/setup/protected/adapter/context/types.ts) - IAdapterContext contract
+- [surface/surface.class.ts](../packages/setup/protected/adapter/surface/surface.class.ts) - `TSurface` (Layer 5b)
+- [elevator/elevator.class.ts](../packages/setup/protected/adapter/elevator/elevator.class.ts) - Base elevator
+- [extensions/collection/collection.extension.class.ts](../packages/setup/content/extensions/collection/collection.extension.class.ts) - Collection registry
 
 ### Key Exports
 
@@ -357,7 +364,7 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 ---
 
-## Layer 5b: Общий слой адаптеров (`packages/setup/naming`, `packages/setup/adapter/surface`, `packages/setup/adapter/exchange`, `packages/setup/adapter/common`)
+## Layer 5b: Общий слой адаптеров (`packages/setup/protected/naming`, `packages/setup/protected/adapter/surface`, `packages/setup/protected/adapter/exchange`, `packages/setup/protected/adapter/common`)
 
 Поведение, которое обязано совпадать во всех фреймворках. Адаптер задаёт
 только то, что действительно различается: профиль (стратегия имён событий и
@@ -373,7 +380,7 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 | `adapter.connect(profile)`            | Обмен на монтирование (`TExchange`): состояние для фреймворка (`state.subscribe` / `state.getSnapshot` — подписка сразу отдаёт каждое свойство тем же вызовом, что и триггер), входы (`inputs.full` / `inputs.delta` / `offer` одного пропа), проброс событий и моделей (`events.listen`), спред несъеденных пропсов (`forward`). Начальные значения не пишет — их применила сборка; память входов начинается с пропсов, с которыми собран контекст. |
 | `adapter.bindElement(el)`             | Корневой узел ↔ `TElementPlugin`; метод контекста (Layer 5).                                                                                                                                                                                                                                                                                                                                                                                         |
 | `toInstanceState` / `TAdapterState`   | Граница рантайма и типа для `state` адаптеров: свойства инстанса и выходы плагинов после `valueOf()`.                                                                                                                                                                                                                                                                                                                                                |
-| `setIcons` / `getIcon` / `ICON_ROLES` | Реестр и контракт пакетов иконок; живёт в `registry/`.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `setIcons` / `getIcon` / `ICON_ROLES` | Реестр и контракт пакетов иконок; живёт в `protected/registry/`, список ролей — в `content/icons/`.                                                                                                                                                                                                                                                                                                                                                  |
 
 Таблица не полная: слоты (`resolveSlotName`, `DEFAULT_SLOT`), `withParts` и правила связки — AGENTS.md, «Что общее, а что специфично для фреймворка».
 
@@ -556,7 +563,7 @@ hover: в тёмной схеме заливка светлеет.
 монтирование, а не ядро, и с инстанса до него нет пути.
 
 Эмит живёт в сборке набора `TOwnBundle`
-([own-bundle.class.ts](../packages/setup/adapter/context/own-bundle.class.ts)), — там же, где
+([own-bundle.class.ts](../packages/setup/protected/adapter/context/own-bundle.class.ts)), — там же, где
 плагины и создаются:
 
 1. `bundle:create` на `instance.events` — единственной шине, видимой обеим
@@ -600,7 +607,7 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 не заведётся, и перестаёт отвечать за его работоспособность.
 
 Инвариант зафиксирован в коде: набор собирает только сборка, по составу
-(`adapter/context/own-bundle.class.ts`), и наружу отдаётся доступ к **уже созданному** —
+(`protected/adapter/context/own-bundle.class.ts`), и наружу отдаётся доступ к **уже созданному** —
 через `bundle:create` и `<ns>:create`. Плагин из реестра приложения состав
 только дополняет: класс, который уже входит в состав компонента, — ошибка
 сборки.
@@ -642,7 +649,7 @@ setup/vue/svelte/solid.
   `TComponentEvents`), на шине инстанса, как `bundle:create`.
 
 Контракт плагина (`definePlugin`) записывается за его классом
-(`pluginContractOf`). Связка (`TExternalPlugins` в `adapter/context/`) подписана на `use` и
+(`pluginContractOf`). Связка (`TExternalPlugins` в `protected/adapter/context/`) подписана на `use` и
 `remove` набора (`TPluginBundle.events`) и подключает плагин одинаково, когда
 бы тот ни встал: значения из `pluginProps` применяются по правилу сборки
 (только отличное от умолчания), ключ пропал — проп возвращается к умолчанию,
@@ -713,7 +720,7 @@ soldy табы — коллекция: владельца в ней предст
 
 #### Точка — основная форма записи
 
-`withParts` ([adapter/common/parts.ts](../packages/setup/adapter/common/parts.ts)) вешает
+`withParts` ([adapter/common/parts.ts](../packages/setup/protected/adapter/common/parts.ts)) вешает
 части на владельца:
 
 ```ts
@@ -1516,7 +1523,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 Оба хелпера остаются Vue-специфичными: `useIcon` строит компонент через
 `defineComponent`/`markRaw`/`h`, `useSplitAttrs` — через `useAttrs`/`computed`.
 Переиспользовать их в других адаптерах напрямую нельзя; общая часть — реестр
-иконок (`setIcons`/`getIcon`) — уже живёт в `packages/setup/registry/`, куда
+иконок (`setIcons`/`getIcon`) — уже живёт в `packages/setup/protected/registry/`, куда
 фреймворки не импортируются.
 
 #### Components (`components/`)
@@ -1582,7 +1589,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 - `adapter/common/` — `ReactProfile` (`naming: ReactNaming`, `defaultSlot: 'children'`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`; `toAriaProps` (HTML-имена атрибутов наборов → имена пропов React: `tabindex` → `tabIndex`); `renderSlot` / `TSlotContent`
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
-  - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/naming` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `DescriptorCallbackEvents<typeof XxxDescriptor>` из `@soldy/setup` — `TCallbackEventProps<DescriptorAllEvents<…>>`, где `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
+  - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/protected/naming` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `DescriptorCallbackEvents<typeof XxxDescriptor>` из `@soldy/setup` — `TCallbackEventProps<DescriptorAllEvents<…>>`, где `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
 - `adapter/runtime/` — `useAdapterContext(factory)` (держит adapter-context между рендерами, уничтожает его и собирает заново фабрикой последнего рендера, когда React повторяет установку эффекта; без `ctrl` инстанс при этом новый), `useAdapter(adapter, props)` (main hook over the exchange `adapter.connect(ReactProfile)` — takes a READY adapter)
 - `adapter/elevator/` — `TReactElevator` + `ReactElevatorFactory` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = up to 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook) + view (`*.tsx`)
@@ -1885,7 +1892,7 @@ TSurface.of(descriptor, profile) — names in the framework: Vue props/emits,
 setup(props, { emit }) {
   1. createVueAdapterContext(Descriptor(), { ctrl, props })  // → createAdapterContext
      ↓
-     six steps in one function (setup/adapter/context):
+     six steps in one function (setup/protected/adapter/context):
      - instance (TButton), unless ctrl is passed
      - bundle tenancy: TOwnBundle (descriptor plugins, TExternalPlugins) or TSharedBundle
      - members of the exchange: instance, descriptor plugins, the binding (pluginProps)
@@ -1937,11 +1944,11 @@ Key files:
 - `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
 - `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete). `TTabsViewPlugin` — плагин темы oren (`@soldy/theme-oren/setup`), ставится её регистрацией `useTheme`
 - `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine), использует TCollectionElements + TCollectionBundlesPlugin)
-- `packages/setup/adapter/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
-- `packages/setup/adapter/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
-- `packages/setup/adapter/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
-- `packages/setup/adapter/extensions/tabs/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
-- `packages/setup/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsKeyboardPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
+- `packages/setup/content/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
+- `packages/setup/content/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
+- `packages/setup/content/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
+- `packages/setup/content/extensions/tabs/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
+- `packages/setup/content/descriptors/plugins/` — CollectionBundlesPluginDescriptor, CollectionElementsPluginDescriptor (wired into Tabs, Accordion, ListBox, Select, Tags), TabsLayoutPluginDescriptor, TabsActiveTabPluginDescriptor, TabsKeyboardPluginDescriptor (Tabs), DragPluginDescriptor (Tabs, Accordion, ListBox)
 
 ---
 
@@ -2042,7 +2049,7 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 от `TInputControl` и наследоваться от списка не мог в принципе.
 
 - Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
-- Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
+- Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
 - Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).

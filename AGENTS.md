@@ -246,7 +246,7 @@ dismiss.events.on('dismiss', () => {
 
 Куда класть поведение: **плагин** (работа с DOM и жизненный цикл),
 **расширение коллекции** (то, что требует владельца и списка сразу),
-**расширение адаптера** (`setup/adapter/extensions/` — проводка, общая для
+**расширение адаптера** (`setup/content/extensions/` — проводка, общая для
 всех фреймворков), **событие или триггер** (если нужно просто сообщить).
 
 ### Механизмы фреймворка — только в адаптерном слое (критично)
@@ -309,7 +309,7 @@ React-компоненты держат adapter-context между рендер�
 значения из `'react'` (в том числе `React.useRef` через namespace-импорт) в
 `packages/ui/react/src/components/**`, `import type` пропускает.
 
-### `setup/adapter/extensions/` — тоже не место для операций над DOM
+### `setup/content/extensions/` — тоже не место для операций над DOM
 
 Расширение адаптера — проводка, общая для всех фреймворков, но это не
 индульгенция на поведение. Правило «значение — в ядро, операция — в плагин»
@@ -319,7 +319,7 @@ React-компоненты держат adapter-context между рендер�
 
 Реальный случай: диагностика «`Tabs.Content` оказался внутри
 `[role="tablist"]`» сначала легла в `TTabsContentBindingExtension`
-(`setup/adapter/extensions/tabs/`) — расширение само брало
+(`setup/content/extensions/tabs/`) — расширение само брало
 `TElementPlugin` из bundle и проверяло `el.closest('[role="tablist"]')`.
 Код не импортировал `vue`/`react`/итд, поэтому формально не нарушал главное
 правило границы — но `el.closest(...)` это операция над DOM, а не проводка,
@@ -327,7 +327,7 @@ React-компоненты держат adapter-context между рендер�
 (`packages/plugins/src/custom/tabs/content-warn/`), подключённый через
 `TabsContentDescriptor`.
 
-**Правило:** как только в коде `setup/adapter/extensions/` появляется
+**Правило:** как только в коде `setup/content/extensions/` появляется
 `el.closest`, `el.querySelector`, `el.getAttribute`, обход `childNodes`,
 `console.warn`/`console.error` по результату такой проверки или любое другое
 чтение живого DOM-узла — это плагин, а не расширение адаптера. Расширению
@@ -340,6 +340,33 @@ Setup — всё, что у шести адаптеров общее: описа
 монтирование и обмен значениями с фреймворком. Пакет один: отдельного пакета
 рефлексии свойств нет — у него был единственный потребитель, а граница между
 пакетами резала правила записи пополам.
+
+### Два слоя: `protected/` и `content/`
+
+На верхнем уровне пакета лежат ровно две папки — больше там заводить нечего.
+
+| Слой         | Что в нём                                                | Кто правит                                                                |
+| ------------ | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `protected/` | Механика: `define/`, `naming/`, `registry/`, `adapter/`. | **Только с разрешения владельца.** Сначала спросить, потом решать вместе. |
+| `content/`   | Наполнение: `descriptors/`, `extensions/`, `icons/`.     | Свободно — этим пакет наполняется компонентами.                           |
+
+**`packages/setup/protected/` не править и не предлагать правки, не получив
+разрешения владельца.** Слой один на шесть адаптеров: правило, переписанное
+здесь, меняет поведение всех компонентов сразу, поэтому нужда в правке
+обсуждается до работы, а не после. Не хватает механики — предложи её словами в
+задаче: что мешает и какой формы не хватает.
+
+**`packages/setup/content/` свободен.** Новый компонент, его расширение
+адаптера и новая роль иконки — это наполнение: дескриптор, папка в
+`extensions/`, строка в `icons/roles.ts`. Разрешения на них не требуется.
+
+Зависимость между слоями односторонняя: **наполнение знает механику, механика о
+наполнении не знает вовсе** — ни в рантайме, ни типом. Поэтому новый компонент
+не заставляет трогать `protected/`: список ролей иконок лежит в наполнении
+(`content/icons/roles.ts`), а реестр (`protected/registry/icons.ts`) работает с
+любой строкой и о списке не знает.
+
+### Устройство механики
 
 Устройство держится на трёх решениях:
 
@@ -355,30 +382,38 @@ Setup — всё, что у шести адаптеров общее: описа
    (`TExternalPlugins` — владелец `pluginProps`). Внешний плагин обслуживает тот
    же `TExchange`, что и компонент, — в общем профиле имён.
 
-| Модуль                                     | Что в нём                                                                                                                                                      |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `naming/`                                  | Имена публичного API — проп `ns_name`, событие-колбэк `onElementReady`, их тип-зеркала, профиль фреймворка (`IAdapterProfile`), `CommonProfile`.               |
-| `define/`                                  | Описание типа: `TName`, `TPropSpec`, `TSlotDeclaration`, дескриптор, определение плагина, наследование (`IDeclaration`), умолчания, `defineType`, вывод типов. |
-| `descriptors/`                             | Дескрипторы компонентов и определения плагинов: объявления прямо в них, по файлу на компонент.                                                                 |
-| `registry/`                                | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки.                                                               |
-| `adapter/surface/`                         | `TSurface` — поверхность в именах фреймворка, одна на пару «описание × профиль»; записи ссылаются на `TPropSpec`, копий нет.                                   |
-| `adapter/exchange/`                        | Ядро обмена: `TCell`, `TLine`, `TMember`, `TStateStore`, `TInputPort`, `TEventRelay` и фасад `TExchange`.                                                      |
-| `adapter/context/`                         | Сборка на монтирование: `createAdapterContext`, `TAdapterContext`, владение набором (`TOwnBundle` / `TSharedBundle`), `TExternalPlugins`.                      |
-| `adapter/common/`                          | Слоты, `withParts`, граница «словарь → тип состояния», типы пропсов адаптеров.                                                                                 |
-| `adapter/extensions/`, `adapter/elevator/` | Проводка коллекций и лифт.                                                                                                                                     |
+| Модуль                        | Что в нём                                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protected/naming/`           | Имена публичного API — проп `ns_name`, событие-колбэк `onElementReady`, их тип-зеркала, профиль фреймворка (`IAdapterProfile`), `CommonProfile`.               |
+| `protected/define/`           | Описание типа: `TName`, `TPropSpec`, `TSlotDeclaration`, дескриптор, определение плагина, наследование (`IDeclaration`), умолчания, `defineType`, вывод типов. |
+| `protected/registry/`         | Что приложение регистрирует на все компоненты типа: плагины, расширения коллекций, тема, иконки.                                                               |
+| `protected/adapter/surface/`  | `TSurface` — поверхность в именах фреймворка, одна на пару «описание × профиль»; записи ссылаются на `TPropSpec`, копий нет.                                   |
+| `protected/adapter/exchange/` | Ядро обмена: `TCell`, `TLine`, `TMember`, `TStateStore`, `TInputPort`, `TEventRelay` и фасад `TExchange`.                                                      |
+| `protected/adapter/context/`  | Сборка на монтирование: `createAdapterContext`, `TAdapterContext`, владение набором (`TOwnBundle` / `TSharedBundle`), `TExternalPlugins`.                      |
+| `protected/adapter/common/`   | Слоты, `withParts`, граница «словарь → тип состояния», типы пропсов адаптеров.                                                                                 |
+| `protected/adapter/elevator/` | Лифт: передача коллекции и контекста детям.                                                                                                                    |
+| `content/descriptors/`        | Дескрипторы компонентов и определения плагинов: объявления прямо в них, по файлу на компонент.                                                                 |
+| `content/extensions/`         | Проводка коллекций, drag-and-drop и табов — расширения адаптера, общие для шести фреймворков.                                                                  |
+| `content/icons/`              | `ICON_ROLES` — список ролей, которые компоненты требуют от пакета иконок, и `missingIconRoles` для conformance-теста.                                          |
 
 **Рантайм-импорт между модулями — только по таблице.** `import type` не
 ограничен: связи в рантайме он не создаёт.
 
-| Модуль                         | Импортирует в рантайме         |
-| ------------------------------ | ------------------------------ |
-| `naming`, `registry`, `define` | ничего из setup                |
-| `descriptors`                  | `define`                       |
-| `adapter`                      | `registry`, `naming`, `define` |
-| `index.ts` пакета              | всё                            |
+| Модуль                                                       | Импортирует в рантайме                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------- |
+| `protected/naming`, `protected/registry`, `protected/define` | ничего из setup                                               |
+| `protected/adapter`                                          | `protected/registry`, `protected/naming`, `protected/define`  |
+| `content/descriptors`                                        | `protected/define`                                            |
+| `content/extensions`                                         | `protected/adapter`, `protected/registry`, `protected/define` |
+| `content/icons`                                              | ничего из setup                                               |
+| бочка слоя (`protected/index.ts`, `content/index.ts`)        | свои модули                                                   |
+| `index.ts` пакета                                            | обе бочки                                                     |
 
-Внутри `adapter/` граница одна, и её держит сторож: **ядро обмена
-(`adapter/exchange/`) не импортирует сборку, реестры, дескрипторы и
+Обратных строк — из `protected` в `content` — в таблице нет и быть не может:
+механика о наполнении не знает.
+
+Внутри `protected/adapter/` граница одна, и её держит сторож: **ядро обмена
+(`protected/adapter/exchange/`) не импортирует сборку, реестры и
 `@soldy/plugins`.** Оно знает описание свойства и поверхность — и только.
 Узнай оно о наборе плагинов, правила записи снова расползлись бы по сборке.
 
@@ -434,7 +469,7 @@ Setup — всё, что у шести адаптеров общее: описа
   сборке не нужен. Память входов обмена начинается с тех же пропсов сборки.
 - Реестры и тема ни о ком не знают: их зовут `TOwnBundle` и
   `TCollectionExtension`. Правило «`instanceof` + `scope` + `embedded`» одно на
-  оба реестра — `createRegistrations` (`registry/registrations.ts`).
+  оба реестра — `createRegistrations` (`protected/registry/registrations.ts`).
 - `TAdapterContext` наружу не выходит: адаптер получает интерфейс
   `IAdapterContext`. Публичный интерфейс не наследует внутренний тип сборки —
   declaration emit Vue его не назовёт.
@@ -479,29 +514,36 @@ Builder добавил бы изменяемое состояние, pipeline �
 
 - `types.ts` папки — контракты и опции её рантайма, включая опции расширений.
 - `<тема>.types.ts` — типы без рантайма: вывод для адаптеров и тип-зеркала
-  (`naming.types.ts`, `define/inference.types.ts`, `define/contribution.types.ts`).
-- Файл с рантаймом типов не экспортирует. Исключение — `registry/icons.ts`:
+  (`naming.types.ts`, `protected/define/inference.types.ts`,
+  `protected/define/contribution.types.ts`).
+- Файл с рантаймом типов не экспортирует. Исключение — `content/icons/roles.ts`:
   его типы выведены из `ICON_ROLES`.
 - Бочка (`index.ts`) перечисляет имена файлов явно, `export *` — только из
   подпапки.
 
 **Куда класть новое:**
 
-- правило построения дескриптора (наследование, умолчание) — `define/`;
-- что происходит с компонентом при монтировании до фреймворка — `adapter/context/`;
+- новый компонент, его плагин или роль иконки — наполнение: `content/`,
+  разрешения не требуется;
+- правило построения дескриптора (наследование, умолчание) — `protected/define/`;
+- что происходит с компонентом при монтировании до фреймворка —
+  `protected/adapter/context/`;
 - правило о значении на границе (запись, сброс, сравнение, порядок событий) —
-  `adapter/exchange/`, одно на шесть адаптеров, а не цикл одного фреймворка;
-- регистрация приложения на тип компонента — `registry/`, выбор подходящих —
-  через `createRegistrations`, а не своим циклом по `instanceof`;
+  `protected/adapter/exchange/`, одно на шесть адаптеров, а не цикл одного
+  фреймворка;
+- регистрация приложения на тип компонента — `protected/registry/`, выбор
+  подходящих — через `createRegistrations`, а не своим циклом по `instanceof`;
 - проводка, общая для всех фреймворков, — расширение в
-  `adapter/extensions/<тема>/`; прочая функция, которую зовут адаптеры, —
-  `adapter/common/`;
-- новая папка верхнего уровня — со строкой в обеих таблицах и в
-  `RUNTIME_IMPORTS` сторожа.
+  `content/extensions/<тема>/`; прочая функция, которую зовут адаптеры, —
+  `protected/adapter/common/`;
+- новая папка — внутри слоя (папок верхнего уровня всего две), со строкой в
+  обеих таблицах и в `RUNTIME_IMPORTS` сторожа. Последние четыре пункта —
+  механика: правка `protected/` идёт только с разрешения владельца.
 
 Сторож — `packages/setup/__tests__/setup-structure.spec.ts`: рантайм-импорт вне
-таблицы, папка верхнего уровня без строки, импорт `@soldy/setup` внутри пакета,
-знание ядра обмена о сборке и нарушение соглашений о файлах роняют тест.
+таблицы, импорт наполнения из `protected/`, папка верхнего уровня мимо слоёв,
+модуль без строки в таблице, импорт `@soldy/setup` внутри пакета, знание ядра
+обмена о сборке и нарушение соглашений о файлах роняют тест.
 
 ## Naming conventions
 
@@ -1248,7 +1290,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   заданная опция идёт впереди `defaultValues` класса. У `definePlugin` опций
   нет — второго пути к ним не заводить.
   Общий фрагмент нескольких компонентов (`LIST_PROPS` у ListBox и Select) —
-  константа рядом с дескрипторами (`descriptors/components/list.ts`), и
+  константа рядом с дескрипторами (`content/descriptors/components/list.ts`), и
   объявляется она через `satisfies`, а не аннотацией словарём (см. «Состав
   событий записан один раз»).
 
@@ -1299,7 +1341,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   наследника не обязана быть надмножеством родительской. Своё объявление
   ложится на одноимённое родительское — тем же правилом, что плагин того же
   класса и слот того же имени: правило одно на три категории
-  (`inheritDeclarations` в `define/`), а что значит «поверх», знает само
+  (`inheritDeclarations` в `protected/define/`), а что значит «поверх», знает само
   объявление (`IDeclaration.inheritFrom`), не дескриптор. У пропа это
   переобъявление: значим ключ объявления, а не значение — написанный факт
   свой, ненаписанный родительский, поэтому `size: { protected: true }` у
@@ -1358,8 +1400,9 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   записью типа, которую никто не сверяет с ядром, а Vue проверял бы её как
   `Object`. Сторож — `setup/__tests__/prop-defaults.spec.ts`, «тип пропа —
   конструктор рантайма». `defineType` экспортируется из `@soldy/setup` и живёт
-  в `packages/setup/define/prop-type.ts`; дескрипторы внутри пакета
-  импортируют его из `define/` относительным путём, не из `@soldy/setup` — см.
+  в `packages/setup/protected/define/prop-type.ts`; дескрипторы внутри пакета
+  импортируют его из `protected/define/` относительным путём, не из
+  `@soldy/setup` — см.
   «Структура `packages/setup`».
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
@@ -1424,7 +1467,7 @@ ListBox, список Select, Popover и будущий Menu выглядят о
 ## Пакеты иконок
 
 Пакет иконок — **реализация контракта**, а не мешок SVG. Контракт — список
-ролей в `setup/registry/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
+ролей в `setup/protected/registry/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
 `close`, `arrowDown`, `arrowRight`, `moreHoriz`. Ровно как тема реализует
 классы, которые soldy выпускает в разметку.
 
@@ -1685,12 +1728,12 @@ declare module '@soldy/core' {
 
 ## Что общее, а что специфично для фреймворка
 
-`packages/setup/naming/` и `packages/setup/adapter/` — поведение, одинаковое во
+`packages/setup/protected/naming/` и `packages/setup/protected/adapter/` — поведение, одинаковое во
 всех адаптерах. Прежде чем писать что-то в `packages/ui/*/adapter/`, проверь,
 не место ли этому там:
 
-- `underscorePropNaming` (`naming/`) — имя пропа одинаково везде (`ns_name`).
-- `callbackEventNaming` (`naming/`) — `element:ready` → `onElementReady`; общая стратегия
+- `underscorePropNaming` (`protected/naming/`) — имя пропа одинаково везде (`ns_name`).
+- `callbackEventNaming` (`protected/naming/`) — `element:ready` → `onElementReady`; общая стратегия
   для React, Svelte и Solid, где события это колбэк-пропы. Тип-зеркало —
   `TCallbackEventProps`. Остальные адаптеры именуют события в своём
   `adapter/common/naming.ts`: Vue и Web Components отдают имя ядра как есть
@@ -1985,7 +2028,7 @@ Partial<IXProps>` вместо аннотации не годится: он ос
 его работоспособность.
 
 Инвариант зафиксирован в коде: набор собирает только сборка
-(`adapter/context/own-bundle.class.ts`), и наружу отдаётся доступ к **уже созданному** —
+(`protected/adapter/context/own-bundle.class.ts`), и наружу отдаётся доступ к **уже созданному** —
 через `bundle:create` и `<ns>:create`. То же самое с `engine` у коллекций.
 
 Цена решения: `bundle:create` идёт по шине core, хотя плагины — слой над core.
@@ -1999,7 +2042,7 @@ TPluginBundle`). В список событий дескриптора имя в
 (setup).
 
 Эмит живёт там же, где плагины создаются, — в сборке набора
-(`TOwnBundle`, `setup/adapter/context/own-bundle.class.ts`). Не заводите для этого отдельный шаг,
+(`TOwnBundle`, `setup/protected/adapter/context/own-bundle.class.ts`). Не заводите для этого отдельный шаг,
 который каждый адаптер обязан помнить и вызывать: седьмой адаптер про него
 забудет.
 
@@ -2204,7 +2247,7 @@ scope задаётся через `defineType<T>` — из него берётс
 | WebC     | `<span slot="leading">` | ✗ нет механизма               |
 
 Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
-(`resolveSlotName` из `packages/setup/adapter/common`). Остальные имена одинаковы везде.
+(`resolveSlotName` из `packages/setup/protected/adapter/common`). Остальные имена одинаковы везде.
 
 Особенности, о которые легко споткнуться:
 

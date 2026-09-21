@@ -117,7 +117,7 @@ activation base; the single implementation lives directly in `TTabsCollectionFac
 
 ## Engine supplied from outside — `resolveEngine`
 
-`CollectionDescriptor` (`packages/setup/descriptors/components/collection/collection.descriptor.ts`)
+`CollectionDescriptor` (`packages/setup/content/descriptors/components/collection/collection.descriptor.ts`)
 declares `engine: { type: Object }` — a plain, non-triggering input, the collection
 equivalent of `ctrl` for a regular component. A caller may pass an already-assembled
 engine; if not, the facade builds its own.
@@ -213,7 +213,7 @@ Collection descriptors are regular `defineComponent` factories wrapped in
 points at the facade; `extends` reuses the base `CollectionDescriptor`. The contract is
 declared inline in `contribution`; owner-level and item-level descriptors are separate.
 
-- Base `CollectionDescriptor` (`packages/setup/descriptors/components/collection/collection.descriptor.ts`):
+- Base `CollectionDescriptor` (`packages/setup/content/descriptors/components/collection/collection.descriptor.ts`):
   `engine`, `items`, `shown` (protected), `trackBy` + engine/collection events
   (`engine:create`, `item:*` with their `*:before` hooks, `items:clear:before`, `change:count`,
   `reset`, `items:added`, `items:removed`, `change:shown`).
@@ -385,11 +385,11 @@ drops it from the result, and in the item setup the owner binding overrides it.
   `TCollectionItemComponent`, and the `batch`/`order`/`selection` facade bases.
 - `packages/core/src/components/custom/tabs/collection/{types.ts,factory.ts,create.ts,facade/facade.class.ts}`
   and `tabs/item/facade/facade.class.ts`.
-- `packages/setup/descriptors/components/collection/collection.descriptor.ts` — base
+- `packages/setup/content/descriptors/components/collection/collection.descriptor.ts` — base
   `CollectionDescriptor`.
-- `packages/setup/descriptors/components/tabs/collection.descriptor.ts` — concrete Tabs
+- `packages/setup/content/descriptors/components/tabs/collection.descriptor.ts` — concrete Tabs
   collection descriptors.
-- `packages/setup/adapter/extensions/collection/` — `TCollectionExtension`,
+- `packages/setup/content/extensions/collection/` — `TCollectionExtension`,
   `TCollectionItemExtension`.
 - `packages/plugins/src/custom/collection/` — `TCollectionBundlesPlugin`,
   `TCollectionElements`.

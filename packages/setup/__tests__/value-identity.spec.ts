@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { required } from './helpers'
 import { TComponentView, TSpinner, TButton, TCollectionEngine, TBatchExtension } from '@soldy/core'
-import { SpinnerDescriptor, ButtonDescriptor } from '../descriptors'
-import { createAdapterContext, type IAdapterContext } from '../adapter'
-import { CommonProfile } from '../naming'
+import { SpinnerDescriptor, ButtonDescriptor } from '../content/descriptors'
+import { createAdapterContext, type IAdapterContext } from '../protected/adapter'
+import { CommonProfile } from '../protected/naming'
 
 /**
  * Контракт границы core → ui.
