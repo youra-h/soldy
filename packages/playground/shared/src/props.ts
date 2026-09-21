@@ -26,6 +26,7 @@ import {
 	TABS_VIEWS,
 	TAGS_OVERFLOWS,
 } from './enums'
+import { COLLECTION_VALUES } from './items'
 import type {
 	TComponentEntry,
 	TControlKind,
@@ -258,6 +259,10 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = {
 	select: {
 		removeOnBackspace: { editable: true, mode: 'multiple' },
+		// Теги в поле бывают только во множественном выборе, и переполняться
+		// им нечем, пока ничего не выбрано: выбор строка делает сама, всем
+		// составом сразу
+		tags_overflow: { mode: 'multiple', value: COLLECTION_VALUES },
 	},
 	'list-box': {
 		indicator: { mode: 'multiple' },

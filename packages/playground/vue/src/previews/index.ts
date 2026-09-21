@@ -1,5 +1,6 @@
 import { h, type Component } from 'vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy/setup'
+import { COLLECTION_ITEMS } from '@soldy/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -40,18 +41,10 @@ export type TPreview = (bind: Record<string, unknown>) => unknown
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 /**
- * Содержимое коллекций стенда.
- *
- * Пять строк, а не три: на трёх нечем проверить свойства, которые начинаются
- * с переполнения — `overflow` у Tags, предел строк у списка, перенос вкладок.
+ * Содержимое коллекций — из общего манифеста: состав нужен не только здесь.
+ * Пресеты строк тоже им пользуются (`tags_overflow` у Select выбирает всё).
  */
-const ITEMS = [
-	{ value: 'a', text: 'Первый' },
-	{ value: 'b', text: 'Второй' },
-	{ value: 'c', text: 'Третий' },
-	{ value: 'd', text: 'Четвёртый' },
-	{ value: 'e', text: 'Пятый' },
-]
+const ITEMS = COLLECTION_ITEMS
 
 /**
  * Иконка превью Icon.
@@ -154,15 +147,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 * Обёртка — граница ширины: ряд обязан быть ровно по ячейке, иначе замер
 	 * меряет не ту ширину и `overflow` не срабатывает вовсе.
 	 *
-	 * Всё, что она делает, — `min-width: 0`. Сцена ячейки (`.pg-col__stage`) —
-	 * флексбокс, а у флекс-элемента автоминимум равен содержимому, и ряд
-	 * держал свои 516px в колонке шириной 214: теги уходили за край, а замер
-	 * считал по 516 и кнопку «…» не показывал. Прокрутка в `scroll` по той же
-	 * причине не появлялась — прокручивать было нечего.
+	 * Ширина — явная, `100%`. Сцена ячейки (`.pg-col__stage`) — флексбокс, а у
+	 * флекс-элемента автоминимум равен его содержимому: с шириной по
+	 * содержимому ряд держал свои 516px в колонке шириной 214 — теги уходили
+	 * за край, замер считал по 516 и кнопку «…» не показывал, а прокрутка в
+	 * `scroll` не появлялась, потому что прокручивать было нечего.
 	 *
-	 * Ширину задавать нечем: `auto` и есть ячейка. Обрезка тоже не её дело —
-	 * ряд в `popover` обрезает себя сам, в `scroll` прокручивает, в `wrap`
-	 * переносит (`themes/oren/.../_tags.scss`).
+	 * Обрезка — не её дело: ряд в `popover` обрезает себя сам, в `scroll`
+	 * прокручивает, в `wrap` переносит (`themes/oren/.../_tags.scss`).
+	 *
+	 * Сторожит `browser/tags-preview.spec.ts` — на самой странице стенда.
 	 */
 	tags: (bind) =>
 		h('div', { style: 'width:100%' }, [h(Tags as Component, { items: ITEMS, ...bind })]),

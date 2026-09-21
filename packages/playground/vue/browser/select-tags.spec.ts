@@ -478,6 +478,26 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 			1,
 		)
 	})
+
+	/**
+	 * Долю строки слот берёт под теги, а не под сам факт режима: в `multiple`
+	 * контейнер тегов стоит в разметке всегда, и по нему одному доля
+	 * включалась заранее — поле без выбора отдавало полстроки пустому слоту, а
+	 * ввод ужимался вдвое.
+	 */
+	it('без выбора слот тегов места не занимает', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
+
+		await expect.poll(settled).toBe(true)
+
+		const [tagged, empty] = [...document.querySelectorAll('.s-select')]
+		const taggedSlot = box(find('.s-input__leading', tagged)).width
+		const emptySlot = box(find('.s-input__leading', empty)).width
+
+		// С тегами слот — доля строки; без тегов он не должен быть даже её
+		// четвертью, иначе доля включилась по пустому ряду
+		expect(emptySlot, 'пустой слот').toBeLessThan(taggedSlot / 4)
+	})
 })
 
 /**

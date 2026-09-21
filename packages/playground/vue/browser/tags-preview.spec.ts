@@ -76,6 +76,19 @@ const rowOf = (prop: HTMLElement): HTMLElement => {
 	return element
 }
 
+/**
+ * Ячейка строки — сцена колонки, а не обёртка превью: именно с ней ряд и
+ * расходился. Сравнение с обёрткой сходится всегда, что бы ни случилось, —
+ * ряд её ребёнок и растёт вместе с ней.
+ */
+const stageOf = (prop: HTMLElement): DOMRect => {
+	const stage = prop.querySelector('.pg-col .pg-col__stage')
+
+	if (!stage) throw new Error('сцены колонки нет')
+
+	return stage.getBoundingClientRect()
+}
+
 /** Правый край содержимого ряда: по нему видно, вылез он из ячейки или нет. */
 const contentEdge = (row: HTMLElement) =>
 	[...row.children].reduce((max, node) => Math.max(max, node.getBoundingClientRect().right), 0)
@@ -114,15 +127,16 @@ describe('строка overflow на странице компонента', () 
 			await page(width)
 
 			const row = rowOf(prop)
-			const box = row.getBoundingClientRect()
+			const stage = stageOf(prop)
 
-			// Ряд ровно по ячейке: шире — значит, замер считает по чужой ширине
-			expect(box.width, `ширина ${width}: ряд шире ячейки`).toBeLessThanOrEqual(
-				(row.parentElement?.getBoundingClientRect().width ?? 0) + 0.5,
-			)
+			// Ряд в ячейке: шире — значит, замер считает по чужой ширине
+			expect(
+				row.getBoundingClientRect().right,
+				`ширина ${width}: ряд за краем ячейки`,
+			).toBeLessThanOrEqual(stage.right + 0.5)
 
-			expect(contentEdge(row), `ширина ${width}: содержимое за краем`).toBeLessThanOrEqual(
-				box.right + 0.5,
+			expect(contentEdge(row), `ширина ${width}: теги за краем ячейки`).toBeLessThanOrEqual(
+				stage.right + 0.5,
 			)
 
 			expect(
@@ -141,9 +155,7 @@ describe('строка overflow на странице компонента', () 
 		await pick(prop, 'popover')
 		await page(WIDE)
 
-		const row = rowOf(prop)
-
-		expect(contentEdge(row)).toBeLessThanOrEqual(row.getBoundingClientRect().right + 0.5)
+		expect(contentEdge(rowOf(prop))).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
 	})
 
 	it('scroll: ряд прокручивается внутри ячейки, а не выходит за неё', async () => {
@@ -154,9 +166,7 @@ describe('строка overflow на странице компонента', () 
 
 		// Прокручивать есть что, и прокрутка — у самого ряда
 		expect(row.scrollWidth).toBeGreaterThan(row.clientWidth)
-		expect(row.getBoundingClientRect().width).toBeLessThanOrEqual(
-			(row.parentElement?.getBoundingClientRect().width ?? 0) + 0.5,
-		)
+		expect(row.getBoundingClientRect().right).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
 	})
 
 	it('wrap: ряд переносится строками и тоже остаётся в ячейке', async () => {
@@ -169,6 +179,6 @@ describe('строка overflow на странице компонента', () 
 		)
 
 		expect(new Set(tops).size, 'строк в ряду').toBeGreaterThan(1)
-		expect(contentEdge(row)).toBeLessThanOrEqual(row.getBoundingClientRect().right + 0.5)
+		expect(contentEdge(row)).toBeLessThanOrEqual(stageOf(prop).right + 0.5)
 	})
 })
