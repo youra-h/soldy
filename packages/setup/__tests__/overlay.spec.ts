@@ -50,6 +50,18 @@ function panelOf(width: number, height: number): { element: HTMLElement; plugin:
 }
 
 /**
+ * Видимая область уже окна — так выглядит страница с классической полосой
+ * прокрутки. Самого `visualViewport` в jsdom нет вовсе, поэтому подставляем
+ * его сами; убирает подставленное общий `afterEach`.
+ */
+function visualViewportOf(width: number, height: number): void {
+	Object.defineProperty(window, 'visualViewport', {
+		value: { width, height },
+		configurable: true,
+	})
+}
+
+/**
  * `TElementPlugin` отдаёт `ready` через `requestAnimationFrame`, поэтому все
  * плагины получают элемент кадром позже. Ждём кадр, а не микрозадачу.
  */
@@ -71,6 +83,8 @@ beforeEach(() => {
 
 afterEach(() => {
 	document.body.innerHTML = ''
+	// Подставленный `visualViewportOf`; у остальных тестов его и не было
+	Reflect.deleteProperty(window, 'visualViewport')
 })
 
 describe('привязка к якорю', () => {
@@ -296,6 +310,27 @@ describe('flip: сторона у края экрана', () => {
 		expect(frame.dataset.get('placement')).toBe('top-start')
 	})
 
+	/**
+	 * Высоту видимой области съедает горизонтальная полоса прокрутки — и
+	 * съеденного хватает, чтобы панель перестала влезать снизу.
+	 */
+	it('места меряются по видимой области, а не по окну', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 300)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		visualViewportOf(1000, 760)
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		// Под якорем 320px по окну — панель в 300px влезла бы, — но 280px по
+		// видимой области, и сверху места больше
+		plugin.setAnchor(anchorAt({ left: 100, top: 400, bottom: 480, right: 220 }))
+
+		expect(frame.dataset.get('placement')).toBe('top-start')
+		expect(frame.y).toBe(100) // 400 - 300
+	})
+
 	it('запись того же значения flip события не шлёт', () => {
 		const plugin = anchorFor(new TFrame({ position: 'fixed' }))
 		const handler = vi.fn()
@@ -338,6 +373,25 @@ describe('shift: сдвиг внутрь окна', () => {
 		plugin.setAnchor(anchorAt({ left: 950, bottom: 250, right: 1050 }))
 
 		expect(frame.x).toBe(880) // 1000 - 120
+	})
+
+	/**
+	 * Полоса прокрутки рисуется поверх страницы, а `innerWidth` считает её
+	 * своей: по краю окна панель пряталась бы под полосой полоской в её
+	 * ширину. Границей служит видимая область.
+	 */
+	it('краем служит видимая область, а не окно: полоса прокрутки не съедает панель', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		visualViewportOf(985, 800)
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 950, bottom: 250, right: 1050 }))
+
+		expect(frame.x).toBe(865) // 985 - 120, а не 1000 - 120
 	})
 })
 
