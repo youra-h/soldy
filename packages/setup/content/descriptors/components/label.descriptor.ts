@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TLabel } from '@soldy/core'
+import { TLabel } from '@soldy-ui/core'
 import { LabelNestedWarnPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 

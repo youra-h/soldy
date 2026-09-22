@@ -1,13 +1,13 @@
 # TODO
 
-## Сборка `.d.ts` для всех `@soldy/*` пакетов
+## Сборка `.d.ts` для всех `@soldy-ui/*` пакетов
 
-**Цель:** каждый пакет собирает собственные декларации типов, а UI-либы (`ui/vue` и др.) ссылаются на готовые типы, а не на исходники. Сейчас это сделано «в лоб» для `@soldy/ui-vue` через `preserveSymlinks` + `paths: {}` (см. `packages/ui/vue/tsconfig.lib.json`) — депсы при этом чек-аются как `.ts`-исходники.
+**Цель:** каждый пакет собирает собственные декларации типов, а UI-либы (`ui/vue` и др.) ссылаются на готовые типы, а не на исходники. Сейчас это сделано «в лоб» для `@soldy-ui/vue` через `preserveSymlinks` + `paths: {}` (см. `packages/ui/vue/tsconfig.lib.json`) — депсы при этом чек-аются как `.ts`-исходники.
 
 ### Текущее состояние
 
-- Все `@soldy/*` пакеты — `private: true`, отдают исходники: `main`/`exports` → `./src/index.ts`.
-- `@soldy/ui-vue`: `build:lib` (vite lib) + `build:types` (vue-tsc → `lib/*.d.ts`) работают.
+- Все `@soldy-ui/*` пакеты — `private: true`, отдают исходники: `main`/`exports` → `./src/index.ts`.
+- `@soldy-ui/vue`: `build:lib` (vite lib) + `build:types` (vue-tsc → `lib/*.d.ts`) работают.
 
 ### Что нужно сделать
 
@@ -26,7 +26,7 @@
 
 4. **Убрать «костыль» в `ui/vue`:**
    - Из `packages/ui/vue/tsconfig.lib.json` убрать `preserveSymlinks: true` и `paths: {}`.
-   - Вместо этого резолвить `@soldy/*` на их собранные `*.d.ts` (через `types`/`exports` в node_modules).
+   - Вместо этого резолвить `@soldy-ui/*` на их собранные `*.d.ts` (через `types`/`exports` в node_modules).
 
 5. **Публикация/потребление:**
    - `files` → только собранные `dist`/`lib`.

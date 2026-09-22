@@ -28,13 +28,13 @@
  * переносится вручную в точки, объявленные шаблоном.
  */
 
-import type { IComponentView, IComponentViewProps } from '@soldy/core'
+import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import {
 	DEFAULT_SLOT,
 	TSurface,
 	type IComponentDescriptor,
 	type TInstanceState,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import { buildAttributeMap, coerceAttribute, type IAttributeBinding, WebcProfile } from '../common'
 import {
 	applyAttributeSet,

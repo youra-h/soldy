@@ -1,11 +1,11 @@
 ---
-'@soldy/setup': minor
-'@soldy/ui-vue': patch
-'@soldy/ui-react': patch
-'@soldy/ui-solid': patch
-'@soldy/ui-svelte': patch
-'@soldy/ui-angular': patch
-'@soldy/ui-webc': patch
+'@soldy-ui/setup': minor
+'@soldy-ui/vue': patch
+'@soldy-ui/react': patch
+'@soldy-ui/solid': patch
+'@soldy-ui/svelte': patch
+'@soldy-ui/angular': patch
+'@soldy-ui/webc': patch
 ---
 
 Инициализация компонента одинакова во всех адаптерах и идёт теми же путями, что и изменения.

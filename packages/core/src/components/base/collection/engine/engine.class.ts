@@ -1,4 +1,4 @@
-import { TEvented } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
 import { TCollectionStorageDriver } from './driver.class'
 import type {
 	ICollectionStorageDriver,

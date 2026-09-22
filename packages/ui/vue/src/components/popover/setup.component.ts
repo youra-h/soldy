@@ -1,4 +1,4 @@
-import { PopoverDescriptor } from '@soldy/setup'
+import { PopoverDescriptor } from '@soldy-ui/setup'
 import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BasePopover, { type PopoverProps } from './base.component'
 

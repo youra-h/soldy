@@ -60,7 +60,7 @@ export type TDismissPluginEvents = TPluginEvents & {
 /**
  * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
  *
- * Неймспейс (`dismiss_enabled`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * Неймспейс (`dismiss_enabled`) навешивает `DescriptorAllProps` в `@soldy-ui/setup`
  * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
  * Защищённого `ownerAttribute` здесь нет: это выход, в разметку его не пишут.
  */

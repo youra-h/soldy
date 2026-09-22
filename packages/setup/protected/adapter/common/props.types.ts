@@ -38,7 +38,7 @@ export type TAdapterProps<TInstance> = {
  * Пропсы внешних плагинов, которые знает приложение. Пустой намеренно: его
  * дополняют рядом с `definePlugin` плагина —
  *
- *   declare module '@soldy/setup' {
+ *   declare module '@soldy-ui/setup' {
  *     interface IExternalPluginProps { timer_ms?: number }
  *   }
  */

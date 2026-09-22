@@ -25,7 +25,12 @@ import {
 	TListBoxItemCollectionFacade,
 	TItemContextRegistry,
 } from '../src'
-import type { IListBoxItem, IListBoxProps, TListContentFit, TListItemContentFit } from '@soldy/core'
+import type {
+	IListBoxItem,
+	IListBoxProps,
+	TListContentFit,
+	TListItemContentFit,
+} from '@soldy-ui/core'
 
 function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 	const owner = new TListBox(props)

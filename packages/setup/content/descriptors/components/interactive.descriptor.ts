@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TInteractive } from '@soldy/core'
+import { TInteractive } from '@soldy-ui/core'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const InteractiveDescriptor = defineDescriptor(() =>

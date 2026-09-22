@@ -5,8 +5,8 @@
  * useAdapter. Хост нужен адаптеру, чтобы диспатчить CustomEvent.
  */
 
-import { createAdapterContext, ComponentDescriptor } from '@soldy/setup'
-import type { IComponent } from '@soldy/core'
+import { createAdapterContext, ComponentDescriptor } from '@soldy-ui/setup'
+import type { IComponent } from '@soldy-ui/core'
 import { useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 

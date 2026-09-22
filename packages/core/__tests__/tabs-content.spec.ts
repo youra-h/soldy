@@ -20,8 +20,8 @@ import {
 	TTabsItemCollectionFacade,
 	TTabsCollectionFacade,
 	TItemContextRegistry,
-} from '@soldy/core'
-import type { ITabsItem } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { ITabsItem } from '@soldy-ui/core'
 
 function createTabs(values: string[]) {
 	const owner = new TTabs()

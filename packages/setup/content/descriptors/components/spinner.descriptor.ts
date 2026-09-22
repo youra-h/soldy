@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TSpinner } from '@soldy/core'
+import { TSpinner } from '@soldy-ui/core'
 import { SpinnerLayoutPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 

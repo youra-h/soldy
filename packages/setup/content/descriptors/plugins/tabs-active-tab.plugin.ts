@@ -3,7 +3,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TTabsActiveTabPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TTabsActiveTabPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const TabsActiveTabPluginDescriptor = definePlugin({
 	ctor: TTabsActiveTabPlugin,

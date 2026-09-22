@@ -1,6 +1,6 @@
 import type { ICommand } from '../commands'
 import type { ICollectionStorageDriver } from '../types'
-import type { TEvented } from '@soldy/core'
+import type { TEvented } from '@soldy-ui/core'
 
 export interface IExtensionContext<T> {
 	readonly driver: ICollectionStorageDriver<T>

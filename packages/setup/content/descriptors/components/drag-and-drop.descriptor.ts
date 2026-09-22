@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TDragAndDrop } from '@soldy/core'
+import { TDragAndDrop } from '@soldy-ui/core'
 import { ComponentDescriptor } from './component.descriptor'
 
 export const DragAndDropDescriptor = defineDescriptor(() =>

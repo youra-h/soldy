@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TBatchExtension, TFilterExtension } from '@soldy/core'
+import { TCollectionEngine, TBatchExtension, TFilterExtension } from '@soldy-ui/core'
 
 type Row = { id: number; firstName: string; lastName: string; age: number; active: boolean }
 

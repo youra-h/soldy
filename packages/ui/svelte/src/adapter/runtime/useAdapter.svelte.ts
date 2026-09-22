@@ -20,9 +20,9 @@
  */
 
 import { onDestroy } from 'svelte'
-import { toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
+import { toInstanceState } from '@soldy-ui/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy-ui/setup'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { SvelteProfile } from '../common'
 
 /** Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда. */

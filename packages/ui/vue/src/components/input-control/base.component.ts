@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { InputControlDescriptor } from '@soldy/setup'
-import type { IInputControl } from '@soldy/core'
+import { InputControlDescriptor } from '@soldy-ui/setup'
+import type { IInputControl } from '@soldy-ui/core'
 
 export const emitsInputControl: TEmits = useEmits(InputControlDescriptor())
 

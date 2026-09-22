@@ -17,7 +17,7 @@ import {
 	createEngine,
 	createEngineRadioGroup,
 } from '../src'
-import type { IRadioGroupItem, IRadioGroupItemProps, IRadioGroupProps } from '@soldy/core'
+import type { IRadioGroupItem, IRadioGroupItemProps, IRadioGroupProps } from '@soldy-ui/core'
 
 /** Группа с радио по значениям — так их регистрирует разметка, по одному. */
 function createGroup(values: string[], props: Partial<IRadioGroupProps> = {}) {

@@ -8,9 +8,9 @@
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
-import { TElementPlugin } from '@soldy/plugins'
-import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
+import { TElementPlugin } from '@soldy-ui/plugins'
+import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy-ui/setup'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { VueProfile } from '../common'
 
 /**

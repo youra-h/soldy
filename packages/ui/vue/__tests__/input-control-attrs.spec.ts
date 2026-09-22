@@ -17,7 +17,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { CheckBox, Input, Switch } from '@soldy/ui-vue'
+import { CheckBox, Input, Switch } from '@soldy-ui/vue'
 
 describe('Input', () => {
 	it('disabled и required — нативные атрибуты <input>, без ARIA-дублей', () => {

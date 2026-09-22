@@ -5,7 +5,7 @@
  * Выполняется регистрация элемента в родительской коллекции.
  */
 
-import { TItemContextRegistry } from '@soldy/core'
+import { TItemContextRegistry } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 import {

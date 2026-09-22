@@ -11,7 +11,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { Tabs, TabsItem } from '@soldy/ui-vue'
+import { Tabs, TabsItem } from '@soldy-ui/vue'
 
 /**
  * Слушатель клавиш плагин вешает по `ready` узла, а `TElementPlugin` отдаёт

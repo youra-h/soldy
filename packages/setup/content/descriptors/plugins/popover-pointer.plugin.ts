@@ -6,7 +6,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TPopoverPointerPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TPopoverPointerPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const PopoverPointerPluginDescriptor = definePlugin({
 	ctor: TPopoverPointerPlugin,

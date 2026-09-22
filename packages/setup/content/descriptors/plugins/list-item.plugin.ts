@@ -6,7 +6,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TListItemPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const ListItemPluginDescriptor = definePlugin({
 	ctor: TListItemPlugin,

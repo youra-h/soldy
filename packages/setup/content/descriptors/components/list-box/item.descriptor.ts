@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TListBoxItem } from '@soldy/core'
+import { TListBoxItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'

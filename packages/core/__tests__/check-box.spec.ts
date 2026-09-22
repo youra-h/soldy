@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCheckBox } from '@soldy/core'
+import { TCheckBox } from '@soldy-ui/core'
 
 describe('TCheckBox', () => {
 	it('создаётся через { props } и через plain props', () => {

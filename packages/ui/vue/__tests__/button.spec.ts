@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { TButton } from '@soldy/core'
-import { TElementPlugin, TPluginBundle } from '@soldy/plugins'
-import { Button } from '@soldy/ui-vue'
+import { TButton } from '@soldy-ui/core'
+import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import { Button } from '@soldy-ui/vue'
 
 /**
  * Button наследует цепочку:

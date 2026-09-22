@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TRadioGroupCollectionFacade, TRadioGroupItemCollectionFacade } from '@soldy/core'
+import { TRadioGroupCollectionFacade, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
 
 export const RadioGroupCollectionDescriptor = defineDescriptor(() =>

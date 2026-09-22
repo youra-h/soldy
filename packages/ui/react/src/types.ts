@@ -1,9 +1,9 @@
 /**
- * Общие типы для React-адаптера @soldy/ui-react.
+ * Общие типы для React-адаптера @soldy-ui/react.
  */
 
 import type { HTMLAttributes, ReactNode } from 'react'
-import type { IEntity } from '@soldy/core'
+import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
 	DescriptorAllProps,
@@ -11,7 +11,7 @@ import type {
 	DescriptorComponentProps,
 	DescriptorSlots,
 	TSlotProps,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 
 /** Событийные пропсы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =

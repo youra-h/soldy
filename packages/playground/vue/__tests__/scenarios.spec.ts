@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy/playground-shared'
+import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy-ui/playground-shared'
 import { componentsOf, findAvailable, SCENARIOS, testsPath, TOPICS } from '../src/catalog'
 import { FIXTURES, fixtureOf } from '../src/scenarios/fixtures'
 import { createScenarioBench, SCENARIO_BENCH } from '../src/composables/useScenarios'

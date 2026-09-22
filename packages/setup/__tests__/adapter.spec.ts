@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { createEngine } from '@soldy/core'
-import type { TCollectionEngine } from '@soldy/core'
-import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy/plugins'
+import { createEngine } from '@soldy-ui/core'
+import type { TCollectionEngine } from '@soldy-ui/core'
+import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy-ui/plugins'
 import {
 	createAdapterContext,
 	defineComponent,
@@ -23,7 +23,7 @@ import {
 	type IAdapterContext,
 	type IComponentContract,
 	type TAdapterState,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import { CallbackProfile, required } from './helpers'
 
 /** Простая in-memory реализация фабрики элеваторов для тестов. */

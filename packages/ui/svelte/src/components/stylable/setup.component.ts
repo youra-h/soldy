@@ -9,7 +9,7 @@
  * переменную теряет реактивность, читать его нужно лениво.
  */
 
-import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
+import { createAdapterContext, StylableDescriptor } from '@soldy-ui/setup'
 import { useAdapter } from '../../adapter'
 import type { StylableProps } from './base.component'
 

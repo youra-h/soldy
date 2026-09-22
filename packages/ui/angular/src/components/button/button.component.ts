@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgClass, NgTemplateOutlet } from '@angular/common'
-import type { IButton } from '@soldy/core'
+import type { IButton } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { AriaDirective, TComponentBase } from '../../adapter'
 import { ButtonInputNames, ButtonOutputNames } from './base.component'

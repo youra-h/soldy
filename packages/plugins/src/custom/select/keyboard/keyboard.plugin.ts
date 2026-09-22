@@ -5,7 +5,7 @@ import type {
 	ISelect,
 	ISelectItem,
 	TCollectionEngine,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionElements } from '../../collection'

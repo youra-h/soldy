@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TValueControl } from '@soldy/core'
-import type { IValueControlProps } from '@soldy/core'
+import { TValueControl } from '@soldy-ui/core'
+import type { IValueControlProps } from '@soldy-ui/core'
 
 describe('TValueControl', () => {
 	it('принимает value/name через { props } и через plain props', () => {

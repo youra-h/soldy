@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TStateUnit } from '@soldy/core'
+import { TStateUnit } from '@soldy-ui/core'
 
 describe('TStateUnit', () => {
 	it('хранит value и эмитит change(value) при изменении', () => {

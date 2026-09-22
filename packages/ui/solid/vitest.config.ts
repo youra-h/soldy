@@ -10,11 +10,11 @@ export default defineConfig({
 		// в тестах подключится server-рантайм без DOM.
 		conditions: ['development', 'browser'],
 		alias: {
-			'@soldy/core': path.resolve(__dirname, '../../core/src'),
-			'@soldy/icons-material': path.resolve(__dirname, '../../icons/material/src'),
-			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
-			'@soldy/setup': path.resolve(__dirname, '../../setup'),
-			'@soldy/ui-solid': path.resolve(__dirname, 'src/index.ts'),
+			'@soldy-ui/core': path.resolve(__dirname, '../../core/src'),
+			'@soldy-ui/icons-material': path.resolve(__dirname, '../../icons/material/src'),
+			'@soldy-ui/plugins': path.resolve(__dirname, '../../plugins/src'),
+			'@soldy-ui/setup': path.resolve(__dirname, '../../setup'),
+			'@soldy-ui/solid': path.resolve(__dirname, 'src/index.ts'),
 		},
 	},
 	test: {

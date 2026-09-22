@@ -21,7 +21,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { ListBox, Tabs, TabsItem } from '@soldy/ui-vue'
+import { ListBox, Tabs, TabsItem } from '@soldy-ui/vue'
 import AccordionHarness from './Accordion.test.vue'
 import TabsHarness from './TabsContent.test.vue'
 import SelectHarness from './Select.test.vue'

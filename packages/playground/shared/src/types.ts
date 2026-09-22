@@ -1,4 +1,4 @@
-import type { IComponentDescriptor, IPluginDefinition } from '@soldy/setup'
+import type { IComponentDescriptor, IPluginDefinition } from '@soldy-ui/setup'
 
 /** Чем редактировать проп. Выводится из метаданных, руками не задаётся. */
 export type TControlKind = 'switch' | 'text' | 'number' | 'select'

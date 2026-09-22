@@ -25,7 +25,7 @@ jobs:
       # Тема отдаёт dist/index.css, который подключает сборка Angular.
       # dist в .gitignore, поэтому собираем до всего остального.
       - name: Сборка темы
-        run: npm run build --workspace=@soldy/theme-oren
+        run: npm run build --workspace=@soldy-ui/theme-oren
 
       # Браузер для test:layout закреплён ревизией Playwright из package-lock,
       # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
@@ -68,7 +68,7 @@ jobs:
 
       - name: Типы — Vue
         run: |
-          npm run build:types --workspace=@soldy/ui-vue
+          npm run build:types --workspace=@soldy-ui/vue
           npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
 
       - name: Типы — Plugins
@@ -86,7 +86,7 @@ jobs:
         run: npx tsc --noEmit -p packages/ui/react/tsconfig.json
 
       - name: Типы — Svelte
-        run: npm run check --workspace=@soldy/ui-svelte
+        run: npm run check --workspace=@soldy-ui/svelte
 
       - name: Типы — Solid
         run: npx tsc --noEmit -p packages/ui/solid/tsconfig.json
@@ -105,7 +105,7 @@ jobs:
       # компонент молча разъедется с дескриптором.
       - name: Angular — дрейф сгенерированных метаданных
         run: |
-          npm run generate --workspace=@soldy/ui-angular
+          npm run generate --workspace=@soldy-ui/angular
           git diff --exit-code packages/ui/angular/src/generated
 
       # Сборки Angular здесь нет намеренно: у пакета пока нет своего стенда в
@@ -113,8 +113,8 @@ jobs:
 
       - name: Сборка стенда Vue
         run: |
-          npm run build --workspace=@soldy/theme-oren
-          npm run build --workspace=@soldy/playground-vue
+          npm run build --workspace=@soldy-ui/theme-oren
+          npm run build --workspace=@soldy-ui/playground-vue
 
   lint:
     name: Линт

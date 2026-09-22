@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onUnmounted, shallowRef, watch } from 'vue'
-import { createEngineSelection, isEventSource } from '@soldy/core'
-import { TPluginBundle } from '@soldy/plugins'
+import { createEngineSelection, isEventSource } from '@soldy-ui/core'
+import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	createInstance,
 	type TComponentEntry,
 	type TInstance,
 	type TPropControl,
-} from '@soldy/playground-shared'
+} from '@soldy-ui/playground-shared'
 import { PREVIEW_COMPONENTS } from '../previews'
 import { propSnippet, instanceSnippet } from '../snippet'
 import PropControl from './PropControl.vue'

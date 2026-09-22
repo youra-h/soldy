@@ -6,7 +6,7 @@
  * монтирования (`adapter.connect()`). Один профиль — одна поверхность на оба.
  */
 
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy-ui/setup'
 import { AngularNaming } from './naming'
 
 export const AngularProfile: IAdapterProfile = { naming: AngularNaming }

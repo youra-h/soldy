@@ -1,10 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton, TTabs } from '@soldy/core'
-import { resolveRegisteredPlugins, useTheme } from '@soldy/setup'
+import { TButton, TTabs } from '@soldy-ui/core'
+import { resolveRegisteredPlugins, useTheme } from '@soldy-ui/setup'
 import oren, { TTabsViewPlugin } from '../setup'
 
 /**
- * Поведение темы: `@soldy/theme-oren/setup` ставит плагины, данные которых
+ * Поведение темы: `@soldy-ui/theme-oren/setup` ставит плагины, данные которых
  * читает её CSS. Полосу под активным табом рисует `_tabs.scss` по переменным
  * `TTabsViewPlugin` — без регистрации её нет.
  */

@@ -301,10 +301,10 @@ They are installed on the owner component; the engine is bound from the adapter 
 
 The owner setup creates **two adapter contexts sharing one bundle**, both through
 `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext`
-from `@soldy/setup`: the wrapper strips Vue proxies from `ctrl` and from the top-level values of
+from `@soldy-ui/setup`: the wrapper strips Vue proxies from `ctrl` and from the top-level values of
 `options`, so the component passes `props.ctrl` / `props.engine` as they are, without `toRaw`.
 The eslint block `soldy/vue-components-no-framework` fails on an import from `'vue'` and on
-`createAdapterContext` imported from `@soldy/setup`. The facade context passes
+`createAdapterContext` imported from `@soldy-ui/setup`. The facade context passes
 `engine: props.engine` through — a caller-supplied engine wins, `resolveEngine` falls back to
 building one otherwise:
 
@@ -314,9 +314,9 @@ import {
   TDragAndDropCollectionExtension,
   TabsDescriptor,
   TabsCollectionDescriptor,
-} from '@soldy/setup'
-import { TTabsCollectionFacade } from '@soldy/core'
-import type { ITabsCollectionProps } from '@soldy/core'
+} from '@soldy-ui/setup'
+import { TTabsCollectionFacade } from '@soldy-ui/core'
+import type { ITabsCollectionProps } from '@soldy-ui/core'
 import {
   useAdapter,
   useCollectionAdapter,
@@ -325,7 +325,7 @@ import {
   type SetupContext,
 } from '../../adapter'
 import BaseTabs, { type TabsProps } from './base.component'
-import { type ITabsComponentProps, type ITabs } from '@soldy/core'
+import { type ITabsComponentProps, type ITabs } from '@soldy-ui/core'
 
 export default {
   name: '_Tabs',

@@ -6,7 +6,7 @@
  * положить в обычную константу — useRef-обвязки, как в React, не нужно.
  */
 
-import { createAdapterContext, ButtonDescriptor } from '@soldy/setup'
+import { createAdapterContext, ButtonDescriptor } from '@soldy-ui/setup'
 import { useAdapter } from '../../adapter'
 import type { ButtonProps } from './base.component'
 

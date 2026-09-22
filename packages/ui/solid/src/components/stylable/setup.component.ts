@@ -6,7 +6,7 @@
  * положить в обычную константу — useRef-обвязки, как в React, не нужно.
  */
 
-import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
+import { createAdapterContext, StylableDescriptor } from '@soldy-ui/setup'
 import { useAdapter } from '../../adapter'
 import type { StylableProps } from './base.component'
 

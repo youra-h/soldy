@@ -1,5 +1,5 @@
-import type { IControl } from '@soldy/core'
-import type { ControlDescriptor } from '@soldy/setup'
+import type { IControl } from '@soldy-ui/core'
+import type { ControlDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseProps } from '../../types'
 
 /** События слоя Control (core + плагины), выведены из дескриптора автоматически. */

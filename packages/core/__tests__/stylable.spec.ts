@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TStylable, TStateUnit } from '@soldy/core'
-import type { IStylableProps, TComponentSize } from '@soldy/core'
+import { TStylable, TStateUnit } from '@soldy-ui/core'
+import type { IStylableProps, TComponentSize } from '@soldy-ui/core'
 
 describe('TStylable', () => {
 	it('size и variant выставляются и эмитят события', () => {

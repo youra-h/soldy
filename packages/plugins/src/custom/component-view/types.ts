@@ -26,7 +26,7 @@ export type TAriaPluginEvents = TPluginEvents & {
 /**
  * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
  *
- * Неймспейс (`aria_label`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * Неймспейс (`aria_label`) навешивает `DescriptorAllProps` в `@soldy-ui/setup`
  * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
  */
 export interface IAriaPluginProps {

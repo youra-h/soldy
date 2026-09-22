@@ -16,12 +16,12 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TButton } from '@soldy/core'
-import type { IButton } from '@soldy/core'
-import { TAriaPlugin, TBasePlugin } from '@soldy/plugins'
-import type { IPluginContext, TPluginEvents } from '@soldy/plugins'
-import { ButtonDescriptor, createAdapterContext, definePlugin, usePlugins } from '@soldy/setup'
-import type { TEventSink } from '@soldy/setup'
+import { TButton } from '@soldy-ui/core'
+import type { IButton } from '@soldy-ui/core'
+import { TAriaPlugin, TBasePlugin } from '@soldy-ui/plugins'
+import type { IPluginContext, TPluginEvents } from '@soldy-ui/plugins'
+import { ButtonDescriptor, createAdapterContext, definePlugin, usePlugins } from '@soldy-ui/setup'
+import type { TEventSink } from '@soldy-ui/setup'
 import { CallbackProfile, required } from './helpers'
 
 type TIntervalEvents = TPluginEvents & {

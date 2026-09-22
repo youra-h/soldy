@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { TextableDescriptor } from '@soldy/setup'
-import type { ITextable } from '@soldy/core'
+import { TextableDescriptor } from '@soldy-ui/setup'
+import type { ITextable } from '@soldy-ui/core'
 
 export const emitsTextable: TEmits = useEmits(TextableDescriptor())
 

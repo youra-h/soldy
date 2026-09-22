@@ -16,7 +16,7 @@
  * компонентов её содержат.
  */
 
-import type { TListEvents } from '@soldy/core'
+import type { TListEvents } from '@soldy-ui/core'
 import type { IComponentPropDefinition } from '../../../protected/define'
 
 export const LIST_PROPS = {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ListBox } from '@soldy/ui-vue'
+import { ListBox } from '@soldy-ui/vue'
 import { SHOWCASE, LAYERS } from '../catalog'
 
 const route = useRoute()

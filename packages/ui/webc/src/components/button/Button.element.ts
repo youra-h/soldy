@@ -7,9 +7,9 @@
  * Разметка вынесена в button.template.ts, жизненный цикл — в TSoldyElement.
  */
 
-import { ButtonDescriptor } from '@soldy/setup'
-import type { IComponentDescriptor } from '@soldy/setup'
-import type { IButton, IButtonProps } from '@soldy/core'
+import { ButtonDescriptor } from '@soldy-ui/setup'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
+import type { IButton, IButtonProps } from '@soldy-ui/core'
 import { TSoldyElement, defineProps, defineElement, useAttributes } from '../../adapter'
 import type { ITemplate, TBinding } from '../../adapter'
 import { buttonTemplate } from './button.template'

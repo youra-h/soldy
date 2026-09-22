@@ -12,8 +12,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TRadioGroup } from '@soldy/core'
-import type { IRadioGroupItem } from '@soldy/core'
+import { TRadioGroup } from '@soldy-ui/core'
+import type { IRadioGroupItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 
 export const RadioGroupDescriptor = defineDescriptor(() =>

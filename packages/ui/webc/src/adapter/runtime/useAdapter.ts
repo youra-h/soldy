@@ -14,9 +14,9 @@
  * элемента), а события уходят `CustomEvent` на хосте.
  */
 
-import { toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, IComponentContract, TInstanceState } from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
+import { toInstanceState } from '@soldy-ui/setup'
+import type { IAdapterContext, IComponentContract, TInstanceState } from '@soldy-ui/setup'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { WebcProfile } from '../common'
 
 export type TBinding<TInstance = object> = {

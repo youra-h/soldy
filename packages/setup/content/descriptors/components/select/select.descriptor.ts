@@ -7,8 +7,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TSelect } from '@soldy/core'
-import type { IInput, ISelectItem } from '@soldy/core'
+import { TSelect } from '@soldy-ui/core'
+import type { IInput, ISelectItem } from '@soldy-ui/core'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,

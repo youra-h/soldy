@@ -1,7 +1,7 @@
 /**
  * Геометрия активного таба не зависит от вида табов.
  *
- * `TTabsViewPlugin` — плагин темы oren (`@soldy/theme-oren/setup`, ставит его
+ * `TTabsViewPlugin` — плагин темы oren (`@soldy-ui/theme-oren/setup`, ставит его
  * `useTheme` в `__tests__/setup.ts`). Он пишет на список переменные полосы (`--underline-*`) и
  * разрыва линии (`--gap-*`), а после монтирования ставит `--ready-animation`.
  * Раньше он делал это только для видов `line` и `outline`, то есть знал имена
@@ -16,7 +16,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Tabs, TabsItem } from '@soldy/ui-vue'
+import { Tabs, TabsItem } from '@soldy-ui/vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

@@ -1,7 +1,7 @@
 /**
  * Тема как набор регистраций: плагины и расширения, без которых её CSS не работает.
  *
- *   // @soldy/theme-oren/setup
+ *   // @soldy-ui/theme-oren/setup
  *   export default defineTheme({
  *     name: 'oren',
  *     plugins: [{ type: TTabs, plugins: [TTabsViewPlugin] }],

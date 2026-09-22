@@ -6,7 +6,7 @@
  * результат этого вызова сериализуется в generated/*.metadata.ts на этапе сборки.
  */
 
-import { TSurface, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { AngularProfile } from './profile'
 
 /**

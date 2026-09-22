@@ -1,4 +1,4 @@
-import type { ISelect } from '@soldy/core'
+import type { ISelect } from '@soldy-ui/core'
 import type { TListEdge } from '../../../list/navigation'
 
 /**

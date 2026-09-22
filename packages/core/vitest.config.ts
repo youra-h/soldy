@@ -4,7 +4,7 @@ import path from 'node:path'
 export default defineConfig({
 	resolve: {
 		alias: {
-			'@soldy/core': path.resolve(__dirname, 'src'),
+			'@soldy-ui/core': path.resolve(__dirname, 'src'),
 		},
 	},
 	test: {

@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/core",
+  "name": "@soldy-ui/core",
   "version": "0.1.0",
   "description": "Headless-модели компонентов без привязки к фреймворку: компоненты, движок коллекций, фасады, расширения",
   "keywords": [

@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/setup",
+  "name": "@soldy-ui/setup",
   "version": "0.1.0",
   "description": "Общее для всех адаптеров: дескрипторы компонентов, их сборка на монтирование и связывание с фреймворком",
   "keywords": [
@@ -27,8 +27,8 @@
     ".": "./index.ts"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/plugins": "*"
+    "@soldy-ui/core": "*",
+    "@soldy-ui/plugins": "*"
   },
   "scripts": {
     "test": "vitest run"

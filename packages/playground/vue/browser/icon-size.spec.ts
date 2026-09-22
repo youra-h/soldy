@@ -14,10 +14,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
-import { COMPONENT_SIZES } from '@soldy/playground-shared'
-import { Icon, useIcon } from '@soldy/ui-vue'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
+import { Icon, useIcon } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Глиф строится один раз: новый компонент на каждый рендер пересоздавал бы узел. */
 const CLOSE = useIcon('close')

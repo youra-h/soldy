@@ -1,5 +1,5 @@
 import type { IExtension } from '../types'
-import type { TNoEvents } from '@soldy/core'
+import type { TNoEvents } from '@soldy-ui/core'
 
 /** Событий у расширения нет — см. `TNoEvents`. */
 export type TFactoryEvents = TNoEvents

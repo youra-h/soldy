@@ -14,7 +14,7 @@
  * soldy.
  */
 
-import type { TInstanceState } from '@soldy/setup'
+import type { TInstanceState } from '@soldy-ui/setup'
 
 /**
  * Куда попадает содержимое слота.

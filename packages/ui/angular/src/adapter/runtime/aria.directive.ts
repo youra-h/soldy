@@ -20,7 +20,7 @@
  */
 
 import { Directive, ElementRef, Input, type OnChanges } from '@angular/core'
-import type { TAriaAttributes, TAttributesMap } from '@soldy/core'
+import type { TAriaAttributes, TAttributesMap } from '@soldy-ui/core'
 
 /**
  * Раскладывает один набор `имя → значение` на элемент, `null` снимает

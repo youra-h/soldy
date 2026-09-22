@@ -25,8 +25,8 @@ import {
 	resolveSlotName,
 	isScopedSlot,
 	slotNames,
-} from '@soldy/setup'
-import type { DescriptorSlots, TEmptySlotScope } from '@soldy/setup'
+} from '@soldy-ui/setup'
+import type { DescriptorSlots, TEmptySlotScope } from '@soldy-ui/setup'
 import { required } from './helpers'
 
 describe('normalizeContribution · slots', () => {

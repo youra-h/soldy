@@ -30,7 +30,7 @@ import {
 	TagsCollectionDescriptor,
 	TextableDescriptor,
 	ValueControlDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import type { TComponentEntry, TThemeEntry, TIconPackEntry } from './types'
 
 /**

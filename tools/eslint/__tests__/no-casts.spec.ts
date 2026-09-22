@@ -46,7 +46,7 @@ describe('eslint.config.ts: приведения в src ядра', () => {
 		],
 		[
 			'as TEvented<…>',
-			"import type { TEvented } from '@soldy/core'\ndeclare const value: object\nexport const x = value as TEvented<object>",
+			"import type { TEvented } from '@soldy-ui/core'\ndeclare const value: object\nexport const x = value as TEvented<object>",
 			'no-restricted-syntax',
 		],
 		[

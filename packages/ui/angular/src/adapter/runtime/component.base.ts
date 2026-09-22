@@ -40,8 +40,8 @@ import {
 	signal,
 	viewChild,
 } from '@angular/core'
-import type { IEntity, TAttributesMap } from '@soldy/core'
-import type { TInstanceState } from '@soldy/setup'
+import type { IEntity, TAttributesMap } from '@soldy-ui/core'
+import type { TInstanceState } from '@soldy-ui/setup'
 import { applyAttributes } from './aria.directive'
 import { SlotDirective } from './slot.directive'
 import type { TBinding } from './useAdapter'

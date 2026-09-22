@@ -37,16 +37,16 @@ describe('eslint.config.ts: компоненты Vue не импортируют
 		expect(await ruleIds(code, COMPONENT_VUE)).toContain('no-restricted-imports')
 	})
 
-	it('createAdapterContext из @soldy/setup под components/ — ошибка', async () => {
+	it('createAdapterContext из @soldy-ui/setup под components/ — ошибка', async () => {
 		const code =
-			"import { createAdapterContext } from '@soldy/setup'\nexport const x = createAdapterContext"
+			"import { createAdapterContext } from '@soldy-ui/setup'\nexport const x = createAdapterContext"
 
 		expect(await ruleIds(code, COMPONENT_TS)).toContain('no-restricted-imports')
 	})
 
-	it('другой импорт из @soldy/setup под components/ — допустимо', async () => {
+	it('другой импорт из @soldy-ui/setup под components/ — допустимо', async () => {
 		const code =
-			"import { ButtonDescriptor } from '@soldy/setup'\nexport const x = ButtonDescriptor"
+			"import { ButtonDescriptor } from '@soldy-ui/setup'\nexport const x = ButtonDescriptor"
 
 		expect(await ruleIds(code, COMPONENT_TS)).toEqual([])
 	})
@@ -57,9 +57,9 @@ describe('eslint.config.ts: компоненты Vue не импортируют
 		).not.toContain('no-restricted-imports')
 	})
 
-	it('createAdapterContext из @soldy/setup вне components/ (адаптер) — допустимо', async () => {
+	it('createAdapterContext из @soldy-ui/setup вне components/ (адаптер) — допустимо', async () => {
 		const code =
-			"import { createAdapterContext } from '@soldy/setup'\nexport const x = createAdapterContext"
+			"import { createAdapterContext } from '@soldy-ui/setup'\nexport const x = createAdapterContext"
 
 		expect(await ruleIds(code, ADAPTER)).not.toContain('no-restricted-imports')
 	})

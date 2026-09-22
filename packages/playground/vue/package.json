@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/playground-vue",
+  "name": "@soldy-ui/playground-vue",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,13 +11,13 @@
     "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/icons-material": "*",
-    "@soldy/playground-shared": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*",
-    "@soldy/theme-oren": "*",
-    "@soldy/ui-vue": "*",
+    "@soldy-ui/core": "*",
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/playground-shared": "*",
+    "@soldy-ui/plugins": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@soldy-ui/vue": "*",
     "vue": "^3.5.32",
     "vue-router": "^4.5.1"
   },

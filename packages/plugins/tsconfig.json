@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@soldy/core": ["../core/src"],
-      "@soldy/plugins": ["./src"]
+      "@soldy-ui/core": ["../core/src"],
+      "@soldy-ui/plugins": ["./src"]
     }
   },
   "include": ["src/**/*", "__tests__/**/*"]

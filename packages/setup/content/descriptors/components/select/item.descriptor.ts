@@ -10,7 +10,7 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TSelectItem } from '@soldy/core'
+import { TSelectItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import { ListItemPluginDescriptor } from '../../plugins'

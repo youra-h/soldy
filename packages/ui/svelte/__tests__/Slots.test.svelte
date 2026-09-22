@@ -1,6 +1,6 @@
 <script lang="ts">
 	/** Тестовая обёртка: сниппеты объявляются только в .svelte-файле. */
-	import { Button } from '@soldy/ui-svelte'
+	import { Button } from '@soldy-ui/svelte'
 
 	let {
 		text = '',

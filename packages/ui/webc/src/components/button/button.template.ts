@@ -7,7 +7,7 @@
  * пяти адаптерах их тоже нет, а лишний span сломал бы селекторы темы.
  */
 
-import type { IButton } from '@soldy/core'
+import type { IButton } from '@soldy-ui/core'
 import { ariaBinding, bind, datasetBinding, type ITemplate } from '../../adapter'
 
 /**

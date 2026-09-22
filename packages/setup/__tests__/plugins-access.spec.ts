@@ -9,9 +9,9 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TButton } from '@soldy/core'
-import { TBasePlugin, TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy/plugins'
-import { createAdapterContext, ButtonDescriptor, ComponentDescriptor } from '@soldy/setup'
+import { TButton } from '@soldy-ui/core'
+import { TBasePlugin, TElementPlugin, TPluginBundle, TReadyPlugin } from '@soldy-ui/plugins'
+import { createAdapterContext, ButtonDescriptor, ComponentDescriptor } from '@soldy-ui/setup'
 import { CallbackProfile, required } from './helpers'
 
 /**

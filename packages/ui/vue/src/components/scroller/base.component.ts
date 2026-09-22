@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { ScrollerDescriptor } from '@soldy/setup'
-import type { IScroller } from '@soldy/core'
+import { ScrollerDescriptor } from '@soldy-ui/setup'
+import type { IScroller } from '@soldy-ui/core'
 
 export const emitsScroller: TEmits = useEmits(ScrollerDescriptor())
 

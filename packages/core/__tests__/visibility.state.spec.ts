@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TVisibilityState } from '@soldy/core'
+import { TVisibilityState } from '@soldy-ui/core'
 
 describe('TVisibilityState', () => {
 	it('show/hide меняют visible и эмитят change', () => {

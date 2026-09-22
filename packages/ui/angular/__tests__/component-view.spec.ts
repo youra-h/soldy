@@ -12,8 +12,8 @@
 import { describe, it, expect } from 'vitest'
 import { Component } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TComponentView } from '@soldy/core'
-import { TComponentViewComponent } from '@soldy/ui-angular'
+import { TComponentView } from '@soldy-ui/core'
+import { TComponentViewComponent } from '@soldy-ui/angular'
 import { announced, elementPlugin } from './element-plugin'
 
 /** Форма потребителя: корень компонента — его собственный тег в разметке. */

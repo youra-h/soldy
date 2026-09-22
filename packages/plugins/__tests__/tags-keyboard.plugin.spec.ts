@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TTags, TTagsItem, createEngineTags } from '@soldy/core'
-import type { ITagsItem, ITagsItemProps, ITagsProps, TSelectionMode } from '@soldy/core'
+import { TTags, TTagsItem, createEngineTags } from '@soldy-ui/core'
+import type { ITagsItem, ITagsItemProps, ITagsProps, TSelectionMode } from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,

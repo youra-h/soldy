@@ -1,4 +1,4 @@
-import { InputDescriptor } from '@soldy/setup'
+import { InputDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useSplitAttrs,

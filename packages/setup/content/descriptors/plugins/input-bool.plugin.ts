@@ -5,7 +5,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TInputBoolPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TInputBoolPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const InputBoolPluginDescriptor = definePlugin({
 	ctor: TInputBoolPlugin,

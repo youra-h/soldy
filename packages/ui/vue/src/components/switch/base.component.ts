@@ -1,8 +1,8 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { SwitchDescriptor } from '@soldy/setup'
+import { SwitchDescriptor } from '@soldy-ui/setup'
 import { Spinner } from '../spinner'
-import type { ISwitch } from '@soldy/core'
+import type { ISwitch } from '@soldy-ui/core'
 
 export const emitsSwitch: TEmits = useEmits(SwitchDescriptor())
 

@@ -1,6 +1,6 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginBundle } from '../../base'
-import type { IControl, TCollectionEngine, TPlainExtension } from '@soldy/core'
+import type { IControl, TCollectionEngine, TPlainExtension } from '@soldy-ui/core'
 import type { TBundlesEvents } from './types'
 
 /**

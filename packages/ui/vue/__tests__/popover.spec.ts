@@ -14,10 +14,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Button, Popover, Select, SelectItem } from '@soldy/ui-vue'
-import { TPopover } from '@soldy/core'
-import type { IPopoverProps } from '@soldy/core'
-import type { DescriptorSlots, PopoverDescriptor } from '@soldy/setup'
+import { Button, Popover, Select, SelectItem } from '@soldy-ui/vue'
+import { TPopover } from '@soldy-ui/core'
+import type { IPopoverProps } from '@soldy-ui/core'
+import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

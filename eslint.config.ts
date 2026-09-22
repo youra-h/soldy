@@ -176,7 +176,7 @@ export default defineConfigWithVueTs(
 								'Механизмы Vue — только в src/adapter/** (AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»).',
 						},
 						{
-							name: '@soldy/setup',
+							name: '@soldy-ui/setup',
 							importNames: ['createAdapterContext'],
 							message:
 								'Используйте createVueAdapterContext из src/adapter/common — он снимает Vue-прокси с ctrl/engine.',

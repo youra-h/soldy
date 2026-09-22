@@ -1,6 +1,6 @@
-import { setIcons, useTheme } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
-import oren from '@soldy/theme-oren/setup'
+import { setIcons, useTheme } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
+import oren from '@soldy-ui/theme-oren/setup'
 
 /**
  * То же, что в `ui/vue/__tests__/setup.ts`: заглушка браузерного API, которого

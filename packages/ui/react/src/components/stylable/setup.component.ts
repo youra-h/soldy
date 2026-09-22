@@ -2,7 +2,7 @@
  * useSetupStylable — setup-слой Stylable (аналог setup.component.ts во Vue).
  */
 
-import { createAdapterContext, StylableDescriptor } from '@soldy/setup'
+import { createAdapterContext, StylableDescriptor } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { StylableProps } from './base.component'
 

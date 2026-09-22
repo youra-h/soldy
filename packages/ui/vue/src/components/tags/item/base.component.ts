@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../../adapter'
 import type { TEmits, TProps, UseProps } from '../../../types/common'
-import { TagsItemDescriptor, TagsCollectionItemDescriptor } from '@soldy/setup'
-import type { ITagsItem } from '@soldy/core'
+import { TagsItemDescriptor, TagsCollectionItemDescriptor } from '@soldy-ui/setup'
+import type { ITagsItem } from '@soldy-ui/core'
 
 export const emitsTagsItem: TEmits = [
 	...useEmits(TagsItemDescriptor()),

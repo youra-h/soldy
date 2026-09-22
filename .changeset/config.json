@@ -5,20 +5,20 @@
   "format": "auto",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "ignore": ["@soldy/playground-shared", "@soldy/playground-vue"],
+  "ignore": ["@soldy-ui/playground-shared", "@soldy-ui/playground-vue"],
   "fixed": [
     [
-      "@soldy/core",
-      "@soldy/icons-material",
-      "@soldy/plugins",
-      "@soldy/setup",
-      "@soldy/theme-oren",
-      "@soldy/ui-angular",
-      "@soldy/ui-react",
-      "@soldy/ui-solid",
-      "@soldy/ui-svelte",
-      "@soldy/ui-vue",
-      "@soldy/ui-webc"
+      "@soldy-ui/core",
+      "@soldy-ui/icons-material",
+      "@soldy-ui/plugins",
+      "@soldy-ui/setup",
+      "@soldy-ui/theme-oren",
+      "@soldy-ui/angular",
+      "@soldy-ui/react",
+      "@soldy-ui/solid",
+      "@soldy-ui/svelte",
+      "@soldy-ui/vue",
+      "@soldy-ui/webc"
     ]
   ],
   "linked": [],

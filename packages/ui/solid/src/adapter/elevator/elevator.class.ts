@@ -1,7 +1,7 @@
 /**
  * TSolidElevator — реализация IContextElevator через Solid Context.
  *
- * Наследует TElevator из @soldy/setup (кэширование ключей в уникальные символы).
+ * Наследует TElevator из @soldy-ui/setup (кэширование ключей в уникальные символы).
  *
  * Ограничение то же, что у React: контекст в Solid нельзя положить императивно —
  * значение отдаётся только через `<Context.Provider>` в JSX. Поэтому `down()`
@@ -15,7 +15,7 @@
 
 import { createContext, useContext } from 'solid-js'
 import type { Context } from 'solid-js'
-import { TElevator } from '@soldy/setup'
+import { TElevator } from '@soldy-ui/setup'
 
 /**
  * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же

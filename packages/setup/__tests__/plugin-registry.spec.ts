@@ -9,16 +9,16 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton, TSwitch } from '@soldy/core'
-import { TBasePlugin, TElementPlugin, TPluginBundle } from '@soldy/plugins'
-import type { IPluginContext } from '@soldy/plugins'
+import { TButton, TSwitch } from '@soldy-ui/core'
+import { TBasePlugin, TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import type { IPluginContext } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	ComponentDescriptor,
 	SwitchDescriptor,
 	createAdapterContext,
 	usePlugins,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 
 /** Плагин снаружи: запоминает опции установки и объявление. */
 class TProbePlugin extends TBasePlugin {

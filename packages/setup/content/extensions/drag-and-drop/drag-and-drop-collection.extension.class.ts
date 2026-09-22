@@ -8,7 +8,7 @@
  *     .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
  */
 
-import { TDragPlugin } from '@soldy/plugins'
+import { TDragPlugin } from '@soldy-ui/plugins'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { DRAG_CONTEXT_ELEVATOR } from '../../../protected/adapter/elevator/keys'
 import type { TCollectionOwner } from '../collection'

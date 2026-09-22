@@ -1,7 +1,7 @@
 /**
  * TReactElevator — реализация IContextElevator через React Context.
  *
- * Наследует TElevator из @soldy/setup (кэширование ключей).
+ * Наследует TElevator из @soldy-ui/setup (кэширование ключей).
  *
  * В отличие от Vue (provide/inject), React-контекст нельзя прокинуть
  * императивно. Поэтому:
@@ -11,7 +11,7 @@
  */
 
 import { createContext, useContext } from 'react'
-import { TElevator } from '@soldy/setup'
+import { TElevator } from '@soldy-ui/setup'
 
 /**
  * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же

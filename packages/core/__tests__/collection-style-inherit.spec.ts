@@ -27,8 +27,8 @@ import {
 	TSelect,
 	TTabs,
 	TTags,
-} from '@soldy/core'
-import type { TClasses, TComponentSize, TComponentVariant, TValuePayload } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { TClasses, TComponentSize, TComponentVariant, TValuePayload } from '@soldy-ui/core'
 
 /** Источник элемента — то, что приходит в `items`. */
 type TSource = { value: string; size?: TComponentSize; variant?: TComponentVariant }

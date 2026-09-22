@@ -1,5 +1,5 @@
 import type { IExtension, IExtensionContext } from './types'
-import { TEvented } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
 
 /**
  * Абстрактное расширение — устраняет повторяющийся код:

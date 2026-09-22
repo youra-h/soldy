@@ -1,4 +1,4 @@
-import type { IIcon } from '@soldy/core'
+import type { IIcon } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils'

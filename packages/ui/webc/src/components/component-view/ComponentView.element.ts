@@ -7,9 +7,9 @@
  * Разметка вынесена в component-view.template.ts, жизненный цикл — в TSoldyElement.
  */
 
-import { ComponentViewDescriptor } from '@soldy/setup'
-import type { IComponentDescriptor } from '@soldy/setup'
-import type { IComponentView, IComponentViewProps } from '@soldy/core'
+import { ComponentViewDescriptor } from '@soldy-ui/setup'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
+import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import { TSoldyElement, defineProps, defineElement, useAttributes } from '../../adapter'
 import type { ITemplate, TBinding } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'

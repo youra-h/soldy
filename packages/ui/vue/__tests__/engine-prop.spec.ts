@@ -14,8 +14,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { createEngine, createEngineActivation } from '@soldy/core'
-import { ListBox, Select, Tabs, Accordion } from '@soldy/ui-vue'
+import { createEngine, createEngineActivation } from '@soldy-ui/core'
+import { ListBox, Select, Tabs, Accordion } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

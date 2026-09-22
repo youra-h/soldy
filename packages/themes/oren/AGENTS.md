@@ -25,7 +25,7 @@
 | `__tests__/theme-setup.spec.ts`   | регистрации темы ставят плагины нужным компонентам                             |
 
 ```bash
-npm run build --workspace=@soldy/theme-oren   # → dist/index.css
+npm run build --workspace=@soldy-ui/theme-oren   # → dist/index.css
 npm run test:theme                             # инварианты токенов
 ```
 
@@ -291,13 +291,13 @@ Switch — нейтраль. Корень базового вида — `:where(
 
 CSS и `index.d.ts` — не всё, что нужно теме. Полосу под активным табом
 `_tabs.scss` рисует по переменным `--underline-*` и `--gap-*`, а пишет их
-`TTabsViewPlugin`. Раньше он лежал в `@soldy/plugins` и стоял в дескрипторе
+`TTabsViewPlugin`. Раньше он лежал в `@soldy-ui/plugins` и стоял в дескрипторе
 Tabs, то есть библиотека работала на CSS одной темы. Теперь он в теме, а
 `setup/index.ts` отдаёт объект `defineTheme`:
 
 ```ts
-import '@soldy/theme-oren'
-import oren from '@soldy/theme-oren/setup'
+import '@soldy-ui/theme-oren'
+import oren from '@soldy-ui/theme-oren/setup'
 
 useTheme(oren)
 ```
@@ -321,7 +321,7 @@ setup/
 - Экспорт `./setup` отдельный от `.`: корень пакета — CSS, и приложение,
   которому поведение не нужно, его не тянет.
 - Плагин темы вправе знать CSS темы, плагин библиотеки — нет. Новые данные для
-  стилей темы пишет плагин здесь, а не в `@soldy/plugins`.
+  стилей темы пишет плагин здесь, а не в `@soldy-ui/plugins`.
 - `scope` у регистраций темы по умолчанию `'all'`: тема рисует компонент и там,
   где он деталь чужой разметки.
 - Без `useTheme` стили на месте, а полосы под активным табом нет. Стенд

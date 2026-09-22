@@ -6,7 +6,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TLabelNestedWarnPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TLabelNestedWarnPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const LabelNestedWarnPluginDescriptor = definePlugin({
 	ctor: TLabelNestedWarnPlugin,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TInteractive, TStateUnit } from '@soldy/core'
+import { TInteractive, TStateUnit } from '@soldy-ui/core'
 
 describe('TInteractive', () => {
 	it('меняет disabled/focused и эмитит события', () => {

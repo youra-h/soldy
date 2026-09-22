@@ -17,13 +17,13 @@ import {
 	TSelectItemCollectionFacade,
 	TItemContextRegistry,
 	TInput,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 import type {
 	ISelectItem,
 	ISelectProps,
 	TSelectPanelPlacement,
 	TSelectPlacement,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 function createSelect(values: string[], props: Partial<ISelectProps> = {}) {
 	const owner = new TSelect(props)

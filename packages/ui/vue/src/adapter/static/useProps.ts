@@ -5,7 +5,7 @@
  * не имеет сайд-эффектов и не тянет реактивный runtime.
  */
 
-import { TSurface, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { VueProfile } from '../common'
 
 export function useProps(descriptor: IComponentDescriptor): Record<string, unknown> {

@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
-import { TButton } from '@soldy/core'
-import { TActionPlugin } from '@soldy/plugins'
-import { Button } from '@soldy/ui-svelte'
+import { TButton } from '@soldy-ui/core'
+import { TActionPlugin } from '@soldy-ui/plugins'
+import { Button } from '@soldy-ui/svelte'
 import { reactiveProps } from './reactive-props.svelte'
 
 let target: HTMLElement

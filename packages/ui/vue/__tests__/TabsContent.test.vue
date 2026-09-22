@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Тестовая обёртка: панели задаются компонентами в слоте `content`. */
-import { Tabs, TabsItem, TabsContent } from '@soldy/ui-vue'
+import { Tabs, TabsItem, TabsContent } from '@soldy-ui/vue'
 </script>
 
 <template>

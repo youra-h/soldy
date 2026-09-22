@@ -17,8 +17,8 @@
 import { describe, it, expect } from 'vitest'
 import { Component, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TButton } from '@soldy/core'
-import { SlotDirective, TButtonComponent } from '@soldy/ui-angular'
+import { TButton } from '@soldy-ui/core'
+import { SlotDirective, TButtonComponent } from '@soldy-ui/angular'
 import { announced, elementPlugin } from './element-plugin'
 
 function mount(inputs: Record<string, unknown> = {}): ComponentFixture<TButtonComponent> {

@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick, ref } from 'vue'
-import { Button, Icon, Input, Spinner } from '@soldy/ui-vue'
+import { Button, Icon, Input, Spinner } from '@soldy-ui/vue'
 
 describe('Button', () => {
 	it('иконочная кнопка получает имя', () => {

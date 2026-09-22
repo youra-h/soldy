@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TTabsContent, TTabsContentCollectionFacade } from '@soldy/core'
+import { TTabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
 import { TabsContentWarnPluginDescriptor } from '../../plugins'
 

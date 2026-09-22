@@ -2,8 +2,8 @@
  * Контракт контекста адаптера, его опций и конструкторов расширений.
  */
 
-import type { TEvented } from '@soldy/core'
-import type { IPluginBundle } from '@soldy/plugins'
+import type { TEvented } from '@soldy-ui/core'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import type { IComponentContract, IComponentDescriptor, IPluginsContract } from '../../define'
 import type { IAdapterProfile } from '../../naming'
 import type { TExchange } from '../exchange/exchange.class'

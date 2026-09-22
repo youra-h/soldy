@@ -3,7 +3,7 @@ import {
 	TDragAndDropCollectionExtension,
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useCollectionAdapter,

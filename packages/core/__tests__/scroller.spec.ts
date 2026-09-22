@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TScroller } from '@soldy/core'
-import type { TScrollerDirection, TScrollerViewport } from '@soldy/core'
+import { TScroller } from '@soldy-ui/core'
+import type { TScrollerDirection, TScrollerViewport } from '@soldy-ui/core'
 
 /**
  * Модель ленты: значение и то, что из него следует для разметки.

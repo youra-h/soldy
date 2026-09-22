@@ -8,7 +8,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TScroller } from '@soldy/core'
+import { TScroller } from '@soldy-ui/core'
 import { ScrollerViewportPluginDescriptor } from '../plugins'
 import { ControlDescriptor } from './control.descriptor'
 

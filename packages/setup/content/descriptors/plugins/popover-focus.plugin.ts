@@ -8,7 +8,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TPopoverFocusPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TPopoverFocusPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const PopoverFocusPluginDescriptor = definePlugin({
 	ctor: TPopoverFocusPlugin,

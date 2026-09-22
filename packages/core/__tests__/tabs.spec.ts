@@ -9,8 +9,8 @@ import {
 	TPlainExtension,
 	TActivationExtension,
 	createEngineTabs,
-} from '@soldy/core'
-import type { ITabsItem, ITabs } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { ITabsItem, ITabs } from '@soldy-ui/core'
 
 // ============================================================================
 // Pure TTabs

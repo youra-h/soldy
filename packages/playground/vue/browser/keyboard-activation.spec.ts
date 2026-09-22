@@ -51,9 +51,9 @@ import {
 	Tabs,
 	TabsItem,
 	Tags,
-} from '@soldy/ui-vue'
+} from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Клавиши активации: имя для заголовка теста и запись для `userEvent.keyboard`. */
 const KEYS = [

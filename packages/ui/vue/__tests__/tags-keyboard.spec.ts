@@ -15,7 +15,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick } from 'vue'
-import { Select, SelectItem, Tags, TagsItem } from '@soldy/ui-vue'
+import { Select, SelectItem, Tags, TagsItem } from '@soldy-ui/vue'
 
 /**
  * Слушатели плагин вешает по `ready` узла, а `TElementPlugin` отдаёт его

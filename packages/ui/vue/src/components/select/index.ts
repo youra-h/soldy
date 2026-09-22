@@ -1,4 +1,4 @@
-import { withParts } from '@soldy/setup'
+import { withParts } from '@soldy-ui/setup'
 import SelectComponent from './Select.vue'
 import { SelectItem } from './item'
 

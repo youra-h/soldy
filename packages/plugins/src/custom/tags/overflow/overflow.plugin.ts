@@ -1,4 +1,4 @@
-import type { IPopover, ITags, ITagsItem, TTagsCollection } from '@soldy/core'
+import type { IPopover, ITags, ITagsItem, TTagsCollection } from '@soldy-ui/core'
 import { TBasePlugin, TPluginBundle } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'

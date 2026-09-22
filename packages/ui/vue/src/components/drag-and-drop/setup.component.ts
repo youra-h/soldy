@@ -1,4 +1,4 @@
-import { TDragAndDropExtension, DragAndDropDescriptor } from '@soldy/setup'
+import { TDragAndDropExtension, DragAndDropDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

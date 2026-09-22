@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { required } from './helpers'
-import { TComponentView, TSpinner, TButton, TCollectionEngine, TBatchExtension } from '@soldy/core'
+import {
+	TComponentView,
+	TSpinner,
+	TButton,
+	TCollectionEngine,
+	TBatchExtension,
+} from '@soldy-ui/core'
 import { SpinnerDescriptor, ButtonDescriptor } from '../content/descriptors'
 import { createAdapterContext, type IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'

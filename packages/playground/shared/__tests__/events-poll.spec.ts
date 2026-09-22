@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { underscorePropNaming, type IComponentDescriptor } from '@soldy/setup'
+import { underscorePropNaming, type IComponentDescriptor } from '@soldy-ui/setup'
 import { findComponent } from '../src/registry'
 import { propControls } from '../src/props'
 import { eventsPoll, pollTargets } from '../src/scenarios'

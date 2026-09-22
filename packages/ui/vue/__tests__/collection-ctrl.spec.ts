@@ -16,8 +16,8 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { TListBox, TSelect, TTabs, TAccordion } from '@soldy/core'
-import { ListBox, Select, Tabs, Accordion } from '@soldy/ui-vue'
+import { TListBox, TSelect, TTabs, TAccordion } from '@soldy-ui/core'
+import { ListBox, Select, Tabs, Accordion } from '@soldy-ui/vue'
 
 // Не `ReturnType<typeof mount>`: `mount` перегружен, и утилита `ReturnType`
 // берёт только последнюю (самую общую) перегрузку — без `ctrl` в результате.

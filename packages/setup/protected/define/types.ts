@@ -14,7 +14,7 @@ import type { IContribution, IPropDefinition, ISlotDefinition } from './contribu
 import type { TName } from './name.class'
 import type { TPropSpec } from './prop-spec.class'
 import type { TSlotDeclaration } from './slot-declaration.class'
-import type { IPluginConstructor } from '@soldy/plugins'
+import type { IPluginConstructor } from '@soldy-ui/plugins'
 
 /**
  * Конструктор инстанса компонента.

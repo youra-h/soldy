@@ -11,8 +11,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Scroller } from '@soldy/ui-vue'
-import { TScroller } from '@soldy/core'
+import { Scroller } from '@soldy-ui/vue'
+import { TScroller } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

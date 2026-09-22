@@ -2,7 +2,7 @@
  * Контракты расширений коллекции: инстанс, к которому они подключаются, и их опции.
  */
 
-import type { TCollectionEngine, TItemContext } from '@soldy/core'
+import type { TCollectionEngine, TItemContext } from '@soldy-ui/core'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /** Инстанс, к которому подключается расширение: фасад, владеющий коллекцией. */

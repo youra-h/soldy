@@ -40,7 +40,7 @@ export type TAnchorPluginEvents = TPluginEvents & {
 /**
  * Пропсы плагина такими, какими их объявляет contribution — без неймспейса.
  *
- * Неймспейс (`anchor_anchor`) навешивает `DescriptorAllProps` в `@soldy/setup`
+ * Неймспейс (`anchor_anchor`) навешивает `DescriptorAllProps` в `@soldy-ui/setup`
  * по `namespace` из `definePlugin`; здесь только собственные имена пропсов.
  */
 export interface IAnchorPluginProps {

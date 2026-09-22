@@ -8,13 +8,13 @@ import {
 	TItemContextRegistry,
 	TBaseOwnerItemExtension,
 	TBaseItemExtension,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 import type {
 	IExtension,
 	IItemExtension,
 	IExtensionItems,
 	IBaseOwnerItemExtensionOptions,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 // --- Пользовательское расширение для теста ---
 

@@ -18,11 +18,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { Activity, StrictMode, act, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { TButton } from '@soldy/core'
-import { TElementPlugin, TPluginBundle } from '@soldy/plugins'
-import { ButtonDescriptor, createAdapterContext } from '@soldy/setup'
-import type { IAdapterContext } from '@soldy/setup'
-import { useAdapterContext, Button, type ButtonProps } from '@soldy/ui-react'
+import { TButton } from '@soldy-ui/core'
+import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import { ButtonDescriptor, createAdapterContext } from '@soldy-ui/setup'
+import type { IAdapterContext } from '@soldy-ui/setup'
+import { useAdapterContext, Button, type ButtonProps } from '@soldy-ui/react'
 
 const roots: Root[] = []
 

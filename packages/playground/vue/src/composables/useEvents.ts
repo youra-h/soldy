@@ -1,5 +1,5 @@
-import type { TComponentEntry } from '@soldy/playground-shared'
-import { useEmits } from '@soldy/ui-vue'
+import type { TComponentEntry } from '@soldy-ui/playground-shared'
+import { useEmits } from '@soldy-ui/vue'
 
 export type TEventSource = 'props' | 'instance'
 

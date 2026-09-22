@@ -3,7 +3,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TListKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TListKeyboardPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const ListKeyboardPluginDescriptor = definePlugin({
 	ctor: TListKeyboardPlugin,

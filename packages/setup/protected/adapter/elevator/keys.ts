@@ -5,7 +5,7 @@
  * живёт в своём UI-пакете и передаётся сюда через TElevatorFactory.
  */
 
-import type { TCollectionEngine } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy-ui/core'
 import type { IElevatorKey, TCollectionItemRegister } from './types'
 
 /** Родительская коллекция. Ребёнок толкает { instance, bundle } наверх. */

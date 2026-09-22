@@ -1,4 +1,4 @@
-import type { TCollectionEngine } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginBundle, TPluginEvents } from '../../base'
 
 /** События реестра bundles элементов коллекции. */

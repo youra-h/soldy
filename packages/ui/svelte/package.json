@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/ui-svelte",
+  "name": "@soldy-ui/svelte",
   "version": "0.1.0",
   "description": "Адаптер Svelte: компоненты на headless-моделях ядра",
   "keywords": [
@@ -31,11 +31,11 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/icons-material": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*",
-    "@soldy/theme-oren": "*",
+    "@soldy-ui/core": "*",
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/plugins": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
     "svelte": "^5.0.0"
   },
   "devDependencies": {

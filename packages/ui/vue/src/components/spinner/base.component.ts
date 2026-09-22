@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { SpinnerDescriptor } from '@soldy/setup'
-import type { ISpinner } from '@soldy/core'
+import { SpinnerDescriptor } from '@soldy-ui/setup'
+import type { ISpinner } from '@soldy-ui/core'
 
 export const emitsSpinner: TEmits = useEmits(SpinnerDescriptor())
 

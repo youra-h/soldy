@@ -1,6 +1,6 @@
 import { h, type Component } from 'vue'
-import type { DescriptorSlots, PopoverDescriptor } from '@soldy/setup'
-import { COLLECTION_ITEMS } from '@soldy/playground-shared'
+import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
+import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
@@ -21,7 +21,7 @@ import {
 	Tabs,
 	Tags,
 	useIcon,
-} from '@soldy/ui-vue'
+} from '@soldy-ui/vue'
 
 /**
  * Как рисовать компонент на стенде.

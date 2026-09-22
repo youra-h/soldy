@@ -9,9 +9,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TName, TPropSpec } from '@soldy/setup'
-import { TAnchorPlugin } from '@soldy/plugins'
-import { ButtonDescriptor } from '@soldy/setup'
+import { TName, TPropSpec } from '@soldy-ui/setup'
+import { TAnchorPlugin } from '@soldy-ui/plugins'
+import { ButtonDescriptor } from '@soldy-ui/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
 import { propControl, propControls } from '../src/props'
 import { findComponent } from '../src/registry'

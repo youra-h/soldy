@@ -1,4 +1,4 @@
-import type { TComponentEntry, TPluginPropAddress, TPropControl } from '@soldy/playground-shared'
+import type { TComponentEntry, TPluginPropAddress, TPropControl } from '@soldy-ui/playground-shared'
 
 /**
  * Сниппет для колонки «Component»: значение приходит пропом.
@@ -18,7 +18,7 @@ export function propSnippet(
 ): string {
 	return [
 		'<script setup lang="ts">',
-		`import { ${entry.label} } from '@soldy/ui-vue'`,
+		`import { ${entry.label} } from '@soldy-ui/vue'`,
 		'</script>',
 		'',
 		'<template>',
@@ -66,8 +66,8 @@ function componentInstanceSnippet(
 
 	return [
 		'<script setup lang="ts">',
-		`import { ${entry.label} } from '@soldy/ui-vue'`,
-		`import { ${ctor} } from '@soldy/core'`,
+		`import { ${entry.label} } from '@soldy-ui/vue'`,
+		`import { ${ctor} } from '@soldy-ui/core'`,
 		'',
 		`const instance = new ${ctor}()`,
 		'',
@@ -100,8 +100,8 @@ function collectionInstanceSnippet(
 
 	return [
 		'<script setup lang="ts">',
-		`import { ${entry.label} } from '@soldy/ui-vue'`,
-		"import { createEngineSelection } from '@soldy/core'",
+		`import { ${entry.label} } from '@soldy-ui/vue'`,
+		"import { createEngineSelection } from '@soldy-ui/core'",
 		'',
 		'const engine = createEngineSelection()',
 		'',
@@ -134,9 +134,9 @@ function pluginInstanceSnippet(
 
 	return [
 		'<script setup lang="ts">',
-		`import { ${entry.label} } from '@soldy/ui-vue'`,
-		`import { ${ctor} } from '@soldy/core'`,
-		`import { TPluginBundle, ${pluginCtor} } from '@soldy/plugins'`,
+		`import { ${entry.label} } from '@soldy-ui/vue'`,
+		`import { ${ctor} } from '@soldy-ui/core'`,
+		`import { TPluginBundle, ${pluginCtor} } from '@soldy-ui/plugins'`,
 		'',
 		`const instance = new ${ctor}()`,
 		'',

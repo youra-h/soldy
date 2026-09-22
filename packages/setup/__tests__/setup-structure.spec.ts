@@ -15,7 +15,7 @@
  * - `protected/` импортирует что-нибудь из `content/`;
  * - на верхнем уровне пакета заведена папка мимо двух слоёв;
  * - у модуля слоя нет строки в таблице (кроме `__tests__`);
- * - код пакета вне тестов импортирует `@soldy/setup`: себя пакет видит только
+ * - код пакета вне тестов импортирует `@soldy-ui/setup`: себя пакет видит только
  *   относительными путями;
  * - файл модуля нарушает соглашения раздела: нет шапки, рантайм в `types.ts`
  *   или `*.types.ts`, экспорт типов из файла с рантаймом, `export *` из файла
@@ -36,7 +36,7 @@ const SETUP = resolve(__dirname, '..')
 /** Не код пакета: тесты и установленные зависимости. */
 const SKIPPED = new Set(['__tests__', 'node_modules'])
 
-/** Корень пакета — точка входа `@soldy/setup`. */
+/** Корень пакета — точка входа `@soldy-ui/setup`. */
 const ENTRY = 'index.ts'
 
 /** Слои пакета: механика и наполнение. */
@@ -504,7 +504,7 @@ describe('структура packages/setup', () => {
 			.filter(({ file }) => file.startsWith('protected/adapter/exchange/'))
 			.filter(
 				({ specifier }) =>
-					specifier === '@soldy/plugins' ||
+					specifier === '@soldy-ui/plugins' ||
 					FORBIDDEN.some(
 						(prefix) => specifier === prefix || specifier.startsWith(`${prefix}/`),
 					),
@@ -514,11 +514,11 @@ describe('структура packages/setup', () => {
 		expect(violations, `Ядро обмена знает лишнее:\n${violations.join('\n')}`).toEqual([])
 	})
 
-	it('код пакета не импортирует @soldy/setup', () => {
+	it('код пакета не импортирует @soldy-ui/setup', () => {
 		const violations = imports
 			.filter(
 				({ specifier }) =>
-					specifier === '@soldy/setup' || specifier.startsWith('@soldy/setup/'),
+					specifier === '@soldy-ui/setup' || specifier.startsWith('@soldy-ui/setup/'),
 			)
 			.map(({ file, specifier }) => `${file}: '${specifier}'`)
 

@@ -8,8 +8,8 @@ import {
 	TClearCommand,
 	TEvented,
 	TCollectionStorageDriver,
-} from '@soldy/core'
-import type { TCollectionStorageDriverEvents, ICommandContext } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { TCollectionStorageDriverEvents, ICommandContext } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 

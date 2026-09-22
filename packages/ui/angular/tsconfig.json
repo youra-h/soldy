@@ -16,11 +16,11 @@
     "lib": ["ES2022", "dom"],
     "types": ["node"],
     "paths": {
-      "@soldy/core": ["../../core/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/setup": ["../../setup"],
-      "@soldy/ui-angular": ["./src"]
+      "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/plugins": ["../../plugins/src"],
+      "@soldy-ui/setup": ["../../setup"],
+      "@soldy-ui/angular": ["./src"]
     }
   },
   "angularCompilerOptions": {

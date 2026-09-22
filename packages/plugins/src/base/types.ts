@@ -1,4 +1,4 @@
-import type { TEvented } from '@soldy/core'
+import type { TEvented } from '@soldy-ui/core'
 import type { PLUGIN_EVENTS } from './events'
 
 /**
@@ -29,14 +29,14 @@ export type TPluginEvents = {
  *
  * Выведены из `PLUGIN_EVENTS`, а не перечислены второй раз: один и тот же
  * список contribution плагина подмешивает в свои события (рантайм-проброс), и
- * из него же строятся типы дескриптора в `@soldy/setup`.
+ * из него же строятся типы дескриптора в `@soldy-ui/setup`.
  */
 export type TPluginPublicEventName = (typeof PLUGIN_EVENTS)[number]
 
 /**
  * Внутренние события базы — `TPluginEvents` без опубликованных: `install` и
  * `destroy`. Эмиттер плагина их шлёт, это рабочая механика bundle, но наружу
- * они не уходят, поэтому вывод контракта плагина в `@soldy/setup`
+ * они не уходят, поэтому вывод контракта плагина в `@soldy-ui/setup`
  * (`TPluginContractFrom`) снимает их с карты плагина.
  */
 export type TPluginInternalEvents = Omit<TPluginEvents, TPluginPublicEventName>

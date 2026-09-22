@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy/core'
+import { TListBoxCollectionFacade, TListBoxItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
 
 export const ListBoxCollectionDescriptor = defineDescriptor(() =>

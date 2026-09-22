@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TCollectionEngine, TBatchExtension, TFactoryExtension } from '@soldy/core'
+import { TCollectionEngine, TBatchExtension, TFactoryExtension } from '@soldy-ui/core'
 
 interface ITestItem {
 	id: number

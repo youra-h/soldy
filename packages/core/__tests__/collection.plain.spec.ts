@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TPlainExtension } from '@soldy/core'
+import { TCollectionEngine, TPlainExtension } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 

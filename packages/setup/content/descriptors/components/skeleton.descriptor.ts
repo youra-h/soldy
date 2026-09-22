@@ -8,7 +8,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TSkeleton } from '@soldy/core'
+import { TSkeleton } from '@soldy-ui/core'
 import { SkeletonLayoutPluginDescriptor } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 

@@ -10,8 +10,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TButton, TFrame, TIcon, TTabsItem } from '@soldy/core'
-import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy/plugins'
+import { TButton, TFrame, TIcon, TTabsItem } from '@soldy-ui/core'
+import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	FrameDescriptor,
@@ -21,8 +21,8 @@ import {
 	defineComponent,
 	TName,
 	TSurface,
-} from '@soldy/setup'
-import type { IAdapterProfile, TEventSink, TStateListener } from '@soldy/setup'
+} from '@soldy-ui/setup'
+import type { IAdapterProfile, TEventSink, TStateListener } from '@soldy-ui/setup'
 import { CallbackProfile, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */

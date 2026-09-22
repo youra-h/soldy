@@ -7,14 +7,14 @@
     "strict": true,
     "noEmit": true,
     "paths": {
-      "@soldy/core": ["../../core/src"],
-      "@soldy/core/*": ["../../core/src/*"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/plugins/*": ["../../plugins/src/*"],
-      "@soldy/setup": ["../../setup"],
-      "@soldy/setup/*": ["../../setup/*"]
+      "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/core/*": ["../../core/src/*"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/plugins": ["../../plugins/src"],
+      "@soldy-ui/plugins/*": ["../../plugins/src/*"],
+      "@soldy-ui/setup": ["../../setup"],
+      "@soldy-ui/setup/*": ["../../setup/*"]
     }
   },
   "include": ["env.d.ts", "src/**/*"]

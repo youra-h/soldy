@@ -15,7 +15,7 @@
  * (движок передан двум компонентам) второй раз не ставится.
  */
 
-import type { TCollectionEngine } from '@soldy/core'
+import type { TCollectionEngine } from '@soldy-ui/core'
 import type { IBundleContext } from '../define'
 import { createRegistrations } from './registrations'
 import type { IPluginRegistrationOptions, TExtensionFactory } from './types'

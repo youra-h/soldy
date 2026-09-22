@@ -1,4 +1,4 @@
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import type { TListItemPluginEvents } from './types'

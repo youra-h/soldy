@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TButton } from '@soldy/core'
-import { ButtonDescriptor } from '@soldy/setup'
+import { TButton } from '@soldy-ui/core'
+import { ButtonDescriptor } from '@soldy-ui/setup'
 import { buttonTemplate } from '../src/components/button/button.template'
-import '@soldy/ui-webc'
+import '@soldy-ui/webc'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))

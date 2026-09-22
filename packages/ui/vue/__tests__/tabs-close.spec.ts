@@ -14,7 +14,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { Tabs, TabsItem } from '@soldy/ui-vue'
+import { Tabs, TabsItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

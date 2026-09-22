@@ -1,4 +1,4 @@
-import { withParts } from '@soldy/setup'
+import { withParts } from '@soldy-ui/setup'
 import AccordionComponent from './Accordion.vue'
 import { AccordionItem } from './item'
 

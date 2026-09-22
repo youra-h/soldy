@@ -1,9 +1,9 @@
 /**
- * Общие типы Solid-адаптера @soldy/ui-solid.
+ * Общие типы Solid-адаптера @soldy-ui/solid.
  */
 
 import type { JSX } from 'solid-js'
-import type { IEntity } from '@soldy/core'
+import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
 	DescriptorAllProps,
@@ -11,7 +11,7 @@ import type {
 	DescriptorComponentProps,
 	DescriptorSlots,
 	TSlotProps,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 
 /** Событийные пропы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =

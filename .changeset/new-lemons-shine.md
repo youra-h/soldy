@@ -1,7 +1,7 @@
 ---
-'@soldy/setup': patch
-'@soldy/icons-material': patch
-'@soldy/ui-vue': patch
+'@soldy-ui/setup': patch
+'@soldy-ui/icons-material': patch
+'@soldy-ui/vue': patch
 ---
 
 Контракт пакетов иконок получил роль moreHoriz — три точки. Кнопка переполнения тегов (overflow="popover") берёт значок из подключённого пакета по этой роли, а не рисует символ многоточия текстом, и подменяется слотом more-icon у Tags. Набор material роль закрывает; своему набору иконок её нужно добавить, иначе на месте значка будет пустая заглушка.

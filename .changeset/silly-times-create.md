@@ -1,5 +1,5 @@
 ---
-'@soldy/plugins': patch
+'@soldy-ui/plugins': patch
 ---
 
 Select: Enter и пробел на кнопке очистки и на крестике тега выполняют их действие, а не открывают панель

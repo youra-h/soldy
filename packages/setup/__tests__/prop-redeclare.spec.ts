@@ -33,15 +33,15 @@ import {
 	defineComponent,
 	TSurface,
 	underscorePropNaming,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import type {
 	DescriptorProps,
 	IAdapterProfile,
 	IComponentDescriptor,
 	IDeclaration,
-} from '@soldy/setup'
-import { TListBoxItem } from '@soldy/core'
-import type { IListBoxItemProps, IRadioGroupItemProps } from '@soldy/core'
+} from '@soldy-ui/setup'
+import { TListBoxItem } from '@soldy-ui/core'
+import type { IListBoxItemProps, IRadioGroupItemProps } from '@soldy-ui/core'
 import { inheritDeclarations } from '../protected/define/inherit'
 import { OWNER_STYLE_PROPS } from '../content/descriptors/components/stylable.descriptor'
 import { required } from './helpers'

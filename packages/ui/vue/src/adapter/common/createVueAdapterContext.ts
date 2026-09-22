@@ -3,7 +3,7 @@ import {
 	createAdapterContext,
 	type IAdapterContextConfig,
 	type IAdapterContextOptions,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 
 /**
  * Опции и конфиг — те же, что у `createAdapterContext`: setup их экспортирует,
@@ -18,7 +18,7 @@ function stripTopLevelProxies<T extends object>(value: T): T {
 }
 
 /**
- * Обёртка над `createAdapterContext` из `@soldy/setup`, единственное место,
+ * Обёртка над `createAdapterContext` из `@soldy-ui/setup`, единственное место,
  * где Vue-компонентам нужен `toRaw`. Снимает прокси с `ctrl` и со значений
  * верхнего уровня `options` (в частности, `engine` коллекционного контекста)
  * перед тем, как отдать их ядру, которое `vue` не импортирует и о прокси не

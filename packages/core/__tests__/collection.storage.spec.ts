@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TArrayStorage } from '@soldy/core'
+import { TArrayStorage } from '@soldy-ui/core'
 
 describe('TArrayStorage', () => {
 	it('изначально пуст', () => {

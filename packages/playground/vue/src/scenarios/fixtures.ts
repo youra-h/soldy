@@ -1,6 +1,6 @@
 import { h, type Component } from 'vue'
-import { Button, CheckBox, Icon, Label, RadioGroup, Switch, useIcon } from '@soldy/ui-vue'
-import type { TScenario } from '@soldy/playground-shared'
+import { Button, CheckBox, Icon, Label, RadioGroup, Switch, useIcon } from '@soldy-ui/vue'
+import type { TScenario } from '@soldy-ui/playground-shared'
 import { PREVIEW_COMPONENTS, toComponents, type TPreview } from '../previews'
 
 /**

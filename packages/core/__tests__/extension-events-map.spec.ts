@@ -2,14 +2,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 import * as ts from 'typescript'
-import { TEvented, TSelect, TSelectExtension, TTabs, TTabsExtension } from '@soldy/core'
+import { TEvented, TSelect, TSelectExtension, TTabs, TTabsExtension } from '@soldy-ui/core'
 import type {
 	ISelectExtension,
 	ITabsExtension,
 	TNoEvents,
 	TSelectItemEventsExtension,
 	TTabsItemEventsExtension,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 /**
  * Сторож правила «интерфейс расширения передаёт карту событий вторым аргументом

@@ -1,5 +1,5 @@
-import type { IButton } from '@soldy/core'
-import type { ButtonDescriptor } from '@soldy/setup'
+import type { IButton } from '@soldy-ui/core'
+import type { ButtonDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
 /** События слоя Button (core + плагины), выведены из дескриптора автоматически. */

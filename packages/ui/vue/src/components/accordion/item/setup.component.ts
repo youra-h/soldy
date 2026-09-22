@@ -2,7 +2,7 @@ import {
 	TCollectionItemExtension,
 	AccordionItemDescriptor,
 	AccordionCollectionItemDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

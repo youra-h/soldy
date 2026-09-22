@@ -1,4 +1,4 @@
-import { ComponentViewDescriptor } from '@soldy/setup'
+import { ComponentViewDescriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseComponentView, { type ComponentViewProps } from './base.component'
 

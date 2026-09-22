@@ -15,8 +15,8 @@ import {
 	TAccordionCollectionFacade,
 	TAccordionItemCollectionFacade,
 	TItemContextRegistry,
-} from '@soldy/core'
-import type { IAccordionItem } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { IAccordionItem } from '@soldy-ui/core'
 
 function createAccordion(values: string[]) {
 	const owner = new TAccordion({ mode: 'multiple' })

@@ -1,4 +1,4 @@
-import { SpinnerDescriptor } from '@soldy/setup'
+import { SpinnerDescriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseSpinner, { type SpinnerProps } from './base.component'
 

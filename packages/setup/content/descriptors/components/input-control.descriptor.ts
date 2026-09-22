@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TInputControl } from '@soldy/core'
+import { TInputControl } from '@soldy-ui/core'
 import { ValueControlDescriptor } from './value-control.descriptor'
 
 export const InputControlDescriptor = defineDescriptor(() =>

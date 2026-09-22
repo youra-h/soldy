@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/ui-vue",
+  "name": "@soldy-ui/vue",
   "version": "0.1.0",
   "description": "Адаптер Vue: компоненты на headless-моделях ядра",
   "keywords": [
@@ -32,10 +32,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/icons-material": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*",
+    "@soldy-ui/core": "*",
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/plugins": "*",
+    "@soldy-ui/setup": "*",
     "vue": "^3.5.32"
   },
   "devDependencies": {

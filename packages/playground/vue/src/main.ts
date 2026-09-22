@@ -1,11 +1,11 @@
 import { createApp } from 'vue'
-import { setIcons, useTheme } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
+import { setIcons, useTheme } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
 import App from './App.vue'
 import { router, DEFAULT_ROUTE } from './router'
 
-import '@soldy/theme-oren'
-import oren from '@soldy/theme-oren/setup'
+import '@soldy-ui/theme-oren'
+import oren from '@soldy-ui/theme-oren/setup'
 import './styles.css'
 
 setIcons(material)

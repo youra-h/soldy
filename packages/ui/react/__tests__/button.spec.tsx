@@ -11,8 +11,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { TButton } from '@soldy/core'
-import { Button, type ButtonProps } from '@soldy/ui-react'
+import { TButton } from '@soldy-ui/core'
+import { Button, type ButtonProps } from '@soldy-ui/react'
 
 const roots: Root[] = []
 

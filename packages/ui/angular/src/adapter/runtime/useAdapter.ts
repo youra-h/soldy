@@ -19,14 +19,14 @@
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
-import { toInstanceState } from '@soldy/setup'
+import { toInstanceState } from '@soldy-ui/setup'
 import type {
 	IAdapterContext,
 	IComponentContract,
 	TStateSnapshot,
 	TInstanceState,
-} from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
+} from '@soldy-ui/setup'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { AngularProfile } from '../common/profile'
 
 export type TBinding<TInstance = any> = {

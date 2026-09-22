@@ -5,7 +5,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TSkeletonLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TSkeletonLayoutPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const SkeletonLayoutPluginDescriptor = definePlugin({
 	ctor: TSkeletonLayoutPlugin,

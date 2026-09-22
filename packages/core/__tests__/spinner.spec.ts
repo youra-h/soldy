@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TSpinner } from '@soldy/core'
+import { TSpinner } from '@soldy-ui/core'
 
 describe('TSpinner', () => {
 	it('создаётся через { props } и через plain props', () => {

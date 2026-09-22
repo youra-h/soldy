@@ -15,7 +15,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TRadioGroupItem } from '@soldy/core'
+import { TRadioGroupItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 

@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { TPropControl, TPropOwner } from '@soldy/playground-shared'
-import { COMPONENTS } from '@soldy/playground-shared'
-import { TAriaPlugin } from '@soldy/plugins'
+import type { TPropControl, TPropOwner } from '@soldy-ui/playground-shared'
+import { COMPONENTS } from '@soldy-ui/playground-shared'
+import { TAriaPlugin } from '@soldy-ui/plugins'
 import { propSnippet, instanceSnippet } from '../src/snippet'
 
 /** Запись манифеста по id; без неё проверять нечего. */
@@ -85,7 +85,7 @@ describe('instanceSnippet', () => {
 		)
 
 		expect(code).toContain('const instance = new TButton()')
-		expect(code).toContain("import { TPluginBundle, TAriaPlugin } from '@soldy/plugins'")
+		expect(code).toContain("import { TPluginBundle, TAriaPlugin } from '@soldy-ui/plugins'")
 		expect(code).toContain("instance.events.on('bundle:create'")
 		expect(code).toContain('const plugin = bundle.get(TAriaPlugin)')
 		expect(code).toContain("plugin.label = 'Закрыть'")

@@ -1,7 +1,7 @@
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView } from '@soldy-ui/core'
 
 /**
  * Плагин-мост для синхронизации состояния ready между элементом и инстансом компонента.

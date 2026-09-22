@@ -11,9 +11,9 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick } from 'vue'
-import { TPluginBundle } from '@soldy/plugins'
-import type { ISelect } from '@soldy/core'
-import { Select, Tabs, TabsItem } from '@soldy/ui-vue'
+import { TPluginBundle } from '@soldy-ui/plugins'
+import type { ISelect } from '@soldy-ui/core'
+import { Select, Tabs, TabsItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

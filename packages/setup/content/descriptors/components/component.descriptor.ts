@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TComponent } from '@soldy/core'
+import { TComponent } from '@soldy-ui/core'
 import { EntityDescriptor } from './entity.descriptor'
 
 export const ComponentDescriptor = defineDescriptor(() =>
