@@ -13,6 +13,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			'@soldy-ui/core': path.resolve(import.meta.dirname, '../core/src'),
+			'@soldy-ui/icons-material': path.resolve(import.meta.dirname, '../icons/material/src'),
 			'@soldy-ui/plugins': path.resolve(import.meta.dirname, '../plugins/src'),
 			'@soldy-ui/setup': path.resolve(import.meta.dirname, 'index.ts'),
 		},
