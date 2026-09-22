@@ -60,6 +60,13 @@ jobs:
           npm run test:playground
           npm run test:layout
 
+      # После тестов: тесты и стенд ходят в соседей исходниками, и здесь это
+      # доказано — до этого шага в клоне нет ни одного `dist`. Перед типами:
+      # декларации адаптера Vue (`build:types` ниже) резолвят соседей как
+      # пакеты, то есть по их собранным `.d.ts`.
+      - name: Сборка пакетов
+        run: npm run build
+
       - name: Типы — Core
         run: npx tsc --noEmit -p packages/core/tsconfig.json
 

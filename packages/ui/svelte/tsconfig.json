@@ -5,7 +5,7 @@
       "@soldy-ui/core": ["../../core/src"],
       "@soldy-ui/icons-material": ["../../icons/material/src"],
       "@soldy-ui/plugins": ["../../plugins/src"],
-      "@soldy-ui/setup": ["../../setup"]
+      "@soldy-ui/setup": ["../../setup/index.ts"]
     }
   },
   "include": ["env.d.ts", "src/**/*"]

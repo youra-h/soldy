@@ -22,15 +22,23 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "main": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@soldy-ui/core": "*",
     "@soldy-ui/plugins": "*"
   },
   "scripts": {
+    "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",
     "test": "vitest run"
   }
 }
