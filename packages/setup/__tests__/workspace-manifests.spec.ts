@@ -162,27 +162,34 @@ function isGitIgnored(path: string): boolean {
 	return status === 0
 }
 
-/**
- * Нарушения точек входа: цель `main`, `types`, `style` и `exports` — файл пакета.
- * `exports` разбирается вглубь: строка — цель, объект — условия или подпути.
- *
- * Цели, которую игнорирует git, в чистом клоне нет — это выход сборки, и он
- * допустим, только если у пакета есть скрипт `build`. Ответ не зависит от того,
- * собран ли пакет на этой машине. Куда пишет сборщик, сторож не читает: это
- * привязало бы его к одному сборщику.
- */
-function checkEntryPoints({ dir, manifest }: TWorkspacePackage): string[] {
+/** Пакет собирается: у него есть скрипт `build`. */
+function hasBuildScript({ manifest }: TWorkspacePackage): boolean {
 	const { scripts } = manifest
-	const buildable = isRecord(scripts) && typeof scripts.build === 'string'
 
-	const checkTarget = (field: string, value: unknown): string[] => {
+	return isRecord(scripts) && typeof scripts.build === 'string'
+}
+
+/** Цель точки входа: как она объявлена в манифесте и куда ведёт от корня репозитория. */
+type TEntryTarget = {
+	/** `exports["."]["types"] "./dist/index.d.ts"` — для текста нарушения. */
+	readonly declared: string
+	/** Путь от корня репозитория через `/`. */
+	readonly path: string
+}
+
+/**
+ * Цели `main`, `types`, `style` и `exports`. `exports` разбирается вглубь:
+ * строка — цель, объект — условия или подпути.
+ */
+function entryTargets({ dir, manifest }: TWorkspacePackage): TEntryTarget[] {
+	const collect = (field: string, value: unknown): TEntryTarget[] => {
 		if (value === undefined) {
 			return []
 		}
 
 		if (isRecord(value)) {
 			return Object.entries(value).flatMap(([key, nested]) =>
-				checkTarget(`${field}[${JSON.stringify(key)}]`, nested),
+				collect(`${field}[${JSON.stringify(key)}]`, nested),
 			)
 		}
 
@@ -192,9 +199,32 @@ function checkEntryPoints({ dir, manifest }: TWorkspacePackage): string[] {
 			)
 		}
 
-		const declared = `${field} ${JSON.stringify(value)}`
-		const path = posix.join(dir, value)
+		return [{ declared: `${field} ${JSON.stringify(value)}`, path: posix.join(dir, value) }]
+	}
 
+	return ENTRY_FIELDS.flatMap((field) => collect(field, manifest[field]))
+}
+
+/**
+ * Пакет отдаёт наружу сборку: хотя бы одна его точка входа ведёт в то, чего
+ * в чистом клоне нет. Пока точки входа показывают на исходники, собирать нечего.
+ */
+function shipsBuildOutput(pkg: TWorkspacePackage): boolean {
+	return entryTargets(pkg).some(({ path }) => isGitIgnored(path))
+}
+
+/**
+ * Нарушения точек входа: цель `main`, `types`, `style` и `exports` — файл пакета.
+ *
+ * Цели, которую игнорирует git, в чистом клоне нет — это выход сборки, и он
+ * допустим, только если у пакета есть скрипт `build`. Ответ не зависит от того,
+ * собран ли пакет на этой машине. Куда пишет сборщик, сторож не читает: это
+ * привязало бы его к одному сборщику.
+ */
+function checkEntryPoints(pkg: TWorkspacePackage): string[] {
+	const buildable = hasBuildScript(pkg)
+
+	return entryTargets(pkg).flatMap(({ declared, path }) => {
 		if (isGitIgnored(path)) {
 			return buildable
 				? []
@@ -204,9 +234,7 @@ function checkEntryPoints({ dir, manifest }: TWorkspacePackage): string[] {
 		return statSync(join(ROOT, path), { throwIfNoEntry: false })?.isFile()
 			? []
 			: [`${declared} — нет такого файла`]
-	}
-
-	return ENTRY_FIELDS.flatMap((field) => checkTarget(field, manifest[field]))
+	})
 }
 
 /** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
@@ -264,6 +292,76 @@ function checkVersions(root: TManifest, library: readonly TWorkspacePackage[]): 
 		)
 
 		violations.push(`версии библиотечных пакетов разошлись: ${groups.join('; ')}`)
+	}
+
+	return violations
+}
+
+/**
+ * Воркспейсы, которые зовёт корневой `build`, — в порядке вызова. Скрипт
+ * собирается из `npm run build --workspace=<имя>`, и второго списка пакетов
+ * сборки в репозитории нет.
+ */
+function buildOrder(root: TManifest): string[] {
+	const { scripts } = root
+
+	if (!isRecord(scripts) || typeof scripts.build !== 'string') {
+		throw new Error('В корневом package.json нет скрипта build')
+	}
+
+	return [...scripts.build.matchAll(/--workspace=(\S+)/g)].map(([, name]) => name)
+}
+
+/**
+ * Корневой `build` собирает каждый пакет, который отдаёт наружу сборку, и в
+ * порядке зависимостей, а не алфавита: прогон деклараций читает соседа через
+ * его манифест, то есть по собранному `dist`. Кто от кого зависит, сторож берёт
+ * из `dependencies` манифестов — второго списка нет.
+ *
+ * `peerDependencies` не в счёт: их ставит потребитель, а не воркспейс, и тема
+ * объявляет ими ядро, которое её сборке CSS не нужно вовсе.
+ */
+function checkBuildOrder(root: TManifest, library: readonly TWorkspacePackage[]): string[] {
+	const violations: string[] = []
+	const order = buildOrder(root)
+	const buildable = new Set(library.filter(hasBuildScript).map(({ manifest }) => manifest.name))
+	const position = new Map<unknown, number>(order.map((name, index) => [name, index]))
+
+	for (const pkg of library) {
+		if (shipsBuildOutput(pkg) && !position.has(pkg.manifest.name)) {
+			violations.push(
+				`build: нет ${JSON.stringify(pkg.manifest.name)} (${pkg.dir}) — пакет отдаёт наружу сборку, а корневой build её не делает`,
+			)
+		}
+	}
+
+	for (const name of order) {
+		if (!buildable.has(name)) {
+			violations.push(
+				`build: ${JSON.stringify(name)} — не библиотечный пакет со скриптом build`,
+			)
+		}
+	}
+
+	for (const { manifest } of library) {
+		const index = position.get(manifest.name)
+		const dependencies = isRecord(manifest.dependencies)
+			? Object.keys(manifest.dependencies)
+			: []
+
+		if (index === undefined) {
+			continue
+		}
+
+		for (const dependency of dependencies) {
+			const required = position.get(dependency)
+
+			if (required !== undefined && required > index) {
+				violations.push(
+					`build: ${JSON.stringify(manifest.name)} собирается раньше ${JSON.stringify(dependency)}, от которого зависит`,
+				)
+			}
+		}
 	}
 
 	return violations
@@ -372,6 +470,16 @@ describe('манифесты пакетов воркспейса', () => {
 		expect(
 			violations,
 			'.changeset/config.json разошёлся с воркспейсом:\n' + violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('корневой build собирает все собираемые пакеты и в порядке зависимостей', () => {
+		const violations = checkBuildOrder(root, library)
+
+		expect(
+			violations,
+			'Корневой build разошёлся с разделом AGENTS.md «Сборка пакетов»:\n' +
+				violations.join('\n'),
 		).toEqual([])
 	})
 
@@ -522,6 +630,79 @@ describe('сторож манифестов', () => {
 		expect(checkVersions({ name: 'soldy', version: VERSION }, [library({})])).toEqual([
 			'корневой package.json: version "1.2.0" — версия у пакетов, у корня её нет',
 		])
+	})
+
+	describe('порядок корневого build', () => {
+		/** Отдаёт наружу сборку: `dist/` игнорируется git, и в чистом клоне его нет. */
+		const built = (overrides: TManifest = {}): TWorkspacePackage =>
+			library({
+				main: './dist/index.js',
+				scripts: { build: 'vite build' },
+				...overrides,
+			})
+
+		/** Зависит от `@soldy-ui/example`, поэтому собирается после него. */
+		const dependent: TWorkspacePackage = {
+			dir: 'packages/other',
+			manifest: {
+				...built().manifest,
+				name: '@soldy-ui/other',
+				repository: { type: 'git', directory: 'packages/other' },
+				dependencies: { '@soldy-ui/example': '*' },
+			},
+		}
+
+		const script = (...names: string[]): TManifest => ({
+			name: 'soldy',
+			scripts: {
+				build: names.map((name) => `npm run build --workspace=${name}`).join(' && '),
+			},
+		})
+
+		it('зависимость впереди зависящего — без нарушений', () => {
+			const root = script('@soldy-ui/example', '@soldy-ui/other')
+
+			expect(checkBuildOrder(root, [built(), dependent])).toEqual([])
+		})
+
+		it('зависимость позади зависящего — нарушение', () => {
+			const root = script('@soldy-ui/other', '@soldy-ui/example')
+
+			expect(checkBuildOrder(root, [built(), dependent])).toEqual([
+				'build: "@soldy-ui/other" собирается раньше "@soldy-ui/example", от которого зависит',
+			])
+		})
+
+		it('пакет со сборкой наружу вне корневого build — нарушение', () => {
+			const root = script('@soldy-ui/example')
+
+			expect(checkBuildOrder(root, [built(), dependent])).toEqual([
+				'build: нет "@soldy-ui/other" (packages/other) — пакет отдаёт наружу сборку, а корневой build её не делает',
+			])
+		})
+
+		// Скрипт `build` у пакета, чьи точки входа ведут на исходники, — это
+		// адаптер Vue до задачи 02: сборка есть, но наружу уходят исходники
+		it('пакет со скриптом build, отдающий исходники, — без нарушений', () => {
+			const sources = built({ main: './src/index.ts' })
+
+			expect(checkBuildOrder(script('@soldy-ui/example'), [built(), sources])).toEqual([])
+		})
+
+		// Пакет без скрипта `build` собирать нечем: имя в корневом build уронило бы его
+		it('пакет без скрипта build в корневом build — нарушение', () => {
+			const root = script('@soldy-ui/example', '@soldy-ui/other')
+
+			expect(checkBuildOrder(root, [built()])).toEqual([
+				'build: "@soldy-ui/other" — не библиотечный пакет со скриптом build',
+			])
+		})
+
+		it('корень без скрипта build — сторож падает, а не молчит', () => {
+			expect(() => checkBuildOrder({ name: 'soldy' }, [built()])).toThrow(
+				'В корневом package.json нет скрипта build',
+			)
+		})
 	})
 
 	it('стенд из ignore — не библиотечный пакет', () => {

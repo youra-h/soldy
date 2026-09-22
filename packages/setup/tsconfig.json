@@ -2,6 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
+    // Нативный загрузчик конфигов Vite требует расширение в импорте фабрики
+    // сборки (`../../tools/vite/lib.config.ts`), TypeScript без этого флага его
+    // запрещает. Безопасно: пакет эмитит только декларации, а его исходники
+    // импортируют друг друга без расширений.
+    "allowImportingTsExtensions": true,
     "paths": {
       "@soldy-ui/core": ["../core/src"],
       "@soldy-ui/plugins": ["../plugins/src"],
@@ -10,5 +15,5 @@
     }
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

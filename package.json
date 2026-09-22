@@ -13,6 +13,7 @@
     "node": "^22.12.0 || ^24 || >=26"
   },
   "scripts": {
+    "build": "npm run build --workspace=@soldy-ui/core && npm run build --workspace=@soldy-ui/plugins && npm run build --workspace=@soldy-ui/setup && npm run build --workspace=@soldy-ui/icons-material && npm run build --workspace=@soldy-ui/theme-oren",
     "watch:theme": "npm run watch --workspace=@soldy-ui/theme-oren",
     "dev:vue": "concurrently -k -n theme,vue -c blue,green \"npm run watch:theme\" \"npm run dev --workspace=@soldy-ui/playground-vue\"",
     "test:setup": "npm run test --workspace=@soldy-ui/setup",

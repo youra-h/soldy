@@ -9,11 +9,17 @@
  * эффекта, который снова связал кнопку со всеми дескрипторами. `@soldy-ui/core`
  * флага пока не объявляет, поэтому сверяется состав модулей setup и plugins, а
  * не общий размер.
+ *
+ * Второй сторож здесь же — о сборке: потребителю уезжает `dist`, а не
+ * исходники, и склеенный в один файл пакет теряет всё вышесказанное. Слепленный
+ * `@soldy-ui/setup` отдавал кнопке 420 KiB вместо 224 KiB — вместе с
+ * дескрипторами Select, Tabs и Accordion.
  */
 
 import { describe, it, expect } from 'vitest'
 import { resolve } from 'node:path'
 import { build } from 'esbuild'
+import { libConfig } from '../../../tools/vite/lib.config'
 
 const PACKAGES = resolve(__dirname, '../..')
 
@@ -64,5 +70,19 @@ describe('tree-shaking @soldy-ui/setup', () => {
 
 		expect(ours.filter((file) => file.includes('select'))).toEqual([])
 		expect(modules.filter((file) => file.startsWith('setup/protected/adapter/'))).toEqual([])
+	})
+
+	// Сборка обязана сохранить ту же гранулярность: отбор выше идёт по модулям,
+	// и у склеенного в один файл пакета отбрасывать нечего
+	it('сборка пакета кладёт в dist модуль на модуль, а не один файл', () => {
+		const { build: config } = libConfig({
+			name: '@soldy-ui/setup',
+			root: resolve(PACKAGES, 'setup'),
+			entry: 'index.ts',
+		})
+		const output = config?.rollupOptions?.output
+
+		expect(Array.isArray(output)).toBe(false)
+		expect(output).toMatchObject({ preserveModules: true })
 	})
 })

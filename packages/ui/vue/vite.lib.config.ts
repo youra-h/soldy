@@ -21,7 +21,7 @@ export default defineConfig({
 			fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
 		},
 		rollupOptions: {
-			external: ['vue', /^@soldy\//],
+			external: ['vue', /^@soldy-ui\//],
 		},
 	},
 })

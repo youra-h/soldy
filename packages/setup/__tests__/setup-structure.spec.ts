@@ -33,8 +33,19 @@ import * as ts from 'typescript'
 
 const SETUP = resolve(__dirname, '..')
 
-/** Не код пакета: тесты и установленные зависимости. */
-const SKIPPED = new Set(['__tests__', 'node_modules'])
+/**
+ * Не код пакета: тесты, установленные зависимости, выход сборки и конфиги
+ * сборки с прогоном. Слои и их модули — это то, что уезжает потребителю, а
+ * `vite.lib.config.ts` и `vitest.config.ts` лежат рядом с ними только потому,
+ * что оба инструмента ищут конфиг в корне пакета.
+ */
+const SKIPPED = new Set([
+	'__tests__',
+	'node_modules',
+	'dist',
+	'vite.lib.config.ts',
+	'vitest.config.ts',
+])
 
 /** Корень пакета — точка входа `@soldy-ui/setup`. */
 const ENTRY = 'index.ts'
