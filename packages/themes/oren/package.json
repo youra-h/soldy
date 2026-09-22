@@ -29,15 +29,18 @@
       "types": "./index.d.ts",
       "default": "./dist/index.css"
     },
-    "./setup": "./setup/index.ts"
+    "./setup": {
+      "types": "./dist/setup/index.d.ts",
+      "default": "./dist/setup/index.js"
+    }
   },
   "files": [
     "dist",
-    "index.d.ts",
-    "setup"
+    "index.d.ts"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "npm run build:css && vite build -c vite.setup.config.ts && tsc -p tsconfig.build.json",
+    "build:css": "vite build",
     "watch": "vite build --watch",
     "test": "vitest run"
   },

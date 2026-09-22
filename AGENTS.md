@@ -25,8 +25,10 @@ npm run changeset:version  # выпуск: версии, CHANGELOG.md, package-l
 # Тестам и стенду сборка не нужна — они ходят в соседей исходниками
 npm run build
 
-# Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore)
-npm run build --workspace=@soldy-ui/theme-oren
+# Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore).
+# Полный build темы собирает ещё и её поведение (./setup) и потому требует
+# собранных соседей — правишь стили, зови build:css
+npm run build:css --workspace=@soldy-ui/theme-oren
 
 # Angular: перегенерировать статические inputs/outputs после правки дескриптора
 npm run generate --workspace=@soldy-ui/angular
@@ -176,7 +178,8 @@ npm run changeset -- --empty
 ## Сборка пакетов
 
 Наружу уезжает `dist`, а не исходники: `npm run build` из корня собирает
-библиотечные пакеты по очереди, и у каждого скрипт `build` — два шага подряд.
+библиотечные пакеты по очереди, и у каждого скрипт `build` — два шага подряд
+(у темы, с её вторым выходом, три — см. ниже).
 
 ```bash
 npm run build                                    # все пакеты, по зависимостям
@@ -197,6 +200,14 @@ npm run build --workspace=@soldy-ui/core         # vite build, затем tsc
   `packages/setup/__tests__/workspace-manifests.spec.ts`: пакет, чьи точки
   входа ведут в выход сборки, обязан быть в корневом `build` и стоять раньше
   тех, кто объявил его в `dependencies`.
+- **Выходов у пакета бывает два.** У темы это CSS (`dist/index.css`) и
+  поведение — экспорт `./setup` (`dist/setup`); собираются они по очереди,
+  каждый своим конфигом, и второй лежит в подкаталоге: `emptyOutDir` первого
+  чистит весь `dist`. Отсюда опция `outDir` у фабрики. Отсюда же у темы
+  второй скрипт, `build:css`: тему собирают и раньше соседей — первым шагом
+  CI и внутри `npm run test:layout`, — а там нужен только CSS, и прогону
+  деклараций `./setup` не на что опереться. Подробности —
+  `packages/themes/oren/AGENTS.md`.
 
 Три решения, о которые легко споткнуться:
 
