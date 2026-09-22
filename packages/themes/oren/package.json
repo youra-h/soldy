@@ -19,7 +19,9 @@
   "bugs": {
     "url": "https://github.com/youra-h/soldy/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.css",
   "style": "./dist/index.css",
@@ -45,9 +47,9 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@soldy-ui/core": "*",
-    "@soldy-ui/plugins": "*",
-    "@soldy-ui/setup": "*"
+    "@soldy-ui/core": "^0.1.0",
+    "@soldy-ui/plugins": "^0.1.0",
+    "@soldy-ui/setup": "^0.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

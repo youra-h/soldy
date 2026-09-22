@@ -19,7 +19,9 @@
   "bugs": {
     "url": "https://github.com/youra-h/soldy/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -37,6 +39,6 @@
     "generate": "node scripts/generate.mjs"
   },
   "dependencies": {
-    "@soldy-ui/setup": "*"
+    "@soldy-ui/setup": "^0.1.0"
   }
 }

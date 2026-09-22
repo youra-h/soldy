@@ -20,34 +20,45 @@
   "bugs": {
     "url": "https://github.com/youra-h/soldy/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "generate": "tsx src/codegen/generate.ts",
     "test": "ng test --no-watch"
   },
   "dependencies": {
+    "@soldy-ui/core": "^0.1.0",
+    "@soldy-ui/plugins": "^0.1.0",
+    "@soldy-ui/setup": "^0.1.0",
+    "tslib": "^2.8.1"
+  },
+  "peerDependencies": {
     "@angular/compiler": "^22.1.5",
     "@angular/core": "^22.1.5",
     "@angular/platform-browser": "^22.1.5",
-    "@soldy-ui/core": "*",
-    "@soldy-ui/icons-material": "*",
-    "@soldy-ui/plugins": "*",
-    "@soldy-ui/setup": "*",
-    "@soldy-ui/theme-oren": "*",
-    "rxjs": "^7.8.2",
-    "tslib": "^2.8.1",
-    "zone.js": "^0.16.3"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@angular/build": "^22.1.7",
     "@angular/cli": "^22.1.7",
+    "@angular/compiler": "^22.1.5",
     "@angular/compiler-cli": "^22.1.5",
+    "@angular/core": "^22.1.5",
+    "@angular/platform-browser": "^22.1.5",
+    "@soldy-ui/icons-material": "^0.1.0",
+    "@soldy-ui/theme-oren": "^0.1.0",
     "@types/node": "^22.0.0",
-    "tsx": "^4.20.0"
+    "rxjs": "^7.8.2",
+    "tsx": "^4.20.0",
+    "zone.js": "^0.16.3"
   }
 }
