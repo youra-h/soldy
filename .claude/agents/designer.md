@@ -94,7 +94,7 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    - Иконка: SVG в `src/`, затем `npm run generate --workspace=@soldy-ui/icons-material`.
      Цвет только через `currentColor`. Новая роль — в спецификацию.
 7. Прогон:
-   - `npm run build --workspace=@soldy-ui/theme-oren` и `npm run test:theme`;
+   - `npm run build:css --workspace=@soldy-ui/theme-oren` и `npm run test:theme`;
    - правил иконки — `npm run test:setup`;
    - правил стили уже существующих компонентов — `npm run test:layout`.
 
@@ -164,7 +164,7 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    отключённое.
 2. Запуск:
    ```
-   npm run build --workspace=@soldy-ui/theme-oren
+   npm run build:css --workspace=@soldy-ui/theme-oren
    npm run test:browser --workspace=@soldy-ui/playground-vue -- design-<task_id>
    ```
    Браузер не находится — установка описана в корневом `AGENTS.md`, раздел

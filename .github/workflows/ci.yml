@@ -24,8 +24,12 @@ jobs:
 
       # Тема отдаёт dist/index.css, который подключает сборка Angular.
       # dist в .gitignore, поэтому собираем до всего остального.
+      #
+      # build:css, а не build: полный build темы собирает ещё и её `./setup`, а
+      # прогон деклараций читает соседей по их `dist` — их здесь пока нет.
+      # Поведение темы собирается ниже, на шаге «Сборка пакетов».
       - name: Сборка темы
-        run: npm run build --workspace=@soldy-ui/theme-oren
+        run: npm run build:css --workspace=@soldy-ui/theme-oren
 
       # Браузер для test:layout закреплён ревизией Playwright из package-lock,
       # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
@@ -118,10 +122,10 @@ jobs:
       # Сборки Angular здесь нет намеренно: у пакета пока нет своего стенда в
       # packages/playground. Когда он появится, сборка вернётся сюда.
 
+      # Тему здесь не пересобираем: её собрал корневой build выше, а build:css
+      # темы вычистил бы её же `dist/setup` — у CSS-сборки `emptyOutDir`.
       - name: Сборка стенда Vue
-        run: |
-          npm run build --workspace=@soldy-ui/theme-oren
-          npm run build --workspace=@soldy-ui/playground-vue
+        run: npm run build --workspace=@soldy-ui/playground-vue
 
   lint:
     name: Линт

@@ -19,6 +19,15 @@ export type TLibraryBuildOptions = {
 	/** Вход бандла от корня пакета. */
 	readonly entry: string
 	/**
+	 * Куда складывать выход, от корня пакета. По умолчанию `dist` — так у
+	 * пакета, у которого выход один.
+	 *
+	 * У пакета их бывает два: тема отдаёт и CSS (`dist/index.css`), и
+	 * поведение (`dist/setup`). Каталог чистится (`emptyOutDir`), поэтому
+	 * второй выход обязан лежать в своём, иначе он стёр бы первый.
+	 */
+	readonly outDir?: string
+	/**
 	 * Чего не вбирать в бандл сверх соседей по скоупу: фреймворк адаптера и
 	 * прочие зависимости, которые ставит потребитель.
 	 */
@@ -41,7 +50,7 @@ function matches(specifier: string, pattern: string | RegExp): boolean {
 }
 
 export function libConfig(options: TLibraryBuildOptions): UserConfig {
-	const { name, root, entry, external = [], plugins = [] } = options
+	const { name, root, entry, outDir = 'dist', external = [], plugins = [] } = options
 
 	return defineConfig({
 		// Корень задан явно: `outDir` Vite считает от него, а не от конфига, и
@@ -55,7 +64,7 @@ export function libConfig(options: TLibraryBuildOptions): UserConfig {
 			alias: { [name]: path.resolve(root, entry) },
 		},
 		build: {
-			outDir: 'dist',
+			outDir,
 			// Прогон деклараций идёт после сборки: обратный порядок стёр бы `.d.ts`
 			emptyOutDir: true,
 			// Библиотеку минифицирует сборщик приложения. Своя минификация только

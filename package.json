@@ -33,7 +33,7 @@
     "changeset:version": "changeset version && npm install --package-lock-only",
     "test:webc": "npm run test --workspace=@soldy-ui/webc",
     "test:playground": "npm run test --workspace=@soldy-ui/playground-shared && npm run test --workspace=@soldy-ui/playground-vue",
-    "test:layout": "npm run build --workspace=@soldy-ui/theme-oren && npm run test:browser --workspace=@soldy-ui/playground-vue"
+    "test:layout": "npm run build:css --workspace=@soldy-ui/theme-oren && npm run test:browser --workspace=@soldy-ui/playground-vue"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
