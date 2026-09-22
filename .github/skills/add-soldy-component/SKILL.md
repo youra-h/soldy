@@ -286,7 +286,7 @@ npx prettier --check .
 # type checks — the same commands as the CI steps «Типы — …»
 npx tsc --noEmit -p packages/core/tsconfig.json
 npx tsc --noEmit -p packages/setup/tsconfig.json
-npm run build:types --workspace=@soldy-ui/vue
+npm run build --workspace=@soldy-ui/vue
 npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
 npx tsc --noEmit -p packages/ui/react/tsconfig.json
 # Angular: ngc без эмита — TS, шаблоны @Component (strictTemplates) и ограничения AOT
