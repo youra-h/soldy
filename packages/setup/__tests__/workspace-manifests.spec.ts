@@ -808,7 +808,7 @@ describe('сторож манифестов', () => {
 	})
 
 	describe('README и LICENSE рядом с манифестом', () => {
-		const LICENSE = 'MIT License\n\nCopyright (c) 2026 Youra Soldatov\n'
+		const LICENSE = 'MIT License\n\nCopyright (c) 2026 Yuri Soldatov\n'
 
 		it('оба файла на месте, лицензия — копия корневой — без нарушений', () => {
 			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE }
