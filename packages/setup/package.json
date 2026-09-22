@@ -9,7 +9,7 @@
     "descriptors"
   ],
   "license": "MIT",
-  "author": "Youra Soldatov",
+  "author": "Yuri Soldatov",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/youra-h/soldy.git",
@@ -19,7 +19,9 @@
   "bugs": {
     "url": "https://github.com/youra-h/soldy/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -34,8 +36,8 @@
     "dist"
   ],
   "dependencies": {
-    "@soldy-ui/core": "*",
-    "@soldy-ui/plugins": "*"
+    "@soldy-ui/core": "^0.1.0",
+    "@soldy-ui/plugins": "^0.1.0"
   },
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",

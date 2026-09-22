@@ -10,6 +10,13 @@ import { readChangesets } from '@changesets/read'
  * стенд — в `ignore`. Библиотечный пакет несёт метаданные: описание, лицензию и
  * путь в репозитории, — а его точки входа ведут на файлы.
  *
+ * Библиотечный пакет ещё и выкладывается: он не `private`, у скоупа открыт
+ * доступ, состав тарболла задан `files`, а текст лицензии и README лежат рядом
+ * с манифестом — поля `license` в тарболле мало. Соседа он объявляет диапазоном
+ * от общей версии (`^0.1.0`): протокол `workspace:` npm не понимает
+ * (EUNSUPPORTEDPROTOCOL), а `"*"` выпуск не переписывает — в опубликованном
+ * пакете он значил бы «любая версия ядра».
+ *
  * Список пакетов не хардкодится: он раскрывается из `workspaces` корневого
  * манифеста, поэтому новый пакет попадает под проверку сам. Список стенда —
  * `ignore` конфига changesets, второго списка здесь нет.
@@ -237,6 +244,89 @@ function checkEntryPoints(pkg: TWorkspacePackage): string[] {
 	})
 }
 
+/**
+ * Нарушения полей выкладки: библиотечный пакет выкладывается в npm, а не
+ * закрыт от него.
+ *
+ * `private` закрывает пакет от `npm publish` целиком. У скоуплённого пакета
+ * доступ по умолчанию `restricted`, и без `publishConfig.access` публикация
+ * упала бы на платном тарифе. `files` задаёт состав тарболла: без него наружу
+ * уезжает весь каталог пакета вместе с `__tests__` и конфигами.
+ */
+function checkPublishing(manifest: TManifest): string[] {
+	const violations: string[] = []
+	const { private: restricted, publishConfig, files } = manifest
+	const access = isRecord(publishConfig) ? publishConfig.access : undefined
+
+	if (restricted !== undefined) {
+		violations.push(`private ${JSON.stringify(restricted)} — библиотечный пакет выкладывается`)
+	}
+
+	if (access !== 'public') {
+		violations.push(
+			`publishConfig.access ${JSON.stringify(access)}, ожидается "public" — у скоупа доступ по умолчанию restricted`,
+		)
+	}
+
+	if (!isStringArray(files) || files.length === 0) {
+		violations.push(`files ${JSON.stringify(files)}, ожидается непустой список путей тарболла`)
+	}
+
+	return violations
+}
+
+/** Файлы пакета, прочитанные с диска: имя файла → текст, нет файла — undefined. */
+type TPackageFiles = Readonly<Record<string, string | undefined>>
+
+/**
+ * Перевод строки содержимым не считается: `.gitattributes` нормализует его в
+ * LF, и в рабочей копии на Windows у соседних файлов он расходится сам по
+ * себе — по тому, какой из них когда чекаутился.
+ */
+function withLf(text: string): string {
+	return text.replace(/\r\n/g, '\n')
+}
+
+/**
+ * Нарушения состава тарболла: рядом с манифестом лежат README и LICENSE, и
+ * лицензия — копия корневой.
+ *
+ * Оба файла npm кладёт в тарболл мимо `files`, и оба видит потребитель: поля
+ * `license` в манифесте мало — оно называет лицензию, но не несёт её текста, а
+ * пакет без README на npm выглядит заброшенным.
+ */
+function checkShippedFiles(files: TPackageFiles, license: string): string[] {
+	const violations: string[] = []
+	const readme = files['README.md']
+
+	if (readme === undefined) {
+		violations.push('нет README.md — его читают на npm вместо описания')
+	} else if (readme.trim() === '') {
+		violations.push('README.md пуст')
+	}
+
+	if (files.LICENSE === undefined) {
+		violations.push('нет LICENSE — в тарболле у пакета нет текста лицензии')
+	} else if (withLf(files.LICENSE) !== withLf(license)) {
+		violations.push('LICENSE расходится с корневым — это его копия, а не своя лицензия')
+	}
+
+	return violations
+}
+
+/** Читает файлы пакета, которые уезжают в тарболл рядом с манифестом. */
+function readShippedFiles(dir: string): TPackageFiles {
+	const read = (name: string): string | undefined => {
+		const file = join(ROOT, dir, name)
+
+		return statSync(file, { throwIfNoEntry: false })?.isFile()
+			? readFileSync(file, 'utf-8')
+			: undefined
+	}
+
+	return { 'README.md': read('README.md'), LICENSE: read('LICENSE') }
+}
+
 /** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
 function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	const violations: string[] = []
@@ -262,9 +352,60 @@ function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 		violations.push(`version ${JSON.stringify(version)}, ожидается строка версии`)
 	}
 
+	violations.push(...checkPublishing(manifest))
 	violations.push(...checkEntryPoints({ dir, manifest }))
 
 	return violations.map((violation) => `${dir}: ${violation}`)
+}
+
+/** Поля манифеста, в которых объявляют зависимость. */
+const DEPENDENCY_FIELDS = [
+	'dependencies',
+	'devDependencies',
+	'peerDependencies',
+	'optionalDependencies',
+] as const
+
+/**
+ * Нарушения диапазонов на соседей: сосед объявлен `^<его версия>`.
+ *
+ * Протокол `workspace:` npm не понимает вовсе (EUNSUPPORTEDPROTOCOL на
+ * `npm install`), поэтому диапазон литеральный. `"*"` не годится: выпуск
+ * переписывает диапазон, только когда новая версия из него выпала, а из `"*"`
+ * не выпадает ничего — в опубликованном пакете он значил бы «любая версия
+ * ядра», включая ту, с которой контракт разошёлся. Версии у группы одна, и её
+ * же берёт диапазон: второго списка версий в репозитории нет.
+ */
+function checkInternalRanges(library: readonly TWorkspacePackage[]): string[] {
+	const versions = new Map(
+		library.map(({ manifest }): [unknown, unknown] => [manifest.name, manifest.version]),
+	)
+
+	return library.flatMap(({ dir, manifest }) =>
+		DEPENDENCY_FIELDS.flatMap((field) => {
+			const deps = manifest[field]
+
+			if (!isRecord(deps)) {
+				return []
+			}
+
+			return Object.entries(deps).flatMap(([name, range]) => {
+				const version = versions.get(name)
+
+				if (version === undefined) {
+					return []
+				}
+
+				const expected = `^${String(version)}`
+
+				return range === expected
+					? []
+					: [
+							`${dir}: ${field}["${name}"] ${JSON.stringify(range)}, ожидается ${JSON.stringify(expected)}`,
+						]
+			})
+		}),
+	)
 }
 
 /**
@@ -455,6 +596,31 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
+	it('у библиотечного пакета рядом README и копия корневой лицензии', () => {
+		const license = readFileSync(join(ROOT, 'LICENSE'), 'utf-8')
+		const violations = library.flatMap(({ dir }) =>
+			checkShippedFiles(readShippedFiles(dir), license).map(
+				(violation) => `${dir}: ${violation}`,
+			),
+		)
+
+		expect(
+			violations,
+			'Состав тарболла разошёлся с разделом AGENTS.md «Версии пакетов»:\n' +
+				violations.join('\n'),
+		).toEqual([])
+	})
+
+	it('сосед объявлен диапазоном от общей версии', () => {
+		const violations = checkInternalRanges(library)
+
+		expect(
+			violations,
+			'Диапазоны на соседей разошлись с разделом AGENTS.md «Версии пакетов»:\n' +
+				violations.join('\n'),
+		).toEqual([])
+	})
+
 	it('библиотечные пакеты идут одной версией, у корня версии нет', () => {
 		const violations = checkVersions(root, library)
 
@@ -513,6 +679,8 @@ describe('сторож манифестов', () => {
 			description: 'Пакет для проверки сторожа',
 			license: 'MIT',
 			repository: { type: 'git', directory: 'packages/example' },
+			publishConfig: { access: 'public' },
+			files: ['dist'],
 			...overrides,
 		},
 	})
@@ -552,6 +720,35 @@ describe('сторож манифестов', () => {
 
 		expect(checkLibraryPackage(library({ description: undefined }))).toEqual(expected)
 		expect(checkLibraryPackage(library({ description: '  ' }))).toEqual(expected)
+	})
+
+	it('private у библиотечного пакета — нарушение', () => {
+		expect(checkLibraryPackage(library({ private: true }))).toEqual([
+			'packages/example: private true — библиотечный пакет выкладывается',
+		])
+	})
+
+	it('доступ скоупа не public — нарушение', () => {
+		const restricted = 'publishConfig.access "restricted", ожидается "public"'
+		const missing = 'publishConfig.access undefined, ожидается "public"'
+		const why = ' — у скоупа доступ по умолчанию restricted'
+
+		expect(checkLibraryPackage(library({ publishConfig: { access: 'restricted' } }))).toEqual([
+			`packages/example: ${restricted}${why}`,
+		])
+		expect(checkLibraryPackage(library({ publishConfig: undefined }))).toEqual([
+			`packages/example: ${missing}${why}`,
+		])
+	})
+
+	it('пакет без files — нарушение', () => {
+		const expected = (declared: string): string[] => [
+			`packages/example: files ${declared}, ожидается непустой список путей тарболла`,
+		]
+
+		expect(checkLibraryPackage(library({ files: undefined }))).toEqual(expected('undefined'))
+		expect(checkLibraryPackage(library({ files: [] }))).toEqual(expected('[]'))
+		expect(checkLibraryPackage(library({ files: 'dist' }))).toEqual(expected('"dist"'))
 	})
 
 	it('цель точки входа без файла — нарушение с путём', () => {
@@ -608,6 +805,100 @@ describe('сторож манифестов', () => {
 		expect(checkLibraryPackage(library({ license: 'ISC' }))).toEqual([
 			'packages/example: license "ISC", ожидается "MIT"',
 		])
+	})
+
+	describe('README и LICENSE рядом с манифестом', () => {
+		const LICENSE = 'MIT License\n\nCopyright (c) 2026 Yuri Soldatov\n'
+
+		it('оба файла на месте, лицензия — копия корневой — без нарушений', () => {
+			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE }
+
+			expect(checkShippedFiles(files, LICENSE)).toEqual([])
+		})
+
+		it('нет файлов — нарушение на каждый', () => {
+			expect(checkShippedFiles({}, LICENSE)).toEqual([
+				'нет README.md — его читают на npm вместо описания',
+				'нет LICENSE — в тарболле у пакета нет текста лицензии',
+			])
+		})
+
+		it('пустой README — нарушение', () => {
+			expect(checkShippedFiles({ 'README.md': ' \n', LICENSE }, LICENSE)).toEqual([
+				'README.md пуст',
+			])
+		})
+
+		it('лицензия расходится с корневой — нарушение', () => {
+			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE: 'ISC License\n' }
+
+			expect(checkShippedFiles(files, LICENSE)).toEqual([
+				'LICENSE расходится с корневым — это его копия, а не своя лицензия',
+			])
+		})
+
+		// Перевод строки нормализует git (.gitattributes), и в рабочей копии на
+		// Windows у соседних файлов он расходится сам по себе
+		it('та же лицензия с другим переводом строки — без нарушений', () => {
+			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE }
+
+			expect(checkShippedFiles(files, LICENSE.replace(/\n/g, '\r\n'))).toEqual([])
+		})
+
+		// Читатель ходит на диск: у самого сторожа README и LICENSE есть
+		it('файлы пакета читаются с диска', () => {
+			const files = readShippedFiles('packages/setup')
+			const root = readFileSync(join(ROOT, 'LICENSE'), 'utf-8')
+
+			expect(files['README.md']).toContain('@soldy-ui/setup')
+			expect(checkShippedFiles(files, root)).toEqual([])
+			expect(readShippedFiles('packages/example')).toEqual({
+				'README.md': undefined,
+				LICENSE: undefined,
+			})
+		})
+	})
+
+	describe('диапазоны на соседей', () => {
+		/** Зависит от `@soldy-ui/example` — с тем полем и тем диапазоном, что дали. */
+		const dependent = (field: string, range: unknown): TWorkspacePackage => ({
+			dir: 'packages/other',
+			manifest: {
+				...other(VERSION).manifest,
+				[field]: { '@soldy-ui/example': range, vue: '^3.5.32' },
+			},
+		})
+
+		it('диапазон от общей версии — без нарушений', () => {
+			for (const field of DEPENDENCY_FIELDS) {
+				expect(
+					checkInternalRanges([library({}), dependent(field, `^${VERSION}`)]),
+					field,
+				).toEqual([])
+			}
+		})
+
+		it('"*" на соседе — нарушение: выпуск такой диапазон не переписывает', () => {
+			expect(checkInternalRanges([library({}), dependent('dependencies', '*')])).toEqual([
+				'packages/other: dependencies["@soldy-ui/example"] "*", ожидается "^1.2.0"',
+			])
+		})
+
+		it('протокол workspace — нарушение: npm его не понимает', () => {
+			expect(
+				checkInternalRanges([library({}), dependent('peerDependencies', 'workspace:^')]),
+			).toEqual([
+				'packages/other: peerDependencies["@soldy-ui/example"] "workspace:^", ожидается "^1.2.0"',
+			])
+		})
+
+		it('диапазон отстал от версии соседа — нарушение', () => {
+			expect(
+				checkInternalRanges([library({}), dependent('devDependencies', '^1.1.0')]),
+			).toEqual([
+				'packages/other: devDependencies["@soldy-ui/example"] "^1.1.0", ожидается "^1.2.0"',
+			])
+		})
 	})
 
 	it('пакет без version — нарушение', () => {

@@ -11,7 +11,7 @@
     "custom-elements"
   ],
   "license": "MIT",
-  "author": "Youra Soldatov",
+  "author": "Yuri Soldatov",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/youra-h/soldy.git",
@@ -21,7 +21,9 @@
   "bugs": {
     "url": "https://github.com/youra-h/soldy/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,10 +41,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy-ui/core": "*",
-    "@soldy-ui/icons-material": "*",
-    "@soldy-ui/plugins": "*",
-    "@soldy-ui/setup": "*",
-    "@soldy-ui/theme-oren": "*"
+    "@soldy-ui/core": "^0.1.0",
+    "@soldy-ui/plugins": "^0.1.0",
+    "@soldy-ui/setup": "^0.1.0"
+  },
+  "devDependencies": {
+    "@soldy-ui/icons-material": "^0.1.0",
+    "@soldy-ui/theme-oren": "^0.1.0"
   }
 }

@@ -6,8 +6,8 @@ render it in Vue, React, Angular, Svelte, Solid and Web Components.**
 [![CI](https://github.com/youra-h/soldy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/youra-h/soldy/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Status:** version `0.1.0`, early development. The API still changes, and the packages are not
-> published to npm yet — all of them are `private`.
+> **Status:** version `0.1.0`, early development. The API still changes. The packages are ready to
+> publish — the first release to npm is on its way.
 
 ## What it is
 
