@@ -10,7 +10,6 @@
       "@soldy-ui/core": ["../../core/src"],
       "@soldy-ui/core/*": ["../../core/src/*"],
       "@soldy-ui/icons-material": ["../../icons/material/src"],
-      "@soldy-ui/icons-material": ["../../icons/material/src"],
       "@soldy-ui/plugins": ["../../plugins/src"],
       "@soldy-ui/plugins/*": ["../../plugins/src/*"],
       "@soldy-ui/setup": ["../../setup/index.ts"],

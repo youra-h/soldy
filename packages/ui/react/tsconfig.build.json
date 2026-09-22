@@ -5,10 +5,9 @@
     "emitDeclarationOnly": true,
     "declaration": true,
     "declarationMap": false,
-    "outDir": "lib",
+    "outDir": "dist",
     "rootDir": "src",
-    "paths": {},
-    "preserveSymlinks": true
+    "paths": {}
   },
   "include": ["src/**/*", "env.d.ts"]
 }

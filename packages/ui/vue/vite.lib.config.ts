@@ -1,27 +1,18 @@
-import { defineConfig } from 'vite'
+// Расширение обязательно: с ним конфиг читает и нативный загрузчик Vite
 import vue from '@vitejs/plugin-vue'
-import path from 'node:path'
+import { libConfig } from '../../../tools/vite/lib.config.ts'
 
 /**
- * Библиотечная сборка @soldy-ui/vue (headless-компоненты, без демо).
+ * Библиотечная сборка @soldy-ui/vue: компоненты на headless-моделях ядра.
  *
- * - Вход: src/index.ts
- * - Форматы: ES + CJS
- * - `vue` и все `@soldy-ui/*` — external (peer-зависимости)
- * - Стили в библиотеке отсутствуют (вынесены в тему), поэтому CSS не эмитится.
+ * Стилей в адаптере нет — их отдаёт пакет темы, поэтому CSS сборка не эмитит.
+ * Декларации собирает `vue-tsc -p tsconfig.build.json` вторым шагом скрипта
+ * `build`: `.vue` обычный `tsc` не читает.
  */
-export default defineConfig({
+export default libConfig({
+	name: '@soldy-ui/vue',
+	root: import.meta.dirname,
+	entry: 'src/index.ts',
+	external: ['vue'],
 	plugins: [vue()],
-	build: {
-		outDir: 'lib',
-		emptyOutDir: true,
-		lib: {
-			entry: path.resolve(__dirname, 'src/index.ts'),
-			formats: ['es', 'cjs'],
-			fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
-		},
-		rollupOptions: {
-			external: ['vue', /^@soldy-ui\//],
-		},
-	},
 })
