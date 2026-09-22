@@ -6,6 +6,11 @@
  * проверяются только здесь. Юнит-тесты плагина (`overlay.spec.ts`) те же
  * сценарии гоняют на заглушках координат — здесь эти координаты считает
  * настоящий layout-движок браузера.
+ *
+ * Здесь же — граница, внутрь которой плагин сдвигает панель: настоящую полосу
+ * прокрутки не подставить заглушкой, а без неё `innerWidth` и видимая область
+ * совпадают и сторож пуст. Ради этого с прогона снят `--hide-scrollbars`
+ * (`vitest.browser.config.ts`).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -14,6 +19,8 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Frame, Select, SelectItem } from '@soldy/ui-vue'
 import type { TSelectPlacement } from '@soldy/core'
+
+import { expectClassicScrollbar, expectInsideWindow } from './viewport'
 
 import '@soldy/theme-oren'
 
@@ -238,6 +245,52 @@ const RtlHarness = defineComponent({
 	},
 })
 
+/**
+ * Якорь у самого правого края страницы, которая выше окна, и панель заметно
+ * шире места справа от него.
+ *
+ * Филлер `200vh` здесь не для прокрутки, а ради полосы: она и есть предмет
+ * теста. `innerWidth` считает полосу своей, `documentElement.clientWidth` —
+ * нет, и от того, какую границу взял shift, зависит, видно панель целиком или
+ * её край спрятан под полосой.
+ */
+const RightEdgeHarness = defineComponent({
+	data() {
+		return { anchorEl: null as Element | null }
+	},
+	mounted() {
+		this.anchorEl = this.$refs.anchor as Element
+	},
+	render() {
+		return h('div', [
+			h('div', { style: 'display: flex; justify-content: flex-end; padding-top: 100px' }, [
+				h(
+					'button',
+					{ ref: 'anchor', class: 's-test-anchor', style: 'width: 80px; height: 32px' },
+					'anchor',
+				),
+			]),
+			h('div', { style: 'height: 200vh' }),
+			this.anchorEl
+				? h(
+						Frame,
+						{
+							visible: true,
+							position: 'fixed',
+							anchor_anchor: this.anchorEl,
+							anchor_placement: 'bottom-start',
+							class: 's-test-panel',
+						},
+						{
+							default: () =>
+								h('div', { style: 'width: 300px; height: 60px' }, 'panel'),
+						},
+					)
+				: null,
+		])
+	},
+})
+
 /** Select с опциями. Без `placement` проп не пишется вовсе — работает умолчание. */
 const selectWith = (placement?: TSelectPlacement) =>
 	h(
@@ -427,5 +480,62 @@ describe('RTL', () => {
 		await expect
 			.poll(() => panel().getBoundingClientRect().right)
 			.toBeCloseTo(anchorRect.right, 0)
+	})
+})
+
+describe('граница — видимая область', () => {
+	/**
+	 * Ширина полосы на время теста своя, известная.
+	 *
+	 * Платформенная разная — локально Windows, в CI Ubuntu, — а где-то полоса и
+	 * вовсе накладная и места не занимает. Сторожить этот спек должен не её:
+	 * ему нужно, чтобы `innerWidth` и `clientWidth` расходились заведомо
+	 * заметнее субпиксельного допуска.
+	 */
+	const SCROLLBAR = 20
+
+	let style: HTMLStyleElement | null = null
+
+	beforeEach(() => {
+		style = document.createElement('style')
+		style.textContent = `html::-webkit-scrollbar { width: ${SCROLLBAR}px }`
+		document.head.append(style)
+	})
+
+	afterEach(() => {
+		style?.remove()
+		style = null
+	})
+
+	/**
+	 * Сторож правки 869f4puaa: границей shift служит `window.visualViewport`, а
+	 * не `window.innerWidth`. Разница между ними и есть ширина классической
+	 * полосы прокрутки, поэтому без полосы в прогоне (Playwright запускает
+	 * Chromium с `--hide-scrollbars`, флаг снят в `vitest.browser.config.ts`)
+	 * тест зелёный при любой реализации.
+	 */
+	it('панель у правого края прижата к видимой области, а не к innerWidth', async () => {
+		render(RightEdgeHarness)
+
+		expectClassicScrollbar()
+
+		const root = document.documentElement
+		const anchorRect = anchor().getBoundingClientRect()
+
+		// Сдвиг действительно нужен: без него панель, выровненная по левому
+		// краю якоря, ушла бы за край видимой области.
+		await expect.poll(() => panel().getBoundingClientRect().width).toBeCloseTo(300, 0)
+		expect(anchorRect.left + 300, 'без сдвига панель не помещается').toBeGreaterThan(
+			root.clientWidth,
+		)
+
+		// Правый край панели совпал с краем видимой области. Сравнение
+		// двустороннее: «зазор меньше пикселя» выполняется и у панели, которая
+		// уехала за край, — то есть ровно в том случае, который сторожим.
+		await expect
+			.poll(() => panel().getBoundingClientRect().right)
+			.toBeCloseTo(root.clientWidth, 0)
+
+		expectInsideWindow(panel(), 'панель')
 	})
 })

@@ -40,7 +40,20 @@ export default defineConfig({
 			// каждого своей версии и обновляется сам, и расхождение между машинами
 			// выглядело бы плавающим тестом. Перед первым прогоном нужен
 			// `npx playwright install chromium`; CI делает это сам и кэширует.
-			provider: playwright(),
+			//
+			// Полосы прокрутки в прогоне настоящие. Playwright в headless
+			// запускает Chromium с `--hide-scrollbars`: полоса не рисуется и не
+			// занимает места, и `innerWidth === documentElement.clientWidth ===
+			// visualViewport.width`. Пока три границы совпадают, любой сторож
+			// раскладки у края окна пуст — прятаться не подо что, и тест
+			// «панель не уехала под полосу» проходит при любой реализации
+			// `TAnchorPlugin` (`browser/anchor.spec.ts`, «граница — видимая
+			// область»). Возвращать флаг «ради чистоты скриншотов» нельзя:
+			// вместе с ним уйдёт и сторож. Прогон остаётся headless — снят
+			// ровно один аргумент.
+			provider: playwright({
+				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
+			}),
 			instances: [{ browser: 'chromium' }],
 		},
 	},
