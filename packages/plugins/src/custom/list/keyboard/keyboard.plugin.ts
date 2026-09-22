@@ -1,4 +1,4 @@
-import type { IControl, TCollectionEngine } from '@soldy/core'
+import type { IControl, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../navigation'

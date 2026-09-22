@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TEntity } from '@soldy/core'
+import { TEntity } from '@soldy-ui/core'
 
 type TTestProps = {
 	a?: number

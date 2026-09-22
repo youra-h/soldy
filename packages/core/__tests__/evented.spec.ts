@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TEvented } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
 
 type TestEvents = {
 	change: (value: string) => void

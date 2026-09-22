@@ -1,5 +1,5 @@
 ---
-'@soldy/core': minor
+'@soldy-ui/core': minor
 ---
 
 Размер и вид элемента коллекции диктует владелец: ListBox, Tabs, Accordion, Tags, RadioGroup и Select отдают элементам свои size и variant резольвером, как его ни наполняй. Своё значение элемента остаётся в rawValue и на вид не влияет. TStateUnit.notify теперь принимает прежний итог и молчит, когда итог не сменился.

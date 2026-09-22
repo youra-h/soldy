@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { SelectDescriptor, SelectCollectionDescriptor } from '@soldy/setup'
-import type { ISelect } from '@soldy/core'
+import { SelectDescriptor, SelectCollectionDescriptor } from '@soldy-ui/setup'
+import type { ISelect } from '@soldy-ui/core'
 
 export const emitsSelect: TEmits = [
 	...useEmits(SelectDescriptor()),

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
-import type { IComponent } from '@soldy/core'
+import type { IComponent } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { TComponentBase } from '../../adapter'
 import { ComponentInputNames, ComponentOutputNames } from './base.component'

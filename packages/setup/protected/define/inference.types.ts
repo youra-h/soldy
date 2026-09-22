@@ -10,8 +10,8 @@
  * contribution.
  */
 
-import type { IEntity, TEvented } from '@soldy/core'
-import type { TPluginInternalEvents } from '@soldy/plugins'
+import type { IEntity, TEvented } from '@soldy-ui/core'
+import type { TPluginInternalEvents } from '@soldy-ui/plugins'
 import type { TUnderscorePropName } from '../naming'
 import type {
 	IComponentDescriptor,

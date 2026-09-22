@@ -11,7 +11,7 @@
  */
 export {}
 
-declare module '@soldy/core' {
+declare module '@soldy-ui/core' {
 	interface IComponentVariants {
 		brand: true
 		danger: true

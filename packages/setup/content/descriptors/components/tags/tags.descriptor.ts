@@ -12,8 +12,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TTags } from '@soldy/core'
-import type { ITagsItem } from '@soldy/core'
+import { TTags } from '@soldy-ui/core'
+import type { ITagsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,

@@ -1,5 +1,5 @@
-import { setIcons } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
+import { setIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
 
 /**
  * Заглушки браузерных API, которых нет в jsdom.

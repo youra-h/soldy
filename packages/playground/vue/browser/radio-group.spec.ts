@@ -15,9 +15,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { Button, RadioGroup, RadioGroupItem } from '@soldy/ui-vue'
+import { Button, RadioGroup, RadioGroupItem } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 

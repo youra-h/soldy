@@ -11,7 +11,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TFrame } from '@soldy/core'
+import { TFrame } from '@soldy-ui/core'
 import {
 	FrameLayoutPluginDescriptor,
 	AnchorPluginDescriptor,

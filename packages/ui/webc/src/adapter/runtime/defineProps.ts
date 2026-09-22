@@ -6,7 +6,7 @@
  * и только тело класса видит их без приведения.
  */
 
-import type { IComponentDescriptor } from '@soldy/setup'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
 import type { TSoldyElement } from './element.base'
 
 export function defineProps(

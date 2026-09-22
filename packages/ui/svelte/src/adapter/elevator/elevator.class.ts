@@ -1,7 +1,7 @@
 /**
  * TSvelteElevator — реализация IContextElevator через setContext/getContext.
  *
- * Наследует TElevator из @soldy/setup (кэширование ключей в уникальные символы).
+ * Наследует TElevator из @soldy-ui/setup (кэширование ключей в уникальные символы).
  *
  * Ключевое ограничение Svelte: setContext/getContext вызываются только во время
  * инициализации компонента — то же ограничение, что у provide/inject во Vue,
@@ -9,7 +9,7 @@
  */
 
 import { getContext, setContext } from 'svelte'
-import { TElevator } from '@soldy/setup'
+import { TElevator } from '@soldy-ui/setup'
 
 export class TSvelteElevator<T = any> extends TElevator<T> {
 	down(value: T): void {

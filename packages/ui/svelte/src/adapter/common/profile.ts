@@ -5,7 +5,7 @@
  * профиль нужен только связке монтирования (`adapter.connect()`).
  */
 
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy-ui/setup'
 import { SvelteNaming } from './naming'
 
 export const SvelteProfile: IAdapterProfile = { naming: SvelteNaming, defaultSlot: 'children' }

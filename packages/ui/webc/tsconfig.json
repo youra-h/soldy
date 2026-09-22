@@ -3,10 +3,10 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "paths": {
-      "@soldy/core": ["../../core/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/setup": ["../../setup"]
+      "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/plugins": ["../../plugins/src"],
+      "@soldy-ui/setup": ["../../setup"]
     }
   },
   "include": ["env.d.ts", "src/**/*", "__tests__/**/*"]

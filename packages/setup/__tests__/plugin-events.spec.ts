@@ -16,8 +16,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { ControlDescriptor, SelectDescriptor } from '@soldy/setup'
-import type { DescriptorAllEvents, IComponentDescriptor } from '@soldy/setup'
+import { ControlDescriptor, SelectDescriptor } from '@soldy-ui/setup'
+import type { DescriptorAllEvents, IComponentDescriptor } from '@soldy-ui/setup'
 
 /**
  * Имена событий в типах дескриптора: свои и плагинные. Из этой же карты React,

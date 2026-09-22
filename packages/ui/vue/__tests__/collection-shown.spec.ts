@@ -12,8 +12,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, type Component } from 'vue'
-import { ListBox, Tabs, Accordion, Tags } from '@soldy/ui-vue'
-import type { TCollectionEngine } from '@soldy/core'
+import { ListBox, Tabs, Accordion, Tags } from '@soldy-ui/vue'
+import type { TCollectionEngine } from '@soldy-ui/core'
 
 /** Движок, который коллекция отдаёт через `engine:create`: элементы с `value`. */
 type TEngine = TCollectionEngine<{ readonly value: unknown }, any>

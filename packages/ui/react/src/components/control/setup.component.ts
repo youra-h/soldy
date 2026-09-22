@@ -5,7 +5,7 @@
  * и связывает его с React Runtime через useAdapter.
  */
 
-import { createAdapterContext, ControlDescriptor } from '@soldy/setup'
+import { createAdapterContext, ControlDescriptor } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { ControlProps } from './base.component'
 

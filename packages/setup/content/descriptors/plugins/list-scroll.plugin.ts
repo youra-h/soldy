@@ -3,7 +3,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TListScrollPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TListScrollPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const ListScrollPluginDescriptor = definePlugin({
 	ctor: TListScrollPlugin,

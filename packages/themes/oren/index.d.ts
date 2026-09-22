@@ -4,7 +4,7 @@
  * Библиотека своих значений `variant`, `view`, `shape` и `animation` не
  * объявляет: её реестры пусты, и тема дополняет их здесь (корневой
  * `AGENTS.md`, «Оформление: значения объявляет тема»). Подключи тему —
- * `import '@soldy/theme-oren'` — и пропсы компонентов примут эти имена, а
+ * `import '@soldy-ui/theme-oren'` — и пропсы компонентов примут эти имена, а
  * опечатку отклонит компилятор.
  *
  * Значение, которое совпадает с видом блока без модификатора (`normal`,
@@ -14,7 +14,7 @@
  */
 export {}
 
-declare module '@soldy/core' {
+declare module '@soldy-ui/core' {
 	/** Смысловой цвет. Без варианта — нейтраль, у Spinner — `accent`. */
 	interface IComponentVariants {
 		normal: true

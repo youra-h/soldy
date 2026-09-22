@@ -22,7 +22,7 @@ import {
 	TItemContextRegistry,
 	createEngineTags,
 } from '../src'
-import type { ITagsItem, ITagsItemProps, ITagsProps } from '@soldy/core'
+import type { ITagsItem, ITagsItemProps, ITagsProps } from '@soldy-ui/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 	const owner = new TTags(props)

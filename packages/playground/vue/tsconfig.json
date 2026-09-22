@@ -8,13 +8,13 @@
     // запрещает. Безопасно: пакет ничего не эмитит.
     "allowImportingTsExtensions": true,
     "paths": {
-      "@soldy/theme-oren/setup": ["../../themes/oren/setup/index.ts"],
-      "@soldy/core": ["../../core/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/plugins": ["../../plugins/src"],
-      "@soldy/setup": ["../../setup/index.ts"],
-      "@soldy/ui-vue": ["../../ui/vue/src/index.ts"],
-      "@soldy/playground-shared": ["../shared/src/index.ts"]
+      "@soldy-ui/theme-oren/setup": ["../../themes/oren/setup/index.ts"],
+      "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/plugins": ["../../plugins/src"],
+      "@soldy-ui/setup": ["../../setup/index.ts"],
+      "@soldy-ui/vue": ["../../ui/vue/src/index.ts"],
+      "@soldy-ui/playground-shared": ["../shared/src/index.ts"]
     }
   },
   "include": [

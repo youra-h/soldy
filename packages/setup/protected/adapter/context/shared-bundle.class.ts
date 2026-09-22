@@ -10,7 +10,7 @@
  * Компонент без плагинов сюда же: набора у него нет, и вести нечего.
  */
 
-import type { IPluginBundle } from '@soldy/plugins'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import type { IComponentDescriptor } from '../../define'
 import { TMember } from '../exchange/member.class'
 import type { IBundleTenancy } from './types'

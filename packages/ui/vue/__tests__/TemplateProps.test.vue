@@ -14,7 +14,7 @@
  * тот же проп с верным значением, чтобы ошибка не оказалась ошибкой по другой
  * причине.
  */
-import { TButton, TDragAndDrop, TInput } from '@soldy/core'
+import { TButton, TDragAndDrop, TInput } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -35,7 +35,7 @@ import {
 	Switch,
 	Tabs,
 	Tags,
-} from '@soldy/ui-vue'
+} from '@soldy-ui/vue'
 
 const button = new TButton()
 const input = new TInput()

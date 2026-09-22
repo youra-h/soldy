@@ -2,7 +2,7 @@ import {
 	TCollectionItemExtension,
 	RadioGroupItemDescriptor,
 	RadioGroupCollectionItemDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

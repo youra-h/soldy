@@ -8,7 +8,7 @@
  * привязки здесь запись до DOM не доходит.
  */
 
-import type { IComponentView } from '@soldy/core'
+import type { IComponentView } from '@soldy-ui/core'
 import { ariaBinding, datasetBinding, type ITemplate } from '../../adapter'
 
 export const componentViewTemplate: ITemplate<IComponentView> = {

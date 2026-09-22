@@ -11,7 +11,7 @@ Adds a new headless UI component across the soldy layers: core model → contrib
 ## When to Use
 
 - Creating a new component from scratch.
-- A component exists in `core` but is missing the `setup` / `@soldy/ui-vue` (or `@soldy/ui-react`, `@soldy/ui-angular`) wiring.
+- A component exists in `core` but is missing the `setup` / `@soldy-ui/vue` (or `@soldy-ui/react`, `@soldy-ui/angular`) wiring.
 
 ## Ground Rules
 
@@ -43,7 +43,7 @@ One file per component: inheritance, the public contract (props, events, slots) 
 
 ```ts
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { T<Name> } from '@soldy/core'
+import { T<Name> } from '@soldy-ui/core'
 import { <Base>Descriptor } from './<base>.descriptor'
 
 export const <Name>Descriptor = defineDescriptor(() =>
@@ -61,7 +61,7 @@ export const <Name>Descriptor = defineDescriptor(() =>
 
 The `props` key is the prop name, and `type` is only the runtime constructor (`String`, `Boolean`, `[String, Object]`): the value type comes from `I<Name>Props`, so a prop never takes `defineType` — Vue would check the wrapper as `Object`.
 
-Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy/setup` and lives in `packages/setup/protected/define/prop-type.ts`; descriptors import it from `'../../../protected/define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
+Slots are declared in the same `contribution` under `slots`; a scope value is `defineType<T>(ctor)` (`scope: { text: defineType<string>(String) }`), a bare `String` does not compile. `defineType` is exported from `@soldy-ui/setup` and lives in `packages/setup/protected/define/prop-type.ts`; descriptors import it from `'../../../protected/define'`. The slot type is inferred from this declaration — `DescriptorSlots<typeof <Name>Descriptor>`, own slots over the slots of `extends`; there is no mirror type to write or export. See AGENTS.md, «Слоты — третья категория контракта».
 
 > A generic core class gets its type parameters' constraints, not their defaults: `ValueControlDescriptor` has `IValueControlProps<unknown>`, `InputControlDescriptor` — `IInputControlProps<unknown>`. A concrete component fixes the value type in its own class (`TInput extends TInputControl<string, …>`), and its descriptor gets exactly that.
 
@@ -72,8 +72,8 @@ Slots are declared in the same `contribution` under `slots`; a scope value is `d
 ```ts
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { <Name>Descriptor } from '@soldy/setup'
-import type { I<Name> } from '@soldy/core'
+import { <Name>Descriptor } from '@soldy-ui/setup'
+import type { I<Name> } from '@soldy-ui/core'
 
 export const emits<Name>: TEmits = useEmits(<Name>Descriptor())
 export const props<Name>: TProps = useProps(<Name>Descriptor()) as TProps
@@ -87,13 +87,13 @@ export default {
 }
 ```
 
-- `setup.component.ts`: type the `setup` props with `<Name>Props`, create the context with `createVueAdapterContext` and return `useAdapter`. The wrapper (`packages/ui/vue/src/adapter/common/`) strips the Vue proxy from `ctrl`, so the component imports nothing from `'vue'` and never imports `createAdapterContext` from `@soldy/setup` — the eslint block `soldy/vue-components-no-framework` fails on both:
+- `setup.component.ts`: type the `setup` props with `<Name>Props`, create the context with `createVueAdapterContext` and return `useAdapter`. The wrapper (`packages/ui/vue/src/adapter/common/`) strips the Vue proxy from `ctrl`, so the component imports nothing from `'vue'` and never imports `createAdapterContext` from `@soldy-ui/setup` — the eslint block `soldy/vue-components-no-framework` fails on both:
 
 ```ts
-import { <Name>Descriptor } from '@soldy/setup'
+import { <Name>Descriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import Base<Name>, { type <Name>Props } from './base.component'
-import { type I<Name>Props, type I<Name> } from '@soldy/core'
+import { type I<Name>Props, type I<Name> } from '@soldy-ui/core'
 
 export default {
   name: '_<Name>',
@@ -112,7 +112,7 @@ export default {
 - `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"` and the three core attribute sets `v-bind="{ ...attrs, ...aria, ...dataset }"`.
 - `index.ts`: export `Base<Name>`, `props<Name>`, `emits<Name>`, and the `.vue` default.
 
-`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `DescriptorComponentProps<TDescriptorFn, TInstance>` from `@soldy/setup` — own props, plugin props (`aria_label`, …) and the adapter's service props (`ctrl`, `embedded`, `pluginProps` — values for plugins installed from outside).
+`UseProps` lives in `packages/ui/vue/src/types/common.ts` and is defined as `DescriptorComponentProps<TDescriptorFn, TInstance>` from `@soldy-ui/setup` — own props, plugin props (`aria_label`, …) and the adapter's service props (`ctrl`, `embedded`, `pluginProps` — values for plugins installed from outside).
 
 ### 4. React adapter — `packages/ui/react/src/components/<name>/`
 
@@ -121,8 +121,8 @@ React has **no runtime props declaration** — only types. Four files per compon
 - `base.component.ts`: derive the precise props type from the descriptor. Use `UseDomProps` when the component renders a DOM root (it merges `HTMLAttributes<HTMLElement>`); use `UseProps` for headless layers:
 
 ```ts
-import type { I<Name> } from '@soldy/core'
-import type { <Name>Descriptor } from '@soldy/setup'
+import type { I<Name> } from '@soldy-ui/core'
+import type { <Name>Descriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
 /** События слоя <Name> (core + плагины), выведены из дескриптора автоматически. */
@@ -134,8 +134,8 @@ export type <Name>Props = UseDomProps<typeof <Name>Descriptor, I<Name>, <Name>Ev
 - `setup.component.ts`: one hook that creates the adapter context once per component lifetime. The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`: the eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes):
 
 ```ts
-import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
-import type { I<Name> } from '@soldy/core'
+import { createAdapterContext, <Name>Descriptor } from '@soldy-ui/setup'
+import type { I<Name> } from '@soldy-ui/core'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { <Name>Props } from './base.component'
 
@@ -158,7 +158,7 @@ export { useSetup<Name> } from './setup.component'
 export { <Name> } from './<Name>'
 ```
 
-React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `SlotProps`, `UseProps`, `UseDomProps` — built on `DescriptorComponentProps` and `DescriptorCallbackEvents` from `@soldy/setup`.
+React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `SlotProps`, `UseProps`, `UseDomProps` — built on `DescriptorComponentProps` and `DescriptorCallbackEvents` from `@soldy-ui/setup`.
 
 ### 5. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
@@ -170,13 +170,13 @@ React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `Slot
 - `manifest.ts` — вход кодогенератора:
 
 ```ts
-import { <Name>Descriptor } from '@soldy/setup'
+import { <Name>Descriptor } from '@soldy-ui/setup'
 
 export const name = '<name>'
 export const descriptor = <Name>Descriptor
 ```
 
-- Запусти `npm run generate --workspace=@soldy/ui-angular` → появится
+- Запусти `npm run generate --workspace=@soldy-ui/angular` → появится
   `src/generated/<name>.metadata.ts` с `<Name>Inputs` / `<Name>Outputs`.
   **Файл коммитится**, CI проверяет, что он не разъехался с дескриптором.
 
@@ -192,8 +192,8 @@ export {
 - `setup.component.ts`:
 
 ```ts
-import { createAdapterContext, <Name>Descriptor } from '@soldy/setup'
-import type { I<Name> } from '@soldy/core'
+import { createAdapterContext, <Name>Descriptor } from '@soldy-ui/setup'
+import type { I<Name> } from '@soldy-ui/core'
 import { useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
@@ -213,7 +213,7 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 ```ts
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgClass, NgTemplateOutlet } from '@angular/common'
-import type { I<Name> } from '@soldy/core'
+import type { I<Name> } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
 import { AriaDirective, TComponentBase } from '../../adapter'
 import { <Name>InputNames, <Name>OutputNames } from './base.component'
@@ -286,13 +286,13 @@ npx prettier --check .
 # type checks — the same commands as the CI steps «Типы — …»
 npx tsc --noEmit -p packages/core/tsconfig.json
 npx tsc --noEmit -p packages/setup/tsconfig.json
-npm run build:types --workspace=@soldy/ui-vue
+npm run build:types --workspace=@soldy-ui/vue
 npx vue-tsc --noEmit -p packages/ui/vue/tsconfig.json
 npx tsc --noEmit -p packages/ui/react/tsconfig.json
 # Angular: ngc без эмита — TS, шаблоны @Component (strictTemplates) и ограничения AOT
 npx ngc -p packages/ui/angular/tsconfig.json
 # Angular: метаданные не должны разъехаться с дескриптором
-npm run generate --workspace=@soldy/ui-angular
+npm run generate --workspace=@soldy-ui/angular
 git diff --exit-code packages/ui/angular/src/generated
 ```
 

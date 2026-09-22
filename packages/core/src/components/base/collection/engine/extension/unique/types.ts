@@ -1,5 +1,5 @@
 import type { IExtension, IExtensionItems } from '../types'
-import type { TNoEvents } from '@soldy/core'
+import type { TNoEvents } from '@soldy-ui/core'
 import type { IUniqueItemExtension } from './item/types'
 
 /** Событий у расширения нет — см. `TNoEvents`. */

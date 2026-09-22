@@ -1,4 +1,4 @@
-import { withParts } from '@soldy/setup'
+import { withParts } from '@soldy-ui/setup'
 import ListBoxComponent from './ListBox.vue'
 import { ListBoxItem } from './item'
 

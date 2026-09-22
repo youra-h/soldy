@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { SkeletonDescriptor } from '@soldy/setup'
-import type { ISkeleton } from '@soldy/core'
+import { SkeletonDescriptor } from '@soldy-ui/setup'
+import type { ISkeleton } from '@soldy-ui/core'
 
 export const emitsSkeleton: TEmits = useEmits(SkeletonDescriptor())
 

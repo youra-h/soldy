@@ -2,7 +2,7 @@ import {
 	TCollectionItemExtension,
 	TagsItemDescriptor,
 	TagsCollectionItemDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

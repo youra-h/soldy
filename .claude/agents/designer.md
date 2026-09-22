@@ -91,10 +91,10 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    - CSS под классы и `data-*`, которых ядро ещё не выпускает, писать можно:
      разметка придёт в той же ветке и в том же PR. Но каждый такой класс и
      атрибут перечисли в спецификации — иначе стиль останется мёртвым.
-   - Иконка: SVG в `src/`, затем `npm run generate --workspace=@soldy/icons-material`.
+   - Иконка: SVG в `src/`, затем `npm run generate --workspace=@soldy-ui/icons-material`.
      Цвет только через `currentColor`. Новая роль — в спецификацию.
 7. Прогон:
-   - `npm run build --workspace=@soldy/theme-oren` и `npm run test:theme`;
+   - `npm run build --workspace=@soldy-ui/theme-oren` и `npm run test:theme`;
    - правил иконки — `npm run test:setup`;
    - правил стили уже существующих компонентов — `npm run test:layout`.
 
@@ -164,8 +164,8 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    отключённое.
 2. Запуск:
    ```
-   npm run build --workspace=@soldy/theme-oren
-   npm run test:browser --workspace=@soldy/playground-vue -- design-<task_id>
+   npm run build --workspace=@soldy-ui/theme-oren
+   npm run test:browser --workspace=@soldy-ui/playground-vue -- design-<task_id>
    ```
    Браузер не находится — установка описана в корневом `AGENTS.md`, раздел
    «Браузерный прогон». Системный Chrome вместо него не подставляй.

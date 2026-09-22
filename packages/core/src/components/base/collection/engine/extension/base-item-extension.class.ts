@@ -1,6 +1,6 @@
 import type { IItemExtension, TBaseItemEventsExtension } from './types'
-import { TEvented } from '@soldy/core'
-import type { TEventSink } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
+import type { TEventSink } from '@soldy-ui/core'
 
 /**
  * Абстрактный item-адаптер — устраняет повторяющийся код конструктора:

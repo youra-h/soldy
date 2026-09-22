@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import * as core from '@soldy/core'
-import { TComponentView } from '@soldy/core'
+import * as core from '@soldy-ui/core'
+import { TComponentView } from '@soldy-ui/core'
 import type {
 	TAccordionView,
 	TButtonView,
@@ -12,7 +12,7 @@ import type {
 	TSkeletonShape,
 	TTabsView,
 	TTagsView,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 /** `true`, только когда типы совпадают в обе стороны. */
 type TExact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false

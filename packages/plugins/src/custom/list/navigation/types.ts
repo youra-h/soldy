@@ -1,4 +1,4 @@
-import type { IControl } from '@soldy/core'
+import type { IControl } from '@soldy-ui/core'
 import type { TPluginEvents } from '../../../base'
 
 /**

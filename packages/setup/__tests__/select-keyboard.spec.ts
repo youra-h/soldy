@@ -12,10 +12,10 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import type { ISelectProps } from '@soldy/core'
+import type { ISelectProps } from '@soldy-ui/core'
 import { createPluginContext, required } from './helpers'
-import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy/core'
-import type { ISelectItem } from '@soldy/core'
+import { TSelect, TSelectItem, TSelectCollectionFacade, TItemContextRegistry } from '@soldy-ui/core'
+import type { ISelectItem } from '@soldy-ui/core'
 import {
 	TSelectKeyboardPlugin,
 	TElementPlugin,
@@ -23,7 +23,7 @@ import {
 	TCollectionElements,
 	TListItemPlugin,
 	TPluginBundle,
-} from '@soldy/plugins'
+} from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

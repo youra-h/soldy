@@ -1,10 +1,10 @@
 /**
- * Общие типы Svelte-адаптера @soldy/ui-svelte.
+ * Общие типы Svelte-адаптера @soldy-ui/svelte.
  */
 
 import type { Snippet } from 'svelte'
 import type { HTMLAttributes } from 'svelte/elements'
-import type { IEntity } from '@soldy/core'
+import type { IEntity } from '@soldy-ui/core'
 import type {
 	IComponentDescriptor,
 	DescriptorAllProps,
@@ -12,7 +12,7 @@ import type {
 	DescriptorComponentProps,
 	DescriptorSlots,
 	DEFAULT_SLOT,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 
 /** Событийные пропы компонента из дескриптора (core + плагины). */
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =

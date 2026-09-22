@@ -1,4 +1,4 @@
-import { ButtonDescriptor } from '@soldy/setup'
+import { ButtonDescriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseButton, { type ButtonProps } from './base.component'
 

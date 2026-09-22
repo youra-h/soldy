@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TPopover } from '@soldy/core'
+import { TPopover } from '@soldy-ui/core'
 import {
 	TDismissPlugin,
 	TElementPlugin,

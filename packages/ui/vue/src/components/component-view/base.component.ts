@@ -1,7 +1,7 @@
 import type { TEmits, TProps, UseProps } from '../../types'
 import { useEmits, useProps } from '../../adapter'
-import { ComponentViewDescriptor } from '@soldy/setup'
-import type { IComponentView } from '@soldy/core'
+import { ComponentViewDescriptor } from '@soldy-ui/setup'
+import type { IComponentView } from '@soldy-ui/core'
 
 export const emitsComponentView: TEmits = useEmits(ComponentViewDescriptor())
 

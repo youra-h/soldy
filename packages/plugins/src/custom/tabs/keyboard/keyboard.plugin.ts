@@ -1,4 +1,4 @@
-import type { ITabs, ITabsItem, TTabsCollection, TTabsOrientation } from '@soldy/core'
+import type { ITabs, ITabsItem, TTabsCollection, TTabsOrientation } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'

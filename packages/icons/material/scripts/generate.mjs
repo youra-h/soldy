@@ -49,10 +49,10 @@ const entries = files.map((file) => {
 
 const output = `/**
  * СГЕНЕРИРОВАНО. Не править руками — правьте SVG рядом и запускайте
- * \`npm run generate --workspace=@soldy/icons-material\`.
+ * \`npm run generate --workspace=@soldy-ui/icons-material\`.
  */
 
-import type { TIconSource } from '@soldy/setup'
+import type { TIconSource } from '@soldy-ui/setup'
 
 ${entries.join('\n\n')}
 `

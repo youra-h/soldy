@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TTabsItem } from '@soldy/core'
+import { TTabsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 

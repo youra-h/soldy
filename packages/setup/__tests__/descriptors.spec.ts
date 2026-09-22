@@ -16,7 +16,7 @@ import {
 	TSelectItem,
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 import {
 	TElementPlugin,
 	TReadyPlugin,
@@ -26,7 +26,7 @@ import {
 	TListKeyboardPlugin,
 	TListHeightPlugin,
 	TListItemPlugin,
-} from '@soldy/plugins'
+} from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	ComponentViewDescriptor,
@@ -47,14 +47,14 @@ import {
 	defineComponent,
 	CommonProfile,
 	createAdapterContext,
-} from '@soldy/setup'
-import type { DescriptorEvents, DescriptorProps, IComponentDescriptor } from '@soldy/setup'
+} from '@soldy-ui/setup'
+import type { DescriptorEvents, DescriptorProps, IComponentDescriptor } from '@soldy-ui/setup'
 import type {
 	IButtonProps,
 	IComponentViewProps,
 	TButtonEvents,
 	TComponentViewEvents,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 import { required } from './helpers'
 
 /** Собрать компонент так же, как это делает монтирование. */

@@ -17,10 +17,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { COMPONENT_VARIANTS } from '@soldy/playground-shared'
-import { CheckBox } from '@soldy/ui-vue'
+import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
+import { CheckBox } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 type TProps = Record<string, unknown>
 

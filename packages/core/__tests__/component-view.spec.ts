@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { TComponentView, TVisibilityState, TStateUnit } from '@soldy/core'
-import type { IComponentViewProps, IVisibilityState } from '@soldy/core'
+import { TComponentView, TVisibilityState, TStateUnit } from '@soldy-ui/core'
+import type { IComponentViewProps, IVisibilityState } from '@soldy-ui/core'
 
 describe('TComponentView', () => {
 	beforeEach(() => {

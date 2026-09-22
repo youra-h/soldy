@@ -10,7 +10,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TAnchorPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TAnchorPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const AnchorPluginDescriptor = definePlugin({
 	ctor: TAnchorPlugin,

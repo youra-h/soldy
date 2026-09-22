@@ -12,7 +12,7 @@ import { router } from '../src/router'
 import { SCENARIOS, testsPath } from '../src/catalog'
 import TestsSidebar from '../src/components/TestsSidebar.vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 import '../src/styles.css'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))

@@ -4,8 +4,8 @@
  *
  * Подключается в точке входа приложения рядом со стилями:
  *
- *   import '@soldy/theme-oren'
- *   import oren from '@soldy/theme-oren/setup'
+ *   import '@soldy-ui/theme-oren'
+ *   import oren from '@soldy-ui/theme-oren/setup'
  *
  *   useTheme(oren)
  *
@@ -17,7 +17,7 @@
  * `extensions/` со своим установщиком, подключённым здесь.
  */
 
-import { defineTheme } from '@soldy/setup'
+import { defineTheme } from '@soldy-ui/setup'
 import { plugins } from './plugins'
 
 export { TTabsViewPlugin } from './plugins'

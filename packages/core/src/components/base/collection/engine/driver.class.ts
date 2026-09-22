@@ -1,7 +1,7 @@
 import type { IStorage } from './storage'
 import type { ICommand, ICommandContext, IQueryCommand } from './commands'
 import type { ICollectionStorageDriver, TCollectionStorageDriverEvents } from './types'
-import { TEvented } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
 
 export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> {
 	private _storage: IStorage<T> // Хранилище элементов коллекции

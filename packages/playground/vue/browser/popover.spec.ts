@@ -13,10 +13,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
-import { Button, Popover } from '@soldy/ui-vue'
-import type { DescriptorSlots, PopoverDescriptor } from '@soldy/setup'
+import { Button, Popover } from '@soldy-ui/vue'
+import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 

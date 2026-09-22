@@ -24,7 +24,7 @@
  */
 
 import { useEffect, useEffectEvent, useReducer, useRef } from 'react'
-import type { IAdapterContext, IComponentContract } from '@soldy/setup'
+import type { IAdapterContext, IComponentContract } from '@soldy-ui/setup'
 
 /** Счётчик версий: его смена перерисовывает компонент с новым контекстом. */
 const nextVersion = (version: number) => version + 1

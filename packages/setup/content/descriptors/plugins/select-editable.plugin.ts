@@ -8,7 +8,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TEditablePlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TEditablePlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const SelectEditablePluginDescriptor = definePlugin({
 	ctor: TEditablePlugin,

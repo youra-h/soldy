@@ -2,8 +2,8 @@
  * Контракты реестра: что приложение регистрирует на тип компонента и с какими опциями.
  */
 
-import type { IExtension } from '@soldy/core'
-import type { IPluginConstructor } from '@soldy/plugins'
+import type { IExtension } from '@soldy-ui/core'
+import type { IPluginConstructor } from '@soldy-ui/plugins'
 import type { IBundleContext } from '../define'
 
 /**

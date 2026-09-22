@@ -1,4 +1,4 @@
-import type { ICheckBox } from '@soldy/core'
+import type { ICheckBox } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'

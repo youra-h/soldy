@@ -13,7 +13,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TDismissPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TDismissPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const DismissPluginDescriptor = definePlugin({
 	ctor: TDismissPlugin,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { TComponentView, TFrame, TTabsItem } from '@soldy/core'
-import type { TDefaultValues } from '@soldy/core'
+import { TComponentView, TFrame, TTabsItem } from '@soldy-ui/core'
+import type { TDefaultValues } from '@soldy-ui/core'
 
 interface ISampleProps {
 	size?: 'small' | 'large'

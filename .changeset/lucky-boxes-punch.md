@@ -1,5 +1,5 @@
 ---
-'@soldy/theme-oren': patch
+'@soldy-ui/theme-oren': patch
 ---
 
 Readonly CheckBox и Switch больше не откликаются на наведение: подсветки нет ни с самого контрола, ни с текста подписи Label, а курсор там обычный, а не рука

@@ -1,4 +1,4 @@
-import { TCollectionExtension, TagsDescriptor, TagsCollectionDescriptor } from '@soldy/setup'
+import { TCollectionExtension, TagsDescriptor, TagsCollectionDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useCollectionAdapter,

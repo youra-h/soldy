@@ -18,8 +18,8 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { createPluginContext, required } from './helpers'
-import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy/core'
-import type { IListBoxItem } from '@soldy/core'
+import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy-ui/core'
+import type { IListBoxItem } from '@soldy-ui/core'
 import {
 	TListKeyboardPlugin,
 	TListItemPlugin,
@@ -27,7 +27,7 @@ import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
 	TPluginBundle,
-} from '@soldy/plugins'
+} from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

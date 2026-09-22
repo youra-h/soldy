@@ -14,8 +14,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick, ref } from 'vue'
-import { Frame } from '@soldy/ui-vue'
-import { TAnchorPlugin } from '@soldy/plugins'
+import { Frame } from '@soldy-ui/vue'
+import { TAnchorPlugin } from '@soldy-ui/plugins'
 
 afterEach(() => {
 	document.body.innerHTML = ''

@@ -14,20 +14,26 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			// Раньше корня пакета: алиас сравнивается префиксом
-			'@soldy/theme-oren/setup': path.resolve(
+			'@soldy-ui/theme-oren/setup': path.resolve(
 				import.meta.dirname,
 				'../../themes/oren/setup/index.ts',
 			),
-			'@soldy/theme-oren': path.resolve(
+			'@soldy-ui/theme-oren': path.resolve(
 				import.meta.dirname,
 				'../../themes/oren/dist/index.css',
 			),
-			'@soldy/core': path.resolve(import.meta.dirname, '../../core/src'),
-			'@soldy/icons-material': path.resolve(import.meta.dirname, '../../icons/material/src'),
-			'@soldy/plugins': path.resolve(import.meta.dirname, '../../plugins/src'),
-			'@soldy/setup': path.resolve(import.meta.dirname, '../../setup/index.ts'),
-			'@soldy/ui-vue': path.resolve(import.meta.dirname, '../../ui/vue/src/index.ts'),
-			'@soldy/playground-shared': path.resolve(import.meta.dirname, '../shared/src/index.ts'),
+			'@soldy-ui/core': path.resolve(import.meta.dirname, '../../core/src'),
+			'@soldy-ui/icons-material': path.resolve(
+				import.meta.dirname,
+				'../../icons/material/src',
+			),
+			'@soldy-ui/plugins': path.resolve(import.meta.dirname, '../../plugins/src'),
+			'@soldy-ui/setup': path.resolve(import.meta.dirname, '../../setup/index.ts'),
+			'@soldy-ui/vue': path.resolve(import.meta.dirname, '../../ui/vue/src/index.ts'),
+			'@soldy-ui/playground-shared': path.resolve(
+				import.meta.dirname,
+				'../shared/src/index.ts',
+			),
 		},
 	},
 })

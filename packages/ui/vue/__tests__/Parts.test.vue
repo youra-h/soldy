@@ -5,7 +5,7 @@
  * через `components: {}` рантайм-компилятор ищет «Tabs.Item» как имя в реестре
  * и не находит — поэтому проверка обязана идти через настоящий .vue-файл.
  */
-import { Tabs, TabsItem } from '@soldy/ui-vue'
+import { Tabs, TabsItem } from '@soldy-ui/vue'
 
 defineProps<{ mode: 'dotted' | 'flat' | 'mixed' }>()
 </script>

@@ -15,8 +15,8 @@
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll, vi } from 'vitest'
-import { TTags, TTagsItem, createEngineTags } from '@soldy/core'
-import type { TTagsOverflow } from '@soldy/core'
+import { TTags, TTagsItem, createEngineTags } from '@soldy-ui/core'
+import type { TTagsOverflow } from '@soldy-ui/core'
 import {
 	countFitting,
 	TCollectionBundlesPlugin,

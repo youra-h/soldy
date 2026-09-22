@@ -14,10 +14,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { TTags, createEngineTags } from '@soldy/core'
-import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy/core'
-import { Tags } from '@soldy/ui-vue'
-import * as material from '@soldy/icons-material'
+import { TTags, createEngineTags } from '@soldy-ui/core'
+import type { ITagsProps, TTagsCollection, TTagsOverflow } from '@soldy-ui/core'
+import { Tags } from '@soldy-ui/vue'
+import * as material from '@soldy-ui/icons-material'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

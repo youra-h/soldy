@@ -2,7 +2,7 @@
  * useSetupTextable — setup-слой Textable (аналог setup.component.ts во Vue).
  */
 
-import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
+import { createAdapterContext, TextableDescriptor } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { TextableProps } from './base.component'
 

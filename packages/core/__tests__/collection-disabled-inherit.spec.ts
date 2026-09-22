@@ -27,8 +27,8 @@ import {
 	TSelect,
 	TTabs,
 	TTags,
-} from '@soldy/core'
-import type { TDataset } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { TDataset } from '@soldy-ui/core'
 
 /** Источник элемента — то, что приходит в `items`. */
 type TSource = { value: string; disabled?: boolean }

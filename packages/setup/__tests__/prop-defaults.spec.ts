@@ -23,8 +23,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TCollectionComponent, TFrame } from '@soldy/core'
-import { TBasePlugin } from '@soldy/plugins'
+import { TCollectionComponent, TFrame } from '@soldy-ui/core'
+import { TBasePlugin } from '@soldy-ui/plugins'
 import {
 	AnchorPluginDescriptor,
 	AriaPluginDescriptor,

@@ -1,5 +1,5 @@
-import { TPluginBundle } from '@soldy/plugins'
-import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy/plugins'
+import { TPluginBundle } from '@soldy-ui/plugins'
+import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy-ui/plugins'
 import * as exported from '../content/descriptors'
 import type { IComponentDescriptor } from '../protected/define'
 import { callbackEventNaming, underscorePropNaming } from '../protected/naming'

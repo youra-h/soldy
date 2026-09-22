@@ -16,8 +16,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { TInput, TSelect } from '@soldy/core'
-import { Input, Select } from '@soldy/ui-vue'
+import { TInput, TSelect } from '@soldy-ui/core'
+import { Input, Select } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

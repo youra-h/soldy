@@ -1,4 +1,4 @@
-import { underscorePropNaming } from '@soldy/setup'
+import { underscorePropNaming } from '@soldy-ui/setup'
 import { propControls } from '../props'
 import type { TComponentEntry, TPropControl } from '../types'
 import type { TAutoScenario } from './types'

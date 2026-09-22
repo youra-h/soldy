@@ -23,8 +23,8 @@
  * pluginProps» в порту входов нет.
  */
 
-import type { IEventEmitter, TPluginEvent } from '@soldy/core'
-import type { IPluginBundle, TPluginBundleEvents } from '@soldy/plugins'
+import type { IEventEmitter, TPluginEvent } from '@soldy-ui/core'
+import type { IPluginBundle, TPluginBundleEvents } from '@soldy-ui/plugins'
 import { pluginContractOf } from '../../define'
 import type { TPluginCtor } from '../../define'
 import { CommonProfile } from '../../naming'

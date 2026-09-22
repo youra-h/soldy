@@ -30,7 +30,7 @@ import {
 	TabsItem,
 	Tags,
 	TagsItem,
-} from '@soldy/ui-vue'
+} from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

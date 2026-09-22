@@ -5,8 +5,8 @@
  * расширениями коллекций, и отменяется тема тоже целиком.
  */
 
-import { TTabs } from '@soldy/core'
-import type { IThemePlugins } from '@soldy/setup'
+import { TTabs } from '@soldy-ui/core'
+import type { IThemePlugins } from '@soldy-ui/setup'
 import { TTabsViewPlugin } from './tabs-view.plugin'
 
 export const plugins: readonly IThemePlugins[] = [

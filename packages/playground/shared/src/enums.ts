@@ -1,4 +1,4 @@
-/// <reference types="@soldy/theme-oren" />
+/// <reference types="@soldy-ui/theme-oren" />
 
 import type {
 	TComponentSize,
@@ -24,8 +24,8 @@ import type {
 	TSelectPlacement,
 	TTagsOverflow,
 	TPopoverPlacement,
-} from '@soldy/core'
-import type { TFramePlacement } from '@soldy/plugins'
+} from '@soldy-ui/core'
+import type { TFramePlacement } from '@soldy-ui/plugins'
 
 /**
  * Списки допустимых значений перечислимых пропов.

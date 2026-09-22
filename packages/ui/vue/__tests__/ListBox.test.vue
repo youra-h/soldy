@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Тестовая обёртка: точка резолвится только компилятором SFC. */
-import { ListBox } from '@soldy/ui-vue'
+import { ListBox } from '@soldy-ui/vue'
 
 defineProps<{
 	mode?: 'single' | 'multiple'

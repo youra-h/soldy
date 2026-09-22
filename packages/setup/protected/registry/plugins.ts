@@ -25,7 +25,7 @@
  * только в продакшен-сборке. Импорт определения держит модуль в бандле.
  */
 
-import type { IPluginConstructor } from '@soldy/plugins'
+import type { IPluginConstructor } from '@soldy-ui/plugins'
 import type { IBundleContext } from '../define'
 import { createRegistrations } from './registrations'
 import type { IPluginRegistrationOptions, IResolvedPlugin, TRegisteredPlugin } from './types'

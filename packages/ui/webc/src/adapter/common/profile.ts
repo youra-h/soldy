@@ -6,7 +6,7 @@
  * `adapter.connect()`). Один профиль — одна поверхность на оба случая.
  */
 
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy-ui/setup'
 import { WebcNaming } from './naming'
 
 export const WebcProfile: IAdapterProfile = { naming: WebcNaming }

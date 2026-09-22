@@ -21,9 +21,9 @@ import {
 	observerCount,
 	triggerResize,
 } from './helpers'
-import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy/plugins'
-import type { IDismissPluginOptions } from '@soldy/plugins'
-import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy/core'
+import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy-ui/plugins'
+import type { IDismissPluginOptions } from '@soldy-ui/plugins'
+import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy-ui/core'
 
 /** Якорь с заданным прямоугольником: jsdom сам ничего не раскладывает. */
 function anchorAt(rect: Partial<DOMRect>): HTMLElement {

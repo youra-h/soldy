@@ -19,13 +19,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { COMPONENT_SIZES } from '@soldy/playground-shared'
-import { Select, SelectItem } from '@soldy/ui-vue'
-import type { TTagsOverflow } from '@soldy/core'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
+import { Select, SelectItem } from '@soldy-ui/vue'
+import type { TTagsOverflow } from '@soldy-ui/core'
 
 import { expectInsideWindow } from './viewport'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Нижняя граница ширины ввода — `min-w-16` из `_input.scss`, в пикселях. */
 const MIN_INPUT_WIDTH = 64

@@ -1,5 +1,5 @@
 import { ref, watchEffect } from 'vue'
-import { THEMES } from '@soldy/playground-shared'
+import { THEMES } from '@soldy-ui/playground-shared'
 
 const STORAGE_KEY = 'soldy-playground-theme'
 

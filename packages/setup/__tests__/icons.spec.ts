@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { MISSING_ICON, getIcon, hasIcon, resetIcons, setIcons } from '../protected/registry/icons'
 import { ICON_ROLES, missingIconRoles } from '../content/icons/roles'
-import * as material from '@soldy/icons-material'
+import * as material from '@soldy-ui/icons-material'
 
 const anIcon = { viewBox: '0 0 24 24', body: '<path d="M0 0h24v24H0z"/>' }
 

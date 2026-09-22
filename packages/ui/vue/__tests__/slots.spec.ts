@@ -16,8 +16,8 @@ import {
 	LabelDescriptor,
 	PopoverDescriptor,
 	TagsDescriptor,
-} from '@soldy/setup'
-import { Button, ComponentView } from '@soldy/ui-vue'
+} from '@soldy-ui/setup'
+import { Button, ComponentView } from '@soldy-ui/vue'
 
 /** Имена слотов, реально объявленные в разметке .vue-файла. */
 function templateSlots(relativePath: string): string[] {

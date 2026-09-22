@@ -12,8 +12,8 @@
  * Базу имени так же берут Vue и Web Components, только отдают её как есть.
  */
 
-import type { INamingStrategy } from '@soldy/setup'
-import { underscorePropNaming } from '@soldy/setup'
+import type { INamingStrategy } from '@soldy-ui/setup'
+import { underscorePropNaming } from '@soldy-ui/setup'
 
 function toCamelCase(input: string): string {
 	return input

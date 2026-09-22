@@ -1,4 +1,4 @@
-import { SkeletonDescriptor } from '@soldy/setup'
+import { SkeletonDescriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseSkeleton, { type SkeletonProps } from './base.component'
 

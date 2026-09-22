@@ -5,7 +5,7 @@ import {
 	TActivationExtension,
 	TSelectionExtension,
 	TItemContextRegistry,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 

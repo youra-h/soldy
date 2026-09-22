@@ -18,9 +18,9 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { SelectDescriptor, toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy/setup'
-import { TDismissPlugin } from '@soldy/plugins'
+import { SelectDescriptor, toInstanceState } from '@soldy-ui/setup'
+import type { IAdapterContext, IComponentContract, TAdapterState } from '@soldy-ui/setup'
+import { TDismissPlugin } from '@soldy-ui/plugins'
 import type {
 	TEditablePlugin,
 	TFrameLayoutPlugin,
@@ -28,7 +28,7 @@ import type {
 	TSelectKeyboardPlugin,
 	TSkeletonLayoutPlugin,
 	TSpinnerLayoutPlugin,
-} from '@soldy/plugins'
+} from '@soldy-ui/plugins'
 import { VueProfile, createVueAdapterContext } from '../src/adapter'
 import type SetupSelect from '../src/components/select/setup.component'
 import type SetupFrame from '../src/components/frame/setup.component'

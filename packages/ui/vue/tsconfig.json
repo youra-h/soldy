@@ -5,9 +5,9 @@
     "paths": {
       "@ui": ["./src/components"],
       "@ui/*": ["./src/components/*"],
-      "@soldy/core": ["../../core/src"],
-      "@soldy/icons-material": ["../../icons/material/src"],
-      "@soldy/plugins": ["../../plugins/src"]
+      "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/icons-material": ["../../icons/material/src"],
+      "@soldy-ui/plugins": ["../../plugins/src"]
     }
   },
   "include": ["src/**/*", "__tests__/**/*", "env.d.ts"]

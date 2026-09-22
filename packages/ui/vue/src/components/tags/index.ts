@@ -1,4 +1,4 @@
-import { withParts } from '@soldy/setup'
+import { withParts } from '@soldy-ui/setup'
 import TagsComponent from './Tags.vue'
 import { TagsItem } from './item'
 

@@ -35,8 +35,8 @@ import {
 	SpinnerDescriptor,
 	SwitchDescriptor,
 	TabsDescriptor,
-} from '@soldy/setup'
-import type { IComponentDescriptor } from '@soldy/setup'
+} from '@soldy-ui/setup'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
 import { useEmits, VueProfile } from '../src/adapter'
 
 const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [

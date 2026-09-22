@@ -1,9 +1,9 @@
 /**
  * СГЕНЕРИРОВАНО. Не править руками — правьте SVG рядом и запускайте
- * `npm run generate --workspace=@soldy/icons-material`.
+ * `npm run generate --workspace=@soldy-ui/icons-material`.
  */
 
-import type { TIconSource } from '@soldy/setup'
+import type { TIconSource } from '@soldy-ui/setup'
 
 export const arrowDown: TIconSource = {
 	viewBox: '0 -960 960 960',

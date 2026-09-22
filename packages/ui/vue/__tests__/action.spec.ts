@@ -7,9 +7,9 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { TButton } from '@soldy/core'
-import { TActionPlugin, TPluginBundle } from '@soldy/plugins'
-import { Accordion, AccordionItem, Button, CheckBox, Input, Tabs, TabsItem } from '@soldy/ui-vue'
+import { TButton } from '@soldy-ui/core'
+import { TActionPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import { Accordion, AccordionItem, Button, CheckBox, Input, Tabs, TabsItem } from '@soldy-ui/vue'
 
 /**
  * Плагин цепляет слушатели по `element:ready`, а TElementPlugin отдаёт его

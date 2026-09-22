@@ -1,4 +1,4 @@
-import { TEvented } from '@soldy/core'
+import { TEvented } from '@soldy-ui/core'
 import type { IPlugin, IPluginBundle, IPluginConstructor, TPluginBundleEvents } from './types'
 
 export class TPluginBundle implements IPluginBundle {

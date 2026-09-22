@@ -31,9 +31,9 @@ import {
 	useRef,
 	useSyncExternalStore,
 } from 'react'
-import { toInstanceState } from '@soldy/setup'
-import type { IAdapterContext, TExchange, IComponentContract, TAdapterState } from '@soldy/setup'
-import type { IPluginBundle } from '@soldy/plugins'
+import { toInstanceState } from '@soldy-ui/setup'
+import type { IAdapterContext, TExchange, IComponentContract, TAdapterState } from '@soldy-ui/setup'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
 
 export type TBinding<

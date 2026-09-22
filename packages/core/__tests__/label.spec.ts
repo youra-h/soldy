@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCheckBox, TLabel, TSwitch } from '@soldy/core'
+import { TCheckBox, TLabel, TSwitch } from '@soldy-ui/core'
 
 /**
  * Подпись контрола: корень `label`, текст и сторона текста.

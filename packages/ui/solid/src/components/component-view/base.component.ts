@@ -1,5 +1,5 @@
-import type { IComponentView } from '@soldy/core'
-import type { ComponentViewDescriptor } from '@soldy/setup'
+import type { IComponentView } from '@soldy-ui/core'
+import type { ComponentViewDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
 /** События слоя ComponentView (core + плагины), выведены из дескриптора автоматически. */

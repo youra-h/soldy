@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { propControls } from '@soldy/playground-shared'
+import { propControls } from '@soldy-ui/playground-shared'
 import { findAvailable } from '../catalog'
 import PropRow from '../components/PropRow.vue'
 import { useEvents, type TEventSource } from '../composables/useEvents'

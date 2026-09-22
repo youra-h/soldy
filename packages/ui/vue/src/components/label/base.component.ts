@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { LabelDescriptor } from '@soldy/setup'
-import type { ILabel } from '@soldy/core'
+import { LabelDescriptor } from '@soldy-ui/setup'
+import type { ILabel } from '@soldy-ui/core'
 
 export const emitsLabel: TEmits = useEmits(LabelDescriptor())
 

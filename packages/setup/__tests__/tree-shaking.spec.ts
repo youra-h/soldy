@@ -6,7 +6,7 @@
  * сохранить все модули бочки: бандл с одним `ButtonDescriptor` весил 466 KiB.
  *
  * Падает, если флаг убрали или если в пакете появился импорт ради побочного
- * эффекта, который снова связал кнопку со всеми дескрипторами. `@soldy/core`
+ * эффекта, который снова связал кнопку со всеми дескрипторами. `@soldy-ui/core`
  * флага пока не объявляет, поэтому сверяется состав модулей setup и plugins, а
  * не общий размер.
  */
@@ -18,9 +18,9 @@ import { build } from 'esbuild'
 const PACKAGES = resolve(__dirname, '../..')
 
 const ALIAS = {
-	'@soldy/setup': resolve(PACKAGES, 'setup/index.ts'),
-	'@soldy/core': resolve(PACKAGES, 'core/src/index.ts'),
-	'@soldy/plugins': resolve(PACKAGES, 'plugins/src/index.ts'),
+	'@soldy-ui/setup': resolve(PACKAGES, 'setup/index.ts'),
+	'@soldy-ui/core': resolve(PACKAGES, 'core/src/index.ts'),
+	'@soldy-ui/plugins': resolve(PACKAGES, 'plugins/src/index.ts'),
 }
 
 /** Модули, попавшие в бандл с ненулевым весом, — путями от `packages/`. */
@@ -49,10 +49,10 @@ async function bundledModules(source: string): Promise<string[]> {
 		)
 }
 
-describe('tree-shaking @soldy/setup', () => {
+describe('tree-shaking @soldy-ui/setup', () => {
 	it('бандл с одним ButtonDescriptor не содержит дескрипторов и плагинов Select', async () => {
 		const modules = await bundledModules(
-			"import { ButtonDescriptor } from '@soldy/setup'\nconsole.log(ButtonDescriptor().props.length)\n",
+			"import { ButtonDescriptor } from '@soldy-ui/setup'\nconsole.log(ButtonDescriptor().props.length)\n",
 		)
 
 		// Разбор не вхолостую: сама кнопка в бандле есть

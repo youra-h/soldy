@@ -1,4 +1,4 @@
-import type { IComponentView, TCollectionEngine } from '@soldy/core'
+import type { IComponentView, TCollectionEngine } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext, IPluginBundle } from '../../base'
 import { TElementPlugin } from '../element'

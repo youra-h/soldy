@@ -13,7 +13,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
-import { RadioGroup, RadioGroupItem } from '@soldy/ui-vue'
+import { RadioGroup, RadioGroupItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

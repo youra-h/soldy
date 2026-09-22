@@ -8,8 +8,8 @@
  * через COLLECTION_ENGINE_ELEVATOR.
  */
 
-import type { TCollectionEngine } from '@soldy/core'
-import { TCollectionBundlesPlugin } from '@soldy/plugins'
+import type { TCollectionEngine } from '@soldy-ui/core'
+import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import { applyRegisteredExtensions } from '../../../protected/registry'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'

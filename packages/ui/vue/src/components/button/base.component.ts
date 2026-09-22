@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { ButtonDescriptor } from '@soldy/setup'
-import type { IButton } from '@soldy/core'
+import { ButtonDescriptor } from '@soldy-ui/setup'
+import type { IButton } from '@soldy-ui/core'
 
 export const emitsButton: TEmits = useEmits(ButtonDescriptor())
 

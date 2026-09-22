@@ -9,9 +9,9 @@
  * обязан помнить и подключать.
  */
 
-import { TEvented } from '@soldy/core'
-import { TElementPlugin } from '@soldy/plugins'
-import type { IPluginBundle } from '@soldy/plugins'
+import { TEvented } from '@soldy-ui/core'
+import { TElementPlugin } from '@soldy-ui/plugins'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import type { IComponentContract, IComponentDescriptor } from '../../define'
 import type { IAdapterProfile } from '../../naming'
 import { TExchange } from '../exchange/exchange.class'

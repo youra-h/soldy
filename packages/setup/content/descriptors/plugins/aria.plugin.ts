@@ -11,7 +11,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TAriaPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 /**
  * Опция `role` (`AriaPluginDescriptor.with({ role: 'img' })`) — роль, которую

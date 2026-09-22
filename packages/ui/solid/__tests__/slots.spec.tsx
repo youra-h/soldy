@@ -5,8 +5,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import type { ComponentProps } from 'solid-js'
 import { render } from 'solid-js/web'
-import { ButtonDescriptor } from '@soldy/setup'
-import { Button } from '@soldy/ui-solid'
+import { ButtonDescriptor } from '@soldy-ui/setup'
+import { Button } from '@soldy-ui/solid'
 
 const disposers: Array<() => void> = []
 

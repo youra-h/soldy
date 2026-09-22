@@ -1,5 +1,5 @@
-import { createAdapterContext, ComponentViewDescriptor } from '@soldy/setup'
-import type { IComponentView } from '@soldy/core'
+import { createAdapterContext, ComponentViewDescriptor } from '@soldy-ui/setup'
+import type { IComponentView } from '@soldy-ui/core'
 import { useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 

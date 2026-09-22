@@ -53,7 +53,7 @@ Compound components name their parts with a dot:
 
 ```vue
 <script setup lang="ts">
-import { Accordion } from '@soldy/ui-vue'
+import { Accordion } from '@soldy-ui/vue'
 </script>
 
 <template>
@@ -72,9 +72,9 @@ The same component can be driven from code — pass a core instance as `ctrl`:
 
 ```vue
 <script setup lang="ts">
-import { TButton } from '@soldy/core'
-import { TActionPlugin, TPluginBundle } from '@soldy/plugins'
-import { Button } from '@soldy/ui-vue'
+import { TButton } from '@soldy-ui/core'
+import { TActionPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import { Button } from '@soldy-ui/vue'
 
 const btn = new TButton({ text: 'Save', variant: 'accent' })
 
@@ -97,11 +97,11 @@ The application plugs in a theme and an icon pack:
 
 ```ts
 import { createApp } from 'vue'
-import { setIcons } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
+import { setIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
 import App from './App.vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 setIcons(material)
 
@@ -134,12 +134,12 @@ What each adapter implements so far:
 
 | Adapter        | Package             | Ready                     |
 | -------------- | ------------------- | ------------------------- |
-| Vue            | `@soldy/ui-vue`     | all of the above          |
-| React          | `@soldy/ui-react`   | Button                    |
-| Angular        | `@soldy/ui-angular` | Button (`<soldy-button>`) |
-| Svelte         | `@soldy/ui-svelte`  | Button                    |
-| Solid          | `@soldy/ui-solid`   | Button                    |
-| Web Components | `@soldy/ui-webc`    | Button (`<soldy-button>`) |
+| Vue            | `@soldy-ui/vue`     | all of the above          |
+| React          | `@soldy-ui/react`   | Button                    |
+| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`) |
+| Svelte         | `@soldy-ui/svelte`  | Button                    |
+| Solid          | `@soldy-ui/solid`   | Button                    |
+| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`) |
 
 ## Repository structure
 

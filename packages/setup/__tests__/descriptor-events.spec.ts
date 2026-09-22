@@ -15,8 +15,8 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { TButton } from '@soldy/core'
-import type { TButtonEvents } from '@soldy/core'
+import { TButton } from '@soldy-ui/core'
+import type { TButtonEvents } from '@soldy-ui/core'
 import {
 	ButtonDescriptor,
 	ListBoxDescriptor,
@@ -25,8 +25,8 @@ import {
 	defineComponent,
 	TSurface,
 	underscorePropNaming,
-} from '@soldy/setup'
-import type * as setup from '@soldy/setup'
+} from '@soldy-ui/setup'
+import type * as setup from '@soldy-ui/setup'
 import type {
 	DescriptorAllEvents,
 	DescriptorCallbackEvents,
@@ -34,7 +34,7 @@ import type {
 	IAdapterProfile,
 	IComponentDescriptor,
 	TInstanceEvents,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import { CallbackProfile } from './helpers'
 
 /** Имена событий ядра как есть — так их отдают наружу Vue и Web Components. */
@@ -152,7 +152,7 @@ type TLostEventName<TDescriptor> =
 			: never
 		: never
 
-/** Потерянные имена у экспорта `@soldy/setup`, если это фабрика дескриптора. */
+/** Потерянные имена у экспорта `@soldy-ui/setup`, если это фабрика дескриптора. */
 type TLostOf<K extends keyof typeof setup> = (typeof setup)[K] extends () => infer D
 	? TLostEventName<D>
 	: never

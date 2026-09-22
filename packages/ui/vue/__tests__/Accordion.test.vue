@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Тестовая обёртка: точка резолвится только компилятором SFC. */
-import { Accordion } from '@soldy/ui-vue'
+import { Accordion } from '@soldy-ui/vue'
 </script>
 
 <template>

@@ -7,7 +7,7 @@
  * остальные пять адаптеров, ставящие атрибуты напрямую.
  */
 
-import type { TAriaAttributes } from '@soldy/core'
+import type { TAriaAttributes } from '@soldy-ui/core'
 
 /** HTML-атрибут → имя пропа. Только те, где имена расходятся. */
 const ATTRIBUTE_TO_PROP: Record<string, string> = {

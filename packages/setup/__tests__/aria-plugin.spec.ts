@@ -11,9 +11,9 @@
 
 import { describe, it, expect } from 'vitest'
 import { createPluginContext } from './helpers'
-import { TAriaPlugin, TIconLayoutPlugin, TSkeletonLayoutPlugin } from '@soldy/plugins'
-import { TButton, TIcon, TSkeleton } from '@soldy/core'
-import type { IComponentView, IComponentViewProps } from '@soldy/core'
+import { TAriaPlugin, TIconLayoutPlugin, TSkeletonLayoutPlugin } from '@soldy-ui/plugins'
+import { TButton, TIcon, TSkeleton } from '@soldy-ui/core'
+import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import {
 	ButtonDescriptor,
 	IconDescriptor,

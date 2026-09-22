@@ -11,7 +11,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { ListBox, ListBoxItem } from '@soldy/ui-vue'
+import { ListBox, ListBoxItem } from '@soldy-ui/vue'
 
 let wrapper: ReturnType<typeof mount> | null = null
 

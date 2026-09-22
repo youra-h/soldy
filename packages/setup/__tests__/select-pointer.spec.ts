@@ -9,10 +9,10 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import type { ISelectProps } from '@soldy/core'
+import type { ISelectProps } from '@soldy-ui/core'
 import { createPluginContext } from './helpers'
-import { TSelect } from '@soldy/core'
-import { TSelectPointerPlugin, TElementPlugin } from '@soldy/plugins'
+import { TSelect } from '@soldy-ui/core'
+import { TSelectPointerPlugin, TElementPlugin } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

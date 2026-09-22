@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TComponentView } from '@soldy/core'
+import { TComponentView } from '@soldy-ui/core'
 import { ElementPluginDescriptor, ReadyPluginDescriptor } from '../plugins'
 import { ComponentDescriptor } from './component.descriptor'
 

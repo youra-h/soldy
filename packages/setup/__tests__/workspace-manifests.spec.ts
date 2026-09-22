@@ -6,7 +6,7 @@ import { readChangesets } from '@changesets/read'
 
 /**
  * Сторож раздела «Версии пакетов» (см. AGENTS.md). Версии ведёт changesets:
- * библиотечные пакеты `@soldy/*` — одна группа `fixed` и потому одна версия,
+ * библиотечные пакеты `@soldy-ui/*` — одна группа `fixed` и потому одна версия,
  * стенд — в `ignore`. Библиотечный пакет несёт метаданные: описание, лицензию и
  * путь в репозитории, — а его точки входа ведут на файлы.
  *
@@ -400,7 +400,7 @@ describe('сторож манифестов', () => {
 	const library = (overrides: TManifest): TWorkspacePackage => ({
 		dir: 'packages/example',
 		manifest: {
-			name: '@soldy/example',
+			name: '@soldy-ui/example',
 			version: VERSION,
 			description: 'Пакет для проверки сторожа',
 			license: 'MIT',
@@ -413,7 +413,7 @@ describe('сторож манифестов', () => {
 		dir: 'packages/other',
 		manifest: {
 			...library({}).manifest,
-			name: '@soldy/other',
+			name: '@soldy-ui/other',
 			version,
 			repository: { type: 'git', directory: 'packages/other' },
 		},
@@ -421,18 +421,18 @@ describe('сторож манифестов', () => {
 
 	const playground: TWorkspacePackage = {
 		dir: 'packages/playground/vue',
-		manifest: { name: '@soldy/playground-vue', version: '0.0.0' },
+		manifest: { name: '@soldy-ui/playground-vue', version: '0.0.0' },
 	}
 
 	const config = (overrides: Partial<TChangesetConfig>): TChangesetConfig => ({
-		fixed: [['@soldy/example', '@soldy/other']],
-		ignore: ['@soldy/playground-vue'],
+		fixed: [['@soldy-ui/example', '@soldy-ui/other']],
+		ignore: ['@soldy-ui/playground-vue'],
 		...overrides,
 	})
 
 	const changeset = (type: string): TChangeset => ({
 		id: 'brave-dogs-sing',
-		releases: [{ name: '@soldy/example', type }],
+		releases: [{ name: '@soldy-ui/example', type }],
 	})
 
 	it('заполненный пакет — без нарушений', () => {
@@ -537,20 +537,20 @@ describe('сторож манифестов', () => {
 
 	it('пакет вне fixed — нарушение', () => {
 		expect(
-			checkFixed(config({ fixed: [['@soldy/example']] }), [library({}), other(VERSION)]),
-		).toEqual(['fixed: нет "@soldy/other" (packages/other) — пакет вне общей версии'])
+			checkFixed(config({ fixed: [['@soldy-ui/example']] }), [library({}), other(VERSION)]),
+		).toEqual(['fixed: нет "@soldy-ui/other" (packages/other) — пакет вне общей версии'])
 	})
 
 	it('стенд в fixed — нарушение', () => {
-		const fixed = [['@soldy/example', '@soldy/other', '@soldy/playground-vue']]
+		const fixed = [['@soldy-ui/example', '@soldy-ui/other', '@soldy-ui/playground-vue']]
 
 		expect(checkFixed(config({ fixed }), [library({}), other(VERSION)])).toEqual([
-			'fixed: "@soldy/playground-vue" — не библиотечный пакет',
+			'fixed: "@soldy-ui/playground-vue" — не библиотечный пакет',
 		])
 	})
 
 	it('fixed из двух групп — нарушение', () => {
-		const fixed = [['@soldy/example'], ['@soldy/other']]
+		const fixed = [['@soldy-ui/example'], ['@soldy-ui/other']]
 
 		expect(checkFixed(config({ fixed }), [library({}), other(VERSION)])).toEqual([
 			'fixed: групп 2, ожидается одна',
@@ -558,16 +558,16 @@ describe('сторож манифестов', () => {
 	})
 
 	it('имя из ignore без пакета — нарушение', () => {
-		const ignore = ['@soldy/playground-vue', '@soldy/playground-react']
+		const ignore = ['@soldy-ui/playground-vue', '@soldy-ui/playground-react']
 
 		expect(checkIgnore(config({ ignore }), [library({}), playground])).toEqual([
-			'ignore: "@soldy/playground-react" — нет такого пакета в воркспейсе',
+			'ignore: "@soldy-ui/playground-react" — нет такого пакета в воркспейсе',
 		])
 	})
 
 	it('major при версии 0.x — нарушение', () => {
 		expect(checkChangesets([changeset('major')], [library({ version: '0.3.0' })])).toEqual([
-			'.changeset/brave-dogs-sing.md: major у "@soldy/example" при версии 0.3.0 — до 1.0 ломающее изменение поднимает minor',
+			'.changeset/brave-dogs-sing.md: major у "@soldy-ui/example" при версии 0.3.0 — до 1.0 ломающее изменение поднимает minor',
 		])
 	})
 

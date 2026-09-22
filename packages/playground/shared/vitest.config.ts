@@ -17,9 +17,9 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: {
-			'@soldy/core': path.resolve(__dirname, '../../core/src'),
-			'@soldy/plugins': path.resolve(__dirname, '../../plugins/src'),
-			'@soldy/setup': path.resolve(__dirname, '../../setup/index.ts'),
+			'@soldy-ui/core': path.resolve(__dirname, '../../core/src'),
+			'@soldy-ui/plugins': path.resolve(__dirname, '../../plugins/src'),
+			'@soldy-ui/setup': path.resolve(__dirname, '../../setup/index.ts'),
 		},
 	},
 })

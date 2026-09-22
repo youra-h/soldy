@@ -5,7 +5,7 @@
  * профиль нужен только связке монтирования (`adapter.connect()`).
  */
 
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy-ui/setup'
 import { SolidNaming } from './naming'
 
 export const SolidProfile: IAdapterProfile = { naming: SolidNaming, defaultSlot: 'children' }

@@ -3,7 +3,7 @@ import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'
 import { isFocusableElement } from '../../utils'
 import type { IDomEventTarget } from '../../utils'
-import type { IControl } from '@soldy/core'
+import type { IControl } from '@soldy-ui/core'
 import type { IActionPluginOptions, TActionPluginEvents } from './types'
 
 /** Теги, где браузер сам превращает Enter/Space в click. */

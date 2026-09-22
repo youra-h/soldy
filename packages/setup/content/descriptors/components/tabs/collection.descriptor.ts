@@ -7,7 +7,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TTabsCollectionFacade, TTabsItemCollectionFacade } from '@soldy/core'
+import { TTabsCollectionFacade, TTabsItemCollectionFacade } from '@soldy-ui/core'
 import { CollectionDescriptor } from '../collection'
 
 export const TabsCollectionDescriptor = defineDescriptor(() =>

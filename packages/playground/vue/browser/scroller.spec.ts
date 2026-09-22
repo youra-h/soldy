@@ -17,9 +17,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Scroller } from '@soldy/ui-vue'
+import { Scroller } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Содержимое заведомо шире узкой ленты и заведомо уже широкой. */
 const ITEMS = ['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый', 'Шестой']

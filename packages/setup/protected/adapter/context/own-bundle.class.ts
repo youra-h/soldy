@@ -21,9 +21,9 @@
  *    получить `removed`.
  */
 
-import type { IEventEmitter } from '@soldy/core'
-import { TElementPlugin, TPluginBundle } from '@soldy/plugins'
-import type { IPluginBundle } from '@soldy/plugins'
+import type { IEventEmitter } from '@soldy-ui/core'
+import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import { PLUGIN_PROPS } from '../../naming'
 import { resolveRegisteredPlugins } from '../../registry'
 import type { IBundleContext, IComponentDescriptor, TPropSpec } from '../../define'

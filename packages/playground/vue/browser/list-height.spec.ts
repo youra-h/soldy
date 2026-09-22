@@ -12,9 +12,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { ListBox, ListBoxItem } from '@soldy/ui-vue'
+import { ListBox, ListBoxItem } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Строк больше предела: контейнер зажат `max-height` ещё до клика. */
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара']

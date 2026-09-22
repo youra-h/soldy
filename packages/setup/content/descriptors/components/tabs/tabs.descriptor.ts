@@ -8,8 +8,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TTabs } from '@soldy/core'
-import type { ITabsItem } from '@soldy/core'
+import { TTabs } from '@soldy-ui/core'
+import type { ITabsItem } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,

@@ -9,8 +9,8 @@ import {
 	TTabs,
 	TTabsItem,
 	TTabsExtension,
-} from '@soldy/core'
-import type { ITabsItem, ITabs } from '@soldy/core'
+} from '@soldy-ui/core'
+import type { ITabsItem, ITabs } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 

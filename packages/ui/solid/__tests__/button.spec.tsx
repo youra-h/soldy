@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createSignal, type ComponentProps } from 'solid-js'
 import { render } from 'solid-js/web'
-import { TButton } from '@soldy/core'
-import { TActionPlugin } from '@soldy/plugins'
-import { Button } from '@soldy/ui-solid'
+import { TButton } from '@soldy-ui/core'
+import { TActionPlugin } from '@soldy-ui/plugins'
+import { Button } from '@soldy-ui/solid'
 
 const disposers: Array<() => void> = []
 

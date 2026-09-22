@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { FrameDescriptor } from '@soldy/setup'
-import type { IFrame } from '@soldy/core'
+import { FrameDescriptor } from '@soldy-ui/setup'
+import type { IFrame } from '@soldy-ui/core'
 
 export const emitsFrame: TEmits = useEmits(FrameDescriptor())
 

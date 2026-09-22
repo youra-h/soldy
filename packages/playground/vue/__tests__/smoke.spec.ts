@@ -13,9 +13,9 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
-import { setIcons } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
-import { COMPONENTS, propControls } from '@soldy/playground-shared'
+import { setIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
+import { COMPONENTS, propControls } from '@soldy-ui/playground-shared'
 import { AVAILABLE, SHOWCASE } from '../src/catalog'
 import { PREVIEW_COMPONENTS } from '../src/previews'
 import { router } from '../src/router'

@@ -1,5 +1,5 @@
 import type { IStorage } from '../storage'
-import type { TEvented } from '@soldy/core'
+import type { TEvented } from '@soldy-ui/core'
 import type { TCollectionStorageDriverEvents } from '../types'
 
 /**

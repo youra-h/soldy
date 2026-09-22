@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TTabs, TTabsItem, createEngineTabs } from '@soldy/core'
-import type { ITabsProps, ITabsItem, ITabsItemProps } from '@soldy/core'
+import { TTabs, TTabsItem, createEngineTabs } from '@soldy-ui/core'
+import type { ITabsProps, ITabsItem, ITabsItemProps } from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,

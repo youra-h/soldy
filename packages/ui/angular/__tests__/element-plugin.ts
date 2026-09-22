@@ -13,7 +13,7 @@
 
 import { EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
-import { TElementPlugin } from '@soldy/plugins'
+import { TElementPlugin } from '@soldy-ui/plugins'
 
 export function elementPlugin(fixture: ComponentFixture<object>): () => TElementPlugin {
 	const output: unknown = Reflect.get(fixture.componentInstance, 'elementCreate')

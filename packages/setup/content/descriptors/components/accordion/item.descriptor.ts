@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
-import { TAccordionItem } from '@soldy/core'
+import { TAccordionItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 

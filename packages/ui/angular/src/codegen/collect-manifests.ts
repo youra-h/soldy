@@ -9,7 +9,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { IComponentDescriptor } from '@soldy/setup'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
 
 export type TManifest = {
 	name: string

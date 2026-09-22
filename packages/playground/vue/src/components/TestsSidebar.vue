@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ListBox } from '@soldy/ui-vue'
+import { ListBox } from '@soldy-ui/vue'
 import { componentsOf, testsPath } from '../catalog'
 import { useScenarios } from '../composables/useScenarios'
 

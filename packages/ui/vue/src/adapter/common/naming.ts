@@ -9,8 +9,8 @@
  * менять вместе с `getName()`. То же решение, что в Web Components.
  */
 
-import type { INamingStrategy } from '@soldy/setup'
-import { underscorePropNaming } from '@soldy/setup'
+import type { INamingStrategy } from '@soldy-ui/setup'
+import { underscorePropNaming } from '@soldy-ui/setup'
 
 export const VueNaming: INamingStrategy = {
 	prop: underscorePropNaming,

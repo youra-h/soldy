@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Input, Select, Switch } from '@soldy/ui-vue'
-import type { TPropControl } from '@soldy/playground-shared'
+import { Input, Select, Switch } from '@soldy-ui/vue'
+import type { TPropControl } from '@soldy-ui/playground-shared'
 
 /**
  * Редактор одного пропа.
  *
  * Тип контрола приходит из общего манифеста, а не выбирается здесь: логика
  * «есть список значений — значит Select, иначе по типу» одинакова для всех
- * шести адаптеров и потому живёт в `@soldy/playground-shared`. Здесь остаётся
+ * шести адаптеров и потому живёт в `@soldy-ui/playground-shared`. Здесь остаётся
  * только отрисовка — тем же набором компонентов, который стенд и проверяет.
  */
 const props = defineProps<{ control: TPropControl; modelValue: unknown }>()

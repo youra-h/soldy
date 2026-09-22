@@ -4,7 +4,7 @@ import {
 	TPlainExtension,
 	TBatchExtension,
 	TActivationExtension,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 

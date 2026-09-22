@@ -5,7 +5,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TSpinnerLayoutPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TSpinnerLayoutPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const SpinnerLayoutPluginDescriptor = definePlugin({
 	ctor: TSpinnerLayoutPlugin,

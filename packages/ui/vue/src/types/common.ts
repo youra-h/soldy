@@ -1,5 +1,5 @@
-import type { IEntity } from '@soldy/core'
-import type { IComponentDescriptor, DescriptorComponentProps } from '@soldy/setup'
+import type { IEntity } from '@soldy-ui/core'
+import type { IComponentDescriptor, DescriptorComponentProps } from '@soldy-ui/setup'
 
 export type TEmits = readonly string[]
 export type TProps = Readonly<Record<string, unknown>>

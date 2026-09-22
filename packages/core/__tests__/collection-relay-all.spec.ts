@@ -5,7 +5,7 @@ import {
 	TBatchExtension,
 	TCollectionComponent,
 	TBatchCollectionFacade,
-} from '@soldy/core'
+} from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 type Extensions = { plain: TPlainExtension<Item>; batch: TBatchExtension<Item> }

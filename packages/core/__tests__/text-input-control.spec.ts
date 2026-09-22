@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TInputControl } from '@soldy/core'
+import { TInputControl } from '@soldy-ui/core'
 
 describe('TInputControl', () => {
 	it('принимает form-flags через { props } и через plain props', () => {

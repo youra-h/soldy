@@ -5,7 +5,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TCollectionElements, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TCollectionElements, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const CollectionElementsPluginDescriptor = definePlugin({
 	ctor: TCollectionElements,

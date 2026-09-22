@@ -10,22 +10,22 @@ A headless UI component framework. Core business logic is **framework-agnostic**
 
 ```bash
 npm run dev:vue      # Vue demo (Vite)
-npm run test:core    # Vitest — @soldy/core
-npm run test:setup   # Vitest — @soldy/setup
+npm run test:core    # Vitest — @soldy-ui/core
+npm run test:setup   # Vitest — @soldy-ui/setup
 npm run test:vue
 npm run test:angular # спеки Angular — билдером @angular/build:unit-test, см. «Angular-специфика»
 npm run test:theme   # Vitest — инварианты токенов темы oren
 npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
 npm run lint         # ESLint (auto-fix)
 npm run format       # Prettier; CI проверяет `prettier --check .` в задаче `lint`
-npm run changeset -- --patch @soldy/core -m "…"  # changeset для PR, см. «Версии пакетов»
+npm run changeset -- --patch @soldy-ui/core -m "…"  # changeset для PR, см. «Версии пакетов»
 npm run changeset:version  # выпуск: версии, CHANGELOG.md, package-lock (программист, /release)
 
 # Тема отдаёт dist/index.css, который подключает стенд Vue (dist в .gitignore)
-npm run build --workspace=@soldy/theme-oren
+npm run build --workspace=@soldy-ui/theme-oren
 
 # Angular: перегенерировать статические inputs/outputs после правки дескриптора
-npm run generate --workspace=@soldy/ui-angular
+npm run generate --workspace=@soldy-ui/angular
 ```
 
 CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов (включая
@@ -101,8 +101,8 @@ notifications`. Фильтра по тексту в стороже нет и б�
 
 ## Версии пакетов
 
-Библиотечные пакеты `@soldy/*` — ядро, `setup`, `plugins`, адаптеры `ui-*`,
-тема и иконки — идут **одной версией**. Адаптеры жёстко привязаны к контракту
+Библиотечные пакеты `@soldy-ui/*` — ядро, `setup`, `plugins`, адаптеры по
+фреймворкам (`vue`, `react`, `angular`, `svelte`, `solid`, `webc`), тема и иконки — идут **одной версией**. Адаптеры жёстко привязаны к контракту
 `core` и `setup`: отдельные версии пакетов дали бы только таблицу
 совместимости.
 
@@ -113,13 +113,13 @@ notifications`. Фильтра по тексту в стороже нет и б�
   выпуск поднимает их вместе. У корневого `package.json` версии нет: changesets
   двигает только пакеты воркспейса, и версия корня после первого же выпуска
   стала бы устаревшей копией;
-- **стенд (`@soldy/playground-*`) — в `ignore`**: это инструмент, а не
+- **стенд (`@soldy-ui/playground-*`) — в `ignore`**: это инструмент, а не
   библиотека, он не выпускается и метаданных пакета не несёт. Новый стенд
   вносится в `ignore`, новый библиотечный пакет — в `fixed`. В обоих списках
   имена, а не glob: сторож сверяет их поимённо;
 - пакеты `private`, публикации в npm нет. `privatePackages.version: true`
   обязателен: без него changesets private-пакеты не версионирует вовсе.
-  Диапазоны `"@soldy/*": "*"` выпуск не переписывает
+  Диапазоны `"@soldy-ui/*": "*"` выпуск не переписывает
   (`bumpVersionsWithWorkspaceProtocolOnly`).
 
 **PR, который меняет файлы библиотечного пакета, несёт changeset** —
@@ -136,8 +136,8 @@ notifications`. Фильтра по тексту в стороже нет и б�
 интерактивные вопросы:
 
 ```bash
-npm run changeset -- --patch @soldy/core,@soldy/setup -m "Что изменилось для потребителя"
-npm run changeset -- --minor @soldy/ui-vue -m "Что сломалось и как обновиться"
+npm run changeset -- --patch @soldy-ui/core,@soldy-ui/setup -m "Что изменилось для потребителя"
+npm run changeset -- --minor @soldy-ui/vue -m "Что сломалось и как обновиться"
 npm run changeset -- --empty
 ```
 
@@ -295,7 +295,7 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 через `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), она
 и вызывает `toRaw`. Сторож — блок eslint `soldy/vue-components-no-framework`
 (`eslint.config.ts`): запрещает импорт `'vue'` и `createAdapterContext` из
-`@soldy/setup` в `packages/ui/vue/src/components/**`.
+`@soldy-ui/setup` в `packages/ui/vue/src/components/**`.
 
 Тот же контроль для Solid, Svelte и Angular, у которых такого eslint-блока
 нет: `packages/setup/__tests__/framework-mechanisms-components.spec.ts`
@@ -414,7 +414,7 @@ Setup — всё, что у шести адаптеров общее: описа
 
 Внутри `protected/adapter/` граница одна, и её держит сторож: **ядро обмена
 (`protected/adapter/exchange/`) не импортирует сборку, реестры и
-`@soldy/plugins`.** Оно знает описание свойства и поверхность — и только.
+`@soldy-ui/plugins`.** Оно знает описание свойства и поверхность — и только.
 Узнай оно о наборе плагинов, правила записи снова расползлись бы по сборке.
 
 Почему так:
@@ -473,7 +473,7 @@ Setup — всё, что у шести адаптеров общее: описа
 - `TAdapterContext` наружу не выходит: адаптер получает интерфейс
   `IAdapterContext`. Публичный интерфейс не наследует внутренний тип сборки —
   declaration emit Vue его не назовёт.
-- Внутри пакета `@soldy/setup` не импортируется, только относительные пути.
+- Внутри пакета `@soldy-ui/setup` не импортируется, только относительные пути.
 - **Пакет объявлен `"sideEffects": false`** — иначе вызовы `defineDescriptor` /
   `definePlugin` на верхнем уровне модулей заставляют сборщик сохранить все
   дескрипторы и плагины ради одной кнопки. Импорт ради побочного эффекта в
@@ -542,7 +542,7 @@ Builder добавил бы изменяемое состояние, pipeline �
 
 Сторож — `packages/setup/__tests__/setup-structure.spec.ts`: рантайм-импорт вне
 таблицы, импорт наполнения из `protected/`, папка верхнего уровня мимо слоёв,
-модуль без строки в таблице, импорт `@soldy/setup` внутри пакета, знание ядра
+модуль без строки в таблице, импорт `@soldy-ui/setup` внутри пакета, знание ядра
 обмена о сборке и нарушение соглашений о файлах роняют тест.
 
 ## Naming conventions
@@ -560,7 +560,7 @@ Builder добавил бы изменяемое состояние, pipeline �
 | Селектор Angular       | `soldy-button`       | шаблонное пространство имён глобально                |
 | **Экспорт компонента** | `Button`, `TabsItem` | **без префикса** — namespace уже дал npm-скоуп       |
 
-`SButton`/`STabs` не вводим: `import { Button } from '@soldy/ui-vue'` уже
+`SButton`/`STabs` не вводим: `import { Button } from '@soldy-ui/vue'` уже
 однозначен, префикс дублировал бы то, что делает импорт.
 
 ### Часть или слот
@@ -602,7 +602,7 @@ Builder добавил бы изменяемое состояние, pipeline �
 
 ### Составные компоненты: точка — основная форма
 
-`withParts` из `@soldy/setup` вешает части на владельца:
+`withParts` из `@soldy-ui/setup` вешает части на владельца:
 
 ```ts
 export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsContent })
@@ -1119,7 +1119,7 @@ this._sink.emit('change:value', payload)
 `value: any`. Указывайте тип или `unknown`.
 
 Состояние адаптеров (`state` у `useAdapter` в React, Solid, Svelte, Angular и
-webc) типизируется по инстансу: `TInstanceState<TInstance>` из `@soldy/setup`
+webc) типизируется по инстансу: `TInstanceState<TInstance>` из `@soldy-ui/setup`
 — его свойства после `valueOf()`. Объект собирается по дескриптору в рантайме,
 поэтому граница с типом одна, `toInstanceState`, и приведений в разметке
 компонентов нет. Тип инстанса несёт контракт дескриптора
@@ -1399,15 +1399,15 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   `view: { type: String, … }`. Обёртка `defineType` в пропе была бы второй
   записью типа, которую никто не сверяет с ядром, а Vue проверял бы её как
   `Object`. Сторож — `setup/__tests__/prop-defaults.spec.ts`, «тип пропа —
-  конструктор рантайма». `defineType` экспортируется из `@soldy/setup` и живёт
+  конструктор рантайма». `defineType` экспортируется из `@soldy-ui/setup` и живёт
   в `packages/setup/protected/define/prop-type.ts`; дескрипторы внутри пакета
   импортируют его из `protected/define/` относительным путём, не из
-  `@soldy/setup` — см.
+  `@soldy-ui/setup` — см.
   «Структура `packages/setup`».
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -1500,8 +1500,8 @@ export const close: TIconSource = {
 **Пакет подключает приложение, как тему:**
 
 ```ts
-import { setIcons } from '@soldy/setup'
-import * as material from '@soldy/icons-material'
+import { setIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
 
 setIcons(material)
 setIcons({ close: myCloseIcon }) // точечно, поверх набора
@@ -1514,7 +1514,7 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 **Устройство пакета** (`packages/icons/material/`): SVG лежат в `src/*.svg` и
 правятся глазами, `src/index.ts` **генерируется** и закоммичен — как
 метаданные Angular. После правки SVG нужен
-`npm run generate --workspace=@soldy/icons-material`.
+`npm run generate --workspace=@soldy-ui/icons-material`.
 
 Генератор снимает `fill="#…"` из исходников Material: цвет должен наследоваться
 через `currentColor`, иначе иконка не подхватит цвет текста.
@@ -1586,7 +1586,7 @@ export type TButtonView = Extract<keyof IButtonViews, string>
 модуль в своём `index.d.ts`:
 
 ```ts
-declare module '@soldy/core' {
+declare module '@soldy-ui/core' {
   interface IButtonViews {
     plain: true
   }
@@ -1629,7 +1629,7 @@ declare module '@soldy/core' {
 Такие части тема красит по контексту (`packages/themes/oren/AGENTS.md`).
 Плагины библиотеки значений темы не читают. Плагин, данные которого нужны
 только CSS одной темы, живёт в пакете темы и ставится её регистрацией:
-`TTabsViewPlugin` (геометрия активного таба) — в `@soldy/theme-oren/setup`
+`TTabsViewPlugin` (геометрия активного таба) — в `@soldy-ui/theme-oren/setup`
 (см. «Плагины и расширения снаружи»).
 
 Нельзя:
@@ -2033,7 +2033,7 @@ Partial<IXProps>` вместо аннотации не годится: он ос
 
 Цена решения: `bundle:create` идёт по шине core, хотя плагины — слой над core.
 Это осознанное исключение, а не протечка. Шина используется как транспорт, не
-как зависимость: `packages/core` не импортирует `@soldy/plugins`, но имя
+как зависимость: `packages/core` не импортирует `@soldy-ui/plugins`, но имя
 события объявляет — в `TComponentEvents`, с аргументом `unknown`. Карта событий
 закрыта, и без имени в ней не скомпилировались бы ни подписка с инстанса, ни
 проп события адаптера, который выводится из той же карты. Тип бандла ядру
@@ -2076,7 +2076,7 @@ usePlugins(TButton, [TRipplePlugin], { scope: 'all' })  // и детали чу�
 useExtensions(TTags, [(owner) => new TTagsHistoryExtension({ owner })])
 
 // 3. Тема — тот же реестр одним объектом
-import oren from '@soldy/theme-oren/setup'
+import oren from '@soldy-ui/theme-oren/setup'
 useTheme(oren)
 ```
 
@@ -2174,7 +2174,7 @@ el.pluginProps = { timer_ms: 500 }; el.addEventListener('plugin:event', …)    
 - **Плагин дескриптора через `pluginProps` не пишется**: его пропсы уже в
   поверхности (`aria_label`, а не `pluginProps.aria_label`).
 - Типы ключей приложение дописывает в `IExternalPluginProps` (module
-  augmentation `@soldy/setup`).
+  augmentation `@soldy-ui/setup`).
 
 Прошлые попытки: пропсы внешнего плагина плоско, через `attrs` во Vue, и
 типы `IRegisteredPlugins` — поверхность начинала зависеть от фреймворка;
@@ -2998,7 +2998,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
   `view`, `shape`, `animation`) у ядра нет вовсе — их объявляет тема (см.
   «Оформление: значения объявляет тема»). Стенд рисует oren, поэтому `enums.ts`
   подключает к программе типов её `index.d.ts`
-  (`/// <reference types="@soldy/theme-oren" />`), и эти списки сверяются с
+  (`/// <reference types="@soldy-ui/theme-oren" />`), и эти списки сверяются с
   ним: тема добавила значение — стенд попросит его и у себя;
 - **Подписка на смену пакета иконок.** Захотелось добавить `onIconsChanged`
   в реестр. Но переключение пакетов на лету нужно только стенду, а он и так

@@ -1,8 +1,8 @@
 import { ref } from 'vue'
-import { setIcons } from '@soldy/setup'
-import type { TIconSource } from '@soldy/setup'
-import { ICON_PACKS } from '@soldy/playground-shared'
-import * as material from '@soldy/icons-material'
+import { setIcons } from '@soldy-ui/setup'
+import type { TIconSource } from '@soldy-ui/setup'
+import { ICON_PACKS } from '@soldy-ui/playground-shared'
+import * as material from '@soldy-ui/icons-material'
 
 /** Пакеты по идентификатору из общего реестра. */
 const PACKS: Record<string, Record<string, TIconSource>> = {

@@ -17,7 +17,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { TTags, TTagsItem, TTagsCollectionFacade, TSelect, TSelectCollectionFacade } from '../src'
-import type { IPopover, ITagsItem, ITagsProps } from '@soldy/core'
+import type { IPopover, ITagsItem, ITagsProps } from '@soldy-ui/core'
 
 function createTags(texts: string[], props: Partial<ITagsProps> = {}) {
 	const owner = new TTags(props)

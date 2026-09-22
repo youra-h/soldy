@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { Accordion, AccordionItem } from '@soldy/ui-vue'
+import { Accordion, AccordionItem } from '@soldy-ui/vue'
 import Harness from './Accordion.test.vue'
 
 const render = () => mount(Harness, { attachTo: document.body })

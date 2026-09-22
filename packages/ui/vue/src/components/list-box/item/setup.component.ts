@@ -2,7 +2,7 @@ import {
 	TCollectionItemExtension,
 	ListBoxItemDescriptor,
 	ListBoxCollectionItemDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

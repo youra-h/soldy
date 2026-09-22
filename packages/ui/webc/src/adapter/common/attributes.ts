@@ -6,7 +6,7 @@
  * адаптеров: там props приходят уже типизированными.
  */
 
-import { TSurface, type IComponentDescriptor } from '@soldy/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { WebcProfile } from './profile'
 
 export interface IAttributeBinding {

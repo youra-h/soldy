@@ -5,8 +5,8 @@
  * useAdapter. Хост нужен адаптеру, чтобы диспатчить CustomEvent.
  */
 
-import { createAdapterContext, TextableDescriptor } from '@soldy/setup'
-import type { ITextable } from '@soldy/core'
+import { createAdapterContext, TextableDescriptor } from '@soldy-ui/setup'
+import type { ITextable } from '@soldy-ui/core'
 import { useAdapter } from '../../adapter'
 import type { TBinding } from '../../adapter'
 

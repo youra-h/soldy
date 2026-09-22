@@ -13,7 +13,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, type Component } from 'vue'
-import { CheckBox, Label, RadioGroup, Switch } from '@soldy/ui-vue'
+import { CheckBox, Label, RadioGroup, Switch } from '@soldy-ui/vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

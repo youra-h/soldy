@@ -8,8 +8,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
-import { TPopover } from '@soldy/core'
-import type { TAriaAttributes, TDatasetAttributes } from '@soldy/core'
+import { TPopover } from '@soldy-ui/core'
+import type { TAriaAttributes, TDatasetAttributes } from '@soldy-ui/core'
 import {
 	AriaPluginDescriptor,
 	DismissPluginDescriptor,

@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { RadioGroupDescriptor, RadioGroupCollectionDescriptor } from '@soldy/setup'
-import type { IRadioGroup } from '@soldy/core'
+import { RadioGroupDescriptor, RadioGroupCollectionDescriptor } from '@soldy-ui/setup'
+import type { IRadioGroup } from '@soldy-ui/core'
 
 export const emitsRadioGroup: TEmits = [
 	...useEmits(RadioGroupDescriptor()),

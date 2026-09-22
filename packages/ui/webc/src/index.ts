@@ -1,3 +1,3 @@
-// @soldy/ui-webc
+// @soldy-ui/webc
 export * from './adapter'
 export * from './components'

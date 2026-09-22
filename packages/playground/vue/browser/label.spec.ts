@@ -27,10 +27,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type Component, type VNode } from 'vue'
-import type { TComponentSize, TDirection, TLabelPosition } from '@soldy/core'
-import { CheckBox, Label, RadioGroup, Switch } from '@soldy/ui-vue'
+import type { TComponentSize, TDirection, TLabelPosition } from '@soldy-ui/core'
+import { CheckBox, Label, RadioGroup, Switch } from '@soldy-ui/vue'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 

@@ -19,8 +19,8 @@
  */
 
 import { afterEach, beforeEach, expect } from 'vitest'
-import { useTheme } from '@soldy/setup'
-import oren from '@soldy/theme-oren/setup'
+import { useTheme } from '@soldy-ui/setup'
+import oren from '@soldy-ui/theme-oren/setup'
 
 /**
  * Поведение темы oren — как в точке входа стенда (`src/main.ts`): стили

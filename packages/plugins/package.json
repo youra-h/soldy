@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/plugins",
+  "name": "@soldy-ui/plugins",
   "version": "0.1.0",
   "description": "Плагины поведения в рантайме, ставятся в TPluginBundle: DOM, фокус, клавиатура, оверлей",
   "keywords": [
@@ -26,7 +26,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@soldy/core": "*"
+    "@soldy-ui/core": "*"
   },
   "scripts": {
     "test": "vitest run"

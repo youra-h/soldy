@@ -11,7 +11,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TSelectKeyboardPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TSelectKeyboardPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const SelectKeyboardPluginDescriptor = definePlugin({
 	ctor: TSelectKeyboardPlugin,

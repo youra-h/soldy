@@ -5,7 +5,7 @@
  * профиль нужен только связке монтирования (`adapter.connect()`).
  */
 
-import type { IAdapterProfile } from '@soldy/setup'
+import type { IAdapterProfile } from '@soldy-ui/setup'
 import { ReactNaming } from './naming'
 
 export const ReactProfile: IAdapterProfile = { naming: ReactNaming, defaultSlot: 'children' }

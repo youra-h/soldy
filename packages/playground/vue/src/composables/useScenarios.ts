@@ -13,7 +13,7 @@ import {
 	type TScenario,
 	type TScenarioState,
 	type TTopic,
-} from '@soldy/playground-shared'
+} from '@soldy-ui/playground-shared'
 import { findAvailable, SCENARIOS, topicsOf } from '../catalog'
 import { fixtureOf } from '../scenarios/fixtures'
 import { useEvents } from './useEvents'

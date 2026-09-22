@@ -2,7 +2,7 @@
  * Контракт лифта: типизированный ключ, фабрика фреймворка и регистрация элемента коллекции.
  */
 
-import type { IPluginBundle } from '@soldy/plugins'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 
 /** Лифт: значения от родителя к детям поверх механизма фреймворка (`provide`/`inject`, React Context, DI Angular). */
 export interface IContextElevator<T = any> {

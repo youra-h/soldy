@@ -20,11 +20,11 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Tags } from '@soldy/ui-vue'
+import { Tags } from '@soldy-ui/vue'
 
 import { expectInsideWindow } from './viewport'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 /** Тегов заведомо больше, чем влезает в узкий ряд. */
 const TAGS = ['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Новосибирск', 'Владивосток']

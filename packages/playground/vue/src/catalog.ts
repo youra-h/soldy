@@ -5,14 +5,14 @@ import {
 	type TComponentEntry,
 	type TScenario,
 	type TTopic,
-} from '@soldy/playground-shared'
+} from '@soldy-ui/playground-shared'
 import { PREVIEW_COMPONENTS } from './previews'
 import { fixtureOf } from './scenarios/fixtures'
 
 /**
  * Что этот адаптер умеет показать.
  *
- * Реестр в `@soldy/playground-shared` — каталог **библиотеки**, он одинаков для
+ * Реестр в `@soldy-ui/playground-shared` — каталог **библиотеки**, он одинаков для
  * всех шести стендов. Но адаптеры дорастают до него по очереди: компоненты
  * сначала пишутся на Vue, обкатываются, и только потом переносятся дальше — в
  * React сейчас два компонента из двадцати.

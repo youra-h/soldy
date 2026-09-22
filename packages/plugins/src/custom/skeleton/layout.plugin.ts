@@ -1,4 +1,4 @@
-import type { ISkeleton } from '@soldy/core'
+import type { ISkeleton } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { toCssValue } from '../../utils'

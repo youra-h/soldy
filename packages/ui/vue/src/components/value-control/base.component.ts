@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { ValueControlDescriptor } from '@soldy/setup'
-import type { IValueControl } from '@soldy/core'
+import { ValueControlDescriptor } from '@soldy-ui/setup'
+import type { IValueControl } from '@soldy-ui/core'
 
 export const emitsValueControl: TEmits = useEmits(ValueControlDescriptor())
 

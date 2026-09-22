@@ -1,4 +1,4 @@
-// @soldy/ui-react
+// @soldy-ui/react
 export * from './types'
 export * from './adapter'
 export * from './components'

@@ -1,5 +1,5 @@
 import { defineComponent, h, markRaw, type Component } from 'vue'
-import { getIcon } from '@soldy/setup'
+import { getIcon } from '@soldy-ui/setup'
 
 /**
  * Компонент иконки по роли из реестра.

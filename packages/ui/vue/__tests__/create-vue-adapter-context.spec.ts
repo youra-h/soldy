@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { reactive } from 'vue'
-import { defineComponent } from '@soldy/setup'
+import { defineComponent } from '@soldy-ui/setup'
 import { createVueAdapterContext } from '../src/adapter'
 
 describe('createVueAdapterContext', () => {

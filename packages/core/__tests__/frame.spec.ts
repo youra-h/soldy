@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { TFrame, FRAME_LAYER_ATTRIBUTE } from '@soldy/core'
+import { TFrame, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 
 describe('TFrame', () => {
 	beforeEach(() => {

@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createPluginContext, installResizeObserverStub, observerCount } from './helpers'
-import { TElementPlugin, TTabsLayoutPlugin } from '@soldy/plugins'
+import { TElementPlugin, TTabsLayoutPlugin } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

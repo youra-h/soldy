@@ -7,7 +7,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
-import { ButtonDescriptor } from '@soldy/setup'
+import { ButtonDescriptor } from '@soldy-ui/setup'
 import Harness from './Slots.test.svelte'
 
 const mounted: ReturnType<typeof mount>[] = []

@@ -17,7 +17,7 @@
  * поставленный другим.
  */
 
-import type { TAria, TAttributesMap, TDataset } from '@soldy/core'
+import type { TAria, TAttributesMap, TDataset } from '@soldy-ui/core'
 import { bind, type ITemplateBinding } from './types'
 
 /**

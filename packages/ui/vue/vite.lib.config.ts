@@ -3,11 +3,11 @@ import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 
 /**
- * Библиотечная сборка @soldy/ui-vue (headless-компоненты, без демо).
+ * Библиотечная сборка @soldy-ui/vue (headless-компоненты, без демо).
  *
  * - Вход: src/index.ts
  * - Форматы: ES + CJS
- * - `vue` и все `@soldy/*` — external (peer-зависимости)
+ * - `vue` и все `@soldy-ui/*` — external (peer-зависимости)
  * - Стили в библиотеке отсутствуют (вынесены в тему), поэтому CSS не эмитится.
  */
 export default defineConfig({

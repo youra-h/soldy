@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/ui-react",
+  "name": "@soldy-ui/react",
   "version": "0.1.0",
   "description": "Адаптер React: компоненты на headless-моделях ядра",
   "keywords": [
@@ -30,11 +30,11 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/icons-material": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*",
-    "@soldy/theme-oren": "*",
+    "@soldy-ui/core": "*",
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/plugins": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

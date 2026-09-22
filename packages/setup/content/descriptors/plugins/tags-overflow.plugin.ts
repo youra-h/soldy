@@ -7,7 +7,7 @@
  */
 
 import { definePlugin } from '../../../protected/define'
-import { TTagsOverflowPlugin, PLUGIN_EVENTS } from '@soldy/plugins'
+import { TTagsOverflowPlugin, PLUGIN_EVENTS } from '@soldy-ui/plugins'
 
 export const TagsOverflowPluginDescriptor = definePlugin({
 	ctor: TTagsOverflowPlugin,

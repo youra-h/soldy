@@ -1,4 +1,4 @@
-import { FrameDescriptor } from '@soldy/setup'
+import { FrameDescriptor } from '@soldy-ui/setup'
 import { useAdapter, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseFrame, { type FrameProps } from './base.component'
 

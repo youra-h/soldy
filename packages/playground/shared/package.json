@@ -1,5 +1,5 @@
 {
-  "name": "@soldy/playground-shared",
+  "name": "@soldy-ui/playground-shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,11 +11,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@soldy/core": "*",
-    "@soldy/plugins": "*",
-    "@soldy/setup": "*"
+    "@soldy-ui/core": "*",
+    "@soldy-ui/plugins": "*",
+    "@soldy-ui/setup": "*"
   },
   "devDependencies": {
-    "@soldy/theme-oren": "*"
+    "@soldy-ui/theme-oren": "*"
   }
 }

@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TControl } from '@soldy/core'
+import { TControl } from '@soldy-ui/core'
 import { ActionPluginDescriptor, AriaPluginDescriptor } from '../plugins'
 import { StylableDescriptor } from './stylable.descriptor'
 

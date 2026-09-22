@@ -15,8 +15,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TListBox } from '@soldy/core'
-import type { IListBoxItem } from '@soldy/core'
+import { TListBox } from '@soldy-ui/core'
+import type { IListBoxItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,

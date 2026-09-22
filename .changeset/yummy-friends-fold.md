@@ -1,5 +1,5 @@
 ---
-'@soldy/setup': minor
+'@soldy-ui/setup': minor
 ---
 
 Типы дескриптора больше не пишутся руками: `defineComponent({ … })` выводит пропсы и события из класса ядра (`ctor`, без него — от `extends`), слоты — из объявления `slots`. Curried-форма `defineComponent<TProps, TEvents, TSlots>()({ … })` удалена: опции передаются сразу, без type-аргументов. `TResolveInstance` удалён, параметры `IComponentDefinitionOptions` перестроены под вывод.

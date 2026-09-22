@@ -1,4 +1,4 @@
-import { FRAME_LAYER_ATTRIBUTE, isEventSource } from '@soldy/core'
+import { FRAME_LAYER_ATTRIBUTE, isEventSource } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import { TElementPlugin } from '../element'

@@ -1,5 +1,5 @@
-import type { TPropSpec } from '@soldy/setup'
-import { underscorePropNaming } from '@soldy/setup'
+import type { TPropSpec } from '@soldy-ui/setup'
+import { underscorePropNaming } from '@soldy-ui/setup'
 import {
 	COMPONENT_SIZES,
 	BUTTON_VIEWS,

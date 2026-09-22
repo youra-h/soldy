@@ -1,11 +1,11 @@
-import type { ITabs, TTabsCollection } from '@soldy/core'
+import type { ITabs, TTabsCollection } from '@soldy-ui/core'
 import {
 	TBasePlugin,
 	TCollectionBundlesPlugin,
 	TElementPlugin,
 	TTabsActiveTabPlugin,
-} from '@soldy/plugins'
-import type { IPluginContext, TActiveTabOffset } from '@soldy/plugins'
+} from '@soldy-ui/plugins'
+import type { IPluginContext, TActiveTabOffset } from '@soldy-ui/plugins'
 
 /**
  * TTabsViewPlugin — геометрия активного таба для темы.

@@ -3,7 +3,7 @@ import type {
 	IExtension,
 	IExtensionItems,
 } from '../../../../../base/collection'
-import type { TNoEvents } from '@soldy/core'
+import type { TNoEvents } from '@soldy-ui/core'
 import type { IAccordionItem } from '../../../item/types'
 import type { IAccordionContentItemExtension } from './item'
 

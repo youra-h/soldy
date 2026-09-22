@@ -6,7 +6,7 @@
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
-import { TInput } from '@soldy/core'
+import { TInput } from '@soldy-ui/core'
 import { InputControlPluginDescriptor, InputPluginDescriptor } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 

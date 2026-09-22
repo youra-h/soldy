@@ -1,4 +1,4 @@
-import { ScrollerDescriptor } from '@soldy/setup'
+import { ScrollerDescriptor } from '@soldy-ui/setup'
 import { useAdapter, useIcon, createVueAdapterContext, type SetupContext } from '../../adapter'
 import BaseScroller, { type ScrollerProps } from './base.component'
 

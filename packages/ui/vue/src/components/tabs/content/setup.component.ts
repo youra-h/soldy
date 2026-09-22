@@ -2,7 +2,7 @@ import {
 	TTabsContentBindingExtension,
 	TabsContentDescriptor,
 	TabsCollectionContentDescriptor,
-} from '@soldy/setup'
+} from '@soldy-ui/setup'
 import {
 	useAdapter,
 	VueElevatorFactory,

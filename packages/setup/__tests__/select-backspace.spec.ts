@@ -12,9 +12,9 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { createPluginContext } from './helpers'
-import { TSelect, TSelectItem, TSelectCollectionFacade } from '@soldy/core'
-import type { ISelectItem, ISelectProps } from '@soldy/core'
-import { TSelectBackspacePlugin, TElementPlugin, TCollectionBundlesPlugin } from '@soldy/plugins'
+import { TSelect, TSelectItem, TSelectCollectionFacade } from '@soldy-ui/core'
+import type { ISelectItem, ISelectProps } from '@soldy-ui/core'
+import { TSelectBackspacePlugin, TElementPlugin, TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 

@@ -1,5 +1,5 @@
-import type { IControl, IList, TCollectionEngine, TScrollBehavior } from '@soldy/core'
-import { frameDebounce } from '@soldy/core'
+import type { IControl, IList, TCollectionEngine, TScrollBehavior } from '@soldy-ui/core'
+import { frameDebounce } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'

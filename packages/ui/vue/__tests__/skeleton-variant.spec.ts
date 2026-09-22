@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { Skeleton } from '@soldy/ui-vue'
+import { Skeleton } from '@soldy-ui/vue'
 
 const variantClasses = (classes: string[]) => classes.filter((name) => name.includes('--variant-'))
 

@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { StylableDescriptor } from '@soldy/setup'
-import type { IStylable } from '@soldy/core'
+import { StylableDescriptor } from '@soldy-ui/setup'
+import type { IStylable } from '@soldy-ui/core'
 
 export const emitsStylable: TEmits = useEmits(StylableDescriptor())
 

@@ -17,12 +17,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { Frame, Select, SelectItem } from '@soldy/ui-vue'
-import type { TSelectPlacement } from '@soldy/core'
+import { Frame, Select, SelectItem } from '@soldy-ui/vue'
+import type { TSelectPlacement } from '@soldy-ui/core'
 
 import { expectClassicScrollbar, expectInsideWindow } from './viewport'
 
-import '@soldy/theme-oren'
+import '@soldy-ui/theme-oren'
 
 const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Самара']
 

@@ -12,7 +12,7 @@ import {
 import type { IExtension, TCollectionEngineItemSource } from '../engine'
 
 /**
- * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy/core`.
+ * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy-ui/core`.
  *
  * Наружу (см. `./public.ts`, реэкспортирован через `index.ts`) уходит только
  * готовая сборка: `createEngine`, `createEngineActivation`,
@@ -26,7 +26,7 @@ import type { IExtension, TCollectionEngineItemSource } from '../engine'
  * а `index.ts`: он реэкспортирует `./public`, а этот файл нет. Тот же приём
  * уже стоит на `factory.ts` каждого компонента: `TabsFactory` и соседи там
  * экспортированы (иначе их не подключить из других файлов пакета), но до
- * потребителя `@soldy/core` не доходят ни через один барабан наверх.
+ * потребителя `@soldy-ui/core` не доходят ни через один барабан наверх.
  *
  * Импортируйте отсюда только внутри `core/src`, прямым путём
  * (`base/collection/create/internal`) — так же, как уже делают перечисленные

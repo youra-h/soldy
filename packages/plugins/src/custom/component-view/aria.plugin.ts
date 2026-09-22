@@ -1,4 +1,4 @@
-import type { IComponentView, TDefaultValues } from '@soldy/core'
+import type { IComponentView, TDefaultValues } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
 import type { IAriaPluginOptions, IAriaPluginProps, TAriaPluginEvents } from './types'

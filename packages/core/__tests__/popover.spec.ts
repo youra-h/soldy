@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TPopover } from '@soldy/core'
+import { TPopover } from '@soldy-ui/core'
 
 /**
  * Модель Popover: состояние панели и то, что из него следует для разметки.

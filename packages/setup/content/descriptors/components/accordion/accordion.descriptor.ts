@@ -8,8 +8,8 @@
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
-import { TAccordion } from '@soldy/core'
-import type { IAccordionItem } from '@soldy/core'
+import { TAccordion } from '@soldy-ui/core'
+import type { IAccordionItem } from '@soldy-ui/core'
 import { ControlDescriptor } from '../control.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,

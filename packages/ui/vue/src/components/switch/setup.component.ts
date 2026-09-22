@@ -1,4 +1,4 @@
-import { SwitchDescriptor } from '@soldy/setup'
+import { SwitchDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
 	useSplitAttrs,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Select, Switch } from '@soldy/ui-vue'
+import { Select, Switch } from '@soldy-ui/vue'
 import { useTheme } from '../composables/useTheme'
 import { useIconPack } from '../composables/useIconPack'
 import { propertiesRoute, TESTS_ROUTE } from '../router'

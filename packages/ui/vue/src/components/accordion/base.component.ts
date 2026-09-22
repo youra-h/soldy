@@ -1,7 +1,7 @@
 import { useEmits, useProps } from '../../adapter'
 import type { TEmits, TProps, UseProps } from '../../types/common'
-import { AccordionDescriptor, AccordionCollectionDescriptor } from '@soldy/setup'
-import type { IAccordion } from '@soldy/core'
+import { AccordionDescriptor, AccordionCollectionDescriptor } from '@soldy-ui/setup'
+import type { IAccordion } from '@soldy-ui/core'
 
 export const emitsAccordion: TEmits = [
 	...useEmits(AccordionDescriptor()),

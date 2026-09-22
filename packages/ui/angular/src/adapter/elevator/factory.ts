@@ -1,4 +1,4 @@
-import type { IElevatorKey, TElevatorFactory } from '@soldy/setup'
+import type { IElevatorKey, TElevatorFactory } from '@soldy-ui/setup'
 import { TAngularElevator } from './elevator.class'
 
 export const AngularElevatorFactory: TElevatorFactory = <T>(key: IElevatorKey<T>) =>

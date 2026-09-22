@@ -1,7 +1,7 @@
 /**
  * TAngularElevator — реализация IContextElevator для Angular.
  *
- * Наследует TElevator из @soldy/setup (кэширование ключей).
+ * Наследует TElevator из @soldy-ui/setup (кэширование ключей).
  *
  * В Angular передача контекста от родителя к потомку реализуется через DI
  * (provide/inject). Каждый elevator создаёт уникальный InjectionToken,
@@ -12,7 +12,7 @@
  */
 
 import { InjectionToken } from '@angular/core'
-import { TElevator } from '@soldy/setup'
+import { TElevator } from '@soldy-ui/setup'
 
 export class TAngularElevator<T = any> extends TElevator<T> {
 	/** Angular InjectionToken для передачи значения через provide/inject. */

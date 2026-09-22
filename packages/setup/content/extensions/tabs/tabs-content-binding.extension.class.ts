@@ -24,8 +24,8 @@
  * (тогда ждём `item:added`) и у панели сменилось `value`.
  */
 
-import { TItemContextRegistry } from '@soldy/core'
-import type { ITabsItem, TAria, TAriaAttributes, TTabsCollection } from '@soldy/core'
+import { TItemContextRegistry } from '@soldy-ui/core'
+import type { ITabsItem, TAria, TAriaAttributes, TTabsCollection } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { ITEM_CONTEXT_ELEVATOR } from '../../../protected/adapter/elevator/keys'
 import type { TCollectionItemFacade } from '../collection'
