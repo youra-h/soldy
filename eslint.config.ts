@@ -1,4 +1,6 @@
+import { fileURLToPath } from 'node:url'
 import { globalIgnores } from 'eslint/config'
+import { includeIgnoreFile } from '@eslint/compat'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
 import pluginSvelte from 'eslint-plugin-svelte'
@@ -13,13 +15,17 @@ export default defineConfigWithVueTs(
 		files: ['**/*.{ts,mts,tsx,vue,svelte}'],
 	},
 
-	globalIgnores([
-		'**/dist/**',
-		'**/dist-ssr/**',
-		'**/coverage/**',
-		'**/lib/**',
-		'**/.angular/**',
-	]),
+	// Чего не видит git, того не видит и линтер. Второй список игнорируемых
+	// путей неизбежно расходится с `.gitignore`: ручной уже разошёлся — в нём
+	// не было ни `packages/playground/*/scratch/` (черновики и снимки отладки,
+	// которые AGENTS.md сам предлагает туда класть), ни `test-results/`, ни
+	// `packages/_plugins/`, и `npm run lint` краснел на файлах, которых в
+	// репозитории нет. Поэтому список один — сам `.gitignore`.
+	includeIgnoreFile(fileURLToPath(new URL('.gitignore', import.meta.url)), 'soldy/gitignore'),
+
+	// `.angular` объявлен в `packages/ui/angular/.gitignore`: корневой файл о
+	// нём не знает, а `includeIgnoreFile` читает ровно один файл.
+	globalIgnores(['**/.angular/**']),
 
 	pluginVue.configs['flat/essential'],
 	vueTsConfigs.recommended,
