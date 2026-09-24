@@ -26,8 +26,9 @@ export default { ...SetupTooltip, components: { Frame } }
 
 		<!--
 			Триггер — элемент потребителя. Фокус остаётся на нём и в панель не
-			уходит. Своего экземпляра у содержимого слота нет, поэтому
-			`aria-describedby` на панель он получает через scope.
+			уходит. Своего экземпляра у содержимого слота нет, поэтому ссылку
+			на панель — `aria-describedby` или, при `type="label"`,
+			`aria-labelledby` — он получает через scope.
 		-->
 		<slot name="trigger" :triggerAria="triggerAria" />
 

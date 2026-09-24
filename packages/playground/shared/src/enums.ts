@@ -25,6 +25,7 @@ import type {
 	TTagsOverflow,
 	TPopoverPlacement,
 	TTooltipPlacement,
+	TTooltipType,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -156,6 +157,9 @@ export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'top-start',
 	'top-end',
 ])
+
+/** Чем подсказка служит триггеру: описанием или именем. */
+export const TOOLTIP_TYPES = enumOf<TTooltipType>()(['description', 'label'])
 
 /**
  * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не
