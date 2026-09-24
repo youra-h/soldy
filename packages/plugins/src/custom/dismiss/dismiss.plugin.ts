@@ -1,6 +1,7 @@
-import { FRAME_LAYER_ATTRIBUTE, isEventSource } from '@soldy-ui/core'
+import { isEventSource } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
+import { isAboveLayer } from '../../utils'
 import { TElementPlugin } from '../element'
 import type { IDismissPluginOptions, TDismissPendingPress, TDismissPluginEvents } from './types'
 
@@ -196,7 +197,11 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		super.destroy()
 	}
 
-	/** Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше неё. */
+	/**
+	 * Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше
+	 * неё — панели, открытой поверх своей (см. шапку). Правило слоёв общее с
+	 * `THideOutsidePlugin`, поэтому живёт в утилитах (`isAboveLayer`).
+	 */
 	private _isInside(target: EventTarget | null): boolean {
 		if (!(target instanceof Element)) return false
 
@@ -204,22 +209,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		if (this._owner && target.closest(`[${OWNER_ATTRIBUTE}="${this._owner}"]`)) return true
 
-		return this._isAboveOwnLayer(target)
-	}
-
-	/**
-	 * Лежит ли узел в слое выше панели владельца — в панели, открытой поверх
-	 * неё (см. шапку). Слой узла — ближайший предок с `data-layer`: панели
-	 * лежат в `body` соседями и друг в друга не вложены.
-	 */
-	private _isAboveOwnLayer(target: Element): boolean {
-		const layer = layerOf(target.closest(`[${FRAME_LAYER_ATTRIBUTE}]`))
-
-		if (layer === null) return false
-
-		const own = layerOf(this.findPanel())
-
-		return own !== null && layer > own
+		return isAboveLayer(target, this.findPanel())
 	}
 
 	/**
@@ -343,15 +333,4 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		this._listening = shouldListen
 	}
-}
-
-/** Номер слоя узла (`data-layer`); `null` — узла нет или слоя у него нет. */
-function layerOf(element: Element | null): number | null {
-	const value = element?.getAttribute(FRAME_LAYER_ATTRIBUTE)
-
-	if (value === null || value === undefined) return null
-
-	const layer = Number(value)
-
-	return Number.isFinite(layer) ? layer : null
 }
