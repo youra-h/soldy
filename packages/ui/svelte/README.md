@@ -21,8 +21,9 @@ slot is `children`.
 npm install @soldy-ui/svelte @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-Svelte `^5` is a peer dependency. A theme and an icon pack are separate packages — pick the ones
-you want.
+Svelte `^5.29` is a peer dependency. The package ships its `.svelte` components uncompiled, so
+your app's bundler compiles them with its Svelte plugin (for Vite, `@sveltejs/vite-plugin-svelte`).
+A theme and an icon pack are separate packages — pick the ones you want.
 
 ## Usage
 
