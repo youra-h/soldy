@@ -12,7 +12,9 @@ import { readChangesets } from '@changesets/read'
  *
  * Библиотечный пакет ещё и выкладывается: он не `private`, у скоупа открыт
  * доступ, состав тарболла задан `files`, а текст лицензии и README лежат рядом
- * с манифестом — поля `license` в тарболле мало. Соседа он объявляет диапазоном
+ * с манифестом — поля `license` в тарболле мало. Чужое содержимое под своей
+ * лицензией пакет называет в `license` (`MIT AND Apache-2.0`) и везёт её текст
+ * файлом `LICENSE-<идентификатор>` из `files`. Соседа он объявляет диапазоном
  * от общей версии (`^0.1.0`): протокол `workspace:` npm не понимает
  * (EUNSUPPORTEDPROTOCOL), а `"*"` выпуск не переписывает — в опубликованном
  * пакете он значил бы «любая версия ядра».
@@ -275,6 +277,60 @@ function checkPublishing(manifest: TManifest): string[] {
 	return violations
 }
 
+/** Идентификатор лицензии SPDX: буквы, цифры, точка и дефис — `Apache-2.0`. */
+const SPDX_ID = /^[A-Za-z0-9.-]+$/
+
+/**
+ * Чужие лицензии пакета из поля `license`. Своя у всех пакетов одна — MIT, а
+ * пакет, который везёт чужое содержимое под другой лицензией, добавляет её
+ * выражением SPDX: `MIT AND Apache-2.0`. Выражение другой формы — `undefined`:
+ * `OR`, `WITH` и скобки сторож не разбирает, повтор лицензии не принимает.
+ */
+function thirdPartyLicenses(license: unknown): readonly string[] | undefined {
+	if (typeof license !== 'string') {
+		return undefined
+	}
+
+	const [own, ...others] = license.split(' AND ')
+	const valid = others.every((id) => SPDX_ID.test(id) && id !== 'MIT')
+
+	return own === 'MIT' && valid && new Set(others).size === others.length ? others : undefined
+}
+
+/** Файл с текстом чужой лицензии рядом с манифестом: `Apache-2.0` → `LICENSE-Apache-2.0`. */
+function licenseFile(id: string): string {
+	return `LICENSE-${id}`
+}
+
+/**
+ * Нарушения поля `license` и текстов чужих лицензий в `files`.
+ *
+ * Чужая лицензия названа в `license`, иначе сканер лицензий видит одну MIT. Её
+ * текст — `LICENSE-<идентификатор>` в `files`: `LICENSE` npm кладёт в тарболл
+ * сам, остальное — только по `files`, и пакет назвал бы лицензию, не везя её
+ * текста. И обратно: текст в `files` без лицензии в `license` — лицензию убрали
+ * из выражения, а содержимое под ней, судя по тарболлу, осталось.
+ */
+function checkLicense(manifest: TManifest): string[] {
+	const { license, files } = manifest
+	const others = thirdPartyLicenses(license)
+
+	if (others === undefined) {
+		return [`license ${JSON.stringify(license)}, ожидается "MIT" или "MIT AND <SPDX-id>…"`]
+	}
+
+	const shipped = isStringArray(files) ? files : []
+	const texts = others.map(licenseFile)
+	const missing = texts
+		.filter((name) => !shipped.includes(name))
+		.map((name) => `files без "${name}" — лицензия названа, а её текст в тарболл не уедет`)
+	const stray = shipped
+		.filter((name) => name.startsWith('LICENSE-') && !texts.includes(name))
+		.map((name) => `files: "${name}" — текст лицензии, которой нет в license`)
+
+	return [...missing, ...stray]
+}
+
 /** Файлы пакета, прочитанные с диска: имя файла → текст, нет файла — undefined. */
 type TPackageFiles = Readonly<Record<string, string | undefined>>
 
@@ -288,14 +344,20 @@ function withLf(text: string): string {
 }
 
 /**
- * Нарушения состава тарболла: рядом с манифестом лежат README и LICENSE, и
- * лицензия — копия корневой.
+ * Нарушения состава тарболла: рядом с манифестом лежат README и LICENSE,
+ * лицензия — копия корневой, а на каждую чужую лицензию (`others`) — непустой
+ * текст `LICENSE-<идентификатор>`.
  *
- * Оба файла npm кладёт в тарболл мимо `files`, и оба видит потребитель: поля
- * `license` в манифесте мало — оно называет лицензию, но не несёт её текста, а
- * пакет без README на npm выглядит заброшенным.
+ * README и LICENSE npm кладёт в тарболл мимо `files`, и оба видит потребитель:
+ * поля `license` в манифесте мало — оно называет лицензию, но не несёт её
+ * текста, а пакет без README на npm выглядит заброшенным. Текст чужой
+ * лицензии уезжает по `files` — это проверяет `checkLicense`.
  */
-function checkShippedFiles(files: TPackageFiles, license: string): string[] {
+function checkShippedFiles(
+	files: TPackageFiles,
+	license: string,
+	others: readonly string[] = [],
+): string[] {
 	const violations: string[] = []
 	const readme = files['README.md']
 
@@ -311,11 +373,25 @@ function checkShippedFiles(files: TPackageFiles, license: string): string[] {
 		violations.push('LICENSE расходится с корневым — это его копия, а не своя лицензия')
 	}
 
+	for (const id of others) {
+		const name = licenseFile(id)
+		const text = files[name]
+
+		if (text === undefined) {
+			violations.push(`нет ${name} — license называет ${id}, а её текста у пакета нет`)
+		} else if (text.trim() === '') {
+			violations.push(`${name} пуст`)
+		}
+	}
+
 	return violations
 }
 
-/** Читает файлы пакета, которые уезжают в тарболл рядом с манифестом. */
-function readShippedFiles(dir: string): TPackageFiles {
+/**
+ * Читает файлы пакета, которые уезжают в тарболл рядом с манифестом: README,
+ * LICENSE и тексты чужих лицензий `others`.
+ */
+function readShippedFiles(dir: string, others: readonly string[] = []): TPackageFiles {
 	const read = (name: string): string | undefined => {
 		const file = join(ROOT, dir, name)
 
@@ -323,23 +399,22 @@ function readShippedFiles(dir: string): TPackageFiles {
 			? readFileSync(file, 'utf-8')
 			: undefined
 	}
+	const names = ['README.md', 'LICENSE', ...others.map(licenseFile)]
 
-	return { 'README.md': read('README.md'), LICENSE: read('LICENSE') }
+	return Object.fromEntries(names.map((name) => [name, read(name)]))
 }
 
 /** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
 function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	const violations: string[] = []
-	const { description, license, repository, version } = manifest
+	const { description, repository, version } = manifest
 	const directory = isRecord(repository) ? repository.directory : undefined
 
 	if (typeof description !== 'string' || description.trim() === '') {
 		violations.push('пустой description')
 	}
 
-	if (license !== 'MIT') {
-		violations.push(`license ${JSON.stringify(license)}, ожидается "MIT"`)
-	}
+	violations.push(...checkLicense(manifest))
 
 	if (directory !== dir) {
 		violations.push(
@@ -596,13 +671,16 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('у библиотечного пакета рядом README и копия корневой лицензии', () => {
+	it('у библиотечного пакета рядом README, копия корневой лицензии и тексты чужих', () => {
 		const license = readFileSync(join(ROOT, 'LICENSE'), 'utf-8')
-		const violations = library.flatMap(({ dir }) =>
-			checkShippedFiles(readShippedFiles(dir), license).map(
+		const violations = library.flatMap(({ dir, manifest }) => {
+			// Выражение другой формы роняет «библиотечные пакеты заполнены»
+			const others = thirdPartyLicenses(manifest.license) ?? []
+
+			return checkShippedFiles(readShippedFiles(dir, others), license, others).map(
 				(violation) => `${dir}: ${violation}`,
-			),
-		)
+			)
+		})
 
 		expect(
 			violations,
@@ -801,10 +879,62 @@ describe('сторож манифестов', () => {
 		])
 	})
 
-	it('лицензия не MIT — нарушение', () => {
-		expect(checkLibraryPackage(library({ license: 'ISC' }))).toEqual([
-			'packages/example: license "ISC", ожидается "MIT"',
-		])
+	describe('лицензия: своя — MIT, чужие — через AND', () => {
+		const invalid = (declared: string): string[] => [
+			`packages/example: license ${declared}, ожидается "MIT" или "MIT AND <SPDX-id>…"`,
+		]
+
+		/** Везёт содержимое под Apache-2.0: лицензия названа, её текст — в `files`. */
+		const apache = { license: 'MIT AND Apache-2.0', files: ['dist', 'LICENSE-Apache-2.0'] }
+
+		it('лицензия не MIT — нарушение', () => {
+			expect(checkLibraryPackage(library({ license: 'ISC' }))).toEqual(invalid('"ISC"'))
+			expect(checkLibraryPackage(library({ license: undefined }))).toEqual(
+				invalid('undefined'),
+			)
+		})
+
+		it('чужая лицензия через AND и её текст в files — без нарушений', () => {
+			const two = {
+				license: 'MIT AND Apache-2.0 AND OFL-1.1',
+				files: [...apache.files, 'LICENSE-OFL-1.1'],
+			}
+
+			expect(checkLibraryPackage(library(apache))).toEqual([])
+			expect(checkLibraryPackage(library(two))).toEqual([])
+		})
+
+		// Своя — первой и одна, чужие — по одной: OR, WITH и скобки сторож не разбирает
+		it('выражение другой формы — нарушение', () => {
+			const expressions = [
+				'Apache-2.0 AND MIT',
+				'MIT OR Apache-2.0',
+				'MIT AND (Apache-2.0 OR ISC)',
+				'MIT AND Apache-2.0 WITH LLVM-exception',
+				'MIT AND MIT',
+				'MIT AND Apache-2.0 AND Apache-2.0',
+				'MIT AND ',
+			]
+
+			for (const license of expressions) {
+				expect(checkLibraryPackage(library({ ...apache, license })), license).toEqual(
+					invalid(JSON.stringify(license)),
+				)
+			}
+		})
+
+		// `LICENSE` npm кладёт в тарболл сам, остальные тексты — только по files
+		it('текста чужой лицензии нет в files — нарушение', () => {
+			expect(checkLibraryPackage(library({ ...apache, files: ['dist'] }))).toEqual([
+				'packages/example: files без "LICENSE-Apache-2.0" — лицензия названа, а её текст в тарболл не уедет',
+			])
+		})
+
+		it('текст в files без лицензии в license — нарушение', () => {
+			expect(checkLibraryPackage(library({ files: apache.files }))).toEqual([
+				'packages/example: files: "LICENSE-Apache-2.0" — текст лицензии, которой нет в license',
+			])
+		})
 	})
 
 	describe('README и LICENSE рядом с манифестом', () => {
@@ -845,6 +975,28 @@ describe('сторож манифестов', () => {
 			expect(checkShippedFiles(files, LICENSE.replace(/\n/g, '\r\n'))).toEqual([])
 		})
 
+		describe('текст чужой лицензии', () => {
+			const others = ['Apache-2.0']
+			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE }
+
+			it('лежит рядом — без нарушений', () => {
+				const apache = { ...files, 'LICENSE-Apache-2.0': 'Apache License\nVersion 2.0\n' }
+
+				expect(checkShippedFiles(apache, LICENSE, others)).toEqual([])
+			})
+
+			it('нет или пуст — нарушение', () => {
+				const blank = { ...files, 'LICENSE-Apache-2.0': ' \n' }
+
+				expect(checkShippedFiles(files, LICENSE, others)).toEqual([
+					'нет LICENSE-Apache-2.0 — license называет Apache-2.0, а её текста у пакета нет',
+				])
+				expect(checkShippedFiles(blank, LICENSE, others)).toEqual([
+					'LICENSE-Apache-2.0 пуст',
+				])
+			})
+		})
+
 		// Читатель ходит на диск: у самого сторожа README и LICENSE есть
 		it('файлы пакета читаются с диска', () => {
 			const files = readShippedFiles('packages/setup')
@@ -852,9 +1004,10 @@ describe('сторож манифестов', () => {
 
 			expect(files['README.md']).toContain('@soldy-ui/setup')
 			expect(checkShippedFiles(files, root)).toEqual([])
-			expect(readShippedFiles('packages/example')).toEqual({
+			expect(readShippedFiles('packages/example', ['Apache-2.0'])).toEqual({
 				'README.md': undefined,
 				LICENSE: undefined,
+				'LICENSE-Apache-2.0': undefined,
 			})
 		})
 	})

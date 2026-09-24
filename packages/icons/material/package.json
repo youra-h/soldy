@@ -8,7 +8,7 @@
     "icons",
     "material"
   ],
-  "license": "MIT",
+  "license": "MIT AND Apache-2.0",
   "author": "Yuri Soldatov",
   "repository": {
     "type": "git",
@@ -32,7 +32,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE-Apache-2.0"
   ],
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",

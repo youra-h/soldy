@@ -1,3 +1,5 @@
 export { useAdapter } from './useAdapter'
 export { useAdapterContext } from './useAdapterContext'
+export { Teleport } from './Teleport'
 export type { TBinding } from './useAdapter'
+export type { TTeleportProps } from './Teleport'

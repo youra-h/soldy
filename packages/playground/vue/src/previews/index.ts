@@ -1,5 +1,5 @@
 import { h, type Component } from 'vue'
-import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
+import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
@@ -20,6 +20,7 @@ import {
 	Switch,
 	Tabs,
 	Tags,
+	Tooltip,
 	useIcon,
 } from '@soldy-ui/vue'
 
@@ -40,6 +41,9 @@ export type TPreview = (bind: Record<string, unknown>) => unknown
 
 /** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
+
+/** Scope слота `trigger` у Tooltip — ссылка триггера на панель. */
+type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
 /**
  * Содержимое коллекций — из общего манифеста: состав нужен не только здесь.
@@ -117,6 +121,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 				],
 			},
 		),
+
+	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
+	// scope слота. Текст подсказки — слотом: пропа текста у неё нет
+	tooltip: (bind) =>
+		h(Tooltip as Component, bind, {
+			trigger: ({ triggerAria }: TTooltipTriggerScope) =>
+				h(Button, { text: 'Наведи', ...triggerAria }),
+			default: () => 'Короткое пояснение к кнопке',
+		}),
 
 	/**
 	 * Содержимое ленты — просто разметка: коллекции у неё нет, и делить ей

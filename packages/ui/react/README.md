@@ -11,8 +11,10 @@ the markup — BEM classes `s-*` and `data-*` state attributes. Props, events an
 component descriptor, so they match the other five adapters; only the spelling is React's: events
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
-> **Status:** the React adapter is in progress — Button is ported, the rest of the set is on its
-> way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> **Status:** the React adapter is in progress — Button, Icon, Label, Frame, Spinner and Skeleton
+> are ported, the rest of the set is on its way. Icon renders the `tag` it is given; picking an
+> icon by role from the registered pack is not ported yet. See
+> [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
 

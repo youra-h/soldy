@@ -42,4 +42,10 @@ once — a missing icon must not bring the whole application down.
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICENSE).
+
+The icons are [Material Symbols](https://fonts.google.com/icons) by Google, © Google, licensed
+under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0); its text
+ships with the package as `LICENSE-Apache-2.0`. The icons are changed from the source SVG files:
+the root `<svg>` element is dropped together with its size and `fill`, so that an icon takes the
+color of the text, and a glyph may be rotated — `arrowDown` is `chevron_right` turned down.

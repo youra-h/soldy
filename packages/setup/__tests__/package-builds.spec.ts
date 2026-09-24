@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 
 /**
  * Сторож раздела «Сборка пакетов» (см. AGENTS.md). Наружу уезжает `dist`, а
- * собирает его один из двух рецептов — какой, видно по инструменту в скрипте
+ * собирает его один из трёх рецептов — какой, видно по инструменту в скрипте
  * `build` пакета.
  *
  * Общий рецепт — бандл Vite, затем прогон деклараций. Три его решения — только
@@ -15,6 +15,13 @@ import { pathToFileURL } from 'node:url'
  * переименование скоупа (`external: [/^@soldy\//]` перестал совпадать хоть с
  * чем-нибудь), держала формат `cjs` и складывала выход в `lib` мимо `dist`,
  * объявленного в манифесте.
+ *
+ * Рецепт Svelte — один проход `svelte-package`. Компоненты `.svelte` уезжают
+ * как написаны: скомпилированный компонент привязан к рантайму своей версии
+ * Svelte, поэтому компилирует его приложение потребителя. `.ts` транспилируются
+ * модуль в модуль, декларации выпускает тот же проход. Бандла нет, и проверки
+ * общего рецепта к нему неприменимы — у него свои: вход и выход, конфиг
+ * деклараций, ни одного `svelte.config` и условие `svelte` в `exports`.
  *
  * Рецепт Angular — один проход `ng-packagr`. Библиотека Angular уезжает в
  * частичной форме: её дособирает компилятор приложения под свою версию Angular,
@@ -40,10 +47,14 @@ import { pathToFileURL } from 'node:url'
 
 const ROOT = resolve(__dirname, '../../..')
 
-/** Собираемый пакет: имя из очереди, его каталог и его скрипт `build`. */
+/** Манифест как есть: поля не принимаются на веру, а проверяются по одному. */
+type TManifest = Readonly<Record<string, unknown>>
+
+/** Собираемый пакет: имя из очереди, его каталог, манифест и скрипт `build`. */
 type TBuiltPackage = {
 	readonly name: string
 	readonly dir: string
+	readonly manifest: TManifest
 	readonly build: string
 }
 
@@ -54,7 +65,7 @@ type TBuiltPackage = {
  */
 type TReadConfig = (file: string) => unknown
 
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+function isRecord(value: unknown): value is TManifest {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
@@ -62,10 +73,19 @@ function readJson(path: string): unknown {
 	return JSON.parse(readFileSync(path, 'utf-8'))
 }
 
-/** Скрипт манифеста — единственное, что от него нужно этому сторожу. */
-function scriptOf(dir: string, name: string): string {
+function readManifest(dir: string): TManifest {
 	const manifest = readJson(join(dir, 'package.json'))
-	const scripts = isRecord(manifest) ? manifest.scripts : undefined
+
+	if (!isRecord(manifest)) {
+		throw new Error(`${dir}/package.json: ожидается объект JSON`)
+	}
+
+	return manifest
+}
+
+/** Скрипт манифеста по имени: нет скрипта — собирать пакет нечем. */
+function scriptOf(manifest: TManifest, dir: string, name: string): string {
+	const { scripts } = manifest
 	const script = isRecord(scripts) ? scripts[name] : undefined
 
 	if (typeof script !== 'string') {
@@ -81,12 +101,13 @@ function scriptOf(dir: string, name: string): string {
  * воркспейс, и держать своё соответствие имён путям не нужно.
  */
 function builtPackages(): TBuiltPackage[] {
-	const build = scriptOf(ROOT, 'build')
+	const build = scriptOf(readManifest(ROOT), ROOT, 'build')
 
 	return [...build.matchAll(/--workspace=(\S+)/g)].map(([, name]) => {
 		const dir = realpathSync(resolve(ROOT, 'node_modules', name))
+		const manifest = readManifest(dir)
 
-		return { name, dir, build: scriptOf(dir, 'build') }
+		return { name, dir, manifest, build: scriptOf(manifest, dir, 'build') }
 	})
 }
 
@@ -101,7 +122,7 @@ function readConfigOf(pkg: TBuiltPackage): TReadConfig {
 
 /**
  * Рецепт сборки узнаётся по инструменту в скрипте `build`. Подходит у пакета
- * ровно один: смесь двух — это третий рецепт, которого сторож не знает.
+ * ровно один: смесь двух — это рецепт, которого сторож не знает.
  */
 type TRecipe = {
 	readonly name: string
@@ -111,10 +132,13 @@ type TRecipe = {
 /** Бандл Vite по общей фабрике, затем прогон деклараций. */
 const LIB_RECIPE: TRecipe = { name: 'общий: vite build, затем декларации', tool: /\bvite build\b/ }
 
+/** Один проход: компоненты как написаны, `.ts` — в `.js`, декларации — тем же проходом. */
+const SVELTE_RECIPE: TRecipe = { name: 'Svelte: svelte-package', tool: /\bsvelte-package\b/ }
+
 /** Один проход: частичная форма Angular, FESM и свёрнутые декларации по APF. */
 const NG_PACKAGR_RECIPE: TRecipe = { name: 'Angular: ng-packagr', tool: /\bng-packagr\b/ }
 
-const RECIPES: readonly TRecipe[] = [LIB_RECIPE, NG_PACKAGR_RECIPE]
+const RECIPES: readonly TRecipe[] = [LIB_RECIPE, SVELTE_RECIPE, NG_PACKAGR_RECIPE]
 
 /** Рецепты, чей инструмент есть в скрипте `build`. */
 function recipesOf(build: string): TRecipe[] {
@@ -178,20 +202,26 @@ async function buildSectionOf(pkg: TBuiltPackage): Promise<Readonly<Record<strin
 	return build
 }
 
+/**
+ * Имена конфига Svelte у всех, кто его ищет: списки расширений у
+ * `svelte-package`, плагина Svelte и `svelte-check` разные, и сторож берёт их
+ * объединение.
+ */
+const SVELTE_CONFIGS = ['js', 'cjs', 'mjs', 'ts', 'cts', 'mts'].map((ext) => `svelte.config.${ext}`)
+
 /** Путь без `./` в начале и `/` в конце: `./dist/` и `dist` — один каталог. */
 function normalizePath(path: string): string {
 	return posix.normalize(path).replace(/\/$/, '')
 }
 
-/** Команда `ng-packagr` из скрипта — до следующей команды или конца строки. */
-function ngPackagrCommandOf(build: string): string {
-	return build.match(/\bng-packagr\b[^&|;]*/)?.[0] ?? ''
+/** Команда инструмента из скрипта — до следующей команды или конца строки. */
+function commandOf(build: string, tool: RegExp): string {
+	return build.match(new RegExp(`${tool.source}[^&|;]*`))?.[0] ?? ''
 }
 
 /**
- * Значение опции команды. `-p ng-package.json`, `--project ng-package.json` и
- * `--project=ng-package.json` читаются одинаково — так их читает и сам
- * инструмент. Опции нет — `undefined`.
+ * Значение опции команды. `-i src`, `--input src` и `--input=src` читаются
+ * одинаково — так их читают и сами инструменты. Опции нет — `undefined`.
  */
 function optionOf(command: string, ...names: readonly string[]): string | undefined {
 	for (const name of names) {
@@ -205,6 +235,76 @@ function optionOf(command: string, ...names: readonly string[]): string | undefi
 	return undefined
 }
 
+/** Условие `svelte` в `exports["."]`; нет его — `undefined`. */
+function svelteConditionOf(manifest: TManifest): unknown {
+	const { exports } = manifest
+	const root = isRecord(exports) ? exports['.'] : undefined
+
+	return isRecord(root) ? root.svelte : undefined
+}
+
+/**
+ * Нарушения рецепта Svelte; пустой список — пакет в порядке. Есть ли файл в
+ * каталоге пакета, отвечает `exists`: так сторож проверяет и себя, на пакетах
+ * без диска.
+ */
+function checkSvelteRecipe(pkg: TBuiltPackage, exists: (file: string) => boolean): string[] {
+	const violations: string[] = []
+	const command = commandOf(pkg.build, SVELTE_RECIPE.tool)
+	const input = optionOf(command, '-i', '--input')
+	const output = optionOf(command, '-o', '--output')
+	const tsconfig = optionOf(command, '--tsconfig')
+	const types = optionOf(command, '-t', '--types')
+	const condition = svelteConditionOf(pkg.manifest)
+
+	// Без опции вход — `src/lib`, как у приложения SvelteKit: у пакета его нет
+	if (input === undefined || normalizePath(input) !== 'src') {
+		violations.push(`вход ${JSON.stringify(input)}, ожидается -i src`)
+	}
+
+	// Манифест обещает `dist`: выход мимо него никем не читается. Выход записан
+	// явно — на умолчание инструмента сторож не полагается
+	if (output === undefined || normalizePath(output) !== 'dist') {
+		violations.push(`выход ${JSON.stringify(output)}, ожидается -o dist`)
+	}
+
+	// Без опции инструмент берёт ближайший tsconfig.json, а его `paths` ведут
+	// соседей в исходники
+	if (tsconfig === undefined || normalizePath(tsconfig) !== 'tsconfig.build.json') {
+		violations.push(
+			`конфиг деклараций ${JSON.stringify(tsconfig)}, ожидается --tsconfig tsconfig.build.json`,
+		)
+	} else if (!exists('tsconfig.build.json')) {
+		violations.push('нет tsconfig.build.json')
+	}
+
+	if (/(?:^|\s)--no-types(?=\s|$)/.test(command) || types === 'false') {
+		violations.push('декларации выключены, а другого прохода для них нет')
+	}
+
+	// Конфиг подхватили бы разом сборка, плагин Svelte в тестах и `svelte-check`,
+	// и его препроцессор отдал бы наружу не то, что проверили тесты
+	for (const config of SVELTE_CONFIGS) {
+		if (exists(config)) {
+			violations.push(
+				`${config} — компоненты уезжают как написаны, конфига Svelte у пакета нет`,
+			)
+		}
+	}
+
+	// По условию `svelte` плагин Svelte у потребителя узнаёт библиотеку и сам
+	// компилирует её компоненты
+	if (typeof condition !== 'string') {
+		violations.push('exports["."] без условия svelte — плагин Svelte не узнает библиотеку')
+	} else if (!normalizePath(condition).startsWith('dist/')) {
+		violations.push(
+			`exports["."]["svelte"] ${JSON.stringify(condition)} — мимо выхода сборки dist`,
+		)
+	}
+
+	return violations
+}
+
 /**
  * Нарушения рецепта Angular; пустой список — пакет в порядке. Конфиги
  * названы в команде явно: без `-p` инструмент ищет `ng-package.json` сам, а
@@ -213,7 +313,7 @@ function optionOf(command: string, ...names: readonly string[]): string | undefi
  */
 function checkNgPackagrRecipe(pkg: TBuiltPackage, read: TReadConfig): string[] {
 	const violations: string[] = []
-	const command = ngPackagrCommandOf(pkg.build)
+	const command = commandOf(pkg.build, NG_PACKAGR_RECIPE.tool)
 	const project = optionOf(command, '-p', '--project')
 	const tsconfig = optionOf(command, '-c', '--config')
 
@@ -339,6 +439,18 @@ describe('сборка пакетов', () => {
 		})
 	})
 
+	describe.each(packagesOf(SVELTE_RECIPE))('рецепт Svelte · $name', (pkg) => {
+		it('компоненты — как написаны, декларации — тем же проходом, выход — в dist', () => {
+			const violations = checkSvelteRecipe(pkg, (file) => existsSync(join(pkg.dir, file)))
+
+			expect(
+				violations,
+				'Сборка разошлась с рецептом Svelte (AGENTS.md, «Сборка пакетов»):\n' +
+					violations.join('\n'),
+			).toEqual([])
+		})
+	})
+
 	describe.each(packagesOf(NG_PACKAGR_RECIPE))('рецепт Angular · $name', (pkg) => {
 		it('частичная форма, конфиги названы явно, выход — в dist', () => {
 			const violations = checkNgPackagrRecipe(pkg, readConfigOf(pkg))
@@ -361,8 +473,10 @@ describe('сторож рецептов', () => {
 
 		expect(recipesOf(lib)).toEqual([LIB_RECIPE])
 		expect(recipesOf(theme)).toEqual([LIB_RECIPE])
+		expect(recipesOf('svelte-package -i src -o dist')).toEqual([SVELTE_RECIPE])
 		expect(recipesOf(angular)).toEqual([NG_PACKAGR_RECIPE])
 		expect(recipesOf('tsc -p tsconfig.build.json')).toEqual([])
+		expect(recipesOf('vite build && svelte-package')).toEqual([LIB_RECIPE, SVELTE_RECIPE])
 		expect(recipesOf('vite build && ng-packagr')).toEqual([LIB_RECIPE, NG_PACKAGR_RECIPE])
 	})
 
@@ -401,12 +515,108 @@ describe('сторож рецептов', () => {
 		})
 	})
 
+	describe('рецепт Svelte', () => {
+		const BUILD = 'svelte-package -i src -o dist --tsconfig tsconfig.build.json'
+
+		const ENTRY: TManifest = {
+			types: './dist/index.d.ts',
+			svelte: './dist/index.js',
+			default: './dist/index.js',
+		}
+
+		const svelte = (build: string, entry: TManifest = ENTRY): TBuiltPackage => ({
+			name: '@soldy-ui/example',
+			dir: 'packages/example',
+			manifest: { name: '@soldy-ui/example', exports: { '.': entry } },
+			build,
+		})
+
+		/** Каталог пакета: конфиг деклараций и то, что дали сверх него. */
+		const files =
+			(...extra: string[]) =>
+			(file: string): boolean =>
+				['tsconfig.build.json', ...extra].includes(file)
+
+		it('пакет по рецепту — без нарушений, как ни запиши опции', () => {
+			const spelled =
+				'svelte-package --input=./src --output dist/ --tsconfig=./tsconfig.build.json --types'
+
+			expect(checkSvelteRecipe(svelte(BUILD), files())).toEqual([])
+			expect(checkSvelteRecipe(svelte(spelled), files())).toEqual([])
+		})
+
+		it('без --tsconfig — нарушение: декларации ушли бы по tsconfig.json', () => {
+			expect(checkSvelteRecipe(svelte('svelte-package -i src -o dist'), files())).toEqual([
+				'конфиг деклараций undefined, ожидается --tsconfig tsconfig.build.json',
+			])
+		})
+
+		it('конфиг деклараций назван, а файла нет — нарушение', () => {
+			expect(checkSvelteRecipe(svelte(BUILD), () => false)).toEqual([
+				'нет tsconfig.build.json',
+			])
+		})
+
+		it('svelte.config у пакета — нарушение под любым расширением', () => {
+			const why = '— компоненты уезжают как написаны, конфига Svelte у пакета нет'
+
+			for (const config of SVELTE_CONFIGS) {
+				expect(checkSvelteRecipe(svelte(BUILD), files(config)), config).toEqual([
+					`${config} ${why}`,
+				])
+			}
+		})
+
+		it('декларации выключены — нарушение в любой записи', () => {
+			for (const flag of ['--no-types', '--types false', '--types=false', '-t false']) {
+				expect(checkSvelteRecipe(svelte(`${BUILD} ${flag}`), files()), flag).toEqual([
+					'декларации выключены, а другого прохода для них нет',
+				])
+			}
+		})
+
+		it('вход не src, выход не dist — нарушение на каждый', () => {
+			const defaults = 'svelte-package --tsconfig tsconfig.build.json'
+			const moved = 'svelte-package -i src/lib -o build --tsconfig tsconfig.build.json'
+
+			expect(checkSvelteRecipe(svelte(defaults), files())).toEqual([
+				'вход undefined, ожидается -i src',
+				'выход undefined, ожидается -o dist',
+			])
+			expect(checkSvelteRecipe(svelte(moved), files())).toEqual([
+				'вход "src/lib", ожидается -i src',
+				'выход "build", ожидается -o dist',
+			])
+		})
+
+		it('опции соседней команды не в счёт', () => {
+			const chained = 'svelte-package --tsconfig tsconfig.build.json && cp -i src -o dist'
+
+			expect(checkSvelteRecipe(svelte(chained), files())).toEqual([
+				'вход undefined, ожидается -i src',
+				'выход undefined, ожидается -o dist',
+			])
+		})
+
+		it('без условия svelte или с ним мимо dist — нарушение', () => {
+			const { svelte: _condition, ...withoutCondition } = ENTRY
+
+			expect(checkSvelteRecipe(svelte(BUILD, withoutCondition), files())).toEqual([
+				'exports["."] без условия svelte — плагин Svelte не узнает библиотеку',
+			])
+			expect(
+				checkSvelteRecipe(svelte(BUILD, { ...ENTRY, svelte: './src/index.ts' }), files()),
+			).toEqual(['exports["."]["svelte"] "./src/index.ts" — мимо выхода сборки dist'])
+		})
+	})
+
 	describe('рецепт Angular', () => {
 		const BUILD = 'ng-packagr -p ng-package.json -c tsconfig.build.json'
 
 		const angular = (build: string): TBuiltPackage => ({
 			name: '@soldy-ui/example',
 			dir: 'packages/example',
+			manifest: { name: '@soldy-ui/example' },
 			build,
 		})
 
