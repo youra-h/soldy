@@ -287,10 +287,13 @@ npm run build --workspace=@soldy-ui/angular      # ng-packagr: частична�
   выход `dist`, декларации не выключены и идут по `tsconfig.build.json`,
   `svelte.config.*` нет, а в `exports["."]` есть условие `svelte`. У рецепта
   Angular оба конфига названы в команде, `dest` конфига `-p` — `dist`, а
-  `compilationMode` в `tsconfig.build.json` — `partial`. У всех
-  `tsconfig.build.json` объявляет `paths` сам — сторож читает файл, а не
-  цепочку `extends`: без ключа пришли бы `paths` пакетного конфига, ведущие
-  соседей в исходники. Соседей в `paths` нет, `preserveSymlinks` — тоже.
+  `compilationMode` в `tsconfig.build.json` — `partial`. `tsconfig.build.json`
+  у всех судится по опциям, которые действуют, — с учётом `extends`, как их
+  читает сам TypeScript: соседей в `paths` нет, `preserveSymlinks` — тоже.
+  Пакетный конфиг ведёт соседей в исходники, и конфиг сборки перекрывает их
+  своим `paths`: без ключа они пришли бы по `extends`, как и
+  `preserveSymlinks` из любого звена цепочки. Конфиг, который TypeScript не
+  разобрал, — тоже падающий тест.
 - **Выходов у пакета бывает два.** У темы это CSS (`dist/index.css`) и
   поведение — экспорт `./setup` (`dist/setup`); собираются они по очереди,
   каждый своим конфигом, и второй лежит в подкаталоге: `emptyOutDir` первого
