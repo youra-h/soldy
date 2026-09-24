@@ -2652,17 +2652,17 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                                           |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                      |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                  |
-| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`     |
-| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                      |
-| `TListItemPlugin`      | `data-highlighted`                                                                  |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                 |
-| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                   |
-| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                            |
-| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog` |
+| Источник               | Что пишет                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                   |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                               |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                  |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                   |
+| `TListItemPlugin`      | `data-highlighted`                                                                                               |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                              |
+| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                |
+| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                         |
+| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-dragging` у `TSlider` |
 
 Два правила, которые легко нарушить:
 
@@ -2964,6 +2964,47 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
   `ui/vue/__tests__/dialog.spec.ts` и `playground/vue/browser/dialog.spec.ts`.
+- **Slider** — Slider и Multi-Thumb Slider pattern, вариант на нативных
+  `input[type="range"]`: поле на каждую ручку, прозрачное и без указателя
+  (`pointer-events: none`). Роль, значение, границы, `disabled` и отправку
+  формы даёт браузер, ARIA-дублей ядро не пишет (`_ariaTag` — `input`). Поле, а
+  не `role="slider"`: мобильный скринридер двигает нативный range своим
+  жестом, а до `role="slider"` жест не доходит — клавиш он не шлёт. Значение —
+  `number | number[]`: число — одна ручка, массив — по ручке на элемент, и
+  форма сохраняется в обе стороны (`v-model`). Хранится значение как задано, а
+  итог отдаёт резольвер шкалы — прижатым к границам, приведённым к шагу и
+  упорядоченным, поэтому порядок записи `value` и `max` не важен; массив
+  сверяется по содержимому — правилом `same` своей единицы состояния
+  (`TStateUnit`). Шаг — числом (сетка от `min`, `max` вне сетки недостижим, как
+  у нативного поля) или списком допустимых значений; математика — шкала
+  `IScale` (`core/src/common/scale`). Ход ручки — от соседа до соседа с
+  зазором `minStepsBetweenThumbs`: ручки не перехлёстываются, а соседей ближе
+  зазора ядро не раздвигает — ход поля (`min`/`max`) тот же и всегда содержит
+  значение. Клавиши — `TSlideKeyboardPlugin`, свои и с `preventDefault`, иначе
+  стрелка дала бы два шага: стрелки ведут ручку по направлению роста (ось,
+  вычисленное направление письма и `inverted` — одна функция с указателем),
+  Shift со стрелкой и PageUp/PageDown — `largeStep`, Home/End — край хода
+  ручки. Жест скринридера приходит событием `input` поля: плагин переводит его
+  направление в шаг ядра и возвращает полю значение ядра. Указатель —
+  `TSlidePointerPlugin`: `pointerdown` на корне гасится — ни выделения, ни
+  своего фокуса браузера; нажатие на ручке тянет её со смещением захвата,
+  мимо ручек — ставит туда ближайшую, у ручек на одном значении ведомую
+  выбирает первое движение; фокус — полю ведомой ручки. Захват указателя и
+  погашенный `click` в конце жеста не дают подписи `Label` увести фокус на
+  первое поле. `data-dragging` ставит первое движение, а не нажатие: прыжок
+  ручки к месту нажатия тема анимирует. `commit` — одно событие на действие:
+  конец жеста, сменившего значение, или шаг клавишей. Имя: подпись `Label`
+  называет первое поле, остальным — `thumbLabels`; без видимого текста —
+  `aria_label` на все поля. Позиции ручек, меток и заливки ядро отдаёт
+  CSS-переменными (`thumbs`, `shownMarks`, `rangeStyle`), ось раскладывает тема
+  логическими свойствами. Перетаскивание — контракт `ISlidable`
+  (`core/src/components/custom/slide`): плагины говорят только с ним, и
+  следующий компонент, где значение задают перетаскиванием, получит их
+  готовыми. Сторожат `core/__tests__/scale.spec.ts`,
+  `core/__tests__/slider.spec.ts`, `plugins/__tests__/slide-direction.spec.ts`,
+  `plugins/__tests__/slide-pointer.plugin.spec.ts`,
+  `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
+  `ui/vue/__tests__/slider.spec.ts` и `playground/vue/browser/slider.spec.ts`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only

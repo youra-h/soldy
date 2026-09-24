@@ -21,6 +21,7 @@ import {
 	SELECT_PLACEMENTS,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
+	SLIDE_ORIENTATIONS,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
@@ -152,6 +153,17 @@ const OWN: Record<string, Record<string, string>> = {
 		prevLabel: 'Имя кнопки «назад» для скринридера',
 		nextLabel: 'Имя кнопки «вперёд» для скринридера',
 	},
+	slider: {
+		min: 'Начало хода',
+		max: 'Конец хода. Вне сетки шага он недостижим, как у нативного поля',
+		step: 'Шаг: число — ровная сетка от min, список допустимых значений — кодом',
+		largeStep: 'Сколько шагов делают Shift со стрелкой, PageUp и PageDown',
+		orientation: 'Ось хода: вдоль строки или снизу вверх',
+		inverted: 'Значение растёт в обратную сторону: справа налево или сверху вниз',
+		origin: 'Откуда растёт заливка одной ручки. Пусто — от min, середина хода — от центра',
+		marks: 'Метки на рельсе — точки шкалы. Список с подписями задаётся кодом',
+		minStepsBetweenThumbs: 'Наименьший зазор между соседними ручками — в шагах шкалы',
+	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
 		closable: 'Показывать ли кнопку закрытия в углу панели',
@@ -266,6 +278,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS },
+	slider: { orientation: SLIDE_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
@@ -313,6 +326,13 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		// а крестика у тега по умолчанию нет
 		overflow: { closable: true },
 	},
+	slider: {
+		// Зазор — между соседями, а у одной ручки соседей нет
+		minStepsBetweenThumbs: { value: [20, 80] },
+		// Точки шкалы с шагом 1 — сотня точек впритык: рельс выглядел бы
+		// сплошной штриховкой
+		marks: { step: 10 },
+	},
 }
 
 export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
@@ -345,6 +365,8 @@ export const NON_EDITABLE = new Set([
 	// Атрибуты вьюпорта ленты от потребителя — набор, а не значение: роль ряда
 	// приносит тот, кто ленту применяет, и текстовым полем его не задать
 	'viewportAria',
+	// Имена ручек ползунка — список строк по числу ручек, а у превью ручка одна
+	'thumbLabels',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

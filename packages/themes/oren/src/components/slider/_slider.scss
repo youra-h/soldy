@@ -1,0 +1,465 @@
+@use './mixins' as mixines;
+
+// Slider — ползунок: одна или несколько ручек на рельсе, заливка и метки.
+//
+// Всё, что зависит от значения, — позиции — приходит от ядра переменными в
+// `style` узла, процентом от начала оси и уже с учётом `inverted`:
+//
+// - `--s-slider-position` — у ручки и у метки: где её центр;
+// - `--s-slider-range-start`, `--s-slider-range-end` — у заливки: её края,
+//   начало не дальше конца.
+//
+// Ось раскладывает тема, и только логическими свойствами: горизонталь — от
+// начала строки (`inset-inline-start`), поэтому в RTL ползунок разворачивается
+// сам, без селектора по направлению; вертикаль — снизу вверх
+// (`inset-block-end`). Ни одного `translate`: у сдвига нет логических
+// направлений, и в RTL он увёл бы ручку и подпись не в ту сторону. Центруют
+// поля и выравнивание флекса.
+//
+// Контракт с плагином указателя: коробка `__track` — ход центров ручек, 0 % и
+// 100 % — её края по оси, мерить надо её. На краю хода ручка выступает за
+// коробку на полстороны; рельс лежит и там, но псевдоэлементом — коробку он не
+// сдвигает, а место под полстороны корень держит отступом.
+.s-slider {
+	$this: &;
+
+	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
+	// и без него обязан выглядеть умолчанием.
+	@include mixines.slider-size('normal');
+
+	// Точка метки — половина рельса и пиксель сверху: видна на тонком рельсе и
+	// не касается его краёв на толстом.
+	--s-slider-tick-size: calc(var(--s-slider-rail-size) / 2 + 1px);
+
+	// Ореол ручки — треть её стороны. Без наведения и перетаскивания ореола нет:
+	// кольцо нулевой ширины.
+	--s-slider-halo-size: calc(var(--s-slider-thumb-size) / 3);
+
+	// Свой слой: ручки подняты над заливкой и метками (`z-index`), но поверх
+	// соседей по странице этот подъём не выходит.
+	@apply relative isolate;
+
+	// Протяжка по подписям меток двигает ручку, а не выделяет текст.
+	@apply select-none;
+
+	// Нажатие в любом месте ползунка ведёт к нему ближнюю ручку — не только по
+	// рельсу, но и по полосе ручек и по подписям меток.
+	@apply cursor-pointer;
+
+	// Горизонтальный — блочный, во всю ширину контейнера: ползунок меряют длиной
+	// хода, а не содержимым.
+	//
+	// Отступ вдоль оси — полстороны ручки: на краю хода ручка выступает ровно на
+	// столько. Поперёк — ореол: он и кольцо фокуса остаются внутри коробки
+	// ползунка, и их не срежет прокручиваемый контейнер вокруг (содержимое
+	// Popover), а полоса, в которой нажатие ведёт ручку, выходит выше и ниже
+	// самой ручки — пальцу нужна цель крупнее неё.
+	//
+	// Жест поперёк оси остаётся странице: пальцем по ползунку её можно листать,
+	// а ручку плагин ведёт только вдоль.
+	&--horizontal {
+		@apply flex;
+		padding-inline: calc(var(--s-slider-thumb-size) / 2);
+		padding-block: var(--s-slider-halo-size);
+		touch-action: pan-y;
+	}
+
+	// Вертикальный — строчный: несколько вертикальных ползунков встают в ряд,
+	// как полосы эквалайзера. Высота — своя (ниже), ширина — по полосе ручек и
+	// подписям меток. Отступы — те же, что у горизонтального, повёрнутые.
+	&--vertical {
+		@apply inline-flex flex-col;
+		padding-block: calc(var(--s-slider-thumb-size) / 2);
+		padding-inline: var(--s-slider-halo-size);
+		touch-action: pan-x;
+	}
+
+	// Дорожка — ход центров ручек. Сама она ничего не рисует: рельс — её
+	// псевдоэлемент, заливка и ручки — позиционированные дети. В потоке у неё
+	// только метки, и ради подписей: ползунок растёт на них поперёк оси, а не
+	// наезжает подписями на соседей. Сетка — чтобы все метки легли в одну
+	// ячейку и её размер шёл по самой крупной подписи.
+	&__track {
+		@apply relative grid;
+		flex: 1 1 0;
+	}
+
+	// Рельс — от края до края корня: за края хода выходит на полстороны ручки,
+	// и ручка на краю лежит на нём, а не свисает. Скругление уходит под ручку.
+	&__track::before {
+		content: '';
+		@apply absolute rounded-full;
+		@apply transition-colors duration-150;
+		background-color: var(--s-slider-rail);
+	}
+
+	&--horizontal > #{$this}__track {
+		min-inline-size: 0;
+		// Полоса ручек: рельс, точки меток и ручки лежат по её центру.
+		min-block-size: var(--s-slider-thumb-size);
+
+		&::before {
+			inset-inline: calc(var(--s-slider-thumb-size) / -2);
+			inset-block-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
+			block-size: var(--s-slider-rail-size);
+		}
+	}
+
+	&--vertical > #{$this}__track {
+		min-block-size: 0;
+		min-inline-size: var(--s-slider-thumb-size);
+
+		&::before {
+			inset-block: calc(var(--s-slider-thumb-size) / -2);
+			inset-inline-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
+			inline-size: var(--s-slider-rail-size);
+		}
+	}
+
+	// Наведение на ползунок — рельс отходит от поверхности на шаг: нажатие в
+	// любом его месте двигает ручку. Выключенный нажатие не меняет — его не
+	// красим.
+	&:hover:not([data-disabled='true']) > #{$this}__track::before {
+		background-color: var(--s-slider-rail-hover);
+	}
+
+	// Заливка — от `--s-slider-range-start` до `--s-slider-range-end`, тем же
+	// цветом, что кромка ручки: ручка читается концом заливки.
+	&__range {
+		@apply absolute rounded-full;
+		background-color: var(--s-slider-fill);
+		transition-duration: 150ms;
+		transition-timing-function: ease-out;
+	}
+
+	&--horizontal #{$this}__range {
+		inset-block-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
+		block-size: var(--s-slider-rail-size);
+		inset-inline-start: calc(
+			var(--s-slider-range-start, 0%) - #{mixines.reach(var(--s-slider-range-start, 0%))}
+		);
+		inset-inline-end: calc(
+			100% - var(--s-slider-range-end, 0%) -
+				#{mixines.reach(calc(100% - var(--s-slider-range-end, 0%)))}
+		);
+	}
+
+	&--vertical #{$this}__range {
+		inset-inline-start: calc((var(--s-slider-thumb-size) - var(--s-slider-rail-size)) / 2);
+		inline-size: var(--s-slider-rail-size);
+		inset-block-end: calc(
+			var(--s-slider-range-start, 0%) - #{mixines.reach(var(--s-slider-range-start, 0%))}
+		);
+		inset-block-start: calc(
+			100% - var(--s-slider-range-end, 0%) -
+				#{mixines.reach(calc(100% - var(--s-slider-range-end, 0%)))}
+		);
+	}
+
+	// Ручка — центром на своей позиции: полстороны назад логическим полем, в RTL
+	// оно само встаёт с другой стороны.
+	//
+	// Поверхность — цвет ручки Switch (`--s-component-knob`), кромка — цвет
+	// заливки. Ореол — вуаль вокруг кромки: кольцо `ring` ложится в одну тень с
+	// `shadow-sm` и её не перебивает.
+	//
+	// Содержимое слота `thumb` (место под подсказку) — по центру ручки: от него
+	// подсказке и считать своё место.
+	&__thumb {
+		@apply absolute flex items-center justify-center;
+		@apply rounded-full border-solid;
+		@apply bg-s-component-knob shadow-sm;
+		@apply cursor-grab;
+		@apply ring-(length:--s-slider-halo) ring-(--s-slider-halo-color);
+		--s-slider-halo: 0px;
+		--s-slider-halo-color: transparent;
+		z-index: 1;
+		inline-size: var(--s-slider-thumb-size);
+		block-size: var(--s-slider-thumb-size);
+		border-width: var(--s-slider-thumb-border);
+		border-color: var(--s-slider-fill);
+		transition-property: box-shadow;
+		transition-duration: 150ms;
+		transition-timing-function: ease-out;
+	}
+
+	&--horizontal #{$this}__thumb {
+		inset-block-start: 0;
+		inset-inline-start: var(--s-slider-position, 0%);
+		margin-inline-start: calc(var(--s-slider-thumb-size) / -2);
+	}
+
+	&--vertical #{$this}__thumb {
+		inset-inline-start: 0;
+		inset-block-end: var(--s-slider-position, 0%);
+		margin-block-end: calc(var(--s-slider-thumb-size) / -2);
+	}
+
+	// Наведение на ручку — ореол. Только там, где нажатие что-то сделает.
+	&:not([data-disabled='true']) #{$this}__thumb:hover {
+		--s-slider-halo: var(--s-slider-halo-size);
+		--s-slider-halo-color: var(--s-slider-halo-hover);
+	}
+
+	// Тянут эту ручку — ореол плотнее. Две ручки на одном значении лежат друг
+	// на друге, и сверху та, что тянут или в фокусе: её и видно, её и
+	// двигают клавиши.
+	&__thumb[data-dragging='true'] {
+		--s-slider-halo: var(--s-slider-halo-size);
+		--s-slider-halo-color: var(--s-slider-halo-active);
+	}
+
+	&__thumb:is([data-dragging='true'], :focus-within) {
+		z-index: 2;
+	}
+
+	// Кольцо фокуса — на ручке: фокус у поля внутри неё, а поле невидимо.
+	&__thumb:has(> #{$this}__input:focus-visible) {
+		@apply outline-2 outline-offset-2 outline-s-component;
+	}
+
+	// Поле — во всю ручку и прозрачное: остаётся в дереве доступности и в
+	// порядке фокуса, и рамку курсора скринридер рисует по ручке, а не по точке
+	// в её углу (так же поле лежит в коробке CheckBox). Указатель оно не ловит:
+	// иначе браузер начал бы свой перетаск поверх плагина, и значение двигали бы
+	// двое.
+	&__input {
+		@apply absolute inset-0 m-0 p-0 size-full opacity-0;
+		@apply appearance-none pointer-events-none;
+	}
+
+	// Метки — в потоке дорожки и все в одной ячейке сетки; на свою позицию
+	// каждая сдвинута относительно, как ручка — абсолютно. Ячейка растёт по
+	// самой крупной подписи, и место под подписи ползунок держит сам.
+	&__marks {
+		@apply grid;
+	}
+
+	// Метка — нулевой протяжённости вдоль оси: её середина и есть позиция, а
+	// точка и подпись встают по центру выравниванием флекса и выходят в обе
+	// стороны поровну.
+	&__mark {
+		@apply relative flex;
+		grid-area: 1 / 1;
+
+		// Точка на рельсе. На заливке — цветом ручки: вуаль той же ступени, что
+		// заливка, на ней невидима.
+		&::before {
+			content: '';
+			@apply shrink-0 rounded-full;
+			@apply transition-colors duration-150;
+			inline-size: var(--s-slider-tick-size);
+			block-size: var(--s-slider-tick-size);
+			background-color: var(--s-slider-tick);
+		}
+
+		&[data-in-range='true']::before {
+			background-color: color-mix(in oklab, var(--s-component-knob) 80%, transparent);
+		}
+
+		// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
+		// метку при перетаскивании (анимация — ниже, под
+		// `prefers-reduced-motion`). В покое кольца нет.
+		&::after {
+			content: '';
+			@apply absolute rounded-full pointer-events-none opacity-0;
+			inline-size: var(--s-slider-thumb-size);
+			block-size: var(--s-slider-thumb-size);
+			margin-inline-start: calc(var(--s-slider-thumb-size) / -2);
+			margin-block-start: calc(var(--s-slider-thumb-size) / -2);
+			border: var(--s-slider-thumb-border) solid var(--s-slider-fill);
+		}
+	}
+
+	&--horizontal #{$this}__mark {
+		@apply flex-col items-center;
+		justify-self: start;
+		inline-size: 0;
+		inset-inline-start: var(--s-slider-position, 0%);
+
+		&::before {
+			margin-block: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);
+		}
+
+		&::after {
+			inset-inline-start: 0;
+			inset-block-start: calc(var(--s-slider-thumb-size) / 2);
+		}
+	}
+
+	&--vertical #{$this}__mark {
+		@apply flex-row items-center;
+		align-self: end;
+		block-size: 0;
+		inset-block-end: var(--s-slider-position, 0%);
+
+		&::before {
+			margin-inline: calc((var(--s-slider-thumb-size) - var(--s-slider-tick-size)) / 2);
+		}
+
+		&::after {
+			inset-inline-start: calc(var(--s-slider-thumb-size) / 2);
+			inset-block-start: 0;
+		}
+	}
+
+	// Подпись метки — приглушённый текст; внутри заливки — основной, на метке
+	// под ручкой — текст варианта и плотнее. Жирность раскладку не двигает:
+	// подпись стоит по центру метки нулевой ширины и растёт в обе стороны.
+	//
+	// Пустая подпись места не занимает: метка без подписи — одна точка.
+	&__mark-label {
+		@apply whitespace-nowrap text-s-neutral-500;
+		@apply transition-colors duration-150;
+		@include mixines.slider-mark-text('normal');
+
+		&:empty {
+			@apply hidden;
+		}
+	}
+
+	&__mark[data-in-range='true'] > #{$this}__mark-label {
+		@apply text-s-component;
+	}
+
+	&__mark[data-current='true'] > #{$this}__mark-label {
+		@apply font-semibold;
+		color: var(--s-slider-current-text);
+	}
+
+	&--horizontal #{$this}__mark-label {
+		margin-block-start: var(--s-slider-gap);
+	}
+
+	&--vertical #{$this}__mark-label {
+		margin-inline-start: var(--s-slider-gap);
+	}
+
+	// Идёт перетаскивание — рука сжата, где бы над ползунком ни был указатель.
+	&[data-dragging='true'],
+	&[data-dragging='true'] * {
+		@apply cursor-grabbing;
+	}
+
+	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
+	// теге. Гаснет ползунок целиком.
+	&[data-disabled='true'] {
+		@apply opacity-s-component-disabled cursor-default pointer-events-none;
+	}
+
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.slider-size($size);
+
+			#{$this}__mark-label {
+				@include mixines.slider-mark-text($size);
+			}
+		}
+	}
+
+	@each $variant in mixines.$variants {
+		&--variant-#{$variant} {
+			@include mixines.slider-colors($variant);
+		}
+	}
+}
+
+// Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
+// он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
+// споря с ней.
+:where(.s-slider) {
+	@include mixines.slider-colors('neutral');
+}
+
+// Длина по умолчанию — нулевой специфичности: класс или стиль потребителя её
+// перекрывает, не споря.
+//
+// У горизонтального — нижняя граница, та же, что у поля Input (`min-w-40`): в
+// форме они стоят рядом. Своего содержимого по ширине у ползунка нет — всё
+// внутри позиционировано, — и там, где ширину берут по содержимому (строчный
+// флекс, обёртка контрола в подписи `Label`), он схлопнулся бы в одну ручку.
+// У вертикального длины по содержимому нет вовсе, высота своя.
+:where(.s-slider--horizontal) {
+	@apply min-w-40;
+}
+
+:where(.s-slider--vertical) {
+	@apply h-40;
+}
+
+// Ход ручек и заливки — плавный: от клавиатуры и от смены значения кодом. Во
+// время перетаскивания ручка идёт за указателем без задержки, при просьбе
+// системы убрать движение — тоже.
+@media (prefers-reduced-motion: no-preference) {
+	.s-slider:not([data-dragging='true']) > .s-slider__track {
+		> .s-slider__thumb {
+			transition-property: box-shadow, inset-inline-start, inset-block-end;
+		}
+
+		> .s-slider__range {
+			transition-property:
+				inset-inline-start, inset-inline-end, inset-block-start, inset-block-end;
+		}
+	}
+
+	// Щелчок — отклик метки, на которую встала ручка: кольцо расходится от
+	// ручки и гаснет. Только при перетаскивании: клавиша и так ходит по шагу, а
+	// на первой отрисовке кольцо вспыхнуло бы у каждой занятой метки.
+	.s-slider[data-dragging='true'] .s-slider__mark[data-current='true']::after {
+		animation: s-slider-detent 400ms ease-out;
+	}
+}
+
+@keyframes s-slider-detent {
+	from {
+		opacity: 0.6;
+		scale: 1;
+	}
+
+	to {
+		opacity: 0;
+		scale: 1.9;
+	}
+}
+
+// Ползунок в подписи `Label`. Обёртка контрола в подписи жмётся к началу строки
+// и берёт ширину по содержимому, а у ползунка своего содержимого по ширине нет:
+// он встал бы в свою нижнюю границу, какой бы широкой ни была подпись. Поэтому
+// горизонтальный ползунок забирает ширину подписи — под текстом и над ним
+// обёртка тянется поперёк столбца, рядом с текстом забирает остаток ряда.
+//
+// Растяжка поперёк — только в столбце: в ряду обёртка стоит по базовой линии
+// первой строки текста, и растяжка её бы сбила.
+.s-label:is(.s-label--position-top, .s-label--position-bottom)
+	> .s-label__control:has(> .s-slider--horizontal) {
+	align-self: stretch;
+}
+
+.s-label:not(.s-label--position-top, .s-label--position-bottom)
+	> .s-label__control:has(> .s-slider--horizontal) {
+	flex-grow: 1;
+}
+
+.s-label__control > .s-slider--horizontal {
+	flex: 1 1 auto;
+}
+
+// Принудительные цвета (высокий контраст Windows): браузер заменяет фоны
+// системным цветом поверхности, и рельс, заливка и точки меток пропали бы
+// вместе с ними — от ползунка остались бы одни кольца ручек.
+@media (forced-colors: active) {
+	.s-slider__track::before {
+		forced-color-adjust: none;
+		background-color: GrayText;
+	}
+
+	.s-slider__range {
+		forced-color-adjust: none;
+		background-color: Highlight;
+	}
+
+	.s-slider__mark::before {
+		forced-color-adjust: none;
+		background-color: CanvasText;
+	}
+}

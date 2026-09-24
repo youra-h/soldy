@@ -20,3 +20,7 @@ export * from './dialog'
 export * from './popover'
 export * from './tooltip'
 export * from './scroller'
+// Только контракты: класса в этой папке нет — перетаскивание значения, общее
+// у ползунка и будущих компонентов
+export * from './slide'
+export * from './slider'

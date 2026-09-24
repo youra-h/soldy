@@ -22,6 +22,7 @@ import {
 	SelectDescriptor,
 	SelectCollectionDescriptor,
 	SkeletonDescriptor,
+	SliderDescriptor,
 	SpinnerDescriptor,
 	StylableDescriptor,
 	SwitchDescriptor,
@@ -87,6 +88,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Подпись контрола: клик по тексту переключает его, текст — его имя',
+	},
+	{
+		id: 'slider',
+		label: 'Slider',
+		descriptor: SliderDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Ползунок: число или диапазон перетаскиванием, клавишами и жестом скринридера',
 	},
 	{
 		id: 'radio-group',
