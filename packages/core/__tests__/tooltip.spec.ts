@@ -10,11 +10,11 @@ import { TTooltip } from '@soldy-ui/core'
  */
 
 describe('умолчания', () => {
-	it('закрыта, над триггером по началу, 400 мс до показа и 150 до скрытия', () => {
+	it('закрыта, над триггером по центру, 400 мс до показа и 150 до скрытия', () => {
 		const tooltip = new TTooltip()
 
 		expect(tooltip.open).toBe(false)
-		expect(tooltip.placement).toBe('top-start')
+		expect(tooltip.placement).toBe('top')
 		expect(tooltip.openDelay).toBe(400)
 		expect(tooltip.closeDelay).toBe(150)
 	})

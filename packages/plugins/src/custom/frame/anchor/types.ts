@@ -3,11 +3,22 @@ import type { TPluginEvents } from '../../../base'
 /**
  * Сторона и выравнивание панели относительно якоря.
  *
+ * Сторона — `top` или `bottom`, выравнивания три: `-start` — по началу
+ * якоря, `-end` — по концу, значение без суффикса — по центру (как у
+ * Floating UI). Начало и конец логические: в RTL они меняются местами, центр
+ * от направления не зависит.
+ *
  * Набор намеренно маленький: это выбор потребителя, а не подбор места.
  * Автоматический переворот при нехватке места (flip) и сдвиг у края экрана
  * (shift) плагин делает сам поверх этого выбора — см. `TAnchorPlugin`.
  */
-export type TFramePlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
+export type TFramePlacement =
+	| 'bottom-start'
+	| 'bottom'
+	| 'bottom-end'
+	| 'top-start'
+	| 'top'
+	| 'top-end'
 
 export interface IAnchorPluginOptions {
 	/** Сторона и выравнивание относительно якоря. По умолчанию `bottom-start`. */

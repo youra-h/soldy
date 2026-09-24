@@ -37,7 +37,7 @@ function anchorAt(rect: Partial<DOMRect>): HTMLElement {
 	return element
 }
 
-/** Панель заданного размера — нужна только для `*-end`, `top-*`, flip и shift. */
+/** Панель заданного размера — нужна только для `*-end`, центра, показа сверху, flip и shift. */
 function panelOf(width: number, height: number): { element: HTMLElement; plugin: TElementPlugin } {
 	const element = document.createElement('div')
 
@@ -410,6 +410,107 @@ describe('RTL', () => {
 		plugin.setAnchor(anchor)
 
 		expect(frame.x).toBe(180) // 300 - 120, как -end в LTR
+	})
+})
+
+/**
+ * Значение без суффикса — `top` и `bottom` — ставит панель по центру якоря.
+ * Сторону по-прежнему выбирает flip, край окна — shift, а направление письма
+ * центра не касается.
+ */
+describe('центр: top и bottom без суффикса', () => {
+	/** Панель 120×60: по центру она начинается на 60px левее середины якоря. */
+	const centered = async (placement: 'top' | 'bottom') => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		plugin.placement = placement
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		return { frame, plugin }
+	}
+
+	it('bottom ставит панель под якорь по его центру, data-placement = bottom', async () => {
+		const { frame, plugin } = await centered('bottom')
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 200, bottom: 250, right: 300 }))
+
+		expect(frame.x).toBe(140) // 200 - 120 / 2
+		expect(frame.y).toBe(250)
+		expect(frame.dataset.get('placement')).toBe('bottom')
+	})
+
+	/**
+	 * Сторону плагин узнаёт по началу значения: по префиксу `top-` значение
+	 * `top` не узнать, и панель уехала бы под якорь.
+	 */
+	it('top поднимает панель над якорем по его центру, data-placement = top', async () => {
+		const { frame, plugin } = await centered('top')
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 200, bottom: 250, right: 300 }))
+
+		expect(frame.x).toBe(140)
+		expect(frame.y).toBe(140) // 200 - 60
+		expect(frame.dataset.get('placement')).toBe('top')
+	})
+
+	it('в rtl центр тот же, что в ltr', async () => {
+		const { frame, plugin } = await centered('bottom')
+		const anchor = anchorAt({ left: 100, top: 200, bottom: 250, right: 300 })
+
+		anchor.style.direction = 'rtl'
+		plugin.setAnchor(anchor)
+
+		expect(frame.x).toBe(140)
+	})
+
+	it('у левого края shift не даёт панели уйти за x=0', async () => {
+		const { frame, plugin } = await centered('bottom')
+
+		// Середина якоря — 30: по центру панель начиналась бы с -30
+		plugin.setAnchor(anchorAt({ left: 10, top: 200, bottom: 250, right: 50 }))
+
+		expect(frame.x).toBe(0)
+	})
+
+	it('у правого края shift не даёт панели уйти за правый край окна', async () => {
+		const { frame, plugin } = await centered('bottom')
+
+		// Якорь уходит за край окна. Середина — 950: по центру панель
+		// кончалась бы на 1010
+		plugin.setAnchor(anchorAt({ left: 860, top: 200, bottom: 250, right: 1040 }))
+
+		expect(frame.x).toBe(880) // 1000 - 120
+	})
+
+	it('flip у верхнего края переносит top вниз и оставляет центр', async () => {
+		const { frame, plugin } = await centered('top')
+
+		// Над якорем 20px, панели нужно 60, а под ним места много
+		plugin.setAnchor(anchorAt({ left: 100, top: 20, bottom: 50, right: 300 }))
+
+		expect(frame.x).toBe(140)
+		expect(frame.y).toBe(50)
+		expect(frame.dataset.get('placement')).toBe('bottom')
+	})
+
+	it('смена выравнивания на центр пересчитывает x', async () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const panel = panelOf(120, 60)
+		const plugin = anchorFor(frame, panel.plugin)
+
+		panel.plugin.element = panel.element
+		await nextFrame()
+
+		plugin.setAnchor(anchorAt({ left: 100, top: 200, bottom: 250, right: 300 }))
+		expect(frame.x).toBe(100)
+
+		plugin.placement = 'bottom'
+
+		expect(frame.x).toBe(140)
+		expect(frame.dataset.get('placement')).toBe('bottom')
 	})
 })
 
