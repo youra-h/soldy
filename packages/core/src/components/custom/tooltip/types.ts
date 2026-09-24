@@ -8,11 +8,19 @@ import type { TAriaAttributes } from '../../../common'
 /**
  * Сторона и выравнивание подсказки у триггера.
  *
- * Те же четыре значения, что у плагина якоря (`anchor_placement`): их Tooltip
- * и отдаёт своему Frame. Тип у ядра свой — плагинов ядро не знает. Flip и
- * shift у края окна плагин якоря делает поверх выбора потребителя.
+ * Те же шесть значений, что у плагина якоря (`anchor_placement`): их Tooltip
+ * и отдаёт своему Frame. `-start` и `-end` — по началу и концу триггера,
+ * значение без суффикса (`top`, `bottom`) — по центру. Тип у ядра свой —
+ * плагинов ядро не знает. Flip и shift у края окна плагин якоря делает поверх
+ * выбора потребителя.
  */
-export type TTooltipPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
+export type TTooltipPlacement =
+	| 'bottom-start'
+	| 'bottom'
+	| 'bottom-end'
+	| 'top-start'
+	| 'top'
+	| 'top-end'
 
 /**
  * Чем подсказка служит триггеру — как `type` у Tooltip GitHub Primer.

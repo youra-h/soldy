@@ -25,6 +25,10 @@ export const ICON_ROLES = [
 	'arrowDown',
 	'arrowRight',
 	'moreHoriz',
+	// Кнопка разворота модального окна: стрелки наружу — развернуть, внутрь —
+	// вернуть размер
+	'arrowsOutward',
+	'arrowsInward',
 ] as const
 
 export type TIconRole = (typeof ICON_ROLES)[number]

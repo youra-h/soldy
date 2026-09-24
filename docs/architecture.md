@@ -36,7 +36,9 @@ TEntity (uid, getProps, assign, toJSON)
 │   ├── TDragAndDrop                        — провайдер контекста, ничего не рендерит
 │   ├── TCollectionComponent / TCollectionItemComponent — фасады коллекций
 │   └── TComponentView (rendered/visible/present, show/hide, tag, direction, classes, aria/dataset/attrs, ready)
-│       ├── TFrame (x, y, width, height, position, target)
+│       ├── TLayer (target, zIndex — общий стек слоёв, data-layer)
+│       │   ├── TFrame (x, y, width, height, position)
+│       │   └── TDialog (placement, width, height, maximized, requestClose)
 │       ├── TIcon, TSkeleton, TTabsContent
 │       ├── TInteractive (disabled, focused)
 │       └── TStylable (size, variant)
@@ -1337,22 +1339,25 @@ ListBox режимы ради чужого компонента, после че
 снимались по одной переменной цикла, которая к моменту очистки была `null` —
 то есть не снимались вовсе.
 
-Поверх выбора потребителя (`placement`, один из `bottom-start`/`bottom-end`/
-`top-start`/`top-end`) плагин сам решает две вещи. **flip** переключает
+Выбор потребителя — `placement`: сторона `top` или `bottom` и выравнивание по
+якорю — `-start`, `-end` или центр, значением без суффикса (`top`, `bottom`).
+Поверх него плагин сам решает две вещи. **flip** переключает
 `top`/`bottom`, если на выбранной стороне панель не влезает по высоте окна, а
 на противоположной места больше; не влезает нигде — остаётся на стороне
-потребителя. Flip выключается свойством `flip` (`anchor_flip: false`, по
-умолчанию включён): сторона потребителя держится, даже если панель там не
-влезает, — так Select выражает `placement: 'top'` и `'bottom'`. **shift**
-сдвигает `x` внутрь окна, чтобы панель не вылезала за
-левый и правый край; шире окна — прижимается к левому. **RTL**
-(`getComputedStyle(anchor).direction`) разворачивает выравнивание: в RTL
-`-start` держит правый край якоря, `-end` — левый. Фактическая сторона после
-flip уходит теме через `data-placement` на самом Frame — она не всегда
-совпадает с тем, что задал потребитель.
+потребителя. Выравнивание, центр в том числе, flip не трогает. Flip
+выключается свойством `flip` (`anchor_flip: false`, по умолчанию включён):
+сторона потребителя держится, даже если панель там не влезает, — так Select
+выражает свои `placement: 'top'` и `'bottom'` (якорю он отдаёт `top-start` и
+`bottom-start`, центр тут ни при чём). **shift** сдвигает `x` внутрь окна,
+чтобы панель не вылезала за левый и правый край; шире окна — прижимается к
+левому. **RTL** (`getComputedStyle(anchor).direction`) разворачивает
+выравнивание: в RTL `-start` держит правый край якоря, `-end` — левый, центр
+от направления не зависит. Фактическая сторона после flip уходит теме через
+`data-placement` на самом Frame — она не всегда совпадает с тем, что задал
+потребитель.
 
 Поэтому плагину нужен размер панели: высота — для flip и показа сверху, ширина
-— для `*-end` и shift. Размер берётся из `getBoundingClientRect()` панели; при
+— для `*-end`, центра и shift. Размер берётся из `getBoundingClientRect()` панели; при
 `matchWidth` ширину даёт якорь, и список под полем не зависит от того, успела
 ли панель отрисоваться. Размер якоря и панели плагин узнаёт без scroll/resize
 окна: на обоих висит свой `ResizeObserver`, поэтому позиция пересчитывается и

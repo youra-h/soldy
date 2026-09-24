@@ -12,6 +12,7 @@ import type {
 	TListIndicator,
 	TSkeletonShape,
 	TSkeletonAnimation,
+	TSlideOrientation,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -26,6 +27,7 @@ import type {
 	TPopoverPlacement,
 	TTooltipPlacement,
 	TTooltipType,
+	TDialogPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -113,6 +115,9 @@ export const SKELETON_ANIMATIONS = enumOf<TSkeletonAnimation>()(['pulse', 'wave'
 
 export const TABS_ORIENTATIONS = enumOf<TTabsOrientation>()(['horizontal', 'vertical'])
 
+/** Ось хода ползунка — общая у всего, что задают перетаскиванием. */
+export const SLIDE_ORIENTATIONS = enumOf<TSlideOrientation>()(['horizontal', 'vertical'])
+
 export const TABS_ALIGNMENTS = enumOf<TTabsAlignment>()(['start', 'center', 'end', 'stretch'])
 
 export const TABS_POSITIONS = enumOf<TTabsPosition>()(['start', 'end'])
@@ -137,8 +142,9 @@ export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'sea
 export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bottom'])
 
 /**
- * Сторона и выравнивание панели Popover у триггера. Значения те же, что у
- * `anchor_placement`, но тип свой — ядра: проп принадлежит поповеру.
+ * Сторона и выравнивание панели Popover у триггера. Значения — четыре из
+ * шести у `anchor_placement`, без центра; тип свой — ядра: проп принадлежит
+ * поповеру.
  */
 export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
 	'bottom-start',
@@ -153,13 +159,24 @@ export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
  */
 export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'bottom-start',
+	'bottom',
 	'bottom-end',
 	'top-start',
+	'top',
 	'top-end',
 ])
 
 /** Чем подсказка служит триггеру: описанием или именем. */
 export const TOOLTIP_TYPES = enumOf<TTooltipType>()(['description', 'label'])
+
+/** Где стоит модальное окно: по центру или у стороны экрана. */
+export const DIALOG_PLACEMENTS = enumOf<TDialogPlacement>()([
+	'center',
+	'start',
+	'end',
+	'top',
+	'bottom',
+])
 
 /**
  * Сторона и выравнивание панели у якоря — `anchor_placement`. Тип объявляет не
@@ -167,8 +184,10 @@ export const TOOLTIP_TYPES = enumOf<TTooltipType>()(['description', 'label'])
  */
 export const FRAME_PLACEMENTS = enumOf<TFramePlacement>()([
 	'bottom-start',
+	'bottom',
 	'bottom-end',
 	'top-start',
+	'top',
 	'top-end',
 ])
 

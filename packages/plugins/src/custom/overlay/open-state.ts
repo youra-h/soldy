@@ -1,4 +1,4 @@
-import { isEventSource } from '@soldy-ui/core'
+import { isCloseRequestable, isEventSource } from '@soldy-ui/core'
 import type { IPluginContext } from '../../base'
 import type { IOverlayOpenOptions, IOverlayOpenState } from './types'
 
@@ -15,9 +15,22 @@ const DEFAULT_PROPERTY = 'open'
  * на все плагины слоя, `TDismissPlugin` в их числе: правило записано только
  * здесь.
  *
- * Владелец берётся рефлексией, а не интерфейсом ядра: у модального оверлея
- * класса ядра ещё нет, а требовать от владельца конкретный тип ради одного
- * булева свойства значило бы придумать его заранее.
+ * Закрытие, которое решил пользователь (`close`), — здесь же: владельца,
+ * который принимает запрос закрытия (`isCloseRequestable`), плагины
+ * закрывают запросом с причиной, остальных — записью. Решать, закрываться ли
+ * по нажатию мимо и Escape, — дело владельца: модальное окно может
+ * закрываться только кнопкой, а подписчик — отменить закрытие.
+ *
+ * Владелец берётся рефлексией, а не интерфейсом ядра: требовать от владельца
+ * конкретный тип ради одного булева свойства значило бы связать плагины слоя
+ * с каждым компонентом, который ими пользуется.
+ *
+ * Подписка живёт на шине владельца, а владелец бывает долговечнее плагина:
+ * свой `ctrl` приложения переживает перемонтирование, и каждое монтирование
+ * ставит ему новый набор. Поэтому привязка снимает свою подписку сама
+ * (`unbind`) — обработчиком, который сама же и повесила, — а плагин зовёт это
+ * в `destroy()`. Иначе на владельце копились бы обработчики уничтоженных
+ * плагинов.
  *
  * `null` — привязки нет: владельца нет, `property: null` или такого свойства
  * у владельца не объявлено.
@@ -33,16 +46,28 @@ export function bindOverlayOpen(
 	if (!instance || !property || !(property in instance)) return null
 
 	const read = (): boolean => !!Reflect.get(instance, property)
-	const events: unknown = Reflect.get(instance, 'events')
-
-	if (isEventSource(events)) {
-		events.on(options?.event ?? `change:${property}`, () => onChange(read()))
+	const write = (value: boolean): void => {
+		Reflect.set(instance, property, value)
 	}
+	const events: unknown = Reflect.get(instance, 'events')
+	const source = isEventSource(events) ? events : null
+	const event = options?.event ?? `change:${property}`
+	const handler = (): void => onChange(read())
+
+	source?.on(event, handler)
 
 	return {
 		read,
-		write(value: boolean): void {
-			Reflect.set(instance, property, value)
+		write,
+		close(reason) {
+			if (isCloseRequestable(instance)) {
+				instance.requestClose(reason)
+			} else {
+				write(false)
+			}
+		},
+		unbind(): void {
+			source?.off(event, handler)
 		},
 	}
 }

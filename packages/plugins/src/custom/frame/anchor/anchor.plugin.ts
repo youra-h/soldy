@@ -21,18 +21,21 @@ import type {
  * привязка — за слежение за посторонним элементом. Смешивать их значит
  * заводить в одном плагине два повода меняться.
  *
- * Поверх выбора потребителя (`placement`) плагин сам решает две вещи:
+ * `placement` — сторона (`top`/`bottom`) и выравнивание по якорю: `-start` —
+ * по началу, `-end` — по концу, без суффикса — по центру. Поверх этого выбора
+ * плагин сам решает две вещи:
  * **flip** — если панель не влезает по высоте с выбранной стороны, а с
  * противоположной места больше, показывает её там; **shift** — сдвигает
  * панель по горизонтали, чтобы она не вылезала за левый и правый край.
  * Границей обоим служит видимая область окна, без классической полосы
- * прокрутки (см. `_viewport`). Оба работают внутри тех же четырёх вариантов
- * `placement`: flip переключает `top`/`bottom`, shift не меняет `placement`, а
- * только ограничивает `x`.
+ * прокрутки (см. `_viewport`). Оба работают внутри тех же шести вариантов
+ * `placement`: flip переключает только сторону — выравнивание, центр в том
+ * числе, остаётся, — а shift не меняет `placement` и только ограничивает `x`.
  * Flip выключается свойством `flip` (по умолчанию включён): панель остаётся на
  * стороне потребителя, даже если там не влезает. Shift от него не зависит.
  * `RTL` (`getComputedStyle(anchor).direction`) разворачивает `-start`/`-end`:
  * в RTL `-start` выравнивает панель по правому краю якоря, `-end` — по левому.
+ * Центр от направления не зависит.
  *
  * Фактическая сторона после flip уходит теме через `data-placement` на самом
  * Frame (`frame.dataset`) — она не всегда совпадает с тем, что задал
@@ -228,14 +231,25 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		if (this._matchWidth) frame.width = rect.width
 
 		const rtl = getComputedStyle(anchor).direction === 'rtl'
-		const alignment = this._placement.endsWith('-end') ? 'end' : 'start'
+		const alignment = this._alignment
 		const side = this._resolveSide(rect, panel.height)
 
 		frame.x = this._resolveX(rect, panel.width, alignment, rtl)
 		frame.y =
 			side === 'top' ? rect.top - panel.height - this._offset : rect.bottom + this._offset
 
-		this._applyPlacement(`${side}-${alignment}`)
+		this._applyPlacement(alignment === 'center' ? side : `${side}-${alignment}`)
+	}
+
+	/**
+	 * Выравнивание из выбора потребителя: суффикс `-start` или `-end`, а
+	 * значение без суффикса (`top`, `bottom`) — центр.
+	 */
+	private get _alignment(): 'start' | 'center' | 'end' {
+		if (this._placement.endsWith('-start')) return 'start'
+		if (this._placement.endsWith('-end')) return 'end'
+
+		return 'center'
 	}
 
 	/**
@@ -269,9 +283,12 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * видимой области, а на противоположной места больше; если не влезает
 	 * нигде, остаёмся на стороне потребителя. С выключенным `flip` сторона
 	 * потребителя отдаётся сразу.
+	 *
+	 * Сторону называет начало значения, а не префикс `top-`: у центра
+	 * суффикса нет, и `top` по префиксу с дефисом уехал бы вниз.
 	 */
 	private _resolveSide(rect: DOMRect, panelHeight: number): 'top' | 'bottom' {
-		const wants = this._placement.startsWith('top-') ? 'top' : 'bottom'
+		const wants = this._placement.startsWith('top') ? 'top' : 'bottom'
 
 		if (!this._flip) return wants
 		const spaceTop = rect.top
@@ -288,22 +305,42 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	/**
 	 * Левый край панели с учётом выравнивания, RTL и shift.
 	 *
-	 * В LTR `-start` выравнивает панель по левому краю якоря, `-end` — по
-	 * правому; в RTL наоборот. После выравнивания `x` сдвигается внутрь видимой
-	 * области по горизонтали, чтобы панель не вылезала ни слева, ни справа —
-	 * если панель шире области, прижимается к левому краю.
+	 * После выравнивания (`_alignX`) `x` сдвигается внутрь видимой области по
+	 * горизонтали, чтобы панель не вылезала ни слева, ни справа — если панель
+	 * шире области, прижимается к левому краю. Центр сдвигается так же, как
+	 * начало и конец: у края окна панель перестаёт стоять по центру якоря, но
+	 * остаётся видна целиком.
 	 */
 	private _resolveX(
 		rect: DOMRect,
 		panelWidth: number,
-		alignment: 'start' | 'end',
+		alignment: 'start' | 'center' | 'end',
 		rtl: boolean,
 	): number {
-		const alignRight = rtl ? alignment === 'start' : alignment === 'end'
-		const x = alignRight ? rect.right - panelWidth : rect.left
+		const x = this._alignX(rect, panelWidth, alignment, rtl)
 		const maxX = Math.max(0, this._viewport.width - panelWidth)
 
 		return Math.min(Math.max(x, 0), maxX)
+	}
+
+	/**
+	 * Левый край панели по выравниванию, до shift.
+	 *
+	 * Центр — середина якоря минус половина панели, от направления он не
+	 * зависит. Начало и конец логические: в LTR `start` — левый край якоря,
+	 * `end` — правый, в RTL наоборот.
+	 */
+	private _alignX(
+		rect: DOMRect,
+		panelWidth: number,
+		alignment: 'start' | 'center' | 'end',
+		rtl: boolean,
+	): number {
+		if (alignment === 'center') return (rect.left + rect.right - panelWidth) / 2
+
+		const alignRight = rtl ? alignment === 'start' : alignment === 'end'
+
+		return alignRight ? rect.right - panelWidth : rect.left
 	}
 
 	/** Пишет фактическую сторону во Frame, только если она изменилась. */
@@ -315,9 +352,9 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/**
-	 * Размер панели. Нужен для выравнивания по правому краю, для показа
-	 * сверху и для shift — везде координата отсчитывается от размера панели,
-	 * а не только от якоря.
+	 * Размер панели. Нужен для выравнивания по правому краю и по центру, для
+	 * показа сверху и для shift — везде координата отсчитывается от размера
+	 * панели, а не только от якоря.
 	 *
 	 * Берём `getBoundingClientRect()`, а не `offsetWidth`/`offsetHeight`:
 	 * оба нулевые, пока `v-show` держит панель на `display: none`, но
@@ -400,7 +437,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	 * Поэтому наблюдение панели снимается до пересчёта и возвращается следующим
 	 * кадром — приём `autoUpdate` из Floating UI. Вернувшееся наблюдение само
 	 * присылает текущий размер: если от новой ширины выросла высота (перенос
-	 * текста при `top-*`), `y` поправится по нему. Возвращать микрозадачей
+	 * текста у панели сверху), `y` поправится по нему. Возвращать микрозадачей
 	 * нельзя: она попадёт в тот же шаг, и уведомление снова пропустится.
 	 *
 	 * Пауза только у якоря. Колбэк панели ничего не приостанавливает:

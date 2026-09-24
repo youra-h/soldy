@@ -119,7 +119,7 @@ describe('фокус', () => {
 })
 
 describe('курсор', () => {
-	it('панель — в 6px над триггером, по его началу', async () => {
+	it('панель — в 6px над триггером, по его центру', async () => {
 		await show({ openDelay: 0 })
 		await userEvent.hover(trigger())
 		await expect.poll(isOpen).toBe(true)
@@ -128,7 +128,8 @@ describe('курсор', () => {
 		const box = panel().getBoundingClientRect()
 
 		expect(Math.round(anchor.top - box.bottom)).toBe(6)
-		expect(Math.round(box.left)).toBe(Math.round(anchor.left))
+		expect(box.left + box.width / 2).toBeCloseTo(anchor.left + anchor.width / 2, 0)
+		expect(panel().dataset.placement).toBe('top')
 	})
 
 	it('курсор через зазор на панель подсказку не закрывает', async () => {

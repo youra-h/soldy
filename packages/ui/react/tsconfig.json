@@ -12,9 +12,10 @@
       "@soldy-ui/icons-material": ["../../icons/material/src"],
       "@soldy-ui/plugins": ["../../plugins/src"],
       "@soldy-ui/plugins/*": ["../../plugins/src/*"],
+      "@soldy-ui/react": ["./src/index.ts"],
       "@soldy-ui/setup": ["../../setup/index.ts"],
       "@soldy-ui/setup/*": ["../../setup/*"]
     }
   },
-  "include": ["env.d.ts", "src/**/*"]
+  "include": ["env.d.ts", "src/**/*", "__tests__/**/*"]
 }

@@ -42,7 +42,7 @@ const OBSERVED: MutationObserverInit = {
  * (`TDismissPlugin.findPanel()`), а без неё корень: у модального окна корень
  * телепортирован целиком (то же правило, что у `TModalFocusPlugin`). И
  * слои, открытые поверх панели: список Select в окне — тоже панель в `body`,
- * соседка окна, а не его потомок. Слой выше — по номеру `TFrame`
+ * соседка окна, а не его потомок. Слой выше — по номеру слоя `TLayer`
  * (`data-layer`) и тем же правилом, по которому `TDismissPlugin` считает
  * нажатие в такой список нажатием внутри (`isAboveLayer`): панель, в которую
  * можно нажать, не должна быть немой.
@@ -142,6 +142,7 @@ export class THideOutsidePlugin extends TBasePlugin<any, THideOutsidePluginEvent
 		this._observer = null
 		this._element = null
 		this._dismiss = null
+		this._open?.unbind()
 		this._open = null
 
 		super.destroy()

@@ -32,7 +32,15 @@
 // Приём общий, а не Button'а: тем же слоем красится дорожка Switch. Держать
 // его здесь, а не в миксинах кнопки, — чтобы второй копии не появилось.
 @mixin veil($color, $density) {
-	background-color: color-mix(in oklab, var(--s-#{$color}-500) $density, transparent);
+	background-color: tint($color, $density);
+}
+
+// Та же вуаль значением, а не фоном — для того, что красится не
+// `background-color`: ореол ручки ползунка (`box-shadow`) и его цвета,
+// отданные частям переменными (`components/slider/_mixins.scss`). Формула
+// одна, у фона и у значения.
+@function tint($color, $density) {
+	@return color-mix(in oklab, var(--s-#{$color}-500) $density, transparent);
 }
 
 // Плотность слоя поверх собственной заливки элемента. Элемент отходит от того,

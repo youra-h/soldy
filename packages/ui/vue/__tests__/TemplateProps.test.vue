@@ -20,6 +20,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
 	DragAndDrop,
 	Frame,
 	Icon,
@@ -31,6 +32,7 @@ import {
 	Scroller,
 	Select,
 	Skeleton,
+	Slider,
 	Spinner,
 	Switch,
 	Tabs,
@@ -72,6 +74,22 @@ const dragAndDrop = new TDragAndDrop()
 	<ComponentView direction="up" />
 	<ComponentView direction="rtl" />
 
+	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
+	<Dialog placement="left" />
+	<Dialog placement="start" />
+
+	<!-- @vue-expect-error — ширина числом или строкой -->
+	<Dialog :width="true" />
+	<Dialog :width="480" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Dialog :dismissible="'no'" />
+	<Dialog :dismissible="false" />
+
+	<!-- @vue-expect-error — имя кнопки разворота строкой -->
+	<Dialog :maximizeLabel="42" />
+	<Dialog maximizeLabel="Развернуть" />
+
 	<!-- @vue-expect-error — у DragAndDrop только свой инстанс -->
 	<DragAndDrop :ctrl="button" />
 	<DragAndDrop :ctrl="dragAndDrop" />
@@ -82,7 +100,7 @@ const dragAndDrop = new TDragAndDrop()
 
 	<!-- @vue-expect-error — проп плагина: стороны `middle` нет -->
 	<Frame anchor_placement="middle" />
-	<Frame anchor_placement="top-end" />
+	<Frame anchor_placement="top" />
 
 	<!-- @vue-expect-error — ширина числом или строкой -->
 	<Icon :width="true" />
@@ -136,6 +154,18 @@ const dragAndDrop = new TDragAndDrop()
 	<Skeleton :height="true" />
 	<Skeleton height="1em" />
 
+	<!-- @vue-expect-error — значение числом или массивом чисел, а не строкой -->
+	<Slider value="30" />
+	<Slider :value="[20, 80]" />
+
+	<!-- @vue-expect-error — оси `diagonal` нет -->
+	<Slider orientation="diagonal" />
+	<Slider orientation="vertical" />
+
+	<!-- @vue-expect-error — метки списком — это значения с подписями, а не числа -->
+	<Slider :marks="[20, 80]" />
+	<Slider :marks="[{ value: 20, label: 'Мало' }]" />
+
 	<!-- @vue-expect-error — толщина числом или `auto` -->
 	<Spinner borderWidth="thick" />
 	<Spinner :borderWidth="2" />
@@ -166,7 +196,7 @@ const dragAndDrop = new TDragAndDrop()
 
 	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
 	<Tooltip placement="left" />
-	<Tooltip placement="top-start" />
+	<Tooltip placement="top" />
 
 	<!-- @vue-expect-error — задержка числом, а не строкой -->
 	<Tooltip openDelay="fast" />

@@ -212,3 +212,37 @@ describe('остановки после корня', () => {
 		expect(owner.open).toBe(false)
 	})
 })
+
+/**
+ * Закрытие без возврата фокуса — правило немодальной стратегии, а не базы:
+ * страница за панелью рабочая, и пользователь уже там, куда нажал. Модальная
+ * стратегия фокус возвращает при любом закрытии
+ * (`modal-focus.plugin.spec.ts`).
+ */
+describe('закрытие и возврат фокуса', () => {
+	it('нажатие мимо закрывает без возврата: фокус не уходит на триггер', async () => {
+		const { owner } = await setup('<button class="only">Одна</button>')
+
+		nodeOf('.after').dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(nodeOf('.only'))
+	})
+
+	it('Escape закрывает с возвратом: открыли с body — фокус на триггер', async () => {
+		const { owner } = await setup('<button class="only">Одна</button>')
+
+		const event = new KeyboardEvent('keydown', {
+			key: 'Escape',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		nodeOf('.only').dispatchEvent(event)
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(nodeOf('.trigger'))
+	})
+})
