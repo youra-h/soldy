@@ -24,14 +24,20 @@
     "access": "public"
   },
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "files": [
-    "src"
+    "dist"
   ],
   "scripts": {
+    "build": "svelte-package -i src -o dist --tsconfig tsconfig.build.json",
     "test": "vitest run --passWithNoTests",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
@@ -41,13 +47,14 @@
     "@soldy-ui/setup": "^0.1.0"
   },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^5.29.0"
   },
   "devDependencies": {
     "@soldy-ui/icons-material": "^0.1.0",
     "@soldy-ui/theme-oren": "^0.1.0",
+    "@sveltejs/package": "^2.5.8",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
-    "svelte": "^5.0.0",
+    "svelte": "^5.29.0",
     "svelte-check": "^4.7.6"
   }
 }
