@@ -23,7 +23,7 @@ export type TLabelEvents = TStylableEvents & {
 }
 
 export interface ILabelProps extends IStylableProps {
-	/** Текст подписи. Слот `text` его переопределяет */
+	/** Текст подписи. Слот `content` его переопределяет */
 	text?: string
 	/** С какой стороны от контрола стоит текст */
 	position?: TLabelPosition

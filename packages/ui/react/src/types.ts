@@ -34,14 +34,21 @@ export type UseProps<
 > = DescriptorComponentProps<TDescriptorFn, TInstance> & TEvents & SlotProps<TDescriptorFn>
 
 /**
- * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с core props.
+ * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами и
+ * слотами дескриптора.
  *
- * `children` из HTMLAttributes исключён: он объявлен `ReactNode`, и пересечение
- * со scoped-слотом (`ReactNode | ((scope) => ReactNode)`) убило бы форму-функцию.
+ * Слот, как и проп, важнее одноимённого атрибута: пересечение сузило бы его до
+ * типа атрибута. `children` из HTMLAttributes объявлен `ReactNode` и убил бы
+ * форму-функцию scoped-слота (`ReactNode | ((scope) => ReactNode)`), а
+ * `content` — атрибут RDFa со строкой — не пустил бы разметку в слот
+ * `content` у Label.
  */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = UseProps<TDescriptorFn, TInstance, TEvents> &
-	Omit<HTMLAttributes<HTMLElement>, keyof DescriptorAllProps<TDescriptorFn> | 'children'>
+	Omit<
+		HTMLAttributes<HTMLElement>,
+		keyof DescriptorAllProps<TDescriptorFn> | keyof SlotProps<TDescriptorFn>
+	>

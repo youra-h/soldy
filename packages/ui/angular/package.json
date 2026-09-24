@@ -24,14 +24,16 @@
     "access": "public"
   },
   "type": "module",
-  "main": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
+  "main": "./dist/fesm2022/soldy-ui-angular.mjs",
+  "types": "./dist/types/soldy-ui-angular.d.ts",
   "files": [
-    "src"
+    "dist",
+    "!dist/package.json",
+    "!dist/README.md",
+    "!dist/LICENSE"
   ],
   "scripts": {
+    "build": "ng-packagr -p ng-package.json -c tsconfig.build.json",
     "generate": "tsx src/codegen/generate.ts",
     "test": "ng test --no-watch"
   },
@@ -57,6 +59,7 @@
     "@soldy-ui/icons-material": "^0.1.0",
     "@soldy-ui/theme-oren": "^0.1.0",
     "@types/node": "^22.0.0",
+    "ng-packagr": "^22.1.1",
     "rxjs": "^7.8.2",
     "tsx": "^4.20.0",
     "zone.js": "^0.16.3"

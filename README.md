@@ -132,14 +132,14 @@ The component set, as the playground shows it:
 
 What each adapter implements so far:
 
-| Adapter        | Package             | Ready                     |
-| -------------- | ------------------- | ------------------------- |
-| Vue            | `@soldy-ui/vue`     | all of the above          |
-| React          | `@soldy-ui/react`   | Button                    |
-| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`) |
-| Svelte         | `@soldy-ui/svelte`  | Button                    |
-| Solid          | `@soldy-ui/solid`   | Button                    |
-| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`) |
+| Adapter        | Package             | Ready                                         |
+| -------------- | ------------------- | --------------------------------------------- |
+| Vue            | `@soldy-ui/vue`     | all of the above                              |
+| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Spinner, Skeleton |
+| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`)                     |
+| Svelte         | `@soldy-ui/svelte`  | Button                                        |
+| Solid          | `@soldy-ui/solid`   | Button                                        |
+| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                     |
 
 ## Repository structure
 

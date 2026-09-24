@@ -2,8 +2,12 @@
  * Дескриптор Label (TLabel) — подпись контрола.
  *
  * Наследует StylableDescriptor (rendered, visible, tag, size, variant, ...)
- * и добавляет text, position, слот text + плагин-предупреждение о вложенном
+ * и добавляет text, position, слот content + плагин-предупреждение о вложенном
  * `label`. Своего `disabled` у подписи нет: состояние у контрола.
+ *
+ * Слот текста — `content`, а не `text`: имя слота не совпадает с именем пропа
+ * (AGENTS.md, «Слоты — третья категория контракта»). `default` занят
+ * контролом, следующее по приоритету имя — `content`.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -24,7 +28,7 @@ export const LabelDescriptor = defineDescriptor(() =>
 				default: {
 					description: 'Контрол: CheckBox, Switch или RadioGroup.Item с tag="span"',
 				},
-				text: { description: 'Текст подписи. Без слота — проп text' },
+				content: { description: 'Текст подписи. Без слота — проп text' },
 			},
 			props: {
 				text: { type: String, triggers: ['change:text'] },

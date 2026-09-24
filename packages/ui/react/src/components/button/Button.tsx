@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps } from '../../adapter'
+import { renderSlot, toAriaProps, toRootLayout } from '../../adapter'
 import { useSetupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -18,25 +18,21 @@ import type { ButtonProps } from './base.component'
 export function Button(props: ButtonProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupButton(props)
 
-	const { rendered, visible, tag, classes, text, aria, dataset, attrs } = state
+	const { rendered, tag, text, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 
-	const { className: userClassName, style: userStyle, ...restProps } = forwardProps
-	const className = [classes?.join(' '), userClassName].filter(Boolean).join(' ')
-	const style = visible ? userStyle : { ...userStyle, display: 'none' }
-
-	// restProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
-	// потребителем ref, попав в restProps, перекрыл бы ref адаптера и тихо
-	// сломал бы привязку к TElementPlugin (не было бы element:ready).
+	// forwardProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
+	// потребителем ref перекрыл бы ref адаптера и тихо сломал бы привязку к
+	// TElementPlugin (не было бы element:ready). Класс и стиль потребителя
+	// раскладка корня сливает с классами и стилем ядра.
 	return (
 		<Tag
-			{...restProps}
+			{...forwardProps}
 			ref={ref}
-			className={className}
-			style={style}
+			{...toRootLayout(state, forwardProps)}
 			{...toAriaProps(attrs)}
 			{...toAriaProps(aria)}
 			{...toAriaProps(dataset)}
