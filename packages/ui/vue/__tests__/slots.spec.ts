@@ -50,7 +50,7 @@ describe('соответствие контракту', () => {
 		)
 	})
 
-	it('Label: контрол в default и текст в text', () => {
+	it('Label: контрол в default и текст в content', () => {
 		expect(templateSlots('src/components/label/Label.vue')).toEqual(
 			LabelDescriptor()
 				.slots.map((slot) => slot.name)
