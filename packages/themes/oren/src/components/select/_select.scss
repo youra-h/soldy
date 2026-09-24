@@ -253,7 +253,8 @@
 		@apply cursor-default;
 
 		&__text {
-			@apply text-start min-w-0;
+			@apply min-w-0;
+			@include button.button-text-align('start');
 		}
 	}
 
