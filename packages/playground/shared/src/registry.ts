@@ -29,6 +29,7 @@ import {
 	TagsDescriptor,
 	TagsCollectionDescriptor,
 	TextableDescriptor,
+	TooltipDescriptor,
 	ValueControlDescriptor,
 } from '@soldy-ui/setup'
 import type { TComponentEntry, TThemeEntry, TIconPackEntry } from './types'
@@ -111,6 +112,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Панель у триггера с произвольным содержимым: немодальный диалог',
+	},
+	{
+		id: 'tooltip',
+		label: 'Tooltip',
+		descriptor: TooltipDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Подсказка у элемента: при наведении и при фокусе с клавиатуры',
 	},
 	{
 		id: 'scroller',
