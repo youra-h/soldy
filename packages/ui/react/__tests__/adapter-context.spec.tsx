@@ -162,8 +162,9 @@ function createProbe() {
 
 describe('useAdapterContext', () => {
 	it('вызывает фабрику один раз, а на повторных рендерах отдаёт тот же объект', () => {
-		// Контекст хук уничтожает сам — заглушке нужен destroy
-		const factory = vi.fn(() => ({ marker: Symbol('adapter-context'), destroy: vi.fn() }))
+		// Настоящий контекст, а не заглушка: хук принимает только контекст
+		// адаптера и уничтожает его сам
+		const factory = vi.fn(() => createAdapterContext(ButtonDescriptor(), { props: {} }))
 		const seen: unknown[] = []
 
 		function Probe({ n }: { n: number }) {
