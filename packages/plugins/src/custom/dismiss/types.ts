@@ -1,21 +1,15 @@
 import type { TPluginEvents } from '../../base'
+import type { IOverlayOpenOptions } from '../overlay/types'
 
-export interface IDismissPluginOptions {
+export interface IDismissPluginOptions extends IOverlayOpenOptions {
 	/**
-	 * Свойство инстанса, которым выражена открытость.
+	 * Слушать ли документ сразу после установки.
 	 *
-	 * Плагин сам следит за ним: пока оно `false`, глобального слушателя нет, а
-	 * нажатие мимо ставит его в `false`. Так связка «открыто ⇄ слушаем»
-	 * описана один раз, а не в шаблоне каждого из шести адаптеров.
-	 *
-	 * `null` отключает привязку — тогда `enabled` ставится вручную.
+	 * Обычно этого не задают: плагин сам следит за открытостью владельца
+	 * (`property`) — пока она `false`, глобального слушателя нет, а нажатие
+	 * мимо ставит её в `false`. Вручную слежение ведут через `enabled` при
+	 * `property: null`.
 	 */
-	property?: string | null
-
-	/** Событие, по которому плагин пересматривает слежение. */
-	event?: string
-
-	/** Слушать ли документ сразу после установки. */
 	enabled?: boolean
 
 	/**
