@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
-import { join, posix, resolve } from 'node:path'
+import { dirname, join, posix, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import * as ts from 'typescript'
 
 /**
  * Сторож раздела «Сборка пакетов» (см. AGENTS.md). Наружу уезжает `dist`, а
@@ -30,13 +31,14 @@ import { pathToFileURL } from 'node:url'
  * бандла Vite к нему неприменимы. У рецепта свои: выход `dist` записан в
  * конфиге `-p`, частичная форма — в `tsconfig.build.json`.
  *
- * Общее у рецептов — `tsconfig.build.json`. `paths` объявлен в нём самом: без
- * ключа `extends` принёс бы `paths` пакетного конфига, ведущие соседей в
- * исходники, поэтому сторож читает файл, а не цепочку `extends`. Соседей в
- * `paths` нет (ссылка пакета на самого себя допустима), `preserveSymlinks` нет:
- * сосед резолвится как пакет, по своему собранному `dist`. Пока это было
- * иначе, сборка читала соседа исходниками, и опубликованная поверхность
- * адаптера этим не проверялась вовсе.
+ * Общее у рецептов — `tsconfig.build.json`. Соседей в его `paths` нет (ссылка
+ * пакета на самого себя допустима), `preserveSymlinks` нет: сосед резолвится
+ * как пакет, по своему собранному `dist`. Пока это было иначе, сборка читала
+ * соседа исходниками, и опубликованная поверхность адаптера этим не
+ * проверялась вовсе. Судятся опции, которые действуют, — с учётом `extends`,
+ * как их читает сам TypeScript: конфиг сборки наследует пакетный, а тот ведёт
+ * соседей в исходники. Раньше сторож читал один файл и требовал `paths` в нём:
+ * пропавший ключ так ловился, а `preserveSymlinks` из родителя — нет.
  *
  * Список пакетов не хардкодится: это очередь корневого `build`, а каталог
  * пакета берётся по его ссылке воркспейса в `node_modules` — второго
@@ -145,35 +147,48 @@ function recipesOf(build: string): TRecipe[] {
 	return RECIPES.filter(({ tool }) => tool.test(build))
 }
 
-/**
- * Нарушения конфига `tsconfig.build.json`; пустой список — конфиг в порядке.
- * Читается сам файл, а не цепочка `extends`: ключ, которого в файле нет,
- * пришёл бы из пакетного конфига — у него `paths` ведут соседей в исходники.
- */
-function checkBuildTsconfig(name: string, config: unknown): string[] {
-	const violations: string[] = []
-	const compilerOptions = isRecord(config) ? config.compilerOptions : undefined
-	const options = isRecord(compilerOptions) ? compilerOptions : {}
-	const { paths, preserveSymlinks } = options
+/** Ошибка TypeScript в разборе конфига — нарушение со своим текстом. */
+function unparsed(diagnostic: ts.Diagnostic): string {
+	return `не разобран: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`
+}
 
-	if (!isRecord(paths)) {
-		violations.push(
-			'paths не объявлен в самом файле — extends принёс бы paths пакетного конфига, ведущие соседей в исходники',
-		)
-	} else {
-		// Ссылка пакета на самого себя допустима, соседа в paths быть не может:
-		// по ней сборка прочитала бы его исходники и увела бы туда декларации
-		for (const key of Object.keys(paths).filter((key) => key !== name)) {
-			violations.push(
-				`paths знает соседа ${key} — сосед резолвится как пакет, по своему dist`,
-			)
-		}
+/**
+ * Нарушения `tsconfig.build.json`; пустой список — конфиг в порядке.
+ *
+ * Опции судятся действующие — с учётом `extends`: чего конфиг сборки не
+ * перекрыл, то пришло из пакетного, а у него `paths` ведут соседей в исходники.
+ * Цепочку разбирает сам TypeScript: звенья бывают JSONC — в
+ * `packages/setup/tsconfig.json` есть комментарии, — и `JSON.parse` их не
+ * прочтёт. Файлы читает `host`: так сторож проверяет и себя, на каталоге в
+ * памяти. Конфиг, который TypeScript не разобрал, — тоже нарушение: без
+ * пропавшего звена сторож судил бы неполные опции.
+ */
+function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost): string[] {
+	const { config, error } = ts.readConfigFile(file, (path) => host.readFile(path))
+
+	if (error) {
+		return [unparsed(error)]
+	}
+
+	const { options, errors } = ts.parseJsonConfigFileContent(
+		config,
+		host,
+		dirname(file),
+		undefined,
+		file,
+	)
+	const violations = errors.map(unparsed)
+
+	// Ссылка пакета на самого себя допустима, соседа в paths быть не может:
+	// по ней сборка прочитала бы его исходники и увела бы туда декларации
+	for (const key of Object.keys(options.paths ?? {}).filter((key) => key !== name)) {
+		violations.push(`paths знает соседа ${key} — сосед резолвится как пакет, по своему dist`)
 	}
 
 	// Держался за прежнее состояние, когда соседи отдавали src
-	if (preserveSymlinks !== undefined) {
+	if (options.preserveSymlinks !== undefined) {
 		violations.push(
-			`preserveSymlinks ${JSON.stringify(preserveSymlinks)} — сосед резолвится как пакет, по своему dist`,
+			`preserveSymlinks ${JSON.stringify(options.preserveSymlinks)} — сосед резолвится как пакет, по своему dist`,
 		)
 	}
 
@@ -394,15 +409,12 @@ describe('сборка пакетов', () => {
 
 	describe.each(PACKAGES)('$name', (pkg) => {
 		it('сборка видит соседа пакетом, а не исходниками', () => {
-			const config = readConfigOf(pkg)('tsconfig.build.json')
-
-			expect(config, `нет ${pkg.dir}/tsconfig.build.json`).toBeDefined()
-
-			const violations = checkBuildTsconfig(pkg.name, config)
+			const file = join(pkg.dir, 'tsconfig.build.json')
+			const violations = checkBuildTsconfig(pkg.name, file, ts.sys)
 
 			expect(
 				violations,
-				'tsconfig.build.json разошёлся с AGENTS.md «Сборка пакетов»:\n' +
+				`${file} разошёлся с AGENTS.md «Сборка пакетов» (опции — с учётом extends):\n` +
 					violations.join('\n'),
 			).toEqual([])
 		})
@@ -483,35 +495,103 @@ describe('сторож рецептов', () => {
 	describe('tsconfig.build.json', () => {
 		const NAME = '@soldy-ui/example'
 		const WHY = 'сосед резолвится как пакет, по своему dist'
+		const BUILD = '/example/tsconfig.build.json'
 
-		it('пустые paths и ссылка пакета на себя — без нарушений', () => {
-			const self = { compilerOptions: { paths: { [NAME]: ['./src'] } } }
+		/**
+		 * Пакетный конфиг, как у адаптеров: соседи ведут в исходники. Записан
+		 * JSONC — с комментарием и висячими запятыми, как бывает у звеньев
+		 * `extends`.
+		 */
+		const PACKAGE_TSCONFIG = `{
+	// Тесты и проверка типов ходят в соседей исходниками
+	"extends": "../tsconfig.base.json",
+	"compilerOptions": {
+		"paths": {
+			"@soldy-ui/core": ["../core/src"],
+			"${NAME}": ["./src"],
+		},
+	},
+}`
 
-			expect(checkBuildTsconfig(NAME, { compilerOptions: { paths: {} } })).toEqual([])
-			expect(checkBuildTsconfig(NAME, self)).toEqual([])
+		/** Каталог в памяти: путь → текст файла. */
+		const memoryHost = (files: Readonly<Record<string, string>>): ts.ParseConfigHost => ({
+			useCaseSensitiveFileNames: true,
+			fileExists: (path) => Object.hasOwn(files, path),
+			readFile: (path) => files[path],
+			// Исходники сторожу не нужны, но без них TypeScript счёл бы конфиг
+			// пустым (TS18003)
+			readDirectory: () => ['/example/src/index.ts'],
 		})
 
-		// Пакетный конфиг ведёт соседей в исходники, и extends принёс бы его paths
-		it('paths не объявлен в самом файле — нарушение', () => {
-			const inherited = {
+		/** Текст конфига: объект пишется как JSON, строка — как есть. */
+		const text = (config: unknown): string =>
+			typeof config === 'string' ? config : JSON.stringify(config)
+
+		/**
+		 * Конфиг сборки поверх пакетного конфига, а тот — поверх общего базового,
+		 * как у адаптеров.
+		 */
+		const check = (build: unknown, base: unknown = {}): string[] =>
+			checkBuildTsconfig(
+				NAME,
+				BUILD,
+				memoryHost({
+					'/tsconfig.base.json': text(base),
+					'/example/tsconfig.json': PACKAGE_TSCONFIG,
+					[BUILD]: text(build),
+				}),
+			)
+
+		it('пустые paths поверх соседей и ссылка пакета на себя — без нарушений', () => {
+			const own = { extends: './tsconfig.json', compilerOptions: { paths: {} } }
+			const self = {
 				extends: './tsconfig.json',
-				compilerOptions: { noEmit: false },
+				compilerOptions: { paths: { [NAME]: ['./src'] } },
 			}
-			const why =
-				'paths не объявлен в самом файле — extends принёс бы paths пакетного конфига, ведущие соседей в исходники'
 
-			expect(checkBuildTsconfig(NAME, inherited)).toEqual([why])
-			expect(checkBuildTsconfig(NAME, { extends: './tsconfig.json' })).toEqual([why])
+			expect(check(own)).toEqual([])
+			expect(check(self)).toEqual([])
 		})
 
-		it('сосед в paths или preserveSymlinks — нарушение', () => {
+		// Пакетный конфиг ведёт соседей в исходники, и extends приносит его paths
+		it('сосед в paths — нарушение, свой он или пришёл по extends', () => {
 			const neighbour = { compilerOptions: { paths: { '@soldy-ui/core': ['../core/src'] } } }
-			const symlinks = { compilerOptions: { paths: {}, preserveSymlinks: true } }
+			const inherited = { extends: './tsconfig.json', compilerOptions: { noEmit: false } }
+			const violation = `paths знает соседа @soldy-ui/core — ${WHY}`
 
-			expect(checkBuildTsconfig(NAME, neighbour)).toEqual([
-				`paths знает соседа @soldy-ui/core — ${WHY}`,
+			expect(check(neighbour)).toEqual([violation])
+			expect(check(inherited)).toEqual([violation])
+			expect(check({ extends: './tsconfig.json' })).toEqual([violation])
+		})
+
+		it('preserveSymlinks — нарушение, из любого звена extends', () => {
+			const own = {
+				extends: './tsconfig.json',
+				compilerOptions: { paths: {}, preserveSymlinks: true },
+			}
+			const inherited = { extends: './tsconfig.json', compilerOptions: { paths: {} } }
+			const violation = `preserveSymlinks true — ${WHY}`
+
+			expect(check(own)).toEqual([violation])
+			// Общий базовый конфиг — звено через одно: сборка → пакет → база
+			expect(check(inherited, { compilerOptions: { preserveSymlinks: true } })).toEqual([
+				violation,
 			])
-			expect(checkBuildTsconfig(NAME, symlinks)).toEqual([`preserveSymlinks true — ${WHY}`])
+		})
+
+		// Без пропавшего звена сторож судил бы неполные опции
+		it('конфиг, который TypeScript не разобрал, — нарушение', () => {
+			const missing = { extends: './tsconfig.missing.json', compilerOptions: { paths: {} } }
+
+			expect(checkBuildTsconfig(NAME, BUILD, memoryHost({}))).toEqual([
+				expect.stringMatching(/^не разобран: .*\/example\/tsconfig\.build\.json/),
+			])
+			expect(check('{ "compilerOptions": ')).toEqual([
+				expect.stringMatching(/^не разобран: /),
+			])
+			expect(check(missing)).toEqual([
+				expect.stringMatching(/^не разобран: .*tsconfig\.missing\.json/),
+			])
 		})
 	})
 
