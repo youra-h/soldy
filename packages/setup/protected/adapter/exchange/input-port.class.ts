@@ -9,6 +9,11 @@
  *   пишется. Иначе повтор откатил бы то, что с тех пор поменяли ядро или код
  *   через инстанс: список, открытый кликом при `open={false}`, закрылся бы от
  *   смены плейсхолдера;
+ * - составное значение с тем же содержимым — тоже повтор. Литерал массива в
+ *   разметке (`value={['a', 'b']}`) на каждом проходе родителя — новый
+ *   объект, поэтому ячейка сверяет по содержимому (`sameValue`), тем же
+ *   правилом, что линия и состояние: по ссылке перерисовка родителя
+ *   откатывала бы выбор пользователя к разметке;
  * - проп ни разу не задавали — ячейка была `undefined` и осталась, слива нет;
  * - задавали и сняли — ячейка сменилась на `undefined`, линия сбрасывает к умолчанию;
  * - после сброса ячейка снова `undefined` — повторное снятие ничего не пишет.
@@ -20,6 +25,7 @@
 
 import { TCell } from './cell.class'
 import type { TLine } from './line.class'
+import { sameValue } from './value'
 
 /** Значение по имени во фреймворке (`aria_label`), затем по сырому (`label`) — для headless-кода и тестов. */
 function pick(props: object, line: TLine): unknown {
@@ -37,7 +43,7 @@ export class TInput {
 		readonly line: TLine,
 		given: unknown,
 	) {
-		this._cell = new TCell(given)
+		this._cell = new TCell<unknown>(given, sameValue)
 		this._cell.listen((value) => line.accept(value))
 	}
 

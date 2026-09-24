@@ -8,7 +8,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick, h } from 'vue'
+import { defineComponent, nextTick, h, ref } from 'vue'
 
 /**
  * `TElementPlugin` отдаёт элемент через `requestAnimationFrame`, поэтому
@@ -329,6 +329,49 @@ describe('множественный выбор', () => {
 		render()
 
 		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(0)
+	})
+
+	/**
+	 * Литерал массива в `value` — новый объект на каждом проходе родителя, и
+	 * Vue отдаёт его Select заново, если родитель — render-функция или в
+	 * литерале есть переменная (`:value="[first, 'tver']"`). Пока вход сверял
+	 * его с прошлым по ссылке, такая перерисовка возвращала снятый выбор.
+	 */
+	it('литерал массива в value не откатывает выбор при перерисовке родителя', async () => {
+		const tick = ref(0)
+		const Parent = defineComponent({
+			setup: () => () =>
+				h('div', [
+					h('span', tick.value),
+					h(Select, { mode: 'multiple', value: ['msk', 'tver'] }, () => [
+						h(SelectItem, { value: 'msk', text: 'Москва' }),
+						h(SelectItem, { value: 'tver', text: 'Тверь' }),
+					]),
+				]),
+		})
+		const selected = () => options().map((option) => option.getAttribute('aria-selected'))
+
+		wrapper = mount(Parent, { attachTo: document.body })
+
+		await nextFrame()
+
+		expect(selected()).toEqual(['true', 'true'])
+
+		// Пользователь снимает выбор с Твери
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[1] as HTMLElement).click()
+		await nextTick()
+
+		expect(selected()).toEqual(['true', 'false'])
+
+		// Родитель перерисовался по своему поводу — литерал тот же по содержимому
+		tick.value++
+		await nextTick()
+
+		expect(wrapper.find('span').text()).toBe('1')
+		expect(selected()).toEqual(['true', 'false'])
+		expect(document.querySelectorAll('.s-tags-item')).toHaveLength(1)
 	})
 })
 
