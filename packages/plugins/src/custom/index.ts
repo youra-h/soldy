@@ -1,6 +1,7 @@
 export * from './action'
 export * from './collection'
 export * from './component-view'
+export * from './dialog'
 export * from './dismiss'
 export * from './drag-and-drop'
 export * from './element'
