@@ -63,14 +63,18 @@ Solid», «Типы — Web Components», «Типы — Angular», провер
 пакетов»). Отступы и ширину строки Prettier берёт из `.editorconfig`, в
 `.prettierrc.json` их не дублировать.
 
-Тесты `packages/core/__tests__`, `packages/plugins/__tests__` и
-`packages/ui/vue/__tests__` тоже проверяются типами: «Типы — Core» гоняет
-`tsc --noEmit` по `packages/core/tsconfig.json` (include `src` + `__tests__`),
-«Типы — Plugins» — `tsc --noEmit` по `packages/plugins/tsconfig.json` (include
-`src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
-`packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`), а не только по
-`tsconfig.build.json`, как раньше. Приведение вроде `as never` там больше не
-спрячет несовпавший контракт компонента или плагина.
+Тесты `packages/core/__tests__`, `packages/plugins/__tests__`,
+`packages/ui/vue/__tests__` и `packages/ui/react/__tests__` тоже проверяются
+типами: «Типы — Core» гоняет `tsc --noEmit` по `packages/core/tsconfig.json`
+(include `src` + `__tests__`), «Типы — Plugins» — `tsc --noEmit` по
+`packages/plugins/tsconfig.json` (include `src` + `__tests__`), «Типы — Vue»
+гоняет `vue-tsc` по `packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`),
+а не только по `tsconfig.build.json`, как раньше, «Типы — React» —
+`tsc --noEmit` по `packages/ui/react/tsconfig.json` (include `src` +
+`__tests__`). Тесты React импортируют `@soldy-ui/react` по имени, и `paths`
+того же конфига ведёт его в `./src/index.ts`, как соседей: без ссылки на себя
+имя резолвилось бы через манифест в `dist`. Приведение вроде `as never` там
+больше не спрячет несовпавший контракт компонента или плагина.
 
 ### Браузерный прогон (`test:layout`)
 
@@ -1824,11 +1828,11 @@ declare module '@soldy-ui/core' {
 
 **Чем стережётся.**
 
-- Фикстура `__tests__/theme.d.ts` в `core`, `ui/vue` и `ui/webc` — реестры с
-  условными именами, которых нет в oren. С именами oren фикстура открыла бы их
-  и коду `src` той же программы: `variant: 'normal'` в умолчании ядра и
-  `view="plain"` в шаблоне Vue прошли бы типы. Тесты задают значения только
-  из фикстуры.
+- Фикстура `__tests__/theme.d.ts` в `core`, `ui/vue`, `ui/react`, `ui/webc` и
+  `ui/angular` — реестры с условными именами, которых нет в oren. С именами
+  oren фикстура открыла бы их и коду `src` той же программы:
+  `variant: 'normal'` в умолчании ядра и `view="plain"` в шаблоне Vue прошли
+  бы типы. Тесты задают значения только из фикстуры.
 - `core/__tests__/theme-registries.spec.ts` — тип каждого значения равен ровно
   именам фикстуры, то есть ядро само ничего не объявило (проверяет «Типы —
   Core»), а у свежих инстансов всех визуальных классов экспорта нет модификаторов

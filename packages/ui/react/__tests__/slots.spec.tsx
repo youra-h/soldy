@@ -6,11 +6,11 @@
  * не распространялась.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import { act } from 'react'
+import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
+import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ButtonDescriptor } from '@soldy-ui/setup'
-import { Button, type ButtonProps } from '@soldy-ui/react'
+import { ButtonDescriptor, type TabsDescriptor } from '@soldy-ui/setup'
+import { Button, type ButtonProps, type UseDomProps } from '@soldy-ui/react'
 
 const roots: Root[] = []
 
@@ -129,5 +129,19 @@ describe('слоты не уходят в атрибуты корня', () => {
 
 		expect(el.hasAttribute('leading')).toBe(false)
 		expect(el.hasAttribute('trailing')).toBe(false)
+	})
+})
+
+describe('слот важнее одноимённого атрибута HTML', () => {
+	/**
+	 * В React слот — проп компонента, и его имя встречается с атрибутами
+	 * `HTMLAttributes`. `content` там — атрибут RDFa со строкой: пересечение
+	 * сузило бы слот панелей у Tabs до строки, и разметку в него было бы не
+	 * передать. `UseDomProps` вычитает из атрибутов имена слотов, как и пропсов.
+	 *
+	 * Тип проверяет не vitest, а шаг CI «Типы — React».
+	 */
+	it('content по TabsDescriptor принимает ReactNode, а не строку атрибута', () => {
+		expectTypeOf<UseDomProps<typeof TabsDescriptor>['content']>().toEqualTypeOf<ReactNode>()
 	})
 })
