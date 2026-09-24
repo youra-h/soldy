@@ -12,6 +12,7 @@ import type {
 	TListIndicator,
 	TSkeletonShape,
 	TSkeletonAnimation,
+	TSlideOrientation,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -25,6 +26,7 @@ import type {
 	TTagsOverflow,
 	TPopoverPlacement,
 	TTooltipPlacement,
+	TDialogPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -112,6 +114,9 @@ export const SKELETON_ANIMATIONS = enumOf<TSkeletonAnimation>()(['pulse', 'wave'
 
 export const TABS_ORIENTATIONS = enumOf<TTabsOrientation>()(['horizontal', 'vertical'])
 
+/** Ось хода ползунка — общая у всего, что задают перетаскиванием. */
+export const SLIDE_ORIENTATIONS = enumOf<TSlideOrientation>()(['horizontal', 'vertical'])
+
 export const TABS_ALIGNMENTS = enumOf<TTabsAlignment>()(['start', 'center', 'end', 'stretch'])
 
 export const TABS_POSITIONS = enumOf<TTabsPosition>()(['start', 'end'])
@@ -155,6 +160,15 @@ export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'bottom-end',
 	'top-start',
 	'top-end',
+])
+
+/** Где стоит модальное окно: по центру или у стороны экрана. */
+export const DIALOG_PLACEMENTS = enumOf<TDialogPlacement>()([
+	'center',
+	'start',
+	'end',
+	'top',
+	'bottom',
 ])
 
 /**

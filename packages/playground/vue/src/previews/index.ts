@@ -1,4 +1,4 @@
-import { h, type Component } from 'vue'
+import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
 import type { DescriptorSlots, PopoverDescriptor, TooltipDescriptor } from '@soldy-ui/setup'
 import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import {
@@ -6,6 +6,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
 	DragAndDrop,
 	Icon,
 	Input,
@@ -16,6 +17,7 @@ import {
 	Scroller,
 	Select,
 	Skeleton,
+	Slider,
 	Spinner,
 	Switch,
 	Tabs,
@@ -61,6 +63,62 @@ const ITEMS = COLLECTION_ITEMS
  */
 const ARROW_DOWN = useIcon('arrowDown')
 
+/**
+ * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое
+ * накрывает страницу подложкой, и показывать его сразу было бы нечестно по
+ * отношению к остальной странице.
+ *
+ * Открытость — `v-model:visible` на своём состоянии: крестик, Escape и
+ * подложка закрывают окно через `update:visible`, а строка `visible` задаёт
+ * его снаружи. Состояние держит компонент — у функции отрисовки его нет. С
+ * экземпляром ядра (вторая колонка) путь тот же: запись в `visible`
+ * инстанса открывает окно, и `update:visible` доезжает сюда. Обработчики
+ * страницы (журнал событий) склеиваются со своим `mergeProps`, а не
+ * затираются им.
+ */
+const DialogPreview = defineComponent({
+	name: 'DialogPreview',
+	inheritAttrs: false,
+	props: { visible: { type: Boolean, default: false } },
+	setup(props, { attrs }) {
+		const shown = ref(props.visible)
+
+		watch(
+			() => props.visible,
+			(value) => {
+				shown.value = value
+			},
+		)
+
+		const setShown = (value: boolean) => {
+			shown.value = value
+		}
+
+		return () => [
+			h(Button, { text: 'Открыть окно', onClick: () => setShown(true) }),
+			h(
+				Dialog as Component,
+				mergeProps(attrs, { visible: shown.value, 'onUpdate:visible': setShown }),
+				{
+					title: () => 'Настройки',
+					default: () => [
+						h(
+							'p',
+							{ style: 'margin:0 0 8px' },
+							'Произвольное содержимое: текст, поля, кнопки',
+						),
+						h(Input, { placeholder: 'Имя' }),
+					],
+					footer: () => [
+						h(Button, { text: 'Отмена', onClick: () => setShown(false) }),
+						h(Button, { text: 'Сохранить', onClick: () => setShown(false) }),
+					],
+				},
+			),
+		]
+	},
+})
+
 /** Слои наследования: у них нет своей разметки, показываем пустую коробку. */
 const layer =
 	(label: string): TPreview =>
@@ -83,6 +141,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — пропом `text`, контрол — слотом. Строки страницы правят саму
 	// подпись: сторону, размер текста, вариант
 	label: (bind) => h(Label, { text: 'Согласен', ...bind }, () => h(CheckBox)),
+
+	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
+	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
+	slider: (bind) => h(Label, { text: 'Громкость', position: 'top' }, () => h(Slider, bind)),
 
 	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
 	'radio-group': (bind) =>
@@ -130,6 +192,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 				h(Button, { text: 'Наведи', ...triggerAria }),
 			default: () => 'Короткое пояснение к кнопке',
 		}),
+
+	// Кнопка открывает окно, окно — на своём состоянии (см. `DialogPreview`)
+	dialog: (bind) => h(DialogPreview, bind),
 
 	/**
 	 * Содержимое ленты — просто разметка: коллекции у неё нет, и делить ей

@@ -27,21 +27,25 @@ import type { IOverlayOpenOptions, IOverlayOpenState } from '../types'
  *
  * **Закрытие.** Фокус возвращается на запомненный элемент, а если там был
  * `body` или элемент уже отсоединён — на то, что подставит наследник
- * (`_returnCandidates`). Кроме закрытия, которое решил `TDismissPlugin`:
- * нажатие мимо и уход фокуса — пользователь уже там, куда нажал. Об этом
- * плагин узнаёт событием `dismiss`, которое приходит до закрытия.
+ * (`_returnCandidates`). Не возвращать его вовсе (`_restore`) решает
+ * стратегия: у немодального оверлея нажатие и уход фокуса мимо — выбор
+ * пользователя, он уже там, куда нажал; у модального фокус возвращается при
+ * любом закрытии.
  *
  * **Escape** закрывает оверлей, если его ещё никто не обработал
  * (`defaultPrevented`). Сам плагин гасит его `preventDefault`, а не
  * `stopPropagation`: так Escape в открытом Select или во вложенной панели
  * закрывает только их слой, а внешний видит, что клавиша уже потрачена.
+ * Закрывает с причиной `escape`: владелец, который принимает запрос закрытия
+ * (модальное окно), может его отклонить — клавиша всё равно потрачена, она
+ * адресована верхнему слою.
  *
  * Слушатели клавиш — на корне и на панели, пока оверлей открыт. Корень берёт
- * у `TElementPlugin`, панель и `dismiss` — у `TDismissPlugin`: панель
- * телепортирована, и найти её можно только по его пометке владельцем. Панели
- * по пометке нет (её не пометили или `TDismissPlugin` не поставлен) —
- * подставляет её наследник (`_panelFallback`): у модального окна корень и
- * есть панель, а у немодального панели просто нет.
+ * у `TElementPlugin`, панель — у `TDismissPlugin`: панель телепортирована, и
+ * найти её можно только по его пометке владельцем. Панели по пометке нет (её
+ * не пометили или `TDismissPlugin` не поставлен) — подставляет её наследник
+ * (`_panelFallback`): у модального окна корень и есть панель, а у
+ * немодального панели просто нет.
  */
 export abstract class TOverlayFocusPlugin<
 	TEvents extends TPluginEvents = TPluginEvents,
@@ -53,7 +57,10 @@ export abstract class TOverlayFocusPlugin<
 	protected _root: Element | null = null
 	/** Панель, найденная при открытии, — на ней тоже висит слушатель клавиш. */
 	protected _panel: Element | null = null
-	/** Возвращать ли фокус при закрытии. Снимают нажатие мимо и уход фокуса. */
+	/**
+	 * Возвращать ли фокус при закрытии. Снимает стратегия — у немодального
+	 * оверлея нажатие мимо, уход фокуса и Tab из панели.
+	 */
 	protected _restore = true
 	/** Узлы со слушателем клавиш: корень и панель, если это разные узлы. */
 	private _targets: IDomEventTarget[] = []
@@ -80,11 +87,6 @@ export abstract class TOverlayFocusPlugin<
 		elementPlugin?.events.on('removed', () => {
 			this._unlisten()
 			this._root = null
-		})
-
-		// Приходит до закрытия (`TDismissPlugin` сообщает, потом закрывает)
-		this._dismiss?.events.on('dismiss', () => {
-			this._restore = false
 		})
 
 		this._open = bindOverlayOpen(ctx, options, (open) => {
@@ -128,7 +130,11 @@ export abstract class TOverlayFocusPlugin<
 		return []
 	}
 
-	/** Закрыть владельца — Escape и, у немодального, Tab из панели. */
+	/**
+	 * Закрыть владельца записью — у немодального оверлея Tab из панели. Это
+	 * не просьба пользователя закрыть: фокус ушёл дальше по странице, и
+	 * держать панель открытой за ним незачем.
+	 */
 	protected _close(): void {
 		this._open?.write(false)
 	}
@@ -222,7 +228,7 @@ export abstract class TOverlayFocusPlugin<
 
 		if (event.key === 'Escape') {
 			event.preventDefault()
-			this._close()
+			this._open?.close('escape')
 
 			return
 		}

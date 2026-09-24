@@ -142,3 +142,75 @@ describe('TStateUnit', () => {
 		expect(s.rawValue).toBe(5)
 	})
 })
+
+/**
+ * Правило «то же самое» — опция единицы состояния. Составное значение без
+ * него «менялось» бы на каждой записи того же состава, а резольвер, который
+ * собирает массив заново, — на каждой проверке итога.
+ */
+describe('TStateUnit: правило «то же самое»', () => {
+	const sameList = (a: readonly number[], b: readonly number[]) =>
+		a.length === b.length && a.every((item, index) => item === b[index])
+
+	it('по умолчанию — строгое равенство: новый массив того же состава — смена', () => {
+		const s = new TStateUnit<number[]>({ initial: [1, 2] })
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		s.value = [1, 2]
+
+		expect(handler).toHaveBeenCalledOnce()
+	})
+
+	it('запись того же состава не пишется и не шлёт change', () => {
+		const initial = [1, 2]
+		const s = new TStateUnit<number[]>({ initial, same: sameList })
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		s.value = [1, 2]
+
+		expect(handler).not.toHaveBeenCalled()
+		expect(s.rawValue).toBe(initial)
+
+		s.value = [1, 3]
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith({ newValue: [1, 3], oldValue: [1, 2] })
+	})
+
+	it('итог резольвера сверяется тем же правилом: новый массив на чтение — не смена', () => {
+		const s = new TStateUnit<number[]>({
+			initial: [3, 1],
+			same: sameList,
+			resolver: (value) => [...value].sort((a, b) => a - b),
+		})
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		// Хранимое другое, итог тот же — события нет, хранимое обновлено
+		s.value = [1, 3]
+		expect(handler).not.toHaveBeenCalled()
+		expect(s.rawValue).toEqual([1, 3])
+
+		// Итог сменился по содержимому — событие одно
+		s.value = [2, 1]
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenCalledWith({ newValue: [1, 2], oldValue: [1, 3] })
+	})
+
+	it('notify и setResolver сверяют итог тем же правилом', () => {
+		const s = new TStateUnit<number[]>({
+			initial: [1, 2],
+			same: sameList,
+			resolver: (value) => [...value],
+		})
+		const handler = vi.fn()
+		s.events.on('change', handler)
+
+		s.notify([1, 2])
+		s.setResolver((value) => value.map((item) => item))
+
+		expect(handler).not.toHaveBeenCalled()
+	})
+})

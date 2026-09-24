@@ -20,6 +20,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
 	DragAndDrop,
 	Frame,
 	Icon,
@@ -31,6 +32,7 @@ import {
 	Scroller,
 	Select,
 	Skeleton,
+	Slider,
 	Spinner,
 	Switch,
 	Tabs,
@@ -71,6 +73,22 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — направления `up` нет -->
 	<ComponentView direction="up" />
 	<ComponentView direction="rtl" />
+
+	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
+	<Dialog placement="left" />
+	<Dialog placement="start" />
+
+	<!-- @vue-expect-error — ширина числом или строкой -->
+	<Dialog :width="true" />
+	<Dialog :width="480" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Dialog :dismissible="'no'" />
+	<Dialog :dismissible="false" />
+
+	<!-- @vue-expect-error — имя кнопки разворота строкой -->
+	<Dialog :maximizeLabel="42" />
+	<Dialog maximizeLabel="Развернуть" />
 
 	<!-- @vue-expect-error — у DragAndDrop только свой инстанс -->
 	<DragAndDrop :ctrl="button" />
@@ -135,6 +153,18 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — высота числом или строкой -->
 	<Skeleton :height="true" />
 	<Skeleton height="1em" />
+
+	<!-- @vue-expect-error — значение числом или массивом чисел, а не строкой -->
+	<Slider value="30" />
+	<Slider :value="[20, 80]" />
+
+	<!-- @vue-expect-error — оси `diagonal` нет -->
+	<Slider orientation="diagonal" />
+	<Slider orientation="vertical" />
+
+	<!-- @vue-expect-error — метки списком — это значения с подписями, а не числа -->
+	<Slider :marks="[20, 80]" />
+	<Slider :marks="[{ value: 20, label: 'Мало' }]" />
 
 	<!-- @vue-expect-error — толщина числом или `auto` -->
 	<Spinner borderWidth="thick" />

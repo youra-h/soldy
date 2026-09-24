@@ -5,6 +5,7 @@ import {
 	BUTTON_VIEWS,
 	CHECK_BOX_VIEWS,
 	COMPONENT_VARIANTS,
+	DIALOG_PLACEMENTS,
 	DIRECTIONS,
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
@@ -20,6 +21,7 @@ import {
 	SELECT_PLACEMENTS,
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
+	SLIDE_ORIENTATIONS,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
@@ -61,6 +63,8 @@ const SHARED: Record<string, string> = {
 	visible: 'Виден ли компонент. В отличие от rendered узел остаётся в дереве',
 	tag: 'Тег корневого элемента. Меняет разметку, не меняя поведения',
 	direction: 'Направление письма. inherit — атрибут dir не ставится вовсе',
+	// Слой поверх страницы — общий у Frame и Dialog
+	target: 'Куда телепортировать слой: CSS-селектор, по умолчанию body',
 	size: 'Размер: высота, отступы и кегль',
 	variant: 'Смысловой цвет: обычный, акцентный, успех, ошибка, предупреждение',
 	disabled: 'Запрещает взаимодействие и убирает из порядка обхода',
@@ -102,7 +106,11 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open, у Dialog — по visible',
+	hideOutside_enabled:
+		'Прятать ли страницу под окном от скринридера. У Dialog его ведёт сам плагин по visible',
+	scrollLock_enabled:
+		'Запирать ли прокрутку страницы под окном. У Dialog его ведёт сам плагин по visible',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -145,6 +153,17 @@ const OWN: Record<string, Record<string, string>> = {
 		prevLabel: 'Имя кнопки «назад» для скринридера',
 		nextLabel: 'Имя кнопки «вперёд» для скринридера',
 	},
+	slider: {
+		min: 'Начало хода',
+		max: 'Конец хода. Вне сетки шага он недостижим, как у нативного поля',
+		step: 'Шаг: число — ровная сетка от min, список допустимых значений — кодом',
+		largeStep: 'Сколько шагов делают Shift со стрелкой, PageUp и PageDown',
+		orientation: 'Ось хода: вдоль строки или снизу вверх',
+		inverted: 'Значение растёт в обратную сторону: справа налево или сверху вниз',
+		origin: 'Откуда растёт заливка одной ручки. Пусто — от min, середина хода — от центра',
+		marks: 'Метки на рельсе — точки шкалы. Список с подписями задаётся кодом',
+		minStepsBetweenThumbs: 'Наименьший зазор между соседними ручками — в шагах шкалы',
+	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
 		closable: 'Показывать ли кнопку закрытия в углу панели',
@@ -153,6 +172,22 @@ const OWN: Record<string, Record<string, string>> = {
 			'Не монтировать содержимое, пока панель не открывали. Потом закрытие только прячет её',
 		placement:
 			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
+	},
+	dialog: {
+		visible:
+			'Открыто ли окно. Закрывают его крестик, Escape и нажатие по подложке — через close:before',
+		placement: 'Где стоит окно: по центру или у стороны. start и end меняются местами в RTL',
+		width: 'Ширина окна: число — px, строка — CSS-значение. Пусто — ширина темы, auto — по экрану с отступом, fit-content — по содержимому',
+		height: 'Высота окна: число — px, строка — CSS-значение. Пусто и fit-content — по содержимому, auto — по экрану с отступом',
+		maximized: 'Развёрнуто ли окно на весь экран. Его же переключает кнопка разворота',
+		maximizable: 'Показывать ли кнопку разворота',
+		closable: 'Показывать ли кнопку закрытия',
+		closeLabel: 'Имя кнопки закрытия для скринридера',
+		maximizeLabel:
+			'Имя кнопки разворота для скринридера. Одно на оба состояния: развёрнутость она сообщает aria-pressed',
+		dismissible:
+			'Закрывают ли окно нажатие по подложке и Escape. Выключено — только кнопка закрытия и код',
+		alert: 'Окно-предупреждение: роль alertdialog, описание — тело окна',
 	},
 	tooltip: {
 		open: 'Показана ли подсказка. Прячут её уход курсора и фокуса, нажатие и Escape',
@@ -204,7 +239,6 @@ const OWN: Record<string, Record<string, string>> = {
 		width: 'Ширина слоя. `auto` — по содержимому',
 		height: 'Высота слоя. `auto` — по содержимому',
 		position: 'Способ позиционирования: в потоке страницы или относительно окна',
-		target: 'Куда телепортировать содержимое',
 	},
 }
 
@@ -244,6 +278,8 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS },
+	slider: { orientation: SLIDE_ORIENTATIONS },
+	dialog: { placement: DIALOG_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
@@ -290,6 +326,13 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		// а крестика у тега по умолчанию нет
 		overflow: { closable: true },
 	},
+	slider: {
+		// Зазор — между соседями, а у одной ручки соседей нет
+		minStepsBetweenThumbs: { value: [20, 80] },
+		// Точки шкалы с шагом 1 — сотня точек впритык: рельс выглядел бы
+		// сплошной штриховкой
+		marks: { step: 10 },
+	},
 }
 
 export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
@@ -322,6 +365,8 @@ export const NON_EDITABLE = new Set([
 	// Атрибуты вьюпорта ленты от потребителя — набор, а не значение: роль ряда
 	// приносит тот, кто ленту применяет, и текстовым полем его не задать
 	'viewportAria',
+	// Имена ручек ползунка — список строк по числу ручек, а у превью ручка одна
+	'thumbLabels',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

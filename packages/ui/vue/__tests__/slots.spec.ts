@@ -13,6 +13,7 @@ import { mount } from '@vue/test-utils'
 import {
 	ButtonDescriptor,
 	ComponentViewDescriptor,
+	DialogDescriptor,
 	LabelDescriptor,
 	PopoverDescriptor,
 	TagsDescriptor,
@@ -46,6 +47,14 @@ describe('соответствие контракту', () => {
 	it('ComponentView: то же для одного слота по умолчанию', () => {
 		expect(templateSlots('src/components/component-view/ComponentView.vue')).toEqual(
 			ComponentViewDescriptor()
+				.slots.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Dialog: заголовок, содержимое, подвал и иконки кнопок шапки', () => {
+		expect(templateSlots('src/components/dialog/Dialog.vue')).toEqual(
+			DialogDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),
 		)
