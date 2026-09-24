@@ -92,6 +92,7 @@ export class TScrollLockPlugin extends TBasePlugin<any, TScrollLockPluginEvents>
 		this._sync()
 
 		this._element = null
+		this._open?.unbind()
 		this._open = null
 
 		super.destroy()

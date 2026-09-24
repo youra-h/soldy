@@ -174,6 +174,8 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		this._enabled = false
 		this._sync()
 
+		this._open?.unbind()
+		this._open = null
 		this._element = null
 
 		super.destroy()

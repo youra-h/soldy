@@ -142,6 +142,7 @@ export class THideOutsidePlugin extends TBasePlugin<any, THideOutsidePluginEvent
 		this._observer = null
 		this._element = null
 		this._dismiss = null
+		this._open?.unbind()
 		this._open = null
 
 		super.destroy()

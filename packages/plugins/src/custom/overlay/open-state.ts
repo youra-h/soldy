@@ -19,6 +19,13 @@ const DEFAULT_PROPERTY = 'open'
  * класса ядра ещё нет, а требовать от владельца конкретный тип ради одного
  * булева свойства значило бы придумать его заранее.
  *
+ * Подписка живёт на шине владельца, а владелец бывает долговечнее плагина:
+ * свой `ctrl` приложения переживает перемонтирование, и каждое монтирование
+ * ставит ему новый набор. Поэтому привязка снимает свою подписку сама
+ * (`unbind`) — обработчиком, который сама же и повесила, — а плагин зовёт это
+ * в `destroy()`. Иначе на владельце копились бы обработчики уничтоженных
+ * плагинов.
+ *
  * `null` — привязки нет: владельца нет, `property: null` или такого свойства
  * у владельца не объявлено.
  */
@@ -34,15 +41,19 @@ export function bindOverlayOpen(
 
 	const read = (): boolean => !!Reflect.get(instance, property)
 	const events: unknown = Reflect.get(instance, 'events')
+	const source = isEventSource(events) ? events : null
+	const event = options?.event ?? `change:${property}`
+	const handler = (): void => onChange(read())
 
-	if (isEventSource(events)) {
-		events.on(options?.event ?? `change:${property}`, () => onChange(read()))
-	}
+	source?.on(event, handler)
 
 	return {
 		read,
 		write(value: boolean): void {
 			Reflect.set(instance, property, value)
+		},
+		unbind(): void {
+			source?.off(event, handler)
 		},
 	}
 }

@@ -19,9 +19,10 @@ import {
 	createPluginContext,
 	installResizeObserverStub,
 	observerCount,
+	required,
 	triggerResize,
 } from './helpers'
-import { TAnchorPlugin, TDismissPlugin, TElementPlugin } from '@soldy-ui/plugins'
+import { TAnchorPlugin, TDismissPlugin, TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import type { IDismissPluginOptions } from '@soldy-ui/plugins'
 import { FRAME_LAYER_ATTRIBUTE, TFrame, TPopover } from '@soldy-ui/core'
 
@@ -1232,6 +1233,30 @@ describe('нажатие мимо', () => {
 
 			expect(handler).toHaveBeenCalledTimes(1)
 			expect(dismiss.enabled).toBe(false)
+		})
+	})
+
+	/**
+	 * Свой `ctrl` приложения переживает перемонтирование: набор уничтожен, а
+	 * владелец живёт дальше и открывается снова. Уничтоженный плагин подписку
+	 * на его открытость снимает — иначе на владельце копились бы обработчики
+	 * мёртвых плагинов.
+	 */
+	describe('уничтожение', () => {
+		it('владелец, переживший набор, уничтоженный плагин не включает', () => {
+			const owner = new TPopover()
+			const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TDismissPlugin)
+			const dismiss = required(bundle.get(TDismissPlugin), 'TDismissPlugin')
+			const seen: boolean[] = []
+
+			dismiss.events.on('change:enabled', (value) => seen.push(value))
+
+			owner.open = true
+			bundle.destroy()
+			owner.open = false
+			owner.open = true
+
+			expect(seen).toEqual([true])
 		})
 	})
 })

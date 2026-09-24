@@ -100,6 +100,7 @@ export abstract class TOverlayFocusPlugin<
 		this._cancelFocusFrame()
 		this._unlisten()
 
+		this._open?.unbind()
 		this._open = null
 		this._dismiss = null
 		this._root = null

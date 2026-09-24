@@ -272,3 +272,29 @@ describe('слушатель клавиш', () => {
 		listen.mockRestore()
 	})
 })
+
+/**
+ * Свой `ctrl` приложения переживает перемонтирование: набор уничтожен, а
+ * владелец живёт дальше. Уничтоженный плагин фокуса без корня ничего не
+ * делает, и по поведению его подписку не увидеть — поэтому сверяется сама
+ * шина владельца. `destroy()` у базы, и модальный плагин проверяет его за
+ * обоих наследников.
+ */
+describe('уничтожение', () => {
+	/** Обработчики, повешенные на открытость владельца (`change:open`). */
+	const openHandlers = (calls: ReadonlyArray<readonly [unknown, unknown]>) =>
+		calls.filter(([event]) => event === 'change:open').map(([, handler]) => handler)
+
+	it('destroy снимает с владельца подписку на открытость', () => {
+		const owner = new TPopover()
+		const on = vi.spyOn(owner.events, 'on')
+		const off = vi.spyOn(owner.events, 'off')
+		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TModalFocusPlugin)
+		const subscribed = openHandlers(on.mock.calls)
+
+		bundle.destroy()
+
+		expect(subscribed).toHaveLength(1)
+		expect(openHandlers(off.mock.calls)).toEqual(subscribed)
+	})
+})
