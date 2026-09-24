@@ -10,7 +10,8 @@
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
  * стерегут, — раскладка поля с тегами и его минимальная ширина — лежат в
  * `themes/oren/src/components/select/_select.scss`, а сжатие тега, которому
- * не хватает места в поле, и его натуральная ширина в однострочном ряду — в
+ * не хватает места в поле, его натуральная ширина в однострочном ряду и ряд
+ * `scroll` без полосы прокрутки, с подсказкой у края, — в
  * `themes/oren/src/components/tags/_tags.scss`.
  * Геометрия строки поля — высота размера и строка слота, в которую встают
  * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
@@ -22,7 +23,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
-import type { TTagsOverflow } from '@soldy-ui/core'
+import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
 import { expectInsideWindow } from './viewport'
 
@@ -126,6 +127,7 @@ const pairHarness = (options: {
 	texts: readonly string[]
 	size?: (typeof COMPONENT_SIZES)[number]
 	overflow?: TTagsOverflow
+	direction?: TDirection
 }) =>
 	defineComponent({
 		render() {
@@ -139,6 +141,7 @@ const pairHarness = (options: {
 							clearable: true,
 							size: options.size,
 							tags_overflow: options.overflow,
+							direction: options.direction,
 							value,
 						},
 						{
@@ -546,6 +549,32 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 	})
 
 	/**
+	 * Полоса прокрутки ряда — тоже его часть. Классическая полоса (Windows,
+	 * Linux) занимает место под тегами, и Chromium прогона рисует такую же
+	 * (`vitest.browser.config.ts` снимает `--hide-scrollbars`). Поле здесь
+	 * постоянной высоты, и ряд `scroll` с полосой вытягивался на 11px ниже его
+	 * нижней рамки. Теги при этом стояли на месте, поэтому проверка частей
+	 * ряда выше этого не видит.
+	 *
+	 * Предусловие — теснота: полоса появляется, только когда ряд
+	 * прокручивается.
+	 */
+	it('ряд не заходит за нижнюю рамку поля', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow }))
+
+		await expect.poll(settled).toBe(true)
+
+		const [tagged] = [...document.querySelectorAll('.s-select')]
+		const field = find('.s-select__field', tagged)
+		const row = box(find('.s-select__field .s-tags', tagged))
+
+		expect(crowded(tagged), 'ряду тесно').toBe(true)
+		expect(row.bottom, 'низ ряда').toBeLessThanOrEqual(
+			box(field).bottom - px(field, 'border-bottom-width'),
+		)
+	})
+
+	/**
 	 * Долю строки слот берёт под теги, а не под сам факт режима: в `multiple`
 	 * контейнер тегов стоит в разметке всегда, и по нему одному доля
 	 * включалась заранее — поле без выбора отдавало полстроки пустому слоту, а
@@ -616,6 +645,160 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 				text.clientWidth,
 			)
 		})
+	})
+})
+
+/**
+ * Маска подсказки у края ряда, как её отдаёт браузер: градиент по строке в
+ * четыре ступени (`tags/_tags.scss`) — прозрачное у края, непрозрачное со
+ * второй ступени по третью и снова прозрачное у другого края.
+ */
+const FADE_MASK = new RegExp(
+	[
+		String.raw`^linear-gradient\(to (?<to>left|right)`,
+		String.raw`rgba\(0, 0, 0, 0\) 0px`,
+		String.raw`rgb\(0, 0, 0\) (?<from>[\d.]+)px`,
+		String.raw`rgb\(0, 0, 0\) (?:100%|calc\(100% - (?<until>[\d.]+)px\))`,
+		String.raw`rgba\(0, 0, 0, 0\) 100%\)$`,
+	].join(', '),
+)
+
+/**
+ * Сколько гаснет у левого и у правого края узла — по вычисленной маске, то
+ * есть то, что видно, а не переменные темы.
+ *
+ * У края, от которого идёт градиент, гаснет до второй ступени, у другого —
+ * сколько третьей не хватает до 100%. Направление градиента переводит их в
+ * левый и правый край: в RTL маска развёрнута.
+ */
+const fades = (element: Element) => {
+	const mask = getComputedStyle(element).maskImage
+	const stops = FADE_MASK.exec(mask)?.groups
+
+	if (!stops) throw new Error(`маска подсказки не разобрана: ${mask}`)
+
+	const from = Number(stops.from)
+	const until = stops.until ? Number(stops.until) : 0
+
+	return stops.to === 'right' ? { left: from, right: until } : { left: until, right: from }
+}
+
+/**
+ * Ряд `scroll` в поле — без полосы прокрутки: её место под тегами поле
+ * постоянной высоты не отдаёт. Листают ряд пальцем, трекпадом и колесом с
+ * Shift, а где ещё есть теги, подсказывает маска у края (`tags/_tags.scss`).
+ *
+ * Состояния «есть что листать» у ряда нет: ширину подсказки ведёт сама
+ * прокрутка ряда, поэтому проверяется вычисленная маска. Меняется она кадром
+ * позже прокрутки — отсюда ожидание, а не чтение сразу.
+ */
+describe('tags_overflow: scroll — подсказка у края вместо полосы', () => {
+	/** Ряд первого поля — того, где выбор есть. */
+	const row = () => find('.s-select__field .s-tags')
+
+	/** Поле со всеми тегами; ряду в нём тесно, и он прокручивается. */
+	const renderCrowded = async (direction?: TDirection) => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'scroll', direction }))
+
+		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
+		await expect.poll(() => scrolls(row())).toBe(true)
+	}
+
+	it('в начале ряда гаснет только конец', async () => {
+		await renderCrowded()
+
+		await expect.poll(() => fades(row()).right).toBeGreaterThan(0)
+		expect(fades(row()).left, 'начало').toBe(0)
+	})
+
+	it('в конце ряда гаснет только начало', async () => {
+		await renderCrowded()
+
+		row().scrollLeft = row().scrollWidth
+
+		await expect.poll(() => fades(row()).left).toBeGreaterThan(0)
+		// Допуск — субпиксельный остаток прокрутки
+		expect(fades(row()).right, 'конец').toBeLessThan(1)
+	})
+
+	/**
+	 * Подсказка у края растёт, пока ряд уходит от него на её ширину: гаснет
+	 * то, что спрятано за краем, но не шире самой подсказки.
+	 */
+	it('у края гаснет не больше, чем за ним спрятано', async () => {
+		await renderCrowded()
+
+		await expect.poll(() => fades(row()).right).toBeGreaterThan(0)
+
+		const full = fades(row()).right
+		const shift = 4
+
+		expect(full, 'подсказка шире сдвига').toBeGreaterThan(shift)
+
+		row().scrollLeft = shift
+
+		await expect.poll(() => fades(row()).left).toBeCloseTo(shift, 0)
+		expect(fades(row()).right, 'конец').toBe(full)
+	})
+
+	it('ряд, который помещается, не гаснет', async () => {
+		render(pairHarness({ value: ['0'], texts: OPTIONS, overflow: 'scroll' }))
+
+		await expect.poll(() => fieldTags().length).toBe(1)
+
+		expect(scrolls(row()), 'ряду тесно').toBe(false)
+
+		// Ширину маске прокрутка отдаёт кадром позже: без ожидания проверка
+		// прошла бы раньше, чем подсказка успела бы появиться
+		await nextFrame()
+		await nextFrame()
+
+		expect(fades(row())).toEqual({ left: 0, right: 0 })
+	})
+
+	/** Начало строки в RTL — правый край: в начале ряда гаснет левый. */
+	it('в RTL в начале ряда гаснет левый край', async () => {
+		await renderCrowded('rtl')
+
+		await expect.poll(() => fades(row()).left).toBeGreaterThan(0)
+		expect(fades(row()).right, 'правый край').toBe(0)
+	})
+
+	/**
+	 * Крестик за краем ряда браузер при фокусе докручивает, а видимый
+	 * наполовину оставляет у края — под подсказкой, где его почти не видно.
+	 * Отступ прокрутки ряда шириной в подсказку это исправляет: такой крестик
+	 * для браузера уже не виден, и он его докручивает. Крестики — остановки
+	 * Tab тегов в поле, и проверяется каждый.
+	 */
+	it('крестик под фокусом не остаётся под подсказкой', async () => {
+		await renderCrowded()
+
+		const closes = [...row().querySelectorAll('.s-tags-item__close')]
+
+		expect(closes, 'крестиков в ряду').toHaveLength(OPTIONS.length)
+
+		for (const [index, close] of closes.entries()) {
+			if (!(close instanceof HTMLElement)) throw new Error(`крестик ${index}: HTML-узла нет`)
+
+			close.focus()
+
+			// Прокрутка отдаёт маске ширину кадром позже
+			await nextFrame()
+			await nextFrame()
+
+			const bounds = box(row())
+			const fade = fades(row())
+			const button = box(close)
+
+			// Допуск на субпиксели
+			expect(button.left, `крестик ${index}: левый край`).toBeGreaterThanOrEqual(
+				bounds.left + fade.left - 0.5,
+			)
+			expect(button.right, `крестик ${index}: правый край`).toBeLessThanOrEqual(
+				bounds.right - fade.right + 0.5,
+			)
+		}
 	})
 })
 
