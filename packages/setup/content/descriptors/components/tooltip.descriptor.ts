@@ -3,8 +3,8 @@
  *
  * Наследует ComponentViewDescriptor (rendered, visible, tag, наборы и плагины
  * element/ready) и добавляет открытость, сторону панели, задержки показа и
- * скрытия, сторону триггера в связке и плагины: нажатие мимо и то, когда
- * подсказка показывается и прячется.
+ * скрытия, режим связки (описание или имя), сторону триггера в связке и
+ * плагины: нажатие мимо и то, когда подсказка показывается и прячется.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -29,7 +29,7 @@ export const TooltipDescriptor = defineDescriptor(() =>
 				trigger: {
 					scope: { triggerAria: defineType<TAriaAttributes>(Object) },
 					description:
-						'Элемент, который подсказка описывает. aria-describedby для него — в scope',
+						'Элемент, который подсказка описывает или называет. Ссылка на панель для него — в scope',
 				},
 				default: { description: 'Текст подсказки' },
 			},
@@ -38,17 +38,18 @@ export const TooltipDescriptor = defineDescriptor(() =>
 				placement: { type: String, triggers: ['change:placement'] },
 				openDelay: { type: Number, triggers: ['change:openDelay'] },
 				closeDelay: { type: Number, triggers: ['change:closeDelay'] },
+				/** Описание (`aria-describedby`) или имя (`aria-labelledby`) триггера. */
+				type: { type: String, triggers: ['change:type'] },
 				/**
 				 * Сторона триггера в связке с панелью. Вычисляет ядро, шаблон
 				 * раскладывает в scope слота `trigger`: оставь её в разметке — и
-				 * формула `id` повторится в каждом из шести адаптеров.
+				 * формула `id` и выбор атрибута по режиму повторятся в каждом из
+				 * шести адаптеров.
 				 *
-				 * Значение постоянное — строится из `uid`. Триггер всё равно нужен:
-				 * проп без триггеров адаптер считает pass-through и наружу не отдаёт.
-				 * `bundle:create` — тот же приём, что `create` у
-				 * `dismiss_ownerAttribute`.
+				 * `id` постоянный — строится из `uid`, а атрибут ссылки меняет
+				 * режим: набор перечитывается на `change:type`.
 				 */
-				triggerAria: { type: Object, protected: true, triggers: ['bundle:create'] },
+				triggerAria: { type: Object, protected: true, triggers: ['change:type'] },
 			},
 		},
 

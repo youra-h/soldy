@@ -7,7 +7,7 @@
  *
  * `variant` — проп, а не атрибут разметки (тот же сценарий, что у Vue,
  * `skeleton-variant.spec.ts`). Значения — условные имена из фикстуры темы
- * Vue (`packages/ui/vue/__tests__/theme.d.ts`), не имена oren.
+ * (`__tests__/theme.d.ts`), не имена oren.
  */
 
 import { describe, it, expect } from 'vitest'

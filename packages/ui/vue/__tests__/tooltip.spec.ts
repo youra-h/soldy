@@ -132,6 +132,81 @@ describe('разметка', () => {
 	})
 })
 
+/**
+ * `type="label"`: подсказка — имя триггера. Нужна кнопке-иконке: с
+ * `aria_label` и подсказкой-описанием скринридер прочёл бы один текст дважды.
+ * Меняется только ссылка триггера — панель та же и так же всегда в документе.
+ */
+describe('подсказка-имя', () => {
+	/** Tooltip с пропсами из шаблона — чтобы менять их `setProps`. */
+	async function mountTooltip(props: Partial<ITooltipProps>): Promise<ReturnType<typeof mount>> {
+		const mounted = mount(Tooltip, {
+			props,
+			slots: {
+				trigger: ({ triggerAria }: TTriggerScope) =>
+					h(Button, { text: 'Сохранить', class: 's-test-trigger', ...triggerAria }),
+				default: () => 'Сохранить черновик',
+			},
+			attachTo: document.body,
+		})
+
+		wrapper = mounted
+		await nextFrame()
+
+		return mounted
+	}
+
+	it('aria-labelledby триггера ведёт на панель, aria-describedby нет — и у закрытой', async () => {
+		await render(() => tooltip({ type: 'label' }))
+
+		expect(isOpen()).toBe(false)
+		expect(document.getElementById(trigger().getAttribute('aria-labelledby') ?? '')).toBe(
+			panel(),
+		)
+		expect(trigger().hasAttribute('aria-describedby')).toBe(false)
+		expect(panel().getAttribute('role')).toBe('tooltip')
+	})
+
+	it('смена type из шаблона переключает атрибут ссылки — и обратно', async () => {
+		const mounted = await mountTooltip({ type: 'description' })
+		const id = panel().id
+
+		expect(trigger().getAttribute('aria-describedby')).toBe(id)
+		expect(trigger().hasAttribute('aria-labelledby')).toBe(false)
+
+		await mounted.setProps({ type: 'label' })
+
+		expect(trigger().getAttribute('aria-labelledby')).toBe(id)
+		expect(trigger().hasAttribute('aria-describedby')).toBe(false)
+
+		await mounted.setProps({ type: 'description' })
+
+		expect(trigger().getAttribute('aria-describedby')).toBe(id)
+		expect(trigger().hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('снятый type возвращает подсказку к описанию', async () => {
+		const mounted = await mountTooltip({ type: 'label' })
+
+		await mounted.setProps({ type: undefined })
+
+		expect(trigger().getAttribute('aria-describedby')).toBe(panel().id)
+		expect(trigger().hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('type из инстанса доходит до триггера так же, как из шаблона', async () => {
+		const ctrl = new TTooltip({ openDelay: 0, closeDelay: 0 })
+
+		await render(() => tooltip({ ctrl }))
+
+		ctrl.type = 'label'
+		await nextTick()
+
+		expect(trigger().getAttribute('aria-labelledby')).toBe(panel().id)
+		expect(trigger().hasAttribute('aria-describedby')).toBe(false)
+	})
+})
+
 describe('показ и скрытие', () => {
 	it('курсор на корне показывает, уход — прячет', async () => {
 		await render(() => tooltip())
@@ -226,6 +301,13 @@ describe('показ и скрытие', () => {
 		await nextFrame()
 
 		expect(panel().dataset.placement).toBe('bottom-end')
+	})
+
+	it('центр доходит до якоря: data-placement без суффикса', async () => {
+		await render(() => tooltip({ open: true, placement: 'bottom' }))
+		await nextFrame()
+
+		expect(panel().dataset.placement).toBe('bottom')
 	})
 })
 

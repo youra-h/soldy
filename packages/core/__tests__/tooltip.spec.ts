@@ -10,13 +10,17 @@ import { TTooltip } from '@soldy-ui/core'
  */
 
 describe('умолчания', () => {
-	it('закрыта, над триггером по началу, 400 мс до показа и 150 до скрытия', () => {
+	it('закрыта, над триггером по центру, 400 мс до показа и 150 до скрытия', () => {
 		const tooltip = new TTooltip()
 
 		expect(tooltip.open).toBe(false)
-		expect(tooltip.placement).toBe('top-start')
+		expect(tooltip.placement).toBe('top')
 		expect(tooltip.openDelay).toBe(400)
 		expect(tooltip.closeDelay).toBe(150)
+	})
+
+	it('подсказка — описание триггера, как в паттерне APG', () => {
+		expect(new TTooltip().type).toBe('description')
 	})
 
 	it('корень строчный — span, базовый класс s-tooltip', () => {
@@ -32,6 +36,7 @@ describe('умолчания', () => {
 			placement: 'bottom-end',
 			openDelay: 0,
 			closeDelay: 1000,
+			type: 'label',
 		})
 
 		expect(tooltip.getProps()).toMatchObject({
@@ -39,6 +44,7 @@ describe('умолчания', () => {
 			placement: 'bottom-end',
 			openDelay: 0,
 			closeDelay: 1000,
+			type: 'label',
 		})
 	})
 })
@@ -72,11 +78,60 @@ describe('связка «триггер ↔ панель»', () => {
 		expect(new TTooltip().aria.get('id')).not.toBe(new TTooltip().aria.get('id'))
 	})
 
-	it('теме состояние не отдаётся: ни data-* на корне, ни ARIA', () => {
-		const tooltip = new TTooltip({ open: true })
+	it.each(['description', 'label'] as const)(
+		'теме состояние не отдаётся: ни data-* на корне, ни ARIA (%s)',
+		(type) => {
+			const tooltip = new TTooltip({ open: true, type })
 
-		expect(tooltip.dataset.toObject()).toEqual({})
-		expect(Object.keys(tooltip.aria.toObject()).sort()).toEqual(['id', 'role'])
+			expect(tooltip.dataset.toObject()).toEqual({})
+			expect(Object.keys(tooltip.aria.toObject()).sort()).toEqual(['id', 'role'])
+		},
+	)
+})
+
+/**
+ * Режим `label`: подсказка — имя триггера, а не описание. Иконочной кнопке
+ * с `aria_label` и подсказкой-описанием скринридер прочёл бы один текст
+ * дважды.
+ */
+describe('подсказка-имя', () => {
+	it('триггер ссылается на панель aria-labelledby — тем же id, описания нет', () => {
+		const tooltip = new TTooltip({ type: 'label' })
+
+		expect(tooltip.triggerAria).toEqual({ 'aria-labelledby': tooltip.aria.get('id') })
+	})
+
+	it('ссылка стоит и у закрытой подсказки, и у открытой', () => {
+		const tooltip = new TTooltip({ type: 'label' })
+		const closed = tooltip.triggerAria
+
+		tooltip.open = true
+
+		expect(closed['aria-labelledby']).toBeTruthy()
+		expect(tooltip.triggerAria).toEqual(closed)
+	})
+
+	it('панель от режима не зависит: та же подсказка с тем же id', () => {
+		const tooltip = new TTooltip()
+		const described = tooltip.aria.toObject()
+
+		tooltip.type = 'label'
+
+		expect(tooltip.aria.toObject()).toEqual(described)
+		expect(described.role).toBe('tooltip')
+	})
+
+	it('смена режима на лету меняет ссылку триггера — и обратно', () => {
+		const tooltip = new TTooltip()
+		const id = tooltip.aria.get('id')
+
+		tooltip.type = 'label'
+
+		expect(tooltip.triggerAria).toEqual({ 'aria-labelledby': id })
+
+		tooltip.type = 'description'
+
+		expect(tooltip.triggerAria).toEqual({ 'aria-describedby': id })
 	})
 })
 
@@ -99,6 +154,7 @@ describe('события', () => {
 		['placement', 'change:placement', 'bottom-start'],
 		['openDelay', 'change:openDelay', 700],
 		['closeDelay', 'change:closeDelay', 0],
+		['type', 'change:type', 'label'],
 	] as const)('%s шлёт %s только на реальное изменение', (prop, event, value) => {
 		const tooltip = new TTooltip()
 		const handler = vi.fn()

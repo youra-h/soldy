@@ -36,7 +36,9 @@ TEntity (uid, getProps, assign, toJSON)
 │   ├── TDragAndDrop                        — провайдер контекста, ничего не рендерит
 │   ├── TCollectionComponent / TCollectionItemComponent — фасады коллекций
 │   └── TComponentView (rendered/visible/present, show/hide, tag, direction, classes, aria/dataset/attrs, ready)
-│       ├── TFrame (x, y, width, height, position, target)
+│       ├── TLayer (target, zIndex — общий стек слоёв, data-layer)
+│       │   ├── TFrame (x, y, width, height, position)
+│       │   └── TDialog (placement, width, height, maximized, requestClose)
 │       ├── TIcon, TSkeleton, TTabsContent
 │       ├── TInteractive (disabled, focused)
 │       └── TStylable (size, variant)
@@ -1337,22 +1339,25 @@ ListBox режимы ради чужого компонента, после че
 снимались по одной переменной цикла, которая к моменту очистки была `null` —
 то есть не снимались вовсе.
 
-Поверх выбора потребителя (`placement`, один из `bottom-start`/`bottom-end`/
-`top-start`/`top-end`) плагин сам решает две вещи. **flip** переключает
+Выбор потребителя — `placement`: сторона `top` или `bottom` и выравнивание по
+якорю — `-start`, `-end` или центр, значением без суффикса (`top`, `bottom`).
+Поверх него плагин сам решает две вещи. **flip** переключает
 `top`/`bottom`, если на выбранной стороне панель не влезает по высоте окна, а
 на противоположной места больше; не влезает нигде — остаётся на стороне
-потребителя. Flip выключается свойством `flip` (`anchor_flip: false`, по
-умолчанию включён): сторона потребителя держится, даже если панель там не
-влезает, — так Select выражает `placement: 'top'` и `'bottom'`. **shift**
-сдвигает `x` внутрь окна, чтобы панель не вылезала за
-левый и правый край; шире окна — прижимается к левому. **RTL**
-(`getComputedStyle(anchor).direction`) разворачивает выравнивание: в RTL
-`-start` держит правый край якоря, `-end` — левый. Фактическая сторона после
-flip уходит теме через `data-placement` на самом Frame — она не всегда
-совпадает с тем, что задал потребитель.
+потребителя. Выравнивание, центр в том числе, flip не трогает. Flip
+выключается свойством `flip` (`anchor_flip: false`, по умолчанию включён):
+сторона потребителя держится, даже если панель там не влезает, — так Select
+выражает свои `placement: 'top'` и `'bottom'` (якорю он отдаёт `top-start` и
+`bottom-start`, центр тут ни при чём). **shift** сдвигает `x` внутрь окна,
+чтобы панель не вылезала за левый и правый край; шире окна — прижимается к
+левому. **RTL** (`getComputedStyle(anchor).direction`) разворачивает
+выравнивание: в RTL `-start` держит правый край якоря, `-end` — левый, центр
+от направления не зависит. Фактическая сторона после flip уходит теме через
+`data-placement` на самом Frame — она не всегда совпадает с тем, что задал
+потребитель.
 
 Поэтому плагину нужен размер панели: высота — для flip и показа сверху, ширина
-— для `*-end` и shift. Размер берётся из `getBoundingClientRect()` панели; при
+— для `*-end`, центра и shift. Размер берётся из `getBoundingClientRect()` панели; при
 `matchWidth` ширину даёт якорь, и список под полем не зависит от того, успела
 ли панель отрисоваться. Размер якоря и панели плагин узнаёт без scroll/resize
 окна: на обоих висит свой `ResizeObserver`, поэтому позиция пересчитывается и
@@ -1602,7 +1607,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
-- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell, `Object.is`), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
+- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the line and the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
 - Events: `binding.bindEvents` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 

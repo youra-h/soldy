@@ -246,6 +246,53 @@ const RtlHarness = defineComponent({
 })
 
 /**
+ * Якорь шире панели, панель над ним по центру (`top`). Направление письма —
+ * параметром: центр от него не зависит, и в RTL панель стоит там же.
+ */
+const centerHarness = (dir: 'ltr' | 'rtl') =>
+	defineComponent({
+		data() {
+			return { anchorEl: null as Element | null }
+		},
+		mounted() {
+			this.anchorEl = this.$refs.anchor as Element
+		},
+		render() {
+			return h(
+				'div',
+				{ dir, style: 'position: relative; padding-top: 250px; width: 400px' },
+				[
+					h(
+						'button',
+						{
+							ref: 'anchor',
+							class: 's-test-anchor',
+							style: 'width: 200px; height: 32px',
+						},
+						'anchor',
+					),
+					this.anchorEl
+						? h(
+								Frame,
+								{
+									visible: true,
+									position: 'fixed',
+									anchor_anchor: this.anchorEl,
+									anchor_placement: 'top',
+									class: 's-test-panel',
+								},
+								{
+									default: () =>
+										h('div', { style: 'width: 120px; height: 40px' }, 'panel'),
+								},
+							)
+						: null,
+				],
+			)
+		},
+	})
+
+/**
  * Якорь у самого правого края страницы, которая выше окна, и панель заметно
  * шире места справа от него.
  *
@@ -481,6 +528,33 @@ describe('RTL', () => {
 			.poll(() => panel().getBoundingClientRect().right)
 			.toBeCloseTo(anchorRect.right, 0)
 	})
+})
+
+describe('центр', () => {
+	/** Середина прямоугольника по горизонтали. */
+	const middle = (rect: DOMRect) => rect.left + rect.width / 2
+
+	/**
+	 * Ширину панели плагин узнаёт по `ready` и `ResizeObserver`, поэтому
+	 * середину опрашиваем: на кадре до замера панель стоит серединой якоря
+	 * своим левым краем.
+	 */
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: top ставит середину панели над серединой якоря',
+		async (dir) => {
+			render(centerHarness(dir))
+
+			const anchorRect = anchor().getBoundingClientRect()
+
+			await expect
+				.poll(() => middle(panel().getBoundingClientRect()))
+				.toBeCloseTo(middle(anchorRect), 0)
+			await expect
+				.poll(() => panel().getBoundingClientRect().bottom)
+				.toBeCloseTo(anchorRect.top, 0)
+			expect(panel().dataset.placement).toBe('top')
+		},
+	)
 })
 
 describe('граница — видимая область', () => {

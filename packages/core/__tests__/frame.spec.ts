@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { TFrame, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
+import { TFrame, TLayer, FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 
 describe('TFrame', () => {
 	beforeEach(() => {
@@ -286,18 +286,22 @@ describe('TFrame', () => {
 		expect(z3).toBe(z1)
 	})
 
-	it('baseZIndex можно переопределить статически', () => {
-		const OriginalBase = TFrame.baseZIndex
-		TFrame.baseZIndex = 5000
-		TFrame.resetZIndexCounter()
+	/**
+	 * Стек один на все слои — Frame и модальное окно, — и база у него одна:
+	 * она задаётся у `TLayer`, а не у наследника.
+	 */
+	it('baseZIndex можно переопределить статически — у TLayer', () => {
+		const OriginalBase = TLayer.baseZIndex
+		TLayer.baseZIndex = 5000
+		TLayer.resetZIndexCounter()
 
 		const frame = new TFrame()
 		frame.show()
 
 		expect(frame.zIndex).toBe(5001)
 
-		TFrame.baseZIndex = OriginalBase
-		TFrame.resetZIndexCounter()
+		TLayer.baseZIndex = OriginalBase
+		TLayer.resetZIndexCounter()
 	})
 
 	it('width/height принимают строки', () => {

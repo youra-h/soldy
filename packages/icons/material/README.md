@@ -8,7 +8,7 @@ Web Components.
 
 An icon pack is an implementation of a contract, not a bag of SVG files: the library asks for a
 fixed set of roles (`check`, `checkIndeterminate`, `close`, `arrowDown`, `arrowRight`,
-`moreHoriz`), and a pack provides them as plain data — a `viewBox` and the body of the `<svg>`. The
+`moreHoriz`, `arrowsOutward`, `arrowsInward`), and a pack provides them as plain data — a `viewBox` and the body of the `<svg>`. The
 root element is built by the adapter, so it can set the size, the classes and `aria-hidden`; there
 is no bundler-specific import and no runtime template compiler.
 
