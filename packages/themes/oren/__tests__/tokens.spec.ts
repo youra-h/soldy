@@ -39,6 +39,16 @@ function declarations(body: string): Map<string, string> {
 	return map
 }
 
+/**
+ * Значения обычного свойства в теле блока — все, сколько объявлено. Имя не
+ * должно быть хвостом другого: `--x-color-scheme` — не `color-scheme`.
+ */
+function propertyValues(body: string, name: string): string[] {
+	return [...body.matchAll(new RegExp(`(?<![\\w-])${name}\\s*:\\s*([^;]+);`, 'g'))].map(
+		([, value]) => value.trim(),
+	)
+}
+
 /** Значение токена; без токена мерить нечего — падаем с его именем. */
 function tokenOf(tokens: Map<string, string>, name: string): string {
 	const value = tokens.get(name)
@@ -99,15 +109,14 @@ function scan(pattern: RegExp): string[] {
 
 const FAMILIES = ['accent', 'positive', 'negative', 'caution', 'neutral']
 
-const light = declarations(
-	block(stripComments(readFileSync(join(SRC, 'tokens.css'), 'utf8')), ':root,'),
+const lightBlock = block(stripComments(readFileSync(join(SRC, 'tokens.css'), 'utf8')), ':root,')
+const darkBlock = block(
+	stripComments(readFileSync(join(SRC, 'tokens-dark.css'), 'utf8')),
+	"[data-theme='oren-dark']",
 )
-const dark = declarations(
-	block(
-		stripComments(readFileSync(join(SRC, 'tokens-dark.css'), 'utf8')),
-		"[data-theme='oren-dark']",
-	),
-)
+
+const light = declarations(lightBlock)
+const dark = declarations(darkBlock)
 
 describe('токены цветовых схем', () => {
 	it('тёмная схема покрывает все ступени светлой', () => {
@@ -156,6 +165,20 @@ describe('токены цветовых схем', () => {
 	it('в тёмной схеме поверхность темнее текста', () => {
 		expect(lightness(tokenOf(dark, '--s-neutral-50'))).toBeLessThan(0.3)
 		expect(lightness(tokenOf(dark, '--s-neutral-800'))).toBeGreaterThan(0.7)
+	})
+
+	/**
+	 * Токены красят только то, что рисует тема. Полосы прокрутки, нативные поля
+	 * и системные цвета браузер рисует сам и схему берёт из `color-scheme`, а не
+	 * из токенов: без него в тёмной схеме полосы у списка Select и содержимого
+	 * Popover оставались светлыми. Объявление — в блоке самой схемы, рядом с её
+	 * токенами: вложенная область другой схемы переключает и то и другое.
+	 */
+	it.each([
+		['светлая', 'light', lightBlock],
+		['тёмная', 'dark', darkBlock],
+	])('%s схема сообщает браузеру свою схему: color-scheme %s', (_, value, body) => {
+		expect(propertyValues(body, 'color-scheme')).toEqual([value])
 	})
 })
 
