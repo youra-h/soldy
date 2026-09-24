@@ -16,6 +16,7 @@ import {
 	LabelDescriptor,
 	PopoverDescriptor,
 	TagsDescriptor,
+	TooltipDescriptor,
 } from '@soldy-ui/setup'
 import { Button, ComponentView } from '@soldy-ui/vue'
 
@@ -50,7 +51,7 @@ describe('соответствие контракту', () => {
 		)
 	})
 
-	it('Label: контрол в default и текст в text', () => {
+	it('Label: контрол в default и текст в content', () => {
 		expect(templateSlots('src/components/label/Label.vue')).toEqual(
 			LabelDescriptor()
 				.slots.map((slot) => slot.name)
@@ -69,6 +70,14 @@ describe('соответствие контракту', () => {
 	it('Tags: слоты тегов и значок кнопки «…»', () => {
 		expect(templateSlots('src/components/tags/Tags.vue')).toEqual(
 			TagsDescriptor()
+				.slots.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Tooltip: триггер и текст подсказки', () => {
+		expect(templateSlots('src/components/tooltip/Tooltip.vue')).toEqual(
+			TooltipDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),
 		)

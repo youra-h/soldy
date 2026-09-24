@@ -14,9 +14,10 @@
 		@apply py-2;
 	}
 
+	// Заголовок — по началу строки, в RTL это правый край.
 	.s-button {
 		&__text {
-			@apply text-left;
+			@include button.button-text-align('start');
 		}
 	}
 

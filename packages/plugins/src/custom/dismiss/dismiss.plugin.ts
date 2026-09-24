@@ -1,7 +1,10 @@
-import { FRAME_LAYER_ATTRIBUTE, isEventSource } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
+import { isAboveLayer } from '../../utils'
 import { TElementPlugin } from '../element'
+// Не из бочки `../overlay`: её плагины импортируют этот модуль, и вышел бы цикл
+import { bindOverlayOpen } from '../overlay/open-state'
+import type { IOverlayOpenState } from '../overlay/types'
 import type { IDismissPluginOptions, TDismissPendingPress, TDismissPluginEvents } from './types'
 
 /** Атрибут, которым панель помечается владельцем (`ownerAttribute`). */
@@ -70,10 +73,12 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 	private _element: Element | null = null
 	private _owner: string | null = null
-	private _instance: object | null = null
-	private _property: string | null = 'open'
-	/** Ведёт ли плагин открытость владельца: тогда `dismiss` его и закрывает. */
-	private _bound = false
+	/**
+	 * Открытость владельца (`property`): по ней плагин включается, ею же
+	 * `dismiss` закрывает владельца. `null` — привязки нет, плагин только
+	 * сообщает.
+	 */
+	private _open: IOverlayOpenState | null = null
 	private _enabled = TDismissPlugin.defaultValues.enabled
 	private _focusOutside = false
 	private _listening = false
@@ -86,7 +91,6 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		const instance = ctx.getInstance<object>()
 
 		if (instance) {
-			this._instance = instance
 			this._owner = String(Reflect.get(instance, 'uid'))
 		}
 
@@ -100,48 +104,27 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 			this._sync()
 		})
 
-		this._property = options?.property === undefined ? this._property : options.property
 		this._enabled = options?.enabled ?? this._enabled
 		this._focusOutside = options?.focusOutside ?? this._focusOutside
 
-		this._bindOpenState(options?.event ?? `change:${this._property}`)
+		this._open = bindOverlayOpen(ctx, options, (open) => {
+			this.enabled = open
+		})
+
+		if (this._open) this.enabled = this._open.read()
 	}
 
 	/**
-	 * Связывает слежение с открытостью владельца.
+	 * Сообщает о нажатии или фокусе мимо, потом закрывает владельца.
 	 *
-	 * Логика простая, но повторять её в шаблоне каждого адаптера нельзя:
-	 * поменяешь в одном — забудешь в пяти остальных.
-	 *
-	 * Закрывает владельца `_dismiss`, после подписчиков `dismiss`, а не первый
-	 * подписчик: иначе остальные узнавали бы о нажатии мимо уже закрытыми и не
-	 * отличали бы его от закрытия по другой причине.
+	 * Закрывает здесь, после подписчиков `dismiss`, а не первым подписчиком:
+	 * иначе остальные узнавали бы о нажатии мимо уже закрытыми и не отличали
+	 * бы его от закрытия по другой причине.
 	 */
-	private _bindOpenState(event: string): void {
-		const instance = this._instance
-		const property = this._property
-
-		if (!instance || !property || !(property in instance)) return
-
-		const events: unknown = Reflect.get(instance, 'events')
-
-		if (isEventSource(events)) {
-			events.on(event, () => {
-				this.enabled = !!Reflect.get(instance, property)
-			})
-		}
-
-		this._bound = true
-		this.enabled = !!Reflect.get(instance, property)
-	}
-
-	/** Сообщает о нажатии или фокусе мимо, потом закрывает владельца. */
 	private _dismiss(event: MouseEvent | FocusEvent): void {
 		this.events.emit('dismiss', event)
 
-		if (this._bound && this._instance && this._property) {
-			Reflect.set(this._instance, this._property, false)
-		}
+		this._open?.write(false)
 	}
 
 	/**
@@ -196,7 +179,11 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		super.destroy()
 	}
 
-	/** Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше неё. */
+	/**
+	 * Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше
+	 * неё — панели, открытой поверх своей (см. шапку). Правило слоёв общее с
+	 * `THideOutsidePlugin`, поэтому живёт в утилитах (`isAboveLayer`).
+	 */
 	private _isInside(target: EventTarget | null): boolean {
 		if (!(target instanceof Element)) return false
 
@@ -204,22 +191,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		if (this._owner && target.closest(`[${OWNER_ATTRIBUTE}="${this._owner}"]`)) return true
 
-		return this._isAboveOwnLayer(target)
-	}
-
-	/**
-	 * Лежит ли узел в слое выше панели владельца — в панели, открытой поверх
-	 * неё (см. шапку). Слой узла — ближайший предок с `data-layer`: панели
-	 * лежат в `body` соседями и друг в друга не вложены.
-	 */
-	private _isAboveOwnLayer(target: Element): boolean {
-		const layer = layerOf(target.closest(`[${FRAME_LAYER_ATTRIBUTE}]`))
-
-		if (layer === null) return false
-
-		const own = layerOf(this.findPanel())
-
-		return own !== null && layer > own
+		return isAboveLayer(target, this.findPanel())
 	}
 
 	/**
@@ -343,15 +315,4 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		this._listening = shouldListen
 	}
-}
-
-/** Номер слоя узла (`data-layer`); `null` — узла нет или слоя у него нет. */
-function layerOf(element: Element | null): number | null {
-	const value = element?.getAttribute(FRAME_LAYER_ATTRIBUTE)
-
-	if (value === null || value === undefined) return null
-
-	const layer = Number(value)
-
-	return Number.isFinite(layer) ? layer : null
 }

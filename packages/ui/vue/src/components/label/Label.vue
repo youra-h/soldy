@@ -37,12 +37,12 @@ export default { ...SetupLabel }
 		-->
 		<span class="s-label__control"><slot /></span>
 		<!--
-			Текст — слот `text`, запасное содержимое — проп `text`. Вокруг
+			Текст — слот `content`, запасное содержимое — проп `text`. Вокруг
 			слота и запасного текста нет пробелов: пустую обёртку тема прячет
 			по `:empty`.
 		-->
 		<span class="s-label__text"
-			><slot name="text">{{ text }}</slot></span
+			><slot name="content">{{ text }}</slot></span
 		>
 	</component>
 </template>

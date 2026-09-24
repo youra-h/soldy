@@ -47,7 +47,29 @@ const entries = files.map((file) => {
 	return `export const ${toName(file)}: TIconSource = {\n\tviewBox: '${viewBox}',\n\tbody: '${body.replace(/'/g, "\\'")}',\n}`
 })
 
-const output = `/**
+/**
+ * Происхождение иконок. SVG рядом — Material Symbols от Google под Apache-2.0,
+ * а она требует от изменённого файла сказать, что его изменили. Шапка уезжает
+ * и в `dist/index.js`: комментарий с пометкой `@license` сборка пакета и
+ * минификаторы потребителя по умолчанию сохраняют, а комментарий без неё — как
+ * пометка «СГЕНЕРИРОВАНО» ниже — до `dist` не доезжает. Текст английский: его
+ * читает потребитель пакета, как README.
+ */
+const origin = `/**
+ * @license
+ * The icons are Material Symbols by Google (https://fonts.google.com/icons),
+ * © Google, licensed under the Apache License, Version 2.0. The license text
+ * ships with this package as LICENSE-Apache-2.0.
+ *
+ * Changes to the source SVG files: the root \`<svg>\` element is dropped together
+ * with its size and \`fill\` — an icon is kept as its \`viewBox\` and inner markup
+ * and takes the color of the text (\`currentColor\`); the inner markup may rotate
+ * the source glyph with a \`transform\`.
+ */`
+
+const output = `${origin}
+
+/**
  * СГЕНЕРИРОВАНО. Не править руками — правьте SVG рядом и запускайте
  * \`npm run generate --workspace=@soldy-ui/icons-material\`.
  */

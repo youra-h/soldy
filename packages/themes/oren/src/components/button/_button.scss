@@ -9,8 +9,11 @@
 
 	@include mixines.button-surface;
 
+	// Область текста — всё место между слотами, содержимое по центру (см.
+	// `button-text-align`).
 	&__text {
-		@apply grow truncate text-center;
+		@apply grow truncate;
+		@include mixines.button-text-align('center');
 	}
 
 	@include mixines.button-disabled;
