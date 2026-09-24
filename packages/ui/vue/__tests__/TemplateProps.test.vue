@@ -201,4 +201,8 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — задержка числом, а не строкой -->
 	<Tooltip openDelay="fast" />
 	<Tooltip :openDelay="0" />
+
+	<!-- @vue-expect-error — режима `name` у подсказки нет: описание или имя -->
+	<Tooltip type="name" />
+	<Tooltip type="label" />
 </template>

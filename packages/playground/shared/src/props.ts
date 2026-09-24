@@ -28,6 +28,7 @@ import {
 	TABS_VIEWS,
 	TAGS_OVERFLOWS,
 	TOOLTIP_PLACEMENTS,
+	TOOLTIP_TYPES,
 } from './enums'
 import { COLLECTION_VALUES } from './items'
 import type {
@@ -197,6 +198,7 @@ const OWN: Record<string, Record<string, string>> = {
 			'Через сколько миллисекунд наведения подсказка показывается. Фокус с клавиатуры показывает сразу',
 		closeDelay:
 			'Через сколько миллисекунд после ухода курсора подсказка прячется. Курсор на ней самой её держит',
+		type: 'Чем подсказка служит триггеру: описанием (aria-describedby) или именем (aria-labelledby) — для кнопки-иконки без текста',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -277,7 +279,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		tags_overflow: TAGS_OVERFLOWS,
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
-	tooltip: { placement: TOOLTIP_PLACEMENTS },
+	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	tabs: {

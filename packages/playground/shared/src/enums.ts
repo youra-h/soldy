@@ -26,6 +26,7 @@ import type {
 	TTagsOverflow,
 	TPopoverPlacement,
 	TTooltipPlacement,
+	TTooltipType,
 	TDialogPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
@@ -164,6 +165,9 @@ export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'top',
 	'top-end',
 ])
+
+/** Чем подсказка служит триггеру: описанием или именем. */
+export const TOOLTIP_TYPES = enumOf<TTooltipType>()(['description', 'label'])
 
 /** Где стоит модальное окно: по центру или у стороны экрана. */
 export const DIALOG_PLACEMENTS = enumOf<TDialogPlacement>()([
