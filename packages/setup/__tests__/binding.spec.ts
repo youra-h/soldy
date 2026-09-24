@@ -10,12 +10,13 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TButton, TFrame, TIcon, TTabsItem } from '@soldy-ui/core'
+import { TButton, TFrame, TIcon, TSelect, TTabsItem } from '@soldy-ui/core'
 import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	FrameDescriptor,
 	IconDescriptor,
+	SelectDescriptor,
 	TabsItemDescriptor,
 	createAdapterContext,
 	defineComponent,
@@ -560,7 +561,97 @@ describe('связка · повторённый проп', () => {
 
 		expect(ctrl.text).toBe('a')
 	})
+
+	/*
+	 * Литерал массива в разметке (`value={['msk', 'tver']}` в React,
+	 * `:value="[20, 80]"` во Vue) — новый объект на каждом проходе родителя.
+	 * Вход сверяет его с прошлым значением фреймворка по содержимому, тем же
+	 * правилом, что линия и состояние. Пока сверка шла по ссылке, перерисовка
+	 * родителя по постороннему поводу откатывала выбор пользователя к разметке.
+	 */
+
+	it('литерал массива с тем же содержимым — повтор: выбор, сделанный в ядре, остаётся', () => {
+		const { ctrl, binding } = bindSelect()
+
+		binding.inputs.full({ value: ['msk', 'tver'] })
+		// Пользователь снял выбор с Твери
+		ctrl.value = ['msk']
+		// Родитель перерисовался из-за другого пропа, литерал — новый объект
+		binding.inputs.full({ value: ['msk', 'tver'], placeholder: 'Город' })
+
+		expect(ctrl.value).toEqual(['msk'])
+		expect(ctrl.placeholder).toBe('Город')
+	})
+
+	it('массив с другим содержимым пишется поверх ядра', () => {
+		const { ctrl, binding } = bindSelect()
+
+		binding.inputs.full({ value: ['msk', 'tver'] })
+		ctrl.value = ['msk']
+		binding.inputs.full({ value: ['msk', 'tula'] })
+
+		expect(ctrl.value).toEqual(['msk', 'tula'])
+	})
+
+	it('снятый массив сбрасывается к умолчанию, даже если ядро его меняло', () => {
+		const { ctrl, binding } = bindSelect()
+
+		binding.inputs.full({ value: ['msk', 'tver'] })
+		ctrl.value = ['msk']
+		binding.inputs.full({})
+
+		expect(ctrl.value).toBeUndefined()
+	})
+
+	it('дельта с массивом того же содержимого — всё равно команда', () => {
+		const { ctrl, binding } = bindSelect()
+
+		binding.inputs.delta({ value: ['msk', 'tver'] })
+		ctrl.value = ['msk']
+		// Web Components: `el.value = ['msk', 'tver']` ещё раз — запись, а не повтор набора
+		binding.inputs.delta({ value: ['msk', 'tver'] })
+
+		expect(ctrl.value).toEqual(['msk', 'tver'])
+	})
+
+	it('сверка поверхностная: литерал с новыми объектами внутри — смена', () => {
+		// `items={[{ value: 'a' }]}` — объекты внутри новые на каждом проходе.
+		// Глубже одного уровня не сверяют ни вход, ни линия, ни состояние
+		class TSample {
+			static defaultValues = { items: [] }
+			sets = 0
+			private _items: object[] = []
+
+			get items(): object[] {
+				return [...this._items]
+			}
+
+			set items(value: object[]) {
+				this.sets++
+				this._items = [...value]
+			}
+		}
+
+		const ctrl = new TSample()
+		const descriptor = defineComponent({
+			ctor: TSample,
+			contribution: { props: { items: { type: Array } } },
+		})
+		const binding = createAdapterContext(descriptor, { ctrl }).connect(CallbackProfile)
+
+		binding.inputs.full({ items: [{ value: 'a' }] })
+		binding.inputs.full({ items: [{ value: 'a' }] })
+
+		expect(ctrl.sets).toBe(2)
+	})
 })
+
+/** Связка над внешним Select: значение при множественном выборе — массив. */
+function bindSelect(ctrl = new TSelect()) {
+	const context = createAdapterContext(SelectDescriptor(), { ctrl })
+
+	return { ctrl, binding: context.connect(CallbackProfile) }
+}
 
 /**
  * Начальные значения пропсов применяет сборка контекста — одна точка для всех
