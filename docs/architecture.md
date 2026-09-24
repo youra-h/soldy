@@ -36,7 +36,9 @@ TEntity (uid, getProps, assign, toJSON)
 │   ├── TDragAndDrop                        — провайдер контекста, ничего не рендерит
 │   ├── TCollectionComponent / TCollectionItemComponent — фасады коллекций
 │   └── TComponentView (rendered/visible/present, show/hide, tag, direction, classes, aria/dataset/attrs, ready)
-│       ├── TFrame (x, y, width, height, position, target)
+│       ├── TLayer (target, zIndex — общий стек слоёв, data-layer)
+│       │   ├── TFrame (x, y, width, height, position)
+│       │   └── TDialog (placement, width, height, maximized, requestClose)
 │       ├── TIcon, TSkeleton, TTabsContent
 │       ├── TInteractive (disabled, focused)
 │       └── TStylable (size, variant)

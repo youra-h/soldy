@@ -20,6 +20,7 @@ import {
 	Button,
 	CheckBox,
 	ComponentView,
+	Dialog,
 	DragAndDrop,
 	Frame,
 	Icon,
@@ -72,6 +73,22 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — направления `up` нет -->
 	<ComponentView direction="up" />
 	<ComponentView direction="rtl" />
+
+	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
+	<Dialog placement="left" />
+	<Dialog placement="start" />
+
+	<!-- @vue-expect-error — ширина числом или строкой -->
+	<Dialog :width="true" />
+	<Dialog :width="480" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Dialog :dismissible="'no'" />
+	<Dialog :dismissible="false" />
+
+	<!-- @vue-expect-error — имя кнопки разворота строкой -->
+	<Dialog :maximizeLabel="42" />
+	<Dialog maximizeLabel="Развернуть" />
 
 	<!-- @vue-expect-error — у DragAndDrop только свой инстанс -->
 	<DragAndDrop :ctrl="button" />

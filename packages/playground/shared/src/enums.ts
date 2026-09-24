@@ -26,6 +26,7 @@ import type {
 	TTagsOverflow,
 	TPopoverPlacement,
 	TTooltipPlacement,
+	TDialogPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -159,6 +160,15 @@ export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'bottom-end',
 	'top-start',
 	'top-end',
+])
+
+/** Где стоит модальное окно: по центру или у стороны экрана. */
+export const DIALOG_PLACEMENTS = enumOf<TDialogPlacement>()([
+	'center',
+	'start',
+	'end',
+	'top',
+	'bottom',
 ])
 
 /**

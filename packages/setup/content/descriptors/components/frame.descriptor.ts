@@ -1,13 +1,14 @@
 /**
  * Дескриптор Frame (TFrame).
  *
- * Наследует ComponentViewDescriptor: Frame — визуальный компонент, ему нужны
- * rendered/visible/present, tag, classes и плагины element/ready. Раньше он
- * наследовал ComponentDescriptor и дублировал эти плагины, потому что
- * ComponentViewDescriptor ошибочно считался приносящим size/variant — те
- * объявлены ниже по цепочке, в StylableDescriptor.
+ * Наследует LayerDescriptor: Frame — слой поверх страницы, ему нужны
+ * rendered/visible/present, tag, classes, плагины element/ready, цель
+ * телепорта и номер в общем стеке. Раньше он наследовал ComponentDescriptor и
+ * дублировал эти плагины, потому что ComponentViewDescriptor ошибочно
+ * считался приносящим size/variant — те объявлены ниже по цепочке, в
+ * StylableDescriptor.
  *
- * Добавляет x, y, width, height, position, target, zIndex + frame-layout плагин.
+ * Добавляет x, y, width, height, position + плагины раскладки, якоря и имени.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -17,13 +18,13 @@ import {
 	AnchorPluginDescriptor,
 	AriaPluginDescriptor,
 } from '../plugins'
-import { ComponentViewDescriptor } from './component-view.descriptor'
+import { LayerDescriptor } from './layer.descriptor'
 
 export const FrameDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TFrame,
 
-		extends: ComponentViewDescriptor(),
+		extends: LayerDescriptor(),
 
 		contribution: {
 			props: {
@@ -32,9 +33,7 @@ export const FrameDescriptor = defineDescriptor(() =>
 				width: { type: [Number, String], triggers: ['change:width'] },
 				height: { type: [Number, String], triggers: ['change:height'] },
 				position: { type: String, triggers: ['change:position'] },
-				target: { type: [Object, String], triggers: ['change:target'] },
 			},
-			events: ['change:zIndex'],
 		},
 
 		plugins: [FrameLayoutPluginDescriptor, AnchorPluginDescriptor, AriaPluginDescriptor],

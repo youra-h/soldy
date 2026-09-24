@@ -1,4 +1,4 @@
-import { isEventSource } from '@soldy-ui/core'
+import { isCloseRequestable, isEventSource } from '@soldy-ui/core'
 import type { IPluginContext } from '../../base'
 import type { IOverlayOpenOptions, IOverlayOpenState } from './types'
 
@@ -15,9 +15,15 @@ const DEFAULT_PROPERTY = 'open'
  * на все плагины слоя, `TDismissPlugin` в их числе: правило записано только
  * здесь.
  *
- * Владелец берётся рефлексией, а не интерфейсом ядра: у модального оверлея
- * класса ядра ещё нет, а требовать от владельца конкретный тип ради одного
- * булева свойства значило бы придумать его заранее.
+ * Закрытие, которое решил пользователь (`close`), — здесь же: владельца,
+ * который принимает запрос закрытия (`isCloseRequestable`), плагины
+ * закрывают запросом с причиной, остальных — записью. Решать, закрываться ли
+ * по нажатию мимо и Escape, — дело владельца: модальное окно может
+ * закрываться только кнопкой, а подписчик — отменить закрытие.
+ *
+ * Владелец берётся рефлексией, а не интерфейсом ядра: требовать от владельца
+ * конкретный тип ради одного булева свойства значило бы связать плагины слоя
+ * с каждым компонентом, который ими пользуется.
  *
  * `null` — привязки нет: владельца нет, `property: null` или такого свойства
  * у владельца не объявлено.
@@ -33,6 +39,9 @@ export function bindOverlayOpen(
 	if (!instance || !property || !(property in instance)) return null
 
 	const read = (): boolean => !!Reflect.get(instance, property)
+	const write = (value: boolean): void => {
+		Reflect.set(instance, property, value)
+	}
 	const events: unknown = Reflect.get(instance, 'events')
 
 	if (isEventSource(events)) {
@@ -41,8 +50,13 @@ export function bindOverlayOpen(
 
 	return {
 		read,
-		write(value: boolean): void {
-			Reflect.set(instance, property, value)
+		write,
+		close(reason) {
+			if (isCloseRequestable(instance)) {
+				instance.requestClose(reason)
+			} else {
+				write(false)
+			}
 		},
 	}
 }
