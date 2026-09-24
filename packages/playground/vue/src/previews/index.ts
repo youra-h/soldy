@@ -16,6 +16,7 @@ import {
 	Scroller,
 	Select,
 	Skeleton,
+	Slider,
 	Spinner,
 	Switch,
 	Tabs,
@@ -83,6 +84,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Подпись — пропом `text`, контрол — слотом. Строки страницы правят саму
 	// подпись: сторону, размер текста, вариант
 	label: (bind) => h(Label, { text: 'Согласен', ...bind }, () => h(CheckBox)),
+
+	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
+	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
+	slider: (bind) => h(Label, { text: 'Громкость', position: 'top' }, () => h(Slider, bind)),
 
 	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
 	'radio-group': (bind) =>

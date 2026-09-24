@@ -12,6 +12,7 @@ import type {
 	TListIndicator,
 	TSkeletonShape,
 	TSkeletonAnimation,
+	TSlideOrientation,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -111,6 +112,9 @@ export const SKELETON_SHAPES = enumOf<TSkeletonShape>()(['rect', 'rounded', 'cir
 export const SKELETON_ANIMATIONS = enumOf<TSkeletonAnimation>()(['pulse', 'wave', 'none'])
 
 export const TABS_ORIENTATIONS = enumOf<TTabsOrientation>()(['horizontal', 'vertical'])
+
+/** Ось хода ползунка — общая у всего, что задают перетаскиванием. */
+export const SLIDE_ORIENTATIONS = enumOf<TSlideOrientation>()(['horizontal', 'vertical'])
 
 export const TABS_ALIGNMENTS = enumOf<TTabsAlignment>()(['start', 'center', 'end', 'stretch'])
 

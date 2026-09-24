@@ -31,6 +31,7 @@ import {
 	Scroller,
 	Select,
 	Skeleton,
+	Slider,
 	Spinner,
 	Switch,
 	Tabs,
@@ -135,6 +136,18 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — высота числом или строкой -->
 	<Skeleton :height="true" />
 	<Skeleton height="1em" />
+
+	<!-- @vue-expect-error — значение числом или массивом чисел, а не строкой -->
+	<Slider value="30" />
+	<Slider :value="[20, 80]" />
+
+	<!-- @vue-expect-error — оси `diagonal` нет -->
+	<Slider orientation="diagonal" />
+	<Slider orientation="vertical" />
+
+	<!-- @vue-expect-error — метки списком — это значения с подписями, а не числа -->
+	<Slider :marks="[20, 80]" />
+	<Slider :marks="[{ value: 20, label: 'Мало' }]" />
 
 	<!-- @vue-expect-error — толщина числом или `auto` -->
 	<Spinner borderWidth="thick" />

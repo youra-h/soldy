@@ -117,9 +117,9 @@
 	}
 
 	// Наведение на ползунок — рельс отходит от поверхности на шаг: нажатие в
-	// любом его месте двигает ручку. Выключенный и readonly нажатие не
-	// меняет — их не красим.
-	&:hover:not([data-disabled='true'], #{$this}--readonly) > #{$this}__track::before {
+	// любом его месте двигает ручку. Выключенный нажатие не меняет — его не
+	// красим.
+	&:hover:not([data-disabled='true']) > #{$this}__track::before {
 		background-color: var(--s-slider-rail-hover);
 	}
 
@@ -196,7 +196,7 @@
 	}
 
 	// Наведение на ручку — ореол. Только там, где нажатие что-то сделает.
-	&:not([data-disabled='true'], #{$this}--readonly) #{$this}__thumb:hover {
+	&:not([data-disabled='true']) #{$this}__thumb:hover {
 		--s-slider-halo: var(--s-slider-halo-size);
 		--s-slider-halo-color: var(--s-slider-halo-hover);
 	}
@@ -339,14 +339,6 @@
 	&[data-dragging='true'],
 	&[data-dragging='true'] * {
 		@apply cursor-grabbing;
-	}
-
-	// Только для чтения: нажатие значение не меняет — курсор обычный, ореола и
-	// подсветки рельса нет (см. правила наведения). Прозрачность не трогаем:
-	// readonly — не выключенный.
-	&--readonly,
-	&--readonly #{$this}__thumb {
-		@apply cursor-default;
 	}
 
 	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом

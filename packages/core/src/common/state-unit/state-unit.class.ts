@@ -1,7 +1,10 @@
 import { TEvented } from '../event/evented'
-import type { TStateUnitValueEvents, IStateUnit } from './types'
+import type { TStateUnitOptions, TStateUnitValueEvents, TSameValue, IStateUnit } from './types'
 import type { TValuePayload } from '../../common'
 import type { TEventSink } from '../event/types'
+
+/** Правило «то же самое» по умолчанию — строгое равенство. */
+const strictlyEqual = <TValue>(a: TValue, b: TValue): boolean => a === b
 
 /**
  * Универсальная единица состояния со значением.
@@ -16,6 +19,10 @@ import type { TEventSink } from '../event/types'
  * резольвера это одно и то же. С резольвером запись, не сменившая итог,
  * молчит, хотя `rawValue` обновлён: так своё `disabled = true` у элемента в
  * выключенном списке не шлёт `change:disabled`.
+ *
+ * «Сменилось» решает правило `same` (по умолчанию `===`): им сверяются и
+ * запись с хранимым, и итог до и после неё. Составное значение приносит своё
+ * правило — массив ручек ползунка сверяется поэлементно.
  */
 export class TStateUnit<
 	TValue,
@@ -24,11 +31,13 @@ export class TStateUnit<
 	public readonly events: TEvented<TEvents>
 	protected _value: TValue
 	private _resolver?: (value: TValue) => TValue
+	private readonly _same: TSameValue<TValue>
 
-	constructor({ initial, resolver }: { initial: TValue; resolver?: (value: TValue) => TValue }) {
+	constructor({ initial, resolver, same = strictlyEqual }: TStateUnitOptions<TValue>) {
 		this.events = new TEvented<TEvents>()
 		this._value = initial
 		this._resolver = resolver
+		this._same = same
 	}
 
 	/**
@@ -93,7 +102,7 @@ export class TStateUnit<
 	 * разрешёнными значениями до и после записи.
 	 */
 	set value(value: TValue) {
-		if (this._value === value) return
+		if (this._same(this._value, value)) return
 
 		const oldValue = this.value
 
@@ -106,7 +115,7 @@ export class TStateUnit<
 	private _emitIfChanged(oldValue: TValue): void {
 		const newValue = this.value
 
-		if (newValue === oldValue) return
+		if (this._same(newValue, oldValue)) return
 
 		const payload: TValuePayload<TValue> = { newValue, oldValue }
 

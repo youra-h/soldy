@@ -1,6 +1,27 @@
 import { TEvented } from '../event/evented'
 import type { TValuePayload } from '../../common'
 
+/**
+ * Правило «то же самое»: равное значение не пишется и `change` не шлёт.
+ *
+ * По умолчанию `===` — его хватает числам, строкам и булевым. Составному
+ * значению нужно своё: массив, собранный заново с тем же составом, по ссылке
+ * другой, и без правила каждая запись того же списка слала бы `change`, а
+ * резольвер, отдающий новый массив на каждое чтение, — на каждой проверке.
+ * Слой setup держит то же правило у своих ячеек (`TCell`).
+ */
+export type TSameValue<TValue> = (a: TValue, b: TValue) => boolean
+
+/** Опции единицы состояния. */
+export type TStateUnitOptions<TValue> = {
+	/** Начальное хранимое значение */
+	initial: TValue
+	/** Преобразование хранимого значения при чтении */
+	resolver?: (value: TValue) => TValue
+	/** Правило «то же самое» — и для записи, и для итога перед `change`. По умолчанию `===` */
+	same?: TSameValue<TValue>
+}
+
 export type TStateUnitValueEvents<TValue> = {
 	/**
 	 * Сменилось `value` — разрешённое значение. `newValue`/`oldValue` тоже
