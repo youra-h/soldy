@@ -35,6 +35,7 @@ import {
 	SpinnerDescriptor,
 	SwitchDescriptor,
 	TabsDescriptor,
+	TooltipDescriptor,
 } from '@soldy-ui/setup'
 import type { IComponentDescriptor } from '@soldy-ui/setup'
 import { useEmits, VueProfile } from '../src/adapter'
@@ -56,6 +57,7 @@ const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [
 	['Spinner', SpinnerDescriptor],
 	['Switch', SwitchDescriptor],
 	['Tabs', TabsDescriptor],
+	['Tooltip', TooltipDescriptor],
 ]
 
 describe('useEmits покрывает все update:', () => {

@@ -24,6 +24,7 @@ import type {
 	TSelectPlacement,
 	TTagsOverflow,
 	TPopoverPlacement,
+	TTooltipPlacement,
 } from '@soldy-ui/core'
 import type { TFramePlacement } from '@soldy-ui/plugins'
 
@@ -139,6 +140,17 @@ export const SELECT_PLACEMENTS = enumOf<TSelectPlacement>()(['auto', 'top', 'bot
  * `anchor_placement`, но тип свой — ядра: проп принадлежит поповеру.
  */
 export const POPOVER_PLACEMENTS = enumOf<TPopoverPlacement>()([
+	'bottom-start',
+	'bottom-end',
+	'top-start',
+	'top-end',
+])
+
+/**
+ * Сторона и выравнивание подсказки у триггера. Значения те же, что у
+ * `anchor_placement`, но тип свой — ядра: проп принадлежит подсказке.
+ */
+export const TOOLTIP_PLACEMENTS = enumOf<TTooltipPlacement>()([
 	'bottom-start',
 	'bottom-end',
 	'top-start',

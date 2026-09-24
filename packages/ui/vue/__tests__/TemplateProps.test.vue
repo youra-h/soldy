@@ -35,6 +35,7 @@ import {
 	Switch,
 	Tabs,
 	Tags,
+	Tooltip,
 } from '@soldy-ui/vue'
 
 const button = new TButton()
@@ -162,4 +163,12 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — подпись кнопки закрытия строкой -->
 	<Tags.Item :closeLabel="42" />
 	<Tags.Item closeLabel="Удалить" />
+
+	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
+	<Tooltip placement="left" />
+	<Tooltip placement="top-start" />
+
+	<!-- @vue-expect-error — задержка числом, а не строкой -->
+	<Tooltip openDelay="fast" />
+	<Tooltip :openDelay="0" />
 </template>

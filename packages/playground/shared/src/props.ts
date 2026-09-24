@@ -25,6 +25,7 @@ import {
 	TABS_POSITIONS,
 	TABS_VIEWS,
 	TAGS_OVERFLOWS,
+	TOOLTIP_PLACEMENTS,
 } from './enums'
 import { COLLECTION_VALUES } from './items'
 import type {
@@ -101,7 +102,7 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select и Popover его ведёт сам плагин по open',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -152,6 +153,15 @@ const OWN: Record<string, Record<string, string>> = {
 			'Не монтировать содержимое, пока панель не открывали. Потом закрытие только прячет её',
 		placement:
 			'Сторона и выравнивание панели у триггера. У края окна сторону переворачивает flip',
+	},
+	tooltip: {
+		open: 'Показана ли подсказка. Прячут её уход курсора и фокуса, нажатие и Escape',
+		placement:
+			'Сторона и выравнивание подсказки у триггера. У края окна сторону переворачивает flip',
+		openDelay:
+			'Через сколько миллисекунд наведения подсказка показывается. Фокус с клавиатуры показывает сразу',
+		closeDelay:
+			'Через сколько миллисекунд после ухода курсора подсказка прячется. Курсор на ней самой её держит',
 	},
 	'list-box': {
 		view: 'Оформление списка',
@@ -233,6 +243,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 		tags_overflow: TAGS_OVERFLOWS,
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
+	tooltip: { placement: TOOLTIP_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
