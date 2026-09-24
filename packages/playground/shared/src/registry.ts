@@ -5,6 +5,7 @@ import {
 	CheckBoxDescriptor,
 	ComponentViewDescriptor,
 	ControlDescriptor,
+	DialogDescriptor,
 	DragAndDropDescriptor,
 	FrameDescriptor,
 	IconDescriptor,
@@ -120,6 +121,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Подсказка у элемента: при наведении и при фокусе с клавиатуры',
+	},
+	{
+		id: 'dialog',
+		label: 'Dialog',
+		descriptor: DialogDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Модальное окно: по центру или у края экрана, с разворотом на весь экран',
 	},
 	{
 		id: 'scroller',

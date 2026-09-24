@@ -1,21 +1,17 @@
-import { TComponentView } from '../../base/component-view'
+import { TLayer } from '../../base/layer'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../common'
-import { FRAME_LAYER_ATTRIBUTE } from './types'
 import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
 
 /**
  * Headless-контейнер для всплывающего контента.
  *
- * Управляет позиционированием (x, y), размером (width, height),
- * видимостью и z-index стеком. Не имеет привязки к DOM — только логика.
- *
- * Каждый показанный Frame получает уникальный возрастающий z-index
- * через статический счётчик {@link TFrame.nextZIndex} — и тот же номер в
- * `data-layer` (`FRAME_LAYER_ATTRIBUTE`): по нему плагины оверлея отличают
- * слой, открытый позже, от открытого раньше. Frame, созданный видимым, слой
- * получает сразу: `show` для него не придёт, а на экране он уже есть.
+ * Слой (`TLayer`) — телепорт, видимость и место в общем стеке z-index с
+ * номером в `data-layer`. Сверху Frame держит свою раскладку: позицию
+ * (x, y), размер (width, height) и способ позиционирования. Не имеет
+ * привязки к DOM — только логика; стили из этих значений собирает
+ * `TFrameLayoutPlugin`.
  *
  * @example
  * const frame = new TFrame({ x: 100, y: 200, width: 300, height: 'auto' })
@@ -23,46 +19,23 @@ import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } 
  * frame.hide() // скрывается
  */
 export default class TFrame
-	extends TComponentView<IFrameProps, TFrameEvents, TFrameStates>
+	extends TLayer<IFrameProps, TFrameEvents, TFrameStates>
 	implements IFrame
 {
 	static baseClass = 's-frame'
 
-	static defaultValues: typeof TComponentView.defaultValues &
-		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'target'> = {
-		...TComponentView.defaultValues,
+	static defaultValues: typeof TLayer.defaultValues &
+		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position'> = {
+		...TLayer.defaultValues,
 		x: 0,
 		y: 0,
 		// Слой по умолчанию берёт размер по содержимому — число задаётся осознанно.
 		width: 'auto',
 		height: 'auto',
-		visible: false,
 		position: 'fixed',
-		target: 'body',
 	}
 
-	/** Базовый z-index для всех Frame. Можно переопределить статически. */
-	static baseZIndex: number = 1000
-
-	/** Счётчик z-index (только инкремент). */
-	private static _zIndexCounter: number = 0
-
-	/**
-	 * Получить следующий z-index.
-	 * Вызывается автоматически при show(), но доступен и снаружи.
-	 */
-	static nextZIndex(): number {
-		return TFrame.baseZIndex + ++TFrame._zIndexCounter
-	}
-
-	/** Сбросить счётчик (для тестов). */
-	static resetZIndexCounter(): void {
-		TFrame._zIndexCounter = 0
-	}
-
-	private _zIndex: number = 0
 	private _position: TFramePosition
-	private _target: string
 
 	constructor(props: Partial<IFrameProps> = {}, options: IComponentOptions<TFrameStates> = {}) {
 		const ctor = new.target as typeof TFrame
@@ -75,7 +48,6 @@ export default class TFrame
 		const height = props.height ?? ctor.defaultValues.height
 
 		this._position = props.position ?? ctor.defaultValues.position
-		this._target = props.target ?? ctor.defaultValues.target
 
 		this._states.x = new TStateUnit<number>({ initial: x }) as TFrameStates['x']
 		this._states.y = new TStateUnit<number>({ initial: y }) as TFrameStates['y']
@@ -98,21 +70,6 @@ export default class TFrame
 		this._states.height.events.on('change', (payload: TValuePayload<number | string>) => {
 			this.events.emit('change:height', payload.newValue)
 		})
-
-		// Показ поднимает Frame над всеми, кто показан раньше
-		this.events.on('show', () => this._raise())
-
-		// Созданный видимым уже на экране, а `show` для него не придёт. Без слоя
-		// он стоял бы с `z-index: 0` под всеми, и нажатие в панель, открытую
-		// поверх него, плагин оверлея счёл бы нажатием мимо
-		if (this.visible) this._raise()
-	}
-
-	/** Новый z-index — выше всех выданных — и тот же номер в `data-layer`. */
-	private _raise(): void {
-		this._zIndex = (this.constructor as typeof TFrame).nextZIndex()
-		this._dataset.add(FRAME_LAYER_ATTRIBUTE, this._zIndex)
-		this.events.emit('change:zIndex', this._zIndex)
 	}
 
 	get x(): number {
@@ -152,19 +109,6 @@ export default class TFrame
 		this.events.emit('change:position', value)
 	}
 
-	get target(): string {
-		return this._target
-	}
-	set target(value: string) {
-		if (this._target === value) return
-		this._target = value
-		this.events.emit('change:target', value)
-	}
-
-	get zIndex(): number {
-		return this._zIndex
-	}
-
 	getProps(): IFrameProps {
 		return {
 			...super.getProps(),
@@ -173,7 +117,6 @@ export default class TFrame
 			width: this.width,
 			height: this.height,
 			position: this.position,
-			target: this.target,
 		}
 	}
 }

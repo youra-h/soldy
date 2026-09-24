@@ -1,4 +1,7 @@
+import type { IPluginContext } from '../../../base'
+import { TDismissPlugin } from '../../dismiss'
 import { TOverlayFocusPlugin } from '../../overlay/focus'
+import type { IOverlayOpenOptions } from '../../overlay/types'
 import { focusFirst, tabStops, tabStopsAfter } from '../../../utils'
 import type { TPopoverFocusPluginEvents } from './types'
 
@@ -6,11 +9,16 @@ import type { TPopoverFocusPluginEvents } from './types'
  * TPopoverFocusPlugin — модель фокуса Popover, немодального диалога APG.
  *
  * Всё, что у оверлеев общее — запомнить, откуда открыли, увести фокус в
- * панель кадром позже, вернуть его при закрытии (кроме закрытия нажатием
- * мимо, о котором сообщает `TDismissPlugin`), закрыть по Escape и погасить
- * его `preventDefault`, — лежит в `TOverlayFocusPlugin`. Здесь остаётся то,
- * чем немодальный оверлей отличается от модального: Tab и запасной возврат
- * фокуса.
+ * панель кадром позже, вернуть его при закрытии, закрыть по Escape и
+ * погасить его `preventDefault`, — лежит в `TOverlayFocusPlugin`. Здесь
+ * остаётся то, чем немодальный оверлей отличается от модального: Tab,
+ * запасной возврат фокуса и закрытие без возврата.
+ *
+ * **Нажатие и уход фокуса мимо фокус не возвращают**: страница за панелью
+ * рабочая, и пользователь уже там, куда нажал. Об этом плагин узнаёт
+ * событием `dismiss` у `TDismissPlugin` — оно приходит до закрытия. У
+ * модального оверлея наоборот: страница за ним недоступна, и фокус
+ * возвращается при любом закрытии.
  *
  * **Tab** ведёт себя так, будто панель стоит в документе сразу за
  * триггером, хотя телепортирована в конец `body`:
@@ -28,6 +36,15 @@ import type { TPopoverFocusPluginEvents } from './types'
  * за панелью доступна.
  */
 export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPluginEvents> {
+	override install(ctx: IPluginContext, options?: IOverlayOpenOptions): void {
+		super.install(ctx, options)
+
+		// Приходит до закрытия (`TDismissPlugin` сообщает, потом закрывает)
+		ctx.get(TDismissPlugin)?.events.on('dismiss', () => {
+			this._restore = false
+		})
+	}
+
 	/** Запомненный элемент пропал — фокус возвращается на триггер в корне. */
 	protected override _returnCandidates(root: Element): readonly Element[] {
 		return tabStops(root)
