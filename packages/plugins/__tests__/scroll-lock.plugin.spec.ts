@@ -287,3 +287,25 @@ describe('ручной замок', () => {
 		expect(seen).toEqual([true, false])
 	})
 })
+
+/**
+ * Свой `ctrl` приложения переживает перемонтирование: набор уничтожен, а
+ * владелец живёт дальше и открывается снова. Уничтоженный плагин подписку на
+ * его открытость снимает — иначе на владельце копились бы обработчики мёртвых
+ * плагинов.
+ */
+describe('уничтожение', () => {
+	it('владелец, переживший набор, уничтоженный плагин не будит', async () => {
+		const { owner, bundle, plugin } = await layer()
+		const seen: boolean[] = []
+
+		plugin.events.on('change:enabled', (value) => seen.push(value))
+
+		owner.open = true
+		bundle.destroy()
+		owner.open = false
+		owner.open = true
+
+		expect(seen).toEqual([true])
+	})
+})
