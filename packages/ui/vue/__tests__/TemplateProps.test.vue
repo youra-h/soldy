@@ -82,7 +82,7 @@ const dragAndDrop = new TDragAndDrop()
 
 	<!-- @vue-expect-error — проп плагина: стороны `middle` нет -->
 	<Frame anchor_placement="middle" />
-	<Frame anchor_placement="top-end" />
+	<Frame anchor_placement="top" />
 
 	<!-- @vue-expect-error — ширина числом или строкой -->
 	<Icon :width="true" />
@@ -166,7 +166,7 @@ const dragAndDrop = new TDragAndDrop()
 
 	<!-- @vue-expect-error — стороны `left` у подсказки нет: сторона и выравнивание -->
 	<Tooltip placement="left" />
-	<Tooltip placement="top-start" />
+	<Tooltip placement="top" />
 
 	<!-- @vue-expect-error — задержка числом, а не строкой -->
 	<Tooltip openDelay="fast" />

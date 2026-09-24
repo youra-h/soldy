@@ -227,6 +227,13 @@ describe('показ и скрытие', () => {
 
 		expect(panel().dataset.placement).toBe('bottom-end')
 	})
+
+	it('центр доходит до якоря: data-placement без суффикса', async () => {
+		await render(() => tooltip({ open: true, placement: 'bottom' }))
+		await nextFrame()
+
+		expect(panel().dataset.placement).toBe('bottom')
+	})
 })
 
 describe('в открытом поповере', () => {
