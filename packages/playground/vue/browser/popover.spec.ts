@@ -6,7 +6,7 @@
  * делает сам плагин фокуса. Здесь — что они складываются с браузерными в
  * порядок «триггер → панель → то, что за поповером», хотя панель
  * телепортирована в конец `body`. Раскладку jsdom тоже не считает: отступ
- * панели от триггера меряется только здесь.
+ * панели от триггера и место крестика в кнопке закрытия меряются только здесь.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -67,6 +67,15 @@ const find = (selector: string): HTMLElement => {
 	return element
 }
 
+/** Бокс узла по селектору — и SVG тоже: иконка не `HTMLElement`. */
+const boxOf = (selector: string): DOMRect => {
+	const element = document.querySelector(selector)
+
+	if (!element) throw new Error(`${selector}: узла нет`)
+
+	return element.getBoundingClientRect()
+}
+
 const trigger = () => find('.s-test-trigger')
 const panel = () => find('.s-popover__panel')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
@@ -117,6 +126,24 @@ describe('открытие', () => {
 
 		await expect.poll(isOpen).toBe(false)
 		expect(active()).toBe(trigger())
+	})
+
+	/**
+	 * Кнопка закрытия — квадрат высоты Button, иконка в нём меньше. Иконку в
+	 * слоте по умолчанию Preflight делает блочной, а `text-align` области
+	 * текста двигает только строчное: крестик прижимался к началу кнопки.
+	 * Раскладку строки Button без Popover сторожит `button-layout.spec.ts`.
+	 */
+	it('крестик — по центру кнопки закрытия', async () => {
+		await show()
+		await open()
+
+		const button = boxOf('.s-popover__close')
+		const icon = boxOf('.s-popover__close .s-icon')
+
+		expect(icon.width).toBeLessThan(button.width)
+		expect(icon.left + icon.width / 2).toBeCloseTo(button.left + button.width / 2, 0)
+		expect(icon.top + icon.height / 2).toBeCloseTo(button.top + button.height / 2, 0)
 	})
 })
 
