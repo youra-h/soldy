@@ -39,8 +39,9 @@ CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов 
 `test:plugins`), типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
 «Типы — Plugins», «Типы — Playground», «Типы — React», «Типы — Svelte», «Типы —
 Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
-`packages/ui/angular/src/generated` и сборки. «Типы — Angular» — это `ngc` без
-эмита, а не `tsc`: кроме TS он проверяет шаблоны `@Component`
+сгенерированных файлов — `packages/ui/angular/src/generated` и
+`packages/icons/material/src/index.ts` — и сборки. «Типы — Angular» — это
+`ngc` без эмита, а не `tsc`: кроме TS он проверяет шаблоны `@Component`
 (`strictTemplates`) и ограничения AOT, которых `tsc` не видит (NG8110 и
 подобные). `noEmit` стоит в самом `packages/ui/angular/tsconfig.json`: код
 пакета выпускает `ng-packagr` по своему конфигу сборки, а без `noEmit` `ngc -p`
@@ -1638,9 +1639,9 @@ ListBox, список Select, Popover и будущий Menu выглядят о
 ## Пакеты иконок
 
 Пакет иконок — **реализация контракта**, а не мешок SVG. Контракт — список
-ролей в `setup/protected/registry/icons.ts` (`ICON_ROLES`): `check`, `checkIndeterminate`,
-`close`, `arrowDown`, `arrowRight`, `moreHoriz`. Ровно как тема реализует
-классы, которые soldy выпускает в разметку.
+ролей в `packages/setup/content/icons/roles.ts` (`ICON_ROLES`): `check`,
+`checkIndeterminate`, `close`, `arrowDown`, `arrowRight`, `moreHoriz`. Ровно
+как тема реализует классы, которые soldy выпускает в разметку.
 
 Добавили иконку в новый компонент — добавьте роль в `ICON_ROLES`, и
 conformance-тест сразу покажет, какие пакеты её ещё не закрыли.
@@ -1684,8 +1685,11 @@ setIcons({ close: myCloseIcon }) // точечно, поверх набора
 
 **Устройство пакета** (`packages/icons/material/`): SVG лежат в `src/*.svg` и
 правятся глазами, `src/index.ts` **генерируется** и закоммичен — как
-метаданные Angular. После правки SVG нужен
-`npm run generate --workspace=@soldy-ui/icons-material`.
+метаданные Angular. После правки SVG или генератора нужен
+`npm run generate --workspace=@soldy-ui/icons-material`. Забытый перезапуск
+ловит CI: шаг «Иконки — дрейф сгенерированного списка» запускает генератор и
+падает, если `src/index.ts` изменился, — вместе со списком он сверяет и шапку
+`@license` (см. ниже).
 
 Генератор снимает `fill="#…"` из исходников Material: цвет должен наследоваться
 через `currentColor`, иначе иконка не подхватит цвет текста.

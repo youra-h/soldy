@@ -121,6 +121,15 @@ jobs:
           npm run generate --workspace=@soldy-ui/angular
           git diff --exit-code packages/ui/angular/src/generated
 
+      # Список иконок тоже закоммичен готовым: генератор собирает его из SVG
+      # рядом и пишет в шапку пометку @license о происхождении иконок. Если SVG
+      # или генератор поправили, а generate не запускали, пакет уедет со старыми
+      # иконками или со старой пометкой. Сборки генератор не требует.
+      - name: Иконки — дрейф сгенерированного списка
+        run: |
+          npm run generate --workspace=@soldy-ui/icons-material
+          git diff --exit-code packages/icons/material/src/index.ts
+
       # Библиотеку Angular собрала «Сборка пакетов» выше, а стенда у пакета пока
       # нет. Появится в packages/playground — его сборка встанет рядом со
       # сборкой стенда Vue.
