@@ -23,8 +23,8 @@ The components are standalone and zoneless — state is a signal, so Zone.js is 
 npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-Angular `^22.1` and RxJS `^7.8` are peer dependencies. A theme and an icon pack are separate
-packages — pick the ones you want.
+`@angular/core` and `@angular/common` `^22.1` are peer dependencies. A theme and an icon pack are
+separate packages — pick the ones you want.
 
 ## Usage
 
