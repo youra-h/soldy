@@ -9,6 +9,8 @@
  * браузера, захват указателя доводит отпускание до корня, а стрелка делает
  * ровно один шаг — ядра, без нативного.
  *
+ * Переходы темы — тоже здесь: jsdom стилей не считает и переходов не заводит.
+ *
  * Позиции — от левого верхнего угла дорожки: её коробка — ход центров ручек,
  * 0 и 1 доли — её края по оси (контракт темы с плагином указателя).
  */
@@ -20,6 +22,8 @@ import { defineComponent, h } from 'vue'
 import { TSlider } from '@soldy-ui/core'
 import type { ISliderProps, TSliderValue } from '@soldy-ui/core'
 import { Label, Slider } from '@soldy-ui/vue'
+
+import { reducedMotion } from './media'
 
 import '@soldy-ui/theme-oren'
 
@@ -70,6 +74,7 @@ function find(selector: string): HTMLElement {
 
 const all = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)]
 const track = () => find('.s-slider__track')
+const range = () => find('.s-slider__range')
 const thumbs = () => all('.s-slider__thumb')
 const fields = () => all('.s-slider__input')
 
@@ -99,6 +104,31 @@ const centerX = (node: Element) => {
 	const box = node.getBoundingClientRect()
 
 	return box.left + box.width / 2
+}
+
+/**
+ * Свойства, которым браузер завёл переход на узле, — по мере прихода
+ * `transitionrun`. Слушатель вешается до действия и застаёт переход, даже если
+ * тот кончился раньше, чем тест снова получил управление.
+ */
+function transitionRuns(node: HTMLElement): string[] {
+	const runs: string[] = []
+
+	node.addEventListener('transitionrun', (event) => runs.push(event.propertyName))
+
+	return runs
+}
+
+/**
+ * Дождаться событий переходов. Переход заводит пересчёт стиля — без замера
+ * он случается только в кадре, после колбэков `requestAnimationFrame`, — а
+ * `transitionrun` браузер шлёт в начале следующего кадра. Через два кадра
+ * пришло всё, что вызвало действие, и пустой список значит, что переходов не
+ * было.
+ */
+async function transitionEvents() {
+	await nextFrame()
+	await nextFrame()
 }
 
 beforeEach(() => {
@@ -360,5 +390,92 @@ describe('клавиатура', () => {
 		await userEvent.keyboard('{ArrowRight}')
 
 		expect(ctrl.value).toBe(49)
+	})
+})
+
+/**
+ * Заливка идёт вместе с ручкой. Ход позиций тема анимирует только вне
+ * протяжки и без просьбы системы убрать движение — у ручки и у заливки
+ * одинаково, иначе одна отстаёт от другой на длину перехода.
+ *
+ * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
+ * ответ Playwright на ввод идёт кругом RPC и может прийти позже, чем кончится
+ * переход в 150 мс, — тогда и `getAnimations()`, и геометрия позеленели бы и
+ * с отстающей заливкой.
+ */
+describe('заливка', () => {
+	/** Насколько край заливки отстал от центра ручки, px. */
+	const lag = () => Math.abs(range().getBoundingClientRect().right - centerX(thumbs()[0]))
+
+	/**
+	 * Фокус на поле первой ручки — нажатием на её центр, значение не
+	 * меняется. События переходов от нажатия приходят раньше, чем тест повесит
+	 * слушатель.
+	 */
+	const focusThumb = async () => {
+		await userEvent.click(thumbs()[0])
+		await transitionEvents()
+	}
+
+	afterEach(async () => {
+		await reducedMotion('no-preference')
+	})
+
+	it('протяжка — край заливки под ручкой, без перехода', async () => {
+		const ctrl = await mount({ value: 20 })
+		const runs = transitionRuns(range())
+
+		await userEvent.hover(track(), { position: along(0.2) })
+		await commands.mouseDown()
+
+		try {
+			// Взялись за центр ручки — значение не прыгнуло
+			expect(ctrl.value).toBe(20)
+
+			await userEvent.hover(track(), { position: along(0.6) })
+
+			expect(ctrl.value).toBe(60)
+			expect(lag()).toBeLessThan(0.5)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		await transitionEvents()
+
+		expect(runs).toEqual([])
+	})
+
+	/**
+	 * Положительный контроль: без него тест протяжки прошёл бы и у темы, где
+	 * переход заливки просто удалили.
+	 */
+	it('клавиша — заливка едет переходом', async () => {
+		const ctrl = await mount({ value: 20 })
+
+		await focusThumb()
+
+		const runs = transitionRuns(range())
+
+		await userEvent.keyboard('{ArrowRight}')
+		await transitionEvents()
+
+		expect(ctrl.value).toBe(21)
+		expect(runs).not.toEqual([])
+	})
+
+	it('система просит меньше движения — клавиша без перехода', async () => {
+		await reducedMotion('reduce')
+
+		const ctrl = await mount({ value: 20 })
+
+		await focusThumb()
+
+		const runs = transitionRuns(range())
+
+		await userEvent.keyboard('{ArrowRight}')
+		await transitionEvents()
+
+		expect(ctrl.value).toBe(21)
+		expect(runs).toEqual([])
 	})
 })
