@@ -2,6 +2,7 @@ import { TValueControl } from '../../base/value-control'
 import type { TValueControlStates } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit, createScale } from '../../../common'
+import { sameValue } from '../../../common/state-unit/same-value'
 import type { IScale, TAriaAttributes } from '../../../common'
 import type { TSlideEdge, TSlideOrientation, TSlideSnap } from '../slide'
 import type {
@@ -17,23 +18,6 @@ import type {
 	TSliderThumb,
 	TSliderValue,
 } from './types'
-
-/**
- * «То же самое» для числа, строки и их списков: списки — поэлементно.
- *
- * Им сверяются значение (правило его единицы состояния), шаг и имена ручек:
- * массив, собранный заново с тем же составом, — то же самое значение.
- */
-function sameValue(a: unknown, b: unknown): boolean {
-	if (a === b) return true
-
-	return (
-		Array.isArray(a) &&
-		Array.isArray(b) &&
-		a.length === b.length &&
-		a.every((item, index) => item === b[index])
-	)
-}
 
 /** Число в отрезке; `NaN` уходит в начало. */
 function within(value: number, low: number, high: number): number {
@@ -362,7 +346,7 @@ export default class TSlider
 	grab(index: number, fraction: number): boolean {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return false
+		if (this.disabled || !isIndexOf(values, index)) return false
 
 		// Ручка идёт за указателем со смещением захвата: взялись за её край —
 		// значение не прыгает к точке нажатия
@@ -377,7 +361,7 @@ export default class TSlider
 	press(fraction: number): boolean {
 		const values = this.values
 
-		if (this.resolvedDisabled || values.length === 0) return false
+		if (this.disabled || values.length === 0) return false
 
 		const target = this._scale.valueAt(fraction)
 		const [lo, hi] = this._group(values, this._nearest(values, target))
@@ -439,7 +423,7 @@ export default class TSlider
 	shift(index: number, count: number): void {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return
+		if (this.disabled || !isIndexOf(values, index)) return
 
 		const before = this.value
 
@@ -450,7 +434,7 @@ export default class TSlider
 	moveToEdge(index: number, edge: TSlideEdge): void {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return
+		if (this.disabled || !isIndexOf(values, index)) return
 
 		const [lower, upper] = this._bounds(values, index)
 		const before = this.value

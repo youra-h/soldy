@@ -45,7 +45,7 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 				v-if="arrows"
 				embedded="tags.scroller"
 				:size="size"
-				:disabled="resolvedDisabled"
+				:disabled="disabled"
 				:viewport-aria="rowAria"
 				:prev-label="prevLabel"
 				:next-label="nextLabel"
@@ -132,7 +132,7 @@ export default { ...SetupTags, components: { Button, Icon, Popover, Scroller, Ta
 							embedded="tags.more-trigger"
 							class="s-tags__more"
 							:size="size"
-							:disabled="resolvedDisabled"
+							:disabled="disabled"
 							v-bind="{ ...triggerAria, ...triggerDataset, ...moreAria }"
 						>
 							<slot name="more-icon">

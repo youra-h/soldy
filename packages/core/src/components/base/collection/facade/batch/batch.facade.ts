@@ -87,7 +87,7 @@ export abstract class TBatchCollectionFacade<
 	}
 
 	set items(value: (TCollectionEngineItemSource<TItem> | TItem)[]) {
-		this.extensions.batch.update(value)
+		this.extensions.batch.items = value
 	}
 
 	/**

@@ -96,11 +96,11 @@ export const SelectDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:clearLabel', 'change:name'],
 				},
-				/** Можно ли открыть панель: запрещает только итог `resolvedDisabled`. */
+				/** Можно ли открыть панель: запрещает только `disabled`. */
 				openable: {
 					type: Boolean,
 					protected: true,
-					triggers: ['change:resolvedDisabled'],
+					triggers: ['change:disabled'],
 				},
 				/**
 				 * Подгонять ли ширину панели под поле — производное от `contentFit`.

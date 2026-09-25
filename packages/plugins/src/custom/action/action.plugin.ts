@@ -117,7 +117,7 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 	}
 
 	private get _disabled(): boolean {
-		return this._instance?.resolvedDisabled === true
+		return this._instance?.disabled === true
 	}
 
 	/**

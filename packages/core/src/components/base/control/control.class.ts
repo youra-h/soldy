@@ -39,10 +39,8 @@ export default class TControl<
 		this._states.disabled =
 			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
 
-		// Единица сообщает о смене итога (`value`), а не своего (`rawValue`):
-		// о своём сообщает сеттер `disabled`
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:resolvedDisabled', payload.newValue)
+			this._sink.emit('change:disabled', payload.newValue)
 		})
 
 		this._states.focused =
@@ -52,7 +50,7 @@ export default class TControl<
 			this._sink.emit('change:focused', payload.newValue)
 		})
 
-		this.events.on('change:resolvedDisabled', () => this._syncDisabled())
+		this.events.on('change:disabled', () => this._syncDisabled())
 		this.events.on('change:tag', () => this._syncDisabled())
 
 		this._syncDisabled()
@@ -64,11 +62,9 @@ export default class TControl<
 		// на остальных. Теме нужно одно значение на любом теге, иначе её
 		// селектор переезжал бы вместе с атрибутом. Булево уходит как есть:
 		// префикс и строку делает `TDataset`, `false` остаётся `"false"`.
-		this.events.on('change:resolvedDisabled', () =>
-			this._dataset.add('disabled', this.resolvedDisabled),
-		)
+		this.events.on('change:disabled', () => this._dataset.add('disabled', this.disabled))
 
-		this._dataset.add('disabled', this.resolvedDisabled)
+		this._dataset.add('disabled', this.disabled)
 	}
 
 	/**
@@ -80,38 +76,21 @@ export default class TControl<
 	}
 
 	/**
-	 * Своё значение — то, что записали разметка, данные или код, как
-	 * `input.disabled` под `<fieldset disabled>`. Выключенный владелец его не
-	 * меняет: итог отдаёт `resolvedDisabled`.
-	 *
-	 * Своё и итог разведены, потому что вход обязан читать то, что записал:
-	 * обмен сверяет пришедшее из разметки с геттером пропа. Отдавай геттер
-	 * итог, своё `true` в выключенном списке совпало бы с ним и не
-	 * записалось — и пропало бы при включении списка.
+	 * Итог: у элемента коллекции — своё **или** владельца (см.
+	 * `bindDisabledToOwner`), у остальных — своё.
 	 */
 	get disabled(): boolean {
-		return this._states.disabled.rawValue
+		return this._states.disabled.value
 	}
 	/**
-	 * Пишет своё значение и сообщает о нём `change:disabled`. Итог к этому
-	 * моменту уже пересчитан: `change:resolvedDisabled`, если итог сменился,
-	 * пришёл раньше, — в выключенном списке своё `true` его не меняет.
+	 * Пишет своё значение. Сравнивает со своим (`rawValue`), а не с итогом:
+	 * в выключенном списке итог уже `true`, и своё `true` иначе проглотилось
+	 * бы — и пропало при включении списка.
 	 */
 	set disabled(value: boolean) {
-		if (this._states.disabled.rawValue === value) return
-
-		this._states.disabled.value = value
-		this._sink.emit('change:disabled', value)
-	}
-
-	/**
-	 * Итог: у элемента коллекции — своё **или** владельца (см.
-	 * `bindDisabledToOwner`), у остальных — своё. Всё, что решает, доступен
-	 * ли контрол, — наборы `attrs`/`aria`/`dataset`, разметка, клавиатура и
-	 * плагины, — читает его. Только для чтения: задают своё.
-	 */
-	get resolvedDisabled(): boolean {
-		return this._states.disabled.value
+		if (this._states.disabled.rawValue !== value) {
+			this._states.disabled.value = value
+		}
 	}
 
 	get focused(): boolean {
@@ -132,8 +111,8 @@ export default class TControl<
 	 * `TCheckBox`, `TSwitch` — `input`). Тогда ARIA-половина правил решается
 	 * по элементу, на котором её прочтёт скринридер, а не по корню.
 	 *
-	 * Пересчёт идёт на `change:resolvedDisabled` и `change:tag`: хук,
-	 * зависящий от чего-то ещё, потребует своей подписки.
+	 * Пересчёт идёт на `change:disabled` и `change:tag`: хук, зависящий от
+	 * чего-то ещё, потребует своей подписки.
 	 */
 	protected get _ariaTag(): string | object {
 		return this.tag
@@ -155,11 +134,9 @@ export default class TControl<
 	 * нативный `disabled` проводит разметка, поэтому ARIA-дубль ядро ему не
 	 * пишет, а у корня-`div` нативного `disabled` нет вовсе.
 	 *
-	 * Зависит и от итога `resolvedDisabled`, и от `tag`, поэтому
-	 * пересчитывается на оба события: выключенный список выключает элемент
-	 * так же, как его своё значение. Раньше это был геттер и пересчёт
-	 * получался сам; плата за общий набор — такие правила приходится
-	 * проводить явно.
+	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
+	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
+	 * набор — такие правила приходится проводить явно.
 	 */
 	protected _syncDisabled(): void {
 		// Непустая строка: '' React не поставит атрибут вовсе, а 'false' в DOM
@@ -167,11 +144,11 @@ export default class TControl<
 		// присутствие атрибута.
 		this._attrs.add(
 			'disabled',
-			this.resolvedDisabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
+			this.disabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
 		)
 		this._aria.add(
 			'aria-disabled',
-			this.resolvedDisabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+			this.disabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
 		)
 	}
 

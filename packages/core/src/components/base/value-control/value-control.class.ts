@@ -2,6 +2,7 @@ import { TControl } from '../control'
 import type { IComponentOptions, TDefaultValues } from '../component'
 import type { IValueControlProps, TValueControlEvents, TValueControlStates } from './types'
 import { TStateUnit } from '../../../common'
+import { sameValue } from '../../../common/state-unit/same-value'
 import type { TValuePayload, TEventSink } from '../../../common'
 
 /**
@@ -37,7 +38,8 @@ export default class TValueControl<
 
 		const value = props.value ?? (ctor.defaultValues.value as TValue)
 
-		this._states.value = options.states?.value ?? new TStateUnit<TValue>({ initial: value })
+		this._states.value =
+			options.states?.value ?? new TStateUnit<TValue>({ initial: value, same: sameValue })
 
 		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
 			this._sink.emit('change:value', payload)

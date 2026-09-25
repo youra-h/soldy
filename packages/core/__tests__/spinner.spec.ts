@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { TSpinner } from '@soldy-ui/core'
-import type { TComponentSize } from '@soldy-ui/core'
-
-const SIZES: TComponentSize[] = ['sm', 'normal', 'lg', 'xl', '2xl']
 
 describe('TSpinner', () => {
 	it('создаётся через { props } и через plain props', () => {
@@ -46,64 +43,60 @@ describe('TSpinner', () => {
 })
 
 /**
- * Толщина кольца: заданная и итоговая.
+ * Толщина кольца: своё значение и итог.
  *
- * Геттер `borderWidth` при `'auto'` отдавал толщину по размеру, и число, равное
- * ей, адаптер считал тем же значением и не записывал: своё оставалось `'auto'`,
- * и смена размера меняла толщину, заданную явно. Теперь геттер отдаёт заданное,
- * а итог — `resolvedBorderWidth`.
+ * Своё — как задано (`'auto'` или число), его отдаёт `getProps()`. Итог —
+ * геттер `borderWidth`: при `'auto'` толщина по размеру. Сеттер сверяет со
+ * своим, поэтому число, равное автоматической толщине, заменяет `'auto'` и
+ * переживает смену размера, а `change:borderWidth` сообщает о смене итога — и
+ * от записи, и от размера.
  */
 describe('TSpinner: толщина кольца', () => {
-	it('borderWidth отдаёт толщину такой, как её записали', () => {
-		const s = new TSpinner({ size: 'xl' })
-
-		expect(s.borderWidth).toBe('auto')
-
-		s.borderWidth = 2
-		expect(s.borderWidth).toBe(2)
-
-		s.borderWidth = 'auto'
-		expect(s.borderWidth).toBe('auto')
-	})
-
-	it('resolvedBorderWidth при auto — по размеру', () => {
+	it('borderWidth при auto — по размеру, при числе — это число', () => {
 		const s = new TSpinner()
-		const resolved = SIZES.map((size) => {
+		const sizes = ['sm', 'normal', 'lg', 'xl', '2xl'] as const
+		const auto = sizes.map((size) => {
 			s.size = size
-			return [size, s.resolvedBorderWidth]
+			return s.borderWidth
 		})
 
-		expect(resolved).toEqual([
-			['sm', 1],
-			['normal', 1],
-			['lg', 1],
-			['xl', 2],
-			['2xl', 2],
-		])
-	})
+		s.borderWidth = 1
 
-	it('resolvedBorderWidth при числе — это число на любом размере', () => {
-		const s = new TSpinner({ borderWidth: 1 })
-		const resolved = SIZES.map((size) => {
+		const fixed = sizes.map((size) => {
 			s.size = size
-			return s.resolvedBorderWidth
+			return s.borderWidth
 		})
 
-		expect(resolved).toEqual([1, 1, 1, 1, 1])
+		expect(auto).toEqual([1, 1, 1, 2, 2])
+		expect(fixed).toEqual([1, 1, 1, 1, 1])
 	})
 
-	it('число, равное толщине по размеру, остаётся заданным', () => {
+	it('число, равное толщине по размеру, записывается своим и итога не меняет', () => {
 		const s = new TSpinner({ size: 'xl' })
 		const changes: Array<number | 'auto'> = []
 
 		s.events.on('change:borderWidth', (value) => changes.push(value))
 		s.borderWidth = 2
 
-		expect(changes).toEqual([2])
+		expect(changes).toEqual([])
+		expect(s.getProps().borderWidth).toBe(2)
 
 		s.size = 'normal'
 
 		expect(s.borderWidth).toBe(2)
-		expect(s.resolvedBorderWidth).toBe(2)
+		expect(changes).toEqual([])
+	})
+
+	it('при auto смена размера, сменившая толщину, шлёт change:borderWidth с итогом', () => {
+		const s = new TSpinner()
+		const changes: Array<number | 'auto'> = []
+
+		s.events.on('change:borderWidth', (value) => changes.push(value))
+		s.size = 'lg'
+		s.size = 'xl'
+		s.size = '2xl'
+		s.size = 'normal'
+
+		expect(changes).toEqual([2, 1])
 	})
 })

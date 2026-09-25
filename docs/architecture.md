@@ -95,7 +95,7 @@ TEntity (uid, getProps, assign, toJSON)
 - **TCell**: the only mutable memory of the layer — a value, an equality rule and listeners. Svelte-store contract: `subscribe` delivers the current value at once, `listen` delivers changes only. «What the framework assigned», the state snapshot and the `pluginProps` bag are cells; there are no «assigned / not assigned» flags
 - **TLine**: one property of one owner for the mount — spec + owner + framework name. Правило записи одно, поэтому оно одно на сборку, обмен и плагины снаружи
   - `read()` - `get` описания, а без него `owner[name]`; составное значение — снимком `valueOf()`
-  - `write(value)` - запись; `protected` и то же значение пропускаются
+  - `write(value)` - запись; `protected` пропускается, «то же ли значение» решает сеттер владельца
   - `reset()` - вернуть умолчание описания; ключ не объявлен — значение остаётся
   - `accept(value)` - значение от фреймворка: `undefined` — «сняли»
   - `seed(value)` - начальное значение: `undefined` и равное умолчанию ничего не задают
@@ -934,7 +934,7 @@ Contributions при этом объявляют `mode` записываемым
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/item.extension.ts           closable = !resolvedDisabled && (item ?? parent)
+    item/item.extension.ts           closable = !disabled && (item ?? parent)
   content/     связка «таб ↔ панель»
     content.extension.ts
     item/item.extension.ts           tabAria и panelAria
@@ -1088,21 +1088,17 @@ scope**, а спеллинг остаётся родным:
 ```ts
 // TControl
 protected _syncDisabled(): void {
-	this._attrs.add(
-		'disabled',
-		this.resolvedDisabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
-	)
+	this._attrs.add('disabled', this.disabled && hasNativeDisabled(this.tag) ? 'disabled' : null)
 	this._aria.add(
 		'aria-disabled',
-		this.resolvedDisabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+		this.disabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
 	)
 }
 ```
 
 Нативный `disabled` уходит в набор `attrs` по тегу корня, `aria-disabled` — в
 `aria` по тегу элемента, на котором стоит `aria` (`_ariaTag`), и никогда оба на
-одном элементе. Пишется итог `resolvedDisabled` (у элемента коллекции — своё
-или владельца), пересчёт — на `change:resolvedDisabled` и `change:tag`.
+одном элементе. Пересчёт — на `change:disabled` и `change:tag`.
 
 `protected: true` в `ComponentViewDescriptor`, триггер один — `change:aria`.
 За границу core → ui уходит снимок (`valueOf()`), а не ссылка на объект.
@@ -1616,7 +1612,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
-- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the line and the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
+- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
 - Events: `binding.events.listen` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
@@ -1639,7 +1635,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 ### ⚠️ React pitfall: infinite loop via `visible` setter (fixed in core)
 
 - The `visible` setter calls `show()`/`hide()` (now in `TComponentView`). `show()` used to emit `show:before` before its own «already visible» check (`hide()` checked first), so writing `instance.visible = sameValue` still emitted events, and event-logging demos re-rendered forever. Fixed in core: the check comes before the emit — see Layer 5b, «Контракт границы», and the `change:*` invariant in AGENTS.md, «Контракт границы core → ui».
-- The line's `write` still skips values the core already holds (`TLine.write` — `sameValue` with the current value): a setter doesn't need to see a value it already holds. `inputs.full`, which runs on every `props` change, skips even earlier — every prop whose value is the same as in the previous set.
+- The line's `write` does not compare with the getter (`TLine.write`): a property with a resolver returns the resolved value, and a value equal to it but not to the own one was lost. Whether it is the same value is decided by the setter, against its own stored value; `inputs.full`, which runs on every `props` change, skips earlier — every prop whose value is the same as in the previous set.
 
 ---
 
@@ -2098,8 +2094,8 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 
 - Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; итог `resolvedDisabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
-- List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `resolvedDisabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
+- List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListHeight/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + ListHeight + ListKeyboard + ListScroll + Drag.
 - `TListHeightPlugin` ограничивает высоту **родителя элементов**, а не корня компонента: у Select корень — поле, а список лежит в телепортированной панели.

@@ -25,7 +25,7 @@ export default { ...SetupCheckBox, components: { Icon } }
 			:checked="value"
 			:indeterminate="indeterminate"
 			:name="name"
-			:disabled="resolvedDisabled"
+			:disabled="disabled"
 			:required="required"
 			v-bind="{ ...aria, ...controlAttrs }"
 		/>

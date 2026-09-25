@@ -11,10 +11,10 @@ const BORDER_WIDTH = '--spinner-border-width'
  * Плагин для управления стилями спиннера: толщина кольца —
  * пользовательским свойством `--spinner-border-width`.
  *
- * Толщину плагин берёт у ядра итогом (`resolvedBorderWidth`), а не заданным
- * значением и не из события: `borderWidth` и `change:borderWidth` несут
- * толщину как задана, а `'auto'` — недопустимая толщина рамки. При `'auto'`
- * итог считает размер, поэтому толщину перечитывает и смена размера.
+ * Толщину плагин читает геттером `borderWidth` — итог: при `'auto'` ядро
+ * считает её по размеру. О смене итога ядро сообщает одним событием
+ * `change:borderWidth` — и от записи толщины, и от размера при `'auto'`, —
+ * поэтому своей подписки на размер у плагина нет.
  */
 export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginEvents> {
 	private _styles: Record<string, string | number> = {}
@@ -29,12 +29,9 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 		// конструктором или готовым `ctrl`, — поэтому стартовые стили плагин
 		// берёт у инстанса сам. Без эмита: подписчиков у плагина ещё нет, а
 		// связка прочитает `styles` при подписке.
-		this._styles = { [BORDER_WIDTH]: toCssValue(spinner.resolvedBorderWidth) }
+		this._styles = { [BORDER_WIDTH]: toCssValue(spinner.borderWidth) }
 
-		const update = () => this._update(spinner)
-
-		this._listenTo(spinner.events, 'change:borderWidth', update)
-		this._listenTo(spinner.events, 'change:size', update)
+		this._listenTo(spinner.events, 'change:borderWidth', () => this._update(spinner))
 	}
 
 	get styles(): Record<string, string | number> {
@@ -42,19 +39,14 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 	}
 
 	/**
-	 * Перечитывает толщину и сообщает о ней, только если она сменилась:
-	 * размер меняет толщину лишь при `'auto'`, а `'auto'`, заменённое той же
-	 * толщиной числом, — не смена.
+	 * Перечитывает толщину. Сменилась ли она, решило ядро: `change:borderWidth`
+	 * приходит только на смену итога.
 	 *
 	 * Объект стилей заменяется целиком, а не мутируется на месте: геттер
 	 * отдаёт ссылку наружу, и без смены идентичности UI не увидит изменения.
 	 */
 	private _update(spinner: ISpinner): void {
-		const value = toCssValue(spinner.resolvedBorderWidth)
-
-		if (this._styles[BORDER_WIDTH] === value) return
-
-		this._styles = { ...this._styles, [BORDER_WIDTH]: value }
+		this._styles = { ...this._styles, [BORDER_WIDTH]: toCssValue(spinner.borderWidth) }
 		this.events.emit('change:styles', this._styles)
 	}
 }
