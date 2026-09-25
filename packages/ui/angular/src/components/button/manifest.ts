@@ -1,4 +1,3 @@
-import { ButtonDescriptor } from '@soldy-ui/setup'
+export { ButtonDescriptor as descriptor } from '@soldy-ui/setup'
 
 export const name = 'button'
-export const descriptor = ButtonDescriptor
