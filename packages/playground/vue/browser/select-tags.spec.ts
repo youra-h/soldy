@@ -11,8 +11,8 @@
  * стерегут, — раскладка поля с тегами и его минимальная ширина — лежат в
  * `themes/oren/src/components/select/_select.scss`, а сжатие тега, которому
  * не хватает места в поле, его натуральная ширина в однострочном ряду и ряд
- * `scroll` без полосы прокрутки, с подсказкой у края, — в
- * `themes/oren/src/components/tags/_tags.scss`.
+ * `scroll` без полосы прокрутки, с подсказкой у края и запасом под кольцо
+ * фокуса, — в `themes/oren/src/components/tags/_tags.scss`.
  * Геометрия строки поля — высота размера и строка слота, в которую встают
  * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
  */
@@ -25,6 +25,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
+import { expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -799,6 +800,34 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 				bounds.right - fade.right + 0.5,
 			)
 		}
+	})
+})
+
+/**
+ * Кольцо фокуса крестика в ряду `scroll`.
+ *
+ * Прокрутка по строке делает ряд прокручиваемой областью и по вертикали, а
+ * такая область режет всё, что вышло за её паддинг-бокс. Ряд стоял ровно по
+ * строке слота, крестик отступает от её края на 2px, а кольцо выходит за
+ * крестик на 4px: от кольца оставались одни боковые дуги. Запас под кольцо —
+ * паддинг ряда (`tags/_tags.scss`). Высоты поля он не меняет, и за рамку ряд
+ * не выводит — это сторожат тесты режима выше.
+ */
+describe('tags_overflow: scroll — кольцо фокуса крестика', () => {
+	it('ряд не срезает кольцо сверху и снизу', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'scroll' }))
+
+		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
+
+		const close = find('.s-select__field .s-tags-item__close')
+
+		// С клавиатуры: кольцо рисует `:focus-visible`. У строк тегов в поле
+		// остановки Tab нет, и первая остановка — крестик первого тега
+		await userEvent.keyboard('{Tab}')
+
+		expect(document.activeElement, 'фокус на крестике').toBe(close)
+
+		expectRingInsideVertically(close, find('.s-select__field .s-tags'), 'крестик')
 	})
 })
 
