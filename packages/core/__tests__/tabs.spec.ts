@@ -236,9 +236,7 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		const tab = createTab('Tab')
 		collection.extensions.plain.insert(tab)
 
-		// Выключенность не пишется, а сочетается: своё у таба прежнее, итог — от набора
-		expect(tab.disabled).toBe(false)
-		expect(tab.resolvedDisabled).toBe(true)
+		expect(tab.disabled).toBe(true)
 		expect(tab.size).toBe('lg')
 		expect(tab.variant).toBe('brand')
 	})
@@ -255,10 +253,8 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 
 		tabs.disabled = true
 
-		expect(tab1.resolvedDisabled).toBe(true)
-		expect(tab2.resolvedDisabled).toBe(true)
-		expect(tab1.disabled).toBe(false)
-		expect(tab2.disabled).toBe(false)
+		expect(tab1.disabled).toBe(true)
+		expect(tab2.disabled).toBe(true)
 	})
 
 	// --- Активация ---

@@ -1214,7 +1214,7 @@ relay и порядок, который расширения выстраива�
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/item.extension.ts         closable = !resolvedDisabled && (item ?? parent)
+    item/item.extension.ts         closable = !disabled && (item ?? parent)
   content/     связка «таб ↔ панель»
     content.extension.ts
     item/item.extension.ts         tabAria и panelAria
@@ -1433,33 +1433,11 @@ Accordion и у Select — унаследованный `aria`: они и вын
 ### `disabled` элемента: своё или владельца
 
 Элемент выключен, если выключен сам **или** выключен владелец — как
-`<fieldset disabled>`. Своё значение и итог — два свойства, как
-`input.disabled` и `:disabled` поля под `<fieldset disabled>` в HTML:
-
-- **`disabled` — своё.** Его пишут фабрика, разметка и `batch.patch` через
-  сеттер, его отдают `getProps()` и модель (`v-model:disabled`), о нём
-  сообщает `change:disabled`. Лежит в `item.states.disabled.rawValue`;
-  выключенный владелец его не меняет.
-- **`resolvedDisabled` — итог**, только для чтения, событие
-  `change:resolvedDisabled`. Его отдаёт резольвер, и его читает всё, что
-  решает, доступен ли контрол: `attrs`/`aria`/`data-disabled`, разметка
-  (`:disabled` вложенного поля и строки элемента), плагины и клавиатура. В
-  дескрипторе — защищённый выход (`ControlDescriptor`).
-
-У контрола без владельца они совпадают, и смена своего шлёт оба события.
-Правило одно на все коллекции — `bindDisabledToOwner` (резольвер читает итог
-владельца, `IDisabledOwner.resolvedDisabled`) и `notifyOwnerDisabled` в
-`base/control/owner-disabled.ts`. Деталь, которой компонент владеет сам,
-получает его итог своим значением: поле и теги Select —
-`field.disabled = select.resolvedDisabled`.
-
-**Почему два свойства.** Обмен сверяет значение из разметки с геттером пропа
-(`TLine.write`), поэтому вход обязан читать то, что записал. Пока геттер
-`disabled` отдавал итог, своё `true`, пришедшее в выключенном списке,
-совпадало с ним, обмен принимал его за повтор и в ядро не писал — и после
-включения списка элемент оживал, хотя в разметке выключен. `get` в
-дескрипторе, читающий `rawValue` мимо геттера ядра, развёл бы `ctrl.disabled`
-и проп, а смена своего без смены итога шла бы без события.
+`<fieldset disabled>`. Своё значение лежит в `item.states.disabled.rawValue`:
+его пишут фабрика, разметка и `batch.patch` через сеттер. Итог отдаёт
+резольвер, поэтому `attrs`/`aria`/`data-disabled`, плагины и клавиатура читают
+`item.disabled` как раньше. Правило одно на все коллекции —
+`bindDisabledToOwner` и `notifyOwnerDisabled` в `base/control/owner-disabled.ts`.
 
 **Расширения `item.disabled` не пишут.** Раньше они писали туда значение
 владельца, и список, собранный данными (`items`), терял собственное
@@ -1467,17 +1445,14 @@ Accordion и у Select — унаследованный `aria`: они и вын
 регистрации, а при сборке данными — нет.
 
 Отсюда контракт `TStateUnit`: `change` сообщает о разрешённом значении, а не о
-`rawValue`, — приходит, только когда сменился итог, и несёт его же; у
-`TControl` это `change:resolvedDisabled`. О своём значении сообщает сеттер
-`TControl.disabled`: он сравнивает со своим, и своё `true` в выключенном
-списке, не меняя итога, записывается и шлёт `change:disabled`.
+`rawValue`, — приходит, только когда сменился итог, и несёт его же. Сеттер
+`TControl.disabled` сравнивает со своим значением: своё `true` в выключенном
+списке итога не меняет, но обязано записаться, иначе пропадёт при включении
+списка.
 
-Сторожат `core/__tests__/collection-disabled-inherit.spec.ts` — шесть
-`createEngine*`: свой `disabled` из `items`, переключения владельца,
-`batch.patch`, своё и итог порознь и число `change:disabled` и
-`change:resolvedDisabled` у элементов — и
-`ui/vue/__tests__/list-box-item-disabled.spec.ts`: своё из разметки доходит до
-ядра, строку элемента шаблон выключает по итогу.
+Сторожит `core/__tests__/collection-disabled-inherit.spec.ts`: шесть
+`createEngine*` — свой `disabled` из `items`, переключения владельца,
+`batch.patch` и число `change:disabled` у элементов.
 
 ### `size` и `variant` элемента: владельца, и только его
 
@@ -2773,7 +2748,7 @@ APG, следуем ему, а расхождения объясняем в ко
 Плата: вычисляемых записей нет, правила стали подписками.
 
 ```ts
-this.events.on('change:resolvedDisabled', () => this._syncDisabled())
+this.events.on('change:disabled', () => this._syncDisabled())
 this.events.on('change:tag', () => this._syncDisabled())
 this._syncDisabled() // начальное состояние — руками
 ```
@@ -2827,7 +2802,7 @@ this._syncDisabled() // начальное состояние — руками
 | `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                            |
 | `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                             |
 | `TListItemPlugin`      | `data-highlighted`                                                                                                                                                         |
-| `TControl`             | `data-disabled` — итог `resolvedDisabled`, на любом теге, от тега не зависит                                                                                               |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                        |
 | `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                          |
 | `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                   |
 | ядро компонента        | своё состояние — `data-open` у `TSelect`, `TPopover` и `TDrawer`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider` |
@@ -2861,15 +2836,13 @@ this._syncDisabled() // начальное состояние — руками
 `select`, `textarea`, `fieldset`), и пишет либо нативный атрибут в `attrs`,
 либо `aria-disabled` в `aria` — никогда оба на одном элементе. Раньше это
 условие (`tag === 'button' ? disabled : undefined`) писал каждый шаблон Button
-сам, и поменять список тегов значило бы поменять шесть шаблонов. Пишет он
-итог — `resolvedDisabled`, а не своё `disabled`: элемент выключенного списка
-выключен и в разметке (см. «`disabled` элемента: своё или владельца»).
+сам, и поменять список тегов значило бы поменять шесть шаблонов.
 
 Теме ни одна из этих половин не годится: обе решает тег, и обе переезжают
 вместе с ним. Поэтому `TControl` пишет ещё одну запись того же состояния —
 `data-disabled` в `dataset`: на любом теге, отдельной подпиской на
-`change:resolvedDisabled`, мимо `_syncDisabled`. Тема читает disabled только
-из неё (см. «CSS не стилизуется по `aria-*`»).
+`change:disabled`, мимо `_syncDisabled`. Тема читает disabled только из неё
+(см. «CSS не стилизуется по `aria-*`»).
 
 Значение — непустая строка (`'disabled'`), не `''` и не `'false'`: у
 `disabled` играет роль только присутствие атрибута, но `''` React не
@@ -3274,8 +3247,7 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
 Отсюда следствие: **`readonly` больше не запрещает открыть панель** — иначе
 select-only (он же `readonly: true`) не открывался бы вовсе, а список для него
 единственный способ сменить значение. `openable` теперь смотрит только на
-выключенность — итог `resolvedDisabled`; запереть Select целиком — это
-`disabled`.
+`disabled`; запереть Select целиком — это `disabled`.
 
 ### Клик и клавиатура — режим выбирает стратегию, а не ветка внутри неё
 
@@ -3531,8 +3503,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
 в `TListKeyboardPlugin`).
 
 - `action:press` — нормализованная активация: клик или Enter/Space, не приходит
-  на выключенный контрол (итог `resolvedDisabled` — у элемента выключенного
-  списка тоже), одинакова на любом теге. Enter/Space нормализуются, только
+  на `disabled`, одинакова на любом теге. Enter/Space нормализуются, только
   когда фокус на самом корне. Клавишу из вложенного поля или кнопки корень не
   отменяет и за свой `press` не выдаёт: что с ней делать, знает сам элемент, а
   его клик всплывёт в корень и даст `press`, как клик мышью. Раньше корень-`div`

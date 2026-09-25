@@ -9,11 +9,10 @@ import type { TListEdge, TListNavigationPluginEvents } from './types'
 
 /**
  * Можно ли подсветить элемент: он доступен и виден. Подсветить то, что нельзя
- * выбрать, значит завести пользователя в тупик. `resolvedDisabled` — итог, в нём
- * учтён и выключенный владелец.
+ * выбрать, значит завести пользователя в тупик. `disabled` — итог, в нём учтён
+ * и выключенный владелец.
  */
-const isNavigable = (item: IControl): boolean =>
-	!item.resolvedDisabled && item.rendered && item.visible
+const isNavigable = (item: IControl): boolean => !item.disabled && item.rendered && item.visible
 
 /**
  * TListNavigationPlugin — общая механика навигации по коллекции с клавиатуры.
@@ -124,9 +123,9 @@ export abstract class TListNavigationPlugin<
 	 * шагать.
 	 *
 	 * Тип — `IControl`, а не элемент конкретного списка: навигации нужны только
-	 * `uid`, `resolvedDisabled`, `rendered` и `visible`. Элементы ListBox и
-	 * опции Select общего предка ниже `IControl` не имеют, и раньше здесь стоял
-	 * `IListItem` от несуществующего теперь компонента `TList`.
+	 * `uid`, `disabled`, `rendered` и `visible`. Элементы ListBox и опции Select
+	 * общего предка ниже `IControl` не имеют, и раньше здесь стоял `IListItem`
+	 * от несуществующего теперь компонента `TList`.
 	 */
 	protected shown(): IControl[] {
 		const batch = this._engine?.extensions.batch as IBatchExtension<IControl> | undefined

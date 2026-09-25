@@ -52,7 +52,6 @@ export const ButtonOutputs = [
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',
-	'changeResolvedDisabled',
 	'changeFocused',
 	'changeText',
 	'changeView',
@@ -113,10 +112,6 @@ export abstract class TButtonSurface<TInstance extends IEntity> extends TCompone
 	declare readonly changeSize: TOutputEmitter<typeof descriptor, 'change:size'>
 	declare readonly changeVariant: TOutputEmitter<typeof descriptor, 'change:variant'>
 	declare readonly changeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
-	declare readonly changeResolvedDisabled: TOutputEmitter<
-		typeof descriptor,
-		'change:resolvedDisabled'
-	>
 	declare readonly changeFocused: TOutputEmitter<typeof descriptor, 'change:focused'>
 	declare readonly changeText: TOutputEmitter<typeof descriptor, 'change:text'>
 	declare readonly changeView: TOutputEmitter<typeof descriptor, 'change:view'>

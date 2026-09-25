@@ -35,7 +35,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 			embedded="accordion.header"
 			class="s-accordion-item__header"
 			:view="view"
-			:disabled="resolvedDisabled"
+			:disabled="disabled"
 			:size="size"
 			:variant="variant"
 			@click="context?.adapters.selection.toggle()"

@@ -50,7 +50,6 @@ export const ControlOutputs = [
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',
-	'changeResolvedDisabled',
 	'changeFocused',
 	'ariaChangeLabel',
 	'ariaChangeLabelledBy',
@@ -107,10 +106,6 @@ export abstract class TControlSurface<TInstance extends IEntity> extends TCompon
 	declare readonly changeSize: TOutputEmitter<typeof descriptor, 'change:size'>
 	declare readonly changeVariant: TOutputEmitter<typeof descriptor, 'change:variant'>
 	declare readonly changeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
-	declare readonly changeResolvedDisabled: TOutputEmitter<
-		typeof descriptor,
-		'change:resolvedDisabled'
-	>
 	declare readonly changeFocused: TOutputEmitter<typeof descriptor, 'change:focused'>
 	declare readonly ariaChangeLabel: TOutputEmitter<typeof descriptor, 'aria:change:label'>
 	declare readonly ariaChangeLabelledBy: TOutputEmitter<

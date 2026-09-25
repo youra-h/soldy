@@ -127,7 +127,7 @@ export class TSelect<
 		// его ещё не пересчитал, а `_applyReadonly` события не шлёт, поэтому
 		// эквивалент выключателя editable читаем явно из пропов.
 		this._field = new TInput({
-			disabled: this.resolvedDisabled,
+			disabled: this.disabled,
 			size: this.size,
 			variant: this.variant,
 			readonly: !(own.editable ?? ctor.defaultValues.editable),
@@ -167,15 +167,11 @@ export class TSelect<
 		this._field.aria.add('role', 'combobox')
 		this._field.aria.add('aria-haspopup', 'listbox')
 
-		this.events.on('change:resolvedDisabled', () => this._syncOpenable())
+		this.events.on('change:disabled', () => this._syncOpenable())
 
 		this._syncOpenable()
 
-		// Своё `disabled` поля — итог Select: поле — деталь Select, и
-		// выключен Select — выключено и поле
-		this.events.on('change:resolvedDisabled', (value: boolean) => {
-			this._field.disabled = value
-		})
+		this.events.on('change:disabled', (value: boolean) => (this._field.disabled = value))
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			this._field.size = payload.newValue
 		})
@@ -214,11 +210,10 @@ export class TSelect<
 	 *
 	 * Раньше её запрещал ещё и `readonly`. Теперь `readonly` значит только
 	 * «в поле нельзя печатать», и ставит его `editable`; select-only — это
-	 * как раз `editable: false`, а ему панель и нужна. Остаётся выключенность:
-	 * итог `resolvedDisabled`.
+	 * как раз `editable: false`, а ему панель и нужна. Остаётся `disabled`.
 	 */
 	get openable(): boolean {
-		return !this.resolvedDisabled
+		return !this.disabled
 	}
 
 	get open(): boolean {

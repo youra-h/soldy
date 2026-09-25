@@ -99,11 +99,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// Итог `resolvedDisabled` тегу отдаёт резольвер по итогу владельца — сообщаем
-		// тем, у кого он сменился
-		this._owner.events.on('change:resolvedDisabled', () =>
-			notifyOwnerDisabled(ctx.driver.valueOf()),
-		)
+		// Итог `disabled` тегу отдаёт резольвер — сообщаем тем, у кого он сменился
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		// `size` и `variant` тегу тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
@@ -293,7 +290,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 */
 	isEnabledTag(item: TItem): boolean {
 		return (
-			!item.resolvedDisabled &&
+			!item.disabled &&
 			item.visible &&
 			item.rendered &&
 			!(this._overflow?.overflowed.includes(item) ?? false)
@@ -322,7 +319,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	private readonly _onTagAvailability = (): void => this._syncTabStop()
 
 	private _watchTag(item: TItem): void {
-		item.events.on('change:resolvedDisabled', this._onTagAvailability)
+		item.events.on('change:disabled', this._onTagAvailability)
 		item.events.on('change:visible', this._onTagAvailability)
 		item.events.on('change:rendered', this._onTagAvailability)
 	}
@@ -332,7 +329,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * забывается как тег под фокусом.
 	 */
 	private _unwatchTag(item: TItem): void {
-		item.events.off('change:resolvedDisabled', this._onTagAvailability)
+		item.events.off('change:disabled', this._onTagAvailability)
 		item.events.off('change:visible', this._onTagAvailability)
 		item.events.off('change:rendered', this._onTagAvailability)
 

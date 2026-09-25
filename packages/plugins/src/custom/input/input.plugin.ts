@@ -43,7 +43,7 @@ export class TInputPlugin extends TBasePlugin<any, TInputPluginEvents> {
 	private _handleInput(event: Event): void {
 		if (!this._instance) return
 
-		if (this._instance.readonly || this._instance.resolvedDisabled) {
+		if (this._instance.readonly || this._instance.disabled) {
 			event.preventDefault()
 			return
 		}

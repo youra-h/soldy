@@ -362,7 +362,7 @@ export default class TSlider
 	grab(index: number, fraction: number): boolean {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return false
+		if (this.disabled || !isIndexOf(values, index)) return false
 
 		// Ручка идёт за указателем со смещением захвата: взялись за её край —
 		// значение не прыгает к точке нажатия
@@ -377,7 +377,7 @@ export default class TSlider
 	press(fraction: number): boolean {
 		const values = this.values
 
-		if (this.resolvedDisabled || values.length === 0) return false
+		if (this.disabled || values.length === 0) return false
 
 		const target = this._scale.valueAt(fraction)
 		const [lo, hi] = this._group(values, this._nearest(values, target))
@@ -439,7 +439,7 @@ export default class TSlider
 	shift(index: number, count: number): void {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return
+		if (this.disabled || !isIndexOf(values, index)) return
 
 		const before = this.value
 
@@ -450,7 +450,7 @@ export default class TSlider
 	moveToEdge(index: number, edge: TSlideEdge): void {
 		const values = this.values
 
-		if (this.resolvedDisabled || !isIndexOf(values, index)) return
+		if (this.disabled || !isIndexOf(values, index)) return
 
 		const [lower, upper] = this._bounds(values, index)
 		const before = this.value

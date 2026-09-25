@@ -99,7 +99,7 @@ export default { ...SetupSlider }
 					:step="thumb.step"
 					:value="thumb.value"
 					:name="name"
-					:disabled="resolvedDisabled"
+					:disabled="disabled"
 					v-bind="{ ...aria, ...thumb.aria }"
 				/>
 				<!-- Место под подсказку со значением: слот `thumb` со scope ручки. -->
