@@ -29,10 +29,30 @@ $handle: 2.75rem;
 $grip-length: 2.25rem;
 $grip-thickness: 0.25rem;
 
-// Въезд и выезд. Кривая замедляется к концу — панель подъезжает, а не
-// врезается; её же берёт возврат на место после жеста.
-$duration: 300ms;
-$easing: cubic-bezier(0.32, 0.72, 0, 1);
+// Въезд и выезд. Числа подобраны глазом, машина сторожит только то, что
+// въезд не вспышка и подложка идёт вместе с панелью (AGENTS.md темы, «Что
+// тестом не проверяется»).
+//
+// Въезд замедляется к концу: панель подъезжает, а не врезается. Его же берёт
+// возврат на место после жеста — панель при нём открыта. Кривая не от vaul
+// (`cubic-bezier(0.32, 0.72, 0, 1)`): за первую треть длительности та
+// проходит под девять десятых пути, а у vaul длительность — 500 мс. На наших
+// прежних 300 мс треть — 100 мс, шесть кадров: панель и затемнение за них
+// почти доезжали, это и было видно вспышкой. Эта кривая за те же 100 мс
+// ведёт панель чуть дальше половины пути.
+$enter-duration: 400ms;
+$enter-easing: cubic-bezier(0.33, 1, 0.68, 1);
+
+// Выезд короче въезда: панель закрывают, когда она больше не нужна, и ждать
+// её ухода незачем. Кривая трогается мягко — панель не отпрыгивает от места
+// первым кадром — и не тянет долгий хвост у края.
+$exit-duration: 250ms;
+$exit-easing: cubic-bezier(0.4, 0, 0.6, 1);
+
+// Подложка — той же длительности, что панель в ту же сторону, но линейно:
+// затемнение набирается ровно, начинается и кончается вместе с панелью. По
+// кривой панели страница темнела бы почти целиком в первые кадры.
+$backdrop-easing: linear;
 
 // Подложка — на весь экран, а внутри контейнера — на контейнер (см.
 // `modal.backdrop`). Закрытая гаснет: `data-open` у неё тот же, что у панели.
@@ -170,31 +190,54 @@ $easing: cubic-bezier(0.32, 0.72, 0, 1);
 // `@starting-style` даёт показанной панели и подложке начальное положение —
 // за краем и прозрачную. Хуков под анимацию у кода нет.
 //
-// Пока панель тянут, перехода нет: она идёт за указателем без задержки. При
-// просьбе системы убрать движение — тоже: панель появляется и пропадает сразу.
-@media (prefers-reduced-motion: no-preference) {
-	.s-drawer:not([data-swiping='true']) {
-		transition-property: translate, display;
-		transition-duration: $duration;
-		transition-timing-function: $easing;
-		transition-behavior: allow-discrete;
+// Длительность и кривую браузер берёт из стиля, в который узел переходит:
+// въезд — из `[data-open='true']`, выезд — из `[data-open='false']`.
+//
+// Пока панель тянут, перехода нет: она идёт за указателем без задержки.
+// Поэтому и тайминги панели — под `:not([data-swiping='true'])`: во время
+// жеста действует `transition-property` по умолчанию, `all`, и с ненулевой
+// длительностью панель отставала бы от указателя.
+//
+// Просьбу системы убрать движение (`prefers-reduced-motion`) выезд не
+// выполняет — решение владельца: это обычный сдвиг панели от её края, так
+// панель открывается и закрывается при любых настройках системы. Ход ручек
+// Slider и листание Scroller просьбу выполняют.
+.s-drawer:not([data-swiping='true']) {
+	transition-property: translate, display;
+	transition-behavior: allow-discrete;
+
+	&[data-open='true'] {
+		transition-duration: $enter-duration;
+		transition-timing-function: $enter-easing;
 	}
 
-	.s-drawer__backdrop {
-		transition-property: opacity, display;
-		transition-duration: $duration;
-		transition-timing-function: $easing;
-		transition-behavior: allow-discrete;
+	&[data-open='false'] {
+		transition-duration: $exit-duration;
+		transition-timing-function: $exit-easing;
+	}
+}
+
+.s-drawer__backdrop {
+	transition-property: opacity, display;
+	transition-timing-function: $backdrop-easing;
+	transition-behavior: allow-discrete;
+
+	&[data-open='true'] {
+		transition-duration: $enter-duration;
 	}
 
-	@starting-style {
-		.s-drawer[data-open='true'] {
-			translate: var(--drawer-away);
-		}
+	&[data-open='false'] {
+		transition-duration: $exit-duration;
+	}
+}
 
-		.s-drawer__backdrop[data-open='true'] {
-			@apply opacity-0;
-		}
+@starting-style {
+	.s-drawer[data-open='true'] {
+		translate: var(--drawer-away);
+	}
+
+	.s-drawer__backdrop[data-open='true'] {
+		@apply opacity-0;
 	}
 }
 
