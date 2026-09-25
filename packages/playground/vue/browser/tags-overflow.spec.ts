@@ -11,6 +11,9 @@
  * там надо другое — что раскладка ряда переехала вместе с ним и что лента не
  * отобрала у тегов стрелки клавиатуры.
  *
+ * В `scroll` делить тоже нечего: ряд прокручивается сам. Проверяется, что,
+ * став прокручиваемой областью, он не срезает кольцо фокуса тега.
+ *
  * Сторож ошибок окна (`browser/setup.ts`) здесь работает как второй тест:
  * замер, который гоняется за собственным результатом, уронил бы прогон
  * сообщением `ResizeObserver loop completed with undelivered notifications`.
@@ -22,6 +25,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
+import { expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -515,5 +519,36 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 		expect(box.right).toBeLessThanOrEqual(area.right + 0.5)
 		expect(box.left).toBeGreaterThanOrEqual(area.left - 0.5)
+	})
+})
+
+/**
+ * Режим `scroll`: кольцо фокуса тега.
+ *
+ * Прокрутка по строке делает ряд прокручиваемой областью и по вертикали, а
+ * такая область режет всё, что вышло за её паддинг-бокс. В режиме выбора
+ * кольцо рисует пилюля — элемент тега, — и ряд стоял ровно по ней: кольцо
+ * выходит за пилюлю на 4px и пропадало сверху и снизу целиком. Запас под
+ * кольцо — паддинг ряда (`tags/_tags.scss`).
+ */
+describe('режим scroll: кольцо фокуса', () => {
+	it('ряд не срезает кольцо тега сверху и снизу', async () => {
+		render(harness(NARROW, { overflow: 'scroll', mode: 'single' }))
+
+		await settled(TAGS.length)
+
+		// Ряду тесно, и под ним полоса прокрутки: запас снизу обязан стоять
+		// над ней, а не под ней
+		expect(row().scrollWidth, 'ряду тесно').toBeGreaterThan(row().clientWidth)
+
+		const item = find('.s-tags-item')
+
+		// С клавиатуры: кольцо рисует `:focus-visible`. Выбора нет, и вход в
+		// набор — на первый тег
+		await userEvent.keyboard('{Tab}')
+
+		expect(item.contains(document.activeElement), 'фокус на первом теге').toBe(true)
+
+		expectRingInsideVertically(item, row(), 'пилюля')
 	})
 })
