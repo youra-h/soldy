@@ -335,6 +335,10 @@ npm run build --workspace=@soldy-ui/angular      # ng-packagr: частична�
 поэтому на `dist` их не переводят. Новый пакет — новый алиас в тех, кто его
 читает; алиас на папку пакета (`../../setup`) не годится: он резолвится через
 манифест, то есть в `dist`. Путь — до файла входа (`../../setup/index.ts`).
+Цели `paths` сторожит `packages/setup/__tests__/source-paths.spec.ts`: ни
+один `tsconfig*.json` репозитория не ведёт в каталог с `package.json` — ни
+точной целью, ни подстановкой в шаблон с `*`. Алиасы `vitest.config.ts` он не
+читает.
 
 Свой пакет — тоже исходниками. Тесты импортируют его по имени
 (`import { Button } from '@soldy-ui/vue'`), и у пакета, чей `tsconfig.json`
