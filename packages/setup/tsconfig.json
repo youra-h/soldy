@@ -10,8 +10,7 @@
     "paths": {
       "@soldy-ui/core": ["../core/src"],
       "@soldy-ui/plugins": ["../plugins/src"],
-      "@soldy-ui/setup": ["."],
-      "@soldy-ui/setup/*": ["./*"]
+      "@soldy-ui/setup": ["./index.ts"]
     }
   },
   "include": ["**/*.ts"],
