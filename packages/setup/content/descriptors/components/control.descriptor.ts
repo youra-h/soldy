@@ -2,7 +2,7 @@
  * Дескриптор Control (TControl).
  *
  * Наследует StylableDescriptor (size, variant, rendered, visible, present, tag, classes, element, instance)
- * и добавляет disabled, focused.
+ * и добавляет disabled, resolvedDisabled, focused.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -18,7 +18,18 @@ export const ControlDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			props: {
+				/** Своё значение — вход разметки и модель двусторонней привязки. */
 				disabled: { type: Boolean, triggers: ['change:disabled'] },
+				/**
+				 * Итог: у элемента коллекции — своё **или** владельца. Входа у
+				 * него нет, задают `disabled`; итог читает разметка — им
+				 * выключают нативный контрол и строку элемента.
+				 */
+				resolvedDisabled: {
+					type: Boolean,
+					protected: true,
+					triggers: ['change:resolvedDisabled'],
+				},
 				focused: { type: Boolean, triggers: ['change:focused'] },
 				// `aria` объявлен в ComponentViewDescriptor — набор нужен и
 				// неинтерактивным слоям, а второе объявление accessor не примет.

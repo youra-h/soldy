@@ -70,8 +70,11 @@ export class TAccordionExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Итог `resolvedDisabled` элементу отдаёт резольвер по итогу владельца — сообщаем
+		// тем, у кого он сменился
+		this._owner.events.on('change:resolvedDisabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` секции тоже отдаёт резольвер — сообщаем прежний
 		// итог, по нему снимается старый класс

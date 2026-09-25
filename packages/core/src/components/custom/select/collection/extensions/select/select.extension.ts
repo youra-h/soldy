@@ -161,8 +161,11 @@ export class TSelectExtension<
 		// отдельной подписки на неё не нужно
 		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
 
-		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Итог `resolvedDisabled` опции отдаёт резольвер по итогу владельца — сообщаем
+		// тем, у кого он сменился
+		this._owner.events.on('change:resolvedDisabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
@@ -232,7 +235,7 @@ export class TSelectExtension<
 	chooseItem(item: TItem): boolean {
 		const selection = this._selection
 
-		if (!selection || item.disabled) return false
+		if (!selection || item.resolvedDisabled) return false
 
 		if (selection.multiple) {
 			selection.toggle(item)

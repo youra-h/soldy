@@ -126,7 +126,8 @@ export class TSelectTagsExtension<
 		// пересобранным тегам
 		ctx.driver.events.on('item:removed', () => this.syncTags())
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
+		// Своё `disabled` набора тегов — итог Select, как у поля
+		this._owner.events.on('change:resolvedDisabled', (value: boolean) => {
 			if (this._tags) this._tags.disabled = value
 		})
 
@@ -164,7 +165,7 @@ export class TSelectTagsExtension<
 	private _createTags(): void {
 		const tags = new TTags({
 			closable: true,
-			disabled: this._owner.disabled,
+			disabled: this._owner.resolvedDisabled,
 			size: this._owner.size,
 			variant: this._owner.variant,
 			overflow: this._overflow,

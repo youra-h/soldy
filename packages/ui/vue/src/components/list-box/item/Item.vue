@@ -56,7 +56,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			embedded="list-box.row"
 			tag="div"
 			:view="view"
-			:disabled="disabled"
+			:disabled="resolvedDisabled"
 			:size="size"
 			:variant="variant"
 			:aria-selected="String(selected)"
