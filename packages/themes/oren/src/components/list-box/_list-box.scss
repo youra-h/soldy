@@ -40,12 +40,18 @@
 .s-list-box-item {
 	@apply min-h-fit;
 
+	// Строка — прямой ребёнок элемента, и её правила пишутся ребёнком, а не
+	// потомком: кнопка, которую потребитель положил в слот строки, тоже
+	// `.s-button` внутри элемента, и потомковое правило доставало её.
+	//
 	// .s-button даёт cursor-pointer по умолчанию — элемент списка не кнопка
 	// действия, глушим курсор здесь же, как у .s-select-item.
-	.s-button {
+	> .s-button {
 		@apply cursor-default;
 
-		&__text {
+		// Область целиком, а не `&__text`: суффикс лёг бы на последний класс и
+		// дал бы `.s-list-box-item > .s-button__text`.
+		> .s-button__text {
 			@apply min-w-0;
 			@include button.button-text-align('start');
 		}
@@ -64,10 +70,10 @@
 	// каждому свой `data-content-fit`. Парного правила на `.s-list-box` нет
 	// намеренно — оно перекрывало бы элемент, отказавшийся от переноса.
 	&[data-content-fit='wrap'] {
-		.s-button {
+		> .s-button {
 			@apply min-h-fit;
 
-			&__text {
+			> .s-button__text {
 				@apply whitespace-normal overflow-visible;
 			}
 		}
