@@ -23,7 +23,7 @@ export default { ...SetupSwitch }
 			:id="id"
 			:checked="value"
 			:name="name"
-			:disabled="disabled"
+			:disabled="resolvedDisabled"
 			:required="required"
 			v-bind="{ ...aria, ...controlAttrs }"
 		/>

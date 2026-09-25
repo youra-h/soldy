@@ -23,7 +23,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		this._applyView(props.view ?? ctor.defaultValues.view)
 
 		this.events.on('change:tag', () => this._syncButtonAria())
-		this.events.on('change:disabled', () => this._syncButtonAria())
+		this.events.on('change:resolvedDisabled', () => this._syncButtonAria())
 
 		this._syncButtonAria()
 	}
@@ -71,7 +71,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		}
 
 		this._aria.add('role', 'button')
-		this._aria.add('tabindex', this.disabled ? null : '0')
+		this._aria.add('tabindex', this.resolvedDisabled ? null : '0')
 	}
 
 	getProps(): IButtonProps {
