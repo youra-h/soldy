@@ -44,14 +44,13 @@
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
-    "@angular/compiler": "^22.1.5",
-    "@angular/core": "^22.1.5",
-    "@angular/platform-browser": "^22.1.5",
-    "rxjs": "^7.8.2"
+    "@angular/common": "^22.1.5",
+    "@angular/core": "^22.1.5"
   },
   "devDependencies": {
     "@angular/build": "^22.1.7",
     "@angular/cli": "^22.1.7",
+    "@angular/common": "^22.1.5",
     "@angular/compiler": "^22.1.5",
     "@angular/compiler-cli": "^22.1.5",
     "@angular/core": "^22.1.5",
