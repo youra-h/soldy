@@ -6,7 +6,8 @@
  * классы, переменные и `data-*`. Здесь — что из них выходит на экране:
  * панель у своего края (логического — в RTL `start` справа), во всю высоту
  * или ширину, внутри контейнера — в его границах; въезд и выезд — переходом
- * темы, и без него, когда система просит убрать движение.
+ * темы: без вспышки в первых кадрах, подложка темнеет вместе с панелью, и
+ * так при любых настройках движения в системе.
  *
  * Жест — настоящей мышью: захват указателя, `touch-action` и то, что нажатие
  * на полосу не уводит фокус, jsdom не выполняет вовсе.
@@ -14,10 +15,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { cdp, page, userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
+
+import { reducedMotion } from './media'
 
 import '@soldy-ui/theme-oren'
 
@@ -32,6 +35,15 @@ const GRIP_ZONE = 44
 
 /** Допуск на субпиксельное округление координат. */
 const EPSILON = 1
+
+/**
+ * Первые кадры въезда, мс: шесть кадров при 60 Гц. Прошли к этому мгновению
+ * панель и затемнение почти весь путь — въезд выглядит вспышкой.
+ */
+const FIRST_FRAMES = 100
+
+/** Доля пути, дальше которой въезд за первые кадры — вспышка. */
+const FLASH_SHARE = 2 / 3
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
@@ -133,6 +145,55 @@ const isOpen = () => getComputedStyle(panel()).display !== 'none'
 const settled = (element: Element) =>
 	Promise.all(element.getAnimations().map((animation) => animation.finished))
 
+/** Свойства, которые на узле сейчас идут CSS-переходом. */
+const transitioning = (element: Element): string[] =>
+	element
+		.getAnimations()
+		.filter((animation) => animation instanceof CSSTransition)
+		.map((animation) => animation.transitionProperty)
+
+/** CSS-переход свойства на узле; нет его — тест падает здесь, а не на чтении. */
+const transitionOf = (element: Element, property: string): CSSTransition => {
+	const found = element
+		.getAnimations()
+		.find(
+			(animation) =>
+				animation instanceof CSSTransition && animation.transitionProperty === property,
+		)
+
+	if (!(found instanceof CSSTransition)) throw new Error(`${property}: перехода нет`)
+
+	return found
+}
+
+/** Длительность перехода, мс. `effect` бывает `null`, а `duration` — не только числом. */
+const durationOf = (transition: CSSTransition): number => {
+	const duration = transition.effect?.getTiming().duration
+
+	if (typeof duration !== 'number') {
+		throw new Error(`${transition.transitionProperty}: длительности числом нет`)
+	}
+
+	return duration
+}
+
+/**
+ * Открыть событием в самой странице, а не через `userEvent`: переход читается
+ * сразу после рендера и не успевает доиграть, как бы ни медлил прогон.
+ */
+const openInPage = async () => {
+	opener().click()
+	await nextTick()
+}
+
+/** Закрыть Escape — так же, событием в самой странице, у узла под фокусом. */
+const escapeInPage = async () => {
+	active()?.dispatchEvent(
+		new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+	)
+	await nextTick()
+}
+
 /** Открыть кнопкой страницы, дождаться фокуса в панели и конца въезда. */
 const open = async () => {
 	await userEvent.click(opener())
@@ -172,12 +233,6 @@ const drag = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 		force: true,
 	})
 }
-
-/** Режим «меньше движения» — эмуляция медиазапроса Chromium, как в DevTools. */
-const reducedMotion = (value: 'reduce' | 'no-preference') =>
-	cdp().send('Emulation.setEmulatedMedia', {
-		features: [{ name: 'prefers-reduced-motion', value }],
-	})
 
 beforeEach(async () => {
 	document.documentElement.dataset.theme = 'oren'
@@ -311,23 +366,13 @@ describe('въезд и выезд', () => {
 	 */
 	it('открытие — панель въезжает переходом, закрытие — выезжает и только потом пропадает', async () => {
 		await show()
-		await userEvent.click(opener())
+		await openInPage()
 
-		const entering = panel()
-			.getAnimations()
-			.filter((animation) => animation instanceof CSSTransition)
-			.map((animation) => animation.transitionProperty)
+		expect(transitioning(panel())).toContain('translate')
 
-		expect(entering).toContain('translate')
-
+		await expect.poll(active).toBe(find('.s-test-first'))
 		await settled(panel())
-
-		// Escape — событием в самой странице: стиль читается сразу после
-		// рендера, и выезд не успевает кончиться, как бы ни медлил прогон
-		active()?.dispatchEvent(
-			new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-		)
-		await nextTick()
+		await escapeInPage()
 
 		// Выезжает: до конца перехода панель в документе, а не `display: none`
 		expect(panel().dataset.open).toBe('false')
@@ -336,17 +381,106 @@ describe('въезд и выезд', () => {
 		await expect.poll(isOpen).toBe(false)
 	})
 
-	it('система просит меньше движения — панель появляется и пропадает сразу', async () => {
+	/**
+	 * Вспышка — это первые кадры: панель и затемнение к ним почти доехали. Так
+	 * было с кривой vaul на 300 мс — под девять десятых пути за 100 мс. Порог —
+	 * во времени, а не в доле длительности: так ловится и укороченная
+	 * длительность. Переходы стоят на паузе, и мгновение выбирает тест, а не
+	 * скорость прогона.
+	 */
+	it('въезд без вспышки: за первые 100 мс панель и затемнение не проходят двух третей пути', async () => {
+		await show()
+		await openInPage()
+
+		const transitions = [
+			transitionOf(panel(), 'translate'),
+			transitionOf(backdrop(), 'opacity'),
+		]
+
+		// Путь панели — по её рамке: в вычисленном `translate` смесь процентов и px
+		const look = () => ({
+			edge: panel().getBoundingClientRect().left,
+			shade: Number(getComputedStyle(backdrop()).opacity),
+		})
+
+		const at = (time: number) => {
+			for (const transition of transitions) transition.currentTime = time
+
+			return look()
+		}
+
+		for (const transition of transitions) transition.pause()
+
+		const start = at(0)
+		const early = at(FIRST_FRAMES)
+
+		for (const transition of transitions) transition.finish()
+
+		const end = look()
+		const share = (key: 'edge' | 'shade') => (early[key] - start[key]) / (end[key] - start[key])
+
+		// Путь начат — иначе проверка ниже прошла бы и на застывшей панели
+		expect(share('edge')).toBeGreaterThan(0)
+		expect(share('shade')).toBeGreaterThan(0)
+
+		expect(share('edge')).toBeLessThanOrEqual(FLASH_SHARE)
+		expect(share('shade')).toBeLessThanOrEqual(FLASH_SHARE)
+	})
+
+	/**
+	 * Затемнение — часть того же движения: начинается и кончается вместе с
+	 * панелью. Выезд короче въезда: закрытую панель не ждут.
+	 */
+	it('подложка идёт вместе с панелью, выезд короче въезда', async () => {
+		const durations = () => ({
+			panel: durationOf(transitionOf(panel(), 'translate')),
+			backdrop: durationOf(transitionOf(backdrop(), 'opacity')),
+		})
+
+		await show()
+		await openInPage()
+
+		const entering = durations()
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+		await settled(backdrop())
+		await escapeInPage()
+
+		const leaving = durations()
+
+		expect(entering.backdrop).toBe(entering.panel)
+		expect(leaving.backdrop).toBe(leaving.panel)
+		expect(leaving.panel).toBeLessThan(entering.panel)
+	})
+
+	/**
+	 * Выезд одинаков при любых настройках системы — решение владельца: это
+	 * обычный сдвиг панели от края, так панель открывается и закрывается.
+	 * Сторож решения: без него переход снова спрятали бы под
+	 * `prefers-reduced-motion`.
+	 */
+	it('система просит меньше движения — панель всё равно въезжает и выезжает', async () => {
 		await reducedMotion('reduce')
 		await show()
-		await userEvent.click(opener())
 
-		expect(panel().getAnimations()).toEqual([])
-		expect(backdrop().getAnimations()).toEqual([])
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
-		await userEvent.keyboard('{Escape}')
+		await openInPage()
 
-		expect(isOpen()).toBe(false)
+		expect(transitioning(panel())).toContain('translate')
+		expect(transitioning(backdrop())).toContain('opacity')
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+		await escapeInPage()
+
+		// Выезжает: до конца перехода панель в документе
+		expect(panel().dataset.open).toBe('false')
+		expect(getComputedStyle(panel()).display).not.toBe('none')
+
+		await expect.poll(isOpen).toBe(false)
 	})
 })
 

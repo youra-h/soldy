@@ -138,6 +138,20 @@
 		.s-input__leading:has(.s-tags-item) {
 			min-width: 0;
 			@apply flex-wrap items-center overflow-x-clip;
+
+			// В `popover` ряд режет сам, и край его обрезки — дальше края
+			// ряда на запас под кольцо фокуса (`tags/_tags.scss`). У кнопки
+			// «…» в конце строки край ряда совпадает с краем слота, и слот
+			// срезал бы заднюю сторону кольца, которую ряд пропустил. Поэтому
+			// слот режет с тем же запасом — 0.25rem, кольцо Button, как
+			// `--s-tags-bleed`, — и так же только там, где запас есть: `clip`
+			// по обеим осям без него срезал бы кольцо сверху и снизу.
+			&:has(> .s-tags[data-overflow='popover']) {
+				@supports (overflow-clip-margin: 0px) {
+					overflow: clip;
+					overflow-clip-margin: 0.25rem;
+				}
+			}
 		}
 
 		// Ряд в одну строку (`scroll`, `arrows`, `popover`) берёт долю строки
