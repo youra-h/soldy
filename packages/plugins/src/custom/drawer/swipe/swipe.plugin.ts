@@ -162,22 +162,13 @@ export class TDrawerSwipePlugin extends TBasePlugin<IDrawer, TDrawerSwipePluginE
 			this._resync()
 		})
 
-		this._owner?.events.on('change:swipe', this._sync)
-		this._owner?.events.on('change:visible', this._sync)
-		this._owner?.events.on('change:placement', this._sync)
+		this._listenTo(this._owner?.events, 'change:swipe', this._sync)
+		this._listenTo(this._owner?.events, 'change:visible', this._sync)
+		this._listenTo(this._owner?.events, 'change:placement', this._sync)
 	}
 
-	/**
-	 * Снять подписки с шины владельца: он бывает долговечнее плагина — свой
-	 * `ctrl` приложения переживает перемонтирование, — и копить на нём
-	 * обработчики уничтоженных плагинов незачем.
-	 */
 	override destroy(): void {
 		this._detach()
-
-		this._owner?.events.off('change:swipe', this._sync)
-		this._owner?.events.off('change:visible', this._sync)
-		this._owner?.events.off('change:placement', this._sync)
 
 		this._owner = null
 		this._root = null

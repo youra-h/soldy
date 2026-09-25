@@ -1,11 +1,45 @@
-import type { ISlidable } from '@soldy-ui/core'
+import type { ISlidable, TSlideSnap } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import type { IDomEventTarget } from '../../../utils'
-import { fractionAt, slideDirection } from '../direction'
+import { fractionAt, lengthAlong, slideDirection } from '../direction'
 import { fieldOf, thumbsOf, trackOf } from '../parts'
-import type { TSlidePointerGesture, TSlidePointerPluginEvents } from './types'
+import type { TSlideDirection } from '../types'
+import {
+	THoldSnapStrategy,
+	TMagnetSnapStrategy,
+	TNoneSnapStrategy,
+	TPlateauSnapStrategy,
+	TSettleSnapStrategy,
+} from './strategies'
+import type { ISlideSnapStrategy, TSlideSnapStrategyCtor } from './strategies'
+import type {
+	ISlidePointerPluginOptions,
+	TSlidePointerGesture,
+	TSlidePointerPluginEvents,
+	TSlidePointerStart,
+} from './types'
+
+/** Стратегия на каждый режим щелчка: режим выбирает класс, а не ветку в жесте. */
+const SNAP_STRATEGIES: Readonly<Record<TSlideSnap, TSlideSnapStrategyCtor>> = {
+	none: TNoneSnapStrategy,
+	magnet: TMagnetSnapStrategy,
+	plateau: TPlateauSnapStrategy,
+	settle: TSettleSnapStrategy,
+	hold: THoldSnapStrategy,
+}
+
+/** Стоянка ручки на метке в режиме `hold`, мс, — пока опция не задана. */
+const HOLD_DELAY = 250
+
+/**
+ * Где ручка жеста была бы без щелчка: сдвинута от своего места при нажатии на
+ * столько же, на сколько указатель.
+ */
+function unsnapped(gesture: TSlidePointerGesture): number {
+	return gesture.anchor + (gesture.at - gesture.origin)
+}
 
 /**
  * TSlidePointerPlugin — указатель перетаскивания: нажатие, протяжка и
@@ -13,14 +47,21 @@ import type { TSlidePointerGesture, TSlidePointerPluginEvents } from './types'
  *
  * Операции над DOM — здесь, значение — у владельца: плагин переводит точку
  * указателя в долю хода по коробке дорожки и зовёт команды `ISlidable`
- * (`grab`, `press`, `drag`, `release`). Какую ручку вести, куда её поставить и
- * когда слать `commit`, решает владелец. О ползунке плагин не знает — только
- * контракт, поэтому его возьмёт и следующий компонент с перетаскиванием.
+ * (`grab`, `press`, `drag`, `release`, `settle`). Какую ручку вести, куда её
+ * поставить и когда слать `commit`, решает владелец. О ползунке плагин не
+ * знает — только контракт, поэтому его возьмёт и следующий компонент с
+ * перетаскиванием.
  *
  * Слушает корень, а не дорожку: полоса ручек, отступы под ореол и подписи
  * меток — тоже цель для пальца, а долю плагин всё равно считает по коробке
  * дорожки. Нажатие на ручке начинает жест с неё (значение не прыгает), мимо
  * ручек — ставит туда ближайшую.
+ *
+ * **Щелчок к меткам** — стратегия на режим владельца (`snap`, `strategies/`).
+ * Стратегию выбирает подписка на `change:snap`, а не проверка режима в
+ * обработчике, и жест держит ту, с которой начался. Стратегия видит ручку:
+ * куда та встала бы без щелчка и куда ей встать. Радиус щелчка владелец
+ * держит в px, в долю хода его переводит длина дорожки.
  *
  * Своих действий у нажатия нет (`preventDefault`): ни выделения текста, ни
  * своего фокуса браузера. Фокус получает поле той ручки, которую ведёт жест, —
@@ -37,23 +78,39 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 	private _gesture: TSlidePointerGesture | null = null
 	/** Жест кончился отпусканием: следующий `click` корня — его, а не пользователя */
 	private _swallowClick = false
+	/** Класс стратегии щелчка для следующего жеста — по режиму владельца */
+	private _snapStrategy: TSlideSnapStrategyCtor = TNoneSnapStrategy
+	private _holdDelay = HOLD_DELAY
+	/** Конец стоянки ручки на метке: стратегии снова нужна ручка, хотя указатель стоит */
+	private _wakeTimer: ReturnType<typeof setTimeout> | null = null
 
-	override install(ctx: IPluginContext): void {
-		super.install(ctx)
+	override install(ctx: IPluginContext, options?: ISlidePointerPluginOptions): void {
+		super.install(ctx, options)
 
+		this._holdDelay = options?.holdDelay ?? this._holdDelay
 		this._owner = ctx.getInstance<ISlidable>()
 
 		const element = ctx.get(TElementPlugin)
 
 		element?.events.on('ready', (node) => this._attach(node))
 		element?.events.on('removed', () => this._detach())
+
+		// Владелец бывает долговечнее плагина — свой `ctrl` переживает
+		// перемонтирование, — поэтому подписку плагин снимает сам (`destroy`)
+		this._snapStrategy = SNAP_STRATEGIES[this._owner?.snap ?? 'none']
+		this._owner?.events.on('change:snap', this._onSnapChange)
 	}
 
 	override destroy(): void {
 		this._detach()
+		this._owner?.events.off('change:snap', this._onSnapChange)
 		this._owner = null
 
 		super.destroy()
+	}
+
+	private readonly _onSnapChange = (snap: TSlideSnap): void => {
+		this._snapStrategy = SNAP_STRATEGIES[snap]
 	}
 
 	private _attach(root: Element): void {
@@ -99,18 +156,27 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 		if (!track) return
 
 		const direction = slideDirection(owner, root)
-		const fraction = fractionAt(direction, track.getBoundingClientRect(), event)
+		const box = track.getBoundingClientRect()
+		const fraction = fractionAt(direction, box, event)
 		const thumb = thumbsOf(owner, track).findIndex(
 			(node) => event.target instanceof Node && node.contains(event.target),
 		)
-		const started = thumb >= 0 ? owner.grab(thumb, fraction) : owner.press(fraction)
+		const start: TSlidePointerStart = {
+			pointer: event.pointerId,
+			track,
+			direction,
+			origin: fraction,
+		}
+		const gesture =
+			thumb >= 0 ? this._grab(owner, thumb, start, box) : this._press(owner, start, box)
 
-		if (!started) return
+		if (!gesture) return
 
 		event.preventDefault()
 
-		this._gesture = { pointer: event.pointerId, track, direction }
+		this._gesture = gesture
 		this._swallowClick = false
+		this._scheduleWake(gesture.snap.wakeAt)
 
 		// Протяжка за пределами ползунка и отпускание где угодно приходят
 		// корню. Среда без захвата указателя (jsdom) ведёт жест без него:
@@ -120,17 +186,114 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 		this._focusActive()
 	}
 
+	/**
+	 * Нажали на ручку: жест с неё. Ручка не двигается, и стратегия начинает
+	 * с того места, где она стоит.
+	 */
+	private _grab(
+		owner: ISlidable,
+		thumb: number,
+		start: TSlidePointerStart,
+		box: DOMRectReadOnly,
+	): TSlidePointerGesture | null {
+		if (!owner.grab(thumb, start.origin)) return null
+
+		const anchor = owner.fractions[thumb]
+		const snap = this._snapFor(owner, start.direction, box, anchor)
+
+		return { ...start, snap, anchor, at: start.origin, placed: anchor }
+	}
+
+	/**
+	 * Нажали мимо ручек: ближайшая встаёт туда, куда её ставит щелчок, — в
+	 * точку нажатия или на метку рядом с ней.
+	 */
+	private _press(
+		owner: ISlidable,
+		start: TSlidePointerStart,
+		box: DOMRectReadOnly,
+	): TSlidePointerGesture | null {
+		const anchor = start.origin
+		const snap = this._snapFor(owner, start.direction, box, anchor)
+		const placed = snap.follow(anchor, performance.now())
+
+		if (!owner.press(placed)) return null
+
+		return { ...start, snap, anchor, at: start.origin, placed }
+	}
+
+	/** Стратегия щелчка на жест: точки — метки владельца, радиус — доля длины дорожки. */
+	private _snapFor(
+		owner: ISlidable,
+		direction: TSlideDirection,
+		box: DOMRectReadOnly,
+		anchor: number,
+	): ISlideSnapStrategy {
+		const length = lengthAlong(direction, box)
+
+		return new this._snapStrategy({
+			points: owner.snapPoints,
+			radius: length > 0 ? owner.snapRadius / length : 0,
+			anchor,
+			holdDelay: this._holdDelay,
+		})
+	}
+
 	private readonly _onPointerMove = (event: PointerEvent): void => {
 		const gesture = this._gesture
 
 		if (!gesture || event.pointerId !== gesture.pointer) return
 
-		this._owner?.drag(
-			fractionAt(gesture.direction, gesture.track.getBoundingClientRect(), event),
-		)
+		gesture.at = fractionAt(gesture.direction, gesture.track.getBoundingClientRect(), event)
+
+		this._follow(gesture)
+	}
+
+	/**
+	 * Повести ручку за указателем жеста — через стратегию щелчка.
+	 *
+	 * Ядро ведёт ручку за указателем со смещением захвата, поэтому место от
+	 * щелчка уходит ему поправкой к указателю: доля, при которой ручка встанет
+	 * туда, куда её поставил щелчок. Без щелчка поправка — ноль, и ядро
+	 * получает указатель как есть: «ещё не двигали» оно узнаёт по точному
+	 * равенству с точкой нажатия. Щелчок оставил ручку на том же месте —
+	 * сообщать нечего.
+	 */
+	private _follow(gesture: TSlidePointerGesture): void {
+		const target = unsnapped(gesture)
+		const placed = gesture.snap.follow(target, performance.now())
+
+		this._scheduleWake(gesture.snap.wakeAt)
+
+		if (placed === gesture.placed) return
+
+		gesture.placed = placed
+		this._owner?.drag(gesture.at + (placed - target))
 
 		// У ручек на одном значении ведомую выбирает первое движение
 		this._focusActive()
+	}
+
+	/** Стоянка на метке кончается — стратегии снова нужна ручка, хотя указатель стоит. */
+	private _scheduleWake(at: number | undefined): void {
+		this._cancelWake()
+
+		if (at === undefined) return
+
+		this._wakeTimer = setTimeout(this._onWake, Math.max(0, at - performance.now()))
+	}
+
+	private readonly _onWake = (): void => {
+		this._wakeTimer = null
+
+		if (this._gesture) this._follow(this._gesture)
+	}
+
+	private _cancelWake(): void {
+		if (this._wakeTimer === null) return
+
+		clearTimeout(this._wakeTimer)
+		this._wakeTimer = null
 	}
 
 	private readonly _onPointerUp = (event: PointerEvent): void => {
@@ -151,12 +314,26 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 		event.preventDefault()
 	}
 
-	/** Закончить жест: отпустили, браузер отнял указатель или корень ушёл. */
+	/**
+	 * Закончить жест: отпустили, браузер отнял указатель или корень ушёл.
+	 * Стратегия решает, довести ли ручку: доводку владелец делает сам, уже без
+	 * перетаскивания (`settle`).
+	 */
 	private _end(): void {
-		if (!this._gesture) return
+		const gesture = this._gesture
+
+		if (!gesture) return
 
 		this._gesture = null
-		this._owner?.release()
+		this._cancelWake()
+
+		const settle = gesture.snap.release(unsnapped(gesture))
+
+		if (settle === undefined) {
+			this._owner?.release()
+		} else {
+			this._owner?.settle(settle)
+		}
 	}
 
 	/**

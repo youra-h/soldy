@@ -56,7 +56,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		element?.events.on('ready', (node) => this._bind(node))
 		element?.events.on('removed', () => this._bind(null))
 
-		this._owner?.events.on('scroll:request', (direction: TScrollerDirection) =>
+		this._listenTo(this._owner?.events, 'scroll:request', (direction: TScrollerDirection) =>
 			this._scroll(direction),
 		)
 	}

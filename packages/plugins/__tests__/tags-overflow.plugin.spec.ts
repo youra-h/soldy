@@ -192,3 +192,50 @@ describe('замер идёт только в popover', () => {
 		expect(await measure('popover')).toHaveBeenCalled()
 	})
 })
+
+/**
+ * Панель «…» плагин не создавал: её заводит расширение коллекции, и живёт она
+ * с движком, а не с набором. Сторож подписок (`setup/__tests__/plugin-unsubscribe.spec.ts`)
+ * смотрит шины владельца и расширений, а шину панели — только здесь.
+ */
+describe('уничтожение', () => {
+	beforeAll(() => {
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				observe(): void {}
+				unobserve(): void {}
+				disconnect(): void {}
+			},
+		)
+	})
+
+	afterAll(() => {
+		vi.unstubAllGlobals()
+	})
+
+	it('destroy снимает подписку с панели «…»', () => {
+		const owner = new TTags({ overflow: 'popover' })
+		const engine = createEngineTags({ owner })
+		const panel = engine.extensions.overflow.panel
+
+		if (!panel) throw new Error('панели нет')
+
+		const on = vi.spyOn(panel.events, 'on')
+		const off = vi.spyOn(panel.events, 'off')
+		const bundle = new TPluginBundle(owner)
+			.use(TElementPlugin)
+			.use(TCollectionBundlesPlugin)
+			.use(TCollectionElements)
+			.use(TTagsOverflowPlugin)
+
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(engine)
+
+		const subscribed = [...on.mock.calls]
+
+		bundle.destroy()
+
+		expect(subscribed.map(([event]) => event)).toEqual(['bundle:create'])
+		expect(off.mock.calls).toEqual(subscribed)
+	})
+})

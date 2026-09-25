@@ -15,10 +15,10 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { TSlider } from '@soldy-ui/core'
-import type { ISliderProps } from '@soldy-ui/core'
+import type { ISliderProps, TSliderValue } from '@soldy-ui/core'
 import { Label, Slider } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-oren'
@@ -212,6 +212,131 @@ describe('протяжка', () => {
 
 		expect(ctrl.values[0]).toBe(20)
 		expect(document.activeElement).toBe(fields()[1])
+	})
+})
+
+/**
+ * Щелчок к меткам — настоящим вводом: радиус в px переводится в долю по
+ * длине настоящей дорожки, доводку довозит переход темы, стоянку на метке
+ * держат настоящие часы. Метка — 50, радиус по умолчанию — 8 px.
+ */
+describe('щелчок к меткам', () => {
+	const MARK = [{ value: 50 }]
+
+	/** Точка в `px` от метки вдоль дорожки: плюс — к `max`. */
+	const nearMark = (px: number) => {
+		const { x, y } = along(0.5)
+
+		return { x: x + px, y }
+	}
+
+	/** Значение, в которое встала бы ручка без щелчка в точке `nearMark(px)`. */
+	const freeValue = (px: number) =>
+		Math.round((nearMark(px).x / track().getBoundingClientRect().width) * 100)
+
+	it('magnet: в радиусе метки ручка встаёт на метку, за радиусом — нет', async () => {
+		const ctrl = await mount({ value: 20, marks: MARK, snap: 'magnet' })
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.2),
+			targetPosition: nearMark(-5),
+		})
+
+		expect(ctrl.value).toBe(50)
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.5),
+			targetPosition: nearMark(-20),
+		})
+
+		expect(ctrl.value).toBe(freeValue(-20))
+	})
+
+	it('plateau: ручка стоит на метке, пока указатель на плато; край хода достижим', async () => {
+		const ctrl = await mount({ value: 50, marks: MARK, snap: 'plateau' })
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.5),
+			targetPosition: nearMark(6),
+		})
+
+		expect(ctrl.value).toBe(50)
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.5),
+			targetPosition: along(1),
+		})
+
+		expect(ctrl.value).toBe(100)
+	})
+
+	it('settle: отпущенная в радиусе ручка доезжает до метки — один commit', async () => {
+		const ctrl = await mount({ value: 20, marks: MARK, snap: 'settle' })
+		const commits: unknown[] = []
+
+		ctrl.events.on('commit', (payload) => commits.push(payload))
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.2),
+			targetPosition: nearMark(-5),
+		})
+
+		expect(ctrl.value).toBe(50)
+		expect(ctrl.dragging).toBe(false)
+		expect(commits).toEqual([{ newValue: 50, oldValue: 20 }])
+	})
+
+	it('settle: за радиусом ручка остаётся, где отпустили', async () => {
+		const ctrl = await mount({ value: 20, marks: MARK, snap: 'settle' })
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.2),
+			targetPosition: nearMark(-20),
+		})
+
+		expect(ctrl.value).toBe(freeValue(-20))
+	})
+
+	it('hold: отпустили сразу за меткой — ручка осталась на метке', async () => {
+		const ctrl = await mount({ value: 20, marks: MARK, snap: 'hold' })
+
+		await userEvent.dragAndDrop(track(), track(), {
+			sourcePosition: along(0.2),
+			targetPosition: along(0.6),
+		})
+
+		expect(ctrl.value).toBe(50)
+	})
+
+	/**
+	 * Кнопка зажата, указатель за меткой и стоит: ручка стоит на метке, а
+	 * когда стоянка кончилась — догоняет его без единого движения указателя.
+	 * Смены значения записаны со временем: так видна и сама стоянка, и её
+	 * длина, как бы долго ни шёл ответ браузера тесту.
+	 */
+	it('hold: ручка стоит на пересечённой метке и догоняет стоящий указатель', async () => {
+		const ctrl = await mount({ value: 20, marks: MARK, snap: 'hold' })
+		const changes: Array<{ value: TSliderValue; at: number }> = []
+
+		ctrl.events.on('change:value', ({ newValue }) =>
+			changes.push({ value: newValue, at: performance.now() }),
+		)
+
+		await userEvent.hover(track(), { position: along(0.2) })
+		await commands.mouseDown()
+
+		try {
+			await userEvent.hover(track(), { position: along(0.6) })
+			await expect.poll(() => ctrl.value, { timeout: 2000 }).toBe(60)
+		} finally {
+			await commands.mouseUp()
+		}
+
+		const [held, caught] = changes
+
+		expect(changes.map(({ value }) => value)).toEqual([50, 60])
+		// Стоянка по умолчанию — 250 мс; запас — на огрубление часов
+		expect(caught.at - held.at).toBeGreaterThanOrEqual(240)
 	})
 })
 

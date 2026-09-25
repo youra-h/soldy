@@ -10,10 +10,16 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TClasses, TSlider } from '@soldy-ui/core'
-import type { ISlidable, ISliderProps, TSlideEdge, TSlideOrientation } from '@soldy-ui/core'
+import { TClasses, TEvented, TSlider } from '@soldy-ui/core'
+import type {
+	ISlidable,
+	ISliderProps,
+	TSlideEdge,
+	TSlideOrientation,
+	TSlideSnap,
+} from '@soldy-ui/core'
 import { TElementPlugin, TPluginBundle, TSlidePointerPlugin } from '../src'
-import type { IPlugin, IPluginConstructor } from '../src'
+import type { IPlugin, IPluginConstructor, ISlidePointerPluginOptions } from '../src'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -35,6 +41,7 @@ afterEach(() => {
 	for (const bundle of bundles.splice(0)) bundle.destroy()
 
 	document.body.innerHTML = ''
+	vi.useRealTimers()
 })
 
 /** Дорожка: 200 px по ширине и высоте, левый верхний угол — (100, 100). */
@@ -44,8 +51,12 @@ const TRACK = new DOMRect(100, 100, 200, 200)
  * Ползунок на странице: корень, дорожка и по ручке с полем на значение.
  * `owner` — владелец перетаскивания; по умолчанию настоящий `TSlider`.
  */
-async function mount<T extends ISlidable>(owner: T, dir: 'ltr' | 'rtl' = 'ltr') {
-	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TSlidePointerPlugin)
+async function mount<T extends ISlidable>(
+	owner: T,
+	dir: 'ltr' | 'rtl' = 'ltr',
+	options: ISlidePointerPluginOptions = {},
+) {
+	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TSlidePointerPlugin, options)
 
 	bundles.push(bundle)
 
@@ -300,10 +311,15 @@ describe('что нажатием не считается', () => {
 describe('владелец — любой ISlidable', () => {
 	class TProbe implements ISlidable {
 		readonly classes = new TClasses('s-probe')
+		readonly events = new TEvented<{ 'change:snap': (value: TSlideSnap) => void }>()
 		readonly orientation: TSlideOrientation = 'horizontal'
 		readonly inverted = false
 		readonly largeStep = 10
 		readonly values = [10, 90]
+		readonly fractions = [0.1, 0.9]
+		snap: TSlideSnap = 'none'
+		readonly snapRadius = 8
+		readonly snapPoints = [0.5]
 		activeThumb: number | undefined = undefined
 		readonly calls: unknown[][] = []
 
@@ -330,6 +346,11 @@ describe('владелец — любой ISlidable', () => {
 			this.activeThumb = undefined
 		}
 
+		settle(fraction: number): void {
+			this.calls.push(['settle', fraction])
+			this.activeThumb = undefined
+		}
+
 		shift(index: number, count: number): void {
 			this.calls.push(['shift', index, count])
 		}
@@ -348,5 +369,213 @@ describe('владелец — любой ISlidable', () => {
 		pointer('pointerdown', track, 350)
 
 		expect(owner.calls).toEqual([['grab', 1, 0.75], ['drag', 0.25], ['release'], ['press', 1]])
+	})
+
+	/**
+	 * Режим — свойство владельца, стратегию плагин выбирает подпиской на его
+	 * смену: доводка приходит командой `settle` вместо `release`.
+	 */
+	it('режим щелчка — по change:snap владельца; доводка — командой settle', async () => {
+		const { owner, track, root, pointer } = await mount(new TProbe())
+
+		owner.snap = 'settle'
+		owner.events.emit('change:snap', 'settle')
+
+		pointer('pointerdown', track, 196)
+		pointer('pointerup', root, 196)
+
+		expect(owner.calls).toEqual([
+			['press', 0.48],
+			['settle', 0.5],
+		])
+	})
+
+	/** Владелец бывает долговечнее плагина: свой `ctrl` переживает перемонтирование. */
+	it('уничтоженный плагин снимает подписку с владельца', async () => {
+		const { owner, bundle } = await mount(new TProbe())
+		const off = vi.spyOn(owner.events, 'off')
+
+		bundle.destroy()
+
+		expect(off).toHaveBeenCalledWith('change:snap', expect.any(Function))
+	})
+})
+
+/**
+ * Щелчок к меткам через плагин: радиус в px, доли по коробке дорожки. Каждая
+ * стратегия отдельно — `slide-snap-strategies.spec.ts`.
+ *
+ * Дорожка 200 px, поэтому радиус по умолчанию (8 px) — 0.04 хода, а метка 50 —
+ * в x = 200.
+ */
+describe('щелчок', () => {
+	const marked = (props: Partial<ISliderProps> = {}) =>
+		slider({ marks: [{ value: 50 }], ...props })
+
+	it('стратегию выбирает режим владельца — с нового жеста, начатый жест держит свою', async () => {
+		const { owner, track, root, pointer } = await mount(marked({ value: 20 }))
+
+		pointer('pointerdown', track, 140)
+		owner.snap = 'magnet'
+		pointer('pointermove', root, 196)
+
+		expect(owner.value).toBe(48)
+
+		pointer('pointerup', root, 196)
+		pointer('pointerdown', track, 194)
+
+		expect(owner.value).toBe(50)
+	})
+
+	it('радиус в px переводится в долю по длине дорожки', async () => {
+		const { owner, track, root, pointer } = await mount(marked({ value: 20, snap: 'magnet' }))
+
+		// 7 px до метки — в радиусе, 10 px — за ним
+		pointer('pointerdown', track, 193)
+		pointer('pointerup', root, 193)
+		expect(owner.value).toBe(50)
+
+		pointer('pointerdown', track, 190)
+		pointer('pointerup', root, 190)
+		expect(owner.value).toBe(45)
+
+		owner.snapRadius = 12
+		pointer('pointerdown', track, 190)
+		expect(owner.value).toBe(50)
+	})
+
+	/**
+	 * Взялись за ручку на 4 px правее центра. Притягивается ручка, а не
+	 * указатель: указатель в метке поставил бы ручку на 2 значения левее.
+	 */
+	it('притягивает ручку, а не указатель: смещение захвата учтено', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 40, snap: 'magnet' }))
+
+		pointer('pointerdown', thumbs[0], 184)
+		pointer('pointermove', root, 200)
+		expect(owner.value).toBe(50)
+
+		pointer('pointermove', root, 214)
+		expect(owner.value).toBe(55)
+	})
+
+	/**
+	 * Ручки на одном значении стоят на метке. Колебание указателя в радиусе
+	 * ручку не сдвигает — и ведомую не выбирает: её выбирает первое движение
+	 * за радиус.
+	 */
+	it('колебание в радиусе не выбирает ведомую из ручек на метке', async () => {
+		const { owner, thumbs, root, pointer } = await mount(
+			marked({ value: [50, 50], snap: 'magnet' }),
+		)
+
+		pointer('pointerdown', thumbs[1], 200)
+		pointer('pointermove', root, 203)
+		expect(owner.dragging).toBe(false)
+
+		pointer('pointermove', root, 170)
+
+		expect(owner.value).toEqual([35, 50])
+	})
+
+	it('plateau: на плато ручка стоит, за ним идёт со сжатием, край хода достижим', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 50, snap: 'plateau' }))
+
+		pointer('pointerdown', thumbs[0], 200)
+		pointer('pointermove', root, 207)
+		expect(owner.value).toBe(50)
+
+		// Свободно было бы 75: промежуток за плато сжат
+		pointer('pointermove', root, 250)
+		expect(owner.value).toBe(73)
+
+		pointer('pointermove', root, 300)
+		expect(owner.value).toBe(100)
+	})
+
+	it('settle: отпущенная в радиусе ручка доезжает до метки уже без перетаскивания', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 20, snap: 'settle' }))
+		const commits: unknown[] = []
+		const order: string[] = []
+
+		owner.events.on('commit', (payload) => commits.push(payload))
+
+		pointer('pointerdown', thumbs[0], 140)
+		pointer('pointermove', root, 196)
+		expect(owner.value).toBe(48)
+
+		owner.events.on('change:dragging', (value) => order.push(`dragging:${value}`))
+		owner.events.on('change:value', ({ newValue }) => order.push(`value:${newValue}`))
+
+		pointer('pointerup', root, 196)
+
+		expect(owner.value).toBe(50)
+		expect(order).toEqual(['dragging:false', 'value:50'])
+		expect(commits).toEqual([{ newValue: 50, oldValue: 20 }])
+	})
+
+	it('settle: за радиусом ручка остаётся, где отпустили', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 20, snap: 'settle' }))
+
+		pointer('pointerdown', thumbs[0], 140)
+		pointer('pointermove', root, 190)
+		pointer('pointerup', root, 190)
+
+		expect(owner.value).toBe(45)
+	})
+
+	/**
+	 * Часы — поддельные: и таймер стоянки, и `performance.now()`. Кадр
+	 * (`requestAnimationFrame`) не подделан — на нём плагины получают корень.
+	 */
+	const fakeClock = () =>
+		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+
+	it('hold: прошедшая метку ручка стоит на ней, потом догоняет стоящий указатель', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 20, snap: 'hold' }))
+
+		fakeClock()
+
+		pointer('pointerdown', thumbs[0], 140)
+		pointer('pointermove', root, 210)
+		expect(owner.value).toBe(50)
+
+		vi.advanceTimersByTime(249)
+		expect(owner.value).toBe(50)
+
+		vi.advanceTimersByTime(1)
+		expect(owner.value).toBe(55)
+	})
+
+	it('hold: отпустили, пока стоит, — ручка осталась на метке', async () => {
+		const { owner, thumbs, root, pointer } = await mount(marked({ value: 20, snap: 'hold' }))
+		const commits: unknown[] = []
+
+		owner.events.on('commit', (payload) => commits.push(payload))
+		fakeClock()
+
+		pointer('pointerdown', thumbs[0], 140)
+		pointer('pointermove', root, 210)
+		pointer('pointerup', root, 210)
+		vi.advanceTimersByTime(1000)
+
+		expect(owner.value).toBe(50)
+		expect(commits).toEqual([{ newValue: 50, oldValue: 20 }])
+	})
+
+	it('hold: время стоянки — опция плагина', async () => {
+		const { owner, thumbs, root, pointer } = await mount(
+			marked({ value: 20, snap: 'hold' }),
+			'ltr',
+			{ holdDelay: 40 },
+		)
+
+		fakeClock()
+
+		pointer('pointerdown', thumbs[0], 140)
+		pointer('pointermove', root, 210)
+		vi.advanceTimersByTime(40)
+
+		expect(owner.value).toBe(55)
 	})
 })

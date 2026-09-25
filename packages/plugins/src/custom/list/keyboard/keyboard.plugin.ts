@@ -69,9 +69,13 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
 
-		engine.extensions.selection.events.on('change:selection', (items: IControl[]) => {
-			if (items.length > 0) this.trackHighlight(items[0].uid)
-		})
+		this._listenTo(
+			engine.extensions.selection.events,
+			'change:selection',
+			(items: IControl[]) => {
+				if (items.length > 0) this.trackHighlight(items[0].uid)
+			},
+		)
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {

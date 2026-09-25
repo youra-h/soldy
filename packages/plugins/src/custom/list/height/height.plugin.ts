@@ -1,7 +1,7 @@
 import { frameDebounce } from '@soldy-ui/core'
-import type { IList } from '@soldy-ui/core'
+import type { IList, TListEvents } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
-import type { IPluginContext } from '../../../base'
+import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isMeasurableElement } from '../../../utils'
@@ -13,7 +13,7 @@ import { isMeasurableElement } from '../../../utils'
  * которого общего предка со списком нет — есть только общий контракт.
  */
 interface IListHeightOwner extends Pick<IList, 'maxRows'> {
-	readonly events: { on(name: 'change:maxRows', handler: () => void): unknown }
+	readonly events: IListenable<Pick<TListEvents, 'change:maxRows'>>
 }
 
 /**
@@ -55,7 +55,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		this._list = ctx.getInstance<IListHeightOwner>()
 		this._collectionElements = ctx.get(TCollectionElements) ?? null
 
-		this._list?.events.on('change:maxRows', () => this._scheduleUpdate())
+		this._listenTo(this._list?.events, 'change:maxRows', () => this._scheduleUpdate())
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -76,8 +76,10 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		const bundles = ctx.get(TCollectionBundlesPlugin)
 
 		bundles?.events.on('engine:bound', (engine) => {
-			engine.extensions.plain.events.on('change:items', () => this._scheduleUpdate())
-			engine.extensions.plain.events.on('item:removed', () => this._scheduleUpdate())
+			const update = () => this._scheduleUpdate()
+
+			this._listenTo(engine.extensions.plain.events, 'change:items', update)
+			this._listenTo(engine.extensions.plain.events, 'item:removed', update)
 		})
 
 		bundles?.events.on('bundle:registered', ({ uid, bundle }) => {

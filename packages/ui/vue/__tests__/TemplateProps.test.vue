@@ -183,6 +183,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Slider :marks="[20, 80]" />
 	<Slider :marks="[{ value: 20, label: 'Мало' }]" />
 
+	<!-- @vue-expect-error — щелчка `sticky` нет -->
+	<Slider snap="sticky" />
+	<Slider snap="magnet" />
+
 	<!-- @vue-expect-error — толщина числом или `auto` -->
 	<Spinner borderWidth="thick" />
 	<Spinner :borderWidth="2" />

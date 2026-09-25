@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
-import { dirname, join, posix, resolve } from 'node:path'
+import { dirname, join, posix, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as ts from 'typescript'
 
@@ -39,6 +39,12 @@ import * as ts from 'typescript'
  * как их читает сам TypeScript: конфиг сборки наследует пакетный, а тот ведёт
  * соседей в исходники. Раньше сторож читал один файл и требовал `paths` в нём:
  * пропавший ключ так ловился, а `preserveSymlinks` из родителя — нет.
+ *
+ * Обратная сторона — `tsconfig.json`, конфиг проверки типов: он ходит в
+ * исходники, и в свои тоже. Тесты импортируют пакет по имени, как потребитель,
+ * и без ссылки пакета на себя в `paths` имя уходило через `node_modules` в
+ * манифест, то есть в `dist`: без сборки «Типы — Vue» падали на «модуль не
+ * найден», а со старой сборкой молча сверяли тесты с устаревшими типами.
  *
  * Список пакетов не хардкодится: это очередь корневого `build`, а каталог
  * пакета берётся по его ссылке воркспейса в `node_modules` — второго
@@ -152,32 +158,46 @@ function unparsed(diagnostic: ts.Diagnostic): string {
 	return `не разобран: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`
 }
 
+/** Разобранный конфиг и нарушения разбора; файл не прочитан — конфига нет. */
+type TParsedTsconfig = {
+	readonly parsed: ts.ParsedCommandLine | undefined
+	readonly violations: string[]
+}
+
+/**
+ * Конфиг, разобранный самим TypeScript: опции — с учётом `extends`, файлы
+ * программы — по `include` и `exclude`. Звенья цепочки бывают JSONC — в
+ * `packages/setup/tsconfig.json` есть комментарии, — и `JSON.parse` их не
+ * прочтёт. Файлы читает `host`: так сторож проверяет и себя, на каталоге в
+ * памяти. Конфиг, который TypeScript не разобрал, — нарушение: без пропавшего
+ * звена сторож судил бы неполные опции.
+ */
+function parseTsconfig(file: string, host: ts.ParseConfigHost): TParsedTsconfig {
+	const { config, error } = ts.readConfigFile(file, (path) => host.readFile(path))
+
+	if (error) {
+		return { parsed: undefined, violations: [unparsed(error)] }
+	}
+
+	const parsed = ts.parseJsonConfigFileContent(config, host, dirname(file), undefined, file)
+
+	return { parsed, violations: parsed.errors.map(unparsed) }
+}
+
 /**
  * Нарушения `tsconfig.build.json`; пустой список — конфиг в порядке.
  *
  * Опции судятся действующие — с учётом `extends`: чего конфиг сборки не
  * перекрыл, то пришло из пакетного, а у него `paths` ведут соседей в исходники.
- * Цепочку разбирает сам TypeScript: звенья бывают JSONC — в
- * `packages/setup/tsconfig.json` есть комментарии, — и `JSON.parse` их не
- * прочтёт. Файлы читает `host`: так сторож проверяет и себя, на каталоге в
- * памяти. Конфиг, который TypeScript не разобрал, — тоже нарушение: без
- * пропавшего звена сторож судил бы неполные опции.
  */
 function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost): string[] {
-	const { config, error } = ts.readConfigFile(file, (path) => host.readFile(path))
+	const { parsed, violations } = parseTsconfig(file, host)
 
-	if (error) {
-		return [unparsed(error)]
+	if (parsed === undefined) {
+		return violations
 	}
 
-	const { options, errors } = ts.parseJsonConfigFileContent(
-		config,
-		host,
-		dirname(file),
-		undefined,
-		file,
-	)
-	const violations = errors.map(unparsed)
+	const { options } = parsed
 
 	// Ссылка пакета на самого себя допустима, соседа в paths быть не может:
 	// по ней сборка прочитала бы его исходники и увела бы туда декларации
@@ -190,6 +210,78 @@ function checkBuildTsconfig(name: string, file: string, host: ts.ParseConfigHost
 		violations.push(
 			`preserveSymlinks ${JSON.stringify(options.preserveSymlinks)} — сосед резолвится как пакет, по своему dist`,
 		)
+	}
+
+	return violations
+}
+
+/** Файлы для разбора конфига и разрешения модулей: `ts.sys` или каталог в памяти. */
+type TTsHost = ts.ParseConfigHost & ts.ModuleResolutionHost
+
+/**
+ * Каталог верхнего уровня пакета, в котором лежит файл: `__tests__`, `src`,
+ * `dist`. Путь берётся относительный: TypeScript пишет пути через `/`, а
+ * каталог пакета на Windows приходит через `\`.
+ */
+function topDirOf(dir: string, file: string): string {
+	return relative(dir, file).split(/[\\/]/)[0]
+}
+
+/** Файл из `__tests__` пакета в программе конфига; тестов в ней нет — `undefined`. */
+function testFileOf(parsed: ts.ParsedCommandLine, dir: string): string | undefined {
+	return parsed.fileNames.find((file) => topDirOf(dir, file) === '__tests__')
+}
+
+/**
+ * Нарушения `tsconfig.json`, конфига проверки типов; пустой список — конфиг в
+ * порядке.
+ *
+ * Тесты импортируют пакет по имени, и программа, в которую они входят, находит
+ * его ссылкой пакета на себя в `paths` — в исходниках. Судится не запись, а то,
+ * во что имя разрешает сам TypeScript, — с учётом `extends` и каталога, от
+ * которого он считает `paths`. Одного итога мало: каталог с манифестом (`"."`)
+ * ведёт по его `types` в `dist`, а без сборки TypeScript откатывается на
+ * `index.ts` рядом, и сторож, запущенный до сборки, как в CI, ошибки не увидел
+ * бы. Поэтому манифест узнаётся отдельно: разрешение, прочитавшее
+ * `package.json`, несёт `packageId` — имя и версию оттуда, — а путь в исходники
+ * манифеста не читает.
+ *
+ * Программу без тестов сторож пропускает: свои модули пакет зовёт
+ * относительными путями, и по имени его там импортировать некому.
+ */
+function checkSelfReference(name: string, file: string, host: TTsHost): string[] {
+	const { parsed, violations } = parseTsconfig(file, host)
+
+	if (parsed === undefined) {
+		return violations
+	}
+
+	const dir = dirname(file)
+	const test = testFileOf(parsed, dir)
+
+	if (test === undefined) {
+		return violations
+	}
+
+	const targets = parsed.options.paths?.[name]
+
+	if (targets === undefined) {
+		violations.push(
+			`paths не знает сам пакет ${name} — тесты найдут его через node_modules, в dist`,
+		)
+
+		return violations
+	}
+
+	const { resolvedModule } = ts.resolveModuleName(name, test, parsed.options, host)
+	const target = `paths ведёт ${name} в ${JSON.stringify(targets)}`
+
+	if (resolvedModule === undefined) {
+		violations.push(`${target} — имя ни во что не разрешается`)
+	} else if (resolvedModule.packageId !== undefined) {
+		violations.push(`${target} — имя разрешается через манифест, а он ведёт в dist`)
+	} else if (topDirOf(dir, resolvedModule.resolvedFileName) === 'dist') {
+		violations.push(`${target} — имя разрешается в выход сборки`)
 	}
 
 	return violations
@@ -373,6 +465,9 @@ function checkNgPackagrRecipe(pkg: TBuiltPackage, read: TReadConfig): string[] {
 
 const PACKAGES = builtPackages()
 
+/** Пакеты очереди с конфигом проверки типов: без `tsconfig.json` проверять нечего. */
+const TYPECHECKED = PACKAGES.filter(({ dir }) => existsSync(join(dir, 'tsconfig.json')))
+
 /** Пакеты очереди, которые собирает рецепт. */
 function packagesOf(recipe: TRecipe): TBuiltPackage[] {
 	return PACKAGES.filter(({ build }) => recipe.tool.test(build))
@@ -389,6 +484,20 @@ describe('сборка пакетов', () => {
 		for (const recipe of RECIPES) {
 			expect(packagesOf(recipe), recipe.name).not.toEqual([])
 		}
+	})
+
+	// Тоже не вхолостую: у пакетов, где тесты в программе проверки типов точно
+	// есть, сторож их находит — иначе ссылка на себя молча не проверялась бы
+	it('тесты в программе проверки типов найдены', () => {
+		const tested = TYPECHECKED.filter(({ dir }) => {
+			const { parsed } = parseTsconfig(join(dir, 'tsconfig.json'), ts.sys)
+
+			return parsed !== undefined && testFileOf(parsed, dir) !== undefined
+		})
+
+		expect(tested.map(({ name }) => name)).toEqual(
+			expect.arrayContaining(['@soldy-ui/setup', '@soldy-ui/vue', '@soldy-ui/webc']),
+		)
 	})
 
 	it('каждый пакет очереди собирается ровно одним рецептом', () => {
@@ -415,6 +524,19 @@ describe('сборка пакетов', () => {
 			expect(
 				violations,
 				`${file} разошёлся с AGENTS.md «Сборка пакетов» (опции — с учётом extends):\n` +
+					violations.join('\n'),
+			).toEqual([])
+		})
+	})
+
+	describe.each(TYPECHECKED)('проверка типов · $name', (pkg) => {
+		it('тесты видят сам пакет исходниками, собран он или нет', () => {
+			const file = join(pkg.dir, 'tsconfig.json')
+			const violations = checkSelfReference(pkg.name, file, ts.sys)
+
+			expect(
+				violations,
+				`${file} разошёлся с AGENTS.md «Сборка пакетов» (локальная разработка сборки не требует):\n` +
 					violations.join('\n'),
 			).toEqual([])
 		})
@@ -492,8 +614,25 @@ describe('сторож рецептов', () => {
 		expect(recipesOf('vite build && ng-packagr')).toEqual([LIB_RECIPE, NG_PACKAGR_RECIPE])
 	})
 
+	const NAME = '@soldy-ui/example'
+
+	/**
+	 * Каталог в памяти: путь → текст файла. Программа любого конфига — все
+	 * файлы `.ts` каталога: `include` и `exclude` он не разбирает, а сторожу
+	 * важен итог — какие файлы в программе.
+	 */
+	const memoryHost = (files: Readonly<Record<string, string>>): TTsHost => ({
+		useCaseSensitiveFileNames: true,
+		fileExists: (path) => Object.hasOwn(files, path),
+		readFile: (path) => files[path],
+		readDirectory: () => Object.keys(files).filter((path) => path.endsWith('.ts')),
+	})
+
+	/** Текст конфига: объект пишется как JSON, строка — как есть. */
+	const text = (config: unknown): string =>
+		typeof config === 'string' ? config : JSON.stringify(config)
+
 	describe('tsconfig.build.json', () => {
-		const NAME = '@soldy-ui/example'
 		const WHY = 'сосед резолвится как пакет, по своему dist'
 		const BUILD = '/example/tsconfig.build.json'
 
@@ -513,23 +652,10 @@ describe('сторож рецептов', () => {
 	},
 }`
 
-		/** Каталог в памяти: путь → текст файла. */
-		const memoryHost = (files: Readonly<Record<string, string>>): ts.ParseConfigHost => ({
-			useCaseSensitiveFileNames: true,
-			fileExists: (path) => Object.hasOwn(files, path),
-			readFile: (path) => files[path],
-			// Исходники сторожу не нужны, но без них TypeScript счёл бы конфиг
-			// пустым (TS18003)
-			readDirectory: () => ['/example/src/index.ts'],
-		})
-
-		/** Текст конфига: объект пишется как JSON, строка — как есть. */
-		const text = (config: unknown): string =>
-			typeof config === 'string' ? config : JSON.stringify(config)
-
 		/**
 		 * Конфиг сборки поверх пакетного конфига, а тот — поверх общего базового,
-		 * как у адаптеров.
+		 * как у адаптеров. Исходники сторожу не нужны, но без них TypeScript счёл
+		 * бы конфиг пустым (TS18003).
 		 */
 		const check = (build: unknown, base: unknown = {}): string[] =>
 			checkBuildTsconfig(
@@ -538,6 +664,7 @@ describe('сторож рецептов', () => {
 				memoryHost({
 					'/tsconfig.base.json': text(base),
 					'/example/tsconfig.json': PACKAGE_TSCONFIG,
+					'/example/src/index.ts': '',
 					[BUILD]: text(build),
 				}),
 			)
@@ -591,6 +718,116 @@ describe('сторож рецептов', () => {
 			])
 			expect(check(missing)).toEqual([
 				expect.stringMatching(/^не разобран: .*tsconfig\.missing\.json/),
+			])
+		})
+	})
+
+	describe('tsconfig.json', () => {
+		const CONFIG = '/example/tsconfig.json'
+
+		/** Разрешение модулей — как в общем базовом конфиге. */
+		const RESOLUTION = { module: 'esnext', moduleResolution: 'bundler' }
+
+		/**
+		 * Пакет без сборки: манифест ведёт в `dist`, рядом исходники — файл входа в
+		 * `src` и `index.ts` в корне, как у setup, — и тест, который импортирует
+		 * пакет по имени.
+		 */
+		const CLEAN = {
+			'/tsconfig.base.json': text({ compilerOptions: RESOLUTION }),
+			'/example/package.json': text({
+				name: NAME,
+				version: '0.1.0',
+				types: './dist/index.d.ts',
+			}),
+			'/example/index.ts': '',
+			'/example/src/index.ts': '',
+			'/example/__tests__/example.spec.ts': `import '${NAME}'`,
+		}
+
+		/** Тот же пакет после сборки. */
+		const BUILT = { ...CLEAN, '/example/dist/index.d.ts': '' }
+
+		/** Конфиг проверки типов поверх общего базового — с данными `paths`. */
+		const check = (
+			paths: Readonly<Record<string, string[]>>,
+			files: Readonly<Record<string, string>> = CLEAN,
+		): string[] =>
+			checkSelfReference(
+				NAME,
+				CONFIG,
+				memoryHost({
+					...files,
+					[CONFIG]: text({
+						extends: '../tsconfig.base.json',
+						compilerOptions: { paths },
+					}),
+				}),
+			)
+
+		it('ссылка на себя в исходники — без нарушений, собран пакет или нет', () => {
+			for (const target of ['./src/index.ts', './src']) {
+				expect(check({ [NAME]: [target] }), target).toEqual([])
+				expect(check({ [NAME]: [target] }, BUILT), target).toEqual([])
+			}
+		})
+
+		it('нет ссылки на себя — нарушение', () => {
+			expect(check({ '@soldy-ui/core': ['../core/src'] })).toEqual([
+				`paths не знает сам пакет ${NAME} — тесты найдут его через node_modules, в dist`,
+			])
+		})
+
+		// Без сборки TypeScript откатывается с манифеста на index.ts рядом, и по
+		// одному итогу разрешения сторож в CI ошибки бы не увидел
+		it('каталог с манифестом — нарушение, собран пакет или нет', () => {
+			const violation = `paths ведёт ${NAME} в ["."] — имя разрешается через манифест, а он ведёт в dist`
+
+			expect(check({ [NAME]: ['.'] })).toEqual([violation])
+			expect(check({ [NAME]: ['.'] }, BUILT)).toEqual([violation])
+		})
+
+		it('ссылка в dist — нарушение, собран пакет или нет', () => {
+			const target = `paths ведёт ${NAME} в ["./dist/index.d.ts"]`
+
+			expect(check({ [NAME]: ['./dist/index.d.ts'] }, BUILT)).toEqual([
+				`${target} — имя разрешается в выход сборки`,
+			])
+			expect(check({ [NAME]: ['./dist/index.d.ts'] })).toEqual([
+				`${target} — имя ни во что не разрешается`,
+			])
+		})
+
+		// paths считаются от конфига, который их записал, а не от пакетного
+		it('ссылка на себя из extends — от каталога своего звена', () => {
+			const inherited = (target: string): string[] =>
+				checkSelfReference(
+					NAME,
+					CONFIG,
+					memoryHost({
+						...CLEAN,
+						'/tsconfig.base.json': text({
+							compilerOptions: { ...RESOLUTION, paths: { [NAME]: [target] } },
+						}),
+						[CONFIG]: text({ extends: '../tsconfig.base.json' }),
+					}),
+				)
+
+			expect(inherited('./example/src/index.ts')).toEqual([])
+			expect(inherited('./src/index.ts')).toEqual([
+				`paths ведёт ${NAME} в ["./src/index.ts"] — имя ни во что не разрешается`,
+			])
+		})
+
+		it('программа без тестов — без нарушений, даже без ссылки на себя', () => {
+			const { '/example/__tests__/example.spec.ts': _test, ...untested } = CLEAN
+
+			expect(check({}, untested)).toEqual([])
+		})
+
+		it('конфиг, который TypeScript не разобрал, — нарушение', () => {
+			expect(checkSelfReference(NAME, CONFIG, memoryHost(CLEAN))).toEqual([
+				expect.stringMatching(/^не разобран: .*\/example\/tsconfig\.json/),
 			])
 		})
 	})

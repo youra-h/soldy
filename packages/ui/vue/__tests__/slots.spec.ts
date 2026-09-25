@@ -74,6 +74,7 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'component-view/ComponentView.vue': ComponentViewDescriptor,
 	'dialog/Dialog.vue': DialogDescriptor,
 	'drag-and-drop/DragAndDrop.vue': DragAndDropDescriptor,
+	'drawer/Drawer.vue': DrawerDescriptor,
 	'frame/Frame.vue': FrameDescriptor,
 	'icon/Icon.vue': IconDescriptor,
 	'input/Input.vue': InputDescriptor,
@@ -240,7 +241,7 @@ describe('соответствие контракту', () => {
 	})
 
 	it('Drawer: заголовок, содержимое, подвал и иконка крестика', () => {
-		expect(templateSlots('src/components/drawer/Drawer.vue')).toEqual(
+		expect(templateSlots('drawer/Drawer.vue')).toEqual(
 			DrawerDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),

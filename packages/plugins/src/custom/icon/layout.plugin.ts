@@ -25,10 +25,10 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 			height: this._toCss(icon.height),
 		}
 
-		icon.events.on('change:width', (value) => {
+		this._listenTo(icon.events, 'change:width', (value) => {
 			this._patch('width', this._toCss(value))
 		})
-		icon.events.on('change:height', (value) => {
+		this._listenTo(icon.events, 'change:height', (value) => {
 			this._patch('height', this._toCss(value))
 		})
 	}

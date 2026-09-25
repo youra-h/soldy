@@ -1,7 +1,23 @@
 import { defineConfig } from 'vitest/config'
-import { playwright } from '@vitest/browser-playwright'
+import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
+
+/**
+ * Кнопка мыши отдельно от движения. `userEvent` жмёт и отпускает её только
+ * вместе с движением (`click`, `dragAndDrop`), а жесту бывает нужна пауза с
+ * зажатой кнопкой — стоянка ручки ползунка на метке
+ * (`browser/slider.spec.ts`). Двигает мышь по-прежнему `userEvent.hover`: он
+ * и переводит точку из рамки теста в координаты страницы. Типы команд —
+ * `browser/commands.d.ts`.
+ */
+const mouseDown = defineBrowserCommand(async ({ page }) => {
+	await page.mouse.down()
+})
+
+const mouseUp = defineBrowserCommand(async ({ page }) => {
+	await page.mouse.up()
+})
 
 /**
  * Прогон в настоящем браузере — для того, что jsdom не считает вовсе.
@@ -55,6 +71,7 @@ export default defineConfig({
 				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
 			}),
 			instances: [{ browser: 'chromium' }],
+			commands: { mouseDown, mouseUp },
 		},
 	},
 	resolve: {

@@ -126,18 +126,18 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 			// оставил бы панель суженной прежним запросом. Именно на выбор
 			// пользователя (`choose`), а не на любую смену выбора: её поле
 			// переживает, пока в нём печатают, и отбор обязан пережить тоже.
-			this._selectExtension?.events.on('choose', () => {
+			this._listenTo(this._selectExtension?.events, 'choose', () => {
 				if (this._owner?.editable) this._resetQuery()
 			})
 		})
 
 		// Оба свойства решают одно: слушать ввод или нет
-		this._owner?.events.on('change:editable', () => {
+		this._listenTo(this._owner?.events, 'change:editable', () => {
 			this._syncListener()
 			this._syncFocusListener()
 			this._returnField()
 		})
-		this._owner?.events.on('change:editableMode', () => {
+		this._listenTo(this._owner?.events, 'change:editableMode', () => {
 			this._syncListener()
 			this._returnField()
 		})

@@ -124,7 +124,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		})
 
 		// Панель могла открыться после того, как якорь уже назначен
-		this._frame?.events.on('show', () => this._update())
+		this._listenTo(this._frame?.events, 'show', () => this._update())
 	}
 
 	setAnchor(element: Element): void {

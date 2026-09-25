@@ -1,4 +1,5 @@
 export type {
+	IListenable,
 	IPlugin,
 	IPluginContext,
 	IPluginConstructor,

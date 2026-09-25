@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { arrowStep, fractionAt, slideDirection } from '../src'
+import { arrowStep, fractionAt, lengthAlong, slideDirection } from '../src'
 import type { TSlideDirection } from '../src'
 import type { TSlideOrientation } from '@soldy-ui/core'
 
@@ -65,6 +65,20 @@ describe('fractionAt — доля хода по коробке дорожки и
 		expect(
 			fractionAt('from-left', new DOMRect(10, 10, 0, 0), { clientX: 40, clientY: 0 }),
 		).toBe(0)
+	})
+})
+
+describe('lengthAlong — длина хода по оси направления', () => {
+	// Та же дорожка 200×40: по ней радиус щелчка в px становится долей хода
+	const box = new DOMRect(100, 50, 200, 40)
+
+	it.each<[TSlideDirection, number]>([
+		['from-left', 200],
+		['from-right', 200],
+		['from-bottom', 40],
+		['from-top', 40],
+	])('%s → %s px', (direction, expected) => {
+		expect(lengthAlong(direction, box)).toBe(expected)
 	})
 })
 

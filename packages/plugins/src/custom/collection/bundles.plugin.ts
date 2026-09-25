@@ -31,7 +31,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 		const plain = engine.extensions.plain as TPlainExtension<IControl>
 
 		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
-		plain.events.on('item:removed', (e) => {
+		this._listenTo(plain.events, 'item:removed', (e) => {
 			const uid = this._uid(e.item)
 
 			if (uid !== undefined) {
@@ -39,7 +39,7 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 			}
 		})
 
-		plain.events.on('reset', () => {
+		this._listenTo(plain.events, 'reset', () => {
 			this._bundles.clear()
 		})
 

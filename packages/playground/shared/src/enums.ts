@@ -13,6 +13,7 @@ import type {
 	TSkeletonShape,
 	TSkeletonAnimation,
 	TSlideOrientation,
+	TSlideSnap,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -119,6 +120,9 @@ export const TABS_ORIENTATIONS = enumOf<TTabsOrientation>()(['horizontal', 'vert
 
 /** Ось хода ползунка — общая у всего, что задают перетаскиванием. */
 export const SLIDE_ORIENTATIONS = enumOf<TSlideOrientation>()(['horizontal', 'vertical'])
+
+/** Щелчок к меткам: как метки притягивают ручку, которую тянут указателем. */
+export const SLIDE_SNAPS = enumOf<TSlideSnap>()(['none', 'magnet', 'plateau', 'settle', 'hold'])
 
 export const TABS_ALIGNMENTS = enumOf<TTabsAlignment>()(['start', 'center', 'end', 'stretch'])
 
