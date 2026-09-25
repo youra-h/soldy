@@ -46,8 +46,14 @@ export function lengthAlong(direction: TSlideDirection, box: DOMRectReadOnly): n
 
 /**
  * Доля хода в точке указателя по коробке дорожки: 0 — у `min`, 1 — у `max`,
- * за краями — край. Коробка дорожки — ход центров ручек, её края и есть 0 и
- * 1 (контракт с темой). Коробка нулевой длины — начало хода.
+ * за краями — за 0 и 1. Коробка дорожки — ход центров ручек, её края и есть 0
+ * и 1 (контракт с темой). Коробка нулевой длины — начало хода.
+ *
+ * Долю здесь не прижимают — прижимает владелец, и не долю указателя, а итог.
+ * Ручку он ведёт со смещением захвата, и прижатая доля не довела бы до края
+ * ручку, взятую не за середину. А по точке нажатия он решает, какую из ручек
+ * на одном значении вести: прижатая к краю, она спутала бы с движением наружу
+ * движение внутрь, начатое ещё за краем.
  */
 export function fractionAt(
 	direction: TSlideDirection,
@@ -56,7 +62,7 @@ export function fractionAt(
 ): number {
 	const length = lengthAlong(direction, box)
 
-	return length > 0 ? Math.min(1, Math.max(0, OFFSET[direction](box, point) / length)) : 0
+	return length > 0 ? OFFSET[direction](box, point) / length : 0
 }
 
 /**
