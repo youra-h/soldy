@@ -1,4 +1,5 @@
 import { TSlideSnapStrategy } from './base.strategy'
+import { withinTravel } from './points'
 import type { TPlateauKnot, TSlideSnapContext } from './types'
 
 /**
@@ -82,7 +83,7 @@ function anchored(knots: readonly TPlateauKnot[], anchor: number): readonly TPla
  * краями хода — край. В узле — ровно его «встаёт»: якорь отдаётся как есть.
  */
 function along(knots: readonly TPlateauKnot[], target: number): number {
-	const at = Math.min(1, Math.max(0, target))
+	const at = withinTravel(target)
 	let index = 0
 
 	while (index < knots.length - 2 && knots[index + 1][0] <= at) index++

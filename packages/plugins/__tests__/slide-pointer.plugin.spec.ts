@@ -215,6 +215,51 @@ describe('протяжка', () => {
 		expect(document.activeElement).toBe(fields[0])
 	})
 
+	/**
+	 * Взялись за ручку на 4 px ближе к краю, к которому тянут. Ядро прибавляет к
+	 * доле указателя смещение захвата, и доля, прижатая к краю дорожки,
+	 * оставила бы ручку в двух значениях от края: 98 вместо 100, 2 вместо 0.
+	 * Так и в каждом режиме щелчка — метка 50 на пути не стоит.
+	 */
+	it.each<TSlideSnap>(['none', 'magnet', 'plateau', 'settle', 'hold'])(
+		'%s: захват не по центру, указатель за краем дорожки — ручка на краю хода',
+		async (snap) => {
+			const { owner, thumbs, root, pointer } = await mount(
+				slider({ value: [10, 90], marks: [{ value: 50 }], snap }),
+			)
+
+			// Центр ручки 90 — 280 px, взялись в 284; указатель — за правым краем
+			pointer('pointerdown', thumbs[1], 284)
+			pointer('pointermove', root, 400)
+			expect(owner.value).toEqual([10, 100])
+			pointer('pointerup', root, 400)
+
+			// Центр ручки 10 — 120 px, взялись в 116; указатель — за левым краем
+			pointer('pointerdown', thumbs[0], 116)
+			pointer('pointermove', root, 0)
+			expect(owner.value).toEqual([0, 100])
+		},
+	)
+
+	/**
+	 * Ручки на одном значении у края хода. Взялись за внешнюю половину — точка
+	 * нажатия за краем дорожки, и какую ручку вести, первое движение решает
+	 * относительно неё. Прижатая к краю, она спутала бы направление: движение
+	 * внутрь, ещё за краем, вышло бы движением наружу, и повела бы верхняя
+	 * ручка — в упор в нижнюю.
+	 */
+	it('ручки на краю хода: взяли за внешнюю половину и повели внутрь — ведёт нижняя', async () => {
+		const { owner, thumbs, root, fields, pointer } = await mount(slider({ value: [100, 100] }))
+
+		// Центр ручек — 300 px, край дорожки; взялись в 304
+		pointer('pointerdown', thumbs[1], 304)
+		pointer('pointermove', root, 302)
+		pointer('pointermove', root, 284)
+
+		expect(owner.value).toEqual([90, 100])
+		expect(document.activeElement).toBe(fields[0])
+	})
+
 	it('отпускание заканчивает жест: dragging снят, commit — один', async () => {
 		const { owner, track, root, pointer } = await mount(slider({ value: 50 }))
 		const commit = vi.fn()
@@ -360,6 +405,7 @@ describe('владелец — любой ISlidable', () => {
 		}
 	}
 
+	/** Доля за краем дорожки уходит владельцу как есть: прижимает он. */
 	it('части — по классам владельца, доли — в направлении роста', async () => {
 		const { owner, thumbs, track, root, pointer } = await mount(new TProbe())
 
@@ -368,7 +414,12 @@ describe('владелец — любой ISlidable', () => {
 		pointer('pointerup', root, 150)
 		pointer('pointerdown', track, 350)
 
-		expect(owner.calls).toEqual([['grab', 1, 0.75], ['drag', 0.25], ['release'], ['press', 1]])
+		expect(owner.calls).toEqual([
+			['grab', 1, 0.75],
+			['drag', 0.25],
+			['release'],
+			['press', 1.25],
+		])
 	})
 
 	/**

@@ -1,10 +1,11 @@
 /**
  * Dialog в настоящем браузере: раскладка темы и действия браузера.
  *
- * Место, размер и разворот раскладывает тема, без замеров, — jsdom их не
- * считает, и юнит-тесты (`ui/vue/__tests__/dialog.spec.ts`) видят только
- * классы и переменные. Здесь — что из них выходит на экране: окно по центру
- * и у сторон (логических — в RTL `start` справа), развёрнутое на весь экран,
+ * Место, размер, отступ от краёв экрана и разворот раскладывает тема, без
+ * замеров, — jsdom их не считает, и юнит-тесты
+ * (`ui/vue/__tests__/dialog.spec.ts`) видят только классы и переменные. Здесь
+ * — что из них выходит на экране: окно по центру и у сторон (логических — в
+ * RTL `start` справа), на своём отступе от краёв, развёрнутое на весь экран,
  * длинное содержимое прокручивается в теле.
  *
  * Действие `mousedown` jsdom тоже не выполняет: там видно лишь, что модель
@@ -20,6 +21,7 @@ import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Dialog } from '@soldy-ui/vue'
 import type { IDialogProps, TDialogPlacement } from '@soldy-ui/core'
+import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 
 import '@soldy-ui/theme-oren'
 
@@ -45,9 +47,13 @@ const inside = (): VNode[] => [
 
 /**
  * Страница с кнопкой, которая открывает окно, и окно на `v-model:visible`.
- * В подвале — ещё одна остановка Tab.
+ * В подвале — ещё одна остановка Tab. Кроме пропсов окна — обработчики его
+ * событий (`onLayout:offset:before`).
  */
-const show = async (props: Partial<IDialogProps> = {}, content: () => VNode[] = inside) => {
+const show = async (
+	props: Partial<IDialogProps> & Record<string, unknown> = {},
+	content: () => VNode[] = inside,
+) => {
 	const shown = ref(false)
 
 	render(
@@ -249,6 +255,115 @@ describe('размер', () => {
 		expect(title.top).toBeGreaterThanOrEqual(box.top)
 		expect(footer.bottom).toBeLessThanOrEqual(box.bottom + EPSILON)
 		expect(footer.height).toBeGreaterThan(0)
+	})
+})
+
+/**
+ * Отступ — поля области экрана, в которую тема вписывает окно: у центра окно
+ * по центру области, у стороны — у её края, и во всех случаях область —
+ * потолок размера. Проверяется окном больше экрана: оно упирается в потолок,
+ * и зазоры до краёв экрана — это и есть отступы.
+ */
+describe('отступ', () => {
+	/** Больше экрана с любым отступом: окно упирается в потолок. */
+	const HUGE = { width: 5000, height: 5000 } as const
+
+	/** Зазор до края совпал с ожидаемым в пределах допуска. */
+	const near = (actual: number, expected: number) =>
+		expect(Math.abs(actual - expected)).toBeLessThan(EPSILON)
+
+	it('0 — окно-потолок вплотную к краям экрана', async () => {
+		await show({ ...HUGE, offset: 0 })
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+
+		near(left, 0)
+		near(right, 0)
+		near(top, 0)
+		near(bottom, 0)
+	})
+
+	it('число у центра — отступ со всех сторон', async () => {
+		await show({ ...HUGE, offset: 40 })
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+
+		near(left, 40)
+		near(right, 40)
+		near(top, 40)
+		near(bottom, 40)
+	})
+
+	it('число у центра окна меньше экрана его не двигает: окно по-прежнему по центру', async () => {
+		await show({ offset: 40 })
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+
+		near(left, right)
+		near(top, bottom)
+	})
+
+	/**
+	 * У стороны окно стоит от своего края на отступ, а по другой оси — по
+	 * центру. `start` и `end` — логические: в RTL меняются местами.
+	 */
+	it.each<[TDialogPlacement, 'ltr' | 'rtl', 'left' | 'right']>([
+		['start', 'ltr', 'left'],
+		['start', 'rtl', 'right'],
+		['end', 'ltr', 'right'],
+		['end', 'rtl', 'left'],
+	])('число у %s в %s — от края %s', async (placement, direction, edge) => {
+		await show({ placement, direction, offset: 40 })
+		await open()
+
+		const box = gaps()
+
+		near(box[edge], 40)
+		near(box.top, box.bottom)
+	})
+
+	it("'10%' — от экрана по своей оси: по горизонтали от ширины, по вертикали от высоты", async () => {
+		await show({ ...HUGE, offset: '10%' })
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+		const { width, height } = viewport()
+
+		near(left, width / 10)
+		near(right, width / 10)
+		near(top, height / 10)
+		near(bottom, height / 10)
+	})
+
+	it('top из события сдвигает центр: окно по центру области, а не экрана', async () => {
+		await show({
+			offset: 20,
+			'onLayout:offset:before': (event: TDialogOffsetEvent) => {
+				event.top = 200
+			},
+		})
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+
+		// Поровну от краёв области — а они в 200 и 20 от краёв экрана
+		near(top - 200, bottom - 20)
+		near(left, right)
+	})
+
+	it('развёрнутое отступов не читает — на весь экран', async () => {
+		await show({ maximized: true, offset: 50 })
+		await open()
+
+		const { left, right, top, bottom } = gaps()
+
+		near(left, 0)
+		near(right, 0)
+		near(top, 0)
+		near(bottom, 0)
 	})
 })
 
