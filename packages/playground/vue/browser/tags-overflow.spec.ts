@@ -22,6 +22,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
+import { expectClearOfFades, fades } from './fades'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -55,6 +56,14 @@ const NARROW = 260
  * порядок ряда не проверить — кнопке не с чем стоять рядом.
  */
 const SEVERAL = 560
+
+/**
+ * Ширина ленты `arrows`, в чистой части которой — между подсказками у краёв —
+ * помещается строка любого тега. В узкой строка «Санкт-Петербург» шире чистой
+ * части, а более широкий элемент не встанет в неё ни при каком решении. Листать
+ * при этом есть что: ряд всё равно шире ленты в несколько раз.
+ */
+const ROWS = 320
 
 const harness = (width: number, props: Record<string, unknown> = {}) =>
 	defineComponent({
@@ -495,8 +504,11 @@ describe('режим arrows: ряд листают кнопки', () => {
 		expect(document.activeElement).toBe(line(TAGS[1]))
 	})
 
-	/** Фокус за краем ленту подтягивает сам — это делает браузер. */
-	it('фокус на теге за краем подтягивает его в зону видимости', async () => {
+	/**
+	 * Фокус за краем ленту подтягивает сам — это делает браузер, — и не под
+	 * подсказку у края, а в чистую часть ленты.
+	 */
+	it('фокус на теге за краем подтягивает его в чистую часть', async () => {
 		render(arrows({ mode: 'multiple' }))
 
 		await scrollable()
@@ -510,10 +522,93 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 		await expect.poll(() => viewport().scrollLeft).toBeGreaterThan(0)
 
-		const box = last.getBoundingClientRect()
-		const area = viewport().getBoundingClientRect()
+		// Края замер пишет кадром позже прокрутки, маска меняется вслед за ними
+		await nextFrame()
+		await nextFrame()
 
-		expect(box.right).toBeLessThanOrEqual(area.right + 0.5)
-		expect(box.left).toBeGreaterThanOrEqual(area.left - 0.5)
+		expectClearOfFades(last, viewport(), 'последний тег')
+	})
+
+	/**
+	 * Элемент под фокусом не остаётся под подсказкой у края — ни при переходе
+	 * вперёд, ни обратно: у края оказывается то следующий, то предыдущий.
+	 * Частично видимый элемент браузер при фокусе не докручивает, а видимая
+	 * часть ленты для него — окно снапа, и тема делает её чистой частью, между
+	 * подсказками (`scroll-padding-inline` в `scroller/_scroller.scss`).
+	 *
+	 * Остановки Tab у набора без выбора — крестики, с выбором — строки тегов
+	 * (roving tabindex).
+	 */
+	describe('элемент под фокусом не остаётся под подсказкой', () => {
+		/** Узел по порядку в списке; нет его или он не HTML — тест падает здесь. */
+		const at = (nodes: Element[], index: number): HTMLElement => {
+			const node = nodes[index]
+
+			if (!(node instanceof HTMLElement)) throw new Error(`узел ${index}: HTML-узла нет`)
+
+			return node
+		}
+
+		/**
+		 * Элемент под фокусом лежит в чистой части ленты, когда она улеглась:
+		 * прокрутка от фокуса мгновенная, но края замер пишет кадром позже, и
+		 * маска меняется вслед за ними.
+		 */
+		const expectFocusedClear = async (element: HTMLElement, what: string) => {
+			await nextFrame()
+			await nextFrame()
+
+			expect(document.activeElement, `${what}: фокус`).toBe(element)
+
+			// Шире чистой части элемент не встанет в неё ни при каком решении
+			const { left, right } = fades(viewport())
+			const clear = viewport().getBoundingClientRect().width - left - right
+
+			expect(element.getBoundingClientRect().width, `${what} уже чистой части`).toBeLessThan(
+				clear,
+			)
+
+			expectClearOfFades(element, viewport(), what)
+		}
+
+		it('без выбора: крестик по очереди вперёд и обратно', async () => {
+			render(arrows())
+
+			await scrollable()
+
+			const closes = [...viewport().querySelectorAll('.s-tags-item__close')]
+			const forth = [...closes.keys()]
+			const back = [...forth].reverse().slice(1)
+
+			expect(closes, 'крестиков в ряду').toHaveLength(TAGS.length)
+
+			for (const index of [...forth, ...back]) {
+				const close = at(closes, index)
+
+				close.focus()
+
+				await expectFocusedClear(close, `крестик ${index}`)
+			}
+		})
+
+		it('с выбором: строка стрелками до последнего тега и обратно', async () => {
+			render(harness(ROWS, { overflow: 'arrows', mode: 'multiple' }))
+
+			await scrollable()
+
+			line(TAGS[0]).focus()
+
+			await expectFocusedClear(line(TAGS[0]), `строка «${TAGS[0]}»`)
+
+			for (const text of TAGS.slice(1)) {
+				await userEvent.keyboard('{ArrowRight}')
+				await expectFocusedClear(line(text), `строка «${text}»`)
+			}
+
+			for (const text of [...TAGS].reverse().slice(1)) {
+				await userEvent.keyboard('{ArrowLeft}')
+				await expectFocusedClear(line(text), `строка «${text}»`)
+			}
+		})
 	})
 })

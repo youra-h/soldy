@@ -19,6 +19,8 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Scroller } from '@soldy-ui/vue'
 
+import { expectClearOfFades, fades } from './fades'
+
 import '@soldy-ui/theme-oren'
 
 /** Содержимое заведомо шире узкой ленты и заведомо уже широкой. */
@@ -71,6 +73,8 @@ const canNext = () => root().dataset.canNext
 
 /** Замер идёт кадрами, а прокрутка плавная: состояние читаем через poll. */
 const settled = (fact: () => unknown, expected: unknown) => expect.poll(fact).toBe(expected)
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 beforeEach(() => {
 	// Тема читается с корня документа — тот же атрибут, что в `index.html`
@@ -212,4 +216,134 @@ describe('прокручиваемая область достижима с кл
 
 		expect(viewport().hasAttribute('tabindex')).toBe(false)
 	})
+})
+
+/**
+ * Подсказка у края гасит содержимое, и элемент под фокусом не вправе остаться
+ * под ней. Частично видимый элемент браузер при фокусе не докручивает — только
+ * тот, что целиком за видимой частью ленты. Видимая часть для него — окно
+ * снапа, и тема делает окно чистой частью ленты, между подсказками
+ * (`scroll-padding-inline` в `scroller/_scroller.scss`). Пока окно было
+ * шириной в запас под кольцо фокуса, кнопка у края оставалась под подсказкой:
+ * видно было 12.5px из 75.
+ *
+ * Проверяется каждая кнопка — сначала вперёд, потом обратно: у края под
+ * подсказкой оказывается то следующая, то предыдущая.
+ */
+describe('элемент под фокусом не остаётся под подсказкой', () => {
+	/** Кнопок столько, что лента листается на несколько страниц в обе стороны. */
+	const STOPS = [...ITEMS, 'Седьмой', 'Восьмой']
+
+	/** Узкая лента, в которой каждый элемент — остановка Tab. */
+	const stops = (dir: 'ltr' | 'rtl') =>
+		defineComponent({
+			render() {
+				return h('div', { class: 's-host', dir, style: `width: ${NARROW}px` }, [
+					h(Scroller, null, () =>
+						STOPS.map((text) =>
+							h(
+								'button',
+								{
+									key: text,
+									class: 's-test-item',
+									style: 'padding: 4px 12px; white-space: nowrap',
+								},
+								text,
+							),
+						),
+					),
+				])
+			},
+		})
+
+	/**
+	 * Фокус на элементе, когда лента улеглась: прокрутка от фокуса мгновенная,
+	 * но края замер пишет кадром позже, и маска меняется вслед за ними.
+	 */
+	const focus = async (element: HTMLElement) => {
+		element.focus()
+
+		await nextFrame()
+		await nextFrame()
+	}
+
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: каждая кнопка под фокусом — в чистой части, вперёд и обратно',
+		async (dir) => {
+			render(stops(dir))
+
+			await settled(canNext, 'true')
+
+			const buttons = [...viewport().querySelectorAll('button')]
+			const forth = [...buttons.keys()]
+			const back = [...forth].reverse().slice(1)
+
+			expect(buttons, 'кнопок в ленте').toHaveLength(STOPS.length)
+
+			for (const index of [...forth, ...back]) {
+				const button = buttons[index]
+
+				await focus(button)
+
+				expect(document.activeElement, `кнопка ${index}: фокус`).toBe(button)
+
+				// Шире чистой части элемент не встанет в неё ни при каком решении
+				const { left, right } = fades(viewport())
+				const clear = viewport().getBoundingClientRect().width - left - right
+
+				expect(
+					button.getBoundingClientRect().width,
+					`кнопка ${index} уже чистой части`,
+				).toBeLessThan(clear)
+
+				expectClearOfFades(button, viewport(), `кнопка ${index}`)
+			}
+		},
+	)
+
+	/**
+	 * Страница, до которой снап доводит листание, встаёт за подсказкой, а не под
+	 * ней: элемент в её начале виден целиком. Это та же чистая часть — окно
+	 * снапа, по которому ставится и страница, и элемент под фокусом.
+	 */
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: после «вперёд» элемент у начала ленты — в чистой части',
+		async (dir) => {
+			render(harness(NARROW, dir))
+
+			await settled(canNext, 'true')
+
+			// Прокрутка плавная, а снап доводит её в самом конце: ждём конца
+			const scrolled = new Promise((resolve) =>
+				viewport().addEventListener('scrollend', resolve, { once: true }),
+			)
+
+			await userEvent.click(next())
+			await scrolled
+			await settled(canPrev, 'true')
+			await nextFrame()
+			await nextFrame()
+
+			const area = viewport().getBoundingClientRect()
+			const fade = fades(viewport())
+
+			// Элемент у начала — первый, что заходит в чистую часть. Снап ставит
+			// ленту на целый пиксель, а границы элементов дробные, и предыдущий
+			// заходит в неё на субпиксель: такой не в счёт. Начало строки в RTL —
+			// правый край
+			const first = [...viewport().children].find((item) => {
+				const box = item.getBoundingClientRect()
+
+				return dir === 'ltr'
+					? box.right > area.left + fade.left + 0.5
+					: box.left < area.right - fade.right - 0.5
+			})
+
+			if (!first) throw new Error('в чистой части ленты нет ни одного элемента')
+
+			// Подсказки у начала нет — и встать за неё проверка не требует
+			expect(dir === 'ltr' ? fade.left : fade.right, 'подсказка у начала').toBeGreaterThan(0)
+			expectClearOfFades(first, viewport(), 'элемент у начала ленты')
+		},
+	)
 })
