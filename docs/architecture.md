@@ -535,11 +535,12 @@ hover: в тёмной схеме заливка светлеет.
 `triggers` это `['change:rendered', 'change:visible']`, т.е. те же события, что
 у самих `rendered` и `visible`. Наивный обход всех свойств повесил бы две
 подписки на `change:rendered`, и потребитель получал бы **два эмита на одно
-изменение**. Поэтому `bindEvents` связки подписывается на пару «источник, сырое
-имя» один раз — одинаково во всех адаптерах.
+изменение**. Поэтому `events.listen` связки подписывается на пару «источник,
+сырое имя» один раз — одинаково во всех адаптерах.
 
 Дедуплицировать можно **только проброс событий**. Синхронизацию состояния
-(`subscribe`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
+(`state.subscribe`) — нельзя: `present` обязан пересчитываться на обоих
+триггерах.
 
 ### Контракт границы: значение, а не ручка на живое состояние
 
@@ -1485,9 +1486,9 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 
 - `useAdapter(adapter, props, emit)` - Main hook over the exchange `adapter.connect(VueProfile)`; дженерики не пишутся: инстанс и выходы плагинов — из контракта контекста, `TProps` — из `props`
   - Returns `TBinding`: `ctrl`, `plugins`, props refs and plugin outputs; `rootElement` — only when the bundle has `TElementPlugin`
-  - Core → Vue: a ref per property with triggers. `binding.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
-  - Vue → core: `watch` per input prop → `binding.write`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
-  - Events: `bindEvents` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
+  - Core → Vue: a ref per property with triggers. `state.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
+  - Vue → core: `watch` per input prop → the input's `offer`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
+  - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
 - `useCollectionAdapter()` - То же для контекста фасада коллекции; `ctrl` и `rootElement` не отдаёт — они принадлежат владельцу (AGENTS.md, «Vue collection setup»)
@@ -1501,13 +1502,14 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 **Отписка обязательна.** `adapter.destroy()` работает только с собственным
 `TEvented` адаптера и не трогает `instance.events`. При внешнем `ctrl`,
 переживающем компонент (документированный сценарий), хендлеры копились бы с
-каждым монтированием. Отписки отдаёт связка (`subscribe`, `bindEvents`),
-`useAdapter` зовёт их на `onUnmounted`.
+каждым монтированием. Отписки отдаёт связка (`state.subscribe`,
+`events.listen`), `useAdapter` зовёт их на `onUnmounted`.
 
-**`v-model`.** Профиль Vue объявляет модель (`update:<prop>`) для каждого записываемого
-свойства с триггерами, поверхность кладёт её в `exportEvents`, связка эмитит в `bindEvents` (значение
-перечитывается связкой, а не берётся из аргумента события: у производных
-триггеров полезная нагрузка может не совпадать со свойством).
+**`v-model`.** Профиль Vue объявляет модель (`update:<prop>`) для каждого
+записываемого свойства с триггерами, поверхность кладёт её в `exportEvents`,
+связка эмитит в `events.listen` (значение перечитывается связкой, а не берётся
+из аргумента события: у производных триггеров полезная нагрузка может не
+совпадать со свойством).
 
 #### Elevator (`adapter/elevator/`)
 
@@ -1611,7 +1613,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
 - Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the line and the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
-- Events: `binding.bindEvents` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
+- Events: `binding.events.listen` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
 ### Theming (`@soldy-ui/theme-oren`) — foundation REMOVED
@@ -1651,8 +1653,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   с полным именем события ядра — `actionPress` и `action:press`).
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)`: `state` (сигнал), `syncInputs`
-  (`writeChanged` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
-  заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents` (`bindEvents` →
+  (`inputs.delta` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
+  заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents` (`events.listen` →
   `EventEmitter` аутпутов, первым аргументом события ядра), `bindElement`,
   `destroy`; `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
   дескриптора); `TComponentBase` (общий жизненный цикл), `AriaDirective`
@@ -1869,7 +1871,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 дескриптора, setup и ссылки на шаблон.
 
 **Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
-для JS) — оба кормят `syncProps` адаптера, а тот — `writeChanged` связки:
+для JS) — оба кормят `syncProps` адаптера, а тот — `inputs.delta` связки:
 элемент отдаёт не полный набор пропсов, а то, что задано, — по одному атрибуту
 или свойству. Выставленное до подключения уходит в сборку контекста. Атрибут
 приводится к типу декларации; для Boolean действует HTML-семантика: значимо

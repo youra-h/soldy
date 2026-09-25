@@ -86,7 +86,7 @@ export function useAdapter<C extends IComponentContract>(
 		plugins: adapter.bundle,
 
 		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
-		// `writeChanged`: `writeAll` сбросил бы к умолчанию все остальные
+		// `inputs.delta`: `inputs.full` сбросил бы к умолчанию все остальные
 		syncInputs(inputs: object): void {
 			binding.inputs.delta(inputs)
 		},
