@@ -1,0 +1,302 @@
+@use '../../mixins/modal';
+
+// Drawer — выезжающая панель.
+//
+// Анатомия — как у модального окна: корень — сама панель и несёт слой,
+// подложка — её сосед, раньше в DOM, `z-index` у них одно число инлайном, и
+// по `data-layer` ничего не красится. Подложка, поверхность, заголовок, тело,
+// подвал и кнопка закрытия — общие с окном (`mixins/_modal.scss`).
+//
+// Своё у панели — край, размер по оси края, полоса жеста, въезд и выезд и
+// место в контейнере. Всё это раскладка темы, без замеров: код отдаёт
+// значения модификатором (`--placement-*`), переменными (`--drawer-width`,
+// `--drawer-height`, сдвиг жеста `--drawer-swipe`) и `data-*` (`data-open`,
+// `data-swiping`, `data-contained`).
+
+// Ширина панели у бокового края, пока `width` не задан: колонка фильтров или
+// меню, а не вторая страница.
+$width: 20rem;
+
+// Полоса подложки, которая видна при любом размере панели: по ней панель
+// закрывают нажатием мимо, и из-под панели видно, откуда её открыли.
+$gap: 3rem;
+
+// Зона захвата полосы жеста — не меньше 44px (WCAG 2.5.5, Apple HIG): полосу
+// берут пальцем.
+$handle: 2.75rem;
+
+// Сама полоса — штрих посередине зоны, вдоль края.
+$grip-length: 2.25rem;
+$grip-thickness: 0.25rem;
+
+// Въезд и выезд. Кривая замедляется к концу — панель подъезжает, а не
+// врезается; её же берёт возврат на место после жеста.
+$duration: 300ms;
+$easing: cubic-bezier(0.32, 0.72, 0, 1);
+
+// Подложка — на весь экран, а внутри контейнера — на контейнер (см.
+// `modal.backdrop`). Закрытая гаснет: `data-open` у неё тот же, что у панели.
+.s-drawer__backdrop {
+	@apply fixed inset-0;
+	@include modal.backdrop;
+
+	&[data-contained='true'] {
+		@apply absolute;
+	}
+
+	&[data-open='false'] {
+		@apply opacity-0;
+	}
+}
+
+// Панель — поверхность модального слоя (`modal.surface`), прижатая к своему
+// краю. Скруглены только углы со стороны страницы: у края экрана углов нет.
+.s-drawer {
+	@apply fixed;
+	@include modal.surface;
+
+	// Прозрачный контур — вторая половина кромки, как у панелей Popover и
+	// Select: в режиме принудительных цветов браузер убирает кольцо вместе с
+	// тенью, а цвет контура заменяет системным, и контур становится рамкой. Он
+	// же гасит кольцо фокуса: фокус панель получает, только когда внутри
+	// нечего фокусировать, а она не контрол, а контейнер диалога.
+	@apply outline outline-transparent;
+
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'title close'
+		'body body'
+		'footer footer';
+
+	// Внутри контейнера — в ближайшем позиционированном предке, а не на экране.
+	&[data-contained='true'] {
+		@apply absolute;
+	}
+
+	// Край. Боковая панель — во всю высоту, ширина — переменной; верхняя и
+	// нижняя — во всю ширину, высота — переменной, а не задана — по
+	// содержимому. Потолок — экран (контейнер) без полосы подложки: длинное
+	// содержимое прокручивается в теле, а шапка, подвал и кнопка остаются на
+	// месте. `start` и `end` — логические стороны: в RTL панель сама встаёт у
+	// другого края.
+	&--placement-start,
+	&--placement-end {
+		@apply inset-y-0;
+		width: var(--drawer-width, #{$width});
+		max-width: calc(100% - #{$gap});
+	}
+
+	&--placement-top,
+	&--placement-bottom {
+		@apply inset-x-0;
+		height: var(--drawer-height, auto);
+		max-height: calc(100% - #{$gap});
+	}
+
+	&--placement-start {
+		inset-inline-start: 0;
+		border-start-end-radius: var(--radius-lg);
+		border-end-end-radius: var(--radius-lg);
+	}
+
+	&--placement-end {
+		inset-inline-end: 0;
+		border-start-start-radius: var(--radius-lg);
+		border-end-start-radius: var(--radius-lg);
+	}
+
+	&--placement-top {
+		inset-block-start: 0;
+		border-end-start-radius: var(--radius-lg);
+		border-end-end-radius: var(--radius-lg);
+	}
+
+	&--placement-bottom {
+		inset-block-end: 0;
+		border-start-start-radius: var(--radius-lg);
+		border-start-end-radius: var(--radius-lg);
+	}
+
+	// Тянут — курсор «держу», и по всей панели, куда бы он ни ушёл.
+	&[data-swiping='true'] {
+		@apply cursor-grabbing;
+	}
+}
+
+// Где стоит панель. Открытая — на месте, а во время жеста — со сдвигом к
+// краю, который пишет плагин жеста (`--drawer-swipe`, px со знаком оси окна).
+// Закрытая — за своим краем (`--drawer-away`, своя переменная темы): туда она
+// уезжает при закрытии и оттуда въезжает при открытии.
+//
+// Сдвиг — `translate`, а не отступ: он от размера самой панели и ничего не
+// раскладывает заново. RTL читается атрибутом, а не `:dir()` — его сборка
+// превращает в список языков (AGENTS.md темы).
+.s-drawer--placement-start,
+.s-drawer--placement-end {
+	translate: var(--drawer-swipe, 0px) 0;
+}
+
+.s-drawer--placement-top,
+.s-drawer--placement-bottom {
+	translate: 0 var(--drawer-swipe, 0px);
+}
+
+.s-drawer--placement-start {
+	--drawer-away: -100% 0;
+}
+
+.s-drawer--placement-end {
+	--drawer-away: 100% 0;
+}
+
+:is([dir='rtl'] .s-drawer, .s-drawer[dir='rtl']) {
+	&.s-drawer--placement-start {
+		--drawer-away: 100% 0;
+	}
+
+	&.s-drawer--placement-end {
+		--drawer-away: -100% 0;
+	}
+}
+
+.s-drawer--placement-top {
+	--drawer-away: 0 -100%;
+}
+
+.s-drawer--placement-bottom {
+	--drawer-away: 0 100%;
+}
+
+.s-drawer[data-open='false'] {
+	translate: var(--drawer-away);
+}
+
+// Въезд и выезд. Закрытие — `display: none` от разметки, и
+// `transition-behavior: allow-discrete` откладывает его до конца перехода, а
+// `@starting-style` даёт показанной панели и подложке начальное положение —
+// за краем и прозрачную. Хуков под анимацию у кода нет.
+//
+// Пока панель тянут, перехода нет: она идёт за указателем без задержки. При
+// просьбе системы убрать движение — тоже: панель появляется и пропадает сразу.
+@media (prefers-reduced-motion: no-preference) {
+	.s-drawer:not([data-swiping='true']) {
+		transition-property: translate, display;
+		transition-duration: $duration;
+		transition-timing-function: $easing;
+		transition-behavior: allow-discrete;
+	}
+
+	.s-drawer__backdrop {
+		transition-property: opacity, display;
+		transition-duration: $duration;
+		transition-timing-function: $easing;
+		transition-behavior: allow-discrete;
+	}
+
+	@starting-style {
+		.s-drawer[data-open='true'] {
+			translate: var(--drawer-away);
+		}
+
+		.s-drawer__backdrop[data-open='true'] {
+			@apply opacity-0;
+		}
+	}
+}
+
+// Полоса жеста — посередине края, за который тянут, то есть края со стороны
+// страницы. Своя дорожка сетки, а не наложение: зона захвата не накрывает
+// заголовок и кнопку закрытия. Сама полоса декоративна — нажатие по ней
+// ничего не делает, тянут её жестом.
+.s-drawer__handle {
+	grid-area: handle;
+	@apply flex items-center justify-center cursor-grab;
+
+	&::before {
+		content: '';
+		@apply block shrink-0 rounded-full bg-s-neutral-300;
+	}
+}
+
+.s-drawer--placement-top > .s-drawer__handle,
+.s-drawer--placement-bottom > .s-drawer__handle {
+	block-size: $handle;
+
+	&::before {
+		inline-size: $grip-length;
+		block-size: $grip-thickness;
+	}
+}
+
+.s-drawer--placement-start > .s-drawer__handle,
+.s-drawer--placement-end > .s-drawer__handle {
+	inline-size: $handle;
+
+	&::before {
+		inline-size: $grip-thickness;
+		block-size: $grip-length;
+	}
+}
+
+// Дорожка полосы — у края со стороны страницы. Отступ содержимого с её
+// стороны держит сама зона: он шире обычного, и второй отступ сверх неё
+// отодвинул бы содержимое дальше, чем у панели без полосы.
+.s-drawer--placement-bottom:has(> .s-drawer__handle) {
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'handle handle'
+		'title close'
+		'body body'
+		'footer footer';
+
+	> .s-drawer__title {
+		padding-block-start: 0;
+	}
+
+	> .s-drawer__close {
+		margin-block-start: calc(
+			var(--spacing) * (#{modal.$title-line} - #{modal.$button-height}) / 2
+		);
+	}
+}
+
+.s-drawer--placement-top:has(> .s-drawer__handle) {
+	grid-template-rows: auto minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		'title close'
+		'body body'
+		'footer footer'
+		'handle handle';
+
+	> .s-drawer__footer {
+		padding-block-end: 0;
+	}
+}
+
+.s-drawer--placement-end:has(> .s-drawer__handle) {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'handle title close'
+		'handle body body'
+		'handle footer footer';
+
+	> :is(.s-drawer__title, .s-drawer__body, .s-drawer__footer) {
+		padding-inline-start: 0;
+	}
+}
+
+.s-drawer--placement-start:has(> .s-drawer__handle) {
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		'title close handle'
+		'body body handle'
+		'footer footer handle';
+
+	> :is(.s-drawer__title, .s-drawer__body, .s-drawer__footer) {
+		padding-inline-end: 0;
+	}
+}
+
+// Заголовок, тело, подвал и кнопка закрытия — как у окна.
+@include modal.parts('s-drawer', ('close'));

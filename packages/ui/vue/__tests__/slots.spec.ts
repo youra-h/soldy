@@ -14,6 +14,7 @@ import {
 	ButtonDescriptor,
 	ComponentViewDescriptor,
 	DialogDescriptor,
+	DrawerDescriptor,
 	LabelDescriptor,
 	PopoverDescriptor,
 	TagsDescriptor,
@@ -55,6 +56,14 @@ describe('соответствие контракту', () => {
 	it('Dialog: заголовок, содержимое, подвал и иконки кнопок шапки', () => {
 		expect(templateSlots('src/components/dialog/Dialog.vue')).toEqual(
 			DialogDescriptor()
+				.slots.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Drawer: заголовок, содержимое, подвал и иконка крестика', () => {
+		expect(templateSlots('src/components/drawer/Drawer.vue')).toEqual(
+			DrawerDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),
 		)

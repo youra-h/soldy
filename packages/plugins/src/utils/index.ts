@@ -1,7 +1,7 @@
 export { toCssValue } from './toCssValue'
 export { isMeasurableElement } from './isMeasurableElement'
 export { isFocusableElement } from './isFocusableElement'
-export { tabStops } from './tabStops'
+export { tabStops, closestControl } from './tabStops'
 export { tabStopsAfter } from './tabStopsAfter'
 export { focusFirst } from './focusFirst'
 export { isAboveLayer } from './isAboveLayer'
