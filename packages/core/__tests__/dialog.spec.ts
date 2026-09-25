@@ -44,6 +44,14 @@ describe('умолчания', () => {
 		expect('height' in TDialog.defaultValues).toBe(true)
 	})
 
+	it('отступ не задан: отступ темы, а не `0` — ноль значит «вплотную»', () => {
+		const dialog = new TDialog()
+
+		expect(dialog.offset).toBeUndefined()
+		expect('offset' in TDialog.defaultValues).toBe(true)
+		expect(dialog.getProps()).toHaveProperty('offset', undefined)
+	})
+
 	it('базовый класс s-dialog, корень — div', () => {
 		const dialog = new TDialog()
 
@@ -56,6 +64,7 @@ describe('умолчания', () => {
 			width: 480,
 			height: '50vh',
 			placement: 'end',
+			offset: '5%',
 			maximized: true,
 			maximizable: true,
 			closable: false,
@@ -176,6 +185,39 @@ describe('место', () => {
 
 		expect(placements).toEqual(['s-dialog--placement-start'])
 		expect(changes).toEqual(['start'])
+	})
+})
+
+describe('отступ', () => {
+	it('число, строка и 0 — значения, undefined снимает; change:offset только на смену', () => {
+		const dialog = new TDialog()
+		const offsets: (number | string | undefined)[] = []
+
+		dialog.events.on('change:offset', (value) => offsets.push(value))
+
+		dialog.offset = 24
+		dialog.offset = 24
+		dialog.offset = '5%'
+		dialog.offset = 0
+		dialog.offset = undefined
+		dialog.offset = undefined
+
+		expect(offsets).toEqual([24, '5%', 0, undefined])
+		expect(dialog.offset).toBeUndefined()
+	})
+
+	it('getProps отдаёт отступ', () => {
+		const dialog = new TDialog({ offset: 0 })
+
+		expect(dialog.getProps().offset).toBe(0)
+
+		dialog.offset = '2rem'
+
+		expect(dialog.getProps().offset).toBe('2rem')
+	})
+
+	it('отрицательное число — значение, а не «отступ темы»: не задан — это undefined', () => {
+		expect(new TDialog({ offset: -1 }).offset).toBe(-1)
 	})
 })
 
