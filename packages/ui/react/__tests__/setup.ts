@@ -8,6 +8,16 @@
 
 import { afterEach, beforeEach, expect } from 'vitest'
 import { format } from 'node:util'
+import { setIcons } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
+
+/**
+ * Пакет иконок подключает приложение — как тему. Тесты играют роль
+ * приложения: без пакета CheckBox рисует заглушку отметки и предупреждает в
+ * консоль о роли, которой нет, — а консоль здесь роняет тест.
+ */
+
+setIcons(material)
 
 /**
  * React узнаёт тестовое окружение по флагу `IS_REACT_ACT_ENVIRONMENT` на

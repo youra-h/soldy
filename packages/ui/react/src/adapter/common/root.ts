@@ -76,3 +76,21 @@ export function toRootLayout(state: TRootState, forward: TRootForward): TRootLay
 		},
 	}
 }
+
+/**
+ * Атрибуты вложенного контрола: пропсы, которые компонент не съел, без класса
+ * и стиля — те сливаются на корне (`toRootLayout`). Так поле раздаёт атрибуты
+ * потребителя двум элементам: обёртке — вид, `<input>` — всё остальное,
+ * события, `aria-*` и `data-*`. Аналог `useSplitAttrs` у Vue.
+ *
+ * Параметр типа — атрибуты компонента (`TDomAttributes`), а не весь его
+ * набор пропсов: `forwardProps` типизирован пропсами целиком, а входов
+ * дескриптора в нём нет — их съела связка.
+ */
+export function toControlAttrs<TAttributes extends TRootForward>(
+	forward: Partial<TAttributes>,
+): Omit<Partial<TAttributes>, keyof TRootForward> {
+	const { className: _className, style: _style, ...control } = forward
+
+	return control
+}

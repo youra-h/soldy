@@ -2725,12 +2725,15 @@ scope задаётся через `defineType<T>` — из него берётс
 
 Слот с именем атрибута DOM тип пропсов адаптера вычитает из атрибутов, как
 проп, — иначе пересечение сузило бы слот до типа атрибута. `content` как раз
-такой: в `HTMLAttributes` React это атрибут RDFa со строкой. В React имена
-слотов вычитает `UseDomProps` (`packages/ui/react/src/types.ts`); проверять
-это типами будут тесты React, когда их включат в проверку типов
-([869f6mbp1](https://app.clickup.com/t/869f6mbp1)). У Solid и Svelte
-`UseDomProps` пока вычитает только пропсы — правило приходит к ним вместе с
-переносом Label ([869f5806t](https://app.clickup.com/t/869f5806t)).
+такой: в `HTMLAttributes` React это атрибут RDFa со строкой. С событием то же:
+`input` полей даёт колбэк `onInput` — имя обработчика DOM, и пересечение свело
+бы их в функцию, которой не написать. В React имена слотов и событий
+дескриптора вычитает `UseDomProps` (`packages/ui/react/src/types.ts`); в
+рантайме их и так съедает `forward` связки. Сторожат `expectTypeOf` в
+`ui/react/__tests__/slots.spec.tsx` и `input.spec.tsx`, их ловит «Типы —
+React». У Solid и Svelte `UseDomProps` пока вычитает только пропсы — правило
+приходит к ним вместе с переносом Label
+([869f5806t](https://app.clickup.com/t/869f5806t)).
 
 Особенности, о которые легко споткнуться:
 
@@ -3044,7 +3047,16 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
   чекбоксе он дубль `checked`. «Выбрано частично» у CheckBox — DOM-свойство
   `indeterminate` вложенного `<input>`, его проводит разметка, как `checked`,
-  а не `aria-checked="mixed"`.
+  а не `aria-checked="mixed"`. У разметки React привязки свойства DOM нет, и
+  `checked`, `indeterminate` и текст поля Input проводит поле адаптера
+  `NativeInput` (`ui/react/src/adapter/runtime/`): умолчание — атрибутом
+  (`defaultChecked`, `defaultValue` — это и серверная разметка), свойство — в
+  узел после коммита, когда сменилось состояние ядра, и только если разошлось
+  с узлом: запись того же текста при наборе сбросила бы каретку. Контролируемого
+  поля React (`value` или `checked` с `onChange`) нет: `onChange` писал бы
+  значение вторым путём рядом с плагинами ввода, а без него React ругается в
+  консоль. Сторожат `ui/react/__tests__/input.spec.tsx` и
+  `ui/react/__tests__/checkable.spec.tsx`.
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его

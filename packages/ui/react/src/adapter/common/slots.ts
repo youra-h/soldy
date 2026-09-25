@@ -23,3 +23,15 @@ export function renderSlot<TScope extends object = object>(
 
 	return content
 }
+
+/**
+ * Передан ли слот — аналог `$slots.x` у Vue: разметка рисует обёртку слота
+ * (`s-input__leading`), только когда в неё есть что положить.
+ *
+ * Не передан — пусто по правилам React: `undefined`, `null` и булево он не
+ * рисует, и `leading={cond && <Icon />}` при ложном условии обёртку не
+ * оставит. Функция слота передана всегда: её содержимое зависит от scope.
+ */
+export function hasSlot<TScope extends object>(content: TSlotContent<TScope> | undefined): boolean {
+	return content !== undefined && content !== null && typeof content !== 'boolean'
+}
