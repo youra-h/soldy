@@ -54,6 +54,13 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 	@apply box-border grid overflow-hidden;
 	@apply bg-s-component-surface text-s-component shadow-xl;
 	@apply ring-1 ring-s-neutral-300;
+
+	// Прозрачный контур — вторая половина кромки, как у панелей Popover и
+	// Select: в режиме принудительных цветов браузер убирает кольцо вместе с
+	// тенью, а цвет контура заменяет системным, и контур становится рамкой. Он
+	// же гасит кольцо фокуса: фокус панель получает, только когда внутри
+	// нечего фокусировать, а она не контрол, а контейнер диалога.
+	@apply outline outline-transparent;
 }
 
 // Части панели блока `$block`: заголовок, тело, подвал и кнопки шапки
