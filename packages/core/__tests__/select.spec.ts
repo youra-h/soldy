@@ -292,6 +292,22 @@ describe('value и выбор — одно и то же', () => {
 		expect(owner.value).toBeUndefined()
 	})
 
+	/**
+	 * Разметка отдаёт `clear` в scope слота `clear` без инстанса, и содержимое
+	 * слота зовёт его голой функцией. Метод прототипа терял там `this`: вызов
+	 * падал с TypeError, и своя кнопка очистки выбора не снимала.
+	 */
+	it('clear, взятый у фасада без инстанса, тоже снимает выбор', () => {
+		const { owner, collection, facadeFor } = createSelect(['a', 'b'])
+		const { clear } = collection
+
+		facadeFor(0).choose()
+		clear()
+
+		expect(collection.selected).toEqual([])
+		expect(owner.value).toBeUndefined()
+	})
+
 	it('синхронизация не зацикливается', () => {
 		// Выбор пишет value, value выбирает — без флага это был бы вечный круг
 		const { owner, facadeFor } = createSelect(['a', 'b'])
