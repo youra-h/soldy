@@ -14,10 +14,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { cdp, page, userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
+
+import { reducedMotion } from './media'
 
 import '@soldy-ui/theme-oren'
 
@@ -172,12 +174,6 @@ const drag = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 		force: true,
 	})
 }
-
-/** Режим «меньше движения» — эмуляция медиазапроса Chromium, как в DevTools. */
-const reducedMotion = (value: 'reduce' | 'no-preference') =>
-	cdp().send('Emulation.setEmulatedMedia', {
-		features: [{ name: 'prefers-reduced-motion', value }],
-	})
 
 beforeEach(async () => {
 	document.documentElement.dataset.theme = 'oren'
