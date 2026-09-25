@@ -64,15 +64,17 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 			this._input = null
 		})
 
+		const sync = () => this._syncListener()
+
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
 			this._engine = engine
 
-			this._selectionExtension?.events.on('change:mode', () => this._syncListener())
+			this._listenTo(this._selectionExtension?.events, 'change:mode', sync)
 			this._syncListener()
 		})
 
-		this._owner?.events.on('change:removeOnBackspace', () => this._syncListener())
-		this._owner?.events.on('change:editable', () => this._syncListener())
+		this._listenTo(this._owner?.events, 'change:removeOnBackspace', sync)
+		this._listenTo(this._owner?.events, 'change:editable', sync)
 	}
 
 	override destroy(): void {

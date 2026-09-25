@@ -47,10 +47,10 @@ export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPl
 
 		const updateStyles = () => this._updateStyles()
 
-		owner.events.on('change:width', updateStyles)
-		owner.events.on('change:height', updateStyles)
-		owner.events.on('change:zIndex', updateStyles)
-		owner.events.on('change:zIndex', () => this._updateBackdropStyles())
+		this._listenTo(owner.events, 'change:width', updateStyles)
+		this._listenTo(owner.events, 'change:height', updateStyles)
+		this._listenTo(owner.events, 'change:zIndex', updateStyles)
+		this._listenTo(owner.events, 'change:zIndex', () => this._updateBackdropStyles())
 
 		this._updateStyles()
 		this._updateBackdropStyles()

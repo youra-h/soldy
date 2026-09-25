@@ -74,11 +74,15 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 			this._scrollToItem(selected[0].uid, 'center')
 		}
 
-		engine.extensions.selection.events.on('change:selection', (items: IControl[]) => {
-			if (items.length > 0) {
-				this._scheduleScroll({ uid: items[0].uid, mode: 'center' })
-			}
-		})
+		this._listenTo(
+			engine.extensions.selection.events,
+			'change:selection',
+			(items: IControl[]) => {
+				if (items.length > 0) {
+					this._scheduleScroll({ uid: items[0].uid, mode: 'center' })
+				}
+			},
+		)
 	}
 
 	private _scrollToItem(uid: string | number, mode: 'center' | 'nearest'): void {

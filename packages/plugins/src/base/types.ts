@@ -58,6 +58,20 @@ export interface IPlugin<
 }
 
 /**
+ * Чужая шина глазами плагина: подписка и отписка по одной карте событий.
+ *
+ * Так плагин описывает шину владельца, которого знает по контракту, а не по
+ * классу: `TListHeightPlugin` стоит и на ListBox, и на Select, общего предка у
+ * них нет, а `TEvented` инвариантен по карте событий — `TEvented` одного из них
+ * в `TEvented` общей карты не присваивается. Любой `TEvented`, чья карта
+ * содержит эти события, под этот вид подходит.
+ */
+export interface IListenable<TEvents extends Record<string, (...args: any) => any>> {
+	on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void
+	off<K extends keyof TEvents>(event: K, handler: TEvents[K]): void
+}
+
+/**
  * Конструктор плагина (со статическим namespace).
  */
 export interface IPluginConstructor<

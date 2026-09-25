@@ -53,13 +53,12 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		elementPlugin?.events.on('ready', (element) => this._attach(element))
 		elementPlugin?.events.on('removed', () => this._detach())
 
-		this._instance?.events.on('change:focused', this._onFocusedChange)
+		this._listenTo(this._instance?.events, 'change:focused', this._onFocusedChange)
 	}
 
 	override destroy(): void {
 		this._detach()
 
-		this._instance?.events.off('change:focused', this._onFocusedChange)
 		this._instance = null
 
 		super.destroy()

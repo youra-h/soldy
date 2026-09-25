@@ -223,6 +223,7 @@ Organized by inheritance:
 - **TBasePlugin**: Provides events, install/destroy/created lifecycle
   - Namespace is declared in the plugin descriptor (`definePlugin({ namespace })`), not on the class
   - Can add props/events via contribution
+  - `_listenTo(source, event, handler)` — подписка на шину, которая живёт дольше набора (владелец, расширения движка); её снимает `destroy()` базы. См. AGENTS.md, «Плагины и расширения снаружи»
 
 ### Доступ к плагинам снаружи
 

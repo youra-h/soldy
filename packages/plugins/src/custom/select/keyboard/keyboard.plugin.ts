@@ -73,10 +73,10 @@ export class TSelectKeyboardPlugin
 		})
 
 		this._syncStrategy()
-		this._owner?.events.on('change:editable', () => this._syncStrategy())
+		this._listenTo(this._owner?.events, 'change:editable', () => this._syncStrategy())
 
 		// Закрытая панель подсветку не держит: она про навигацию, а не про выбор
-		this._owner?.events.on('close', () => this.clearHighlight())
+		this._listenTo(this._owner?.events, 'close', () => this.clearHighlight())
 	}
 
 	override destroy(): void {
@@ -110,7 +110,7 @@ export class TSelectKeyboardPlugin
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
 		const batch = engine.extensions.batch as IBatchExtension<IControl>
 
-		batch.events.on('change:shown', () => {
+		this._listenTo(batch.events, 'change:shown', () => {
 			// Подсветки нет — ставить её на смене выдачи незачем: панель может
 			// быть и закрыта
 			if (this._highlightedUid == null) return

@@ -27,7 +27,7 @@ export class TSkeletonLayoutPlugin extends TBasePlugin<any, TSkeletonLayoutPlugi
 
 		const event = prop === 'width' ? 'change:width' : 'change:height'
 
-		skeleton.events.on(event, (value) => {
+		this._listenTo(skeleton.events, event, (value) => {
 			this._patch(prop, toCssValue(value || 'auto'))
 		})
 	}

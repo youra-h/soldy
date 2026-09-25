@@ -33,8 +33,8 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 
 		const update = () => this._update(spinner)
 
-		spinner.events.on('change:borderWidth', update)
-		spinner.events.on('change:size', update)
+		this._listenTo(spinner.events, 'change:borderWidth', update)
+		this._listenTo(spinner.events, 'change:size', update)
 	}
 
 	get styles(): Record<string, string | number> {
