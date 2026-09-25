@@ -252,12 +252,16 @@
 		@apply w-full justify-start py-2;
 	}
 
+	// Строка опции — прямой ребёнок, как у `.s-list-box-item`, и правила строки
+	// пишутся ребёнком: потомковое правило доставало и кнопку в слоте строки.
+	//
 	// .s-button даёт cursor-pointer по умолчанию (см. _button.scss) — опция
 	// списка не кнопка-действие, глушим курсор здесь же.
-	.s-button {
+	> .s-button {
 		@apply cursor-default;
 
-		&__text {
+		// Область целиком, а не `&__text` — см. `.s-list-box-item`.
+		> .s-button__text {
 			@apply min-w-0;
 			@include button.button-text-align('start');
 		}
@@ -276,10 +280,10 @@
 	// целиком, в отличие от элемента ListBox. То же устройство, что у
 	// `.s-list-box-item`.
 	&[data-content-fit='wrap'] {
-		.s-button {
+		> .s-button {
 			@apply min-h-fit;
 
-			&__text {
+			> .s-button__text {
 				@apply whitespace-normal overflow-visible;
 			}
 		}

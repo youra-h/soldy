@@ -8,7 +8,8 @@
  * `text-align`, иконку — нет: Preflight делает `svg` блочным, и в кнопке шире
  * себя иконка прижималась к началу. Так стоял крестик Popover
  * (`popover.spec.ts`). Строки ListBox, Select и Accordion выравнивают область к
- * началу строки, в RTL это правый край.
+ * началу строки, в RTL это правый край. Кнопку потребителя внутри элемента
+ * правила строки не задевают: она остаётся обычной кнопкой.
  *
  * Проверки сверяют узлы друг с другом, а не с числами темы. В jsdom раскладки
  * нет.
@@ -285,3 +286,142 @@ describe.each(Object.entries(ROWS))('%s: содержимое строки — �
 		expect(glyph[side]).toBeCloseTo(box(iconArea)[side], 0)
 	})
 })
+
+/**
+ * Кнопка потребителя шире своего содержимого — иначе выравнивать внутри неё
+ * было бы нечего. Ширина — инлайном, как у `buttonHarness`.
+ */
+const nested = (mark: string, content: () => VNodeChild) =>
+	h(Button, { class: `s-test-${mark}`, style: 'width: 120px' }, { default: content })
+
+/**
+ * Кнопка потребителя внутри элемента: в слоте строки ListBox и Select, в
+ * содержимом секции Accordion. В каждом одна кнопка с текстом и одна с иконкой.
+ * Слот строки взят `trailing`: `leading` и слот по умолчанию лежат в той же
+ * строке.
+ */
+const NESTED: Record<string, () => VNodeChild> = {
+	ListBox: () =>
+		h(ListBox, null, () => [
+			h(
+				ListBoxItem,
+				{ key: 'text', value: 'text', text: 'Москва' },
+				{ trailing: () => nested('text', () => 'Ок') },
+			),
+			h(
+				ListBoxItem,
+				{ key: 'icon', value: 'icon', text: 'Казань' },
+				{ trailing: () => nested('icon', () => icon('glyph')) },
+			),
+		]),
+	Select: () =>
+		h(Select, { open: true }, () => [
+			h(
+				SelectItem,
+				{ key: 'text', value: 'text', text: 'Москва' },
+				{ trailing: () => nested('text', () => 'Ок') },
+			),
+			h(
+				SelectItem,
+				{ key: 'icon', value: 'icon', text: 'Казань' },
+				{ trailing: () => nested('icon', () => icon('glyph')) },
+			),
+		]),
+	Accordion: () =>
+		h(Accordion, null, () => [
+			h(
+				AccordionItem,
+				{ key: 'section', value: 'section', text: 'Москва', selected: true },
+				{
+					default: () => [
+						nested('text', () => 'Ок'),
+						nested('icon', () => icon('glyph')),
+					],
+				},
+			),
+		]),
+}
+
+/**
+ * Выравнивание к началу и курсор строки — правила самой строки, а не всего,
+ * что лежит в элементе. Кнопка внутри элемента остаётся обычной кнопкой:
+ * содержимое по центру, курсор — её собственный.
+ */
+describe.each(Object.entries(NESTED))('%s: кнопка внутри элемента — не строка', (_name, list) => {
+	it.each(DIRECTIONS)('%s: текст и иконка — по центру кнопки, курсор — pointer', async (dir) => {
+		document.documentElement.dir = dir
+
+		await show(
+			defineComponent({
+				render: () => h('div', { style: 'width: 320px' }, [list()]),
+			}),
+		)
+
+		const textButton = find('.s-test-text')
+		const iconButton = find('.s-test-icon')
+		const textArea = find('.s-test-text > .s-button__text')
+		const iconArea = find('.s-test-icon > .s-button__text')
+		const text = textBox(textArea)
+		const glyph = box(find('.s-test-glyph'))
+
+		expect(text.width).toBeLessThan(box(textArea).width)
+		expect(glyph.width).toBeLessThan(box(iconArea).width)
+		expect(middle(text).x).toBeCloseTo(middle(box(textButton)).x, 0)
+		expect(middle(glyph).x).toBeCloseTo(middle(box(iconButton)).x, 0)
+		expect(getComputedStyle(textButton).cursor).toBe('pointer')
+		expect(getComputedStyle(iconButton).cursor).toBe('pointer')
+	})
+})
+
+/**
+ * Перенос (`contentFit: 'wrap'`) — тоже правило строки: многоточие снимается у
+ * её области, а кнопка в слоте строки держит своё — длинный текст в одну
+ * строку, обрезанный.
+ */
+const WRAPPED: Record<string, () => VNodeChild> = {
+	ListBox: () =>
+		h(ListBox, { contentFit: 'wrap' }, () => [
+			h(
+				ListBoxItem,
+				{
+					class: 's-test-row',
+					value: 'row',
+					text: 'Санкт-Петербург и Ленинградская область',
+				},
+				{ trailing: () => nested('text', () => 'Сохранить изменения') },
+			),
+		]),
+	Select: () =>
+		h(Select, { open: true, contentFit: 'wrap' }, () => [
+			h(
+				SelectItem,
+				{
+					class: 's-test-row',
+					value: 'row',
+					text: 'Санкт-Петербург и Ленинградская область',
+				},
+				{ trailing: () => nested('text', () => 'Сохранить изменения') },
+			),
+		]),
+}
+
+describe.each(Object.entries(WRAPPED))(
+	'%s: перенос строки — не у кнопки в её слоте',
+	(_name, list) => {
+		it('строка переносится, текст кнопки — в одну строку и обрезан', async () => {
+			await show(
+				defineComponent({
+					render: () => h('div', { style: 'width: 320px' }, [list()]),
+				}),
+			)
+
+			const rowArea = find('.s-test-row > .s-button > .s-button__text')
+			const area = find('.s-test-text > .s-button__text')
+
+			// Текст строки занял больше строк, чем текст кнопки: строка перенеслась
+			expect(textBox(rowArea).height).toBeGreaterThan(textBox(area).height)
+			// Текст кнопки не влез и обрезан, а не перенесён
+			expect(area.scrollWidth).toBeGreaterThan(area.clientWidth)
+		})
+	},
+)

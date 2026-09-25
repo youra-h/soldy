@@ -12,11 +12,11 @@
 	&__header {
 		@apply w-full justify-start;
 		@apply py-2;
-	}
 
-	// Заголовок — по началу строки, в RTL это правый край.
-	.s-button {
-		&__text {
+		// Заголовок — по началу строки, в RTL это правый край. Только своя
+		// область: правило по любой `.s-button` в секции доставало и кнопки в
+		// её содержимом.
+		> .s-button__text {
 			@include button.button-text-align('start');
 		}
 	}
