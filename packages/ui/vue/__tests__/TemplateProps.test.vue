@@ -22,6 +22,7 @@ import {
 	ComponentView,
 	Dialog,
 	DragAndDrop,
+	Drawer,
 	Frame,
 	Icon,
 	Input,
@@ -93,6 +94,22 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — у DragAndDrop только свой инстанс -->
 	<DragAndDrop :ctrl="button" />
 	<DragAndDrop :ctrl="dragAndDrop" />
+
+	<!-- @vue-expect-error — центра у выезжающей панели нет: она у края -->
+	<Drawer placement="center" />
+	<Drawer placement="bottom" />
+
+	<!-- @vue-expect-error — жест за полосу или за панель, а не флаг -->
+	<Drawer :swipe="true" />
+	<Drawer swipe="handle" />
+
+	<!-- @vue-expect-error — флаг, а не строка -->
+	<Drawer :contained="'yes'" />
+	<Drawer contained />
+
+	<!-- @vue-expect-error — ширина числом или строкой -->
+	<Drawer :width="true" />
+	<Drawer :width="360" />
 
 	<!-- @vue-expect-error — позиционирования `sticky` нет -->
 	<Frame position="sticky" />

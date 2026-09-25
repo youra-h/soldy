@@ -21,13 +21,41 @@
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
 import { toInstanceState } from '@soldy-ui/setup'
 import type {
+	DescriptorAllEvents,
 	IAdapterContext,
 	IComponentContract,
+	IComponentDescriptor,
 	TStateSnapshot,
 	TInstanceState,
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { AngularProfile } from '../common/profile'
+
+/**
+ * Что отдаёт выход — первый аргумент события ядра: `syncEvents` шлёт
+ * `emit(args[0])`. У события без аргументов — `undefined`.
+ */
+type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
+	? TArgs extends readonly []
+		? undefined
+		: TArgs[0]
+	: undefined
+
+/**
+ * Выход по событию дескриптора: эмиттер того, что шлёт `syncEvents`.
+ *
+ * Эмиттеры ставит `TComponentBase` по списку имён, и в типе класса их нет, а
+ * строгая проверка шаблона читает выход как поле класса: привязка
+ * `(actionPress)` без поля не компилируется, а `$event` берёт тип у поля. Поля
+ * объявляет сгенерированный `T<Имя>Outputs` (`generated/*.metadata.ts`) —
+ * по фабрике дескриптора и полному имени события, которые кодогенератор берёт
+ * из той же поверхности, что имена выходов. Событие вне карты дескриптора
+ * (`DescriptorAllEvents`) не компилируется.
+ */
+export type TOutputEmitter<
+	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
+	TEvent extends keyof DescriptorAllEvents<TDescriptorFn>,
+> = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
 export type TBinding<TInstance = any> = {
 	/** Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`. */
@@ -65,7 +93,8 @@ export function useAdapter<C extends IComponentContract>(
 
 		syncEvents(outputs: Record<string, EventEmitter<unknown>>): () => void {
 			// Аутпут объявлен кодогенерацией по той же поверхности: у события
-			// без аутпута некому отдать значение
+			// без аутпута некому отдать значение. Отдаётся первый аргумент —
+			// его и обещает тип выхода (`TOutputEmitter`)
 			return binding.events.listen((exportName, args) => outputs[exportName]?.emit(args[0]))
 		},
 

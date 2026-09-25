@@ -8,6 +8,7 @@ import {
 	ComponentView,
 	Dialog,
 	DragAndDrop,
+	Drawer,
 	Icon,
 	Input,
 	Label,
@@ -119,6 +120,63 @@ const DialogPreview = defineComponent({
 	},
 })
 
+/**
+ * Выезжающую панель на стенде тоже открывает кнопка — по той же причине, что
+ * окно, и на том же своём состоянии (`v-model:visible`, см. `DialogPreview`).
+ *
+ * Кнопка и панель лежат в своей коробке с `position: relative`: с
+ * `contained` панель не телепортируется, а встаёт в ближайшем
+ * позиционированном предке, и строка `contained` показывает её в коробке
+ * превью, а не у края всей страницы.
+ */
+const DrawerPreview = defineComponent({
+	name: 'DrawerPreview',
+	inheritAttrs: false,
+	props: { visible: { type: Boolean, default: false } },
+	setup(props, { attrs }) {
+		const shown = ref(props.visible)
+
+		watch(
+			() => props.visible,
+			(value) => {
+				shown.value = value
+			},
+		)
+
+		const setShown = (value: boolean) => {
+			shown.value = value
+		}
+
+		return () =>
+			h(
+				'div',
+				{ style: 'position:relative; width:100%; min-height:240px; overflow:hidden' },
+				[
+					h(Button, { text: 'Открыть панель', onClick: () => setShown(true) }),
+					h(
+						Drawer as Component,
+						mergeProps(attrs, { visible: shown.value, 'onUpdate:visible': setShown }),
+						{
+							title: () => 'Фильтры',
+							default: () => [
+								h(
+									'p',
+									{ style: 'margin:0 0 8px' },
+									'Произвольное содержимое: текст, поля, кнопки',
+								),
+								h(Input, { placeholder: 'Поиск' }),
+							],
+							footer: () => [
+								h(Button, { text: 'Сбросить', onClick: () => setShown(false) }),
+								h(Button, { text: 'Применить', onClick: () => setShown(false) }),
+							],
+						},
+					),
+				],
+			)
+	},
+})
+
 /** Слои наследования: у них нет своей разметки, показываем пустую коробку. */
 const layer =
 	(label: string): TPreview =>
@@ -195,6 +253,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	// Кнопка открывает окно, окно — на своём состоянии (см. `DialogPreview`)
 	dialog: (bind) => h(DialogPreview, bind),
+
+	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
+	drawer: (bind) => h(DrawerPreview, bind),
 
 	/**
 	 * Содержимое ленты — просто разметка: коллекции у неё нет, и делить ей

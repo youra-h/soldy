@@ -1,6 +1,4 @@
-import type { TPluginEvents } from '../../../base'
+import type { TModalLayoutPluginEvents } from '../../overlay/modal-layout'
 
-export type TDialogLayoutPluginEvents = TPluginEvents & {
-	'change:styles': (styles: Record<string, string | number>) => void
-	'change:backdropStyles': (styles: Record<string, string | number>) => void
-}
+/** События раскладки окна — те же, что у общей раскладки модального слоя. */
+export type TDialogLayoutPluginEvents = TModalLayoutPluginEvents

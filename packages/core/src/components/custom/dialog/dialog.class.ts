@@ -1,39 +1,21 @@
-import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../../base/layer'
-import type { TCloseReason } from '../../base/layer'
+import { TModalLayer } from '../../base/modal-layer'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { TComponentViewStates } from '../../base/component-view'
-import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
+import type { TAriaAttributes } from '../../../common'
 import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './types'
 
 /**
  * Модальное окно.
  *
- * Паттерн APG — Dialog (Modal). Окно — слой (`TLayer`) целиком: корень и есть
- * панель, телепортированная в `body`, с номером слоя и открытостью в
- * `visible`. Панель объявляет себя `role="dialog"` и `aria-modal="true"`, имя
- * ей даёт заголовок (`aria-labelledby`). Фокус, замкнутый Tab и Escape — у
- * `TModalFocusPlugin`, нажатие мимо — у `TDismissPlugin`, немой для
- * скринридера фон — у `THideOutsidePlugin`, запертая прокрутка — у
- * `TScrollLockPlugin`: здесь только состояние и то, что из него следует для
- * разметки.
- *
- * **Имя — заголовок.** Слот `title` рисуется всегда, и `aria-labelledby`
- * ссылается на него: формула `id` одна на обе стороны связки, и сторону
- * заголовка ядро отдаёт выходом `titleAria` — у разметки без экземпляра
- * набора нет. `TAriaPlugin` окну не ставится: он пишет те же ключи и снял бы
- * связку при установке.
+ * Паттерн APG — Dialog (Modal). Всё, что следует из модальности, — роль,
+ * `aria-modal`, имя от заголовка, кнопка закрытия, запрос закрытия с
+ * отменяемым `close:before`, `dismissible` и размер — у общей с выезжающей
+ * панелью базы `TModalLayer`. Своего у окна три вещи: место на экране,
+ * разворот и режим предупреждения.
  *
  * **Предупреждение** (`alert`) — вариант того же окна, а не отдельный
  * компонент: клавиатура и фокус у него те же. Меняется роль —
  * `alertdialog`, — и описанием окна становится тело (`aria-describedby`).
- *
- * **Закрытие пользователем — запрос** (`requestClose`) с причиной: кнопка
- * закрытия, нажатие мимо или Escape. Запрос проходит через отменяемое
- * `close:before`, а при `dismissible: false` нажатие мимо и Escape
- * отклоняются без события — окно закрывается только кнопкой. Запись
- * `visible` из кода и `v-model` запросом не считаются: родитель, который
- * открытость пишет сам, с окном не разойдётся. Поэтому не `hide:before` —
- * его шлёт и программное скрытие.
  *
  * **Место, размер и разворот — значения, раскладка — тема.** Место уходит
  * модификатором `--placement-<v>` (стоит всегда, и у центра), развёрнутость —
@@ -41,48 +23,28 @@ import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './t
  * (`TDialogLayoutPlugin`). Координат и замеров у окна нет.
  */
 export default class TDialog
-	extends TLayer<IDialogProps, TDialogEvents, TComponentViewStates>
+	extends TModalLayer<IDialogProps, TDialogEvents, TComponentViewStates>
 	implements IDialog
 {
 	static override baseClass = 's-dialog'
 
-	static defaultValues: typeof TLayer.defaultValues &
+	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<
 			IDialogProps,
-			| 'placement'
-			| 'maximized'
-			| 'maximizable'
-			| 'closable'
-			| 'closeLabel'
-			| 'maximizeLabel'
-			| 'dismissible'
-			| 'alert',
-			'width' | 'height'
+			'placement' | 'maximized' | 'maximizable' | 'maximizeLabel' | 'alert'
 		> = {
-		...TLayer.defaultValues,
-		// Не `'auto'`, как у Frame: размер по умолчанию выбирает тема, а
-		// `auto` растянул бы окно по экрану
-		width: undefined,
-		height: undefined,
+		...TModalLayer.defaultValues,
 		placement: 'center',
 		maximized: false,
 		maximizable: false,
-		closable: true,
-		closeLabel: 'Close',
 		maximizeLabel: 'Maximize',
-		dismissible: true,
 		alert: false,
 	}
 
-	protected _width: number | string | undefined
-	protected _height: number | string | undefined
 	protected _placement!: TDialogPlacement
 	protected _maximized!: boolean
 	protected _maximizable: boolean
-	protected _closable: boolean
-	protected _closeLabel: string
 	protected _maximizeLabel: string
-	protected _dismissible: boolean
 	protected _alert!: boolean
 
 	constructor(
@@ -93,80 +55,17 @@ export default class TDialog
 
 		const ctor = new.target as typeof TDialog
 
-		this._width = props.width ?? ctor.defaultValues.width
-		this._height = props.height ?? ctor.defaultValues.height
 		this._maximizable = props.maximizable ?? ctor.defaultValues.maximizable
-		this._closable = props.closable ?? ctor.defaultValues.closable
-		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._maximizeLabel = props.maximizeLabel ?? ctor.defaultValues.maximizeLabel
-		this._dismissible = props.dismissible ?? ctor.defaultValues.dismissible
-
-		// Окно модально: скринридер вне его не читает. Это значение, а не
-		// операция — фон на самих узлах прячет `THideOutsidePlugin`
-		this._aria.add('aria-modal', 'true')
-		// Имя — заголовок. Ссылка стоит всегда: заголовок рисуется всегда
-		this._aria.add('aria-labelledby', this._titleId)
 
 		this._applyAlert(props.alert ?? ctor.defaultValues.alert)
 		this._applyPlacement(props.placement ?? ctor.defaultValues.placement)
 		this._applyMaximized(props.maximized ?? ctor.defaultValues.maximized)
 	}
 
-	/**
-	 * Пользователь закрывает окно: кнопкой закрытия, нажатием мимо или
-	 * Escape. Нажатие мимо и Escape при `dismissible: false` отклоняются без
-	 * события; остальное проходит через отменяемое `close:before`.
-	 *
-	 * Зовут его кнопка закрытия и плагины слоя. Код, которому нужно просто
-	 * закрыть окно, пишет `visible = false`: запросом это не считается.
-	 */
-	requestClose(reason: TCloseReason): void {
-		// Закрывать нечего
-		if (!this.visible) return
-
-		// Окно закрывается только кнопкой: нажатие мимо и Escape — не повод
-		if (!this._dismissible && reason !== 'button') return
-
-		const event = new TCloseEvent(reason)
-
-		this.events.emit('close:before', event)
-
-		if (event.defaultPrevented) return
-
-		this.hide()
-	}
-
 	/** Развернуть окно или вернуть ему размер — действие кнопки разворота. */
 	toggleMaximized(): void {
 		this.maximized = !this._maximized
-	}
-
-	/**
-	 * Ширина окна: число — px, строка — CSS-значение. Не задана — ширину даёт
-	 * тема. Значение уходит теме переменной, а не инлайном: развёрнутое окно
-	 * и потолок по экрану тема держит сама.
-	 */
-	get width(): number | string | undefined {
-		return this._width
-	}
-
-	set width(value: number | string | undefined) {
-		if (this._width === value) return
-
-		this._width = value
-		this.events.emit('change:width', value)
-	}
-
-	/** Высота окна: число — px, строка — CSS-значение. Не задана — по содержимому. */
-	get height(): number | string | undefined {
-		return this._height
-	}
-
-	set height(value: number | string | undefined) {
-		if (this._height === value) return
-
-		this._height = value
-		this.events.emit('change:height', value)
 	}
 
 	/** Где окно стоит на экране: по центру или у одной из сторон. */
@@ -209,36 +108,6 @@ export default class TDialog
 	}
 
 	/**
-	 * Показывать ли кнопку закрытия. Без неё окно закрывают нажатие мимо,
-	 * Escape (пока `dismissible`) и код.
-	 */
-	get closable(): boolean {
-		return this._closable
-	}
-
-	set closable(value: boolean) {
-		if (this._closable === value) return
-
-		this._closable = value
-		this.events.emit('change:closable', value)
-	}
-
-	/**
-	 * Имя кнопки закрытия. Дефолт английский: язык интерфейса ядру неизвестен,
-	 * а оставить кнопку без имени нельзя.
-	 */
-	get closeLabel(): string {
-		return this._closeLabel
-	}
-
-	set closeLabel(value: string) {
-		if (this._closeLabel === value) return
-
-		this._closeLabel = value
-		this.events.emit('change:closeLabel', value)
-	}
-
-	/**
 	 * Имя кнопки разворота. Одно на оба состояния: кнопка — переключатель, и
 	 * состояние она сообщает `aria-pressed`, а не сменой имени (APG, Button).
 	 */
@@ -253,22 +122,6 @@ export default class TDialog
 		this.events.emit('change:maximizeLabel', value)
 	}
 
-	/**
-	 * Закрывают ли окно нажатие мимо и Escape. Выключено — окно закрывается
-	 * только кнопкой закрытия и кодом. Закрыть окно только Escape — отменить
-	 * `close:before` с причиной `outside`.
-	 */
-	get dismissible(): boolean {
-		return this._dismissible
-	}
-
-	set dismissible(value: boolean) {
-		if (this._dismissible === value) return
-
-		this._dismissible = value
-		this.events.emit('change:dismissible', value)
-	}
-
 	/** Окно — предупреждение: `role="alertdialog"`, описание — тело окна. */
 	get alert(): boolean {
 		return this._alert
@@ -281,23 +134,9 @@ export default class TDialog
 		this.events.emit('change:alert', value)
 	}
 
-	/**
-	 * Сторона заголовка в связке с окном. Отдельный набор, а не часть `aria`:
-	 * `aria` описывает панель, а это — вложенный элемент без экземпляра
-	 * (AGENTS.md, «Часть или слот»).
-	 */
-	get titleAria(): TAriaAttributes {
-		return { id: this._titleId }
-	}
-
 	/** Сторона тела: на него ссылается `aria-describedby` предупреждения. */
 	get bodyAria(): TAriaAttributes {
 		return { id: this._bodyId }
-	}
-
-	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */
-	get closeAria(): TAriaAttributes {
-		return { 'aria-label': this._closeLabel }
 	}
 
 	/** Имя кнопки разворота и её состояние: нажата — окно развёрнуто. */
@@ -306,26 +145,6 @@ export default class TDialog
 			'aria-label': this._maximizeLabel,
 			'aria-pressed': this._maximized ? 'true' : 'false',
 		}
-	}
-
-	/**
-	 * `data-*` подложки — тот же номер слоя, что у окна.
-	 *
-	 * Подложка — сосед панели в телепорте, и нажатие по ней для плагинов слоя
-	 * — нажатие мимо окна. Но окно бывает открыто поверх окна, и для нижнего
-	 * подложка верхнего — нажатие в слой выше своего, то есть внутри: без
-	 * номера нажатие по подложке верхнего окна закрыло бы оба. Пометки
-	 * владельцем (`data-owner`) у подложки нет: для своего окна она — мимо.
-	 */
-	get backdropDataset(): TDatasetAttributes {
-		const layer = this._dataset.get(FRAME_LAYER_ATTRIBUTE)
-
-		return layer === undefined ? {} : { [FRAME_LAYER_ATTRIBUTE]: layer }
-	}
-
-	/** `id` заголовка — одна формула на обе стороны связки. */
-	protected get _titleId(): string {
-		return `s-dialog-title-${this.uid}`
 	}
 
 	/** `id` тела — одна формула на обе стороны связки. */
@@ -362,15 +181,10 @@ export default class TDialog
 	override getProps(): IDialogProps {
 		return {
 			...super.getProps(),
-			width: this._width,
-			height: this._height,
 			placement: this._placement,
 			maximized: this._maximized,
 			maximizable: this._maximizable,
-			closable: this._closable,
-			closeLabel: this._closeLabel,
 			maximizeLabel: this._maximizeLabel,
-			dismissible: this._dismissible,
 			alert: this._alert,
 		}
 	}

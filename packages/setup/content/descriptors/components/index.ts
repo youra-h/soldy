@@ -1,6 +1,8 @@
 export { LayerDescriptor } from './layer.descriptor'
+export { ModalLayerDescriptor } from './modal-layer.descriptor'
 export { FrameDescriptor } from './frame.descriptor'
 export { DialogDescriptor } from './dialog.descriptor'
+export { DrawerDescriptor } from './drawer.descriptor'
 export { SkeletonDescriptor } from './skeleton.descriptor'
 export { DragAndDropDescriptor } from './drag-and-drop.descriptor'
 export { ButtonDescriptor } from './button.descriptor'

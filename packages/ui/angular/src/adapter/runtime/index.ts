@@ -1,5 +1,5 @@
 export { useAdapter } from './useAdapter'
-export type { TBinding } from './useAdapter'
+export type { TBinding, TOutputEmitter } from './useAdapter'
 export { TComponentBase } from './component.base'
 export { AriaDirective } from './aria.directive'
 export { SlotDirective } from './slot.directive'

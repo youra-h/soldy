@@ -7,6 +7,8 @@ import {
 	COMPONENT_VARIANTS,
 	DIALOG_PLACEMENTS,
 	DIRECTIONS,
+	DRAWER_PLACEMENTS,
+	DRAWER_SWIPES,
 	FRAME_PLACEMENTS,
 	FRAME_POSITIONS,
 	HTML_TAGS,
@@ -64,7 +66,7 @@ const SHARED: Record<string, string> = {
 	visible: 'Виден ли компонент. В отличие от rendered узел остаётся в дереве',
 	tag: 'Тег корневого элемента. Меняет разметку, не меняя поведения',
 	direction: 'Направление письма. inherit — атрибут dir не ставится вовсе',
-	// Слой поверх страницы — общий у Frame и Dialog
+	// Слой поверх страницы — общий у Frame, Dialog и Drawer
 	target: 'Куда телепортировать слой: CSS-селектор, по умолчанию body',
 	size: 'Размер: высота, отступы и кегль',
 	variant: 'Смысловой цвет: обычный, акцентный, успех, ошибка, предупреждение',
@@ -107,11 +109,11 @@ const PLUGIN: Record<string, string> = {
 		'Переносить панель на другую сторону, если на выбранной она не влезает по высоте окна',
 	anchor_offset: 'Отступ панели от якоря, px',
 	dismiss_enabled:
-		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open, у Dialog — по visible',
+		'Слушать ли нажатие мимо панели, чтобы её закрыть. У Select, Popover и Tooltip его ведёт сам плагин по open, у Dialog и Drawer — по visible',
 	hideOutside_enabled:
-		'Прятать ли страницу под окном от скринридера. У Dialog его ведёт сам плагин по visible',
+		'Прятать ли страницу под окном от скринридера. У Dialog и Drawer его ведёт сам плагин по visible',
 	scrollLock_enabled:
-		'Запирать ли прокрутку страницы под окном. У Dialog его ведёт сам плагин по visible',
+		'Запирать ли прокрутку страницы под окном. У Dialog его ведёт сам плагин по visible, у Drawer — пока панель открыта и не внутри контейнера',
 }
 
 /** Собственные пропы компонента — то, ради чего он и заведён. */
@@ -189,6 +191,21 @@ const OWN: Record<string, Record<string, string>> = {
 		dismissible:
 			'Закрывают ли окно нажатие по подложке и Escape. Выключено — только кнопка закрытия и код',
 		alert: 'Окно-предупреждение: роль alertdialog, описание — тело окна',
+	},
+	drawer: {
+		visible:
+			'Открыта ли панель. Закрывают её крестик, Escape, нажатие по подложке и жест — через close:before',
+		placement:
+			'У какого края экрана стоит панель. start и end меняются местами в RTL, жест зеркалится вместе с ними',
+		width: 'Ширина панели у бокового края: число — px, строка — CSS-значение. Пусто — ширина темы',
+		height: 'Высота панели у верхнего и нижнего края: число — px, строка — CSS-значение. Пусто — по содержимому',
+		closable: 'Показывать ли кнопку закрытия',
+		closeLabel: 'Имя кнопки закрытия для скринридера',
+		dismissible:
+			'Закрывают ли панель нажатие по подложке и Escape. Выключено — только кнопка закрытия, жест и код',
+		swipe: 'За что панель можно смахнуть к её краю, чтобы закрыть: ни за что, за полосу у края или за любое место, кроме контролов',
+		contained:
+			'Панель внутри своего контейнера, а не поверх страницы: встаёт в ближайшем позиционированном предке и не запирает прокрутку документа',
 	},
 	tooltip: {
 		open: 'Показана ли подсказка. Прячут её уход курсора и фокуса, нажатие и Escape',
@@ -282,6 +299,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
+	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },
 	tabs: {
 		view: TABS_VIEWS,
 		orientation: TABS_ORIENTATIONS,
