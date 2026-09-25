@@ -167,25 +167,29 @@ React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `Slot
 от Vue/React: имена inputs/outputs **генерируются заранее**, т.к. Angular AOT
 требует литеральные массивы в декораторе.
 
-- `manifest.ts` — вход кодогенератора:
+- `manifest.ts` — вход кодогенератора. Фабрика — реэкспортом, а не `const`:
+  сгенерированный файл берёт её тип из манифеста, а выведенный тип `const`
+  декларации пакета выписать не могут:
 
 ```ts
-import { <Name>Descriptor } from '@soldy-ui/setup'
+export { <Name>Descriptor as descriptor } from '@soldy-ui/setup'
 
 export const name = '<name>'
-export const descriptor = <Name>Descriptor
 ```
 
 - Запусти `npm run generate --workspace=@soldy-ui/angular` → появится
-  `src/generated/<name>.metadata.ts` с `<Name>Inputs` / `<Name>Outputs`.
-  **Файл коммитится**, CI проверяет, что он не разъехался с дескриптором.
+  `src/generated/<name>.metadata.ts` с `<Name>Inputs` / `<Name>Outputs` и
+  `T<Name>Surface` — абстрактной директивой, которая объявляет входы и выходы
+  компонента вместе с их типами для строгого шаблона. **Файл коммитится**, CI
+  проверяет, что он не разъехался с дескриптором.
 
-- `base.component.ts` — только переэкспорт сгенерированных имён:
+- `base.component.ts` — только переэкспорт сгенерированного:
 
 ```ts
 export {
   <Name>Inputs as <Name>InputNames,
   <Name>Outputs as <Name>OutputNames,
+  T<Name>Surface,
 } from '../../generated/<name>.metadata'
 ```
 
@@ -204,31 +208,32 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 }
 ```
 
-- `<name>.component.ts` — оболочка. Наследует `TComponentBase`
-  (`packages/ui/angular/src/adapter/runtime/component.base.ts`), состояние
-  читается как `state()` (сигнал). Корень с `TElementPlugin` связывает база:
-  компонент зовёт только `super(<Name>InputNames, <Name>OutputNames)` и
-  реализует `createBinding`:
+- `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
+  (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
+  состояние читается как `state()` (сигнал). Корень с `TElementPlugin`
+  связывает база: компонент зовёт только `super(<Name>InputNames, <Name>OutputNames)`
+  и реализует `createBinding`. Своих `inputs` и `outputs` в `@Component` нет:
+  их объявляет `T<Name>Surface`, и вход, объявленный здесь ещё раз, строгий
+  шаблон потребителя пропускал бы без сверки значения — это ловит
+  `packages/ui/angular/__tests__/inputs.spec.ts`:
 
 ```ts
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgClass, NgTemplateOutlet } from '@angular/common'
 import type { I<Name> } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import { AriaDirective, TComponentBase } from '../../adapter'
-import { <Name>InputNames, <Name>OutputNames } from './base.component'
+import { AriaDirective } from '../../adapter'
+import { <Name>InputNames, <Name>OutputNames, T<Name>Surface } from './base.component'
 import { setup<Name> } from './setup.component'
 
 @Component({
   selector: 'soldy-<name>',
   standalone: true,
-  inputs: [...<Name>InputNames],
-  outputs: [...<Name>OutputNames],
   imports: [NgClass, NgTemplateOutlet, AriaDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './<name>.component.html',
 })
-export class T<Name>Component extends TComponentBase<I<Name>> {
+export class T<Name>Component extends T<Name>Surface<I<Name>> {
   constructor() {
     super(<Name>InputNames, <Name>OutputNames)
   }

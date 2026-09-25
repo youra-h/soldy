@@ -1,5 +1,5 @@
 export {
 	ComponentViewInputs as ComponentViewInputNames,
 	ComponentViewOutputs as ComponentViewOutputNames,
-	TComponentViewOutputs,
+	TComponentViewSurface,
 } from '../../generated/component-view.metadata'

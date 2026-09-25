@@ -1,5 +1,5 @@
 export {
 	ControlInputs as ControlInputNames,
 	ControlOutputs as ControlOutputNames,
-	TControlOutputs,
+	TControlSurface,
 } from '../../generated/control.metadata'

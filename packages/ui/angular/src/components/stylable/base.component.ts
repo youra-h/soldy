@@ -1,5 +1,5 @@
 export {
 	StylableInputs as StylableInputNames,
 	StylableOutputs as StylableOutputNames,
-	TStylableOutputs,
+	TStylableSurface,
 } from '../../generated/stylable.metadata'
