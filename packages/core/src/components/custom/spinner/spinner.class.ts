@@ -41,7 +41,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	 * значение из разметки и то же самое не пишут. Итог на его месте прятал
 	 * число, равное толщине по размеру: запись не доходила до сеттера, своё
 	 * значение оставалось `'auto'`, и смена размера меняла толщину, заданную
-	 * явно. Итог — `borderWidthResolved`.
+	 * явно. Итог — `resolvedBorderWidth`.
 	 */
 	get borderWidth(): number | 'auto' {
 		return this._borderWidth
@@ -61,7 +61,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	 * Своего события у итога нет: он меняется от `change:borderWidth`, а при
 	 * `'auto'` — ещё и от `change:size`.
 	 */
-	get borderWidthResolved(): number {
+	get resolvedBorderWidth(): number {
 		if (this._borderWidth === 'auto') {
 			return this.calculateBorderWidth()
 		}

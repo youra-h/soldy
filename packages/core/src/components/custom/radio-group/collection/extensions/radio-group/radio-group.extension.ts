@@ -85,7 +85,7 @@ export class TRadioGroupExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// Итог `disabledResolved` радио отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `resolvedDisabled` радио отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),

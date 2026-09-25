@@ -148,11 +148,11 @@ export default class TScroller
 	 * не гасит, поэтому выключенная лента обязана доехать до кнопок.
 	 */
 	get prevDisabled(): boolean {
-		return this.disabledResolved || !this._canPrev
+		return this.resolvedDisabled || !this._canPrev
 	}
 
 	get nextDisabled(): boolean {
-		return this.disabledResolved || !this._canNext
+		return this.resolvedDisabled || !this._canNext
 	}
 
 	/**

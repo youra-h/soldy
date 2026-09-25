@@ -20,7 +20,7 @@ export default { ...SetupInput }
 			:id="id"
 			:value="value"
 			:name="name"
-			:disabled="disabledResolved"
+			:disabled="resolvedDisabled"
 			:readonly="readonly"
 			:required="required"
 			:placeholder="placeholder"

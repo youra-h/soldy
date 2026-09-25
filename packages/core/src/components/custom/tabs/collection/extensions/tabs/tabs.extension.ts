@@ -93,7 +93,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// Итог `disabledResolved` элементу отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `resolvedDisabled` элементу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
@@ -272,7 +272,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 * однажды разошлась бы с остановкой.
 	 */
 	isEnabledTab(item: TItem): boolean {
-		return !item.disabledResolved && item.visible && item.rendered
+		return !item.resolvedDisabled && item.visible && item.rendered
 	}
 
 	/**

@@ -83,7 +83,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 							v-if="clearable"
 							class="s-select__clear"
 							:size="size"
-							:disabled="disabledResolved"
+							:disabled="resolvedDisabled"
 							@click.stop="facade.clear()"
 							v-bind="clearAria"
 						>

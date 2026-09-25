@@ -1214,7 +1214,7 @@ relay и порядок, который расширения выстраива�
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/item.extension.ts         closable = !disabledResolved && (item ?? parent)
+    item/item.extension.ts         closable = !resolvedDisabled && (item ?? parent)
   content/     связка «таб ↔ панель»
     content.extension.ts
     item/item.extension.ts         tabAria и panelAria
@@ -1440,7 +1440,7 @@ Accordion и у Select — унаследованный `aria`: они и вын
   сеттер, его отдают `getProps()` и модель (`v-model:disabled`), о нём
   сообщает `change:disabled`. Лежит в `item.states.disabled.rawValue`;
   выключенный владелец его не меняет.
-- **`disabledResolved` — итог**, только для чтения, событие
+- **`resolvedDisabled` — итог**, только для чтения, событие
   `change:disabled:resolved`. Его отдаёт резольвер, и его читает всё, что
   решает, доступен ли контрол: `attrs`/`aria`/`data-disabled`, разметка
   (`:disabled` вложенного поля и строки элемента), плагины и клавиатура. В
@@ -1448,10 +1448,10 @@ Accordion и у Select — унаследованный `aria`: они и вын
 
 У контрола без владельца они совпадают, и смена своего шлёт оба события.
 Правило одно на все коллекции — `bindDisabledToOwner` (резольвер читает итог
-владельца, `IDisabledOwner.disabledResolved`) и `notifyOwnerDisabled` в
+владельца, `IDisabledOwner.resolvedDisabled`) и `notifyOwnerDisabled` в
 `base/control/owner-disabled.ts`. Деталь, которой компонент владеет сам,
 получает его итог своим значением: поле и теги Select —
-`field.disabled = select.disabledResolved`.
+`field.disabled = select.resolvedDisabled`.
 
 **Почему два свойства.** Обмен сверяет значение из разметки с геттером пропа
 (`TLine.write`), поэтому вход обязан читать то, что записал. Пока геттер
@@ -2827,7 +2827,7 @@ this._syncDisabled() // начальное состояние — руками
 | `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                            |
 | `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                             |
 | `TListItemPlugin`      | `data-highlighted`                                                                                                                                                         |
-| `TControl`             | `data-disabled` — итог `disabledResolved`, на любом теге, от тега не зависит                                                                                               |
+| `TControl`             | `data-disabled` — итог `resolvedDisabled`, на любом теге, от тега не зависит                                                                                               |
 | `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                          |
 | `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                   |
 | ядро компонента        | своё состояние — `data-open` у `TSelect`, `TPopover` и `TDrawer`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider` |
@@ -2862,7 +2862,7 @@ this._syncDisabled() // начальное состояние — руками
 либо `aria-disabled` в `aria` — никогда оба на одном элементе. Раньше это
 условие (`tag === 'button' ? disabled : undefined`) писал каждый шаблон Button
 сам, и поменять список тегов значило бы поменять шесть шаблонов. Пишет он
-итог — `disabledResolved`, а не своё `disabled`: элемент выключенного списка
+итог — `resolvedDisabled`, а не своё `disabled`: элемент выключенного списка
 выключен и в разметке (см. «`disabled` элемента: своё или владельца»).
 
 Теме ни одна из этих половин не годится: обе решает тег, и обе переезжают
@@ -3274,7 +3274,7 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
 Отсюда следствие: **`readonly` больше не запрещает открыть панель** — иначе
 select-only (он же `readonly: true`) не открывался бы вовсе, а список для него
 единственный способ сменить значение. `openable` теперь смотрит только на
-выключенность — итог `disabledResolved`; запереть Select целиком — это
+выключенность — итог `resolvedDisabled`; запереть Select целиком — это
 `disabled`.
 
 ### Клик и клавиатура — режим выбирает стратегию, а не ветка внутри неё
@@ -3531,7 +3531,7 @@ Disabled — так же: тема читает `data-disabled`, которое 
 в `TListKeyboardPlugin`).
 
 - `action:press` — нормализованная активация: клик или Enter/Space, не приходит
-  на выключенный контрол (итог `disabledResolved` — у элемента выключенного
+  на выключенный контрол (итог `resolvedDisabled` — у элемента выключенного
   списка тоже), одинакова на любом теге. Enter/Space нормализуются, только
   когда фокус на самом корне. Клавишу из вложенного поля или кнопки корень не
   отменяет и за свой `press` не выдаёт: что с ней делать, знает сам элемент, а

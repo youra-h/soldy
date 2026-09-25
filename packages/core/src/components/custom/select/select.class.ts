@@ -127,7 +127,7 @@ export class TSelect<
 		// его ещё не пересчитал, а `_applyReadonly` события не шлёт, поэтому
 		// эквивалент выключателя editable читаем явно из пропов.
 		this._field = new TInput({
-			disabled: this.disabledResolved,
+			disabled: this.resolvedDisabled,
 			size: this.size,
 			variant: this.variant,
 			readonly: !(own.editable ?? ctor.defaultValues.editable),
@@ -215,10 +215,10 @@ export class TSelect<
 	 * Раньше её запрещал ещё и `readonly`. Теперь `readonly` значит только
 	 * «в поле нельзя печатать», и ставит его `editable`; select-only — это
 	 * как раз `editable: false`, а ему панель и нужна. Остаётся выключенность:
-	 * итог `disabledResolved`.
+	 * итог `resolvedDisabled`.
 	 */
 	get openable(): boolean {
-		return !this.disabledResolved
+		return !this.resolvedDisabled
 	}
 
 	get open(): boolean {

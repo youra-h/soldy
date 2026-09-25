@@ -60,7 +60,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 			tag="span"
 			:size="size"
 			:variant="variant"
-			:disabled="disabledResolved"
+			:disabled="resolvedDisabled"
 			tabindex="-1"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>

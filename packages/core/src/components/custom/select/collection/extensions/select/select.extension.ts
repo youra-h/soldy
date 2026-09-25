@@ -161,7 +161,7 @@ export class TSelectExtension<
 		// отдельной подписки на неё не нужно
 		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
 
-		// Итог `disabledResolved` опции отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `resolvedDisabled` опции отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
@@ -235,7 +235,7 @@ export class TSelectExtension<
 	chooseItem(item: TItem): boolean {
 		const selection = this._selection
 
-		if (!selection || item.disabledResolved) return false
+		if (!selection || item.resolvedDisabled) return false
 
 		if (selection.multiple) {
 			selection.toggle(item)

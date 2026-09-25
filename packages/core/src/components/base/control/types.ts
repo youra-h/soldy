@@ -4,7 +4,7 @@ import type { IStateUnit } from '../../../common'
 export type TControlEvents = TStylableEvents & {
 	/** Сменилось своё `disabled` — то, что записали разметка, данные или код. */
 	'change:disabled': (value: boolean) => void
-	/** Сменился итог `disabledResolved`. */
+	/** Сменился итог `resolvedDisabled`. */
 	'change:disabled:resolved': (value: boolean) => void
 	'change:focused': (value: boolean) => void
 }
@@ -36,7 +36,7 @@ export interface IDisabledItem {
  * всё, что решает, доступен ли контрол, читает итог.
  */
 export interface IDisabledOwner {
-	readonly disabledResolved: boolean
+	readonly resolvedDisabled: boolean
 }
 
 export interface IControl<
@@ -54,6 +54,6 @@ export interface IControl<
 	 * Итог: у элемента коллекции — своё **или** владельца, у остальных — своё.
 	 * По нему контрол доступен или нет — разметка, клавиатура, плагины.
 	 */
-	readonly disabledResolved: boolean
+	readonly resolvedDisabled: boolean
 	focused: boolean
 }

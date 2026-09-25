@@ -71,7 +71,7 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 		}
 
 		this._aria.add('role', 'button')
-		this._aria.add('tabindex', this.disabledResolved ? null : '0')
+		this._aria.add('tabindex', this.resolvedDisabled ? null : '0')
 	}
 
 	getProps(): IButtonProps {

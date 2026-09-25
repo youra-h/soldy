@@ -28,15 +28,15 @@ describe('TControl', () => {
 		const seen: string[] = []
 
 		ctrl.events.on('change:disabled', (value) => {
-			seen.push(`disabled:${value}:${ctrl.disabled}:${ctrl.disabledResolved}`)
+			seen.push(`disabled:${value}:${ctrl.disabled}:${ctrl.resolvedDisabled}`)
 		})
 		ctrl.events.on('change:disabled:resolved', (value) => {
-			seen.push(`resolved:${value}:${ctrl.disabled}:${ctrl.disabledResolved}`)
+			seen.push(`resolved:${value}:${ctrl.disabled}:${ctrl.resolvedDisabled}`)
 		})
 
 		ctrl.disabled = true
 
-		expect(ctrl.disabledResolved).toBe(true)
+		expect(ctrl.resolvedDisabled).toBe(true)
 		expect(seen).toEqual(['resolved:true:true:true', 'disabled:true:true:true'])
 		expect(ctrl.dataset.get('disabled')).toBe('true')
 	})
@@ -45,14 +45,14 @@ describe('TControl', () => {
 	 * Своё — вход и `getProps()`, итог — наборы: выключенный владелец выключает
 	 * контрол, не трогая его своё значение.
 	 */
-	it('с владельцем: disabled и getProps — своё, disabledResolved и наборы — итог', () => {
+	it('с владельцем: disabled и getProps — своё, resolvedDisabled и наборы — итог', () => {
 		const ctrl = new TControl<IControlProps>({ tag: 'button' })
 
-		bindDisabledToOwner(ctrl, { disabledResolved: true })
+		bindDisabledToOwner(ctrl, { resolvedDisabled: true })
 
 		expect(ctrl.disabled).toBe(false)
 		expect(ctrl.getProps()).toMatchObject({ disabled: false })
-		expect(ctrl.disabledResolved).toBe(true)
+		expect(ctrl.resolvedDisabled).toBe(true)
 		expect(ctrl.attrs.get('disabled')).toBe('disabled')
 		expect(ctrl.dataset.get('disabled')).toBe('true')
 	})

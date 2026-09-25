@@ -20,5 +20,5 @@ export interface ISpinner extends IStylable<ISpinnerProps, TSpinnerEvents, TSpin
 	/** Толщина кольца как задана: пиксели или `'auto'` — по размеру */
 	borderWidth: number | 'auto'
 	/** Итоговая толщина кольца в пикселях: при `'auto'` посчитана по размеру */
-	readonly borderWidthResolved: number
+	readonly resolvedBorderWidth: number
 }

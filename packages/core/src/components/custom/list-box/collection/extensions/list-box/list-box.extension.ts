@@ -83,7 +83,7 @@ export class TListBoxExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		// Итог `disabledResolved` элементу отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `resolvedDisabled` элементу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
@@ -127,7 +127,7 @@ export class TListBoxExtension<
 	 * элементе: переключить выбор элемента.
 	 *
 	 * Выключенный элемент не выбирается: он виден и объявляется скринридером
-	 * как недоступный, но нажатие по нему ничего не делает. `disabledResolved` —
+	 * как недоступный, но нажатие по нему ничего не делает. `resolvedDisabled` —
 	 * итог, в нём учтён и выключенный список.
 	 *
 	 * Проверка здесь, а не в `TSelectionExtension`: выбрать выключенный элемент
@@ -136,7 +136,7 @@ export class TListBoxExtension<
 	chooseItem(item: TItem): boolean {
 		const selection = this._selection
 
-		if (!selection || item.disabledResolved) return false
+		if (!selection || item.resolvedDisabled) return false
 
 		selection.toggle(item)
 

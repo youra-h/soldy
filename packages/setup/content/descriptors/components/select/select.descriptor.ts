@@ -96,7 +96,7 @@ export const SelectDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:clearLabel', 'change:name'],
 				},
-				/** Можно ли открыть панель: запрещает только итог `disabledResolved`. */
+				/** Можно ли открыть панель: запрещает только итог `resolvedDisabled`. */
 				openable: {
 					type: Boolean,
 					protected: true,

@@ -9,7 +9,7 @@
  * резольвер, и расширения `item.disabled` не пишут.
  *
  * Своё и итог — два свойства, как `input.disabled` и `:disabled` под
- * `<fieldset disabled>`: `disabled` отдаёт своё, `disabledResolved` — итог.
+ * `<fieldset disabled>`: `disabled` отдаёт своё, `resolvedDisabled` — итог.
  * Пока геттер `disabled` отдавал итог, своё `true` из разметки в выключенном
  * списке совпадало с ним, обмен считал его повтором и не записывал — и после
  * включения списка элемент оживал.
@@ -42,7 +42,7 @@ type TSource = { value: string; disabled?: boolean }
 /** То, что сценарий трогает у элемента: у всех коллекций оно общее. */
 type TItemProbe = {
 	disabled: boolean
-	readonly disabledResolved: boolean
+	readonly resolvedDisabled: boolean
 	readonly dataset: TDataset
 	readonly events: {
 		on(
@@ -195,10 +195,10 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		})
 
 		expect(item('a').disabled).toBe(true)
-		expect(item('a').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
 		expect(item('a').dataset.get('disabled')).toBe('true')
 		expect(item('b').disabled).toBe(false)
-		expect(item('b').disabledResolved).toBe(false)
+		expect(item('b').resolvedDisabled).toBe(false)
 		expect(item('b').dataset.get('disabled')).toBe('false')
 	})
 
@@ -210,8 +210,8 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 
 		owner.disabled = true
 
-		expect(item('a').disabledResolved).toBe(true)
-		expect(item('b').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
+		expect(item('b').resolvedDisabled).toBe(true)
 		expect(item('b').dataset.get('disabled')).toBe('true')
 		// Своё владелец не трогает: у выключенного вместе со списком оно `false`
 		expect(item('a').disabled).toBe(true)
@@ -219,9 +219,9 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 
 		owner.disabled = false
 
-		expect(item('a').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
 		expect(item('a').dataset.get('disabled')).toBe('true')
-		expect(item('b').disabledResolved).toBe(false)
+		expect(item('b').resolvedDisabled).toBe(false)
 		expect(item('b').dataset.get('disabled')).toBe('false')
 	})
 
@@ -229,16 +229,16 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		const { owner, item, push } = build({ disabled: true, items: [{ value: 'a' }] })
 		const pushed = push({ value: 'b' })
 
-		expect(item('a').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
 		expect(item('a').dataset.get('disabled')).toBe('true')
-		expect(pushed.disabledResolved).toBe(true)
+		expect(pushed.resolvedDisabled).toBe(true)
 		expect(pushed.dataset.get('disabled')).toBe('true')
 		expect(pushed.disabled).toBe(false)
 
 		owner.disabled = false
 
-		expect(item('a').disabledResolved).toBe(false)
-		expect(pushed.disabledResolved).toBe(false)
+		expect(item('a').resolvedDisabled).toBe(false)
+		expect(pushed.resolvedDisabled).toBe(false)
 		expect(pushed.dataset.get('disabled')).toBe('false')
 	})
 
@@ -257,9 +257,9 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		owner.disabled = false
 
 		expect(item('a').disabled).toBe(true)
-		expect(item('a').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
 		expect(item('a').dataset.get('disabled')).toBe('true')
-		expect(item('b').disabledResolved).toBe(false)
+		expect(item('b').resolvedDisabled).toBe(false)
 	})
 
 	it('то же, когда своё приходит через batch.patch', () => {
@@ -275,8 +275,8 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		// Патч обновил тот же элемент, а не заменил его
 		expect(item('a')).toBe(a)
 		expect(a.disabled).toBe(true)
-		expect(a.disabledResolved).toBe(true)
-		expect(item('b').disabledResolved).toBe(false)
+		expect(a.resolvedDisabled).toBe(true)
+		expect(item('b').resolvedDisabled).toBe(false)
 	})
 
 	it('своё true в выключенном списке: один change:disabled, итог молчит', () => {
@@ -298,7 +298,7 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		// Включили список — итог остался `true`: своё его держит
 		owner.disabled = false
 
-		expect(item('a').disabledResolved).toBe(true)
+		expect(item('a').resolvedDisabled).toBe(true)
 		expect(resolved).not.toHaveBeenCalled()
 		expect(own).toHaveBeenCalledOnce()
 	})
