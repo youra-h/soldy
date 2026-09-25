@@ -9,8 +9,8 @@
  * Вторая половина — прозрачный контур: его цвет браузер тоже заменяет
  * системным, и контур становится рамкой
  * (`themes/oren/src/components/popover/_popover.scss`).
- * Тем же контуром держится плашка Tooltip: её фон здесь тоже становится фоном
- * страницы.
+ * Тем же контуром держатся плашка Tooltip и выезжающая панель Drawer: их фон
+ * здесь тоже становится фоном страницы.
  *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
@@ -22,7 +22,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Button, Popover, Select, SelectItem, Tooltip } from '@soldy-ui/vue'
+import { Button, Drawer, Popover, Select, SelectItem, Tooltip } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 import { find, opacity, pixel, style } from './colors'
@@ -90,6 +90,16 @@ const PANELS = [
 				Select,
 				{ open: true },
 				{ default: () => [h(SelectItem, { value: '0', text: 'Москва' })] },
+			),
+	},
+	{
+		name: 'Drawer',
+		panel: '.s-drawer',
+		markup: () =>
+			h(
+				Drawer,
+				{ visible: true },
+				{ title: () => 'Фильтры', default: () => 'Содержимое панели' },
 			),
 	},
 	{

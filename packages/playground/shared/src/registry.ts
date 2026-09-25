@@ -7,6 +7,7 @@ import {
 	ControlDescriptor,
 	DialogDescriptor,
 	DragAndDropDescriptor,
+	DrawerDescriptor,
 	FrameDescriptor,
 	IconDescriptor,
 	InputDescriptor,
@@ -138,6 +139,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Модальное окно: по центру или у края экрана, с разворотом на весь экран',
+	},
+	{
+		id: 'drawer',
+		label: 'Drawer',
+		descriptor: DrawerDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Выезжающая панель у края экрана или контейнера: смахивается жестом',
 	},
 	{
 		id: 'scroller',
