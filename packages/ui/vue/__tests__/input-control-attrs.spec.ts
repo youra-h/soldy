@@ -55,6 +55,16 @@ describe('Input', () => {
 		expect(wrapper.attributes('dir')).toBe('rtl')
 		expect(wrapper.find('input').attributes('dir')).toBeUndefined()
 	})
+
+	/**
+	 * `tag` — всегда тег корня: по нему ядро решает, есть ли у корня нативный
+	 * `disabled`. Жёсткий `div` в шаблоне сделал бы проп декоративным, и `tag`
+	 * у Input разошёлся бы с React.
+	 */
+	it('корень рисуется по tag, по умолчанию — div', () => {
+		expect(mount(Input).element.localName).toBe('div')
+		expect(mount(Input, { props: { tag: 'span' } }).element.localName).toBe('span')
+	})
 })
 
 /**

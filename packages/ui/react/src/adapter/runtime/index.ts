@@ -1,5 +1,7 @@
 export { useAdapter } from './useAdapter'
 export { useAdapterContext } from './useAdapterContext'
 export { Teleport } from './Teleport'
+export { NativeInput } from './NativeInput'
 export type { TBinding } from './useAdapter'
 export type { TTeleportProps } from './Teleport'
+export type { TNativeInputLive, TNativeInputProps } from './NativeInput'

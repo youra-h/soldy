@@ -5,13 +5,19 @@ export default { ...SetupInput }
 </script>
 
 <template>
-	<div
+	<component
 		ref="rootElement"
+		:is="tag"
 		v-if="rendered"
 		v-show="visible"
 		:class="classes"
 		v-bind="{ ...attrs, ...containerAttrs }"
 	>
+		<!--
+			Корень рисуется по `tag`, по умолчанию `div`: `tag` — всегда тег
+			корня, и по нему же ядро решает, есть ли у корня нативный
+			`disabled`.
+		-->
 		<div v-if="$slots.leading" class="s-input__leading">
 			<slot name="leading" :ctrl="ctrl"> </slot>
 		</div>
@@ -29,5 +35,5 @@ export default { ...SetupInput }
 		<div v-if="$slots.trailing" class="s-input__trailing">
 			<slot name="trailing" :ctrl="ctrl"> </slot>
 		</div>
-	</div>
+	</component>
 </template>

@@ -13,7 +13,8 @@ import type { IconProps } from './base.component'
  *
  * Размер (`width`, `height`) приходит стилем от плагина раскладки, имя —
  * от плагина доступного имени: без него иконка скрыта (`aria-hidden`), с ним
- * становится `role="img"`. Иконку по роли из пакета иконок здесь не ищут.
+ * становится `role="img"`. Иконку по роли из пакета иконок здесь не ищут: тег
+ * для неё даёт `roleIcon(role)` адаптера.
  */
 export function Icon(props: IconProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupIcon(props)
