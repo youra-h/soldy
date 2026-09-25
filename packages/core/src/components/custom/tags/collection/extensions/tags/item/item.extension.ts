@@ -27,7 +27,7 @@ export class TTagsItemExtension<
 		this.events.relay(item.events, [
 			'change:closable',
 			// Итог `resolvedDisabled` входит в итог `closable` — см. геттер
-			{ from: 'change:resolvedDisabled', as: 'change:closable' },
+			{ from: 'change:disabled:resolved', as: 'change:closable' },
 		])
 	}
 
@@ -38,7 +38,7 @@ export class TTagsItemExtension<
 	 * собственный `closable` элемента, поэтому не зависит от того, как тег
 	 * пришёл к «выключен»: со старта, позже или вместе с набором. Итог
 	 * `resolvedDisabled` сочетает своё значение тега и владельца
-	 * (`bindDisabledToOwner`), и `change:resolvedDisabled` приходит на смену
+	 * (`bindDisabledToOwner`), и `change:disabled:resolved` приходит на смену
 	 * итога.
 	 *
 	 * У включённого — явное значение элемента > глобальное значение из

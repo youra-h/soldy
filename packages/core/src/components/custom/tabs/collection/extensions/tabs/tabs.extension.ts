@@ -95,7 +95,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 		// Итог `resolvedDisabled` элементу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
-		this._owner.events.on('change:resolvedDisabled', () =>
+		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
 		)
 
@@ -240,14 +240,14 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	private readonly _onTabAvailability = (): void => this._syncTabStop()
 
 	private _watchTab(item: TItem): void {
-		item.events.on('change:resolvedDisabled', this._onTabAvailability)
+		item.events.on('change:disabled:resolved', this._onTabAvailability)
 		item.events.on('change:visible', this._onTabAvailability)
 		item.events.on('change:rendered', this._onTabAvailability)
 	}
 
 	/** Удалённый таб больше не двигает остановку списка, в котором его нет. */
 	private _unwatchTab(item: TItem): void {
-		item.events.off('change:resolvedDisabled', this._onTabAvailability)
+		item.events.off('change:disabled:resolved', this._onTabAvailability)
 		item.events.off('change:visible', this._onTabAvailability)
 		item.events.off('change:rendered', this._onTabAvailability)
 	}

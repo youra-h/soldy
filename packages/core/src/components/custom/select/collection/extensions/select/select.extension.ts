@@ -163,7 +163,7 @@ export class TSelectExtension<
 
 		// Итог `resolvedDisabled` опции отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
-		this._owner.events.on('change:resolvedDisabled', () =>
+		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
 		)
 

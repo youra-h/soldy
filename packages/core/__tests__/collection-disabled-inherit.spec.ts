@@ -46,7 +46,7 @@ type TItemProbe = {
 	readonly dataset: TDataset
 	readonly events: {
 		on(
-			event: 'change:disabled' | 'change:resolvedDisabled',
+			event: 'change:disabled' | 'change:disabled:resolved',
 			handler: (value: boolean) => void,
 		): void
 	}
@@ -285,7 +285,7 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		const resolved = vi.fn()
 
 		item('a').events.on('change:disabled', own)
-		item('a').events.on('change:resolvedDisabled', resolved)
+		item('a').events.on('change:disabled:resolved', resolved)
 
 		item('a').disabled = true
 		// То же значение — повтор, события нет
@@ -303,7 +303,7 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		expect(own).toHaveBeenCalledOnce()
 	})
 
-	it('change:resolvedDisabled — одно на смену итога, у выключенного самим собой — ни одного', () => {
+	it('change:disabled:resolved — одно на смену итога, у выключенного самим собой — ни одного', () => {
 		const { owner, item } = build({
 			disabled: false,
 			items: [{ value: 'a', disabled: true }, { value: 'b' }],
@@ -312,8 +312,8 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		const inherited = vi.fn()
 		const ownValue = vi.fn()
 
-		item('a').events.on('change:resolvedDisabled', own)
-		item('b').events.on('change:resolvedDisabled', inherited)
+		item('a').events.on('change:disabled:resolved', own)
+		item('b').events.on('change:disabled:resolved', inherited)
 		item('b').events.on('change:disabled', ownValue)
 
 		owner.disabled = true

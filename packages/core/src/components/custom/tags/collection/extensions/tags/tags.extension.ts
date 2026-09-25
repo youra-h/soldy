@@ -101,7 +101,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 		// Итог `resolvedDisabled` тегу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
-		this._owner.events.on('change:resolvedDisabled', () =>
+		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
 		)
 
@@ -322,7 +322,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	private readonly _onTagAvailability = (): void => this._syncTabStop()
 
 	private _watchTag(item: TItem): void {
-		item.events.on('change:resolvedDisabled', this._onTagAvailability)
+		item.events.on('change:disabled:resolved', this._onTagAvailability)
 		item.events.on('change:visible', this._onTagAvailability)
 		item.events.on('change:rendered', this._onTagAvailability)
 	}
@@ -332,7 +332,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * забывается как тег под фокусом.
 	 */
 	private _unwatchTag(item: TItem): void {
-		item.events.off('change:resolvedDisabled', this._onTagAvailability)
+		item.events.off('change:disabled:resolved', this._onTagAvailability)
 		item.events.off('change:visible', this._onTagAvailability)
 		item.events.off('change:rendered', this._onTagAvailability)
 

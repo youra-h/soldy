@@ -42,7 +42,7 @@ export default class TControl<
 		// Единица сообщает о смене итога (`value`), а не своего (`rawValue`):
 		// о своём сообщает сеттер `disabled`
 		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:resolvedDisabled', payload.newValue)
+			this._sink.emit('change:disabled:resolved', payload.newValue)
 		})
 
 		this._states.focused =
@@ -52,7 +52,7 @@ export default class TControl<
 			this._sink.emit('change:focused', payload.newValue)
 		})
 
-		this.events.on('change:resolvedDisabled', () => this._syncDisabled())
+		this.events.on('change:disabled:resolved', () => this._syncDisabled())
 		this.events.on('change:tag', () => this._syncDisabled())
 
 		this._syncDisabled()
@@ -64,7 +64,7 @@ export default class TControl<
 		// на остальных. Теме нужно одно значение на любом теге, иначе её
 		// селектор переезжал бы вместе с атрибутом. Булево уходит как есть:
 		// префикс и строку делает `TDataset`, `false` остаётся `"false"`.
-		this.events.on('change:resolvedDisabled', () =>
+		this.events.on('change:disabled:resolved', () =>
 			this._dataset.add('disabled', this.resolvedDisabled),
 		)
 
@@ -94,7 +94,7 @@ export default class TControl<
 	}
 	/**
 	 * Пишет своё значение и сообщает о нём `change:disabled`. Итог к этому
-	 * моменту уже пересчитан: `change:resolvedDisabled`, если итог сменился,
+	 * моменту уже пересчитан: `change:disabled:resolved`, если итог сменился,
 	 * пришёл раньше, — в выключенном списке своё `true` его не меняет.
 	 */
 	set disabled(value: boolean) {
@@ -132,7 +132,7 @@ export default class TControl<
 	 * `TCheckBox`, `TSwitch` — `input`). Тогда ARIA-половина правил решается
 	 * по элементу, на котором её прочтёт скринридер, а не по корню.
 	 *
-	 * Пересчёт идёт на `change:resolvedDisabled` и `change:tag`: хук,
+	 * Пересчёт идёт на `change:disabled:resolved` и `change:tag`: хук,
 	 * зависящий от чего-то ещё, потребует своей подписки.
 	 */
 	protected get _ariaTag(): string | object {
