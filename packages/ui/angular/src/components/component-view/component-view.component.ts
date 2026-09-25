@@ -1,14 +1,18 @@
 import { Component, ChangeDetectionStrategy, HostBinding } from '@angular/core'
 import type { IComponentView } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import { TComponentBase } from '../../adapter'
-import { ComponentViewInputNames, ComponentViewOutputNames } from './base.component'
+import {
+	ComponentViewInputNames,
+	ComponentViewOutputNames,
+	TComponentViewOutputs,
+} from './base.component'
 import { setupComponentView } from './setup.component'
 
 /**
  * TComponentViewComponent — слой TComponentView с DOM-биндингом.
  *
- * inputs/outputs — статические константы из generated/component-view.metadata.ts.
+ * inputs/outputs — статические константы из generated/component-view.metadata.ts,
+ * оттуда же база `TComponentViewOutputs` — типы выходов для строгого шаблона.
  * Классы и видимость применяются к хост-элементу через @HostBinding.
  *
  * Хост существует всё время жизни компонента, поэтому привязку к
@@ -30,7 +34,7 @@ import { setupComponentView } from './setup.component'
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class TComponentViewComponent extends TComponentBase<IComponentView> {
+export class TComponentViewComponent extends TComponentViewOutputs<IComponentView> {
 	@HostBinding('class') get hostClass(): string {
 		return this.state().classes?.join(' ') ?? ''
 	}

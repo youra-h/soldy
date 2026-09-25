@@ -1,28 +1,27 @@
 /**
  * Плагин узла в тестах — только через выход `element:create`.
  *
- * Эмиттеры аутпутов ставит конструктор `TComponentBase` через `Reflect.set`:
- * имена приходят генерированным массивом, полей класса под них нет. Поэтому и
- * читаются они рефлексией — приведение здесь прятало бы отсутствие выхода,
- * а не чинило его.
+ * Эмиттер выхода ставит конструктор `TComponentBase` по генерированному
+ * массиву имён, а тип полю `elementCreate` даёт сгенерированный
+ * `T<Имя>Outputs`, от которого наследуется компонент. Поэтому выход читается
+ * как поле, без рефлексии и приведений.
  *
  * Подписка ставится до первой проверки изменений: набор объявляет себя на
  * микрозадаче после `ngOnInit` (`TOwnBundle._announce`), а `ngOnInit` зовёт
  * первый `detectChanges()`.
  */
 
-import { EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import { TElementPlugin } from '@soldy-ui/plugins'
+import type { TComponentViewComponent } from '@soldy-ui/angular'
 
-export function elementPlugin(fixture: ComponentFixture<object>): () => TElementPlugin {
-	const output: unknown = Reflect.get(fixture.componentInstance, 'elementCreate')
+/** Компонент с `TElementPlugin` в наборе: выход `elementCreate` у всех визуальных один. */
+type TWithElementCreate = Pick<TComponentViewComponent, 'elementCreate'>
 
-	if (!(output instanceof EventEmitter)) throw new Error('Выход elementCreate не объявлен')
-
+export function elementPlugin(fixture: ComponentFixture<TWithElementCreate>): () => TElementPlugin {
 	let plugin: TElementPlugin | undefined
 
-	output.subscribe((value: unknown) => {
+	fixture.componentInstance.elementCreate.subscribe((value) => {
 		if (value instanceof TElementPlugin) plugin = value
 	})
 
