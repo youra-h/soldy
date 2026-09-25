@@ -56,7 +56,10 @@ export const SelectDescriptor = defineDescriptor(() =>
 				 * дополняет их, а не заменяет.
 				 */
 				leading: { description: 'Перед полем' },
-				clear: { description: 'Кнопка очистки значения' },
+				clear: {
+					scope: { clear: defineType<() => void>(Function) },
+					description: 'Кнопка очистки значения',
+				},
 				'arrow-icon': { description: 'Стрелка состояния панели' },
 				trailing: { description: 'После стрелки' },
 				default: { description: 'Опции — элементы коллекции' },
