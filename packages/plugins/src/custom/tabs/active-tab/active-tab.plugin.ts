@@ -46,18 +46,17 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
 			this._engine = engine as TTabsCollection
 
-			engine.extensions.activation.events.on('item:activated', () => this._emitOffset())
-			engine.extensions.activation.events.on('item:deactivated', () => this._emitOffset())
+			const emit = () => this._emitOffset()
+			const emitNextFrame = () => requestAnimationFrame(emit)
 
-			engine.extensions.plain.events.on('item:removed', () =>
-				requestAnimationFrame(() => this._emitOffset()),
-			)
-			engine.extensions.plain.events.on('item:moved', () =>
-				requestAnimationFrame(() => this._emitOffset()),
-			)
+			this._listenTo(engine.extensions.activation.events, 'item:activated', emit)
+			this._listenTo(engine.extensions.activation.events, 'item:deactivated', emit)
+
+			this._listenTo(engine.extensions.plain.events, 'item:removed', emitNextFrame)
+			this._listenTo(engine.extensions.plain.events, 'item:moved', emitNextFrame)
 		})
 
-		this._tabs?.events.on('change:view', () => this._emitOffset())
+		this._listenTo(this._tabs?.events, 'change:view', () => this._emitOffset())
 	}
 
 	override destroy(): void {

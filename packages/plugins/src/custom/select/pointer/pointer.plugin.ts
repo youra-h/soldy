@@ -50,7 +50,7 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 			this._element = null
 		})
 
-		this._owner?.events.on('change:editable', (value: boolean) => {
+		this._listenTo(this._owner?.events, 'change:editable', (value: boolean) => {
 			this._editable = value
 		})
 	}

@@ -80,7 +80,7 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 
 		bundles?.events.on('bundle:unregistered', this._onLayoutChange)
 
-		this._owner?.events.on('change:overflow', this._onLayoutChange)
+		this._listenTo(this._owner?.events, 'change:overflow', this._onLayoutChange)
 	}
 
 	override destroy(): void {
@@ -102,12 +102,14 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 
 	private readonly _onLayoutChange = (): void => this._resync()
 
-	/** Движок сменился — подписки на состав и панель переезжают вместе с ним. */
+	/** Движок привязан: подписки на состав и панель держатся до `destroy()`. */
 	private _bindEngine(engine: TTagsCollection): void {
 		this._engine = engine
 
-		engine.extensions.batch.events.on('change:shown', this._onLayoutChange)
-		engine.extensions.overflow.events.on('change:panel', (panel) => this._bindPanel(panel))
+		this._listenTo(engine.extensions.batch.events, 'change:shown', this._onLayoutChange)
+		this._listenTo(engine.extensions.overflow.events, 'change:panel', (panel) =>
+			this._bindPanel(panel),
+		)
 
 		this._bindPanel(engine.extensions.overflow.panel)
 		this._resync()
@@ -122,7 +124,7 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 	private _bindPanel(panel: IPopover | null): void {
 		this._more = null
 
-		panel?.events.on('bundle:create', (bundle) => {
+		this._listenTo(panel?.events, 'bundle:create', (bundle) => {
 			if (!(bundle instanceof TPluginBundle)) return
 
 			const node = bundle.get(TElementPlugin)

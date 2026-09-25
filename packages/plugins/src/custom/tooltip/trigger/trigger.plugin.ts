@@ -72,7 +72,7 @@ export class TTooltipTriggerPlugin extends TBasePlugin<any, TTooltipTriggerPlugi
 
 		this._owner = ctx.getInstance<ITooltip>()
 		this._dismiss = ctx.get(TDismissPlugin) ?? null
-		this._owner?.events.on('change:open', this._onOpenChange)
+		this._listenTo(this._owner?.events, 'change:open', this._onOpenChange)
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -82,9 +82,6 @@ export class TTooltipTriggerPlugin extends TBasePlugin<any, TTooltipTriggerPlugi
 
 	override destroy(): void {
 		this._unbindRoot()
-		// Внешний `ctrl` переживает компонент: подписка на него осталась бы
-		// висеть с каждым монтированием
-		this._owner?.events.off('change:open', this._onOpenChange)
 
 		this._owner = null
 		this._dismiss = null

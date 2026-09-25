@@ -49,12 +49,12 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 	private _bindFrame(frame: IFrame): void {
 		const update = () => this._update()
 
-		frame.events.on('change:x', update)
-		frame.events.on('change:y', update)
-		frame.events.on('change:width', update)
-		frame.events.on('change:height', update)
-		frame.events.on('change:zIndex', update)
-		frame.events.on('change:position', update)
+		this._listenTo(frame.events, 'change:x', update)
+		this._listenTo(frame.events, 'change:y', update)
+		this._listenTo(frame.events, 'change:width', update)
+		this._listenTo(frame.events, 'change:height', update)
+		this._listenTo(frame.events, 'change:zIndex', update)
+		this._listenTo(frame.events, 'change:position', update)
 
 		this._update()
 	}
