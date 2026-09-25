@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { TSpinner } from '@soldy-ui/core'
 import { Spinner } from '@soldy-ui/vue'
@@ -73,5 +74,38 @@ describe('Spinner: смена толщины и размера', () => {
 		await mounted.setProps({ size: 'xl' })
 
 		expect(borderWidth()).toBe('2px')
+	})
+})
+
+/**
+ * Толщина числом, равным автоматической, — тоже заданная толщина.
+ *
+ * Связка не пишет значение, равное тому, что отдаёт геттер пропа, а геттер
+ * `borderWidth` при `'auto'` отдавал толщину по размеру. Число, равное ей, до
+ * ядра не доходило: своё значение оставалось `'auto'`, и смена размера меняла
+ * толщину, которую разметка задала явно, — 2px у `xl` вместо заданного 1px.
+ */
+describe('Spinner: толщина, равная автоматической', () => {
+	it('заданная пропом переживает смену размера', async () => {
+		const mounted = mount(Spinner)
+
+		wrapper = mounted
+		expect(borderWidth()).toBe('1px')
+
+		await mounted.setProps({ borderWidth: 1 })
+		await mounted.setProps({ size: 'xl' })
+
+		expect(borderWidth()).toBe('1px')
+	})
+
+	it('заданная при сборке поверх внешнего ctrl — тоже', async () => {
+		const ctrl = new TSpinner()
+
+		wrapper = mount(Spinner, { props: { ctrl, borderWidth: 1 } })
+		ctrl.size = 'xl'
+		await nextTick()
+
+		expect(ctrl.borderWidth).toBe(1)
+		expect(borderWidth()).toBe('1px')
 	})
 })
