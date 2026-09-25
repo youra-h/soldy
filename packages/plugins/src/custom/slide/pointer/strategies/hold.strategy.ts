@@ -1,5 +1,5 @@
 import { TSlideSnapStrategy } from './base.strategy'
-import { crossedPoint } from './points'
+import { crossedPoint, withinTravel } from './points'
 import type { THoldStop, TSlideSnapContext } from './types'
 
 /**
@@ -11,10 +11,17 @@ import type { THoldStop, TSlideSnapContext } from './types'
  * когда стоянка кончится, она сообщает (`wakeAt`), и плагин зовёт её снова,
  * хотя указатель стоит. Пока ручка стоит, другие метки на пути не держат:
  * догнав указатель, она проходит их без остановки.
+ *
+ * Путь — ручки, а за краями хода её нет: указатель за краем дорожки держит
+ * её на краю. Поэтому путь прижат к ходу — метку на краю ручка, вернувшаяся
+ * из-за края, покидает, а не пересекает снова.
  */
 export class THoldSnapStrategy extends TSlideSnapStrategy {
 	private readonly _delay: number
-	/** Где ручка была бы без щелчка шагом раньше — от неё виден путь через метку */
+	/**
+	 * Где ручка была бы без щелчка шагом раньше, в пределах хода, — от неё
+	 * виден путь через метку
+	 */
 	private _last: number
 	private _stop: THoldStop | undefined = undefined
 
@@ -22,7 +29,7 @@ export class THoldSnapStrategy extends TSlideSnapStrategy {
 		super(context)
 
 		this._delay = context.holdDelay
-		this._last = context.anchor
+		this._last = withinTravel(context.anchor)
 	}
 
 	override get wakeAt(): number | undefined {
@@ -31,12 +38,13 @@ export class THoldSnapStrategy extends TSlideSnapStrategy {
 
 	override follow(target: number, now: number): number {
 		const from = this._last
+		const to = withinTravel(target)
 
-		this._last = target
+		this._last = to
 
 		if (this._stop && now < this._stop.until) return this._stop.point
 
-		const point = crossedPoint(this._points, from, target)
+		const point = crossedPoint(this._points, from, to)
 
 		this._stop = point === undefined ? undefined : { point, until: now + this._delay }
 

@@ -86,4 +86,17 @@ describe('Spinner · толщина кольца', () => {
 
 		expect(borderWidth(root())).toBe('4px')
 	})
+
+	// Число, равное автоматической толщине, — тоже заданная толщина. Связка не
+	// пишет значение, равное геттеру пропа, а `borderWidth` при `'auto'`
+	// отдавал толщину по размеру: число до ядра не доходило, и у `xl` кольцо
+	// становилось 2px. Сценарий тот же, что у Vue (`spinner-border-width.spec.ts`).
+	it('толщина, равная автоматической, переживает смену размера', () => {
+		const { root, render } = mount(<Spinner />)
+
+		render(<Spinner borderWidth={1} />)
+		render(<Spinner borderWidth={1} size="xl" />)
+
+		expect(borderWidth(root())).toBe('1px')
+	})
 })

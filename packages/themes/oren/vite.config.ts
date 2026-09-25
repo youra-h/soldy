@@ -13,7 +13,7 @@ export default defineConfig({
 		outDir: 'dist',
 		emptyOutDir: true,
 		lib: {
-			entry: path.resolve(__dirname, 'src/index.ts'),
+			entry: path.resolve(import.meta.dirname, 'src/index.ts'),
 			formats: ['es'],
 		},
 		rollupOptions: {
@@ -26,7 +26,7 @@ export default defineConfig({
 		preprocessorOptions: {
 			scss: {
 				additionalData: (content: string) => {
-					const importLine = `@import "${path.resolve(__dirname, 'src/base.css')}";\n`
+					const importLine = `@import "${path.resolve(import.meta.dirname, 'src/base.css')}";\n`
 					const matches = [...content.matchAll(/^@use\s+[^;]+;\s*\n/gm)]
 
 					if (matches.length > 0) {

@@ -17,6 +17,7 @@ import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { Dialog, Select, SelectItem } from '@soldy-ui/vue'
 import { TDialog } from '@soldy-ui/core'
 import type { IDialogProps, TCloseEvent, TCloseReason } from '@soldy-ui/core'
+import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 import * as material from '@soldy-ui/icons-material'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -232,6 +233,90 @@ describe('разметка', () => {
 
 		expect(panel().parentElement).toBe(host)
 		expect(backdrop().parentElement).toBe(host)
+	})
+})
+
+describe('отступ', () => {
+	/** Переменные отступа панели — по стороне. */
+	const offsets = () => ({
+		top: panel().style.getPropertyValue('--dialog-offset-top'),
+		bottom: panel().style.getPropertyValue('--dialog-offset-bottom'),
+		start: panel().style.getPropertyValue('--dialog-offset-start'),
+		end: panel().style.getPropertyValue('--dialog-offset-end'),
+	})
+
+	it('offset — переменными темы по сторонам, не инлайном', async () => {
+		await render({ props: { offset: 24 } })
+
+		expect(offsets()).toEqual({ top: '24px', bottom: '24px', start: '24px', end: '24px' })
+		expect(panel().getAttribute('style')).not.toMatch(/inset|margin/)
+	})
+
+	it('незаданный отступ переменных не даёт: умолчание — у темы', async () => {
+		await render()
+
+		expect(offsets()).toEqual({ top: '', bottom: '', start: '', end: '' })
+	})
+
+	it('смена offset из шаблона пересчитывает переменные', async () => {
+		const offset = ref<number | string | undefined>(24)
+
+		wrapper = mount(
+			defineComponent({
+				render: () => h(Dialog, { offset: offset.value }, { default: inside }),
+			}),
+			{ attachTo: document.body },
+		)
+
+		await settle()
+
+		offset.value = '5%'
+		await nextTick()
+
+		expect(offsets().top).toBe('5%')
+
+		offset.value = undefined
+		await nextTick()
+
+		expect(offsets().top).toBe('')
+	})
+
+	it('обработчик layout:offset:before правит сторону у окна, открытого позже', async () => {
+		const shown = await render({
+			props: {
+				offset: 24,
+				'onLayout:offset:before': (event: TDialogOffsetEvent) => {
+					event.top = '10%'
+				},
+			},
+		})
+
+		await open(shown)
+
+		expect(offsets()).toEqual({ top: '10%', bottom: '24px', start: '24px', end: '24px' })
+	})
+
+	it('и у созданного видимым: показа, который пересчитал бы стили, у него нет', async () => {
+		const placements: string[] = []
+
+		wrapper = mount(Dialog, {
+			props: {
+				visible: true,
+				placement: 'start',
+				offset: 24,
+				'onLayout:offset:before': (event: TDialogOffsetEvent) => {
+					placements.push(event.placement)
+					event.start = 0
+				},
+			},
+			slots: { default: inside },
+			attachTo: document.body,
+		})
+
+		await settle()
+
+		expect(placements).toContain('start')
+		expect(offsets()).toEqual({ top: '24px', bottom: '24px', start: '0px', end: '24px' })
 	})
 })
 

@@ -34,11 +34,16 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 		this._aria.add('role', 'status')
 	}
 
+	/**
+	 * Толщина кольца как задана: число пикселей или `'auto'` — «по размеру».
+	 *
+	 * Геттер пропа отдаёт то, что записал сеттер, а не итог: с ним сверяют
+	 * значение из разметки и то же самое не пишут. Итог на его месте прятал
+	 * число, равное толщине по размеру: запись не доходила до сеттера, своё
+	 * значение оставалось `'auto'`, и смена размера меняла толщину, заданную
+	 * явно. Итог — `resolvedBorderWidth`.
+	 */
 	get borderWidth(): number | 'auto' {
-		if (this._borderWidth === 'auto') {
-			return this.calculateBorderWidth()
-		}
-
 		return this._borderWidth
 	}
 
@@ -47,6 +52,21 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 			this._borderWidth = value
 			this.events.emit('change:borderWidth', value)
 		}
+	}
+
+	/**
+	 * Итоговая толщина кольца в пикселях: при `'auto'` — по размеру
+	 * (`calculateBorderWidth()`), иначе заданная, на любом размере.
+	 *
+	 * Своего события у итога нет: он меняется от `change:borderWidth`, а при
+	 * `'auto'` — ещё и от `change:size`.
+	 */
+	get resolvedBorderWidth(): number {
+		if (this._borderWidth === 'auto') {
+			return this.calculateBorderWidth()
+		}
+
+		return this._borderWidth
 	}
 
 	/**

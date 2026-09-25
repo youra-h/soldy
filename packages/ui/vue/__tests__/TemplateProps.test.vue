@@ -83,6 +83,10 @@ const dragAndDrop = new TDragAndDrop()
 	<Dialog :width="true" />
 	<Dialog :width="480" />
 
+	<!-- @vue-expect-error — отступ числом или строкой, а не флагом -->
+	<Dialog :offset="true" />
+	<Dialog offset="5%" />
+
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Dialog :dismissible="'no'" />
 	<Dialog :dismissible="false" />

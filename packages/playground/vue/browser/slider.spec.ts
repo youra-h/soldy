@@ -107,6 +107,19 @@ const centerX = (node: Element) => {
 }
 
 /**
+ * Точка за ползунком: в 20 px от края дорожки — дальше отступа корня под
+ * полручки, — на уровне её середины. Координаты — от левого верхнего угла
+ * `body`: указатель уходит на страницу.
+ */
+function beyond(edge: 'left' | 'right') {
+	const box = track().getBoundingClientRect()
+	const page = document.body.getBoundingClientRect()
+	const x = edge === 'left' ? box.left - 20 : box.right + 20
+
+	return { x: x - page.left, y: box.top + box.height / 2 - page.top }
+}
+
+/**
  * Свойства, которым браузер завёл переход на узле, — по мере прихода
  * `transitionrun`. Слушатель вешается до действия и застаёт переход, даже если
  * тот кончился раньше, чем тест снова получил управление.
@@ -215,6 +228,31 @@ describe('протяжка', () => {
 		})
 
 		expect(ctrl.value).toBe(70)
+	})
+
+	/**
+	 * Взялись за ручку на 6 px ближе к краю, к которому тянут, и увели
+	 * указатель за ползунок. Ручка идёт со смещением захвата, и доля указателя,
+	 * прижатая к краю дорожки, не довела бы её до края на эти 6 px.
+	 */
+	it('взятая не за середину ручка доходит до края хода, когда указатель за ползунком', async () => {
+		const ctrl = await mount({ value: [10, 90] })
+		const low = along(0.1)
+		const high = along(0.9)
+
+		await userEvent.dragAndDrop(track(), document.body, {
+			sourcePosition: { x: high.x + 6, y: high.y },
+			targetPosition: beyond('right'),
+		})
+
+		expect(ctrl.value).toEqual([10, 100])
+
+		await userEvent.dragAndDrop(track(), document.body, {
+			sourcePosition: { x: low.x - 6, y: low.y },
+			targetPosition: beyond('left'),
+		})
+
+		expect(ctrl.value).toEqual([0, 100])
 	})
 
 	it('две ручки не перехлёстываются', async () => {

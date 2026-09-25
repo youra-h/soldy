@@ -15,6 +15,8 @@ export type TDialogPlacement = 'center' | 'start' | 'end' | 'top' | 'bottom'
 export type TDialogEvents = TModalLayerEvents & {
 	/** change:placement */
 	'change:placement': (value: TDialogPlacement) => void
+	/** change:offset */
+	'change:offset': (value: number | string | undefined) => void
 	/** change:maximized */
 	'change:maximized': (value: boolean) => void
 	/** change:maximizable */
@@ -38,6 +40,14 @@ export interface IDialogProps extends IModalLayerProps {
 	height?: number | string
 	/** Где окно стоит на экране: по центру или у стороны */
 	placement?: TDialogPlacement
+	/**
+	 * Отступ окна от краёв экрана: число — px, строка — CSS-значение, проценты
+	 * — от экрана по своей оси. Не задан — отступ темы, `0` — вплотную. У
+	 * центра действует со всех сторон, у стороны — от её края, и со всех — как
+	 * потолок размера. Стороны по отдельности правит подписчик события
+	 * раскладки `layout:offset:before`
+	 */
+	offset?: number | string
 	/** Развёрнуто ли окно на весь экран */
 	maximized?: boolean
 	/** Показывать ли кнопку разворота */
@@ -54,6 +64,8 @@ export interface IDialogProps extends IModalLayerProps {
 export interface IDialog extends IModalLayer<IDialogProps, TDialogEvents, TComponentViewStates> {
 	/** Где окно стоит на экране */
 	placement: TDialogPlacement
+	/** Отступ окна от краёв экрана; `undefined` — отступ темы, `0` — вплотную */
+	offset: number | string | undefined
 	/** Развёрнуто ли окно на весь экран */
 	maximized: boolean
 	/** Показывать ли кнопку разворота */
