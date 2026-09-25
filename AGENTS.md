@@ -105,6 +105,10 @@ Playwright (конфиг `vitest.browser.config.ts`).
   идёт через headless-shell.
 - CI ставит Chromium сам: кэш `~/.cache/ms-playwright` по `package-lock.json`,
   `playwright install chromium` при промахе, `install-deps` всегда.
+- Кнопку мыши `userEvent` жмёт только вместе с движением (`click`,
+  `dragAndDrop`). Жесту с паузой при зажатой кнопке — команды `mouseDown` и
+  `mouseUp` из `commands` (`vitest.browser.config.ts`, типы —
+  `browser/commands.d.ts`), а мышь двигает `userEvent.hover` с `position`.
 
 **Событие `error` на `window` роняет тест.** Хук
 `packages/playground/vue/browser/setup.ts` (подключён в `setupFiles` конфига,
@@ -3039,9 +3043,20 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   логическими свойствами. Перетаскивание — контракт `ISlidable`
   (`core/src/components/custom/slide`): плагины говорят только с ним, и
   следующий компонент, где значение задают перетаскиванием, получит их
-  готовыми. Сторожат `core/__tests__/scale.spec.ts`,
+  готовыми. Щелчок к меткам (`snap`: `none`, `magnet` — притяжение в
+  радиусе, `plateau` — метка занимает два радиуса хода, промежутки сжаты,
+  `settle` — доводка отпущенной, `hold` — стоянка на пересечённой метке) —
+  стратегия плагина указателя на режим, её выбирает подписка на `change:snap`,
+  а не проверка в обработчике. Опорные точки — показанные метки (доли хода в
+  направлении роста, `snapPoints`), без меток режим ничего не делает; радиус
+  `snapRadius` — в px, в долю его переводит длина дорожки. Стратегия видит
+  ручку, а не указатель: смещение захвата учтено, и ядро получает щелчок
+  поправкой к указателю. Доводка — команда `settle`: перетаскивание снято до
+  переноса, ручку довозит переход темы, `commit` один. Клавиатура ходит по
+  шагу при любом режиме. Сторожат `core/__tests__/scale.spec.ts`,
   `core/__tests__/slider.spec.ts`, `plugins/__tests__/slide-direction.spec.ts`,
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
+  `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/slider.spec.ts` и `playground/vue/browser/slider.spec.ts`.
 

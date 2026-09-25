@@ -3,8 +3,8 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../base/value-control'
-import type { TAriaAttributes, TDatasetAttributes, TValuePayload } from '../../../common'
-import type { ISlidable, TSlideOrientation } from '../slide'
+import type { TAriaAttributes, TDatasetAttributes, TEvented, TValuePayload } from '../../../common'
+import type { ISlidable, TSlideOrientation, TSlideSnap } from '../slide'
 
 /**
  * Значение ползунка: число — одна ручка, массив — по ручке на элемент.
@@ -120,6 +120,10 @@ export type TSliderEvents = TValueControlEvents<TSliderValue> & {
 	'change:minStepsBetweenThumbs': (value: number) => void
 	/** change:thumbLabels */
 	'change:thumbLabels': (value: string[] | undefined) => void
+	/** change:snap */
+	'change:snap': (value: TSlideSnap) => void
+	/** change:snapRadius */
+	'change:snapRadius': (value: number) => void
 	/** Идёт перетаскивание: с первого движения после нажатия до отпускания */
 	'change:dragging': (value: boolean) => void
 	/**
@@ -158,6 +162,14 @@ export interface ISliderProps extends IValueControlProps<TSliderValue> {
 	 * Подпись `Label` называет только первое поле, остальным имя — отсюда.
 	 */
 	thumbLabels?: string[]
+	/**
+	 * Щелчок: как метки притягивают ручку, которую тянут указателем. Опорные
+	 * точки — метки (`marks`): без меток режим ничего не делает. Клавиши ходят
+	 * по шагу при любом режиме
+	 */
+	snap?: TSlideSnap
+	/** Радиус щелчка в px вдоль оси */
+	snapRadius?: number
 }
 
 export interface ISlider
@@ -182,6 +194,16 @@ export interface ISlider
 	minStepsBetweenThumbs: number
 	/** Имена ручек для скринридера */
 	thumbLabels: string[] | undefined
+	/** Щелчок: как метки притягивают ручку, которую тянут указателем */
+	snap: TSlideSnap
+	/** Радиус щелчка в px вдоль оси */
+	snapRadius: number
+	/**
+	 * Шина ползунка. Объявлена здесь, потому что предки объявляют её
+	 * по-разному: компонент — полной картой, перетаскивание — подпиской на
+	 * смену щелчка. Полная карта подходит под обе.
+	 */
+	readonly events: TEvented<TSliderEvents>
 	/** Идёт перетаскивание */
 	readonly dragging: boolean
 	/** Ручки — выход для разметки */

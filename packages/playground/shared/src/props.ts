@@ -22,6 +22,7 @@ import {
 	SKELETON_ANIMATIONS,
 	SKELETON_SHAPES,
 	SLIDE_ORIENTATIONS,
+	SLIDE_SNAPS,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
@@ -164,6 +165,8 @@ const OWN: Record<string, Record<string, string>> = {
 		origin: 'Откуда растёт заливка одной ручки. Пусто — от min, середина хода — от центра',
 		marks: 'Метки на рельсе — точки шкалы. Список с подписями задаётся кодом',
 		minStepsBetweenThumbs: 'Наименьший зазор между соседними ручками — в шагах шкалы',
+		snap: 'Щелчок: как метки притягивают ручку, которую тянут. magnet — в радиусе метки ручка на ней, plateau — метка занимает два радиуса хода, settle — отпущенная рядом доезжает до метки, hold — стоит на пересечённой метке и догоняет указатель',
+		snapRadius: 'Радиус щелчка в px вдоль оси',
 	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
@@ -280,7 +283,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
-	slider: { orientation: SLIDE_ORIENTATIONS },
+	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	tabs: {
 		view: TABS_VIEWS,
@@ -292,6 +295,14 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	skeleton: { shape: SKELETON_SHAPES, animation: SKELETON_ANIMATIONS },
 	frame: { position: FRAME_POSITIONS },
 }
+
+/**
+ * Метки строк щелчка ползунка: редкие и с подписями на мелком шаге — там, где
+ * плавную ручку трудно остановить ровно на метке. Точки шкалы (`marks: true`)
+ * не годятся: с шагом 1 метка стоит на каждом значении, и щелчок ничего бы не
+ * менял, а с шагом 10 ручке и так некуда встать, кроме метки.
+ */
+const SNAP_MARKS = [0, 25, 50, 75, 100].map((value) => ({ value, label: String(value) }))
 
 /**
  * Что ещё выставить превью на строке пропа, чтобы сам проп было видно.
@@ -334,6 +345,11 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		// Точки шкалы с шагом 1 — сотня точек впритык: рельс выглядел бы
 		// сплошной штриховкой
 		marks: { step: 10 },
+		// Щелчку нужны метки, к которым притягивать: без них режим ничего не
+		// делает
+		snap: { marks: SNAP_MARKS },
+		// Радиус без режима и меток ни на что не влияет
+		snapRadius: { snap: 'magnet', marks: SNAP_MARKS },
 	},
 }
 

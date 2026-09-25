@@ -20,15 +20,28 @@ export function slideDirection(
 	return rtl === owner.inverted ? 'from-left' : 'from-right'
 }
 
-/** Путь от стороны `min` до точки и длина хода — по оси направления. */
-const ALONG: Record<
-	TSlideDirection,
-	(box: DOMRectReadOnly, point: TSlidePoint) => [offset: number, length: number]
-> = {
-	'from-left': (box, point) => [point.clientX - box.left, box.width],
-	'from-right': (box, point) => [box.right - point.clientX, box.width],
-	'from-bottom': (box, point) => [box.bottom - point.clientY, box.height],
-	'from-top': (box, point) => [point.clientY - box.top, box.height],
+/** Путь от стороны `min` до точки — по оси направления. */
+const OFFSET: Record<TSlideDirection, (box: DOMRectReadOnly, point: TSlidePoint) => number> = {
+	'from-left': (box, point) => point.clientX - box.left,
+	'from-right': (box, point) => box.right - point.clientX,
+	'from-bottom': (box, point) => box.bottom - point.clientY,
+	'from-top': (box, point) => point.clientY - box.top,
+}
+
+/** Сторона коробки, вдоль которой идёт ход. */
+const LENGTH: Record<TSlideDirection, 'width' | 'height'> = {
+	'from-left': 'width',
+	'from-right': 'width',
+	'from-bottom': 'height',
+	'from-top': 'height',
+}
+
+/**
+ * Длина хода в px — по коробке дорожки вдоль оси направления. По ней радиус
+ * щелчка из пикселей становится долей хода.
+ */
+export function lengthAlong(direction: TSlideDirection, box: DOMRectReadOnly): number {
+	return box[LENGTH[direction]]
 }
 
 /**
@@ -41,9 +54,9 @@ export function fractionAt(
 	box: DOMRectReadOnly,
 	point: TSlidePoint,
 ): number {
-	const [offset, length] = ALONG[direction](box, point)
+	const length = lengthAlong(direction, box)
 
-	return length > 0 ? Math.min(1, Math.max(0, offset / length)) : 0
+	return length > 0 ? Math.min(1, Math.max(0, OFFSET[direction](box, point) / length)) : 0
 }
 
 /**

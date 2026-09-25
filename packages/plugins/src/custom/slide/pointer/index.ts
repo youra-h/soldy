@@ -1,2 +1,6 @@
 export { TSlidePointerPlugin } from './pointer.plugin'
-export type { TSlidePointerPluginEvents, TSlidePointerGesture } from './types'
+export type {
+	ISlidePointerPluginOptions,
+	TSlidePointerPluginEvents,
+	TSlidePointerGesture,
+} from './types'

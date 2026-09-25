@@ -3,7 +3,7 @@ import type { TValueControlStates } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit, createScale } from '../../../common'
 import type { IScale, TAriaAttributes } from '../../../common'
-import type { TSlideEdge, TSlideOrientation } from '../slide'
+import type { TSlideEdge, TSlideOrientation, TSlideSnap } from '../slide'
 import type {
 	ISlider,
 	ISliderProps,
@@ -62,9 +62,13 @@ function percent(fraction: number): string {
  * - Шкала (`IScale`) — границы, шаг числом или списком, перевод между
  *   значением и долей хода. Чистая математика из `common/scale`.
  * - Жест и клавиши приходят командами контракта `ISlidable` (`grab`, `press`,
- *   `drag`, `release`, `shift`, `moveToEdge`): где указатель и какая клавиша,
- *   знают плагины `TSlidePointerPlugin` и `TSlideKeyboardPlugin`, а что от
- *   этого станет со значением — только ядро.
+ *   `drag`, `release`, `settle`, `shift`, `moveToEdge`): где указатель и какая
+ *   клавиша, знают плагины `TSlidePointerPlugin` и `TSlideKeyboardPlugin`, а
+ *   что от этого станет со значением — только ядро.
+ * - Щелчок к меткам (`snap`) — стратегия плагина указателя. Ядро держит режим
+ *   и радиус и отдаёт доли меток и ручек (`snapPoints`, `fractions`), а куда
+ *   встать ручке, решает плагин: радиус в px он переводит в долю по длине
+ *   дорожки.
  * - Всё, что зависит от значения, разметка получает выходами — ручки, края
  *   заливки, метки: позиции CSS-переменными, состояния наборами `data-*`.
  *   Считать их в шести адаптерах значило бы шесть раз повторить одну формулу.
@@ -94,7 +98,9 @@ export default class TSlider
 			| 'orientation'
 			| 'inverted'
 			| 'marks'
-			| 'minStepsBetweenThumbs',
+			| 'minStepsBetweenThumbs'
+			| 'snap'
+			| 'snapRadius',
 			'origin' | 'thumbLabels'
 		> = {
 		...TValueControl.defaultValues,
@@ -112,6 +118,10 @@ export default class TSlider
 		marks: false,
 		minStepsBetweenThumbs: 0,
 		thumbLabels: undefined,
+		snap: 'none',
+		// Зона метки — 16 px: шире притяжения поля с `<datalist>` в Chromium
+		// (5 px), но уже промежутка между метками на ползунке обычной длины
+		snapRadius: 8,
 	}
 
 	protected _min: number
@@ -125,6 +135,8 @@ export default class TSlider
 	protected _marks: TSliderMarks
 	protected _minStepsBetweenThumbs: number
 	protected _thumbLabels: string[] | undefined
+	protected _snap: TSlideSnap
+	protected _snapRadius: number
 	protected _dragging = false
 	protected _activeThumb: number | undefined = undefined
 	protected _gesture: TSliderGesture | undefined = undefined
@@ -153,6 +165,8 @@ export default class TSlider
 		this._minStepsBetweenThumbs =
 			props.minStepsBetweenThumbs ?? ctor.defaultValues.minStepsBetweenThumbs
 		this._thumbLabels = props.thumbLabels ?? ctor.defaultValues.thumbLabels
+		this._snap = props.snap ?? ctor.defaultValues.snap
+		this._snapRadius = props.snapRadius ?? ctor.defaultValues.snapRadius
 
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
 
@@ -287,6 +301,28 @@ export default class TSlider
 		this.events.emit('change:thumbLabels', value)
 	}
 
+	get snap(): TSlideSnap {
+		return this._snap
+	}
+
+	set snap(value: TSlideSnap) {
+		if (this._snap === value) return
+
+		this._snap = value
+		this.events.emit('change:snap', value)
+	}
+
+	get snapRadius(): number {
+		return this._snapRadius
+	}
+
+	set snapRadius(value: number) {
+		if (this._snapRadius === value) return
+
+		this._snapRadius = value
+		this.events.emit('change:snapRadius', value)
+	}
+
 	/** Идёт перетаскивание: с первого движения после нажатия до отпускания. */
 	get dragging(): boolean {
 		return this._dragging
@@ -301,6 +337,22 @@ export default class TSlider
 		const value = this.value
 
 		return Array.isArray(value) ? value : [value]
+	}
+
+	/** Доли хода ручек в направлении роста: `inverted` их не переворачивает. */
+	get fractions(): number[] {
+		return this.values.map((value) => this._scale.fraction(value))
+	}
+
+	/**
+	 * Точки щелчка — доли показанных меток: вне хода метки нет и на экране.
+	 * Список меток задаёт потребитель в любом порядке и с повторами, а
+	 * стратегиям щелчка нужен упорядоченный.
+	 */
+	get snapPoints(): number[] {
+		const fractions = this._markList().map(({ value }) => this._scale.fraction(value))
+
+		return [...new Set(fractions)].sort((a, b) => a - b)
 	}
 
 	get activeThumb(): number | undefined {
@@ -368,13 +420,19 @@ export default class TSlider
 	}
 
 	release(): void {
-		const gesture = this._gesture
+		const gesture = this._finish()
 
-		if (!gesture) return
+		if (gesture) this._commit(gesture.before)
+	}
 
-		this._gesture = undefined
-		this._activeThumb = undefined
-		this._setDragging(false)
+	settle(fraction: number): void {
+		const index = this._activeThumb
+		const gesture = this._finish()
+
+		if (!gesture || index === undefined) return
+
+		// Перетаскивания уже нет: ручку до метки довозит переход темы
+		this._moveThumb(this.values, index, this._scale.valueAt(fraction))
 		this._commit(gesture.before)
 	}
 
@@ -518,6 +576,20 @@ export default class TSlider
 	}
 
 	/**
+	 * Закончить жест: ручку отпустили, перетаскивания нет. Отдаёт законченный
+	 * жест — с ним значение до жеста для `commit`; жеста не было — `undefined`.
+	 */
+	protected _finish(): TSliderGesture | undefined {
+		const gesture = this._gesture
+
+		this._gesture = undefined
+		this._activeThumb = undefined
+		this._setDragging(false)
+
+		return gesture
+	}
+
+	/**
 	 * Поставить ручку в `target` в пределах её хода. Значение пишется в той
 	 * форме, в какой задано: число остаётся числом.
 	 */
@@ -635,6 +707,8 @@ export default class TSlider
 			marks: this._marks,
 			minStepsBetweenThumbs: this._minStepsBetweenThumbs,
 			thumbLabels: this._thumbLabels,
+			snap: this._snap,
+			snapRadius: this._snapRadius,
 		}
 	}
 }
