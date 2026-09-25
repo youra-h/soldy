@@ -36,7 +36,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="tabs.row"
-			:disabled="resolvedDisabled"
+			:disabled="disabledResolved"
 			:size="size"
 			:variant="variant"
 			@click="context && (context.adapters.activation.active = true)"
@@ -78,7 +78,7 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			embedded="tabs.close"
 			:rendered="!!tab_closable"
 			class="s-tabs-item__close"
-			:disabled="resolvedDisabled"
+			:disabled="disabledResolved"
 			:size="size"
 			@click.stop="context?.adapters?.tabs?.close()"
 			v-bind="closeAria"

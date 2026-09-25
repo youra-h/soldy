@@ -51,7 +51,7 @@ describe('TSpinner', () => {
  * Геттер `borderWidth` при `'auto'` отдавал толщину по размеру, и число, равное
  * ей, адаптер считал тем же значением и не записывал: своё оставалось `'auto'`,
  * и смена размера меняла толщину, заданную явно. Теперь геттер отдаёт заданное,
- * а итог — `resolvedBorderWidth`.
+ * а итог — `borderWidthResolved`.
  */
 describe('TSpinner: толщина кольца', () => {
 	it('borderWidth отдаёт толщину такой, как её записали', () => {
@@ -66,11 +66,11 @@ describe('TSpinner: толщина кольца', () => {
 		expect(s.borderWidth).toBe('auto')
 	})
 
-	it('resolvedBorderWidth при auto — по размеру', () => {
+	it('borderWidthResolved при auto — по размеру', () => {
 		const s = new TSpinner()
 		const resolved = SIZES.map((size) => {
 			s.size = size
-			return [size, s.resolvedBorderWidth]
+			return [size, s.borderWidthResolved]
 		})
 
 		expect(resolved).toEqual([
@@ -82,11 +82,11 @@ describe('TSpinner: толщина кольца', () => {
 		])
 	})
 
-	it('resolvedBorderWidth при числе — это число на любом размере', () => {
+	it('borderWidthResolved при числе — это число на любом размере', () => {
 		const s = new TSpinner({ borderWidth: 1 })
 		const resolved = SIZES.map((size) => {
 			s.size = size
-			return s.resolvedBorderWidth
+			return s.borderWidthResolved
 		})
 
 		expect(resolved).toEqual([1, 1, 1, 1, 1])
@@ -104,6 +104,6 @@ describe('TSpinner: толщина кольца', () => {
 		s.size = 'normal'
 
 		expect(s.borderWidth).toBe(2)
-		expect(s.resolvedBorderWidth).toBe(2)
+		expect(s.borderWidthResolved).toBe(2)
 	})
 })

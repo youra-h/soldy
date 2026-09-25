@@ -2,7 +2,7 @@
  * Дескриптор Control (TControl).
  *
  * Наследует StylableDescriptor (size, variant, rendered, visible, present, tag, classes, element, instance)
- * и добавляет disabled, resolvedDisabled, focused.
+ * и добавляет disabled, disabledResolved, focused.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -25,7 +25,7 @@ export const ControlDescriptor = defineDescriptor(() =>
 				 * него нет, задают `disabled`; итог читает разметка — им
 				 * выключают нативный контрол и строку элемента.
 				 */
-				resolvedDisabled: {
+				disabledResolved: {
 					type: Boolean,
 					protected: true,
 					triggers: ['change:disabled:resolved'],

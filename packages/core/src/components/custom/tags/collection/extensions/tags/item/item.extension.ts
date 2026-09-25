@@ -26,7 +26,7 @@ export class TTagsItemExtension<
 		this.events.relay(parent.events, ['change:closable'])
 		this.events.relay(item.events, [
 			'change:closable',
-			// Итог `resolvedDisabled` входит в итог `closable` — см. геттер
+			// Итог `disabledResolved` входит в итог `closable` — см. геттер
 			{ from: 'change:disabled:resolved', as: 'change:closable' },
 		])
 	}
@@ -37,7 +37,7 @@ export class TTagsItemExtension<
 	 * Выключенный тег не закрывается. Правило выводится здесь, а не пишется в
 	 * собственный `closable` элемента, поэтому не зависит от того, как тег
 	 * пришёл к «выключен»: со старта, позже или вместе с набором. Итог
-	 * `resolvedDisabled` сочетает своё значение тега и владельца
+	 * `disabledResolved` сочетает своё значение тега и владельца
 	 * (`bindDisabledToOwner`), и `change:disabled:resolved` приходит на смену
 	 * итога.
 	 *
@@ -45,7 +45,7 @@ export class TTagsItemExtension<
 	 * расширения.
 	 */
 	get closable(): boolean {
-		return !this._item.resolvedDisabled && (this._item.closable ?? this._parent.closable)
+		return !this._item.disabledResolved && (this._item.closable ?? this._parent.closable)
 	}
 
 	/**

@@ -934,7 +934,7 @@ Contributions при этом объявляют `mode` записываемым
 tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
-    item/item.extension.ts           closable = !resolvedDisabled && (item ?? parent)
+    item/item.extension.ts           closable = !disabledResolved && (item ?? parent)
   content/     связка «таб ↔ панель»
     content.extension.ts
     item/item.extension.ts           tabAria и panelAria
@@ -1090,18 +1090,18 @@ scope**, а спеллинг остаётся родным:
 protected _syncDisabled(): void {
 	this._attrs.add(
 		'disabled',
-		this.resolvedDisabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
+		this.disabledResolved && hasNativeDisabled(this.tag) ? 'disabled' : null,
 	)
 	this._aria.add(
 		'aria-disabled',
-		this.resolvedDisabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+		this.disabledResolved && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
 	)
 }
 ```
 
 Нативный `disabled` уходит в набор `attrs` по тегу корня, `aria-disabled` — в
 `aria` по тегу элемента, на котором стоит `aria` (`_ariaTag`), и никогда оба на
-одном элементе. Пишется итог `resolvedDisabled` (у элемента коллекции — своё
+одном элементе. Пишется итог `disabledResolved` (у элемента коллекции — своё
 или владельца), пересчёт — на `change:disabled:resolved` и `change:tag`.
 
 `protected: true` в `ComponentViewDescriptor`, триггер один — `change:aria`.
@@ -2098,8 +2098,8 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 
 - Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; итог `resolvedDisabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
-- List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `resolvedDisabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; итог `disabledResolved` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
+- List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabledResolved`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListHeight/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + ListHeight + ListKeyboard + ListScroll + Drag.
 - `TListHeightPlugin` ограничивает высоту **родителя элементов**, а не корня компонента: у Select корень — поле, а список лежит в телепортированной панели.

@@ -99,7 +99,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// Итог `resolvedDisabled` тегу отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `disabledResolved` тегу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),
@@ -293,7 +293,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 */
 	isEnabledTag(item: TItem): boolean {
 		return (
-			!item.resolvedDisabled &&
+			!item.disabledResolved &&
 			item.visible &&
 			item.rendered &&
 			!(this._overflow?.overflowed.includes(item) ?? false)

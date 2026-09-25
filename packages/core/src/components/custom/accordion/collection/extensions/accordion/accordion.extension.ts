@@ -70,7 +70,7 @@ export class TAccordionExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		// Итог `resolvedDisabled` элементу отдаёт резольвер по итогу владельца — сообщаем
+		// Итог `disabledResolved` элементу отдаёт резольвер по итогу владельца — сообщаем
 		// тем, у кого он сменился
 		this._owner.events.on('change:disabled:resolved', () =>
 			notifyOwnerDisabled(ctx.driver.valueOf()),

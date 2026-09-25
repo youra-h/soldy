@@ -11,7 +11,7 @@ const BORDER_WIDTH = '--spinner-border-width'
  * Плагин для управления стилями спиннера: толщина кольца —
  * пользовательским свойством `--spinner-border-width`.
  *
- * Толщину плагин берёт у ядра итогом (`resolvedBorderWidth`), а не заданным
+ * Толщину плагин берёт у ядра итогом (`borderWidthResolved`), а не заданным
  * значением и не из события: `borderWidth` и `change:borderWidth` несут
  * толщину как задана, а `'auto'` — недопустимая толщина рамки. При `'auto'`
  * итог считает размер, поэтому толщину перечитывает и смена размера.
@@ -29,7 +29,7 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 		// конструктором или готовым `ctrl`, — поэтому стартовые стили плагин
 		// берёт у инстанса сам. Без эмита: подписчиков у плагина ещё нет, а
 		// связка прочитает `styles` при подписке.
-		this._styles = { [BORDER_WIDTH]: toCssValue(spinner.resolvedBorderWidth) }
+		this._styles = { [BORDER_WIDTH]: toCssValue(spinner.borderWidthResolved) }
 
 		const update = () => this._update(spinner)
 
@@ -50,7 +50,7 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 	 * отдаёт ссылку наружу, и без смены идентичности UI не увидит изменения.
 	 */
 	private _update(spinner: ISpinner): void {
-		const value = toCssValue(spinner.resolvedBorderWidth)
+		const value = toCssValue(spinner.borderWidthResolved)
 
 		if (this._styles[BORDER_WIDTH] === value) return
 

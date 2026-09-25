@@ -165,7 +165,7 @@ export class TSelectTagsExtension<
 	private _createTags(): void {
 		const tags = new TTags({
 			closable: true,
-			disabled: this._owner.resolvedDisabled,
+			disabled: this._owner.disabledResolved,
 			size: this._owner.size,
 			variant: this._owner.variant,
 			overflow: this._overflow,

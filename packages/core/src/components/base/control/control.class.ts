@@ -65,10 +65,10 @@ export default class TControl<
 		// селектор переезжал бы вместе с атрибутом. Булево уходит как есть:
 		// префикс и строку делает `TDataset`, `false` остаётся `"false"`.
 		this.events.on('change:disabled:resolved', () =>
-			this._dataset.add('disabled', this.resolvedDisabled),
+			this._dataset.add('disabled', this.disabledResolved),
 		)
 
-		this._dataset.add('disabled', this.resolvedDisabled)
+		this._dataset.add('disabled', this.disabledResolved)
 	}
 
 	/**
@@ -82,7 +82,7 @@ export default class TControl<
 	/**
 	 * Своё значение — то, что записали разметка, данные или код, как
 	 * `input.disabled` под `<fieldset disabled>`. Выключенный владелец его не
-	 * меняет: итог отдаёт `resolvedDisabled`.
+	 * меняет: итог отдаёт `disabledResolved`.
 	 *
 	 * Своё и итог разведены, потому что вход обязан читать то, что записал:
 	 * обмен сверяет пришедшее из разметки с геттером пропа. Отдавай геттер
@@ -110,7 +110,7 @@ export default class TControl<
 	 * ли контрол, — наборы `attrs`/`aria`/`dataset`, разметка, клавиатура и
 	 * плагины, — читает его. Только для чтения: задают своё.
 	 */
-	get resolvedDisabled(): boolean {
+	get disabledResolved(): boolean {
 		return this._states.disabled.value
 	}
 
@@ -155,7 +155,7 @@ export default class TControl<
 	 * нативный `disabled` проводит разметка, поэтому ARIA-дубль ядро ему не
 	 * пишет, а у корня-`div` нативного `disabled` нет вовсе.
 	 *
-	 * Зависит и от итога `resolvedDisabled`, и от `tag`, поэтому
+	 * Зависит и от итога `disabledResolved`, и от `tag`, поэтому
 	 * пересчитывается на оба события: выключенный список выключает элемент
 	 * так же, как его своё значение. Раньше это был геттер и пересчёт
 	 * получался сам; плата за общий набор — такие правила приходится
@@ -167,11 +167,11 @@ export default class TControl<
 		// присутствие атрибута.
 		this._attrs.add(
 			'disabled',
-			this.resolvedDisabled && hasNativeDisabled(this.tag) ? 'disabled' : null,
+			this.disabledResolved && hasNativeDisabled(this.tag) ? 'disabled' : null,
 		)
 		this._aria.add(
 			'aria-disabled',
-			this.resolvedDisabled && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
+			this.disabledResolved && !hasNativeDisabled(this._ariaTag) ? 'true' : null,
 		)
 	}
 

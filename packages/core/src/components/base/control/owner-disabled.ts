@@ -12,7 +12,7 @@ import type { IDisabledItem, IDisabledOwner } from './types'
  *
  * Своё значение не копируется: оно уже лежит в `rawValue`, куда его пишут
  * фабрика, разметка и `batch.patch` через сеттер, и его же отдаёт
- * `item.disabled`. Итог отдаёт резольвер — через `item.resolvedDisabled`,
+ * `item.disabled`. Итог отдаёт резольвер — через `item.disabledResolved`,
  * который и читает всё, что решает, доступен ли элемент.
  *
  * О коллекции модуль не знает — элементы передаёт расширение.
@@ -25,7 +25,7 @@ import type { IDisabledItem, IDisabledOwner } from './types'
  * резольвер заменяется, а `change` приходит, только если итог сменился.
  */
 export function bindDisabledToOwner(item: IDisabledItem, owner: IDisabledOwner): void {
-	item.states.disabled.setResolver((own) => own || owner.resolvedDisabled)
+	item.states.disabled.setResolver((own) => own || owner.disabledResolved)
 }
 
 /**

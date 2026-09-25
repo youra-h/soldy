@@ -38,7 +38,7 @@ export default { ...SetupRadioGroupItem }
 			:name="name"
 			:value="value"
 			:checked="active"
-			:disabled="resolvedDisabled"
+			:disabled="disabledResolved"
 			v-bind="{ ...aria, ...controlAttrs }"
 			@change="context && (context.adapters.activation.active = true)"
 		/>
