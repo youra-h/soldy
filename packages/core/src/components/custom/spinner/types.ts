@@ -17,8 +17,6 @@ export type TSpinnerEvents = TStylableEvents & {
 }
 
 export interface ISpinner extends IStylable<ISpinnerProps, TSpinnerEvents, TSpinnerStates> {
-	/** Толщина кольца как задана: пиксели или `'auto'` — по размеру */
+	/** Толщина бордера */
 	borderWidth: number | 'auto'
-	/** Итоговая толщина кольца в пикселях: при `'auto'` посчитана по размеру */
-	readonly resolvedBorderWidth: number
 }
