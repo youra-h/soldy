@@ -561,6 +561,132 @@ describe('выходы для разметки', () => {
 	})
 })
 
+/**
+ * Щелчок к меткам решает стратегия плагина указателя
+ * (`plugins/__tests__/slide-snap-strategies.spec.ts`), а ядро держит режим и
+ * радиус, отдаёт доли меток и ручек и доводит ручку командой `settle`.
+ */
+describe('щелчок', () => {
+	it('по умолчанию щелчка нет, радиус — 8 px; смена шлёт событие один раз', () => {
+		const instance = slider()
+		const snaps = vi.fn()
+		const radii = vi.fn()
+
+		instance.events.on('change:snap', snaps)
+		instance.events.on('change:snapRadius', radii)
+
+		expect(instance.snap).toBe('none')
+		expect(instance.snapRadius).toBe(8)
+
+		instance.snap = 'magnet'
+		instance.snap = 'magnet'
+		instance.snapRadius = 12
+		instance.snapRadius = 12
+
+		expect(snaps.mock.calls).toEqual([['magnet']])
+		expect(radii.mock.calls).toEqual([[12]])
+	})
+
+	it('точки щелчка — доли показанных меток: по возрастанию, без повторов, вне хода нет', () => {
+		const instance = slider({
+			min: -50,
+			max: 50,
+			marks: [{ value: 25 }, { value: -50 }, { value: 25, label: 'Снова' }, { value: 80 }],
+		})
+
+		expect(instance.snapPoints).toEqual([0, 0.75])
+	})
+
+	it('точки у marks: true — точки шкалы; без меток — пусто', () => {
+		expect(slider({ step: 25, marks: true }).snapPoints).toEqual([0, 0.25, 0.5, 0.75, 1])
+		expect(slider({ step: [0, 10, 100], marks: true }).snapPoints).toEqual([0, 0.1, 1])
+		expect(slider({ snap: 'magnet' }).snapPoints).toEqual([])
+	})
+
+	/**
+	 * Доли — в направлении роста, как у команд жеста: плагин переводит в них
+	 * указатель с учётом `inverted` сам. Перевернуть их ещё раз значило бы
+	 * притянуть ручку к зеркальной метке.
+	 */
+	it('inverted не переворачивает доли меток и ручек — только позиции на экране', () => {
+		const instance = slider({ value: [20, 70], inverted: true, marks: [{ value: 20 }] })
+
+		expect(instance.snapPoints).toEqual([0.2])
+		expect(instance.fractions).toEqual([0.2, 0.7])
+		expect(instance.shownMarks[0].style).toEqual({ '--s-slider-position': '80%' })
+	})
+
+	it('доли ручек — по порядку ручек, у одной ручки — одна', () => {
+		expect(slider({ value: 30 }).fractions).toEqual([0.3])
+		expect(slider({ value: [10, 60], min: 0, max: 200 }).fractions).toEqual([0.05, 0.3])
+	})
+})
+
+describe('settle — жест закончен доводкой', () => {
+	it('ручка встаёт в долю уже без перетаскивания; commit — один, с доведённым значением', () => {
+		const instance = slider({ value: 50 })
+		const order: string[] = []
+		const { commits } = record(instance)
+
+		instance.grab(0, 0.5)
+		instance.drag(0.57)
+
+		instance.events.on('change:dragging', (value) => order.push(`dragging:${value}`))
+		instance.events.on('change:value', ({ newValue }) => order.push(`value:${newValue}`))
+
+		instance.settle(0.6)
+
+		expect(instance.value).toBe(60)
+		expect(instance.dragging).toBe(false)
+		expect(instance.activeThumb).toBeUndefined()
+		// Сначала снято перетаскивание — переход темы довозит ручку
+		expect(order).toEqual(['dragging:false', 'value:60'])
+		expect(commits).toEqual([{ newValue: 60, oldValue: 50 }])
+	})
+
+	it('доведённая ручка не уходит за соседа', () => {
+		const instance = slider({ value: [40, 60] })
+
+		instance.grab(0, 0.4)
+		instance.drag(0.55)
+		instance.settle(0.75)
+
+		expect(instance.value).toEqual([60, 60])
+	})
+
+	it('нажатие без протяжки и доводка — один commit на всё действие', () => {
+		const instance = slider({ value: 10 })
+		const { commits } = record(instance)
+
+		instance.press(0.48)
+		instance.settle(0.5)
+
+		expect(commits).toEqual([{ newValue: 50, oldValue: 10 }])
+	})
+
+	it('доводка в то же значение — commit по жесту, без лишнего', () => {
+		const instance = slider({ value: 50 })
+		const { commits } = record(instance)
+
+		instance.grab(0, 0.5)
+		instance.drag(0.6)
+		instance.settle(0.6)
+
+		expect(commits).toEqual([{ newValue: 60, oldValue: 50 }])
+	})
+
+	it('вне жеста ничего не делает', () => {
+		const instance = slider({ value: 50 })
+		const { values, commits } = record(instance)
+
+		instance.settle(0.9)
+
+		expect(instance.value).toBe(50)
+		expect(values).toEqual([])
+		expect(commits).toEqual([])
+	})
+})
+
 describe('getProps', () => {
 	it('отдаёт свои пропсы', () => {
 		const props = slider({
@@ -575,6 +701,8 @@ describe('getProps', () => {
 			marks: true,
 			minStepsBetweenThumbs: 1,
 			thumbLabels: ['a', 'b'],
+			snap: 'plateau',
+			snapRadius: 12,
 		}).getProps()
 
 		expect(props).toMatchObject({
@@ -589,6 +717,8 @@ describe('getProps', () => {
 			marks: true,
 			minStepsBetweenThumbs: 1,
 			thumbLabels: ['a', 'b'],
+			snap: 'plateau',
+			snapRadius: 12,
 		})
 	})
 })

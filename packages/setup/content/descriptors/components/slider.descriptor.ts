@@ -4,8 +4,8 @@
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size,
  * variant, наборы, плагины element/ready/action/aria) и добавляет шкалу,
- * ось, метки, имена ручек, выходы для разметки и плагины указателя и
- * клавиатуры.
+ * ось, метки, щелчок к меткам, имена ручек, выходы для разметки и плагины
+ * указателя и клавиатуры.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -64,6 +64,12 @@ export const SliderDescriptor = defineDescriptor(() =>
 				marks: { type: [Boolean, Array], triggers: ['change:marks'] },
 				minStepsBetweenThumbs: { type: Number, triggers: ['change:minStepsBetweenThumbs'] },
 				thumbLabels: { type: Array, triggers: ['change:thumbLabels'] },
+				/**
+				 * Щелчок к меткам и его радиус в px. Что делает режим, решает
+				 * стратегия плагина указателя: разметке и теме он не виден.
+				 */
+				snap: { type: String, triggers: ['change:snap'] },
+				snapRadius: { type: Number, triggers: ['change:snapRadius'] },
 				/**
 				 * Ручки: значение, ход и шаг поля, позиция, `data-dragging` и имя.
 				 * Своего экземпляра у ручки нет — её наборы отдаются значением.
