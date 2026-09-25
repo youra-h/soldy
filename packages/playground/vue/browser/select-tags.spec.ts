@@ -8,11 +8,12 @@
  *
  * Стенд, а не пакет адаптера: здесь единственное место, где настоящие
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
- * стерегут, — раскладка поля с тегами и его минимальная ширина — лежат в
- * `themes/oren/src/components/select/_select.scss`, а сжатие тега, которому
- * не хватает места в поле, его натуральная ширина в однострочном ряду и ряд
- * `scroll` без полосы прокрутки, с подсказкой у края и запасом под кольцо
- * фокуса, — в `themes/oren/src/components/tags/_tags.scss`.
+ * стерегут, — раскладка поля с тегами, его минимальная ширина и обрезка слота
+ * с тегами — лежат в `themes/oren/src/components/select/_select.scss`, а
+ * сжатие тега, которому не хватает места в поле, его натуральная ширина в
+ * однострочном ряду, ряд `scroll` без полосы прокрутки, с подсказкой у края и
+ * запасом под кольцо фокуса и обрезка ряда `popover` с запасом под кольцо — в
+ * `themes/oren/src/components/tags/_tags.scss`.
  * Геометрия строки поля — высота размера и строка слота, в которую встают
  * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
  */
@@ -25,7 +26,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
-import { expectRingInsideVertically } from './focus-ring'
+import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -866,6 +867,45 @@ describe('кнопка «…» в поле', () => {
 			box(find('.s-select__field input', tagged)).left - more.right,
 			'от кнопки до ввода',
 		).toBeLessThan(12)
+	})
+
+	/**
+	 * Кольцо кнопки выходит за неё на 4px, а режут его двое: сам ряд —
+	 * `popover` обрезает то, что не поместилось, — и слот тегов, который
+	 * обрезает тег шире себя. Край ряда и край слота у кнопки совпадают, и у
+	 * кольца пропадала задняя сторона. Запас под кольцо — за краем обрезки у
+	 * обоих (`tags/_tags.scss`, `select/_select.scss`), поэтому оба режут и по
+	 * вертикали: проверяются обе оси.
+	 */
+	it('ни ряд, ни слот не срезают кольцо фокуса кнопки', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'popover' }))
+
+		await expect.poll(() => document.querySelector('.s-tags__more')).not.toBeNull()
+
+		const button = find('.s-select__field .s-tags__more')
+		const row = find('.s-select__field .s-tags')
+		const slot = find('.s-select__field .s-input__leading')
+
+		// Кнопка — у самого края ряда и слота. Отойди она от края, кольцу было
+		// бы куда выйти и без запаса, и проверка ниже прошла бы вхолостую
+		expect(box(row).right - box(button).right, 'от кнопки до края ряда').toBeCloseTo(0, 1)
+		expect(box(slot).right - box(button).right, 'от кнопки до края слота').toBeCloseTo(0, 1)
+
+		// С клавиатуры: кольцо рисует `:focus-visible`. Остановки Tab в поле —
+		// крестики тегов ряда, за ними кнопка
+		for (let step = 0; step <= OPTIONS.length && document.activeElement !== button; step++) {
+			await userEvent.keyboard('{Tab}')
+		}
+
+		expect(document.activeElement, 'фокус на кнопке «…»').toBe(button)
+
+		for (const [area, name] of [
+			[row, 'ряд'],
+			[slot, 'слот'],
+		] as const) {
+			expectRingInsideHorizontally(button, area, `кнопка «…», ${name}`)
+			expectRingInsideVertically(button, area, `кнопка «…», ${name}`)
+		}
 	})
 })
 

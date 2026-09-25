@@ -14,6 +14,10 @@
  * В `scroll` делить тоже нечего: ряд прокручивается сам. Проверяется, что,
  * став прокручиваемой областью, он не срезает кольцо фокуса тега.
  *
+ * В `popover` ряд обрезает то, что не поместилось, и проверяется ещё, что
+ * обрезка не срезает кольцо фокуса у тех, кто стоит на краю ряда: у первого
+ * тега и у кнопки «…».
+ *
  * Сторож ошибок окна (`browser/setup.ts`) здесь работает как второй тест:
  * замер, который гоняется за собственным результатом, уронил бы прогон
  * сообщением `ResizeObserver loop completed with undelivered notifications`.
@@ -25,7 +29,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
-import { expectRingInsideVertically } from './focus-ring'
+import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
 import '@soldy-ui/theme-oren'
@@ -550,5 +554,65 @@ describe('режим scroll: кольцо фокуса', () => {
 		expect(item.contains(document.activeElement), 'фокус на первом теге').toBe(true)
 
 		expectRingInsideVertically(item, row(), 'пилюля')
+	})
+})
+
+/**
+ * Режим `popover`: кольцо фокуса у краёв ряда.
+ *
+ * Ряд обрезает то, что не поместилось, а кольцо выходит за элемент на 4px.
+ * Обрезка ровно по краю ряда срезала сторону кольца целиком у тех, кто стоит
+ * на краю: у первого тега в режиме выбора — переднюю, у кнопки «…» в конце
+ * строки — заднюю. Запас под кольцо — за краем обрезки (`tags/_tags.scss`), и
+ * ряд из-за него режет по обеим осям: проверяются обе.
+ */
+describe('режим popover: кольцо фокуса у краёв ряда', () => {
+	beforeEach(() => {
+		render(harness(NARROW, { mode: 'single' }))
+	})
+
+	it('ряд не срезает кольцо первого тега', async () => {
+		await expect.poll(() => more()).not.toBeNull()
+
+		const item = find('.s-tags-item')
+
+		// Тег стоит вплотную к краю ряда, как в `wrap`: запас — за краем
+		// обрезки, а не паддингом. Отступи тег от края, кольцу было бы куда
+		// выйти и без запаса, и проверка ниже прошла бы вхолостую
+		expect(
+			item.getBoundingClientRect().left - row().getBoundingClientRect().left,
+			'от края ряда до тега',
+		).toBeCloseTo(0, 1)
+
+		// С клавиатуры: кольцо рисует `:focus-visible`. Выбора нет, и вход в
+		// набор — на первый тег
+		await userEvent.keyboard('{Tab}')
+
+		expect(item.contains(document.activeElement), 'фокус на первом теге').toBe(true)
+
+		expectRingInsideHorizontally(item, row(), 'пилюля')
+		expectRingInsideVertically(item, row(), 'пилюля')
+	})
+
+	it('ряд не срезает кольцо кнопки «…»', async () => {
+		await expect.poll(() => more()).not.toBeNull()
+
+		const button = find('.s-tags__more')
+
+		// Кнопка — у самого края ряда. Отойди она от края, кольцу было бы куда
+		// выйти и без запаса, и проверка ниже прошла бы вхолостую
+		expect(
+			row().getBoundingClientRect().right - button.getBoundingClientRect().right,
+			'от кнопки до края ряда',
+		).toBeCloseTo(0, 1)
+
+		// Набор с выбором — одна остановка Tab, следующая за ним — кнопка «…»
+		await userEvent.keyboard('{Tab}')
+		await userEvent.keyboard('{Tab}')
+
+		expect(document.activeElement, 'фокус на кнопке «…»').toBe(button)
+
+		expectRingInsideHorizontally(button, row(), 'кнопка «…»')
+		expectRingInsideVertically(button, row(), 'кнопка «…»')
 	})
 })
