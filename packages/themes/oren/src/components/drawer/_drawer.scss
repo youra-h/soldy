@@ -55,13 +55,6 @@ $easing: cubic-bezier(0.32, 0.72, 0, 1);
 	@apply fixed;
 	@include modal.surface;
 
-	// Прозрачный контур — вторая половина кромки, как у панелей Popover и
-	// Select: в режиме принудительных цветов браузер убирает кольцо вместе с
-	// тенью, а цвет контура заменяет системным, и контур становится рамкой. Он
-	// же гасит кольцо фокуса: фокус панель получает, только когда внутри
-	// нечего фокусировать, а она не контрол, а контейнер диалога.
-	@apply outline outline-transparent;
-
 	grid-template-columns: minmax(0, 1fr) auto;
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	grid-template-areas:
