@@ -1,4 +1,12 @@
 /**
+ * Доля в пределах хода: за краем — край. Указатель за краем дорожки ведёт
+ * ручку за край хода (`fractionAt` долю не прижимает), но стоит она на краю.
+ */
+export function withinTravel(fraction: number): number {
+	return Math.min(1, Math.max(0, fraction))
+}
+
+/**
  * Ближайшая к `target` точка не дальше `radius`; поровну от двух — меньшая.
  * Такой нет — `undefined`.
  */

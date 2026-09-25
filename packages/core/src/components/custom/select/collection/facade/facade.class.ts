@@ -108,10 +108,15 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		}
 	}
 
-	/** Снять выбор целиком — кнопка очистки поля. */
-	clear(): void {
-		this._select.clear()
-	}
+	/**
+	 * Снять выбор целиком — кнопка очистки поля.
+	 *
+	 * Поле, привязанное к инстансу, а не метод прототипа: разметка отдаёт его
+	 * в scope слота `clear` без инстанса, и своя кнопка зовёт его голой
+	 * функцией. Метод потерял бы там `this`. Привязка здесь одна на все
+	 * адаптеры — обёртку в шаблоне пришлось бы повторить в каждом.
+	 */
+	readonly clear = (): void => this._select.clear()
 
 	private get _select(): TSelectExtension<ISelect, ISelectItem> {
 		return this.extensions.select
