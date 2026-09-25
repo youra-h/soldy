@@ -1,26 +1,25 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IComponent } from '@soldy-ui/core'
 import type { TBinding } from '../../adapter'
-import { ComponentInputNames, ComponentOutputNames, TComponentOutputs } from './base.component'
+import { ComponentInputNames, ComponentOutputNames, TComponentSurface } from './base.component'
 import { setupComponent } from './setup.component'
 
 /**
  * TComponentComponent — headless-слой TComponent.
  *
- * inputs/outputs — статические константы из generated/component.metadata.ts,
- * оттуда же база `TComponentOutputs` — типы выходов для строгого шаблона.
+ * Входы и выходы с их типами объявляет сгенерированная база
+ * `TComponentSurface` (generated/component.metadata.ts), в `@Component` их
+ * нет — как у Button.
  *
  * Selector: <soldy-component>
  */
 @Component({
 	selector: 'soldy-component',
 	standalone: true,
-	inputs: [...ComponentInputNames],
-	outputs: [...ComponentOutputNames],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class TComponentComponent extends TComponentOutputs<IComponent> {
+export class TComponentComponent extends TComponentSurface<IComponent> {
 	constructor() {
 		super(ComponentInputNames, ComponentOutputNames)
 	}

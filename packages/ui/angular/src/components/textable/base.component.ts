@@ -1,5 +1,5 @@
 export {
 	TextableInputs as TextableInputNames,
 	TextableOutputs as TextableOutputNames,
-	TTextableOutputs,
+	TTextableSurface,
 } from '../../generated/textable.metadata'

@@ -4,15 +4,16 @@ import type { TBinding } from '../../adapter'
 import {
 	ComponentViewInputNames,
 	ComponentViewOutputNames,
-	TComponentViewOutputs,
+	TComponentViewSurface,
 } from './base.component'
 import { setupComponentView } from './setup.component'
 
 /**
  * TComponentViewComponent — слой TComponentView с DOM-биндингом.
  *
- * inputs/outputs — статические константы из generated/component-view.metadata.ts,
- * оттуда же база `TComponentViewOutputs` — типы выходов для строгого шаблона.
+ * Входы и выходы с их типами объявляет сгенерированная база
+ * `TComponentViewSurface` (generated/component-view.metadata.ts), в
+ * `@Component` их нет — как у Button.
  * Классы и видимость применяются к хост-элементу через @HostBinding.
  *
  * Хост существует всё время жизни компонента, поэтому привязку к
@@ -29,12 +30,10 @@ import { setupComponentView } from './setup.component'
 @Component({
 	selector: 'soldy-component-view',
 	standalone: true,
-	inputs: [...ComponentViewInputNames],
-	outputs: [...ComponentViewOutputNames],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
-export class TComponentViewComponent extends TComponentViewOutputs<IComponentView> {
+export class TComponentViewComponent extends TComponentViewSurface<IComponentView> {
 	@HostBinding('class') get hostClass(): string {
 		return this.state().classes?.join(' ') ?? ''
 	}
