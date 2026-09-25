@@ -54,7 +54,24 @@ export class TBatchExtension<TItem extends object>
 		return this._ctx.driver.valueOf()
 	}
 
+	/**
+	 * Заменить состав, если он другой. Те же экземпляры тем же порядком — не
+	 * смена: без `trackBy` замена — это `clear()` + `set()`, и состав,
+	 * вернувшийся тем же (эхо `update:items` у `v-model`), пересобрал бы
+	 * коллекцию и сбросил выбор. Сверяет сеттер, а не `update`: операция
+	 * перевставляет что дали — так `TFactoryExtension` догоняет сырые объекты
+	 * тем же составом.
+	 */
 	set items(items: TCollectionEngineItemSource<TItem>[]) {
+		const stored = this.items
+
+		if (
+			items.length === stored.length &&
+			items.every((item, index) => item === stored[index])
+		) {
+			return
+		}
+
 		this.update(items)
 	}
 

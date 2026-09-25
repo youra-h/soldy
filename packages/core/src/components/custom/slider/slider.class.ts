@@ -2,6 +2,7 @@ import { TValueControl } from '../../base/value-control'
 import type { TValueControlStates } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit, createScale } from '../../../common'
+import { sameValue } from '../../../common/state-unit/same-value'
 import type { IScale, TAriaAttributes } from '../../../common'
 import type { TSlideEdge, TSlideOrientation, TSlideSnap } from '../slide'
 import type {
@@ -17,23 +18,6 @@ import type {
 	TSliderThumb,
 	TSliderValue,
 } from './types'
-
-/**
- * «То же самое» для числа, строки и их списков: списки — поэлементно.
- *
- * Им сверяются значение (правило его единицы состояния), шаг и имена ручек:
- * массив, собранный заново с тем же составом, — то же самое значение.
- */
-function sameValue(a: unknown, b: unknown): boolean {
-	if (a === b) return true
-
-	return (
-		Array.isArray(a) &&
-		Array.isArray(b) &&
-		a.length === b.length &&
-		a.every((item, index) => item === b[index])
-	)
-}
 
 /** Число в отрезке; `NaN` уходит в начало. */
 function within(value: number, low: number, high: number): number {

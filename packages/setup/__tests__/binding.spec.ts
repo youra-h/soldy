@@ -10,13 +10,15 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TButton, TFrame, TIcon, TSelect, TTabsItem } from '@soldy-ui/core'
+import { TButton, TFrame, TIcon, TSelect, TSlider, TSpinner, TTabsItem } from '@soldy-ui/core'
 import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
 	FrameDescriptor,
 	IconDescriptor,
 	SelectDescriptor,
+	SliderDescriptor,
+	SpinnerDescriptor,
 	TabsItemDescriptor,
 	createAdapterContext,
 	defineComponent,
@@ -164,7 +166,7 @@ describe('связка · ядро ↔ фреймворк', () => {
 		expect(write).not.toHaveBeenCalled()
 	})
 
-	it('запись из фреймворка: то же значение не пишется', () => {
+	it('запись из фреймворка: повтор не шлёт триггер — вход гасит повтор, сеттер сверяет со своим', () => {
 		const ctrl = new TButton({ text: 'a' })
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const binding = context.connect(CallbackProfile)
@@ -356,7 +358,7 @@ describe('связка · снятый проп', () => {
 	})
 
 	it('заданным проп считается и тогда, когда значение уже лежало в инстансе', () => {
-		// Ядро уже держит то же значение, и запись пропускается — но проп задан
+		// Ядро уже держит то же значение, и сеттер ничего не меняет — но проп задан
 		const { ctrl, binding } = bindButton(new TButton({ text: 'a' }))
 
 		binding.inputs.full({ text: 'a' })
@@ -566,7 +568,7 @@ describe('связка · повторённый проп', () => {
 	 * Литерал массива в разметке (`value={['msk', 'tver']}` в React,
 	 * `:value="[20, 80]"` во Vue) — новый объект на каждом проходе родителя.
 	 * Вход сверяет его с прошлым значением фреймворка по содержимому, тем же
-	 * правилом, что линия и состояние. Пока сверка шла по ссылке, перерисовка
+	 * правилом, что и состояние. Пока сверка шла по ссылке, перерисовка
 	 * родителя по постороннему поводу откатывала выбор пользователя к разметке.
 	 */
 
@@ -616,7 +618,7 @@ describe('связка · повторённый проп', () => {
 
 	it('сверка поверхностная: литерал с новыми объектами внутри — смена', () => {
 		// `items={[{ value: 'a' }]}` — объекты внутри новые на каждом проходе.
-		// Глубже одного уровня не сверяют ни вход, ни линия, ни состояние
+		// Глубже одного уровня не сверяют ни вход, ни состояние
 		class TSample {
 			static defaultValues = { items: [] }
 			sets = 0
@@ -780,12 +782,57 @@ describe('сборка · начальные значения пропсов', (
 		})
 	})
 
-	it('внешний ctrl с размером — тоже: запись пропа пропущена, стиль уже есть', () => {
+	it('внешний ctrl с размером — тоже: запись пропа ничего не меняет, стиль уже есть', () => {
 		const ctrl = new TIcon({ width: 24 })
 		const context = createAdapterContext(IconDescriptor(), { ctrl, props: { width: 24 } })
 		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
 
 		// Незаданная высота стиля не ставит: её даёт `size`
 		expect(layout.styles).toEqual({ width: '24px', height: '' })
+	})
+})
+
+/**
+ * Свойство с резольвером: геттер отдаёт итог, сеттер пишет своё. Значение из
+ * разметки, равное итогу, но не своему, — тоже запись: то же ли это значение,
+ * решает сеттер, сверкой со своим. Пока связка сверяла пришедшее с геттером,
+ * такое значение пропадало, и итог потом уходил к старому своему. Повтор
+ * рендера по-прежнему гасит вход, эхо модели — сеттер.
+ */
+describe('связка · значение, равное итогу', () => {
+	it('Slider: значение, равное прижатому, становится своим и переживает смену границ', () => {
+		// Своё 150 при max 100 — показано 100
+		const ctrl = new TSlider({ value: 150, max: 100 })
+		const binding = createAdapterContext(SliderDescriptor(), { ctrl }).connect(CallbackProfile)
+
+		expect(ctrl.value).toBe(100)
+
+		binding.inputs.full({ value: 100 })
+		ctrl.max = 200
+
+		expect(ctrl.value).toBe(100)
+	})
+
+	it('Spinner: толщина, равная автоматической, при сборке поверх внешнего ctrl', () => {
+		const ctrl = new TSpinner()
+
+		createAdapterContext(SpinnerDescriptor(), { ctrl, props: { borderWidth: 1 } })
+		ctrl.size = 'xl'
+
+		expect(ctrl.getProps().borderWidth).toBe(1)
+		expect(ctrl.borderWidth).toBe(1)
+	})
+
+	it('эхо модели массивом того же состава — не смена: второго change:value нет', () => {
+		const { ctrl, binding } = bindSelect()
+		const changes = vi.fn()
+
+		ctrl.value = ['msk']
+		ctrl.events.on('change:value', changes)
+		// `update:value` вернулся от родителя новым массивом того же состава
+		binding.inputs.full({ value: ['msk'] })
+
+		expect(changes).not.toHaveBeenCalled()
+		expect(ctrl.value).toEqual(['msk'])
 	})
 })

@@ -63,11 +63,18 @@ export default class TInputControl<
 		return this._id || String(this.uid)
 	}
 
+	/**
+	 * Пишет своё значение, сравнивая со своим. `change:id` — только при смене
+	 * итога: своё, равное `uid`, заменяет незаданное, а показанный `id` тот же.
+	 */
 	set id(value: string) {
 		if (this._id === value) return
 
+		const before = this.id
+
 		this._id = value
-		this._sink.emit('change:id', this.id)
+
+		if (this.id !== before) this._sink.emit('change:id', this.id)
 	}
 
 	/**

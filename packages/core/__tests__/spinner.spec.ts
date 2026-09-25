@@ -41,3 +41,62 @@ describe('TSpinner', () => {
 		expect(s.toJSON()).toEqual(props)
 	})
 })
+
+/**
+ * Толщина кольца: своё значение и итог.
+ *
+ * Своё — как задано (`'auto'` или число), его отдаёт `getProps()`. Итог —
+ * геттер `borderWidth`: при `'auto'` толщина по размеру. Сеттер сверяет со
+ * своим, поэтому число, равное автоматической толщине, заменяет `'auto'` и
+ * переживает смену размера, а `change:borderWidth` сообщает о смене итога — и
+ * от записи, и от размера.
+ */
+describe('TSpinner: толщина кольца', () => {
+	it('borderWidth при auto — по размеру, при числе — это число', () => {
+		const s = new TSpinner()
+		const sizes = ['sm', 'normal', 'lg', 'xl', '2xl'] as const
+		const auto = sizes.map((size) => {
+			s.size = size
+			return s.borderWidth
+		})
+
+		s.borderWidth = 1
+
+		const fixed = sizes.map((size) => {
+			s.size = size
+			return s.borderWidth
+		})
+
+		expect(auto).toEqual([1, 1, 1, 2, 2])
+		expect(fixed).toEqual([1, 1, 1, 1, 1])
+	})
+
+	it('число, равное толщине по размеру, записывается своим и итога не меняет', () => {
+		const s = new TSpinner({ size: 'xl' })
+		const changes: Array<number | 'auto'> = []
+
+		s.events.on('change:borderWidth', (value) => changes.push(value))
+		s.borderWidth = 2
+
+		expect(changes).toEqual([])
+		expect(s.getProps().borderWidth).toBe(2)
+
+		s.size = 'normal'
+
+		expect(s.borderWidth).toBe(2)
+		expect(changes).toEqual([])
+	})
+
+	it('при auto смена размера, сменившая толщину, шлёт change:borderWidth с итогом', () => {
+		const s = new TSpinner()
+		const changes: Array<number | 'auto'> = []
+
+		s.events.on('change:borderWidth', (value) => changes.push(value))
+		s.size = 'lg'
+		s.size = 'xl'
+		s.size = '2xl'
+		s.size = 'normal'
+
+		expect(changes).toEqual([2, 1])
+	})
+})
