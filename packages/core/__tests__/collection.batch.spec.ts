@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TCollectionEngine, TPlainExtension, TBatchExtension } from '@soldy-ui/core'
+import {
+	TCollectionEngine,
+	TPlainExtension,
+	TBatchExtension,
+	TSelectionExtension,
+} from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
 
@@ -190,5 +195,74 @@ describe('TBatchExtension', () => {
 		col.extensions.batch.set([{ id: 1, name: 'a' }])
 
 		expect(() => col.extensions.batch.patch([{ id: 1, name: 'a' }])).toThrow()
+	})
+})
+
+/**
+ * Пустой вход с `trackBy` — тоже состав: сверка удаляет всё, чего в нём нет.
+ * Раньше `patch` обрывал его проверкой на пустоту, и `items = []` оставлял
+ * коллекцию и выбор как были — а без `trackBy` тот же `items = []` очищал.
+ */
+describe('TBatchExtension — пустой items с trackBy', () => {
+	function createSelectable() {
+		const col = new TCollectionEngine<
+			Item,
+			{
+				plain: TPlainExtension<Item>
+				batch: TBatchExtension<Item>
+				selection: TSelectionExtension<Item>
+			}
+		>({
+			extensions: {
+				plain: new TPlainExtension<Item>(),
+				batch: new TBatchExtension<Item>(),
+				selection: new TSelectionExtension<Item>(),
+			},
+		})
+
+		col.extensions.batch.trackBy = (item) => item.id
+
+		return col
+	}
+
+	it('очищает коллекцию и снимает выбор одним change:items', () => {
+		const col = createSelectable()
+
+		col.extensions.batch.items = [
+			{ id: 1, name: 'a' },
+			{ id: 2, name: 'b' },
+		]
+		col.extensions.selection.select(col.extensions.batch.items[1])
+
+		expect(col.extensions.selection.selected).toHaveLength(1)
+
+		const changeItems = vi.fn()
+		const added = vi.fn()
+
+		col.extensions.plain.events.on('change:items', changeItems)
+		col.extensions.batch.events.on('items:added', added)
+
+		col.extensions.batch.items = []
+
+		expect(col.extensions.batch.items).toEqual([])
+		expect(changeItems).toHaveBeenCalledTimes(1)
+		expect(col.extensions.selection.selected).toEqual([])
+		// Добавлять было нечего
+		expect(added).not.toHaveBeenCalled()
+	})
+
+	it('на пустой коллекции не шлёт ни change:items, ни items:added', () => {
+		const col = createSelectable()
+		const changeItems = vi.fn()
+		const added = vi.fn()
+
+		col.extensions.plain.events.on('change:items', changeItems)
+		col.extensions.batch.events.on('items:added', added)
+
+		col.extensions.batch.items = []
+
+		expect(col.extensions.batch.items).toEqual([])
+		expect(changeItems).not.toHaveBeenCalled()
+		expect(added).not.toHaveBeenCalled()
 	})
 })
