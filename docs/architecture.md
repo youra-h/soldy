@@ -1102,7 +1102,7 @@ protected _syncDisabled(): void {
 Нативный `disabled` уходит в набор `attrs` по тегу корня, `aria-disabled` — в
 `aria` по тегу элемента, на котором стоит `aria` (`_ariaTag`), и никогда оба на
 одном элементе. Пишется итог `resolvedDisabled` (у элемента коллекции — своё
-или владельца), пересчёт — на `change:disabled:resolved` и `change:tag`.
+или владельца), пересчёт — на `change:resolvedDisabled` и `change:tag`.
 
 `protected: true` в `ComponentViewDescriptor`, триггер один — `change:aria`.
 За границу core → ui уходит снимок (`valueOf()`), а не ссылка на объект.

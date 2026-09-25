@@ -5,7 +5,7 @@ export type TControlEvents = TStylableEvents & {
 	/** Сменилось своё `disabled` — то, что записали разметка, данные или код. */
 	'change:disabled': (value: boolean) => void
 	/** Сменился итог `resolvedDisabled`. */
-	'change:disabled:resolved': (value: boolean) => void
+	'change:resolvedDisabled': (value: boolean) => void
 	'change:focused': (value: boolean) => void
 }
 

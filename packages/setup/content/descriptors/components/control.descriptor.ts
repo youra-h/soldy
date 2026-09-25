@@ -28,7 +28,7 @@ export const ControlDescriptor = defineDescriptor(() =>
 				resolvedDisabled: {
 					type: Boolean,
 					protected: true,
-					triggers: ['change:disabled:resolved'],
+					triggers: ['change:resolvedDisabled'],
 				},
 				focused: { type: Boolean, triggers: ['change:focused'] },
 				// `aria` объявлен в ComponentViewDescriptor — набор нужен и

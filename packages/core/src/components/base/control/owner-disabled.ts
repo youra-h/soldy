@@ -37,7 +37,7 @@ export function bindDisabledToOwner(item: IDisabledItem, owner: IDisabledOwner):
  *
  * Прежний итог таких элементов противоположен нынешнему: он равен прежнему
  * итогу владельца, а тот только что сменился. Прежнего итога владельца
- * функция не получает — `change:disabled:resolved` несёт одно новое значение.
+ * функция не получает — `change:resolvedDisabled` несёт одно новое значение.
  */
 export function notifyOwnerDisabled(items: Iterable<IDisabledItem>): void {
 	for (const item of items) {

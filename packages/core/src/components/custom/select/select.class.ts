@@ -167,13 +167,13 @@ export class TSelect<
 		this._field.aria.add('role', 'combobox')
 		this._field.aria.add('aria-haspopup', 'listbox')
 
-		this.events.on('change:disabled:resolved', () => this._syncOpenable())
+		this.events.on('change:resolvedDisabled', () => this._syncOpenable())
 
 		this._syncOpenable()
 
 		// Своё `disabled` поля — итог Select: поле — деталь Select, и
 		// выключен Select — выключено и поле
-		this.events.on('change:disabled:resolved', (value: boolean) => {
+		this.events.on('change:resolvedDisabled', (value: boolean) => {
 			this._field.disabled = value
 		})
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {

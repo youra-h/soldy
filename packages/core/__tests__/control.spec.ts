@@ -30,7 +30,7 @@ describe('TControl', () => {
 		ctrl.events.on('change:disabled', (value) => {
 			seen.push(`disabled:${value}:${ctrl.disabled}:${ctrl.resolvedDisabled}`)
 		})
-		ctrl.events.on('change:disabled:resolved', (value) => {
+		ctrl.events.on('change:resolvedDisabled', (value) => {
 			seen.push(`resolved:${value}:${ctrl.disabled}:${ctrl.resolvedDisabled}`)
 		})
 

@@ -96,7 +96,7 @@ props.engine }`, общий `bundle`) — та же форма, что у Tabs, 
   уничтожает `_tags` целиком при смене режима, а не подменяет один активный
   инстанс на другой);
 - общие свойства владелец синхронизирует подпиской, а не вычислением
-  (`TSelect` слушает `change:disabled:resolved`/`change:size`/`change:variant`/… и
+  (`TSelect` слушает `change:resolvedDisabled`/`change:size`/`change:variant`/… и
   пишет их в `field`; `TSelectTagsExtension` делает то же для `tags`);
 - шаблон передаёт экземпляр целиком через `:ctrl`, без параллельных `:value`/
   `:placeholder`/`aria` рядом — иначе завелась бы вторая копия состояния

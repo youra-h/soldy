@@ -1441,7 +1441,7 @@ Accordion и у Select — унаследованный `aria`: они и вын
   сообщает `change:disabled`. Лежит в `item.states.disabled.rawValue`;
   выключенный владелец его не меняет.
 - **`resolvedDisabled` — итог**, только для чтения, событие
-  `change:disabled:resolved`. Его отдаёт резольвер, и его читает всё, что
+  `change:resolvedDisabled`. Его отдаёт резольвер, и его читает всё, что
   решает, доступен ли контрол: `attrs`/`aria`/`data-disabled`, разметка
   (`:disabled` вложенного поля и строки элемента), плагины и клавиатура. В
   дескрипторе — защищённый выход (`ControlDescriptor`).
@@ -1468,14 +1468,14 @@ Accordion и у Select — унаследованный `aria`: они и вын
 
 Отсюда контракт `TStateUnit`: `change` сообщает о разрешённом значении, а не о
 `rawValue`, — приходит, только когда сменился итог, и несёт его же; у
-`TControl` это `change:disabled:resolved`. О своём значении сообщает сеттер
+`TControl` это `change:resolvedDisabled`. О своём значении сообщает сеттер
 `TControl.disabled`: он сравнивает со своим, и своё `true` в выключенном
 списке, не меняя итога, записывается и шлёт `change:disabled`.
 
 Сторожат `core/__tests__/collection-disabled-inherit.spec.ts` — шесть
 `createEngine*`: свой `disabled` из `items`, переключения владельца,
 `batch.patch`, своё и итог порознь и число `change:disabled` и
-`change:disabled:resolved` у элементов — и
+`change:resolvedDisabled` у элементов — и
 `ui/vue/__tests__/list-box-item-disabled.spec.ts`: своё из разметки доходит до
 ядра, строку элемента шаблон выключает по итогу.
 
@@ -2773,7 +2773,7 @@ APG, следуем ему, а расхождения объясняем в ко
 Плата: вычисляемых записей нет, правила стали подписками.
 
 ```ts
-this.events.on('change:disabled:resolved', () => this._syncDisabled())
+this.events.on('change:resolvedDisabled', () => this._syncDisabled())
 this.events.on('change:tag', () => this._syncDisabled())
 this._syncDisabled() // начальное состояние — руками
 ```
@@ -2868,7 +2868,7 @@ this._syncDisabled() // начальное состояние — руками
 Теме ни одна из этих половин не годится: обе решает тег, и обе переезжают
 вместе с ним. Поэтому `TControl` пишет ещё одну запись того же состояния —
 `data-disabled` в `dataset`: на любом теге, отдельной подпиской на
-`change:disabled:resolved`, мимо `_syncDisabled`. Тема читает disabled только
+`change:resolvedDisabled`, мимо `_syncDisabled`. Тема читает disabled только
 из неё (см. «CSS не стилизуется по `aria-*`»).
 
 Значение — непустая строка (`'disabled'`), не `''` и не `'false'`: у

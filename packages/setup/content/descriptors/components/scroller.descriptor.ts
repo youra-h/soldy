@@ -49,12 +49,12 @@ export const ScrollerDescriptor = defineDescriptor(() =>
 				prevDisabled: {
 					type: Boolean,
 					protected: true,
-					triggers: ['change:canPrev', 'change:disabled:resolved'],
+					triggers: ['change:canPrev', 'change:resolvedDisabled'],
 				},
 				nextDisabled: {
 					type: Boolean,
 					protected: true,
-					triggers: ['change:canNext', 'change:disabled:resolved'],
+					triggers: ['change:canNext', 'change:resolvedDisabled'],
 				},
 				/** `tabindex` вьюпорта: `0`, когда листать есть куда, а своих остановок нет. */
 				viewportTabIndex: {

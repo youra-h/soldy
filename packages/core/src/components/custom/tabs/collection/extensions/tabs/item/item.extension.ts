@@ -26,7 +26,7 @@ export class TTabsItemExtension<
 		this.events.relay(item.events, [
 			'change:closable',
 			// Итог `resolvedDisabled` входит в итог `closable` — см. геттер
-			{ from: 'change:disabled:resolved', as: 'change:closable' },
+			{ from: 'change:resolvedDisabled', as: 'change:closable' },
 		])
 	}
 
@@ -37,7 +37,7 @@ export class TTabsItemExtension<
 	 * собственный `closable` элемента, поэтому не зависит от того, как таб
 	 * пришёл к «выключен»: со старта, позже или вместе с набором. Итог
 	 * `resolvedDisabled` сочетает своё значение таба и владельца
-	 * (`bindDisabledToOwner`), и `change:disabled:resolved` приходит на смену
+	 * (`bindDisabledToOwner`), и `change:resolvedDisabled` приходит на смену
 	 * итога.
 	 *
 	 * У включённого — явное значение элемента > глобальное значение из

@@ -100,7 +100,7 @@ export const SelectDescriptor = defineDescriptor(() =>
 				openable: {
 					type: Boolean,
 					protected: true,
-					triggers: ['change:disabled:resolved'],
+					triggers: ['change:resolvedDisabled'],
 				},
 				/**
 				 * Подгонять ли ширину панели под поле — производное от `contentFit`.

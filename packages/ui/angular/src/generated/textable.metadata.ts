@@ -51,7 +51,7 @@ export const TextableOutputs = [
 	'changeSize',
 	'changeVariant',
 	'changeDisabled',
-	'changeDisabledResolved',
+	'changeResolvedDisabled',
 	'changeFocused',
 	'changeText',
 	'ariaChangeLabel',
@@ -112,9 +112,9 @@ export abstract class TTextableSurface<
 	declare readonly changeSize: TOutputEmitter<typeof descriptor, 'change:size'>
 	declare readonly changeVariant: TOutputEmitter<typeof descriptor, 'change:variant'>
 	declare readonly changeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
-	declare readonly changeDisabledResolved: TOutputEmitter<
+	declare readonly changeResolvedDisabled: TOutputEmitter<
 		typeof descriptor,
-		'change:disabled:resolved'
+		'change:resolvedDisabled'
 	>
 	declare readonly changeFocused: TOutputEmitter<typeof descriptor, 'change:focused'>
 	declare readonly changeText: TOutputEmitter<typeof descriptor, 'change:text'>
