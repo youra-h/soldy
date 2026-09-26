@@ -23,8 +23,8 @@
 | `__tests__/tailwind-scan.spec.ts` | поиск классов Tailwind выключен: утилиты в `dist` не берутся из текстов                                                          |
 | `setup/`                          | поведение темы: `plugins/` (+ `install.ts`), `index.ts` с `defineTheme`                                                          |
 | `__tests__/theme-setup.spec.ts`   | регистрации темы ставят плагины нужным компонентам                                                                               |
-| `__tests__/package-build.spec.ts` | два выхода в одном `dist`: порядок сборки и поставка `./setup`                                                                   |
-| `vite.config.ts`                  | сборка CSS: SCSS → `dist/index.css`                                                                                              |
+| `__tests__/package-build.spec.ts` | два выхода в одном `dist`: порядок сборки, CSS-выход — один `index.css`, поставка `./setup`                                      |
+| `vite.config.ts`                  | сборка CSS без режима библиотеки: `src/index.scss` → `dist/index.css`                                                            |
 | `vite.setup.config.ts`            | сборка поведения: `setup/index.ts` → `dist/setup` (общая фабрика `tools/vite`)                                                   |
 | `tsconfig.build.json`             | `.d.ts` поведения: прогон `tsc` вторым шагом, в тот же `dist/setup`                                                              |
 
@@ -350,6 +350,15 @@ setup/
 **Выходов у пакета два, и собираются они по очереди.** CSS идёт первым: у его
 сборки `emptyOutDir`, и она чистит весь `dist`, — поэтому поведение кладётся в
 свой подкаталог (`dist/setup`) и строится после.
+
+**CSS собирается без режима библиотеки.** Вход — сам `src/index.scss`
+(`build.rollupOptions.input`), и эта сборка кладёт в `dist` один `index.css`:
+у входа из одних стилей пустой JS-чанк Vite выбрасывает сам. Режим библиотеки
+требует JS-вход — со `.scss` Vite падает в `vite:css-post`, — и пустой чанк
+такого входа уезжал в пакет файлом `theme-oren.js`: `files` везёт весь `dist`,
+хотя ни одна точка входа на него не ведёт. Сторож —
+`__tests__/package-build.spec.ts`: CSS-сборка в памяти отдаёт ровно
+`index.css`.
 
 Отсюда же второй скрипт, `build:css`. Прогон деклараций `setup/` читает
 `@soldy-ui/core`, `@soldy-ui/plugins` и `@soldy-ui/setup` через их манифесты,

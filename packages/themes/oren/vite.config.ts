@@ -2,7 +2,14 @@ import { defineConfig } from 'vite'
 import path from 'node:path'
 
 /**
- * Сборка темы: SCSS-исходники компилируются в единый dist/index.css.
+ * Сборка стилей темы: SCSS-исходники компилируются в единый dist/index.css.
+ *
+ * Вход — сам `src/index.scss`, и режима библиотеки (`build.lib`) нет: у входа
+ * из одних стилей пустой JS-чанк Vite выбрасывает сам, и в `dist` ложится один
+ * `index.css`. Режим библиотеки требует JS-вход — со `.scss` он падает в
+ * `vite:css-post`, — и пустой чанк такого входа уезжал в пакет файлом
+ * `theme-oren.js`, на который не ведёт ни одна точка входа. Сторож —
+ * `__tests__/package-build.spec.ts`.
  *
  * В SCSS-вход инжектируется @import base.css (tailwind + токены + утилиты),
  * чтобы @apply в компонентных стилях корректно развернулся через
@@ -12,11 +19,8 @@ export default defineConfig({
 	build: {
 		outDir: 'dist',
 		emptyOutDir: true,
-		lib: {
-			entry: path.resolve(import.meta.dirname, 'src/index.ts'),
-			formats: ['es'],
-		},
 		rollupOptions: {
+			input: path.resolve(import.meta.dirname, 'src/index.scss'),
 			output: {
 				assetFileNames: 'index.css',
 			},
