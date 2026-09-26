@@ -20,6 +20,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	TagsKeyboardPluginDescriptor,
 	TagsOverflowPluginDescriptor,
+	TagsScrollPluginDescriptor,
 } from '../../plugins'
 
 export const TagsDescriptor = defineDescriptor(() =>
@@ -109,6 +110,8 @@ export const TagsDescriptor = defineDescriptor(() =>
 			TagsKeyboardPluginDescriptor,
 			// Замер ряда: сколько тегов помещается в строку в режиме `popover`
 			TagsOverflowPluginDescriptor,
+			// Доводка тега под фокусом в окно ряда, который прокручивается сам (`scroll`)
+			TagsScrollPluginDescriptor,
 		],
 	}),
 )

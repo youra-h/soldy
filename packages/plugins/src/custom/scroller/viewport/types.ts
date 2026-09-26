@@ -1,4 +1,5 @@
 import type { TPluginEvents } from '../../../base'
+import type { TInlineSpan } from '../../../utils'
 
 /**
  * Своих событий у плагина нет: результат замера виден через инстанс —
@@ -9,16 +10,10 @@ import type { TPluginEvents } from '../../../base'
 export type TScrollerViewportPluginEvents = TPluginEvents
 
 /**
- * Отрезок по строке: левый и правый край в координатах окна браузера — как их
- * отдаёт `getBoundingClientRect()`.
- *
- * Края физические. Где у строки начало, решает направление письма, а не
- * отрезок: в RTL начало — правый край.
+ * Отрезок по строке — общий тип доводки (`utils`). Наружу его отдаёт лента:
+ * им описаны опции `resolveFocusShift`.
  */
-export type TInlineSpan = {
-	left: number
-	right: number
-}
+export type { TInlineSpan }
 
 /** Что плагин намерил, когда фокус пришёл в ленту, — всё отрезками по строке. */
 export type TFocusShiftOptions = {

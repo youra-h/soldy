@@ -2,11 +2,11 @@ import type { IScroller, TScrollerDirection } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
-import { tabStops } from '../../../utils'
+import { itemOf, scrollWindowOf, tabStops } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import { resolveEdges } from './edges'
 import { resolveFocusShift } from './focus'
-import type { TInlineSpan, TScrollerViewportPluginEvents } from './types'
+import type { TScrollerViewportPluginEvents } from './types'
 
 /**
  * TScrollerViewportPlugin — вьюпорт ленты: замер краёв, само листание и
@@ -34,7 +34,8 @@ import type { TInlineSpan, TScrollerViewportPluginEvents } from './types'
  * подсказкой темы. Поэтому по `focusin` плагин доводит элемент в окно сам
  * (счёт — `resolveFocusShift`). Окно — паддинг-бокс вьюпорта без
  * `scroll-padding`: ширину подсказки знает только тема, и она же делает окно
- * чистой частью ленты. Три решения:
+ * чистой частью ленты. Замер окна и доводка без снапа — общие с рядом тегов
+ * `scroll` (`scrollWindowOf`, `nearestShift`). Три решения:
  * - только фокус с клавиатуры (`:focus-visible`). Фокус от нажатия мышью
  *   браузер сам не докручивает, и правильно: сдвинься лента между нажатием и
  *   отпусканием, под указателем оказался бы другой элемент, и `click` не
@@ -281,7 +282,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 
 		const style = getComputedStyle(viewport)
 		const shift = resolveFocusShift({
-			snapport: snapportOf(viewport, style),
+			snapport: scrollWindowOf(viewport, style),
 			focused: target.getBoundingClientRect(),
 			item: itemOf(target, viewport).getBoundingClientRect(),
 			rtl: style.direction === 'rtl',
@@ -317,48 +318,4 @@ function prefersReducedMotion(): boolean {
 	return (
 		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 	)
-}
-
-/**
- * Окно снапа вьюпорта по строке: паддинг-бокс (`clientLeft`, `clientWidth` —
- * без рамки и полосы прокрутки) без вычисленного `scroll-padding` с каждой
- * стороны. Стороны физические: логический `scroll-padding-inline` браузер
- * отдаёт уже разложенным по ним.
- */
-function snapportOf(viewport: Element, style: CSSStyleDeclaration): TInlineSpan {
-	const left = viewport.getBoundingClientRect().left + viewport.clientLeft
-	const width = viewport.clientWidth
-
-	return {
-		left: left + insetOf(style.scrollPaddingLeft, width),
-		right: left + width - insetOf(style.scrollPaddingRight, width),
-	}
-}
-
-/**
- * Отступ окна снапа с одной стороны, в px. Процент считается от ширины
- * области прокрутки. `auto` спецификация оставляет браузеру и советует ноль —
- * ноль и считается.
- */
-function insetOf(value: string, width: number): number {
-	const length = parseFloat(value)
-
-	if (!Number.isFinite(length)) return 0
-
-	return value.endsWith('%') ? (length * width) / 100 : length
-}
-
-/**
- * Элемент ленты, в котором лежит узел, — его предок, который прямой ребёнок
- * вьюпорта. Точки снапа тема ставит на них, а содержимое лежит во вьюпорте
- * без обёрток.
- */
-function itemOf(node: Element, viewport: Element): Element {
-	let item = node
-
-	while (item.parentElement !== null && item.parentElement !== viewport) {
-		item = item.parentElement
-	}
-
-	return item
 }
