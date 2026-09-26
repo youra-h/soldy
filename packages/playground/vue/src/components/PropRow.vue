@@ -4,6 +4,7 @@ import { createEngineSelection, isEventSource } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	createInstance,
+	isEmptyField,
 	type TComponentEntry,
 	type TInstance,
 	type TPropControl,
@@ -118,11 +119,21 @@ if (props.control.scope === 'plugin') {
 /**
  * Куда писать проп: коллекционный — в фасад, плагинный — в свой плагин под
  * именем без неймспейса, остальные — в инстанс.
+ *
+ * Пустое поле — проп не задан, и правило у него то же, что у связки в первой
+ * колонке (`TLine.reset`): свойство получает умолчание декларации, а без
+ * умолчания (`mode` фасадов) остаётся как есть. Значим ключ, а не значение:
+ * объявленное `undefined` (`aria_label`) тоже умолчание. Запись `undefined`
+ * мимо этого правила дала бы значение вне типа свойства — у ProgressLinear
+ * полосу на нуле вместо бега.
  */
 function write(next: unknown): void {
-	// Пустая строка означает «проп не задан», а не пустое значение
-	const written = next === '' ? undefined : next
 	const control = props.control
+	const empty = isEmptyField(next)
+
+	if (empty && !Object.hasOwn(control, 'default')) return
+
+	const written = empty ? control.default : next
 
 	if (control.scope === 'plugin') {
 		// Плагина может не быть: превью `frame` и слоёв — заглушка на
@@ -146,9 +157,7 @@ onUnmounted(() => instance.value.destroy?.())
 // Пресет первым: собственное значение строки его перекрывает, а не наоборот
 const propBind = computed(() => ({
 	...props.control.preset,
-	...(value.value === undefined || value.value === ''
-		? {}
-		: { [props.control.name]: value.value }),
+	...(isEmptyField(value.value) ? {} : { [props.control.name]: value.value }),
 	...props.tag('props'),
 	key: props.iconVersion,
 }))
