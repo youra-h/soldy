@@ -2,6 +2,7 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/stylable/manifest'
 
 export const StylableInputs = [
@@ -44,8 +45,22 @@ export const StylableOutputs = [
  * Поверхность Stylable в Angular: входы и выходы компонента с типами для
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `StylableOutputs` — поля их только объявляют.
+ * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
-@Directive({ standalone: true, inputs: [...StylableInputs], outputs: [...StylableOutputs] })
+@Directive({
+	standalone: true,
+	inputs: [
+		'embedded',
+		'pluginProps',
+		{ name: 'rendered', transform: booleanInput },
+		{ name: 'visible', transform: booleanInput },
+		'tag',
+		'direction',
+		'size',
+		'variant',
+	],
+	outputs: [...StylableOutputs],
+})
 export abstract class TStylableSurface<
 	TInstance extends IEntity,
 > extends TComponentBase<TInstance> {

@@ -1647,10 +1647,11 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 - `adapter/common/` — `AngularProfile` (`naming: AngularNaming`), `AngularNaming`
   (события → camelCase без `on`-префикса, т.к. имя `@Output` обязано быть
-  валидным TS-идентификатором), `useInputs`/`useOutputs` (**только для
-  кодогенератора**: имена берутся из поверхности
-  `TSurface.of(descriptor, AngularProfile)`; `useOutputs` отдаёт выход в паре
-  с полным именем события ядра — `actionPress` и `action:press`).
+  валидным TS-идентификатором), `useInputs`/`useBooleanInputs`/`useOutputs`
+  (**только для кодогенератора**: имена берутся из поверхности
+  `TSurface.of(descriptor, AngularProfile)`; `useBooleanInputs` — входы, чей
+  проп объявлен ровно `Boolean`; `useOutputs` отдаёт выход в паре с полным
+  именем события ядра — `actionPress` и `action:press`).
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)`: `state` (сигнал), `syncInputs`
   (`inputs.delta` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
@@ -1660,7 +1661,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
   дескриптора); `TComponentBase` (общий жизненный цикл), `AriaDirective`
   (`[ariaAttrs]`, `[attrs]`, `[dataset]` — раскладка наборов ядра),
-  `SlotDirective` (`<ng-template slot>`).
+  `SlotDirective` (`<ng-template slot>`); `booleanInput` — transform булева
+  входа, в бочку не входит: его импортируют сгенерированные метаданные.
 - `adapter/elevator/` — `TAngularElevator` + `AngularElevatorFactory`.
 - `codegen/` — `collect-manifests` + `generate` → `src/generated/*.metadata.ts`:
   массивы имён и поверхность `T<Имя>Surface` — абстрактная директива, которая
@@ -1706,6 +1708,16 @@ Angular AOT статически анализирует декоратор: `inp
 поэтому `descriptor` в нём — реэкспорт из `@soldy-ui/setup`: декларации пакета
 называют его по имени (`typeof ButtonDescriptor`), а выведенный тип `const`
 выписать не смогли бы (TS2883, TS7056).
+
+Булев вход (проп ровно `Boolean`) декоратор объявляет объектом
+`{ name: 'disabled', transform: booleanInput }`, остальные — именем, поэтому
+`inputs` декоратора — литерал, а массив имён остаётся для `TComponentBase`.
+Атрибут без значения (`<soldy-button disabled>`) Angular отдаёт входу пустой
+строкой, и transform превращает её в `true`, как это делают остальные
+адаптеры. Transform Angular применяет до `ngOnChanges` и записи в поле, поэтому
+поле входа — тип значения после него, а тип записи проверка шаблона берёт у
+параметра transform (`boolean | '' | undefined`, в декларации пакета —
+`ngAcceptInputType_disabled`): `disabled="yes"` остаётся ошибкой шаблона.
 
 ### Реактивность
 

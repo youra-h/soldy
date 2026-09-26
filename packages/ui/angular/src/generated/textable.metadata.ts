@@ -2,6 +2,7 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/textable/manifest'
 
 export const TextableInputs = [
@@ -62,8 +63,28 @@ export const TextableOutputs = [
  * Поверхность Textable в Angular: входы и выходы компонента с типами для
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `TextableOutputs` — поля их только объявляют.
+ * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
-@Directive({ standalone: true, inputs: [...TextableInputs], outputs: [...TextableOutputs] })
+@Directive({
+	standalone: true,
+	inputs: [
+		'embedded',
+		'pluginProps',
+		{ name: 'rendered', transform: booleanInput },
+		{ name: 'visible', transform: booleanInput },
+		'tag',
+		'direction',
+		'size',
+		'variant',
+		{ name: 'disabled', transform: booleanInput },
+		{ name: 'focused', transform: booleanInput },
+		'text',
+		'aria_label',
+		'aria_labelledBy',
+		'aria_describedBy',
+	],
+	outputs: [...TextableOutputs],
+})
 export abstract class TTextableSurface<
 	TInstance extends IEntity,
 > extends TComponentBase<TInstance> {
