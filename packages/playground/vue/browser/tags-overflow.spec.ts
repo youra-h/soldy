@@ -29,7 +29,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
-import { expectClearOfFades, fades } from './fades'
+import { expectClearOfFades, expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
@@ -512,10 +512,7 @@ describe('режим arrows: ряд листают кнопки', () => {
 		expect(document.activeElement).toBe(line(TAGS[1]))
 	})
 
-	/**
-	 * Фокус за краем ленту подтягивает сам — это делает браузер, — и не под
-	 * подсказку у края, а в чистую часть ленты.
-	 */
+	/** Фокус за краем ленту подтягивает сам — и не под подсказку у края, а в чистую часть. */
 	it('фокус на теге за краем подтягивает его в чистую часть', async () => {
 		render(arrows({ mode: 'multiple' }))
 
@@ -539,15 +536,20 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 	/**
 	 * Элемент под фокусом не остаётся под подсказкой у края — ни при переходе
-	 * вперёд, ни обратно: у края оказывается то следующий, то предыдущий.
-	 * Частично видимый элемент браузер при фокусе не докручивает, а видимая
-	 * часть ленты для него — окно снапа, и тема делает её чистой частью, между
-	 * подсказками (`scroll-padding-inline` в `scroller/_scroller.scss`).
+	 * вперёд, ни обратно: у края оказывается то следующий, то предыдущий. Сам
+	 * браузер частично видимый элемент при фокусе не докручивает, и в окно
+	 * снапа — чистую часть ленты, между подсказками, — его доводит плагин
+	 * ленты (`TScrollerViewportPlugin`).
 	 *
 	 * Остановки Tab у набора без выбора — крестики, с выбором — строки тегов
-	 * (roving tabindex).
+	 * (roving tabindex). Обход — клавиатурой, как ходит пользователь: плагин
+	 * доводит только фокус с клавиатуры (`:focus-visible`), а `focus()` из
+	 * скрипта после нажатия мышью в соседнем тесте браузер видимым не считает.
 	 */
 	describe('элемент под фокусом не остаётся под подсказкой', () => {
+		/** Текст тега, который шире окна снапа. */
+		const LONG = 'Петропавловск-Камчатский'
+
 		/** Узел по порядку в списке; нет его или он не HTML — тест падает здесь. */
 		const at = (nodes: Element[], index: number): HTMLElement => {
 			const node = nodes[index]
@@ -558,28 +560,16 @@ describe('режим arrows: ряд листают кнопки', () => {
 		}
 
 		/**
-		 * Элемент под фокусом лежит в чистой части ленты, когда она улеглась:
-		 * прокрутка от фокуса мгновенная, но края замер пишет кадром позже, и
-		 * маска меняется вслед за ними.
+		 * Клавиша — и ждём, пока лента уляжется: прокрутка от фокуса мгновенная,
+		 * но края замер пишет кадром позже, и маска меняется вслед за ними.
 		 */
-		const expectFocusedClear = async (element: HTMLElement, what: string) => {
+		const press = async (keys: string) => {
+			await userEvent.keyboard(keys)
 			await nextFrame()
 			await nextFrame()
-
-			expect(document.activeElement, `${what}: фокус`).toBe(element)
-
-			// Шире чистой части элемент не встанет в неё ни при каком решении
-			const { left, right } = fades(viewport())
-			const clear = viewport().getBoundingClientRect().width - left - right
-
-			expect(element.getBoundingClientRect().width, `${what} уже чистой части`).toBeLessThan(
-				clear,
-			)
-
-			expectClearOfFades(element, viewport(), what)
 		}
 
-		it('без выбора: крестик по очереди вперёд и обратно', async () => {
+		it('без выбора: крестик по очереди, Tab вперёд и обратно', async () => {
 			render(arrows())
 
 			await scrollable()
@@ -590,12 +580,22 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 			expect(closes, 'крестиков в ряду').toHaveLength(TAGS.length)
 
-			for (const index of [...forth, ...back]) {
-				const close = at(closes, index)
+			// Кнопка «назад» в начале строки выключена, и первый Tab ведёт
+			// сразу в ленту
+			for (const index of forth) {
+				await press('{Tab}')
 
-				close.focus()
+				expectFocusedClearOfFades(at(closes, index), viewport(), `крестик ${index}`)
+			}
 
-				await expectFocusedClear(close, `крестик ${index}`)
+			for (const index of back) {
+				await press('{Shift>}{Tab}{/Shift}')
+
+				expectFocusedClearOfFades(
+					at(closes, index),
+					viewport(),
+					`крестик ${index}, обратно`,
+				)
 			}
 		})
 
@@ -604,19 +604,79 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 			await scrollable()
 
-			line(TAGS[0]).focus()
+			// Весь набор — одна остановка Tab, и без выбора она на первом теге
+			await press('{Tab}')
 
-			await expectFocusedClear(line(TAGS[0]), `строка «${TAGS[0]}»`)
+			expectFocusedClearOfFades(line(TAGS[0]), viewport(), `строка «${TAGS[0]}»`)
 
 			for (const text of TAGS.slice(1)) {
-				await userEvent.keyboard('{ArrowRight}')
-				await expectFocusedClear(line(text), `строка «${text}»`)
+				await press('{ArrowRight}')
+
+				expectFocusedClearOfFades(line(text), viewport(), `строка «${text}»`)
 			}
 
 			for (const text of [...TAGS].reverse().slice(1)) {
-				await userEvent.keyboard('{ArrowLeft}')
-				await expectFocusedClear(line(text), `строка «${text}»`)
+				await press('{ArrowLeft}')
+
+				expectFocusedClearOfFades(line(text), viewport(), `строка «${text}», обратно`)
 			}
+		})
+
+		/**
+		 * Тег шире окна: точка снапа у него — любое положение, где он накрывает
+		 * окно, и крестик в его конце доводится ближайшим из них, при котором
+		 * крестик в окне. С «началом тега к началу окна», как у узкого, крестик
+		 * остался бы за краем.
+		 *
+		 * Крестик стоит на краю окна — частью в чистой части ленты, частью под
+		 * подсказкой. Такой браузер сам не докручивает, и доводит его только
+		 * плагин. Целиком ушедший из окна браузер при переходе Tab докрутил бы
+		 * сам, ещё до `focusin`, и правило плагина осталось бы непроверенным.
+		 * Длину тега задаёт шрифт, поэтому не тег подгоняется под ленту, а лента
+		 * под тег: край чистой части ставится на середину крестика.
+		 */
+		it('тег шире окна: крестик на краю окна под фокусом — в чистой части', async () => {
+			render(
+				harness(NARROW, {
+					overflow: 'arrows',
+					items: [LONG, ...TAGS.slice(1)].map((text) => ({ value: text, text })),
+				}),
+			)
+
+			await scrollable()
+
+			const tag = at([...viewport().querySelectorAll(':scope > .s-tags-item')], 0)
+			const close = at([...tag.querySelectorAll('.s-tags-item__close')], 0)
+
+			/** Правый край чистой части: в начале строки подсказка только у конца. */
+			const edge = () => viewport().getBoundingClientRect().right - fades(viewport()).right
+			const middle = () => {
+				const box = close.getBoundingClientRect()
+
+				return (box.left + box.right) / 2
+			}
+
+			host().style.width = `${host().getBoundingClientRect().width + middle() - edge()}px`
+
+			await nextFrame()
+			await nextFrame()
+
+			const box = close.getBoundingClientRect()
+
+			expect(tag.textContent?.trim(), 'первый тег').toBe(LONG)
+			expect(fades(viewport()).left, 'лента в начале строки').toBe(0)
+			expect(box.left, 'крестик заходит в чистую часть').toBeLessThan(edge() - 4)
+			expect(box.right, 'крестик заходит под подсказку').toBeGreaterThan(edge() + 4)
+			// Шире чистой части — значит, шире и окна: иначе тег встал бы в него
+			// целиком, как узкий
+			expect(tag.getBoundingClientRect().width, 'тег шире чистой части').toBeGreaterThan(
+				edge() - viewport().getBoundingClientRect().left,
+			)
+
+			// Весь набор без выбора — остановки у крестиков, и первый — этот
+			await press('{Tab}')
+
+			expectFocusedClearOfFades(close, viewport(), 'крестик длинного тега')
 		})
 	})
 })

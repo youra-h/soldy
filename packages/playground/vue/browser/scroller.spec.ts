@@ -19,7 +19,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { Scroller } from '@soldy-ui/vue'
 
-import { expectClearOfFades, fades } from './fades'
+import { expectClearOfFades, expectFocusedClearOfFades, fades } from './fades'
 
 import '@soldy-ui/theme-oren'
 
@@ -220,15 +220,18 @@ describe('прокручиваемая область достижима с кл
 
 /**
  * Подсказка у края гасит содержимое, и элемент под фокусом не вправе остаться
- * под ней. Частично видимый элемент браузер при фокусе не докручивает — только
- * тот, что целиком за видимой частью ленты. Видимая часть для него — окно
- * снапа, и тема делает окно чистой частью ленты, между подсказками
- * (`scroll-padding-inline` в `scroller/_scroller.scss`). Пока окно было
- * шириной в запас под кольцо фокуса, кнопка у края оставалась под подсказкой:
- * видно было 12.5px из 75.
+ * под ней. Сам браузер при фокусе докручивает только элемент, целиком ушедший
+ * из окна снапа, а частично видимый оставляет у края — поэтому доводит его
+ * плагин ленты (`TScrollerViewportPlugin`), в окно снапа. Окно тема делает
+ * чистой частью ленты, между подсказками (`scroll-padding-inline` в
+ * `scroller/_scroller.scss`). Без доводки кнопка у края уходила под подсказку
+ * на 11–50px, а при обратном ходе от неё оставалось видно полпикселя.
  *
  * Проверяется каждая кнопка — сначала вперёд, потом обратно: у края под
- * подсказкой оказывается то следующая, то предыдущая.
+ * подсказкой оказывается то следующая, то предыдущая. Обход — клавиатурой,
+ * как ходит пользователь: плагин доводит только фокус с клавиатуры
+ * (`:focus-visible`), а `focus()` из скрипта после нажатия мышью в соседнем
+ * тесте браузер видимым не считает.
  */
 describe('элемент под фокусом не остаётся под подсказкой', () => {
 	/** Кнопок столько, что лента листается на несколько страниц в обе стороны. */
@@ -257,49 +260,83 @@ describe('элемент под фокусом не остаётся под по
 		})
 
 	/**
-	 * Фокус на элементе, когда лента улеглась: прокрутка от фокуса мгновенная,
+	 * Клавиша — и ждём, пока лента уляжется: прокрутка от фокуса мгновенная,
 	 * но края замер пишет кадром позже, и маска меняется вслед за ними.
 	 */
-	const focus = async (element: HTMLElement) => {
-		element.focus()
-
+	const press = async (keys: string) => {
+		await userEvent.keyboard(keys)
 		await nextFrame()
 		await nextFrame()
 	}
 
 	it.each(['ltr', 'rtl'] as const)(
-		'%s: каждая кнопка под фокусом — в чистой части, вперёд и обратно',
+		'%s: каждая кнопка под фокусом — в чистой части, Tab вперёд и обратно',
 		async (dir) => {
 			render(stops(dir))
 
 			await settled(canNext, 'true')
 
 			const buttons = [...viewport().querySelectorAll('button')]
-			const forth = [...buttons.keys()]
-			const back = [...forth].reverse().slice(1)
 
 			expect(buttons, 'кнопок в ленте').toHaveLength(STOPS.length)
 
-			for (const index of [...forth, ...back]) {
-				const button = buttons[index]
+			// Кнопка «назад» в начале строки выключена, и первый Tab ведёт
+			// сразу в ленту
+			for (const [index, button] of buttons.entries()) {
+				await press('{Tab}')
 
-				await focus(button)
+				expectFocusedClearOfFades(button, viewport(), `кнопка ${index}`)
+			}
 
-				expect(document.activeElement, `кнопка ${index}: фокус`).toBe(button)
+			for (const [index, button] of [...buttons.entries()].reverse().slice(1)) {
+				await press('{Shift>}{Tab}{/Shift}')
 
-				// Шире чистой части элемент не встанет в неё ни при каком решении
-				const { left, right } = fades(viewport())
-				const clear = viewport().getBoundingClientRect().width - left - right
-
-				expect(
-					button.getBoundingClientRect().width,
-					`кнопка ${index} уже чистой части`,
-				).toBeLessThan(clear)
-
-				expectClearOfFades(button, viewport(), `кнопка ${index}`)
+				expectFocusedClearOfFades(button, viewport(), `кнопка ${index}, обратно`)
 			}
 		},
 	)
+
+	/**
+	 * Нажатие мышью элемент не доводит: лента, сдвинувшаяся между нажатием и
+	 * отпусканием, увела бы кнопку из-под указателя, и `click` до неё не
+	 * дошёл бы. Фокус от нажатия браузер видимым не считает, и плагин его
+	 * пропускает.
+	 *
+	 * Кнопка — на краю окна снапа: частью в чистой части ленты, частью под
+	 * подсказкой, то есть такая, какую плагин довёл бы. Нажатие — у края её
+	 * части в окне: точку за окном Playwright перед нажатием докрутил бы сам, и
+	 * ленту сдвинул бы не плагин. А у края — чтобы доводка, сдвинь она ленту,
+	 * подставила под отпускание соседнюю кнопку.
+	 */
+	it('нажатие мышью по кнопке у края доходит, и лента не сдвигается', async () => {
+		render(stops('ltr'))
+
+		await settled(canNext, 'true')
+
+		const edge = viewport().getBoundingClientRect().right - fades(viewport()).right
+		const button = [...viewport().querySelectorAll('button')].find((candidate) => {
+			const box = candidate.getBoundingClientRect()
+
+			return box.left < edge - 8 && box.right > edge + 0.5
+		})
+
+		if (!button) throw new Error('на краю окна нет кнопки')
+
+		let clicks = 0
+
+		button.addEventListener('click', () => clicks++)
+
+		const box = button.getBoundingClientRect()
+
+		await userEvent.click(button, { position: { x: edge - box.left - 4, y: box.height / 2 } })
+		await nextFrame()
+		await nextFrame()
+
+		// Фокус от нажатия был — плагину было на что отозваться
+		expect(document.activeElement, 'фокус').toBe(button)
+		expect(clicks, 'нажатий дошло').toBe(1)
+		expect(viewport().scrollLeft, 'положение ленты').toBe(0)
+	})
 
 	/**
 	 * Страница, до которой снап доводит листание, встаёт за подсказкой, а не под

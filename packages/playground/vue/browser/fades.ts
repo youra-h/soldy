@@ -69,3 +69,25 @@ export const expectClearOfFades = (element: Element, container: Element, what: s
 		bounds.right - fade.right + EPSILON,
 	)
 }
+
+/**
+ * Фокус на узле, и узел лежит в чистой части контейнера — сторож «элемент под
+ * фокусом не остаётся под подсказкой».
+ *
+ * Годится он только для узла уже чистой части: более широкий не встанет в неё
+ * ни при каком решении. Поэтому ширина проверяется первой — иначе такой узел
+ * читался бы как ошибка доводки, а не как неверно подобранный тест.
+ */
+export const expectFocusedClearOfFades = (
+	element: Element,
+	container: Element,
+	what: string,
+): void => {
+	const fade = fades(container)
+	const clear = container.getBoundingClientRect().width - fade.left - fade.right
+
+	expect(document.activeElement, `${what}: фокус`).toBe(element)
+	expect(element.getBoundingClientRect().width, `${what} уже чистой части`).toBeLessThan(clear)
+
+	expectClearOfFades(element, container, what)
+}

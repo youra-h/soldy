@@ -7,3 +7,33 @@ import type { TPluginEvents } from '../../../base'
  * с первым.
  */
 export type TScrollerViewportPluginEvents = TPluginEvents
+
+/**
+ * Отрезок по строке: левый и правый край в координатах окна браузера — как их
+ * отдаёт `getBoundingClientRect()`.
+ *
+ * Края физические. Где у строки начало, решает направление письма, а не
+ * отрезок: в RTL начало — правый край.
+ */
+export type TInlineSpan = {
+	left: number
+	right: number
+}
+
+/** Что плагин намерил, когда фокус пришёл в ленту, — всё отрезками по строке. */
+export type TFocusShiftOptions = {
+	/**
+	 * Окно снапа — паддинг-бокс вьюпорта без `scroll-padding` с каждой
+	 * стороны. Тема делает его чистой частью ленты, между подсказками у краёв.
+	 */
+	snapport: TInlineSpan
+	/** Элемент под фокусом. */
+	focused: TInlineSpan
+	/**
+	 * Элемент ленты, в котором он лежит, — прямой ребёнок вьюпорта. Точки
+	 * снапа тема ставит на них: `scroll-snap-align: start`.
+	 */
+	item: TInlineSpan
+	/** Письмо справа налево: начало строки — правый край. */
+	rtl: boolean
+}
