@@ -191,7 +191,7 @@ export default class TTooltip
 
 	/** `id` панели — одна формула на обе стороны связки. */
 	protected get _panelId(): string {
-		return `s-tooltip-panel-${this.uid}`
+		return `s-tooltip-panel-${this.idBase}`
 	}
 
 	override getProps(): ITooltipProps {

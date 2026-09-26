@@ -39,12 +39,12 @@ export class TAccordionContentExtension<TItem extends IAccordionItem = IAccordio
 
 	/** `id` элемента-заголовка. */
 	headerId(item: TItem): string {
-		return `s-accordion-header-${item.uid}`
+		return `s-accordion-header-${item.idBase}`
 	}
 
 	/** `id` раскрывающейся панели. */
 	contentId(item: TItem): string {
-		return `s-accordion-content-${item.uid}`
+		return `s-accordion-content-${item.idBase}`
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {

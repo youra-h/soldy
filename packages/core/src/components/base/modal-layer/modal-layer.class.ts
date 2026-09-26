@@ -76,7 +76,8 @@ export default class TModalLayer<
 	/**
 	 * `id` заголовка — одна формула на обе стороны связки. Блок берётся у
 	 * класса (`s-dialog-title-7`, `s-drawer-title-7`): у двух слоёв на
-	 * странице `uid` и так разные, а блок в `id` говорит, чей это заголовок.
+	 * странице основы (`idBase`) и так разные, а блок в `id` говорит, чей это
+	 * заголовок.
 	 */
 	protected readonly _titleId: string
 
@@ -90,7 +91,7 @@ export default class TModalLayer<
 		this._closable = props.closable ?? ctor.defaultValues.closable
 		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._dismissible = props.dismissible ?? ctor.defaultValues.dismissible
-		this._titleId = `${ctor.baseClass}-title-${this.uid}`
+		this._titleId = `${ctor.baseClass}-title-${this.idBase}`
 
 		this._aria.add('role', 'dialog')
 		// Слой модален: скринридер вне его не читает. Это значение, а не

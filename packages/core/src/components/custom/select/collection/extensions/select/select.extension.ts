@@ -100,15 +100,16 @@ export class TSelectExtension<
 	}
 
 	/**
-	 * `id` списка и опций строятся от `uid`: он уникален в рамках сессии,
-	 * поэтому два Select на странице не столкнутся, даже если значения совпали.
+	 * `id` списка и опций строятся от основ (`idBase`) Select и опции: они у
+	 * каждого экземпляра свои, поэтому два Select на странице не столкнутся,
+	 * даже если значения совпали.
 	 */
 	get listId(): string {
-		return `s-select-list-${this._owner.uid}`
+		return `s-select-list-${this._owner.idBase}`
 	}
 
 	optionId(item: TItem): string {
-		return `s-select-option-${item.uid}`
+		return `s-select-option-${item.idBase}`
 	}
 
 	/**

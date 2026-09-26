@@ -296,7 +296,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 		const owner = this._owner
 
-		return !!owner && !!target.closest(`[data-owner="${owner.uid}"]`)
+		return !!owner && !!target.closest(`[data-owner="${owner.idBase}"]`)
 	}
 
 	/**

@@ -51,7 +51,7 @@ const OWNER_ATTRIBUTE = 'data-owner'
  * Как считается «мимо». Панель обычно телепортирована в `body`, то есть
  * лежит вне поддерева владельца — простой `contains()` по корню посчитал бы
  * нажатие внутри панели нажатием снаружи. Поэтому панель помечается
- * `data-owner="<uid владельца>"`, и плагин проверяет обе границы. Это чистый
+ * `data-owner="<idBase владельца>"`, и плагин проверяет обе границы. Это чистый
  * DOM: работает одинаково во всех шести адаптерах и не требует проводки
  * между компонентами.
  *
@@ -91,8 +91,12 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 
 		const instance = ctx.getInstance<object>()
 
-		if (instance) {
-			this._owner = String(Reflect.get(instance, 'uid'))
+		// Основа `id` владельца, а не `uid`: пометка уходит в разметку, и на
+		// сервере и в браузере обязана совпасть (`IComponentView.idBase`)
+		const idBase: unknown = instance ? Reflect.get(instance, 'idBase') : undefined
+
+		if (typeof idBase === 'string') {
+			this._owner = idBase
 		}
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {

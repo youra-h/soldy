@@ -707,7 +707,8 @@ describe('пауза наблюдения панели на уведомлени
 })
 
 describe('нажатие мимо', () => {
-	const setup = async (uid: number, options?: IDismissPluginOptions) => {
+	// Владелец — основа `id` в DOM (`IComponentView.idBase`): ею плагин помечает панель
+	const setup = async (owner: number, options?: IDismissPluginOptions) => {
 		const element = document.createElement('div')
 
 		document.body.appendChild(element)
@@ -715,7 +716,7 @@ describe('нажатие мимо', () => {
 		const elementPlugin = new TElementPlugin()
 		const dismiss = new TDismissPlugin()
 
-		dismiss.install(createPluginContext({ uid }, [elementPlugin]), options)
+		dismiss.install(createPluginContext({ idBase: String(owner) }, [elementPlugin]), options)
 
 		elementPlugin.element = element
 		await nextFrame()
@@ -856,7 +857,7 @@ describe('нажатие мимо', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('ownerAttribute несёт uid владельца — им помечается панель', async () => {
+	it('ownerAttribute несёт основу id владельца — ею помечается панель', async () => {
 		expect((await setup(7)).dismiss.ownerAttribute).toEqual({ 'data-owner': '7' })
 	})
 
@@ -1286,7 +1287,7 @@ describe('нажатие мимо', () => {
 		it('до объявления корня панели нет', () => {
 			const dismiss = new TDismissPlugin()
 
-			dismiss.install(createPluginContext({ uid: 51 }, [new TElementPlugin()]))
+			dismiss.install(createPluginContext({ idBase: '51' }, [new TElementPlugin()]))
 			ownPanel(dismiss, 1001)
 
 			expect(dismiss.findPanel()).toBeNull()

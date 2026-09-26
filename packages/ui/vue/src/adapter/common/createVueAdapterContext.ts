@@ -1,4 +1,4 @@
-import { toRaw } from 'vue'
+import { toRaw, useId } from 'vue'
 import {
 	createAdapterContext,
 	type IAdapterContextConfig,
@@ -29,6 +29,12 @@ function stripTopLevelProxies<T extends object>(value: T): T {
  * расширений по умолчанию обёртка не собирает (см. AGENTS.md, «Vue collection
  * setup»).
  *
+ * Здесь же — основа `id` экземпляра (`idBase`) от `useId`. Счётчик ядра
+ * (`uid`) на сервере общий для всех запросов, и `id` от него расходились при
+ * гидратации, а `useId` Vue выводит из места компонента в дереве. Обёртку
+ * зовёт `setup()` компонента, поэтому у `useId` есть текущий компонент.
+ * Основа, заданная опцией явно, остаётся за тем, кто её задал.
+ *
  * Сигнатура — сама `createAdapterContext`: своих параметров типа у обёртки
  * нет, контракт контекста выводится из дескриптора там же, где и у остальных
  * адаптеров.
@@ -39,8 +45,10 @@ export const createVueAdapterContext: typeof createAdapterContext = (descriptor,
 		{
 			...options,
 			ctrl: options.ctrl !== undefined ? toRaw(options.ctrl) : undefined,
-			options:
-				options.options !== undefined ? stripTopLevelProxies(options.options) : undefined,
+			options: {
+				idBase: useId(),
+				...(options.options !== undefined ? stripTopLevelProxies(options.options) : {}),
+			},
 		},
 		config,
 	)

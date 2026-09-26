@@ -209,7 +209,8 @@ describe('разметка', () => {
 	it('панель помечена владельцем, подложка — нет', async () => {
 		await render()
 
-		expect(panel().dataset.owner).toMatch(/^\d+$/)
+		// Пометка — основа `id` панели (`useId`), а не счётчик ядра
+		expect(panel().dataset.owner).toBeTruthy()
 		expect(backdrop().hasAttribute('data-owner')).toBe(false)
 	})
 

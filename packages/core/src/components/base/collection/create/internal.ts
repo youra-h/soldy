@@ -185,7 +185,7 @@ const ENGINE_OWNERS = new WeakMap<object, unknown>()
  * на `meta`), обязано ставиться после него. Наборы это и задают: `meta` в
  * базовом, `selection` — надстройкой над ним.
  */
-export function attachEngine<TItem extends object, TOwner>(
+export function attachEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 	engine: TCollectionEngine<TItem, any>,
 	set: TExtensionSet<TItem>,
 	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
@@ -220,6 +220,25 @@ export function attachEngine<TItem extends object, TOwner>(
 
 		engine.use(build(owner))
 	}
+
+	bindItemIdBase(engine, owner)
+}
+
+/** Владелец коллекции — визуальный компонент: у него есть основа `id` в DOM. */
+export interface IIdBaseOwner {
+	readonly idBase: string
+}
+
+/**
+ * Основа `id` элементов из данных — от владельца (`TFactoryExtension.bindIdBase`).
+ * Элементы из разметки собирает адаптер со своей основой, фабрика их не строит.
+ * Элементы, созданные до привязки (движок собран снаружи с `items`), остаются
+ * со своей основой — `uid`: такой движок и его `id` — забота того, кто его собрал.
+ */
+function bindItemIdBase(engine: TCollectionEngine<any, any>, owner: IIdBaseOwner): void {
+	const factory: unknown = engine.extensions.factory
+
+	if (factory instanceof TFactoryExtension) factory.bindIdBase(owner.idBase)
 }
 
 /**
@@ -232,14 +251,20 @@ export function attachEngine<TItem extends object, TOwner>(
  * список уровня 1 упадёт на `undefined` ещё до того, как до дополнения дойдёт
  * очередь.
  */
-export function resolveEngine<TItem extends object, TOwner>(
+export function resolveEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 	options: { engine?: unknown; owner?: TOwner },
 	set: TExtensionSet<TItem>,
 	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
 	label: string,
 	build: (owner: TOwner) => TCollectionEngine<TItem, any>,
 ): TCollectionEngine<TItem, any> {
-	if (!options.engine) return build(options.owner as TOwner)
+	if (!options.engine) {
+		const built = build(options.owner as TOwner)
+
+		if (options.owner) bindItemIdBase(built, options.owner)
+
+		return built
+	}
 
 	const engine = options.engine as TCollectionEngine<TItem, any>
 

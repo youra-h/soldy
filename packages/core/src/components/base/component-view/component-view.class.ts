@@ -49,6 +49,7 @@ export default class TComponentView<
 		direction: 'inherit',
 	}
 
+	protected readonly _idBase: string
 	protected _tag: string | object
 	protected _direction: TDirection
 	protected _classes: TClasses
@@ -61,6 +62,8 @@ export default class TComponentView<
 		const ctor = new.target as typeof TComponentView
 
 		super(props, options)
+
+		this._idBase = options.idBase || String(this.uid)
 
 		const rendered = props.rendered ?? ctor.defaultValues.rendered
 		const visible = props.visible ?? ctor.defaultValues.visible
@@ -117,6 +120,16 @@ export default class TComponentView<
 	 */
 	protected get _sink(): TEventSink<TComponentViewEvents> {
 		return this.events
+	}
+
+	/**
+	 * `uid` — счётчик процесса: на сервере он общий для всех запросов, в
+	 * браузере начинается заново, и `id` от него расходились при гидратации.
+	 * Опцию `idBase` адаптер берёт у фреймворка (`useId`), а тот выводит её из
+	 * места компонента в дереве; без опции — `uid`, как раньше.
+	 */
+	get idBase(): string {
+		return this._idBase
 	}
 
 	get present(): boolean {

@@ -63,14 +63,15 @@ export class TRadioGroupExtension<
 	}
 
 	/**
-	 * Общий `name` радио группы — своё имя группы, а без него имя от её `uid`.
+	 * Общий `name` радио группы — своё имя группы, а без него имя от её основы
+	 * (`idBase`).
 	 *
 	 * Без общего `name` браузер не соберёт радио в группу: не будет ни стрелок,
-	 * ни одной остановки Tab, ни снятия отметки с соседа. `uid` уникален в
-	 * рамках сессии, поэтому две безымянные группы на странице не сольются.
+	 * ни одной остановки Tab, ни снятия отметки с соседа. Основа у каждой группы
+	 * своя, поэтому две безымянные группы на странице не сольются.
 	 */
 	get groupName(): string {
-		return this._owner.name || `s-radio-group-${this._owner.uid}`
+		return this._owner.name || `s-radio-group-${this._owner.idBase}`
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {

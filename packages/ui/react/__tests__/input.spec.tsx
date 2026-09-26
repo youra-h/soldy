@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
-import { StrictMode, act, createRef } from 'react'
+import { StrictMode, act, createRef, type ReactElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { TInput, type IInput, type TValuePayload } from '@soldy-ui/core'
@@ -303,15 +303,11 @@ describe('Input · серверный рендер', () => {
 		expect(find(container, 'input', HTMLInputElement).getAttribute('value')).toBe('abc')
 	})
 
-	/**
-	 * `id` задан явно, временно, до
-	 * [869f7k0hu](https://app.clickup.com/t/869f7k0hu): без него поле берёт
-	 * `uid` ядра, счётчик экземпляров у сервера и клиента свой, и React
-	 * сообщает о расхождении атрибута `id`. Это свойство всех автоматических
-	 * `id`, а не поля.
-	 */
-	it('гидратация без расхождений, значение на месте', () => {
-		const element = <Input id="field" value="abc" />
+	/** Сервер и браузер в одном процессе: рендер сервера и гидратация — одна разметка. */
+	function hydrate(element: ReactElement): {
+		container: HTMLElement
+		onRecoverableError: ReturnType<typeof vi.fn>
+	} {
 		const container = document.createElement('div')
 		const onRecoverableError = vi.fn()
 
@@ -322,8 +318,49 @@ describe('Input · серверный рендер', () => {
 			track(hydrateRoot(container, element, { onRecoverableError }))
 		})
 
+		return { container, onRecoverableError }
+	}
+
+	const idsOf = (container: HTMLElement) =>
+		[...container.querySelectorAll('input')].map((input) => input.id)
+
+	/**
+	 * Автоматический `id` поля — основа экземпляра (`idBase`) от `useId`, а не
+	 * `uid` ядра. Счётчик экземпляров у сервера и браузера свой — здесь это
+	 * видно и в одном процессе: рендер сервера уже сдвинул его, и экземпляры
+	 * гидратации получают другие `uid`. От `uid` React сообщил бы о
+	 * расхождении атрибута `id` (сторож консоли уронил бы тест).
+	 */
+	it('гидратация без расхождений, значение на месте', () => {
+		const { container, onRecoverableError } = hydrate(<Input value="abc" />)
+
 		expect(onRecoverableError).not.toHaveBeenCalled()
 		expect(find(container, 'input', HTMLInputElement).value).toBe('abc')
+	})
+
+	it('автоматический id у сервера и браузера один, у соседей — разный', () => {
+		const element = (
+			<div>
+				<Input value="a" />
+				<Input value="b" />
+			</div>
+		)
+		const server = document.createElement('div')
+
+		server.innerHTML = renderToString(element)
+
+		const { container } = hydrate(element)
+		const ids = idsOf(container)
+
+		expect(ids).toEqual(idsOf(server))
+		expect(ids.every((id) => id !== '')).toBe(true)
+		expect(new Set(ids).size).toBe(2)
+	})
+
+	it('заданный id — как есть, на сервере и в браузере', () => {
+		const { container } = hydrate(<Input id="field" value="abc" />)
+
+		expect(idsOf(container)).toEqual(['field'])
 	})
 })
 

@@ -547,9 +547,13 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
-с фабрикой, которая создаёт контекст. Сторож — блок eslint
+с фабрикой, которая создаёт контекст. Собирает фабрика функцией `create`,
+которую ей отдаёт хук, — `(create) => create(XDescriptor(), { ctrl, props })`:
+это `createAdapterContext` с основой `id` от `useId` (см. «`id` в разметке —
+от основы экземпляра»). Сторож — блок eslint
 `soldy/react-components-no-framework` (`eslint.config.ts`): запрещает
-значения из `'react'` (в том числе `React.useRef` через namespace-импорт) в
+значения из `'react'` (в том числе `React.useRef` через namespace-импорт) и
+`createAdapterContext` из `@soldy-ui/setup` в
 `packages/ui/react/src/components/**`, `import type` пропускает.
 
 ### `setup/content/extensions/` — тоже не место для операций над DOM
@@ -1419,8 +1423,8 @@ Vue отдаёт шаблону не `state`, а рефы (`TBinding`: проп�
 
 ```ts
 // content/content.extension.ts — id панели и aria-controls таба это одно и то же
-tabId(item)   { return `s-tab-${item.uid}` }
-panelId(item) { return `s-tabpanel-${item.uid}` }
+tabId(item)   { return `s-tab-${item.idBase}` }
+panelId(item) { return `s-tabpanel-${item.idBase}` }
 ```
 
 Разнеси формулу по разным файлам — однажды разойдутся. Сторону таба
@@ -2064,7 +2068,7 @@ declare module '@soldy-ui/core' {
 
 **Панель помечается владельцем.** Она телепортирована, то есть лежит вне
 поддерева владельца, и простой `contains()` счёл бы нажатие внутри неё
-нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<uid>"` —
+нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<idBase>"` —
 чистый DOM, одинаково во всех шести адаптерах.
 
 **Вложенность слоёв — по номеру, а не по DOM.** Список Select в поповере и
@@ -3070,7 +3074,7 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
   раздаёт каждому радио `TRadioGroupExtension`, а без имени группы строит от её
-  `uid`. Своё `name` у `RadioGroup.Item` поэтому и не вход разметки — оно
+  основы `idBase`. Своё `name` у `RadioGroup.Item` поэтому и не вход разметки — оно
   разбило бы группу на одиночные радио (см. «Переобъявление пропа»); `view`
   раздаёт группа так же. Одну остановку Tab, стрелки по кругу с пропуском выключенных и пробел
   даёт браузер, поэтому клавиатурного плагина и `tabindex` у группы нет. Браузер
@@ -3544,6 +3548,43 @@ Disabled — так же: тема читает `data-disabled`, которое 
 варианта Tailwind `aria-*` в `@apply` и `@variant` — он компилируется в тот же
 селектор. Селектор по нативному атрибуту disabled запрещён там же и
 тем же способом; псевдокласс на вложенном поле фиксированного тега — нет.
+
+### `id` в разметке — от основы экземпляра, а не от `uid`
+
+Всё, что экземпляр пишет в разметку как идентификатор, — `id` поля, панелей
+Popover и Tooltip, заголовка и тела Dialog, списка и опций Select, связок
+табов и секций Accordion, `name` группы радио, пометка панели `data-owner` —
+строится от основы `idBase` (`IComponentView`). `uid` — счётчик экземпляров
+процесса: на сервере он общий для всех запросов, в браузере начинается
+заново, и `id` от него расходились при гидратации. `uid` остаётся
+идентичностью экземпляра внутри процесса — реестр наборов, `unique`, поиск
+элемента.
+
+Основу даёт опция конструктора `idBase` (`IComponentOptions`), без неё — `uid`.
+Кто её задаёт:
+
+- **адаптер** — от `useId` фреймворка, который выводит её из места компонента
+  в дереве. Опцию он кладёт в `options` сборки, и `createAdapterContext`
+  передаёт её конструктору как есть — механика setup о ней не знает. Во Vue это
+  делает `createVueAdapterContext`, в React — `create`, который
+  `useAdapterContext` отдаёт фабрике. Адаптеры Solid, Svelte, Angular и Web
+  Components основу пока не передают: компонентов с `id` в разметке у них нет;
+- **ядро** — тем экземплярам, которые строит само. Элемент коллекции из
+  данных (`items`) создаёт фабрика движка, и `useId` до него не доходит: его
+  основа — `<основа владельца>-item-<номер>`, номер по порядку создания
+  (`TFactoryExtension.bindIdBase`, зовёт `resolveEngine` при привязке движка к
+  владельцу). Поле Select берёт `id` самого Select.
+
+Элемент из разметки фабрика не строит — у него своя основа от адаптера.
+Движок, собранный снаружи с `items` до привязки к владельцу, и внешний `ctrl`
+держат ту основу, с которой их создали: их `id` — забота того, кто их собрал.
+
+Сторожат `core/__tests__/id-base.spec.ts` (формулы и сторож «строка из `uid`
+в `core` и `plugins`» по коду, а не тексту), `ui/vue/__tests__/ssr-ids.spec.ts`
+и `ui/react/__tests__/input.spec.tsx` («Input · серверный рендер») — рендер
+сервера и гидратация без расхождений, — и eslint-блок
+`soldy/react-components-no-framework` (см. «Механизмы фреймворка — только в
+адаптерном слое»).
 
 ### Прочее
 

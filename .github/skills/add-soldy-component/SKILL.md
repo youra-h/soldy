@@ -131,17 +131,16 @@ export type <Name>EventProps = EventProps<typeof <Name>Descriptor>
 export type <Name>Props = UseDomProps<typeof <Name>Descriptor, I<Name>, <Name>EventProps>
 ```
 
-- `setup.component.ts`: one hook that creates the adapter context once per component lifetime. The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`: the eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes):
+- `setup.component.ts`: one hook that creates the adapter context once per component lifetime. The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`. The factory builds the context with `create`, which the hook hands it: `createAdapterContext` plus the instance id base (`idBase`) from `useId`, so ids in markup match between server and client (AGENTS.md, «`id` в разметке — от основы экземпляра»). The eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes) and on importing `createAdapterContext`:
 
 ```ts
-import { createAdapterContext, <Name>Descriptor } from '@soldy-ui/setup'
-import type { I<Name> } from '@soldy-ui/core'
+import { <Name>Descriptor } from '@soldy-ui/setup'
 import { useAdapter, useAdapterContext } from '../../adapter'
 import type { <Name>Props } from './base.component'
 
 export function useSetup<Name>(props: <Name>Props) {
-  const adapter = useAdapterContext<I<Name>>(() =>
-    createAdapterContext(<Name>Descriptor(), { ctrl: props.ctrl, props }),
+  const adapter = useAdapterContext((create) =>
+    create(<Name>Descriptor(), { ctrl: props.ctrl, props }),
   )
 
   return useAdapter(adapter, props)

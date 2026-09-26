@@ -93,7 +93,7 @@ export interface IComponent<
 
 /**
  * Внутренние настройки компонента (второй аргумент конструктора).
- * states — инъекция state-реализаций.
+ * states — инъекция state-реализаций, idBase — основа `id` в DOM.
  */
 export interface IComponentOptions<TStates = any> {
 	/**
@@ -101,4 +101,9 @@ export interface IComponentOptions<TStates = any> {
 	 * Нужна, чтобы менять поведение state свойств без оверрайда геттеров/сеттеров.
 	 */
 	states?: Partial<TStates>
+	/**
+	 * Основа `id`, которые экземпляр пишет в DOM (`IComponentView.idBase`).
+	 * Читает её визуальный слой; пустая строка — то же, что не задана.
+	 */
+	idBase?: string
 }

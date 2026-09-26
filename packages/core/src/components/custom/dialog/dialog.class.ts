@@ -172,7 +172,7 @@ export default class TDialog
 
 	/** `id` тела — одна формула на обе стороны связки. */
 	protected get _bodyId(): string {
-		return `s-dialog-body-${this.uid}`
+		return `s-dialog-body-${this.idBase}`
 	}
 
 	protected _applyAlert(value: boolean): void {
