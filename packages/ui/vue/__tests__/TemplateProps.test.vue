@@ -29,6 +29,7 @@ import {
 	Label,
 	ListBox,
 	Popover,
+	ProgressLinear,
 	RadioGroup,
 	Scroller,
 	Select,
@@ -150,6 +151,11 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Popover :lazyMount="'yes'" />
 	<Popover lazyMount />
+
+	<!-- @vue-expect-error — доля числом или null, а не строкой -->
+	<ProgressLinear value="40" />
+	<ProgressLinear :value="40" />
+	<ProgressLinear :value="null" />
 
 	<!-- @vue-expect-error — имя кнопки ленты строкой -->
 	<Scroller :prevLabel="42" />

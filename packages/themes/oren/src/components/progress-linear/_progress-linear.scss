@@ -1,0 +1,188 @@
+@use './mixins' as mixines;
+
+// ProgressLinear — индикатор выполнения линией: доля готового, когда она
+// известна, и бег, когда неизвестна.
+//
+// От ядра на корне приходят:
+//
+// - `--s-progress-linear-percent` в `style` — доля готового процентом от
+//   `min` до `max`, с `%`. Пока доля неизвестна, переменной нет;
+// - `data-indeterminate` — `true`, пока доля неизвестна.
+//
+// Корень и есть дорожка. Раскладка — логическими свойствами: заливка растёт от
+// начала строки (`inset-inline-start`) и в RTL встаёт справа сама, без
+// селектора по направлению. Бег идёт сдвигом (`translate`): сдвиг и
+// прозрачность браузер анимирует вне главного потока, и отрезок бежит, даже
+// пока страница занята той самой длинной операцией, ради которой индикатор
+// показан. Но у сдвига нет логических направлений, поэтому бег зеркалит
+// атрибут `dir` (`$rtl` ниже).
+.s-progress-linear {
+	$this: &;
+
+	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
+	// и без него обязан выглядеть умолчанием.
+	@include mixines.progress-linear-size('normal');
+
+	// Блочный при любом теге, во всю ширину контейнера: полосу меряют длиной, а
+	// не содержимым. Скругление и обрезка — у дорожки: заливка у начала и
+	// бегущий отрезок у краёв уходят под её скругление.
+	@apply relative block overflow-hidden rounded-full;
+	background-color: var(--s-progress-linear-track);
+	transition: background-color 250ms linear;
+
+	// Заливка — от начала дорожки на долю готового. Переход длины добавляет
+	// только блок `prefers-reduced-motion: no-preference` ниже: при просьбе
+	// системы убрать движение заливка встаёт на новую долю сразу.
+	&__range {
+		@apply absolute rounded-full;
+		inset-block: 0;
+		inset-inline-start: 0;
+		inline-size: var(--s-progress-linear-percent, 0%);
+		background-color: var(--s-progress-linear-fill);
+		transition-property: background-color;
+		transition-duration: 250ms;
+		transition-timing-function: linear;
+	}
+
+	// Доля неизвестна — заливки нет, по дорожке идёт отрезок цвета заливки.
+	//
+	// Заливка спрятана (`visibility`), а не убрана из раскладки (`display`):
+	// переменной доли у корня нет, и длина заливки, пока она спрятана, уходит
+	// к нулю. Когда доля снова известна, заливка идёт к ней от начала дорожки
+	// тем же переходом, что и при смене доли; из `display: none` перехода не
+	// было бы, и заливка возникла бы сразу на новой доле.
+	//
+	// Отрезок — псевдоэлемент корня, своего узла у него нет. Здесь он без
+	// движения: во всю дорожку и дышит прозрачностью — так бег выглядит при
+	// просьбе системы убрать движение. Прозрачность — не движение, а полной
+	// плотности отрезок не набирает: целиком залитая дорожка читалась бы как
+	// «готово». Бегом его делает блок `prefers-reduced-motion: no-preference`
+	// ниже.
+	&[data-indeterminate='true'] {
+		> #{$this}__range {
+			@apply invisible;
+		}
+
+		&::after {
+			content: '';
+			@apply absolute inset-0 rounded-full;
+			background-color: var(--s-progress-linear-fill);
+			animation: s-progress-linear-pulse 2s ease-in-out infinite;
+		}
+	}
+
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.progress-linear-size($size);
+		}
+	}
+
+	@each $variant, $color in mixines.$variants {
+		&--variant-#{$variant} {
+			@include mixines.progress-linear-colors($color);
+		}
+	}
+}
+
+// Вид блока без варианта — `accent`, как у Spinner: индикатор сообщает о
+// работе системы, а не просит действия, и у одной семьи индикаторов один цвет.
+// Модификатору `accent` правило не нужно, он совпадает с базой, а `normal` —
+// нейтраль. Нулевая специфичность — вариант перекрывает базу, не споря с ней.
+:where(.s-progress-linear) {
+	@include mixines.progress-linear-colors('accent');
+}
+
+// Длина по умолчанию — нулевой специфичности: класс или стиль потребителя её
+// перекрывает, не споря.
+//
+// Нижняя граница — та же, что у поля Input и ползунка (`min-w-40`). Своего
+// содержимого по ширине у полосы нет, и там, где ширину берут по содержимому
+// (строчный флекс, кнопка), она схлопнулась бы в ноль.
+:where(.s-progress-linear) {
+	@apply min-w-40;
+}
+
+// Правое-левое письмо: сам корень с атрибутом или любой предок с ним.
+//
+// Атрибут, а не `:dir(rtl)`: сборка темы даунлевелит `:dir()` в список
+// `:lang()` (подробности — в `AGENTS.md` пакета), и полоса с `dir="rtl"` на
+// русской странице бежала бы не в ту сторону. Заливке селектор не нужен — она
+// логическая и считается по настоящей направленности.
+$rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
+
+// Движение — только когда система о нём не просила.
+//
+// Доля меняется плавно: новые значения приходят шагами — по файлу, по порции
+// данных, — и переход ведёт глаз от прежней доли к новой. Кривая линейная, а
+// переход короткий: при частых обновлениях каждый следующий начинается с
+// места, где застал заливку, и с замедлением к концу, как у `ease-out`,
+// заливка шла бы толчками.
+//
+// Бег — отрезок в две пятых дорожки выходит из-за её начала и уходит за
+// конец: сдвиг от `-100%` до `250%` его собственной длины. Скорость
+// постоянная: с разгоном и торможением отрезок подолгу висел бы у краёв узкой
+// полоской — у `ease-in-out` так проходит больше трети круга, — и дорожка
+// казалась бы пустой, будто работа встала.
+@media (prefers-reduced-motion: no-preference) {
+	.s-progress-linear__range {
+		transition-property: background-color, inline-size;
+	}
+
+	.s-progress-linear[data-indeterminate='true']::after {
+		inset-inline-end: auto;
+		inline-size: 40%;
+		animation: s-progress-linear-run 1.6s linear infinite;
+	}
+
+	#{$rtl}[data-indeterminate='true']::after {
+		animation-name: s-progress-linear-run-rtl;
+	}
+}
+
+@keyframes s-progress-linear-run {
+	from {
+		translate: -100%;
+	}
+
+	to {
+		translate: 250%;
+	}
+}
+
+// Тот же бег в RTL: отрезок стоит у начала строки, то есть справа, выходит
+// из-за правого края и уходит за левый.
+@keyframes s-progress-linear-run-rtl {
+	from {
+		translate: 100%;
+	}
+
+	to {
+		translate: -250%;
+	}
+}
+
+@keyframes s-progress-linear-pulse {
+	0%,
+	100% {
+		opacity: 0.15;
+	}
+
+	50% {
+		opacity: 0.6;
+	}
+}
+
+// Принудительные цвета (высокий контраст Windows): браузер заменяет фоны
+// системным цветом поверхности, и от полосы не осталось бы ничего — ни
+// дорожки, ни заливки. Цвета — те же, что у ползунка.
+@media (forced-colors: active) {
+	.s-progress-linear {
+		forced-color-adjust: none;
+		background-color: GrayText;
+	}
+
+	.s-progress-linear__range,
+	.s-progress-linear::after {
+		background-color: Highlight;
+	}
+}

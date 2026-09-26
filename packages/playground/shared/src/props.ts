@@ -250,6 +250,11 @@ const OWN: Record<string, Record<string, string>> = {
 	spinner: {
 		borderWidth: 'Толщина дуги',
 	},
+	'progress-linear': {
+		value: 'Сколько готово — число от min до max. Пусто — доля неизвестна, и полоса бежит',
+		min: 'Начало шкалы',
+		max: 'Конец шкалы',
+	},
 	skeleton: {
 		shape: 'Форма заглушки',
 		animation: 'Анимация ожидания',
@@ -369,6 +374,12 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		snap: { marks: SNAP_MARKS },
 		// Радиус без режима и меток ни на что не влияет
 		snapRadius: { snap: 'magnet', marks: SNAP_MARKS },
+	},
+	'progress-linear': {
+		// Шкала двигает долю, а пока доля неизвестна, полоса бежит и шкалы не
+		// показывает
+		min: { value: 40 },
+		max: { value: 40 },
 	},
 }
 

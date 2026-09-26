@@ -12,6 +12,20 @@ export function clamp(value: number, low: number, high: number): number {
 }
 
 /**
+ * Доля значения на отрезке `[min, max]` — от 0 до 1: вне отрезка — край,
+ * `NaN` — начало. У пустого отрезка (`max` не больше `min`) доли нет, и
+ * значение стоит в начале.
+ *
+ * Формула одна на ядро: доля хода у шкалы ползунка и доля готового у
+ * индикатора выполнения, которому шкала с шагом не нужна.
+ */
+export function fractionOf(value: number, min: number, max: number): number {
+	const span = max - min
+
+	return span > 0 ? clamp((value - min) / span, 0, 1) : 0
+}
+
+/**
  * Сколько шагов делает сдвиг: целое число. Дробное округляется, `NaN` — ни
  * одного шага, а бесконечность доводит до края.
  */
@@ -43,9 +57,7 @@ export abstract class TScale implements IScale {
 	abstract shift(value: number, count: number): number
 
 	fraction(value: number): number {
-		const span = this.max - this.min
-
-		return span > 0 ? clamp((value - this.min) / span, 0, 1) : 0
+		return fractionOf(value, this.min, this.max)
 	}
 
 	valueAt(fraction: number): number {

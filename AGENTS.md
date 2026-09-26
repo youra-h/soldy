@@ -2865,18 +2865,18 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                                                                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                  |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                              |
-| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                 |
-| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                  |
-| `TListItemPlugin`      | `data-highlighted`                                                                                                                                              |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                             |
-| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                               |
-| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                          |
-| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                        |
-| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider` |
+| Источник               | Что пишет                                                                                                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                                                            |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                                                        |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                                                           |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                                                            |
+| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                                                        |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                                                       |
+| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                                                         |
+| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                                                                    |
+| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                                                  |
+| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider`, `data-indeterminate` у `TProgressLinear` |
 
 Два правила, которые легко нарушить:
 
@@ -3325,6 +3325,22 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/slider.spec.ts` и `playground/vue/browser/slider.spec.ts`.
+- **ProgressLinear** — индикатор выполнения линией, роль `progressbar` на
+  корне. `aria-valuemin` и `aria-valuemax` стоят всегда, `aria-valuenow` —
+  только при известной доле: неопределённый индикатор объявляется без него,
+  и скринридер не прочтёт «0 %». Доля неизвестна — это `value: null` (по
+  умолчанию), а не флаг рядом со значением: пара допускала бы бег с долей.
+  Значение хранится как задано, границы шкалы действуют только в выходах:
+  доля (`percentStyle`, переменная `--s-progress-linear-percent`) прижата к
+  0–100 %, `aria-valuenow` — к `[min, max]`, и полоса со скринридером
+  показывают одно и то же. Имя — `aria_label` или `aria_labelledBy`
+  (`TAriaPlugin` без `role`, как у Spinner). Содержимого и слотов нет: дети
+  `progressbar` презентационные, скринридер их не читает, — подпись и число
+  потребитель ставит рядом и связывает через `aria_labelledBy`. Бег и
+  переход доли — тема, по `data-indeterminate` и переменной доли. Сторожат
+  `core/__tests__/progress-linear.spec.ts`,
+  `ui/vue/__tests__/progress-linear.spec.ts` и
+  `playground/vue/browser/progress-linear.spec.ts`.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only

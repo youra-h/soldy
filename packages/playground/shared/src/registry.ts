@@ -17,6 +17,7 @@ import {
 	ListBoxDescriptor,
 	ListBoxCollectionDescriptor,
 	PopoverDescriptor,
+	ProgressLinearDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
 	ScrollerDescriptor,
@@ -207,6 +208,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Индикатор ожидания',
+	},
+	{
+		id: 'progress-linear',
+		label: 'ProgressLinear',
+		descriptor: ProgressLinearDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Индикатор выполнения линией: доля готового, а пока она неизвестна — бег',
 	},
 	{
 		id: 'skeleton',

@@ -233,14 +233,16 @@ Tabs взяли из этой пары первую ступень: 300 и в п
 пропустит. Сверяет `__tests__/theme-values.spec.ts`. Обратное не требуется:
 значению, которое совпадает с видом по умолчанию, правило не нужно
 (`--view-line` у Tabs, `--view-outlined` у CheckBox, `--shape-rounded`,
-`--animation-pulse`, `--variant-normal` у всех, кроме Spinner).
+`--animation-pulse`, `--variant-normal` у всех, кроме Spinner и
+ProgressLinear).
 
 **Вид по умолчанию — на самом блоке.** У компонента без значения модификатора
 нет, и блок выглядит прежним умолчанием: Button — `filled` с нейтралью,
-Spinner — `accent`, Tabs — `line`, Skeleton — `rounded` и `pulse`, элемент
-RadioGroup — `dot` с нейтралью, CheckBox — `outlined` с нейтралью, Input и
-Switch — нейтраль. Корень базового вида — `:where(.s-<блок>)`, нулевая
-специфичность: модификатор перекрывает базу, не споря с ней.
+Spinner и ProgressLinear — `accent`, Tabs — `line`, Skeleton — `rounded` и
+`pulse`, элемент RadioGroup — `dot` с нейтралью, CheckBox — `outlined` с
+нейтралью, Input и Switch — нейтраль. Корень базового вида —
+`:where(.s-<блок>)`, нулевая специфичность: модификатор перекрывает базу, не
+споря с ней.
 
 **Вид по контексту.** Раньше строки ListBox, Accordion и Select, крестики Tabs
 и Tags и очистку Select разметка рисовала с `view="plain"`, строку таба — с
@@ -507,6 +509,11 @@ Rendering: она меняет сами цвета, а не только отв�
   `prefers-reduced-motion` (`playground/vue/browser/dialog.spec.ts`). Быстро
   ли и плавно ли это — видно лишь на стенде: обе схемы, окно поверх окна,
   предупреждение.
+- **бег ProgressLinear** (`progress-linear/_progress-linear.scss`). Длина
+  отрезка, его скорость и плотности пульса в режиме «меньше движения»
+  подобраны глазом. Смотреть на стенде: узкая и широкая полоса — скорость
+  отрезка растёт с длиной дорожки, — RTL, обе схемы и пульс рядом с залитой
+  до конца полосой: он не должен читаться как «готово».
 
 ## Открытый вопрос
 
