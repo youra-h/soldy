@@ -42,7 +42,7 @@ export type TPropControl = TPropOwner & {
 	options?: readonly string[]
 	description: string
 	/**
-	 * Значение по умолчанию из декларации пропа (`IPropDeclaration.default`).
+	 * Значение по умолчанию из описания пропа (`TPropSpec.default`).
 	 *
 	 * Значим ключ, а не значение: объявленное умолчание бывает и `undefined`
 	 * (`closable` у элемента Tabs и Tags). Ключа нет — умолчания у пропа нет.
