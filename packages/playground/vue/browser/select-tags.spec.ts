@@ -769,6 +769,12 @@ describe('tags_overflow: scroll — подсказка у края вместо 
  * крестик на 4px: от кольца оставались одни боковые дуги. Запас под кольцо —
  * паддинг ряда (`tags/_tags.scss`). Высоты поля он не меняет, и за рамку ряд
  * не выводит — это сторожат тесты режима выше.
+ *
+ * По строке запаса в поле нет, хотя у самостоятельного ряда `scroll` он есть
+ * (`tags-overflow.spec.ts`): у пилюли в поле нет остановки Tab, и её кольцо
+ * не рисуется, а крестик отступает от края пилюли — его кольцу есть куда
+ * выйти. Правило поля запас по строке снимает, и теги стоят вплотную к краю
+ * ряда, как в `wrap`.
  */
 describe('tags_overflow: scroll — кольцо фокуса крестика', () => {
 	it('ряд не срезает кольцо сверху и снизу', async () => {
@@ -785,6 +791,21 @@ describe('tags_overflow: scroll — кольцо фокуса крестика',
 		expect(document.activeElement, 'фокус на крестике').toBe(close)
 
 		expectRingInsideVertically(close, find('.s-select__field .s-tags'), 'крестик')
+	})
+
+	/**
+	 * Запас самостоятельного ряда по строке сдвинул бы теги поля от края ряда
+	 * на просвет слота — переменная запаса в поле другая, а правило то же.
+	 */
+	it('первый тег стоит вплотную к началу ряда', async () => {
+		render(pairHarness({ value: ALL_VALUES, texts: OPTIONS, overflow: 'scroll' }))
+
+		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
+
+		const row = find('.s-select__field .s-tags')
+
+		expect(row.scrollLeft, 'ряд в начале прокрутки').toBe(0)
+		expect(box(fieldTags()[0]).left - box(row).left, 'от начала ряда до тега').toBeCloseTo(0, 1)
 	})
 })
 
