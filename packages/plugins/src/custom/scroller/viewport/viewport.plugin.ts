@@ -5,10 +5,12 @@ import { TElementPlugin } from '../../element'
 import { tabStops } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import { resolveEdges } from './edges'
-import type { TScrollerViewportPluginEvents } from './types'
+import { resolveFocusShift } from './focus'
+import type { TInlineSpan, TScrollerViewportPluginEvents } from './types'
 
 /**
- * TScrollerViewportPlugin — вьюпорт ленты: замер краёв и само листание.
+ * TScrollerViewportPlugin — вьюпорт ленты: замер краёв, само листание и
+ * доводка элемента под фокусом в окно снапа.
  *
  * Плагин, а не расширение или разметка: и то, и другое здесь — операции над
  * DOM. Где сейчас лента, сколько у неё содержимого и есть ли внутри свои
@@ -26,6 +28,27 @@ import type { TScrollerViewportPluginEvents } from './types'
  * Писать в DOM прямо из колбэка наблюдателя нельзя: петля
  * `ResizeObserver loop completed with undelivered notifications` роняет
  * браузерный прогон (сторож `playground/vue/browser/setup.ts`).
+ *
+ * **Фокус.** Элемент под фокусом браузер докручивает, только если тот целиком
+ * ушёл из окна снапа, а частично видимый оставляет на месте — у края, под
+ * подсказкой темы. Поэтому по `focusin` плагин доводит элемент в окно сам
+ * (счёт — `resolveFocusShift`). Окно — паддинг-бокс вьюпорта без
+ * `scroll-padding`: ширину подсказки знает только тема, и она же делает окно
+ * чистой частью ленты. Три решения:
+ * - только фокус с клавиатуры (`:focus-visible`). Фокус от нажатия мышью
+ *   браузер сам не докручивает, и правильно: сдвинься лента между нажатием и
+ *   отпусканием, под указателем оказался бы другой элемент, и `click` не
+ *   дошёл бы;
+ * - сдвиг синхронный, прямо в обработчике, и мгновенный (`instant`). Фокус
+ *   браузер докручивает и сам, тоже мгновенно: после `focus()` — сразу за
+ *   `focusin`, и плавную анимацию он бы перебил, а после нашего сдвига ему уже
+ *   нечего делать. При переходе Tab он докручивает ещё до `focusin`, и
+ *   элемент, целиком ушедший из окна, плагин застаёт уже в окне;
+ * - сдвиг — к точке снапа элемента ленты (прямого ребёнка вьюпорта), при
+ *   которой элемент под фокусом в окне, а у элемента шире окна — к ближайшей
+ *   такой. Точка — потому что снап действует и на программную прокрутку и
+ *   вернул бы ленту к соседней; ближайшая — потому что с одним «начало к
+ *   началу» крестик в конце длинного тега остался бы за краем.
  */
 export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerViewportPluginEvents> {
 	private _owner: IScroller | null = null
@@ -101,6 +124,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		// положение не изменилось, — а нам нужен пересчёт и тогда. Поток
 		// `scroll` гасится кадром, как и остальные поводы
 		viewport?.addEventListener('scroll', this._onSchedule)
+		viewport?.addEventListener('focusin', this._onFocusIn)
 
 		if (this._viewport) {
 			this._mutation ??= new MutationObserver(this._onSchedule)
@@ -116,6 +140,7 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 
 		root?.removeEventListener('click', this._onClick)
 		viewport?.removeEventListener('scroll', this._onSchedule)
+		viewport?.removeEventListener('focusin', this._onFocusIn)
 
 		this._mutation?.disconnect()
 	}
@@ -239,6 +264,32 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		if (this._owns(target.closest(this._selector('__next')))) this._owner?.scrollNext()
 	}
 
+	/**
+	 * Фокус с клавиатуры пришёл в ленту — довести элемент под ним в окно
+	 * снапа (почему так — в описании плагина).
+	 *
+	 * Сам вьюпорт — остановка Tab ленты без своих остановок: он и есть окно, и
+	 * доводить его некуда.
+	 */
+	private readonly _onFocusIn = (event: FocusEvent): void => {
+		const viewport = this._viewport
+		const target = event.target
+
+		if (!viewport || !(target instanceof Element) || target === viewport) return
+
+		if (!target.matches(':focus-visible')) return
+
+		const style = getComputedStyle(viewport)
+		const shift = resolveFocusShift({
+			snapport: snapportOf(viewport, style),
+			focused: target.getBoundingClientRect(),
+			item: itemOf(target, viewport).getBoundingClientRect(),
+			rtl: style.direction === 'rtl',
+		})
+
+		if (shift !== null) viewport.scrollBy({ left: shift, behavior: 'instant' })
+	}
+
 	private _owns(node: Element | null): boolean {
 		if (node === null) return false
 
@@ -266,4 +317,48 @@ function prefersReducedMotion(): boolean {
 	return (
 		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 	)
+}
+
+/**
+ * Окно снапа вьюпорта по строке: паддинг-бокс (`clientLeft`, `clientWidth` —
+ * без рамки и полосы прокрутки) без вычисленного `scroll-padding` с каждой
+ * стороны. Стороны физические: логический `scroll-padding-inline` браузер
+ * отдаёт уже разложенным по ним.
+ */
+function snapportOf(viewport: Element, style: CSSStyleDeclaration): TInlineSpan {
+	const left = viewport.getBoundingClientRect().left + viewport.clientLeft
+	const width = viewport.clientWidth
+
+	return {
+		left: left + insetOf(style.scrollPaddingLeft, width),
+		right: left + width - insetOf(style.scrollPaddingRight, width),
+	}
+}
+
+/**
+ * Отступ окна снапа с одной стороны, в px. Процент считается от ширины
+ * области прокрутки. `auto` спецификация оставляет браузеру и советует ноль —
+ * ноль и считается.
+ */
+function insetOf(value: string, width: number): number {
+	const length = parseFloat(value)
+
+	if (!Number.isFinite(length)) return 0
+
+	return value.endsWith('%') ? (length * width) / 100 : length
+}
+
+/**
+ * Элемент ленты, в котором лежит узел, — его предок, который прямой ребёнок
+ * вьюпорта. Точки снапа тема ставит на них, а содержимое лежит во вьюпорте
+ * без обёрток.
+ */
+function itemOf(node: Element, viewport: Element): Element {
+	let item = node
+
+	while (item.parentElement !== null && item.parentElement !== viewport) {
+		item = item.parentElement
+	}
+
+	return item
 }

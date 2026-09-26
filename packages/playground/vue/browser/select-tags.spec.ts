@@ -26,6 +26,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
+import { expectClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
@@ -651,41 +652,6 @@ describe.each(SINGLE_ROW_MODES)('tags_overflow: $overflow', ({ overflow, settled
 })
 
 /**
- * Маска подсказки у края ряда, как её отдаёт браузер: градиент по строке в
- * четыре ступени (`tags/_tags.scss`) — прозрачное у края, непрозрачное со
- * второй ступени по третью и снова прозрачное у другого края.
- */
-const FADE_MASK = new RegExp(
-	[
-		String.raw`^linear-gradient\(to (?<to>left|right)`,
-		String.raw`rgba\(0, 0, 0, 0\) 0px`,
-		String.raw`rgb\(0, 0, 0\) (?<from>[\d.]+)px`,
-		String.raw`rgb\(0, 0, 0\) (?:100%|calc\(100% - (?<until>[\d.]+)px\))`,
-		String.raw`rgba\(0, 0, 0, 0\) 100%\)$`,
-	].join(', '),
-)
-
-/**
- * Сколько гаснет у левого и у правого края узла — по вычисленной маске, то
- * есть то, что видно, а не переменные темы.
- *
- * У края, от которого идёт градиент, гаснет до второй ступени, у другого —
- * сколько третьей не хватает до 100%. Направление градиента переводит их в
- * левый и правый край: в RTL маска развёрнута.
- */
-const fades = (element: Element) => {
-	const mask = getComputedStyle(element).maskImage
-	const stops = FADE_MASK.exec(mask)?.groups
-
-	if (!stops) throw new Error(`маска подсказки не разобрана: ${mask}`)
-
-	const from = Number(stops.from)
-	const until = stops.until ? Number(stops.until) : 0
-
-	return stops.to === 'right' ? { left: from, right: until } : { left: until, right: from }
-}
-
-/**
  * Ряд `scroll` в поле — без полосы прокрутки: её место под тегами поле
  * постоянной высоты не отдаёт. Листают ряд пальцем, трекпадом и колесом с
  * Shift, а где ещё есть теги, подсказывает маска у края (`tags/_tags.scss`).
@@ -789,17 +755,7 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 			await nextFrame()
 			await nextFrame()
 
-			const bounds = box(row())
-			const fade = fades(row())
-			const button = box(close)
-
-			// Допуск на субпиксели
-			expect(button.left, `крестик ${index}: левый край`).toBeGreaterThanOrEqual(
-				bounds.left + fade.left - 0.5,
-			)
-			expect(button.right, `крестик ${index}: правый край`).toBeLessThanOrEqual(
-				bounds.right - fade.right + 0.5,
-			)
+			expectClearOfFades(close, row(), `крестик ${index}`)
 		}
 	})
 })
