@@ -125,7 +125,8 @@ if (props.control.scope === 'plugin') {
  * умолчания (`mode` фасадов) остаётся как есть. Значим ключ, а не значение:
  * объявленное `undefined` (`aria_label`) тоже умолчание. Запись `undefined`
  * мимо этого правила дала бы значение вне типа свойства — у ProgressLinear
- * полосу на нуле вместо бега.
+ * шкалу без конца (`aria-valuemax="undefined"`), у Tooltip подсказку без
+ * задержки.
  */
 function write(next: unknown): void {
 	const control = props.control

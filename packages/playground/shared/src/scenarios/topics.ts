@@ -18,4 +18,10 @@ export const TOPICS: readonly TTopic[] = [
 		label: 'Slots',
 		description: 'Как содержимое слотов ложится в разметку при разном содержимом и ширине',
 	},
+	{
+		id: 'motion',
+		label: 'Motion',
+		description:
+			'Как компонент движется: анимации и переходы темы, которые оценивает только глаз',
+	},
 ]
