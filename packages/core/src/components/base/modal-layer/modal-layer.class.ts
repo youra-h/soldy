@@ -37,6 +37,12 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  * **Размер — значение, раскладка — тема.** Ширина и высота уходят теме
  * переменными раскладки наследника (`TDialogLayoutPlugin`,
  * `TDrawerLayoutPlugin`); не заданы — размер выбирает тема.
+ *
+ * **Открытость — `data-open`** у панели и подложки. По нему тема ведёт
+ * переход к закрытому виду и обратно: окно гаснет и проявляется, панель
+ * уезжает за край и въезжает. Своего появления и исчезания у ядра нет — ни
+ * «присутствия», ни хуков под анимацию: закрытый слой спрятан `visible`, а
+ * переход до скрытия и после показа держит CSS.
  */
 export default class TModalLayer<
 	TProps extends IModalLayerProps = IModalLayerProps,
@@ -92,6 +98,9 @@ export default class TModalLayer<
 		this._aria.add('aria-modal', 'true')
 		// Имя — заголовок. Ссылка стоит всегда: заголовок рисуется всегда
 		this._aria.add('aria-labelledby', this._titleId)
+
+		this._applyOpen()
+		this.events.on('change:visible', () => this._applyOpen())
 	}
 
 	/**
@@ -216,18 +225,33 @@ export default class TModalLayer<
 	}
 
 	/**
-	 * `data-*` подложки — тот же номер слоя, что у панели.
+	 * `data-*` подложки — тот же номер слоя и та же открытость, что у панели.
 	 *
 	 * Подложка — сосед панели, и нажатие по ней для плагинов слоя — нажатие
 	 * мимо. Но слой бывает открыт поверх слоя, и для нижнего подложка верхнего
 	 * — нажатие в слой выше своего, то есть внутри: без номера нажатие по
 	 * подложке верхнего окна закрыло бы оба. Пометки владельцем (`data-owner`)
 	 * у подложки нет: для своего слоя она — мимо.
+	 *
+	 * Открытость — чтобы подложка гасла вместе с панелью: экземпляра у неё нет,
+	 * и `data-open` ей отдаёт этот набор.
 	 */
 	get backdropDataset(): TDatasetAttributes {
 		const layer = this._dataset.get(FRAME_LAYER_ATTRIBUTE)
 
-		return layer === undefined ? {} : { [FRAME_LAYER_ATTRIBUTE]: layer }
+		return {
+			...(layer === undefined ? {} : { [FRAME_LAYER_ATTRIBUTE]: layer }),
+			'data-open': String(this.visible),
+		}
+	}
+
+	/**
+	 * Открытость — теме: по `data-open` она ведёт переход к закрытому виду, и
+	 * переходу до скрытия есть к чему идти. Второй записи состояния тут нет —
+	 * это проекция `visible` в набор, как `data-open` у Popover.
+	 */
+	private _applyOpen(): void {
+		this._dataset.add('open', this.visible)
 	}
 
 	override getProps(): TProps {

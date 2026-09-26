@@ -7,8 +7,9 @@
  * кнопки шапки говорят с ядром, три причины закрытия проходят через запрос, а
  * окно поверх окна и Select внутри закрывают только свой слой.
  *
- * Раскладку и действие `mousedown` jsdom не выполняет: место, размер и то,
- * что нажатие по подложке не уносит фокус, — `playground/vue/browser/dialog.spec.ts`.
+ * Раскладку, переходы темы и действие `mousedown` jsdom не выполняет: место,
+ * размер, появление и исчезание и то, что нажатие по подложке не уносит
+ * фокус, — `playground/vue/browser/dialog.spec.ts`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -172,6 +173,25 @@ describe('разметка', () => {
 
 		expect(panel().classList).toContain('s-dialog--placement-end')
 		expect(panel().dataset.maximized).toBe('false')
+	})
+
+	/** По нему тема гасит закрытое окно вместе с подложкой. */
+	it('открытость — data-open у панели и подложки, туда и обратно', async () => {
+		const shown = await render()
+
+		expect(panel().dataset.open).toBe('false')
+		expect(backdrop().dataset.open).toBe('false')
+
+		await open(shown)
+
+		expect(panel().dataset.open).toBe('true')
+		expect(backdrop().dataset.open).toBe('true')
+
+		shown.value = false
+		await settle()
+
+		expect(panel().dataset.open).toBe('false')
+		expect(backdrop().dataset.open).toBe('false')
 	})
 
 	it('размер — переменными темы, не инлайном', async () => {

@@ -57,8 +57,15 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				titleAria: { type: Object, protected: true, triggers: ['bundle:create'] },
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
-				/** Номер слоя у подложки: он у неё тот же, что у панели. */
-				backdropDataset: { type: Object, protected: true, triggers: ['change:zIndex'] },
+				/**
+				 * Номер слоя и открытость у подложки: они у неё те же, что у
+				 * панели. По открытости подложка гаснет вместе с панелью.
+				 */
+				backdropDataset: {
+					type: Object,
+					protected: true,
+					triggers: ['change:zIndex', 'change:visible'],
+				},
 			},
 			/**
 			 * Пользователь закрывает панель: кнопкой, нажатием мимо, Escape или

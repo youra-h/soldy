@@ -21,6 +21,7 @@ import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
 
 import { reducedMotion } from './media'
+import { durationOf, settled, transitionOf, transitioning } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -140,42 +141,6 @@ const handle = () => find('.s-drawer__handle')
 const opener = () => find('.s-test-opener')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
-
-/** Переходы на узле — въезд и выезд доигрывают, прежде чем мерить. */
-const settled = (element: Element) =>
-	Promise.all(element.getAnimations().map((animation) => animation.finished))
-
-/** Свойства, которые на узле сейчас идут CSS-переходом. */
-const transitioning = (element: Element): string[] =>
-	element
-		.getAnimations()
-		.filter((animation) => animation instanceof CSSTransition)
-		.map((animation) => animation.transitionProperty)
-
-/** CSS-переход свойства на узле; нет его — тест падает здесь, а не на чтении. */
-const transitionOf = (element: Element, property: string): CSSTransition => {
-	const found = element
-		.getAnimations()
-		.find(
-			(animation) =>
-				animation instanceof CSSTransition && animation.transitionProperty === property,
-		)
-
-	if (!(found instanceof CSSTransition)) throw new Error(`${property}: перехода нет`)
-
-	return found
-}
-
-/** Длительность перехода, мс. `effect` бывает `null`, а `duration` — не только числом. */
-const durationOf = (transition: CSSTransition): number => {
-	const duration = transition.effect?.getTiming().duration
-
-	if (typeof duration !== 'number') {
-		throw new Error(`${transition.transitionProperty}: длительности числом нет`)
-	}
-
-	return duration
-}
 
 /**
  * Открыть событием в самой странице, а не через `userEvent`: переход читается
