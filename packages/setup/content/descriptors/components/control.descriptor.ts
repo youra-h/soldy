@@ -21,7 +21,8 @@ export const ControlDescriptor = defineDescriptor(() =>
 				disabled: { type: Boolean, triggers: ['change:disabled'] },
 				focused: { type: Boolean, triggers: ['change:focused'] },
 				// `aria` объявлен в ComponentViewDescriptor — набор нужен и
-				// неинтерактивным слоям, а второе объявление accessor не примет.
+				// неинтерактивным слоям. Здесь его не повторяют: одноимённое
+				// объявление наследника — переобъявление, а менять в нём нечего.
 			},
 		},
 

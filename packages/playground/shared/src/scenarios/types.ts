@@ -32,7 +32,7 @@ export type TScenarioCheck = {
 
 /** Событие, которое получил потребитель фреймворка, с аргументами. */
 export type TJournalEntry = {
-	/** Полное имя аксессора: `change:text`, `action:press`, `update:text`. */
+	/** Полное имя события: `change:text`, `action:press`, у `v-model` — `update:text`. */
 	name: string
 	args: readonly unknown[]
 }
