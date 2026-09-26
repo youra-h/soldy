@@ -16,6 +16,7 @@ import { join, relative, resolve, sep } from 'node:path'
 import * as ts from 'typescript'
 import {
 	TButton,
+	TCalendar,
 	TDialog,
 	TInput,
 	TPopover,
@@ -67,6 +68,19 @@ describe('id в DOM — от основы', () => {
 
 		expect(owner.field.id).toBe('r1')
 		expect(collection.engine.extensions.select.listId).toBe('s-select-list-r1')
+	})
+
+	it('заголовки месяцев Calendar — от основы и места месяца в блоке', () => {
+		const calendar = new TCalendar({ numberOfMonths: 2 }, { idBase: 'r1' })
+		const ids = ['s-calendar-title-r1-0', 's-calendar-title-r1-1']
+
+		expect(calendar.months.map(({ titleAria }) => titleAria.id)).toEqual(ids)
+		expect(calendar.months.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual(ids)
+
+		// Листание не меняет id: место в блоке то же
+		calendar.showNext()
+
+		expect(calendar.months.map(({ titleAria }) => titleAria.id)).toEqual(ids)
 	})
 
 	it('группа радио без своего имени: name — от основы', () => {
