@@ -61,7 +61,7 @@ export function useAdapter<C extends IComponentContract>(
 
 		// Элемент отдаёт не полный набор, а то, что задано: по одному атрибуту или
 		// свойству. Выставленное до подключения применила сборка контекста.
-		// Поэтому `writeChanged`: `writeAll` сбросил бы к умолчанию остальные
+		// Поэтому `inputs.delta`: `inputs.full` сбросил бы к умолчанию остальные
 		syncProps(props: object): void {
 			binding.inputs.delta(props)
 		},

@@ -262,6 +262,48 @@ describe('кнопка очистки', () => {
 
 		expect(wrapper.find('input').element.value).toBe('')
 	})
+
+	/**
+	 * Своя кнопка вместо встроенной берёт `clear` из scope слота и зовёт его
+	 * голой функцией. Метод, оторванный от фасада, падал там с TypeError, и
+	 * выбор оставался.
+	 */
+	it('своя кнопка в слоте clear снимает выбор функцией из scope', async () => {
+		const errors: unknown[] = []
+		const select = mount(Select, {
+			props: { name: 'Город', value: 'tver' },
+			slots: {
+				default: () => [
+					h(SelectItem, { value: 'msk', text: 'Москва' }),
+					h(SelectItem, { value: 'tver', text: 'Тверь' }),
+				],
+				clear: ({ clear }: { clear: () => void }) =>
+					h('button', { class: 'probe-clear', onClick: () => clear() }),
+			},
+			global: {
+				config: {
+					errorHandler: (error) => {
+						errors.push(error)
+					},
+				},
+			},
+			attachTo: document.body,
+		})
+		const selected = () => options().map((option) => option.getAttribute('aria-selected'))
+
+		wrapper = select
+		await nextFrame()
+
+		expect(select.find('input').element.value).toBe('Тверь')
+		expect(selected()).toEqual(['false', 'true'])
+
+		await select.find('.probe-clear').trigger('click')
+		await nextTick()
+
+		expect(errors).toEqual([])
+		expect(select.find('input').element.value).toBe('')
+		expect(selected()).toEqual(['false', 'false'])
+	})
 })
 
 describe('множественный выбор', () => {

@@ -22,6 +22,7 @@ import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
 import { toInstanceState } from '@soldy-ui/setup'
 import type {
 	DescriptorAllEvents,
+	DescriptorComponentProps,
 	IAdapterContext,
 	IComponentContract,
 	IComponentDescriptor,
@@ -30,6 +31,23 @@ import type {
 } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { AngularProfile } from '../common/profile'
+
+/**
+ * Вход по пропу дескриптора: тип его значения.
+ *
+ * Входы объявлены массивом имён, и значение входа Angular пишет в
+ * одноимённое свойство инстанса. Строгая проверка шаблона сверяет привязку
+ * `[text]="…"` с полем класса, а вход без поля пропускает молча. Поля
+ * объявляет сгенерированный `T<Имя>Surface` (`generated/*.metadata.ts`) — по
+ * фабрике дескриптора и имени из того же массива: свой проп, проп плагина
+ * (`aria_label`) или служебный адаптера (`embedded`, `pluginProps`), как их
+ * сводит `DescriptorComponentProps`. Имя вне пропсов дескриптора не
+ * компилируется.
+ */
+export type TInputValue<
+	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
+	TInput extends keyof DescriptorComponentProps<TDescriptorFn>,
+> = DescriptorComponentProps<TDescriptorFn>[TInput]
 
 /**
  * Что отдаёт выход — первый аргумент события ядра: `syncEvents` шлёт
@@ -47,7 +65,7 @@ type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
  * Эмиттеры ставит `TComponentBase` по списку имён, и в типе класса их нет, а
  * строгая проверка шаблона читает выход как поле класса: привязка
  * `(actionPress)` без поля не компилируется, а `$event` берёт тип у поля. Поля
- * объявляет сгенерированный `T<Имя>Outputs` (`generated/*.metadata.ts`) —
+ * объявляет сгенерированный `T<Имя>Surface` (`generated/*.metadata.ts`) —
  * по фабрике дескриптора и полному имени события, которые кодогенератор берёт
  * из той же поверхности, что имена выходов. Событие вне карты дескриптора
  * (`DescriptorAllEvents`) не компилируется.
@@ -86,7 +104,7 @@ export function useAdapter<C extends IComponentContract>(
 		plugins: adapter.bundle,
 
 		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
-		// `writeChanged`: `writeAll` сбросил бы к умолчанию все остальные
+		// `inputs.delta`: `inputs.full` сбросил бы к умолчанию все остальные
 		syncInputs(inputs: object): void {
 			binding.inputs.delta(inputs)
 		},

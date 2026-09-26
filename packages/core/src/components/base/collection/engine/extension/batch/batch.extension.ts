@@ -54,7 +54,24 @@ export class TBatchExtension<TItem extends object>
 		return this._ctx.driver.valueOf()
 	}
 
+	/**
+	 * Заменить состав, если он другой. Те же экземпляры тем же порядком — не
+	 * смена: без `trackBy` замена — это `clear()` + `set()`, и состав,
+	 * вернувшийся тем же (эхо `update:items` у `v-model`), пересобрал бы
+	 * коллекцию и сбросил выбор. Сверяет сеттер, а не `update`: операция
+	 * перевставляет что дали — так `TFactoryExtension` догоняет сырые объекты
+	 * тем же составом.
+	 */
 	set items(items: TCollectionEngineItemSource<TItem>[]) {
+		const stored = this.items
+
+		if (
+			items.length === stored.length &&
+			items.every((item, index) => item === stored[index])
+		) {
+			return
+		}
+
 		this.update(items)
 	}
 
@@ -129,9 +146,14 @@ export class TBatchExtension<TItem extends object>
 		}
 	}
 
+	/**
+	 * Сверить состав с входом по ключу `trackBy`.
+	 *
+	 * Пустой вход — тоже состав, а не «нечего делать»: сверка удаляет всё, чего
+	 * во входе нет, то есть всё. Иначе `items = []` с `trackBy` оставлял бы
+	 * коллекцию как была, а без `trackBy` (`clear()` + `set()`) очищал бы её.
+	 */
 	patch(items: TCollectionEngineItemSource<TItem>[]): void {
-		if (!items.length) return
-
 		const trackBy = this._trackBy
 
 		if (!trackBy) {
@@ -141,7 +163,8 @@ export class TBatchExtension<TItem extends object>
 		// Сверка живёт в команде: ей нужен сырой storage, а не выборка из `items`.
 		this._ctx.execute(new TPatchCommand<TItem>(items, trackBy))
 
-		this.events.emit('items:added', items)
+		// Пустой вход ничего не добавляет — сообщать не о чем.
+		if (items.length) this.events.emit('items:added', items)
 	}
 
 	remove(items: TItem[]): void {

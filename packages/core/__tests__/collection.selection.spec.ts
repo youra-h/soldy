@@ -59,6 +59,26 @@ describe('TSelectionExtension', () => {
 		expect(col.extensions.selection.selectedCount).toBe(1)
 	})
 
+	// Эхо `update:selected` у `v-model` возвращает элементу `true`: выбрать
+	// выбранное — не смена, как снять невыбранное
+	it.each(['single', 'multiple'] as const)(
+		'select: выбранное в %s — без change:selection',
+		(mode) => {
+			const col = createCollection()
+			const item: Item = { id: 1, name: 'a' }
+			const changes = vi.fn()
+
+			col.extensions.selection.mode = mode
+			col.extensions.plain.insert(item)
+			col.extensions.selection.select(item)
+			col.extensions.selection.events.on('change:selection', changes)
+			col.extensions.selection.select(item)
+
+			expect(changes).not.toHaveBeenCalled()
+			expect(col.extensions.selection.selected).toEqual([item])
+		},
+	)
+
 	it('select: в multiple не снимает выделение', () => {
 		const col = createCollection()
 

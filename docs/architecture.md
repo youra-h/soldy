@@ -95,7 +95,7 @@ TEntity (uid, getProps, assign, toJSON)
 - **TCell**: the only mutable memory of the layer — a value, an equality rule and listeners. Svelte-store contract: `subscribe` delivers the current value at once, `listen` delivers changes only. «What the framework assigned», the state snapshot and the `pluginProps` bag are cells; there are no «assigned / not assigned» flags
 - **TLine**: one property of one owner for the mount — spec + owner + framework name. Правило записи одно, поэтому оно одно на сборку, обмен и плагины снаружи
   - `read()` - `get` описания, а без него `owner[name]`; составное значение — снимком `valueOf()`
-  - `write(value)` - запись; `protected` и то же значение пропускаются
+  - `write(value)` - запись; `protected` пропускается, «то же ли значение» решает сеттер владельца
   - `reset()` - вернуть умолчание описания; ключ не объявлен — значение остаётся
   - `accept(value)` - значение от фреймворка: `undefined` — «сняли»
   - `seed(value)` - начальное значение: `undefined` и равное умолчанию ничего не задают
@@ -535,11 +535,12 @@ hover: в тёмной схеме заливка светлеет.
 `triggers` это `['change:rendered', 'change:visible']`, т.е. те же события, что
 у самих `rendered` и `visible`. Наивный обход всех свойств повесил бы две
 подписки на `change:rendered`, и потребитель получал бы **два эмита на одно
-изменение**. Поэтому `bindEvents` связки подписывается на пару «источник, сырое
-имя» один раз — одинаково во всех адаптерах.
+изменение**. Поэтому `events.listen` связки подписывается на пару «источник,
+сырое имя» один раз — одинаково во всех адаптерах.
 
 Дедуплицировать можно **только проброс событий**. Синхронизацию состояния
-(`subscribe`) — нельзя: `present` обязан пересчитываться на обоих триггерах.
+(`state.subscribe`) — нельзя: `present` обязан пересчитываться на обоих
+триггерах.
 
 ### Контракт границы: значение, а не ручка на живое состояние
 
@@ -1485,9 +1486,9 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 
 - `useAdapter(adapter, props, emit)` - Main hook over the exchange `adapter.connect(VueProfile)`; дженерики не пишутся: инстанс и выходы плагинов — из контракта контекста, `TProps` — из `props`
   - Returns `TBinding`: `ctrl`, `plugins`, props refs and plugin outputs; `rootElement` — only when the bundle has `TElementPlugin`
-  - Core → Vue: a ref per property with triggers. `binding.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
-  - Vue → core: `watch` per input prop → `binding.write`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
-  - Events: `bindEvents` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
+  - Core → Vue: a ref per property with triggers. `state.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
+  - Vue → core: `watch` per input prop → the input's `offer`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
+  - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
 - `useCollectionAdapter()` - То же для контекста фасада коллекции; `ctrl` и `rootElement` не отдаёт — они принадлежат владельцу (AGENTS.md, «Vue collection setup»)
@@ -1501,13 +1502,14 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 **Отписка обязательна.** `adapter.destroy()` работает только с собственным
 `TEvented` адаптера и не трогает `instance.events`. При внешнем `ctrl`,
 переживающем компонент (документированный сценарий), хендлеры копились бы с
-каждым монтированием. Отписки отдаёт связка (`subscribe`, `bindEvents`),
-`useAdapter` зовёт их на `onUnmounted`.
+каждым монтированием. Отписки отдаёт связка (`state.subscribe`,
+`events.listen`), `useAdapter` зовёт их на `onUnmounted`.
 
-**`v-model`.** Профиль Vue объявляет модель (`update:<prop>`) для каждого записываемого
-свойства с триггерами, поверхность кладёт её в `exportEvents`, связка эмитит в `bindEvents` (значение
-перечитывается связкой, а не берётся из аргумента события: у производных
-триггеров полезная нагрузка может не совпадать со свойством).
+**`v-model`.** Профиль Vue объявляет модель (`update:<prop>`) для каждого
+записываемого свойства с триггерами, поверхность кладёт её в `exportEvents`,
+связка эмитит в `events.listen` (значение перечитывается связкой, а не берётся
+из аргумента события: у производных триггеров полезная нагрузка может не
+совпадать со свойством).
 
 #### Elevator (`adapter/elevator/`)
 
@@ -1610,8 +1612,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
-- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the line and the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
-- Events: `binding.bindEvents` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
+- Core → React: `useSyncExternalStore(link.state.subscribe, link.state.getSnapshot)` — the render reads the immutable snapshot, the subscription happens at commit, and React compares the snapshot again after subscribing, so a core change between render and commit is not lost (the snapshot object stays the same while nothing changed, so nothing re-renders). `useEffect(() => link.inputs.full(props), [props, link])` = React → Core: the effect gets the full props set on every parent render, and `inputs.full` writes only the props whose value changed since the previous set (the input cell compares by content with `sameValue`, the same rule as the state: an array literal like `value={['a', 'b']}` is a new object on every render, not a change), so a repeated prop doesn't roll back what the core or code through the instance changed since. The input memory starts from the props the context was assembled with, so the first `inputs.full` writes nothing that the assembly already applied. When the context is rebuilt, `useAdapter` binds the new one (`adapter.connect(ReactProfile)`) and `useSyncExternalStore` switches to its store: a rebuild is a mount like any other, and the assembly applies the props again
+- Events: `binding.events.listen` in `useLayoutEffect` (so rAF `ready` from TElementPlugin isn't missed); the callback is read from the latest `props` via `propsRef`
 - `{...restProps}` разворачивается ПЕРВЫМ, до `ref`: в React 19 `ref` — обычный проп, и переданный потребителем ref перекрыл бы ref адаптера, тихо сломав привязку к `TElementPlugin`
 
 ### Theming (`@soldy-ui/theme-oren`) — foundation REMOVED
@@ -1633,7 +1635,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 ### ⚠️ React pitfall: infinite loop via `visible` setter (fixed in core)
 
 - The `visible` setter calls `show()`/`hide()` (now in `TComponentView`). `show()` used to emit `show:before` before its own «already visible» check (`hide()` checked first), so writing `instance.visible = sameValue` still emitted events, and event-logging demos re-rendered forever. Fixed in core: the check comes before the emit — see Layer 5b, «Контракт границы», and the `change:*` invariant in AGENTS.md, «Контракт границы core → ui».
-- The line's `write` still skips values the core already holds (`TLine.write` — `sameValue` with the current value): a setter doesn't need to see a value it already holds. `inputs.full`, which runs on every `props` change, skips even earlier — every prop whose value is the same as in the previous set.
+- The line's `write` does not compare with the getter (`TLine.write`): a property with a resolver returns the resolved value, and a value equal to it but not to the own one was lost. Whether it is the same value is decided by the setter, against its own stored value; `inputs.full`, which runs on every `props` change, skips earlier — every prop whose value is the same as in the previous set.
 
 ---
 
@@ -1651,16 +1653,18 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   с полным именем события ядра — `actionPress` и `action:press`).
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)`: `state` (сигнал), `syncInputs`
-  (`writeChanged` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
-  заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents` (`bindEvents` →
+  (`inputs.delta` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
+  заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents` (`events.listen` →
   `EventEmitter` аутпутов, первым аргументом события ядра), `bindElement`,
-  `destroy`; `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
+  `destroy`; `TInputValue` (тип входа: тип пропа дескриптора по имени входа) и
+  `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
   дескриптора); `TComponentBase` (общий жизненный цикл), `AriaDirective`
   (`[ariaAttrs]`, `[attrs]`, `[dataset]` — раскладка наборов ядра),
   `SlotDirective` (`<ng-template slot>`).
 - `adapter/elevator/` — `TAngularElevator` + `AngularElevatorFactory`.
 - `codegen/` — `collect-manifests` + `generate` → `src/generated/*.metadata.ts`:
-  массивы имён для декоратора и типы выходов (`T<Имя>Outputs`).
+  массивы имён и поверхность `T<Имя>Surface` — абстрактная директива, которая
+  объявляет входы и выходы компонента вместе с их типами.
 
 ### Почему Angular нужен кодогенератор
 
@@ -1679,20 +1683,29 @@ Angular AOT статически анализирует декоратор: `inp
 новых приложений Angular — проверяет привязку `(actionPress)="…"` обращением к
 полю класса (`_t1["actionPress"].subscribe(($event) => …)`), а эмиттеры
 `TComponentBase` ставит в конструкторе по массиву имён, и в типе класса их
-нет: привязка не компилировалась (TS7053). Поэтому рядом с массивами генератор
-пишет абстрактный `T<Имя>Outputs extends TComponentBase` под
-`@Directive({ standalone: true })`, и компонент наследует его. Поля в нём —
-`declare readonly <выход>: TOutputEmitter<typeof descriptor, '<событие>'>`:
-тип — эмиттер первого аргумента события ядра (его шлёт `syncEvents`), пара
-«выход — событие» — из той же записи поверхности, что имя, а событие вне
-карты дескриптора (`DescriptorAllEvents`) не компилируется. `declare`, а не
-поле с `!`: при `useDefineForClassFields` такое поле затёрло бы эмиттер базы.
-Декоратор нужен метаданным базы: на классе без него компилятор их обрывает, и
-вход `ctrl` пропал бы из шаблона потребителя (`[ctrl]="btn"` — NG8002). Тип
-фабрики берётся из манифеста, поэтому `descriptor` в нём — реэкспорт из
-`@soldy-ui/setup`: декларации пакета называют его по имени
-(`typeof ButtonDescriptor`), а выведенный тип `const` выписать не смогли бы
-(TS2883, TS7056).
+нет: привязка не компилировалась (TS7053). Значение привязки входа
+(`_t1.text = 42`) она сверяет с полем входа, а вход без поля пропускает молча,
+с любым значением. Поэтому рядом с массивами генератор пишет абстрактную
+директиву `T<Имя>Surface extends TComponentBase` —
+`@Directive({ standalone: true, inputs: [...], outputs: [...] })`, — и
+компонент наследует её, а своих `inputs` и `outputs` не объявляет. Поля в
+ней — `declare <вход>: TInputValue<typeof descriptor, '<вход>'>` (тип пропа
+дескриптора со служебными `embedded` и `pluginProps`) и
+`declare readonly <выход>: TOutputEmitter<typeof descriptor, '<событие>'>`
+(эмиттер первого аргумента события ядра, его шлёт `syncEvents`). Имя входа и
+пара «выход — событие» — из той же записи поверхности, что имя в массиве, а
+вход вне пропсов дескриптора и событие вне его карты (`DescriptorAllEvents`)
+не компилируются. Входы объявляет тот же класс, что их поля: поле входа
+проверка ищет среди собственных членов класса, чей декоратор объявил вход, и
+вход из `@Component` наследника остался бы без сверки даже с полем в базе.
+Поле входа — без `readonly`: с ним привязка при `strictInputAccessModifiers`
+была бы ошибкой. `declare`, а не поле с `!`: при `useDefineForClassFields`
+такое поле затёрло бы эмиттер базы. Декоратор нужен и метаданным базы: на
+классе без него компилятор их обрывает, и вход `ctrl` пропал бы из шаблона
+потребителя (`[ctrl]="btn"` — NG8002). Тип фабрики берётся из манифеста,
+поэтому `descriptor` в нём — реэкспорт из `@soldy-ui/setup`: декларации пакета
+называют его по имени (`typeof ButtonDescriptor`), а выведенный тип `const`
+выписать не смогли бы (TS2883, TS7056).
 
 ### Реактивность
 
@@ -1869,7 +1882,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 дескриптора, setup и ссылки на шаблон.
 
 **Два входных канала.** Атрибуты (строки, для HTML) и свойства (любые значения,
-для JS) — оба кормят `syncProps` адаптера, а тот — `writeChanged` связки:
+для JS) — оба кормят `syncProps` адаптера, а тот — `inputs.delta` связки:
 элемент отдаёт не полный набор пропсов, а то, что задано, — по одному атрибуту
 или свойству. Выставленное до подключения уходит в сборку контекста. Атрибут
 приводится к типу декларации; для Boolean действует HTML-семантика: значимо
@@ -2053,7 +2066,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/plugins        | `TBasePlugin`, `TPluginBundle`, `PLUGIN_EVENTS`, `IPlugin`, `IPluginContext`, `IPluginBundle`; plugin classes (`TElementPlugin`, `TReadyPlugin`, `TActionPlugin`, `TAriaPlugin`, `TAnchorPlugin`, `TDismissPlugin`, list, select, tabs and collection plugins, …); `toCssValue`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | @soldy-ui/vue            | Vue components (`Button`, `CheckBox`, …; collections with parts — `Tabs` with `Tabs.Item` / `Tabs.Content` and flat `TabsItem` / `TabsContent`; `Base*` declarations) + adapter (`createVueAdapterContext`, `useAdapter`, `useCollectionAdapter`, `useProps`, `useEmits`, `VueProfile`, `VueNaming`, `useIcon`, `useSplitAttrs`, `TVueElevator`, `VueElevatorFactory`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | @soldy-ui/react          | `Button`, `ComponentView`, `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `ReactElevatorFactory`, `renderSlot`, `toAriaProps`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `setupXxx`, generated names and output types (`ButtonInputNames` / `ButtonOutputNames` / `TButtonOutputs`, …), `useAdapter`, `TOutputEmitter`, `TComponentBase`, `AriaDirective`, `SlotDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `useAdapter`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `AriaDirective`, `SlotDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `SolidElevatorFactory`, `renderSlot`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | @soldy-ui/webc           | `<soldy-button>` (`TButtonElement`), `<soldy-component-view>` (`TComponentViewElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`), `TSoldyElement`, `defineElement`, `defineProps`, `useAdapter`, `useAttributes`, `bind` / `ariaBinding` / `datasetBinding`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |

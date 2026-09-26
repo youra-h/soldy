@@ -138,6 +138,20 @@
 		.s-input__leading:has(.s-tags-item) {
 			min-width: 0;
 			@apply flex-wrap items-center overflow-x-clip;
+
+			// В `popover` ряд режет сам, и край его обрезки — дальше края
+			// ряда на запас под кольцо фокуса (`tags/_tags.scss`). У кнопки
+			// «…» в конце строки край ряда совпадает с краем слота, и слот
+			// срезал бы заднюю сторону кольца, которую ряд пропустил. Поэтому
+			// слот режет с тем же запасом — 0.25rem, кольцо Button, как
+			// `--s-tags-bleed`, — и так же только там, где запас есть: `clip`
+			// по обеим осям без него срезал бы кольцо сверху и снизу.
+			&:has(> .s-tags[data-overflow='popover']) {
+				@supports (overflow-clip-margin: 0px) {
+					overflow: clip;
+					overflow-clip-margin: 0.25rem;
+				}
+			}
 		}
 
 		// Ряд в одну строку (`scroll`, `arrows`, `popover`) берёт долю строки
@@ -220,9 +234,15 @@
 // Вторая половина кромки — прозрачный контур, как у `.s-popover__panel`, там
 // и объяснение: в режиме принудительных цветов браузер убирает кольцо вместе
 // с тенью, а контур перекрашивает в системный цвет, и он становится рамкой.
+//
+// Цвет текста у панели свой, как у `.s-popover__panel`. Без него она брала бы
+// цвет из `body`: на странице без своего цвета — системный текст схемы, а не
+// текст темы, на странице со своим — её цвет, какой бы ни была панель под ним.
+// Опции бы этого не заметили — их строку красит `Button`, — а всё остальное
+// содержимое панели, первым слот `empty`, заметило бы.
 .s-select__panel {
 	@apply overflow-hidden rounded-md box-border;
-	@apply bg-s-component-surface shadow-md;
+	@apply bg-s-component-surface text-s-component shadow-md;
 	@apply ring-1 ring-s-neutral-300;
 	@apply outline outline-transparent;
 }

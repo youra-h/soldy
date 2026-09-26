@@ -2,8 +2,12 @@
  * useInputs — build-time утилита: извлекает имена Angular-инпутов из дескриптора.
  *
  * ⚠️ Используется ТОЛЬКО в кодогенераторе (codegen/generate.ts), НЕ в компонентах.
- * Angular AOT требует статические массивы строк в @Component({ inputs }), поэтому
+ * Angular AOT требует статические массивы строк в `inputs` декоратора, поэтому
  * результат этого вызова сериализуется в generated/*.metadata.ts на этапе сборки.
+ *
+ * Имя входа — оно же имя пропа в пропсах дескриптора (`underscorePropNaming`,
+ * как у всех адаптеров): по нему сгенерированный `T<Имя>Surface` берёт тип
+ * входа (`TInputValue`).
  */
 
 import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'

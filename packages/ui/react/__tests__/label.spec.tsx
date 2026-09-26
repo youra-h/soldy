@@ -5,8 +5,8 @@
  * текст (слот `content`, без него — проп `text`). Связи через `for` и `id`
  * нет: контрол — первый labelable-потомок `label`, поэтому клик по тексту
  * переключает его, а текст становится его доступным именем. Сценарии — те
- * же, что у Vue (`label.spec.ts`); CheckBox и Switch в React ещё нет, их место
- * занимает нативное поле.
+ * же, что у Vue (`label.spec.ts`). Радио в React ещё нет, поэтому вложенный
+ * `label` в сценариях предупреждения — нативное поле со своей подписью.
  *
  * Слот `content` назван не `text`: в React слот — это проп, и одноимённый с
  * пропом `text` слился бы с ним. `content` при этом ещё и атрибут RDFa в
@@ -15,7 +15,9 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { Label } from '@soldy-ui/react'
+import { act } from 'react'
+import type { ReactElement } from 'react'
+import { CheckBox, Label, Switch, type SwitchProps } from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
 afterEach(() => {
@@ -26,7 +28,7 @@ describe('Label · разметка', () => {
 	it('корень — label, внутри контрол, потом текст', () => {
 		const el = mount(
 			<Label text="Согласен">
-				<input type="checkbox" />
+				<CheckBox />
 			</Label>,
 		).root()
 
@@ -40,7 +42,7 @@ describe('Label · разметка', () => {
 			's-label__control',
 			's-label__text',
 		])
-		expect(el.querySelector('.s-label__control > input')).not.toBeNull()
+		expect(el.querySelector('.s-label__control > .s-check-box input')).not.toBeNull()
 		expect(find(el, '.s-label__text', HTMLElement).textContent).toBe('Согласен')
 	})
 
@@ -103,31 +105,41 @@ describe('Label · текст: проп и слот', () => {
 	})
 })
 
-describe('Label · поле в подписи', () => {
+/** Колбэк смены значения контрола — одного типа у CheckBox и Switch. */
+type TOnValue = SwitchProps['onChangeValue']
+
+/** CheckBox и Switch устроены одинаково: корень-`span` и `<input type="checkbox">`. */
+const CHECKABLES = [
+	[
+		'CheckBox',
+		(onChangeValue?: TOnValue): ReactElement => <CheckBox onChangeValue={onChangeValue} />,
+	],
+	[
+		'Switch',
+		(onChangeValue?: TOnValue): ReactElement => <Switch onChangeValue={onChangeValue} />,
+	],
+] as const
+
+describe.each(CHECKABLES)('Label · %s в подписи', (_name, control) => {
 	it('у поля одна подпись — сама Label', () => {
-		const el = mount(
-			<Label text="Согласен">
-				<input type="checkbox" />
-			</Label>,
-		).root()
+		const el = mount(<Label text="Согласен">{control()}</Label>).root()
 
 		const input = find(el, 'input', HTMLInputElement)
 
 		expect([...(input.labels ?? [])]).toEqual([el])
 	})
 
-	it('клик по тексту переключает поле один раз', () => {
-		const onChange = vi.fn()
-		const el = mount(
-			<Label text="Согласен">
-				<input type="checkbox" onChange={onChange} />
-			</Label>,
-		).root()
+	it('клик по тексту переключает контрол один раз', async () => {
+		const onChangeValue = vi.fn()
+		const el = mount(<Label text="Согласен">{control(onChangeValue)}</Label>).root()
 
-		find(el, '.s-label__text', HTMLElement).click()
+		// Слушатель поля плагин вешает кадром позже, по `ready` узла
+		await nextFrame()
+
+		act(() => find(el, '.s-label__text', HTMLElement).click())
 
 		expect(find(el, 'input', HTMLInputElement).checked).toBe(true)
-		expect(onChange).toHaveBeenCalledTimes(1)
+		expect(onChangeValue.mock.calls).toEqual([[{ newValue: true, oldValue: false }]])
 	})
 })
 

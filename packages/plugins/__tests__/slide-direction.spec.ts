@@ -55,10 +55,15 @@ describe('fractionAt — доля хода по коробке дорожки и
 		expect(fractionAt(direction, box, { clientX, clientY })).toBe(expected)
 	})
 
-	it('за краями дорожки — край', () => {
-		expect(fractionAt('from-left', box, { clientX: 20, clientY: 0 })).toBe(0)
-		expect(fractionAt('from-left', box, { clientX: 900, clientY: 0 })).toBe(1)
-		expect(fractionAt('from-bottom', box, { clientX: 0, clientY: 0 })).toBe(1)
+	/**
+	 * Долю указателя плагин не прижимает: ядро прибавит к ней смещение захвата,
+	 * и прижатая заранее не довела бы до края ручку, взятую не за середину.
+	 * Итог прижимает владелец.
+	 */
+	it('за краями дорожки — за 0 и 1', () => {
+		expect(fractionAt('from-left', box, { clientX: 20, clientY: 0 })).toBe(-0.4)
+		expect(fractionAt('from-left', box, { clientX: 900, clientY: 0 })).toBe(4)
+		expect(fractionAt('from-bottom', box, { clientX: 0, clientY: 0 })).toBe(2.25)
 	})
 
 	it('коробка нулевой длины — начало хода', () => {

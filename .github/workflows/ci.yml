@@ -74,6 +74,15 @@ jobs:
       - name: Сборка пакетов
         run: npm run build
 
+      # Сразу после сборки: проверяется то, что уедет в npm, — файлы тарболлов
+      # (`npm pack --dry-run`), а не исходники. Пакет объявляет в dependencies
+      # или peerDependencies всё, что импортируют его JS, декларации и
+      # компоненты Svelte: в репозитории необъявленный пакет всё равно лежит в
+      # общем node_modules, а у потребителя на pnpm его нет. Несобранный пакет
+      # проверку не проходит — его точек входа нет в тарболле.
+      - name: Импорты пакетов объявлены
+        run: npm run check:published-imports
+
       - name: Типы — Core
         run: npx tsc --noEmit -p packages/core/tsconfig.json
 

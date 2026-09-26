@@ -1,5 +1,5 @@
 export {
 	ButtonInputs as ButtonInputNames,
 	ButtonOutputs as ButtonOutputNames,
-	TButtonOutputs,
+	TButtonSurface,
 } from '../../generated/button.metadata'

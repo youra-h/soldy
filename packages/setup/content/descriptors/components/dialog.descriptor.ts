@@ -3,8 +3,8 @@
  *
  * Наследует ModalLayerDescriptor (видимость, слой, размер, кнопка и запрос
  * закрытия, `dismissible`, заголовок и плагины модального слоя) и добавляет
- * место, разворот, режим предупреждения, выходы кнопки разворота и тела и
- * плагин раскладки окна.
+ * место, отступ от краёв экрана, разворот, режим предупреждения, выходы
+ * кнопки разворота и тела и плагин раскладки окна.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -33,6 +33,12 @@ export const DialogDescriptor = defineDescriptor(() =>
 			},
 			props: {
 				placement: { type: String, triggers: ['change:placement'] },
+				/**
+				 * Отступ от краёв экрана, один на все стороны. Теме уходит
+				 * переменными раскладки; стороны по отдельности правит подписчик
+				 * `layout:offset:before`.
+				 */
+				offset: { type: [Number, String], triggers: ['change:offset'] },
 				maximized: { type: Boolean, triggers: ['change:maximized'] },
 				maximizable: { type: Boolean, triggers: ['change:maximizable'] },
 				maximizeLabel: { type: String, triggers: ['change:maximizeLabel'] },
@@ -53,7 +59,7 @@ export const DialogDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// `z-index` слоя у панели и подложки, размер — переменными окна
+			// `z-index` слоя у панели и подложки, размер и отступ — переменными окна
 			DialogLayoutPluginDescriptor,
 		],
 	}),

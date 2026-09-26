@@ -1,8 +1,21 @@
-import type { IModalLayer } from '@soldy-ui/core'
+import type { IModalLayer, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { toCssValue } from '../../../utils'
 import type { TModalLayoutPluginEvents, TModalLayoutVariables } from './types'
+
+/**
+ * Одни ли и те же стили: те же ключи с теми же значениями. Порядок ключей не
+ * важен — это набор свойств, а не список.
+ */
+function sameStyles(
+	a: Record<string, string | number>,
+	b: Record<string, string | number>,
+): boolean {
+	const keys = Object.keys(a)
+
+	return keys.length === Object.keys(b).length && keys.every((key) => b[key] === a[key])
+}
 
 /**
  * Раскладка модального слоя — общая часть окна и выезжающей панели: слой и
@@ -12,7 +25,8 @@ import type { TModalLayoutPluginEvents, TModalLayoutVariables } from './types'
  * разворот и анимацию раскладывает тема по модификаторам и `data-*`. Плагину
  * остаются значения, которые в класс не уложить:
  *
- * - `styles` — панели: `z-index` слоя и размер переменными. Переменными, а не
+ * - `styles` — панели: `z-index` слоя, размер и свои переменные наследника
+ *   (`_panelVariables`: у окна — отступы от краёв экрана). Переменными, а не
  *   инлайном `width` и `height`: инлайн перебил бы тему, а у неё потолок
  *   размера по экрану и развёрнутое окно. Незаданный размер переменной не
  *   даёт вовсе — тогда действует умолчание темы (`var(--dialog-width, …)`);
@@ -24,11 +38,18 @@ import type { TModalLayoutPluginEvents, TModalLayoutVariables } from './types'
  * называет их (`_variables`), а считает всё база. Второй копии расчёта у
  * окна и панели нет.
  *
- * Считает при установке и на смену ширины, высоты и слоя. Объекты
+ * Считает при установке и на смену ширины, высоты и слоя; на смену своих
+ * значений наследник зовёт тот же пересчёт (`_updateStyles`). Объекты
  * заменяются целиком, а не мутируются: геттер отдаёт ссылку наружу, и без
- * смены идентичности адаптер не увидит изменения.
+ * смены идентичности адаптер не увидит изменения. `change:styles` — только
+ * когда стили сменились по содержимому: повод пересчёта не всегда их меняет.
+ *
+ * Дженерик по карте событий — для наследника со своими событиями
+ * (`offset:before` у окна); свои события база шлёт через `_sink`.
  */
-export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPluginEvents> {
+export abstract class TModalLayoutPlugin<
+	TEvents extends TModalLayoutPluginEvents = TModalLayoutPluginEvents,
+> extends TBasePlugin<any, TEvents> {
 	/** Переменные размера, которые читает тема этого компонента. */
 	protected abstract readonly _variables: TModalLayoutVariables
 
@@ -56,7 +77,7 @@ export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPl
 		this._updateBackdropStyles()
 	}
 
-	/** Стили панели: `z-index` слоя и переменные размера. */
+	/** Стили панели: `z-index` слоя, переменные размера и свои переменные наследника. */
 	get styles(): Record<string, string | number> {
 		return this._styles
 	}
@@ -72,7 +93,30 @@ export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPl
 		super.destroy()
 	}
 
-	private _updateStyles(): void {
+	/**
+	 * Эмит собственных событий раскладки — без приведения `this.events` к
+	 * конкретной карте (см. `TEventSink` в `@soldy-ui/core`): карта — дженерик,
+	 * а `change:styles` и `change:backdropStyles` объявлены здесь.
+	 */
+	protected override get _sink(): TEventSink<TModalLayoutPluginEvents> {
+		return this.events
+	}
+
+	/**
+	 * Свои переменные панели сверх размера: имя переменной → CSS-значение.
+	 * Их читает каждый пересчёт стилей, начиная с установки, поэтому то, из
+	 * чего они строятся, наследник обязан знать уже тогда. По умолчанию своих
+	 * нет.
+	 */
+	protected _panelVariables(): Record<string, string> {
+		return {}
+	}
+
+	/**
+	 * Пересчитать стили панели. Наследник зовёт его на смену значений, из
+	 * которых строит `_panelVariables`.
+	 */
+	protected _updateStyles(): void {
 		const owner = this._owner
 
 		if (!owner) return
@@ -82,8 +126,12 @@ export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPl
 		if (owner.width !== undefined) styles[this._variables.width] = toCssValue(owner.width)
 		if (owner.height !== undefined) styles[this._variables.height] = toCssValue(owner.height)
 
+		Object.assign(styles, this._panelVariables())
+
+		if (sameStyles(styles, this._styles)) return
+
 		this._styles = styles
-		this.events.emit('change:styles', this._styles)
+		this._sink.emit('change:styles', this._styles)
 	}
 
 	private _updateBackdropStyles(): void {
@@ -92,6 +140,6 @@ export abstract class TModalLayoutPlugin extends TBasePlugin<any, TModalLayoutPl
 		if (!owner) return
 
 		this._backdropStyles = { 'z-index': owner.zIndex }
-		this.events.emit('change:backdropStyles', this._backdropStyles)
+		this._sink.emit('change:backdropStyles', this._backdropStyles)
 	}
 }

@@ -136,6 +136,8 @@ export class TSelectionExtension<TItem extends object = any>
 
 	select(item: TItem): void {
 		if (this._mode === 'none') return
+		// Выбрать выбранное — не смена, как снять невыбранное в `deselect`
+		if (this._selected.has(item)) return
 		if (!this._ctx.driver.valueOf().includes(item)) return
 
 		if (!this.multiple) {

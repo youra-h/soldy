@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
+    "types": ["node"],
     "paths": {
       "@soldy-ui/core": ["../../core/src"],
       "@soldy-ui/core/*": ["../../core/src/*"],

@@ -11,10 +11,10 @@ const BORDER_WIDTH = '--spinner-border-width'
  * Плагин для управления стилями спиннера: толщина кольца —
  * пользовательским свойством `--spinner-border-width`.
  *
- * Толщину плагин читает геттером `borderWidth`, а не из события: при `'auto'`
- * геттер считает её по размеру (`calculateBorderWidth()`), а событие
- * `change:borderWidth` принесло бы само `'auto'` — недопустимую толщину рамки.
- * Поэтому толщину перечитывает и смена размера.
+ * Толщину плагин читает геттером `borderWidth` — итог: при `'auto'` ядро
+ * считает её по размеру. О смене итога ядро сообщает одним событием
+ * `change:borderWidth` — и от записи толщины, и от размера при `'auto'`, —
+ * поэтому своей подписки на размер у плагина нет.
  */
 export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginEvents> {
 	private _styles: Record<string, string | number> = {}
@@ -31,10 +31,7 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 		// связка прочитает `styles` при подписке.
 		this._styles = { [BORDER_WIDTH]: toCssValue(spinner.borderWidth) }
 
-		const update = () => this._update(spinner)
-
-		this._listenTo(spinner.events, 'change:borderWidth', update)
-		this._listenTo(spinner.events, 'change:size', update)
+		this._listenTo(spinner.events, 'change:borderWidth', () => this._update(spinner))
 	}
 
 	get styles(): Record<string, string | number> {
@@ -42,19 +39,14 @@ export class TSpinnerLayoutPlugin extends TBasePlugin<any, TSpinnerLayoutPluginE
 	}
 
 	/**
-	 * Перечитывает толщину и сообщает о ней, только если она сменилась:
-	 * размер меняет толщину лишь при `'auto'`, а `'auto'`, заменённое той же
-	 * толщиной числом, — не смена.
+	 * Перечитывает толщину. Сменилась ли она, решило ядро: `change:borderWidth`
+	 * приходит только на смену итога.
 	 *
 	 * Объект стилей заменяется целиком, а не мутируется на месте: геттер
 	 * отдаёт ссылку наружу, и без смены идентичности UI не увидит изменения.
 	 */
 	private _update(spinner: ISpinner): void {
-		const value = toCssValue(spinner.borderWidth)
-
-		if (this._styles[BORDER_WIDTH] === value) return
-
-		this._styles = { ...this._styles, [BORDER_WIDTH]: value }
+		this._styles = { ...this._styles, [BORDER_WIDTH]: toCssValue(spinner.borderWidth) }
 		this.events.emit('change:styles', this._styles)
 	}
 }

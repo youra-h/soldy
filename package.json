@@ -26,6 +26,7 @@
     "test:svelte": "npm run test --workspace=@soldy-ui/svelte",
     "test:solid": "npm run test --workspace=@soldy-ui/solid",
     "test:eslint": "vitest run --root tools/eslint",
+    "check:published-imports": "vitest run --root tools/published-imports",
     "lint": "eslint . --fix",
     "lint:ci": "eslint .",
     "format": "prettier --write .",

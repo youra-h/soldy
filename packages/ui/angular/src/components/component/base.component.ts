@@ -1,5 +1,5 @@
 export {
 	ComponentInputs as ComponentInputNames,
 	ComponentOutputs as ComponentOutputNames,
-	TComponentOutputs,
+	TComponentSurface,
 } from '../../generated/component.metadata'

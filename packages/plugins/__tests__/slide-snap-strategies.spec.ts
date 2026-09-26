@@ -216,4 +216,22 @@ describe('hold — задержка', () => {
 
 		expect(strategy.release(0.55)).toBeUndefined()
 	})
+
+	/**
+	 * Указатель за краем дорожки ведёт ручку за край хода, но ручка стоит на
+	 * краю. Метку на краю она достигает, а вернувшись, с неё уходит — путь из-за
+	 * края через метку прошёл бы только указатель.
+	 */
+	it('за краем хода — край: метку на краю достигнутую держит, покинутую — нет', () => {
+		const strategy = create(THoldSnapStrategy, { points: [0.5, 1], anchor: 0.9 })
+
+		expect(strategy.follow(1.3, 0)).toBe(1)
+		expect(strategy.follow(1.3, 100)).toBe(1.3)
+		expect(strategy.follow(0.95, 110)).toBe(0.95)
+	})
+
+	it('нажали за краем хода: ручка встала на край и метку на нём покидает', () => {
+		expect(create(THoldSnapStrategy, { points: [1], anchor: 1.2 }).follow(0.95, 0)).toBe(0.95)
+		expect(create(THoldSnapStrategy, { points: [0], anchor: -0.2 }).follow(0.05, 0)).toBe(0.05)
+	})
 })

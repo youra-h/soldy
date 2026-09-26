@@ -19,8 +19,8 @@ import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './t
  *
  * **Место, размер и разворот — значения, раскладка — тема.** Место уходит
  * модификатором `--placement-<v>` (стоит всегда, и у центра), развёрнутость —
- * `data-maximized`, ширина и высота — переменными раскладки
- * (`TDialogLayoutPlugin`). Координат и замеров у окна нет.
+ * `data-maximized`, ширина, высота и отступ от краёв экрана — переменными
+ * раскладки (`TDialogLayoutPlugin`). Координат и замеров у окна нет.
  */
 export default class TDialog
 	extends TModalLayer<IDialogProps, TDialogEvents, TComponentViewStates>
@@ -31,10 +31,13 @@ export default class TDialog
 	static defaultValues: typeof TModalLayer.defaultValues &
 		TDefaultValues<
 			IDialogProps,
-			'placement' | 'maximized' | 'maximizable' | 'maximizeLabel' | 'alert'
+			'placement' | 'maximized' | 'maximizable' | 'maximizeLabel' | 'alert',
+			'offset'
 		> = {
 		...TModalLayer.defaultValues,
 		placement: 'center',
+		// Не задан — отступ темы. Не `0`: ноль — это «вплотную к краям»
+		offset: undefined,
 		maximized: false,
 		maximizable: false,
 		maximizeLabel: 'Maximize',
@@ -42,6 +45,7 @@ export default class TDialog
 	}
 
 	protected _placement!: TDialogPlacement
+	protected _offset: number | string | undefined
 	protected _maximized!: boolean
 	protected _maximizable: boolean
 	protected _maximizeLabel: string
@@ -55,6 +59,7 @@ export default class TDialog
 
 		const ctor = new.target as typeof TDialog
 
+		this._offset = props.offset ?? ctor.defaultValues.offset
 		this._maximizable = props.maximizable ?? ctor.defaultValues.maximizable
 		this._maximizeLabel = props.maximizeLabel ?? ctor.defaultValues.maximizeLabel
 
@@ -78,6 +83,24 @@ export default class TDialog
 
 		this._applyPlacement(value, this._placement)
 		this.events.emit('change:placement', value)
+	}
+
+	/**
+	 * Отступ окна от краёв экрана: число — px, строка — CSS-значение. Не задан
+	 * — отступ темы, `0` — вплотную. Один на все стороны: у центра он
+	 * действует со всех, у стороны — от её края, и со всех — как потолок
+	 * размера. Стороны по отдельности правит подписчик `layout:offset:before`
+	 * — событие раскладки, а не ядра: значение уходит теме переменными.
+	 */
+	get offset(): number | string | undefined {
+		return this._offset
+	}
+
+	set offset(value: number | string | undefined) {
+		if (this._offset === value) return
+
+		this._offset = value
+		this.events.emit('change:offset', value)
 	}
 
 	/**
@@ -182,6 +205,7 @@ export default class TDialog
 		return {
 			...super.getProps(),
 			placement: this._placement,
+			offset: this._offset,
 			maximized: this._maximized,
 			maximizable: this._maximizable,
 			maximizeLabel: this._maximizeLabel,
