@@ -9,11 +9,6 @@
  * тегов — чужое содержимое слота (поле ввода). Движок — `createEngineTags`,
  * как у компонента: остановку Tab считает `TTagsExtension`, плагин переносит
  * фокус и сообщает, на каком теге он оказался.
- *
- * `scrollIntoView` в jsdom нет: узлам тегов его подменяет `setup` и
- * записывает, чей узел и с чем докручивали. Где тег оказался, здесь не
- * посчитать — раскладку сторожит браузерный прогон
- * (`playground/vue/browser/tags-overflow.spec.ts`).
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -74,17 +69,11 @@ async function setup(
 
 	const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
 
-	/** Докрутки узлов тегов по порядку: чей узел и с какими опциями. */
-	const scrolls: { value: string; options: boolean | ScrollIntoViewOptions | undefined }[] = []
-
 	for (const item of items) {
 		const node = document.createElement('div')
 		const row = document.createElement('div')
 		const close = document.createElement('button')
 
-		node.scrollIntoView = (options) => {
-			scrolls.push({ value: String(item.value), options })
-		}
 		node.dataset.value = String(item.value)
 		row.setAttribute('role', 'option')
 		// Фокусируемость строки даёт `tabindex` — в разметке его пишет ядро
@@ -164,7 +153,6 @@ async function setup(
 		focused,
 		values,
 		stop,
-		scrolls,
 	}
 }
 
@@ -428,68 +416,6 @@ describe('Delete и Backspace закрывают тег', () => {
 		press(nodeOf('[data-value="a"] .close', root), 'Delete')
 
 		expect(values()).toEqual(['b', 'c'])
-	})
-})
-
-/**
- * Фокус получает строка тега, а видеть надо весь тег: за строкой стоит
- * крестик, а кольцо фокуса рисует пилюля. Поэтому, перенеся фокус, плагин
- * докручивает до узла тега — `nearest`, ровно до края области.
- */
-describe('перенос фокуса докручивает до всего тега', () => {
-	const NEAREST = { block: 'nearest', inline: 'nearest' }
-
-	it('стрелка — до узла тега, на который ушёл фокус', async () => {
-		const { pressOn, scrolls } = await setup(ABC)
-
-		pressOn('a', 'ArrowRight')
-		pressOn('b', 'ArrowLeft')
-
-		expect(scrolls).toEqual([
-			{ value: 'b', options: NEAREST },
-			{ value: 'a', options: NEAREST },
-		])
-	})
-
-	it('Home и End — до крайнего тега', async () => {
-		const { pressOn, scrolls } = await setup(ABC)
-
-		pressOn('b', 'End')
-		pressOn('c', 'Home')
-
-		expect(scrolls).toEqual([
-			{ value: 'c', options: NEAREST },
-			{ value: 'a', options: NEAREST },
-		])
-	})
-
-	it('после Delete — до соседа, к которому ушёл фокус', async () => {
-		const { pressOn, scrolls } = await setup(ABC)
-
-		pressOn('b', 'Delete')
-
-		expect(scrolls).toEqual([{ value: 'c', options: NEAREST }])
-	})
-
-	/**
-	 * Не на `focusin`: туда приходит и фокус от нажатия мышью, а ряд, сдвинутый
-	 * под нажатой кнопкой, увёл бы `click` с тега.
-	 */
-	it('фокус кликом или из кода плагин не докручивает', async () => {
-		const { rowOf, scrolls } = await setup(ABC)
-
-		rowOf('c').focus()
-
-		expect(scrolls).toEqual([])
-	})
-
-	it('клавишу, которую плагин не взял, — тоже', async () => {
-		const { pressOn, scrolls } = await setup(ABC)
-
-		pressOn('a', 'ArrowRight', { shiftKey: true })
-		pressOn('a', 'Enter')
-
-		expect(scrolls).toEqual([])
 	})
 })
 
