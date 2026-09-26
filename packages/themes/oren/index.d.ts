@@ -10,12 +10,13 @@
  * Значение, которое совпадает с видом блока без модификатора (`normal`,
  * `filled` у Button, `outlined` у CheckBox, `line`, `dot`, `rounded`,
  * `pulse`), своего правила в CSS может не иметь, но объявлено всё равно: его
- * можно задать явно, и `normal` у Spinner — не база, а нейтраль.
+ * можно задать явно, и `normal` у Spinner и ProgressLinear — не база, а
+ * нейтраль.
  */
 export {}
 
 declare module '@soldy-ui/core' {
-	/** Смысловой цвет. Без варианта — нейтраль, у Spinner — `accent`. */
+	/** Смысловой цвет. Без варианта — нейтраль, у Spinner и ProgressLinear — `accent`. */
 	interface IComponentVariants {
 		normal: true
 		accent: true
