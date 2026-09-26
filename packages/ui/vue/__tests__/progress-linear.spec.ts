@@ -1,11 +1,11 @@
 /**
  * ProgressLinear во Vue — проводка на настоящей разметке.
  *
- * Долю, `aria-value*` и `data-indeterminate` считает ядро
+ * Долю, `aria-value*`, `data-indeterminate` и модификатор оси считает ядро
  * (`core/__tests__/progress-linear.spec.ts`), переходы и бег рисует тема
  * (`playground/vue/browser/progress-linear.spec.ts`). Здесь важно, что всё это
- * доезжает до разметки: наборы и доля — на корне, внутри одна заливка без
- * привязок.
+ * доезжает до разметки: наборы, модификатор и доля — на корне, внутри одна
+ * заливка без привязок.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -34,7 +34,7 @@ function root(): HTMLElement {
 const percent = () => root().style.getPropertyValue('--s-progress-linear-percent')
 
 describe('первая отрисовка', () => {
-	it('доля неизвестна: роль и шкала без aria-valuenow, бег, переменной нет', () => {
+	it('по умолчанию полоса пуста: доля 0, aria-valuenow="0", бега нет, ось горизонтальная', () => {
 		wrapper = mount(ProgressLinear)
 
 		const node = root()
@@ -42,8 +42,22 @@ describe('первая отрисовка', () => {
 		expect(node.localName).toBe('span')
 		expect(node.classList.contains('s-progress-linear')).toBe(true)
 		expect(node.classList.contains('s-progress-linear--size-normal')).toBe(true)
+		expect(node.classList.contains('s-progress-linear--horizontal')).toBe(true)
 		expect(node.getAttribute('role')).toBe('progressbar')
 		expect(node.getAttribute('aria-valuemin')).toBe('0')
+		expect(node.getAttribute('aria-valuemax')).toBe('100')
+		expect(node.getAttribute('aria-valuenow')).toBe('0')
+		expect(node.hasAttribute('aria-orientation')).toBe(false)
+		expect(node.dataset.indeterminate).toBe('false')
+		expect(percent()).toBe('0%')
+	})
+
+	it('флаг из разметки: роль и шкала без aria-valuenow, бег, переменной нет', () => {
+		wrapper = mount(ProgressLinear, { props: { value: 40, indeterminate: true } })
+
+		const node = root()
+
+		expect(node.getAttribute('role')).toBe('progressbar')
 		expect(node.getAttribute('aria-valuemax')).toBe('100')
 		expect(node.hasAttribute('aria-valuenow')).toBe(false)
 		expect(node.dataset.indeterminate).toBe('true')
@@ -60,6 +74,17 @@ describe('первая отрисовка', () => {
 		expect(percent()).toBe('40%')
 		// Бег в RTL тема зеркалит по атрибуту
 		expect(node.getAttribute('dir')).toBe('rtl')
+	})
+
+	it('вертикальная ось — модификатором на корне, без aria-orientation', () => {
+		wrapper = mount(ProgressLinear, { props: { value: 40, orientation: 'vertical' } })
+
+		const node = root()
+
+		expect(node.classList.contains('s-progress-linear--vertical')).toBe(true)
+		expect(node.classList.contains('s-progress-linear--horizontal')).toBe(false)
+		expect(node.hasAttribute('aria-orientation')).toBe(false)
+		expect(percent()).toBe('40%')
 	})
 
 	it('внутри — одна заливка: span только с классом, без стиля и слотов', () => {
@@ -79,26 +104,49 @@ describe('первая отрисовка', () => {
 	})
 })
 
-describe('смена значения', () => {
-	it('null → число → null: наборы и доля идут за значением', async () => {
-		const mounted = mount(ProgressLinear)
+describe('смена значения и флага', () => {
+	it('флаг поверх значения и обратно: после снятия снова видна доля', async () => {
+		const mounted = mount(ProgressLinear, { props: { value: 60 } })
 
 		wrapper = mounted
 
-		await mounted.setProps({ value: 60 })
-
-		expect(root().getAttribute('aria-valuenow')).toBe('60')
-		expect(root().dataset.indeterminate).toBe('false')
 		expect(percent()).toBe('60%')
 
-		await mounted.setProps({ value: null })
+		await mounted.setProps({ indeterminate: true })
 
 		expect(root().hasAttribute('aria-valuenow')).toBe(false)
 		expect(root().dataset.indeterminate).toBe('true')
 		expect(percent()).toBe('')
+
+		await mounted.setProps({ indeterminate: false })
+
+		expect(root().getAttribute('aria-valuenow')).toBe('60')
+		expect(root().dataset.indeterminate).toBe('false')
+		expect(percent()).toBe('60%')
 	})
 
-	it('снятое из разметки значение — снова бег: умолчание — null', async () => {
+	it('снятый из разметки флаг — снова доля: умолчание флага — false', async () => {
+		const running = ref(true)
+
+		wrapper = mount({
+			render: () =>
+				h(
+					ProgressLinear,
+					running.value ? { value: 30, indeterminate: true } : { value: 30 },
+				),
+		})
+
+		expect(root().dataset.indeterminate).toBe('true')
+		expect(percent()).toBe('')
+
+		running.value = false
+		await nextTick()
+
+		expect(root().dataset.indeterminate).toBe('false')
+		expect(percent()).toBe('30%')
+	})
+
+	it('снятое из разметки значение — пустая полоса: умолчание — 0', async () => {
 		const shown = ref(true)
 
 		wrapper = mount({
@@ -110,8 +158,25 @@ describe('смена значения', () => {
 		shown.value = false
 		await nextTick()
 
-		expect(root().dataset.indeterminate).toBe('true')
-		expect(percent()).toBe('')
+		expect(root().getAttribute('aria-valuenow')).toBe('0')
+		expect(root().dataset.indeterminate).toBe('false')
+		expect(percent()).toBe('0%')
+	})
+
+	it('смена оси меняет модификатор на корне', async () => {
+		const mounted = mount(ProgressLinear, { props: { value: 20 } })
+
+		wrapper = mounted
+
+		await mounted.setProps({ orientation: 'vertical' })
+
+		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
+		expect(root().classList.contains('s-progress-linear--horizontal')).toBe(false)
+
+		await mounted.setProps({ orientation: undefined })
+
+		expect(root().classList.contains('s-progress-linear--horizontal')).toBe(true)
+		expect(root().classList.contains('s-progress-linear--vertical')).toBe(false)
 	})
 
 	it('смена шкалы пересчитывает долю и aria-value*', async () => {
@@ -140,16 +205,22 @@ describe('внешний ctrl', () => {
 		expect(root().getAttribute('aria-valuenow')).toBe('25')
 		expect(percent()).toBe('25%')
 
-		ctrl.value = null
+		ctrl.indeterminate = true
 		await nextTick()
 
 		expect(root().dataset.indeterminate).toBe('true')
 		expect(percent()).toBe('')
 
 		ctrl.value = 90
+		ctrl.indeterminate = false
 		await nextTick()
 
 		expect(percent()).toBe('90%')
+
+		ctrl.orientation = 'vertical'
+		await nextTick()
+
+		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
 	})
 
 	it('пропсы разметки ложатся поверх ctrl', () => {
@@ -159,6 +230,19 @@ describe('внешний ctrl', () => {
 
 		expect(ctrl.max).toBe(50)
 		expect(percent()).toBe('50%')
+	})
+
+	it('бег и ось внешнего ctrl переживают монтирование без этих пропсов', () => {
+		const ctrl = new TProgressLinear({
+			value: 25,
+			indeterminate: true,
+			orientation: 'vertical',
+		})
+
+		wrapper = mount(ProgressLinear, { props: { ctrl } })
+
+		expect(root().dataset.indeterminate).toBe('true')
+		expect(root().classList.contains('s-progress-linear--vertical')).toBe(true)
 	})
 })
 

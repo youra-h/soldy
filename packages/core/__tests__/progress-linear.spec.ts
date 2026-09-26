@@ -3,14 +3,15 @@ import { TProgressLinear } from '@soldy-ui/core'
 import type { IProgressLinearProps } from '@soldy-ui/core'
 
 /**
- * TProgressLinear — индикатор выполнения линией: значение, шкала и то, что из
- * них следует для скринридера (`aria-value*`) и для темы (`data-indeterminate`
- * и доля CSS-переменной).
+ * TProgressLinear — индикатор выполнения линией: значение, шкала, флаг бега,
+ * ось и то, что из них следует для скринридера (`aria-value*`) и для темы
+ * (`data-indeterminate`, модификатор оси и доля CSS-переменной).
  *
  * Значение хранится как задано, границы действуют только в выходах: доля
- * прижата к 0–100 %, `aria-valuenow` — к шкале. Разметку проверяет
- * `ui/vue/__tests__/progress-linear.spec.ts`, переходы и бег темы — браузер
- * (`playground/vue/browser/progress-linear.spec.ts`).
+ * прижата к 0–100 %, `aria-valuenow` — к шкале. Флаг бега главнее значения:
+ * пока он стоит, доли и `aria-valuenow` нет, а значение хранится. Разметку
+ * проверяет `ui/vue/__tests__/progress-linear.spec.ts`, переходы и бег темы —
+ * браузер (`playground/vue/browser/progress-linear.spec.ts`).
  */
 
 const progress = (props: Partial<IProgressLinearProps> = {}) => new TProgressLinear(props)
@@ -20,29 +21,60 @@ const percentOf = (instance: TProgressLinear) =>
 	instance.percentStyle['--s-progress-linear-percent']
 
 describe('умолчания', () => {
-	it('доля неизвестна, шкала 0–100, корень — span с классом блока', () => {
+	it('доля — 0 на шкале 0–100, бега нет, ось горизонтальная, корень — span с классом блока', () => {
 		const instance = progress()
 
-		expect(instance.value).toBeNull()
+		expect(instance.value).toBe(0)
 		expect(instance.min).toBe(0)
 		expect(instance.max).toBe(100)
+		expect(instance.indeterminate).toBe(false)
+		expect(instance.orientation).toBe('horizontal')
 		expect(instance.tag).toBe('span')
 		expect(instance.classes.toArray()).toContain('s-progress-linear')
 		expect(instance.classes.toArray()).toContain('s-progress-linear--size-normal')
-		expect(instance.getProps()).toMatchObject({ value: null, min: 0, max: 100 })
+		expect(instance.classes.toArray()).toContain('s-progress-linear--horizontal')
+		expect(instance.getProps()).toMatchObject({
+			value: 0,
+			min: 0,
+			max: 100,
+			indeterminate: false,
+			orientation: 'horizontal',
+		})
+	})
+
+	it('пустая полоса — доля известна: aria-valuenow="0", доля 0%', () => {
+		const instance = progress()
+
+		expect(instance.aria.get('aria-valuenow')).toBe('0')
+		expect(instance.dataset.get('data-indeterminate')).toBe('false')
+		expect(percentOf(instance)).toBe('0%')
 	})
 
 	it('заданное — как задано, и в getProps тоже', () => {
-		const instance = progress({ value: 7, min: 5, max: 10 })
+		const instance = progress({
+			value: 7,
+			min: 5,
+			max: 10,
+			indeterminate: true,
+			orientation: 'vertical',
+		})
 
 		expect([instance.value, instance.min, instance.max]).toEqual([7, 5, 10])
-		expect(instance.getProps()).toMatchObject({ value: 7, min: 5, max: 10 })
+		expect(instance.indeterminate).toBe(true)
+		expect(instance.orientation).toBe('vertical')
+		expect(instance.getProps()).toMatchObject({
+			value: 7,
+			min: 5,
+			max: 10,
+			indeterminate: true,
+			orientation: 'vertical',
+		})
 	})
 })
 
 describe('наборы: скринридеру и теме', () => {
-	it('доля неизвестна — роль и шкала есть, aria-valuenow нет, data-indeterminate="true"', () => {
-		const instance = progress()
+	it('бег — роль и шкала есть, aria-valuenow нет, data-indeterminate="true", доли нет', () => {
+		const instance = progress({ value: 40, indeterminate: true })
 
 		expect(instance.aria.toObject()).toEqual({
 			role: 'progressbar',
@@ -66,21 +98,6 @@ describe('наборы: скринридеру и теме', () => {
 		expect(instance.percentStyle).toEqual({ '--s-progress-linear-percent': '40%' })
 	})
 
-	it('смена значения переводит наборы туда и обратно', () => {
-		const instance = progress()
-
-		instance.value = 60
-
-		expect(instance.aria.get('aria-valuenow')).toBe('60')
-		expect(instance.dataset.get('data-indeterminate')).toBe('false')
-
-		instance.value = null
-
-		expect(instance.aria.has('aria-valuenow')).toBe(false)
-		expect(instance.dataset.get('data-indeterminate')).toBe('true')
-		expect(instance.percentStyle).toEqual({})
-	})
-
 	it('смена шкалы переписывает aria-valuemin и aria-valuemax', () => {
 		const instance = progress({ value: 3 })
 
@@ -97,6 +114,101 @@ describe('наборы: скринридеру и теме', () => {
 
 		expect(instance.aria.has('aria-label')).toBe(false)
 		expect(instance.aria.has('aria-labelledby')).toBe(false)
+	})
+})
+
+/**
+ * Бег — флаг, и он главнее значения, как у CheckBox. Значения «неизвестно» у
+ * `value` нет: иначе у бега было бы два пути.
+ */
+describe('флаг бега', () => {
+	it('снимает aria-valuenow и долю, а значение хранит', () => {
+		const instance = progress({ value: 60 })
+
+		instance.indeterminate = true
+
+		expect(instance.value).toBe(60)
+		expect(instance.aria.has('aria-valuenow')).toBe(false)
+		expect(instance.dataset.get('data-indeterminate')).toBe('true')
+		expect(instance.percentStyle).toEqual({})
+	})
+
+	it('снятый флаг возвращает на полосу хранимое значение', () => {
+		const instance = progress({ value: 60, indeterminate: true })
+
+		instance.indeterminate = false
+
+		expect(instance.aria.get('aria-valuenow')).toBe('60')
+		expect(instance.dataset.get('data-indeterminate')).toBe('false')
+		expect(percentOf(instance)).toBe('60%')
+	})
+
+	it('значение, записанное во время бега, ждёт снятия флага', () => {
+		const instance = progress({ indeterminate: true })
+
+		instance.value = 25
+		instance.max = 50
+
+		expect(instance.aria.has('aria-valuenow')).toBe(false)
+		expect(instance.percentStyle).toEqual({})
+		// Шкалу скринридер знает и во время бега
+		expect(instance.aria.get('aria-valuemax')).toBe('50')
+
+		instance.indeterminate = false
+
+		expect(instance.aria.get('aria-valuenow')).toBe('25')
+		expect(percentOf(instance)).toBe('50%')
+	})
+})
+
+/**
+ * Ось — модификатор без префикса, как у Slider и Tabs: значение библиотеки.
+ * `aria-orientation` у роли `progressbar` нет (ARIA 1.2) — ядро его не пишет
+ * ни при какой оси.
+ */
+describe('ось', () => {
+	it('модификатор меняется вместе с осью, прежний снимается', () => {
+		const instance = progress()
+		const axis = () =>
+			instance.classes.toArray().filter((name) => /--(horizontal|vertical)$/.test(name))
+
+		expect(axis()).toEqual(['s-progress-linear--horizontal'])
+
+		instance.orientation = 'vertical'
+
+		expect(axis()).toEqual(['s-progress-linear--vertical'])
+
+		instance.orientation = 'horizontal'
+
+		expect(axis()).toEqual(['s-progress-linear--horizontal'])
+	})
+
+	it('заданная конструктором ось — сразу своим модификатором', () => {
+		const classes = progress({ orientation: 'vertical' }).classes.toArray()
+
+		expect(classes).toContain('s-progress-linear--vertical')
+		expect(classes).not.toContain('s-progress-linear--horizontal')
+	})
+
+	it('aria-orientation нет ни при какой оси', () => {
+		const instance = progress({ value: 40 })
+
+		expect(instance.aria.has('aria-orientation')).toBe(false)
+
+		instance.orientation = 'vertical'
+
+		expect(instance.aria.has('aria-orientation')).toBe(false)
+		expect(progress({ orientation: 'vertical' }).aria.has('aria-orientation')).toBe(false)
+	})
+
+	it('ось долю и наборы не трогает', () => {
+		const instance = progress({ value: 40 })
+
+		instance.orientation = 'vertical'
+
+		expect(percentOf(instance)).toBe('40%')
+		expect(instance.aria.get('aria-valuenow')).toBe('40')
+		expect(instance.dataset.get('data-indeterminate')).toBe('false')
 	})
 })
 
@@ -175,12 +287,32 @@ describe('события — только на смену', () => {
 		expect(fired).toEqual([])
 
 		instance.value = 50
-		instance.value = null
-		instance.value = null
+		instance.value = 50
 		instance.min = 10
 		instance.max = 90
 
-		expect(fired).toEqual(['value 50', 'value null', 'min 10', 'max 90'])
+		expect(fired).toEqual(['value 50', 'min 10', 'max 90'])
+	})
+
+	it('change:indeterminate и change:orientation: запись того же значения молчит', () => {
+		const instance = progress()
+		const fired: string[] = []
+
+		instance.events.on('change:indeterminate', (value) => fired.push(`indeterminate ${value}`))
+		instance.events.on('change:orientation', (value) => fired.push(`orientation ${value}`))
+
+		instance.indeterminate = false
+		instance.orientation = 'horizontal'
+
+		expect(fired).toEqual([])
+
+		instance.indeterminate = true
+		instance.indeterminate = true
+		instance.orientation = 'vertical'
+		instance.orientation = 'vertical'
+		instance.indeterminate = false
+
+		expect(fired).toEqual(['indeterminate true', 'orientation vertical', 'indeterminate false'])
 	})
 
 	it('change:aria и change:dataset — когда набор сменился', () => {
@@ -194,6 +326,7 @@ describe('события — только на смену', () => {
 		// Записали то же самое — наборы не тронуты
 		instance.value = 40
 		instance.max = 100
+		instance.indeterminate = false
 
 		expect([aria, dataset]).toEqual([0, 0])
 
@@ -201,8 +334,33 @@ describe('события — только на смену', () => {
 
 		expect([aria, dataset]).toEqual([1, 0])
 
-		instance.value = null
+		instance.indeterminate = true
 
 		expect([aria, dataset]).toEqual([2, 1])
+
+		// Значение под бегом наборов не трогает: aria-valuenow нет
+		instance.value = 70
+
+		expect([aria, dataset]).toEqual([2, 1])
+
+		// Ось — модификатор, а не набор
+		instance.orientation = 'vertical'
+
+		expect([aria, dataset]).toEqual([2, 1])
+	})
+
+	it('change:classes — когда сменилась ось', () => {
+		const instance = progress()
+		let classes = 0
+
+		instance.events.on('change:classes', () => (classes += 1))
+
+		instance.orientation = 'horizontal'
+
+		expect(classes).toBe(0)
+
+		instance.orientation = 'vertical'
+
+		expect(classes).toBeGreaterThan(0)
 	})
 })

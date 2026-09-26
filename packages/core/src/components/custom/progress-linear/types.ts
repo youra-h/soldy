@@ -12,28 +12,42 @@ import type {
  */
 export type TProgressLinearStyle = Record<`--${string}`, string>
 
+/**
+ * Ось полосы: `horizontal` — вдоль строки, от её начала; `vertical` — снизу
+ * вверх, как вертикальный Slider.
+ */
+export type TProgressLinearOrientation = 'horizontal' | 'vertical'
+
 export interface IProgressLinearProps extends IStylableProps {
-	/**
-	 * Сколько готово — число на шкале от `min` до `max`. `null` — доля
-	 * неизвестна, и полоса бежит. Бег — это `null`, а не флаг рядом со
-	 * значением: пара «значение + флаг» допускала бы бег с долей.
-	 */
-	value?: number | null
+	/** Сколько готово — число на шкале от `min` до `max` */
+	value?: number
 	/** Начало шкалы */
 	min?: number
 	/** Конец шкалы */
 	max?: number
+	/**
+	 * Доля неизвестна — полоса бежит. Флаг главнее значения, как у CheckBox:
+	 * пока он стоит, доли и `aria-valuenow` нет, а `value` хранится и
+	 * вернётся, когда бег снимут.
+	 */
+	indeterminate?: boolean
+	/** Ось полосы */
+	orientation?: TProgressLinearOrientation
 }
 
 export type TProgressLinearStates = TStylableStates
 
 export type TProgressLinearEvents = TStylableEvents & {
 	/** change:value */
-	'change:value': (value: number | null) => void
+	'change:value': (value: number) => void
 	/** change:min */
 	'change:min': (value: number) => void
 	/** change:max */
 	'change:max': (value: number) => void
+	/** change:indeterminate */
+	'change:indeterminate': (value: boolean) => void
+	/** change:orientation */
+	'change:orientation': (value: TProgressLinearOrientation) => void
 }
 
 export interface IProgressLinear extends IStylable<
@@ -41,15 +55,19 @@ export interface IProgressLinear extends IStylable<
 	TProgressLinearEvents,
 	TProgressLinearStates
 > {
-	/** Сколько готово; `null` — доля неизвестна */
-	value: number | null
+	/** Сколько готово */
+	value: number
 	/** Начало шкалы */
 	min: number
 	/** Конец шкалы */
 	max: number
+	/** Доля неизвестна — полоса бежит, `value` при этом хранится */
+	indeterminate: boolean
+	/** Ось полосы */
+	orientation: TProgressLinearOrientation
 	/**
 	 * `--s-progress-linear-percent` — доля готового, прижатая к 0–100 %. Пока
-	 * доля неизвестна, переменной нет
+	 * полоса бежит, переменной нет
 	 */
 	readonly percentStyle: TProgressLinearStyle
 }
