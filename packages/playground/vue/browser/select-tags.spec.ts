@@ -131,11 +131,13 @@ const pairHarness = (options: {
 	size?: (typeof COMPONENT_SIZES)[number]
 	overflow?: TTagsOverflow
 	direction?: TDirection
+	/** Ширина контейнера каждого поля; по умолчанию `FIELD_WIDTH`. */
+	width?: number
 }) =>
 	defineComponent({
 		render() {
 			const select = (value?: string[]) =>
-				h('div', { style: `width: ${FIELD_WIDTH}px` }, [
+				h('div', { style: `width: ${options.width ?? FIELD_WIDTH}px` }, [
 					h(
 						Select,
 						{
@@ -862,6 +864,57 @@ describe('кнопка «…» в поле', () => {
 			expectRingInsideHorizontally(button, area, `кнопка «…», ${name}`)
 			expectRingInsideVertically(button, area, `кнопка «…», ${name}`)
 		}
+	})
+})
+
+/**
+ * Ширина поля, в которой лента `arrows` помещается в слот на любом размере.
+ * Ряд делит строку поля с вводом пополам, а кнопки листания растут с размером:
+ * в `FIELD_WIDTH` на `2xl` они забирают всю долю ряда — вьюпорт сжат до своего
+ * паддинга, — и кнопка «вперёд» выходит за слот, а не стоит у его края.
+ */
+const ARROWS_FIELD_WIDTH = 640
+
+/**
+ * Кнопка «вперёд» ленты `arrows` в поле стоит у правого края слота тегов: лента
+ * — доля строки поля, и кончается она там, где начинается ввод. Слот обрезает
+ * тег шире себя, край его обрезки совпадал с краем кнопки, и у кольца фокуса
+ * пропадала правая сторона. Запас под кольцо — за краем обрезки слота
+ * (`select/_select.scss`), а с запасом слот режет и по вертикали: кнопки ленты
+ * растянуты по строке слота, и кольцо умещается в запас впритык. Поэтому обе
+ * оси и каждый размер — строка слота у каждого своя.
+ */
+describe.each(COMPONENT_SIZES)('размер %s: кнопка «вперёд» ленты в поле', (size) => {
+	it('слот не срезает кольцо фокуса кнопки', async () => {
+		render(
+			pairHarness({
+				value: ALL_VALUES,
+				texts: OPTIONS,
+				overflow: 'arrows',
+				size,
+				width: ARROWS_FIELD_WIDTH,
+			}),
+		)
+
+		await expect.poll(() => find('.s-select__field .s-scroller').dataset.canNext).toBe('true')
+
+		const button = find('.s-select__field .s-scroller__next')
+		const slot = find('.s-select__field .s-input__leading')
+
+		// Кнопка — у самого края слота. Отойди она от края, кольцу было бы куда
+		// выйти и без запаса, и проверка ниже прошла бы вхолостую
+		expect(box(slot).right - box(button).right, 'от кнопки до края слота').toBeCloseTo(0, 1)
+
+		// С клавиатуры: кольцо рисует `:focus-visible`. Вперёд табом до кнопки не
+		// дойти — крестики тегов докручивают ленту до конца, и кнопка гаснет, —
+		// а назад из ввода она первая остановка
+		input().focus()
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+		expect(document.activeElement, 'фокус на кнопке «вперёд»').toBe(button)
+
+		expectRingInsideHorizontally(button, slot, 'кнопка «вперёд», слот')
+		expectRingInsideVertically(button, slot, 'кнопка «вперёд», слот')
 	})
 })
 
