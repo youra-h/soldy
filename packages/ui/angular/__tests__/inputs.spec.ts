@@ -9,17 +9,25 @@
  * своим декоратором: поле входа ищется среди членов того класса, чей
  * декоратор объявил вход.
  *
- * Здесь три проверки:
- * - хосты с верными значениями: их шаблоны проверяет «Типы — Angular», а
- *   рантайм доносит значения из шаблона до ядра;
+ * Булев вход декоратор объявляет с `transform: booleanInput`. Атрибут без
+ * значения (`<soldy-button disabled>`) Angular отдаёт входу пустой строкой, а
+ * transform превращает её в `true`, как это делают остальные адаптеры. Тип
+ * записи такого входа проверка берёт у параметра transform, а не у поля.
+ *
+ * Здесь пять проверок:
+ * - хосты с верными значениями, `disabled` без значения тоже: их шаблоны
+ *   проверяет «Типы — Angular», а рантайм доносит значения из шаблона до ядра;
+ * - снятый булев вход возвращается к умолчанию, а не к `false`;
  * - `expectTypeOf` — тип поля: с `any` верный шаблон прошёл бы и так;
- * - неверное значение в каждом входе каждого компонента экспорта: хост
- *   компилирует здесь же компилятор Angular, в памяти. Под `@ts-expect-error`
- *   отрицательный случай не записать — ошибка шаблона приходит не из строки
- *   TS. А без него сверку незаметно выключил бы даже вход, объявленный ещё раз
- *   в `@Component` компонента: поле в базе на месте, тип у него верный, и
- *   верный шаблон компилируется — выдаёт поломку только неверное значение,
- *   которое прошло.
+ * - какие входы генератор считает булевыми;
+ * - хосты каждого компонента экспорта, которые компилирует здесь же
+ *   компилятор Angular, в памяти: неверное значение в каждом входе — ошибка на
+ *   каждом, булевы входы атрибутом без значения — ни одной ошибки, со
+ *   значением `"yes"` — ошибка на каждом. Под `@ts-expect-error` отрицательный
+ *   случай не записать — ошибка шаблона приходит не из строки TS. А без него
+ *   сверку незаметно выключил бы даже вход, объявленный ещё раз в `@Component`
+ *   компонента: поле в базе на месте, тип у него верный, и верный шаблон
+ *   компилируется — выдаёт поломку только неверное значение, которое прошло.
  */
 
 import { describe, it, expect, expectTypeOf, beforeAll } from 'vitest'
@@ -34,16 +42,26 @@ import {
 	setFileSystem,
 } from '@angular/compiler-cli'
 import { Component, reflectComponentType, signal, type Type } from '@angular/core'
-import { TestBed } from '@angular/core/testing'
+import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import type { TButtonView, TComponentSize } from '@soldy-ui/core'
-import type { TExternalPluginProps } from '@soldy-ui/setup'
+import {
+	ButtonDescriptor,
+	ValueControlDescriptor,
+	type TExternalPluginProps,
+} from '@soldy-ui/setup'
 import * as angular from '@soldy-ui/angular'
-import { TButtonComponent, TComponentComponent, TComponentViewComponent } from '@soldy-ui/angular'
+import {
+	TButtonComponent,
+	TComponentComponent,
+	TComponentViewComponent,
+	useBooleanInputs,
+	useInputs,
+} from '@soldy-ui/angular'
 
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
-	template: `<soldy-button [text]="text()" [size]="size()" aria_label="Сохранить" />`,
+	template: `<soldy-button [text]="text()" [size]="size()" aria_label="Сохранить" disabled />`,
 })
 class ButtonHost {
 	readonly text = signal('Save')
@@ -59,16 +77,23 @@ class ComponentViewHost {
 	readonly visible = signal(false)
 }
 
+/** Корень Button в хосте — первый элемент внутри `<soldy-button>`. */
+function buttonRoot(fixture: ComponentFixture<unknown>): Element {
+	const host: HTMLElement = fixture.nativeElement
+	const root = host.querySelector('soldy-button')?.firstElementChild
+
+	if (!root) throw new Error('Корень Button не отрисован')
+
+	return root
+}
+
 describe('вход в строгом шаблоне · значение доходит до ядра', () => {
 	it('Button: [text], [size] и aria_label', () => {
 		const fixture = TestBed.createComponent(ButtonHost)
 
 		fixture.detectChanges()
 
-		const host: HTMLElement = fixture.nativeElement
-		const root = host.querySelector('soldy-button')?.firstElementChild
-
-		if (!root) throw new Error('Корень Button не отрисован')
+		const root = buttonRoot(fixture)
 
 		expect(root.querySelector('.s-button__text')?.textContent?.trim()).toBe('Save')
 		expect(root.classList).toContain('s-button--size-xl')
@@ -103,6 +128,43 @@ describe('вход в строгом шаблоне · значение дохо
 	})
 })
 
+describe('булев вход · атрибут без значения', () => {
+	/**
+	 * Без transform `''` доходила до ядра: запись проходила, но пустая строка —
+	 * ложь, и кнопка оставалась включённой.
+	 */
+	it('Button: disabled без значения выключает кнопку', () => {
+		const fixture = TestBed.createComponent(ButtonHost)
+
+		fixture.detectChanges()
+
+		const root = buttonRoot(fixture)
+
+		expect(root.getAttribute('data-disabled')).toBe('true')
+		expect(root.hasAttribute('disabled')).toBe(true)
+	})
+
+	/**
+	 * `booleanInput` отдаёт `undefined` как есть, и снятый вход связка
+	 * возвращает к умолчанию декларации. `booleanAttribute` из `@angular/core`
+	 * отдал бы `false`, и `visible` с умолчанием `true` остался бы скрытым.
+	 */
+	it('снятый булев вход возвращается к умолчанию, а не к false', () => {
+		const fixture = TestBed.createComponent(TComponentViewComponent)
+		const host: HTMLElement = fixture.nativeElement
+
+		fixture.componentRef.setInput('visible', false)
+		fixture.detectChanges()
+
+		expect(host.style.display).toBe('none')
+
+		fixture.componentRef.setInput('visible', undefined)
+		fixture.detectChanges()
+
+		expect(host.style.display).toBe('')
+	})
+})
+
 /**
  * Тип поля — то, с чем проверка шаблона сверяет значение. С `any` на его месте
  * хосты выше скомпилировались бы при любом значении.
@@ -115,6 +177,14 @@ describe('тип входа · тип пропа дескриптора', () => 
 		expectTypeOf<TComponentViewComponent['visible']>().toEqualTypeOf<boolean | undefined>()
 	})
 
+	/**
+	 * Поле хранит то, что вернул transform. Запись — `''` у атрибута без
+	 * значения — проверка шаблона сверяет с параметром transform, а не с полем.
+	 */
+	it('булев вход — значение после transform', () => {
+		expectTypeOf<TButtonComponent['disabled']>().toEqualTypeOf<boolean | undefined>()
+	})
+
 	it('проп плагина — под именем с неймспейсом', () => {
 		expectTypeOf<TButtonComponent['aria_label']>().toEqualTypeOf<string | undefined>()
 	})
@@ -124,6 +194,27 @@ describe('тип входа · тип пропа дескриптора', () => 
 		expectTypeOf<TComponentComponent['pluginProps']>().toEqualTypeOf<
 			TExternalPluginProps | undefined
 		>()
+	})
+})
+
+/**
+ * Булев вход — проп, объявленный ровно `Boolean`: ему генератор ставит
+ * transform. У пропа, где `Boolean` — один из типов, пустая строка — значение,
+ * и transform его не получает.
+ */
+describe('булев вход · критерий генератора', () => {
+	it('проп ровно Boolean', () => {
+		expect(useBooleanInputs(ButtonDescriptor())).toEqual([
+			'rendered',
+			'visible',
+			'disabled',
+			'focused',
+		])
+	})
+
+	it('Boolean среди типов пропа — не булев вход', () => {
+		expect(useInputs(ValueControlDescriptor())).toContain('value')
+		expect(useBooleanInputs(ValueControlDescriptor())).not.toContain('value')
 	})
 })
 
@@ -145,6 +236,12 @@ type TExportedComponent = {
 	readonly selector: string
 	/** Все входы в том виде, в каком их видит шаблон, с `ctrl` базы. */
 	readonly inputs: readonly string[]
+	/**
+	 * Булевы входы — входы с transform: другого transform у компонентов нет.
+	 * Берутся из рантайма, поэтому видно, что transform дошёл до компонента
+	 * через наследование от `T<Имя>Surface`.
+	 */
+	readonly booleans: readonly string[]
 }
 
 /** Компоненты экспорта — не ручным списком: новый попадёт под проверку сам. */
@@ -161,20 +258,32 @@ function exportedComponents(): TExportedComponent[] {
 			name,
 			selector: mirror.selector,
 			inputs: mirror.inputs.map((input) => input.templateName),
+			booleans: mirror.inputs
+				.filter((input) => input.transform !== undefined)
+				.map((input) => input.templateName),
 		})
 	}
 
 	return result
 }
 
-/**
- * Хост потребителя с неверным значением в каждом входе: `symbol` не подходит
- * ни одному пропу компонентов. Вход, чья привязка скомпилировалась, не
- * сверяется с типом вовсе.
- */
-function hostSource({ name, selector, inputs }: TExportedComponent): string {
-	const bindings = inputs.map((input) => `[${input}]="wrong"`).join(' ')
+/** Виды хоста — по тому, что стоит на элементе компонента. */
+const HOST_KINDS = ['wrong', 'bare', 'yes'] as const
 
+type THostKind = (typeof HOST_KINDS)[number]
+
+const BINDINGS: Record<THostKind, (component: TExportedComponent) => readonly string[]> = {
+	// `symbol` не подходит ни одному пропу компонентов: вход, чья привязка
+	// скомпилировалась, не сверяется с типом вовсе
+	wrong: ({ inputs }) => inputs.map((input) => `[${input}]="wrong"`),
+	// Атрибут без значения — пустая строка: её принимает параметр transform
+	bare: ({ booleans }) => booleans,
+	// Любая другая строка булеву входу не подходит
+	yes: ({ booleans }) => booleans.map((input) => `${input}="yes"`),
+}
+
+/** Хост потребителя, у которого на элементе компонента стоят `bindings`. */
+function hostSource({ name, selector }: TExportedComponent, bindings: readonly string[]): string {
 	return [
 		`import { Component } from '@angular/core'`,
 		`import { ${name} } from '@soldy-ui/angular'`,
@@ -182,7 +291,7 @@ function hostSource({ name, selector, inputs }: TExportedComponent): string {
 		'@Component({',
 		'	standalone: true,',
 		`	imports: [${name}],`,
-		`	template: \`<${selector} ${bindings} />\`,`,
+		`	template: \`<${selector} ${bindings.join(' ')} />\`,`,
 		'})',
 		'export class Host {',
 		`	readonly wrong = Symbol('wrong')`,
@@ -192,8 +301,8 @@ function hostSource({ name, selector, inputs }: TExportedComponent): string {
 }
 
 /** Входной файл хоста. На диске его нет: он лежит рядом со спеком, чтобы разрешались пакеты. */
-const hostFile = (component: TExportedComponent): string =>
-	resolve(PACKAGE, `__tests__/inputs.${component.name}.host.ts`)
+const hostFile = (component: TExportedComponent, kind: THostKind): string =>
+	resolve(PACKAGE, `__tests__/inputs.${component.name}.${kind}.host.ts`)
 
 type TRejection = {
 	/** Что подчёркнуто в шаблоне: у неверного значения — имя входа. */
@@ -263,14 +372,28 @@ function compileHosts(sources: ReadonlyMap<string, string>): {
 	return { rejections, outside }
 }
 
-describe('вход в строгом шаблоне · неверное значение — ошибка компиляции', () => {
+describe('вход в строгом шаблоне · хосты компонентов экспорта', () => {
 	const components = exportedComponents()
+	const withBooleans = components.filter(({ booleans }) => booleans.length > 0)
 	let compiled: ReturnType<typeof compileHosts>
+
+	const rejectionsOf = (component: TExportedComponent, kind: THostKind) =>
+		compiled.rejections.get(hostFile(component, kind)) ?? []
 
 	// Компилятор Angular разбирает всю программу пакета: секунды, а не миллисекунды
 	beforeAll(() => {
 		compiled = compileHosts(
-			new Map(components.map((component) => [hostFile(component), hostSource(component)])),
+			new Map(
+				components.flatMap((component) =>
+					HOST_KINDS.map(
+						(kind) =>
+							[
+								hostFile(component, kind),
+								hostSource(component, BINDINGS[kind](component)),
+							] as const,
+					),
+				),
+			),
 		)
 	}, 60_000)
 
@@ -284,16 +407,43 @@ describe('вход в строгом шаблоне · неверное знач
 		)
 	})
 
+	/**
+	 * Без этого проверки булевых входов ниже прошли бы и пустыми: пропади
+	 * transform, у компонентов не осталось бы ни одного булева входа.
+	 */
+	it('transform стоит ровно на булевых входах генератора', () => {
+		const button = components.find(({ name }) => name === 'TButtonComponent')
+
+		expect(button?.booleans).toEqual(useBooleanInputs(ButtonDescriptor()))
+	})
+
 	it('кроме привязок хостов, ошибок в программе нет', () => {
 		expect(compiled.outside).toEqual([])
 	})
 
 	it.each(components.map((component) => [component.name, component] as const))(
-		'%s: ошибка на каждом входе',
+		'%s: неверное значение — ошибка на каждом входе',
 		(_name, component) => {
 			// TS2322 — «значение не присваивается типу поля»: сверка шла по входу
-			expect(compiled.rejections.get(hostFile(component)) ?? []).toEqual(
+			expect(rejectionsOf(component, 'wrong')).toEqual(
 				component.inputs.map((input) => ({ span: input, code: 2322 })),
+			)
+		},
+	)
+
+	it.each(withBooleans.map((component) => [component.name, component] as const))(
+		'%s: булевы входы атрибутом без значения — без ошибок',
+		(_name, component) => {
+			expect(rejectionsOf(component, 'bare')).toEqual([])
+		},
+	)
+
+	it.each(withBooleans.map((component) => [component.name, component] as const))(
+		'%s: булевы входы со значением "yes" — ошибка на каждом',
+		(_name, component) => {
+			// Тип записи — параметр transform, `boolean | '' | undefined`, а не `string`
+			expect(rejectionsOf(component, 'yes')).toEqual(
+				component.booleans.map((input) => ({ span: input, code: 2322 })),
 			)
 		},
 	)

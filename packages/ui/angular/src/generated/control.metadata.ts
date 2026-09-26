@@ -2,6 +2,7 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/control/manifest'
 
 export const ControlInputs = [
@@ -60,8 +61,27 @@ export const ControlOutputs = [
  * Поверхность Control в Angular: входы и выходы компонента с типами для
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `ControlOutputs` — поля их только объявляют.
+ * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
-@Directive({ standalone: true, inputs: [...ControlInputs], outputs: [...ControlOutputs] })
+@Directive({
+	standalone: true,
+	inputs: [
+		'embedded',
+		'pluginProps',
+		{ name: 'rendered', transform: booleanInput },
+		{ name: 'visible', transform: booleanInput },
+		'tag',
+		'direction',
+		'size',
+		'variant',
+		{ name: 'disabled', transform: booleanInput },
+		{ name: 'focused', transform: booleanInput },
+		'aria_label',
+		'aria_labelledBy',
+		'aria_describedBy',
+	],
+	outputs: [...ControlOutputs],
+})
 export abstract class TControlSurface<TInstance extends IEntity> extends TComponentBase<TInstance> {
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>

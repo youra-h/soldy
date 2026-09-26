@@ -2,6 +2,7 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/component-view/manifest'
 
 export const ComponentViewInputs = [
@@ -40,10 +41,18 @@ export const ComponentViewOutputs = [
  * Поверхность ComponentView в Angular: входы и выходы компонента с типами для
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `ComponentViewOutputs` — поля их только объявляют.
+ * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
 @Directive({
 	standalone: true,
-	inputs: [...ComponentViewInputs],
+	inputs: [
+		'embedded',
+		'pluginProps',
+		{ name: 'rendered', transform: booleanInput },
+		{ name: 'visible', transform: booleanInput },
+		'tag',
+		'direction',
+	],
 	outputs: [...ComponentViewOutputs],
 })
 export abstract class TComponentViewSurface<

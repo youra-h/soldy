@@ -12,7 +12,11 @@ export const ComponentOutputs = ['bundleCreate', 'pluginEvent'] as const
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `ComponentOutputs` — поля их только объявляют.
  */
-@Directive({ standalone: true, inputs: [...ComponentInputs], outputs: [...ComponentOutputs] })
+@Directive({
+	standalone: true,
+	inputs: ['embedded', 'pluginProps'],
+	outputs: [...ComponentOutputs],
+})
 export abstract class TComponentSurface<
 	TInstance extends IEntity,
 > extends TComponentBase<TInstance> {

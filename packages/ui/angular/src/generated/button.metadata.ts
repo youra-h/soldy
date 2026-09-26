@@ -2,6 +2,7 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/button/manifest'
 
 export const ButtonInputs = [
@@ -64,8 +65,29 @@ export const ButtonOutputs = [
  * Поверхность Button в Angular: входы и выходы компонента с типами для
  * строгой проверки шаблона. Значения входов пишет Angular, эмиттеры ставит
  * `TComponentBase` по `ButtonOutputs` — поля их только объявляют.
+ * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
  */
-@Directive({ standalone: true, inputs: [...ButtonInputs], outputs: [...ButtonOutputs] })
+@Directive({
+	standalone: true,
+	inputs: [
+		'embedded',
+		'pluginProps',
+		{ name: 'rendered', transform: booleanInput },
+		{ name: 'visible', transform: booleanInput },
+		'tag',
+		'direction',
+		'size',
+		'variant',
+		{ name: 'disabled', transform: booleanInput },
+		{ name: 'focused', transform: booleanInput },
+		'text',
+		'view',
+		'aria_label',
+		'aria_labelledBy',
+		'aria_describedBy',
+	],
+	outputs: [...ButtonOutputs],
+})
 export abstract class TButtonSurface<TInstance extends IEntity> extends TComponentBase<TInstance> {
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
