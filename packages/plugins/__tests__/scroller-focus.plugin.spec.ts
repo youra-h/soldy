@@ -97,6 +97,78 @@ describe('элемент ленты не шире окна: начало к на
 })
 
 /**
+ * Элемент под фокусом уже в окне, а его элемент ленты не шире окна — нет. В
+ * окне должен стоять весь элемент ленты: снап выравнивает элементы, и
+ * докрутку до конца окна он вернул бы к соседней точке, а у тега кольцо
+ * рисует пилюля. Сдвиг — к той же точке снапа, что выше: начало элемента
+ * ленты у начала окна, в RTL — правые края.
+ *
+ * Отрезки — как у тега: строка у начала пилюли, крестик у конца. В окне то
+ * строка, а за краем крестик, то наоборот.
+ */
+describe('элемент под фокусом в окне, а элемент ленты не шире окна — нет', () => {
+	/** Отрезок лежит в окне снапа. */
+	const expectInside = (box: TInlineSpan, what: string) => {
+		expect(box.left, `${what}: левый край`).toBeGreaterThanOrEqual(SNAPPORT.left)
+		expect(box.right, `${what}: правый край`).toBeLessThanOrEqual(SNAPPORT.right)
+	}
+
+	const cases = [
+		{
+			name: 'LTR, за краем в конце — крестик',
+			focused: span(220, 290),
+			item: span(220, 320),
+			rtl: false,
+			shift: 120,
+		},
+		{
+			name: 'LTR, за краем в начале — строка',
+			focused: span(150, 174),
+			item: span(80, 180),
+			rtl: false,
+			shift: -20,
+		},
+		{
+			name: 'RTL, за краем в конце — крестик',
+			focused: span(110, 180),
+			item: span(80, 180),
+			rtl: true,
+			shift: -120,
+		},
+		{
+			name: 'RTL, за краем в начале — строка',
+			focused: span(226, 250),
+			item: span(220, 320),
+			rtl: true,
+			shift: 20,
+		},
+	]
+
+	it.each(cases)('$name', ({ focused, item, rtl, shift }) => {
+		// По одному элементу под фокусом сдвигать нечего: он уже в окне
+		expectInside(focused, 'элемент под фокусом до сдвига')
+
+		expect(resolveFocusShift({ snapport: SNAPPORT, focused, item, rtl })).toBe(shift)
+
+		expectInside(shifted(item, shift), 'элемент ленты после сдвига')
+	})
+
+	/** Допуск тот же, что у элемента под фокусом: края элементов дробные. */
+	it('элемент ленты, вышедший из окна на полпикселя, — ещё в окне', () => {
+		const at = (left: number) =>
+			resolveFocusShift({
+				snapport: SNAPPORT,
+				focused: span(120, 180),
+				item: span(left, 190),
+				rtl: false,
+			})
+
+		expect(at(99.6)).toBeNull()
+		expect(at(99.4)).not.toBeNull()
+	})
+})
+
+/**
  * Элемент ленты шире окна: точка снапа у него — любое положение, где он
  * накрывает окно. Из них — ближайшее, при котором элемент под фокусом в окне.
  */

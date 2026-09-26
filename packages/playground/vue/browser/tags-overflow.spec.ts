@@ -743,6 +743,80 @@ describe('режим arrows: ряд листают кнопки', () => {
 
 			expectFocusedClearOfFades(close, viewport(), 'крестик длинного тега')
 		})
+
+		/**
+		 * Строка тега под фокусом уже в окне, а его пилюля — нет: крестик за
+		 * строкой стоит на краю окна, частью в чистой части ленты, частью под
+		 * подсказкой. В окно встаёт вся пилюля — элемент ленты, а не только
+		 * элемент под фокусом: кольцо в режиме выбора рисует она, а крестик без
+		 * подписи не скажет, какой тег он закроет. Пока лента смотрела на одну
+		 * строку, она стояла на месте, а докрутку пилюли до конца окна плагином
+		 * клавиатуры снап возвращал к точке предыдущего тега: крестик оставался
+		 * под подсказкой, кольцо — за краем вьюпорта.
+		 *
+		 * Лента подгоняется под тег тем же приёмом, что выше: край чистой части
+		 * ставится на середину крестика. Тег — второй: Tab входит в набор на
+		 * первом, а на этот фокус переводит стрелка.
+		 */
+		it('с выбором: строка в окне, крестик на краю — в окно встаёт вся пилюля', async () => {
+			render(harness(ROWS, { overflow: 'arrows', mode: 'single' }))
+
+			await scrollable()
+
+			const text = TAGS[1]
+			const tag = at([...viewport().querySelectorAll(':scope > .s-tags-item')], 1)
+			const close = at([...tag.querySelectorAll('.s-tags-item__close')], 0)
+
+			/** Правый край чистой части: в начале строки подсказка только у конца. */
+			const edge = () => viewport().getBoundingClientRect().right - fades(viewport()).right
+			const middle = () => {
+				const box = close.getBoundingClientRect()
+
+				return (box.left + box.right) / 2
+			}
+
+			/** Ширина окна снапа — паддинг-бокс вьюпорта без отступа прокрутки. */
+			const snapport = () => {
+				const style = getComputedStyle(viewport())
+
+				return (
+					viewport().clientWidth -
+					parseFloat(style.scrollPaddingLeft) -
+					parseFloat(style.scrollPaddingRight)
+				)
+			}
+
+			host().style.width = `${host().getBoundingClientRect().width + middle() - edge()}px`
+
+			await nextFrame()
+			await nextFrame()
+
+			// Весь набор — одна остановка Tab, и без выбора она на первом теге
+			await press('{Tab}')
+
+			expect(document.activeElement, `фокус на строке «${TAGS[0]}»`).toBe(line(TAGS[0]))
+
+			// Перед стрелкой проверяется, что доводить есть что: иначе проверки
+			// после неё прошли бы вхолостую
+			const box = close.getBoundingClientRect()
+
+			expect(tag.textContent?.trim(), 'второй тег').toBe(text)
+			expect(fades(viewport()).left, 'лента в начале строки').toBe(0)
+			expectClearOfFades(line(text), viewport(), `строка «${text}»`)
+			expect(box.left, 'крестик заходит в чистую часть').toBeLessThan(edge() - 4)
+			expect(box.right, 'крестик заходит под подсказку').toBeGreaterThan(edge() + 4)
+			// Пилюля шире окна в него не встанет — это случай тега шире окна, выше
+			expect(tag.getBoundingClientRect().width, 'пилюля уже окна снапа').toBeLessThan(
+				snapport(),
+			)
+
+			await press('{ArrowRight}')
+
+			expect(document.activeElement, `фокус на строке «${text}»`).toBe(line(text))
+
+			expectClearOfFades(tag, viewport(), `пилюля «${text}»`)
+			expectRingInsideHorizontally(tag, viewport(), `пилюля «${text}»`)
+		})
 	})
 
 	/**
