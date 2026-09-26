@@ -24,6 +24,7 @@ import type { ISliderProps, TSliderValue } from '@soldy-ui/core'
 import { Label, Slider } from '@soldy-ui/vue'
 
 import { reducedMotion } from './media'
+import { transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -117,31 +118,6 @@ function beyond(edge: 'left' | 'right') {
 	const x = edge === 'left' ? box.left - 20 : box.right + 20
 
 	return { x: x - page.left, y: box.top + box.height / 2 - page.top }
-}
-
-/**
- * Свойства, которым браузер завёл переход на узле, — по мере прихода
- * `transitionrun`. Слушатель вешается до действия и застаёт переход, даже если
- * тот кончился раньше, чем тест снова получил управление.
- */
-function transitionRuns(node: HTMLElement): string[] {
-	const runs: string[] = []
-
-	node.addEventListener('transitionrun', (event) => runs.push(event.propertyName))
-
-	return runs
-}
-
-/**
- * Дождаться событий переходов. Переход заводит пересчёт стиля — без замера
- * он случается только в кадре, после колбэков `requestAnimationFrame`, — а
- * `transitionrun` браузер шлёт в начале следующего кадра. Через два кадра
- * пришло всё, что вызвало действие, и пустой список значит, что переходов не
- * было.
- */
-async function transitionEvents() {
-	await nextFrame()
-	await nextFrame()
 }
 
 beforeEach(() => {

@@ -3,6 +3,7 @@ import type { TValueControlStates } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TStateUnit, createScale } from '../../../common'
 import { sameValue } from '../../../common/state-unit/same-value'
+import { percent } from '../../../common/utility/percent'
 import type { IScale, TAriaAttributes } from '../../../common'
 import type { TSlideEdge, TSlideOrientation, TSlideSnap } from '../slide'
 import type {
@@ -22,14 +23,6 @@ import type {
 /** Число в отрезке; `NaN` уходит в начало. */
 function within(value: number, low: number, high: number): number {
 	return value > low ? Math.min(value, high) : low
-}
-
-/**
- * Доля хода процентом для CSS — с `%` и без хвоста плавающей точки: 0.3 хода
- * даёт `30%`, а не `30.000000000000004%`.
- */
-function percent(fraction: number): string {
-	return `${Math.round(fraction * 1e6) / 1e4}%`
 }
 
 /**

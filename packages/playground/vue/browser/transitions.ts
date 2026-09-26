@@ -1,6 +1,8 @@
 /**
  * CSS-переходы темы в настоящем браузере — общее для спеков, которые смотрят,
- * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`).
+ * как слой появляется и исчезает (`drawer.spec.ts`, `dialog.spec.ts`), и как
+ * новое значение доезжает до места переходом (`slider.spec.ts`,
+ * `progress-linear.spec.ts`).
  *
  * Хуков под анимацию у кода нет: переход держит тема, и увидеть его можно
  * только на самом узле. Браузер заводит на каждое свойство, которое идёт
@@ -81,4 +83,31 @@ export const whileLeaving = async (element: Element, check: () => void): Promise
 	}
 
 	return seen
+}
+
+/**
+ * Свойства, которым браузер завёл переход на узле, — по мере прихода
+ * `transitionrun`. Слушатель вешается до действия и застаёт переход, даже если
+ * тот кончился раньше, чем тест снова получил управление: ответ Playwright на
+ * ввод идёт кругом RPC, и снимок `getAnimations()` после действия мог бы уже
+ * ничего не застать.
+ */
+export const transitionRuns = (element: HTMLElement): string[] => {
+	const runs: string[] = []
+
+	element.addEventListener('transitionrun', (event) => runs.push(event.propertyName))
+
+	return runs
+}
+
+/**
+ * Дождаться событий переходов. Переход заводит пересчёт стиля — без замера
+ * он случается только в кадре, после колбэков `requestAnimationFrame`, — а
+ * `transitionrun` браузер шлёт в начале следующего кадра. Через два кадра
+ * пришло всё, что вызвало действие, и пустой список значит, что переходов не
+ * было.
+ */
+export const transitionEvents = async (): Promise<void> => {
+	await nextFrame()
+	await nextFrame()
 }

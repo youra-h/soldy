@@ -1,5 +1,19 @@
+<script lang="ts">
+import SetupProgressLinear from './setup.component'
+
+export default { ...SetupProgressLinear }
+</script>
+
 <template>
-	<span class="s-progress-linear">
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		:style="percentStyle"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
 		<!--
 			Индикатор выполнения — линия. Корень и есть дорожка во всю длину, в нём
 			заливка доли готового. Корень рисуется по `tag`, по умолчанию `span`:
@@ -22,5 +36,5 @@
 			рисует псевдоэлементом корня: своего узла у бегущего отрезка нет.
 		-->
 		<span class="s-progress-linear__range"></span>
-	</span>
+	</component>
 </template>

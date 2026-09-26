@@ -14,6 +14,7 @@ import {
 	Label,
 	ListBox,
 	Popover,
+	ProgressLinear,
 	RadioGroup,
 	Scroller,
 	Select,
@@ -336,6 +337,17 @@ export const PREVIEWS: Record<string, TPreview> = {
 	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
 	spinner: (bind) => h(Spinner, bind),
+
+	/**
+	 * Длину полосе даёт контейнер, своей у неё нет. Обёртка — граница ширины,
+	 * как у ленты: сцена ячейки — флексбокс, и полоса держала бы там только
+	 * свой минимум.
+	 *
+	 * Без значения полоса бежит — так её и видно на витрине. Имени без видимой
+	 * подписи у неё нет, превью даёт его пропом, как поповеру.
+	 */
+	'progress-linear': (bind) =>
+		h('div', { style: 'width:100%' }, [h(ProgressLinear, { aria_label: 'Загрузка', ...bind })]),
 
 	skeleton: (bind) => h(Skeleton, { width: 160, height: 16, ...bind }),
 
