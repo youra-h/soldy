@@ -6,9 +6,10 @@ import type { TCloseReason } from '@soldy-ui/core'
  * Модель модального окна: состояние и то, что из него следует для разметки.
  *
  * Фокус, Escape и Tab — модель фокуса, нажатие мимо — плагин оверлея, фон и
- * прокрутка — свои плагины; место, размер и разворот раскладывает тема. Здесь
- * только ядро: умолчания, ARIA окна и его частей, модификатор места,
- * `data-maximized`, слой в общем стеке и запрос закрытия.
+ * прокрутка — свои плагины; место, размер и разворот раскладывает тема, она же
+ * гасит закрытое окно. Здесь только ядро: умолчания, ARIA окна и его частей,
+ * модификатор места, `data-maximized`, `data-open`, слой в общем стеке и
+ * запрос закрытия.
  */
 
 beforeEach(() => {
@@ -276,13 +277,56 @@ describe('размер', () => {
 	})
 })
 
+describe('открытость для темы', () => {
+	/**
+	 * Появление и исчезание — CSS темы: закрытое окно и подложку она гасит по
+	 * `data-open`, и переходу до скрытия есть к чему идти. У подложки
+	 * экземпляра нет — ту же открытость ей отдаёт выход `backdropDataset`.
+	 */
+	it('data-open у окна и подложки — false и true вслед за visible', () => {
+		const dialog = new TDialog()
+
+		expect(dialog.dataset.get('open')).toBe('false')
+		expect(dialog.backdropDataset['data-open']).toBe('false')
+
+		dialog.show()
+
+		expect(dialog.dataset.get('open')).toBe('true')
+		expect(dialog.backdropDataset['data-open']).toBe('true')
+
+		dialog.visible = false
+
+		expect(dialog.dataset.get('open')).toBe('false')
+		expect(dialog.backdropDataset['data-open']).toBe('false')
+	})
+
+	it('созданное видимым — data-open сразу true, у подложки тоже', () => {
+		const dialog = shown()
+
+		expect(dialog.dataset.get('open')).toBe('true')
+		expect(dialog.backdropDataset['data-open']).toBe('true')
+	})
+
+	/** Иначе тема погасила бы окно, которое осталось открытым. */
+	it('отменённое скрытие data-open не трогает', () => {
+		const dialog = shown()
+
+		dialog.events.on('hide:before', (event) => event.preventDefault())
+		dialog.hide()
+
+		expect(dialog.visible).toBe(true)
+		expect(dialog.dataset.get('open')).toBe('true')
+		expect(dialog.backdropDataset['data-open']).toBe('true')
+	})
+})
+
 describe('слой', () => {
 	it('скрытое окно слоя не получает', () => {
 		const dialog = new TDialog()
 
 		expect(dialog.zIndex).toBe(0)
 		expect(dialog.dataset.has(FRAME_LAYER_ATTRIBUTE)).toBe(false)
-		expect(dialog.backdropDataset).toEqual({})
+		expect(dialog.backdropDataset).toEqual({ 'data-open': 'false' })
 	})
 
 	it('показанное — номер слоя в zIndex и data-layer, у подложки тот же', () => {
@@ -292,7 +336,10 @@ describe('слой', () => {
 
 		expect(dialog.zIndex).toBeGreaterThan(0)
 		expect(dialog.dataset.get(FRAME_LAYER_ATTRIBUTE)).toBe(String(dialog.zIndex))
-		expect(dialog.backdropDataset).toEqual({ [FRAME_LAYER_ATTRIBUTE]: String(dialog.zIndex) })
+		expect(dialog.backdropDataset).toEqual({
+			[FRAME_LAYER_ATTRIBUTE]: String(dialog.zIndex),
+			'data-open': 'true',
+		})
 	})
 
 	it('созданное видимым получает слой сразу', () => {

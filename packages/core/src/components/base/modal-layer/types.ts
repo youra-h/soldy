@@ -63,6 +63,6 @@ export interface IModalLayer<
 	readonly titleAria: TAriaAttributes
 	/** Имя кнопки закрытия: `closeLabel` */
 	readonly closeAria: TAriaAttributes
-	/** `data-*` подложки: тот же номер слоя, что у панели */
+	/** `data-*` подложки: тот же номер слоя и та же открытость, что у панели */
 	readonly backdropDataset: TDatasetAttributes
 }

@@ -14,10 +14,10 @@ import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwi
  * край, жест и место в документе.
  *
  * **Край — значение, раскладка и анимация — тема.** Край уходит модификатором
- * `--placement-<v>` (стоит всегда), открытость — `data-open`: по нему тема
- * уводит закрытую панель за край. Своего въезда и выезда у ядра нет — ни
- * «присутствия», ни хуков под анимацию: закрытая панель спрятана `visible`, а
- * переход до скрытия и после показа держит CSS.
+ * `--placement-<v>` (стоит всегда), открытость — `data-open` модального слоя:
+ * по нему тема уводит закрытую панель за край. Своего въезда и выезда у ядра
+ * нет — ни «присутствия», ни хуков под анимацию: закрытая панель спрятана
+ * `visible`, а переход до скрытия и после показа держит CSS.
  *
  * **Жест** (`swipe`) — смахнуть панель к её краю, чтобы закрыть. Тянет
  * `TDrawerSwipePlugin`: сдвиг во время жеста — операция над узлом, и через
@@ -68,13 +68,12 @@ export default class TDrawer
 		this._applyPlacement(props.placement ?? ctor.defaultValues.placement)
 		this._applyContained(props.contained ?? ctor.defaultValues.contained)
 		this._dataset.add('swiping', this._swiping)
-		this._applyOpen()
 
 		this.events.on('change:visible', () => {
 			// Скрытую панель не тянут: жест кончается вместе с ней
 			if (!this.visible) this._setSwiping(false)
 
-			this._applyOpen()
+			this._syncLocksScroll()
 		})
 	}
 
@@ -161,15 +160,14 @@ export default class TDrawer
 	}
 
 	/**
-	 * `data-*` подложки: номер слоя, как у любого модального слоя, и то, что
-	 * тема читает у самой панели, — открытость и место в документе. Подложка —
-	 * сосед панели без экземпляра: гаснет вместе с ней и внутри контейнера
-	 * накрывает только его.
+	 * `data-*` подложки: номер слоя и открытость, как у любого модального
+	 * слоя, и то, что тема читает у самой панели, — место в документе.
+	 * Подложка — сосед панели без экземпляра: внутри контейнера она накрывает
+	 * только его.
 	 */
 	override get backdropDataset(): TDatasetAttributes {
 		return {
 			...super.backdropDataset,
-			'data-open': String(this.visible),
 			'data-contained': String(this._contained),
 		}
 	}
@@ -189,16 +187,6 @@ export default class TDrawer
 
 		// Тема по нему ставит панель и подложку в контейнер, а не на экран
 		this._dataset.add('contained', value)
-		this._syncLocksScroll()
-	}
-
-	/**
-	 * Открытость — теме: по `data-open` она уводит закрытую панель за край,
-	 * и переход до скрытия ей есть к чему идти. Второй записи состояния тут
-	 * нет — это проекция `visible` в набор, как `data-open` у Popover.
-	 */
-	protected _applyOpen(): void {
-		this._dataset.add('open', this.visible)
 		this._syncLocksScroll()
 	}
 

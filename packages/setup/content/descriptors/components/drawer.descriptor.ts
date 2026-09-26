@@ -45,8 +45,8 @@ export const DrawerDescriptor = defineDescriptor(() =>
 				 */
 				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
 				/**
-				 * Подложка гаснет вместе с панелью и внутри контейнера накрывает
-				 * только его: к номеру слоя добавлены открытость и место.
+				 * Подложка внутри контейнера накрывает только его: к номеру слоя и
+				 * открытости добавлено место.
 				 */
 				backdropDataset: {
 					triggers: ['change:zIndex', 'change:visible', 'change:contained'],

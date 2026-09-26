@@ -1,12 +1,14 @@
 /**
- * Dialog в настоящем браузере: раскладка темы и действия браузера.
+ * Dialog в настоящем браузере: раскладка и переход темы, действия браузера.
  *
  * Место, размер, отступ от краёв экрана и разворот раскладывает тема, без
  * замеров, — jsdom их не считает, и юнит-тесты
  * (`ui/vue/__tests__/dialog.spec.ts`) видят только классы и переменные. Здесь
  * — что из них выходит на экране: окно по центру и у сторон (логических — в
  * RTL `start` справа), на своём отступе от краёв, развёрнутое на весь экран,
- * длинное содержимое прокручивается в теле.
+ * длинное содержимое прокручивается в теле. Появление и исчезание — переходом
+ * темы: окно проявляется и гаснет вместе с подложкой, на месте, и так при
+ * любых настройках движения в системе.
  *
  * Действие `mousedown` jsdom тоже не выполняет: там видно лишь, что модель
  * фокуса его гасит. Здесь — что нажатие по подложке правда не уносит фокус:
@@ -22,6 +24,9 @@ import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { Button, Dialog } from '@soldy-ui/vue'
 import type { IDialogProps, TDialogPlacement } from '@soldy-ui/core'
 import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
+
+import { reducedMotion } from './media'
+import { durationOf, easingOf, settled, transitionOf, transitioning } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -117,6 +122,23 @@ const open = async () => {
 	await expect.poll(active).toBe(find('.s-test-first'))
 }
 
+/**
+ * Открыть событием в самой странице, а не через `userEvent`: переход читается
+ * сразу после рендера и не успевает доиграть, как бы ни медлил прогон.
+ */
+const openInPage = async () => {
+	opener().click()
+	await nextTick()
+}
+
+/** Закрыть Escape — так же, событием в самой странице, у узла под фокусом. */
+const escapeInPage = async () => {
+	active()?.dispatchEvent(
+		new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+	)
+	await nextTick()
+}
+
 /** Видимая область — граница, от которой тема отсчитывает место окна. */
 const viewport = () => ({
 	width: document.documentElement.clientWidth,
@@ -143,8 +165,9 @@ beforeEach(async () => {
 	await page.viewport(1000, 700)
 })
 
-afterEach(() => {
+afterEach(async () => {
 	cleanup()
+	await reducedMotion('no-preference')
 })
 
 describe('место', () => {
@@ -380,6 +403,124 @@ describe('подложка', () => {
 				document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2),
 			),
 		).toBe(true)
+	})
+})
+
+describe('появление и исчезание', () => {
+	/** Свойства, которые идут переходом, кроме `display`: тот только откладывает скрытие. */
+	const moving = (element: Element) =>
+		transitioning(element).filter((property) => property !== 'display')
+
+	/** Длительность и кривая перехода прозрачности на узле. */
+	const timingOf = (element: Element) => {
+		const transition = transitionOf(element, 'opacity')
+
+		return { duration: durationOf(transition), easing: easingOf(transition) }
+	}
+
+	/** Переход прозрачности у окна и подложки — в эту минуту. */
+	const timings = () => ({ panel: timingOf(panel()), backdrop: timingOf(backdrop()) })
+
+	/**
+	 * Переход держит тема: `@starting-style` даёт показанным окну и подложке
+	 * нулевую прозрачность, `allow-discrete` откладывает `display: none` до
+	 * конца исчезания. Хуков под анимацию у кода нет — видно это по переходу
+	 * на самих узлах.
+	 */
+	it('открытие — окно и подложка проявляются, закрытие — гаснут и только потом пропадают', async () => {
+		await show()
+		await openInPage()
+
+		expect(transitioning(panel())).toContain('opacity')
+		expect(transitioning(backdrop())).toContain('opacity')
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+		await settled(backdrop())
+		await escapeInPage()
+
+		// Гаснут: до конца перехода окно и подложка в документе, а не `display: none`
+		for (const element of [panel(), backdrop()]) {
+			expect(element.dataset.open).toBe('false')
+			expect(transitioning(element)).toContain('opacity')
+			expect(getComputedStyle(element).display).not.toBe('none')
+		}
+
+		await expect.poll(isOpen).toBe(false)
+		await expect.poll(() => getComputedStyle(backdrop()).display).toBe('none')
+	})
+
+	/**
+	 * Окно появляется на своём месте, а не выезжает, а разворот и размер
+	 * меняются сразу. Переходом по всем свойствам поехали бы и они.
+	 */
+	it('переходит только прозрачность: окно не выезжает, разворот — сразу', async () => {
+		await show({ maximizable: true })
+		await openInPage()
+
+		expect(moving(panel())).toEqual(['opacity'])
+		expect(moving(backdrop())).toEqual(['opacity'])
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+
+		find('.s-dialog__maximize').click()
+		await nextTick()
+
+		expect(panel().dataset.maximized).toBe('true')
+		expect(transitioning(panel())).toEqual([])
+		expect(Math.round(panel().getBoundingClientRect().width)).toBe(viewport().width)
+	})
+
+	/**
+	 * Затемнение — часть того же появления: начинается и кончается вместе с
+	 * окном и идёт тем же темпом. Исчезание короче появления: закрытое окно
+	 * не ждут.
+	 */
+	it('окно и подложка идут вместе, исчезание короче появления', async () => {
+		await show()
+		await openInPage()
+
+		const entering = timings()
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+		await settled(backdrop())
+		await escapeInPage()
+
+		const leaving = timings()
+
+		expect(entering.backdrop).toEqual(entering.panel)
+		expect(leaving.backdrop).toEqual(leaving.panel)
+		expect(leaving.panel.duration).toBeLessThan(entering.panel.duration)
+	})
+
+	/**
+	 * Прозрачность — не движение: окно стоит на месте, и просьбу системы
+	 * убрать движение переход не выполняет. Сторож решения: без него переход
+	 * спрятали бы под `prefers-reduced-motion`, как ход ручек Slider.
+	 */
+	it('система просит меньше движения — окно всё равно проявляется и гаснет', async () => {
+		await reducedMotion('reduce')
+		await show()
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+
+		await openInPage()
+
+		expect(transitioning(panel())).toContain('opacity')
+		expect(transitioning(backdrop())).toContain('opacity')
+
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+		await escapeInPage()
+
+		// Гаснет: до конца перехода окно в документе
+		expect(panel().dataset.open).toBe('false')
+		expect(getComputedStyle(panel()).display).not.toBe('none')
+
+		await expect.poll(isOpen).toBe(false)
 	})
 })
 

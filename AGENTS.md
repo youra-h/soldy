@@ -1949,13 +1949,16 @@ declare module '@soldy-ui/core' {
   следует из модальности, один раз — `role="dialog"`, `aria-modal`, имя от
   заголовка (`titleAria`), кнопка закрытия (`closable`, `closeLabel`,
   `closeAria`), `dismissible`, запрос закрытия с `close:before`, размер
-  (`width`/`height`) и номер слоя у подложки (`backdropDataset`). Своё у окна —
-  место, разворот и `alert`, у панели — край, жест и место в документе. Панель
-  не наследник окна: она получила бы центр и разворот, а прятать ненужный
-  проп переобъявлением нельзя (см. «Переобъявление пропа»). Дескриптор базы —
-  `ModalLayerDescriptor` с модальным набором плагинов: `TDismissPlugin` без
-  `focusOutside`, `TModalFocusPlugin`, `THideOutsidePlugin`,
-  `TScrollLockPlugin`, все с `property: 'visible'`.
+  (`width`/`height`), номер слоя у подложки (`backdropDataset`) и открытость
+  для темы — `data-open` у панели и подложки: по нему окно проявляется и
+  гаснет, а панель въезжает и выезжает, переходом темы, без хуков под
+  анимацию. Своё у окна — место, разворот и `alert`, у панели — край, жест и
+  место в документе. Панель не наследник окна: она получила бы центр и
+  разворот, а прятать ненужный проп переобъявлением нельзя (см.
+  «Переобъявление пропа»). Дескриптор базы — `ModalLayerDescriptor` с
+  модальным набором плагинов: `TDismissPlugin` без `focusOutside`,
+  `TModalFocusPlugin`, `THideOutsidePlugin`, `TScrollLockPlugin`, все с
+  `property: 'visible'`.
 - **`TAnchorPlugin`** (namespace `anchor`) — привязка к чужому элементу:
   `anchor_anchor`, `anchor_placement`, `anchor_matchWidth`, `anchor_flip`.
   Считает координаты и пишет их во Frame (`x`/`y`/`width`); раскладывает их
@@ -2836,17 +2839,18 @@ this._syncDisabled() // начальное состояние — руками
   `"false"`, а не снимает атрибут: тема смотрит `[data-x='true']`, и
   «выключено» надо отличать от «неприменимо». Снимает только `null`.
 
-| Источник               | Что пишет                                                                                                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                             |
-| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                                         |
-| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                            |
-| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                             |
-| `TListItemPlugin`      | `data-highlighted`                                                                                                                                                         |
-| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                                        |
-| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                                          |
-| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                                   |
-| ядро компонента        | своё состояние — `data-open` у `TSelect`, `TPopover` и `TDrawer`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider` |
+| Источник               | Что пишет                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSelectionExtension`  | `data-selected` — **всем** элементам коллекции                                                                                                                  |
+| `TActivationExtension` | `data-selected` — то же имя при состоянии `active`                                                                                                              |
+| `TListBoxExtension`    | `data-content-fit` — уже разрешённый (элемент поверх списка) и `data-indicator`                                                                                 |
+| `TSelectExtension`     | `data-content-fit` и `data-indicator` — значения самого Select                                                                                                  |
+| `TListItemPlugin`      | `data-highlighted`                                                                                                                                              |
+| `TControl`             | `data-disabled` — на любом теге, от тега не зависит                                                                                                             |
+| `TLayer`               | `data-layer` — номер слоя показанной панели, тот же, что `zIndex`                                                                                               |
+| `TModalLayer`          | `data-open` — открытость окна и выезжающей панели, у панели и подложки                                                                                          |
+| `TAnchorPlugin`        | `data-placement` — фактическая сторона панели после flip                                                                                                        |
+| ядро компонента        | своё состояние — `data-open` у `TSelect` и `TPopover`, `data-maximized` у `TDialog`, `data-swiping` и `data-contained` у `TDrawer`, `data-dragging` у `TSlider` |
 
 Два правила, которые легко нарушить:
 
@@ -3154,6 +3158,13 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   странице его не пускает только она. Поведение — модальный набор слоя:
   `TDismissPlugin` без `focusOutside`, `TModalFocusPlugin`,
   `THideOutsidePlugin`, `TScrollLockPlugin`, все с `property: 'visible'`.
+  **Появление и исчезание — переход темы** по `data-open` у панели и
+  подложки, как въезд Drawer: `@starting-style` и
+  `transition-behavior: allow-discrete`, «присутствия» в ядре и
+  `<Transition>` в адаптере нет. Переходит только прозрачность, у окна и
+  подложки одним правилом: окно появляется на месте, а не выезжает, разворот
+  и размер меняются сразу. При `prefers-reduced-motion` переход тот же:
+  прозрачность — не движение.
   **Место, размер и разворот — значения, раскладка — тема**, без замеров и
   координат: `placement` (`center` по умолчанию, `start`, `end`, `top`,
   `bottom` — логические стороны) — модификатором `--placement-<v>`, который
