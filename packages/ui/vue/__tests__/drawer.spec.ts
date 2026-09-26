@@ -402,8 +402,9 @@ describe('фон под панелью', () => {
 
 		expect(document.documentElement.style.overflow).toBe('hidden')
 
+		// Замок отпускается кадром позже, когда корень доиграл переходы
 		drawer.contained = true
-		await nextTick()
+		await settle()
 
 		expect(document.documentElement.style.overflow).toBe('')
 

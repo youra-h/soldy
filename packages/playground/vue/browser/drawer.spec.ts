@@ -7,7 +7,9 @@
  * панель у своего края (логического — в RTL `start` справа), во всю высоту
  * или ширину, внутри контейнера — в его границах; въезд и выезд — переходом
  * темы: без вспышки в первых кадрах, подложка темнеет вместе с панелью, и
- * так при любых настройках движения в системе.
+ * так при любых настройках движения в системе. Прокрутка страницы, запертая
+ * под панелью, возвращается, когда панель выехала, — вернись она на
+ * закрытии, панель съехала бы вбок в начале выезда.
  *
  * Жест — настоящей мышью: захват указателя, `touch-action` и то, что нажатие
  * на полосу не уводит фокус, jsdom не выполняет вовсе.
@@ -21,7 +23,8 @@ import { Drawer, Input } from '@soldy-ui/vue'
 import type { IDrawerProps, TCloseEvent, TCloseReason, TDrawerPlacement } from '@soldy-ui/core'
 
 import { reducedMotion } from './media'
-import { durationOf, settled, transitionOf, transitioning } from './transitions'
+import { durationOf, settled, transitionOf, transitioning, whileLeaving } from './transitions'
+import { expectClassicScrollbar } from './viewport'
 
 import '@soldy-ui/theme-oren'
 
@@ -60,6 +63,8 @@ type TShowOptions = {
 	content?: () => VNode[]
 	/** Подписчик `close:before` */
 	onCloseBefore?: (event: TCloseEvent) => void
+	/** Страница выше экрана — с полосой прокрутки */
+	tall?: boolean
 }
 
 /**
@@ -68,7 +73,7 @@ type TShowOptions = {
  */
 const show = async (
 	props: Partial<IDrawerProps> = {},
-	{ contained = false, content = inside, onCloseBefore }: TShowOptions = {},
+	{ contained = false, content = inside, onCloseBefore, tall = false }: TShowOptions = {},
 ) => {
 	const shown = ref(false)
 	const reasons: TCloseReason[] = []
@@ -94,7 +99,7 @@ const show = async (
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { style: 'padding: 40px' }, [
+				h('div', { style: tall ? 'padding: 40px; height: 3000px' : 'padding: 40px' }, [
 					h(
 						'button',
 						{
@@ -446,6 +451,43 @@ describe('въезд и выезд', () => {
 		expect(getComputedStyle(panel()).display).not.toBe('none')
 
 		await expect.poll(isOpen).toBe(false)
+	})
+})
+
+/**
+ * Прокрутку страницы под панелью запирает замок, и полоса прокрутки уходит
+ * вместе с ней. Вернись она, едва панель закрыли, область просмотра сузилась
+ * бы, и панель у правого края начала бы выезд, съехав на всю ширину полосы.
+ * Поэтому прокрутка возвращается, когда панель исчезла.
+ */
+describe('прокрутка страницы', () => {
+	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
+	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
+
+	it('пока панель выезжает, прокрутка заперта и панель не сдвинута, а исчезла — прокрутка вернулась', async () => {
+		await show({}, { tall: true })
+
+		// Полоса занимает место — иначе панели не от чего съезжать, и сторож пуст
+		expectClassicScrollbar()
+
+		await open()
+
+		// Место панели без выезда: `offsetLeft` не видит `translate`, а рамку
+		// двигает сам выезд
+		const place = panel().offsetLeft
+
+		await escapeInPage()
+
+		const seen = await whileLeaving(panel(), () => {
+			expect(locked(), 'прокрутка заперта').toBe(true)
+			expect(panel().offsetLeft, 'панель не сдвинута').toBe(place)
+		})
+
+		// Панель застали выезжающей — иначе проверять было нечего
+		expect(seen).toBeGreaterThan(1)
+
+		await expect.poll(locked).toBe(false)
+		expectClassicScrollbar()
 	})
 })
 
