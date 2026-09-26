@@ -8,7 +8,9 @@
  * RTL `start` справа), на своём отступе от краёв, развёрнутое на весь экран,
  * длинное содержимое прокручивается в теле. Появление и исчезание — переходом
  * темы: окно проявляется и гаснет вместе с подложкой, на месте, и так при
- * любых настройках движения в системе.
+ * любых настройках движения в системе. Прокрутка страницы, запертая под
+ * окном, возвращается, когда окно исчезло, — вернись она на закрытии, окно
+ * съехало бы вбок, пока гаснет.
  *
  * Действие `mousedown` jsdom тоже не выполняет: там видно лишь, что модель
  * фокуса его гасит. Здесь — что нажатие по подложке правда не уносит фокус:
@@ -26,7 +28,15 @@ import type { IDialogProps, TDialogPlacement } from '@soldy-ui/core'
 import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 
 import { reducedMotion } from './media'
-import { durationOf, easingOf, settled, transitionOf, transitioning } from './transitions'
+import {
+	durationOf,
+	easingOf,
+	settled,
+	transitionOf,
+	transitioning,
+	whileLeaving,
+} from './transitions'
+import { expectClassicScrollbar } from './viewport'
 
 import '@soldy-ui/theme-oren'
 
@@ -50,6 +60,11 @@ const inside = (): VNode[] => [
 	h('button', { class: 's-test-second' }, 'Вторая'),
 ]
 
+type TPageOptions = {
+	/** Страница выше экрана — с полосой прокрутки */
+	tall?: boolean
+}
+
 /**
  * Страница с кнопкой, которая открывает окно, и окно на `v-model:visible`.
  * В подвале — ещё одна остановка Tab. Кроме пропсов окна — обработчики его
@@ -58,13 +73,14 @@ const inside = (): VNode[] => [
 const show = async (
 	props: Partial<IDialogProps> & Record<string, unknown> = {},
 	content: () => VNode[] = inside,
+	{ tall = false }: TPageOptions = {},
 ) => {
 	const shown = ref(false)
 
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { style: 'padding: 40px' }, [
+				h('div', { style: tall ? 'padding: 40px; height: 3000px' : 'padding: 40px' }, [
 					h(
 						'button',
 						{
@@ -521,6 +537,79 @@ describe('появление и исчезание', () => {
 		expect(getComputedStyle(panel()).display).not.toBe('none')
 
 		await expect.poll(isOpen).toBe(false)
+	})
+})
+
+/**
+ * Прокрутку страницы под окном запирает замок, и полоса прокрутки уходит
+ * вместе с ней. Вернись она, едва окно закрыли, область просмотра сузилась бы,
+ * и окно по центру съехало бы на полширины полосы, пока гаснет. Поэтому
+ * прокрутка возвращается, когда окно исчезло.
+ */
+describe('прокрутка страницы', () => {
+	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
+	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
+
+	/** Рамка окна — место и размер. */
+	const frame = () => {
+		const { left, top, width, height } = panel().getBoundingClientRect()
+
+		return { left, top, width, height }
+	}
+
+	it('пока окно гаснет, прокрутка заперта и окно на месте, а исчезло — прокрутка вернулась', async () => {
+		await show({}, inside, { tall: true })
+
+		// Полоса занимает место — иначе окну не от чего съезжать, и сторож пуст
+		expectClassicScrollbar()
+
+		await open()
+		await settled(panel())
+
+		const place = frame()
+
+		await escapeInPage()
+
+		const seen = await whileLeaving(panel(), () => {
+			expect(locked(), 'прокрутка заперта').toBe(true)
+			expect(frame(), 'окно на месте').toEqual(place)
+		})
+
+		// Окно застали гаснущим — иначе проверять было нечего
+		expect(seen).toBeGreaterThan(1)
+
+		await expect.poll(locked).toBe(false)
+		expectClassicScrollbar()
+	})
+
+	/**
+	 * Открытие перебивает переход закрытия. Замок так и лежит — его ещё не
+	 * отпускали, — а следующее закрытие отпускает его один раз.
+	 */
+	it('открыли снова, пока окно гаснет: прокрутка заперта, следующее закрытие её возвращает', async () => {
+		await show({}, inside, { tall: true })
+
+		expectClassicScrollbar()
+
+		await open()
+		await settled(panel())
+		await escapeInPage()
+		await nextFrame()
+
+		// Окно ещё гаснет — открытие перебьёт его переход
+		expect(transitioning(panel())).toContain('opacity')
+
+		await openInPage()
+		await expect.poll(active).toBe(find('.s-test-first'))
+		await settled(panel())
+
+		// Перебитый переход отменён, а замок так и лежит
+		expect(locked()).toBe(true)
+
+		await escapeInPage()
+
+		await expect.poll(isOpen).toBe(false)
+		await expect.poll(locked).toBe(false)
 	})
 })
 

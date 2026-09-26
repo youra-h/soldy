@@ -58,3 +58,27 @@ export const easingOf = (transition: CSSTransition): string => {
 
 	return easing
 }
+
+/** Сколько кадров самое большее ждать исчезания: две секунды при 60 Гц. */
+const LEAVING_FRAMES = 120
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/**
+ * Узел исчезает: `check` сразу и потом в каждом кадре, пока у узла не
+ * `display: none`. Отдаёт, сколько раз узел застали на экране: исчезни он
+ * сразу, проверять было бы нечего, и сторож прошёл бы сам.
+ */
+export const whileLeaving = async (element: Element, check: () => void): Promise<number> => {
+	let seen = 0
+
+	while (getComputedStyle(element).display !== 'none') {
+		if (seen === LEAVING_FRAMES) throw new Error(`узел не исчез за ${LEAVING_FRAMES} кадров`)
+
+		check()
+		seen += 1
+		await nextFrame()
+	}
+
+	return seen
+}
