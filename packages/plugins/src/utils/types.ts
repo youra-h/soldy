@@ -30,3 +30,36 @@ export interface IDomEventTarget {
 		options?: boolean | EventListenerOptions,
 	): void
 }
+
+/**
+ * Отрезок по строке: левый и правый край в координатах окна браузера — как их
+ * отдаёт `getBoundingClientRect()`.
+ *
+ * Края физические. Где у строки начало, решает направление письма, а не
+ * отрезок: в RTL начало — правый край.
+ */
+export type TInlineSpan = {
+	left: number
+	right: number
+}
+
+/**
+ * Что нужно доводке элемента под фокусом (`nearestShift`) — всё отрезками по
+ * строке.
+ */
+export type TNearestShiftOptions = {
+	/**
+	 * Окно области прокрутки — паддинг-бокс области без `scroll-padding` с
+	 * каждой стороны (`scrollWindowOf`). Окно задаёт тема: у ленты это её
+	 * чистая часть между подсказками, у ряда тегов — место с запасом под
+	 * кольцо фокуса.
+	 */
+	scrollWindow: TInlineSpan
+	/** Элемент под фокусом. */
+	focused: TInlineSpan
+	/**
+	 * Элемент области, в котором он лежит, — прямой ребёнок области
+	 * (`itemOf`). Без него в окно доводится один элемент под фокусом.
+	 */
+	item?: TInlineSpan
+}

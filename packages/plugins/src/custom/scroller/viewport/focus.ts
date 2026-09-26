@@ -1,32 +1,20 @@
 /**
- * Доводка элемента под фокусом — чистая функция, без DOM.
+ * Доводка элемента под фокусом в окно снапа ленты — чистая функция, без DOM.
  *
  * Плагин рядом только читает у вьюпорта окно снапа и два прямоугольника, а
  * весь счёт здесь. Отсюда и проверяемость, как у `edges.ts`: RTL, субпиксели и
  * элемент шире окна проверяются числами, а не настоящей раскладкой.
+ *
+ * Своё у ленты здесь только снап. Проверку «уже в окне» и элемент ленты шире
+ * окна она берёт у общей доводки (`nearestShift`), которой пользуется и ряд
+ * тегов `scroll`.
  */
 
-import type { TFocusShiftOptions, TInlineSpan } from './types'
-
-/**
- * Допуск на субпиксельное округление: край, вышедший из окна на полпикселя, —
- * ещё в окне. Лента встаёт на целый пиксель, а края элементов дробные.
- */
-const TOLERANCE = 0.5
+import { nearestShift } from '../../../utils'
+import type { TInlineSpan } from '../../../utils'
+import type { TFocusShiftOptions } from './types'
 
 const width = (span: TInlineSpan): number => span.right - span.left
-
-/**
- * Сдвиги ленты, при которых отрезок лежит в окне, а если он шире окна — накрывает
- * его: больше окна от него не увидеть. Сдвиг — как у `scrollBy`: на сколько
- * лента со всем содержимым уезжает влево.
- */
-function fitting(span: TInlineSpan, snapport: TInlineSpan): [number, number] {
-	const left = span.left - snapport.left
-	const right = span.right - snapport.right
-
-	return [Math.min(left, right), Math.max(left, right)]
-}
 
 /**
  * На сколько сдвинуть ленту, чтобы элемент под фокусом встал в окно снапа, —
@@ -50,15 +38,12 @@ export function resolveFocusShift({
 	item,
 	rtl,
 }: TFocusShiftOptions): number | null {
-	const [from, to] = fitting(focused, snapport)
-
-	if (from - TOLERANCE <= 0 && to + TOLERANCE >= 0) return null
+	// «Уже в окне» лента смотрит по одному элементу под фокусом
+	if (nearestShift({ scrollWindow: snapport, focused }) === null) return null
 
 	if (width(item) <= width(snapport)) {
 		return rtl ? item.right - snapport.right : item.left - snapport.left
 	}
 
-	const [snapFrom, snapTo] = fitting(item, snapport)
-
-	return Math.min(Math.max(0, from, snapFrom), to, snapTo)
+	return nearestShift({ scrollWindow: snapport, focused, item })
 }

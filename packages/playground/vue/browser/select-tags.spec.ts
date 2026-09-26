@@ -18,6 +18,8 @@
  * `themes/oren/src/components/tags/_tags.scss`.
  * Геометрия строки поля — высота размера и строка слота, в которую встают
  * теги, очистка и стрелка, — в `themes/oren/src/components/input/_input.scss`.
+ * Тег под фокусом в чистую часть ряда `scroll` доводит плагин ряда тегов —
+ * `plugins/src/custom/tags/scroll/`.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -28,7 +30,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Select, SelectItem } from '@soldy-ui/vue'
 import type { TDirection, TTagsOverflow } from '@soldy-ui/core'
 
-import { expectClearOfFades, fades } from './fades'
+import { expectFocusedClearOfFades, fades } from './fades'
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
 import { expectInsideWindow } from './viewport'
 
@@ -677,6 +679,30 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 
 		await expect.poll(() => fieldTags().length).toBe(OPTIONS.length)
 		await expect.poll(() => scrolls(row())).toBe(true)
+
+		// Узел ряда плагины получают кадром позже (`TElementPlugin`), и до того
+		// доводить ряд некому
+		await nextFrame()
+		await nextFrame()
+	}
+
+	/** Крестики ряда по порядку — остановки Tab тегов в поле. */
+	const closes = () => [...row().querySelectorAll('.s-tags-item__close')]
+
+	/** Крестик по порядку; нет его или он не HTML — тест падает здесь. */
+	const close = (index: number): HTMLElement => {
+		const node = closes()[index]
+
+		if (!(node instanceof HTMLElement)) throw new Error(`крестик ${index}: HTML-узла нет`)
+
+		return node
+	}
+
+	/** Клавиша — и ждём маску: прокрутка отдаёт ей ширину кадром позже. */
+	const press = async (keys: string) => {
+		await userEvent.keyboard(keys)
+		await nextFrame()
+		await nextFrame()
 	}
 
 	it('в начале ряда гаснет только конец', async () => {
@@ -740,31 +766,89 @@ describe('tags_overflow: scroll — подсказка у края вместо 
 	})
 
 	/**
-	 * Крестик за краем ряда браузер при фокусе докручивает, а видимый
-	 * наполовину оставляет у края — под подсказкой, где его почти не видно.
-	 * Отступ прокрутки ряда шириной в подсказку это исправляет: такой крестик
-	 * для браузера уже не виден, и он его докручивает. Крестики — остановки
-	 * Tab тегов в поле, и проверяется каждый.
+	 * Крестик под фокусом — в чистой части ряда, между подсказками. Её ширину
+	 * ряду задаёт отступ прокрутки темы, шириной в подсказку, а тег под
+	 * фокусом доводит туда плагин ряда (`TTagsScrollPlugin`). Сам браузер при
+	 * фокусе докручивает только крестик, целиком ушедший за край чистой части,
+	 * а видимый в ней хоть краем оставляет у края — под подсказкой, где его
+	 * почти не видно.
+	 *
+	 * Крестики — остановки Tab тегов в поле, и проверяется каждый: сначала
+	 * вперёд, потом обратно — у края оказывается то следующий, то предыдущий.
+	 * Обход — клавиатурой, как ходит пользователь: плагин доводит только фокус
+	 * с клавиатуры (`:focus-visible`).
 	 */
 	it('крестик под фокусом не остаётся под подсказкой', async () => {
 		await renderCrowded()
 
-		const closes = [...row().querySelectorAll('.s-tags-item__close')]
+		const indices = [...closes().keys()]
 
-		expect(closes, 'крестиков в ряду').toHaveLength(OPTIONS.length)
+		expect(indices, 'крестиков в ряду').toHaveLength(OPTIONS.length)
 
-		for (const [index, close] of closes.entries()) {
-			if (!(close instanceof HTMLElement)) throw new Error(`крестик ${index}: HTML-узла нет`)
+		// У строк тегов в поле остановки Tab нет, и первая остановка —
+		// крестик первого тега
+		for (const index of indices) {
+			await press('{Tab}')
 
-			close.focus()
+			expectFocusedClearOfFades(close(index), row(), `крестик ${index}`)
+		}
 
-			// Прокрутка отдаёт маске ширину кадром позже
-			await nextFrame()
-			await nextFrame()
+		for (const index of [...indices].reverse().slice(1)) {
+			await press('{Shift>}{Tab}{/Shift}')
 
-			expectClearOfFades(close, row(), `крестик ${index}`)
+			expectFocusedClearOfFades(close(index), row(), `крестик ${index}, обратно`)
 		}
 	})
+
+	/**
+	 * Крестик на краю чистой части — частью в ней, частью под подсказкой. Такой
+	 * браузер при фокусе не докручивает вовсе, и в чистую часть его доводит
+	 * только плагин ряда. При обходе подряд крестик на край попадает не всегда:
+	 * целиком ушедший за край браузер докручивает сам, ещё до `focusin`, и
+	 * доводка осталась бы непроверенной. Поэтому ряд ставится так, чтобы край
+	 * окна пришёлся на середину крестика: у конца ряда — перед Tab на него, у
+	 * начала — перед Shift+Tab. Окно ряда — паддинг-бокс без отступа
+	 * прокрутки, а он шириной в подсказку: посреди ряда край окна и есть край
+	 * чистой части.
+	 */
+	it.each([
+		{ side: 'end', to: 3, key: '{Tab}' },
+		{ side: 'start', to: 2, key: '{Shift>}{Tab}{/Shift}' },
+	] as const)(
+		'крестик на краю чистой части ($side) под фокусом доводится в неё',
+		async ({ side, to, key }) => {
+			await renderCrowded()
+
+			// До соседа — обходом, как ходит пользователь
+			const from = side === 'end' ? to - 1 : to + 1
+
+			for (let step = 0; step <= from; step++) await press('{Tab}')
+
+			expect(document.activeElement, `фокус на крестике ${from}`).toBe(close(from))
+
+			/** Край окна ряда с этой стороны. */
+			const edge = () => {
+				const style = getComputedStyle(row())
+				const left = box(row()).left + row().clientLeft
+
+				return side === 'end'
+					? left + row().clientWidth - parseFloat(style.scrollPaddingRight)
+					: left + parseFloat(style.scrollPaddingLeft)
+			}
+			const middle = () => (box(close(to)).left + box(close(to)).right) / 2
+
+			row().scrollLeft += middle() - edge()
+
+			expect(box(close(to)).left, 'крестик на краю окна: левый край').toBeLessThan(edge() - 4)
+			expect(box(close(to)).right, 'крестик на краю окна: правый край').toBeGreaterThan(
+				edge() + 4,
+			)
+
+			await press(key)
+
+			expectFocusedClearOfFades(close(to), row(), `крестик ${to}`)
+		},
+	)
 })
 
 /**

@@ -16,7 +16,10 @@
  * и снизу, ни сбоку у тех, кто стоит на краю прокрутки: у первого тега и у
  * последнего, докрученного до конца ряда. И что тег у края, видимый частично,
  * на который стрелка переводит фокус, ряд показывает целиком — с крестиком и
- * кольцом; то же — у ленты `arrows`.
+ * кольцом; то же — у ленты `arrows`. И что так же целиком ряд показывает всё,
+ * на что фокус приходит с клавиатуры: крестики набора без выбора при обходе
+ * Tab и тег, на который приходится вход в набор, — а нажатие мышью ряд не
+ * двигает.
  *
  * В `popover` ряд обрезает то, что не поместилось, и проверяется ещё, что
  * обрезка не срезает кольцо фокуса у тех, кто стоит на краю ряда: у первого
@@ -848,6 +851,199 @@ describe('режим scroll: кольцо фокуса у краёв ряда', 
 
 	it('стрелка на тег у начала ряда, видимый частично, показывает его целиком', async () => {
 		await arrowOntoCutTag(row, 'start')
+	})
+})
+
+/**
+ * Режим `scroll`: элемент под фокусом у края ряда виден целиком.
+ *
+ * Частично видимый элемент браузер при фокусе не докручивает вовсе, а целиком
+ * скрытый ставит по центру, и у края ряда срезанным оставался то сам элемент,
+ * то его тег: крестик, поставленный по центру, — с началом подписи за краем,
+ * тег, на который приходится вход в набор, — с началом подписи и стороной
+ * кольца. Тег под фокусом в окно ряда — паддинг-бокс без отступа прокрутки
+ * темы — доводит плагин ряда (`TTagsScrollPlugin`). Тег, а не только элемент
+ * под фокусом: кольцо в режиме выбора рисует пилюля, а крестик без подписи не
+ * скажет, какой тег он закроет.
+ *
+ * Обход — клавиатурой, как ходит пользователь: плагин доводит только фокус с
+ * клавиатуры (`:focus-visible`), а `focus()` из скрипта после нажатия мышью в
+ * соседнем тесте браузер видимым не считает. Нажатие мышью ряд не двигает —
+ * это проверяется отдельно.
+ */
+describe('режим scroll: элемент под фокусом у края ряда виден целиком', () => {
+	/** Узел по порядку в списке; нет его или он не HTML — тест падает здесь. */
+	const at = (nodes: Element[], index: number): HTMLElement => {
+		const node = nodes[index]
+
+		if (!(node instanceof HTMLElement)) throw new Error(`узел ${index}: HTML-узла нет`)
+
+		return node
+	}
+
+	/** Теги ряда по порядку — пилюли, прямые дети ряда. */
+	const items = () => [...row().querySelectorAll(':scope > .s-tags-item')]
+
+	/**
+	 * Край обрезки ряда по строке — его паддинг-бокс: прокручиваемая область
+	 * режет ровно по нему.
+	 */
+	const clip = () => {
+		const left = row().getBoundingClientRect().left + row().clientLeft
+
+		return { left, right: left + row().clientWidth }
+	}
+
+	/** Тег виден целиком: ни одним краем не заходит за край обрезки ряда. */
+	const expectTagVisible = (item: Element, what: string) => {
+		const box = item.getBoundingClientRect()
+		const { left, right } = clip()
+
+		expect(box.left, `${what}: левый край`).toBeGreaterThanOrEqual(left - 0.5)
+		expect(box.right, `${what}: правый край`).toBeLessThanOrEqual(right + 0.5)
+	}
+
+	/** Ряд — в одну строку, и ему тесно: иначе доводить нечего. */
+	const crowded = async (props: Record<string, unknown>) => {
+		render(harness(NARROW, { overflow: 'scroll', ...props }))
+
+		await settled(TAGS.length)
+
+		expect(row().scrollWidth, 'ряду тесно').toBeGreaterThan(row().clientWidth)
+
+		// Узел ряда плагины получают кадром позже (`TElementPlugin`), и до того
+		// доводить ряд некому
+		await nextFrame()
+		await nextFrame()
+	}
+
+	/**
+	 * Остановки Tab набора без выбора — крестики: у строк действия нет. У края
+	 * оказывается то следующий, то предыдущий, поэтому обход — вперёд и
+	 * обратно. В RTL ряд идёт справа налево, и край, у которого срезан
+	 * следующий тег, — левый.
+	 */
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: без выбора: крестик по очереди, Tab вперёд и обратно',
+		async (direction) => {
+			await crowded({ direction })
+
+			// Направление дошло до корня — иначе проверка ниже сторожит LTR
+			expect(row().getAttribute('dir'), 'направление ряда').toBe(direction)
+
+			const tags = items()
+			const closes = tags.map((item) => find(':scope > .s-tags-item__close', item))
+			const forth = [...tags.keys()]
+			const back = [...forth].reverse().slice(1)
+
+			expect(tags, 'тегов в ряду').toHaveLength(TAGS.length)
+
+			const check = (index: number, what: string) => {
+				const close = at(closes, index)
+
+				expect(document.activeElement, `${what}: фокус`).toBe(close)
+
+				expectRingInsideHorizontally(close, row(), what)
+				expectTagVisible(at(tags, index), `${what}: тег`)
+			}
+
+			for (const index of forth) {
+				await userEvent.keyboard('{Tab}')
+
+				check(index, `крестик ${index}`)
+			}
+
+			for (const index of back) {
+				await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+				check(index, `крестик ${index}, обратно`)
+			}
+		},
+	)
+
+	/**
+	 * Весь набор с выбором — одна остановка Tab, по тегам ходят стрелки. Кольцо
+	 * рисует пилюля: оно внутри ряда — значит, и крестик, который лежит в ней.
+	 */
+	it('с выбором: тег стрелками до последнего и обратно', async () => {
+		await crowded({ mode: 'multiple' })
+
+		const tags = items()
+
+		const check = (index: number, what: string) => {
+			const item = at(tags, index)
+
+			expect(item.contains(document.activeElement), `${what}: фокус`).toBe(true)
+
+			expectRingInsideHorizontally(item, row(), what)
+		}
+
+		await userEvent.keyboard('{Tab}')
+
+		check(0, 'тег 0')
+
+		for (const index of [...tags.keys()].slice(1)) {
+			await userEvent.keyboard('{ArrowRight}')
+
+			check(index, `тег ${index}`)
+		}
+
+		for (const index of [...tags.keys()].reverse().slice(1)) {
+			await userEvent.keyboard('{ArrowLeft}')
+
+			check(index, `тег ${index}, обратно`)
+		}
+	})
+
+	/**
+	 * Вход в набор по Tab приходится на остановку набора — первый тег, пока
+	 * фокуса в наборе не было. Ряд прокрутили колесом, и тег виден частично:
+	 * фокус на него ставит браузер, и он такой тег не докручивает.
+	 */
+	it('с выбором: Tab в набор на тег, видимый частично, показывает его целиком', async () => {
+		await crowded({ mode: 'single' })
+
+		const first = at(items(), 0)
+
+		row().scrollLeft = 50
+
+		expect(first.getBoundingClientRect().left, 'первый тег за краем').toBeLessThan(clip().left)
+		expect(first.getBoundingClientRect().right, 'первый тег виден').toBeGreaterThan(clip().left)
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(first.contains(document.activeElement), 'фокус на первом теге').toBe(true)
+
+		expectRingInsideHorizontally(first, row(), 'пилюля')
+	})
+
+	/**
+	 * Фокус от нажатия мышью ряд не доводит: ряд, сдвинувшийся между нажатием и
+	 * отпусканием, увёл бы тег из-под указателя, и `click` до него не дошёл
+	 * бы. Нажатие — по части тега в ряду, у края обрезки: точку за краем
+	 * Playwright перед нажатием докрутил бы сам, и ряд сдвинул бы не плагин.
+	 */
+	it('нажатие мышью по тегу у края выбирает его, и ряд не сдвигается', async () => {
+		await crowded({ mode: 'single' })
+
+		const edge = clip().right
+		const item = items().find((candidate) => {
+			const box = candidate.getBoundingClientRect()
+
+			return box.left < edge - 16 && box.right > edge + 0.5
+		})
+
+		if (!(item instanceof HTMLElement)) throw new Error('у края ряда нет тега')
+
+		const line = find(':scope > .s-button:first-child', item)
+		const box = line.getBoundingClientRect()
+
+		await userEvent.click(line, { position: { x: edge - box.left - 8, y: box.height / 2 } })
+
+		// Фокус от нажатия был — плагину было на что отозваться
+		expect(document.activeElement, 'фокус').toBe(line)
+		expect(item.dataset.selected, 'тег выбран').toBe('true')
+		expect(row().scrollLeft, 'положение ряда').toBe(0)
 	})
 })
 
