@@ -50,6 +50,35 @@ describe('eslint.config.ts: компоненты React не импортирую
 		)
 	})
 
+	it('createAdapterContext из @soldy-ui/setup под components/ — ошибка', async () => {
+		// Контекст собирает `create` из `useAdapterContext`: прямой вызов
+		// потерял бы основу `id` от `useId`
+		const code =
+			"import { createAdapterContext } from '@soldy-ui/setup'\nexport const x = createAdapterContext"
+
+		expect(await ruleIds(code, COMPONENT_TS)).toContain(
+			'@typescript-eslint/no-restricted-imports',
+		)
+	})
+
+	it('другой импорт из @soldy-ui/setup под components/ — допустимо', async () => {
+		const code =
+			"import { ButtonDescriptor } from '@soldy-ui/setup'\nexport const x = ButtonDescriptor"
+
+		expect(await ruleIds(code, COMPONENT_TS)).not.toContain(
+			'@typescript-eslint/no-restricted-imports',
+		)
+	})
+
+	it('createAdapterContext из @soldy-ui/setup вне components/ (адаптер) — допустимо', async () => {
+		const code =
+			"import { createAdapterContext } from '@soldy-ui/setup'\nexport const x = createAdapterContext"
+
+		expect(await ruleIds(code, ADAPTER)).not.toContain(
+			'@typescript-eslint/no-restricted-imports',
+		)
+	})
+
 	it("import из 'react' вне components/ (адаптер) — допустимо", async () => {
 		expect(
 			await ruleIds("import { useRef } from 'react'\nexport const x = useRef(null)", ADAPTER),

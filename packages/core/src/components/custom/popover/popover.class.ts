@@ -195,7 +195,7 @@ export default class TPopover
 
 	/** `id` панели — одна формула на обе стороны связки. */
 	protected get _panelId(): string {
-		return `s-popover-panel-${this.uid}`
+		return `s-popover-panel-${this.idBase}`
 	}
 
 	protected _applyOpen(value: boolean): void {

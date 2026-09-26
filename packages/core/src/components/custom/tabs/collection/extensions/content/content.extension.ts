@@ -42,16 +42,16 @@ export class TTabsContentExtension<TItem extends ITabsItem = ITabsItem>
 	/**
 	 * `id` элемента с `role="tab"`.
 	 *
-	 * Основа — `uid` таба: он уникален в рамках сессии, поэтому две группы
+	 * Основа — `idBase` таба: у каждого экземпляра своя, поэтому две группы
 	 * табов на странице не столкнутся, даже если значения совпадают.
 	 */
 	tabId(item: TItem): string {
-		return `s-tab-${item.uid}`
+		return `s-tab-${item.idBase}`
 	}
 
 	/** `id` элемента с `role="tabpanel"`. Панель берёт его у связанного таба. */
 	panelId(item: TItem): string {
-		return `s-tabpanel-${item.uid}`
+		return `s-tabpanel-${item.idBase}`
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {

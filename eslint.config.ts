@@ -192,7 +192,9 @@ export default defineConfigWithVueTs(
 	// (`ElementType`, `ReactElement`) компонентам нужны — `allowTypeImports`
 	// пропускает `import type { ... } from 'react'`. Отсюда
 	// `@typescript-eslint/no-restricted-imports`, а не базовое `no-restricted-imports`:
-	// только у него есть эта опция.
+	// только у него есть эта опция. Контекст компонент собирает функцией
+	// `create`, которую отдаёт `useAdapterContext`: она несёт основу `id` от
+	// `useId`, и прямой `createAdapterContext` её молча потерял бы.
 	{
 		name: 'soldy/react-components-no-framework',
 		files: ['packages/ui/react/src/components/**/*.{ts,tsx}'],
@@ -206,6 +208,12 @@ export default defineConfigWithVueTs(
 							allowTypeImports: true,
 							message:
 								'Механизмы React — только в src/adapter/** (AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»).',
+						},
+						{
+							name: '@soldy-ui/setup',
+							importNames: ['createAdapterContext'],
+							message:
+								'Собирайте контекст функцией create из useAdapterContext — она несёт основу id от useId.',
 						},
 					],
 				},

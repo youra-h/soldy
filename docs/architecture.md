@@ -948,8 +948,8 @@ tabs/collection/extensions/
 
 ```ts
 // TTabsContentExtension
-tabId(item)   { return `s-tab-${item.uid}` }
-panelId(item) { return `s-tabpanel-${item.uid}` }
+tabId(item)   { return `s-tab-${item.idBase}` }
+panelId(item) { return `s-tabpanel-${item.idBase}` }
 ```
 
 `aria-controls` таба и `id` панели — один идентификатор. Разнеси формулу по
@@ -1400,7 +1400,7 @@ ListBox режимы ради чужого компонента, после че
 
 **Панель помечается владельцем.** Она телепортирована, то есть лежит вне
 поддерева владельца, и простой `contains()` счёл бы нажатие внутри неё
-нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<uid>"` —
+нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<idBase>"` —
 чистый DOM, одинаково во всех шести адаптерах, без проводки между компонентами.
 
 ### Select — Combobox по APG
@@ -1519,7 +1519,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 
 - `VueProfile` - Vue profile (`naming: VueNaming`): one surface for the static layer and the binding
 - `VueNaming` - Vue naming strategy (props `ns_name` as everywhere, events keep the core name: `element:ready`)
-- `createVueAdapterContext()` — обёртка над `createAdapterContext`, которая снимает Vue-прокси с `ctrl` и значений `options`; Vue-компоненты создают контекст только через неё. Тип контекста — тот же, что у `createAdapterContext`
+- `createVueAdapterContext()` — обёртка над `createAdapterContext`, которая снимает Vue-прокси с `ctrl` и значений `options` и кладёт в `options` основу `id` экземпляра от `useId` (`idBase`, AGENTS.md, «`id` в разметке — от основы экземпляра»); Vue-компоненты создают контекст только через неё. Тип контекста — тот же, что у `createAdapterContext`
 - `useIcon(role)` — компонент иконки по роли из реестра. Строит разметку через
   `h('svg', { viewBox, innerHTML })`, а не `template`: последнее требовало бы
   рантайм-компилятор Vue. Роль резолвится на отрисовке, поэтому `setIcons()`
@@ -1600,7 +1600,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 - `adapter/common/` — `ReactProfile` (`naming: ReactNaming`, `defaultSlot: 'children'`) и `ReactNaming`, который целиком собран из общих стратегий: `prop: underscorePropNaming`, `event: callbackEventNaming`; `toAriaProps` (HTML-имена атрибутов наборов → имена пропов React: `tabindex` → `tabIndex`); `renderSlot` / `TSlotContent`
   - props: same as Vue (`namespace_name`); events: `onXxx` callbacks (`change:visible` → `onChangeVisible`, `element:ready` → `onElementReady`)
   - тип-зеркало `TCallbackEventProps` живёт в `packages/setup/protected/naming` (им же пользуются Svelte и Solid). **Descriptor = единственный источник типов**: React НЕ импортирует `IXxxProps`/`TXxxEvents`/`TXxxPluginEvents` из core/plugins. Component event props = `EventProps<typeof XxxDescriptor>` (`src/types.ts`) = `DescriptorCallbackEvents<typeof XxxDescriptor>` из `@soldy-ui/setup` — `TCallbackEventProps<DescriptorAllEvents<…>>`, где `DescriptorAllEvents` включает свои + namespaced события плагинов из tuple (`TPlugins` phantom на `IComponentDescriptor`).
-- `adapter/runtime/` — `useAdapterContext(factory)` (держит adapter-context между рендерами, уничтожает его и собирает заново фабрикой последнего рендера, когда React повторяет установку эффекта; без `ctrl` инстанс при этом новый), `useAdapter(adapter, props)` (main hook over the exchange `adapter.connect(ReactProfile)` — takes a READY adapter)
+- `adapter/runtime/` — `useAdapterContext(factory)` (отдаёт фабрике `create` — `createAdapterContext` с основой `id` от `useId`; держит adapter-context между рендерами, уничтожает его и собирает заново фабрикой последнего рендера, когда React повторяет установку эффекта; без `ctrl` инстанс при этом новый), `useAdapter(adapter, props)` (main hook over the exchange `adapter.connect(ReactProfile)` — takes a READY adapter)
 - `adapter/elevator/` — `TReactElevator` + `ReactElevatorFactory` (React Context; `down`/`up` — collections NOT wired yet)
 - `components/` — each component = up to 3 modules: `base.component.ts` (типы/props) + `setup.component.ts` (`useSetupXxx` hook) + view (`*.tsx`)
   - headless layers: `component` — only `base.component.ts`; `stylable`/`control`/`textable` — `base.component.ts` + `setup.component.ts` (no `.tsx` view, like Vue base layers)
@@ -1608,7 +1608,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 **Key design decisions (React-specific):**
 
-- `useSetupXxx(props)` hook doesn't hold the adapter-context itself: it passes the factory `() => createAdapterContext(XxxDescriptor(), { ctrl: props.ctrl, props })` to `useAdapterContext` (`adapter/runtime/`), which calls it once on the first render and returns the same context afterwards (`__tests__/adapter-context.spec.tsx`), then hands the context to `useAdapter`. Components call no React hooks of their own — AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»
+- `useSetupXxx(props)` hook doesn't hold the adapter-context itself: it passes the factory `(create) => create(XxxDescriptor(), { ctrl: props.ctrl, props })` to `useAdapterContext` — `create` is `createAdapterContext` with the instance id base (`idBase`) from `useId`, and the eslint block `soldy/react-components-no-framework` forbids importing `createAdapterContext` in components (AGENTS.md, «`id` в разметке — от основы экземпляра») (`adapter/runtime/`), which calls it once on the first render and returns the same context afterwards (`__tests__/adapter-context.spec.tsx`), then hands the context to `useAdapter`. Components call no React hooks of their own — AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
