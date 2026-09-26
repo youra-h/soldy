@@ -23,8 +23,9 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 	 * `query()` — там подписчик может его подменить.
 	 *
 	 * Копия, а не живая ссылка на `storage.items`: иначе состав менялся бы под
-	 * тем, кто его уже получил. Заодно это конвенция `accessor.getValue()`,
-	 * которая зовёт `valueOf()`.
+	 * тем, кто его уже получил. Заодно это конвенция границы core → ui:
+	 * `TPropSpec.read` (setup) у объекта со своим `valueOf()` берёт результат
+	 * вызова.
 	 */
 	public valueOf(): T[] {
 		return [...this._storage.items]

@@ -73,7 +73,7 @@ describe('Составные props меняют идентичность при 
 			extensions: { batch },
 		})
 
-		// accessor.getValue делает ровно это: val?.valueOf?.() ?? val
+		// Так читает TPropSpec.read: у объекта со своим valueOf() — результат вызова
 		const driver = engine.getCore().driver
 		const before = driver.valueOf()
 

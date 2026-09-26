@@ -2006,12 +2006,13 @@ Single source of truth for metadata. Enables:
 - Plugin composition
 - Static framework declarations from the surface (`TSurface.of`)
 
-### 2. **Accessor Pattern (Runtime Reflection)**
+### 2. **Exchange Pattern (Value Exchange per Mount)**
 
-Unified reflection API. Enables:
+One exchange of values between the core and a framework (`TExchange`), shared by all six adapters. Enables:
 
-- Framework-agnostic property/event access
-- Namespace prefixing for plugins
+- Framework-agnostic property/event access: state out (`state.subscribe` / `state.getSnapshot`), props in (`inputs.full` / `inputs.delta`), events out (`events.listen`)
+- One write rule per property (`TLine`) for the instance, descriptor plugins and external plugins alike
+- Namespace prefixing for plugins (`ns_name`) in the surface, through the profile's naming
 
 Prop/event names per framework come from the surface (`TSurface.of(descriptor, profile)`), and the exchange (`adapter.connect`) connects them to the owners on mount — Layers 2 and 5b.
 

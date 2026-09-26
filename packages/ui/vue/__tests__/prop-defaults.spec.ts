@@ -5,7 +5,7 @@
  * `default` со значением `undefined` это отключает, поэтому умолчание
  * объявляется ключом, а не значением (см. `IPropDeclaration.default`).
  * Проверка `default !== undefined` при сборке декларации или в поверхности
- * (`surfaceOf`) сломала бы оба случая ниже молча.
+ * (`TSurface.of`) сломала бы оба случая ниже молча.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'

@@ -322,12 +322,13 @@ Button is the canonical minimal component. Copy its shape:
   колбэк-пропами, `element:ready` → `onElementReady`);
 - профиль фреймворка `IAdapterProfile` — стратегия имён и слот по умолчанию, одна
   константа на адаптер (`VueProfile`, `ReactProfile`, …);
-- поверхность `surfaceOf(descriptor, profile)` — публичный API компонента в
+- поверхность `TSurface.of(descriptor, profile)` — публичный API компонента в
   именах фреймворка: из неё берут статический слой и связка;
-- связка `bindComponent(adapter, profile)` — всё, что адаптеры делают с
-  аксессором на монтировании: состояние для фреймворка (`subscribe` — оно же
-  инициализация), проброс событий и моделей,
-  запись пропсов, спред несъеденных;
+- связка `adapter.connect(profile)` — обмен `TExchange`, всё, что адаптеры
+  делают со значениями на монтировании: состояние для фреймворка
+  (`state.subscribe` — оно же инициализация, `state.getSnapshot`), запись
+  пропсов (`inputs.full` / `inputs.delta`), проброс событий и моделей
+  (`events.listen`), спред несъеденных (`forward`);
 - `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`, метод
   контекста.
 
@@ -335,7 +336,7 @@ Button is the canonical minimal component. Copy its shape:
 где лежит в setup — «Структура `packages/setup`».
 
 Адаптер задаёт **только** профиль, куда писать значение, как отдать событие и в
-какой момент своего цикла это делать; своих циклов по аксессору у него нет.
+какой момент своего цикла это делать; своих циклов по свойствам у него нет.
 Своя стратегия имён событий тоже не у каждого: React, Svelte и Solid берут общую
 `callbackEventNaming`, своя стратегия у Vue и Web Components (`element:ready`) и
 у Angular (`elementReady`). Если пишешь что-то в

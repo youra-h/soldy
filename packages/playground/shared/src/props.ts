@@ -489,7 +489,7 @@ export function propControl(
  * Есть ли у пропа строка на странице.
  *
  * `protected` — вычисляемые наружу значения (`classes`, `aria`, `dataset`,
- * `present`, `styles` плагинов раскладки): аксессор их не пишет вовсе, и
+ * `present`, `styles` плагинов раскладки): обмен их не пишет вовсе, и
  * контрол для них был бы обманом. `NON_EDITABLE` — по имени из разметки.
  */
 function isEditable(prop: TPropSpec): boolean {
