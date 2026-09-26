@@ -3,8 +3,9 @@ import { useAdapter, createVueAdapterContext, type SetupContext } from '../../ad
 import BaseProgressLinear, { type ProgressLinearProps } from './base.component'
 
 /**
- * Логики здесь нет: долю, `aria-value*` и `data-indeterminate` считает ядро,
- * бег рисует тема. Выход `percentStyle` шаблон кладёт в `:style` корня.
+ * Логики здесь нет: долю, `aria-value*`, `data-indeterminate` и модификатор
+ * оси считает ядро, бег рисует тема. Выход `percentStyle` шаблон кладёт в
+ * `:style` корня.
  */
 export default {
 	name: '_ProgressLinear',

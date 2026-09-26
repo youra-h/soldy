@@ -16,6 +16,7 @@ import {
 	LIST_CONTENT_FITS,
 	LIST_INDICATORS,
 	POPOVER_PLACEMENTS,
+	PROGRESS_LINEAR_ORIENTATIONS,
 	RADIO_GROUP_VIEWS,
 	SCROLL_BEHAVIORS,
 	SELECTION_MODES,
@@ -251,9 +252,12 @@ const OWN: Record<string, Record<string, string>> = {
 		borderWidth: 'Толщина дуги',
 	},
 	'progress-linear': {
-		value: 'Сколько готово — число от min до max. Пусто — доля неизвестна, и полоса бежит',
+		value: 'Сколько готово — число от min до max',
 		min: 'Начало шкалы',
 		max: 'Конец шкалы',
+		indeterminate:
+			'Доля неизвестна — полоса бежит. Значение при этом хранится и вернётся, когда бег снимут',
+		orientation: 'Ось полосы: вдоль строки или снизу вверх',
 	},
 	skeleton: {
 		shape: 'Форма заглушки',
@@ -307,6 +311,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS },
+	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },
 	tabs: {
@@ -376,10 +381,16 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		snapRadius: { snap: 'magnet', marks: SNAP_MARKS },
 	},
 	'progress-linear': {
-		// Шкала двигает долю, а пока доля неизвестна, полоса бежит и шкалы не
-		// показывает
+		// Шкала двигает долю, а у доли по умолчанию — нуля — двигать нечего:
+		// пустая полоса пуста на любом `max`
 		min: { value: 40 },
 		max: { value: 40 },
+		// Флаг главнее значения, и что значение под бегом хранится, видно
+		// только на доле: снятый флаг возвращает её на полосу
+		indeterminate: { value: 40 },
+		// Ось видна и на пустой дорожке, а откуда растёт заливка — только на
+		// доле
+		orientation: { value: 40 },
 	},
 }
 

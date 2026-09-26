@@ -6,6 +6,7 @@ import type {
 	IProgressLinear,
 	IProgressLinearProps,
 	TProgressLinearEvents,
+	TProgressLinearOrientation,
 	TProgressLinearStates,
 	TProgressLinearStyle,
 } from './types'
@@ -14,6 +15,11 @@ import type {
  * Индикатор выполнения линией: доля готового, когда она известна, и бег,
  * когда неизвестна.
  *
+ * **Бег — флаг `indeterminate`, и он главнее значения**, как у CheckBox:
+ * пока он стоит, доли и `aria-valuenow` нет, а `value` хранится как было и
+ * вернётся на полосу, когда бег снимут. Второго пути к бегу нет: `value` —
+ * всегда число, по умолчанию `0`.
+ *
  * **Значение хранится как задано.** Полоса значение не правит и в форму не
  * отдаёт, поэтому резольвера, как у Slider, у неё нет: границы шкалы действуют
  * только в выходах. Доля (`percentStyle`) прижата к 0–100 %, `aria-valuenow` —
@@ -21,15 +27,20 @@ import type {
  * записи не важен: значение, пришедшее раньше `max`, к прежнему `max` не
  * прижимается и не теряется.
  *
- * Паттерн — роль `progressbar`. Пока доля неизвестна, `aria-valuenow` нет:
- * так объявляется неопределённый индикатор, и скринридер не прочтёт «0 %».
- * Имя даёт `TAriaPlugin` (`aria_label`, `aria_labelledBy`), как у Spinner:
- * строк языка интерфейса у библиотеки нет. Содержимого у полосы нет — дети
- * роли `progressbar` презентационные, скринридер их не читает. Подпись и
- * число потребитель ставит рядом своей разметкой.
+ * Паттерн — роль `progressbar`. Пока полоса бежит, `aria-valuenow` нет: так
+ * объявляется неопределённый индикатор, и скринридер не прочтёт «0 %». Имя
+ * даёт `TAriaPlugin` (`aria_label`, `aria_labelledBy`), как у Spinner: строк
+ * языка интерфейса у библиотеки нет. Содержимого у полосы нет — дети роли
+ * `progressbar` презентационные, скринридер их не читает. Подпись и число
+ * потребитель ставит рядом своей разметкой.
  *
- * Теме на корне — `data-indeterminate` и доля CSS-переменной. Бег по
- * `data-indeterminate` рисует сама тема: движение — её дело, а не ядра.
+ * Ось (`orientation`) — модификатор `--horizontal` или `--vertical`, как у
+ * Slider и Tabs: значение библиотеки, а не темы. `aria-orientation` ядро не
+ * пишет — у роли `progressbar` такого атрибута нет (ARIA 1.2).
+ *
+ * Теме на корне — модификатор оси, `data-indeterminate` и доля
+ * CSS-переменной. Бег по `data-indeterminate` рисует сама тема: движение —
+ * её дело, а не ядра.
  */
 export default class TProgressLinear
 	extends TStylable<IProgressLinearProps, TProgressLinearEvents, TProgressLinearStates>
@@ -38,19 +49,26 @@ export default class TProgressLinear
 	static override baseClass = 's-progress-linear'
 
 	static defaultValues: typeof TStylable.defaultValues &
-		TDefaultValues<IProgressLinearProps, 'value' | 'min' | 'max'> = {
+		TDefaultValues<
+			IProgressLinearProps,
+			'value' | 'min' | 'max' | 'indeterminate' | 'orientation'
+		> = {
 		...TStylable.defaultValues,
 		// Полосу кладут в `Button` и `Label`, а внутри них HTML разрешает
 		// только строчную разметку
 		tag: 'span',
-		value: null,
+		value: 0,
 		min: 0,
 		max: 100,
+		indeterminate: false,
+		orientation: 'horizontal',
 	}
 
-	protected _value: number | null
+	protected _value: number
 	protected _min: number
 	protected _max: number
+	protected _indeterminate: boolean
+	protected _orientation!: TProgressLinearOrientation
 
 	constructor(
 		props: Partial<IProgressLinearProps> = {},
@@ -63,12 +81,15 @@ export default class TProgressLinear
 		this._value = props.value ?? ctor.defaultValues.value
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
+		this._indeterminate = props.indeterminate ?? ctor.defaultValues.indeterminate
 
 		this._aria.add('role', 'progressbar')
+		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
 
 		this.events.on('change:value', () => this._syncValue())
 		this.events.on('change:min', () => this._syncValue())
 		this.events.on('change:max', () => this._syncValue())
+		this.events.on('change:indeterminate', () => this._syncValue())
 
 		this._syncValue()
 	}
@@ -77,11 +98,11 @@ export default class TProgressLinear
 	/* Свойства                                                           */
 	/* ------------------------------------------------------------------ */
 
-	get value(): number | null {
+	get value(): number {
 		return this._value
 	}
 
-	set value(value: number | null) {
+	set value(value: number) {
 		if (this._value === value) return
 
 		this._value = value
@@ -110,18 +131,40 @@ export default class TProgressLinear
 		this.events.emit('change:max', value)
 	}
 
+	get indeterminate(): boolean {
+		return this._indeterminate
+	}
+
+	set indeterminate(value: boolean) {
+		if (this._indeterminate === value) return
+
+		this._indeterminate = value
+		this.events.emit('change:indeterminate', value)
+	}
+
+	get orientation(): TProgressLinearOrientation {
+		return this._orientation
+	}
+
+	set orientation(value: TProgressLinearOrientation) {
+		if (this._orientation === value) return
+
+		this._applyOrientation(value, this._orientation)
+		this.events.emit('change:orientation', value)
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* Выходы для разметки                                                */
 	/* ------------------------------------------------------------------ */
 
 	/**
 	 * `--s-progress-linear-percent` — доля готового процентом: вне шкалы —
-	 * край, у пустой шкалы (`max` не больше `min`) — `0%`. Пока доля
-	 * неизвестна, переменной нет: заливка уходит к нулю, и пришедшую долю тема
-	 * ведёт от начала дорожки, а не с того места, где её оставили.
+	 * край, у пустой шкалы (`max` не больше `min`) — `0%`. Пока полоса бежит,
+	 * переменной нет: заливка уходит к нулю, и долю, вернувшуюся после бега,
+	 * тема ведёт от начала дорожки, а не с того места, где её оставили.
 	 */
 	get percentStyle(): TProgressLinearStyle {
-		if (this._value === null) return {}
+		if (this._indeterminate) return {}
 
 		return {
 			'--s-progress-linear-percent': percent(fractionOf(this._value, this._min, this._max)),
@@ -133,18 +176,18 @@ export default class TProgressLinear
 	/* ------------------------------------------------------------------ */
 
 	/**
-	 * Наборы, которые следуют из значения и шкалы: `aria-value*` —
+	 * Наборы, которые следуют из значения, шкалы и флага бега: `aria-value*` —
 	 * скринридеру, `data-indeterminate` — теме. `data-indeterminate` стоит с
 	 * первой отрисовки, и у известной доли — значением `"false"`: тема
 	 * отличает «доля известна» от «неприменимо».
 	 */
 	protected _syncValue(): void {
-		const value = this._value
+		const running = this._indeterminate
 
 		this._aria.add('aria-valuemin', String(this._min))
 		this._aria.add('aria-valuemax', String(this._max))
-		this._aria.add('aria-valuenow', value === null ? null : String(this._now(value)))
-		this._dataset.add('indeterminate', value === null)
+		this._aria.add('aria-valuenow', running ? null : String(this._now(this._value)))
+		this._dataset.add('indeterminate', running)
 	}
 
 	/**
@@ -155,12 +198,30 @@ export default class TProgressLinear
 		return clamp(value, this._min, Math.max(this._min, this._max))
 	}
 
+	/**
+	 * Модификатор оси — без префикса, как у Slider и Tabs: значение
+	 * библиотеки, и с именами темы оно не столкнётся. `aria-orientation` нет:
+	 * роль `progressbar` его не поддерживает.
+	 */
+	protected _applyOrientation(
+		newValue: TProgressLinearOrientation,
+		oldValue?: TProgressLinearOrientation,
+	): void {
+		this._classes.swapClass({
+			oldClass: `--${oldValue}`,
+			newClass: `--${newValue}`,
+		})
+		this._orientation = newValue
+	}
+
 	override getProps(): IProgressLinearProps {
 		return {
 			...super.getProps(),
 			value: this._value,
 			min: this._min,
 			max: this._max,
+			indeterminate: this._indeterminate,
+			orientation: this._orientation,
 		}
 	}
 }
