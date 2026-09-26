@@ -38,7 +38,8 @@ const CLOSE_KEYS = new Set(['Delete', 'Backspace'])
  *
  * Сами `tabindex` плагин не пишет: их ставит `TTagsExtension`, потому что
  * атрибут обязан стоять с первой отрисовки, включая серверную. Здесь только
- * то, что требует DOM: слушатели и перенос фокуса.
+ * то, что требует DOM: слушатели, перенос фокуса и докрутка ряда до тега под
+ * ним.
  *
  * От `TListNavigationPlugin` не наследуется: там фокус на контейнере и
  * подсветка через `aria-activedescendant`, а здесь фокус ходит по самим
@@ -277,10 +278,30 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 		)
 	}
 
-	/** Фокус на строку тега с ролью. Гард нужен: узел плагину приходит `Element`. */
+	/**
+	 * Фокус на строку тега с ролью — и ряд докручивается до всего тега. Гард
+	 * нужен: узел плагину приходит `Element`.
+	 *
+	 * Фокус получает строка, а видеть надо пилюлю — узел тега: за строкой стоит
+	 * крестик, а кольцо фокуса рисует пилюля. Сам браузер при фокусе докручивает
+	 * только строку, и то лишь целиком скрытую: частично видимую он оставляет у
+	 * края, с крестиком за ним и срезанной стороной кольца. `nearest` двигает
+	 * ряд ровно до края, и тег, видимый целиком, остаётся на месте; запас под
+	 * кольцо у края — `scroll-padding` ряда от темы.
+	 *
+	 * Здесь, а не на `focusin`: туда приходит и фокус от нажатия мышью, и ряд,
+	 * сдвинутый под нажатой кнопкой, увёл бы `click` с тега.
+	 *
+	 * `scrollIntoView` есть не везде — его нет в jsdom. Прокрутка — удобство, а
+	 * не часть контракта.
+	 */
 	private _focus(item: ITagsItem): void {
-		const option = this._elements?.getElementByUid(item.uid)?.querySelector(OPTION_SELECTOR)
+		const node = this._elements?.getElementByUid(item.uid)
+		const option = node?.querySelector(OPTION_SELECTOR)
 
-		if (isFocusableElement(option)) option.focus()
+		if (!node || !isFocusableElement(option)) return
+
+		option.focus()
+		node.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
 	}
 }
