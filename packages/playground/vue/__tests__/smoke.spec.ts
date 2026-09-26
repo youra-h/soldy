@@ -72,6 +72,27 @@ function rowOf(wrapper: ReturnType<typeof mount>, name: string) {
 	return found
 }
 
+/**
+ * Клики по двум разным элементам в каждой колонке строки ListBox — те же, что
+ * в проверке строки `mode`. Результат — число выбранных по колонкам, а не общий
+ * счёт по строке: упавшая проверка сразу показывает, в какой колонке режим не
+ * доехал. Два выбранных — признак `multiple`: у ListBox режим в DOM не выведен.
+ */
+async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<number[]> {
+	const stages = row.findAll('.pg-col__stage')
+
+	for (const stage of stages) {
+		const items = stage.findAll('.s-list-box-item .s-button')
+
+		await items[0].trigger('click')
+		await items[1].trigger('click')
+	}
+
+	await nextTick()
+
+	return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
+}
+
 describe('каталог адаптера', () => {
 	/**
 	 * Ключи карты превью — те же идентификаторы, что в общем реестре. Опечатка
@@ -328,27 +349,6 @@ describe('свойства плагинов', () => {
  * оба остаются выбранными только в `multiple`.
  */
 describe('пресет строки', () => {
-	/**
-	 * Клики по двум разным элементам в каждой колонке строки ListBox — те же,
-	 * что в проверке строки `mode`. Результат — число выбранных по колонкам,
-	 * а не общий счёт по строке: упавшая проверка сразу показывает, в какой
-	 * колонке режим не доехал.
-	 */
-	async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<number[]> {
-		const stages = row.findAll('.pg-col__stage')
-
-		for (const stage of stages) {
-			const items = stage.findAll('.s-list-box-item .s-button')
-
-			await items[0].trigger('click')
-			await items[1].trigger('click')
-		}
-
-		await nextTick()
-
-		return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
-	}
-
 	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'select' } })
 
@@ -398,6 +398,93 @@ describe('пресет строки', () => {
 		await nextFrame()
 
 		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
+
+		wrapper.unmount()
+	})
+})
+
+/**
+ * Очищенное поле — «проп не задан», и колонки обязаны показывать одно.
+ *
+ * Первая колонка такой проп не передаёт, и связка возвращает свойство к
+ * умолчанию декларации (`TLine.reset`). Вторая пишет в экземпляр сама и
+ * писала туда `undefined` — значение вне типа свойства: у ProgressLinear
+ * полоса вставала на ноль вместо бега. По случаю на каждую ветку записи:
+ * свойство компонента, коллекции и плагина.
+ */
+describe('очищенное поле', () => {
+	/**
+	 * Значение — через контрол строки, тем же, что отдаёт он сам: стёртое
+	 * числовое поле и снятый выбор списка дают `undefined`, стёртое
+	 * текстовое — `''`.
+	 */
+	async function enter(row: ReturnType<typeof rowOf>, value: unknown): Promise<void> {
+		row.findComponent(PropControl).vm.$emit('update:modelValue', value)
+		await nextTick()
+		await nextFrame()
+	}
+
+	it('возвращает умолчание: ProgressLinear снова бежит в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'progress-linear' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = rowOf(wrapper, 'value')
+		const indeterminate = () =>
+			row
+				.findAll('.pg-col__stage .s-progress-linear')
+				.map((bar) => bar.attributes('data-indeterminate'))
+
+		await enter(row, 40)
+		expect(indeterminate()).toEqual(['false', 'false'])
+
+		await enter(row, undefined)
+		expect(indeterminate()).toEqual(['true', 'true'])
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * У `mode` фасадов умолчания нет: «не задано» его сеттер не принимает, и
+	 * сбрасывать не к чему. Первая колонка режим оставляет — вторая тоже.
+	 */
+	it('без умолчания не пишет ничего: ListBox остаётся в multiple в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = rowOf(wrapper, 'mode')
+
+		await enter(row, 'multiple')
+		await enter(row, undefined)
+
+		expect(await selectedAfterTwoClicks(row)).toEqual([2, 2])
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Значим ключ умолчания, а не значение: `aria_label` объявлен с умолчанием
+	 * `undefined`, и пишется оно, как любое другое. Проверка «умолчание не
+	 * `undefined`» оставила бы плагину второй колонки прежнее имя.
+	 */
+	it('пишет и объявленное undefined: имя уходит из обеих колонок', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'button' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = rowOf(wrapper, 'aria_label')
+		const labels = () =>
+			row.findAll('.pg-col__stage .s-button').map((button) => button.attributes('aria-label'))
+
+		await enter(row, 'Закрыть')
+		expect(labels()).toEqual(['Закрыть', 'Закрыть'])
+
+		await enter(row, '')
+		expect(labels()).toEqual([undefined, undefined])
 
 		wrapper.unmount()
 	})

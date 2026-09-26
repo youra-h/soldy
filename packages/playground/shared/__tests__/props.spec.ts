@@ -13,7 +13,7 @@ import { TName, TPropSpec } from '@soldy-ui/setup'
 import { TAnchorPlugin } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
-import { propControl, propControls } from '../src/props'
+import { isEmptyField, propControl, propControls } from '../src/props'
 import { findComponent } from '../src/registry'
 
 /** Проп `button`, которого нет ни в списках значений, ни в пресетах. */
@@ -64,6 +64,23 @@ describe('propControl: умолчание', () => {
 		)
 
 		expect(shown).toEqual(expected)
+	})
+})
+
+/**
+ * Пустое поле — проп не задан, и вторая колонка пишет вместо него умолчание.
+ * Ноль и `false` — значения: сочти их пустыми, и выключенный `visible` вернулся
+ * бы к `true`, а `largeStep: 0` — к десяти.
+ */
+describe('isEmptyField', () => {
+	it('пусты стёртое поле и снятый выбор', () => {
+		expect(isEmptyField('')).toBe(true)
+		expect(isEmptyField(undefined)).toBe(true)
+	})
+
+	it('ноль и false — значения', () => {
+		expect(isEmptyField(0)).toBe(false)
+		expect(isEmptyField(false)).toBe(false)
 	})
 })
 
