@@ -38,12 +38,7 @@ export const TabsCollectionItemDescriptor = defineDescriptor(() =>
 			props: {
 				active: { type: Boolean, triggers: ['change:active'] },
 				order: { type: Number, protected: true, triggers: ['change:order'] },
-				tab_closable: {
-					type: Boolean,
-					protected: true,
-					get: (item: TTabsItemCollectionFacade) => item.closable,
-					triggers: ['change:closable'],
-				},
+				tab_closable: { type: Boolean, protected: true, triggers: ['change:closable'] },
 			},
 		},
 	}),

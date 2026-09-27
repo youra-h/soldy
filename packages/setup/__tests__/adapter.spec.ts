@@ -1,7 +1,16 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { createEngine, createEngineListBox, TListBox, TListBoxItem } from '@soldy-ui/core'
+import {
+	createEngine,
+	createEngineListBox,
+	createEngineTabs,
+	TListBox,
+	TListBoxItem,
+	TTabs,
+	TTabsContent,
+	TTabsItem,
+} from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy-ui/plugins'
 import {
@@ -12,9 +21,11 @@ import {
 	DragAndDropDescriptor,
 	FrameDescriptor,
 	ListBoxCollectionItemDescriptor,
+	TabsCollectionContentDescriptor,
 	TElevator,
 	TCollectionExtension,
 	TCollectionItemExtension,
+	TTabsContentBindingExtension,
 	TDragAndDropExtension,
 	TDragAndDropCollectionExtension,
 	COLLECTION_ENGINE_ELEVATOR,
@@ -404,5 +415,118 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 		context.destroy()
 
 		expect(engine.extensions.batch.items).toEqual([])
+	})
+})
+
+/**
+ * Панель Tabs в коллекцию не входит, но фазы у неё те же. Сборка связывает
+ * панель с табом, который уже в коллекции (таб из данных), и пишет только
+ * своё — фасад и `aria` панели. Подписки на движок и `value` и второй поиск —
+ * на `attach`: таб разметки входит в коллекцию на своём `attach`, а подписка,
+ * заведённая сборкой, у React осталась бы на шине движка от отброшенного
+ * рендера.
+ */
+describe('TTabsContentBindingExtension: сборка и вход', () => {
+	/** Движок Tabs под лифтом и панель `a`, собранная под ним. */
+	function assemblePanel(items: ReadonlyArray<{ value: string; text: string }> = []) {
+		const { factory, store } = createElevatorFactory()
+		const engine = createEngineTabs({ owner: new TTabs(), items: [...items] })
+
+		store.set(ITEM_CONTEXT_ELEVATOR, engine)
+
+		const content = new TTabsContent({ value: 'a' })
+		const context = createAdapterContext(TabsCollectionContentDescriptor(), {}).use(
+			TTabsContentBindingExtension,
+			{ content, elevator: factory },
+		)
+		const push = (value: string) =>
+			engine.extensions.plain.push(new TTabsItem({ value, text: value.toUpperCase() }))
+
+		return { engine, content, context, push }
+	}
+
+	/** Сторона панели в связке: роль, `id` и ссылка на таб. */
+	const panelSide = (content: TTabsContent) => ({
+		role: content.aria.get('role'),
+		id: content.aria.get('id'),
+		labelledBy: content.aria.get('aria-labelledby'),
+	})
+
+	it('таб из данных связывается уже в сборке: фасад и aria панели', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
+		expect(context.instance.item).toBe(tab)
+		expect(panelSide(content)).toEqual({
+			role: 'tabpanel',
+			id: tab.aria.get('aria-controls'),
+			labelledBy: tab.aria.get('id'),
+		})
+	})
+
+	it('до attach таб, вошедший после сборки, панель не находит', () => {
+		const { content, context, push } = assemblePanel()
+
+		push('a')
+
+		expect(context.instance.item).toBeUndefined()
+		expect(content.aria.has('role')).toBe(false)
+	})
+
+	it('attach находит таб, вошедший после сборки', () => {
+		const { content, context, push } = assemblePanel()
+		const tab = push('a')
+
+		context.attach()
+
+		expect(context.instance.item).toBe(tab)
+		expect(panelSide(content)).toEqual({
+			role: 'tabpanel',
+			id: tab.aria.get('aria-controls'),
+			labelledBy: tab.aria.get('id'),
+		})
+	})
+
+	it('после attach панель следит за составом и своим value', () => {
+		const { content, context, push } = assemblePanel()
+
+		context.attach()
+
+		const a = push('a')
+
+		expect(context.instance.item).toBe(a)
+
+		const b = push('b')
+
+		content.value = 'b'
+
+		expect(context.instance.item).toBe(b)
+		expect(content.aria.get('aria-labelledby')).toBe(b.aria.get('id'))
+	})
+
+	it('destroy снимает подписки и aria панели', () => {
+		const { content, context, push } = assemblePanel()
+
+		push('a')
+		context.attach()
+		context.destroy()
+
+		expect(content.aria.has('role')).toBe(false)
+
+		// Подписки сняты: ни новый таб, ни смена value панель не связывают
+		push('b')
+		content.value = 'b'
+
+		expect(content.aria.has('role')).toBe(false)
+	})
+
+	it('собранная, но не принятая панель при destroy снимает aria сборки', () => {
+		const { content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+
+		expect(content.aria.get('role')).toBe('tabpanel')
+
+		context.destroy()
+
+		expect(content.aria.has('role')).toBe(false)
 	})
 })

@@ -22,6 +22,21 @@
  *
  * Перерешение нужно в двух случаях: панель смонтировалась раньше своего таба
  * (тогда ждём `item:added`) и у панели сменилось `value`.
+ *
+ * Работа разделена по фазам контекста, как у `TCollectionItemExtension`:
+ *
+ * - **сборка** — первое связывание. Оно пишет только своё — фасад панели и её
+ *   `aria`. Таб из данных (`items`) в коллекции уже есть, и панель под него
+ *   попадает в первую же отрисовку, в том числе серверную;
+ * - **вход** (`attach` контекста) — связывание ещё раз и подписки на `item:added`
+ *   движка и `change:value` панели. Табы разметки входят в коллекцию на своём
+ *   `attach`, и панель, что стоит в документе после них, находит их вторым
+ *   поиском. Подписки ждут входа, потому что шины не свои: движок — владельца,
+ *   панель могла прийти снаружи (`ctrl`), а у React сборка идёт на рендере, и
+ *   отброшенный рендер оставил бы на них лишнего подписчика;
+ * - **снятие** (`destroy` контекста) — отписка и атрибуты панели. Контекст,
+ *   собранный, но так и не принятый, уничтожается тоже: снимать с шин тогда
+ *   нечего, а атрибуты сборки уходят.
  */
 
 import { TItemContextRegistry } from '@soldy-ui/core'
@@ -105,9 +120,13 @@ export class TTabsContentBindingExtension {
 
 		resolve()
 
-		// Панель могла смонтироваться раньше своего таба
-		engine.extensions.plain.events.on('item:added', resolve)
-		content.events.on('change:value', resolve)
+		context.events.on('attach', () => {
+			resolve()
+
+			// Панель могла смонтироваться раньше своего таба
+			engine.extensions.plain.events.on('item:added', resolve)
+			content.events.on('change:value', resolve)
+		})
 
 		context.events.on('destroy', () => {
 			engine.extensions.plain.events.off('item:added', resolve)
