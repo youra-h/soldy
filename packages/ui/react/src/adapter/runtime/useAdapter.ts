@@ -20,6 +20,9 @@
  * состояние заполняется заново из неё.
  *
  * Возвращает ctrl, plugins, ref, forwardProps и state (экспортированные props).
+ *
+ * Фасад коллекции связывает `useCollectionAdapter` — те же шаги 1–3 без
+ * того, что принадлежит компоненту.
  */
 
 import {
@@ -32,7 +35,13 @@ import {
 	useSyncExternalStore,
 } from 'react'
 import { toInstanceState } from '@soldy-ui/setup'
-import type { IAdapterContext, TExchange, IComponentContract, TAdapterState } from '@soldy-ui/setup'
+import type {
+	IAdapterContext,
+	TExchange,
+	IComponentContract,
+	TAdapterState,
+	TStateSnapshot,
+} from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { ReactProfile } from '../common'
 
@@ -46,6 +55,21 @@ export type TBinding<
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
 	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
+	state: TAdapterState<C>
+}
+
+/**
+ * То же, что `TBinding`, но без `ctrl` и `ref`: они принадлежат компоненту, а
+ * не фасаду его коллекции (см. `useCollectionAdapter`).
+ */
+export type TCollectionBinding<
+	C extends IComponentContract = IComponentContract,
+	TProps extends object = object,
+> = {
+	plugins: IPluginBundle | null
+	/** Пропсы, которые не съели ни компонент, ни фасад: уходят атрибутами в DOM. */
+	forwardProps: Partial<TProps>
+	/** Свойства фасада и выходы плагинов его дескриптора — как у `TBinding`. */
 	state: TAdapterState<C>
 }
 
@@ -63,11 +87,15 @@ function rebind(_: TStore, adapter: IAdapterContext): TStore {
 	return bind(adapter)
 }
 
-/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
-export function useAdapter<C extends IComponentContract, TProps extends object>(
-	adapter: IAdapterContext<C>,
-	props: TProps,
-): TBinding<C, TProps> {
+/**
+ * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
+ * состояние, входы и события. Отдаёт то, из чего каждый хук собирает свой
+ * результат.
+ */
+function useExchange(
+	adapter: IAdapterContext,
+	props: object,
+): { binding: TExchange; state: TStateSnapshot } {
 	const [store, dispatch] = useReducer(rebind, adapter, bind)
 
 	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
@@ -107,6 +135,16 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		[binding],
 	)
 
+	return { binding, state }
+}
+
+/** Инстанс и выходы плагинов берутся из контракта в типе контекста — его выводит `createAdapterContext`. */
+export function useAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+): TBinding<C, TProps> {
+	const { binding, state } = useExchange(adapter, props)
+
 	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin
 	const ref = useCallback((el: Element | null) => adapter.bindElement(el), [adapter])
 
@@ -116,6 +154,38 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		ctrl: adapter.instance,
 		plugins: adapter.bundle,
 		ref,
+		forwardProps,
+		state: toInstanceState<C>(state),
+	}
+}
+
+/**
+ * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
+ *
+ * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы
+ * и события у фасада те же, что у компонента, а `ctrl` и `ref` — нет:
+ *
+ * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
+ *   ждут сам компонент;
+ * - своего узла у фасада нет: он делит набор компонента, и корень к
+ *   `TElementPlugin` привязывает `useAdapter` компонента.
+ *
+ * `props` — все пропсы компонента: фасад берёт из них свои входы и колбэки
+ * своих событий. `forward` — то, что не съел компонент (`forwardProps` его
+ * `useAdapter`): фасад отбирает из них свои имена, и в DOM уходит только то,
+ * что не съели ни компонент, ни фасад.
+ */
+export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+	forward: Partial<TProps>,
+): TCollectionBinding<C, TProps> {
+	const { binding, state } = useExchange(adapter, props)
+
+	const forwardProps = useMemo(() => binding.forward(forward), [forward, binding])
+
+	return {
+		plugins: adapter.bundle,
 		forwardProps,
 		state: toInstanceState<C>(state),
 	}

@@ -10,8 +10,9 @@
  * 1. Core → Svelte: подписка на состояние связки
  * 2. Svelte → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
- * 4. DOM-биндинг через attachment (аналог callback-ref в React)
- * 5. Очистка при уничтожении компонента
+ * 4. Компонент принят — adapter.attach()
+ * 5. DOM-биндинг через attachment (аналог callback-ref в React)
+ * 6. Очистка при уничтожении компонента
  *
  * Принимает геттер props: в Svelte 5 деструктуризация рвёт реактивность,
  * поэтому наружу передаётся сам объект `$props()`, а читается он лениво.
@@ -75,7 +76,12 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		}),
 	)
 
-	// 4. Очистка контекста
+	// 4. Компонент принят: инициализация компонента Svelte выполняется один
+	// раз, и на сервере тоже, — это и есть его монтирование. Не в эффекте:
+	// эффект на сервере не выполняется
+	adapter.attach()
+
+	// 5. Очистка контекста
 	$effect(() => () => adapter.destroy())
 
 	const forwardProps = $derived(binding.forward(getProps()))

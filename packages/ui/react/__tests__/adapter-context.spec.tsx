@@ -141,7 +141,7 @@ function createProbe() {
 	const rendered: IAdapterContext[] = []
 
 	function Probe() {
-		const adapter = useAdapterContext(() => {
+		const { contexts: adapter } = useAdapterContext(() => {
 			const context = createAdapterContext(ButtonDescriptor(), { props: {} })
 
 			created.push(context)
@@ -168,7 +168,7 @@ describe('useAdapterContext', () => {
 		const seen: unknown[] = []
 
 		function Probe({ n }: { n: number }) {
-			const adapter = useAdapterContext(factory)
+			const { contexts: adapter } = useAdapterContext(factory)
 
 			seen.push(adapter)
 
@@ -456,5 +456,86 @@ describe('повторная установка эффектов · <Activity>',
 		// Пересобранный контекст применяет пропсы, как любая сборка
 		expect(ctrl.text).toBe('из разметки')
 		expect(textOf(target)).toBe('из разметки')
+	})
+})
+
+/**
+ * Фабрика может вернуть несколько контекстов — у коллекции это свой и фасада.
+ * Живут они одной единицей: хук держит, пересобирает и уничтожает их вместе,
+ * уничтожает — в обратном порядке. Принимает (`attach`) — при коммите, в
+ * порядке сборки, после сборки и каждой пересборки: на рендере компонент ещё
+ * не принят, а уничтоженные контексты не принимаются вовсе.
+ */
+describe('useAdapterContext · несколько контекстов и приём при коммите', () => {
+	function createPairProbe() {
+		const log: string[] = []
+		let built = 0
+
+		function Probe() {
+			useAdapterContext(() => {
+				const n = ++built
+				const first = createAdapterContext(ButtonDescriptor(), { props: {} })
+				const second = createAdapterContext(ButtonDescriptor(), { props: {} })
+
+				first.events.on('attach', () => log.push(`attach first ${n}`))
+				second.events.on('attach', () => log.push(`attach second ${n}`))
+				first.events.on('destroy', () => log.push(`destroy first ${n}`))
+				second.events.on('destroy', () => log.push(`destroy second ${n}`))
+
+				return [first, second] as const
+			})
+
+			return null
+		}
+
+		return { Probe, log }
+	}
+
+	it('контексты принимаются при коммите в порядке сборки, уничтожаются — в обратном', () => {
+		const { Probe, log } = createPairProbe()
+		const { unmount } = mountRoot(<Probe />)
+
+		expect(log).toEqual(['attach first 1', 'attach second 1'])
+
+		unmount()
+
+		expect(log).toEqual([
+			'attach first 1',
+			'attach second 1',
+			'destroy second 1',
+			'destroy first 1',
+		])
+	})
+
+	it('StrictMode: пересобранные принимаются, уничтоженные — нет', () => {
+		const { Probe, log } = createPairProbe()
+		const { unmount } = mountRoot(
+			<StrictMode>
+				<Probe />
+			</StrictMode>,
+		)
+
+		expect(log).toEqual([
+			'attach first 1',
+			'attach second 1',
+			'destroy second 1',
+			'destroy first 1',
+			'attach first 2',
+			'attach second 2',
+		])
+
+		unmount()
+
+		expect(log.slice(6)).toEqual(['destroy second 2', 'destroy first 2'])
+	})
+
+	it('без повторной установки перерисовка не принимает заново', () => {
+		const { Probe, log } = createPairProbe()
+		const { render } = mountRoot(<Probe />)
+
+		render(<Probe />)
+		render(<Probe />)
+
+		expect(log).toEqual(['attach first 1', 'attach second 1'])
 	})
 })

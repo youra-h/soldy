@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { createEngine } from '@soldy-ui/core'
+import { createEngine, createEngineListBox, TListBox, TListBoxItem } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy-ui/plugins'
 import {
@@ -11,8 +11,10 @@ import {
 	ButtonDescriptor,
 	DragAndDropDescriptor,
 	FrameDescriptor,
+	ListBoxCollectionItemDescriptor,
 	TElevator,
 	TCollectionExtension,
+	TCollectionItemExtension,
 	TDragAndDropExtension,
 	TDragAndDropCollectionExtension,
 	COLLECTION_ENGINE_ELEVATOR,
@@ -346,5 +348,61 @@ describe('расширения коллекций', () => {
 		expect(activateSpy).not.toHaveBeenCalled()
 
 		activateSpy.mockRestore()
+	})
+})
+
+/**
+ * Элемент коллекции собирается и входит в коллекцию на разных фазах контекста.
+ *
+ * Сборка (`use`) берёт движок и регистратор через лифт и отдаёт фасаду контекст
+ * элемента — чужого хранилища она не трогает. Вход — регистрация и `meta` — на
+ * `attach` контекста: фреймворк принял компонент. У React сборка идёт на
+ * рендере, и отброшенный рендер иначе оставил бы в движке фантом.
+ */
+describe('TCollectionItemExtension: сборка и вход', () => {
+	/** Список с движком ListBox и элемент разметки, собранный под ним. */
+	function assembleItem(props: object = {}) {
+		const { factory } = createElevatorFactory()
+		const engine = createEngineListBox({ owner: new TListBox() })
+		const owner = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			ctrl: new TEngineOwner(engine),
+		})
+
+		owner.use(TCollectionExtension, { elevator: factory })
+
+		const item = new TListBoxItem({ value: 'a', text: 'a' })
+		const context = createAdapterContext(ListBoxCollectionItemDescriptor(), { props }).use(
+			TCollectionItemExtension,
+			{ item, elevator: factory },
+		)
+
+		return { engine, item, context }
+	}
+
+	it('до attach контекст элемента есть, а в движке элемента нет', () => {
+		const { engine, context } = assembleItem()
+
+		expect(context.instance.context).toBeDefined()
+		expect(engine.extensions.batch.items).toEqual([])
+	})
+
+	it('attach добавляет элемент и применяет meta из пропсов сборки', () => {
+		const { engine, item, context } = assembleItem({ selected: true })
+
+		expect(engine.extensions.selection.isSelected(item)).toBe(false)
+
+		context.attach()
+
+		expect(engine.extensions.batch.items).toEqual([item])
+		expect(engine.extensions.selection.isSelected(item)).toBe(true)
+	})
+
+	it('уничтожение контекста снимает элемент', () => {
+		const { engine, context } = assembleItem()
+
+		context.attach()
+		context.destroy()
+
+		expect(engine.extensions.batch.items).toEqual([])
 	})
 })

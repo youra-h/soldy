@@ -440,3 +440,72 @@ describe('tabindex у элементов', () => {
 		expect(late.aria.get('tabindex')).toBe('-1')
 	})
 })
+
+/**
+ * `aria-selected` — на всех элементах, а не только на выбранных: скринридер
+ * объявляет «не выбрана», и без атрибута этого не скажет. Пишет родительское
+ * расширение в набор `aria` элемента, как у Select и Tags: раньше атрибут
+ * считала разметка Vue, и в серверную разметку и в остальные адаптеры он бы
+ * не попал.
+ */
+describe('aria-selected у элементов', () => {
+	const ariaSelected = (items: readonly IListBoxItem[]) =>
+		items.map((item) => item.aria.get('aria-selected'))
+
+	it('стоит у всех элементов, у невыбранных — false', () => {
+		const { items } = createListBox(['a', 'b', 'c'])
+
+		expect(ariaSelected(items)).toEqual(['false', 'false', 'false'])
+	})
+
+	it('следует за выбором и его снятием', () => {
+		const { collection, items } = createListBox(['a', 'b', 'c'])
+		const { selection } = collection.engine.extensions
+
+		selection.select(items[1])
+
+		expect(ariaSelected(items)).toEqual(['false', 'true', 'false'])
+
+		// В single новый выбор снимает прежний — атрибут переезжает вместе с ним
+		selection.select(items[2])
+
+		expect(ariaSelected(items)).toEqual(['false', 'false', 'true'])
+
+		selection.resetSelection()
+
+		expect(ariaSelected(items)).toEqual(['false', 'false', 'false'])
+	})
+
+	it('в multiple стоит у каждого выбранного', () => {
+		const { collection, items } = createListBox(['a', 'b', 'c'])
+
+		collection.mode = 'multiple'
+		collection.engine.extensions.selection.select(items[0])
+		collection.engine.extensions.selection.select(items[2])
+
+		expect(ariaSelected(items)).toEqual(['true', 'false', 'true'])
+	})
+
+	it('значение списка, заданное до элементов, выбирает их с атрибутом', () => {
+		const owner = new TListBox({ value: 'b' })
+		const collection = new TListBoxCollectionFacade({}, { owner })
+		const items = [
+			new TListBoxItem({ value: 'a', text: 'a' }),
+			new TListBoxItem({ value: 'b', text: 'b' }),
+		]
+
+		collection.items = items as IListBoxItem[]
+
+		expect(ariaSelected(items)).toEqual(['false', 'true'])
+	})
+
+	it('элемент, добавленный позже, получает атрибут по текущему выбору', () => {
+		const { owner, collection, items } = createListBox(['a'])
+		const late = new TListBoxItem({ value: 'z', text: 'z' })
+
+		owner.value = 'z'
+		collection.items = [...items, late] as IListBoxItem[]
+
+		expect(ariaSelected([...items, late])).toEqual(['false', 'true'])
+	})
+})

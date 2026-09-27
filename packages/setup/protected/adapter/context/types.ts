@@ -9,7 +9,12 @@ import type { IAdapterProfile } from '../../naming'
 import type { TExchange } from '../exchange/exchange.class'
 import type { TMember } from '../exchange/member.class'
 
+/**
+ * Жизненный цикл контекста: `attach` — фреймворк принял собранный компонент,
+ * `destroy` — отпустил. Оба шлёт рантайм адаптера, по разу и в этом порядке.
+ */
 export type TAdapterEvents = {
+	attach: () => void
 	destroy: () => void
 }
 
@@ -125,6 +130,16 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	 * применила сборка.
 	 */
 	connect(profile: IAdapterProfile): TExchange
+
+	/**
+	 * Фреймворк принял собранный компонент: с этого момента он часть живого
+	 * дерева, а не черновик сборки. Пара к `destroy()`: обе зовёт рантайм
+	 * адаптера в свой момент цикла, а не компонент. Сборка чужого не трогает —
+	 * то, что пишет в чужое хранилище (вход элемента в коллекцию владельца),
+	 * подписывается на `attach`. Зовётся один раз, между сборкой и
+	 * `destroy()`: порядок держит рантайм адаптера, как и у `destroy()`.
+	 */
+	attach(): void
 
 	/** Запустить уничтожение контекста */
 	destroy(): void

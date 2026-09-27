@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { InputProps } from './base.component'
 
 export function useSetupInput(props: InputProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(InputDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

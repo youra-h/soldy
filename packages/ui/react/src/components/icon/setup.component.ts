@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { IconProps } from './base.component'
 
 export function useSetupIcon(props: IconProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(IconDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

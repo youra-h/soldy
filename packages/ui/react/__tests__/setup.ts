@@ -20,6 +20,23 @@ import * as material from '@soldy-ui/icons-material'
 setIcons(material)
 
 /**
+ * Заглушка `ResizeObserver`: jsdom его не реализует, а ListBox следит им за
+ * высотой строк (`TListHeightPlugin`). Без заглушки узел, объявленный
+ * `element:ready`, валит необработанную ошибку. Та же заглушка — в настройке
+ * тестов Vue.
+ */
+
+if (!('ResizeObserver' in globalThis)) {
+	class ResizeObserverStub {
+		observe(): void {}
+		unobserve(): void {}
+		disconnect(): void {}
+	}
+
+	globalThis.ResizeObserver = ResizeObserverStub
+}
+
+/**
  * React узнаёт тестовое окружение по флагу `IS_REACT_ACT_ENVIRONMENT` на
  * глобальном объекте. Без флага каждый `act` печатает «The current testing
  * environment is not configured to support act(...)», а обновление состояния

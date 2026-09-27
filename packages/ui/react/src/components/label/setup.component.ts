@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { LabelProps } from './base.component'
 
 export function useSetupLabel(props: LabelProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(LabelDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

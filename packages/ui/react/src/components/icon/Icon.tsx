@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { toAriaProps, toRootLayout } from '../../adapter'
+import { toRootProps } from '../../adapter'
 import { useSetupIcon } from './setup.component'
 import type { IconProps } from './base.component'
 
@@ -25,14 +25,6 @@ export function Icon(props: IconProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ, чтобы не перекрыть ref адаптера (см. Button)
-	return (
-		<Tag
-			{...forwardProps}
-			ref={ref}
-			{...toRootLayout(state, forwardProps)}
-			{...toAriaProps(attrs)}
-			{...toAriaProps(aria)}
-		/>
-	)
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
+	return <Tag {...toRootProps(ref, state, [attrs, aria], forwardProps)} />
 }

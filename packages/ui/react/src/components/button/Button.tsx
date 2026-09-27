@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootLayout } from '../../adapter'
+import { renderSlot, toRootProps } from '../../adapter'
 import { useSetupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
 
@@ -24,19 +24,11 @@ export function Button(props: ButtonProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ: в React 19 `ref` — обычный проп, и переданный
-	// потребителем ref перекрыл бы ref адаптера и тихо сломал бы привязку к
-	// TElementPlugin (не было бы element:ready). Класс и стиль потребителя
-	// раскладка корня сливает с классами и стилем ядра.
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним
+	// (`toRootProps`): `tabindex="-1"` строки списка перекрывает `tabindex="0"`,
+	// который кнопка на `div` ставит себе сама
 	return (
-		<Tag
-			{...forwardProps}
-			ref={ref}
-			{...toRootLayout(state, forwardProps)}
-			{...toAriaProps(attrs)}
-			{...toAriaProps(aria)}
-			{...toAriaProps(dataset)}
-		>
+		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 			{renderSlot(props.leading)}
 			<span className="s-button__text">
 				{renderSlot(props.children, { text: text ?? '' }) ?? text}

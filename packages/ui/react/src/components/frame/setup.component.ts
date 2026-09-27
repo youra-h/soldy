@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { FrameProps } from './base.component'
 
 export function useSetupFrame(props: FrameProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(FrameDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

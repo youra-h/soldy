@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootLayout } from '../../adapter'
+import { renderSlot, toRootProps } from '../../adapter'
 import { useSetupLabel } from './setup.component'
 import type { LabelProps } from './base.component'
 
@@ -30,16 +30,9 @@ export function Label(props: LabelProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ, чтобы не перекрыть ref адаптера (см. Button)
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
-		<Tag
-			{...forwardProps}
-			ref={ref}
-			{...toRootLayout(state, forwardProps)}
-			{...toAriaProps(attrs)}
-			{...toAriaProps(aria)}
-			{...toAriaProps(dataset)}
-		>
+		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 			<span className="s-label__control">{renderSlot(props.children)}</span>
 			<span className="s-label__text">{renderSlot(props.content) ?? text}</span>
 		</Tag>
