@@ -1,2 +1,6 @@
+export * from './item/types'
+export { default as TCalendarItem } from './item/item.class'
+export { TCalendarItemCollectionFacade } from './item/facade'
 export * from './types'
 export { default as TCalendar } from './calendar.class'
+export * from './collection'

@@ -1,7 +1,7 @@
-import { compareDates, orderDates } from '../../../../common'
+import { compareDates, orderDates } from '../../../../../../../common'
 import { NO_MARKS } from './marks'
-import type { TCalendarDate } from '../../../../common'
-import type { TCalendarRange } from '../types'
+import type { TCalendarDate } from '../../../../../../../common'
+import type { TCalendarRange } from '../../../../types'
 import type {
 	ICalendarSelection,
 	TCalendarChoice,

@@ -1,15 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TCalendar } from '@soldy-ui/core'
-import type { ICalendarProps, TCalendarDay, TCalendarValue } from '@soldy-ui/core'
+import { TCalendar, TCalendarCollectionFacade, createEngineCalendar } from '@soldy-ui/core'
+import type {
+	ICalendarItem,
+	ICalendarProps,
+	TCalendarGrid,
+	TCalendarMode,
+	TCalendarValue,
+} from '@soldy-ui/core'
 import { addDays, compareDates } from '../src/common/calendar'
 
 /**
- * TCalendar — значение по режиму выбора, фокус и вид, выбор пользователя и
- * наборы дней для разметки.
+ * Календарь — владелец коллекции дней: вид кладёт в неё дни показанных
+ * месяцев, выбор выбирает даты, фокус ведёт остановку Tab.
  *
- * Команды здесь зовутся так, как их позовёт плагин клавиатуры и указателя
- * будущего компонента: какая клавиша какой команде соответствует, ядро не
- * знает. Расчёт дат сам по себе — `calendar-date.spec.ts`.
+ * Команды зовутся так, как их позовёт плагин клавиатуры и указателя: какая
+ * клавиша какой команде соответствует, ядро не знает. Расчёт дат сам по себе —
+ * `calendar-date.spec.ts`.
  *
  * Сегодня во всех тестах — суббота 2026-09-26: время подменено полднем по
  * местному времени, и дата не зависит от пояса машины.
@@ -24,32 +30,32 @@ afterEach(() => {
 	vi.useRealTimers()
 })
 
-const calendar = (props: Partial<ICalendarProps> = {}) => new TCalendar(props)
+/** Календарь и его коллекция — так их собирает адаптер. */
+function calendar(props: Partial<ICalendarProps> = {}, mode?: TCalendarMode) {
+	const owner = new TCalendar(props, { idBase: 'c1' })
+	const collection = new TCalendarCollectionFacade(mode ? { mode } : {}, { owner })
+	const { view, selection, focus } = collection.extensions
 
-/** Все дни показанных месяцев, с заполнителями. */
-function allDays(instance: TCalendar): TCalendarDay[] {
-	return instance.months.flatMap(({ weeks }) => weeks.flat())
+	return { owner, collection, view, selection, focus }
 }
 
-/** Дни показанных месяцев без заполнителей соседних месяцев. */
-function daysOf(instance: TCalendar): TCalendarDay[] {
-	return allDays(instance).filter((day) => day.dataset['data-outside-month'] === 'false')
+type TCalendarSetup = ReturnType<typeof calendar>
+
+/** День в коллекции по дате. */
+function day({ collection }: TCalendarSetup, date: string): ICalendarItem {
+	const item = collection.items.find((candidate) => candidate.date === date)
+
+	if (!item) throw new Error(`${date} не в коллекции`)
+
+	return item
 }
 
-/** День месяца по дате. */
-function dayOf(instance: TCalendar, date: string): TCalendarDay {
-	const day = daysOf(instance).find((item) => item.date === date)
-
-	if (!day) throw new Error(`${date} не показан`)
-
-	return day
-}
-
-/** Даты дней месяца, у которых флаг набора `data-*` — `"true"`. */
-function flagged(instance: TCalendar, name: string): string[] {
-	return daysOf(instance)
-		.filter((day) => day.dataset[name] === 'true')
-		.map((day) => day.date)
+/** Даты дней коллекции, у которых флаг `data-*` — `"true"`, по возрастанию. */
+function flagged({ collection }: TCalendarSetup, name: string): string[] {
+	return collection.items
+		.filter((item) => item.dataset.get(name) === 'true')
+		.map((item) => item.date)
+		.sort(compareDates)
 }
 
 /** Даты от `from` до `to` включительно. */
@@ -61,21 +67,9 @@ function datesFrom(from: string, to: string): string[] {
 	return dates
 }
 
-/** Смены значения, вида, фокуса, якоря и указателя — в порядке прихода. */
-function record(instance: TCalendar) {
-	const events: string[] = []
-	const values: TCalendarValue[] = []
-
-	instance.events.on('change:value', ({ newValue }) => {
-		values.push(newValue)
-		events.push('value')
-	})
-	instance.events.on('change:month', (month) => events.push(`month ${month}`))
-	instance.events.on('change:focusedDate', (date) => events.push(`focus ${date}`))
-	instance.events.on('change:anchor', (anchor) => events.push(`anchor ${anchor}`))
-	instance.events.on('change:hoveredDate', (date) => events.push(`hover ${date}`))
-
-	return { events, values }
+/** Ключи сеток. */
+function keys(grids: TCalendarGrid[]): string[] {
+	return grids.map(({ key }) => key)
 }
 
 /** Имя дня недели в локали; 2026-09-20 — воскресенье. */
@@ -86,887 +80,590 @@ function weekdayName(locale: string, day: number): string {
 }
 
 describe('без аргументов', () => {
-	it('одна дата, английская локаль, фокус и вид — сегодня', () => {
-		const instance = new TCalendar()
+	it('владелец: ничего не выбрано, английская локаль, колонки en-US — с воскресенья', () => {
+		const owner = new TCalendar()
 
-		expect(instance.value).toBeUndefined()
-		expect(instance.mode).toBe('single')
-		expect(instance.locale).toBe('en-US')
-		expect(instance.numberOfMonths).toBe(1)
-		expect(instance.focusedDate).toBe('2026-09-26')
-		expect(instance.month).toBe('2026-09-01')
-		expect(instance.months.map(({ key }) => key)).toEqual(['2026-09-01'])
-		expect(instance.anchor).toBeUndefined()
-		expect(instance.hoveredDate).toBeUndefined()
+		expect(owner.value).toBeUndefined()
+		expect(owner.locale).toBe('en-US')
+		expect(owner.months).toBeUndefined()
+		expect(owner.classes.toArray()).toContain('s-calendar')
+		expect(owner.weekdays).toHaveLength(7)
+		expect(owner.weekdays[0].long).toBe(weekdayName('en-US', 0))
 	})
 
-	it('корень — div с классом блока; колонки en-US — с воскресенья', () => {
-		const instance = new TCalendar()
+	it('коллекция: одна сетка на сегодняшнем месяце, в ней дни месяца, фокус — сегодня', () => {
+		const setup = calendar()
 
-		expect(instance.tag).toBe('div')
-		expect(instance.classes.toArray()).toContain('s-calendar')
-		expect(instance.weekdays).toHaveLength(7)
-		expect(instance.weekdays[0].long).toBe(weekdayName('en-US', 0))
+		expect(setup.collection.mode).toBe('single')
+		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
+		expect(setup.owner.months).toEqual(['2026-09-01'])
+		expect(setup.collection.items.map((item) => item.date)).toEqual(
+			datesFrom('2026-09-01', '2026-09-30'),
+		)
+		expect(setup.collection.focusedDate).toBe('2026-09-26')
+	})
+
+	it('день — Calendar.Item: корень td, дата и номер в цифрах локали', () => {
+		const item = day(calendar(), '2026-09-05')
+
+		expect(item.tag).toBe('td')
+		expect(item.classes.toArray()).toContain('s-calendar-item')
+		expect(item.text).toBe('5')
+		expect(item.aria.get('aria-label')).toBe(
+			new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' }).format(
+				Date.UTC(2026, 8, 5),
+			),
+		)
+	})
+
+	it('createEngineCalendar без владельца падает — дням нужен календарь', () => {
+		// @ts-expect-error — владелец обязателен и в типе
+		expect(() => createEngineCalendar({})).toThrow(/owner/)
 	})
 })
 
-describe('итог значения — по режиму', () => {
-	it('single — дата; невалидная строка выпадает; из массива — самая ранняя', () => {
-		expect(calendar({ value: '2026-09-10' }).value).toBe('2026-09-10')
-		expect(calendar({ value: '2026-02-30' }).value).toBeUndefined()
-		expect(calendar({ value: ['2026-09-20', '2026-09-10'] }).value).toBe('2026-09-10')
+describe('вид: месяцы сеток', () => {
+	it('сетки независимы: январь рядом с сентябрём; в коллекции — дни обоих месяцев', () => {
+		const setup = calendar({ months: ['2026-01-15', '2026-09-01'] })
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-09-01'])
+		expect(setup.collection.items).toHaveLength(31 + 30)
+		expect(setup.owner.months).toEqual(['2026-01-01', '2026-09-01'])
 	})
 
-	it('multiple — даты по возрастанию без повторов', () => {
-		expect(
-			calendar({
-				mode: 'multiple',
-				value: ['2026-09-20', 'мусор', '2026-09-10', '2026-09-20'],
-			}).value,
-		).toEqual(['2026-09-10', '2026-09-20'])
-		expect(calendar({ mode: 'multiple', value: '2026-09-26' }).value).toEqual(['2026-09-26'])
-		expect(calendar({ mode: 'multiple' }).value).toEqual([])
-	})
+	it('заполнители соседних месяцев — не элементы: у ячейки нет дня, она скрыта от скринридера', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+		const [grid] = setup.collection.grids
+		const cells = grid.weeks.flat()
+		const fillers = cells.filter((cell) => cell.item === undefined)
 
-	it('range — пара по возрастанию; одна дата — однодневный диапазон', () => {
-		expect(calendar({ mode: 'range', value: ['2026-09-20', '2026-09-10'] }).value).toEqual([
-			'2026-09-10',
-			'2026-09-20',
+		// Сентябрь 2026 с воскресенья: 2 дня августа в начале, 3 дня октября в конце
+		expect(fillers.map((cell) => cell.date)).toEqual([
+			'2026-08-30',
+			'2026-08-31',
+			'2026-10-01',
+			'2026-10-02',
+			'2026-10-03',
 		])
-		expect(calendar({ mode: 'range', value: '2026-09-26' }).value).toEqual([
-			'2026-09-26',
-			'2026-09-26',
+		expect(fillers.every((cell) => cell.aria['aria-hidden'] === 'true')).toBe(true)
+		expect(cells.filter((cell) => cell.item).map((cell) => cell.item?.date)).toEqual(
+			datesFrom('2026-09-01', '2026-09-30'),
+		)
+	})
+
+	it('при двух сетках подряд хвост одной — заполнитель, а день — в своей сетке', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
+		const [september, october] = setup.collection.grids
+		const inSeptember = september.weeks.flat().find((cell) => cell.date === '2026-10-01')
+		const inOctober = october.weeks.flat().find((cell) => cell.date === '2026-10-01')
+
+		expect(inSeptember?.item).toBeUndefined()
+		expect(inOctober?.item).toBe(day(setup, '2026-10-01'))
+	})
+
+	it('один месяц — одна сетка: повтор отбрасывается', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-09-20', '2026-10-01'] })
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-09-01', '2026-10-01'])
+	})
+
+	it('месяцы не заданы — сетка на месяце первой выбранной даты', () => {
+		expect(keys(calendar({ value: '2027-03-10' }).collection.grids)).toEqual(['2027-03-01'])
+	})
+
+	it('листание сдвигает все сетки; оставшиеся на экране дни — те же экземпляры', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
+		const october5 = day(setup, '2026-10-05')
+
+		setup.collection.extensions.view.showNext()
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-10-01', '2026-11-01'])
+		expect(setup.owner.months).toEqual(['2026-10-01', '2026-11-01'])
+		expect(day(setup, '2026-10-05')).toBe(october5)
+		expect(setup.collection.items.some((item) => item.date === '2026-09-05')).toBe(false)
+	})
+
+	it('выбор месяца в сетке; месяц уже в другой сетке — сетки меняются местами', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
+
+		setup.view.showMonth(1, '2026-05-17')
+		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-05-01'])
+
+		setup.view.showMonth(0, '2026-05-01')
+		expect(keys(setup.collection.grids)).toEqual(['2026-05-01', '2026-01-01'])
+	})
+
+	it('запись months снаружи перестраивает сетки; тот же список — не смена', () => {
+		const setup = calendar()
+		const changes = vi.fn()
+
+		setup.collection.events.on('change:months', changes)
+		setup.owner.months = ['2026-01-01', '2026-02-01']
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-01-01', '2026-02-01'])
+		expect(changes).toHaveBeenCalledTimes(1)
+
+		setup.owner.months = ['2026-01-01', '2026-02-01']
+		expect(changes).toHaveBeenCalledTimes(1)
+	})
+
+	it('заголовки и сетки: role="grid", имя — заголовок; id — от основы и места сетки', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
+		const ids = ['s-calendar-title-c1-0', 's-calendar-title-c1-1']
+
+		expect(setup.collection.grids.map(({ titleAria }) => titleAria.id)).toEqual(ids)
+		expect(setup.collection.grids.map(({ gridAria }) => gridAria.role)).toEqual([
+			'grid',
+			'grid',
 		])
-		expect(
-			calendar({ mode: 'range', value: ['2026-09-20', '2026-09-01', '2026-09-10'] }).value,
-		).toEqual(['2026-09-01', '2026-09-20'])
-		expect(calendar({ mode: 'range' }).value).toBeUndefined()
+		expect(setup.collection.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual(
+			ids,
+		)
 	})
 
-	it('недоступные дни и дни вне границ остаются в значении — это данные потребителя', () => {
-		const instance = calendar({
-			mode: 'multiple',
-			value: ['2026-08-31', '2026-09-15'],
-			min: '2026-09-01',
-			unavailable: (date) => date === '2026-09-15',
-		})
+	it('aria-multiselectable — в multiple и range', () => {
+		const setup = calendar()
 
-		expect(instance.value).toEqual(['2026-08-31', '2026-09-15'])
+		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBeNull()
+
+		setup.collection.mode = 'multiple'
+		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBe('true')
+
+		setup.collection.mode = 'range'
+		expect(setup.collection.grids[0].gridAria['aria-multiselectable']).toBe('true')
+	})
+})
+
+describe('вид у границ', () => {
+	it('сетки не выходят за месяцы min и max; листать туда нельзя', () => {
+		const setup = calendar({ min: '2026-09-10', max: '2026-10-20', months: ['2026-01-01'] })
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
+		expect(setup.collection.prevDisabled).toBe(true)
+		expect(setup.collection.nextDisabled).toBe(false)
+
+		setup.view.showNext()
+		expect(keys(setup.collection.grids)).toEqual(['2026-10-01'])
+		expect(setup.collection.nextDisabled).toBe(true)
+
+		setup.view.showNext()
+		expect(keys(setup.collection.grids)).toEqual(['2026-10-01'])
 	})
 
-	it('смена режима туда и обратно пересчитывает итог, заданное не трогает', () => {
-		const given = ['2026-09-20', '2026-09-10', '2026-09-15']
-		const instance = calendar({ mode: 'multiple', value: given })
-		const { values } = record(instance)
+	it('день вне границ выключен: ни фокуса, ни выбора; data-out-of-bounds', () => {
+		const setup = calendar({ min: '2026-09-10' })
+		const early = day(setup, '2026-09-05')
 
-		instance.mode = 'single'
-		expect(instance.value).toBe('2026-09-10')
-
-		instance.mode = 'range'
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-20'])
-
-		instance.mode = 'multiple'
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-15', '2026-09-20'])
-
-		expect(values).toEqual([
-			'2026-09-10',
-			['2026-09-10', '2026-09-20'],
-			['2026-09-10', '2026-09-15', '2026-09-20'],
-		])
-		expect(instance.states.value.rawValue).toBe(given)
+		expect(early.disabled).toBe(true)
+		expect(early.aria.get('aria-disabled')).toBe('true')
+		expect(early.aria.get('tabindex')).toBeUndefined()
+		expect(early.dataset.get('out-of-bounds')).toBe('true')
+		expect(setup.selection.chooseDate('2026-09-05')).toBe(false)
 	})
 
-	it('смена режима, не сменившая итог, change:value не шлёт', () => {
-		const instance = calendar({ mode: 'range', value: ['2026-09-10', '2026-09-20'] })
-		const { values } = record(instance)
+	it('смена min выключает и включает дни; change:disabled — только у тех, чей итог сменился', () => {
+		const setup = calendar()
+		const early = day(setup, '2026-09-05')
+		const late = day(setup, '2026-09-25')
+		const earlyChanges = vi.fn()
+		const lateChanges = vi.fn()
 
-		instance.mode = 'multiple'
+		early.events.on('change:disabled', earlyChanges)
+		late.events.on('change:disabled', lateChanges)
 
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-20'])
-		expect(values).toEqual([])
+		setup.owner.min = '2026-09-10'
+		expect(early.disabled).toBe(true)
+		expect(earlyChanges).toHaveBeenCalledWith(true)
+		expect(lateChanges).not.toHaveBeenCalled()
+
+		setup.owner.min = undefined
+		expect(early.disabled).toBe(false)
+	})
+
+	it('выключенный календарь: дни выключены, остановки Tab нет, листать и выбирать нельзя', () => {
+		const setup = calendar({ disabled: true })
+
+		expect(setup.collection.items.every((item) => item.disabled)).toBe(true)
+		expect(setup.collection.items.some((item) => item.aria.has('tabindex'))).toBe(false)
+		expect(setup.collection.prevDisabled).toBe(true)
+		expect(setup.selection.chooseDate('2026-09-10')).toBe(false)
+
+		setup.owner.disabled = false
+		expect(day(setup, '2026-09-26').aria.get('tabindex')).toBe('0')
 	})
 })
 
 describe('выбор', () => {
-	it('single заменяет значение; та же дата — не смена', () => {
-		const instance = calendar()
-		const { values } = record(instance)
+	it('single заменяет значение; значение календаря — строка', () => {
+		const setup = calendar()
 
-		expect(instance.chooseDate('2026-09-10')).toBe(true)
-		expect(instance.chooseDate('2026-09-12')).toBe(true)
-		expect(instance.chooseDate('2026-09-12')).toBe(true)
+		setup.selection.chooseDate('2026-09-10')
+		setup.selection.chooseDate('2026-09-12')
 
-		expect(instance.value).toBe('2026-09-12')
-		expect(values).toEqual(['2026-09-10', '2026-09-12'])
+		expect(setup.owner.value).toBe('2026-09-12')
+		expect(flagged(setup, 'selected')).toEqual(['2026-09-12'])
+		expect(day(setup, '2026-09-12').aria.get('aria-selected')).toBe('true')
+		expect(day(setup, '2026-09-10').aria.get('aria-selected')).toBe('false')
 	})
 
-	it('multiple переключает дату', () => {
-		const instance = calendar({ mode: 'multiple' })
+	it('multiple переключает дату; значение — даты по возрастанию', () => {
+		const setup = calendar({}, 'multiple')
 
-		instance.chooseDate('2026-09-10')
-		instance.chooseDate('2026-09-05')
-		expect(instance.value).toEqual(['2026-09-05', '2026-09-10'])
+		setup.selection.chooseDate('2026-09-20')
+		setup.selection.chooseDate('2026-09-10')
+		expect(setup.owner.value).toEqual(['2026-09-10', '2026-09-20'])
 
-		instance.chooseDate('2026-09-10')
-		expect(instance.value).toEqual(['2026-09-05'])
+		setup.selection.chooseDate('2026-09-20')
+		expect(setup.owner.value).toEqual(['2026-09-10'])
 	})
 
 	it('range: первый выбор ставит якорь, второй пишет пару — и задом наперёд', () => {
-		const instance = calendar({ mode: 'range' })
-		const { events } = record(instance)
+		const setup = calendar({}, 'range')
+		const values: TCalendarValue[] = []
 
-		instance.chooseDate('2026-09-20')
+		setup.owner.events.on('change:value', ({ newValue }) => values.push(newValue))
 
-		expect(instance.anchor).toBe('2026-09-20')
-		expect(instance.value).toBeUndefined()
+		setup.selection.chooseDate('2026-09-20')
+		expect(setup.collection.anchor).toBe('2026-09-20')
+		expect(values).toEqual([])
 
-		instance.chooseDate('2026-09-10')
+		setup.selection.chooseDate('2026-09-12')
+		expect(setup.collection.anchor).toBeUndefined()
+		expect(setup.owner.value).toEqual(['2026-09-12', '2026-09-20'])
+		expect(flagged(setup, 'range-start')).toEqual(['2026-09-12'])
+		expect(flagged(setup, 'range-end')).toEqual(['2026-09-20'])
+		expect(flagged(setup, 'range-middle')).toEqual(datesFrom('2026-09-13', '2026-09-19'))
+	})
 
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-20'])
-		expect(instance.anchor).toBeUndefined()
-		// Значение — последним: к change:value якорь снят и фокус на выбранной дате
-		expect(events).toEqual([
-			'anchor 2026-09-20',
-			'focus 2026-09-20',
-			'anchor undefined',
-			'focus 2026-09-10',
-			'value',
+	it('выбор — даты, а не элементы: выбранная дата переживает листание', () => {
+		const setup = calendar({ value: '2026-09-10' })
+
+		setup.view.showNext()
+		expect(setup.owner.value).toBe('2026-09-10')
+
+		setup.view.showPrev()
+		expect(flagged(setup, 'selected')).toEqual(['2026-09-10'])
+	})
+
+	it('диапазон через непоказанные месяцы: январь — сентябрь, середина не в коллекции', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] }, 'range')
+
+		setup.selection.chooseDate('2026-01-20')
+		setup.selection.chooseDate('2026-09-05')
+
+		expect(setup.owner.value).toEqual(['2026-01-20', '2026-09-05'])
+		expect(flagged(setup, 'range-middle')).toEqual([
+			...datesFrom('2026-01-21', '2026-01-31'),
+			...datesFrom('2026-09-01', '2026-09-04'),
 		])
 	})
 
-	it('range: одна дата дважды — однодневный диапазон', () => {
-		const instance = calendar({ mode: 'range' })
+	it('предпросмотр: от якоря до дня под указателем, без указателя — до фокуса', () => {
+		const setup = calendar({}, 'range')
 
-		instance.chooseDate('2026-09-12')
-		instance.chooseDate('2026-09-12')
+		setup.selection.chooseDate('2026-09-10')
+		setup.selection.notifyHover('2026-09-14')
+		expect(flagged(setup, 'preview')).toEqual(datesFrom('2026-09-10', '2026-09-14'))
 
-		expect(instance.value).toEqual(['2026-09-12', '2026-09-12'])
+		setup.selection.notifyHover(undefined)
+		setup.focus.shiftFocus('day', 2)
+		expect(flagged(setup, 'preview')).toEqual(datesFrom('2026-09-10', '2026-09-12'))
 	})
 
-	it('не дата не выбирается', () => {
-		const instance = calendar()
+	it('недоступный день получает фокус, но не выбирается; aria-disabled и data-unavailable', () => {
+		const setup = calendar({ unavailable: (date) => date === '2026-09-15' })
+		const blocked = day(setup, '2026-09-15')
 
-		expect(instance.chooseDate('2026-02-30')).toBe(false)
-		expect(instance.value).toBeUndefined()
-	})
-})
+		expect(blocked.unavailable).toBe(true)
+		expect(blocked.disabled).toBe(false)
+		expect(blocked.aria.get('aria-disabled')).toBe('true')
+		expect(blocked.dataset.get('unavailable')).toBe('true')
+		expect(setup.selection.chooseDate('2026-09-15')).toBe(false)
 
-describe('предпросмотр диапазона', () => {
-	it('пока стоит якорь, сетка показывает от якоря до дня под указателем, а без указателя — до фокуса', () => {
-		const instance = calendar({ mode: 'range', value: ['2026-09-01', '2026-09-03'] })
-
-		expect(flagged(instance, 'data-selected')).toEqual(datesFrom('2026-09-01', '2026-09-03'))
-		expect(flagged(instance, 'data-preview')).toEqual([])
-
-		instance.chooseDate('2026-09-10')
-		instance.notifyHover('2026-09-14')
-
-		// Вместо значения — предпросмотр
-		expect(flagged(instance, 'data-selected')).toEqual(datesFrom('2026-09-10', '2026-09-14'))
-		expect(flagged(instance, 'data-preview')).toEqual(datesFrom('2026-09-10', '2026-09-14'))
-		expect(flagged(instance, 'data-range-start')).toEqual(['2026-09-10'])
-		expect(flagged(instance, 'data-range-end')).toEqual(['2026-09-14'])
-		expect(flagged(instance, 'data-range-middle')).toEqual(
-			datesFrom('2026-09-11', '2026-09-13'),
-		)
-		expect(dayOf(instance, '2026-09-12').aria['aria-selected']).toBe('true')
-
-		// Указатель ушёл — до фокуса; после выбора фокус на якоре
-		instance.notifyHover(undefined)
-		instance.shiftFocus('day', -3)
-
-		expect(flagged(instance, 'data-selected')).toEqual(datesFrom('2026-09-07', '2026-09-10'))
-		expect(flagged(instance, 'data-range-start')).toEqual(['2026-09-07'])
-		expect(flagged(instance, 'data-range-end')).toEqual(['2026-09-10'])
-	})
-
-	it('день под указателем — внутреннее состояние со своим событием', () => {
-		const instance = calendar()
-		const { events } = record(instance)
-
-		instance.notifyHover('2026-09-14')
-		instance.notifyHover('2026-09-14')
-		instance.notifyHover('мусор')
-
-		expect(instance.hoveredDate).toBeUndefined()
-		expect(events).toEqual(['hover 2026-09-14', 'hover undefined'])
-	})
-
-	it('якорь снимают cancelRange, смена режима и смена значения', () => {
-		const instance = calendar({ mode: 'range', value: ['2026-09-01', '2026-09-03'] })
-
-		instance.chooseDate('2026-09-10')
-		instance.cancelRange()
-
-		expect(instance.anchor).toBeUndefined()
-		expect(flagged(instance, 'data-selected')).toEqual(datesFrom('2026-09-01', '2026-09-03'))
-
-		instance.chooseDate('2026-09-10')
-		instance.mode = 'multiple'
-		expect(instance.anchor).toBeUndefined()
-
-		instance.mode = 'range'
-		instance.chooseDate('2026-09-10')
-		// Тот же итог — не смена: начатый диапазон остаётся
-		instance.value = ['2026-09-03', '2026-09-01']
-		expect(instance.anchor).toBe('2026-09-10')
-
-		instance.value = ['2026-09-20', '2026-09-22']
-		expect(instance.anchor).toBeUndefined()
+		setup.focus.focusDate('2026-09-15')
+		expect(blocked.aria.get('tabindex')).toBe('0')
 	})
 
 	it('якорь уходит в unavailable вторым аргументом: «не дольше трёх ночей»', () => {
-		const instance = calendar({
-			mode: 'range',
-			unavailable: (date, anchor) =>
-				anchor !== undefined && compareDates(date, addDays(anchor, 3)) > 0,
+		const setup = calendar(
+			{
+				unavailable: (date, anchor) =>
+					anchor !== undefined && Math.abs(daysBetween(anchor, date)) > 3,
+			},
+			'range',
+		)
+
+		setup.selection.chooseDate('2026-09-10')
+
+		expect(day(setup, '2026-09-13').unavailable).toBe(false)
+		expect(day(setup, '2026-09-14').unavailable).toBe(true)
+		expect(setup.selection.chooseDate('2026-09-14')).toBe(false)
+		expect(setup.selection.chooseDate('2026-09-13')).toBe(true)
+		expect(day(setup, '2026-09-14').unavailable).toBe(false)
+	})
+
+	it('смена режима пишет значение в форме нового режима и снимает якорь', () => {
+		const setup = calendar({ value: ['2026-09-20', '2026-09-10'] }, 'multiple')
+
+		setup.collection.mode = 'single'
+		expect(setup.owner.value).toBe('2026-09-10')
+
+		setup.collection.mode = 'range'
+		setup.selection.chooseDate('2026-09-12')
+		expect(setup.collection.anchor).toBe('2026-09-12')
+
+		setup.collection.mode = 'multiple'
+		expect(setup.collection.anchor).toBeUndefined()
+	})
+
+	it('запись value снаружи снимает якорь и переводит фокус на первую дату', () => {
+		const setup = calendar({}, 'range')
+
+		setup.selection.chooseDate('2026-09-10')
+		setup.owner.value = ['2026-11-03', '2026-11-08']
+
+		expect(setup.collection.anchor).toBeUndefined()
+		expect(setup.collection.focusedDate).toBe('2026-11-03')
+		expect(keys(setup.collection.grids)).toEqual(['2026-11-01'])
+		expect(flagged(setup, 'range-start')).toEqual(['2026-11-03'])
+	})
+})
+
+describe('фокус', () => {
+	it('одна остановка Tab на все сетки — у дня с фокусом; прочие дни — -1', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
+		const stops = setup.collection.items.filter((item) => item.aria.get('tabindex') === '0')
+
+		expect(stops.map((item) => item.date)).toEqual(['2026-09-26'])
+		expect(day(setup, '2026-10-05').aria.get('tabindex')).toBe('-1')
+	})
+
+	it('сдвиг на день, неделю, месяц и год; месяц прижимает число', () => {
+		const setup = calendar({ value: '2026-01-31' })
+
+		setup.focus.shiftFocus('month', 1)
+		expect(setup.collection.focusedDate).toBe('2026-02-28')
+
+		setup.focus.shiftFocus('week', 1)
+		expect(setup.collection.focusedDate).toBe('2026-03-07')
+
+		setup.focus.shiftFocus('year', -1)
+		expect(setup.collection.focusedDate).toBe('2025-03-07')
+	})
+
+	it('фокус ушёл из показанного месяца — сетки сдвигаются на столько же', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'], value: '2026-01-31' })
+
+		setup.focus.shiftFocus('day', 1)
+
+		expect(setup.collection.focusedDate).toBe('2026-02-01')
+		expect(keys(setup.collection.grids)).toEqual(['2026-02-01', '2026-10-01'])
+	})
+
+	it('фокус внутри показанных месяцев сетки не двигает', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'] })
+
+		setup.focus.focusDate('2026-10-15')
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-09-01', '2026-10-01'])
+	})
+
+	it('сдвиг вывел бы сетку за границы — месяц фокуса встаёт только в его сетку', () => {
+		const setup = calendar({
+			months: ['2026-01-01', '2026-09-01'],
+			max: '2026-09-30',
+			value: '2026-01-31',
 		})
 
-		instance.chooseDate('2026-09-10')
+		setup.focus.shiftFocus('day', 1)
 
-		expect(dayOf(instance, '2026-09-14').dataset['data-unavailable']).toBe('true')
-		expect(dayOf(instance, '2026-09-13').dataset['data-unavailable']).toBe('false')
-		expect(instance.chooseDate('2026-09-14')).toBe(false)
-		expect(instance.chooseDate('2026-09-13')).toBe(true)
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-13'])
-
-		// Якоря нет — дни снова доступны
-		expect(dayOf(instance, '2026-09-20').dataset['data-unavailable']).toBe('false')
-	})
-})
-
-describe('недоступные дни и дни вне границ', () => {
-	it('недоступный день получает фокус, но не выбирается', () => {
-		const instance = calendar({ unavailable: (date) => date === '2026-09-15' })
-
-		expect(instance.chooseDate('2026-09-15')).toBe(false)
-		expect(instance.value).toBeUndefined()
-
-		instance.focusDate('2026-09-15')
-
-		const day = dayOf(instance, '2026-09-15')
-
-		expect(instance.focusedDate).toBe('2026-09-15')
-		expect(day.aria.tabindex).toBe('0')
-		expect(day.aria['aria-disabled']).toBe('true')
-		expect(day.dataset['data-unavailable']).toBe('true')
+		expect(keys(setup.collection.grids)).toEqual(['2026-02-01', '2026-09-01'])
 	})
 
-	it('день вне границ — ни фокуса, ни выбора', () => {
-		const instance = calendar({ min: '2026-09-10', max: '2026-09-20', value: '2026-09-15' })
+	it('листание: фокус едет со своей сеткой на месяц', () => {
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'], value: '2026-10-31' })
 
-		expect(instance.chooseDate('2026-09-05')).toBe(false)
-		expect(instance.value).toBe('2026-09-15')
+		setup.view.showNext()
 
-		instance.focusDate('2026-09-05')
-		expect(instance.focusedDate).toBe('2026-09-10')
-
-		instance.focusDate('2026-09-25')
-		expect(instance.focusedDate).toBe('2026-09-20')
-
-		const day = dayOf(instance, '2026-09-05')
-
-		expect(day.aria.tabindex).toBeNull()
-		expect(day.aria['aria-disabled']).toBe('true')
-		expect(day.dataset['data-out-of-bounds']).toBe('true')
-		expect(day.dataset['data-unavailable']).toBe('false')
+		expect(setup.collection.focusedDate).toBe('2026-11-30')
 	})
 
-	it('диапазон проходит через недоступный день', () => {
-		const instance = calendar({ mode: 'range', unavailable: (date) => date === '2026-09-15' })
+	it('края недели — от первого дня недели', () => {
+		const setup = calendar({ value: '2026-09-16', weekStart: 1 })
 
-		instance.chooseDate('2026-09-10')
-		instance.chooseDate('2026-09-20')
+		setup.focus.moveFocusToEdge('start')
+		expect(setup.collection.focusedDate).toBe('2026-09-14')
 
-		expect(instance.value).toEqual(['2026-09-10', '2026-09-20'])
-		expect(dayOf(instance, '2026-09-15').dataset['data-range-middle']).toBe('true')
-	})
-})
-
-describe('фокус после записи значения и выбора', () => {
-	it('запись value — фокус на первой дате итога, вид за ним', () => {
-		const instance = calendar({ mode: 'multiple' })
-
-		instance.value = ['2026-11-05', '2026-10-02']
-
-		expect(instance.focusedDate).toBe('2026-10-02')
-		expect(instance.month).toBe('2026-10-01')
-	})
-
-	it('тот же итог и пустое значение фокус не трогают', () => {
-		const instance = calendar({ mode: 'multiple', value: ['2026-09-10'] })
-
-		instance.focusDate('2026-09-20')
-		instance.value = ['2026-09-10']
-		expect(instance.focusedDate).toBe('2026-09-20')
-
-		instance.value = []
-		expect(instance.focusedDate).toBe('2026-09-20')
-	})
-
-	it('после chooseDate в multiple фокус — на выбранной дате, а не на первой', () => {
-		const instance = calendar({ mode: 'multiple', value: ['2026-09-01'] })
-		const { events } = record(instance)
-
-		instance.chooseDate('2026-09-20')
-
-		expect(instance.value).toEqual(['2026-09-01', '2026-09-20'])
-		expect(instance.focusedDate).toBe('2026-09-20')
-		// Без захода на первую дату
-		expect(events).toEqual(['focus 2026-09-20', 'value'])
-	})
-
-	it('при сборке фокус — на первой дате значения; вне границ — на границе', () => {
-		expect(calendar({ mode: 'range', value: ['2026-12-20', '2026-11-03'] }).focusedDate).toBe(
-			'2026-11-03',
-		)
-		expect(calendar({ value: '2027-02-14' }).month).toBe('2027-02-01')
-		expect(calendar({ value: '2026-08-01', min: '2026-09-10' }).focusedDate).toBe('2026-09-10')
-	})
-})
-
-describe('ходьба фокуса', () => {
-	it('сдвиг на день, неделю, месяц и год; месяц прижимает число', () => {
-		const instance = calendar({ value: '2026-01-31' })
-
-		instance.shiftFocus('month', 1)
-		expect(instance.focusedDate).toBe('2026-02-28')
-
-		instance.shiftFocus('week', 1)
-		expect(instance.focusedDate).toBe('2026-03-07')
-
-		instance.shiftFocus('day', -7)
-		expect(instance.focusedDate).toBe('2026-02-28')
-
-		instance.shiftFocus('year', -2)
-		expect(instance.focusedDate).toBe('2024-02-28')
+		setup.focus.moveFocusToEdge('end')
+		expect(setup.collection.focusedDate).toBe('2026-09-20')
 	})
 
 	it('за границей — граница', () => {
-		const instance = calendar({ min: '2026-09-05', max: '2026-09-25', value: '2026-09-06' })
+		const setup = calendar({ min: '2026-09-10', max: '2026-09-20', value: '2026-09-15' })
 
-		instance.shiftFocus('week', -1)
-		expect(instance.focusedDate).toBe('2026-09-05')
+		setup.focus.shiftFocus('week', 2)
+		expect(setup.collection.focusedDate).toBe('2026-09-20')
 
-		instance.shiftFocus('year', 1)
-		expect(instance.focusedDate).toBe('2026-09-25')
+		setup.focus.focusDate('2025-01-01')
+		expect(setup.collection.focusedDate).toBe('2026-09-10')
 	})
 
-	it('недоступные дни ходьба не пропускает', () => {
-		const instance = calendar({
-			value: '2026-09-26',
-			unavailable: (date) => date === '2026-09-27',
-		})
+	it('адаптеры дня: selected и focused со своими событиями', () => {
+		const setup = calendar()
+		const item = day(setup, '2026-09-10')
+		const adapters = {
+			selection: setup.selection.createItem(item),
+			focus: setup.focus.createItem(item),
+		}
+		const selected = vi.fn()
+		const focused = vi.fn()
 
-		instance.shiftFocus('day', 1)
+		adapters.selection.events.on('change:selected', selected)
+		adapters.focus.events.on('change:focused', focused)
 
-		expect(instance.focusedDate).toBe('2026-09-27')
-	})
+		adapters.selection.choose()
 
-	it('края недели при weekStart 0 и 1', () => {
-		// 2026-09-23 — среда
-		const sunday = calendar({ value: '2026-09-23', weekStart: 0 })
-
-		sunday.moveFocusToEdge('start')
-		expect(sunday.focusedDate).toBe('2026-09-20')
-		sunday.moveFocusToEdge('end')
-		expect(sunday.focusedDate).toBe('2026-09-26')
-
-		const monday = calendar({ value: '2026-09-23', weekStart: 1 })
-
-		monday.moveFocusToEdge('start')
-		expect(monday.focusedDate).toBe('2026-09-21')
-		monday.moveFocusToEdge('end')
-		expect(monday.focusedDate).toBe('2026-09-27')
-	})
-
-	it('край недели в соседнем месяце уводит вид; за границей — граница', () => {
-		// 2026-10-01 — четверг
-		const instance = calendar({ value: '2026-10-01', weekStart: 1 })
-
-		instance.moveFocusToEdge('start')
-
-		expect(instance.focusedDate).toBe('2026-09-28')
-		expect(instance.month).toBe('2026-09-01')
-
-		const bounded = calendar({ value: '2026-10-01', weekStart: 1, min: '2026-09-30' })
-
-		bounded.moveFocusToEdge('start')
-
-		expect(bounded.focusedDate).toBe('2026-09-30')
+		expect(adapters.selection.selected).toBe(true)
+		expect(adapters.focus.focused).toBe(true)
+		expect(selected).toHaveBeenCalled()
+		expect(focused).toHaveBeenCalled()
 	})
 })
 
-describe('вид за фокусом', () => {
-	it('один месяц: фокус ушёл за конец месяца — вид на следующий', () => {
-		const instance = calendar({ value: '2026-09-30' })
-		const { events } = record(instance)
-
-		instance.shiftFocus('day', 1)
-
-		expect(instance.month).toBe('2026-10-01')
-		expect(events).toEqual(['month 2026-10-01', 'focus 2026-10-01'])
-	})
-
-	it('три месяца: вид сдвигается на минимум', () => {
-		const instance = calendar({ value: '2026-09-15', numberOfMonths: 3 })
-		const keys = () => instance.months.map(({ key }) => key)
-
-		expect(keys()).toEqual(['2026-09-01', '2026-10-01', '2026-11-01'])
-
-		instance.focusDate('2026-11-30')
-		expect(keys()).toEqual(['2026-09-01', '2026-10-01', '2026-11-01'])
-
-		instance.shiftFocus('day', 1)
-		expect(keys()).toEqual(['2026-10-01', '2026-11-01', '2026-12-01'])
-
-		instance.focusDate('2026-09-30')
-		expect(keys()).toEqual(['2026-09-01', '2026-10-01', '2026-11-01'])
-	})
-
-	it('листание сдвигает вид и фокус на месяц; число прижимается к длине месяца', () => {
-		const instance = calendar({ value: '2026-09-15', numberOfMonths: 3 })
-
-		instance.focusDate('2026-11-05')
-		instance.showNext()
-
-		expect(instance.month).toBe('2026-10-01')
-		expect(instance.focusedDate).toBe('2026-12-05')
-
-		instance.showPrev()
-		instance.showPrev()
-
-		expect(instance.month).toBe('2026-08-01')
-		expect(instance.focusedDate).toBe('2026-10-05')
-
-		const short = calendar({ value: '2026-01-31' })
-
-		short.showNext()
-
-		expect(short.focusedDate).toBe('2026-02-28')
-	})
-
-	it('запись month сдвигает вид и фокус; другое число того же месяца событий не шлёт', () => {
-		const instance = calendar({ value: '2026-09-26' })
-
-		instance.month = '2027-01-15'
-
-		expect(instance.month).toBe('2027-01-01')
-		expect(instance.focusedDate).toBe('2027-01-26')
-
-		const { events } = record(instance)
-
-		instance.month = '2027-01-20'
-		instance.month = instance.month
-
-		expect(events).toEqual([])
-	})
-
-	it('month при сборке — как при записи', () => {
-		const instance = calendar({ value: '2026-09-26', month: '2027-01-01' })
-
-		expect(instance.month).toBe('2027-01-01')
-		expect(instance.focusedDate).toBe('2027-01-26')
-		expect(instance.value).toBe('2026-09-26')
-	})
-
-	it('month = undefined — первым показан месяц фокуса', () => {
-		const instance = calendar({ value: '2026-09-15', numberOfMonths: 3 })
-
-		instance.focusDate('2026-11-05')
-		instance.month = undefined
-
-		expect(instance.month).toBe('2026-11-01')
-		expect(instance.focusedDate).toBe('2026-11-05')
-	})
-})
-
-describe('листание у границ', () => {
-	it('вид не раньше месяца min и не позже месяца max', () => {
-		const instance = calendar({ value: '2026-09-15', min: '2026-09-10', max: '2026-11-20' })
-
-		expect(instance.prevDisabled).toBe(true)
-		expect(instance.nextDisabled).toBe(false)
-
-		instance.showPrev()
-		expect(instance.month).toBe('2026-09-01')
-
-		instance.showNext()
-		instance.showNext()
-
-		expect(instance.month).toBe('2026-11-01')
-		expect(instance.focusedDate).toBe('2026-11-15')
-		expect(instance.nextDisabled).toBe(true)
-
-		instance.showNext()
-		expect(instance.month).toBe('2026-11-01')
-	})
-
-	it('фокус после листания прижимается к границе', () => {
-		const instance = calendar({ value: '2026-09-20', max: '2026-10-10' })
-
-		instance.showNext()
-
-		expect(instance.focusedDate).toBe('2026-10-10')
-	})
-
-	it('несколько месяцев: блок кончается на месяце max', () => {
-		const instance = calendar({
-			value: '2026-09-15',
-			min: '2026-09-10',
-			max: '2026-12-20',
-			numberOfMonths: 3,
-		})
-
-		instance.showNext()
-		instance.showNext()
-
-		expect(instance.months.map(({ key }) => key)).toEqual([
-			'2026-10-01',
-			'2026-11-01',
-			'2026-12-01',
-		])
-		expect(instance.nextDisabled).toBe(true)
-
-		instance.month = '2027-05-01'
-		expect(instance.month).toBe('2026-10-01')
-	})
-
-	it('блок не помещается между границами — держится месяц min', () => {
-		const instance = calendar({
-			value: '2026-10-01',
-			min: '2026-09-10',
-			max: '2026-10-05',
-			numberOfMonths: 3,
-		})
-
-		expect(instance.month).toBe('2026-09-01')
-		expect(instance.prevDisabled).toBe(true)
-		expect(instance.nextDisabled).toBe(true)
-	})
-
-	it('выключенный календарь листать нельзя, и команды он игнорирует', () => {
-		const instance = calendar({ value: '2026-09-15', mode: 'range', disabled: true })
-		const { events } = record(instance)
-
-		expect(instance.prevDisabled).toBe(true)
-		expect(instance.nextDisabled).toBe(true)
-
-		instance.showNext()
-		instance.showPrev()
-		instance.shiftFocus('day', 1)
-		instance.focusDate('2026-09-01')
-		instance.moveFocusToEdge('end')
-		instance.cancelRange()
-
-		expect(instance.chooseDate('2026-09-20')).toBe(false)
-		expect(events).toEqual([])
-	})
-})
-
-describe('смена границ и числа месяцев', () => {
-	it('смена min прижимает фокус и вид, значение не трогает', () => {
-		const instance = calendar({ value: '2026-09-26' })
-
-		instance.min = '2026-10-05'
-
-		expect(instance.focusedDate).toBe('2026-10-05')
-		expect(instance.month).toBe('2026-10-01')
-		expect(instance.value).toBe('2026-09-26')
-	})
-
-	it('граница не датой — как не задана', () => {
-		const instance = calendar({ min: '2026-02-30', max: 'мусор' })
-
-		expect(instance.focusedDate).toBe('2026-09-26')
-		expect(instance.prevDisabled).toBe(false)
-		expect(instance.nextDisabled).toBe(false)
-		expect(instance.chooseDate('1900-01-01')).toBe(true)
-	})
-
-	it('max раньше min — граница схлопывается в min', () => {
-		const instance = calendar({ value: '2026-09-26', min: '2026-09-20', max: '2026-09-10' })
-
-		expect(instance.focusedDate).toBe('2026-09-20')
-		expect(instance.chooseDate('2026-09-20')).toBe(true)
-		expect(instance.chooseDate('2026-09-21')).toBe(false)
-	})
-
-	it('меньше месяцев — вид идёт за фокусом', () => {
-		const instance = calendar({ value: '2026-09-15', numberOfMonths: 3 })
-
-		instance.focusDate('2026-11-05')
-		instance.numberOfMonths = 1
-
-		expect(instance.month).toBe('2026-11-01')
-		expect(instance.focusedDate).toBe('2026-11-05')
-	})
-
-	it('больше месяцев у max — вид отступает, чтобы блок кончился на месяце max', () => {
-		const instance = calendar({ value: '2026-12-10', max: '2026-12-31' })
-
-		instance.numberOfMonths = 2
-
-		expect(instance.months.map(({ key }) => key)).toEqual(['2026-11-01', '2026-12-01'])
-	})
-
-	it('число месяцев не целое и меньше единицы — один месяц', () => {
-		expect(calendar({ numberOfMonths: 0 }).months).toHaveLength(1)
-		expect(calendar({ numberOfMonths: Number.NaN }).months).toHaveLength(1)
-		expect(calendar({ numberOfMonths: 2.7 }).months).toHaveLength(2)
-	})
-})
-
-describe('локаль и первый день недели', () => {
-	it('смена locale без weekStart меняет колонки', () => {
-		const instance = calendar({ value: '2026-09-15' })
-
-		// 2026-09-01 — вторник
-		expect(instance.weekdays[0].long).toBe(weekdayName('en-US', 0))
-		expect(instance.months[0].weeks[0][0].date).toBe('2026-08-30')
-
-		instance.locale = 'ru'
-
-		expect(instance.weekdays[0].long).toBe(weekdayName('ru', 1))
-		expect(instance.months[0].weeks[0][0].date).toBe('2026-08-31')
-	})
-
-	it('weekStart перекрывает локаль; не день недели — как не задан', () => {
-		const instance = calendar({ locale: 'ru', weekStart: 0 })
-
-		expect(instance.weekdays.map(({ long }) => long)).toEqual(
-			[0, 1, 2, 3, 4, 5, 6].map((day) => weekdayName('ru', day)),
+describe('локаль и сегодня', () => {
+	it('смена locale меняет номера, имена и колонки; состав тот же', () => {
+		const setup = calendar()
+		const fifth = day(setup, '2026-09-05')
+
+		setup.owner.locale = 'ar-EG'
+
+		expect(day(setup, '2026-09-05')).toBe(fifth)
+		expect(fifth.text).toBe(
+			new Intl.DateTimeFormat('ar-EG', { day: 'numeric', timeZone: 'UTC' }).format(
+				Date.UTC(2026, 8, 5),
+			),
 		)
-
-		Reflect.set(instance, 'weekStart', 7)
-
-		expect(instance.weekdays[0].long).toBe(weekdayName('ru', 1))
 	})
 
-	it('заголовок, номера и имена дней — в локали', () => {
-		const instance = calendar({ locale: 'ru', value: '2026-09-10' })
+	it('сегодня — aria-current="date" и data-today', () => {
+		const setup = calendar()
 
-		expect(instance.months[0].title).toBe(
-			new Intl.DateTimeFormat('ru', {
+		expect(day(setup, '2026-09-26').aria.get('aria-current')).toBe('date')
+		expect(flagged(setup, 'today')).toEqual(['2026-09-26'])
+	})
+})
+
+/**
+ * Расширения запоминают посчитанное: отметки выбора, каркас сеток, что день
+ * знает от вида, резольвер «недоступен». Здесь — что память не теряет ни одной
+ * смены, от которой посчитанное зависит.
+ */
+describe('запомненное не отстаёт от данных', () => {
+	it('листание зовёт unavailable только для новых дней', () => {
+		const rule = vi.fn((date: string) => date === '2026-10-13')
+		const setup = calendar({ months: ['2026-09-01', '2026-10-01'], unavailable: rule })
+
+		rule.mockClear()
+		setup.view.showNext()
+
+		const called = new Set(rule.mock.calls.map(([date]) => date))
+
+		expect([...called].sort(compareDates)).toEqual(datesFrom('2026-11-01', '2026-11-30'))
+		expect(day(setup, '2026-10-13').unavailable).toBe(true)
+	})
+
+	it('новая функция unavailable доходит до дней, оставшихся на экране', () => {
+		const setup = calendar({ unavailable: () => false })
+		const tenth = day(setup, '2026-09-10')
+		const changes = vi.fn()
+
+		tenth.events.on('change:unavailable', changes)
+		setup.owner.unavailable = (date) => date === '2026-09-10'
+
+		expect(tenth.unavailable).toBe(true)
+		expect(changes).toHaveBeenCalledWith(true)
+	})
+
+	it('отметки идут за записью значения, режимом, якорем, указателем и фокусом', () => {
+		const setup = calendar({ value: '2026-09-10' })
+
+		expect(setup.selection.isSelected('2026-09-10')).toBe(true)
+
+		setup.owner.value = '2026-09-11'
+		expect(setup.selection.isSelected('2026-09-10')).toBe(false)
+		expect(setup.selection.isSelected('2026-09-11')).toBe(true)
+
+		setup.collection.mode = 'range'
+		setup.selection.chooseDate('2026-09-05')
+		setup.selection.notifyHover('2026-09-07')
+		expect(setup.selection.isSelected('2026-09-06')).toBe(true)
+		expect(setup.selection.isSelected('2026-09-08')).toBe(false)
+
+		setup.selection.notifyHover(undefined)
+		setup.focus.focusDate('2026-09-09')
+		expect(setup.selection.isSelected('2026-09-08')).toBe(true)
+
+		setup.selection.cancelRange()
+		expect(setup.selection.isSelected('2026-09-08')).toBe(false)
+		expect(setup.selection.isSelected('2026-09-11')).toBe(true)
+	})
+
+	it('каркас сеток идёт за локалью и первым днём недели', () => {
+		const setup = calendar({ locale: 'en-US' })
+		const title = setup.collection.grids[0].title
+
+		setup.owner.locale = 'ru-RU'
+		expect(setup.collection.grids[0].title).not.toBe(title)
+		expect(setup.collection.grids[0].title).toBe(
+			new Intl.DateTimeFormat('ru-RU', {
 				month: 'long',
 				year: 'numeric',
 				timeZone: 'UTC',
 			}).format(Date.UTC(2026, 8, 1)),
 		)
-		expect(dayOf(instance, '2026-09-10').text).toBe('10')
-		expect(dayOf(instance, '2026-09-10').aria['aria-label']).toBe(
-			new Intl.DateTimeFormat('ru', { dateStyle: 'full', timeZone: 'UTC' }).format(
-				Date.UTC(2026, 8, 10),
+
+		// Сентябрь 2026 начинается во вторник
+		setup.owner.weekStart = 2
+		expect(setup.collection.grids[0].weeks[0][0].date).toBe('2026-09-01')
+
+		setup.owner.weekStart = 0
+		expect(setup.collection.grids[0].weeks[0][0].date).toBe('2026-08-30')
+	})
+
+	it('имя дня идёт за локалью, «сегодня» — за поясом', () => {
+		const setup = calendar()
+		const fifth = day(setup, '2026-09-05')
+
+		setup.owner.locale = 'de-DE'
+		expect(fifth.aria.get('aria-label')).toBe(
+			new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeZone: 'UTC' }).format(
+				Date.UTC(2026, 8, 5),
 			),
 		)
-		expect(instance.weekdays[0].short).toBe(
-			new Intl.DateTimeFormat('ru', { weekday: 'short', timeZone: 'UTC' }).format(
-				Date.UTC(2026, 8, 21),
-			),
-		)
+
+		// Полдень 26-го по местному времени; в поясе на 14 часов восточнее UTC
+		// уже 27-е, если машина не восточнее его самого
+		vi.setSystemTime(new Date(Date.UTC(2026, 8, 26, 12)))
+		setup.owner.timeZone = 'Pacific/Kiritimati'
+		expect(flagged(setup, 'today')).toEqual(['2026-09-27'])
+		expect(day(setup, '2026-09-27').aria.get('aria-current')).toBe('date')
+		expect(day(setup, '2026-09-26').aria.get('aria-current')).toBeUndefined()
+	})
+
+	it('«выключен» идёт за календарём и после листания: новые дни — тоже', () => {
+		const setup = calendar()
+
+		setup.owner.disabled = true
+		setup.view.showNext()
+
+		expect(setup.collection.items.every((item) => item.disabled)).toBe(true)
+
+		setup.owner.disabled = false
+		expect(setup.collection.items.some((item) => item.disabled)).toBe(false)
 	})
 })
 
-describe('наборы дней', () => {
-	it('один tabindex="0" на все месяцы — у дня с фокусом; прочие дни месяца — -1, заполнители — без него', () => {
-		const instance = calendar({ value: '2026-09-15', numberOfMonths: 3 })
-
-		instance.focusDate('2026-10-15')
-
-		const days = daysOf(instance)
-		const placeholders = allDays(instance).filter(
-			(day) => day.dataset['data-outside-month'] === 'true',
-		)
-
-		expect(allDays(instance).filter((day) => day.aria.tabindex === '0')).toEqual([
-			dayOf(instance, '2026-10-15'),
-		])
-		expect(days.filter((day) => day.aria.tabindex === '-1')).toHaveLength(days.length - 1)
-		expect(days.every((day) => day.aria['aria-hidden'] === null)).toBe(true)
-
-		expect(placeholders.length).toBeGreaterThan(0)
-
-		for (const day of placeholders) {
-			expect(day.aria).toEqual({
-				tabindex: null,
-				'aria-selected': null,
-				'aria-disabled': null,
-				'aria-current': null,
-				'aria-label': null,
-				'aria-hidden': 'true',
-			})
-			expect(day.dataset['data-selected']).toBe('false')
-		}
-	})
-
-	it('заполнитель не показывает выбор, даже если его дата выбрана', () => {
-		// Сентябрьская сетка с воскресенья заканчивается заполнителями 1–3 октября
-		const instance = calendar({ mode: 'multiple', value: ['2026-09-15', '2026-10-02'] })
-		const placeholder = allDays(instance).find((day) => day.date === '2026-10-02')
-
-		expect(placeholder?.dataset['data-outside-month']).toBe('true')
-		expect(placeholder?.dataset['data-selected']).toBe('false')
-	})
-
-	it('сегодня — aria-current="date" и data-today', () => {
-		const instance = calendar()
-
-		expect(dayOf(instance, '2026-09-26').aria['aria-current']).toBe('date')
-		expect(dayOf(instance, '2026-09-25').aria['aria-current']).toBeNull()
-		expect(flagged(instance, 'data-today')).toEqual(['2026-09-26'])
-	})
-
-	it('«сегодня» — в часовом поясе timeZone', () => {
-		vi.setSystemTime(Date.UTC(2026, 8, 26, 20))
-
-		expect(flagged(calendar({ timeZone: 'UTC' }), 'data-today')).toEqual(['2026-09-26'])
-		expect(flagged(calendar({ timeZone: 'Asia/Tokyo' }), 'data-today')).toEqual(['2026-09-27'])
-		expect(calendar({ timeZone: 'Asia/Tokyo' }).focusedDate).toBe('2026-09-27')
-	})
-
-	it('aria-selected стоит и у невыбранных — «false»', () => {
-		const instance = calendar({ value: '2026-09-10' })
-
-		expect(dayOf(instance, '2026-09-10').aria['aria-selected']).toBe('true')
-		expect(dayOf(instance, '2026-09-11').aria['aria-selected']).toBe('false')
-		expect(dayOf(instance, '2026-09-10').dataset['data-selected']).toBe('true')
-	})
-
-	it('имя дня — полная дата, текст — номер', () => {
-		const day = dayOf(calendar(), '2026-09-10')
-
-		expect(day.text).toBe('10')
-		expect(day.aria['aria-label']).toBe(
-			new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' }).format(
-				Date.UTC(2026, 8, 10),
-			),
-		)
-	})
-
-	it('выключенный календарь: ни одного tabindex, все дни — aria-disabled', () => {
-		const instance = calendar({ disabled: true })
-
-		expect(
-			daysOf(instance).every(
-				(day) => day.aria.tabindex === null && day.aria['aria-disabled'] === 'true',
-			),
-		).toBe(true)
-
-		instance.disabled = false
-
-		expect(dayOf(instance, '2026-09-26').aria.tabindex).toBe('0')
-		expect(dayOf(instance, '2026-09-26').aria['aria-disabled']).toBeNull()
-	})
-
-	it('флаги диапазона: начало, середина, конец; однодневный — начало и конец сразу', () => {
-		const instance = calendar({ mode: 'range', value: ['2026-09-10', '2026-09-13'] })
-
-		expect(flagged(instance, 'data-selected')).toEqual(datesFrom('2026-09-10', '2026-09-13'))
-		expect(flagged(instance, 'data-range-start')).toEqual(['2026-09-10'])
-		expect(flagged(instance, 'data-range-middle')).toEqual(['2026-09-11', '2026-09-12'])
-		expect(flagged(instance, 'data-range-end')).toEqual(['2026-09-13'])
-
-		instance.value = '2026-09-20'
-
-		expect(flagged(instance, 'data-range-start')).toEqual(['2026-09-20'])
-		expect(flagged(instance, 'data-range-end')).toEqual(['2026-09-20'])
-		expect(flagged(instance, 'data-range-middle')).toEqual([])
-	})
-
-	it('в single и multiple флагов диапазона нет', () => {
-		const instance = calendar({ mode: 'multiple', value: ['2026-09-10', '2026-09-11'] })
-
-		expect(flagged(instance, 'data-selected')).toEqual(['2026-09-10', '2026-09-11'])
-
-		for (const name of ['data-range-start', 'data-range-end', 'data-range-middle']) {
-			expect(flagged(instance, name)).toEqual([])
-		}
-	})
-
-	it('сетка: role="grid", имя — заголовок; aria-multiselectable — в multiple и range', () => {
-		for (const month of calendar({ numberOfMonths: 2 }).months) {
-			expect(month.gridAria).toEqual({
-				role: 'grid',
-				'aria-labelledby': month.titleAria.id,
-				'aria-multiselectable': null,
-			})
-		}
-
-		expect(calendar({ mode: 'multiple' }).months[0].gridAria['aria-multiselectable']).toBe(
-			'true',
-		)
-		expect(calendar({ mode: 'range' }).months[0].gridAria['aria-multiselectable']).toBe('true')
-	})
-
-	it('выходы — снимки: новый объект на каждое чтение', () => {
-		const instance = calendar()
-
-		expect(instance.months).not.toBe(instance.months)
-		expect(instance.months).toEqual(instance.months)
-		expect(instance.weekdays).not.toBe(instance.weekdays)
-	})
-})
-
-describe('то же значение — не смена', () => {
-	it('тот же массив новым объектом, в другом порядке и с повторами событий не шлёт', () => {
-		const instance = calendar({ mode: 'multiple', value: ['2026-09-10', '2026-09-20'] })
-
-		instance.focusDate('2026-09-15')
-
-		const { events } = record(instance)
-
-		instance.value = ['2026-09-10', '2026-09-20']
-		instance.value = ['2026-09-20', '2026-09-10']
-		instance.value = ['2026-09-20', '2026-09-10', '2026-09-20']
-
-		expect(events).toEqual([])
-	})
-
-	it('свойства тем же значением событий не шлют', () => {
-		const unavailable = (date: string) => date === '2026-09-15'
-		const instance = calendar({
-			min: '2026-09-01',
-			numberOfMonths: 2,
-			locale: 'ru',
-			weekStart: 1,
-			timeZone: 'UTC',
-			unavailable,
-		})
-		const changes = vi.fn()
-
-		instance.events.on('change:mode', changes)
-		instance.events.on('change:min', changes)
-		instance.events.on('change:numberOfMonths', changes)
-		instance.events.on('change:locale', changes)
-		instance.events.on('change:weekStart', changes)
-		instance.events.on('change:timeZone', changes)
-		instance.events.on('change:unavailable', changes)
-		instance.events.on('change:month', changes)
-		instance.events.on('change:focusedDate', changes)
-
-		instance.mode = 'single'
-		instance.min = '2026-09-01'
-		instance.numberOfMonths = 2
-		instance.locale = 'ru'
-		instance.weekStart = 1
-		instance.timeZone = 'UTC'
-		instance.unavailable = unavailable
-		instance.month = instance.month
-
-		expect(changes).not.toHaveBeenCalled()
-	})
-
-	it('getProps — свойства календаря и первый показанный месяц', () => {
-		const instance = calendar({ mode: 'range', min: '2026-09-01', locale: 'ru' })
-
-		expect(instance.getProps()).toMatchObject({
-			mode: 'range',
-			min: '2026-09-01',
-			max: undefined,
-			locale: 'ru',
-			numberOfMonths: 1,
-			month: '2026-09-01',
-			value: undefined,
-		})
-	})
-})
+/** Дней от `from` до `to`. */
+function daysBetween(from: string, to: string): number {
+	return (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000
+}
