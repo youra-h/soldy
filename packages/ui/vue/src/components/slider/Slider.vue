@@ -48,9 +48,11 @@ export default { ...SetupSlider }
 			<!--
 				Метки — только если они заданы: точками шкалы или списком. Каждая
 				метка — позиция в `style` (`--s-slider-position`) и состояния
-				`data-in-range` и `data-current`.
+				`data-in-range` и `data-current`. Блок — под `aria-hidden`, как
+				подсказка: подписи меток — зрительная шкала, значение и границы
+				объявляет поле, а в подписи `Label` их текст вошёл бы в имя поля.
 			-->
-			<span v-if="shownMarks.length > 0" class="s-slider__marks">
+			<span v-if="shownMarks.length > 0" class="s-slider__marks" aria-hidden="true">
 				<span
 					v-for="(mark, index) in shownMarks"
 					:key="index"

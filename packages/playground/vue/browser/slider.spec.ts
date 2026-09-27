@@ -158,6 +158,33 @@ describe('раскладка', () => {
 	})
 })
 
+/**
+ * Подписи меток — зрительная шкала: значение и границы объявляет само поле.
+ * Подпись `Label` называет поле всем своим текстом, а метки лежат внутри неё,
+ * и без `aria-hidden` скринридер прочёл бы «Мин Макс Цена».
+ */
+describe('подписи меток', () => {
+	it('в подписи Label на экране, но в имя поля не входят', async () => {
+		await mount(
+			{
+				value: 50,
+				marks: [
+					{ value: 0, label: 'Мин' },
+					{ value: 100, label: 'Макс' },
+				],
+			},
+			{ label: true },
+		)
+
+		const labels = all('.s-slider__mark-label')
+
+		expect(labels.map((node) => node.textContent)).toEqual(['Мин', 'Макс'])
+		expect(labels.every((node) => find('.s-label').contains(node))).toBe(true)
+		expect(labels.map((node) => getComputedStyle(node).display)).not.toContain('none')
+		expect(page.getByRole('slider', { name: 'Цена', exact: true }).query()).toBe(field(0))
+	})
+})
+
 describe('нажатие на дорожке', () => {
 	it('ставит ближайшую ручку в точку нажатия', async () => {
 		const ctrl = await mount({ value: [10, 90] })
