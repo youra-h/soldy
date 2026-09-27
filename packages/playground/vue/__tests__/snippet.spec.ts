@@ -139,3 +139,79 @@ describe('пресет строки', () => {
 		expect(propSnippet(select, 'open', true)).toContain('<Select :open="true" />')
 	})
 })
+
+/**
+ * Пустое поле — проп не задан: превью его не получает, экземпляр остаётся на
+ * умолчании, и код говорит то же. Раньше разметка оставляла голое имя — у
+ * булева пропа Vue читает его как `true`, — а экземпляру присваивалось `true`.
+ * Литерала умолчания в коде тоже нет: свежий экземпляр уже на нём стоит.
+ */
+describe.each([
+	['стёртое текстовое поле', ''],
+	['стёртое числовое поле или снятый выбор', undefined],
+])('пустое поле — %s', (_name, value) => {
+	const progressLinear = entryOf('progress-linear')
+	const preset = { value: 40 }
+
+	it('propSnippet не пишет атрибут пропа, пресет на месте', () => {
+		const code = propSnippet(progressLinear, 'max', value, preset)
+
+		expect(code).toContain('\t<ProgressLinear :value="40" />')
+		expect(code).not.toContain('max')
+	})
+
+	it('свойство компонента: экземпляр без присваивания, пресет рядом с ctrl', () => {
+		const code = instanceSnippet(
+			progressLinear,
+			control({ name: 'max', scope: 'component', preset }),
+			value,
+		)
+
+		expect(code).toContain('const instance = new TProgressLinear()\n</script>')
+		expect(code).not.toContain('max')
+		expect(code).toContain('\t<ProgressLinear :value="40" :ctrl="instance" />')
+	})
+
+	it('коллекционное свойство: движок без присваивания', () => {
+		const code = instanceSnippet(
+			accordion,
+			control({ name: 'mode', scope: 'collection' }),
+			value,
+		)
+
+		expect(code).toContain('const engine = createEngineSelection()\n</script>')
+		expect(code).not.toContain('mode')
+		expect(code).toContain('\t<Accordion :engine="engine" />')
+	})
+
+	/**
+	 * Писать в плагин нечего, и вместе с записью уходят подписка на bundle и
+	 * импорт плагина: остаётся экземпляр, который превью получает пропом.
+	 */
+	it('свойство плагина: ни подписки на bundle, ни импорта плагина', () => {
+		const code = instanceSnippet(
+			entryOf('button'),
+			control({
+				name: 'aria_label',
+				scope: 'plugin',
+				plugin: { ctor: TAriaPlugin, name: 'label' },
+			}),
+			value,
+		)
+
+		expect(code).toBe(
+			[
+				'<script setup lang="ts">',
+				"import { Button } from '@soldy-ui/vue'",
+				"import { TButton } from '@soldy-ui/core'",
+				'',
+				'const instance = new TButton()',
+				'</script>',
+				'',
+				'<template>',
+				'\t<Button :ctrl="instance" />',
+				'</template>',
+			].join('\n'),
+		)
+	})
+})
