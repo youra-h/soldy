@@ -15,6 +15,7 @@ import type {
 	TProgressLinearOrientation,
 	TSlideOrientation,
 	TSlideSnap,
+	TSliderTooltip,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -130,6 +131,9 @@ export const PROGRESS_LINEAR_ORIENTATIONS = enumOf<TProgressLinearOrientation>()
 
 /** Щелчок к меткам: как метки притягивают ручку, которую тянут указателем. */
 export const SLIDE_SNAPS = enumOf<TSlideSnap>()(['none', 'magnet', 'plateau', 'settle', 'hold'])
+
+/** Подсказка со значением у ручки ползунка: нет, пока с ручкой работают, всегда. */
+export const SLIDER_TOOLTIPS = enumOf<TSliderTooltip>()(['none', 'auto', 'always'])
 
 export const TABS_ALIGNMENTS = enumOf<TTabsAlignment>()(['start', 'center', 'end', 'stretch'])
 

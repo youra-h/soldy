@@ -687,6 +687,56 @@ describe('settle — жест закончен доводкой', () => {
 	})
 })
 
+/**
+ * Подсказка со значением — разметка внутри ручки. Ядро держит режим, отдаёт
+ * его теме модификатором и решает, рисовать ли подсказку, а когда её
+ * показывать в `auto`, решает тема (`playground/vue/browser/slider.spec.ts`).
+ */
+describe('подсказка', () => {
+	/** Модификаторы режима подсказки на корне. */
+	const tooltipClasses = (instance: TSlider) =>
+		instance.classes.toArray().filter((name) => name.startsWith('s-slider--tooltip-'))
+
+	it('по умолчанию нет: модификатор --tooltip-none, рисовать нечего', () => {
+		const instance = slider()
+
+		expect(instance.tooltip).toBe('none')
+		expect(instance.tooltipRendered).toBe(false)
+		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-none'])
+	})
+
+	it('режим из пропсов — модификатором с первой отрисовки', () => {
+		const instance = slider({ tooltip: 'always' })
+
+		expect(instance.tooltipRendered).toBe(true)
+		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-always'])
+	})
+
+	it('смена режима — одно change:tooltip, повтор молчит; модификатор и tooltipRendered — за режимом', () => {
+		const instance = slider()
+		const changes = vi.fn()
+
+		instance.events.on('change:tooltip', changes)
+
+		instance.tooltip = 'auto'
+		instance.tooltip = 'auto'
+
+		expect(changes.mock.calls).toEqual([['auto']])
+		expect(instance.tooltipRendered).toBe(true)
+		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-auto'])
+
+		instance.tooltip = 'always'
+
+		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-always'])
+
+		instance.tooltip = 'none'
+
+		expect(changes.mock.calls).toEqual([['auto'], ['always'], ['none']])
+		expect(instance.tooltipRendered).toBe(false)
+		expect(tooltipClasses(instance)).toEqual(['s-slider--tooltip-none'])
+	})
+})
+
 describe('getProps', () => {
 	it('отдаёт свои пропсы', () => {
 		const props = slider({
@@ -703,6 +753,7 @@ describe('getProps', () => {
 			thumbLabels: ['a', 'b'],
 			snap: 'plateau',
 			snapRadius: 12,
+			tooltip: 'auto',
 		}).getProps()
 
 		expect(props).toMatchObject({
@@ -719,6 +770,7 @@ describe('getProps', () => {
 			thumbLabels: ['a', 'b'],
 			snap: 'plateau',
 			snapRadius: 12,
+			tooltip: 'auto',
 		})
 	})
 })

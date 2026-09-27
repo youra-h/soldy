@@ -264,9 +264,9 @@ describe('слоты со scope', () => {
 		])
 	})
 
-	it('thumb — после поля ручки, со значением и номером', async () => {
+	it('thumb — содержимое подсказки, со значением и номером ручки', async () => {
 		wrapper = mount(Slider, {
-			props: { value: [20, 80] },
+			props: { value: [20, 80], tooltip: 'always' },
 			slots: {
 				thumb: ({ value, index }: TThumbScope) =>
 					h('b', { class: 's-test-thumb' }, `${index}:${value}`),
@@ -278,10 +278,74 @@ describe('слоты со scope', () => {
 		const probes = all('.s-test-thumb')
 
 		expect(probes.map((node) => node.textContent)).toEqual(['0:20', '1:80'])
-		expect(probes.map((node) => node.previousElementSibling?.localName)).toEqual([
+		expect(probes.map((node) => node.parentElement?.className)).toEqual([
+			's-slider__tooltip',
+			's-slider__tooltip',
+		])
+	})
+})
+
+/**
+ * Подсказка со значением — разметка внутри ручки. Рисовать ли её, решает ядро
+ * (`tooltipRendered`), когда показывать в `auto` — тема: это и то, что
+ * подсказка едет за ручкой, проверяет браузер
+ * (`playground/vue/browser/slider.spec.ts`).
+ */
+describe('подсказка со значением', () => {
+	const tooltips = () => all('.s-slider__tooltip')
+
+	it('без режима подсказки нет, и слот thumb не рисуется', async () => {
+		wrapper = mount(Slider, {
+			props: { value: [20, 80] },
+			slots: { thumb: () => h('b', { class: 's-test-thumb' }, '?') },
+			attachTo: document.body,
+		})
+		await nextTick()
+
+		expect(find('.s-slider').classList.contains('s-slider--tooltip-none')).toBe(true)
+		expect(tooltips()).toEqual([])
+		expect(all('.s-test-thumb')).toEqual([])
+	})
+
+	it('auto — по подсказке на ручку сразу после поля, под aria-hidden', async () => {
+		await render({ value: [20, 80], tooltip: 'auto' })
+
+		expect(find('.s-slider').classList.contains('s-slider--tooltip-auto')).toBe(true)
+		expect(tooltips().map((node) => node.localName)).toEqual(['span', 'span'])
+		expect(tooltips().map((node) => node.previousElementSibling?.localName)).toEqual([
 			'input',
 			'input',
 		])
+		expect(tooltips().map((node) => node.getAttribute('aria-hidden'))).toEqual(['true', 'true'])
+	})
+
+	it('текст — значение ручки, без пробелов, и меняется вместе с ним', async () => {
+		await render({ value: [20, 80], tooltip: 'auto' })
+
+		expect(tooltips().map((node) => node.textContent)).toEqual(['20', '80'])
+
+		await press(field(1), 'ArrowLeft')
+
+		expect(tooltips().map((node) => node.textContent)).toEqual(['20', '79'])
+	})
+
+	it('режим с экземпляра: включили — подсказка есть, выключили — нет', async () => {
+		const ctrl = new TSlider({ value: 30 })
+
+		await render({ ctrl })
+
+		expect(tooltips()).toEqual([])
+
+		ctrl.tooltip = 'always'
+		await nextTick()
+
+		expect(find('.s-slider').classList.contains('s-slider--tooltip-always')).toBe(true)
+		expect(tooltips().map((node) => node.textContent)).toEqual(['30'])
+
+		ctrl.tooltip = 'none'
+		await nextTick()
+
+		expect(tooltips()).toEqual([])
 	})
 })
 
