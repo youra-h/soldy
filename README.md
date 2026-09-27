@@ -95,17 +95,21 @@ btn.events.on('bundle:create', (bundle: unknown) => {
 </template>
 ```
 
-The application plugs in a theme and an icon pack:
+The application plugs in a theme and an icon pack. The theme comes in two parts: the stylesheet and
+its behavior (`./setup`) — the plugins whose values its CSS reads, such as the bar under the active
+tab:
 
 ```ts
 import { createApp } from 'vue'
-import { setIcons } from '@soldy-ui/setup'
+import { setIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import App from './App.vue'
 
 import '@soldy-ui/theme-oren'
+import oren from '@soldy-ui/theme-oren/setup'
 
 setIcons(material)
+useTheme(oren)
 
 createApp(App).mount('#app')
 ```
@@ -188,6 +192,8 @@ packages/
     vue/            Vue playground app
 tools/
   eslint/           local ESLint rule (soldy/no-explicit-any) and tests for the lint blocks
+  vite/             shared Vite library build config for the packages
+  published-imports/  check that built packages declare every package they import
   agent-flow/       ClickUp ↔ Claude Code task pipeline
 docs/               architecture overview
 ```
