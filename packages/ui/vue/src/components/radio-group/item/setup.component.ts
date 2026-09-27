@@ -35,6 +35,9 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
+		// Элемент входит в коллекцию сразу: `setup()` — это и есть монтирование Vue
+		itemAdapter.get(TCollectionItemExtension)?.join()
+
 		const itemBinding = useAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 

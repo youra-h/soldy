@@ -37,8 +37,8 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`.s-button` подсветка и выбор раскрашены по вариантам, а у элемента
 			списка своих таких правил нет. Приводить разметку к одному носителю
 			— часть задачи про доступность ListBox, там же, где ему добавят
-			`role="option"`; сейчас `aria-selected` всё ещё захардкожен здесь,
-			а не приходит набором.
+			`role="option"`. `aria-selected` приходит набором `aria`: его всем
+			элементам пишет `TListBoxExtension`, как у Select и Tags.
 
 			Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
 			`tag` — тег корня (`TComponentView`), и рисует по нему корень
@@ -59,7 +59,6 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			:disabled="disabled"
 			:size="size"
 			:variant="variant"
-			:aria-selected="String(selected)"
 			@click="context?.adapters.list.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
