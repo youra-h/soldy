@@ -1,6 +1,5 @@
-import { TStylable } from '../../base/stylable'
+import { TProgress } from '../../base/progress'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import { clamp, fractionOf } from '../../../common/scale/scale.class'
 import { percent } from '../../../common/utility/percent'
 import type {
 	IProgressLinear,
@@ -15,24 +14,10 @@ import type {
  * Индикатор выполнения линией: доля готового, когда она известна, и бег,
  * когда неизвестна.
  *
- * **Бег — флаг `indeterminate`, и он главнее значения**, как у CheckBox:
- * пока он стоит, доли и `aria-valuenow` нет, а `value` хранится как было и
- * вернётся на полосу, когда бег снимут. Второго пути к бегу нет: `value` —
- * всегда число, по умолчанию `0`.
- *
- * **Значение хранится как задано.** Полоса значение не правит и в форму не
- * отдаёт, поэтому резольвера, как у Slider, у неё нет: границы шкалы действуют
- * только в выходах. Доля (`percentStyle`) прижата к 0–100 %, `aria-valuenow` —
- * к `[min, max]`, и полоса со скринридером показывают одно и то же. Порядок
- * записи не важен: значение, пришедшее раньше `max`, к прежнему `max` не
- * прижимается и не теряется.
- *
- * Паттерн — роль `progressbar`. Пока полоса бежит, `aria-valuenow` нет: так
- * объявляется неопределённый индикатор, и скринридер не прочтёт «0 %». Имя
- * даёт `TAriaPlugin` (`aria_label`, `aria_labelledBy`), как у Spinner: строк
- * языка интерфейса у библиотеки нет. Содержимого у полосы нет — дети роли
- * `progressbar` презентационные, скринридер их не читает. Подпись и число
- * потребитель ставит рядом своей разметкой.
+ * Модель — у базы `TProgress`, общей с кольцом `TProgressSpinner`: значение,
+ * шкала, флаг бега, роль `progressbar` с `aria-value*`, `data-indeterminate` и
+ * доля. Своё у полосы — ось и то, как доля уходит теме: процентом, потому что
+ * заливку тема тянет по длине дорожки.
  *
  * Ось (`orientation`) — модификатор `--horizontal` или `--vertical`, как у
  * Slider и Tabs: значение библиотеки, а не темы. `aria-orientation` ядро не
@@ -43,31 +28,17 @@ import type {
  * её дело, а не ядра.
  */
 export default class TProgressLinear
-	extends TStylable<IProgressLinearProps, TProgressLinearEvents, TProgressLinearStates>
+	extends TProgress<IProgressLinearProps, TProgressLinearEvents, TProgressLinearStates>
 	implements IProgressLinear
 {
 	static override baseClass = 's-progress-linear'
 
-	static defaultValues: typeof TStylable.defaultValues &
-		TDefaultValues<
-			IProgressLinearProps,
-			'value' | 'min' | 'max' | 'indeterminate' | 'orientation'
-		> = {
-		...TStylable.defaultValues,
-		// Полосу кладут в `Button` и `Label`, а внутри них HTML разрешает
-		// только строчную разметку
-		tag: 'span',
-		value: 0,
-		min: 0,
-		max: 100,
-		indeterminate: false,
+	static defaultValues: typeof TProgress.defaultValues &
+		TDefaultValues<IProgressLinearProps, 'orientation'> = {
+		...TProgress.defaultValues,
 		orientation: 'horizontal',
 	}
 
-	protected _value: number
-	protected _min: number
-	protected _max: number
-	protected _indeterminate: boolean
 	protected _orientation!: TProgressLinearOrientation
 
 	constructor(
@@ -78,69 +49,12 @@ export default class TProgressLinear
 
 		const ctor = new.target as typeof TProgressLinear
 
-		this._value = props.value ?? ctor.defaultValues.value
-		this._min = props.min ?? ctor.defaultValues.min
-		this._max = props.max ?? ctor.defaultValues.max
-		this._indeterminate = props.indeterminate ?? ctor.defaultValues.indeterminate
-
-		this._aria.add('role', 'progressbar')
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
-
-		this.events.on('change:value', () => this._syncValue())
-		this.events.on('change:min', () => this._syncValue())
-		this.events.on('change:max', () => this._syncValue())
-		this.events.on('change:indeterminate', () => this._syncValue())
-
-		this._syncValue()
 	}
 
 	/* ------------------------------------------------------------------ */
 	/* Свойства                                                           */
 	/* ------------------------------------------------------------------ */
-
-	get value(): number {
-		return this._value
-	}
-
-	set value(value: number) {
-		if (this._value === value) return
-
-		this._value = value
-		this.events.emit('change:value', value)
-	}
-
-	get min(): number {
-		return this._min
-	}
-
-	set min(value: number) {
-		if (this._min === value) return
-
-		this._min = value
-		this.events.emit('change:min', value)
-	}
-
-	get max(): number {
-		return this._max
-	}
-
-	set max(value: number) {
-		if (this._max === value) return
-
-		this._max = value
-		this.events.emit('change:max', value)
-	}
-
-	get indeterminate(): boolean {
-		return this._indeterminate
-	}
-
-	set indeterminate(value: boolean) {
-		if (this._indeterminate === value) return
-
-		this._indeterminate = value
-		this.events.emit('change:indeterminate', value)
-	}
 
 	get orientation(): TProgressLinearOrientation {
 		return this._orientation
@@ -164,39 +78,16 @@ export default class TProgressLinear
 	 * тема ведёт от начала дорожки, а не с того места, где её оставили.
 	 */
 	get percentStyle(): TProgressLinearStyle {
-		if (this._indeterminate) return {}
+		const fraction = this._fraction
 
-		return {
-			'--s-progress-linear-percent': percent(fractionOf(this._value, this._min, this._max)),
-		}
+		if (fraction === null) return {}
+
+		return { '--s-progress-linear-percent': percent(fraction) }
 	}
 
 	/* ------------------------------------------------------------------ */
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
-
-	/**
-	 * Наборы, которые следуют из значения, шкалы и флага бега: `aria-value*` —
-	 * скринридеру, `data-indeterminate` — теме. `data-indeterminate` стоит с
-	 * первой отрисовки, и у известной доли — значением `"false"`: тема
-	 * отличает «доля известна» от «неприменимо».
-	 */
-	protected _syncValue(): void {
-		const running = this._indeterminate
-
-		this._aria.add('aria-valuemin', String(this._min))
-		this._aria.add('aria-valuemax', String(this._max))
-		this._aria.add('aria-valuenow', running ? null : String(this._now(this._value)))
-		this._dataset.add('indeterminate', running)
-	}
-
-	/**
-	 * Значение для скринридера — на шкале, как и доля полосы. У пустой шкалы
-	 * — `min`: полоса там пуста.
-	 */
-	protected _now(value: number): number {
-		return clamp(value, this._min, Math.max(this._min, this._max))
-	}
 
 	/**
 	 * Модификатор оси — без префикса, как у Slider и Tabs: значение
@@ -217,10 +108,6 @@ export default class TProgressLinear
 	override getProps(): IProgressLinearProps {
 		return {
 			...super.getProps(),
-			value: this._value,
-			min: this._min,
-			max: this._max,
-			indeterminate: this._indeterminate,
 			orientation: this._orientation,
 		}
 	}

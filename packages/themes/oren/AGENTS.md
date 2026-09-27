@@ -7,26 +7,26 @@
 
 ## Что здесь чем является
 
-| Файл                              | Роль                                                                                                                                                                                    |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/tokens.css`                  | светлая схема + регистрация шкал в `@theme inline` (общая на обе схемы)                                                                                                                 |
-| `src/tokens-dark.css`             | тёмная схема: те же ступени, инвертированные по ролям                                                                                                                                   |
-| `src/utilities.css`               | утилиты из семантических токенов (`@utility`)                                                                                                                                           |
-| `src/base.css`                    | tailwind + токены + утилиты; инжектится в каждый SCSS через `additionalData`                                                                                                            |
-| `src/index.scss`                  | список компонентных стилей                                                                                                                                                              |
-| `src/components/*/`               | `_имя.scss` + при необходимости `_mixins.scss`                                                                                                                                          |
-| `src/mixins/`                     | общее для нескольких компонентов: маркер `required`, переход, наведение, вуаль, части модального слоя (окно и выезжающая панель), плашка подсказки (Tooltip и подсказка у ручки Slider) |
-| `index.d.ts`                      | значения оформления темы: наборы `variant`, `view`, `shape`, `animation`                                                                                                                |
-| `__tests__/tokens.spec.ts`        | инварианты схем и запреты на уровне исходников                                                                                                                                          |
-| `__tests__/theme-values.spec.ts`  | каждый модификатор темы объявлен в `index.d.ts`                                                                                                                                         |
-| `__tests__/label-hover.spec.ts`   | подсветка контрола в `Label` не зависит от браузера                                                                                                                                     |
-| `__tests__/tailwind-scan.spec.ts` | поиск классов Tailwind выключен: утилиты в `dist` не берутся из текстов                                                                                                                 |
-| `setup/`                          | поведение темы: `plugins/` (+ `install.ts`), `index.ts` с `defineTheme`                                                                                                                 |
-| `__tests__/theme-setup.spec.ts`   | регистрации темы ставят плагины нужным компонентам                                                                                                                                      |
-| `__tests__/package-build.spec.ts` | два выхода в одном `dist`: порядок сборки, CSS-выход — один `index.css`, поставка `./setup`                                                                                             |
-| `vite.config.ts`                  | сборка CSS без режима библиотеки: `src/index.scss` → `dist/index.css`                                                                                                                   |
-| `vite.setup.config.ts`            | сборка поведения: `setup/index.ts` → `dist/setup` (общая фабрика `tools/vite`)                                                                                                          |
-| `tsconfig.build.json`             | `.d.ts` поведения: прогон `tsc` вторым шагом, в тот же `dist/setup`                                                                                                                     |
+| Файл                              | Роль                                                                                                                                                                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/tokens.css`                  | светлая схема + регистрация шкал в `@theme inline` (общая на обе схемы)                                                                                                                                                                                  |
+| `src/tokens-dark.css`             | тёмная схема: те же ступени, инвертированные по ролям                                                                                                                                                                                                    |
+| `src/utilities.css`               | утилиты из семантических токенов (`@utility`)                                                                                                                                                                                                            |
+| `src/base.css`                    | tailwind + токены + утилиты; инжектится в каждый SCSS через `additionalData`                                                                                                                                                                             |
+| `src/index.scss`                  | список компонентных стилей                                                                                                                                                                                                                               |
+| `src/components/*/`               | `_имя.scss` + при необходимости `_mixins.scss`                                                                                                                                                                                                           |
+| `src/mixins/`                     | общее для нескольких компонентов: маркер `required`, переход, наведение, вуаль, части модального слоя (окно и выезжающая панель), плашка подсказки (Tooltip и подсказка у ручки Slider), цвета индикаторов выполнения (ProgressLinear и ProgressSpinner) |
+| `index.d.ts`                      | значения оформления темы: наборы `variant`, `view`, `shape`, `animation`                                                                                                                                                                                 |
+| `__tests__/tokens.spec.ts`        | инварианты схем и запреты на уровне исходников                                                                                                                                                                                                           |
+| `__tests__/theme-values.spec.ts`  | каждый модификатор темы объявлен в `index.d.ts`                                                                                                                                                                                                          |
+| `__tests__/label-hover.spec.ts`   | подсветка контрола в `Label` не зависит от браузера                                                                                                                                                                                                      |
+| `__tests__/tailwind-scan.spec.ts` | поиск классов Tailwind выключен: утилиты в `dist` не берутся из текстов                                                                                                                                                                                  |
+| `setup/`                          | поведение темы: `plugins/` (+ `install.ts`), `index.ts` с `defineTheme`                                                                                                                                                                                  |
+| `__tests__/theme-setup.spec.ts`   | регистрации темы ставят плагины нужным компонентам                                                                                                                                                                                                       |
+| `__tests__/package-build.spec.ts` | два выхода в одном `dist`: порядок сборки, CSS-выход — один `index.css`, поставка `./setup`                                                                                                                                                              |
+| `vite.config.ts`                  | сборка CSS без режима библиотеки: `src/index.scss` → `dist/index.css`                                                                                                                                                                                    |
+| `vite.setup.config.ts`            | сборка поведения: `setup/index.ts` → `dist/setup` (общая фабрика `tools/vite`)                                                                                                                                                                           |
+| `tsconfig.build.json`             | `.d.ts` поведения: прогон `tsc` вторым шагом, в тот же `dist/setup`                                                                                                                                                                                      |
 
 ```bash
 npm run build:css --workspace=@soldy-ui/theme-oren  # → dist/index.css
@@ -233,14 +233,14 @@ Tabs взяли из этой пары первую ступень: 300 и в п
 пропустит. Сверяет `__tests__/theme-values.spec.ts`. Обратное не требуется:
 значению, которое совпадает с видом по умолчанию, правило не нужно
 (`--view-line` у Tabs, `--view-outlined` у CheckBox, `--shape-rounded`,
-`--animation-pulse`, `--variant-normal` у всех, кроме Spinner и
-ProgressLinear).
+`--animation-pulse`, `--variant-normal` у всех, кроме Spinner, ProgressLinear
+и ProgressSpinner).
 
 **Вид по умолчанию — на самом блоке.** У компонента без значения модификатора
 нет, и блок выглядит прежним умолчанием: Button — `filled` с нейтралью,
-Spinner и ProgressLinear — `accent`, Tabs — `line`, Skeleton — `rounded` и
-`pulse`, элемент RadioGroup — `dot` с нейтралью, CheckBox — `outlined` с
-нейтралью, Input и Switch — нейтраль. Корень базового вида —
+Spinner, ProgressLinear и ProgressSpinner — `accent`, Tabs — `line`, Skeleton —
+`rounded` и `pulse`, элемент RadioGroup — `dot` с нейтралью, CheckBox —
+`outlined` с нейтралью, Input и Switch — нейтраль. Корень базового вида —
 `:where(.s-<блок>)`, нулевая специфичность: модификатор перекрывает базу, не
 споря с ней.
 
@@ -518,6 +518,13 @@ Rendering: она меняет сами цвета, а не только отв�
   Смотреть на стенде, ручными сценариями `/tests/motion/progress-linear`:
   узкая и широкая полоса — скорость отрезка растёт с длиной дорожки, — RTL,
   вертикальная полоса, обе схемы и цикл загрузки.
+- **кольцо ProgressSpinner** (`progress-spinner/_progress-spinner.scss`).
+  Толщина — восьмая часть диаметра, бегущая дуга — четверть кольца, круг и
+  кривая бега — как у Spinner: всё подобрано глазом. Смотреть рядом со
+  Spinner того же размера, в кнопке и в строке текста, на всех размерах:
+  диаметр у них один, кольцо толще, и ни весом, ни ритмом бега они спорить не
+  должны. Дорожку — в тёмной схеме на странице и на панели: у тонкого кольца
+  вуаль тише, чем у полосы. Полное кольцо — без шва на двенадцати часах.
 
 ## Открытый вопрос
 

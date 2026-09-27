@@ -18,6 +18,7 @@ import {
 	ListBoxCollectionDescriptor,
 	PopoverDescriptor,
 	ProgressLinearDescriptor,
+	ProgressSpinnerDescriptor,
 	RadioGroupDescriptor,
 	RadioGroupCollectionDescriptor,
 	ScrollerDescriptor,
@@ -216,6 +217,14 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Индикатор выполнения линией: доля готового, а пока она неизвестна — бег',
+	},
+	{
+		id: 'progress-spinner',
+		label: 'ProgressSpinner',
+		descriptor: ProgressSpinnerDescriptor,
+		showcase: true,
+		span: 1,
+		description: 'Индикатор выполнения кольцом: доля готового, а пока она неизвестна — бег',
 	},
 	{
 		id: 'skeleton',
