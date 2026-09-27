@@ -77,6 +77,7 @@ export class TCollectionItemExtension {
 
 		if (this._register) this._leave = this._register(this._item, this._context.bundle)
 
-		if (this._engine?.extensions.meta) this._engine.extensions.meta.apply(this._item, this._meta)
+		// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
+		this._engine?.extensions.meta?.apply(this._item, this._meta)
 	}
 }

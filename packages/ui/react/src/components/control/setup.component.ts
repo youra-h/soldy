@@ -11,7 +11,7 @@ import type { ControlProps } from './base.component'
 
 export function useSetupControl(props: ControlProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(ControlDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

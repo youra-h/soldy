@@ -141,7 +141,7 @@ function createProbe() {
 	const rendered: IAdapterContext[] = []
 
 	function Probe() {
-		const adapter = useAdapterContext(() => {
+		const { contexts: adapter } = useAdapterContext(() => {
 			const context = createAdapterContext(ButtonDescriptor(), { props: {} })
 
 			created.push(context)
@@ -168,7 +168,7 @@ describe('useAdapterContext', () => {
 		const seen: unknown[] = []
 
 		function Probe({ n }: { n: number }) {
-			const adapter = useAdapterContext(factory)
+			const { contexts: adapter } = useAdapterContext(factory)
 
 			seen.push(adapter)
 
@@ -456,5 +456,77 @@ describe('повторная установка эффектов · <Activity>',
 		// Пересобранный контекст применяет пропсы, как любая сборка
 		expect(ctrl.text).toBe('из разметки')
 		expect(textOf(target)).toBe('из разметки')
+	})
+})
+
+/**
+ * Фабрика может вернуть несколько контекстов — у коллекции это свой и фасада.
+ * Живут они одной единицей: хук держит, пересобирает и уничтожает их вместе,
+ * уничтожает — в обратном порядке. После сборки и каждой пересборки — шаг
+ * коммита, в том же эффекте, что и уничтожение: уничтоженные контексты через
+ * него не проходят, живые не проходят дважды.
+ */
+describe('useAdapterContext · несколько контекстов и шаг коммита', () => {
+	function createPairProbe() {
+		const log: string[] = []
+		const builds = new WeakMap<IAdapterContext, number>()
+		let built = 0
+
+		function Probe() {
+			useAdapterContext(
+				() => {
+					const n = ++built
+					const first = createAdapterContext(ButtonDescriptor(), { props: {} })
+					const second = createAdapterContext(ButtonDescriptor(), { props: {} })
+
+					builds.set(first, n)
+					first.events.on('destroy', () => log.push(`destroy first ${n}`))
+					second.events.on('destroy', () => log.push(`destroy second ${n}`))
+
+					return [first, second] as const
+				},
+				([first]) => log.push(`commit ${builds.get(first)}`),
+			)
+
+			return null
+		}
+
+		return { Probe, log }
+	}
+
+	it('контексты уничтожаются вместе и в обратном порядке, коммит — после сборки', () => {
+		const { Probe, log } = createPairProbe()
+		const { unmount } = mountRoot(<Probe />)
+
+		expect(log).toEqual(['commit 1'])
+
+		unmount()
+
+		expect(log).toEqual(['commit 1', 'destroy second 1', 'destroy first 1'])
+	})
+
+	it('StrictMode: коммит — и у пересобранных, уничтоженные его не получают', () => {
+		const { Probe, log } = createPairProbe()
+		const { unmount } = mountRoot(
+			<StrictMode>
+				<Probe />
+			</StrictMode>,
+		)
+
+		expect(log).toEqual(['commit 1', 'destroy second 1', 'destroy first 1', 'commit 2'])
+
+		unmount()
+
+		expect(log.slice(4)).toEqual(['destroy second 2', 'destroy first 2'])
+	})
+
+	it('без повторной установки перерисовка не коммитит заново', () => {
+		const { Probe, log } = createPairProbe()
+		const { render } = mountRoot(<Probe />)
+
+		render(<Probe />)
+		render(<Probe />)
+
+		expect(log).toEqual(['commit 1'])
 	})
 })

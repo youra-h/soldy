@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { Teleport, renderSlot, toAriaProps, toRootLayout } from '../../adapter'
+import { Teleport, renderSlot, toRootProps } from '../../adapter'
 import { useSetupFrame } from './setup.component'
 import type { FrameProps } from './base.component'
 
@@ -24,17 +24,10 @@ export function Frame(props: FrameProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ, чтобы не перекрыть ref адаптера (см. Button)
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
 		<Teleport to={target}>
-			<Tag
-				{...forwardProps}
-				ref={ref}
-				{...toRootLayout(state, forwardProps)}
-				{...toAriaProps(attrs)}
-				{...toAriaProps(aria)}
-				{...toAriaProps(dataset)}
-			>
+			<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 				{renderSlot(props.children)}
 			</Tag>
 		</Teleport>
