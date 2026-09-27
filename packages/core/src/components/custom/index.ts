@@ -1,6 +1,7 @@
 export * from './icon'
 export * from './spinner'
 export * from './progress-linear'
+export * from './progress-spinner'
 export * from './select'
 export * from './skeleton'
 export * from './button'

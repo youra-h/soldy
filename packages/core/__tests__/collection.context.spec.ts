@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
 	TCollectionEngine,
 	TPlainExtension,
 	TActivationExtension,
 	TSelectionExtension,
 	TOrderExtension,
+	TItemContext,
 	TItemContextRegistry,
 	TBaseOwnerItemExtension,
 	TBaseItemExtension,
@@ -232,5 +233,80 @@ describe('TItemContext + TItemContextRegistry', () => {
 		expect(_order).toBeGreaterThanOrEqual(0)
 		expect(_customActive).toBe(false)
 		expect(_customAction).toBe('custom:test')
+	})
+})
+
+/**
+ * У контекста два конца, и они разные. `release()` — кончилось то, что держало
+ * контекст (монтирование элемента): адаптеры отписаны, элемент не тронут, и
+ * элемент из данных рисуется при следующем показе. `destroy()` — элемент
+ * удалён из коллекции: то же и `rendered = false`.
+ */
+describe('TItemContext: release и destroy', () => {
+	/** Элемент, который умеет не рисоваться, — в коллекции и с контекстом. */
+	function mounted() {
+		const col = createCollection()
+		const item = { id: 1, name: 'a', rendered: true }
+
+		col.extensions.plain.insert(item)
+
+		return {
+			col,
+			item,
+			ctx: new TItemContext<Item, TestExtensions>(item, col.getCore().extensions),
+		}
+	}
+
+	it('release отписывает адаптеры от расширений', () => {
+		const { col, item, ctx } = mounted()
+		const adapter = ctx.adapters.selection
+		const emit = vi.spyOn(adapter.events, 'emit')
+
+		ctx.release()
+		emit.mockClear()
+		col.extensions.selection.select(item)
+
+		// relay-подписка адаптера на расширение разорвана
+		expect(emit).not.toHaveBeenCalled()
+	})
+
+	it('release не трогает элемент: он в коллекции и рисуется', () => {
+		const { col, item, ctx } = mounted()
+
+		ctx.adapters.selection.selected = true
+		ctx.release()
+
+		expect(col.getCore().driver.valueOf()).toContain(item)
+		expect(col.extensions.selection.isSelected(item)).toBe(true)
+		expect(item.rendered).toBe(true)
+	})
+
+	it('после release контекст рабочий: адаптер создаётся заново и слушает расширение', () => {
+		const { col, item, ctx } = mounted()
+		const before = ctx.adapters.selection
+
+		ctx.release()
+
+		const after = ctx.adapters.selection
+		const changed = vi.fn()
+
+		after.events.on('change:selected', changed)
+		col.extensions.selection.select(item)
+
+		expect(after).not.toBe(before)
+		expect(after.selected).toBe(true)
+		expect(changed).toHaveBeenCalled()
+	})
+
+	it('destroy отписывает адаптеры и снимает элемент с отрисовки', () => {
+		const { col, item, ctx } = mounted()
+		const emit = vi.spyOn(ctx.adapters.selection.events, 'emit')
+
+		ctx.destroy()
+		emit.mockClear()
+		col.extensions.selection.select(item)
+
+		expect(emit).not.toHaveBeenCalled()
+		expect(item.rendered).toBe(false)
 	})
 })

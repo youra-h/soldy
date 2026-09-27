@@ -28,6 +28,19 @@ export abstract class TCollectionItemComponent<
 		this._context = context
 	}
 
+	/**
+	 * Отвязывает контекст: монтирование, для которого его ставили, кончилось.
+	 * Геттеры отдают то же, что до `setContext`, — элемент вне коллекции.
+	 *
+	 * Фасад читают и после снятия — React, например, перечитывает состояние
+	 * уже уничтоженной сборки. Держал бы фасад отпущенный контекст, такое
+	 * чтение создало бы адаптеры заново, и они остались бы подписаны на
+	 * расширения движка.
+	 */
+	clearContext(): void {
+		this._context = undefined
+	}
+
 	get context(): TItemContext<TItem, TExtensions> | undefined {
 		return this._context
 	}

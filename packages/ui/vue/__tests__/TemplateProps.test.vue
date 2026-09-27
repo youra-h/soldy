@@ -31,6 +31,7 @@ import {
 	ListBox,
 	Popover,
 	ProgressLinear,
+	ProgressSpinner,
 	RadioGroup,
 	Scroller,
 	Select,
@@ -184,6 +185,14 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — оси `diagonal` нет -->
 	<ProgressLinear orientation="diagonal" />
 	<ProgressLinear orientation="vertical" />
+
+	<!-- @vue-expect-error — доля числом, а не строкой -->
+	<ProgressSpinner value="40" />
+	<ProgressSpinner :value="40" />
+
+	<!-- @vue-expect-error — бег — флаг `indeterminate`, у значения `null` нет -->
+	<ProgressSpinner :value="null" />
+	<ProgressSpinner indeterminate />
 
 	<!-- @vue-expect-error — имя кнопки ленты строкой -->
 	<Scroller :prevLabel="42" />

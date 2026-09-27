@@ -1,6 +1,9 @@
+import { vi } from 'vitest'
+import { TEvented } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy-ui/plugins'
 import * as exported from '../content/descriptors'
+import type { IElevatorKey, TElevatorFactory } from '../protected/adapter/elevator'
 import type { IComponentDescriptor } from '../protected/define'
 import { callbackEventNaming, underscorePropNaming } from '../protected/naming'
 import type { IAdapterProfile } from '../protected/naming'
@@ -114,6 +117,68 @@ export function triggerResize(element: Element): void {
 /** Сколько наблюдателей сейчас следят за узлом. */
 export function observerCount(element: Element): number {
 	return resizeObservers.filter((observer) => observer.isObserving(element)).length
+}
+
+/** Шпион, который помнит аргументы вызовов. */
+interface ICallLog {
+	readonly mock: { readonly calls: ReadonlyArray<readonly unknown[]> }
+}
+
+/** Подписки шины: что на неё повесили и что с неё сняли. */
+export interface IBusSpy {
+	readonly name: string
+	readonly on: ICallLog
+	readonly off: ICallLog
+}
+
+/** Шпионы на `on` и `off` шины у того, у кого она есть. Без шины следить не за чем. */
+export function spyBus(name: string, holder: unknown): IBusSpy[] {
+	const bus: unknown =
+		typeof holder === 'object' && holder !== null ? Reflect.get(holder, 'events') : null
+
+	if (!(bus instanceof TEvented)) return []
+
+	return [{ name, on: vi.spyOn(bus, 'on'), off: vi.spyOn(bus, 'off') }]
+}
+
+/** Подписки, повешенные на шины: `<шина>: <событие>`. */
+export function subscribed(spies: readonly IBusSpy[]): string[] {
+	return spies.flatMap(({ name, on }) =>
+		on.mock.calls.map(([event]) => `${name}: ${String(event)}`),
+	)
+}
+
+/** Подписки, которые остались на шинах после уничтожения: `<шина>: <событие>`. */
+export function leftovers(spies: readonly IBusSpy[]): string[] {
+	return spies.flatMap(({ name, on, off }) =>
+		on.mock.calls
+			.filter(
+				([event, handler]) =>
+					!off.mock.calls.some(([e, h]) => e === event && h === handler),
+			)
+			.map(([event]) => `${name}: ${String(event)}`),
+	)
+}
+
+/**
+ * Лифт в памяти для тестов без фреймворка: одно хранилище на фабрику, дерева
+ * нет. Родитель кладёт значение (`down`), ребёнок той же фабрики его берёт (`up`).
+ */
+export function createElevatorFactory(): {
+	factory: TElevatorFactory
+	store: Map<IElevatorKey<unknown>, unknown>
+} {
+	const store = new Map<IElevatorKey<unknown>, unknown>()
+
+	// Как `inject<T>` во фреймворках: тип значения задаёт ключ, хранилищу он неизвестен
+	const factory: TElevatorFactory = <T>(key: IElevatorKey<T>) => ({
+		down: (value: T) => {
+			store.set(key, value)
+		},
+		up: () => store.get(key) as T | undefined,
+	})
+
+	return { factory, store }
 }
 
 /** Значение, которое тест обязан получить: без него дальше проверять нечего. */

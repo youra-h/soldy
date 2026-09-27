@@ -205,6 +205,17 @@ describe('метки', () => {
 
 		expect(all('.s-slider__mark').map(position)).toEqual(['0%', '25%', '50%', '75%', '100%'])
 	})
+
+	/**
+	 * Подписи меток — зрительная шкала: значение и границы объявляет поле. Что
+	 * в подписи `Label` их текст не входит в имя поля, проверяет браузер
+	 * (`playground/vue/browser/slider.spec.ts`), здесь — что блок скрыт.
+	 */
+	it('блок меток — под aria-hidden', async () => {
+		await render({ value: 20, marks: [{ value: 0, label: 'Мин' }, { value: 100 }] })
+
+		expect(find('.s-slider__marks').getAttribute('aria-hidden')).toBe('true')
+	})
 })
 
 describe('v-model сохраняет форму значения', () => {

@@ -1,9 +1,9 @@
 import type {
-	IStylable,
-	IStylableProps,
-	TStylableEvents,
-	TStylableStates,
-} from '../../base/stylable'
+	IProgress,
+	IProgressProps,
+	TProgressEvents,
+	TProgressStates,
+} from '../../base/progress'
 
 /**
  * CSS-переменные корня — и только они: доля готового процентом от `min` до
@@ -18,51 +18,23 @@ export type TProgressLinearStyle = Record<`--${string}`, string>
  */
 export type TProgressLinearOrientation = 'horizontal' | 'vertical'
 
-export interface IProgressLinearProps extends IStylableProps {
-	/** Сколько готово — число на шкале от `min` до `max` */
-	value?: number
-	/** Начало шкалы */
-	min?: number
-	/** Конец шкалы */
-	max?: number
-	/**
-	 * Доля неизвестна — полоса бежит. Флаг главнее значения, как у CheckBox:
-	 * пока он стоит, доли и `aria-valuenow` нет, а `value` хранится и
-	 * вернётся, когда бег снимут.
-	 */
-	indeterminate?: boolean
+export interface IProgressLinearProps extends IProgressProps {
 	/** Ось полосы */
 	orientation?: TProgressLinearOrientation
 }
 
-export type TProgressLinearStates = TStylableStates
+export type TProgressLinearStates = TProgressStates
 
-export type TProgressLinearEvents = TStylableEvents & {
-	/** change:value */
-	'change:value': (value: number) => void
-	/** change:min */
-	'change:min': (value: number) => void
-	/** change:max */
-	'change:max': (value: number) => void
-	/** change:indeterminate */
-	'change:indeterminate': (value: boolean) => void
+export type TProgressLinearEvents = TProgressEvents & {
 	/** change:orientation */
 	'change:orientation': (value: TProgressLinearOrientation) => void
 }
 
-export interface IProgressLinear extends IStylable<
+export interface IProgressLinear extends IProgress<
 	IProgressLinearProps,
 	TProgressLinearEvents,
 	TProgressLinearStates
 > {
-	/** Сколько готово */
-	value: number
-	/** Начало шкалы */
-	min: number
-	/** Конец шкалы */
-	max: number
-	/** Доля неизвестна — полоса бежит, `value` при этом хранится */
-	indeterminate: boolean
 	/** Ось полосы */
 	orientation: TProgressLinearOrientation
 	/**

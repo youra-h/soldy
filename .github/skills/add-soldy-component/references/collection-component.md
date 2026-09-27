@@ -203,6 +203,12 @@ export class TTabsItemCollectionFacade extends TOrderItemFacade<
   set active(value: boolean) {
     if (this._context) this._context.adapters.activation.active = value
   }
+
+  // Prop of the facade — prefixed: the tab has its own `closable`, and the two
+  // objects merge in the markup. Named as the prop, so the adapter state types know it
+  get tab_closable(): boolean {
+    return this._context?.adapters.tabs.closable ?? false
+  }
 }
 ```
 
@@ -220,7 +226,7 @@ declared inline in `contribution`; owner-level and item-level descriptors are se
 - Owner-level `TabsCollectionDescriptor`: `activeItem` (`protected: true`, triggers
   `change:activation`) + events `item:activated` / `item:deactivated` / `item:close`.
 - Item-level `TabsCollectionItemDescriptor`: `active`, `order` (protected), `tab_closable`
-  (protected, via `get`).
+  (protected — the facade getter of the same name, like `content_aria` on Accordion).
 
 ```ts
 export const TabsCollectionDescriptor = defineDescriptor(() =>
@@ -241,12 +247,7 @@ export const TabsCollectionItemDescriptor = defineDescriptor(() =>
       props: {
         active: { type: Boolean, triggers: ['change:active'] },
         order: { type: Number, protected: true, triggers: ['change:order'] },
-        tab_closable: {
-          type: Boolean,
-          protected: true,
-          get: (item: TTabsItemCollectionFacade) => item.closable,
-          triggers: ['change:closable'],
-        },
+        tab_closable: { type: Boolean, protected: true, triggers: ['change:closable'] },
       },
     },
   }),
@@ -297,7 +298,11 @@ They are installed on the owner component; the engine is bound from the adapter 
 - `TCollectionItemExtension` (item) — reads `ITEM_CONTEXT_ELEVATOR` (up), builds the
   `TItemContext` and takes the register callback from `COLLECTION_ENGINE_ELEVATOR`. The item enters
   the collection on the context's `attach` — `(item, bundle)` registration and `meta` — which the
-  adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit.
+  adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit. The
+  `TItemContext` belongs to this one mount: `destroy` detaches it from the facade
+  (`clearContext`) and releases its item adapters (`release`), the item itself stays as it is.
+  Don't hand a mount a context from `TItemContextRegistry` — the registry is for code that needs
+  contexts for the engine's whole life (AGENTS.md, «Контекст элемента живёт одно монтирование»).
 
 ## Vue wiring
 

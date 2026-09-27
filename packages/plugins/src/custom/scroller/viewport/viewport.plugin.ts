@@ -2,15 +2,22 @@ import type { IScroller, TScrollerDirection } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
-import { itemOf, scrollWindowOf, tabStops } from '../../../utils'
+import { isFocusableElement, itemOf, scrollWindowOf, tabStops } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import { resolveEdges } from './edges'
 import { resolveFocusShift } from './focus'
 import type { TScrollerViewportPluginEvents } from './types'
 
+/** Часть разметки — кнопка, которая листает в эту сторону. */
+const BUTTON_PART: Record<TScrollerDirection, string> = { prev: '__prev', next: '__next' }
+
+/** Сторона напротив. */
+const OPPOSITE: Record<TScrollerDirection, TScrollerDirection> = { prev: 'next', next: 'prev' }
+
 /**
- * TScrollerViewportPlugin — вьюпорт ленты: замер краёв, само листание и
- * доводка элемента под фокусом в окно снапа.
+ * TScrollerViewportPlugin — вьюпорт ленты: замер краёв, само листание,
+ * доводка элемента под фокусом в окно снапа и фокус кнопки, выключенной у
+ * края.
  *
  * Плагин, а не расширение или разметка: и то, и другое здесь — операции над
  * DOM. Где сейчас лента, сколько у неё содержимого и есть ли внутри свои
@@ -54,6 +61,21 @@ import type { TScrollerViewportPluginEvents } from './types'
  *   подписи не скажет, какой тег он закроет. Точка — потому что снап
  *   действует и на программную прокрутку; ближайшая — потому что с одним
  *   «начало к началу» крестик в конце длинного тега остался бы за краем.
+ *
+ * **Фокус у края.** Когда лента доезжает до края, кнопка этой стороны
+ * выключается нативным `disabled`, и если фокус был на ней, браузер
+ * сбрасывает его на страницу: пользователь клавиатуры и скринридера теряет
+ * место и кольцо фокуса. Поэтому плагин отдаёт такой фокус кнопке напротив.
+ * Край, от которого ушли, к этому моменту уже открыт: пользователь остаётся у
+ * ленты, и прокрутка не меняется. Отдаёт кадром позже: в одном замере один
+ * край закрывается, а другой открывается, и кнопку напротив включает только
+ * перерисовка адаптера. Фокус, который за этот кадр увели на другой элемент,
+ * плагин не трогает, а у выключенной ленты отдать его некому.
+ *
+ * Не режим `Button` «выключена, но фокусируема» (`aria-disabled` вместо
+ * нативного `disabled`): это новая поверхность общего компонента ради правила
+ * фокуса одной ленты. И не элемент ленты: остановка ряда тегов бывает за
+ * краем, и фокус на ней прокрутил бы ленту обратно.
  */
 export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerViewportPluginEvents> {
 	private _owner: IScroller | null = null
@@ -62,6 +84,8 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 	private _resize: ResizeObserver | null = null
 	private _mutation: MutationObserver | null = null
 	private _frame: number | null = null
+	/** Кадр, в котором фокус уйдёт от выключенной кнопки к кнопке напротив. */
+	private _handoverFrame: number | null = null
 
 	/**
 	 * Узлы под наблюдением размера — вьюпорт и его прямые дети.
@@ -87,12 +111,21 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		this._listenTo(this._owner?.events, 'scroll:request', (direction: TScrollerDirection) =>
 			this._scroll(direction),
 		)
+
+		// Край закрылся — кнопку этого края выключат вместе с фокусом на ней
+		this._listenTo(this._owner?.events, 'change:canPrev', (open: boolean) => {
+			if (!open) this._onEdgeClosed('prev')
+		})
+		this._listenTo(this._owner?.events, 'change:canNext', (open: boolean) => {
+			if (!open) this._onEdgeClosed('next')
+		})
 	}
 
 	override destroy(): void {
 		this._unlisten()
 		this._disconnect()
 		this._cancel()
+		this._cancelHandover()
 
 		this._resize?.disconnect()
 		this._resize = null
@@ -110,6 +143,8 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		this._unlisten()
 		this._disconnect()
 		this._cancel()
+		// Кнопка, от которой ждали фокус, осталась в старом корне
+		this._cancelHandover()
 
 		this._root = root
 		this._viewport = root?.querySelector(this._selector('__viewport')) ?? null
@@ -295,6 +330,80 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 		if (shift !== null) viewport.scrollBy({ left: shift, behavior: 'instant' })
 	}
 
+	/**
+	 * Край закрылся. Если фокус на кнопке этого края, её выключит перерисовка,
+	 * и браузер сбросит фокус на страницу, — кадром позже его заберёт кнопка
+	 * напротив (почему так — в описании плагина).
+	 */
+	private _onEdgeClosed(edge: TScrollerDirection): void {
+		const active = this._root?.ownerDocument.activeElement ?? null
+		const button = active?.closest(this._selector(BUTTON_PART[edge])) ?? null
+
+		if (button === null || !this._owns(button)) return
+
+		this._cancelHandover()
+		this._handoverFrame = requestAnimationFrame(() => {
+			this._handoverFrame = null
+			this._handOver(edge, button)
+		})
+	}
+
+	/**
+	 * Отдать фокус кнопке напротив, если у него не осталось места.
+	 *
+	 * Без места он в двух случаях: браузер сбросил его на страницу или оставил
+	 * на выключенной кнопке. Если же край за кадр открылся снова, кнопка жива,
+	 * и фокус на ней остаётся.
+	 */
+	private _handOver(edge: TScrollerDirection, stranded: Element): void {
+		const owner = this._owner
+		const root = this._root
+
+		if (!owner || !root) return
+
+		const doc = root.ownerDocument
+		const active = doc.activeElement
+
+		if (stranded.contains(active)) {
+			// Фокус ещё на кнопке: отдаём, только если она по-прежнему выключена
+			if (!isButtonDisabled(owner, edge)) return
+		} else if (active !== null && active !== doc.body && active !== doc.documentElement) {
+			// За кадр фокус увели на другой элемент — там ему и быть
+			return
+		}
+
+		const opposite = OPPOSITE[edge]
+
+		// Выключена и кнопка напротив: выключена вся лента или листать стало
+		// нечего — отдать фокус некому
+		if (isButtonDisabled(owner, opposite)) return
+
+		const button = this._button(opposite)
+
+		if (isFocusableElement(button)) button.focus()
+	}
+
+	private _cancelHandover(): void {
+		if (this._handoverFrame === null) return
+
+		cancelAnimationFrame(this._handoverFrame)
+		this._handoverFrame = null
+	}
+
+	/**
+	 * Кнопка этой ленты, а не первая по селектору: у вложенной ленты кнопки с
+	 * тем же классом, и лежат они в нашем вьюпорте.
+	 */
+	private _button(side: TScrollerDirection): Element | null {
+		const selector = this._selector(BUTTON_PART[side])
+
+		for (const node of this._root?.querySelectorAll(selector) ?? []) {
+			if (this._owns(node)) return node
+		}
+
+		return null
+	}
+
 	private _owns(node: Element | null): boolean {
 		if (node === null) return false
 
@@ -305,6 +414,15 @@ export class TScrollerViewportPlugin extends TBasePlugin<IScroller, TScrollerVie
 	private _selector(part: string): string {
 		return this._owner?.classes.resolve(part, { point: true }) ?? ''
 	}
+}
+
+/**
+ * Выключена ли кнопка этой стороны — правилом ядра: выключена лента или
+ * упёрлись в край. Своего правила у плагина нет: второй экземпляр однажды
+ * разошёлся бы с тем, по которому кнопку выключает разметка.
+ */
+function isButtonDisabled(owner: IScroller, side: TScrollerDirection): boolean {
+	return side === 'prev' ? owner.prevDisabled : owner.nextDisabled
 }
 
 /**

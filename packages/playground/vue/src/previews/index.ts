@@ -16,6 +16,7 @@ import {
 	ListBox,
 	Popover,
 	ProgressLinear,
+	ProgressSpinner,
 	RadioGroup,
 	Scroller,
 	Select,
@@ -355,6 +356,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 	 */
 	'progress-linear': (bind) =>
 		h('div', { style: 'width:100%' }, [h(ProgressLinear, { aria_label: 'Загрузка', ...bind })]),
+
+	/**
+	 * Кольцо строчное и своего размера, как Spinner: обёртка по ширине ему не
+	 * нужна. По умолчанию оно пусто — доля ноль, а бег — флаг
+	 * `indeterminate`. Имя превью даёт пропом, как полосе.
+	 */
+	'progress-spinner': (bind) => h(ProgressSpinner, { aria_label: 'Загрузка', ...bind }),
 
 	skeleton: (bind) => h(Skeleton, { width: 160, height: 16, ...bind }),
 

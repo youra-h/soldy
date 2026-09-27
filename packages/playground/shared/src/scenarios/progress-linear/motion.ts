@@ -1,25 +1,5 @@
+import { LOADING, LOADING_PROPS, REDUCE, VERDICT, loadingCycle } from '../progress-motion'
 import type { TScenario } from '../types'
-
-/** Значение под бегом «Загрузки»: к этой доле полоса придёт, когда бег снимут. */
-const HELD = 40
-
-/** Доли после бега — шагами до конца шкалы. */
-const STEPS = [55, 70, 85, 100] as const
-
-/** Сколько держать бег, мс. */
-const RUN_HOLD = 3000
-
-/** Сколько держать каждую долю, мс. */
-const STEP_HOLD = 800
-
-/** Сколько держать полную полосу перед новым бегом, мс. */
-const DONE_HOLD = 1500
-
-/** Последний шаг любого сценария темы. */
-const VERDICT = 'Всё так — ✓, иначе ✗'
-
-/** Просьба системы убрать движение — как её включить на стенде. */
-const REDUCE = 'DevTools → Rendering → prefers-reduced-motion: reduce'
 
 /**
  * Движение ProgressLinear — то, что оценивает только глаз: ровность и
@@ -28,7 +8,8 @@ const REDUCE = 'DevTools → Rendering → prefers-reduced-motion: reduce'
  * едет переходом (`playground/vue/browser/progress-linear.spec.ts`); плавно
  * ли это, видно только на сцене.
  *
- * Все ручные и на превью, без фикстур: слотов у полосы нет.
+ * Все ручные и на превью, без фикстур: слотов у полосы нет. Цикл «Загрузки» —
+ * общий с кольцом (`progress-motion.ts`).
  */
 export const PROGRESS_LINEAR_MOTION: readonly TScenario[] = [
 	{
@@ -85,36 +66,14 @@ export const PROGRESS_LINEAR_MOTION: readonly TScenario[] = [
 		title: 'Загрузка',
 		description:
 			'Цикл загрузки по кругу: бег, потом доля растёт от нуля и шагами доходит до конца, и снова бег',
-		props: { value: HELD, indeterminate: true },
+		props: LOADING_PROPS,
 		steps: [
-			`Сцена по кругу: бег ${RUN_HOLD / 1000} с, под ним значение ${HELD}; бег снят — заливка растёт от нуля до ${HELD} %, а не возникает сразу; дальше шагами до 100 % и снова бег`,
+			`Сцена по кругу: бег ${LOADING.runHold / 1000} с, под ним значение ${LOADING.held}; бег снят — заливка растёт от нуля до ${LOADING.held} %, а не возникает сразу; дальше шагами до 100 % и снова бег`,
 			'Каждый шаг доли едет плавно и без рывков, заливка не отстаёт от шагов',
 			'Полная полоса читается как «готово», и бег с ней не путается',
 			`${REDUCE} — доля встаёт на каждый шаг сразу, бег тот же`,
 			VERDICT,
 		],
-		run: async (ctx) => {
-			// Круг за кругом, пока человек не поставит итог: отметка отменяет
-			// прогон, и `pause` обрывает цикл. Сам цикл не кончается — иначе
-			// сценарий засчитался бы без человека
-			while (!ctx.signal.aborted) {
-				// Бег поверх значения: доли на полосе нет, а значение хранится
-				ctx.instance.value = HELD
-				ctx.instance.indeterminate = true
-				await ctx.pause(RUN_HOLD)
-
-				// Бег снят — заливка идёт от нуля к значению, которое держалось
-				// под ним
-				ctx.instance.indeterminate = false
-				await ctx.pause(STEP_HOLD)
-
-				for (const value of STEPS) {
-					ctx.instance.value = value
-					await ctx.pause(STEP_HOLD)
-				}
-
-				await ctx.pause(DONE_HOLD)
-			}
-		},
+		run: loadingCycle,
 	},
 ]

@@ -11,11 +11,16 @@
  * `ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref`
  * потребителя из его атрибутов выбил бы привязку корня к `TElementPlugin` —
  * не было бы `element:ready`.
+ *
+ * Элемент коллекции (`Tabs.Item`, `Accordion.Item`) делит атрибуты
+ * потребителя, как у Vue: класс и стиль — корню, остальное — строке, поверх её
+ * набора `aria`. Корень остаётся за адаптером и у него.
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { createRef, type ComponentType } from 'react'
+import { createRef, type ComponentType, type ReactNode } from 'react'
 import {
+	Accordion,
 	Button,
 	ComponentView,
 	Frame,
@@ -23,6 +28,9 @@ import {
 	Label,
 	Skeleton,
 	Spinner,
+	Tabs,
+	type AccordionItemProps,
+	type AccordionProps,
 	type ButtonProps,
 	type ComponentViewProps,
 	type FrameProps,
@@ -30,17 +38,32 @@ import {
 	type LabelProps,
 	type SkeletonProps,
 	type SpinnerProps,
+	type TabsContentProps,
+	type TabsItemProps,
+	type TabsProps,
 } from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
-/** Общие пропсы строки таблицы: направление и колбэк готовности есть у всех семи. */
+/** Общие пропсы строки таблицы: направление и колбэк готовности есть у всех. */
 type TProbeProps = ButtonProps &
 	ComponentViewProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
 	SkeletonProps &
-	SpinnerProps
+	SpinnerProps &
+	TabsProps &
+	AccordionProps &
+	TabsContentProps
+
+/** Панель рисуется, пока активен её таб, — и только внутри набора. */
+function TabsContentProbe(props: TabsContentProps): ReactNode {
+	return (
+		<Tabs content={<Tabs.Content value="a" {...props} />}>
+			<Tabs.Item value="a" text="A" active />
+		</Tabs>
+	)
+}
 
 /**
  * Компонент, класс его корня и пропсы, без которых он не рисуется: у Icon
@@ -57,6 +80,36 @@ const COMPONENTS: ReadonlyArray<
 	['Label', Label, '.s-label', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
 	['Spinner', Spinner, '.s-spinner', {}],
+	['Tabs', Tabs, '.s-tabs', {}],
+	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
+	['Accordion', Accordion, '.s-accordion', {}],
+]
+
+/** Общие пропсы элементов коллекций в таблице. */
+type TItemProbeProps = TabsItemProps & AccordionItemProps
+
+/** Таб — в наборе: `id` строке пишет коллекция. */
+function TabsItemProbe(props: TabsItemProps): ReactNode {
+	return (
+		<Tabs>
+			<Tabs.Item value="a" text="A" active {...props} />
+		</Tabs>
+	)
+}
+
+/** Секция — в аккордеоне: `id` заголовку пишет коллекция. */
+function AccordionItemProbe(props: AccordionItemProps): ReactNode {
+	return (
+		<Accordion>
+			<Accordion.Item value="a" text="A" {...props} />
+		</Accordion>
+	)
+}
+
+/** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
+const ITEMS: ReadonlyArray<readonly [string, ComponentType<TItemProbeProps>, string, string]> = [
+	['Tabs.Item', TabsItemProbe, '.s-tabs-item', '.s-tabs-item [role="tab"]'],
+	['Accordion.Item', AccordionItemProbe, '.s-accordion-item', '.s-accordion-item__header'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -91,6 +144,23 @@ describe('атрибут снаружи перекрывает набор ядр
 	})
 })
 
+describe('элемент коллекции: атрибуты снаружи — строке, поверх её aria', () => {
+	/** `id` строке пишет коллекция при входе элемента — связка с панелью. */
+	it.each(ITEMS)('%s: id потребителя — поверх id коллекции', (_name, Probe, _root, row) => {
+		mount(<Probe id="mine" />)
+
+		expect(find(document, row, HTMLElement).id).toBe('mine')
+	})
+
+	it.each(ITEMS)('%s: класс и стиль — корню, а не строке', (_name, Probe, root, row) => {
+		mount(<Probe className="mine" style={{ color: 'red' }} />)
+
+		expect(find(document, root, HTMLElement).classList.contains('mine')).toBe(true)
+		expect(find(document, root, HTMLElement).style.color).toBe('red')
+		expect(find(document, row, HTMLElement).classList.contains('mine')).toBe(false)
+	})
+})
+
 describe('ref потребителя не выбивает привязку корня к TElementPlugin', () => {
 	it.each(COMPONENTS)(
 		'%s: element:ready приходит с корнем',
@@ -105,4 +175,15 @@ describe('ref потребителя не выбивает привязку ко
 			expect(onElementReady).toHaveBeenCalledWith(find(document, selector, HTMLElement))
 		},
 	)
+
+	it.each(ITEMS)('%s: element:ready приходит с корнем элемента', async (_name, Probe, root) => {
+		const onElementReady = vi.fn()
+		// `ref` уходит строке вместе с остальными атрибутами, корень — за адаптером
+		const attributes: Record<string, unknown> = { ref: createRef() }
+
+		mount(<Probe {...attributes} onElementReady={onElementReady} />)
+		await nextFrame()
+
+		expect(onElementReady).toHaveBeenCalledWith(find(document, root, HTMLElement))
+	})
 })
