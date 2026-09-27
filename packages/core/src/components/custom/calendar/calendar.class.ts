@@ -41,14 +41,14 @@ export default class TCalendar
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<
 			ICalendarProps,
-			'locale' | 'prevLabel' | 'nextLabel',
-			'min' | 'max' | 'unavailable' | 'weekStart' | 'timeZone' | 'months'
+			'weekStart' | 'locale' | 'prevLabel' | 'nextLabel',
+			'min' | 'max' | 'unavailable' | 'timeZone' | 'months'
 		> = {
 		...TValueControl.defaultValues,
 		min: undefined,
 		max: undefined,
 		unavailable: undefined,
-		// Не задан — первый день недели даёт `locale`
+		// Неделя с понедельника, как у ISO 8601; локаль её не меняет
 		weekStart: 1,
 		locale: DEFAULT_LOCALE,
 		timeZone: undefined,
@@ -62,7 +62,7 @@ export default class TCalendar
 	protected _min: TCalendarDate | undefined
 	protected _max: TCalendarDate | undefined
 	protected _unavailable: TCalendarUnavailable | undefined
-	protected _weekStart: TWeekday | undefined
+	protected _weekStart: TWeekday
 	protected _locale: string
 	protected _timeZone: string | undefined
 	protected _months: TCalendarDate[] | undefined
@@ -129,12 +129,12 @@ export default class TCalendar
 		this.events.emit('change:unavailable', value)
 	}
 
-	/** Не целое от 0 до 6 — как не задан: первый день даёт локаль. */
-	get weekStart(): TWeekday | undefined {
+	/** Первый день недели: 0 — воскресенье … 6 — суббота. */
+	get weekStart(): TWeekday {
 		return this._weekStart
 	}
 
-	set weekStart(value: TWeekday | undefined) {
+	set weekStart(value: TWeekday) {
 		if (this._weekStart === value) return
 
 		this._weekStart = value
@@ -218,7 +218,7 @@ export default class TCalendar
 	}
 
 	get firstDay(): TWeekday {
-		return isWeekday(this._weekStart) ? this._weekStart : calendarLocale(this._locale).firstDay
+		return isWeekday(this._weekStart) ? this._weekStart : TCalendar.defaultValues.weekStart
 	}
 
 	/** Дни недели от первого: короткое имя — подпись колонки, полное — для скринридера. */

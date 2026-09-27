@@ -82,12 +82,12 @@ afterEach(() => {
 
 describe('высота месяца', () => {
 	/**
-	 * Февраль 2026 с воскресенья — ровно четыре недели, август — шесть. Ряд
+	 * Февраль 2027 с понедельника — ровно четыре недели, август — шесть. Ряд
 	 * заголовков у соседей один, и недели у них стоят вровень, только если
 	 * месяц держит место под шесть недель при любой своей длине.
 	 */
 	it('месяцы в четыре и шесть недель одной высоты', async () => {
-		await show({ months: ['2026-02-01', '2026-08-01'] })
+		await show({ months: ['2027-02-01', '2027-08-01'] })
 
 		const [february, august] = findAll('.s-calendar__month')
 
@@ -101,13 +101,13 @@ describe('высота месяца', () => {
 	})
 
 	it('листание по месяцам разной длины не меняет высоту календаря', async () => {
-		await show({ months: ['2026-02-01'] })
+		await show({ months: ['2027-02-01'] })
 
 		const root = find('.s-calendar')
 		const height = root.getBoundingClientRect().height
 
 		// Март — пять недель, апрель — пять, май — шесть
-		for (const title of ['March 2026', 'April 2026', 'May 2026']) {
+		for (const title of ['March 2027', 'April 2027', 'May 2027']) {
 			find('.s-calendar__next').click()
 			await expect.poll(titles).toEqual([title])
 

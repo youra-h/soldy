@@ -80,7 +80,7 @@ function weekdayName(locale: string, day: number): string {
 }
 
 describe('без аргументов', () => {
-	it('владелец: ничего не выбрано, английская локаль, колонки en-US — с воскресенья', () => {
+	it('владелец: ничего не выбрано, английская локаль, колонки — с понедельника', () => {
 		const owner = new TCalendar()
 
 		expect(owner.value).toBeUndefined()
@@ -88,7 +88,8 @@ describe('без аргументов', () => {
 		expect(owner.months).toBeUndefined()
 		expect(owner.classes.toArray()).toContain('s-calendar')
 		expect(owner.weekdays).toHaveLength(7)
-		expect(owner.weekdays[0].long).toBe(weekdayName('en-US', 0))
+		expect(owner.weekStart).toBe(1)
+		expect(owner.weekdays[0].long).toBe(weekdayName('en-US', 1))
 	})
 
 	it('коллекция: одна сетка на сегодняшнем месяце, в ней дни месяца, фокус — сегодня', () => {
@@ -137,13 +138,13 @@ describe('вид: месяцы сеток', () => {
 		const cells = grid.weeks.flat()
 		const fillers = cells.filter((cell) => cell.item === undefined)
 
-		// Сентябрь 2026 с воскресенья: 2 дня августа в начале, 3 дня октября в конце
+		// Сентябрь 2026 с понедельника: день августа в начале, 4 дня октября в конце
 		expect(fillers.map((cell) => cell.date)).toEqual([
-			'2026-08-30',
 			'2026-08-31',
 			'2026-10-01',
 			'2026-10-02',
 			'2026-10-03',
+			'2026-10-04',
 		])
 		expect(fillers.every((cell) => cell.aria['aria-hidden'] === 'true')).toBe(true)
 		expect(cells.filter((cell) => cell.item).map((cell) => cell.item?.date)).toEqual(
@@ -714,6 +715,9 @@ describe('запомненное не отстаёт от данных', () => {
 				timeZone: 'UTC',
 			}).format(Date.UTC(2026, 8, 1)),
 		)
+
+		// Локаль неделю не меняет: и у en-US, и у ru-RU она с понедельника
+		expect(setup.collection.grids[0].weeks[0][0].date).toBe('2026-08-31')
 
 		// Сентябрь 2026 начинается во вторник
 		setup.owner.weekStart = 2

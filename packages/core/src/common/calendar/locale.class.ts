@@ -1,5 +1,4 @@
 import { addDays, utcDateOf } from './date'
-import { firstDayOfWeek } from './week'
 import type { ICalendarLocale, TCalendarDate, TWeekday, TWeekdayWidth } from './types'
 
 /**
@@ -23,7 +22,7 @@ const DAY: Intl.DateTimeFormatOptions = { day: 'numeric' }
 const FULL: Intl.DateTimeFormatOptions = { dateStyle: 'full' }
 
 /**
- * Локаль календаря: канонический тег, первый день недели и подписи.
+ * Локаль календаря: канонический тег и подписи.
  *
  * Форматтеры создаются при первом обращении, а не при загрузке модуля, и
  * живут вместе с объектом — а он один на тег (`calendarLocale`). Каждый
@@ -36,14 +35,12 @@ const FULL: Intl.DateTimeFormatOptions = { dateStyle: 'full' }
  */
 export class TCalendarLocale implements ICalendarLocale {
 	readonly locale: string
-	readonly firstDay: TWeekday
 	readonly calendar: string
 	private readonly _formatters = new Map<string, Intl.DateTimeFormat>()
 
 	/** @param tag тег локали; невалидный и пустой — `en-US` */
 	constructor(tag: string | undefined) {
 		this.locale = canonicalTag(tag)
-		this.firstDay = firstDayOfWeek(this.locale)
 		this.calendar = labelCalendar(this.locale)
 	}
 

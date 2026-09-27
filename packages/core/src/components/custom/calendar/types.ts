@@ -49,7 +49,7 @@ export type TCalendarEvents = TValueControlEvents<TCalendarValue> & {
 	/** change:unavailable */
 	'change:unavailable': (value: TCalendarUnavailable | undefined) => void
 	/** change:weekStart */
-	'change:weekStart': (value: TWeekday | undefined) => void
+	'change:weekStart': (value: TWeekday) => void
 	/** change:locale */
 	'change:locale': (value: string) => void
 	/** change:timeZone */
@@ -70,9 +70,9 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 	max?: TCalendarDate
 	/** Недоступные дни: фокус на них встаёт, выбор — нет */
 	unavailable?: TCalendarUnavailable
-	/** Первый день недели; не задан — по локали */
+	/** Первый день недели: 0 — воскресенье … 6 — суббота; не задан — понедельник */
 	weekStart?: TWeekday
-	/** Локаль подписей и первого дня недели (BCP 47) */
+	/** Локаль подписей (BCP 47) */
 	locale?: string
 	/** Часовой пояс «сегодня» (IANA); не задан — пояс среды */
 	timeZone?: string
@@ -98,8 +98,8 @@ export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps,
 	max: TCalendarDate | undefined
 	/** Недоступные дни */
 	unavailable: TCalendarUnavailable | undefined
-	/** Первый день недели; `undefined` — по локали */
-	weekStart: TWeekday | undefined
+	/** Первый день недели */
+	weekStart: TWeekday
 	/** Локаль */
 	locale: string
 	/** Часовой пояс «сегодня» */
@@ -110,7 +110,7 @@ export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps,
 	prevLabel: string
 	/** Имя кнопки «следующий месяц» */
 	nextLabel: string
-	/** Первый день недели: `weekStart`, а без него — по локали */
+	/** Первый день недели: `weekStart`, а значение вне 0–6 — понедельник */
 	readonly firstDay: TWeekday
 	/** Дни недели — заголовки колонок, от первого дня недели */
 	readonly weekdays: TCalendarWeekday[]

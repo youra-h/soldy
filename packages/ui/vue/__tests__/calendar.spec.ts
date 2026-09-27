@@ -93,13 +93,13 @@ describe('разметка', () => {
 			['s-calendar__prev', 's-calendar__next', 's-calendar__month'],
 		)
 		expect(findAll('.s-calendar__weekday').map((cell) => cell.textContent?.trim())).toEqual([
-			'Sun',
 			'Mon',
 			'Tue',
 			'Wed',
 			'Thu',
 			'Fri',
 			'Sat',
+			'Sun',
 		])
 		expect(find('.s-calendar__grid thead').getAttribute('aria-hidden')).toBe('true')
 	})
@@ -123,7 +123,7 @@ describe('разметка', () => {
 		const fillers = findAll('.s-calendar__filler')
 		const days = findAll('.s-calendar-item')
 
-		// Сентябрь 2026 с воскресенья: 2 дня августа, 3 дня октября
+		// Сентябрь 2026 с понедельника: день августа, 4 дня октября
 		expect(fillers).toHaveLength(5)
 		expect(fillers.every((cell) => cell.getAttribute('aria-hidden') === 'true')).toBe(true)
 		expect(fillers.every((cell) => cell.textContent === '')).toBe(true)

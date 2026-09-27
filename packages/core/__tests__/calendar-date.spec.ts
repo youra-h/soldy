@@ -23,7 +23,7 @@ import type { TCalendarDate, TWeekday } from '../src/common/calendar'
 
 /**
  * Расчёт дат календаря — `common/calendar`: разбор, сдвиги, недели, сетка
- * месяца, «сегодня» в часовом поясе, первый день недели и подписи локали.
+ * месяца, «сегодня» в часовом поясе и подписи локали.
  *
  * Строки Intl сверяются с тем же форматтером, а не с литералом: ICU разных
  * версий Node пишет их по-разному. Оракул дней — `Date` через
@@ -295,40 +295,10 @@ describe('сетка месяца', () => {
 	})
 })
 
-describe('первый день недели', () => {
-	it('по региону локали: en-US — воскресенье, ru — понедельник', () => {
-		expect(calendarLocale('en-US').firstDay).toBe(0)
-		expect(calendarLocale('en').firstDay).toBe(0)
-		expect(calendarLocale('ru').firstDay).toBe(1)
-		expect(calendarLocale('ru-RU').firstDay).toBe(1)
-	})
-
-	it('по региону из каждой группы таблицы', () => {
-		expect(calendarLocale('es-MX').firstDay).toBe(0)
-		expect(calendarLocale('dv-MV').firstDay).toBe(5)
-		expect(calendarLocale('ar-EG').firstDay).toBe(6)
-		// Регион выведен из языка: fa → IR
-		expect(calendarLocale('fa').firstDay).toBe(6)
-		// Регионов понедельника в таблице нет
-		expect(calendarLocale('de-DE').firstDay).toBe(1)
-		expect(calendarLocale('en-001').firstDay).toBe(1)
-	})
-
-	it('ключ -u-fw- главнее региона', () => {
-		expect(calendarLocale('en-US-u-fw-mon').firstDay).toBe(1)
-		expect(calendarLocale('ru-RU-u-fw-sun').firstDay).toBe(0)
-		expect(calendarLocale('ar-EG-u-ca-gregory-fw-thu').firstDay).toBe(4)
-		expect(calendarLocale('EN-us-U-FW-SAT').firstDay).toBe(6)
-		// Неизвестное значение ключа — как без ключа
-		expect(calendarLocale('en-US-u-fw-xyz').firstDay).toBe(0)
-	})
-
+describe('локаль', () => {
 	it('невалидная и пустая локаль — умолчание en-US, а не исключение', () => {
 		for (const tag of ['not a locale!', '', undefined]) {
-			const locale = calendarLocale(tag)
-
-			expect(locale.locale, String(tag)).toBe('en-US')
-			expect(locale.firstDay).toBe(0)
+			expect(calendarLocale(tag).locale, String(tag)).toBe('en-US')
 		}
 	})
 
