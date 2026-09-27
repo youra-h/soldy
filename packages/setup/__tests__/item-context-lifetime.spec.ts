@@ -35,6 +35,10 @@ import {
 	AccordionCollectionItemDescriptor,
 	AccordionDescriptor,
 	AccordionItemDescriptor,
+	CalendarCollectionDescriptor,
+	CalendarCollectionItemDescriptor,
+	CalendarDescriptor,
+	CalendarItemDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
 	ListBoxDescriptor,
@@ -231,6 +235,24 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 }
 
 /**
+ * Коллекции, у которых элемента из разметки нет: состав кладёт сама коллекция.
+ * Дни календаря кладёт вид по месяцам сеток, `items` у него не принимается, а
+ * день монтируется только над элементом из состава (`ctrl`).
+ */
+const DATA_ONLY: Readonly<Record<string, TCollectionKit>> = {
+	CalendarCollectionItemDescriptor: {
+		list: () => mountList(CalendarDescriptor(), CalendarCollectionDescriptor(), []),
+		item: (elevator, source) =>
+			mountItem(
+				CalendarItemDescriptor(),
+				CalendarCollectionItemDescriptor(),
+				elevator,
+				source,
+			),
+	},
+}
+
+/**
  * Фасады, чей контекст берут не через вход в коллекцию: панель таба в
  * коллекцию не входит, а берёт контекст таба с тем же `value`.
  */
@@ -258,7 +280,9 @@ describe('сторож: элемент коллекции освобождает
 			)
 			.map(([name]) => name)
 
-		expect([...Object.keys(COLLECTIONS), ...PANELS].sort()).toEqual(facades.sort())
+		expect([...Object.keys(COLLECTIONS), ...Object.keys(DATA_ONLY), ...PANELS].sort()).toEqual(
+			facades.sort(),
+		)
 	})
 
 	it('шпионы видят подписки item-адаптеров: у ListBox — выбор, порядок и список', () => {
@@ -299,6 +323,19 @@ describe('сторож: элемент коллекции освобождает
 
 			expect(leftovers(spies)).toEqual([])
 			expect(engine.extensions.batch.items).toEqual([])
+		})
+	})
+
+	describe.each(Object.entries(DATA_ONLY))('%s', (_name, kit) => {
+		it('элемент из данных: после размонтирований подписок нет ни на движке, ни на элементе', () => {
+			const { engine, elevator } = kit.list([])
+			const item = firstOf(engine)
+			const spies = [...spyEngine(engine), ...spyBus('элемент', item)]
+
+			for (let i = 0; i < MOUNTS; i++) cycle(() => kit.item(elevator, { ctrl: item }))
+
+			expect(leftovers(spies)).toEqual([])
+			expect(engine.extensions.batch.items).toContain(item)
 		})
 	})
 })

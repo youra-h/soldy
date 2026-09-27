@@ -4,6 +4,7 @@ import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
 	ComponentView,
 	Dialog,
@@ -223,6 +224,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 		h(Select as Component, { placeholder: 'Выберите', editable: true, ...bind }, () =>
 			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 		),
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
+	// сеток. Локаль — язык браузера: языка интерфейса библиотека не знает, и
+	// без неё календарь рисует `en-US` с неделей от воскресенья. Проп строки
+	// её перекрывает
+	calendar: (bind) =>
+		h(Calendar as Component, { locale: globalThis.navigator.language, ...bind }),
 
 	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
 	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус

@@ -1,4 +1,5 @@
 import {
+	acceptsEngine,
 	isEmptyField,
 	type TComponentEntry,
 	type TPluginPropAddress,
@@ -64,7 +65,9 @@ export function instanceSnippet(
 		case 'component':
 			return componentInstanceSnippet(entry, control.name, value, control.preset)
 		case 'collection':
-			return collectionInstanceSnippet(entry, control.name, value, control.preset)
+			return acceptsEngine(entry)
+				? collectionInstanceSnippet(entry, control.name, value, control.preset)
+				: collectionMarkupSnippet(entry, control.name, value, control.preset)
 		case 'plugin':
 			return pluginInstanceSnippet(entry, control.plugin, value, control.preset)
 	}
@@ -120,6 +123,35 @@ function collectionInstanceSnippet(
 		'',
 		'<template>',
 		`\t<${entry.label}${presetAttrs(preset)} :engine="engine" />`,
+		'</template>',
+	].join('\n')
+}
+
+/**
+ * Коллекционный проп коллекции, которая движка снаружи не берёт (календарь:
+ * дни кладёт в коллекцию его вид). Через инстанс до её фасада не дотянуться,
+ * и проп доносит разметка рядом с `ctrl` — так его передаёт и сам стенд
+ * (`PropRow.vue`, `acceptsEngine`).
+ */
+function collectionMarkupSnippet(
+	entry: TComponentEntry,
+	prop: string,
+	value: unknown,
+	preset?: Record<string, unknown>,
+): string {
+	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
+	const own = isEmptyField(value) ? '' : ` ${attr(prop, value)}`
+
+	return [
+		'<script setup lang="ts">',
+		`import { ${entry.label} } from '@soldy-ui/vue'`,
+		`import { ${ctor} } from '@soldy-ui/core'`,
+		'',
+		`const instance = new ${ctor}()`,
+		'</script>',
+		'',
+		'<template>',
+		`\t<${entry.label}${presetAttrs(preset)}${own} :ctrl="instance" />`,
 		'</template>',
 	].join('\n')
 }

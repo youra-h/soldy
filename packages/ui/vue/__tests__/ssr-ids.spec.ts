@@ -20,6 +20,7 @@ import { createSSRApp, h, type VNode } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import {
 	Accordion,
+	Calendar,
 	Input,
 	RadioGroup,
 	RadioGroupItem,
@@ -123,6 +124,18 @@ describe('автоматические id при гидратации', () => {
 		expect(attrs(client, '[aria-controls]', 'aria-controls')).toEqual(
 			attrs(server, '[aria-controls]', 'aria-controls'),
 		)
+	})
+
+	it('календарь: заголовки месяцев и имена сеток у сервера и браузера одни', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Calendar, { months: ['2026-09-01', '2026-10-01'] }),
+		)
+		const ids = attrs(client, '.s-calendar__title', 'id')
+
+		expect(warnings).toEqual([])
+		expect(ids).toEqual(attrs(server, '.s-calendar__title', 'id'))
+		expect(attrs(client, '[role="grid"]', 'aria-labelledby')).toEqual(ids)
+		expect(new Set(ids).size).toBe(2)
 	})
 
 	it('группа радио без своего имени: общий name у сервера и браузера один', async () => {

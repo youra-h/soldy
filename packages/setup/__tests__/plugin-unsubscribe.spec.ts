@@ -26,11 +26,13 @@
 import { describe, it, expect } from 'vitest'
 import {
 	TAccordion,
+	TCalendar,
 	TListBox,
 	TSelect,
 	TTabs,
 	TTags,
 	createEngineAccordion,
+	createEngineCalendar,
 	createEngineListBox,
 	createEngineSelect,
 	createEngineTabs,
@@ -72,6 +74,11 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 		const owner = new TAccordion()
 
 		return { owner, engine: createEngineAccordion({ owner }) }
+	},
+	CalendarDescriptor: () => {
+		const owner = new TCalendar()
+
+		return { owner, engine: createEngineCalendar({ owner }) }
 	},
 	ListBoxDescriptor: () => {
 		const owner = new TListBox()

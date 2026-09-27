@@ -18,3 +18,5 @@ export * from './classes'
 export * from './state-unit'
 export * from './states'
 export * from './scale'
+// Расчёт дат — внутренний: наружу только типы, которые называет API календаря
+export type { TCalendarDate, TWeekday, TDateUnit } from './calendar'

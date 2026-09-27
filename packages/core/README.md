@@ -56,4 +56,10 @@ engine.extensions.plain.events.on('item:remove:before', (e) => e.preventDefault(
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICENSE).
+
+The first day of the week by region, which the calendar uses when a locale does not name it, is
+[Unicode CLDR](https://cldr.unicode.org/) data — CLDR 48, `weekData.firstDay` of
+[cldr-json](https://github.com/unicode-org/cldr-json) 48.2.0, © Unicode, Inc., licensed under the
+[Unicode License v3](https://www.unicode.org/license.txt); its text ships with the package as
+`LICENSE-Unicode-3.0`. The package keeps only the regions whose week does not start on Monday.

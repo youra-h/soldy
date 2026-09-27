@@ -185,6 +185,62 @@ describe('правое-левое письмо', () => {
 	})
 })
 
+/**
+ * Кнопка, доехавшая до края, выключается нативным `disabled` — и если фокус
+ * был на ней, браузер сбрасывает его на страницу: пользователь клавиатуры и
+ * скринридера теряет место и кольцо фокуса. Плагин ленты отдаёт фокус кнопке
+ * напротив — край, от которого ушли, к этому моменту уже открыт.
+ *
+ * Листает клавиатура, как ходит пользователь: Enter по кнопке под фокусом.
+ */
+describe('кнопка, выключившаяся у края под фокусом', () => {
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: Enter по «вперёд» до края — фокус на «назад», а не на странице',
+		async (dir) => {
+			render(harness(NARROW, dir))
+
+			await settled(canNext, 'true')
+
+			next().focus()
+
+			// Каждое нажатие — страница: листаем, пока есть куда
+			let position = viewport().scrollLeft
+
+			for (let step = 0; canNext() === 'true'; step++) {
+				if (step === 10) throw new Error('лента не доехала до края')
+
+				// Прокрутка плавная, а снап доводит её в самом конце: ждём конца
+				const scrolled = new Promise((resolve) =>
+					viewport().addEventListener('scrollend', resolve, { once: true }),
+				)
+
+				await userEvent.keyboard('{Enter}')
+				await scrolled
+
+				position = viewport().scrollLeft
+
+				// Края замер пишет кадром позже, кнопки перерисовывает адаптер
+				await nextFrame()
+				await nextFrame()
+			}
+
+			expect(next().hasAttribute('disabled'), '«вперёд» на краю').toBe(true)
+
+			await expect.poll(() => document.activeElement, { message: 'фокус' }).toBe(prev())
+
+			// Кольцо на месте: фокус пришёл вслед за клавиатурой
+			expect(prev().matches(':focus-visible'), 'кольцо фокуса').toBe(true)
+
+			// Кнопка стоит снаружи вьюпорта: фокус на ней ленту не двигает
+			await nextFrame()
+			await nextFrame()
+
+			expect(viewport().scrollLeft, 'положение ленты').toBe(position)
+			expect(canNext(), 'лента у края').toBe('false')
+		},
+	)
+})
+
 describe('прокручиваемая область достижима с клавиатуры', () => {
 	/** Правило axe `scrollable-region-focusable`: у содержимого своих остановок нет. */
 	it('вьюпорт становится остановкой Tab', async () => {

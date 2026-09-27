@@ -1,4 +1,5 @@
 export * from './action'
+export * from './calendar'
 export * from './collection'
 export * from './component-view'
 export * from './dialog'
