@@ -17,6 +17,7 @@ import type {
 	TSliderStep,
 	TSliderStyle,
 	TSliderThumb,
+	TSliderTooltip,
 	TSliderValue,
 } from './types'
 
@@ -49,6 +50,11 @@ function within(value: number, low: number, high: number): number {
  * - Всё, что зависит от значения, разметка получает выходами — ручки, края
  *   заливки, метки: позиции CSS-переменными, состояния наборами `data-*`.
  *   Считать их в шести адаптерах значило бы шесть раз повторить одну формулу.
+ * - Подсказка со значением (`tooltip`) — разметка внутри ручки: ядро держит
+ *   режим, отдаёт его теме модификатором и решает, рисовать ли подсказку
+ *   (`tooltipRendered`). Когда её показывать в `auto`, решает тема по
+ *   наведению и нажатию ручки, её `data-dragging` и фокусу с клавиатуры:
+ *   наведения, нажатия и фокуса ядро не видит.
  *
  * **Значение хранится как задано**, итог отдаёт резольвер шкалы: прижатое к
  * границам, приведённое к шагу и упорядоченное. Поэтому порядок записи не
@@ -77,7 +83,8 @@ export default class TSlider
 			| 'marks'
 			| 'minStepsBetweenThumbs'
 			| 'snap'
-			| 'snapRadius',
+			| 'snapRadius'
+			| 'tooltip',
 			'origin' | 'thumbLabels'
 		> = {
 		...TValueControl.defaultValues,
@@ -99,6 +106,9 @@ export default class TSlider
 		// Зона метки — 16 px: шире притяжения поля с `<datalist>` в Chromium
 		// (5 px), но уже промежутка между метками на ползунке обычной длины
 		snapRadius: 8,
+		// Число у ручки нужно не всякому ползунку: значение часто стоит рядом
+		// своим полем или подписью
+		tooltip: 'none',
 	}
 
 	protected _min: number
@@ -114,6 +124,7 @@ export default class TSlider
 	protected _thumbLabels: string[] | undefined
 	protected _snap: TSlideSnap
 	protected _snapRadius: number
+	protected _tooltip!: TSliderTooltip
 	protected _dragging = false
 	protected _activeThumb: number | undefined = undefined
 	protected _gesture: TSliderGesture | undefined = undefined
@@ -146,6 +157,7 @@ export default class TSlider
 		this._snapRadius = props.snapRadius ?? ctor.defaultValues.snapRadius
 
 		this._applyOrientation(props.orientation ?? ctor.defaultValues.orientation)
+		this._applyTooltip(props.tooltip ?? ctor.defaultValues.tooltip)
 
 		// С первой отрисовки и значением `"false"`: тема отличает «не тянут»
 		// от «неприменимо»
@@ -298,6 +310,26 @@ export default class TSlider
 
 		this._snapRadius = value
 		this.events.emit('change:snapRadius', value)
+	}
+
+	get tooltip(): TSliderTooltip {
+		return this._tooltip
+	}
+
+	set tooltip(value: TSliderTooltip) {
+		if (this._tooltip === value) return
+
+		this._applyTooltip(value, this._tooltip)
+		this.events.emit('change:tooltip', value)
+	}
+
+	/**
+	 * Рисовать ли у ручек подсказку со значением. Когда её показывать в
+	 * `auto`, решает тема: наведения, нажатия и фокуса с клавиатуры ядро не
+	 * видит.
+	 */
+	get tooltipRendered(): boolean {
+		return this._tooltip !== 'none'
 	}
 
 	/** Идёт перетаскивание: с первого движения после нажатия до отпускания. */
@@ -536,6 +568,18 @@ export default class TSlider
 		this._orientation = newValue
 	}
 
+	/**
+	 * Режим подсказки — модификатором корня `--tooltip-<режим>`, с первой
+	 * отрисовки: по нему тема прячет подсказку `auto` в покое и держит место
+	 * под подсказку `always`. Не `data-tooltip`: по этому атрибуту рисуют свои
+	 * подсказки CSS-библиотеки (Bulma и другие), и на ползунке всплыла бы
+	 * чужая.
+	 */
+	protected _applyTooltip(newValue: TSliderTooltip, oldValue?: TSliderTooltip): void {
+		this._classes.swap({ prefix: '--tooltip-', oldValue, newValue })
+		this._tooltip = newValue
+	}
+
 	protected _setDragging(value: boolean): void {
 		if (this._dragging === value) return
 
@@ -686,6 +730,7 @@ export default class TSlider
 			thumbLabels: this._thumbLabels,
 			snap: this._snap,
 			snapRadius: this._snapRadius,
+			tooltip: this._tooltip,
 		}
 	}
 }

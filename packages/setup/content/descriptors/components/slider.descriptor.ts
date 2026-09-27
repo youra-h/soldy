@@ -4,8 +4,8 @@
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size,
  * variant, наборы, плагины element/ready/action/aria) и добавляет шкалу,
- * ось, метки, щелчок к меткам, имена ручек, выходы для разметки и плагины
- * указателя и клавиатуры.
+ * ось, метки, щелчок к меткам, имена ручек, подсказку со значением, выходы
+ * для разметки и плагины указателя и клавиатуры.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
@@ -45,7 +45,8 @@ export const SliderDescriptor = defineDescriptor(() =>
 						value: defineType<number>(Number),
 						index: defineType<number>(Number),
 					},
-					description: 'Содержимое ручки после поля — место под подсказку со значением',
+					description:
+						'Содержимое подсказки у ручки. По умолчанию — значение ручки; рисуется, только когда подсказка включена (tooltip)',
 				},
 			},
 			props: {
@@ -70,6 +71,13 @@ export const SliderDescriptor = defineDescriptor(() =>
 				 */
 				snap: { type: String, triggers: ['change:snap'] },
 				snapRadius: { type: Number, triggers: ['change:snapRadius'] },
+				/**
+				 * Подсказка со значением у ручки: режим и рисовать ли её. Второе
+				 * вычисляет ядро — разметка без экземпляра формулу не повторяет, —
+				 * а когда показывать в `auto`, решает тема.
+				 */
+				tooltip: { type: String, triggers: ['change:tooltip'] },
+				tooltipRendered: { type: Boolean, protected: true, triggers: ['change:tooltip'] },
 				/**
 				 * Ручки: значение, ход и шаг поля, позиция, `data-dragging` и имя.
 				 * Своего экземпляра у ручки нет — её наборы отдаются значением.

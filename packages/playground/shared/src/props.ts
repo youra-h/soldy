@@ -26,6 +26,7 @@ import {
 	SKELETON_SHAPES,
 	SLIDE_ORIENTATIONS,
 	SLIDE_SNAPS,
+	SLIDER_TOOLTIPS,
 	TABS_ALIGNMENTS,
 	TABS_ORIENTATIONS,
 	TABS_POSITIONS,
@@ -170,6 +171,8 @@ const OWN: Record<string, Record<string, string>> = {
 		minStepsBetweenThumbs: 'Наименьший зазор между соседними ручками — в шагах шкалы',
 		snap: 'Щелчок: как метки притягивают ручку, которую тянут. magnet — в радиусе метки ручка на ней, plateau — метка занимает два радиуса хода, settle — отпущенная рядом доезжает до метки, hold — стоит на пересечённой метке и догоняет указатель',
 		snapRadius: 'Радиус щелчка в px вдоль оси',
+		tooltip:
+			'Подсказка со значением у ручки: нет, видна, пока ручку наводят, держат, тянут или она в фокусе с клавиатуры (auto), или всегда',
 	},
 	popover: {
 		open: 'Открыта ли панель. Закрывают её крестик, Escape, нажатие и фокус мимо',
@@ -310,7 +313,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	},
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
-	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS },
+	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },

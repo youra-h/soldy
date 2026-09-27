@@ -35,6 +35,24 @@ export type TSliderMark = {
 export type TSliderMarks = boolean | TSliderMark[]
 
 /**
+ * Подсказка со значением у ручки:
+ *
+ * - `none` — подсказки нет (по умолчанию);
+ * - `auto` — видна, пока ручку наводят, держат, тянут или она в фокусе с
+ *   клавиатуры;
+ * - `always` — видна всегда.
+ *
+ * Одно свойство, а не пара флагов «показывать» и «всегда»: пара давала бы
+ * состояние, которого не бывает. Рисовать ли подсказку, ядро отдаёт выходом
+ * `tooltipRendered`, а когда показывать в `auto`, решает тема — наведения,
+ * нажатия и фокуса с клавиатуры ядро не знает, ему видно только
+ * перетаскивание.
+ * Смысл у значения один в любой теме, поэтому это union ядра, а не реестр
+ * темы.
+ */
+export type TSliderTooltip = 'none' | 'auto' | 'always'
+
+/**
  * CSS-переменные узла — и только они: позиция процентом от начала оси, с `%`,
  * уже с учётом `inverted`. Ось раскладывает тема: горизонталь — от начала
  * строки, вертикаль — снизу вверх, поэтому RTL разметке знать не нужно.
@@ -124,6 +142,8 @@ export type TSliderEvents = TValueControlEvents<TSliderValue> & {
 	'change:snap': (value: TSlideSnap) => void
 	/** change:snapRadius */
 	'change:snapRadius': (value: number) => void
+	/** change:tooltip */
+	'change:tooltip': (value: TSliderTooltip) => void
 	/** Идёт перетаскивание: с первого движения после нажатия до отпускания */
 	'change:dragging': (value: boolean) => void
 	/**
@@ -170,6 +190,11 @@ export interface ISliderProps extends IValueControlProps<TSliderValue> {
 	snap?: TSlideSnap
 	/** Радиус щелчка в px вдоль оси */
 	snapRadius?: number
+	/**
+	 * Подсказка со значением у ручки: нет, видна, пока ручку наводят, держат,
+	 * тянут или она в фокусе с клавиатуры (`auto`), или видна всегда
+	 */
+	tooltip?: TSliderTooltip
 }
 
 export interface ISlider
@@ -198,6 +223,13 @@ export interface ISlider
 	snap: TSlideSnap
 	/** Радиус щелчка в px вдоль оси */
 	snapRadius: number
+	/** Подсказка со значением у ручки */
+	tooltip: TSliderTooltip
+	/**
+	 * Рисовать ли у ручек подсказку со значением: режим не `none`. Когда её
+	 * показывать, решает тема
+	 */
+	readonly tooltipRendered: boolean
 	/**
 	 * Шина ползунка. Объявлена здесь, потому что предки объявляют её
 	 * по-разному: компонент — полной картой, перетаскивание — подпиской на

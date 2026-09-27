@@ -19,9 +19,10 @@ export default { ...SetupSlider }
 			`label` HTML разрешает только строчную разметку. Поэтому и всё
 			внутри — `span`.
 
-			Ориентация, размер и вариант приходят классами (`--horizontal` /
-			`--vertical`, `--size-*`, `--variant-*`), состояния — набором
-			`dataset` (`data-disabled`, `data-dragging`), `dir` — в `attrs`.
+			Ориентация, режим подсказки, размер и вариант приходят классами
+			(`--horizontal` / `--vertical`, `--tooltip-*`, `--size-*`,
+			`--variant-*`), состояния — набором `dataset` (`data-disabled`,
+			`data-dragging`), `dir` — в `attrs`.
 			Обработчиков здесь нет: нажатия и протяжку ловит плагин указателя на
 			корне, клавиши и жест скринридера — плагин клавиатуры на полях.
 
@@ -73,7 +74,8 @@ export default { ...SetupSlider }
 
 			<!--
 				Ручка — по одной на значение: позиция в `style`
-				(`--s-slider-position`), состояние `data-dragging`.
+				(`--s-slider-position`), состояние `data-dragging`. Подсказка со
+				значением — внутри ручки, поэтому едет за ней сама.
 			-->
 			<span
 				v-for="(thumb, index) in thumbs"
@@ -102,8 +104,21 @@ export default { ...SetupSlider }
 					:disabled="disabled"
 					v-bind="{ ...aria, ...thumb.aria }"
 				/>
-				<!-- Место под подсказку со значением: слот `thumb` со scope ручки. -->
-				<slot name="thumb" :value="thumb.value" :index="index" />
+				<!--
+					Подсказка со значением — только когда она включена
+					(`tooltip`): рисовать ли, решает ядро (`tooltipRendered`),
+					когда показывать в `auto` — тема. Под `aria-hidden`: значение
+					объявляет поле, а в подписи `Label` текст подсказки вошёл бы в
+					имя поля. Содержимое — слот `thumb` со scope ручки, по
+					умолчанию — её значение. Вокруг слота и запасного текста нет
+					пробелов, как у подписи метки: в тексте подсказки остались бы
+					пробелы по краям.
+				-->
+				<span v-if="tooltipRendered" class="s-slider__tooltip" aria-hidden="true"
+					><slot name="thumb" :value="thumb.value" :index="index">{{
+						thumb.value
+					}}</slot></span
+				>
 			</span>
 		</span>
 	</component>
