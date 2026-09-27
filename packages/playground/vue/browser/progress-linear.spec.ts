@@ -7,8 +7,8 @@
  * заводит ни переходов, ни анимаций. Как полоса лежит и движется, решает тема
  * (`themes/oren/src/components/progress-linear/_progress-linear.scss`): доля
  * едет переходом, бег — сдвиг отрезка, у горизонтальной зеркальный в RTL, у
- * вертикальной — снизу вверх в любом направлении письма, а при просьбе
- * системы убрать движение доля встаёт сразу, и отрезок не бежит, а дышит.
+ * вертикальной — снизу вверх в любом направлении письма. При просьбе системы
+ * убрать движение доля встаёт сразу, а бег тот же.
  *
  * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
  * переход короткий, и `getAnimations()` после действия мог бы его уже не
@@ -159,15 +159,6 @@ function shiftsAt(progress: readonly number[], axis: 'x' | 'y' = 'x'): number[] 
 	})
 }
 
-/** Плотности пульса по кадрам анимации бега. */
-function pulseOpacities(): number[] {
-	const { effect } = runOf(root())
-
-	return effect instanceof KeyframeEffect
-		? effect.getKeyframes().map((keyframe) => Number(keyframe.opacity))
-		: []
-}
-
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
 })
@@ -278,24 +269,33 @@ describe('бег', () => {
 		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(ltr.map((shift) => -shift))
 	})
 
-	it('система просит меньше движения — отрезок во всю дорожку не бежит, а дышит', async () => {
+	/**
+	 * Бег одинаков при любых настройках системы — решение владельца, как у
+	 * выезда Drawer: у неизвестной доли движение и есть сообщение «работа
+	 * идёт», а отрезок, который стоит на месте и мерцает, читается как
+	 * зависшая полоса. Сторож решения: без него бег снова спрятали бы под
+	 * `prefers-reduced-motion`.
+	 */
+	it('система просит меньше движения — отрезок всё равно бежит', async () => {
+		mount({ indeterminate: true })
+		await transitionEvents()
+
+		const width = segment().width
+		const shifts = shiftsAt([0.25, 0.5, 0.75])
+
+		cleanup()
 		await reducedMotion('reduce')
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		mount({ indeterminate: true })
 		await transitionEvents()
 
-		expect(segment().translate).toBe('none')
-		expect(Math.abs(Number.parseFloat(segment().width) - root().offsetWidth)).toBeLessThan(
-			EPSILON,
-		)
-
-		const opacities = pulseOpacities()
-
-		// Дышит, но до полной плотности не доходит: залитая до конца дорожка
-		// читалась бы как «готово»
-		expect(opacities.length).toBeGreaterThan(1)
-		expect(Math.max(...opacities)).toBeLessThan(1)
-		expect(Math.min(...opacities)).toBeLessThan(Math.max(...opacities))
+		// Тот же отрезок, а не вся дорожка, и идёт он тем же путём
+		expect(segment().width).toBe(width)
+		expect(root().offsetWidth - Number.parseFloat(width)).toBeGreaterThan(EPSILON)
+		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(shifts)
 	})
 })
 
@@ -390,24 +390,25 @@ describe('вертикальная полоса', () => {
 		expect(shiftsAt([0.25, 0.5, 0.75], 'x')).toEqual([0, 0, 0])
 	})
 
-	it('система просит меньше движения — тот же пульс во всю дорожку', async () => {
+	it('система просит меньше движения — отрезок всё равно бежит', async () => {
+		mount({ indeterminate: true, orientation: 'vertical' })
+		await transitionEvents()
+
+		const height = segment().height
+		const shifts = shiftsAt([0.25, 0.5, 0.75], 'y')
+
+		cleanup()
 		await reducedMotion('reduce')
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		mount({ indeterminate: true, orientation: 'vertical' })
 		await transitionEvents()
 
-		expect(segment().translate).toBe('none')
-		expect(Math.abs(Number.parseFloat(segment().height) - root().offsetHeight)).toBeLessThan(
-			EPSILON,
-		)
-		expect(Math.abs(Number.parseFloat(segment().width) - root().offsetWidth)).toBeLessThan(
-			EPSILON,
-		)
-
-		const opacities = pulseOpacities()
-
-		expect(opacities.length).toBeGreaterThan(1)
-		expect(Math.max(...opacities)).toBeLessThan(1)
-		expect(Math.min(...opacities)).toBeLessThan(Math.max(...opacities))
+		// Тот же отрезок, а не вся полоса, и идёт он тем же путём — вверх
+		expect(segment().height).toBe(height)
+		expect(root().offsetHeight - Number.parseFloat(height)).toBeGreaterThan(EPSILON)
+		expect(shiftsAt([0.25, 0.5, 0.75], 'y')).toEqual(shifts)
 	})
 })

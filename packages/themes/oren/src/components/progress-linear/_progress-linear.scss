@@ -14,11 +14,17 @@
 // заливка растёт от начала строки (`inset-inline-start`) и в RTL встаёт справа
 // сама, без селектора по направлению; вертикальная — снизу вверх
 // (`inset-block-end`), как заливка вертикального ползунка. Бег идёт сдвигом
-// (`translate`): сдвиг и прозрачность браузер анимирует вне главного потока,
-// и отрезок бежит, даже пока страница занята той самой длинной операцией, ради
-// которой индикатор показан. Но у сдвига нет логических направлений, поэтому
+// (`translate`): сдвиг браузер анимирует вне главного потока, и отрезок
+// бежит, даже пока страница занята той самой длинной операцией, ради которой
+// индикатор показан. Но у сдвига нет логических направлений, поэтому
 // горизонтальный бег зеркалит атрибут `dir` (`$rtl` ниже). Вертикальному
 // направление письма не нужно: снизу вверх он идёт в любом.
+//
+// Просьбу системы убрать движение (`prefers-reduced-motion`) бег не
+// выполняет — решение владельца, как у выезда Drawer: у неизвестной доли
+// движение и есть сообщение «работа идёт», а отрезок, который стоит на месте
+// и мерцает, читается как зависшая полоса. Переход доли просьбу выполняет
+// (блок движения ниже).
 .s-progress-linear {
 	$this: &;
 
@@ -78,12 +84,13 @@
 	// переходом, что и при смене доли; из `display: none` перехода не было бы,
 	// и заливка возникла бы сразу на новой доле.
 	//
-	// Отрезок — псевдоэлемент корня, своего узла у него нет. Здесь он без
-	// движения: во всю дорожку и дышит прозрачностью — так бег выглядит при
-	// просьбе системы убрать движение, у обеих осей одинаково. Прозрачность —
-	// не движение, а полной плотности отрезок не набирает: целиком залитая
-	// дорожка читалась бы как «готово». Бегом его делает блок
-	// `prefers-reduced-motion: no-preference` ниже.
+	// Отрезок — псевдоэлемент корня, своего узла у него нет. Стоит он там же,
+	// где начинается заливка, — у начала строки, у вертикальной снизу, — и
+	// длиной в две пятых дорожки. Бег — сдвиг отрезка вдоль оси (кадры ниже):
+	// он выходит из-за начала дорожки и уходит за конец, от `-100%` до `250%`
+	// своей длины. Скорость постоянная: с разгоном и торможением отрезок
+	// подолгу висел бы у краёв узкой полоской — у `ease-in-out` так проходит
+	// больше трети круга, — и дорожка казалась бы пустой, будто работа встала.
 	&[data-indeterminate='true'] {
 		> #{$this}__range {
 			@apply invisible;
@@ -91,10 +98,25 @@
 
 		&::after {
 			content: '';
-			@apply absolute inset-0 rounded-full;
+			@apply absolute rounded-full;
 			background-color: var(--s-progress-linear-fill);
-			animation: s-progress-linear-pulse 2s ease-in-out infinite;
 		}
+	}
+
+	&--horizontal[data-indeterminate='true']::after {
+		inset-block: 0;
+		inset-inline-start: 0;
+		inline-size: 40%;
+		animation: s-progress-linear-run 1.6s linear infinite;
+	}
+
+	// Вертикальный — тот же бег снизу вверх, на своих кадрах: у сдвига вдоль
+	// строки и поперёк неё разные оси.
+	&--vertical[data-indeterminate='true']::after {
+		inset-inline: 0;
+		inset-block-end: 0;
+		block-size: 40%;
+		animation: s-progress-linear-run-vertical 1.6s linear infinite;
 	}
 
 	@each $size, $_ in mixines.$sizes {
@@ -142,7 +164,13 @@
 // логическая и считается по настоящей направленности.
 $rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
 
-// Движение — только когда система о нём не просила.
+#{$rtl}.s-progress-linear--horizontal[data-indeterminate='true']::after {
+	animation-name: s-progress-linear-run-rtl;
+}
+
+// Переход доли — только когда система о движении не просила: при просьбе
+// заливка встаёт на новую долю сразу, как ручки Slider. Бега блок не
+// касается — он одинаков при любых настройках системы (шапка файла).
 //
 // Доля меняется плавно: новые значения приходят шагами — по файлу, по порции
 // данных, — и переход ведёт глаз от прежней доли к новой. Кривая линейная, а
@@ -150,13 +178,6 @@ $rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
 // места, где застал заливку, и с замедлением к концу, как у `ease-out`,
 // заливка шла бы толчками. Переходом идёт длина по оси — ширина у
 // горизонтальной, высота у вертикальной.
-//
-// Бег — отрезок в две пятых дорожки выходит из-за её начала и уходит за
-// конец: сдвиг от `-100%` до `250%` его собственной длины. Скорость
-// постоянная: с разгоном и торможением отрезок подолгу висел бы у краёв узкой
-// полоской — у `ease-in-out` так проходит больше трети круга, — и дорожка
-// казалась бы пустой, будто работа встала. Вертикальный — тот же бег снизу
-// вверх, на своих кадрах: у сдвига вдоль строки и поперёк неё разные оси.
 @media (prefers-reduced-motion: no-preference) {
 	.s-progress-linear--horizontal > .s-progress-linear__range {
 		transition-property: background-color, inline-size;
@@ -164,22 +185,6 @@ $rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
 
 	.s-progress-linear--vertical > .s-progress-linear__range {
 		transition-property: background-color, block-size;
-	}
-
-	.s-progress-linear--horizontal[data-indeterminate='true']::after {
-		inset-inline-end: auto;
-		inline-size: 40%;
-		animation: s-progress-linear-run 1.6s linear infinite;
-	}
-
-	#{$rtl}.s-progress-linear--horizontal[data-indeterminate='true']::after {
-		animation-name: s-progress-linear-run-rtl;
-	}
-
-	.s-progress-linear--vertical[data-indeterminate='true']::after {
-		inset-block-start: auto;
-		block-size: 40%;
-		animation: s-progress-linear-run-vertical 1.6s linear infinite;
 	}
 }
 
@@ -214,17 +219,6 @@ $rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
 
 	to {
 		translate: 0 -250%;
-	}
-}
-
-@keyframes s-progress-linear-pulse {
-	0%,
-	100% {
-		opacity: 0.15;
-	}
-
-	50% {
-		opacity: 0.6;
 	}
 }
 
