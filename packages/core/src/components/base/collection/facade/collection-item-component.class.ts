@@ -28,6 +28,18 @@ export abstract class TCollectionItemComponent<
 		this._context = context
 	}
 
+	/**
+	 * Отвязывает контекст: монтирование, для которого его ставили, кончилось.
+	 * Геттеры отдают то же, что до `setContext`, — элемент вне коллекции.
+	 *
+	 * Держи фасад отпущенный контекст дальше, первое же чтение создало бы
+	 * адаптеры заново, и они остались бы подписаны на расширения движка:
+	 * React, например, перечитывает состояние уже уничтоженной сборки.
+	 */
+	clearContext(): void {
+		this._context = undefined
+	}
+
 	get context(): TItemContext<TItem, TExtensions> | undefined {
 		return this._context
 	}
