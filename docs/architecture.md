@@ -1989,13 +1989,15 @@ Parent (TCollectionExtension, in setup layer; context.instance — фасад, �
   - elevator(COLLECTION_ENGINE_ELEVATOR).down(register)
   ↓
   Child (TCollectionItemExtension, in setup layer; context.instance — фасад элемента):
-    - elevator(ITEM_CONTEXT_ELEVATOR).up() → setContext(TItemContext элемента)
+    - elevator(ITEM_CONTEXT_ELEVATOR).up() → setContext(TItemContext элемента — свой на монтирование)
     - elevator(COLLECTION_ENGINE_ELEVATOR).up() → регистратор; сборка ничего чужого не трогает
     - attach контекста — рантайм адаптера в момент монтирования (Vue: setup(), React: коммит useAdapterContext) → register(item, bundle)
     - Parent: 1) plain.push(item) — только для элемента из разметки; элемент из `items` уже в коллекции
               2) bundles.register(bundle, item)  // key = item.uid
     - meta: engine.extensions.meta.apply(item, props элемента) — тоже на attach, после регистрации
-    - Cleanup (destroy): plain.remove(item) для элемента из разметки → item:removed → реестр bundles чистится по событию
+    - Cleanup (destroy): plain.remove(item) для элемента из разметки → item:removed → реестр bundles чистится по событию;
+      фасад отвязывается от контекста (clearContext), контекст отпускает item-адаптеры (release), элемент не трогается
+    - item:removed своего элемента, пока смонтирован: TItemContext.destroy() — release и rendered = false
 
 TCollectionBundlesPlugin (plugins layer):
   - хранит ссылку на движок (engine) + Map<uid, IPluginBundle> (только bundles, НЕ instances)
