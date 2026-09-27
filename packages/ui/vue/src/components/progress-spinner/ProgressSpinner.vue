@@ -1,5 +1,19 @@
+<script lang="ts">
+import SetupProgressSpinner from './setup.component'
+
+export default { ...SetupProgressSpinner }
+</script>
+
 <template>
-	<span class="s-progress-spinner">
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:class="classes"
+		:style="fractionStyle"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
 		<!--
 			Индикатор выполнения — кольцо. Корень — коробка кольца, в ней рисунок.
 			Корень рисуется по `tag`, по умолчанию `span`: кольцо кладут в
@@ -41,5 +55,5 @@
 			-->
 			<circle class="s-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
 		</svg>
-	</span>
+	</component>
 </template>

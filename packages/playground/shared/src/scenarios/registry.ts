@@ -3,6 +3,7 @@ import { BUTTON_EVENTS } from './button/events'
 import { BUTTON_SLOTS } from './button/slots'
 import { LABEL_SLOTS } from './label/slots'
 import { PROGRESS_LINEAR_MOTION } from './progress-linear/motion'
+import { PROGRESS_SPINNER_MOTION } from './progress-spinner/motion'
 import { eventsPoll } from './events-poll'
 import type { TScenario } from './types'
 
@@ -35,4 +36,5 @@ export const SCENARIOS: readonly TScenario[] = [
 	...BUTTON_SLOTS,
 	...LABEL_SLOTS,
 	...PROGRESS_LINEAR_MOTION,
+	...PROGRESS_SPINNER_MOTION,
 ]

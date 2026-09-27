@@ -22,27 +22,19 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { cdp, userEvent } from 'vitest/browser'
+import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { Button, Dialog, Drawer, Popover, Select, SelectItem, Tooltip } from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 import { find, opacity, pixel, style } from './colors'
+import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-
-/**
- * Эмуляция режима. Playwright сам держит `none` — прогон не зависит от того,
- * включён ли режим на машине, — поэтому снимается эмуляция тем же `none`, а не
- * пустым значением: пустое сняло бы и его, и следующий спек на той же
- * странице получил бы режим машины.
- */
-const forcedColors = (value: 'active' | 'none') =>
-	cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'forced-colors', value }] })
 
 /** Схемы темы: палитру режима выбирает браузер, но проверяем обе. */
 const SCHEMES = ['oren', 'oren-dark'] as const
