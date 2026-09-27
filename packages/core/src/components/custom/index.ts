@@ -27,3 +27,4 @@ export * from './scroller'
 // у ползунка и будущих компонентов
 export * from './slide'
 export * from './slider'
+export * from './calendar'

@@ -69,6 +69,24 @@ describe('instanceSnippet', () => {
 	})
 
 	/**
+	 * Коллекция календаря движка снаружи не берёт: дни кладёт в неё вид. До её
+	 * фасада проп доносит разметка рядом с `ctrl` — так его передаёт и сам
+	 * стенд, — а движка и `:engine` в коде нет.
+	 */
+	it('коллекционное свойство без движка снаружи — разметкой рядом с ctrl', () => {
+		const code = instanceSnippet(
+			entryOf('calendar'),
+			control({ name: 'mode', scope: 'collection' }),
+			'range',
+		)
+
+		expect(code).toContain('const instance = new TCalendar()')
+		expect(code).toContain('<Calendar :mode="\'range\'" :ctrl="instance" />')
+		expect(code).not.toContain('engine')
+		expect(code).not.toContain('instance.mode')
+	})
+
+	/**
 	 * Плагинный проп — ни `instance.aria_label`, ни `instance.label`: таких
 	 * свойств у инстанса нет. Плагин берут из bundle, который компонент отдаёт
 	 * событием `bundle:create`, и пишут ему имя без неймспейса.

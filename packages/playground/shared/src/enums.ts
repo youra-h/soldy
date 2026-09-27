@@ -23,6 +23,7 @@ import type {
 	TFramePosition,
 	TDirection,
 	TScrollBehavior,
+	TCalendarMode,
 	TSelectionMode,
 	TSelectEditableMode,
 	TSelectPlacement,
@@ -151,6 +152,12 @@ export const DIRECTIONS = enumOf<TDirection>()(['ltr', 'rtl', 'inherit'])
 export const SCROLL_BEHAVIORS = enumOf<TScrollBehavior>()(['none', 'instant', 'smooth'])
 
 export const SELECTION_MODES = enumOf<TSelectionMode>()(['none', 'single', 'multiple'])
+
+/**
+ * Режим выбора календаря — свой, а не общий `SELECTION_MODES`: выбирают даты,
+ * а не элементы, и «ничего» у календаря нет, зато есть диапазон.
+ */
+export const CALENDAR_MODES = enumOf<TCalendarMode>()(['single', 'multiple', 'range'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])

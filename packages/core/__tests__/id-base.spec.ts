@@ -16,6 +16,8 @@ import { join, relative, resolve, sep } from 'node:path'
 import * as ts from 'typescript'
 import {
 	TButton,
+	TCalendar,
+	TCalendarCollectionFacade,
 	TDialog,
 	TInput,
 	TPopover,
@@ -67,6 +69,27 @@ describe('id в DOM — от основы', () => {
 
 		expect(owner.field.id).toBe('r1')
 		expect(collection.engine.extensions.select.listId).toBe('s-select-list-r1')
+	})
+
+	it('заголовки сеток Calendar — от основы и места сетки', () => {
+		const owner = new TCalendar({ months: ['2026-01-01', '2026-02-01'] }, { idBase: 'r1' })
+		const collection = new TCalendarCollectionFacade({}, { owner })
+		const ids = ['s-calendar-title-r1-0', 's-calendar-title-r1-1']
+
+		expect(collection.grids.map(({ titleAria }) => titleAria.id)).toEqual(ids)
+		expect(collection.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual(ids)
+
+		// Листание не меняет id: место сетки то же
+		collection.extensions.view.showNext()
+
+		expect(collection.grids.map(({ titleAria }) => titleAria.id)).toEqual(ids)
+	})
+
+	it('дни Calendar — от основы календаря и номера по порядку создания', () => {
+		const owner = new TCalendar({ months: ['2026-09-01'] }, { idBase: 'r1' })
+		const collection = new TCalendarCollectionFacade({}, { owner })
+
+		expect(collection.items[0].idBase).toBe('r1-item-1')
 	})
 
 	it('группа радио без своего имени: name — от основы', () => {

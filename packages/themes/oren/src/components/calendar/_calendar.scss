@@ -1,0 +1,498 @@
+@use './mixins' as mixines;
+@use '../button/mixins' as button;
+
+// Calendar — сетки показанных месяцев и одна пара кнопок листания на все.
+//
+//   .s-calendar                    корень — ряд месяцев
+//     .s-calendar__prev            кнопка «назад» (Button)
+//     .s-calendar__next            кнопка «вперёд» (Button)
+//     .s-calendar__month           месяц, по одному на сетку
+//       .s-calendar__title         заголовок месяца
+//       .s-calendar__grid          сетка — `table`
+//         .s-calendar__weekdays    строка дней недели (`thead > tr`)
+//           .s-calendar__weekday   день недели (`th`)
+//         .s-calendar__week        неделя (`tbody > tr`)
+//           .s-calendar__filler    заполнитель — день соседнего месяца (`td`)
+//           .s-calendar-item       день — Calendar.Item (`td`)
+//             __day                плитка дня: номер или содержимое слота
+//
+// От ядра приходят: у корня — `data-disabled` и модификаторы `--size-*` и
+// `--variant-*`; у дня — отметки выбора (`data-selected`, `data-range-start`,
+// `data-range-middle`, `data-range-end`, `data-preview`), `data-today`,
+// `data-unavailable` и `data-disabled` (вне `min`/`max` или выключен
+// календарь). Фокус — у самой ячейки дня, одна остановка Tab на все сетки;
+// тема читает его псевдоклассом `:focus-visible`.
+//
+// Своей поверхности у календаря нет — ни фона, ни рамки, ни полей. Он стоит и
+// прямо на странице, и в панели DatePicker, а там поверхность и поля даёт
+// панель: своя рамка легла бы второй внутри её кромки. На странице карточку
+// вокруг календаря ставит тот, кто его туда кладёт.
+//
+// Геометрия — одна переменная на размер, сторона плитки дня
+// (`--s-calendar-day`). Ячейка шире плитки на запас под кольцо фокуса с каждой
+// стороны, и от ячейки считается всё остальное: ряд заголовков, высота
+// месяца, место кнопок листания.
+.s-calendar {
+	$this: &;
+
+	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок и
+	// без него обязан выглядеть умолчанием.
+	@include mixines.calendar-size('normal');
+
+	// Запас вокруг плитки — ровно под кольцо фокуса Button (`outline-2` с
+	// `outline-offset-2`), то же число, что у ленты Scroller. Кольцо дня поэтому
+	// умещается в своей ячейке и не ложится на соседей, а кольцо кнопки листания
+	// — в коробке календаря: прокручиваемая панель вокруг его не срежет.
+	--s-calendar-bleed: 0.25rem;
+	--s-calendar-cell: calc(var(--s-calendar-day) + 2 * var(--s-calendar-bleed));
+
+	// Строка дней недели — ниже недели: подписи колонок мельче номеров, и полная
+	// ячейка развела бы их с сеткой.
+	--s-calendar-head: var(--s-calendar-day);
+
+	// Зазор между месяцами — полъячейки. Соседние дни месяца стоят на двух
+	// запасах друг от друга, а плитки соседних месяцев — ещё и на зазоре, в
+	// несколько раз дальше: сетки читаются отдельными, а ряд из трёх месяцев не
+	// расползается.
+	--s-calendar-gap: calc(var(--s-calendar-cell) / 2);
+
+	// Месяцы — в ряд. Ширина календаря — по месяцам, а не по контейнеру: кнопки
+	// листания стоят у краёв корня и обязаны оказаться у крайних колонок, а не
+	// у края страницы.
+	//
+	// Не поместились в ширину — переносятся. Ширина корня тогда — ширина
+	// контейнера, и первая строка месяцев разносится по краям
+	// (`justify-between`): «вперёд» остаётся над последней колонкой последнего
+	// месяца строки, а не повисает за ней. Пока месяцы помещаются, свободного
+	// места нет, и зазор между ними — ровно `--s-calendar-gap`.
+	@apply relative flex flex-wrap justify-between;
+	@apply w-fit max-w-full;
+	@apply text-s-component;
+	gap: var(--s-calendar-gap);
+
+	@include mixines.calendar-text('normal');
+
+	@each $size, $_ in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.calendar-size($size);
+			@include mixines.calendar-text($size);
+		}
+	}
+
+	@each $variant in mixines.$variants {
+		&--variant-#{$variant} {
+			@include mixines.calendar-colors($variant);
+		}
+	}
+
+	// Выключенный календарь гаснет по частям, а не корнем целиком. Дни и кнопки
+	// листания выключены сами — у дня `data-disabled` ставит вид календаря, у
+	// кнопок ядро, — и гаснут своими правилами. Прозрачность корня легла бы на
+	// них второй раз, и они пропали бы совсем. Остаются подписи — заголовки и
+	// дни недели: своего состояния у них нет.
+	&[data-disabled='true'] {
+		#{$this}__title,
+		#{$this}__weekday {
+			@apply opacity-s-component-disabled;
+		}
+	}
+}
+
+// Цвет календаря без варианта — нейтраль. Модификатору `normal` правило не
+// нужно, он совпадает с базой. Нулевая специфичность — вариант перекрывает базу,
+// не споря с ней.
+:where(.s-calendar) {
+	@include mixines.calendar-colors('neutral');
+}
+
+// Кнопки листания — одна пара на весь календарь, поверх ряда заголовков:
+// «назад» у начала, «вперёд» у конца, вровень с плитками крайних колонок. В
+// DOM пара стоит до сеток — Tab проходит «назад», «вперёд» и остановку сетки, —
+// а на экране её разносит тема. Место от этого в DOM не меняется, поэтому
+// кнопки вынуты из потока и стоят у краёв корня.
+//
+// Квадрат со стороной плитки дня. Размерная высота Button на каждом размере с
+// ней и так совпадает (шкала одна), а горизонтальный паддинг снят: в кнопке
+// одна иконка, и квадрат ровняет её с плитками колонки под ней.
+.s-calendar__prev,
+.s-calendar__next {
+	@apply absolute;
+	inset-block-start: var(--s-calendar-bleed);
+	inline-size: var(--s-calendar-day);
+	block-size: var(--s-calendar-day);
+	padding-inline: 0;
+}
+
+.s-calendar__prev {
+	inset-inline-start: var(--s-calendar-bleed);
+}
+
+.s-calendar__next {
+	inset-inline-end: var(--s-calendar-bleed);
+}
+
+// Вид кнопок — `plain` по контексту: значения вида разметка не передаёт (их
+// объявляет тема), а стрелка не должна спорить с заголовком месяца. Нулевая
+// специфичность, как у базового вида Button.
+:where(.s-calendar__prev),
+:where(.s-calendar__next) {
+	@include button.button-view('plain');
+}
+
+// Календарь в правом-левом письме: сам корень с атрибутом или любой предок с
+// ним.
+//
+// Атрибут, а не `:dir(rtl)`: сборка темы даунлевелит `:dir()` в список
+// `:lang()` (подробности — в `AGENTS.md` пакета). Раскладке это не мешает — она
+// логическая и считается по настоящей направленности.
+$rtl: ":is([dir='rtl'] .s-calendar, .s-calendar[dir='rtl'])";
+
+// Стрелка смотрит в свою сторону. Роль в контракте иконок одна — `arrowRight`,
+// и ту, что показывает в начало строки, зеркалит тема: в LTR это «назад», в
+// RTL — «вперёд». Так же, как у ленты Scroller.
+.s-calendar__prev .s-icon {
+	transform: scaleX(-1);
+}
+
+#{$rtl} {
+	.s-calendar__prev .s-icon {
+		transform: none;
+	}
+
+	.s-calendar__next .s-icon {
+		transform: scaleX(-1);
+	}
+}
+
+// Месяц — заголовок над сеткой.
+//
+// Высота — под шесть недель при любом месяце. Модель отдаёт от четырёх до
+// шести недель, и без запаса календарь прыгал бы при листании, а соседние
+// месяцы разной длины стояли бы вразнобой. Недели прижаты к верху, запас — под
+// последней, поэтому ряды соседних сеток стоят вровень.
+.s-calendar__month {
+	@apply flex flex-col;
+	min-block-size: calc(
+		var(--s-calendar-cell) + var(--s-calendar-head) + 6 * var(--s-calendar-cell)
+	);
+}
+
+// Заголовок месяца — одной строкой по центру месяца, в ряду высотой в ячейку:
+// кнопки листания стоят в том же ряду. Поля по бокам — под кнопки: у крайних
+// месяцев название под кнопку не заходит, а у средних поля те же, чтобы все
+// названия стояли по центру своих месяцев одинаково.
+//
+// Название длиннее ряда (длинная подпись локали на мелком размере) обрезается
+// многоточием, а не переносится: вторая строка сдвинула бы сетку этого месяца
+// вниз, и ряды соседних сеток разошлись бы. Имя сетки у скринридера от этого
+// не страдает — это полный текст узла.
+.s-calendar__title {
+	@apply truncate text-center font-semibold;
+	block-size: var(--s-calendar-cell);
+	padding-inline: var(--s-calendar-cell);
+}
+
+// Сетка — таблица из семи колонок по ячейке. Ширина колонок задана первой
+// строкой (`table-fixed`), и содержимое дня её не раздвигает.
+.s-calendar__grid {
+	@apply table-fixed border-collapse;
+	inline-size: calc(7 * var(--s-calendar-cell));
+}
+
+// Строка дней недели.
+.s-calendar__weekdays {
+	block-size: var(--s-calendar-head);
+}
+
+// День недели — короткое имя, приглушённым текстом: это подпись колонки, а не
+// содержимое сетки.
+//
+// Имя длиннее колонки (короткие имена бывают и в два слова, как у `he-IL`, а на
+// `sm` колонка узкая) обрезается по колонке, а не залезает на соседнюю:
+// многоточие от трёх букв оставило бы одну.
+.s-calendar__weekday {
+	@apply p-0 text-center align-middle font-medium text-s-neutral-500;
+	@apply overflow-hidden whitespace-nowrap;
+	inline-size: var(--s-calendar-cell);
+}
+
+// Неделя — ряд ячеек одной высоты. Высота задана рядом: у заполнителя
+// содержимого нет, и ряд без неё сжался бы до дней в нём.
+.s-calendar__week {
+	block-size: var(--s-calendar-cell);
+}
+
+// Заполнитель — день соседнего месяца. Элемента коллекции у него нет, и
+// рисовать в нём нечего: число повторило бы дату, которая стоит в соседней
+// сетке. Ячейка только держит место в неделе.
+.s-calendar__filler {
+	@apply p-0;
+}
+
+// День — ячейка сетки, Calendar.Item.
+//
+// Ячейка несёт фокус (одна остановка Tab на все сетки, как в APG) и полосу
+// диапазона — своим псевдоэлементом. Плитка внутри несёт всё, что относится к
+// самому дню: заливку выбранного, наведение, кольцо фокуса, отметку «сегодня».
+// Два слоя, а не один: полоса идёт через ячейку от края до края и соединяет
+// дни, а плитка стоит поверх неё с запасом под кольцо.
+.s-calendar-item {
+	$this: &;
+
+	@apply relative p-0 text-center align-middle select-none;
+	inline-size: var(--s-calendar-cell);
+	block-size: var(--s-calendar-cell);
+
+	// Цифры одной ширины: номера в колонке стоят ровно, и «11» не уже «18».
+	font-variant-numeric: tabular-nums;
+
+	// Кольцо фокуса рисует плитка (ниже), кольцо браузера у ячейки снято:
+	// ячейка шире плитки на запас, и её кольцо обвело бы пустое место.
+	@apply outline-none;
+
+	// Плитка — по центру ячейки, в запасе под кольцо. Содержимое — столбец по
+	// центру: номер или то, что потребитель положил в слот (номер и цена,
+	// номер и точка события). Не уже плитки и не ниже её; содержимое крупнее
+	// плитку раздвигает — такому содержимому потребитель задаёт размер сам,
+	// переменной `--s-calendar-day` на календаре.
+	&__day {
+		@apply relative mx-auto flex flex-col items-center justify-center;
+		@apply rounded-md;
+		@apply transition-colors duration-150;
+		inline-size: fit-content;
+		min-inline-size: var(--s-calendar-day);
+		min-block-size: var(--s-calendar-day);
+	}
+
+	// Выбрать можно — указатель руки. Недоступный день фокус получает, но не
+	// выбирается, выключенный не получает ни того ни другого.
+	&:not([data-disabled='true'], [data-unavailable='true']) {
+		@apply cursor-pointer;
+	}
+
+	// Наведение и нажатие — только там, где клик что-то сделает, вуалью
+	// состояний, как у Button `plain`. Поверх полосы диапазона вуаль ложится
+	// вторым слоем, и наведённый день на полосе темнее соседей.
+	&:hover:not([data-disabled='true'], [data-unavailable='true']) > #{$this}__day {
+		background-color: var(--s-calendar-hover);
+	}
+
+	&:active:not([data-disabled='true'], [data-unavailable='true']) > #{$this}__day {
+		background-color: var(--s-calendar-press);
+	}
+
+	// Кольцо фокуса — на плитке, тем же кольцом, что у Button. Снаружи плитки с
+	// отступом: видно и на заливке выбранного, и поверх рамки «сегодня», и на
+	// недоступном дне.
+	&:focus-visible > #{$this}__day {
+		@include button.button-focus-ring;
+	}
+
+	// Полоса диапазона — псевдоэлемент ячейки, высотой в плитку. Поверх неё
+	// плитка: она позиционирована и идёт в DOM после псевдоэлемента.
+	//
+	// Середина диапазона — полоса через всю ячейку, и соседние дни сливаются в
+	// одну ленту, в том числе через недоступные дни: они в диапазоне, ядро
+	// отмечает их серединой. Начало — полоса от центра ячейки к концу строки,
+	// конец — от начала строки к центру: выбранная плитка на краю закрывает
+	// полосу под собой, и лента уходит из-под неё. Однодневный диапазон —
+	// начало и конец сразу — полосы не рисует: это одна плитка.
+	//
+	// Заполнители в ленту не входят: отметок у них нет.
+	//
+	// Кромка ленты — переменной: у выбранного диапазона её нет, у предпросмотра
+	// она пунктирная (ниже). На концах ленты кромку ставят те же правила, что
+	// её скругляют, — края ленты описаны один раз для обоих видов.
+	--s-calendar-band-edge: none;
+
+	&::before {
+		@apply absolute pointer-events-none;
+		inset-block: var(--s-calendar-bleed);
+		inset-inline: 0;
+		background-color: var(--s-calendar-band);
+	}
+
+	&:is(
+			[data-range-middle='true'],
+			[data-preview='true'],
+			[data-range-start='true']:not([data-range-end='true']),
+			[data-range-end='true']:not([data-range-start='true'])
+		)::before {
+		content: '';
+	}
+
+	&[data-range-start='true']:not([data-range-end='true'], [data-preview='true'])::before {
+		inset-inline-start: 50%;
+	}
+
+	&[data-range-end='true']:not([data-range-start='true'], [data-preview='true'])::before {
+		inset-inline-end: 50%;
+	}
+
+	// Предпросмотр — диапазон, который ещё не выбран: якорь стоит, второй конец
+	// идёт за указателем, а без указателя — за фокусом. Он не обязан выглядеть
+	// выбранным: это одна бледная лента в пунктирной кромке, от края до края,
+	// без залитых плиток на концах. Концы ленты скруглены по краю плитки; день
+	// под указателем темнее остальных — на нём вуаль наведения. Однодневный
+	// предпросмотр — только что выбранный якорь — это одна плитка в пунктире, и
+	// с днём под указателем её не спутать.
+	//
+	// Чем концы отличаются друг от друга — якорь от дня под указателем, —
+	// отметки не говорят, и тема их не различает: второй конец и так виден по
+	// указателю или по кольцу фокуса.
+	&[data-preview='true'] {
+		--s-calendar-band-edge: 1px dashed var(--s-calendar-preview-edge);
+
+		&::before {
+			background-color: var(--s-calendar-preview);
+			border-block: var(--s-calendar-band-edge);
+		}
+
+		&[data-range-start='true']::before {
+			inset-inline-start: var(--s-calendar-bleed);
+			border-inline-start: var(--s-calendar-band-edge);
+			border-start-start-radius: var(--radius-md);
+			border-end-start-radius: var(--radius-md);
+		}
+
+		&[data-range-end='true']::before {
+			inset-inline-end: var(--s-calendar-bleed);
+			border-inline-end: var(--s-calendar-band-edge);
+			border-start-end-radius: var(--radius-md);
+			border-end-end-radius: var(--radius-md);
+		}
+	}
+
+	// Лента обрывается на краю недели и на краю месяца — там, где за днём в
+	// строке нет следующего дня: в крайней колонке и рядом с заполнителем.
+	// Обрывается по краю плитки и со скруглением, как у плитки: лента,
+	// доведённая до края ячейки, читалась бы уходящей дальше по строке, хотя
+	// продолжение — на следующей строке или в соседней сетке.
+	//
+	// Край касается только той стороны, к которой лента подходит: у середины —
+	// обеих, у начала — конца строки, у конца — начала. Начало в последней
+	// колонке так лишается хвоста за своей плиткой.
+	&:is([data-range-middle='true'], [data-range-end='true']:not([data-range-start='true'])):is(
+			:first-child,
+			.s-calendar__filler + *
+		)::before {
+		inset-inline-start: var(--s-calendar-bleed);
+		border-inline-start: var(--s-calendar-band-edge);
+		border-start-start-radius: var(--radius-md);
+		border-end-start-radius: var(--radius-md);
+	}
+
+	&:is([data-range-middle='true'], [data-range-start='true']:not([data-range-end='true'])):is(
+			:last-child,
+			:has(+ .s-calendar__filler)
+		)::before {
+		inset-inline-end: var(--s-calendar-bleed);
+		border-inline-end: var(--s-calendar-band-edge);
+		border-start-end-radius: var(--radius-md);
+		border-end-end-radius: var(--radius-md);
+	}
+
+	// Текст дней на ленте — ступень 800 варианта: у нейтрали это основной
+	// текст, у цветного варианта — текст его цвета, как у Button `plain`.
+	&:is([data-range-middle='true'], [data-preview='true']) > #{$this}__day {
+		color: var(--s-calendar-band-text);
+	}
+
+	// Сегодня — рамка плитки насыщенной ступенью. Рамка, а не тень: в режиме
+	// принудительных цветов тени браузер убирает, а рамку оставляет. Плитка не
+	// растёт — рамка внутри её стороны (`box-sizing: border-box`).
+	&[data-today='true'] > #{$this}__day {
+		@apply border;
+		border-color: var(--s-calendar-today);
+	}
+
+	// Недоступный день — фокус на него встаёт, выбрать нельзя: номер зачёркнут и
+	// приглушён. Прозрачности нет — кольцо фокуса на нём обязано быть видно
+	// целиком.
+	&[data-unavailable='true'] > #{$this}__day {
+		@apply line-through text-s-neutral-500;
+	}
+
+	// Выбранный день — залитая плитка: в `single` и `multiple` каждый выбранный
+	// день, в диапазоне — его концы. Середину диапазона рисует лента, а
+	// предпросмотр не выбран вовсе.
+	//
+	// Правило после наведения, нажатия и недоступного: заливка перекрывает их
+	// вуаль и приглушённый текст той же специфичностью.
+	&[data-selected='true']:not([data-range-middle='true'], [data-preview='true']) > #{$this}__day {
+		@apply text-white;
+		background-color: var(--s-calendar-fill);
+	}
+
+	&[data-selected='true']:not([data-range-middle='true'], [data-preview='true']):not(
+			[data-disabled='true'],
+			[data-unavailable='true']
+		) {
+		&:hover > #{$this}__day {
+			background-color: var(--s-calendar-fill-hover);
+		}
+
+		&:active > #{$this}__day {
+			background-color: var(--s-calendar-fill-active);
+		}
+	}
+
+	// Сегодня и выбран — рамка насыщенной ступени слилась бы с заливкой той же
+	// ступени. Остаётся внутренняя рамка цвета текста на заливке, полупрозрачная:
+	// «сегодня» видно, а плитка читается выбранной.
+	&[data-today='true'][data-selected='true']:not(
+			[data-range-middle='true'],
+			[data-preview='true']
+		)
+		> #{$this}__day {
+		border-color: color-mix(in oklab, currentColor 60%, transparent);
+	}
+
+	// Выключенный день — вне `min`/`max` или выключен календарь: гаснет ячейка
+	// целиком, с плиткой и лентой, как выключенный Button.
+	&[data-disabled='true'] {
+		@apply opacity-s-component-disabled;
+	}
+}
+
+// Принудительные цвета (высокий контраст Windows): браузер заменяет фоны
+// системным цветом поверхности, и выбор пропал бы вместе с заливкой плитки и
+// лентой. Выбранное — плитки и лента — красится системной подсветкой целиком,
+// с системным текстом подсветки: так этот режим показывает выбор везде.
+// Концы диапазона от середины тогда не отличить, и это его цена — диапазон
+// читается одной лентой. Предпросмотр остаётся пунктирной кромкой без фона:
+// он не выбран.
+//
+// Текст дней на подсветке — без подложки, которую браузер кладёт под текст в
+// этом режиме (`forced-color-adjust: none` у плитки): иначе каждый номер на
+// ленте стоял бы в прямоугольнике цвета страницы.
+@media (forced-colors: active) {
+	.s-calendar-item[data-selected='true']:not([data-preview='true']) > .s-calendar-item__day {
+		forced-color-adjust: none;
+		color: HighlightText;
+	}
+
+	.s-calendar-item[data-selected='true']:not([data-range-middle='true'], [data-preview='true'])
+		> .s-calendar-item__day {
+		background-color: Highlight;
+	}
+
+	.s-calendar-item::before {
+		forced-color-adjust: none;
+		background-color: Highlight;
+	}
+
+	// Рамка «сегодня» — цветом текста плитки: на подсветке это текст подсветки,
+	// а не ступень темы, которую этот режим не перекрашивает.
+	.s-calendar-item[data-today='true'] > .s-calendar-item__day {
+		border-color: currentColor;
+	}
+
+	.s-calendar-item[data-preview='true'] {
+		--s-calendar-preview-edge: Highlight;
+
+		&::before {
+			background-color: transparent;
+		}
+	}
+}

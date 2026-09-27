@@ -25,6 +25,9 @@ import {
 	TAccordion,
 	TAccordionCollectionFacade,
 	TAccordionItemCollectionFacade,
+	TCalendar,
+	TCalendarCollectionFacade,
+	TCalendarItemCollectionFacade,
 	TCollectionComponent,
 	TCollectionItemComponent,
 	TEvented,
@@ -124,8 +127,10 @@ const SOURCES = [
 /**
  * Коллекции экспорта: фасад владельца над своим владельцем и составом — ключ
  * по дескриптору фасада владельца, фасад элемента — по дескриптору элемента.
+ * `null` вместо дескриптора элемента — у фасада элемента записываемых пропсов
+ * нет, и сверять в нём нечего.
  */
-const COLLECTIONS: Readonly<Record<string, readonly [string, () => TMountedCollection]>> = {
+const COLLECTIONS: Readonly<Record<string, readonly [string | null, () => TMountedCollection]>> = {
 	AccordionCollectionDescriptor: [
 		'AccordionCollectionItemDescriptor',
 		() => {
@@ -134,6 +139,16 @@ const COLLECTIONS: Readonly<Record<string, readonly [string, () => TMountedColle
 			facade.items = SOURCES
 
 			return withItem(facade, new TAccordionItemCollectionFacade())
+		},
+	],
+	// Состав дней кладёт вид календаря сам, а выбор и фокус дню пишут
+	// расширения — у фасада дня входов нет
+	CalendarCollectionDescriptor: [
+		null,
+		() => {
+			const facade = new TCalendarCollectionFacade({}, { owner: new TCalendar() })
+
+			return withItem(facade, new TCalendarItemCollectionFacade())
 		},
 	],
 	ListBoxCollectionDescriptor: [
@@ -208,7 +223,9 @@ describe('сторож: повторная запись того же значе
 	})
 
 	it('таблица коллекций покрывает каждый фасад с записываемыми пропсами', () => {
-		const covered = Object.entries(COLLECTIONS).flatMap(([owner, [item]]) => [owner, item])
+		const covered = Object.entries(COLLECTIONS).flatMap(([owner, [item]]) =>
+			item === null ? [owner] : [owner, item],
+		)
 
 		expect(covered.sort()).toEqual(facades.map(([name]) => name).sort())
 	})
