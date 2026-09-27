@@ -3,8 +3,9 @@
  *
  * 1. Связывает компонент с Vue через обмен `adapter.connect()` из setup: рефы
  *    свойств, входные пропсы, события и `update:<prop>` для v-model
- * 2. Привязывает DOM-элемент корня к TElementPlugin через контекст
- * 3. Вызывает adapter.destroy() при анмаунте компонента
+ * 2. Принимает компонент — adapter.attach() в setup
+ * 3. Привязывает DOM-элемент корня к TElementPlugin через контекст
+ * 4. Вызывает adapter.destroy() при анмаунте компонента
  */
 
 import { ref, watch, onUnmounted, type Ref } from 'vue'
@@ -112,7 +113,12 @@ export function useAdapterParts(
 		offs.push(link.events.listen((name, args) => emit(name, ...args)))
 	}
 
-	// 4. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда
+	// 4. Компонент принят: у Vue это сама `setup()`, повторов и отброшенных
+	// сборок не бывает. Здесь же, а не в `onMounted`: `setup()` идёт и на
+	// сервере, и элемент коллекции должен войти в неё к серверной разметке
+	adapter.attach()
+
+	// 5. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда
 	// привязать: у headless-слоёв и фасада коллекции `TElementPlugin` нет, и
 	// `rootElement` в результат не попадает.
 	const rootElement = adapter.bundle?.get(TElementPlugin) ? ref<Element | null>(null) : null
@@ -121,7 +127,7 @@ export function useAdapterParts(
 		watch(rootElement, (el) => adapter.bindElement(el ?? null), { flush: 'post' })
 	}
 
-	// 5. Очистка. Отписка обязательна: при внешнем `ctrl`, переживающем компонент,
+	// 6. Очистка. Отписка обязательна: при внешнем `ctrl`, переживающем компонент,
 	// adapter.destroy() не трогает instance.events — хендлеры копились бы с каждым
 	// монтированием.
 	onUnmounted(() => {

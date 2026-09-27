@@ -37,12 +37,12 @@
  * числе собранный, но так и не отрисованный, если компонент размонтировали до
  * перерисовки.
  *
- * После сборки и каждой пересборки — шаг коммита (`commit`), в том же эффекте,
- * что и уничтожение: уничтоженный набор через него никуда не войдёт, а живой не
- * войдёт дважды. Так элемент коллекции входит в неё (`join()`) — при коммите, а
- * не на рендере: отброшенный рендер оставил бы в движке фантом. Эффекты детей
- * идут раньше родителя и в порядке документа, поэтому элементы разметки
- * входят в коллекцию в порядке DOM.
+ * Принимает контексты (`attach()`) тот же эффект, что их уничтожает, — после
+ * сборки и каждой пересборки. Для React компонент принят при коммите, а не на
+ * рендере: отброшенный рендер не должен трогать ничего чужого, и элемент
+ * коллекции поэтому входит в неё только здесь. Эффекты детей идут раньше
+ * родителя и в порядке документа, поэтому элементы разметки входят в
+ * коллекцию в порядке DOM.
  *
  * Выходы плагинов из типа контекста хук сохраняет: по ним `useAdapter` типизирует
  * `state`, и потерянные здесь они не дошли бы до разметки.
@@ -81,16 +81,22 @@ function isList(contexts: TAdapterContexts): contexts is readonly IAdapterContex
 	return Array.isArray(contexts)
 }
 
-/** В обратном порядке: фасад собран на наборе владельца и уходит раньше него. */
-function destroyAll(contexts: TAdapterContexts): void {
-	const list = isList(contexts) ? contexts : [contexts]
+function listOf(contexts: TAdapterContexts): readonly IAdapterContext[] {
+	return isList(contexts) ? contexts : [contexts]
+}
 
-	for (const context of [...list].reverse()) context.destroy()
+/** В порядке сборки: фасад собран на наборе владельца и принимается после него. */
+function attachAll(contexts: TAdapterContexts): void {
+	for (const context of listOf(contexts)) context.attach()
+}
+
+/** В обратном порядке: фасад уходит раньше владельца. */
+function destroyAll(contexts: TAdapterContexts): void {
+	for (const context of [...listOf(contexts)].reverse()) context.destroy()
 }
 
 export function useAdapterContext<T extends TAdapterContexts>(
 	factory: (create: TCreateAdapterContext, elevator: TElevatorFactory) => T,
-	commit?: (contexts: T) => void,
 ): TAssembly<T> {
 	const idBase = useId()
 	// Слой, который компонент увидел на рендере: из него сборка читает `up()`
@@ -116,7 +122,6 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	}
 	// Эффект зовёт фабрику последнего рендера, а не той, что застал при установке
 	const rebuild = useEffectEvent(() => assemble(parent))
-	const onCommit = useEffectEvent((contexts: T) => commit?.(contexts))
 
 	if (!ref.current) {
 		ref.current = assemble(parent)
@@ -141,7 +146,7 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		const current = ref.current
 
-		if (current) onCommit(current.contexts)
+		if (current) attachAll(current.contexts)
 
 		return () => {
 			if (current) destroyAll(current.contexts)

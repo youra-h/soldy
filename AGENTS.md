@@ -1502,22 +1502,30 @@ Accordion и у Select — унаследованный `aria`: они и вын
 ### Элемент входит в коллекцию при монтировании, а не при сборке (критично)
 
 Движок, расширения и плагины одинаковы во всех адаптерах, а момент, когда
-элемент разметки входит в коллекцию, у каждого фреймворка свой. Поэтому
-`TCollectionItemExtension` (`setup/content/extensions/collection/`) делает
-работу в два шага:
+фреймворк принимает собранный компонент, у каждого свой. Поэтому у контекста
+три фазы — собран, принят (`attach()`), уничтожен (`destroy()`), — а
+`TCollectionItemExtension` (`setup/content/extensions/collection/`) делит
+работу по ним:
 
 - **сборка** (`use(TCollectionItemExtension, …)`) — движок и регистратор
   через лифт, контекст элемента в фасад (`setContext`), `meta` из пропсов.
   Чужого хранилища она не трогает;
-- **вход** (`join()`, расширение отдаёт `IAdapterContext.get`) — регистрация
-  в коллекции владельца и `meta.apply`. Снятие — при уничтожении контекста;
-  повторный вход и вход после уничтожения ничего не делают.
+- **вход** — на событие `attach` контекста: регистрация в коллекции
+  владельца и `meta.apply`;
+- **снятие** — на `destroy`.
 
-Вход зовёт адаптер в момент монтирования своего фреймворка: Vue — сразу за
-`.use(…)` в `setup()`, React — шагом коммита `useAdapterContext` (второй
-аргумент), в том же эффекте, что и уничтожение: уничтоженный набор в
-коллекцию не войдёт, а живой не войдёт дважды. Забытый вызов виден сразу —
-элемент разметки не попадает в коллекцию.
+`attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
+компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
+Solid, Svelte — в `useAdapter` при инициализации, Angular — при создании
+связки в `ngOnInit`, Web Components — в `connectedCallback`, React —
+`useAdapterContext` в том же эффекте, что и уничтожение. Каждый контекст
+рантайм принимает один раз и до уничтожения — как и уничтожает один раз, —
+поэтому защиты от повторов у контекста нет: повтор значил бы ошибку рантайма,
+а не норму, которую надо гасить. Пересобранный React набор — новые контексты,
+у них свой `attach`. Сторожат `setup/__tests__/adapter.spec.ts` («сборка и
+вход») и `ui/react/__tests__/adapter-context.spec.tsx` («приём при
+коммите»); без вызова в рантайме Vue или React элементы разметки не попадают
+в коллекцию, и падают тесты коллекций.
 
 **Почему не на рендере React.** Сборка React идёт на рендере, а побочный
 эффект на чужом хранилище там недопустим: отброшенный рендер оставит в движке
@@ -1714,7 +1722,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension` and calls its `join()` right away — `setup()` is Vue's mount (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension`, and the item joins the collection when `useAdapter` attaches the context in `setup()` (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -2317,6 +2325,10 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 - `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`. Метод
   контекста, а не расширение: её зовут все шесть адаптеров. У компонента без
   этого плагина вызов ничего не делает.
+- `adapter.attach()` — фреймворк принял собранный компонент, пара к
+  `destroy()`. Зовут все шесть адаптеров из своего рантайма, в свой момент
+  цикла; всё, что пишет в чужое хранилище, ждёт события `attach`, а не
+  вызова из компонента (см. «Элемент входит в коллекцию при монтировании»).
 
 **Правило:** починил баг в одном адаптере — проверь остальные. Исторически
 исправления уезжали в React/Angular и не возвращались во Vue.

@@ -462,31 +462,28 @@ describe('повторная установка эффектов · <Activity>',
 /**
  * Фабрика может вернуть несколько контекстов — у коллекции это свой и фасада.
  * Живут они одной единицей: хук держит, пересобирает и уничтожает их вместе,
- * уничтожает — в обратном порядке. После сборки и каждой пересборки — шаг
- * коммита, в том же эффекте, что и уничтожение: уничтоженные контексты через
- * него не проходят, живые не проходят дважды.
+ * уничтожает — в обратном порядке. Принимает (`attach`) — при коммите, в
+ * порядке сборки, после сборки и каждой пересборки: на рендере компонент ещё
+ * не принят, а уничтоженные контексты не принимаются вовсе.
  */
-describe('useAdapterContext · несколько контекстов и шаг коммита', () => {
+describe('useAdapterContext · несколько контекстов и приём при коммите', () => {
 	function createPairProbe() {
 		const log: string[] = []
-		const builds = new WeakMap<IAdapterContext, number>()
 		let built = 0
 
 		function Probe() {
-			useAdapterContext(
-				() => {
-					const n = ++built
-					const first = createAdapterContext(ButtonDescriptor(), { props: {} })
-					const second = createAdapterContext(ButtonDescriptor(), { props: {} })
+			useAdapterContext(() => {
+				const n = ++built
+				const first = createAdapterContext(ButtonDescriptor(), { props: {} })
+				const second = createAdapterContext(ButtonDescriptor(), { props: {} })
 
-					builds.set(first, n)
-					first.events.on('destroy', () => log.push(`destroy first ${n}`))
-					second.events.on('destroy', () => log.push(`destroy second ${n}`))
+				first.events.on('attach', () => log.push(`attach first ${n}`))
+				second.events.on('attach', () => log.push(`attach second ${n}`))
+				first.events.on('destroy', () => log.push(`destroy first ${n}`))
+				second.events.on('destroy', () => log.push(`destroy second ${n}`))
 
-					return [first, second] as const
-				},
-				([first]) => log.push(`commit ${builds.get(first)}`),
-			)
+				return [first, second] as const
+			})
 
 			return null
 		}
@@ -494,18 +491,23 @@ describe('useAdapterContext · несколько контекстов и шаг
 		return { Probe, log }
 	}
 
-	it('контексты уничтожаются вместе и в обратном порядке, коммит — после сборки', () => {
+	it('контексты принимаются при коммите в порядке сборки, уничтожаются — в обратном', () => {
 		const { Probe, log } = createPairProbe()
 		const { unmount } = mountRoot(<Probe />)
 
-		expect(log).toEqual(['commit 1'])
+		expect(log).toEqual(['attach first 1', 'attach second 1'])
 
 		unmount()
 
-		expect(log).toEqual(['commit 1', 'destroy second 1', 'destroy first 1'])
+		expect(log).toEqual([
+			'attach first 1',
+			'attach second 1',
+			'destroy second 1',
+			'destroy first 1',
+		])
 	})
 
-	it('StrictMode: коммит — и у пересобранных, уничтоженные его не получают', () => {
+	it('StrictMode: пересобранные принимаются, уничтоженные — нет', () => {
 		const { Probe, log } = createPairProbe()
 		const { unmount } = mountRoot(
 			<StrictMode>
@@ -513,20 +515,27 @@ describe('useAdapterContext · несколько контекстов и шаг
 			</StrictMode>,
 		)
 
-		expect(log).toEqual(['commit 1', 'destroy second 1', 'destroy first 1', 'commit 2'])
+		expect(log).toEqual([
+			'attach first 1',
+			'attach second 1',
+			'destroy second 1',
+			'destroy first 1',
+			'attach first 2',
+			'attach second 2',
+		])
 
 		unmount()
 
-		expect(log.slice(4)).toEqual(['destroy second 2', 'destroy first 2'])
+		expect(log.slice(6)).toEqual(['destroy second 2', 'destroy first 2'])
 	})
 
-	it('без повторной установки перерисовка не коммитит заново', () => {
+	it('без повторной установки перерисовка не принимает заново', () => {
 		const { Probe, log } = createPairProbe()
 		const { render } = mountRoot(<Probe />)
 
 		render(<Probe />)
 		render(<Probe />)
 
-		expect(log).toEqual(['commit 1'])
+		expect(log).toEqual(['attach first 1', 'attach second 1'])
 	})
 })

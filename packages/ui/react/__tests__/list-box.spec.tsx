@@ -7,7 +7,7 @@
  * `engine-prop`, `collection-shown`): выбор, состав, отметка и слоты.
  *
  * Своё у React — момент входа элемента в коллекцию: не на рендере, а при
- * коммите (`join()` шагом коммита `useAdapterContext`). Его и лифт проверяет
+ * коммите (`attach` контекста в эффекте `useAdapterContext`). Его и лифт проверяет
  * `list-box-elevator.spec.tsx`.
  */
 

@@ -352,13 +352,12 @@ describe('расширения коллекций', () => {
 })
 
 /**
- * Элемент коллекции собирается и входит в коллекцию разными шагами.
+ * Элемент коллекции собирается и входит в коллекцию на разных фазах контекста.
  *
  * Сборка (`use`) берёт движок и регистратор через лифт и отдаёт фасаду контекст
- * элемента — чужого хранилища она не трогает. Вход (`join()`) — регистрация и
- * `meta`: его зовёт адаптер в момент монтирования своего фреймворка. Vue — сразу
- * в `setup()`, React — при коммите: на рендере отброшенный рендер оставил бы в
- * движке фантом.
+ * элемента — чужого хранилища она не трогает. Вход — регистрация и `meta` — на
+ * `attach` контекста: фреймворк принял компонент. У React сборка идёт на
+ * рендере, и отброшенный рендер иначе оставил бы в движке фантом.
  */
 describe('TCollectionItemExtension: сборка и вход', () => {
 	/** Список с движком ListBox и элемент разметки, собранный под ним. */
@@ -376,61 +375,34 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 			TCollectionItemExtension,
 			{ item, elevator: factory },
 		)
-		const extension = required(context.get(TCollectionItemExtension), 'расширение элемента')
 
-		return { engine, item, context, extension }
+		return { engine, item, context }
 	}
 
-	it('до join() контекст элемента есть, а в движке элемента нет', () => {
+	it('до attach контекст элемента есть, а в движке элемента нет', () => {
 		const { engine, context } = assembleItem()
 
 		expect(context.instance.context).toBeDefined()
 		expect(engine.extensions.batch.items).toEqual([])
 	})
 
-	it('join() добавляет элемент и применяет meta из пропсов сборки', () => {
-		const { engine, item, extension } = assembleItem({ selected: true })
+	it('attach добавляет элемент и применяет meta из пропсов сборки', () => {
+		const { engine, item, context } = assembleItem({ selected: true })
 
 		expect(engine.extensions.selection.isSelected(item)).toBe(false)
 
-		extension.join()
+		context.attach()
 
 		expect(engine.extensions.batch.items).toEqual([item])
 		expect(engine.extensions.selection.isSelected(item)).toBe(true)
 	})
 
 	it('уничтожение контекста снимает элемент', () => {
-		const { engine, context, extension } = assembleItem()
+		const { engine, context } = assembleItem()
 
-		extension.join()
+		context.attach()
 		context.destroy()
 
 		expect(engine.extensions.batch.items).toEqual([])
-	})
-
-	it('повторный join() второй раз элемент не добавляет', () => {
-		const { engine, item, extension } = assembleItem()
-		const added: unknown[] = []
-
-		engine.extensions.plain.events.on('item:added', (e) => added.push(e.item))
-
-		extension.join()
-		extension.join()
-
-		expect(added).toEqual([item])
-		expect(engine.extensions.batch.items).toEqual([item])
-	})
-
-	it('join() после уничтожения ничего не делает', () => {
-		const { engine, context, extension } = assembleItem({ selected: true })
-		const applied: unknown[] = []
-
-		engine.extensions.meta.events.on('meta:applied', (item) => applied.push(item))
-
-		context.destroy()
-		extension.join()
-
-		expect(engine.extensions.batch.items).toEqual([])
-		expect(applied).toEqual([])
 	})
 })

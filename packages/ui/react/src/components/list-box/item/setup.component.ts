@@ -7,11 +7,10 @@
  * Расширение элемента берёт через лифт движок и регистратор списка и отдаёт
  * фасаду контекст элемента.
  *
- * В коллекцию элемент входит шагом коммита (`join()`), а не на рендере:
- * отброшенный рендер оставил бы в движке фантом, а элемент, добавленный после
- * монтирования, обновлял бы список посреди рендера ребёнка. Пересобранный
- * список — это новый движок: элемент пересобирается вслед за ним, потому что
- * сменилось прочитанное через лифт.
+ * В коллекцию элемент входит, когда `useAdapterContext` принимает контексты
+ * при коммите, а не на рендере. Пересобранный список — это новый движок:
+ * элемент пересобирается вслед за ним, потому что сменилось прочитанное через
+ * лифт.
  *
  * `context` отдаётся разметке явно: выбор — метод item-адаптера.
  */
@@ -27,20 +26,17 @@ import type { ListBoxItemProps } from './base.component'
 export function useSetupListBoxItem(props: ListBoxItemProps) {
 	const {
 		contexts: [adapter, item],
-	} = useAdapterContext(
-		(create, elevator) => {
-			const adapter = create(ListBoxItemDescriptor(), { ctrl: props.ctrl, props })
+	} = useAdapterContext((create, elevator) => {
+		const adapter = create(ListBoxItemDescriptor(), { ctrl: props.ctrl, props })
 
-			const item = create(
-				ListBoxCollectionItemDescriptor(),
-				{ props },
-				{ bundle: adapter.bundle },
-			).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		const item = create(
+			ListBoxCollectionItemDescriptor(),
+			{ props },
+			{ bundle: adapter.bundle },
+		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-			return [adapter, item] as const
-		},
-		([, item]) => item.get(TCollectionItemExtension)?.join(),
-	)
+		return [adapter, item] as const
+	})
 
 	const owner = useAdapter(adapter, props)
 	const facade = useCollectionAdapter(item, props, owner.forwardProps)
