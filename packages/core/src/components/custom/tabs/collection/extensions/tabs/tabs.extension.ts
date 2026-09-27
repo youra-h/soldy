@@ -18,8 +18,17 @@ import type {
 	ITabsExtension,
 } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
+import {
+	bindDisabledToOwner,
+	notifyOwnerDisabled,
+	unbindDisabledFromOwner,
+} from '../../../../../base/control'
+import {
+	bindStyleToOwner,
+	notifyOwnerSize,
+	notifyOwnerVariant,
+	unbindStyleFromOwner,
+} from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -79,14 +88,17 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Реестр для доступа к item-адаптерам (кеширует через WeakMap)
+		// Реестр для доступа к item-адаптерам — на время владения: его отпустит `destroy`
 		this._itemRegistry = new TItemContextRegistry({
 			extensions: ctx.extensions as TTabsExtensions<TItem>,
 			driver: ctx.driver,
 		})
 
+		// Расширение уходит вместе с владельцем, а драйвер, активация, владелец
+		// и табы живут дольше — подписки через `_listenTo`, их снимет `destroy`
+
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -94,15 +106,22 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		this._listenTo(this._owner.events, 'change:disabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` табу тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
@@ -110,7 +129,8 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		)
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTabsItemExtension резолвит closable из item ?? owner).
+		// (TTabsItemExtension резолвит closable из item ?? owner). Релей снимает
+		// очистка шины расширения (`destroy`)
 		this.events.relay(this._owner.events, ['change:closable'])
 
 		// `aria-selected` пишется сюда, а не в TActivationExtension: то
@@ -120,14 +140,14 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		const activation = this._activation
 
 		if (activation) {
-			activation.events.on('change:activation', () => this._syncSelectedAria())
+			this._listenTo(activation.events, 'change:activation', () => this._syncSelectedAria())
 
-			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
+			this._listenTo(ctx.driver.events, 'item:added', () => this._syncSelectedAria())
 
 			// Закрыли активный таб — активным становится сосед: иначе в списке не
 			// останется ни активного таба, ни панели. Это политика Tabs, а не
 			// активации: общее расширение на удаление активного только сбрасывает.
-			ctx.driver.events.on('item:remove:before', (e) => {
+			this._listenTo(ctx.driver.events, 'item:remove:before', (e) => {
 				this._dropCancelledActivation()
 
 				if (!activation.isActive(e.item)) return
@@ -135,7 +155,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 				this._pendingActivation = { event: e, siblings: [...ctx.driver.valueOf()] }
 			})
 
-			ctx.driver.events.on('item:removed', (e) => {
+			this._listenTo(ctx.driver.events, 'item:removed', (e) => {
 				this._dropCancelledActivation()
 
 				const pending = this._pendingActivation
@@ -159,12 +179,28 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		// один раз на команду — после всех `item:*`, в том числе после
 		// активации соседа закрытого таба
 		ctx.driver.valueOf().forEach((item) => this._watchTab(item))
-		ctx.driver.events.on('item:added', (e) => this._watchTab(e.item as TItem))
-		ctx.driver.events.on('item:removed', (e) => this._unwatchTab(e.item as TItem))
-		ctx.driver.events.on('change:items', () => this._syncTabStop())
-		activation?.events.on('change:activation', () => this._syncTabStop())
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._watchTab(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:removed', (e) => this._unwatchTab(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'change:items', () => this._syncTabStop())
+		this._listenTo(activation?.events, 'change:activation', () => this._syncTabStop())
 
 		this._syncTabStop()
+	}
+
+	/**
+	 * Набор ушёл: подписки сняты, реестр контекстов отпущен, а `disabled`,
+	 * `size` и `variant` табов отвязаны от набора — итог снова свой у таба, пока
+	 * движок не достанется следующему набору.
+	 */
+	override destroy(): void {
+		super.destroy()
+
+		this._itemRegistry?.release()
+
+		const items = this._ctx?.driver.valueOf() ?? []
+
+		unbindDisabledFromOwner(items)
+		unbindStyleFromOwner(items)
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
@@ -236,17 +272,26 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	/** Повод пересчитать остановку: сменилось, можно ли перейти на таб. */
 	private readonly _onTabAvailability = (): void => this._syncTabStop()
 
+	/**
+	 * Отписки от табов, которые сейчас в списке: удалённый снимается сразу,
+	 * остальные — с уходом расширения (`destroy`).
+	 */
+	private readonly _tabWatchers = new WeakMap<TItem, Array<() => void>>()
+
 	private _watchTab(item: TItem): void {
-		item.events.on('change:disabled', this._onTabAvailability)
-		item.events.on('change:visible', this._onTabAvailability)
-		item.events.on('change:rendered', this._onTabAvailability)
+		if (this._tabWatchers.has(item)) return
+
+		this._tabWatchers.set(item, [
+			this._listenTo(item.events, 'change:disabled', this._onTabAvailability),
+			this._listenTo(item.events, 'change:visible', this._onTabAvailability),
+			this._listenTo(item.events, 'change:rendered', this._onTabAvailability),
+		])
 	}
 
 	/** Удалённый таб больше не двигает остановку списка, в котором его нет. */
 	private _unwatchTab(item: TItem): void {
-		item.events.off('change:disabled', this._onTabAvailability)
-		item.events.off('change:visible', this._onTabAvailability)
-		item.events.off('change:rendered', this._onTabAvailability)
+		this._tabWatchers.get(item)?.forEach((unsubscribe) => unsubscribe())
+		this._tabWatchers.delete(item)
 	}
 
 	/**

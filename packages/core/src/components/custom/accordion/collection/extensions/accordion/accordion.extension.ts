@@ -9,8 +9,17 @@ import type {
 	IAccordionExtension,
 } from './types'
 import { TAccordionItemExtension, type IAccordionItemExtension } from './item'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
+import {
+	bindDisabledToOwner,
+	notifyOwnerDisabled,
+	unbindDisabledFromOwner,
+} from '../../../../../base/control'
+import {
+	bindStyleToOwner,
+	notifyOwnerSize,
+	notifyOwnerVariant,
+	unbindStyleFromOwner,
+} from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -62,8 +71,11 @@ export class TAccordionExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		// Расширение уходит вместе с владельцем, а драйвер и владелец живут
+		// дольше — подписки через `_listenTo`, их снимет `destroy`
+
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -71,15 +83,22 @@ export class TAccordionExtension<
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		this._listenTo(this._owner.events, 'change:disabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` секции тоже отдаёт резольвер — сообщаем прежний
 		// итог, по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
@@ -87,8 +106,23 @@ export class TAccordionExtension<
 		)
 
 		// Внешний вид: пробрасываем change:view в item-адаптеры
-		// (TAccordionItemExtension резолвит view из owner).
+		// (TAccordionItemExtension резолвит view из owner). Релей снимает
+		// очистка шины расширения (`destroy`)
 		this.events.relay(this._owner.events, ['change:view'])
+	}
+
+	/**
+	 * Accordion ушёл: подписки сняты, а `disabled`, `size` и `variant` секций
+	 * отвязаны от него — итог снова свой у секции, пока движок не достанется
+	 * следующему владельцу.
+	 */
+	override destroy(): void {
+		super.destroy()
+
+		const items = this._ctx?.driver.valueOf() ?? []
+
+		unbindDisabledFromOwner(items)
+		unbindStyleFromOwner(items)
 	}
 
 	/**

@@ -4,8 +4,17 @@ import type {
 	IExtension,
 	IExtensionContext,
 } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
+import {
+	bindDisabledToOwner,
+	notifyOwnerDisabled,
+	unbindDisabledFromOwner,
+} from '../../../../../base/control'
+import {
+	bindStyleToOwner,
+	notifyOwnerSize,
+	notifyOwnerVariant,
+	unbindStyleFromOwner,
+} from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { IRadioGroupItem } from '../../../item/types'
 import type { IRadioGroup, TRadioGroupValue, TRadioGroupView } from '../../../types'
@@ -77,9 +86,12 @@ export class TRadioGroupExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
+		// Расширение уходит вместе с группой, а драйвер, активация и сама группа
+		// живут дольше — подписки через `_listenTo`, их снимет `destroy`
+
 		// После вставки на месте источника уже инстанс: `TFactoryExtension`
 		// подменяет его в `item:add:before`
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -87,28 +99,35 @@ export class TRadioGroupExtension<
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
 		// Итог `disabled` радио отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		this._listenTo(this._owner.events, 'change:disabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` радио тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
-		this._owner.events.on('change:view', (value: TRadioGroupView | undefined) => {
+		this._listenTo(this._owner.events, 'change:view', (value: TRadioGroupView | undefined) => {
 			ctx.driver.valueOf().forEach((item) => {
 				item.view = value
 			})
 		})
 
-		this._owner.events.on('change:name', () => {
+		this._listenTo(this._owner.events, 'change:name', () => {
 			const name = this.groupName
 
 			ctx.driver.valueOf().forEach((item) => {
@@ -118,22 +137,22 @@ export class TRadioGroupExtension<
 
 		const activation = this._activation
 
-		activation?.events.on('item:activated', () => this._activationToValue())
+		this._listenTo(activation?.events, 'item:activated', () => this._activationToValue())
 
 		// Отметку снимает и активация сама, когда отмеченное радио удалили из
 		// коллекции. Это не выбор «ничего»: радио в группе уже нет
-		activation?.events.on('item:deactivated', (item) => {
+		this._listenTo(activation?.events, 'item:deactivated', (item) => {
 			if (item && !ctx.driver.valueOf().includes(item)) return
 
 			this._activationToValue()
 		})
 
-		this._owner.events.on('change:value', () => this._valueToActivation())
+		this._listenTo(this._owner.events, 'change:value', () => this._valueToActivation())
 
 		// Радио могло приехать позже, чем выставили `value`: элементы
 		// регистрируются при монтировании, а проп приходит сразу
-		ctx.driver.events.on('item:added', () => this._valueToActivation())
-		ctx.driver.events.on('change:items', () => this._valueToActivation())
+		this._listenTo(ctx.driver.events, 'item:added', () => this._valueToActivation())
+		this._listenTo(ctx.driver.events, 'change:items', () => this._valueToActivation())
 
 		// Направление на старте — по тому, у кого есть что сказать: значение
 		// задано пропом — главное оно; нет — движок могли собрать снаружи уже с
@@ -143,6 +162,20 @@ export class TRadioGroupExtension<
 		} else {
 			this._activationToValue()
 		}
+	}
+
+	/**
+	 * Группа ушла: подписки сняты, а `disabled`, `size` и `variant` радио
+	 * отвязаны от неё — итог снова свой у радио, пока движок не достанется
+	 * следующей группе.
+	 */
+	override destroy(): void {
+		super.destroy()
+
+		const items = this._ctx?.driver.valueOf() ?? []
+
+		unbindDisabledFromOwner(items)
+		unbindStyleFromOwner(items)
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {

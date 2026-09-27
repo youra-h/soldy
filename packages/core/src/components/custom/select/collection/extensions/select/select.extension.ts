@@ -6,8 +6,17 @@ import type {
 	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
+import {
+	bindDisabledToOwner,
+	notifyOwnerDisabled,
+	unbindDisabledFromOwner,
+} from '../../../../../base/control'
+import {
+	bindStyleToOwner,
+	notifyOwnerSize,
+	notifyOwnerVariant,
+	unbindStyleFromOwner,
+} from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -79,12 +88,13 @@ export class TSelectExtension<
 	private _batch: IBatchExtension<TItem> | null = null
 
 	/**
-	 * Подписки на переименование опций, которые сейчас в списке.
+	 * Отписки от переименования опций, которые сейчас в списке.
 	 *
 	 * Обработчик у каждой опции свой: ему нужна опция, а событие несёт только
-	 * значение. Поэтому он хранится до удаления опции — иначе снять подписку
-	 * было бы нечем. `WeakMap` — чтобы запись не удерживала опцию, если движок
-	 * выбросят, не удалив из него опции.
+	 * значение. Поэтому отписка хранится до удаления опции — иначе снять
+	 * подписку было бы нечем. Остальные снимает уход расширения (`destroy`).
+	 * `WeakMap` — чтобы запись не удерживала опцию, если движок выбросят, не
+	 * удалив из него опции.
 	 */
 	private readonly _textWatchers = new WeakMap<TItem, () => void>()
 
@@ -147,10 +157,13 @@ export class TSelectExtension<
 		// слот, и перебрать его коллекция не может; зато у каждой опции есть
 		// `visible`, который все шесть адаптеров уже уважают. Отсюда и правило:
 		// показана ровно та опция, что осталась в выдаче.
+		// Расширение уходит вместе с владельцем, а драйвер, соседние расширения,
+		// владелец и опции живут дольше — подписки через `_listenTo`, их снимет
+		// `destroy`
 		this._batch = ctx.extensions.batch as IBatchExtension<TItem>
-		this._batch.events.on('change:shown', () => this._syncShown())
+		this._listenTo(this._batch.events, 'change:shown', () => this._syncShown())
 
-		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._onItemAdded(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -160,43 +173,51 @@ export class TSelectExtension<
 		// Переименование опции слушается от добавления (`_onItemAdded`) до
 		// удаления. Очистка шлёт `item:removed` каждой опции перед `reset` —
 		// отдельной подписки на неё не нужно
-		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
+		this._listenTo(ctx.driver.events, 'item:removed', (e) => this._unwatchText(e.item))
 
 		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		this._listenTo(this._owner.events, 'change:disabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
-		this._owner.events.on('change:contentFit', () => {
+		this._listenTo(this._owner.events, 'change:contentFit', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
 
-		this._owner.events.on('change:indicator', () => {
+		this._listenTo(this._owner.events, 'change:indicator', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
-		// Сторона отметки доезжает до item-адаптеров
+		// Сторона отметки доезжает до item-адаптеров. Релей снимает очистка
+		// шины расширения (`destroy`)
 		this.events.relay(this._owner.events, ['change:indicator'])
 
 		const selection = this._selection
 
 		if (selection) {
-			selection.events.on('change:selection', () => this._onSelectionChanged())
-			selection.events.on('change:mode', () => this._onModeChanged())
+			this._listenTo(selection.events, 'change:selection', () => this._onSelectionChanged())
+			this._listenTo(selection.events, 'change:mode', () => this._onModeChanged())
 
-			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
-			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
+			this._listenTo(ctx.driver.events, 'item:added', () => this._syncSelectedAria())
+			this._listenTo(ctx.driver.events, 'item:removed', () => this._onSelectionChanged())
 		}
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
@@ -204,8 +225,8 @@ export class TSelectExtension<
 		// `SELECT_OWNER_EXTENSIONS` установлен раньше `select` специально ради
 		// этого — `ctx.extensions.tags` здесь уже существует, и его подписка
 		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
-		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
-		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
+		this._listenTo(this._owner.events, 'change:placeholder', () => this._syncFieldPlaceholder())
+		this._listenTo(this._tags?.events, 'change:tags', () => this._syncFieldPlaceholder())
 
 		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
 		// движка, собранного снаружи, применяет `selection` при установке, а
@@ -215,6 +236,20 @@ export class TSelectExtension<
 		// считаем по текущему выбору тем же обработчиком
 		this._onSelectionChanged()
 		this._writeField()
+	}
+
+	/**
+	 * Поле ушло: подписки сняты, а `disabled`, `size` и `variant` опций
+	 * отвязаны от него — итог снова свой у опции, пока движок не достанется
+	 * следующему полю.
+	 */
+	override destroy(): void {
+		super.destroy()
+
+		const items = this._ctx?.driver.valueOf() ?? []
+
+		unbindDisabledFromOwner(items)
+		unbindStyleFromOwner(items)
 	}
 
 	/**
@@ -294,10 +329,10 @@ export class TSelectExtension<
 	private _watchText(item: TItem): void {
 		if (this._textWatchers.has(item)) return
 
-		const watcher = (): void => this._onItemRenamed(item)
-
-		this._textWatchers.set(item, watcher)
-		item.events.on('change:text', watcher)
+		this._textWatchers.set(
+			item,
+			this._listenTo(item.events, 'change:text', () => this._onItemRenamed(item)),
+		)
 	}
 
 	/**
@@ -305,11 +340,7 @@ export class TSelectExtension<
 	 * удерживала бы Select, пока жива сама опция.
 	 */
 	private _unwatchText(item: TItem): void {
-		const watcher = this._textWatchers.get(item)
-
-		if (!watcher) return
-
-		item.events.off('change:text', watcher)
+		this._textWatchers.get(item)?.()
 		this._textWatchers.delete(item)
 	}
 

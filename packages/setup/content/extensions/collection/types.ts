@@ -5,9 +5,14 @@
 import type { TCollectionEngine, TItemContext } from '@soldy-ui/core'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
-/** Инстанс, к которому подключается расширение: фасад, владеющий коллекцией. */
+/**
+ * Инстанс, к которому подключается расширение: фасад, владеющий коллекцией.
+ * Живёт одно монтирование — `destroy()` отпускает движок, который фасад взял
+ * за владельцем.
+ */
 export type TCollectionOwner = {
 	readonly engine: TCollectionEngine<any, any>
+	destroy(): void
 }
 
 export interface ICollectionExtensionOptions {

@@ -20,7 +20,9 @@ import {
 	ButtonDescriptor,
 	DragAndDropDescriptor,
 	FrameDescriptor,
+	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
+	ListBoxDescriptor,
 	TabsCollectionContentDescriptor,
 	TElevator,
 	TCollectionExtension,
@@ -37,9 +39,18 @@ import {
 } from '@soldy-ui/setup'
 import { CallbackProfile, createElevatorFactory, required } from './helpers'
 
-/** Фасад-заглушка: у инстанса есть движок — всё, что нужно коллекционным расширениям. */
+/**
+ * Фасад-заглушка: у инстанса есть движок и уход вместе с контекстом — всё, что
+ * нужно коллекционным расширениям.
+ */
 class TEngineOwner {
+	destroyed = false
+
 	constructor(readonly engine: TCollectionEngine<any, any>) {}
+
+	destroy(): void {
+		this.destroyed = true
+	}
 }
 
 describe('TElevator', () => {
@@ -269,6 +280,57 @@ describe('расширения коллекций', () => {
 		cleanup()
 
 		expect(remove).toHaveBeenCalledWith(item)
+	})
+
+	it('уничтожение контекста уничтожает фасад: фасад собран этим контекстом', () => {
+		const { factory } = createElevatorFactory()
+		const instance = new TEngineOwner(createEngine())
+		const ctx = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
+			ctrl: instance,
+		})
+
+		ctx.use(TCollectionExtension, { elevator: factory })
+
+		expect(instance.destroyed).toBe(false)
+
+		ctx.destroy()
+
+		expect(instance.destroyed).toBe(true)
+	})
+
+	/**
+	 * Готовый движок переживает монтирование. Уходящий фасад отпускает его, и
+	 * список, собранный заново с новым владельцем, получает движок целиком: без
+	 * предупреждения о двух владельцах и со своим `value`.
+	 */
+	it('уничтожение контекста фасада отпускает движок следующему владельцу', () => {
+		const warn = vi.spyOn(console, 'warn')
+		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
+		const mount = (value: string) => {
+			const { factory } = createElevatorFactory()
+			const owner = createAdapterContext(ListBoxDescriptor(), { props: { value } })
+			const facade = createAdapterContext(
+				ListBoxCollectionDescriptor(),
+				{ options: { owner: owner.instance, engine } },
+				{ bundle: owner.bundle },
+			).use(TCollectionExtension, { elevator: factory })
+
+			return { owner, facade }
+		}
+
+		const first = mount('a')
+
+		first.facade.destroy()
+		first.owner.destroy()
+
+		const second = mount('b')
+
+		expect(warn).not.toHaveBeenCalled()
+		expect(second.facade.instance.selected.map((item) => item.value)).toEqual(['b'])
+
+		warn.mockRestore()
+		second.facade.destroy()
+		second.owner.destroy()
 	})
 
 	it('TCollectionExtension не подключается к инстансу без engine', () => {

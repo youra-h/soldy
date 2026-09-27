@@ -116,25 +116,33 @@ export class TSelectTagsExtension<
 
 		if (!selection) return
 
-		selection.events.on('change:mode', () => this._syncMode())
-		selection.events.on('change:selection', () => this.syncTags())
+		// Расширение уходит вместе с полем, а драйвер, выбор и само поле живут
+		// дольше — подписки через `_listenTo`, их снимет `destroy`. Свои теги и
+		// их движок расширение создаёт само, и уходят они вместе с ним
+		this._listenTo(selection.events, 'change:mode', () => this._syncMode())
+		this._listenTo(selection.events, 'change:selection', () => this.syncTags())
 
 		// Удалённую опцию `TSelectionExtension` снимает с выбора молча, поэтому
 		// удаление слушаем сами. Его подписка заведена раньше нашей — `selection`
 		// стоит в составе до `tags`, — значит к этому моменту выбор уже без
 		// удалённой опции. `select` стоит после нас и плейсхолдер считает по уже
 		// пересобранным тегам
-		ctx.driver.events.on('item:removed', () => this.syncTags())
+		this._listenTo(ctx.driver.events, 'item:removed', () => this.syncTags())
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
+		this._listenTo(this._owner.events, 'change:disabled', (value: boolean) => {
 			if (this._tags) this._tags.disabled = value
 		})
 
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			if (this._tags) this._tags.size = payload.newValue
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				if (this._tags) this._tags.size = payload.newValue
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				if (this._tags) this._tags.variant = payload.newValue

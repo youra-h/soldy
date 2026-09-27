@@ -4,8 +4,17 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
+import {
+	bindDisabledToOwner,
+	notifyOwnerDisabled,
+	unbindDisabledFromOwner,
+} from '../../../../../base/control'
+import {
+	bindStyleToOwner,
+	notifyOwnerSize,
+	notifyOwnerVariant,
+	unbindStyleFromOwner,
+} from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -49,12 +58,13 @@ export class TListBoxExtension<
 	protected readonly _owner: TOwner
 
 	/**
-	 * Подписки на собственный `contentFit` элементов, которые сейчас в списке.
+	 * Отписки от собственного `contentFit` элементов, которые сейчас в списке.
 	 *
 	 * Обработчик у каждого элемента свой: ему нужен элемент, а событие несёт
-	 * только значение. Поэтому он хранится до удаления элемента — иначе снять
-	 * подписку было бы нечем. `WeakMap` — чтобы запись не удерживала элемент,
-	 * если движок выбросят, не удалив из него элементы.
+	 * только значение. Поэтому отписка хранится до удаления элемента — иначе
+	 * снять подписку было бы нечем. Остальные снимает уход расширения
+	 * (`destroy`). `WeakMap` — чтобы запись не удерживала элемент, если движок
+	 * выбросят, не удалив из него элементы.
 	 */
 	private readonly _contentFitWatchers = new WeakMap<TItem, () => void>()
 
@@ -77,7 +87,9 @@ export class TListBoxExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		// Расширение уходит вместе с владельцем, а драйвер, выбор, владелец и
+		// элементы живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -85,15 +97,22 @@ export class TListBoxExtension<
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		this._listenTo(this._owner.events, 'change:disabled', () =>
+			notifyOwnerDisabled(ctx.driver.valueOf()),
+		)
 
 		// `size` и `variant` элементу тоже отдаёт резольвер — сообщаем прежний
 		// итог, по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
+		this._listenTo(
+			this._owner.events,
+			'change:size',
+			(payload: TValuePayload<TComponentSize>) => {
+				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+			},
+		)
 
-		this._owner.events.on(
+		this._listenTo(
+			this._owner.events,
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
@@ -102,28 +121,45 @@ export class TListBoxExtension<
 
 		// У `data-content-fit` два источника — список и сам элемент, и атрибут
 		// пересчитывается на смену любого из них
-		this._owner.events.on('change:contentFit', () => {
+		this._listenTo(this._owner.events, 'change:contentFit', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
 
 		ctx.driver.valueOf().forEach((item) => this._watchContentFit(item))
-		ctx.driver.events.on('item:added', (e) => this._watchContentFit(e.item as TItem))
+		this._listenTo(ctx.driver.events, 'item:added', (e) =>
+			this._watchContentFit(e.item as TItem),
+		)
 		// Очистка шлёт `item:removed` каждому элементу перед `reset` — отдельной
 		// подписки на неё не нужно
-		ctx.driver.events.on('item:removed', (e) => this._unwatchContentFit(e.item))
+		this._listenTo(ctx.driver.events, 'item:removed', (e) => this._unwatchContentFit(e.item))
 
-		this._owner.events.on('change:indicator', () => {
+		this._listenTo(this._owner.events, 'change:indicator', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
 		// Выбор, сложившийся до установки (`value` стоит раньше `list`), догоняет
 		// `_applyOwner` выше: он ставит `aria-selected` по текущему выбору
-		this._selection?.events.on('change:selection', () => {
+		this._listenTo(this._selection?.events, 'change:selection', () => {
 			ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item as TItem))
 		})
 
-		// Внешний вид и сторона отметки доезжают до item-адаптеров
+		// Внешний вид и сторона отметки доезжают до item-адаптеров. Релей снимает
+		// очистка шины расширения (`destroy`)
 		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
+	}
+
+	/**
+	 * Список ушёл: подписки сняты, а `disabled`, `size` и `variant` элементов
+	 * отвязаны от него — итог снова свой у элемента, пока движок не достанется
+	 * следующему списку.
+	 */
+	override destroy(): void {
+		super.destroy()
+
+		const items = this._ctx?.driver.valueOf() ?? []
+
+		unbindDisabledFromOwner(items)
+		unbindStyleFromOwner(items)
 	}
 
 	/**
@@ -217,10 +253,10 @@ export class TListBoxExtension<
 	private _watchContentFit(item: TItem): void {
 		if (this._contentFitWatchers.has(item)) return
 
-		const watcher = (): void => this._applyContentFit(item)
-
-		this._contentFitWatchers.set(item, watcher)
-		item.events.on('change:contentFit', watcher)
+		this._contentFitWatchers.set(
+			item,
+			this._listenTo(item.events, 'change:contentFit', () => this._applyContentFit(item)),
+		)
 	}
 
 	/**
@@ -228,11 +264,7 @@ export class TListBoxExtension<
 	 * список, а подписка удерживала бы список, пока жив сам элемент.
 	 */
 	private _unwatchContentFit(item: TItem): void {
-		const watcher = this._contentFitWatchers.get(item)
-
-		if (!watcher) return
-
-		item.events.off('change:contentFit', watcher)
+		this._contentFitWatchers.get(item)?.()
 		this._contentFitWatchers.delete(item)
 	}
 }
