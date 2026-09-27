@@ -203,6 +203,12 @@ export class TTabsItemCollectionFacade extends TOrderItemFacade<
   set active(value: boolean) {
     if (this._context) this._context.adapters.activation.active = value
   }
+
+  // Prop of the facade — prefixed: the tab has its own `closable`, and the two
+  // objects merge in the markup. Named as the prop, so the adapter state types know it
+  get tab_closable(): boolean {
+    return this._context?.adapters.tabs.closable ?? false
+  }
 }
 ```
 
@@ -220,7 +226,7 @@ declared inline in `contribution`; owner-level and item-level descriptors are se
 - Owner-level `TabsCollectionDescriptor`: `activeItem` (`protected: true`, triggers
   `change:activation`) + events `item:activated` / `item:deactivated` / `item:close`.
 - Item-level `TabsCollectionItemDescriptor`: `active`, `order` (protected), `tab_closable`
-  (protected, via `get`).
+  (protected — the facade getter of the same name, like `content_aria` on Accordion).
 
 ```ts
 export const TabsCollectionDescriptor = defineDescriptor(() =>
@@ -241,12 +247,7 @@ export const TabsCollectionItemDescriptor = defineDescriptor(() =>
       props: {
         active: { type: Boolean, triggers: ['change:active'] },
         order: { type: Number, protected: true, triggers: ['change:order'] },
-        tab_closable: {
-          type: Boolean,
-          protected: true,
-          get: (item: TTabsItemCollectionFacade) => item.closable,
-          triggers: ['change:closable'],
-        },
+        tab_closable: { type: Boolean, protected: true, triggers: ['change:closable'] },
       },
     },
   }),

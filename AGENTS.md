@@ -1514,6 +1514,12 @@ Accordion и у Select — унаследованный `aria`: они и вын
   владельца и `meta.apply`;
 - **снятие** — на `destroy`.
 
+Панель `Tabs.Content` в коллекцию не входит, но фазы у неё те же
+(`TTabsContentBindingExtension`, `setup/content/extensions/tabs/`): сборка
+связывает её с табом, трогая только её фасад и `aria`, — так панель таба из
+данных есть и в серверной разметке, — а подписки на движок и повторный поиск,
+который находит табы разметки, ждут `attach`.
+
 `attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
 компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
 Solid, Svelte — в `useAdapter` при инициализации, Angular — при создании

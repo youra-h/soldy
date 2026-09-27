@@ -695,7 +695,7 @@ describe('выключенный таб не закрывается', () => {
 
 		tab.disabled = true
 
-		expect(facade.closable).toBe(false)
+		expect(facade.tab_closable).toBe(false)
 		expect(changed).toHaveBeenCalledOnce()
 	})
 })

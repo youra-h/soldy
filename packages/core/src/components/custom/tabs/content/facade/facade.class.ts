@@ -14,9 +14,9 @@ import type { ITabsItem } from '../../item/types'
  * не самой панели.
  *
  * Ничего не вычисляет сам: активность берёт у адаптера `activation` — ровно
- * как `TTabsItemCollectionFacade` берёт `closable` у адаптера `tabs`. Атрибутов
- * связки фасад не отдаёт: сторону панели из адаптера `content` кладёт прямо в
- * `aria` панели `TTabsContentBindingExtension`.
+ * как `TTabsItemCollectionFacade` берёт закрываемость у адаптера `tabs`.
+ * Атрибутов связки фасад не отдаёт: сторону панели из адаптера `content`
+ * кладёт прямо в `aria` панели `TTabsContentBindingExtension`.
  */
 export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	ITabsItem,
