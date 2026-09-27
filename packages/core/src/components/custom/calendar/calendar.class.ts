@@ -49,7 +49,7 @@ export default class TCalendar
 		max: undefined,
 		unavailable: undefined,
 		// Не задан — первый день недели даёт `locale`
-		weekStart: 1,
+		weekStart: undefined,
 		locale: DEFAULT_LOCALE,
 		timeZone: undefined,
 		months: undefined,
