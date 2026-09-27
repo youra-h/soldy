@@ -10,8 +10,9 @@
  * 1. Core → Solid: подписка на состояние связки
  * 2. Solid → Core: входные пропсы в эффекте
  * 3. События (Core → колбэк-пропы onXxx)
- * 4. DOM-биндинг через callback-ref
- * 5. Очистка при уничтожении компонента (onCleanup)
+ * 4. Компонент принят — adapter.attach()
+ * 5. DOM-биндинг через callback-ref
+ * 6. Очистка при уничтожении компонента (onCleanup)
  *
  * Props передаются как есть: в Solid это объект геттеров, деструктурировать
  * его нельзя, но читать напрямую — можно и нужно.
@@ -65,7 +66,11 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		}),
 	)
 
-	// 4. Очистка контекста
+	// 4. Компонент принят: тело компонента Solid выполняется один раз, и на
+	// сервере тоже, — это и есть его монтирование
+	adapter.attach()
+
+	// 5. Очистка контекста
 	onCleanup(() => adapter.destroy())
 
 	const forwardProps = createMemo(() => binding.forward(props))

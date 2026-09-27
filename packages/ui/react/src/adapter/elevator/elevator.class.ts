@@ -1,56 +1,34 @@
 /**
- * TReactElevator — реализация IContextElevator через React Context.
+ * TReactElevator — лифт одного ключа поверх слоя сборки (`TReactElevatorScope`).
  *
- * Наследует TElevator из @soldy-ui/setup (кэширование ключей).
+ * Наследует TElevator из @soldy-ui/setup: ключ лифта — символ, один на имя.
  *
- * В отличие от Vue (provide/inject), React-контекст нельзя прокинуть
- * императивно. Поэтому:
- * - `down(value)` кэширует значение в инстансе (императивный путь);
- * - `up()` читает значение через `useContext` и должен вызываться во время
- *   рендера React-компонента (падает на `_value`, если контекст не задан).
+ * В отличие от Vue (`provide`/`inject`), React-контекст не прокинуть
+ * императивно, и хука в сборке может не быть: при повторной установке эффекта
+ * компонент собирается заново вне рендера. Поэтому лифт не зовёт `useContext`
+ * сам, а работает со слоем, который компонент увидел на рендере:
+ *
+ * - `up()` читает родительский слой;
+ * - `down(value)` пишет в свой слой компонента — детям его отдаёт `Elevate`.
  */
 
-import { createContext, useContext } from 'react'
 import { TElevator } from '@soldy-ui/setup'
-
-/**
- * Один Context на ключ: провайдер и потребитель обязаны получить один и тот же
- * объект. Значения разных ключей разного типа, поэтому кэш хранит `unknown`, а
- * тип значения задаёт ключ elevator'а.
- */
-const CONTEXT_CACHE = new Map<symbol, React.Context<unknown>>()
-
-function resolveContext(key: symbol): React.Context<unknown> {
-	let ctx = CONTEXT_CACHE.get(key)
-
-	if (!ctx) {
-		ctx = createContext<unknown>(undefined)
-		CONTEXT_CACHE.set(key, ctx)
-	}
-
-	return ctx
-}
+import type { TReactElevatorScope } from './scope.class'
 
 export class TReactElevator<T = unknown> extends TElevator<T> {
-	/** Готовый Context, чтобы прокинуть значение через JSX: <el.Context.Provider value={...}>. */
-	readonly Context: React.Context<unknown>
-
-	private _value: T | undefined
-
-	constructor(key: string | symbol) {
+	constructor(
+		key: string | symbol,
+		private readonly _scope: TReactElevatorScope,
+	) {
 		super(key)
-
-		this.Context = resolveContext(this._key)
 	}
 
 	down(value: T): void {
-		this._value = value
+		this._scope.write(this._key, value)
 	}
 
 	up(): T | undefined {
-		// Тип значения задаёт ключ elevator'а: под этим ключом кладут только `T`
-		const fromContext = useContext(this.Context) as T | undefined
-
-		return fromContext ?? this._value
+		// Тип значения задаёт ключ лифта: под этим ключом кладут только `T`
+		return this._scope.read(this._key) as T | undefined
 	}
 }

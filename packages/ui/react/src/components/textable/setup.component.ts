@@ -7,7 +7,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { TextableProps } from './base.component'
 
 export function useSetupTextable(props: TextableProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(TextableDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

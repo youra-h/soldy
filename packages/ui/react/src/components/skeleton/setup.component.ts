@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { SkeletonProps } from './base.component'
 
 export function useSetupSkeleton(props: SkeletonProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(SkeletonDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

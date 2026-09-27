@@ -4,6 +4,7 @@
  * Принимает ГОТОВЫЙ adapter-context и хост-элемент, возвращает TBinding:
  *
  * - state: текущие значения props из Core (обычный объект)
+ * - компонент принят (`adapter.attach()`) сразу при создании связки
  * - syncProps(props): элемент → Core, только переданные ключи
  * - bindElement(el): DOM-биндинг для TElementPlugin
  * - destroy(): снятие подписок + adapter.destroy()
@@ -53,6 +54,10 @@ export function useAdapter<C extends IComponentContract>(
 			}),
 		)
 	})
+
+	// Компонент принят: связку заводит `connectedCallback`, отброшенных
+	// сборок у Web Components нет
+	adapter.attach()
 
 	return {
 		state: toInstanceState<C>(state),

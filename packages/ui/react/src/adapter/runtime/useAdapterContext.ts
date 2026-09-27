@@ -4,7 +4,11 @@
  * один раз за жизнь компонента).
  *
  * Компонент передаёт фабрику (обычно `(create) => create(XDescriptor(), ...)`),
- * хук вызывает её при первом рендере и на следующих отдаёт тот же объект.
+ * хук вызывает её при первом рендере и на следующих отдаёт то же самое.
+ * Фабрика может вернуть и несколько контекстов — у коллекции это свой и
+ * фасада (`[adapter, collection]`): фасад собран на инстансе и наборе
+ * владельца, поэтому живут они одной единицей — хук держит, пересобирает и
+ * уничтожает их вместе, уничтожает — в обратном порядке.
  *
  * Собирает фабрика функцией `create`, которую даёт хук, а не
  * `createAdapterContext` напрямую: `create` — та же сборка с основой `id`
@@ -16,37 +20,93 @@
  * 19 под StrictMode зовёт дважды, и второй контекст с живым набором плагинов
  * утёк бы, а кэш `useMemo` React вправе сбросить.
  *
- * Уничтожает контекст очистка эффекта. React вправе заново установить эффекты
+ * Вторым аргументом фабрика получает лифт компонента (`elevator`): `up()`
+ * читает слой, который компонент увидел на рендере, `down()` пишет в слой
+ * компонента. Этот слой хук возвращает (`layer`), а детям его отдаёт `Elevate`.
+ * Хук помнит, что сборка прочла через `up()`. Сменилось это на рендере —
+ * например, владелец коллекции пересобран, и движок у него новый, — компонент
+ * собирается заново тем же путём, что при повторной установке эффекта.
+ *
+ * Уничтожает контексты очистка эффекта. React вправе заново установить эффекты
  * того же компонента: StrictMode делает лишний цикл при монтировании,
- * `<Activity>` — при показе. Компонент при этом жив, а его контекст уже
- * уничтожен, поэтому на такой установке хук собирает контекст заново и
- * перерисовывает компонент с ним. Фабрика — из последнего рендера: пропсы
+ * `<Activity>` — при показе. Компонент при этом жив, а его контексты уже
+ * уничтожены, поэтому на такой установке хук собирает их заново и
+ * перерисовывает компонент с ними. Фабрика — из последнего рендера: пропсы
  * первого с тех пор могли смениться. Без `ctrl` инстанс у нового контекста
  * новый, с `ctrl` — тот же. Каждый контекст уничтожается ровно один раз, в том
  * числе собранный, но так и не отрисованный, если компонент размонтировали до
  * перерисовки.
  *
+ * Принимает контексты (`attach()`) тот же эффект, что их уничтожает, — после
+ * сборки и каждой пересборки. Для React компонент принят при коммите, а не на
+ * рендере: отброшенный рендер не должен трогать ничего чужого, и элемент
+ * коллекции поэтому входит в неё только здесь. Эффекты детей идут раньше
+ * родителя и в порядке документа, поэтому элементы разметки входят в
+ * коллекцию в порядке DOM.
+ *
  * Выходы плагинов из типа контекста хук сохраняет: по ним `useAdapter` типизирует
  * `state`, и потерянные здесь они не дошли бы до разметки.
  */
 
-import { useEffect, useEffectEvent, useId, useReducer, useRef } from 'react'
+import { useContext, useEffect, useEffectEvent, useId, useMemo, useReducer, useRef } from 'react'
 import { createAdapterContext } from '@soldy-ui/setup'
-import type { IAdapterContext, IComponentContract } from '@soldy-ui/setup'
+import type { IAdapterContext, TElevatorFactory } from '@soldy-ui/setup'
+import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
+import { TReactElevatorScope } from '../elevator/scope.class'
 
 /** Сборка контекста, которую хук отдаёт фабрике: сигнатура — `createAdapterContext`. */
 export type TCreateAdapterContext = typeof createAdapterContext
 
-/** Счётчик версий: его смена перерисовывает компонент с новым контекстом. */
+/** Что собирает фабрика: контекст компонента или несколько — свой и фасада коллекции. */
+export type TAdapterContexts = IAdapterContext | readonly IAdapterContext[]
+
+/** Результат хука: контексты из фабрики и слой лифта, который компонент отдаёт детям. */
+export type TAssembly<T extends TAdapterContexts> = {
+	/** Ровно то, что вернула фабрика. */
+	readonly contexts: T
+	/** Слой компонента: родительский и то, что сборка опустила. Детям — через `Elevate`. */
+	readonly layer: TElevatorLayer
+}
+
+/** Сборка на руках у хука: контексты и лифт, на котором они собраны. */
+type TBuilt<T extends TAdapterContexts> = {
+	readonly contexts: T
+	readonly scope: TReactElevatorScope
+}
+
+/** Счётчик версий: его смена перерисовывает компонент с новыми контекстами. */
 const nextVersion = (version: number) => version + 1
 
-export function useAdapterContext<C extends IComponentContract>(
-	factory: (create: TCreateAdapterContext) => IAdapterContext<C>,
-): IAdapterContext<C> {
+function isList(contexts: TAdapterContexts): contexts is readonly IAdapterContext[] {
+	return Array.isArray(contexts)
+}
+
+function listOf(contexts: TAdapterContexts): readonly IAdapterContext[] {
+	return isList(contexts) ? contexts : [contexts]
+}
+
+/** В порядке сборки: фасад собран на наборе владельца и принимается после него. */
+function attachAll(contexts: TAdapterContexts): void {
+	for (const context of listOf(contexts)) context.attach()
+}
+
+/** В обратном порядке: фасад уходит раньше владельца. */
+function destroyAll(contexts: TAdapterContexts): void {
+	for (const context of [...listOf(contexts)].reverse()) context.destroy()
+}
+
+export function useAdapterContext<T extends TAdapterContexts>(
+	factory: (create: TCreateAdapterContext, elevator: TElevatorFactory) => T,
+): TAssembly<T> {
 	const idBase = useId()
-	const ref = useRef<IAdapterContext<C> | null>(null)
-	// Контекст в `ref` уничтожен очисткой эффекта; признак — хука, не контекста
+	// Слой, который компонент увидел на рендере: из него сборка читает `up()`
+	const parent = useContext(ElevatorContext)
+	const ref = useRef<TBuilt<T> | null>(null)
+	// Контексты в `ref` уничтожены очисткой эффекта; признак — хука, не контекста
 	const destroyed = useRef(false)
+	// С чем прошла последняя установка эффекта: сменить его может только
+	// устаревшее прочитанное
+	const settled = useRef<TElevatorLayer | null>(null)
 	const [, rerender] = useReducer(nextVersion, 0)
 	// Основа, заданная опцией явно, остаётся за тем, кто её задал
 	const create: TCreateAdapterContext = (descriptor, options, config) =>
@@ -55,26 +115,47 @@ export function useAdapterContext<C extends IComponentContract>(
 			{ ...options, options: { idBase, ...options.options } },
 			config,
 		)
+	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
+		const scope = new TReactElevatorScope(layer)
+
+		return { contexts: factory(create, scope.elevator), scope }
+	}
 	// Эффект зовёт фабрику последнего рендера, а не той, что застал при установке
-	const rebuild = useEffectEvent(() => factory(create))
+	const rebuild = useEffectEvent(() => assemble(parent))
 
 	if (!ref.current) {
-		ref.current = factory(create)
+		ref.current = assemble(parent)
 	}
 
+	const built = ref.current
+	// Прочитанное сборкой сменилось — эффект переустановится с новым слоем, а
+	// пока нет — остаётся тем, с чем установлен: пересобранные в эффекте
+	// контексты его не трогают
+	const source = built.scope.isStale(parent) ? parent : settled.current
+
 	useEffect(() => {
-		// Повторная установка после очистки: компонент жив, а его контекст нет
+		settled.current = source
+
+		// Повторная установка: после очистки (StrictMode, `<Activity>`) или
+		// из-за устаревшего прочитанного. Компонент жив, а его контекстов нет
 		if (destroyed.current) {
 			ref.current = rebuild()
 			destroyed.current = false
 			rerender()
 		}
 
+		const current = ref.current
+
+		if (current) attachAll(current.contexts)
+
 		return () => {
-			ref.current?.destroy()
+			if (current) destroyAll(current.contexts)
+
 			destroyed.current = true
 		}
-	}, [])
+	}, [source])
 
-	return ref.current
+	const layer = useMemo(() => built.scope.layerOver(parent), [built, parent])
+
+	return { contexts: built.contexts, layer }
 }

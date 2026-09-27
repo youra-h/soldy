@@ -7,7 +7,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
 export function useSetupComponentView(props: ComponentViewProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(ComponentViewDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

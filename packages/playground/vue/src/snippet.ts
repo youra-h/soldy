@@ -1,4 +1,9 @@
-import type { TComponentEntry, TPluginPropAddress, TPropControl } from '@soldy-ui/playground-shared'
+import {
+	isEmptyField,
+	type TComponentEntry,
+	type TPluginPropAddress,
+	type TPropControl,
+} from '@soldy-ui/playground-shared'
 
 /**
  * Сниппет для колонки «Component»: значение приходит пропом.
@@ -9,6 +14,10 @@ import type { TComponentEntry, TPluginPropAddress, TPropControl } from '@soldy-u
  * `preset` — соседние пропы, без которых этот не виден (см. `presetForProp`).
  * Превью строки их получает, значит и код обязан: без них вставленный пример
  * показал бы переключатель, который ни на что не влияет.
+ *
+ * Пустое поле — проп не задан (`isEmptyField`): превью его не получает, и в
+ * коде атрибута нет. Голое имя «не задан» не значит — у булева пропа Vue
+ * прочтёт его как `true`. Пресет остаётся.
  */
 export function propSnippet(
 	entry: TComponentEntry,
@@ -16,13 +25,15 @@ export function propSnippet(
 	value: unknown,
 	preset: Record<string, unknown> = {},
 ): string {
+	const own = isEmptyField(value) ? '' : ` ${attr(prop, value)}`
+
 	return [
 		'<script setup lang="ts">',
 		`import { ${entry.label} } from '@soldy-ui/vue'`,
 		'</script>',
 		'',
 		'<template>',
-		`\t<${entry.label}${presetAttrs(preset)} ${attr(prop, value)} />`,
+		`\t<${entry.label}${presetAttrs(preset)}${own} />`,
 		'</template>',
 	].join('\n')
 }
@@ -39,6 +50,10 @@ export function propSnippet(
  * коллекции. `new TAccordion().mode = …` в реальном проекте упал бы или
  * молча ничего не сделал. То же с плагинными: `instance.anchor_placement`
  * нет ни у инстанса, ни у плагина — у `TAnchorPlugin` свойство `placement`.
+ *
+ * Пустое поле — проп не задан, и записи в коде нет: свежий экземпляр уже стоит
+ * на умолчании. Литерал умолчания не подставляется — у пропа без умолчания
+ * (`mode` фасадов) подставлять нечего.
  */
 export function instanceSnippet(
 	entry: TComponentEntry,
@@ -62,7 +77,6 @@ function componentInstanceSnippet(
 	preset?: Record<string, unknown>,
 ): string {
 	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
-	const literal = toTemplateValue(value) ?? 'true'
 
 	return [
 		'<script setup lang="ts">',
@@ -70,8 +84,7 @@ function componentInstanceSnippet(
 		`import { ${ctor} } from '@soldy-ui/core'`,
 		'',
 		`const instance = new ${ctor}()`,
-		'',
-		`instance.${prop} = ${literal}`,
+		...assignment(`instance.${prop}`, value),
 		'</script>',
 		'',
 		'<template>',
@@ -96,16 +109,13 @@ function collectionInstanceSnippet(
 	value: unknown,
 	preset?: Record<string, unknown>,
 ): string {
-	const literal = toTemplateValue(value) ?? 'true'
-
 	return [
 		'<script setup lang="ts">',
 		`import { ${entry.label} } from '@soldy-ui/vue'`,
 		"import { createEngineSelection } from '@soldy-ui/core'",
 		'',
 		'const engine = createEngineSelection()',
-		'',
-		`engine.extensions.selection.${prop} = ${literal}`,
+		...assignment(`engine.extensions.selection.${prop}`, value),
 		'</script>',
 		'',
 		'<template>',
@@ -129,30 +139,54 @@ function pluginInstanceSnippet(
 	preset?: Record<string, unknown>,
 ): string {
 	const ctor = entry.descriptor().ctor?.name ?? 'TComponent'
-	const pluginCtor = address.ctor.name
-	const literal = toTemplateValue(value) ?? 'true'
+	const { imports, lines } = pluginAssignment(address, value)
 
 	return [
 		'<script setup lang="ts">',
 		`import { ${entry.label} } from '@soldy-ui/vue'`,
 		`import { ${ctor} } from '@soldy-ui/core'`,
-		`import { TPluginBundle, ${pluginCtor} } from '@soldy-ui/plugins'`,
+		...imports,
 		'',
 		`const instance = new ${ctor}()`,
-		'',
-		"instance.events.on('bundle:create', (bundle: unknown) => {",
-		'\tif (!(bundle instanceof TPluginBundle)) return',
-		'',
-		`\tconst plugin = bundle.get(${pluginCtor})`,
-		'',
-		`\tif (plugin) plugin.${address.name} = ${literal}`,
-		'})',
+		...lines,
 		'</script>',
 		'',
 		'<template>',
 		`\t<${entry.label}${presetAttrs(preset)} :ctrl="instance" />`,
 		'</template>',
 	].join('\n')
+}
+
+/** Присваивание с отбивкой сверху. Пустое поле — проп не задан, строк нет. */
+function assignment(target: string, value: unknown): string[] {
+	return isEmptyField(value) ? [] : ['', `${target} = ${toTemplateValue(value)}`]
+}
+
+/**
+ * Запись в плагин: подписка на `bundle:create` и импорт того, что она берёт.
+ * Пустое поле — писать в плагин нечего, и без записи не нужно ни то, ни другое.
+ */
+function pluginAssignment(
+	address: TPluginPropAddress,
+	value: unknown,
+): { imports: string[]; lines: string[] } {
+	if (isEmptyField(value)) return { imports: [], lines: [] }
+
+	const pluginCtor = address.ctor.name
+
+	return {
+		imports: [`import { TPluginBundle, ${pluginCtor} } from '@soldy-ui/plugins'`],
+		lines: [
+			'',
+			"instance.events.on('bundle:create', (bundle: unknown) => {",
+			'\tif (!(bundle instanceof TPluginBundle)) return',
+			'',
+			`\tconst plugin = bundle.get(${pluginCtor})`,
+			'',
+			`\tif (plugin) plugin.${address.name} = ${toTemplateValue(value)}`,
+			'})',
+		],
+	}
 }
 
 /**
@@ -166,16 +200,16 @@ function presetAttrs(preset: Record<string, unknown> = {}): string {
 		.join('')
 }
 
-/** Один проп в шаблоне: без значения — голым именем, иначе через `:`. */
+/** Один проп в шаблоне — всегда через `:` и со значением. */
 function attr(name: string, value: unknown): string {
-	const literal = toTemplateValue(value)
-
-	return literal === null ? name : `:${name}="${literal}"`
+	return `:${name}="${toTemplateValue(value)}"`
 }
 
-/** Значение так, как его пишут в шаблоне. `null` — проп без значения. */
-function toTemplateValue(value: unknown): string | null {
-	if (value === undefined || value === '') return null
+/**
+ * Значение так, как его пишут в коде. Пустое поле сюда не доходит: такой проп
+ * не задан, и в коде его нет вовсе.
+ */
+function toTemplateValue(value: unknown): string {
 	if (typeof value === 'string') return `'${value.replace(/'/g, "\\'")}'`
 	if (typeof value === 'number' || typeof value === 'boolean') return String(value)
 

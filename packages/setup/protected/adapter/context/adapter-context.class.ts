@@ -7,6 +7,11 @@
  * `bindElement` — метод контекста, а не расширение: связку корня с
  * `TElementPlugin` зовут все шесть адаптеров, а расширение каждый из них был бы
  * обязан помнить и подключать.
+ *
+ * Жизнь контекста — три фазы: собран, принят фреймворком (`attach`), уничтожен.
+ * Когда наступает вторая, знает только рантайм адаптера: у Vue, Solid, Svelte,
+ * Angular и Web Components это сама сборка, у React — коммит. Поэтому фаза —
+ * метод контекста, как `bindElement`, а не шаг, который помнит каждый компонент.
  */
 
 import { TEvented } from '@soldy-ui/core'
@@ -57,6 +62,10 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 		const plugin = this.bundle?.get(TElementPlugin)
 
 		if (plugin) plugin.element = element
+	}
+
+	attach(): void {
+		this.events.emit('attach')
 	}
 
 	destroy(): void {

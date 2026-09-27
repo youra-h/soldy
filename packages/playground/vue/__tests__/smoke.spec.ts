@@ -409,8 +409,8 @@ describe('пресет строки', () => {
  * Первая колонка такой проп не передаёт, и связка возвращает свойство к
  * умолчанию декларации (`TLine.reset`). Вторая пишет в экземпляр сама и
  * писала туда `undefined` — значение вне типа свойства: у ProgressLinear
- * полоса вставала на ноль вместо бега. По случаю на каждую ветку записи:
- * свойство компонента, коллекции и плагина.
+ * шкала осталась бы без конца (`aria-valuemax="undefined"`). По случаю на
+ * каждую ветку записи: свойство компонента, коллекции и плагина.
  */
 describe('очищенное поле', () => {
 	/**
@@ -424,23 +424,32 @@ describe('очищенное поле', () => {
 		await nextFrame()
 	}
 
-	it('возвращает умолчание: ProgressLinear снова бежит в обеих колонках', async () => {
+	/**
+	 * Строка `max` — с пресетом `value: 40`, и по доле видно, куда встала
+	 * шкала. Строка `value` для этой проверки не годится: умолчание доли —
+	 * ноль, и `undefined`, записанный мимо правила, полоса рисует так же —
+	 * пустой, с `aria-valuenow="0"`.
+	 */
+	it('возвращает умолчание: шкала ProgressLinear снова до 100 в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'progress-linear' } })
 
 		await nextTick()
 		await nextFrame()
 
-		const row = rowOf(wrapper, 'value')
-		const indeterminate = () =>
+		const row = rowOf(wrapper, 'max')
+		const scales = () =>
 			row
 				.findAll('.pg-col__stage .s-progress-linear')
-				.map((bar) => bar.attributes('data-indeterminate'))
+				.map(
+					(bar) =>
+						`${bar.attributes('aria-valuenow')} из ${bar.attributes('aria-valuemax')}`,
+				)
 
-		await enter(row, 40)
-		expect(indeterminate()).toEqual(['false', 'false'])
+		await enter(row, 50)
+		expect(scales()).toEqual(['40 из 50', '40 из 50'])
 
 		await enter(row, undefined)
-		expect(indeterminate()).toEqual(['true', 'true'])
+		expect(scales()).toEqual(['40 из 100', '40 из 100'])
 
 		wrapper.unmount()
 	})

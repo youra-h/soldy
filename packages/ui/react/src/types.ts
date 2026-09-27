@@ -48,15 +48,17 @@ export type UseProps<
  * Это ровно то, что компонент не съел: его `forwardProps` без входов
  * дескриптора. Поле раздаёт их двум элементам — класс и стиль корню,
  * остальное `<input>` (`toControlAttrs`).
+ *
+ * События — те, что компонент принимает (`TEvents`): у коллекции это ещё и
+ * события фасада, и `reset` коллекции иначе сошёлся бы с `onReset` формы.
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TAttributes extends object = HTMLAttributes<HTMLElement>,
+	TEvents extends object = EventProps<TDescriptorFn>,
 > = Omit<
 	TAttributes,
-	| keyof DescriptorAllProps<TDescriptorFn>
-	| keyof SlotProps<TDescriptorFn>
-	| keyof EventProps<TDescriptorFn>
+	keyof DescriptorAllProps<TDescriptorFn> | keyof SlotProps<TDescriptorFn> | keyof TEvents
 >
 
 /**
@@ -83,4 +85,5 @@ export type UseDomProps<
 	TInstance extends IEntity = IEntity,
 	TEvents extends object = EventProps<TDescriptorFn>,
 	TAttributes extends object = HTMLAttributes<HTMLElement>,
-> = UseProps<TDescriptorFn, TInstance, TEvents> & TDomAttributes<TDescriptorFn, TAttributes>
+> = UseProps<TDescriptorFn, TInstance, TEvents> &
+	TDomAttributes<TDescriptorFn, TAttributes, TEvents>

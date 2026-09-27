@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootLayout } from '../../adapter'
+import { renderSlot, toRootProps } from '../../adapter'
 import { useSetupSpinner } from './setup.component'
 import type { SpinnerProps } from './base.component'
 
@@ -20,15 +20,9 @@ export function Spinner(props: SpinnerProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ, чтобы не перекрыть ref адаптера (см. Button)
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
-		<Tag
-			{...forwardProps}
-			ref={ref}
-			{...toRootLayout(state, forwardProps)}
-			{...toAriaProps(attrs)}
-			{...toAriaProps(aria)}
-		>
+		<Tag {...toRootProps(ref, state, [attrs, aria], forwardProps)}>
 			{renderSlot(props.children)}
 		</Tag>
 	)

@@ -16,7 +16,7 @@ export type TScenarioKind = 'auto' | 'manual'
 export type TScenarioStatus = 'idle' | 'running' | 'waiting' | 'passed' | 'failed'
 
 /** Тема страницы тестов — пункт левого меню. */
-export type TTopicId = 'events' | 'slots'
+export type TTopicId = 'events' | 'slots' | 'motion'
 
 export type TTopic = {
 	id: TTopicId
@@ -114,6 +114,13 @@ export type TAutoScenario = TScenarioBase & {
  * Шаги говорят человеку, что делать. `run` необязателен: если он есть и его
  * условие выполнилось, сценарий засчитывается сам; без него итог ставят
  * только кнопки ✓ и ✗.
+ *
+ * `run`, который только показывает — крутит сцену по кругу, пока человек
+ * смотрит (ширина сцены, цикл загрузки у полосы), — не завершается сам:
+ * `while (!ctx.signal.aborted)` с `ctx.pause` внутри. Законченный `run`
+ * засчитал бы сценарий без человека. Обрывает цикл отмена прогона — отметка
+ * ✓ или ✗, перезапуск или уход со страницы: `pause` бросает её, и итог
+ * остаётся тем, что поставил человек.
  */
 export type TManualScenario = TScenarioBase & {
 	kind: 'manual'

@@ -3,7 +3,7 @@
  *
  * Наследует StylableDescriptor (rendered, visible, present, tag, direction,
  * наборы, size, variant, плагины element/ready) и добавляет значение, шкалу,
- * выход `percentStyle` и плагин имени.
+ * флаг бега, ось, выход `percentStyle` и плагин имени.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
@@ -19,18 +19,26 @@ export const ProgressLinearDescriptor = defineDescriptor(() =>
 
 		contribution: {
 			props: {
-				/** Сколько готово; `null` (по умолчанию) — доля неизвестна, полоса бежит */
+				/** Сколько готово — число на шкале от `min` до `max`, по умолчанию 0 */
 				value: { type: Number, triggers: ['change:value'] },
 				min: { type: Number, triggers: ['change:min'] },
 				max: { type: Number, triggers: ['change:max'] },
 				/**
+				 * Доля неизвестна — полоса бежит. Главнее `value`: оно хранится
+				 * и вернётся на полосу, когда бег снимут
+				 */
+				indeterminate: { type: Boolean, triggers: ['change:indeterminate'] },
+				/** Ось: `horizontal` (по умолчанию) или `vertical` — снизу вверх */
+				orientation: { type: String, triggers: ['change:orientation'] },
+				/**
 				 * Доля готового — `--s-progress-linear-percent`. Считает ядро:
-				 * в шести адаптерах одна формула была бы шесть раз.
+				 * в шести адаптерах одна формула была бы шесть раз. Пока полоса
+				 * бежит, переменной нет — отсюда триггер флага.
 				 */
 				percentStyle: {
 					type: Object,
 					protected: true,
-					triggers: ['change:value', 'change:min', 'change:max'],
+					triggers: ['change:value', 'change:min', 'change:max', 'change:indeterminate'],
 				},
 			},
 		},

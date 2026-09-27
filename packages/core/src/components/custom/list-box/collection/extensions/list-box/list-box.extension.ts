@@ -25,7 +25,8 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  *
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
- * свойства лежат на инстансе списка по контракту `IList`.
+ * свойства лежат на инстансе списка по контракту `IList`. Для скринридера —
+ * `aria-selected` всем элементам, как у Select и Tags.
  *
  * Через него идёт выбор пользователя (`chooseItem`): и клик по строке, и
  * клавиатура списка. Выключенному элементу он отказывает.
@@ -115,6 +116,12 @@ export class TListBoxExtension<
 			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
+		// Выбор, сложившийся до установки (`value` стоит раньше `list`), догоняет
+		// `_applyOwner` выше: он ставит `aria-selected` по текущему выбору
+		this._selection?.events.on('change:selection', () => {
+			ctx.driver.valueOf().forEach((item) => this._applySelectedAria(item as TItem))
+		})
+
 		// Внешний вид и сторона отметки доезжают до item-адаптеров
 		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
 	}
@@ -160,8 +167,24 @@ export class TListBoxExtension<
 		// элементы по одному — при тысяче опций так невозможно уйти со списка.
 		item.aria.add('tabindex', '-1')
 
+		this._applySelectedAria(item)
 		this._applyContentFit(item)
 		this._applyIndicator(item)
+	}
+
+	/**
+	 * `aria-selected` стоит на **всех** элементах, а не только на выбранных:
+	 * скринридер объявляет «2 из 7, не выбрана», и для этого нужен атрибут.
+	 *
+	 * Пишет родительское расширение, а не шаблон: раньше атрибут считала
+	 * разметка Vue (`String(selected)`), и каждый адаптер повторял бы это
+	 * правило у себя. Отсюда он попадает в набор `aria` элемента — и в первую
+	 * же отрисовку, включая серверную.
+	 */
+	private _applySelectedAria(item: TItem): void {
+		const selection = this._selection
+
+		if (selection) item.aria.add('aria-selected', selection.isSelected(item) ? 'true' : 'false')
 	}
 
 	/**

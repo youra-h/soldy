@@ -152,10 +152,17 @@ const dragAndDrop = new TDragAndDrop()
 	<Popover :lazyMount="'yes'" />
 	<Popover lazyMount />
 
-	<!-- @vue-expect-error — доля числом или null, а не строкой -->
+	<!-- @vue-expect-error — доля числом, а не строкой -->
 	<ProgressLinear value="40" />
 	<ProgressLinear :value="40" />
+
+	<!-- @vue-expect-error — бег — флаг `indeterminate`, у значения `null` нет -->
 	<ProgressLinear :value="null" />
+	<ProgressLinear indeterminate />
+
+	<!-- @vue-expect-error — оси `diagonal` нет -->
+	<ProgressLinear orientation="diagonal" />
+	<ProgressLinear orientation="vertical" />
 
 	<!-- @vue-expect-error — имя кнопки ленты строкой -->
 	<Scroller :prevLabel="42" />

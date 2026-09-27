@@ -1,13 +1,14 @@
 /**
- * ProgressLinear в настоящем браузере: переход доли и бег — тема.
+ * ProgressLinear в настоящем браузере: переход доли, бег и ось — тема.
  *
  * Долю и наборы считает ядро (`core/__tests__/progress-linear.spec.ts`),
  * разметку — адаптер (`ui/vue/__tests__/progress-linear.spec.ts`). Здесь то,
- * чего jsdom не видит вовсе: он не считает стилей и не заводит ни переходов,
- * ни анимаций. Как полоса движется, решает тема
+ * чего jsdom не видит вовсе: он не считает ни стилей, ни раскладки и не
+ * заводит ни переходов, ни анимаций. Как полоса лежит и движется, решает тема
  * (`themes/oren/src/components/progress-linear/_progress-linear.scss`): доля
- * едет переходом, бег — сдвиг отрезка, зеркальный в RTL, а при просьбе
- * системы убрать движение доля встаёт сразу, и отрезок не бежит, а дышит.
+ * едет переходом, бег — сдвиг отрезка, у горизонтальной зеркальный в RTL, у
+ * вертикальной — снизу вверх в любом направлении письма. При просьбе системы
+ * убрать движение доля встаёт сразу, а бег тот же.
  *
  * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
  * переход короткий, и `getAnimations()` после действия мог бы его уже не
@@ -20,6 +21,7 @@ import { defineComponent, h } from 'vue'
 import { TProgressLinear } from '@soldy-ui/core'
 import type { IProgressLinearProps } from '@soldy-ui/core'
 import { ProgressLinear } from '@soldy-ui/vue'
+import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
@@ -29,9 +31,12 @@ import '@soldy-ui/theme-oren'
 /** Допуск на субпиксельное округление длины, px. */
 const EPSILON = 0.5
 
+/** Высота вертикальной полосы по умолчанию — `h-40` темы, px. */
+const VERTICAL_LENGTH = 160
+
 /**
  * Полоса на странице шириной 400 px. Значение держит экземпляр ядра: через
- * него тест и меняет долю.
+ * него тест и меняет долю, флаг и ось.
  */
 function mount(props: Partial<IProgressLinearProps> = {}, dir: 'ltr' | 'rtl' = 'ltr') {
 	const ctrl = new TProgressLinear(props)
@@ -63,8 +68,24 @@ const range = () => find('.s-progress-linear__range')
 /** Бегущий отрезок: его вычисленный стиль — у псевдоэлемента корня. */
 const segment = () => getComputedStyle(root(), '::after')
 
-/** Длина заливки долей дорожки. */
+/** Длина заливки долей дорожки — по ширине у горизонтальной. */
 const filled = () => range().getBoundingClientRect().width / root().getBoundingClientRect().width
+
+/** Длина заливки долей дорожки — по высоте у вертикальной. */
+const filledUp = () =>
+	range().getBoundingClientRect().height / root().getBoundingClientRect().height
+
+/** Коробка корня полосы: смонтировать, дождаться отрисовки, измерить и снять. */
+async function boxOf(props: Partial<IProgressLinearProps>): Promise<DOMRect> {
+	mount(props)
+	await transitionEvents()
+
+	const box = root().getBoundingClientRect()
+
+	cleanup()
+
+	return box
+}
 
 /**
  * С какой длины заливка пошла переходом — по первому кадру перехода, который
@@ -108,11 +129,22 @@ function runOf(element: HTMLElement): CSSAnimation {
 }
 
 /**
+ * Сдвиг вдоль оси из вычисленного `translate`: по X у горизонтальной, по Y у
+ * вертикальной. Браузер пишет сдвиг одним значением, пока по Y он нулевой
+ * (`-100%`), и двумя, когда нет (`0px 12.5%`).
+ */
+function shiftAlong(translate: string, axis: 'x' | 'y'): number {
+	const [x = '0', y = '0'] = translate === 'none' ? [] : translate.split(' ')
+
+	return Number.parseFloat(axis === 'x' ? x : y)
+}
+
+/**
  * Сдвиг отрезка на долях круга бега — в процентах его длины, как их считает
  * браузер. Бег встаёт на паузу: коробки псевдоэлемента браузер не отдаёт, а
  * вычисленный сдвиг — отдаёт.
  */
-function shiftsAt(progress: readonly number[]): number[] {
+function shiftsAt(progress: readonly number[], axis: 'x' | 'y' = 'x'): number[] {
 	const run = runOf(root())
 	const duration = run.effect?.getTiming().duration
 
@@ -123,7 +155,7 @@ function shiftsAt(progress: readonly number[]): number[] {
 	return progress.map((share) => {
 		run.currentTime = duration * share
 
-		return Number.parseFloat(segment().translate)
+		return shiftAlong(segment().translate, axis)
 	})
 }
 
@@ -164,9 +196,9 @@ describe('доля', () => {
 	})
 
 	/**
-	 * Пока доля неизвестна, переменной доли нет, и заливка под бегом уходит к
-	 * нулю. Пришедшая доля растёт от начала дорожки, а не с места, где заливку
-	 * оставили перед бегом.
+	 * Пока полоса бежит, переменной доли нет, и заливка под бегом уходит к
+	 * нулю. Доля, вернувшаяся со снятием флага, растёт от начала дорожки, а не
+	 * с места, где заливку оставили перед бегом.
 	 */
 	it('от бега к доле — заливка растёт от нуля', async () => {
 		const ctrl = mount({ value: 25 })
@@ -174,13 +206,15 @@ describe('доля', () => {
 		await transitionEvents()
 
 		// Под бегом заливка уходит к нулю тем же переходом — дождаться его
-		ctrl.value = null
+		ctrl.indeterminate = true
 		await transitionEvents()
 		await settled(range())
 
 		const starts = transitionStarts(range())
 
+		// Значение, записанное во время бега, ждёт снятия флага
 		ctrl.value = 60
+		ctrl.indeterminate = false
 		await transitionEvents()
 
 		expect(starts).toEqual(['width 0%'])
@@ -204,8 +238,12 @@ describe('доля', () => {
 })
 
 describe('бег', () => {
-	it('пока доля неизвестна, заливка спрятана, а отрезок идёт к концу строки', async () => {
-		mount({ value: null })
+	it('флаг включает бег поверх доли: заливка спрятана, а отрезок идёт к концу строки', async () => {
+		const ctrl = mount({ value: 40 })
+
+		await transitionEvents()
+
+		ctrl.indeterminate = true
 		await transitionEvents()
 
 		expect(getComputedStyle(range()).visibility).toBe('hidden')
@@ -218,40 +256,159 @@ describe('бег', () => {
 	})
 
 	it('в RTL бег зеркальный: отрезок стоит справа и идёт влево', async () => {
-		mount({ value: null })
+		mount({ indeterminate: true })
 		await transitionEvents()
 
 		const ltr = shiftsAt([0.25, 0.5, 0.75])
 
 		cleanup()
-		mount({ value: null }, 'rtl')
+		mount({ indeterminate: true }, 'rtl')
 		await transitionEvents()
 
 		expect(segment().right).toBe('0px')
 		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(ltr.map((shift) => -shift))
 	})
 
-	it('система просит меньше движения — отрезок во всю дорожку не бежит, а дышит', async () => {
-		await reducedMotion('reduce')
-
-		mount({ value: null })
+	/**
+	 * Бег одинаков при любых настройках системы — решение владельца, как у
+	 * выезда Drawer: у неизвестной доли движение и есть сообщение «работа
+	 * идёт», а отрезок, который стоит на месте и мерцает, читается как
+	 * зависшая полоса. Сторож решения: без него бег снова спрятали бы под
+	 * `prefers-reduced-motion`.
+	 */
+	it('система просит меньше движения — отрезок всё равно бежит', async () => {
+		mount({ indeterminate: true })
 		await transitionEvents()
 
-		expect(segment().translate).toBe('none')
-		expect(Math.abs(Number.parseFloat(segment().width) - root().offsetWidth)).toBeLessThan(
-			EPSILON,
-		)
+		const width = segment().width
+		const shifts = shiftsAt([0.25, 0.5, 0.75])
 
-		const { effect } = runOf(root())
-		const opacities =
-			effect instanceof KeyframeEffect
-				? effect.getKeyframes().map((keyframe) => Number(keyframe.opacity))
-				: []
+		cleanup()
+		await reducedMotion('reduce')
 
-		// Дышит, но до полной плотности не доходит: залитая до конца дорожка
-		// читалась бы как «готово»
-		expect(opacities.length).toBeGreaterThan(1)
-		expect(Math.max(...opacities)).toBeLessThan(1)
-		expect(Math.min(...opacities)).toBeLessThan(Math.max(...opacities))
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+
+		mount({ indeterminate: true })
+		await transitionEvents()
+
+		// Тот же отрезок, а не вся дорожка, и идёт он тем же путём
+		expect(segment().width).toBe(width)
+		expect(root().offsetWidth - Number.parseFloat(width)).toBeGreaterThan(EPSILON)
+		expect(shiftsAt([0.25, 0.5, 0.75])).toEqual(shifts)
+	})
+})
+
+/**
+ * Вертикальная полоса повторяет решения вертикального ползунка: строчный
+ * блок своей высоты, толщина по размеру — поперёк оси, заливка и бег снизу
+ * вверх.
+ */
+describe('вертикальная полоса', () => {
+	it.each(COMPONENT_SIZES)(
+		'размер %s: 160 px в высоту, толщина как у горизонтальной',
+		async (size) => {
+			const horizontal = await boxOf({ size })
+			const vertical = await boxOf({ size, orientation: 'vertical' })
+
+			expect(horizontal.height).toBeGreaterThan(0)
+			expect(Math.abs(vertical.height - VERTICAL_LENGTH)).toBeLessThan(EPSILON)
+			expect(Math.abs(vertical.width - horizontal.height)).toBeLessThan(EPSILON)
+		},
+	)
+
+	it('заливка от низа дорожки во всю её ширину', async () => {
+		mount({ value: 40, orientation: 'vertical' })
+		await transitionEvents()
+
+		const track = root().getBoundingClientRect()
+		const fill = range().getBoundingClientRect()
+
+		expect(Math.abs(fill.bottom - track.bottom)).toBeLessThan(EPSILON)
+		expect(Math.abs(fill.width - track.width)).toBeLessThan(EPSILON)
+		expect(filledUp()).toBeCloseTo(0.4, 2)
+	})
+
+	it('смена доли — переходом высоты от прежней', async () => {
+		const ctrl = mount({ value: 40, orientation: 'vertical' })
+
+		await transitionEvents()
+
+		const starts = transitionStarts(range())
+
+		ctrl.value = 80
+		await transitionEvents()
+
+		// Логическое `block-size` Chromium ведёт физическим свойством
+		expect(starts).toEqual(['height 40%'])
+	})
+
+	it('система просит меньше движения — доля встаёт сразу', async () => {
+		await reducedMotion('reduce')
+
+		const ctrl = mount({ value: 40, orientation: 'vertical' })
+
+		await transitionEvents()
+
+		const runs = transitionRuns(range())
+
+		ctrl.value = 80
+		await transitionEvents()
+
+		expect(runs).toEqual([])
+		expect(filledUp()).toBeCloseTo(0.8, 2)
+	})
+
+	it('бег — снизу вверх: отрезок стоит у низа и идёт к верху', async () => {
+		mount({ indeterminate: true, orientation: 'vertical' })
+		await transitionEvents()
+
+		expect(getComputedStyle(range()).visibility).toBe('hidden')
+		expect(segment().bottom).toBe('0px')
+
+		const [quarter, half, threeQuarters] = shiftsAt([0.25, 0.5, 0.75], 'y')
+
+		// Ось экрана вниз: путь вверх — убывающий сдвиг
+		expect(quarter).toBeGreaterThan(half)
+		expect(half).toBeGreaterThan(threeQuarters)
+		// Вдоль строки отрезок не ходит
+		expect(shiftsAt([0.25, 0.5, 0.75], 'x')).toEqual([0, 0, 0])
+	})
+
+	it('в RTL бег тот же: направление письма вертикальную полосу не задевает', async () => {
+		mount({ indeterminate: true, orientation: 'vertical' })
+		await transitionEvents()
+
+		const ltr = shiftsAt([0.25, 0.5, 0.75], 'y')
+
+		cleanup()
+		mount({ indeterminate: true, orientation: 'vertical' }, 'rtl')
+		await transitionEvents()
+
+		expect(segment().bottom).toBe('0px')
+		expect(shiftsAt([0.25, 0.5, 0.75], 'y')).toEqual(ltr)
+		expect(shiftsAt([0.25, 0.5, 0.75], 'x')).toEqual([0, 0, 0])
+	})
+
+	it('система просит меньше движения — отрезок всё равно бежит', async () => {
+		mount({ indeterminate: true, orientation: 'vertical' })
+		await transitionEvents()
+
+		const height = segment().height
+		const shifts = shiftsAt([0.25, 0.5, 0.75], 'y')
+
+		cleanup()
+		await reducedMotion('reduce')
+
+		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+
+		mount({ indeterminate: true, orientation: 'vertical' })
+		await transitionEvents()
+
+		// Тот же отрезок, а не вся полоса, и идёт он тем же путём — вверх
+		expect(segment().height).toBe(height)
+		expect(root().offsetHeight - Number.parseFloat(height)).toBeGreaterThan(EPSILON)
+		expect(shiftsAt([0.25, 0.5, 0.75], 'y')).toEqual(shifts)
 	})
 })

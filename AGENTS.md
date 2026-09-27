@@ -548,7 +548,8 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
-с фабрикой, которая создаёт контекст. Собирает фабрика функцией `create`,
+с фабрикой, которая создаёт контекст (у коллекции — два: свой и фасада, см.
+«Элемент входит в коллекцию при монтировании»). Собирает фабрика функцией `create`,
 которую ей отдаёт хук, — `(create) => create(XDescriptor(), { ctrl, props })`:
 это `createAdapterContext` с основой `id` от `useId` (см. «`id` в разметке —
 от основы экземпляра»). Сторож — блок eslint
@@ -1499,6 +1500,64 @@ Accordion и у Select — унаследованный `aria`: они и вын
 `createEngine*` — своё из `items`, запись в инстанс, `batch.patch`, число
 модификаторов после смены у владельца и число `change:size` у элемента.
 
+### Элемент входит в коллекцию при монтировании, а не при сборке (критично)
+
+Движок, расширения и плагины одинаковы во всех адаптерах, а момент, когда
+фреймворк принимает собранный компонент, у каждого свой. Поэтому у контекста
+три фазы — собран, принят (`attach()`), уничтожен (`destroy()`), — а
+`TCollectionItemExtension` (`setup/content/extensions/collection/`) делит
+работу по ним:
+
+- **сборка** (`use(TCollectionItemExtension, …)`) — движок и регистратор
+  через лифт, контекст элемента в фасад (`setContext`), `meta` из пропсов.
+  Чужого хранилища она не трогает;
+- **вход** — на событие `attach` контекста: регистрация в коллекции
+  владельца и `meta.apply`;
+- **снятие** — на `destroy`.
+
+`attach()`, как `destroy()` и `bindElement`, зовёт рантайм адаптера, а не
+компонент: Vue — `useAdapterParts` в `setup()` (она идёт и на сервере),
+Solid, Svelte — в `useAdapter` при инициализации, Angular — при создании
+связки в `ngOnInit`, Web Components — в `connectedCallback`, React —
+`useAdapterContext` в том же эффекте, что и уничтожение. Каждый контекст
+рантайм принимает один раз и до уничтожения — как и уничтожает один раз, —
+поэтому защиты от повторов у контекста нет: повтор значил бы ошибку рантайма,
+а не норму, которую надо гасить. Пересобранный React набор — новые контексты,
+у них свой `attach`. Сторожат `setup/__tests__/adapter.spec.ts` («сборка и
+вход») и `ui/react/__tests__/adapter-context.spec.tsx` («приём при
+коммите»); без вызова в рантайме Vue или React элементы разметки не попадают
+в коллекцию, и падают тесты коллекций.
+
+**Почему не на рендере React.** Сборка React идёт на рендере, а побочный
+эффект на чужом хранилище там недопустим: отброшенный рендер оставит в движке
+фантом, а элемент, добавленный после монтирования, обновит владельца посреди
+рендера ребёнка — React пишет «Cannot update a component while rendering…».
+Эффекты детей идут раньше родителя и в порядке документа, поэтому `push`
+сохраняет порядок DOM. Не заводите регистрацию на рендере ни «пока владелец
+не смонтирован», ни с отложенным уведомлением связки: тогда момент и порядок
+решал бы адаптер.
+
+**Лифт React — один контекст со слоем значений.** `up()` читает слой, который
+компонент увидел на рендере, `down()` пишет в слой компонента, детям его
+отдаёт `Elevate` (`ui/react/src/adapter/elevator/`). `useContext` в `up()`
+быть не может: `up()` зовётся и при пересборке в эффекте, где хуков нет.
+Контексты одного компонента (свой и фасада) `useAdapterContext` держит одной
+единицей — фасад собран на инстансе и наборе владельца — и помнит, что сборка
+прочла через `up()`. Пересобранный владелец (StrictMode, `<Activity>`) — это
+новый движок: у элемента сменилось прочитанное, и он пересобирается тем же
+путём, что при повторной установке эффекта.
+
+**Цена.** Серверная разметка и первый кадр элемента из разметки — без того,
+что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
+Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
+`engine`) сервер рисует полностью: его элементы в коллекции с самой сборки.
+
+Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
+`ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,
+`<Activity>`, сервер и гидратация, — и
+`ui/react/__tests__/adapter-context.spec.tsx` (несколько контекстов и шаг
+коммита).
+
 ### ARIA: что знает элемент, а что коллекция
 
 `TTabsItem` пишет в свой `aria` только `role: 'tab'` — это единственное, что
@@ -1664,7 +1723,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension`, and the item joins the collection when `useAdapter` attaches the context in `setup()` (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -2397,6 +2456,10 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 - `adapter.bindElement(el)` — связка корневого узла с `TElementPlugin`. Метод
   контекста, а не расширение: её зовут все шесть адаптеров. У компонента без
   этого плагина вызов ничего не делает.
+- `adapter.attach()` — фреймворк принял собранный компонент, пара к
+  `destroy()`. Зовут все шесть адаптеров из своего рантайма, в свой момент
+  цикла; всё, что пишет в чужое хранилище, ждёт события `attach`, а не
+  вызова из компонента (см. «Элемент входит в коллекцию при монтировании»).
 
 **Правило:** починил баг в одном адаптере — проверь остальные. Исторически
 исправления уезжали в React/Angular и не возвращались во Vue.
@@ -3089,6 +3152,20 @@ Accordion.Item он был `'button'` при жёстком `<div>` в шабл�
 объявляла себя кнопкой со своим `aria-disabled`. Лечится переносом набора на
 строку, а не пропом, который глушит ARIA у `Button`.
 
+**Атрибуты снаружи — поверх наборов, и в React тоже.** Во Vue атрибуты,
+пришедшие компоненту снаружи, падают на корень последними, и набор элемента
+перекрывает то, что `Button` пишет себе сам, без усилий. В React порядок
+пишет разметка, и он один на все компоненты — `toRootProps`
+(`ui/react/src/adapter/common/root.ts`): наборы ядра в порядке шаблона Vue,
+поверх — атрибуты снаружи, класс и стиль — раскладкой корня (`toRootLayout`),
+`ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref`
+потребителя из атрибутов выбил бы привязку корня к `TElementPlugin`. Раньше
+компоненты React разворачивали атрибуты снаружи первыми, и `tabindex="-1"`
+строки ListBox проигрывал `tabindex="0"` кнопки — строки списка стали бы
+остановками Tab. Сторожит `ui/react/__tests__/root-attributes.spec.tsx`:
+атрибут снаружи перекрывает набор ядра, а `ref` потребителя не выбивает
+привязку — таблицей по компонентам.
+
 Нативные атрибуты вложенного контрола фиксированного тега — `disabled`,
 `required` и `readonly` у `<input>` Input, CheckBox и Switch — проводка в
 разметке, как `name`: у фиксированного тега нет условия «есть ли атрибут у
@@ -3452,8 +3529,22 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   ручку, а не указатель: смещение захвата учтено, и ядро получает щелчок
   поправкой к указателю. Доводка — команда `settle`: перетаскивание снято до
   переноса, ручку довозит переход темы, `commit` один. Клавиатура ходит по
-  шагу при любом режиме. Сторожат `core/__tests__/scale.spec.ts`,
-  `core/__tests__/slider.spec.ts`, `plugins/__tests__/slide-direction.spec.ts`,
+  шагу при любом режиме. Подсказка со значением (`tooltip`: `none` по
+  умолчанию, `auto` — пока ручку наводят, держат, тянут или её поле в фокусе
+  с клавиатуры, `always`) — разметка внутри ручки, а не `Tooltip`: дитя ручки
+  едет за ней по построению, и в протяжке, и в переходе темы, а
+  `role="tooltip"` с `aria-describedby` повторили бы значение, которое
+  объявляет поле. Рисовать ли её, решает выход ядра `tooltipRendered`, когда
+  показывать в `auto` — тема: по модификатору `--tooltip-<режим>`, наведению
+  и нажатию ручки, её `data-dragging` и `:focus-visible` поля; наведения и
+  фокуса в наборах ядра нет. Модификатор, а не `data-tooltip`: по этому
+  атрибуту свои подсказки рисуют CSS-библиотеки. Содержимое — слот `thumb`,
+  по умолчанию значение ручки; подсказка под `aria-hidden`, и в подписи
+  `Label` её текст в имя поля не входит. Горизонтальный ползунок в `always`
+  держит под неё место над ручками. Место, видимость и имя поля с подсказкой
+  сторожит `describe('подсказка')` браузерного спека. Сторожат
+  `core/__tests__/scale.spec.ts`, `core/__tests__/slider.spec.ts`,
+  `plugins/__tests__/slide-direction.spec.ts`,
   `plugins/__tests__/slide-pointer.plugin.spec.ts`,
   `plugins/__tests__/slide-snap-strategies.spec.ts`,
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
@@ -3461,19 +3552,30 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
 - **ProgressLinear** — индикатор выполнения линией, роль `progressbar` на
   корне. `aria-valuemin` и `aria-valuemax` стоят всегда, `aria-valuenow` —
   только при известной доле: неопределённый индикатор объявляется без него,
-  и скринридер не прочтёт «0 %». Доля неизвестна — это `value: null` (по
-  умолчанию), а не флаг рядом со значением: пара допускала бы бег с долей.
-  Значение хранится как задано, границы шкалы действуют только в выходах:
-  доля (`percentStyle`, переменная `--s-progress-linear-percent`) прижата к
-  0–100 %, `aria-valuenow` — к `[min, max]`, и полоса со скринридером
-  показывают одно и то же. Имя — `aria_label` или `aria_labelledBy`
-  (`TAriaPlugin` без `role`, как у Spinner). Содержимого и слотов нет: дети
-  `progressbar` презентационные, скринридер их не читает, — подпись и число
-  потребитель ставит рядом и связывает через `aria_labelledBy`. Бег и
-  переход доли — тема, по `data-indeterminate` и переменной доли. Сторожат
+  и скринридер не прочтёт «0 %». Доля неизвестна — это флаг `indeterminate`,
+  и он главнее значения, как у CheckBox: пока он стоит, доли и
+  `aria-valuenow` нет, а `value` хранится и возвращается на полосу, когда
+  бег снимают. Значения «неизвестно» у `value` нет — это всегда число, по
+  умолчанию `0`: иначе у бега было бы два пути. Значение хранится как задано,
+  границы шкалы действуют только в выходах: доля (`percentStyle`, переменная
+  `--s-progress-linear-percent`) прижата к 0–100 %, `aria-valuenow` — к
+  `[min, max]`, и полоса со скринридером показывают одно и то же. Ось —
+  `orientation` (`horizontal` по умолчанию или `vertical` — снизу вверх, как
+  вертикальный Slider), модификатором без префикса (`--horizontal`,
+  `--vertical`), как у Slider и Tabs; `aria-orientation` ядро не пишет — у
+  роли `progressbar` его нет (ARIA 1.2). Имя — `aria_label` или
+  `aria_labelledBy` (`TAriaPlugin` без `role`, как у Spinner). Содержимого и
+  слотов нет: дети `progressbar` презентационные, скринридер их не читает, —
+  подпись и число потребитель ставит рядом и связывает через
+  `aria_labelledBy`. Бег, переход доли и раскладка по оси — тема, по
+  `data-indeterminate`, модификатору оси и переменной доли. Бег одинаков при
+  любых настройках системы, и при `prefers-reduced-motion` тоже, — решение
+  владельца, как у выезда Drawer: у неизвестной доли движение и есть
+  сообщение «работа идёт»; переход доли просьбу выполняет. Сторожат
   `core/__tests__/progress-linear.spec.ts`,
   `ui/vue/__tests__/progress-linear.spec.ts` и
-  `playground/vue/browser/progress-linear.spec.ts`.
+  `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
+  оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
 
 **ComboBox отдельным компонентом не заводим.** Ark и Radix держат `Select` и
 `Combobox` врозь, потому что у них расходится модель значения: у select-only
@@ -4023,11 +4125,24 @@ Popover и Tooltip, заголовка и тела Dialog, списка и оп�
 
 Рядом со страницей свойств — страница тестов (`/tests/<тема>/<компонент>`,
 ссылка в шапке, обратно — на ту же страницу свойств). Слева два меню: темы
-(`events`, `slots`) и компоненты темы; компонент — своя страница, при смене
-темы он сохраняется. На странице два раздела: сверху автоматические с общей
-кнопкой «Запустить все» (`runAuto`), снизу ручные — каждый своей кнопкой,
-пачкой они не запускаются. У каждого раздела сводка и красный бейдж
-`errors: N` или зелёная галка.
+(`events`, `slots`, `motion`) и компоненты темы; компонент — своя страница,
+при смене темы он сохраняется. На странице два раздела: сверху
+автоматические с общей кнопкой «Запустить все» (`runAuto`), снизу ручные —
+каждый своей кнопкой, пачкой они не запускаются. У каждого раздела сводка и
+красный бейдж `errors: N` или зелёная галка.
+
+Тема `motion` — движение, которое оценивает только глаз: анимации и
+переходы темы. Машина сторожит, что движение есть и идёт куда надо
+(браузерные спеки), а плавно ли оно и как читается — ручной сценарий: бег,
+бег в RTL, вертикальный бег и цикл загрузки у ProgressLinear.
+
+**Ручной сценарий, который только показывает, не завершается сам.** Его
+`run` крутит сцену по кругу — ширину сцены (`button/slots/width`), цикл
+загрузки полосы (`progress-linear/motion/loading`) — в
+`while (!ctx.signal.aborted)` с `ctx.pause` внутри: законченный `run`
+засчитал бы сценарий без человека. Цикл обрывает отмена прогона — отметка
+✓/✗, перезапуск или уход со страницы, — `pause` бросает её, и итог остаётся
+тем, что поставил человек (`TManualScenario.run` в `types.ts`).
 
 Граница та же — дублируется вёрстка, но не данные:
 

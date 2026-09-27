@@ -4,6 +4,7 @@
  * Принимает ГОТОВЫЙ adapter-context и возвращает TBinding:
  *
  * - state: сигнал с текущими значениями props из Core
+ * - компонент принят (`adapter.attach()`) сразу при создании связки
  * - syncInputs(inputs): Angular → Core, только изменившиеся входы (вызывается из
  *   ngOnChanges)
  * - syncEvents(outputs): подписывает Angular EventEmitter'ы на Core-события
@@ -96,6 +97,10 @@ export function useAdapter<C extends IComponentContract>(
 	// получает его целиком. Подписка сразу отдаёт каждое свойство тем же
 	// вызовом, что и триггер: так сигнал и заполняется
 	const unsubscribe = binding.state.subscribe(() => values.set(binding.state.getSnapshot()))
+
+	// Компонент принят: связку заводит `ngOnInit`, отброшенных сборок у
+	// Angular нет
+	adapter.attach()
 
 	return {
 		state: computed(() => toInstanceState<C>(values())),

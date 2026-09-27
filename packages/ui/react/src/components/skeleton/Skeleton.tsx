@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootLayout } from '../../adapter'
+import { renderSlot, toRootProps } from '../../adapter'
 import { useSetupSkeleton } from './setup.component'
 import type { SkeletonProps } from './base.component'
 
@@ -21,15 +21,10 @@ export function Skeleton(props: SkeletonProps): ReactElement {
 
 	const Tag = tag as ElementType
 
-	// forwardProps идёт ПЕРВЫМ, чтобы не перекрыть ref адаптера (см. Button)
+	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним
+	// (`toRootProps`). Видимость в раскладку корня не идёт: она прячет заглушку
 	return (
-		<Tag
-			{...forwardProps}
-			ref={ref}
-			{...toRootLayout({ classes, layout_styles }, forwardProps)}
-			{...toAriaProps(attrs)}
-			{...toAriaProps(aria)}
-		>
+		<Tag {...toRootProps(ref, { classes, layout_styles }, [attrs, aria], forwardProps)}>
 			{present ? <div className="s-skeleton__placeholder" aria-hidden="true" /> : null}
 			{renderSlot(props.children)}
 		</Tag>

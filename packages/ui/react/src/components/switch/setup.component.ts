@@ -10,7 +10,7 @@ import { useAdapter, useAdapterContext } from '../../adapter'
 import type { SwitchProps } from './base.component'
 
 export function useSetupSwitch(props: SwitchProps) {
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(SwitchDescriptor(), { ctrl: props.ctrl, props }),
 	)
 

@@ -11,7 +11,7 @@ import type { ButtonProps } from './base.component'
 
 export function useSetupButton(props: ButtonProps) {
 	// Создаем адаптер 1 раз за жизненный цикл компонента (аналог setup() во Vue)
-	const adapter = useAdapterContext((create) =>
+	const { contexts: adapter } = useAdapterContext((create) =>
 		create(ButtonDescriptor(), { ctrl: props.ctrl, props }),
 	)
 
