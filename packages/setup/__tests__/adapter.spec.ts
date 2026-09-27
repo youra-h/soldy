@@ -40,16 +40,21 @@ import {
 import { CallbackProfile, createElevatorFactory, required } from './helpers'
 
 /**
- * Фасад-заглушка: у инстанса есть движок и уход вместе с контекстом — всё, что
- * нужно коллекционным расширениям.
+ * Фасад-заглушка: у инстанса есть движок, который он держит, пока монтирование
+ * принято, — всё, что нужно коллекционным расширениям.
  */
 class TEngineOwner {
-	destroyed = false
+	/** Что сборка делала с движком: `retain` и `release` по порядку. */
+	readonly holds: string[] = []
 
 	constructor(readonly engine: TCollectionEngine<any, any>) {}
 
-	destroy(): void {
-		this.destroyed = true
+	retain(): void {
+		this.holds.push('retain')
+	}
+
+	release(): void {
+		this.holds.push('release')
 	}
 }
 
@@ -282,7 +287,7 @@ describe('расширения коллекций', () => {
 		expect(remove).toHaveBeenCalledWith(item)
 	})
 
-	it('уничтожение контекста уничтожает фасад: фасад собран этим контекстом', () => {
+	it('приём монтирования удерживает движок, уничтожение контекста — отпускает', () => {
 		const { factory } = createElevatorFactory()
 		const instance = new TEngineOwner(createEngine())
 		const ctx = createAdapterContext(defineComponent({ ctor: TEngineOwner }), {
@@ -291,17 +296,18 @@ describe('расширения коллекций', () => {
 
 		ctx.use(TCollectionExtension, { elevator: factory })
 
-		expect(instance.destroyed).toBe(false)
+		expect(instance.holds).toEqual([])
 
+		ctx.attach()
 		ctx.destroy()
 
-		expect(instance.destroyed).toBe(true)
+		expect(instance.holds).toEqual(['retain', 'release'])
 	})
 
 	/**
-	 * Готовый движок переживает монтирование. Уходящий фасад отпускает его, и
-	 * список, собранный заново с новым владельцем, получает движок целиком: без
-	 * предупреждения о двух владельцах и со своим `value`.
+	 * Готовый движок переживает монтирование. Уничтожение контекста фасада его
+	 * отпускает, и список, собранный заново с новым владельцем, получает движок
+	 * целиком: без предупреждения о двух владельцах и со своим `value`.
 	 */
 	it('уничтожение контекста фасада отпускает движок следующему владельцу', () => {
 		const warn = vi.spyOn(console, 'warn')
@@ -314,6 +320,9 @@ describe('расширения коллекций', () => {
 				{ options: { owner: owner.instance, engine } },
 				{ bundle: owner.bundle },
 			).use(TCollectionExtension, { elevator: factory })
+
+			owner.attach()
+			facade.attach()
 
 			return { owner, facade }
 		}

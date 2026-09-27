@@ -1,36 +1,34 @@
 // @vitest-environment jsdom
 
 /**
- * Сторож: уходящий список снимает с долгоживущих шин всё, что повесили на них
- * расширения его владельца и сам фасад.
+ * Сторож: движок, перешедший к следующему владельцу, не держит ничего от
+ * прежнего.
  *
- * Владельческие расширения движка (`value`, `list`, `tabs` и соседи) живут,
- * пока владелец держит движок: фасад, уходя, отпускает его (`releaseEngine`).
- * Шины вокруг живут дольше. Движок, пришедший снаружи (`engine`), переживает
- * монтирование вместе с драйвером, соседними расширениями и элементами из
- * данных: React пересобирает список под StrictMode и `<Activity>`, Vue
- * монтирует заново под `v-if`. Свой `ctrl` приложения переживает
- * монтирование со своей шиной — и когда движок фасад собрал сам. Подписка,
- * которую уход не снял, оставляет на такой шине обработчик мёртвого
- * расширения, и тот продолжает писать элементам свойства ушедшего владельца.
- * Перехватчик, которым фасад пробрасывает события расширения (`relayAll`),
- * оставляет мёртвому фасаду каждое событие живого движка. Снаружи ни того ни
- * другого не видно, поэтому стережётся тестом. Владельческие расширения
- * подписываются через `TBaseExtension._listenTo`, и отписку делает их
- * `destroy`; перехватчики фасада снимает его `destroy`.
+ * Владельческие расширения движка (`value`, `list`, `tabs` и соседи)
+ * стоят, пока движок у владельца. Конец монтирования движок только отпускает
+ * (`release` фасада): React собирает заново список, живой под StrictMode и
+ * `<Activity>`, на том же фасаде. Снимает расширения прежнего владельца и его
+ * фасад следующий владелец, взяв отпущенный движок (`attachEngine`). Шины
+ * вокруг живут дольше: драйвер, соседние расширения и элементы из данных — с
+ * движком, пришедшим снаружи (`engine`), шина владельца — со своим `ctrl`
+ * приложения. Подписка, которую переход не снял, оставляет на такой шине
+ * обработчик снятого расширения, и тот продолжает писать элементам свойства
+ * прежнего владельца. Перехватчик, которым фасад пробрасывает события
+ * расширения (`relayAll`), оставляет снятому фасаду каждое событие живого
+ * движка. Снаружи ни того ни другого не видно, поэтому стережётся тестом.
+ * Владельческие расширения подписываются через `TBaseExtension._listenTo`, и
+ * отписку делает их `destroy`; перехватчики фасада снимает его `destroy`.
  *
  * Сверка — шпионами на шины, как в `plugin-unsubscribe.spec.ts`: каждая пара
- * «событие, обработчик», повешенная на шину (`on`), после ухода найдена среди
- * снятых (`off`), а каждый перехватчик (`use`) снят. Список монтируется так,
- * как его монтируют адаптеры: свой контекст над своим `ctrl`, контекст фасада
- * на его наборе с `TCollectionExtension`; уход — `destroy` обоих, фасад
- * первым, как у React.
- *
- * - Движок снаружи: до слежки через него уже прошёл один владелец — движок
- *   дособран (фабрика, выбор или активация), элементы из данных стали
- *   экземплярами. Шпионы — на драйвере, каждом расширении и каждом элементе
- *   движка и на шине нового владельца.
- * - Свой движок: его шин до монтирования нет, шпион — на шине владельца.
+ * «событие, обработчик», повешенная на шину (`on`) к концу монтирования
+ * списка, после перехода найдена среди снятых (`off`), а каждый перехватчик
+ * (`use`) снят. Список монтируется так, как его монтируют адаптеры: свой
+ * контекст над своим `ctrl`, контекст фасада на его наборе с
+ * `TCollectionExtension`, приём обоих; конец монтирования — `destroy` обоих,
+ * фасад первым, как у React. До слежки через движок уже прошёл один владелец —
+ * движок дособран (фабрика, выбор или активация), элементы из данных стали
+ * экземплярами. Шпионы — на драйвере, каждом расширении и каждом элементе
+ * движка и на шине владельца под слежкой.
  *
  * Идёт по всем фасадам коллекций из экспорта: новая коллекция попадёт под
  * проверку сама — без строки в таблице сторож упадёт.
@@ -42,6 +40,8 @@ import type { TCollectionEngine } from '@soldy-ui/core'
 import {
 	AccordionCollectionDescriptor,
 	AccordionDescriptor,
+	CalendarCollectionDescriptor,
+	CalendarDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
 	RadioGroupCollectionDescriptor,
@@ -61,7 +61,6 @@ import type { IComponentDescriptor, IPluginsContract } from '../protected/define
 import {
 	createElevatorFactory,
 	exportedDescriptors,
-	leftovers,
 	required,
 	spyBus,
 	subscribed,
@@ -74,25 +73,18 @@ const SOURCES = [
 	{ value: 'b', text: 'B' },
 ]
 
-/**
- * Смонтировать список над своим `ctrl` и уйти. Движок снаружи — фасад его
- * дособирает; без него фасад собирает свой из `items`. Отдаёт движок, на
- * котором работал список.
- */
+/** Смонтировать список над своим `ctrl` и готовым движком и закончить монтирование. */
 function mountList<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
 	own: IComponentDescriptor,
 	collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
 	ctrl: object,
-	engine?: TCollectionEngine<any, any>,
-): TCollectionEngine<any, any> {
+	engine: TCollectionEngine<any, any>,
+): void {
 	const { factory: elevator } = createElevatorFactory()
 	const owner = createAdapterContext(own, { ctrl })
 	const facade = createAdapterContext(
 		collection,
-		{
-			props: engine ? {} : { items: SOURCES.map((source) => ({ ...source })) },
-			options: { owner: owner.instance, engine },
-		},
+		{ options: { owner: owner.instance, engine } },
 		{ bundle: owner.bundle },
 	).use(TCollectionExtension, { elevator })
 
@@ -101,17 +93,12 @@ function mountList<TFacade extends TCollectionOwner, TPlugins extends IPluginsCo
 
 	facade.destroy()
 	owner.destroy()
-
-	return facade.instance.engine
 }
 
 /** Коллекция под сторожем: дескриптор компонента — его класс и есть владелец. */
 type TCollectionKit = {
 	readonly own: () => IComponentDescriptor
-	readonly mount: (
-		ctrl: object,
-		engine?: TCollectionEngine<any, any>,
-	) => TCollectionEngine<any, any>
+	readonly mount: (ctrl: object, engine: TCollectionEngine<any, any>) => void
 }
 
 /** Коллекции экспорта — ключ по дескриптору фасада. */
@@ -120,6 +107,11 @@ const COLLECTIONS: Readonly<Record<string, TCollectionKit>> = {
 		own: AccordionDescriptor,
 		mount: (ctrl, engine) =>
 			mountList(AccordionDescriptor(), AccordionCollectionDescriptor(), ctrl, engine),
+	},
+	CalendarCollectionDescriptor: {
+		own: CalendarDescriptor,
+		mount: (ctrl, engine) =>
+			mountList(CalendarDescriptor(), CalendarCollectionDescriptor(), ctrl, engine),
 	},
 	ListBoxCollectionDescriptor: {
 		own: ListBoxDescriptor,
@@ -179,11 +171,40 @@ function spyMiddlewares(name: string, holder: unknown): TMiddlewareSpy[] {
 	return [spy]
 }
 
-/** Перехватчики, оставшиеся на шинах после ухода: имя шины на каждый. */
-function middlewareLeftovers(spies: readonly TMiddlewareSpy[]): string[] {
-	return spies.flatMap(({ name, added, removed }) =>
-		added.filter((middleware) => !removed.has(middleware)).map(() => name),
-	)
+/** Подписка, повешенная на шину: шпион шины, событие и обработчик. */
+type THung = { readonly spy: IBusSpy; readonly event: unknown; readonly handler: unknown }
+
+/** Перехватчик, повешенный на шину: имя шины и снятые перехватчики её шпиона. */
+type THook = { readonly name: string; readonly middleware: unknown; readonly removed: Set<unknown> }
+
+/** Подписки и перехватчики, повешенные к этому моменту. */
+function hungNow(
+	buses: readonly IBusSpy[],
+	middlewares: readonly TMiddlewareSpy[],
+): { subscriptions: THung[]; hooks: THook[] } {
+	return {
+		subscriptions: buses.flatMap((spy): THung[] =>
+			spy.on.mock.calls.map(([event, handler]) => ({ spy, event, handler })),
+		),
+		hooks: middlewares.flatMap(({ name, added, removed }): THook[] =>
+			added.map((middleware) => ({ name, middleware, removed })),
+		),
+	}
+}
+
+/** Что из повешенного осталось на шинах: `<шина>: <событие>` и перехватчики. */
+function stillHung(hung: { subscriptions: THung[]; hooks: THook[] }): string[] {
+	return [
+		...hung.subscriptions
+			.filter(
+				({ spy, event, handler }) =>
+					!spy.off.mock.calls.some(([e, h]) => e === event && h === handler),
+			)
+			.map(({ spy, event }) => `${spy.name}: ${String(event)}`),
+		...hung.hooks
+			.filter(({ middleware, removed }) => !removed.has(middleware))
+			.map(({ name }) => `${name}: перехватчик`),
+	]
 }
 
 /** Шины готового движка и нового владельца: драйвер, расширения, элементы, владелец. */
@@ -213,7 +234,7 @@ function readyEngine(kit: TCollectionKit): TCollectionEngine<any, any> {
 	return engine
 }
 
-describe('сторож: уходящий список снимает подписки своего владельца и фасада', () => {
+describe('сторож: следующий владелец снимает подписки прежнего владельца и его фасада', () => {
 	it('таблица покрывает каждый фасад коллекции из экспорта', () => {
 		const facades = exportedDescriptors()
 			.filter(([, descriptor]) => descriptor.ctor.prototype instanceof TCollectionComponent)
@@ -244,25 +265,20 @@ describe('сторож: уходящий список снимает подпи�
 	})
 
 	describe.each(Object.entries(COLLECTIONS))('%s', (_name, kit) => {
-		it('движок снаружи: после ухода ни подписок, ни перехватчиков на движке, владельце и элементах', () => {
+		it('на движке, прежнем владельце и элементах ни подписок, ни перехватчиков', () => {
 			const engine = readyEngine(kit)
 			const ctrl = new (kit.own().ctor)()
 			const { buses, middlewares } = spyAround(engine, ctrl)
 
 			kit.mount(ctrl, engine)
 
-			expect(leftovers(buses)).toEqual([])
-			expect(middlewareLeftovers(middlewares)).toEqual([])
-		})
+			const hung = hungNow(buses, middlewares)
 
-		it('свой движок: после ухода подписок на шине владельца нет', () => {
-			const ctrl = new (kit.own().ctor)()
-			const spies = spyBus('владелец', ctrl)
+			expect(hung.subscriptions).not.toEqual([])
 
-			kit.mount(ctrl)
+			kit.mount(new (kit.own().ctor)(), engine)
 
-			expect(subscribed(spies)).not.toEqual([])
-			expect(leftovers(spies)).toEqual([])
+			expect(stillHung(hung)).toEqual([])
 		})
 	})
 })

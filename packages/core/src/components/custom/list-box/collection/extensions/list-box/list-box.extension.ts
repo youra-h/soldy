@@ -4,17 +4,8 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import {
-	bindDisabledToOwner,
-	notifyOwnerDisabled,
-	unbindDisabledFromOwner,
-} from '../../../../../base/control'
-import {
-	bindStyleToOwner,
-	notifyOwnerSize,
-	notifyOwnerVariant,
-	unbindStyleFromOwner,
-} from '../../../../../base/stylable'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -62,8 +53,8 @@ export class TListBoxExtension<
 	 *
 	 * Обработчик у каждого элемента свой: ему нужен элемент, а событие несёт
 	 * только значение. Поэтому отписка хранится до удаления элемента — иначе
-	 * снять подписку было бы нечем. Остальные снимает уход расширения
-	 * (`destroy`). `WeakMap` — чтобы запись не удерживала элемент, если движок
+	 * снять подписку было бы нечем. Остальные снимает `destroy`
+	 * расширения. `WeakMap` — чтобы запись не удерживала элемент, если движок
 	 * выбросят, не удалив из него элементы.
 	 */
 	private readonly _contentFitWatchers = new WeakMap<TItem, () => void>()
@@ -87,8 +78,9 @@ export class TListBoxExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение уходит вместе с владельцем, а драйвер, выбор, владелец и
-		// элементы живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		// Расширение снимают, когда движок переходит к другому владельцу, а
+		// драйвер, выбор, владелец и элементы живут дальше — подписки через
+		// `_listenTo`, их снимет `destroy`
 		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
@@ -146,20 +138,6 @@ export class TListBoxExtension<
 		// Внешний вид и сторона отметки доезжают до item-адаптеров. Релей снимает
 		// очистка шины расширения (`destroy`)
 		this.events.relay(this._owner.events, ['change:view', 'change:indicator'])
-	}
-
-	/**
-	 * Список ушёл: подписки сняты, а `disabled`, `size` и `variant` элементов
-	 * отвязаны от него — итог снова свой у элемента, пока движок не достанется
-	 * следующему списку.
-	 */
-	override destroy(): void {
-		super.destroy()
-
-		const items = this._ctx?.driver.valueOf() ?? []
-
-		unbindDisabledFromOwner(items)
-		unbindStyleFromOwner(items)
 	}
 
 	/**

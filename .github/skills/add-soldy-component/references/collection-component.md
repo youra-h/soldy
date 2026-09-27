@@ -60,14 +60,14 @@ instance) — exists because a collection can be assembled without an owner (`cr
 and handed to the component later; `resolveEngine` (below) uses both sets to fill in
 whatever a supplied engine is missing.
 
-Owner extensions live only as long as their owner holds the engine: a supplied engine
-outlives the component (React StrictMode / `<Activity>`, Vue `v-if`), and the leaving facade
-releases it to the next owner. So an owner extension subscribes to anything that outlives it —
-the driver, sibling extensions, the owner, the items — through `TBaseExtension._listenTo`, and
-undoes in `destroy()` what it did to the items (`unbindDisabledFromOwner`,
-`unbindStyleFromOwner`) and any `TItemContextRegistry` it keeps (`release()`). The guard
+A supplied engine outlives the list (Vue `v-if`, conditional rendering in React), so the
+owner extensions live only while their owner has the engine: the next owner takes a released
+engine and removes the previous owner's extensions (`TCollectionEngine.remove`, which calls
+`destroy()`). So an owner extension subscribes to anything that outlives it — the driver,
+sibling extensions, the owner, the items — through `TBaseExtension._listenTo`, and releases any
+`TItemContextRegistry` it keeps in its `destroy()`. The guard
 `packages/setup/__tests__/engine-release.spec.ts` covers every collection facade in the export
-(AGENTS.md, «Владелец отпускает движок, уходя»).
+(AGENTS.md, «Движок снаружи переходит к следующему владельцу»).
 
 `collection/create.ts` is the public entry, requiring an owner explicitly:
 
@@ -303,8 +303,8 @@ They are installed on the owner component; the engine is bound from the adapter 
 
 - `TCollectionExtension` (owner) — facade mode: reads `context.instance.engine`, calls
   `bundles.bindEngine(engine)`, provides `ITEM_CONTEXT_ELEVATOR` (engine down) and
-  `COLLECTION_ENGINE_ELEVATOR` (register callback down). On the context's `destroy` it
-  destroys the facade, which releases the engine to the next owner.
+  `COLLECTION_ENGINE_ELEVATOR` (register callback down). On the context's `attach` the facade
+  retains the engine, on `destroy` it releases it for the next owner.
 - `TCollectionItemExtension` (item) — reads `ITEM_CONTEXT_ELEVATOR` (up), builds the
   `TItemContext` and takes the register callback from `COLLECTION_ENGINE_ELEVATOR`. The item enters
   the collection on the context's `attach` — `(item, bundle)` registration and `meta` — which the
@@ -313,7 +313,7 @@ They are installed on the owner component; the engine is bound from the adapter 
   (`clearContext`) and releases its item adapters (`release`), the item itself stays as it is.
   Don't hand a mount a context from `TItemContextRegistry` — the registry is for code that needs
   contexts longer than one mount: the `tabs` and `tags` owner extensions, which release it when
-  their owner lets the engine go (AGENTS.md, «Контекст элемента живёт одно монтирование»).
+  the engine goes to another owner (AGENTS.md, «Контекст элемента живёт одно монтирование»).
 
 ## Vue wiring
 

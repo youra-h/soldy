@@ -45,8 +45,9 @@ export class TValueSelectionExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение владельческое и уходит вместе с владельцем, а движок и
-		// владелец живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		// Расширение владельческое: его снимают, когда движок переходит к другому
+		// владельцу, а движок и владелец живут дальше — подписки через
+		// `_listenTo`, их снимет `destroy`
 		this._listenTo(this._selection?.events, 'change:selection', () => this._selectionToValue())
 		this._listenTo(this._owner.events, 'change:value', () => this._valueToSelection())
 

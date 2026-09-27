@@ -82,8 +82,9 @@ export class TCollectionEngine<
 	 *
 	 * Зачем: владельческие расширения (`value`, `list`, `tabs` и соседи) живут
 	 * столько, сколько владелец держит движок, а движок, пришедший снаружи,
-	 * переживает владельца. Следующий владелец ставит свои под теми же
-	 * именами — см. `releaseEngine` в `create/internal.ts`.
+	 * переживает владельца. Следующий владелец снимает расширения прежнего и
+	 * ставит свои под теми же именами — см. `attachEngine` в
+	 * `create/internal.ts`.
 	 */
 	public remove(extension: IExtension<T>): void {
 		if (this.extensions[extension.name] === extension) {

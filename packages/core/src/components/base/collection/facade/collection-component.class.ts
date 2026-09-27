@@ -2,7 +2,7 @@ import { TComponent } from '../../component'
 import type { IComponentProps } from '../../component'
 import { TCollectionEngine } from './../engine'
 import type { IExtension, TPlainExtension } from './../engine'
-import { releaseEngine } from '../create/internal'
+import { releaseEngine, retainEngine } from '../create/internal'
 import type { ICollectionComponentOptions, TCollectionComponentEvents } from './types'
 
 /**
@@ -21,8 +21,10 @@ import type { ICollectionComponentOptions, TCollectionComponentEvents } from './
  * приведение. Тип элемента у расширения `any` по той же причине, что у
  * `batch` в `TBatchCollectionFacade`: расширения инвариантны по элементу.
  *
- * Живёт одно монтирование, как контекст, который его собрал: движок взят за
- * владельцем (`resolveEngine`), и уходящий фасад его отпускает (`destroy`).
+ * Движок, пришедший снаружи, фасад держит за владельцем (`resolveEngine`), и
+ * держит, пока его монтирование принято: `retain` и `release` зовёт сборка
+ * на приём и конец монтирования. Отпущенный движок берёт другой владелец, и
+ * фасад прежнего тогда снимается (`destroy`).
  */
 export abstract class TCollectionComponent<
 	TItem extends object,
@@ -31,7 +33,7 @@ export abstract class TCollectionComponent<
 > extends TComponent<IComponentProps, TEvents> {
 	public readonly engine: TCollectionEngine<TItem, TExtensions>
 
-	/** Владелец, за которым фасад взял движок: его отпускает `destroy()`. */
+	/** Владелец, за которым фасад держит движок. */
 	private readonly _owner: object | undefined
 
 	constructor(
@@ -58,20 +60,27 @@ export abstract class TCollectionComponent<
 		this.engine.batch(action)
 	}
 
+	/** Монтирование принято: владелец держит движок, другой его не возьмёт. */
+	retain(): void {
+		if (this._owner) retainEngine(this.engine, this._owner, this)
+	}
+
 	/**
-	 * Фасад уходит вместе с монтированием. Владелец отпускает движок
-	 * (`releaseEngine`): его расширения снимаются с шин, и движок достаётся
-	 * следующему владельцу — движок, пришедший снаружи, переживает и фасад, и
-	 * владельца. Шина фасада очищается: мёртвый фасад не держит релеев на шинах
-	 * движка, который живёт дальше.
-	 *
-	 * Читать фасад после этого можно: React перечитывает состояние уже
-	 * уничтоженной сборки, а расширения ушедшего владельца стоят в карте
-	 * движка, пока их место не займёт следующий.
+	 * Монтирование кончилось: движок свободен для другого владельца. Фасад при
+	 * этом рабочий — React собирает заново список, живой под StrictMode и
+	 * `<Activity>`, на том же фасаде, и тот удерживает движок снова (`retain`).
+	 */
+	release(): void {
+		if (this._owner) releaseEngine(this.engine, this._owner, this)
+	}
+
+	/**
+	 * Фасад отработал: отпущенный им движок взял другой владелец или другой
+	 * фасад того же владельца. Шина очищается — мёртвый фасад не держит релеев
+	 * на шинах движка, который живёт дальше. Зовёт запись владения
+	 * (`create/internal.ts`).
 	 */
 	destroy(): void {
-		if (this._owner) releaseEngine(this.engine, this._owner)
-
 		this.events.destroy()
 	}
 }

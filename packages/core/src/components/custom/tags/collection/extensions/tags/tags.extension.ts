@@ -18,17 +18,8 @@ import type {
 } from './types'
 import { TTagsItemExtension, type ITagsItemExtension } from './item'
 import type { ITagsOverflowExtension } from '../overflow'
-import {
-	bindDisabledToOwner,
-	notifyOwnerDisabled,
-	unbindDisabledFromOwner,
-} from '../../../../../base/control'
-import {
-	bindStyleToOwner,
-	notifyOwnerSize,
-	notifyOwnerVariant,
-	unbindStyleFromOwner,
-} from '../../../../../base/stylable'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -96,14 +87,15 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Реестр — на время владения: его отпустит `destroy`
+		// Реестр — пока движок у этого владельца: его отпустит `destroy`
 		this._itemRegistry = new TItemContextRegistry({
 			extensions: ctx.extensions as TTagsExtensions<TItem>,
 			driver: ctx.driver,
 		})
 
-		// Расширение уходит вместе с владельцем, а драйвер, выбор, владелец и
-		// теги живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		// Расширение снимают, когда движок переходит к другому владельцу, а
+		// драйвер, выбор, владелец и теги живут дальше — подписки через
+		// `_listenTo`, их снимет `destroy`
 		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
@@ -167,19 +159,13 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Набор ушёл: подписки сняты, реестр контекстов отпущен, а `disabled`,
-	 * `size` и `variant` тегов отвязаны от набора — итог снова свой у тега, пока
-	 * движок не достанется следующему набору.
+	 * Движок перешёл к другому владельцу: подписки сняты, и реестр контекстов
+	 * отпущен — иначе он остался бы подписан на драйвер навсегда.
 	 */
 	override destroy(): void {
 		super.destroy()
 
 		this._itemRegistry?.release()
-
-		const items = this._ctx?.driver.valueOf() ?? []
-
-		unbindDisabledFromOwner(items)
-		unbindStyleFromOwner(items)
 	}
 
 	/**
@@ -356,7 +342,7 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 
 	/**
 	 * Отписки от тегов, которые сейчас в наборе: удалённый снимается сразу,
-	 * остальные — с уходом расширения (`destroy`).
+	 * остальные — `destroy` расширения.
 	 */
 	private readonly _tagWatchers = new WeakMap<TItem, Array<() => void>>()
 

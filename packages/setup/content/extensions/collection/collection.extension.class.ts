@@ -7,11 +7,11 @@
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
  * через COLLECTION_ENGINE_ELEVATOR.
  *
- * Фасад собран этим контекстом и живёт столько же: уничтожение контекста
- * уничтожает фасад, и тот отпускает движок, взятый за владельцем. Движок,
- * пришедший снаружи (`engine`), переживает монтирование: React пересобирает
- * список под StrictMode и `<Activity>`, Vue монтирует заново под `v-if`, и
- * без `ctrl` у каждой сборки новый владелец — он получает движок целиком.
+ * Движок, пришедший снаружи (`engine`), фасад держит за владельцем, пока его
+ * монтирование принято, и отпускает с концом монтирования: Vue снимает список
+ * под `v-if`, и новый список с тем же движком получает его целиком. React
+ * собирает заново список, живой под StrictMode и `<Activity>`, на том же
+ * фасаде — тот удерживает движок снова.
  */
 
 import type { TCollectionEngine } from '@soldy-ui/core'
@@ -40,7 +40,8 @@ export class TCollectionExtension {
 
 		this._wire(context, elevator, engine)
 
-		context.events.on('destroy', () => context.instance.destroy())
+		context.events.on('attach', () => context.instance.retain())
+		context.events.on('destroy', () => context.instance.release())
 	}
 
 	/**

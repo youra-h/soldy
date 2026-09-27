@@ -116,9 +116,10 @@ export class TSelectTagsExtension<
 
 		if (!selection) return
 
-		// Расширение уходит вместе с полем, а драйвер, выбор и само поле живут
-		// дольше — подписки через `_listenTo`, их снимет `destroy`. Свои теги и
-		// их движок расширение создаёт само, и уходят они вместе с ним
+		// Расширение снимают, когда движок переходит к другому полю, а драйвер,
+		// выбор и само поле живут дальше — подписки через `_listenTo`, их снимет
+		// `destroy`. Свои теги и их движок расширение создаёт само, и уходят они
+		// вместе с ним
 		this._listenTo(selection.events, 'change:mode', () => this._syncMode())
 		this._listenTo(selection.events, 'change:selection', () => this.syncTags())
 

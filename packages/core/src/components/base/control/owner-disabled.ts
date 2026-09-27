@@ -28,19 +28,6 @@ export function bindDisabledToOwner(item: IDisabledItem, owner: IDisabledOwner):
 }
 
 /**
- * Отвязать `disabled` элементов от владельца: он ушёл, и итог — снова своё
- * значение элемента. `change` — тем, у кого итог сменился.
- *
- * Зовёт расширение, уходя вместе с владельцем (`destroy`). Привязанный к
- * ушедшему итог читал бы его и дальше, а сообщать о смене было бы уже некому:
- * отвязка держит итог и то, что по нему нарисовано, согласованными, пока
- * движок ждёт следующего владельца.
- */
-export function unbindDisabledFromOwner(items: Iterable<IDisabledItem>): void {
-	for (const item of items) item.states.disabled.setResolver(undefined)
-}
-
-/**
  * Владелец сменил `disabled` — сообщить элементам, у которых сменился итог.
  *
  * Это только элементы со своим `false`: у выключенных самих по себе итог

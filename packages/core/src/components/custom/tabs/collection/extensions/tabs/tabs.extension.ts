@@ -18,17 +18,8 @@ import type {
 	ITabsExtension,
 } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
-import {
-	bindDisabledToOwner,
-	notifyOwnerDisabled,
-	unbindDisabledFromOwner,
-} from '../../../../../base/control'
-import {
-	bindStyleToOwner,
-	notifyOwnerSize,
-	notifyOwnerVariant,
-	unbindStyleFromOwner,
-} from '../../../../../base/stylable'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
@@ -88,14 +79,16 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Реестр для доступа к item-адаптерам — на время владения: его отпустит `destroy`
+		// Реестр для доступа к item-адаптерам — пока движок у этого владельца: его
+		// отпустит `destroy`
 		this._itemRegistry = new TItemContextRegistry({
 			extensions: ctx.extensions as TTabsExtensions<TItem>,
 			driver: ctx.driver,
 		})
 
-		// Расширение уходит вместе с владельцем, а драйвер, активация, владелец
-		// и табы живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		// Расширение снимают, когда движок переходит к другому владельцу, а
+		// драйвер, активация, владелец и табы живут дальше — подписки через
+		// `_listenTo`, их снимет `destroy`
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
 		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
@@ -188,19 +181,13 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	/**
-	 * Набор ушёл: подписки сняты, реестр контекстов отпущен, а `disabled`,
-	 * `size` и `variant` табов отвязаны от набора — итог снова свой у таба, пока
-	 * движок не достанется следующему набору.
+	 * Движок перешёл к другому владельцу: подписки сняты, и реестр контекстов
+	 * отпущен — иначе он остался бы подписан на драйвер навсегда.
 	 */
 	override destroy(): void {
 		super.destroy()
 
 		this._itemRegistry?.release()
-
-		const items = this._ctx?.driver.valueOf() ?? []
-
-		unbindDisabledFromOwner(items)
-		unbindStyleFromOwner(items)
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
@@ -274,7 +261,7 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 	/**
 	 * Отписки от табов, которые сейчас в списке: удалённый снимается сразу,
-	 * остальные — с уходом расширения (`destroy`).
+	 * остальные — `destroy` расширения.
 	 */
 	private readonly _tabWatchers = new WeakMap<TItem, Array<() => void>>()
 

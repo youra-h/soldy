@@ -1,13 +1,15 @@
 /**
- * Готовый движок (`engine`) переходит к пересобранному списку.
+ * Готовый движок (`engine`) у пересобранного и у смонтированного заново списка.
  *
- * StrictMode и `<Activity>` уничтожают контексты списка и собирают их заново.
- * Без `ctrl` у новой сборки новый инстанс `TListBox` — новый владелец того же
- * движка. Прежний, уходя, отпускает движок, и новый ставит свои владельческие
- * расширения (`value`, `list`). Раньше движок помнил первого владельца
- * навсегда: новый получал в консоль «движок уже привязан к другому
+ * StrictMode и `<Activity>` уничтожают контексты живого списка и собирают их
+ * заново — на тех же инстансах владельца и фасада: движок остаётся у того же
+ * владельца. Раньше у пересборки был новый инстанс `TListBox`, то есть второй
+ * владелец того же движка: он получал в консоль «движок уже привязан к другому
  * компоненту», а `value` и выключенность элементов оставались привязаны к
- * уничтоженному инстансу.
+ * прежнему инстансу.
+ *
+ * Список, снятый и смонтированный заново, — новый владелец. Прежний с концом
+ * монтирования отпустил движок, и новый берёт его целиком.
  *
  * Консоль проверять отдельно не нужно: предупреждение роняет тест (`setup.ts`).
  */
@@ -45,9 +47,9 @@ async function flush(): Promise<void> {
 type TRender = (props: ListBoxProps) => void
 
 /**
- * Смонтировать список над движком снаружи с `value="b"` и пересобрать его, не
- * размонтируя: StrictMode делает это при монтировании, `<Activity>` — при
- * показе после скрытия.
+ * Смонтировать список над движком снаружи и довести до `value="b"`:
+ * пересобрать, не размонтируя (StrictMode — при монтировании, `<Activity>` —
+ * при показе после скрытия), или снять и смонтировать заново с новым `value`.
  */
 const REBUILDS: Readonly<
 	Record<string, (engine: TCollectionEngine<TItem, any>) => Promise<TRender>>
@@ -80,29 +82,40 @@ const REBUILDS: Readonly<
 
 		return (props) => render(view(props))
 	},
+	'снят и смонтирован заново': async (engine) => {
+		const view = (props: ListBoxProps | null) => (
+			<div>{props && <ListBox engine={engine} {...props} />}</div>
+		)
+		const { render } = mount(view({ value: 'a' }))
+
+		await flush()
+
+		render(view(null))
+		render(view({ value: 'b' }))
+		await flush()
+
+		return (props) => render(view(props))
+	},
 }
 
-describe.each(Object.entries(REBUILDS))(
-	'%s: готовый движок у пересобранного списка',
-	(_, rebuild) => {
-		it('value из пропсов выбирает элемент и после пересборки', async () => {
-			const render = await rebuild(createEngine<TItem>({ items: ITEMS }))
+describe.each(Object.entries(REBUILDS))('%s: готовый движок у списка', (_, rebuild) => {
+	it('value из пропсов выбирает элемент и после пересборки', async () => {
+		const render = await rebuild(createEngine<TItem>({ items: ITEMS }))
 
-			expect(selection()).toEqual(['false', 'true', 'false'])
+		expect(selection()).toEqual(['false', 'true', 'false'])
 
-			render({ value: 'c' })
+		render({ value: 'c' })
 
-			expect(selection()).toEqual(['false', 'false', 'true'])
-		})
+		expect(selection()).toEqual(['false', 'false', 'true'])
+	})
 
-		it('выключенность списка доходит до элементов', async () => {
-			const render = await rebuild(createEngine<TItem>({ items: ITEMS }))
+	it('выключенность списка доходит до элементов', async () => {
+		const render = await rebuild(createEngine<TItem>({ items: ITEMS }))
 
-			expect(disabled()).toEqual(['false', 'false', 'false'])
+		expect(disabled()).toEqual(['false', 'false', 'false'])
 
-			render({ value: 'b', disabled: true })
+		render({ value: 'b', disabled: true })
 
-			expect(disabled()).toEqual(['true', 'true', 'true'])
-		})
-	},
-)
+		expect(disabled()).toEqual(['true', 'true', 'true'])
+	})
+})

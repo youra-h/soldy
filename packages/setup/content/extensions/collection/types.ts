@@ -7,12 +7,13 @@ import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /**
  * Инстанс, к которому подключается расширение: фасад, владеющий коллекцией.
- * Живёт одно монтирование — `destroy()` отпускает движок, который фасад взял
- * за владельцем.
+ * Движок он держит за владельцем, пока монтирование принято (`retain`), и
+ * отпускает с его концом (`release`).
  */
 export type TCollectionOwner = {
 	readonly engine: TCollectionEngine<any, any>
-	destroy(): void
+	retain(): void
+	release(): void
 }
 
 export interface ICollectionExtensionOptions {

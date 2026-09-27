@@ -6,17 +6,8 @@ import type {
 	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import {
-	bindDisabledToOwner,
-	notifyOwnerDisabled,
-	unbindDisabledFromOwner,
-} from '../../../../../base/control'
-import {
-	bindStyleToOwner,
-	notifyOwnerSize,
-	notifyOwnerVariant,
-	unbindStyleFromOwner,
-} from '../../../../../base/stylable'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
@@ -92,7 +83,7 @@ export class TSelectExtension<
 	 *
 	 * Обработчик у каждой опции свой: ему нужна опция, а событие несёт только
 	 * значение. Поэтому отписка хранится до удаления опции — иначе снять
-	 * подписку было бы нечем. Остальные снимает уход расширения (`destroy`).
+	 * подписку было бы нечем. Остальные снимает `destroy` расширения.
 	 * `WeakMap` — чтобы запись не удерживала опцию, если движок выбросят, не
 	 * удалив из него опции.
 	 */
@@ -157,9 +148,9 @@ export class TSelectExtension<
 		// слот, и перебрать его коллекция не может; зато у каждой опции есть
 		// `visible`, который все шесть адаптеров уже уважают. Отсюда и правило:
 		// показана ровно та опция, что осталась в выдаче.
-		// Расширение уходит вместе с владельцем, а драйвер, соседние расширения,
-		// владелец и опции живут дольше — подписки через `_listenTo`, их снимет
-		// `destroy`
+		// Расширение снимают, когда движок переходит к другому владельцу, а
+		// драйвер, соседние расширения, владелец и опции живут дальше — подписки
+		// через `_listenTo`, их снимет `destroy`
 		this._batch = ctx.extensions.batch as IBatchExtension<TItem>
 		this._listenTo(this._batch.events, 'change:shown', () => this._syncShown())
 
@@ -236,20 +227,6 @@ export class TSelectExtension<
 		// считаем по текущему выбору тем же обработчиком
 		this._onSelectionChanged()
 		this._writeField()
-	}
-
-	/**
-	 * Поле ушло: подписки сняты, а `disabled`, `size` и `variant` опций
-	 * отвязаны от него — итог снова свой у опции, пока движок не достанется
-	 * следующему полю.
-	 */
-	override destroy(): void {
-		super.destroy()
-
-		const items = this._ctx?.driver.valueOf() ?? []
-
-		unbindDisabledFromOwner(items)
-		unbindStyleFromOwner(items)
 	}
 
 	/**

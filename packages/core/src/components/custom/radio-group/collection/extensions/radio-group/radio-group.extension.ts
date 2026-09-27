@@ -4,17 +4,8 @@ import type {
 	IExtension,
 	IExtensionContext,
 } from '../../../../../base/collection'
-import {
-	bindDisabledToOwner,
-	notifyOwnerDisabled,
-	unbindDisabledFromOwner,
-} from '../../../../../base/control'
-import {
-	bindStyleToOwner,
-	notifyOwnerSize,
-	notifyOwnerVariant,
-	unbindStyleFromOwner,
-} from '../../../../../base/stylable'
+import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
+import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { IRadioGroupItem } from '../../../item/types'
 import type { IRadioGroup, TRadioGroupValue, TRadioGroupView } from '../../../types'
@@ -86,8 +77,9 @@ export class TRadioGroupExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение уходит вместе с группой, а драйвер, активация и сама группа
-		// живут дольше — подписки через `_listenTo`, их снимет `destroy`
+		// Расширение снимают, когда движок переходит к другой группе, а драйвер,
+		// активация и сама группа живут дальше — подписки через `_listenTo`, их
+		// снимет `destroy`
 
 		// После вставки на месте источника уже инстанс: `TFactoryExtension`
 		// подменяет его в `item:add:before`
@@ -162,20 +154,6 @@ export class TRadioGroupExtension<
 		} else {
 			this._activationToValue()
 		}
-	}
-
-	/**
-	 * Группа ушла: подписки сняты, а `disabled`, `size` и `variant` радио
-	 * отвязаны от неё — итог снова свой у радио, пока движок не достанется
-	 * следующей группе.
-	 */
-	override destroy(): void {
-		super.destroy()
-
-		const items = this._ctx?.driver.valueOf() ?? []
-
-		unbindDisabledFromOwner(items)
-		unbindStyleFromOwner(items)
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
