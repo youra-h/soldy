@@ -29,15 +29,17 @@ Web Components connect that model to a framework and render the markup: BEM clas
 - **Two equal ways to drive a component.** Configure it in the template, or create a core instance,
   pass it as `ctrl` and work with it from code: both sides see the same state and events. Plugins
   are reachable from the instance too, through the `bundle:create` event.
-- **Collections are an engine, not an array.** Tabs, Accordion, ListBox, Select and Tags run on the
-  same engine with pluggable extensions: selection, activation, order, filtering. Every insert,
-  update, remove, move and clear first emits a cancellable `*:before` event, and items come from
-  the `items` prop or from markup.
-- **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Accordion, Select and Switch take
-  roles and relations from their APG patterns. Select implements the Combobox keyboard model, and
-  Tabs the Tabs one: arrow keys and Home/End with automatic activation, and a single Tab stop.
-  ARIA is computed outside the framework and rendered with the markup, so it is in place from the
-  first render.
+- **Collections are an engine, not an array.** Tabs, Accordion, ListBox, Select, Tags and
+  RadioGroup run on the same engine with pluggable extensions: selection, activation, order,
+  filtering. Every insert, update, remove, move and clear first emits a cancellable `*:before`
+  event, and items come from the `items` prop or from markup. Calendar is a collection too: its
+  days are items, built from the months on screen.
+- **Accessibility from the WAI-ARIA Authoring Practices.** Tabs, Tags, Accordion, Select, Switch,
+  RadioGroup, Slider, Popover, Tooltip, Dialog, Drawer and Calendar take roles and relations from
+  their APG patterns, and ProgressLinear and ProgressSpinner use the `progressbar` role. Select
+  implements the Combobox keyboard model, and Tabs the Tabs one: arrow keys and Home/End with
+  automatic activation, and a single Tab stop. ARIA is computed outside the framework and rendered
+  with the markup, so it is in place from the first render.
 - **Themes and icon packs are pluggable contracts.** A theme styles `s-*` classes and `data-*`
   attributes, never `aria-*`, so an accessibility fix does not break the look. An icon pack is
   plain data for a fixed set of roles, with no bundler-specific imports.
@@ -114,21 +116,32 @@ The dark scheme is switched on with `<html data-theme="oren-dark">`.
 
 The component set, as the playground shows it:
 
-| Component   | What it is                                                             |
-| ----------- | ---------------------------------------------------------------------- |
-| Button      | Button: text, icons in slots, four views                               |
-| Input       | Text field with slots for icons and buttons                            |
-| CheckBox    | Checkbox with a third, indeterminate state                             |
-| Switch      | Switch: the same value as a checkbox, a different metaphor             |
-| Select      | Select field: an input plus a list in an overlay, the Combobox pattern |
-| ListBox     | List with single or multiple selection                                 |
-| Tabs        | Tabs: a tab list and panels linked by value                            |
-| Tags        | Tag set: close buttons, optional selection                             |
-| Accordion   | Sections that expand one at a time or several at once                  |
-| Icon        | Icon from the registered pack, by role                                 |
-| Spinner     | Loading indicator                                                      |
-| Skeleton    | Placeholder while content loads                                        |
-| DragAndDrop | Drag and drop of collection items                                      |
+| Component       | What it is                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| Button          | Button: text, icons in slots, four views                                                       |
+| Input           | Text field with slots for icons and buttons                                                    |
+| CheckBox        | Checkbox with a third, indeterminate state                                                     |
+| Switch          | Switch: the same value as a checkbox, a different metaphor                                     |
+| Label           | Control label: clicking the text toggles the control, and the text is its accessible name      |
+| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        |
+| RadioGroup      | One option out of several: native radio buttons sharing a `name`                               |
+| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         |
+| Calendar        | Month grids: pick a single date, several dates or a range                                      |
+| Popover         | Panel at a trigger with any content: a non-modal dialog                                        |
+| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      |
+| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            |
+| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               |
+| Scroller        | Single-row strip of any content, paged with two buttons                                        |
+| ListBox         | List with single or multiple selection                                                         |
+| Tabs            | Tabs: a tab list and panels linked by value                                                    |
+| Tags            | Tag set: close buttons, optional selection                                                     |
+| Accordion       | Sections that expand one at a time or several at once                                          |
+| Icon            | Icon from the registered pack, by role                                                         |
+| Spinner         | Busy indicator                                                                                 |
+| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   |
+| ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown |
+| Skeleton        | Placeholder while content loads                                                                |
+| DragAndDrop     | Drag and drop of collection items                                                              |
 
 What each adapter implements so far:
 
@@ -140,6 +153,17 @@ What each adapter implements so far:
 | Svelte         | `@soldy-ui/svelte`  | Button                                                                                           |
 | Solid          | `@soldy-ui/solid`   | Button                                                                                           |
 | Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                                        |
+
+### In development
+
+A new component comes to Vue first and moves to the other adapters after that. The dates are
+estimates:
+
+| Component  | What it is                                                                    | Package           | Expected      |
+| ---------- | ----------------------------------------------------------------------------- | ----------------- | ------------- |
+| RadioGroup | The Vue component, ported                                                     | `@soldy-ui/react` | October 2026  |
+| DateInput  | Date field typed in parts in the locale's format, selectable as a whole       | `@soldy-ui/vue`   | November 2026 |
+| DatePicker | DateInput and Calendar in a dropdown panel, like the input and list of Select | `@soldy-ui/vue`   | November 2026 |
 
 ## Repository structure
 
@@ -191,7 +215,7 @@ On the way there:
 
 - every component ported to React, Angular, Svelte, Solid and Web Components;
 - a playground for each of those adapters;
-- Menu and Popover on the same overlay layer as Select;
+- Menu on the same overlay layer as Select and Popover;
 - the packages published to npm;
 - more themes and icon packs on the same contracts.
 
