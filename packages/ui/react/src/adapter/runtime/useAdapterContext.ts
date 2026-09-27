@@ -24,18 +24,32 @@
  * читает слой, который компонент увидел на рендере, `down()` пишет в слой
  * компонента. Этот слой хук возвращает (`layer`), а детям его отдаёт `Elevate`.
  * Хук помнит, что сборка прочла через `up()`. Сменилось это на рендере —
- * например, владелец коллекции пересобран, и движок у него новый, — компонент
- * собирается заново тем же путём, что при повторной установке эффекта.
+ * например, владелец коллекции пересобран, и регистратор элементов у него
+ * новый, — компонент собирается заново тем же путём, что при повторной
+ * установке эффекта.
  *
  * Уничтожает контексты очистка эффекта. React вправе заново установить эффекты
  * того же компонента: StrictMode делает лишний цикл при монтировании,
  * `<Activity>` — при показе. Компонент при этом жив, а его контексты уже
  * уничтожены, поэтому на такой установке хук собирает их заново и
  * перерисовывает компонент с ними. Фабрика — из последнего рендера: пропсы
- * первого с тех пор могли смениться. Без `ctrl` инстанс у нового контекста
- * новый, с `ctrl` — тот же. Каждый контекст уничтожается ровно один раз, в том
- * числе собранный, но так и не отрисованный, если компонент размонтировали до
- * перерисовки.
+ * первого с тех пор могли смениться. Каждый контекст уничтожается ровно один
+ * раз, в том числе собранный, но так и не отрисованный, если компонент
+ * размонтировали до перерисовки.
+ *
+ * **Инстанс переживает пересборку.** Компонент жив, и его состояние — инстанс
+ * ядра — остаётся с ним, как `useState` и `useRef` React остаются с
+ * компонентом под StrictMode и `<Activity>`. Уничтожение контекста инстанс не
+ * трогает: снимает набор плагинов и связку. Поэтому пересборка отдаёт каждому
+ * контексту, собранному без `ctrl`, инстанс, который этот хук собрал в
+ * прошлый раз, — так, как если бы его передали `ctrl`. Контекст — по порядку
+ * вызовов `create` в фабрике: фабрика одна на компонент, и порядок её сборки
+ * от рендера к рендеру тот же. Инстанс чужого класса на том же месте (фабрика
+ * собрала другое) не отдаётся — контекст соберёт свой. Отсюда то же, что при
+ * `ctrl`: пропсы разметки пересборка записывает снова, и значение, записанное
+ * кодом поверх разметки, возвращается к разметке, а состояние, которого
+ * разметка не задаёт (выбор пользователя, текст поля), остаётся. У коллекции
+ * это и владелец, и фасад: фасад держит движок — и свой, и пришедший снаружи.
  *
  * Принимает контексты (`attach()`) тот же эффект, что их уничтожает, — после
  * сборки и каждой пересборки. Для React компонент принят при коммите, а не на
@@ -72,6 +86,11 @@ export type TAssembly<T extends TAdapterContexts> = {
 type TBuilt<T extends TAdapterContexts> = {
 	readonly contexts: T
 	readonly scope: TReactElevatorScope
+	/**
+	 * Инстансы, которые сборка создала сама, по порядку вызовов `create`; на
+	 * месте контекста с `ctrl` — `undefined`: чужой инстанс хук не удерживает.
+	 */
+	readonly own: readonly (object | undefined)[]
 }
 
 /** Счётчик версий: его смена перерисовывает компонент с новыми контекстами. */
@@ -108,20 +127,37 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	// устаревшее прочитанное
 	const settled = useRef<TElevatorLayer | null>(null)
 	const [, rerender] = useReducer(nextVersion, 0)
-	// Основа, заданная опцией явно, остаётся за тем, кто её задал
-	const create: TCreateAdapterContext = (descriptor, options, config) =>
-		createAdapterContext(
-			descriptor,
-			{ ...options, options: { idBase, ...options.options } },
-			config,
-		)
-	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
+	// `previous` — инстансы прошлой сборки: пересобранный контекст получает свой
+	const assemble = (
+		layer: TElevatorLayer,
+		previous: readonly (object | undefined)[] = [],
+	): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
+		const own: (object | undefined)[] = []
+		// Основа, заданная опцией явно, остаётся за тем, кто её задал
+		const create: TCreateAdapterContext = (descriptor, options, config) => {
+			const kept = previous[own.length]
+			const context = createAdapterContext(
+				descriptor,
+				{
+					...options,
+					ctrl: options.ctrl ?? (kept instanceof descriptor.ctor ? kept : undefined),
+					options: { idBase, ...options.options },
+				},
+				config,
+			)
 
-		return { contexts: factory(create, scope.elevator), scope }
+			own.push(options.ctrl ? undefined : context.instance)
+
+			return context
+		}
+
+		return { contexts: factory(create, scope.elevator), scope, own }
 	}
 	// Эффект зовёт фабрику последнего рендера, а не той, что застал при установке
-	const rebuild = useEffectEvent(() => assemble(parent))
+	const rebuild = useEffectEvent((previous: readonly (object | undefined)[]) =>
+		assemble(parent, previous),
+	)
 
 	if (!ref.current) {
 		ref.current = assemble(parent)
@@ -137,9 +173,10 @@ export function useAdapterContext<T extends TAdapterContexts>(
 		settled.current = source
 
 		// Повторная установка: после очистки (StrictMode, `<Activity>`) или
-		// из-за устаревшего прочитанного. Компонент жив, а его контекстов нет
+		// из-за устаревшего прочитанного. Компонент жив, а его контекстов нет —
+		// собираются заново на его инстансах
 		if (destroyed.current) {
-			ref.current = rebuild()
+			ref.current = rebuild(ref.current?.own ?? [])
 			destroyed.current = false
 			rerender()
 		}

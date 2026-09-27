@@ -1,4 +1,5 @@
 import type {
+	IExtension,
 	TUniqueExtension,
 	TMetaExtension,
 	TOrderExtension,
@@ -32,3 +33,28 @@ export type TSelectionCollectionExtensions<TItem extends object> =
 	TBaseCollectionExtensions<TItem> & {
 		selection: TSelectionExtension<TItem>
 	}
+
+/**
+ * Фасад, через который владелец держит движок. Его снимают (`destroy`), когда
+ * движок достаётся другому владельцу или другому фасаду того же владельца.
+ *
+ * Внутренний, как и запись владения: их ведут `attachEngine`, `retainEngine`
+ * и `releaseEngine` (`./internal.ts`), в `@soldy-ui/core` они не уходят.
+ */
+export interface IEngineHolder {
+	destroy(): void
+}
+
+/** Запись владения движком. */
+export interface IEngineClaim {
+	/** Владелец, для которого стоят расширения. */
+	readonly owner: object
+	/** Владельческие расширения, поставленные для него: их снимет следующий владелец. */
+	readonly extensions: IExtension<any>[]
+	/**
+	 * Фасад, чьё монтирование кончилось (`releaseEngine`), пока движок не
+	 * удержали снова (`retainEngine`). Есть — движок свободен, и другой
+	 * владелец его возьмёт.
+	 */
+	released?: IEngineHolder
+}

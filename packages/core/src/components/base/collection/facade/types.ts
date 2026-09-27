@@ -74,6 +74,12 @@ export interface ICollectionComponentOptions<
 > extends IComponentOptions {
 	/** Управляющий объект — готовая коллекция (аналог `ctrl` для обычных компонентов). */
 	engine: TCollectionEngine<TItem, TExtensions>
+	/**
+	 * Владелец, за которым фасад держит движок (`resolveEngine`): его фасад
+	 * отпускает и удерживает снова (`release`, `retain`). Без владельца
+	 * движок ни за кем не записан.
+	 */
+	owner?: object
 }
 
 /**

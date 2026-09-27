@@ -51,6 +51,7 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 					'Tags',
 					createEngine,
 				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
+				owner: options.owner,
 			},
 		)
 

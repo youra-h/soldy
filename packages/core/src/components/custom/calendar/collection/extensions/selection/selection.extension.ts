@@ -119,11 +119,15 @@ export class TCalendarSelectionExtension
 
 		const owner = this._owner
 
+		// Расширение снимают, когда движок переходит к другому календарю, а
+		// драйвер, фокус и календарь живут дальше — подписки через `_listenTo`,
+		// их снимет `destroy`
+
 		// Дни пришли — их «недоступен» и отметки. На весь состав: при листании
 		// новые дни приходят пачкой, и итог `change:items` один. Резольвер
 		// ставится только тем, у кого его нет или он устарел: оставшимся на
 		// экране днях функция потребителя повторно не зовётся
-		ctx.driver.events.on('change:items', () => {
+		this._listenTo(ctx.driver.events, 'change:items', () => {
 			this._bindStale()
 			this._paintAll()
 		})
@@ -131,11 +135,11 @@ export class TCalendarSelectionExtension
 		// Догон: дни могли лечь в коллекцию раньше расширения
 		this._bindStale()
 
-		owner.events.on('change:value', () => this._onValue())
-		owner.events.on('change:unavailable', () => this._bindStale())
+		this._listenTo(owner.events, 'change:value', () => this._onValue())
+		this._listenTo(owner.events, 'change:unavailable', () => this._bindStale())
 
 		// Предпросмотр идёт до фокуса, пока указателя нет
-		focusOf(ctx)?.events.on('change:focusedDate', () => {
+		this._listenTo(focusOf(ctx)?.events, 'change:focusedDate', () => {
 			if (this._anchor !== undefined && this._hovered === undefined) this._paintAll()
 		})
 

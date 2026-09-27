@@ -6,6 +6,12 @@
  * Выполняется: привязка коллекции к реестру bundles,
  * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
  * через COLLECTION_ENGINE_ELEVATOR.
+ *
+ * Движок, пришедший снаружи (`engine`), фасад держит за владельцем, пока его
+ * монтирование принято, и отпускает с концом монтирования: Vue снимает список
+ * под `v-if`, и новый список с тем же движком получает его целиком. React
+ * собирает заново список, живой под StrictMode и `<Activity>`, на том же
+ * фасаде — тот удерживает движок снова.
  */
 
 import type { TCollectionEngine } from '@soldy-ui/core'
@@ -33,6 +39,9 @@ export class TCollectionExtension {
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
 
 		this._wire(context, elevator, engine)
+
+		context.events.on('attach', () => context.instance.retain())
+		context.events.on('destroy', () => context.instance.release())
 	}
 
 	/**
