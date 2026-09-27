@@ -21,6 +21,8 @@ import { describe, it, expect } from 'vitest'
 import {
 	AccordionDescriptor,
 	ButtonDescriptor,
+	CalendarCollectionDescriptor,
+	CalendarDescriptor,
 	CheckBoxDescriptor,
 	ComponentViewDescriptor,
 	DialogDescriptor,
@@ -47,6 +49,9 @@ import { useEmits, VueProfile } from '../src/adapter'
 const DESCRIPTORS: Array<[string, () => IComponentDescriptor]> = [
 	['Accordion', AccordionDescriptor],
 	['Button', ButtonDescriptor],
+	['Calendar', CalendarDescriptor],
+	// Коллекционная часть — свой адаптер со своим `emit`: `update:mode`
+	['CalendarCollection', CalendarCollectionDescriptor],
 	['CheckBox', CheckBoxDescriptor],
 	['ComponentView', ComponentViewDescriptor],
 	['Dialog', DialogDescriptor],

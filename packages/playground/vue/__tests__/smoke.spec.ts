@@ -232,16 +232,19 @@ describe('свойства коллекции', () => {
 	const modeRow = (wrapper: ReturnType<typeof mount>) =>
 		wrapper.findAll('.pg-prop').find((row) => row.find('.pg-prop__name').text() === 'mode')
 
-	it.each(['list-box', 'select', 'accordion'])('%s показывает строку mode', async (id) => {
-		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id } })
+	it.each(['list-box', 'select', 'accordion', 'calendar'])(
+		'%s показывает строку mode',
+		async (id) => {
+			const wrapper = mount(ComponentPage, { ...mountOptions, props: { id } })
 
-		await nextTick()
-		await nextFrame()
+			await nextTick()
+			await nextFrame()
 
-		expect(modeRow(wrapper)).toBeDefined()
+			expect(modeRow(wrapper)).toBeDefined()
 
-		wrapper.unmount()
-	})
+			wrapper.unmount()
+		},
+	)
 
 	it('переключение mode доходит до коллекции в обеих колонках', async () => {
 		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'list-box' } })
@@ -271,6 +274,36 @@ describe('свойства коллекции', () => {
 		await nextTick()
 
 		expect(row.findAll('.s-list-box-item[data-selected="true"]')).toHaveLength(4)
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Коллекция календаря движка снаружи не берёт: дни кладёт в неё вид. Вторая
+	 * колонка отдаёт `mode` разметкой рядом с `ctrl` — и он обязан доехать до
+	 * фасада. Признак режима — `aria-multiselectable` у сетки: несколько дней
+	 * выбирают в `multiple` и `range`.
+	 */
+	it('календарь: mode доходит до коллекции в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'calendar' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = modeRow(wrapper)
+
+		if (!row) throw new Error('нет строки mode')
+
+		const multiselectable = () =>
+			row.findAll('.s-calendar__grid').map((grid) => grid.attributes('aria-multiselectable'))
+
+		expect(multiselectable()).toEqual([undefined, undefined])
+
+		row.findComponent(PropControl).vm.$emit('update:modelValue', 'range')
+		await nextTick()
+		await nextFrame()
+
+		expect(multiselectable()).toEqual(['true', 'true'])
 
 		wrapper.unmount()
 	})

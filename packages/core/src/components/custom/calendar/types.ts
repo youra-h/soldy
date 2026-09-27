@@ -3,7 +3,7 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../base/value-control'
-import type { TCalendarDate, TWeekday } from '../../../common'
+import type { TAriaAttributes, TCalendarDate, TWeekday } from '../../../common'
 import type { ICalendarCollectionProps } from './collection/types'
 
 /** Диапазон дат: начало и конец по возрастанию; одна дата — однодневный диапазон. */
@@ -56,6 +56,10 @@ export type TCalendarEvents = TValueControlEvents<TCalendarValue> & {
 	'change:timeZone': (value: string | undefined) => void
 	/** Сменились показанные месяцы — записью, листанием или уходом фокуса */
 	'change:months': (value: TCalendarDate[] | undefined) => void
+	/** change:prevLabel */
+	'change:prevLabel': (value: string) => void
+	/** change:nextLabel */
+	'change:nextLabel': (value: string) => void
 }
 
 /** Пропсы самого календаря (без коллекционной части). */
@@ -78,6 +82,10 @@ export interface ICalendarComponentProps extends IValueControlProps<TCalendarVal
 	 * сетка на месяце фокуса
 	 */
 	months?: TCalendarDate[]
+	/** Имя кнопки «предыдущий месяц» для скринридера */
+	prevLabel?: string
+	/** Имя кнопки «следующий месяц» для скринридера */
+	nextLabel?: string
 }
 
 /** Полный набор пропсов календаря: свои и коллекционные (`mode`). */
@@ -98,8 +106,16 @@ export interface ICalendar extends IValueControl<TCalendarValue, ICalendarProps,
 	timeZone: string | undefined
 	/** Месяцы сеток — как заданы или как их показала коллекция */
 	months: TCalendarDate[] | undefined
+	/** Имя кнопки «предыдущий месяц» */
+	prevLabel: string
+	/** Имя кнопки «следующий месяц» */
+	nextLabel: string
 	/** Первый день недели: `weekStart`, а без него — по локали */
 	readonly firstDay: TWeekday
 	/** Дни недели — заголовки колонок, от первого дня недели */
 	readonly weekdays: TCalendarWeekday[]
+	/** Набор кнопки «предыдущий месяц»: её имя. Своего экземпляра у кнопки нет */
+	readonly prevAria: TAriaAttributes
+	/** Набор кнопки «следующий месяц» */
+	readonly nextAria: TAriaAttributes
 }

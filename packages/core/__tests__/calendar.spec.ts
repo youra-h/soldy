@@ -221,6 +221,25 @@ describe('вид: месяцы сеток', () => {
 		)
 	})
 
+	it('заголовок — вежливая живая область: смену месяца скринридер объявляет сам', () => {
+		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
+
+		expect(setup.collection.grids.map(({ titleAria }) => titleAria['aria-live'])).toEqual([
+			'polite',
+			'polite',
+		])
+	})
+
+	it('ячейка — дата, день и набор; у заполнителя ни текста, ни состояний', () => {
+		const [grid] = calendar({ months: ['2026-09-01'] }).collection.grids
+		const cells = grid.weeks.flat()
+
+		expect(cells.every((cell) => Object.keys(cell).sort().join() === 'aria,date,item')).toBe(
+			true,
+		)
+		expect(cells.find((cell) => cell.date === '2026-09-05')?.item?.text).toBe('5')
+	})
+
 	it('aria-multiselectable — в multiple и range', () => {
 		const setup = calendar()
 
@@ -290,6 +309,80 @@ describe('вид у границ', () => {
 
 		setup.owner.disabled = false
 		expect(day(setup, '2026-09-26').aria.get('tabindex')).toBe('0')
+	})
+})
+
+describe('кнопки листания', () => {
+	it('имена по умолчанию английские; набор кнопки — её имя', () => {
+		const { owner } = calendar()
+
+		expect(owner.prevLabel).toBe('Previous month')
+		expect(owner.nextLabel).toBe('Next month')
+		expect(owner.prevAria).toEqual({ 'aria-label': 'Previous month' })
+		expect(owner.nextAria).toEqual({ 'aria-label': 'Next month' })
+	})
+
+	it('смена имени — событие и новый набор; то же имя — не смена', () => {
+		const { owner } = calendar({ prevLabel: 'Назад' })
+		const changes = vi.fn()
+
+		owner.events.on('change:nextLabel', changes)
+		owner.nextLabel = 'Вперёд'
+		owner.nextLabel = 'Вперёд'
+
+		expect(changes).toHaveBeenCalledTimes(1)
+		expect(owner.prevAria).toEqual({ 'aria-label': 'Назад' })
+		expect(owner.nextAria).toEqual({ 'aria-label': 'Вперёд' })
+		expect(owner.getProps()).toMatchObject({ prevLabel: 'Назад', nextLabel: 'Вперёд' })
+	})
+
+	it('change:paging — на листание', () => {
+		const setup = calendar()
+		const paging = vi.fn()
+
+		setup.collection.events.on('change:paging', paging)
+		setup.view.showNext()
+
+		expect(paging).toHaveBeenCalledTimes(1)
+	})
+
+	it('change:paging — на смену границы, даже когда сетки остались на месте', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+		const paging = vi.fn()
+
+		setup.collection.events.on('change:paging', paging)
+		setup.owner.min = '2026-09-10'
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-09-01'])
+		expect(setup.collection.prevDisabled).toBe(true)
+		expect(paging).toHaveBeenCalledTimes(1)
+	})
+
+	it('change:paging — одно, когда граница сдвинула сетки', () => {
+		const setup = calendar({ months: ['2026-09-01'] })
+		const paging = vi.fn()
+
+		setup.collection.events.on('change:paging', paging)
+		setup.owner.min = '2026-11-10'
+
+		expect(keys(setup.collection.grids)).toEqual(['2026-11-01'])
+		expect(paging).toHaveBeenCalledTimes(1)
+	})
+
+	it('change:paging — на выключение календаря: листать нельзя в обе стороны', () => {
+		const setup = calendar()
+		const paging = vi.fn()
+
+		setup.collection.events.on('change:paging', paging)
+		setup.owner.disabled = true
+
+		expect(paging).toHaveBeenCalledTimes(1)
+		expect(setup.collection.prevDisabled).toBe(true)
+		expect(setup.collection.nextDisabled).toBe(true)
+
+		setup.owner.disabled = false
+		expect(paging).toHaveBeenCalledTimes(2)
+		expect(setup.collection.nextDisabled).toBe(false)
 	})
 })
 

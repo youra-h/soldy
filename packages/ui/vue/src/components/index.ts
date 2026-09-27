@@ -1,5 +1,6 @@
 export * from './icon'
 export * from './button'
+export * from './calendar'
 export * from './check-box'
 export * from './accordion'
 export * from './component'

@@ -17,6 +17,7 @@ import type {
 	TCalendarDate,
 	TComponentSize,
 	TComponentVariant,
+	TMonthGridDay,
 	TValuePayload,
 } from '../../../../../../common'
 import { calendarBounds, datesOf, inBounds } from '../../../dates'
@@ -35,6 +36,13 @@ import type {
 const FILLER_ARIA: Readonly<TAriaAttributes> = { 'aria-hidden': 'true' }
 
 /**
+ * Смену месяца заголовок объявляет сам: он — вежливая живая область, как
+ * заголовок в APG (Date Picker Dialog). Своего анонсера, как у React Aria, у
+ * календаря нет, а имя сетки и так даёт этот заголовок.
+ */
+const TITLE_LIVE = 'polite'
+
+/**
  * Вид календаря: какие месяцы показаны и какие дни поэтому лежат в коллекции.
  *
  * **Коллекция — дни показанных месяцев, и только их.** Заполнители соседних
@@ -46,6 +54,10 @@ const FILLER_ARIA: Readonly<TAriaAttributes> = { 'aria-hidden': 'true' }
  * **Сетки независимы.** Месяц у каждой свой (январь рядом с сентябрём),
  * один месяц — в одной сетке. Листание сдвигает все сетки разом, выбор месяца
  * меняет одну; месяц, уже показанный другой сеткой, меняет их местами.
+ *
+ * **Можно ли листать** — `prevDisabled` и `nextDisabled`, об их смене говорит
+ * `change:paging`. Итог зависит и от владельца — его границ и «выключен», —
+ * поэтому событие шлёт вид: выход фасада коллекции событий владельца не видит.
  *
  * **Что день знает от вида:** выключен ли он (вне `min`/`max` или календарь
  * выключен — резольвер, как `bindDisabledToOwner`), размер и вариант
@@ -104,7 +116,13 @@ export class TCalendarViewExtension
 		owner.events.on('change:months', () => this._setMonths(this._resolveMonths(owner.months)))
 		owner.events.on('change:min', () => this._rebound())
 		owner.events.on('change:max', () => this._rebound())
-		owner.events.on('change:disabled', () => this._applyStale())
+
+		// Выключенный календарь — выключенные дни и кнопки листания
+		owner.events.on('change:disabled', () => {
+			this._applyStale()
+			this.events.emit('change:paging')
+		})
+
 		owner.events.on('change:timeZone', () => this._applyStale())
 		owner.events.on('change:weekStart', () => this.events.emit('change:grids'))
 
@@ -130,10 +148,10 @@ export class TCalendarViewExtension
 
 	/**
 	 * Сетки — снимок на каждое чтение: новые объекты, дни — из коллекции.
-	 * Раскладка по неделям и подписи (заголовок, номера ячеек) берутся из
-	 * каркаса, который пересчитывается, только когда сменились месяцы, первый
-	 * день недели или локаль: форматировать сотни ячеек через Intl на каждое
-	 * чтение — самое дорогое в выходе.
+	 * Раскладка по неделям и заголовки берутся из каркаса, который
+	 * пересчитывается, только когда сменились месяцы, первый день недели или
+	 * локаль: раскладывать недели и форматировать заголовки через Intl на
+	 * каждое чтение незачем.
 	 */
 	get grids(): TCalendarGrid[] {
 		const multiselectable = selectionOf(this._ctx)?.multiselectable ? 'true' : null
@@ -146,19 +164,17 @@ export class TCalendarViewExtension
 			return {
 				key,
 				title,
-				titleAria: { id },
+				titleAria: { id, 'aria-live': TITLE_LIVE },
 				gridAria: {
 					role: 'grid',
 					'aria-labelledby': id,
 					'aria-multiselectable': multiselectable,
 				},
 				weeks: weeks.map((week) =>
-					week.map(({ date, outside, text }) => ({
+					week.map(({ date, outside }) => ({
 						date,
 						item: outside ? undefined : days.get(date),
-						text,
 						aria: outside ? { ...FILLER_ARIA } : {},
-						dataset: { 'data-outside-month': String(outside) },
 					})),
 				),
 			}
@@ -251,7 +267,7 @@ export class TCalendarViewExtension
 		return this._months.reduce((a, b) => (compareDates(b, a) > 0 ? b : a))
 	}
 
-	/** Каркас сеток: раскладка и подписи, по ключу из месяцев, первого дня недели и локали. */
+	/** Каркас сеток: раскладка и заголовки, по ключу из месяцев, первого дня недели и локали. */
 	private _skeleton(): TGridSkeleton[] {
 		const locale = this._owner.locale
 		const first = this._owner.firstDay
@@ -263,9 +279,7 @@ export class TCalendarViewExtension
 		const grids = this._months.map((month) => ({
 			key: month,
 			title: labels.monthTitle(month),
-			weeks: monthGrid(month, first).map((week) =>
-				week.map(({ date, outside }) => ({ date, outside, text: labels.dayNumber(date) })),
-			),
+			weeks: monthGrid(month, first),
 		}))
 
 		this._skeletonMemo = { key, grids }
@@ -308,8 +322,11 @@ export class TCalendarViewExtension
 		return clampDate(first, this._bounds.low, this._bounds.high)
 	}
 
-	/** Записать месяцы сеток: состав коллекции, месяцы владельца, события — только о смене. */
-	private _setMonths(months: TCalendarDate[]): void {
+	/**
+	 * Записать месяцы сеток: состав коллекции, месяцы владельца, события —
+	 * только о смене. Возвращает, сменились ли месяцы.
+	 */
+	private _setMonths(months: TCalendarDate[]): boolean {
 		const previous = this._months
 
 		if (months.length === previous.length && months.every((m, i) => m === previous[i])) {
@@ -317,7 +334,7 @@ export class TCalendarViewExtension
 			// у него остаются показанные месяцы
 			this._owner.months = this.months
 
-			return
+			return false
 		}
 
 		this._months = months
@@ -326,6 +343,9 @@ export class TCalendarViewExtension
 
 		this.events.emit('change:months', this.months, previous)
 		this.events.emit('change:grids')
+		this.events.emit('change:paging')
+
+		return true
 	}
 
 	/** Состав коллекции — дни показанных месяцев, по дате. */
@@ -344,11 +364,16 @@ export class TCalendarViewExtension
 		this._batch.update(sources)
 	}
 
-	/** Сменились границы: месяцы прижимаются к ним, дни пересчитывают «выключен». */
+	/**
+	 * Сменились границы: месяцы прижимаются к ним, дни пересчитывают «выключен».
+	 * Листание зависит от границ и тогда, когда сетки остались на месте: `min`
+	 * дошёл до месяца первой сетки — «назад» гаснет.
+	 */
 	private _rebound(): void {
 		this._bounds = calendarBounds(this._owner.min, this._owner.max)
 		this._applyStale()
-		this._setMonths(this._resolveMonths(this._months))
+
+		if (!this._setMonths(this._resolveMonths(this._months))) this.events.emit('change:paging')
 	}
 
 	/**
@@ -404,11 +429,8 @@ export class TCalendarViewExtension
 	}
 }
 
-/** День каркаса сетки: дата, чужой ли месяц и номер в цифрах локали. */
-type TSkeletonCell = { date: TCalendarDate; outside: boolean; text: string }
-
-/** Каркас сетки — то, что не зависит от дней коллекции и выбора. */
-type TGridSkeleton = { key: TCalendarDate; title: string; weeks: TSkeletonCell[][] }
+/** Каркас сетки — то, что не зависит от дней коллекции и выбора: заголовок и раскладка. */
+type TGridSkeleton = { key: TCalendarDate; title: string; weeks: TMonthGridDay[][] }
 
 /** Из чего посчитано то, что день знает от вида. */
 type TViewApplied = { labelKey: string; off: boolean; bounds: TCalendarBounds }

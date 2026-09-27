@@ -4,6 +4,7 @@ import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
 	ComponentView,
 	Dialog,
@@ -222,6 +223,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 		h(Select as Component, { placeholder: 'Выберите', editable: true, ...bind }, () =>
 			ITEMS.map((item) => h(Select.Item, { key: item.value, ...item })),
 		),
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
+	// сеток, и превью отдаёт ему только пропы строки
+	calendar: (bind) => h(Calendar as Component, bind),
 
 	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
 	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус

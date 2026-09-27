@@ -3,6 +3,7 @@ import { underscorePropNaming } from '@soldy-ui/setup'
 import {
 	COMPONENT_SIZES,
 	BUTTON_VIEWS,
+	CALENDAR_MODES,
 	CHECK_BOX_VIEWS,
 	COMPONENT_VARIANTS,
 	DIALOG_PLACEMENTS,
@@ -159,6 +160,17 @@ const OWN: Record<string, Record<string, string>> = {
 		prevLabel: 'Имя кнопки «назад» для скринридера',
 		nextLabel: 'Имя кнопки «вперёд» для скринридера',
 	},
+	calendar: {
+		value: 'Выбранная дата строкой YYYY-MM-DD; в multiple и range — список дат, его задают кодом',
+		mode: 'Режим выбора: одна дата, несколько дат или диапазон «от и до»',
+		min: 'Первый день, который можно выбрать, YYYY-MM-DD. Раньше — ни фокуса, ни выбора',
+		max: 'Последний день, который можно выбрать, YYYY-MM-DD',
+		weekStart: 'Первый день недели: 0 — воскресенье … 6 — суббота. Пусто — по локали',
+		locale: 'Локаль подписей и первого дня недели, тег BCP 47: ru-RU, de-DE, he-IL',
+		timeZone: 'Часовой пояс «сегодня», имя IANA: Europe/Moscow. Пусто — пояс среды',
+		prevLabel: 'Имя кнопки «предыдущий месяц» для скринридера',
+		nextLabel: 'Имя кнопки «следующий месяц» для скринридера',
+	},
 	slider: {
 		min: 'Начало хода',
 		max: 'Конец хода. Вне сетки шага он недостижим, как у нативного поля',
@@ -314,6 +326,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	popover: { placement: POPOVER_PLACEMENTS },
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
+	calendar: { mode: CALENDAR_MODES },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },
@@ -429,6 +442,10 @@ export const NON_EDITABLE = new Set([
 	'viewportAria',
 	// Имена ручек ползунка — список строк по числу ручек, а у превью ручка одна
 	'thumbLabels',
+	// Недоступные дни календаря — функция от даты, контрола для неё не бывает
+	'unavailable',
+	// Месяцы сеток календаря — список дат по числу сеток; листание пишет их само
+	'months',
 ])
 
 export function describeProp(componentId: string, prop: string): string | undefined {

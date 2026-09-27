@@ -18,6 +18,7 @@ import { TButton, TDragAndDrop, TInput } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
 	ComponentView,
 	Dialog,
@@ -67,6 +68,26 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — чужой инстанс ядра -->
 	<Button :ctrl="input" />
 	<Button :ctrl="button" />
+
+	<!-- @vue-expect-error — режима выбора `many` у календаря нет -->
+	<Calendar mode="many" />
+	<Calendar mode="range" />
+
+	<!-- @vue-expect-error — дня недели 7 нет: 0 — воскресенье … 6 — суббота -->
+	<Calendar :weekStart="7" />
+	<Calendar :weekStart="1" />
+
+	<!-- @vue-expect-error — месяцы сеток списком, а не строкой -->
+	<Calendar months="2026-09-01" />
+	<Calendar :months="['2026-09-01', '2026-10-01']" />
+
+	<!-- @vue-expect-error — имя кнопки листания строкой -->
+	<Calendar :prevLabel="42" />
+	<Calendar prevLabel="Предыдущий месяц" />
+
+	<!-- @vue-expect-error — направления `up` нет -->
+	<Calendar.Item direction="up" />
+	<Calendar.Item direction="rtl" />
 
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<CheckBox :indeterminate="'yes'" />

@@ -27,6 +27,8 @@ import {
 	AccordionDescriptor,
 	AccordionItemDescriptor,
 	ButtonDescriptor,
+	CalendarDescriptor,
+	CalendarItemDescriptor,
 	CheckBoxDescriptor,
 	ComponentViewDescriptor,
 	DialogDescriptor,
@@ -71,6 +73,8 @@ const DESCRIPTORS: Readonly<Record<string, () => IComponentDescriptor>> = {
 	'accordion/Accordion.vue': AccordionDescriptor,
 	'accordion/item/Item.vue': AccordionItemDescriptor,
 	'button/Button.vue': ButtonDescriptor,
+	'calendar/Calendar.vue': CalendarDescriptor,
+	'calendar/item/Item.vue': CalendarItemDescriptor,
 	'check-box/CheckBox.vue': CheckBoxDescriptor,
 	'component-view/ComponentView.vue': ComponentViewDescriptor,
 	'dialog/Dialog.vue': DialogDescriptor,
@@ -221,6 +225,14 @@ describe('соответствие контракту', () => {
 	it('Button: разметка объявляет ровно слоты дескриптора', () => {
 		expect(templateSlots('button/Button.vue')).toEqual(
 			ButtonDescriptor()
+				.slots.map((slot) => slot.name)
+				.sort(),
+		)
+	})
+
+	it('Calendar.Item: один слот по умолчанию с текстом дня', () => {
+		expect(templateSlots('calendar/item/Item.vue')).toEqual(
+			CalendarItemDescriptor()
 				.slots.map((slot) => slot.name)
 				.sort(),
 		)
