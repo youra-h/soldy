@@ -14,9 +14,13 @@ export interface ICollectionExtensionOptions {
 	elevator: TElevatorFactory
 }
 
-/** Инстанс, к которому подключается расширение: item-фасад, принимающий контекст элемента. */
+/**
+ * Инстанс, к которому подключается расширение: item-фасад, принимающий контекст
+ * элемента на монтирование и отпускающий его в конце.
+ */
 export type TCollectionItemFacade = {
 	setContext(context: TItemContext<any, any>): void
+	clearContext(): void
 }
 
 export interface ICollectionItemExtensionOptions {

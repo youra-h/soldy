@@ -298,7 +298,11 @@ They are installed on the owner component; the engine is bound from the adapter 
 - `TCollectionItemExtension` (item) — reads `ITEM_CONTEXT_ELEVATOR` (up), builds the
   `TItemContext` and takes the register callback from `COLLECTION_ENGINE_ELEVATOR`. The item enters
   the collection on the context's `attach` — `(item, bundle)` registration and `meta` — which the
-  adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit.
+  adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit. The
+  `TItemContext` belongs to this one mount: `destroy` detaches it from the facade
+  (`clearContext`) and releases its item adapters (`release`), the item itself stays as it is.
+  Don't hand a mount a context from `TItemContextRegistry` — the registry is for code that needs
+  contexts for the engine's whole life (AGENTS.md, «Контекст элемента живёт одно монтирование»).
 
 ## Vue wiring
 

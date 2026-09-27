@@ -6,18 +6,39 @@
  * Работа разделена по фазам контекста:
  *
  * - **сборка** (конструктор) — движок и регистратор через лифт, контекст
- *   элемента в фасад, `meta` из пропсов. Ничего чужого она не трогает;
+ *   элемента в фасад, `meta` из пропсов. В чужое хранилище она не пишет;
  * - **вход** (`attach` контекста) — регистрация в коллекции владельца и
  *   `meta.apply`. Это запись в чужое хранилище, поэтому она ждёт, пока
  *   фреймворк примет компонент: у React сборка идёт на рендере, и отброшенный
  *   рендер оставил бы в движке фантом, а элемент, добавленный после
  *   монтирования, обновлял бы владельца посреди рендера ребёнка;
- * - **снятие** (`destroy` контекста).
+ * - **снятие** (`destroy` контекста) — выход из коллекции и освобождение
+ *   контекста элемента.
  *
  * Когда наступает `attach`, решает рантайм адаптера.
+ *
+ * Контекст элемента (`TItemContext`) — этого монтирования и живёт ровно
+ * столько же: сборка отдаёт его фасаду, снятие отвязывает от фасада и
+ * отпускает (`release`). Его item-адаптеры подписаны на расширения движка, а
+ * движок живёт дольше монтирования: элемент из данных (`items`) остаётся в
+ * коллекции, когда фильтр или страница его прячут, и монтируется заново,
+ * когда показывают, а React пересобирает элемент, не размонтируя
+ * (StrictMode, `<Activity>`). Неотпущенный контекст оставлял бы на движке
+ * подписчиков с каждым показом. Отвязать фасад так же обязательно: React
+ * перечитывает состояние уже уничтоженной сборки, и фасад, державший
+ * отпущенный контекст, создал бы адаптеры заново. Один контекст на элемент
+ * для всех монтирований не заводится: таб и его панель берут контекст одного
+ * элемента, и освобождение одним сломало бы другого.
+ *
+ * Удалили элемент из коллекции, пока он смонтирован, — контекст уничтожается
+ * (`TItemContext.destroy`): адаптеры отпущены, элемент больше не рисуется.
+ * Выход элемента разметки при снятии удалением не считается: элемент уходит
+ * из коллекции потому, что кончилось его монтирование, и `rendered` чужого
+ * `ctrl` остаётся его — смонтированный снова, он рисуется.
  */
 
-import { TItemContextRegistry } from '@soldy-ui/core'
+import { TItemContext } from '@soldy-ui/core'
+import type { TPlainExtension, TRemoveEvent } from '@soldy-ui/core'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import {
 	COLLECTION_ENGINE_ELEVATOR,
@@ -38,16 +59,21 @@ export class TCollectionItemExtension {
 		const register = elevator(COLLECTION_ENGINE_ELEVATOR).up()
 		// Пропсы элемента для `meta` движка — из пропсов сборки
 		const meta = collectItemProps(context.descriptor.props, context.props)
+		// Контекст элемента — этого монтирования. Фасад получает его при сборке:
+		// разметка читает его с первой отрисовки
+		const itemContext = engine ? new TItemContext(item, engine.extensions) : undefined
+		const plain: TPlainExtension<object> | undefined = engine?.extensions.plain
 
-		// context.instance — item-фасад, созданный item-дескриптором. Контекст
-		// элемента он получает при сборке: разметка читает его с первой отрисовки
-		if (engine) {
-			const registry = new TItemContextRegistry(engine.getCore())
+		if (itemContext) context.instance.setContext(itemContext)
 
-			context.instance.setContext(registry.get(item))
+		// Элемент удалили из коллекции, пока он смонтирован
+		const removed = (e: TRemoveEvent<object>): void => {
+			if (e.item === item) itemContext?.destroy()
 		}
 
 		context.events.on('attach', () => {
+			plain?.events.on('item:removed', removed)
+
 			if (register) this._leave = register(item, context.bundle)
 
 			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
@@ -55,8 +81,15 @@ export class TCollectionItemExtension {
 		})
 
 		context.events.on('destroy', () => {
+			// Подписка снимается до выхода: свой выход — не удаление из коллекции
+			plain?.events.off('item:removed', removed)
+
 			this._leave?.()
 			this._leave = undefined
+
+			// Фасад — без контекста: чтение после снятия создало бы адаптеры заново
+			context.instance.clearContext()
+			itemContext?.release()
 		})
 	}
 }

@@ -31,28 +31,11 @@ import {
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
 	DRAG_CONTEXT_ELEVATOR,
-	type IElevatorKey,
-	type TElevatorFactory,
 	type IAdapterContext,
 	type IComponentContract,
 	type TAdapterState,
 } from '@soldy-ui/setup'
-import { CallbackProfile, required } from './helpers'
-
-/** Простая in-memory реализация фабрики элеваторов для тестов. */
-function createElevatorFactory() {
-	const store = new Map<IElevatorKey<unknown>, unknown>()
-
-	// Как `inject<T>` во фреймворках: тип значения задаёт ключ, хранилищу он неизвестен
-	const factory: TElevatorFactory = <T>(key: IElevatorKey<T>) => ({
-		down: (value: T) => {
-			store.set(key, value)
-		},
-		up: () => store.get(key) as T | undefined,
-	})
-
-	return { factory, store }
-}
+import { CallbackProfile, createElevatorFactory, required } from './helpers'
 
 /** Фасад-заглушка: у инстанса есть движок — всё, что нужно коллекционным расширениям. */
 class TEngineOwner {
