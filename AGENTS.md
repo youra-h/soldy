@@ -547,7 +547,8 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 
 React-компоненты держат adapter-context между рендерами не сами: вместо
 своего `useRef` они зовут `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`)
-с фабрикой, которая создаёт контекст. Собирает фабрика функцией `create`,
+с фабрикой, которая создаёт контекст (у коллекции — два: свой и фасада, см.
+«Элемент входит в коллекцию при монтировании»). Собирает фабрика функцией `create`,
 которую ей отдаёт хук, — `(create) => create(XDescriptor(), { ctrl, props })`:
 это `createAdapterContext` с основой `id` от `useId` (см. «`id` в разметке —
 от основы экземпляра»). Сторож — блок eslint
@@ -1498,6 +1499,56 @@ Accordion и у Select — унаследованный `aria`: они и вын
 `createEngine*` — своё из `items`, запись в инстанс, `batch.patch`, число
 модификаторов после смены у владельца и число `change:size` у элемента.
 
+### Элемент входит в коллекцию при монтировании, а не при сборке (критично)
+
+Движок, расширения и плагины одинаковы во всех адаптерах, а момент, когда
+элемент разметки входит в коллекцию, у каждого фреймворка свой. Поэтому
+`TCollectionItemExtension` (`setup/content/extensions/collection/`) делает
+работу в два шага:
+
+- **сборка** (`use(TCollectionItemExtension, …)`) — движок и регистратор
+  через лифт, контекст элемента в фасад (`setContext`), `meta` из пропсов.
+  Чужого хранилища она не трогает;
+- **вход** (`join()`, расширение отдаёт `IAdapterContext.get`) — регистрация
+  в коллекции владельца и `meta.apply`. Снятие — при уничтожении контекста;
+  повторный вход и вход после уничтожения ничего не делают.
+
+Вход зовёт адаптер в момент монтирования своего фреймворка: Vue — сразу за
+`.use(…)` в `setup()`, React — шагом коммита `useAdapterContext` (второй
+аргумент), в том же эффекте, что и уничтожение: уничтоженный набор в
+коллекцию не войдёт, а живой не войдёт дважды. Забытый вызов виден сразу —
+элемент разметки не попадает в коллекцию.
+
+**Почему не на рендере React.** Сборка React идёт на рендере, а побочный
+эффект на чужом хранилище там недопустим: отброшенный рендер оставит в движке
+фантом, а элемент, добавленный после монтирования, обновит владельца посреди
+рендера ребёнка — React пишет «Cannot update a component while rendering…».
+Эффекты детей идут раньше родителя и в порядке документа, поэтому `push`
+сохраняет порядок DOM. Не заводите регистрацию на рендере ни «пока владелец
+не смонтирован», ни с отложенным уведомлением связки: тогда момент и порядок
+решал бы адаптер.
+
+**Лифт React — один контекст со слоем значений.** `up()` читает слой, который
+компонент увидел на рендере, `down()` пишет в слой компонента, детям его
+отдаёт `Elevate` (`ui/react/src/adapter/elevator/`). `useContext` в `up()`
+быть не может: `up()` зовётся и при пересборке в эффекте, где хуков нет.
+Контексты одного компонента (свой и фасада) `useAdapterContext` держит одной
+единицей — фасад собран на инстансе и наборе владельца — и помнит, что сборка
+прочла через `up()`. Пересобранный владелец (StrictMode, `<Activity>`) — это
+новый движок: у элемента сменилось прочитанное, и он пересобирается тем же
+путём, что при повторной установке эффекта.
+
+**Цена.** Серверная разметка и первый кадр элемента из разметки — без того,
+что пишет ему коллекция (`data-selected`, `tabindex`, размер от списка).
+Гидратация сходится, после коммита всё на месте. Список из данных (`items`,
+`engine`) сервер рисует полностью: его элементы в коллекции с самой сборки.
+
+Сторожат `setup/__tests__/adapter.spec.ts` («сборка и вход»),
+`ui/react/__tests__/list-box-elevator.spec.tsx` — лифт, StrictMode,
+`<Activity>`, сервер и гидратация, — и
+`ui/react/__tests__/adapter-context.spec.tsx` (несколько контекстов и шаг
+коммита).
+
 ### ARIA: что знает элемент, а что коллекция
 
 `TTabsItem` пишет в свой `aria` только `role: 'tab'` — это единственное, что
@@ -1663,7 +1714,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension` and calls its `join()` right away — `setup()` is Vue's mount (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -2957,6 +3008,20 @@ Accordion.Item он был `'button'` при жёстком `<div>` в шабл�
 один. У Select.Item `aria` стояла на обёртке — и строка внутри опции
 объявляла себя кнопкой со своим `aria-disabled`. Лечится переносом набора на
 строку, а не пропом, который глушит ARIA у `Button`.
+
+**Атрибуты снаружи — поверх наборов, и в React тоже.** Во Vue атрибуты,
+пришедшие компоненту снаружи, падают на корень последними, и набор элемента
+перекрывает то, что `Button` пишет себе сам, без усилий. В React порядок
+пишет разметка, и он один на все компоненты — `toRootProps`
+(`ui/react/src/adapter/common/root.ts`): наборы ядра в порядке шаблона Vue,
+поверх — атрибуты снаружи, класс и стиль — раскладкой корня (`toRootLayout`),
+`ref` адаптера — последним: в React 19 `ref` — обычный проп, и `ref`
+потребителя из атрибутов выбил бы привязку корня к `TElementPlugin`. Раньше
+компоненты React разворачивали атрибуты снаружи первыми, и `tabindex="-1"`
+строки ListBox проигрывал `tabindex="0"` кнопки — строки списка стали бы
+остановками Tab. Сторожит `ui/react/__tests__/root-attributes.spec.tsx`:
+атрибут снаружи перекрывает набор ядра, а `ref` потребителя не выбивает
+привязку — таблицей по компонентам.
 
 Нативные атрибуты вложенного контрола фиксированного тега — `disabled`,
 `required` и `readonly` у `<input>` Input, CheckBox и Switch — проводка в

@@ -295,7 +295,9 @@ They are installed on the owner component; the engine is bound from the adapter 
   `bundles.bindEngine(engine)`, provides `ITEM_CONTEXT_ELEVATOR` (engine down) and
   `COLLECTION_ENGINE_ELEVATOR` (register callback down).
 - `TCollectionItemExtension` (item) — reads `ITEM_CONTEXT_ELEVATOR` (up), builds the
-  `TItemContext`, then registers `(item, bundle)` through `COLLECTION_ENGINE_ELEVATOR`.
+  `TItemContext` and takes the register callback from `COLLECTION_ENGINE_ELEVATOR`. The item enters
+  the collection on `join()` — `(item, bundle)` registration and `meta` — which the adapter calls at
+  its framework's mount: Vue right after `.use(...)` in `setup()`, React at commit.
 
 ## Vue wiring
 
@@ -365,9 +367,10 @@ would depend on spread order, which is exactly what broke before this helper exi
 JSDoc on `useCollectionAdapter`).
 
 The item setup mirrors the two-context shape (`TabsItemDescriptor` +
-`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension`), but calls plain
-`useAdapter` on both sides and spreads the item binding before the owner binding: both
-bindings carry `ctrl` and `rootElement`, and the owner's, spread last, win.
+`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension` followed by
+`itemAdapter.get(TCollectionItemExtension)?.join()`), but calls plain `useAdapter` on both
+sides and spreads the item binding before the owner binding: both bindings carry `ctrl` and
+`rootElement`, and the owner's, spread last, win.
 
 `useAdapterParts` creates a `rootElement` ref and watches it **only when** the context's
 bundle has `TElementPlugin`; the watch calls `adapter.bindElement`. A facade context shares

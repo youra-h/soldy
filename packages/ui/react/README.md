@@ -12,8 +12,9 @@ component descriptor, so they match the other five adapters; only the spelling i
 arrive as callback props (`element:ready` → `onElementReady`), and the default slot is `children`.
 
 > **Status:** the React adapter is in progress — Button, Icon, Label, Frame, Spinner, Skeleton,
-> Input, CheckBox and Switch are ported, the rest of the set is on its way. Icon renders the `tag`
-> it is given; `roleIcon(role)` makes that tag from the registered icon pack. See
+> Input, CheckBox, Switch and ListBox (the first collection: `<ListBox.Item>` or `items`) are
+> ported, the rest of the set is on its way. Icon renders the `tag` it is given; `roleIcon(role)`
+> makes that tag from the registered icon pack. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install
