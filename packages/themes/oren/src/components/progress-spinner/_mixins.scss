@@ -1,0 +1,34 @@
+@use 'sass:map';
+@use '../../mixins/progress';
+
+// Диаметр кольца по шкале размеров — ступени утилит Tailwind.
+//
+// Ступени те же, что у Spinner (`spinner/_spinner.scss`, `w-3` … `w-7`): оба
+// кольца кладут в кнопку и строку рядом с текстом, и кольцо с долей, которое
+// встало на место Spinner того же размера, не должно сдвинуть текст. Толщину
+// шкала не задаёт: она — доля диаметра (`_progress-spinner.scss`).
+$sizes: (
+	'sm': 3,
+	'normal': 4,
+	'lg': 5,
+	'xl': 6,
+	'2xl': 7,
+);
+
+// Диаметр — переменной на корне: коробку по ней меряет правило нулевой
+// специфичности, и свой размер кольцу потребитель задаёт шириной и высотой,
+// не споря с модификатором.
+@mixin progress-spinner-size($size) {
+	--s-progress-spinner-size: calc(var(--spacing) * #{map.get($sizes, $size)});
+}
+
+// Варианты — общие у индикаторов выполнения (`mixins/_progress.scss`): кольцо и
+// линия одного варианта одного цвета.
+$variants: progress.$variants;
+
+// Цвет варианта — переменными на корне (`--s-progress-spinner-track`,
+// `--s-progress-spinner-fill`): дорожку и обе дуги красят окружности рисунка.
+// Выбор ступеней и его причины — общие с линией, там же.
+@mixin progress-spinner-colors($color) {
+	@include progress.colors('progress-spinner', $color);
+}
