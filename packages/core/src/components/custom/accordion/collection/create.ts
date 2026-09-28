@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from './factory'
+import { ACCORDION_EXTENSIONS } from './factory'
 import type { TAccordionCollection } from './types'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
@@ -15,10 +15,5 @@ import type { IAccordionItem } from '../item/types'
 export function createEngineAccordion(
 	options: TCreateEngineOptions<IAccordionItem> & { owner: IAccordion },
 ): TAccordionCollection {
-	return createComponentEngine(
-		'createEngineAccordion',
-		ACCORDION_EXTENSIONS(),
-		ACCORDION_OWNER_EXTENSIONS,
-		options,
-	) as TAccordionCollection
+	return createComponentEngine('createEngineAccordion', ACCORDION_EXTENSIONS(), options)
 }

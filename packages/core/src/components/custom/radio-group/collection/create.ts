@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { RADIO_GROUP_EXTENSIONS, RADIO_GROUP_OWNER_EXTENSIONS } from './factory'
+import { RADIO_GROUP_EXTENSIONS } from './factory'
 import type { TRadioGroupCollection } from './types'
 import type { IRadioGroup } from '../types'
 import type { IRadioGroupItem } from '../item/types'
@@ -16,10 +16,5 @@ import type { IRadioGroupItem } from '../item/types'
 export function createEngineRadioGroup(
 	options: TCreateEngineOptions<IRadioGroupItem> & { owner: IRadioGroup },
 ): TRadioGroupCollection {
-	return createComponentEngine(
-		'createEngineRadioGroup',
-		RADIO_GROUP_EXTENSIONS(),
-		RADIO_GROUP_OWNER_EXTENSIONS,
-		options,
-	) as TRadioGroupCollection
+	return createComponentEngine('createEngineRadioGroup', RADIO_GROUP_EXTENSIONS(), options)
 }

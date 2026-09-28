@@ -62,12 +62,8 @@ export class TAccordionExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение снимают, когда движок переходит к другому владельцу, а
-		// драйвер и владелец живут дальше — подписки через `_listenTo`, их
-		// снимет `destroy`
-
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
+		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -75,22 +71,15 @@ export class TAccordionExtension<
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
 		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._listenTo(this._owner.events, 'change:disabled', () =>
-			notifyOwnerDisabled(ctx.driver.valueOf()),
-		)
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		// `size` и `variant` секции тоже отдаёт резольвер — сообщаем прежний
 		// итог, по нему снимается старый класс
-		this._listenTo(
-			this._owner.events,
-			'change:size',
-			(payload: TValuePayload<TComponentSize>) => {
-				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-			},
-		)
+		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		})
 
-		this._listenTo(
-			this._owner.events,
+		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
@@ -98,8 +87,7 @@ export class TAccordionExtension<
 		)
 
 		// Внешний вид: пробрасываем change:view в item-адаптеры
-		// (TAccordionItemExtension резолвит view из owner). Релей снимает
-		// очистка шины расширения (`destroy`)
+		// (TAccordionItemExtension резолвит view из owner).
 		this.events.relay(this._owner.events, ['change:view'])
 	}
 

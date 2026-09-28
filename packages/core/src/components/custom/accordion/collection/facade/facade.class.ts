@@ -1,13 +1,10 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import type { TAccordionView } from '../../types'
-import { AccordionFactory, ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
-import type {
-	TAccordionCollection,
-	TAccordionCollectionExtensions,
-	TAccordionCollectionFacadeEngine,
-} from '../types'
+import { ACCORDION_EXTENSIONS } from '../factory'
+import { createEngineAccordion } from '../create'
+import { completeEngine } from '../../../../base/collection/create/internal'
+import type { TAccordionCollectionExtensions, TAccordionCollectionFacadeEngine } from '../types'
 import type { TAccordionCollectionFacadeEvents } from '../types'
 import type { IAccordionItem } from '../../item/types'
 import type { IAccordion } from '../../types'
@@ -25,22 +22,16 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<IAccordionItem> = {},
-		options: TCollectionFacadeOptions<TAccordionCollectionFacadeEngine, IAccordion> = {},
+		options: TCollectionFacadeOptions<TAccordionCollectionFacadeEngine, IAccordion>,
 	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Accordion. Именно здесь, а не в теле:
-		// базы трогают расширения в своих конструкторах
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					ACCORDION_EXTENSIONS(),
-					ACCORDION_OWNER_EXTENSIONS,
-					'Accordion',
-					AccordionFactory,
-				) as TAccordionCollection,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, ACCORDION_EXTENSIONS(), options.owner)
+					: createEngineAccordion({ owner: options.owner }),
 			},
 		)
 

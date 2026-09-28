@@ -10,7 +10,6 @@ import {
 	TSelectionExtension,
 } from '../engine'
 import type { IExtension, TCollectionEngineItemSource } from '../engine'
-import type { IEngineClaim, IEngineHolder } from './types'
 
 /**
  * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy-ui/core`.
@@ -18,40 +17,37 @@ import type { IEngineClaim, IEngineHolder } from './types'
  * Наружу (см. `./public.ts`, реэкспортирован через `index.ts`) уходит только
  * готовая сборка: `createEngine`, `createEngineActivation`,
  * `createEngineSelection` и тип их опций. Всё, что здесь, — рабочие
- * инструменты для самих компонентов: набор расширений строит
+ * инструменты для самих компонентов: набор расширений компонента объявляет
  * `custom/<component>/collection/factory.ts`, компонентный сборщик —
  * `custom/<component>/collection/create.ts`, а пришедший снаружи движок
- * достраивает `custom/<component>/collection/facade/facade.class.ts`.
+ * дособирает `custom/<component>/collection/facade/facade.class.ts`.
  *
  * Границу проводит не модификатор доступа — в TS их для функций модуля нет, —
  * а `index.ts`: он реэкспортирует `./public`, а этот файл нет. Тот же приём
- * уже стоит на `factory.ts` каждого компонента: `TabsFactory` и соседи там
- * экспортированы (иначе их не подключить из других файлов пакета), но до
- * потребителя `@soldy-ui/core` не доходят ни через один барабан наверх.
+ * уже стоит на `factory.ts` каждого компонента: набор там экспортирован
+ * (иначе его не подключить из других файлов пакета), но до потребителя
+ * `@soldy-ui/core` не доходит ни через один барабан наверх.
  *
  * Импортируйте отсюда только внутри `core/src`, прямым путём
  * (`base/collection/create/internal`) — так же, как уже делают перечисленные
  * выше файлы.
  */
 
-/** Как построить расширение. Функция, а не готовый объект: набор переиспользуется. */
-export type TExtensionSet<TItem extends object> = Record<string, () => IExtension<TItem>>
-
 /**
- * То же, но с гарантией `batch`: он есть в любом наборе, который строят
- * `baseExtensions`, `activationExtensions` и `selectionExtensions`.
- * `assembleEngine` полагается на эту гарантию, чтобы наполнить движок без
- * приведения типа.
+ * Набор расширений коллекции — как построить каждое. Функция, а не готовый
+ * объект: набор переиспользуется. Аргумент — инстанс компонента; расширениям,
+ * которым он не нужен (`plain`, `batch`, выбор), его просто не читают.
+ *
+ * `batch` гарантирован: он есть в любом наборе, который строят
+ * `baseExtensions`, `activationExtensions` и `selectionExtensions`, и
+ * `assembleEngine` наполняет им движок без приведения типа.
  */
-export type TBaseExtensionSet<TItem extends object> = TExtensionSet<TItem> & {
-	batch: () => TBatchExtension<TItem>
-}
-
-/** То же для расширений, которым нужен инстанс компонента. */
-export type TOwnerExtensionSet<TItem extends object, TOwner> = Record<
+export type TExtensionSet<TItem extends object, TOwner = unknown> = Record<
 	string,
 	(owner: TOwner) => IExtension<TItem>
->
+> & {
+	batch: (owner: TOwner) => TBatchExtension<TItem>
+}
 
 /**
  * Опции любого сборщика: состав необязателен, его можно задать и потом.
@@ -71,13 +67,13 @@ export type TCreateEngineOptions<TItem extends object = object> = {
  * `factory` сюда не входит намеренно: она оборачивает сырой источник в класс
  * элемента, а какой это класс — знает только компонент. Без неё на первом
  * уровне в коллекции лежат обычные объекты; инстансами их сделает `factory`,
- * которую компонент доустановит при привязке — догонялка у неё для этого и
+ * которую компонент доустановит при дособирании — догонялка у неё для этого и
  * есть. `itemCtor` поэтому передаётся только на компонентном уровне.
  */
 export function baseExtensions<TItem extends object>(
 	itemCtor?: new (source: Partial<TItem>) => TItem,
-): TBaseExtensionSet<TItem> {
-	const set: TBaseExtensionSet<TItem> = {
+): TExtensionSet<TItem> {
+	const set: TExtensionSet<TItem> = {
 		unique: () => new TUniqueExtension<TItem>(),
 		meta: () => new TMetaExtension<TItem>(),
 		order: () => new TOrderExtension<TItem>(),
@@ -93,7 +89,7 @@ export function baseExtensions<TItem extends object>(
 /** Базовый набор плюс активный элемент — модель Tabs. */
 export function activationExtensions<TItem extends object>(
 	itemCtor?: new (source: Partial<TItem>) => TItem,
-): TBaseExtensionSet<TItem> {
+): TExtensionSet<TItem> {
 	return {
 		...baseExtensions<TItem>(itemCtor),
 		activation: () => new TActivationExtension<TItem>(),
@@ -103,7 +99,7 @@ export function activationExtensions<TItem extends object>(
 /** Базовый набор плюс выбор — модель ListBox, Select и Accordion. */
 export function selectionExtensions<TItem extends object>(
 	itemCtor?: new (source: Partial<TItem>) => TItem,
-): TBaseExtensionSet<TItem> {
+): TExtensionSet<TItem> {
 	return { ...baseExtensions<TItem>(itemCtor), selection: () => new TSelectionExtension<TItem>() }
 }
 
@@ -111,21 +107,22 @@ export function selectionExtensions<TItem extends object>(
  * Собрать движок по набору и, если дали, наполнить.
  *
  * `batch` строится отдельно от цикла по остальным расширениям: набор
- * гарантирует его типом (`TBaseExtensionSet`), поэтому наполнение движка идёт
+ * гарантирует его типом (`TExtensionSet`), поэтому наполнение движка идёт
  * через готовую ссылку на инстанс, без обращения к `engine.extensions` и без
  * приведения типа.
  */
-export function assembleEngine<TItem extends object>(
-	set: TBaseExtensionSet<TItem>,
+export function assembleEngine<TItem extends object, TOwner>(
+	set: TExtensionSet<TItem, TOwner>,
+	owner: TOwner,
 	items?: readonly (TCollectionEngineItemSource<TItem> | TItem)[],
 ): TCollectionEngine<TItem, any> {
-	const batch = set.batch()
+	const batch = set.batch(owner)
 	const extensions: Record<string, IExtension<TItem>> = { batch }
 
 	for (const [name, build] of Object.entries(set)) {
 		if (name === 'batch') continue
 
-		extensions[name] = build()
+		extensions[name] = build(owner)
 	}
 
 	const engine = new TCollectionEngine<TItem, any>({ extensions })
@@ -136,216 +133,60 @@ export function assembleEngine<TItem extends object>(
 }
 
 /**
- * Общее тело компонентных сборщиков.
+ * Движок компонента целиком. Общее тело компонентных сборщиков
+ * (`createEngineTabs` и соседи): они отличаются только набором.
  *
- * Все четыре (`createEngineTabs` и соседи) отличаются только наборами, поэтому
- * само тело написано один раз: четыре копии одного кода в этом проекте уже
- * однажды разъехались — тремя разными API у фасадов.
+ * Тот же путь, что у движка, пришедшего снаружи: коллекция с составом —
+ * `createEngine({ items })`, — дособранная набором компонента. Поэтому
+ * расширения компонента застают элементы уже в коллекции, как и в готовом
+ * движке.
  *
- * `owner` обязателен и проверяется явно: без него владельческие расширения
- * получили бы `undefined` и упали бы позже и не там.
+ * `owner` обязателен и проверяется явно: без него расширения, которым нужен
+ * компонент, получили бы `undefined` и упали бы позже и не там.
  */
-export function createComponentEngine<TItem extends object, TOwner>(
+export function createComponentEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 	label: string,
-	set: TBaseExtensionSet<TItem>,
-	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
+	set: TExtensionSet<TItem, TOwner>,
 	options: TCreateEngineOptions<TItem> & { owner: TOwner },
-) {
+): TCollectionEngine<TItem, any> {
 	if (!options?.owner) {
 		throw new Error(
 			`${label}: нужен owner — инстанс компонента, которому принадлежит коллекция`,
 		)
 	}
 
-	const engine = assembleEngine<TItem>(set, options.items)
+	const engine = assembleEngine(baseExtensions<TItem>(), undefined, options.items)
 
-	for (const build of Object.values(ownerSet)) engine.use(build(options.owner))
-
-	return engine
+	return completeEngine(engine, set, options.owner)
 }
 
 /**
- * Кому движок принадлежит и какие расширения для владельца в нём стоят.
+ * Дособрать готовый движок до компонента: поставить расширения набора,
+ * которых в нём нет. Что уже есть, остаётся как есть.
  *
- * Запись на самом движке, а не геттер `owner` в классах расширений: так
- * владение живёт в одном месте и не требует ничего от того, кто пишет новое
- * расширение. `WeakMap` — чтобы не удерживать выброшенные движки.
- *
- * Движок, пришедший снаружи, переживает монтирование списка: Vue снимает
- * список под `v-if` и монтирует заново, и у новой сборки новый владелец.
- * Поэтому владение не вечное. Конец монтирования движок отпускает
- * (`releaseEngine`), но расширения владельца остаются рабочими: тот же
- * владелец удержит его снова (`retainEngine`) — так React собирает заново
- * список, живой под StrictMode и `<Activity>`. Снимает их только другой
- * владелец, когда берёт отпущенный движок (`attachEngine`).
- */
-const ENGINE_CLAIMS = new WeakMap<object, IEngineClaim>()
-
-/**
- * Фасады, у которых движок забрал другой владелец, пока они были сняты. Такой
- * фасад, принятый снова (React показал скрытый список), остался без
- * расширений и релеев — `retainEngine` о нём предупреждает.
- */
-const TAKEN = new WeakSet<IEngineHolder>()
-
-/**
- * Поставить владельческие расширения, которых в движке нет, и вернуть
- * поставленные. Недостающее — по имени, как у базового набора: у движка,
- * собранного сборщиком компонента (`createEngineListBox` и соседи),
- * владельческие уже стоят и остаются за тем, для кого их собрали.
- */
-function installOwnerExtensions<TItem extends object, TOwner extends IIdBaseOwner>(
-	engine: TCollectionEngine<TItem, any>,
-	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
-	owner: TOwner,
-): IExtension<TItem>[] {
-	const installed: IExtension<TItem>[] = []
-
-	for (const [name, build] of Object.entries(ownerSet)) {
-		if (engine.extensions[name]) continue
-
-		const extension = build(owner)
-
-		engine.use(extension)
-		installed.push(extension)
-	}
-
-	bindItemIdBase(engine, owner)
-
-	return installed
-}
-
-/**
- * Движок снова держит фасад `holder`: другой фасад, отпустивший его раньше,
- * своё отработал — владелец собран заново (свой `ctrl` пережил монтирование) —
- * и снимается со своих релеев на шинах движка.
- */
-function retire(claim: IEngineClaim, holder?: IEngineHolder): void {
-	if (claim.released && claim.released !== holder) claim.released.destroy()
-
-	claim.released = undefined
-}
-
-/**
- * Привязать пришедший снаружи движок к компоненту.
- *
- * Пользователь мог собрать его любым уровнем — компонент дополняет недостающее
- * и не предъявляет требований к тому, кто собирал. Это и делает уровни 1–2
- * самостоятельными: заранее знать, куда поедет коллекция, не обязательно.
- *
- * Базовый набор ставится сразу и остаётся с движком. Владельческий — когда
- * движок свободен: владельца у него не было или прежний его отпустил
- * (`releaseEngine`). Тогда расширения прежнего снимаются
- * (`TCollectionEngine.remove`), его фасад — тоже, а на их место встают
- * расширения этого владельца. Тот же владелец, собранный ещё раз, движок уже
- * держит.
+ * Пользователь мог собрать движок любым уровнем — компонент дополняет
+ * недостающее и не предъявляет требований к тому, кто собирал. Это и делает
+ * уровни 1–2 самостоятельными: заранее знать, куда поедет коллекция, не
+ * обязательно.
  *
  * **Порядок важен.** В конструкторе движка `extensions` заполняется целиком до
  * первого `install`, поэтому там порядок безразличен. Здесь расширения ставятся
  * по одному, и то, что ищет соседа в своём `install` (`selection` подписывается
  * на `meta`), обязано ставиться после него. Наборы это и задают: `meta` в
- * базовом, `selection` — надстройкой над ним.
+ * базовом, `selection` — надстройкой над ним, расширения компонента — в конце.
  */
-export function attachEngine<TItem extends object, TOwner extends IIdBaseOwner>(
+export function completeEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 	engine: TCollectionEngine<TItem, any>,
-	set: TExtensionSet<TItem>,
-	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
+	set: TExtensionSet<TItem, TOwner>,
 	owner: TOwner,
-	label: string,
-): void {
+): TCollectionEngine<TItem, any> {
 	for (const [name, build] of Object.entries(set)) {
-		if (engine.extensions[name]) continue
-
-		engine.use(build())
+		if (!engine.has(name)) engine.use(build(owner))
 	}
 
-	const claim = ENGINE_CLAIMS.get(engine)
+	bindItemIdBase(engine, owner)
 
-	if (claim?.owner === owner) {
-		retire(claim)
-		claim.extensions.push(...installOwnerExtensions(engine, ownerSet, owner))
-
-		return
-	}
-
-	if (claim && !claim.released) {
-		// Не падаем и не поддерживаем двух владельцев: расширения лежат по
-		// имени, и второй молча затёр бы владельческое расширение первого —
-		// тот перестал бы раздавать элементам `size`, `variant` и `disabled`,
-		// ничем об этом не сообщив. Первый остаётся рабочим, второй — нет
-		console.warn(
-			`${label}: движок уже привязан к другому компоненту. ` +
-				`Один движок — один компонент; второму нужна своя коллекция.`,
-		)
-
-		return
-	}
-
-	if (claim?.released) {
-		for (const extension of claim.extensions) engine.remove(extension)
-
-		TAKEN.add(claim.released)
-		claim.released.destroy()
-	}
-
-	ENGINE_CLAIMS.set(engine, {
-		owner,
-		extensions: installOwnerExtensions(engine, ownerSet, owner),
-	})
-}
-
-/**
- * Монтирование фасада кончилось: движок свободен, другой владелец его возьмёт
- * (`attachEngine`). Расширения владельца остаются рабочими — тот же владелец
- * может удержать движок снова (`retainEngine`): React собирает заново список,
- * который под StrictMode и `<Activity>` остаётся живым, на том же инстансе.
- *
- * Движок чужого владельца или ничей — ничего: отпускать нечего.
- */
-export function releaseEngine(
-	engine: TCollectionEngine<any, any>,
-	owner: object,
-	holder: IEngineHolder,
-): void {
-	const claim = ENGINE_CLAIMS.get(engine)
-
-	if (claim?.owner !== owner) return
-
-	retire(claim, holder)
-	claim.released = holder
-}
-
-/**
- * Монтирование фасада принято: владелец держит движок, и другой его не
- * возьмёт. Движок, отпущенный этим фасадом, снова занят; отпущенный другим
- * фасадом того же владельца — тоже, а тот фасад своё отработал.
- *
- * Движок, пока фасад был снят, перешёл к другому компоненту — фасад остался
- * без расширений и без релеев: предупреждение, как у второго владельца.
- * Фасад, который движок так и не взял (собран, пока движок держал другой),
- * предупреждение уже получил при сборке.
- */
-export function retainEngine(
-	engine: TCollectionEngine<any, any>,
-	owner: object,
-	holder: IEngineHolder,
-): void {
-	const claim = ENGINE_CLAIMS.get(engine)
-
-	if (!claim) return
-
-	if (claim.owner !== owner) {
-		if (!TAKEN.has(holder)) return
-
-		console.warn(
-			'Коллекция: движок перешёл к другому компоненту, пока этот был снят. ' +
-				'Один движок — один компонент; второму нужна своя коллекция.',
-		)
-
-		return
-	}
-
-	retire(claim, holder)
+	return engine
 }
 
 /** Владелец коллекции — визуальный компонент: у него есть основа `id` в DOM. */
@@ -356,43 +197,11 @@ export interface IIdBaseOwner {
 /**
  * Основа `id` элементов из данных — от владельца (`TFactoryExtension.bindIdBase`).
  * Элементы из разметки собирает адаптер со своей основой, фабрика их не строит.
- * Элементы, созданные до привязки (движок собран снаружи с `items`), остаются
- * со своей основой — `uid`: такой движок и его `id` — забота того, кто его собрал.
+ * Элементы, созданные раньше (движок собран с `items`), остаются со своей
+ * основой — `uid`: такой движок и его `id` — забота того, кто его собрал.
  */
 function bindItemIdBase(engine: TCollectionEngine<any, any>, owner: IIdBaseOwner): void {
 	const factory: unknown = engine.extensions.factory
 
 	if (factory instanceof TFactoryExtension) factory.bindIdBase(owner.idBase)
-}
-
-/**
- * Движок для фасада: чужой — дополнить, своего нет — построить.
- *
- * Зовётся **в выражении аргумента `super()`**, и это не стилистика. Базовые
- * фасады трогают расширения в собственных конструкторах
- * (`TSelectionCollectionFacade` релеит `extensions.selection.events`), а
- * выполняются они раньше тела наследника. Дополни движок после `super()` — и
- * список уровня 1 упадёт на `undefined` ещё до того, как до дополнения дойдёт
- * очередь.
- */
-export function resolveEngine<TItem extends object, TOwner extends IIdBaseOwner>(
-	options: { engine?: unknown; owner?: TOwner },
-	set: TExtensionSet<TItem>,
-	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
-	label: string,
-	build: (owner: TOwner) => TCollectionEngine<TItem, any>,
-): TCollectionEngine<TItem, any> {
-	if (!options.engine) {
-		const built = build(options.owner as TOwner)
-
-		if (options.owner) bindItemIdBase(built, options.owner)
-
-		return built
-	}
-
-	const engine = options.engine as TCollectionEngine<TItem, any>
-
-	if (options.owner) attachEngine(engine, set, ownerSet, options.owner, label)
-
-	return engine
 }

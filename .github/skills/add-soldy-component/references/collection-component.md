@@ -12,7 +12,7 @@ the file layout and the Vue wiring on top of it, using Tabs as the worked exampl
 ```
 <component>/collection/
   types.ts                          extension map + engine type + props interfaces
-  factory.ts                        extension sets (owner-less + owner-only) + <Name>Factory
+  factory.ts                        the component's extension list (<NAME>_EXTENSIONS)
   create.ts                         createEngine<Name>(options) — public entry with owner
   facade/{facade.class.ts,index.ts} owner facade
   extensions/<name>/                component-specific extensions (see AGENTS.md)
@@ -29,58 +29,35 @@ building blocks every collection composes from:
   `itemCtor` given). Present in every collection.
 - `activationExtensions(itemCtor?)` — base + `activation`. Tabs' model.
 - `selectionExtensions(itemCtor?)` — base + `selection`. Accordion / ListBox / Select / Tags.
-- `assembleEngine(set, items?)`, `createComponentEngine(...)`, `attachEngine(...)`,
-  `resolveEngine(...)` — see below.
+- `assembleEngine(set, owner, items?)`, `completeEngine(engine, set, owner)`,
+  `createComponentEngine(label, set, options)` — see below.
 
-Tabs builds its own set on top of `activationExtensions` in `collection/factory.ts`. The set
-is typed `TBaseExtensionSet`, not the bare `TExtensionSet`: it guarantees `batch`, which
+A collection keeps **one list** of the extensions the component can't work without, in
+`collection/factory.ts` — built on top of `activationExtensions` for Tabs, including the ones
+that need the component instance. The list is typed `TExtensionSet<TItem, TOwner>`: every
+entry gets the owner (the base ones just ignore it), and `batch` is guaranteed, which
 `assembleEngine` relies on to fill the engine without a cast:
 
 ```ts
-export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
+export const TABS_EXTENSIONS = (): TExtensionSet<ITabsItem, ITabs> => ({
   ...activationExtensions<ITabsItem>(TTabsItem),
   content: () => new TTabsContentExtension<ITabsItem>(),
-})
-
-export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
   tabs: (owner) => new TTabsExtension({ owner }),
-}
-
-export const TabsFactory = (owner: ITabs): TTabsCollection => {
-  const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
-
-  for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
-
-  return engine as TTabsCollection
-}
+})
 ```
 
-The split — owner-less `TABS_EXTENSIONS` vs `TABS_OWNER_EXTENSIONS` (needs a `TTabs`
-instance) — exists because a collection can be assembled without an owner (`createEngine`)
-and handed to the component later; `resolveEngine` (below) uses both sets to fill in
-whatever a supplied engine is missing.
+Declaration order is installation order: an extension that looks up a neighbour in its
+`install` goes after it.
 
-A supplied engine outlives the list (Vue `v-if`, conditional rendering in React), so the
-owner extensions live only while their owner has the engine: the next owner takes a released
-engine and removes the previous owner's extensions (`TCollectionEngine.remove`, which calls
-`destroy()`). So an owner extension subscribes to anything that outlives it — the driver,
-sibling extensions, the owner, the items — through `TBaseExtension._listenTo`, and releases any
-`TItemContextRegistry` it keeps in its `destroy()`. The guard
-`packages/setup/__tests__/engine-release.spec.ts` covers every collection facade in the export
-(AGENTS.md, «Движок снаружи переходит к следующему владельцу»).
-
-`collection/create.ts` is the public entry, requiring an owner explicitly:
+`collection/create.ts` is the public entry, requiring an owner explicitly. It is a data
+collection (`createEngine({ items })`) completed with the list — the same path a supplied
+engine takes:
 
 ```ts
 export function createEngineTabs(
   options: TCreateEngineOptions<ITabsItem> & { owner: ITabs },
 ): TTabsCollection {
-  return createComponentEngine(
-    'createEngineTabs',
-    TABS_EXTENSIONS(),
-    TABS_OWNER_EXTENSIONS,
-    options,
-  ) as TTabsCollection
+  return createComponentEngine('createEngineTabs', TABS_EXTENSIONS(), options)
 }
 ```
 
@@ -124,19 +101,19 @@ repeats the folder: `batch/batch.facade.ts`, `order/item/order-item.facade.ts`,
 Tabs has activation, not selection, so it stops at `batch` / `order` — there is no
 activation base; the single implementation lives directly in `TTabsCollectionFacade`.
 
-## Engine supplied from outside — `resolveEngine`
+## Engine supplied from outside — `completeEngine`
 
 `CollectionDescriptor` (`packages/setup/content/descriptors/components/collection/collection.descriptor.ts`)
 declares `engine: { type: Object }` — a plain, non-triggering input, the collection
-equivalent of `ctrl` for a regular component. A caller may pass an already-assembled
-engine; if not, the facade builds its own.
+equivalent of `ctrl` for a regular component. A caller may pass an engine assembled at any
+level; the facade completes it with the component's list — installs every extension the
+engine doesn't have by name, leaves the rest as is (`completeEngine`). No engine — the
+facade builds one with the component's builder (`createEngineTabs`).
 
-The facade resolves this **in the argument expression of `super()`**, not in the
+The facade does this **in the argument expression of `super()`**, not in the
 constructor body — base facades already touch extensions in their own constructors
 (`TSelectionCollectionFacade` relays `extensions.selection.events`), and those run before
-the subclass body. See the JSDoc on `resolveEngine`
-(`packages/core/src/components/base/collection/create/internal.ts`) for why the order
-matters.
+the subclass body.
 
 A facade never lists the events it forwards: it is a projection of its extensions, so it
 relays each source whole with `relayAll`, and its event map is the intersection of the
@@ -161,18 +138,14 @@ export class TTabsCollectionFacade extends TBatchCollectionFacade<
 > {
   constructor(
     props: TCollectionFacadeProps<ITabsItem> = {},
-    options: TCollectionFacadeOptions<TTabsCollectionFacadeEngine, ITabs> = {},
+    options: TCollectionFacadeOptions<TTabsCollectionFacadeEngine, ITabs>,
   ) {
     super(
       {},
       {
-        engine: resolveEngine(
-          options,
-          TABS_EXTENSIONS(),
-          TABS_OWNER_EXTENSIONS,
-          'Tabs',
-          TabsFactory,
-        ) as TTabsCollection,
+        engine: options.engine
+          ? completeEngine(options.engine, TABS_EXTENSIONS(), options.owner)
+          : createEngineTabs({ owner: options.owner }),
       },
     )
 
@@ -303,8 +276,7 @@ They are installed on the owner component; the engine is bound from the adapter 
 
 - `TCollectionExtension` (owner) — facade mode: reads `context.instance.engine`, calls
   `bundles.bindEngine(engine)`, provides `ITEM_CONTEXT_ELEVATOR` (engine down) and
-  `COLLECTION_ENGINE_ELEVATOR` (register callback down). On the context's `attach` the facade
-  retains the engine, on `destroy` it releases it for the next owner.
+  `COLLECTION_ENGINE_ELEVATOR` (register callback down).
 - `TCollectionItemExtension` (item) — reads `ITEM_CONTEXT_ELEVATOR` (up), builds the
   `TItemContext` and takes the register callback from `COLLECTION_ENGINE_ELEVATOR`. The item enters
   the collection on the context's `attach` — `(item, bundle)` registration and `meta` — which the
@@ -312,8 +284,7 @@ They are installed on the owner component; the engine is bound from the adapter 
   `TItemContext` belongs to this one mount: `destroy` detaches it from the facade
   (`clearContext`) and releases its item adapters (`release`), the item itself stays as it is.
   Don't hand a mount a context from `TItemContextRegistry` — the registry is for code that needs
-  contexts longer than one mount: the `tabs` and `tags` owner extensions, which release it when
-  the engine goes to another owner (AGENTS.md, «Контекст элемента живёт одно монтирование»).
+  contexts for the engine's whole life (AGENTS.md, «Контекст элемента живёт одно монтирование»).
 
 ## Vue wiring
 
@@ -323,7 +294,7 @@ from `@soldy-ui/setup`: the wrapper strips Vue proxies from `ctrl` and from the 
 `options`, so the component passes `props.ctrl` / `props.engine` as they are, without `toRaw`.
 The eslint block `soldy/vue-components-no-framework` fails on an import from `'vue'` and on
 `createAdapterContext` imported from `@soldy-ui/setup`. The facade context passes
-`engine: props.engine` through — a caller-supplied engine wins, `resolveEngine` falls back to
+`engine: props.engine` through — a caller-supplied engine is completed, and without one the facade falls back to
 building one otherwise:
 
 ```ts
@@ -398,7 +369,7 @@ drops it from the result, and in the item setup the owner binding overrides it.
   `TCollectionStorageDriver`, standard extensions.
 - `packages/core/src/components/base/collection/create/internal.ts` —
   `baseExtensions`/`activationExtensions`/`selectionExtensions`, `assembleEngine`,
-  `createComponentEngine`, `attachEngine`, `resolveEngine`.
+  `createComponentEngine`, `completeEngine`.
 - `packages/core/src/components/base/collection/facade/` — `TCollectionComponent`,
   `TCollectionItemComponent`, and the `batch`/`order`/`selection` facade bases.
 - `packages/core/src/components/custom/tabs/collection/{types.ts,factory.ts,create.ts,facade/facade.class.ts}`

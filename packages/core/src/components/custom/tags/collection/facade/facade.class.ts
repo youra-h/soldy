@@ -1,13 +1,9 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
+import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
+import { TAGS_EXTENSIONS } from '../factory'
+import { createEngineTags } from '../create'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
-	TCollectionEngine,
-	TCollectionFacadeOptions,
-	TSelectionFacadeProps,
-} from '../../../../base/collection'
-import { TagsFactory, TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
-import type {
-	TTagsCollection,
 	TTagsCollectionExtensions,
 	TTagsCollectionFacadeEngine,
 	TTagsCollectionFacadeEvents,
@@ -20,7 +16,7 @@ import type { IPopover } from '../../../popover'
  * Фасад коллекции Tags.
  *
  * Наследует `TSelectionCollectionFacade`, как ListBox: состав и выбор из
- * базы, `mode` по умолчанию `none` задаёт `TagsFactory`. Своё сверх базы —
+ * базы, `mode` по умолчанию `none` задаёт `TAGS_EXTENSIONS`. Своё сверх базы —
  * деление показанного на ряд и панель (`overflow`): вид набора остаётся
  * свойством самого `TTags`, а вот кто где нарисован — членство в коллекции.
  */
@@ -31,27 +27,16 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<ITagsItem> = {},
-		options: TCollectionFacadeOptions<TTagsCollectionFacadeEngine, ITags> & {
-			/** Фабрика движка коллекции — переопределяется наследником. */
-			factory?: (owner: ITags) => TTagsCollection
-		} = {},
+		options: TCollectionFacadeOptions<TTagsCollectionFacadeEngine, ITags>,
 	) {
-		const createEngine = options.factory ?? TagsFactory
-
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Tags. Именно здесь, а не в теле:
-		// базы трогают расширения в своих конструкторах
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					TAGS_EXTENSIONS(),
-					TAGS_OWNER_EXTENSIONS,
-					'Tags',
-					createEngine,
-				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, TAGS_EXTENSIONS(), options.owner)
+					: createEngineTags({ owner: options.owner }),
 			},
 		)
 

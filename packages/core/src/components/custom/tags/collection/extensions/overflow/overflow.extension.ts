@@ -65,14 +65,11 @@ export class TTagsOverflowExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение снимают, когда движок переходит к другому владельцу, а он и
-		// `batch` живут дальше — подписки через `_listenTo`, их снимет `destroy`.
-		// Панель расширение создаёт само, и уходит она вместе с ним
-		this._listenTo(this._owner.events, 'change:overflow', () => this._syncMode())
+		this._owner.events.on('change:overflow', () => this._syncMode())
 
 		// Состав сменился — делить надо заново. `change:shown` приходит и на
 		// смену состава, и на устаревшую выборку — ровно то, что рисует ряд
-		this._listenTo(this._batch?.events, 'change:shown', () => this._sync())
+		this._batch?.events.on('change:shown', () => this._sync())
 
 		this._syncMode()
 	}

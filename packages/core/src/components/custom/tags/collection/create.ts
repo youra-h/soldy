@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from './factory'
+import { TAGS_EXTENSIONS } from './factory'
 import type { TTagsCollection } from './types'
 import type { ITags } from '../types'
 import type { ITagsItem } from '../item/types'
@@ -15,10 +15,5 @@ import type { ITagsItem } from '../item/types'
 export function createEngineTags(
 	options: TCreateEngineOptions<ITagsItem> & { owner: ITags },
 ): TTagsCollection {
-	return createComponentEngine(
-		'createEngineTags',
-		TAGS_EXTENSIONS(),
-		TAGS_OWNER_EXTENSIONS,
-		options,
-	) as TTagsCollection
+	return createComponentEngine('createEngineTags', TAGS_EXTENSIONS(), options)
 }

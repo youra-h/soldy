@@ -1,18 +1,14 @@
 import { TBatchCollectionFacade } from '../../../../base/collection'
-import type {
-	TCollectionEngine,
-	TCollectionFacadeOptions,
-	TCollectionFacadeProps,
-} from '../../../../base/collection'
-import { resolveEngine } from '../../../../base/collection/create/internal'
+import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TCalendarDate } from '../../../../../common'
 import type { ICalendarItem } from '../../item/types'
 import type { ICalendar } from '../../types'
 import type { TCalendarGrid, TCalendarMode } from '../extensions'
-import { CALENDAR_EXTENSIONS, CALENDAR_OWNER_EXTENSIONS, CalendarFactory } from '../factory'
+import { CALENDAR_EXTENSIONS } from '../factory'
+import { createEngineCalendar } from '../create'
 import type {
 	ICalendarCollectionProps,
-	TCalendarCollection,
 	TCalendarCollectionExtensions,
 	TCalendarCollectionFacadeEngine,
 	TCalendarCollectionFacadeEvents,
@@ -37,22 +33,16 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 > {
 	constructor(
 		props: TCollectionFacadeProps<ICalendarItem> & ICalendarCollectionProps = {},
-		options: TCollectionFacadeOptions<TCalendarCollectionFacadeEngine, ICalendar> & {
-			/** Фабрика движка коллекции — переопределяется наследником. */
-			factory?: (owner: ICalendar) => TCalendarCollection
-		} = {},
+		options: TCollectionFacadeOptions<TCalendarCollectionFacadeEngine, ICalendar>,
 	) {
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					CALENDAR_EXTENSIONS(),
-					CALENDAR_OWNER_EXTENSIONS,
-					'Calendar',
-					options.factory ?? CalendarFactory,
-				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, CALENDAR_EXTENSIONS(), options.owner)
+					: createEngineCalendar({ owner: options.owner }),
 			},
 		)
 

@@ -54,9 +54,9 @@ export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollection
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineSelect`…). Фасад сам
- * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
- * поэтому годится любой уровень, включая уровень 1, где ни `TSelectItem`, ни
- * владельческие расширения ещё не собраны.
+ * дособирает базовый набор и подключает к движку своего владельца (см.
+ * `TCollectionComponent`), поэтому годится любой уровень, включая уровень 1,
+ * где ни `TSelectItem`, ни владельческие расширения ещё не собраны.
  *
  * Оба параметра — `any`, а не «уровень 1» или «частичный набор»: у
  * `TCollectionEngine.events` есть `engine:create`, куда сам движок передаётся
@@ -66,8 +66,7 @@ export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollection
  * (в том числе `Partial<TSelectCollectionExtensions>`) сделал бы совместимым
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TSelectCollection`, который собирает `createEngineSelect`. Точность
- * остаётся там, где движок инстанцируется (`TSelectCollection`,
- * `SelectFactory`), а не там, где его только принимают.
+ * остаётся там, где движок собирается (`TSelectCollection`, `createEngineSelect`), а не там, где его только принимают.
  */
 export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
 
@@ -80,8 +79,7 @@ export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
  *
  * `engine` принимает движок любого уровня сборки, а не только
  * `TSelectCollection` — тот же контраст, что и у конструктора фасада (см.
- * `TSelectCollectionFacadeEngine` выше): компонент доустанавливает
- * недостающее сам через `resolveEngine`.
+ * `TSelectCollectionFacadeEngine` выше): компонент дособирает и подключает недостающее сам.
  */
 export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = ISelectItem>
 	extends

@@ -43,7 +43,7 @@ export type TCalendarCollection = TCollectionEngine<ICalendarItem, TCalendarColl
 
 /**
  * Движок, который принимает фасад: любого уровня сборки, недостающее
- * фасад дополнит сам (`resolveEngine`). Оба параметра — `any`: движок
+ * фасад дособерёт и подключит сам (`TCollectionComponent`). Оба параметра — `any`: движок
  * инвариантен по набору расширений через `engine:create` (см. ListBox).
  */
 export type TCalendarCollectionFacadeEngine = TCollectionEngine<any, any>

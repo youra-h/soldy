@@ -32,6 +32,7 @@ import {
 	TSelect,
 	TSelectCollectionFacade,
 	TAccordion,
+	TPlainExtension,
 } from '../src'
 
 afterEach(() => {
@@ -277,18 +278,32 @@ describe('дополнение недостающего', () => {
 	})
 
 	/**
-	 * Один движок в двух компонентах — расширения лежат по имени, и второй
-	 * молча затёр бы владельческое расширение первого. Не падаем и не
-	 * поддерживаем двух владельцев: предупреждаем.
+	 * Собранный движок дособирать нечего: второй компонент на нём ничего не
+	 * ставит и ничего не заменяет — расширения остаются теми, что поставил
+	 * первый.
 	 */
-	it('второй компонент на том же движке предупреждает', () => {
-		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+	it('второй компонент на собранном движке ничего не дособирает', () => {
+		const warn = vi.spyOn(console, 'warn')
 		const engine = createEngine({ items: [{ value: 'a' }] })
 
 		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
-		expect(warn).not.toHaveBeenCalled()
+
+		const extensions: Readonly<Record<string, unknown>> = { ...engine.extensions }
 
 		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
+
+		expect(warn).not.toHaveBeenCalled()
+		expect({ ...engine.extensions }).toEqual(extensions)
+	})
+
+	it('расширение под занятым именем не ставится, в консоль — предупреждение', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		const engine = createEngine({ items: [{ value: 'a' }] })
+		const plain = engine.extensions.plain
+
+		engine.use(new TPlainExtension())
+
+		expect(engine.extensions.plain).toBe(plain)
 		expect(warn).toHaveBeenCalledOnce()
 	})
 })

@@ -42,9 +42,9 @@ export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtens
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineActivation`, `createEngineTabs`…). Фасад сам
- * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
- * поэтому годится любой уровень, включая уровень 1, где ни `TTabsItem`, ни
- * владельческие расширения ещё не собраны.
+ * дособирает базовый набор и подключает к движку своего владельца (см.
+ * `TCollectionComponent`), поэтому годится любой уровень, включая уровень 1,
+ * где ни `TTabsItem`, ни владельческие расширения ещё не собраны.
  *
  * Оба параметра — `any`, а не «уровень 1» или «частичный набор»: у
  * `TCollectionEngine.events` есть `engine:create`, куда сам движок передаётся
@@ -54,7 +54,7 @@ export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtens
  * (в том числе `Partial<TTabsCollectionExtensions>`) сделал бы совместимым
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TTabsCollection`, который собирает `createEngineTabs`. Точность остаётся
- * там, где движок инстанцируется (`TTabsCollection`, `TabsFactory`), а не
+ * там, где движок собирается (`TTabsCollection`, `createEngineTabs`), а не
  * там, где его только принимают.
  */
 export type TTabsCollectionFacadeEngine = TCollectionEngine<any, any>
@@ -65,7 +65,7 @@ export type TTabsCollectionFacadeEngine = TCollectionEngine<any, any>
  *
  * `engine` принимает движок любого уровня сборки, а не только `TTabsCollection`
  * — тот же контраст, что и у конструктора фасада (см. `TTabsCollectionFacadeEngine`
- * выше): компонент доустанавливает недостающее сам через `resolveEngine`.
+ * выше): компонент дособирает и подключает недостающее сам.
  */
 export interface ITabsCollectionProps<TItemProps = ITabsItemProps, TItem = ITabsItem>
 	extends

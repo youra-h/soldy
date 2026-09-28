@@ -1,53 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-	TBaseExtension,
 	TCollectionEngine,
-	TEvented,
 	TPlainExtension,
 	TActivationExtension,
 	TSelectionExtension,
 	TItemContextRegistry,
 } from '@soldy-ui/core'
-import type { IExtensionContext, TCollectionStorageDriverEvents } from '@soldy-ui/core'
 
 type Item = { id: number; name: string }
-
-/** Карта событий проверочного расширения: одно своё событие. */
-type TProbeEvents = { 'probe:added': (item: Item) => void }
-
-/**
- * Проверочное расширение: слушает драйвер и шину «владельца» через
- * `_listenTo`, пробрасывает событие владельца к себе релеем — как это делают
- * владельческие расширения компонентов.
- */
-class TProbeExtension extends TBaseExtension<Item, TProbeEvents> {
-	readonly name = 'probe'
-
-	readonly owner = new TEvented<{ 'probe:added': (item: Item) => void }>()
-
-	/** Сколько раз сработали подписки на драйвер и владельца. */
-	heard = 0
-
-	/** Отписка от `item:removed` — её расширение снимает само, раньше `destroy`. */
-	stopRemoved: () => void = () => {}
-
-	override install(ctx: IExtensionContext<Item>): void {
-		super.install(ctx)
-
-		this._listenTo(ctx.driver.events, 'item:added', () => this.heard++)
-		this.stopRemoved = this._listenTo(ctx.driver.events, 'item:removed', () => this.heard++)
-		this.events.relay(this.owner, ['probe:added'])
-	}
-
-	/** Подписка на шину, которой нет: у движка нет соседнего расширения. */
-	listenToNothing(): () => void {
-		return this._listenTo<TCollectionStorageDriverEvents<Item>, 'item:added'>(
-			undefined,
-			'item:added',
-			() => this.heard++,
-		)
-	}
-}
 
 describe('TCollectionEngine', () => {
 	it('создаётся без расширений', () => {
@@ -281,111 +241,5 @@ describe('TCollectionEngine', () => {
 		ctx.adapters.activation.active = true
 
 		expect(activation.isActive(item)).toBe(true)
-	})
-
-	/**
-	 * Обратное `use()`: движок, пришедший снаружи, переходит к следующему
-	 * владельцу, и тот снимает владельческие расширения прежнего и ставит свои
-	 * под теми же именами.
-	 */
-	it('remove: убирает расширение из карты и уничтожает его', () => {
-		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
-			extensions: { plain: new TPlainExtension<Item>() },
-		})
-		const probe = new TProbeExtension()
-
-		col.use(probe)
-		col.remove(probe)
-
-		expect('probe' in col.extensions).toBe(false)
-
-		col.extensions.plain.insert({ id: 1, name: 'a' })
-
-		expect(probe.heard).toBe(0)
-	})
-
-	it('remove: имя, занятое другим расширением, не трогает, а переданное уничтожает', () => {
-		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
-			extensions: { plain: new TPlainExtension<Item>() },
-		})
-		const first = new TProbeExtension()
-		const second = new TProbeExtension()
-
-		col.use(first)
-		col.use(second)
-		col.remove(first)
-
-		expect(col.extensions.probe).toBe(second)
-
-		col.extensions.plain.insert({ id: 1, name: 'a' })
-
-		expect(first.heard).toBe(0)
-		expect(second.heard).toBe(1)
-	})
-})
-
-/**
- * Расширение, которое снимают раньше движка, снимает всё, что повесило на
- * чужие шины: подписки `_listenTo` и релеи своей шины.
- */
-describe('TBaseExtension: подписки на чужие шины', () => {
-	function installed() {
-		const col = new TCollectionEngine<Item, { plain: TPlainExtension<Item> }>({
-			extensions: { plain: new TPlainExtension<Item>() },
-		})
-		const probe = new TProbeExtension()
-
-		col.use(probe)
-
-		return { plain: col.extensions.plain, probe }
-	}
-
-	it('destroy снимает подписки на драйвер', () => {
-		const { plain, probe } = installed()
-		const item = { id: 1, name: 'a' }
-
-		plain.insert(item)
-		probe.destroy()
-		plain.remove(item)
-		plain.insert({ id: 2, name: 'b' })
-
-		expect(probe.heard).toBe(1)
-	})
-
-	it('destroy снимает релей с шины владельца и подписчиков своей шины', () => {
-		const { probe } = installed()
-		const heard = vi.fn()
-
-		probe.events.on('probe:added', heard)
-		probe.destroy()
-
-		const relayed = vi.spyOn(probe.events, 'emit')
-
-		probe.owner.emit('probe:added', { id: 1, name: 'a' })
-
-		expect(relayed).not.toHaveBeenCalled()
-		expect(heard).not.toHaveBeenCalled()
-	})
-
-	it('отписка, возвращённая _listenTo, снимает подписку раньше destroy', () => {
-		const { plain, probe } = installed()
-		const item = { id: 1, name: 'a' }
-
-		plain.insert(item)
-		probe.stopRemoved()
-		plain.remove(item)
-
-		expect(probe.heard).toBe(1)
-	})
-
-	it('повторный destroy ничего не делает, шины нет — подписываться не на что', () => {
-		const { plain, probe } = installed()
-
-		probe.listenToNothing()()
-		probe.destroy()
-		probe.destroy()
-		plain.insert({ id: 1, name: 'a' })
-
-		expect(probe.heard).toBe(0)
 	})
 })

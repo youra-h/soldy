@@ -13,7 +13,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { createEngine, createEngineActivation } from '@soldy-ui/core'
 import { ListBox, Select, Tabs, Accordion } from '@soldy-ui/vue'
 
@@ -158,64 +158,5 @@ describe.each([
 
 		expect(resets).toBe(0)
 		expect(added).toBe(ITEMS.length)
-	})
-})
-
-/**
- * Готовый движок переживает компонент: `v-if` снимает список и монтирует его
- * заново, и без `ctrl` у новой сборки новый владелец. Прежний, уходя,
- * отпускает движок, и новый получает его целиком — без предупреждения о двух
- * владельцах, со своим `value` и своей выключенностью.
- */
-describe('v-if: готовый движок у смонтированного заново списка', () => {
-	/** Строки элементов — на них `aria-selected` и `data-disabled`. */
-	const rows = () => [...document.querySelectorAll('.s-list-box-item .s-button')]
-
-	it('ListBox: value и disabled — нового владельца, консоль чиста', async () => {
-		const warn = vi.spyOn(console, 'warn')
-		const engine = createEngine<TItem>({ items: [...ITEMS, { value: 'c', text: 'Третий' }] })
-		const shown = ref(true)
-		const value = ref('a')
-		const disabled = ref(false)
-
-		wrapper = mount(
-			defineComponent({
-				render: () =>
-					shown.value
-						? h(ListBox, { engine, value: value.value, disabled: disabled.value })
-						: null,
-			}),
-			{ attachTo: document.body },
-		)
-		await nextTick()
-
-		shown.value = false
-		await nextTick()
-
-		value.value = 'b'
-		shown.value = true
-		await nextTick()
-
-		expect(warn).not.toHaveBeenCalled()
-		expect(rows().map((row) => row.getAttribute('aria-selected'))).toEqual([
-			'false',
-			'true',
-			'false',
-		])
-
-		value.value = 'c'
-		disabled.value = true
-		await nextTick()
-
-		expect(rows().map((row) => row.getAttribute('aria-selected'))).toEqual([
-			'false',
-			'false',
-			'true',
-		])
-		expect(rows().map((row) => row.getAttribute('data-disabled'))).toEqual([
-			'true',
-			'true',
-			'true',
-		])
 	})
 })

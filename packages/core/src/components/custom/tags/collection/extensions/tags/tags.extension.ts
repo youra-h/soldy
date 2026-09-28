@@ -87,16 +87,12 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Реестр — пока движок у этого владельца: его отпустит `destroy`
 		this._itemRegistry = new TItemContextRegistry({
 			extensions: ctx.extensions as TTagsExtensions<TItem>,
 			driver: ctx.driver,
 		})
 
-		// Расширение снимают, когда движок переходит к другому владельцу, а
-		// драйвер, выбор, владелец и теги живут дальше — подписки через
-		// `_listenTo`, их снимет `destroy`
-		this._listenTo(ctx.driver.events, 'item:added', (e) => this._applyOwner(e.item as TItem))
+		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -104,22 +100,15 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
 		// Итог `disabled` тегу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._listenTo(this._owner.events, 'change:disabled', () =>
-			notifyOwnerDisabled(ctx.driver.valueOf()),
-		)
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		// `size` и `variant` тегу тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
-		this._listenTo(
-			this._owner.events,
-			'change:size',
-			(payload: TValuePayload<TComponentSize>) => {
-				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-			},
-		)
+		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		})
 
-		this._listenTo(
-			this._owner.events,
+		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
@@ -127,18 +116,17 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		)
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTagsItemExtension резолвит closable из item ?? owner). Релей снимает
-		// очистка шины расширения (`destroy`)
+		// (TTagsItemExtension резолвит closable из item ?? owner)
 		this.events.relay(this._owner.events, ['change:closable'])
 
 		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
 
 		if (selection) {
-			this._listenTo(selection.events, 'change:mode', () => this._applyMode())
-			this._listenTo(selection.events, 'change:selection', () => this._syncSelectedAria())
+			selection.events.on('change:mode', () => this._applyMode())
+			selection.events.on('change:selection', () => this._syncSelectedAria())
 
-			this._listenTo(ctx.driver.events, 'item:added', () => this._applyMode())
-			this._listenTo(ctx.driver.events, 'item:removed', () => this._applyMode())
+			ctx.driver.events.on('item:added', () => this._applyMode())
+			ctx.driver.events.on('item:removed', () => this._applyMode())
 
 			this._applyMode()
 		}
@@ -147,25 +135,15 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		// состава и порядка набора и от того, можно ли перейти на каждый тег.
 		// `change:items` приходит один раз на команду — после всех `item:*`
 		ctx.driver.valueOf().forEach((item) => this._watchTag(item))
-		this._listenTo(ctx.driver.events, 'item:added', (e) => this._watchTag(e.item as TItem))
-		this._listenTo(ctx.driver.events, 'item:removed', (e) => this._unwatchTag(e.item))
-		this._listenTo(ctx.driver.events, 'change:items', () => this._syncTabStop())
-		this._listenTo(selection?.events, 'change:mode', () => this._syncTabStop())
-		this._listenTo(selection?.events, 'change:selection', () => this._syncTabStop())
+		ctx.driver.events.on('item:added', (e) => this._watchTag(e.item as TItem))
+		ctx.driver.events.on('item:removed', (e) => this._unwatchTag(e.item))
+		ctx.driver.events.on('change:items', () => this._syncTabStop())
+		selection?.events.on('change:mode', () => this._syncTabStop())
+		selection?.events.on('change:selection', () => this._syncTabStop())
 		// Тег, уехавший в панель, из порядка обхода выбывает
-		this._listenTo(this._overflow?.events, 'change:fit', () => this._syncTabStop())
+		this._overflow?.events.on('change:fit', () => this._syncTabStop())
 
 		this._syncTabStop()
-	}
-
-	/**
-	 * Движок перешёл к другому владельцу: подписки сняты, и реестр контекстов
-	 * отпущен — иначе он остался бы подписан на драйвер навсегда.
-	 */
-	override destroy(): void {
-		super.destroy()
-
-		this._itemRegistry?.release()
 	}
 
 	/**
@@ -340,20 +318,10 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	/** Повод пересчитать остановку: сменилось, можно ли перейти на тег. */
 	private readonly _onTagAvailability = (): void => this._syncTabStop()
 
-	/**
-	 * Отписки от тегов, которые сейчас в наборе: удалённый снимается сразу,
-	 * остальные — `destroy` расширения.
-	 */
-	private readonly _tagWatchers = new WeakMap<TItem, Array<() => void>>()
-
 	private _watchTag(item: TItem): void {
-		if (this._tagWatchers.has(item)) return
-
-		this._tagWatchers.set(item, [
-			this._listenTo(item.events, 'change:disabled', this._onTagAvailability),
-			this._listenTo(item.events, 'change:visible', this._onTagAvailability),
-			this._listenTo(item.events, 'change:rendered', this._onTagAvailability),
-		])
+		item.events.on('change:disabled', this._onTagAvailability)
+		item.events.on('change:visible', this._onTagAvailability)
+		item.events.on('change:rendered', this._onTagAvailability)
 	}
 
 	/**
@@ -361,8 +329,9 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * забывается как тег под фокусом.
 	 */
 	private _unwatchTag(item: TItem): void {
-		this._tagWatchers.get(item)?.forEach((unsubscribe) => unsubscribe())
-		this._tagWatchers.delete(item)
+		item.events.off('change:disabled', this._onTagAvailability)
+		item.events.off('change:visible', this._onTagAvailability)
+		item.events.off('change:rendered', this._onTagAvailability)
 
 		if (this._focused === item) this._focused = undefined
 	}

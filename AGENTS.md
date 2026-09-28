@@ -1532,11 +1532,9 @@ Accordion и у Select — унаследованный `aria`: они и вын
 (`release`). Отвязка обязательна: React перечитывает состояние уже
 уничтоженной сборки, и фасад, державший отпущенный контекст, создал бы
 адаптеры заново. Панель отпускает контекст прежнего таба и при
-перепривязке. `TItemContextRegistry` монтированию не годится — он подписан на
-`item:removed`, пока его не отпустят (`release()`); реестр держат расширения
-`tabs` и `tags`, которым контексты нужны, пока движок у их владельца, и
-отпускают его, когда движок переходит к другому (см. «Движок снаружи
-переходит к следующему владельцу»). Один контекст на элемент для всех
+перепривязке. `TItemContextRegistry` монтированию не годится — он навсегда
+подписан на `item:removed`; реестр держат расширения `tabs` и `tags`, которым
+контексты нужны на всю жизнь движка. Один контекст на элемент для всех
 монтирований не заводится: таб и панель берут контекст одного элемента, и
 освобождение одним сломало бы другого.
 
@@ -1614,67 +1612,41 @@ Solid, Svelte — в `useAdapter` при инициализации, Angular —
 `ui/react/__tests__/adapter-context.spec.tsx` (несколько контекстов и шаг
 коммита).
 
-### Движок снаружи переходит к следующему владельцу (критично)
+### Готовый движок дособирается до компонента (критично)
 
-Владельческие расширения (`*_OWNER_EXTENSIONS` в `collection/factory.ts` —
-`value`, `list`, `tabs`, `select` и соседи) держат владельца и подписаны на
-него, а движок, пришедший снаружи (`engine`), живёт дольше списка: Vue
-снимает список под `v-if` и монтирует заново, React — по условию в разметке,
-и у новой сборки новый владелец. Раньше движок помнил первого навсегда: новый
-получал «движок уже привязан к другому компоненту», а `value`, `size`,
-`variant` и `disabled` элементов оставались у прежнего.
+У каждой коллекции один набор расширений — всё, без чего компонент не
+работает, в том числе то, чему нужен его инстанс: `TABS_EXTENSIONS` и соседи в
+`collection/factory.ts`. Движок к фасаду приходит одним из двух путей, и оба —
+через этот набор:
 
-Владение записано на движке (`base/collection/create/internal.ts`) и держится
-монтированием фасада:
+- **движка не дали** — фасад собирает его сборщиком компонента
+  (`createEngineTabs` и соседи);
+- **движок дали** (`engine`, собран на любом уровне) — фасад ставит в него
+  расширения набора, которых в движке нет по имени, а что есть, не трогает
+  (`completeEngine`, `base/collection/create/internal.ts`).
 
-- **взять** — `attachEngine` из `resolveEngine`, при сборке фасада: ставит
-  недостающие владельческие расширения и записывает их за владельцем. При
-  сборке, а не при приёме: сервер рисует список из `engine` целиком, с
-  выбором и атрибутами владельца;
-- **отпустить** — конец монтирования: `release` фасада на `destroy` контекста
-  (`TCollectionExtension`). Движок только помечен свободным, расширения
-  владельца и фасад остаются рабочими;
-- **удержать снова** — приём монтирования: `retain` фасада на `attach`
-  контекста. React собирает заново список, живой под StrictMode и
-  `<Activity>`, на том же владельце и фасаде (см. «Инстанс переживает
-  пересборку React»), и фасад удерживает движок снова. Если движок тем
-  временем взял другой, фасад остался без расширений и релеев —
-  предупреждение;
-- **передать** — `attachEngine` другого владельца на отпущенном движке:
-  расширения прежнего снимаются (`TCollectionEngine.remove` — обратное
-  `use()`, с `destroy` расширения), фасад прежнего — тоже (`destroy`: его
-  перехватчики `relayAll` не остаются на шинах живого движка), на их место
-  встают свои. Тот же владелец (свой `ctrl` пережил монтирование) расширения
-  сохраняет, снимается только прежний фасад.
+Сборщик компонента идёт тем же путём: `createEngine({ items })`, дособранный
+набором, — расширения компонента застают элементы уже в коллекции, как и в
+готовом движке. Порядок набора — порядок установки: кто в `install` ищет
+соседа, стоит после него.
 
-Снимает расширения следующий владелец, а не конец монтирования: React
-собирает элементы заново раньше списка, и фасад элемента берёт адаптер
-владельческого расширения уже при сборке — снятое на конце монтирования
-уронило бы пересборку. Движок, который держит другой, — прежнее
-предупреждение, и второй владелец остаётся без своих расширений. Смена `key`
-в React собирает новый список раньше, чем отпущен прежний, и попадает сюда же
-([869f7vzv0](https://app.clickup.com/t/869f7vzv0)). Расширения реестра
-(`useExtensions`) остаются у первого владельца: снять их — правка
-`protected/registry` ([869f7vzxq](https://app.clickup.com/t/869f7vzxq)).
+Имя расширения в движке одно: `TCollectionEngine.use` расширение под занятым
+именем не ставит и предупреждает в консоль — два расширения под одним именем
+подменили бы друг друга в `extensions`, а подписаны остались бы оба.
+`TCollectionEngine.has(name)` — есть ли расширение с таким именем.
 
-**Владельческое расширение подписывается через `TBaseExtension._listenTo`** —
-на шины, которые живут дольше него: драйвера, соседних расширений, владельца и
-элементов. Снимает их `destroy()` базы. Подписку, которую снимают раньше
-(элемент ушёл из коллекции), держат отпиской, которую вернул `_listenTo`.
-Завёл реестр контекстов — отпускает в своём `destroy()`
-(`TItemContextRegistry.release()`). Прямой `on` оставил бы на такой шине
-обработчик снятого расширения, и тот писал бы элементам свойства прежнего
-владельца. Элементы новый владелец привязывает к себе сам
-(`bindDisabledToOwner`, `bindStyleToOwner`), и резольвер сообщает тем, у
-кого сменился итог.
+**Собранный движок второй раз не дособирается.** Расширения, которым нужен
+инстанс компонента, остаются за тем инстансом, для которого их поставили.
+Новый инстанс над тем же движком — список снят и собран заново без `ctrl` —
+своих не получает, и его `value`, `size`, `disabled` до элементов не доходят.
+Чтобы список, собранный заново, работал с тем же движком, ему передают тот же
+`ctrl`. Пересборка контекстов React на живом компоненте идёт на том же
+инстансе (см. «Инстанс переживает пересборку React»), и её это не касается.
 
-Сторожат `setup/__tests__/engine-release.spec.ts` — по всем фасадам
-коллекций: всё, что прежний владелец и его фасад повесили на шины движка,
-владельца и элементов, после перехода снято, —
-`core/__tests__/engine-owner.spec.ts` (переход, удержание тем же фасадом,
-тот же владелец в новом фасаде, два владельца сразу),
-`ui/react/__tests__/engine-owner.spec.tsx` (StrictMode, `<Activity>`, снятие
-и новое монтирование) и `ui/vue/__tests__/engine-prop.spec.ts` (`v-if`).
+Сторожат `core/__tests__/engine-create.spec.ts` (дособирание на каждом
+уровне, второй компонент на собранном движке, повтор имени),
+`ui/react/__tests__/engine-owner.spec.tsx` (StrictMode и `<Activity>` над
+готовым движком) и `ui/vue/__tests__/engine-prop.spec.ts`.
 
 ### ARIA: что знает элемент, а что коллекция
 
@@ -1841,7 +1813,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
 
 - **Collections use facades**: the owner is a `TCollectionComponent` subclass (e.g. `TTabsCollectionFacade`) that owns a `TCollectionEngine` and exposes getters (`items`, `trackBy`, `activeItem`); the item is a `TCollectionItemComponent` subclass (e.g. `TTabsItemCollectionFacade`) holding a `TItemContext`. Both are wired through `defineComponent` descriptors — there is no `defineCollection`/`defineExtension`. Facades don't implement these from scratch: they extend the base matching their extension set (`TBatchCollectionFacade`/`TSelectionCollectionFacade`/`TActivationCollectionFacade`, `TOrderItemFacade`/`TSelectionItemFacade`/`TActivationItemFacade`) — see «Иерархия фасадов повторяет состав расширений» above. Facades never list the events they forward: `relayAll` takes the source's whole map, and the facade's event map is an intersection of those maps — see «Карта событий выводится из источника, а не переписывается» above.
 
-- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; `resolveEngine` picks up the passed-in engine and attaches it to the owner, or builds its own when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension`, and the item joins the collection when `useAdapter` attaches the context in `setup()` (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
+- **Vue collection setup** creates two adapter contexts sharing one bundle: the owner component (`TabsDescriptor`, through `useAdapter`) and the collection facade (`TabsCollectionDescriptor`, `{ bundle: adapter.bundle }`, through `useCollectionAdapter`). Both contexts are created via `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), not `createAdapterContext` from `@soldy-ui/setup` directly — the wrapper strips Vue proxies from `ctrl` and from top-level values of `options`. The facade context's `options` carries `{ owner: adapter.instance, engine: props.engine }`; the facade completes a passed-in engine with the component's extension list (`completeEngine`), or builds its own with the component's builder when none was passed. `useCollectionAdapter` leaves `ctrl` and `rootElement` out of its result before the setup merges `{ ...refs, ...refsCollection }`, since those belong to the owner, not the facade — so the spread order no longer matters. Items register through `TCollectionExtension`/`TCollectionItemExtension` over the elevator (provide/inject): the item setup assembles `TCollectionItemExtension`, and the item joins the collection when `useAdapter` attaches the context in `setup()` (see «Элемент входит в коллекцию при монтировании, а не при сборке»).
 
 ## Граница переиспользования между похожими компонентами (критично)
 
@@ -4047,8 +4019,8 @@ Popover и Tooltip, заголовка и тела Dialog, списка и оп�
 - **ядро** — тем экземплярам, которые строит само. Элемент коллекции из
   данных (`items`) создаёт фабрика движка, и `useId` до него не доходит: его
   основа — `<основа владельца>-item-<номер>`, номер по порядку создания
-  (`TFactoryExtension.bindIdBase`, зовёт `resolveEngine` при привязке движка к
-  владельцу). Поле Select берёт `id` самого Select.
+  (`TFactoryExtension.bindIdBase`, зовёт `completeEngine`, дособирая движок до
+  компонента). Поле Select берёт `id` самого Select.
 
 Элемент из разметки фабрика не строит — у него своя основа от адаптера.
 Движок, собранный снаружи с `items` до привязки к владельцу, и внешний `ctrl`

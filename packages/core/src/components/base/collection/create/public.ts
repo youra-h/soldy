@@ -58,7 +58,7 @@ export function createEngine<TItem extends object = object>(
 	// ровно эти пять расширений), а не затыкает несоответствие: сигнатура
 	// снаружи делает вызывающего типобезопасным без единого приведения на его
 	// стороне — ровно то, чего не хватало `TCollectionEngine<TItem, any>`.
-	return assembleEngine(baseExtensions<TItem>(), options.items) as TCollectionEngine<
+	return assembleEngine(baseExtensions<TItem>(), undefined, options.items) as TCollectionEngine<
 		TItem,
 		TBaseCollectionExtensions<TItem>
 	>
@@ -68,18 +68,20 @@ export function createEngine<TItem extends object = object>(
 export function createEngineActivation<TItem extends object = object>(
 	options: TCreateEngineOptions<TItem> = {},
 ): TCollectionEngine<TItem, TActivationCollectionExtensions<TItem>> {
-	return assembleEngine(activationExtensions<TItem>(), options.items) as TCollectionEngine<
-		TItem,
-		TActivationCollectionExtensions<TItem>
-	>
+	return assembleEngine(
+		activationExtensions<TItem>(),
+		undefined,
+		options.items,
+	) as TCollectionEngine<TItem, TActivationCollectionExtensions<TItem>>
 }
 
 /** Коллекция с выбором — модель ListBox, Select и Accordion. */
 export function createEngineSelection<TItem extends object = object>(
 	options: TCreateEngineOptions<TItem> = {},
 ): TCollectionEngine<TItem, TSelectionCollectionExtensions<TItem>> {
-	return assembleEngine(selectionExtensions<TItem>(), options.items) as TCollectionEngine<
-		TItem,
-		TSelectionCollectionExtensions<TItem>
-	>
+	return assembleEngine(
+		selectionExtensions<TItem>(),
+		undefined,
+		options.items,
+	) as TCollectionEngine<TItem, TSelectionCollectionExtensions<TItem>>
 }

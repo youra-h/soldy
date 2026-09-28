@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { CALENDAR_EXTENSIONS, CALENDAR_OWNER_EXTENSIONS } from './factory'
+import { CALENDAR_EXTENSIONS } from './factory'
 import type { TCalendarCollection } from './types'
 import type { ICalendar } from '../types'
 import type { ICalendarItem } from '../item/types'
@@ -12,10 +12,5 @@ import type { ICalendarItem } from '../item/types'
 export function createEngineCalendar(
 	options: TCreateEngineOptions<ICalendarItem> & { owner: ICalendar },
 ): TCalendarCollection {
-	return createComponentEngine(
-		'createEngineCalendar',
-		CALENDAR_EXTENSIONS(),
-		CALENDAR_OWNER_EXTENSIONS,
-		options,
-	)
+	return createComponentEngine('createEngineCalendar', CALENDAR_EXTENSIONS(), options)
 }

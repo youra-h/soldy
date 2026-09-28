@@ -620,7 +620,7 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 
 `engine` у коллекций, в отличие от bundle, пропом принимается — как `ctrl`:
 фасад сам дополняет переданный движок недостающими расширениями
-(`resolveEngine` в `core/src/components/base/collection/create/internal.ts`),
+(`completeEngine` в `core/src/components/base/collection/create/internal.ts`),
 так что инвариант держит компонент, а не тот, кто собирал движок.
 
 Отсюда правило: **bundle всегда собирается внутри, наружу отдаётся доступ к уже
@@ -1987,9 +1987,6 @@ Parent (TCollectionExtension, in setup layer; context.instance — фасад, �
   - elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
   - context.bundle.get(TCollectionBundlesPlugin).bindEngine(engine)  // ссылка на движок в плагин, эмит 'engine:bound'
   - elevator(COLLECTION_ENGINE_ELEVATOR).down(register)
-  - attach контекста → фасад.retain(), destroy → фасад.release(): движок снаружи держится
-    монтированием, отпущенный берёт следующий владелец и снимает расширения и фасад прежнего
-    (AGENTS.md, «Движок снаружи переходит к следующему владельцу»)
   ↓
   Child (TCollectionItemExtension, in setup layer; context.instance — фасад элемента):
     - elevator(ITEM_CONTEXT_ELEVATOR).up() → setContext(TItemContext элемента — свой на монтирование)
@@ -2016,7 +2013,7 @@ Key files:
 - `packages/plugins/src/custom/collection/collection-elements.plugin.ts` — TCollectionElements (доступ к DOM-элементам через bundle.get(TElementPlugin))
 - `packages/plugins/src/custom/tabs/` — TTabsLayoutPlugin / TTabsActiveTabPlugin (мигрированы из \_plugins), TTabsContentWarnPlugin, TTabsKeyboardPlugin (клавиатура APG Tabs: стрелки, Home/End, Delete). `TTabsViewPlugin` — плагин темы oren (`@soldy-ui/theme-oren/setup`), ставится её регистрацией `useTheme`
 - `packages/plugins/src/custom/drag-and-drop/` — TDragPlugin (мигрирован из \_plugins; activate(engine), использует TCollectionElements + TCollectionBundlesPlugin)
-- `packages/setup/content/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register; на attach и destroy контекста фасад удерживает и отпускает движок)
+- `packages/setup/content/extensions/collection/collection.extension.class.ts` — TCollectionExtension (движок берёт у фасада, передаёт его детям, bindEngine + push/register)
 - `packages/setup/content/extensions/drag-and-drop/drag-and-drop*.extension.class.ts` — TDragAndDropExtension (down(true)), TDragAndDropCollectionExtension (up() → TDragPlugin.activate(context.instance.engine))
 - `packages/setup/content/extensions/collection/collection-item.extension.class.ts` — TCollectionItemExtension (TItemContext через ITEM_CONTEXT_ELEVATOR + регистрация через COLLECTION_ENGINE_ELEVATOR + meta через `engine.extensions.meta`)
 - `packages/setup/content/extensions/tabs/tabs-content-binding.extension.class.ts` — TTabsContentBindingExtension (панель находит таб по `value`, сторона панели в `aria`)
@@ -2108,7 +2105,7 @@ Framework-agnostic dependency injection:
 
 Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view` vs orientation/alignment/position/view/closable) and the state extension (`selection` → `selected` vs `activation` → `active`).
 
-- Core: `packages/core/src/components/custom/accordion/` — `TAccordion` (view only), `TAccordionItem` (text + arrowPlacement), `collection/` with `AccordionFactory` + `TAccordionExtension`/`TAccordionItemExtension` (item adapter exposes `view`, the item facade gives it as the `view` prop) + `TAccordionContentExtension` (header ↔ panel link, `aria-expanded`), like `TTabsContentExtension` at Tabs.
+- Core: `packages/core/src/components/custom/accordion/` — `TAccordion` (view only), `TAccordionItem` (text + arrowPlacement), `collection/` with `ACCORDION_EXTENSIONS` + `TAccordionExtension`/`TAccordionItemExtension` (item adapter exposes `view`, the item facade gives it as the `view` prop) + `TAccordionContentExtension` (header ↔ panel link, `aria-expanded`), like `TTabsContentExtension` at Tabs.
 - Custom item classes removed (`TAccordionItemCustom`, `AccordionItemCustomDescriptor`, `AccordionItemCustomContribution`, `BaseAccordionItemCustom`) — single `TAccordionItem` remains, same in UI.
 - Selection default mode is `'single'` (TSelectionExtension default); old Accordion default `'multiple'` is set explicitly by callers (e.g. `packages/ui/vue/__tests__/Accordion.test.vue` passes `mode="multiple"`).
 - Vue: `Accordion.vue` renders `AccordionItem` for `shown` when items come from the `items` prop (fallback content of the default slot); `accordion/item/Item.vue` toggles via `context.adapters.selection.toggle()`, button view via `view`, header ARIA from the item's own `aria` set, panel side via `content_aria`, open state for the theme via `data-selected`.
@@ -2123,7 +2120,7 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 
 - Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
+- Collections: `LIST_BOX_EXTENSIONS`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListHeight/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + ListHeight + ListKeyboard + ListScroll + Drag.

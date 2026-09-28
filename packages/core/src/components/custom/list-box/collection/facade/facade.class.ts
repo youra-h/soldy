@@ -1,16 +1,9 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
-import type {
-	TCollectionEngine,
-	TCollectionFacadeOptions,
-	TSelectionFacadeProps,
-} from '../../../../base/collection'
-import { ListBoxFactory, LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
-import type {
-	TListBoxCollection,
-	TListBoxCollectionExtensions,
-	TListBoxCollectionFacadeEngine,
-} from '../types'
+import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
+import { LIST_BOX_EXTENSIONS } from '../factory'
+import { createEngineListBox } from '../create'
+import { completeEngine } from '../../../../base/collection/create/internal'
+import type { TListBoxCollectionExtensions, TListBoxCollectionFacadeEngine } from '../types'
 import type { IListBoxItem } from '../../item/types'
 import type { IListBox } from '../../types'
 import type { TListBoxView } from '../../types'
@@ -28,27 +21,16 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 > {
 	constructor(
 		props: TSelectionFacadeProps<IListBoxItem> = {},
-		options: TCollectionFacadeOptions<TListBoxCollectionFacadeEngine, IListBox> & {
-			/** Фабрика движка коллекции — переопределяется наследником. */
-			factory?: (owner: IListBox) => TListBoxCollection
-		} = {},
+		options: TCollectionFacadeOptions<TListBoxCollectionFacadeEngine, IListBox>,
 	) {
-		const createEngine = options.factory ?? ListBoxFactory
-
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно ListBox. Именно здесь, а не в теле:
-		// базы трогают расширения в своих конструкторах
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					LIST_BOX_EXTENSIONS(),
-					LIST_BOX_OWNER_EXTENSIONS,
-					'ListBox',
-					createEngine,
-				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, LIST_BOX_EXTENSIONS(), options.owner)
+					: createEngineListBox({ owner: options.owner }),
 			},
 		)
 

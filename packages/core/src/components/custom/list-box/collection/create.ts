@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from './factory'
+import { LIST_BOX_EXTENSIONS } from './factory'
 import type { TListBoxCollection } from './types'
 import type { IListBox } from '../types'
 import type { IListBoxItem } from '../item/types'
@@ -15,10 +15,5 @@ import type { IListBoxItem } from '../item/types'
 export function createEngineListBox(
 	options: TCreateEngineOptions<IListBoxItem> & { owner: IListBox },
 ): TListBoxCollection {
-	return createComponentEngine(
-		'createEngineListBox',
-		LIST_BOX_EXTENSIONS(),
-		LIST_BOX_OWNER_EXTENSIONS,
-		options,
-	) as TListBoxCollection
+	return createComponentEngine('createEngineListBox', LIST_BOX_EXTENSIONS(), options)
 }

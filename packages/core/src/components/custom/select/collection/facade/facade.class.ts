@@ -1,12 +1,9 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 
-import { SelectFactory, SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
-import type {
-	TSelectCollection,
-	TSelectCollectionExtensions,
-	TSelectCollectionFacadeOptions,
-} from '../types'
+import { SELECT_EXTENSIONS } from '../factory'
+import { createEngineSelect } from '../create'
+import { completeEngine } from '../../../../base/collection/create/internal'
+import type { TSelectCollectionExtensions, TSelectCollectionFacadeOptions } from '../types'
 import type { TSelectCollectionFacadeEvents } from '../types'
 import type { ISelect } from '../../types'
 import type { ISelectItem } from '../../item/types'
@@ -36,24 +33,15 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		tags_overflow: 'wrap',
 	}
 
-	constructor(
-		props: TSelectCollectionFacadeProps = {},
-		options: TSelectCollectionFacadeOptions = {},
-	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Select. Именно здесь, а не в теле:
-		// базы трогают расширения в своих конструкторах
+	constructor(props: TSelectCollectionFacadeProps = {}, options: TSelectCollectionFacadeOptions) {
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					SELECT_EXTENSIONS(),
-					SELECT_OWNER_EXTENSIONS,
-					'Select',
-					SelectFactory,
-				) as TSelectCollection,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, SELECT_EXTENSIONS(), options.owner)
+					: createEngineSelect({ owner: options.owner }),
 			},
 		)
 

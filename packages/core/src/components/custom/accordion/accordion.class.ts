@@ -10,8 +10,8 @@ import type {
 
 /**
  * Компонент Accordion (TAccordion).
- * Владеет только раскладкой (view). Коллекция создаётся отдельно через AccordionFactory
- * или через TCollectionExtension в adapter-слое.
+ * Владеет только раскладкой (view). Коллекция создаётся отдельно: сборщиком
+ * `createEngineAccordion` или фасадом коллекции.
  */
 export class TAccordion
 	extends TControl<IAccordionProps, TAccordionEvents, TAccordionStates>

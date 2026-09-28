@@ -1,12 +1,9 @@
 import { TActivationCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
-import { RadioGroupFactory, RADIO_GROUP_EXTENSIONS, RADIO_GROUP_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
-import type {
-	TRadioGroupCollection,
-	TRadioGroupCollectionExtensions,
-	TRadioGroupCollectionFacadeEngine,
-} from '../types'
+import { RADIO_GROUP_EXTENSIONS } from '../factory'
+import { createEngineRadioGroup } from '../create'
+import { completeEngine } from '../../../../base/collection/create/internal'
+import type { TRadioGroupCollectionExtensions, TRadioGroupCollectionFacadeEngine } from '../types'
 import type { IRadioGroupItem } from '../../item/types'
 import type { IRadioGroup } from '../../types'
 
@@ -23,22 +20,16 @@ export class TRadioGroupCollectionFacade extends TActivationCollectionFacade<
 > {
 	constructor(
 		props: TCollectionFacadeProps<IRadioGroupItem> = {},
-		options: TCollectionFacadeOptions<TRadioGroupCollectionFacadeEngine, IRadioGroup> = {},
+		options: TCollectionFacadeOptions<TRadioGroupCollectionFacadeEngine, IRadioGroup>,
 	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно RadioGroup. Именно здесь, а не в
-		// теле: базы трогают расширения в своих конструкторах
+		// Движок пришёл снаружи — дособрать до компонента; нет — собрать свой.
+		// Здесь, а не в теле: базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					RADIO_GROUP_EXTENSIONS(),
-					RADIO_GROUP_OWNER_EXTENSIONS,
-					'RadioGroup',
-					RadioGroupFactory,
-				) as TRadioGroupCollection,
-				owner: options.owner,
+				engine: options.engine
+					? completeEngine(options.engine, RADIO_GROUP_EXTENSIONS(), options.owner)
+					: createEngineRadioGroup({ owner: options.owner }),
 			},
 		)
 

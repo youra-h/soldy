@@ -79,13 +79,12 @@ export class TSelectExtension<
 	private _batch: IBatchExtension<TItem> | null = null
 
 	/**
-	 * Отписки от переименования опций, которые сейчас в списке.
+	 * Подписки на переименование опций, которые сейчас в списке.
 	 *
 	 * Обработчик у каждой опции свой: ему нужна опция, а событие несёт только
-	 * значение. Поэтому отписка хранится до удаления опции — иначе снять
-	 * подписку было бы нечем. Остальные снимает `destroy` расширения.
-	 * `WeakMap` — чтобы запись не удерживала опцию, если движок выбросят, не
-	 * удалив из него опции.
+	 * значение. Поэтому он хранится до удаления опции — иначе снять подписку
+	 * было бы нечем. `WeakMap` — чтобы запись не удерживала опцию, если движок
+	 * выбросят, не удалив из него опции.
 	 */
 	private readonly _textWatchers = new WeakMap<TItem, () => void>()
 
@@ -148,13 +147,10 @@ export class TSelectExtension<
 		// слот, и перебрать его коллекция не может; зато у каждой опции есть
 		// `visible`, который все шесть адаптеров уже уважают. Отсюда и правило:
 		// показана ровно та опция, что осталась в выдаче.
-		// Расширение снимают, когда движок переходит к другому владельцу, а
-		// драйвер, соседние расширения, владелец и опции живут дальше — подписки
-		// через `_listenTo`, их снимет `destroy`
 		this._batch = ctx.extensions.batch as IBatchExtension<TItem>
-		this._listenTo(this._batch.events, 'change:shown', () => this._syncShown())
+		this._batch.events.on('change:shown', () => this._syncShown())
 
-		this._listenTo(ctx.driver.events, 'item:added', (e) => this._onItemAdded(e.item as TItem))
+		ctx.driver.events.on('item:added', (e) => this._onItemAdded(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
@@ -164,65 +160,57 @@ export class TSelectExtension<
 		// Переименование опции слушается от добавления (`_onItemAdded`) до
 		// удаления. Очистка шлёт `item:removed` каждой опции перед `reset` —
 		// отдельной подписки на неё не нужно
-		this._listenTo(ctx.driver.events, 'item:removed', (e) => this._unwatchText(e.item))
+		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
 
 		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._listenTo(this._owner.events, 'change:disabled', () =>
-			notifyOwnerDisabled(ctx.driver.valueOf()),
-		)
+		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
 
 		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
 		// по нему снимается старый класс
-		this._listenTo(
-			this._owner.events,
-			'change:size',
-			(payload: TValuePayload<TComponentSize>) => {
-				notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-			},
-		)
+		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
+			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		})
 
-		this._listenTo(
-			this._owner.events,
+		this._owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
 			},
 		)
 
-		this._listenTo(this._owner.events, 'change:contentFit', () => {
+		this._owner.events.on('change:contentFit', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 		})
 
-		this._listenTo(this._owner.events, 'change:indicator', () => {
+		this._owner.events.on('change:indicator', () => {
 			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 		})
 
-		// Сторона отметки доезжает до item-адаптеров. Релей снимает очистка
-		// шины расширения (`destroy`)
+		// Сторона отметки доезжает до item-адаптеров
 		this.events.relay(this._owner.events, ['change:indicator'])
 
 		const selection = this._selection
 
 		if (selection) {
-			this._listenTo(selection.events, 'change:selection', () => this._onSelectionChanged())
-			this._listenTo(selection.events, 'change:mode', () => this._onModeChanged())
+			selection.events.on('change:selection', () => this._onSelectionChanged())
+			selection.events.on('change:mode', () => this._onModeChanged())
 
-			this._listenTo(ctx.driver.events, 'item:added', () => this._syncSelectedAria())
-			this._listenTo(ctx.driver.events, 'item:removed', () => this._onSelectionChanged())
+			ctx.driver.events.on('item:added', () => this._syncSelectedAria())
+			ctx.driver.events.on('item:removed', () => this._onSelectionChanged())
 		}
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
 		// живёт всё время, пока `multiple`, даже без единого тега. `tags` в
-		// `SELECT_OWNER_EXTENSIONS` установлен раньше `select` специально ради
+		// `SELECT_EXTENSIONS` установлен раньше `select` специально ради
 		// этого — `ctx.extensions.tags` здесь уже существует, и его подписка
 		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
-		this._listenTo(this._owner.events, 'change:placeholder', () => this._syncFieldPlaceholder())
-		this._listenTo(this._tags?.events, 'change:tags', () => this._syncFieldPlaceholder())
+		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
+		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
 		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
 		// движка, собранного снаружи, применяет `selection` при установке, а
 		// `value` из пропа — расширение `value`, которое в
-		// `SELECT_OWNER_EXTENSIONS` стоит раньше нас. Их `change:selection` до
+		// `SELECT_EXTENSIONS` стоит раньше нас. Их `change:selection` до
 		// нас не дошёл, поэтому `aria-selected`, текст выбранного и плейсхолдер
 		// считаем по текущему выбору тем же обработчиком
 		this._onSelectionChanged()
@@ -306,10 +294,10 @@ export class TSelectExtension<
 	private _watchText(item: TItem): void {
 		if (this._textWatchers.has(item)) return
 
-		this._textWatchers.set(
-			item,
-			this._listenTo(item.events, 'change:text', () => this._onItemRenamed(item)),
-		)
+		const watcher = (): void => this._onItemRenamed(item)
+
+		this._textWatchers.set(item, watcher)
+		item.events.on('change:text', watcher)
 	}
 
 	/**
@@ -317,7 +305,11 @@ export class TSelectExtension<
 	 * удерживала бы Select, пока жива сама опция.
 	 */
 	private _unwatchText(item: TItem): void {
-		this._textWatchers.get(item)?.()
+		const watcher = this._textWatchers.get(item)
+
+		if (!watcher) return
+
+		item.events.off('change:text', watcher)
 		this._textWatchers.delete(item)
 	}
 

@@ -44,10 +44,14 @@ export class TCollectionEngine<
 	 * Ничего не возвращает: типизированную сборку делает только конструктор —
 	 * там состав известен заранее и `TExtensions` строится честно. `use()`
 	 * нужен для другого случая: движок уже существует (например, пришёл снаружи
-	 * через пропс `engine`, см. `attachEngine`), и в него нужно дописать то,
+	 * через пропс `engine`, см. `completeEngine`), и в него нужно дописать то,
 	 * чего не хватает. На уровне типов такое расширение доступно в `extensions`
 	 * по имени как `IExtension<T> | undefined` — гарантии, что оно есть,
 	 * `TExtensions` не даёт.
+	 *
+	 * Имя уже занято — расширение не ставится, в консоль уходит
+	 * предупреждение: два расширения под одним именем подменили бы друг друга
+	 * в `extensions`, а подписаны остались бы оба.
 	 *
 	 * @example
 	 * ```ts
@@ -64,6 +68,14 @@ export class TCollectionEngine<
 	 * ```
 	 */
 	public use(extension: IExtension<T>): void {
+		if (this.has(extension.name)) {
+			console.warn(
+				`Коллекция: расширение «${extension.name}» уже установлено, повторно не ставится`,
+			)
+
+			return
+		}
+
 		Object.assign(this.extensions, { [extension.name]: extension })
 
 		const ctx = this._createContext()
@@ -71,27 +83,9 @@ export class TCollectionEngine<
 		extension.install(ctx)
 	}
 
-	/**
-	 * Снять расширение — обратное `use()`: убрать из `extensions` и уничтожить
-	 * (`destroy()`), чтобы оно отписалось от шин движка, соседей и владельца.
-	 *
-	 * Из карты убирается, только если под его именем стоит оно само: имя могло
-	 * достаться другому расширению, и то остаётся на месте. Уничтожается в
-	 * любом случае — поставленное однажды, оно подписано, даже если его имя
-	 * потом заняли.
-	 *
-	 * Зачем: владельческие расширения (`value`, `list`, `tabs` и соседи) живут
-	 * столько, сколько владелец держит движок, а движок, пришедший снаружи,
-	 * переживает владельца. Следующий владелец снимает расширения прежнего и
-	 * ставит свои под теми же именами — см. `attachEngine` в
-	 * `create/internal.ts`.
-	 */
-	public remove(extension: IExtension<T>): void {
-		if (this.extensions[extension.name] === extension) {
-			Reflect.deleteProperty(this.extensions, extension.name)
-		}
-
-		extension.destroy?.()
+	/** Установлено ли расширение с таким именем. */
+	public has(name: string): boolean {
+		return this.extensions[name] !== undefined
 	}
 
 	/**

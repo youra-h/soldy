@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from './factory'
+import { SELECT_EXTENSIONS } from './factory'
 import type { TSelectCollection } from './types'
 import type { ISelect } from '../types'
 import type { ISelectItem } from '../item/types'
@@ -15,10 +15,5 @@ import type { ISelectItem } from '../item/types'
 export function createEngineSelect(
 	options: TCreateEngineOptions<ISelectItem> & { owner: ISelect },
 ): TSelectCollection {
-	return createComponentEngine(
-		'createEngineSelect',
-		SELECT_EXTENSIONS(),
-		SELECT_OWNER_EXTENSIONS,
-		options,
-	) as TSelectCollection
+	return createComponentEngine('createEngineSelect', SELECT_EXTENSIONS(), options)
 }

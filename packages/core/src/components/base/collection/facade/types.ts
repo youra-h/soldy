@@ -74,12 +74,6 @@ export interface ICollectionComponentOptions<
 > extends IComponentOptions {
 	/** Управляющий объект — готовая коллекция (аналог `ctrl` для обычных компонентов). */
 	engine: TCollectionEngine<TItem, TExtensions>
-	/**
-	 * Владелец, за которым фасад держит движок (`resolveEngine`): его фасад
-	 * отпускает и удерживает снова (`release`, `retain`). Без владельца
-	 * движок ни за кем не записан.
-	 */
-	owner?: object
 }
 
 /**
@@ -92,10 +86,11 @@ export type TCollectionFacadeProps<TItem = any, TItemProps = any> = {
 }
 
 /**
- * Опции конструктора фасада владельца коллекции:
- * либо готовая коллекция `engine`, либо `owner` для её создания.
+ * Опции конструктора фасада владельца коллекции: `owner` — инстанс компонента,
+ * `engine` — готовая коллекция. Дали `engine` — фасад дособирает его до
+ * компонента, нет — собирает свою.
  */
 export type TCollectionFacadeOptions<TCollection = unknown, TOwner = unknown> = {
 	engine?: TCollection
-	owner?: TOwner
+	owner: TOwner
 }

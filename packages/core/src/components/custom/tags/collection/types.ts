@@ -4,8 +4,6 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
-	TCollectionFacadeOptions,
-	IExtension,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 	TFactoryExtension,
@@ -48,9 +46,9 @@ export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtens
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineTags`…). Фасад сам
- * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
- * поэтому годится любой уровень, включая уровень 1, где ни `TTagsItem`, ни
- * владельческие расширения ещё не собраны.
+ * дособирает базовый набор и подключает к движку своего владельца (см.
+ * `TCollectionComponent`), поэтому годится любой уровень, включая уровень 1,
+ * где ни `TTagsItem`, ни владельческие расширения ещё не собраны.
  *
  * Оба параметра — `any`, а не «уровень 1» или «частичный набор»: у
  * `TCollectionEngine.events` есть `engine:create`, куда сам движок передаётся
@@ -60,7 +58,7 @@ export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtens
  * (в том числе `Partial<TTagsCollectionExtensions>`) сделал бы совместимым
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TTagsCollection`, который собирает `createEngineTags`. Точность остаётся
- * там, где движок инстанцируется (`TTagsCollection`, `TagsFactory`), а не
+ * там, где движок собирается (`TTagsCollection`, `createEngineTags`), а не
  * там, где его только принимают.
  */
 export type TTagsCollectionFacadeEngine = TCollectionEngine<any, any>
@@ -85,15 +83,6 @@ export interface ITagsCollectionProps<
 
 /** Item-level props элемента: выбранность. */
 export interface ITagsCollectionItemProps extends ISelectionCollectionItemProps {}
-
-/** Опции конструктора фасада коллекции. */
-export type TTagsCollectionFacadeOptions<
-	TItem extends ITagsItem = ITagsItem,
-	TExtensions extends Record<string, IExtension<any>> = TTagsCollectionExtensions,
-> = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, ITags> & {
-	/** Фабрика движка коллекции — переопределяется наследником. */
-	factory?: (owner: ITags) => TCollectionEngine<TItem, TExtensions>
-}
 
 /**
  * Item-адаптеры коллекции: выбор, порядок и делегат тегов.

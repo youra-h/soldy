@@ -1,6 +1,6 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { TABS_EXTENSIONS, TABS_OWNER_EXTENSIONS } from './factory'
+import { TABS_EXTENSIONS } from './factory'
 import type { TTabsCollection } from './types'
 import type { ITabs } from '../types'
 import type { ITabsItem } from '../item/types'
@@ -16,10 +16,5 @@ import type { ITabsItem } from '../item/types'
 export function createEngineTabs(
 	options: TCreateEngineOptions<ITabsItem> & { owner: ITabs },
 ): TTabsCollection {
-	return createComponentEngine(
-		'createEngineTabs',
-		TABS_EXTENSIONS(),
-		TABS_OWNER_EXTENSIONS,
-		options,
-	) as TTabsCollection
+	return createComponentEngine('createEngineTabs', TABS_EXTENSIONS(), options)
 }

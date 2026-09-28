@@ -8,9 +8,6 @@
  * компоненту», а `value` и выключенность элементов оставались привязаны к
  * прежнему инстансу.
  *
- * Список, снятый и смонтированный заново, — новый владелец. Прежний с концом
- * монтирования отпустил движок, и новый берёт его целиком.
- *
  * Консоль проверять отдельно не нужно: предупреждение роняет тест (`setup.ts`).
  */
 
@@ -49,7 +46,7 @@ type TRender = (props: ListBoxProps) => void
 /**
  * Смонтировать список над движком снаружи и довести до `value="b"`:
  * пересобрать, не размонтируя (StrictMode — при монтировании, `<Activity>` —
- * при показе после скрытия), или снять и смонтировать заново с новым `value`.
+ * при показе после скрытия).
  */
 const REBUILDS: Readonly<
 	Record<string, (engine: TCollectionEngine<TItem, any>) => Promise<TRender>>
@@ -77,20 +74,6 @@ const REBUILDS: Readonly<
 		await flush()
 
 		render(view({ value: 'b' }, 'hidden'))
-		render(view({ value: 'b' }))
-		await flush()
-
-		return (props) => render(view(props))
-	},
-	'снят и смонтирован заново': async (engine) => {
-		const view = (props: ListBoxProps | null) => (
-			<div>{props && <ListBox engine={engine} {...props} />}</div>
-		)
-		const { render } = mount(view({ value: 'a' }))
-
-		await flush()
-
-		render(view(null))
 		render(view({ value: 'b' }))
 		await flush()
 
