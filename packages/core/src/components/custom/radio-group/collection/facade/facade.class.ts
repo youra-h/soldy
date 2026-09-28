@@ -38,7 +38,6 @@ export class TRadioGroupCollectionFacade extends TActivationCollectionFacade<
 					'RadioGroup',
 					RadioGroupFactory,
 				) as TRadioGroupCollection,
-				owner: options.owner,
 			},
 		)
 

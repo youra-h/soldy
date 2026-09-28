@@ -40,7 +40,6 @@ export class TTabsCollectionFacade extends TActivationCollectionFacade<
 					'Tabs',
 					TabsFactory,
 				) as TTabsCollection,
-				owner: options.owner,
 			},
 		)
 

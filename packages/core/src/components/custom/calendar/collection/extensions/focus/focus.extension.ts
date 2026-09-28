@@ -85,22 +85,17 @@ export class TCalendarFocusExtension
 		const view = viewOf(ctx)
 		const owner = this._owner
 
-		// Расширение снимают, когда движок переходит к другому календарю, а
-		// драйвер, вид и календарь живут дальше — подписки через `_listenTo`, их
-		// снимет `destroy`
-		this._listenTo(ctx.driver.events, 'change:items', () => this._paintAll())
+		ctx.driver.events.on('change:items', () => this._paintAll())
 
-		this._listenTo(view?.events, 'change:months', (months, previous) =>
-			this._follow(months, previous),
-		)
+		view?.events.on('change:months', (months, previous) => this._follow(months, previous))
 
 		// Границы сменились — фокус прижимается к ним. Вид к этому моменту уже
 		// прижал сетки: его подписка на календарь раньше
-		this._listenTo(owner.events, 'change:min', () => this._move(this._focusedDate))
-		this._listenTo(owner.events, 'change:max', () => this._move(this._focusedDate))
+		owner.events.on('change:min', () => this._move(this._focusedDate))
+		owner.events.on('change:max', () => this._move(this._focusedDate))
 
 		// Выключенный календарь — без остановки Tab
-		this._listenTo(owner.events, 'change:disabled', () => this._paintAll())
+		owner.events.on('change:disabled', () => this._paintAll())
 
 		this._settle()
 		this._paintAll()

@@ -52,7 +52,6 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 					'Calendar',
 					options.factory ?? CalendarFactory,
 				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
-				owner: options.owner,
 			},
 		)
 

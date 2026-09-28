@@ -40,7 +40,6 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 					'Accordion',
 					AccordionFactory,
 				) as TAccordionCollection,
-				owner: options.owner,
 			},
 		)
 

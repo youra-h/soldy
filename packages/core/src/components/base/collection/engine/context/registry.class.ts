@@ -1,25 +1,19 @@
 import type { IExtension } from '../extension'
-import type {
-	ICollectionStorageDriver,
-	ICollectionEngineCore,
-	TCollectionStorageDriverEvents,
-} from '../types'
+import type { ICollectionStorageDriver, ICollectionEngineCore } from '../types'
 import { TItemContext } from './item.class'
 
 /**
- * Реестр контекстов элементов — кеширует TItemContext по элементам.
+ * Реестр контекстов элементов — кеширует TItemContext по элементам через WeakMap.
  *
  * Создаётся один раз для коллекции, затем через `.get(item)` получается контекст для любого элемента.
  *
- * Реестр — для кода, которому контексты нужны дольше одного монтирования:
- * расширения `tabs` и `tags` держат свой, чтобы закрывать элементы по их
- * адаптерам. Контекст живёт, пока элемент в коллекции, и уничтожается при
- * удалении: на `item:removed` реестр подписан, пока его не отпустят
- * (`release()`). Владельческое расширение отпускает свой реестр, когда
- * движок переходит к другому владельцу. Монтированию элемента реестр не
- * годится: заведённый на монтирование, он оставил бы на движке и эту
- * подписку, и контекст элемента из данных, который в коллекции остаётся, — с
- * каждым показом новые. У монтирования свой `TItemContext`, и отпускает его
+ * Реестр — для кода, которому контексты нужны на всю жизнь движка: расширения
+ * `tabs` и `tags` держат свой, чтобы закрывать элементы по их адаптерам.
+ * Контекст живёт, пока элемент в коллекции, и уничтожается при удалении, а на
+ * `item:removed` реестр подписан навсегда. Монтированию элемента реестр не
+ * годится: заведённый на монтирование, он оставил бы на движке и эту подписку,
+ * и контекст элемента из данных, который в коллекции остаётся, — с каждым
+ * показом новые. У монтирования свой `TItemContext`, и отпускает его
  * `release()`.
  *
  * @template TItem       — тип элемента коллекции
@@ -39,21 +33,13 @@ export class TItemContextRegistry<
 	private readonly _extensions: TExtensions
 	private readonly _driver: ICollectionStorageDriver<TItem>
 
-	/**
-	 * Контексты по элементам. `Map`, а не `WeakMap`: `release()` отпускает
-	 * каждый. Запись уходит, когда элемент удалили из коллекции, поэтому
-	 * реестр держит только элементы, которые и так держит движок.
-	 */
-	private readonly _contexts = new Map<TItem, TItemContext<TItem, TExtensions>>()
-
-	private readonly _onRemoved: TCollectionStorageDriverEvents<TItem>['item:removed'] = (e) =>
-		this.destroy(e.item)
+	private _contexts = new WeakMap<TItem, TItemContext<TItem, TExtensions>>()
 
 	constructor(collectionCore: ICollectionEngineCore<TItem, TExtensions>) {
 		this._extensions = collectionCore.extensions
 		this._driver = collectionCore.driver
 
-		this._driver.events.on('item:removed', this._onRemoved)
+		this._driver.events.on('item:removed', (e) => this.destroy(e.item))
 	}
 
 	/**
@@ -84,18 +70,5 @@ export class TItemContextRegistry<
 			context.destroy()
 			this._contexts.delete(item)
 		}
-	}
-
-	/**
-	 * Реестр больше не нужен: отписаться от драйвера и отпустить контексты
-	 * (`TItemContext.release`). Элементы не трогаются — они остаются в
-	 * коллекции, ушёл только тот, кто держал реестр.
-	 */
-	release(): void {
-		this._driver.events.off('item:removed', this._onRemoved)
-
-		for (const context of this._contexts.values()) context.release()
-
-		this._contexts.clear()
 	}
 }

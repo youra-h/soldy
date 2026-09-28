@@ -11,8 +11,7 @@
  * монтировании, `<Activity>` — при показе. Компонент оставался с тем же
  * контекстом и уничтоженным набором плагинов: узел не привязан, `ready`,
  * нажатия и фокус не приходят. Теперь контекст уничтожает сам хук, а на
- * повторной установке собирает новый фабрикой последнего рендера — на том же
- * инстансе: компонент жив, и его состояние остаётся с ним.
+ * повторной установке собирает новый фабрикой последнего рендера.
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -358,7 +357,7 @@ describe('повторная установка эффектов · <Activity>',
 		expect(onActionPress).toHaveBeenCalledTimes(1)
 	})
 
-	it('без ctrl после показа инстанс тот же: проп разметки записан снова, остальное сохранено', async () => {
+	it('без ctrl после показа инстанс новый, и состояние берётся у него', async () => {
 		const { bundles, props } = probeProps()
 		const view = (mode: 'visible' | 'hidden') => (
 			<Activity mode={mode}>
@@ -373,7 +372,6 @@ describe('повторная установка эффектов · <Activity>',
 
 		act(() => {
 			first.text = 'из кода'
-			first.disabled = true
 		})
 
 		expect(textOf(target)).toBe('из кода')
@@ -385,14 +383,10 @@ describe('повторная установка эффектов · <Activity>',
 
 		const second = instanceOf(lastBundle(bundles))
 
-		// Компонент жив, и его состояние с ним, как useState React. Пересборка
-		// пишет пропсы разметки, как внешнему ctrl: текст из кода вернулся к
-		// разметке, а `disabled`, которого разметка не задаёт, остался
-		expect(second).toBe(first)
+		// Как при новом монтировании: состояние, не заданное пропсами, не переносится
+		expect(second).not.toBe(first)
 		expect(second.text).toBe('из разметки')
 		expect(textOf(target)).toBe('из разметки')
-		expect(second.disabled).toBe(true)
-		expect(buttonOf(target).hasAttribute('disabled')).toBe(true)
 	})
 
 	it('проп, сменённый пока компонент скрыт, после показа приходит новым', () => {

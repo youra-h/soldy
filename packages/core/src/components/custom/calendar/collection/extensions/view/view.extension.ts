@@ -103,49 +103,42 @@ export class TCalendarViewExtension
 
 		if (factory instanceof TFactoryExtension) factory.bindIdBase(this._owner.idBase)
 
-		// Расширение снимают, когда движок переходит к другому календарю, а
-		// драйвер и календарь живут дальше — подписки через `_listenTo`, их
-		// снимет `destroy`
-
 		// Дни пришли — то, что они знают от вида. На весь состав: при листании
 		// новые дни приходят пачкой, и итог `change:items` один. Пишется только
 		// новым дням и тем, чьи данные устарели: оставшиеся на экране дни
 		// листание не трогает
-		this._listenTo(ctx.driver.events, 'change:items', () => this._applyStale())
+		ctx.driver.events.on('change:items', () => this._applyStale())
 
 		this._setMonths(this._resolveMonths(this._owner.months))
 
 		const owner = this._owner
 
-		this._listenTo(owner.events, 'change:months', () =>
-			this._setMonths(this._resolveMonths(owner.months)),
-		)
-		this._listenTo(owner.events, 'change:min', () => this._rebound())
-		this._listenTo(owner.events, 'change:max', () => this._rebound())
+		owner.events.on('change:months', () => this._setMonths(this._resolveMonths(owner.months)))
+		owner.events.on('change:min', () => this._rebound())
+		owner.events.on('change:max', () => this._rebound())
 
 		// Выключенный календарь — выключенные дни и кнопки листания
-		this._listenTo(owner.events, 'change:disabled', () => {
+		owner.events.on('change:disabled', () => {
 			this._applyStale()
 			this.events.emit('change:paging')
 		})
 
-		this._listenTo(owner.events, 'change:timeZone', () => this._applyStale())
-		this._listenTo(owner.events, 'change:weekStart', () => this.events.emit('change:grids'))
+		owner.events.on('change:timeZone', () => this._applyStale())
+		owner.events.on('change:weekStart', () => this.events.emit('change:grids'))
 
 		// Номер дня и имя — в цифрах и словах локали: состав тот же, подписи новые
-		this._listenTo(owner.events, 'change:locale', () => {
+		owner.events.on('change:locale', () => {
 			this._build()
 			this._applyStale()
 			this.events.emit('change:grids')
 		})
 
 		// `size` и `variant` день получает резольвером — сообщаем прежний итог
-		this._listenTo(owner.events, 'change:size', (payload: TValuePayload<TComponentSize>) => {
+		owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
 			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
 		})
 
-		this._listenTo(
-			owner.events,
+		owner.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
 				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)

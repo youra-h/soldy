@@ -53,7 +53,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 					'Select',
 					SelectFactory,
 				) as TSelectCollection,
-				owner: options.owner,
 			},
 		)
 

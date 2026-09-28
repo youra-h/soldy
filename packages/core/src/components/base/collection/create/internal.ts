@@ -10,7 +10,6 @@ import {
 	TSelectionExtension,
 } from '../engine'
 import type { IExtension, TCollectionEngineItemSource } from '../engine'
-import type { IEngineClaim, IEngineHolder } from './types'
 
 /**
  * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy-ui/core`.
@@ -165,66 +164,13 @@ export function createComponentEngine<TItem extends object, TOwner>(
 }
 
 /**
- * Кому движок принадлежит и какие расширения для владельца в нём стоят.
+ * Кому движок уже принадлежит.
  *
- * Запись на самом движке, а не геттер `owner` в классах расширений: так
- * владение живёт в одном месте и не требует ничего от того, кто пишет новое
+ * Метка на самом движке, а не геттер `owner` в пяти классах расширений: так
+ * проверка живёт в одном месте и не требует ничего от того, кто пишет новое
  * расширение. `WeakMap` — чтобы не удерживать выброшенные движки.
- *
- * Движок, пришедший снаружи, переживает монтирование списка: Vue снимает
- * список под `v-if` и монтирует заново, и у новой сборки новый владелец.
- * Поэтому владение не вечное. Конец монтирования движок отпускает
- * (`releaseEngine`), но расширения владельца остаются рабочими: тот же
- * владелец удержит его снова (`retainEngine`) — так React собирает заново
- * список, живой под StrictMode и `<Activity>`. Снимает их только другой
- * владелец, когда берёт отпущенный движок (`attachEngine`).
  */
-const ENGINE_CLAIMS = new WeakMap<object, IEngineClaim>()
-
-/**
- * Фасады, у которых движок забрал другой владелец, пока они были сняты. Такой
- * фасад, принятый снова (React показал скрытый список), остался без
- * расширений и релеев — `retainEngine` о нём предупреждает.
- */
-const TAKEN = new WeakSet<IEngineHolder>()
-
-/**
- * Поставить владельческие расширения, которых в движке нет, и вернуть
- * поставленные. Недостающее — по имени, как у базового набора: у движка,
- * собранного сборщиком компонента (`createEngineListBox` и соседи),
- * владельческие уже стоят и остаются за тем, для кого их собрали.
- */
-function installOwnerExtensions<TItem extends object, TOwner extends IIdBaseOwner>(
-	engine: TCollectionEngine<TItem, any>,
-	ownerSet: TOwnerExtensionSet<TItem, TOwner>,
-	owner: TOwner,
-): IExtension<TItem>[] {
-	const installed: IExtension<TItem>[] = []
-
-	for (const [name, build] of Object.entries(ownerSet)) {
-		if (engine.extensions[name]) continue
-
-		const extension = build(owner)
-
-		engine.use(extension)
-		installed.push(extension)
-	}
-
-	bindItemIdBase(engine, owner)
-
-	return installed
-}
-
-/**
- * Движок снова держит фасад `holder`: другой фасад, отпустивший его раньше,
- * своё отработал — владелец собран заново (свой `ctrl` пережил монтирование) —
- * и снимается со своих релеев на шинах движка.
- */
-function retire(claim: IEngineClaim, holder?: IEngineHolder): void {
-	if (claim.released && claim.released !== holder) claim.released.destroy()
-
-	claim.released = undefined
-}
+const ENGINE_OWNERS = new WeakMap<object, unknown>()
 
 /**
  * Привязать пришедший снаружи движок к компоненту.
@@ -232,13 +178,6 @@ function retire(claim: IEngineClaim, holder?: IEngineHolder): void {
  * Пользователь мог собрать его любым уровнем — компонент дополняет недостающее
  * и не предъявляет требований к тому, кто собирал. Это и делает уровни 1–2
  * самостоятельными: заранее знать, куда поедет коллекция, не обязательно.
- *
- * Базовый набор ставится сразу и остаётся с движком. Владельческий — когда
- * движок свободен: владельца у него не было или прежний его отпустил
- * (`releaseEngine`). Тогда расширения прежнего снимаются
- * (`TCollectionEngine.remove`), его фасад — тоже, а на их место встают
- * расширения этого владельца. Тот же владелец, собранный ещё раз, движок уже
- * держит.
  *
  * **Порядок важен.** В конструкторе движка `extensions` заполняется целиком до
  * первого `install`, поэтому там порядок безразличен. Здесь расширения ставятся
@@ -259,16 +198,9 @@ export function attachEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 		engine.use(build())
 	}
 
-	const claim = ENGINE_CLAIMS.get(engine)
+	const previous = ENGINE_OWNERS.get(engine)
 
-	if (claim?.owner === owner) {
-		retire(claim)
-		claim.extensions.push(...installOwnerExtensions(engine, ownerSet, owner))
-
-		return
-	}
-
-	if (claim && !claim.released) {
+	if (previous && previous !== owner) {
 		// Не падаем и не поддерживаем двух владельцев: расширения лежат по
 		// имени, и второй молча затёр бы владельческое расширение первого —
 		// тот перестал бы раздавать элементам `size`, `variant` и `disabled`,
@@ -281,71 +213,15 @@ export function attachEngine<TItem extends object, TOwner extends IIdBaseOwner>(
 		return
 	}
 
-	if (claim?.released) {
-		for (const extension of claim.extensions) engine.remove(extension)
+	ENGINE_OWNERS.set(engine, owner)
 
-		TAKEN.add(claim.released)
-		claim.released.destroy()
+	for (const [name, build] of Object.entries(ownerSet)) {
+		if (engine.extensions[name]) continue
+
+		engine.use(build(owner))
 	}
 
-	ENGINE_CLAIMS.set(engine, {
-		owner,
-		extensions: installOwnerExtensions(engine, ownerSet, owner),
-	})
-}
-
-/**
- * Монтирование фасада кончилось: движок свободен, другой владелец его возьмёт
- * (`attachEngine`). Расширения владельца остаются рабочими — тот же владелец
- * может удержать движок снова (`retainEngine`): React собирает заново список,
- * который под StrictMode и `<Activity>` остаётся живым, на том же инстансе.
- *
- * Движок чужого владельца или ничей — ничего: отпускать нечего.
- */
-export function releaseEngine(
-	engine: TCollectionEngine<any, any>,
-	owner: object,
-	holder: IEngineHolder,
-): void {
-	const claim = ENGINE_CLAIMS.get(engine)
-
-	if (claim?.owner !== owner) return
-
-	retire(claim, holder)
-	claim.released = holder
-}
-
-/**
- * Монтирование фасада принято: владелец держит движок, и другой его не
- * возьмёт. Движок, отпущенный этим фасадом, снова занят; отпущенный другим
- * фасадом того же владельца — тоже, а тот фасад своё отработал.
- *
- * Движок, пока фасад был снят, перешёл к другому компоненту — фасад остался
- * без расширений и без релеев: предупреждение, как у второго владельца.
- * Фасад, который движок так и не взял (собран, пока движок держал другой),
- * предупреждение уже получил при сборке.
- */
-export function retainEngine(
-	engine: TCollectionEngine<any, any>,
-	owner: object,
-	holder: IEngineHolder,
-): void {
-	const claim = ENGINE_CLAIMS.get(engine)
-
-	if (!claim) return
-
-	if (claim.owner !== owner) {
-		if (!TAKEN.has(holder)) return
-
-		console.warn(
-			'Коллекция: движок перешёл к другому компоненту, пока этот был снят. ' +
-				'Один движок — один компонент; второму нужна своя коллекция.',
-		)
-
-		return
-	}
-
-	retire(claim, holder)
+	bindItemIdBase(engine, owner)
 }
 
 /** Владелец коллекции — визуальный компонент: у него есть основа `id` в DOM. */

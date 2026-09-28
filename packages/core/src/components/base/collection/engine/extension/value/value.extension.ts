@@ -45,16 +45,13 @@ export class TValueSelectionExtension<
 	override install(ctx: IExtensionContext<TItem>): void {
 		super.install(ctx)
 
-		// Расширение владельческое: его снимают, когда движок переходит к другому
-		// владельцу, а движок и владелец живут дальше — подписки через
-		// `_listenTo`, их снимет `destroy`
-		this._listenTo(this._selection?.events, 'change:selection', () => this._selectionToValue())
-		this._listenTo(this._owner.events, 'change:value', () => this._valueToSelection())
+		this._selection?.events.on('change:selection', () => this._selectionToValue())
+		this._owner.events.on('change:value', () => this._valueToSelection())
 
 		// Элемент мог приехать позже, чем выставили `value`: опции регистрируются
 		// при монтировании, а проп приходит сразу
-		this._listenTo(ctx.driver.events, 'item:added', () => this._valueToSelection())
-		this._listenTo(ctx.driver.events, 'change:items', () => this._valueToSelection())
+		ctx.driver.events.on('item:added', () => this._valueToSelection())
+		ctx.driver.events.on('change:items', () => this._valueToSelection())
 
 		// Направление на старте выбирается по тому, у кого есть что сказать.
 		//

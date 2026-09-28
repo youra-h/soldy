@@ -11,10 +11,9 @@
  * монтирования, обновлял бы список посреди рендера ребёнка — React пишет об
  * этом в консоль, и сторож консоли уронил бы тест.
  *
- * Пересобранный список (StrictMode, `<Activity>`) держит тот же движок: фасад
- * и владелец переживают пересборку, и выбор пользователя — тоже. Элемент
- * пересобирается вслед за списком: сменилось прочитанное через лифт. В движке
- * остаются ровно элементы разметки, по одному разу и в порядке DOM.
+ * Пересобранный список (StrictMode, `<Activity>`) — это новый движок. Элемент
+ * пересобирается вслед за ним: сменилось прочитанное через лифт. В живом
+ * движке остаются ровно элементы разметки, по одному разу и в порядке DOM.
  *
  * Цена входа при коммите: серверная разметка и первый кадр элемента из
  * разметки — без того, что пишет ему коллекция. Гидратация сходится, после
@@ -192,47 +191,10 @@ describe('пересборка списка', () => {
 		render(view('visible'))
 		await flush()
 
-		// Движок тот же: фасад пережил пересборку
-		expect(probe.engines.length).toBe(1)
+		expect(probe.engines.length).toBeGreaterThan(1)
 		expect(probe.values()).toEqual(['a', 'b', 'c'])
 
 		act(() => rowOf('C').click())
-
-		expect(selection()).toEqual(['false', 'false', 'true'])
-	})
-
-	/**
-	 * Выбор без `value` — состояние компонента, а не разметки: React сохраняет
-	 * состояние скрытого компонента, и список его сохраняет. Элементы из данных
-	 * те же, поэтому и строки — те же узлы.
-	 */
-	it('<Activity>: список из данных сохраняет выбор пользователя', async () => {
-		const items = [
-			{ value: 'a', text: 'A' },
-			{ value: 'b', text: 'B' },
-			{ value: 'c', text: 'C' },
-		]
-		const view = (mode: 'visible' | 'hidden', value?: string) => (
-			<Activity mode={mode}>
-				<ListBox items={items} value={value} />
-			</Activity>
-		)
-		const { render } = mount(view('visible'))
-
-		await flush()
-
-		act(() => rowOf('B').click())
-
-		const before = rows()
-
-		render(view('hidden'))
-		render(view('visible'))
-		await flush()
-
-		expect(selection()).toEqual(['false', 'true', 'false'])
-		expect(rows()).toEqual(before)
-
-		render(view('visible', 'c'))
 
 		expect(selection()).toEqual(['false', 'false', 'true'])
 	})

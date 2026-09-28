@@ -48,7 +48,6 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 					'ListBox',
 					createEngine,
 				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
-				owner: options.owner,
 			},
 		)
 
