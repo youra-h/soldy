@@ -4,15 +4,14 @@ import type {
 	TCollectionFacadeOptions,
 	TCollectionFacadeProps,
 } from '../../../../base/collection'
-import { resolveEngine } from '../../../../base/collection/create/internal'
+import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
 import type { TCalendarDate } from '../../../../../common'
 import type { ICalendarItem } from '../../item/types'
 import type { ICalendar } from '../../types'
 import type { TCalendarGrid, TCalendarMode } from '../extensions'
-import { CALENDAR_EXTENSIONS, CALENDAR_OWNER_EXTENSIONS, CalendarFactory } from '../factory'
+import { calendarExtensions } from '../factory'
 import type {
 	ICalendarCollectionProps,
-	TCalendarCollection,
 	TCalendarCollectionExtensions,
 	TCalendarCollectionFacadeEngine,
 	TCalendarCollectionFacadeEvents,
@@ -37,20 +36,14 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 > {
 	constructor(
 		props: TCollectionFacadeProps<ICalendarItem> & ICalendarCollectionProps = {},
-		options: TCollectionFacadeOptions<TCalendarCollectionFacadeEngine, ICalendar> & {
-			/** Фабрика движка коллекции — переопределяется наследником. */
-			factory?: (owner: ICalendar) => TCalendarCollection
-		} = {},
+		options: TCollectionFacadeOptions<TCalendarCollectionFacadeEngine, ICalendar> = {},
 	) {
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					CALENDAR_EXTENSIONS(),
-					CALENDAR_OWNER_EXTENSIONS,
-					'Calendar',
-					options.factory ?? CalendarFactory,
+				engine: withOwnerIds(
+					completeEngine(options.engine, calendarExtensions(options.owner)),
+					options.owner,
 				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
 			},
 		)

@@ -1,24 +1,16 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { TAGS_EXTENSIONS, TAGS_OWNER_EXTENSIONS } from './factory'
+import { tagsExtensions } from './factory'
 import type { TTagsCollection } from './types'
 import type { ITags } from '../types'
 import type { ITagsItem } from '../item/types'
 
 /**
- * Коллекция Tags целиком — со всем, включая владельческое.
- *
- * `owner` обязателен: проброс `disabled`/`size`/`variant` и закрытие держатся
- * на компоненте. Нужна коллекция без него — берите `createEngine` или
- * `createEngineSelection`: недостающее `<Tags>` доустановит сам.
+ * Коллекция Tags целиком. `owner` необязателен: без него детали владельца не
+ * ставятся — их доставит `<Tags>`, когда движок передадут компоненту.
  */
 export function createEngineTags(
-	options: TCreateEngineOptions<ITagsItem> & { owner: ITags },
+	options: TCreateEngineOptions<ITagsItem> & { owner?: ITags } = {},
 ): TTagsCollection {
-	return createComponentEngine(
-		'createEngineTags',
-		TAGS_EXTENSIONS(),
-		TAGS_OWNER_EXTENSIONS,
-		options,
-	) as TTagsCollection
+	return createComponentEngine(tagsExtensions, options)
 }

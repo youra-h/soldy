@@ -1,7 +1,7 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 
-import { SelectFactory, SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
+import { selectExtensions } from '../factory'
+import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TSelectCollection,
 	TSelectCollectionExtensions,
@@ -40,18 +40,15 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectCollectionFacadeProps = {},
 		options: TSelectCollectionFacadeOptions = {},
 	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Select. Именно здесь, а не в теле:
+		// Движок мог прийти снаружи собранным на любом уровне — `completeEngine`
+		// доставит в него то, чего не хватает Select. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					SELECT_EXTENSIONS(),
-					SELECT_OWNER_EXTENSIONS,
-					'Select',
-					SelectFactory,
+				engine: withOwnerIds(
+					completeEngine(options.engine, selectExtensions(options.owner)),
+					options.owner,
 				) as TSelectCollection,
 			},
 		)

@@ -44,10 +44,13 @@ export class TCollectionEngine<
 	 * Ничего не возвращает: типизированную сборку делает только конструктор —
 	 * там состав известен заранее и `TExtensions` строится честно. `use()`
 	 * нужен для другого случая: движок уже существует (например, пришёл снаружи
-	 * через пропс `engine`, см. `attachEngine`), и в него нужно дописать то,
+	 * через пропс `engine`, см. `completeEngine`), и в него нужно дописать то,
 	 * чего не хватает. На уровне типов такое расширение доступно в `extensions`
 	 * по имени как `IExtension<T> | undefined` — гарантии, что оно есть,
 	 * `TExtensions` не даёт.
+	 *
+	 * Имя уже занято — предупреждение, и расширение не ставится: тихая замена
+	 * оставила бы подписки прежнего расширения живыми рядом с новым.
 	 *
 	 * @example
 	 * ```ts
@@ -64,11 +67,22 @@ export class TCollectionEngine<
 	 * ```
 	 */
 	public use(extension: IExtension<T>): void {
+		if (this.has(extension.name)) {
+			console.warn(`TCollectionEngine: расширение «${extension.name}» уже установлено`)
+
+			return
+		}
+
 		Object.assign(this.extensions, { [extension.name]: extension })
 
 		const ctx = this._createContext()
 
 		extension.install(ctx)
+	}
+
+	/** Стоит ли расширение с таким именем. */
+	public has(name: string): boolean {
+		return this.extensions[name] !== undefined
 	}
 
 	/**

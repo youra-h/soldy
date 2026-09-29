@@ -10,7 +10,7 @@ import type {
 
 /**
  * Компонент Accordion (TAccordion).
- * Владеет только раскладкой (view). Коллекция создаётся отдельно через AccordionFactory
+ * Владеет только раскладкой (view). Коллекция создаётся отдельно через accordionExtensions
  * или через TCollectionExtension в adapter-слое.
  */
 export class TAccordion

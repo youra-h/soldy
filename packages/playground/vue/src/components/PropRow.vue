@@ -79,10 +79,9 @@ const markupOnly = isCollectionRow && !engine
  *
  * Без `owner` было бы иначе: `TAccordionCollectionFacade` и соседи трогают
  * владельческое расширение в собственном конструкторе (`this.extensions
- * .accordion.events`), а `resolveEngine` довешивает его только при известном
- * `owner`. Тот же общий владелец заодно не даёт сработать предупреждению
- * «движок уже привязан к другому компоненту» — второго владельца тут нет,
- * оба фасада ссылаются на один и тот же `instance.value`.
+ * .accordion.events`), а `completeEngine` довешивает его только при известном
+ * `owner`. Оба фасада ссылаются на один и тот же `instance.value` — второго
+ * владельца тут нет.
  */
 const facade: TInstance | null = engine ? createFacade(engine) : null
 

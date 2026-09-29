@@ -48,7 +48,7 @@ export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtens
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineTags`…). Фасад сам
- * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * дополняет недостающее через `completeEngine` (см. `create/internal.ts`),
  * поэтому годится любой уровень, включая уровень 1, где ни `TTagsItem`, ни
  * владельческие расширения ещё не собраны.
  *
@@ -60,7 +60,7 @@ export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtens
  * (в том числе `Partial<TTagsCollectionExtensions>`) сделал бы совместимым
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TTagsCollection`, который собирает `createEngineTags`. Точность остаётся
- * там, где движок инстанцируется (`TTagsCollection`, `TagsFactory`), а не
+ * там, где движок инстанцируется (`TTagsCollection`, `tagsExtensions`), а не
  * там, где его только принимают.
  */
 export type TTagsCollectionFacadeEngine = TCollectionEngine<any, any>

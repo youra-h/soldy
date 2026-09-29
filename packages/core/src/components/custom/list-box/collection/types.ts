@@ -42,7 +42,7 @@ export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollect
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineListBox`…). Фасад
- * сам дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * сам дополняет недостающее через `completeEngine` (см. `create/internal.ts`),
  * поэтому годится любой уровень, включая уровень 1, где ни `TListBoxItem`,
  * ни владельческие расширения ещё не собраны.
  *
@@ -55,7 +55,7 @@ export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollect
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TListBoxCollection`, который собирает `createEngineListBox`. Точность
  * остаётся там, где движок инстанцируется (`TListBoxCollection`,
- * `ListBoxFactory`), а не там, где его только принимают.
+ * `listBoxExtensions`), а не там, где его только принимают.
  */
 export type TListBoxCollectionFacadeEngine = TCollectionEngine<any, any>
 

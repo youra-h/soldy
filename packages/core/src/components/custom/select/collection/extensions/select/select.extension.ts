@@ -201,7 +201,7 @@ export class TSelectExtension<
 
 		// Плейсхолдер поля — по составу тегов, а не по режиму: инстанс `tags`
 		// живёт всё время, пока `multiple`, даже без единого тега. `tags` в
-		// `SELECT_OWNER_EXTENSIONS` установлен раньше `select` специально ради
+		// `selectExtensions` установлен раньше `select` специально ради
 		// этого — `ctx.extensions.tags` здесь уже существует, и его подписка
 		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
 		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
@@ -210,7 +210,7 @@ export class TSelectExtension<
 		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
 		// движка, собранного снаружи, применяет `selection` при установке, а
 		// `value` из пропа — расширение `value`, которое в
-		// `SELECT_OWNER_EXTENSIONS` стоит раньше нас. Их `change:selection` до
+		// `selectExtensions` стоит раньше нас. Их `change:selection` до
 		// нас не дошёл, поэтому `aria-selected`, текст выбранного и плейсхолдер
 		// считаем по текущему выбору тем же обработчиком
 		this._onSelectionChanged()

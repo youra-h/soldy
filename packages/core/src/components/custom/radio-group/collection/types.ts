@@ -35,7 +35,7 @@ export type TRadioGroupCollection = TCollectionEngine<
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineActivation`, `createEngineRadioGroup`). Фасад
- * сам дополняет недостающее через `resolveEngine`, поэтому оба параметра —
+ * сам дополняет недостающее через `completeEngine`, поэтому оба параметра —
  * `any`: движок инвариантен по ним через `engine:create` (см.
  * `TTabsCollectionFacadeEngine`). Точный тип — там, где движок собирается.
  */

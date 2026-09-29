@@ -1,24 +1,16 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { LIST_BOX_EXTENSIONS, LIST_BOX_OWNER_EXTENSIONS } from './factory'
+import { listBoxExtensions } from './factory'
 import type { TListBoxCollection } from './types'
 import type { IListBox } from '../types'
 import type { IListBoxItem } from '../item/types'
 
 /**
- * Коллекция ListBox целиком — со всем, включая владельческое.
- *
- * `owner` обязателен: связь `value` ↔ выбор и проброс `size`/`variant`
- * держатся на компоненте. Нужна коллекция без него — берите `createEngine`
- * или `createEngineSelection`: недостающее `<ListBox>` доустановит сам.
+ * Коллекция ListBox целиком. `owner` необязателен: без него детали владельца не
+ * ставятся — их доставит `<ListBox>`, когда движок передадут компоненту.
  */
 export function createEngineListBox(
-	options: TCreateEngineOptions<IListBoxItem> & { owner: IListBox },
+	options: TCreateEngineOptions<IListBoxItem> & { owner?: IListBox } = {},
 ): TListBoxCollection {
-	return createComponentEngine(
-		'createEngineListBox',
-		LIST_BOX_EXTENSIONS(),
-		LIST_BOX_OWNER_EXTENSIONS,
-		options,
-	) as TListBoxCollection
+	return createComponentEngine(listBoxExtensions, options)
 }
