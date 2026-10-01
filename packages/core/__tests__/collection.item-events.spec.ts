@@ -91,9 +91,10 @@ describe('Item-адаптеры: проброс событий из расшир
 		>({
 			extensions: {
 				plain: new TPlainExtension<ITabsItem>(),
-				tabs: new TTabsExtension({ owner: tabs }),
+				tabs: new TTabsExtension(),
 			},
 		})
+		col.options.set({ owner: tabs })
 		const registry = new TItemContextRegistry(col.getCore())
 		const tab = new TTabsItem({ text: 'Tab', value: 'tab' })
 

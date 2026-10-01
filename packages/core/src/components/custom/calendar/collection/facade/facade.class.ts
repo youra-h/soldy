@@ -45,8 +45,11 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 					completeEngine(options.engine, calendarExtensions(options.owner)),
 					options.owner,
 				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this.extensions.view.events)
 		this.events.relayAll(this.extensions.selection.events)

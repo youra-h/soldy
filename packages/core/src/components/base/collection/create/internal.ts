@@ -9,7 +9,7 @@ import {
 	TActivationExtension,
 	TSelectionExtension,
 } from '../engine'
-import type { IExtension, TCollectionEngineItemSource } from '../engine'
+import type { IExtension, TCollectionEngineItemSource, TEngineOptions } from '../engine'
 
 /**
  * Внутренняя кухня сборки коллекций — не часть публичного API `@soldy-ui/core`.
@@ -98,11 +98,14 @@ export function selectionExtensions<TItem extends object>(
  * нём нет. Не пришёл — берётся новый, и собирается тем же циклом. Деталь,
  * которая уже стоит, не создаётся и не трогается.
  */
-export function completeEngine<TItem extends object>(
-	engine: TCollectionEngine<TItem, any> | undefined,
+export function completeEngine<
+	TItem extends object,
+	TOptions extends TEngineOptions = TEngineOptions,
+>(
+	engine: TCollectionEngine<TItem, any, TOptions> | undefined,
 	set: TExtensionSet<TItem>,
-): TCollectionEngine<TItem, any> {
-	const target = engine ?? new TCollectionEngine<TItem, any>({ extensions: {} })
+): TCollectionEngine<TItem, any, TOptions> {
+	const target = engine ?? new TCollectionEngine<TItem, any, TOptions>({ extensions: {} })
 
 	for (const [name, create] of Object.entries(set)) {
 		if (!target.has(name)) target.use(create())
@@ -112,10 +115,10 @@ export function completeEngine<TItem extends object>(
 }
 
 /** Наполнить движок элементами, если их дали. */
-export function fillEngine<TItem extends object>(
-	engine: TCollectionEngine<TItem, any>,
+export function fillEngine<TItem extends object, TOptions extends TEngineOptions = TEngineOptions>(
+	engine: TCollectionEngine<TItem, any, TOptions>,
 	items?: readonly (TCollectionEngineItemSource<TItem> | TItem)[],
-): TCollectionEngine<TItem, any> {
+): TCollectionEngine<TItem, any, TOptions> {
 	const batch: unknown = engine.extensions.batch
 
 	if (items?.length && batch instanceof TBatchExtension) batch.set([...items])

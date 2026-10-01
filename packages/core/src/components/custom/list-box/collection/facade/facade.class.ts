@@ -36,8 +36,11 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 					completeEngine(options.engine, listBoxExtensions(options.owner)),
 					options.owner,
 				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.applyProps(props)
 	}

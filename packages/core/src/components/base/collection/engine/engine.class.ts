@@ -9,15 +9,25 @@ import { TArrayStorage } from './storage'
 import type { IStorage } from './storage'
 import type { IExtension, IExtensionContext } from './extension'
 import type { ICommand } from './commands'
+import { TEngineOptionStore } from './options'
+import type { TEngineOptions } from './options'
 
 export class TCollectionEngine<
 	T extends object,
 	TExtensions extends Record<string, IExtension<T>> = Record<never, IExtension<T>>,
+	// `any` по умолчанию — стирание, как у первых двух параметров: движок, собранный
+	// без типа опций, передаётся туда, где его ждут с типом (`TTabsCollection`)
+	TOptions extends TEngineOptions = any,
 > {
 	private readonly _driver: ICollectionStorageDriver<T>
+	/**
+	 * Опции движка — значения, которые компонент передаёт своим расширениям после
+	 * сборки (например, владельца): `set`, `get` и `watch`.
+	 */
+	public readonly options = new TEngineOptionStore<TOptions>()
 	public readonly extensions: TExtensions & Record<string, IExtension<T> | undefined>
 	public readonly events = new TEvented<
-		TCollectionEngineEvents<TCollectionEngine<T, TExtensions>>
+		TCollectionEngineEvents<TCollectionEngine<T, TExtensions, TOptions>>
 	>()
 
 	constructor(options: { storage?: IStorage<T>; extensions: TExtensions }) {
@@ -95,12 +105,13 @@ export class TCollectionEngine<
 		}
 	}
 
-	private _createContext(): IExtensionContext<T> {
+	private _createContext(): IExtensionContext<T, TOptions> {
 		return {
 			driver: this._driver,
 			extensions: this.extensions,
 			execute: (cmd: ICommand<T>) => this._driver.execute(cmd),
 			batch: (action: () => void) => this._driver.batch(action),
+			options: this.options,
 		}
 	}
 

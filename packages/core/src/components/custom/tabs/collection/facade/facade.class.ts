@@ -1,12 +1,12 @@
 import { TActivationCollectionFacade } from '../../../../base/collection'
-import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
+import type {
+	TCollectionEngine,
+	TCollectionFacadeOptions,
+	TCollectionFacadeProps,
+} from '../../../../base/collection'
 import { tabsExtensions } from '../factory'
 import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
-import type {
-	TTabsCollection,
-	TTabsCollectionExtensions,
-	TTabsCollectionFacadeEngine,
-} from '../types'
+import type { TTabsCollectionExtensions, TTabsCollectionFacadeEngine } from '../types'
 import type { TTabsCollectionFacadeEvents } from '../types'
 import type { ITabsItem } from '../../item/types'
 import type { ITabs } from '../../types'
@@ -34,11 +34,14 @@ export class TTabsCollectionFacade extends TActivationCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, tabsExtensions(options.owner)),
+					completeEngine(options.engine, tabsExtensions()),
 					options.owner,
-				) as TTabsCollection,
+				) as TCollectionEngine<ITabsItem, TTabsCollectionExtensions>,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this.extensions.tabs.events)
 

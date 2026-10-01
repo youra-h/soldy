@@ -42,8 +42,11 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 					completeEngine(options.engine, tagsExtensions(options.owner)),
 					options.owner,
 				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this.extensions.overflow.events)
 

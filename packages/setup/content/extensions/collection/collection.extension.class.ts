@@ -33,6 +33,11 @@ export class TCollectionExtension {
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
 
 		this._wire(context, elevator, engine)
+
+		// Владельца в опции движка пишет сам фасад: что в них лежит, знает он.
+		// Здесь — только момент: принят компонент — привязать, уничтожен — снять
+		context.events.on('attach', () => context.instance.bindOwner())
+		context.events.on('destroy', () => context.instance.releaseOwner())
 	}
 
 	/**

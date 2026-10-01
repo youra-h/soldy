@@ -22,7 +22,11 @@ import type {
 	TActivationCollectionFacadeEvents,
 	TActivationItemFacadeEvents,
 } from '../../../base/collection'
-import type { TTabsExtensionEvents, TTabsItemEventsExtension } from './extensions'
+import type {
+	TTabsEngineOptions,
+	TTabsExtensionEvents,
+	TTabsItemEventsExtension,
+} from './extensions'
 import type { TComponentEvents } from '../../../base/component'
 
 export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
@@ -37,7 +41,11 @@ export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
 	content: TTabsContentExtension<TItem>
 }
 
-export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtensions>
+export type TTabsCollection = TCollectionEngine<
+	ITabsItem,
+	TTabsCollectionExtensions,
+	TTabsEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки

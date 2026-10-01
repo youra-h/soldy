@@ -2,6 +2,7 @@ import type {
 	IExtension,
 	IExtensionContext,
 	IActivationExtension,
+	IBaseOwnerItemExtensionOptions,
 	TRemoveEvent,
 } from '../../../../../base/collection'
 import {
@@ -13,7 +14,7 @@ import type { ITabsItem } from '../../../item/types'
 import type { ITabs } from '../../../types'
 import type {
 	TTabsExtensionEvents,
-	ITabsExtensionOptions,
+	TTabsEngineOptions,
 	TTabsExtensions,
 	ITabsExtension,
 } from './types'
@@ -22,27 +23,25 @@ import { TTabsItemExtension, type ITabsItemExtension } from './item'
 /**
  * TTabsExtension — расширение коллекции для управления табами.
  *
- * Получает ссылку на инстанс TTabs через options.owner. `size` и `variant`
- * расширение пишет табу значениями набора — их диктует он. `disabled`
- * набора распространяется на табы, как у `<fieldset>`.
+ * Владелец — опция движка (`owner`): он приходит и уходит после сборки, и
+ * расширение наблюдает его (`ctx.options.watch`). `size` и `variant` расширение пишет
+ * табу значениями набора — их диктует он. `disabled` набора распространяется
+ * на табы, как у `<fieldset>`.
  *
  * @template TOwner — тип владельца (TTabs или наследник)
  * @template TItem  — тип элемента таба (ITabsItem или наследник)
  */
 export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsItem = ITabsItem>
-	extends TBaseOwnerItemExtension<TItem, ITabsItemExtension<TItem>, TTabsExtensionEvents>
+	extends TBaseOwnerItemExtension<
+		TItem,
+		ITabsItemExtension<TItem>,
+		TTabsExtensionEvents,
+		TTabsEngineOptions<TOwner>
+	>
 	implements IExtension<TItem>, ITabsExtension<TItem>
 {
 	readonly name = 'tabs' as const
 
-	/**
-	 * Ссылка на инстанс TTabs, переданная через конструктор.
-	 * Используется для проброса свойств на элементы и подписки на события.
-	 * @private
-	 * @readonly
-	 * @type {TOwner}
-	 */
-	private readonly _owner: TOwner
 	private _itemRegistry!: TItemContextRegistry<TItem, TTabsExtensions<TItem>>
 
 	/**
@@ -60,18 +59,16 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	 */
 	private _pendingActivation?: { event: TRemoveEvent<TItem>; siblings: TItem[] }
 
-	constructor(options: ITabsExtensionOptions<TOwner, TItem>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ITabsItemExtension<TItem>>) {
 		super(TTabsItemExtension, options)
-
-		this._owner = options.owner
 	}
 
-	/** Глобальный closable с инстанса TTabs. */
+	/** Глобальный closable с инстанса TTabs. Владельца нет — закрывать нельзя. */
 	get closable(): boolean {
-		return this._owner.closable
+		return this._ctx.options.get('owner')?.closable ?? false
 	}
 
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TTabsEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
 		// Реестр для доступа к item-адаптерам (кеширует через WeakMap)
@@ -80,34 +77,50 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 			driver: ctx.driver,
 		})
 
-		// При добавлении элемента — пробрасываем текущие свойства владельца
+		// При добавлении элемента — свойства владельца, если он есть
 		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item as TItem))
-
-		// Догон: расширение приходит в коллекцию, которую могли наполнить
-		// раньше — например, собрав её снаружи через `createEngine({ items })`.
-		// Тем элементам `item:added` уже не придёт
-		ctx.driver.valueOf().forEach((item) => this._inheritOwner(item))
 
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// Смена у владельца — всем элементам: `disabled` распространяется на них,
-		// как у `<fieldset>`, `size` и `variant` диктует он
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
+		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился владелец, прежние сняты
+		let closable = this.closable
+
+		ctx.options.watch('owner', (owner, scope) => {
+			// `closable` табов читают из расширения — сообщить, если он сменился
+			// вместе с владельцем
+			if (closable !== this.closable) {
+				closable = this.closable
+				this.events.emit('change:closable', closable)
+			}
+
+			if (!owner) return
+
+			// Догон: элементы, лежавшие до прихода владельца
+			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item))
+
+			// Смена у владельца — всем элементам: `disabled` распространяется на
+			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			scope.on(owner.events, 'change:disabled', (value: boolean) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.disabled = value
+				})
+			})
+			scope.on(owner.events, 'change:size', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+			scope.on(owner.events, 'change:variant', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+
+			// Глобальный closable — в item-адаптеры (TTabsItemExtension резолвит
+			// closable из item ?? owner)
+			scope.on(owner.events, 'change:closable', (value: boolean) => {
+				closable = value
+				this.events.emit('change:closable', value)
 			})
 		})
-		this._owner.events.on('change:size', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-		this._owner.events.on('change:variant', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-
-		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTabsItemExtension резолвит closable из item ?? owner).
-		this.events.relay(this._owner.events, ['change:closable'])
 
 		// `aria-selected` пишется сюда, а не в TActivationExtension: то
 		// расширение общее для всех коллекций, а «выбранность» выражается
@@ -169,18 +182,22 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 
 	/**
 	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
-	 * `disabled` — когда владелец выключен.
+	 * `disabled` — когда владелец выключен. Владельца нет — элемент со своим.
 	 */
 	private _inheritOwner(item: TItem): void {
-		this._applyStyle(item)
+		const owner = this._ctx.options.get('owner')
 
-		if (this._owner.disabled) item.disabled = true
+		if (!owner) return
+
+		this._applyStyle(item, owner)
+
+		if (owner.disabled) item.disabled = true
 	}
 
 	/** `size` и `variant` элемента — всегда владельца. */
-	private _applyStyle(item: TItem): void {
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+	private _applyStyle(item: TItem, owner: TOwner): void {
+		item.size = owner.size
+		item.variant = owner.variant
 	}
 
 	/**

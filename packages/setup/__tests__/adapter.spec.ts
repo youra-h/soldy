@@ -37,9 +37,16 @@ import {
 } from '@soldy-ui/setup'
 import { CallbackProfile, createElevatorFactory, required } from './helpers'
 
-/** Фасад-заглушка: у инстанса есть движок — всё, что нужно коллекционным расширениям. */
+/**
+ * Фасад-заглушка: движок и привязка владельца — всё, что нужно коллекционным
+ * расширениям. Владельца у заглушки нет, привязывать нечего.
+ */
 class TEngineOwner {
 	constructor(readonly engine: TCollectionEngine<any, any>) {}
+
+	bindOwner(): void {}
+
+	releaseOwner(): void {}
 }
 
 describe('TElevator', () => {

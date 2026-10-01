@@ -197,16 +197,18 @@ type TabsExtensions = {
 function createTabsCollection(tabs?: TTabs) {
 	const owner = tabs ?? new TTabs()
 
-	return {
-		owner,
-		collection: new TCollectionEngine<ITabsItem, TabsExtensions>({
-			extensions: {
-				plain: new TPlainExtension<ITabsItem>(),
-				activation: new TActivationExtension<ITabsItem>(),
-				tabs: new TTabsExtension({ owner }),
-			},
-		}),
-	}
+	const collection = new TCollectionEngine<ITabsItem, TabsExtensions>({
+		extensions: {
+			plain: new TPlainExtension<ITabsItem>(),
+			activation: new TActivationExtension<ITabsItem>(),
+			tabs: new TTabsExtension(),
+		},
+	})
+
+	// Владелец — опция движка
+	collection.options.set({ owner })
+
+	return { owner, collection }
 }
 
 function createTab(text: string, value?: string): TTabsItem {

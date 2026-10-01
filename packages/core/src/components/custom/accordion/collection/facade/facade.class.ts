@@ -37,8 +37,11 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 					completeEngine(options.engine, accordionExtensions(options.owner)),
 					options.owner,
 				) as TAccordionCollection,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this.extensions.accordion.events)
 

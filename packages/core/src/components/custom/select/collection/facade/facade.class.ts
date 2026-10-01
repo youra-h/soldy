@@ -50,8 +50,11 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 					completeEngine(options.engine, selectExtensions(options.owner)),
 					options.owner,
 				) as TSelectCollection,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this._tags.events)
 
