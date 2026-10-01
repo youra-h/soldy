@@ -1,9 +1,11 @@
-import type { IControl, IControlProps, TControlEvents, TControlStates } from '../control'
-import type { IStateUnit, TValuePayload } from '../../../common'
+import type { IControl, IControlProps, TControlEvents } from '../control'
+import type { TChangeEvent, TValuePayload } from '../../../common'
 
 export type TValueControlEvents<T> = TControlEvents & {
 	/** change:value */
 	'change:value': (payload: TValuePayload<T>) => void
+	/** Запись своего `value` — подправить или отменить (`TChangeEvent`) */
+	'change:value:before': (e: TChangeEvent<T>) => void
 	/** input:value (опционально) */
 	'input:value': (payload: TValuePayload<T>) => void
 	input: (payload: TValuePayload<T>) => void
@@ -16,16 +18,11 @@ export interface IValueControlProps<TValue> extends IControlProps {
 	name?: string
 }
 
-export type TValueControlStates<TValue> = TControlStates & {
-	value: IStateUnit<TValue>
-}
-
 export interface IValueControl<
 	TValue,
 	TProps extends IValueControlProps<TValue> = IValueControlProps<TValue>,
 	TEvents extends Record<string, (...args: any) => any> = TValueControlEvents<TValue>,
-	TStates extends TValueControlStates<TValue> = TValueControlStates<TValue>,
-> extends IControl<TProps, TEvents, TStates> {
+> extends IControl<TProps, TEvents> {
 	value: TValue
 	name: string
 }

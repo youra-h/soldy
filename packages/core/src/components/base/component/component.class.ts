@@ -5,7 +5,6 @@ import type {
 	IComponentOptions,
 	IComponentProps,
 	TComponentEvents,
-	TComponentStates,
 	TDefaultValues,
 } from './types'
 
@@ -13,7 +12,7 @@ import type {
  * Headless-модель компонента.
  *
  * База для ВСЕХ компонентов, включая невизуальные (TDragAndDrop, фасады
- * коллекций). Даёт события и реестр состояний — но ничего про отображение.
+ * коллекций). Даёт события — и ничего про отображение.
  *
  * Видимость (rendered/visible/present, show/hide) и всё остальное, связанное
  * с DOM, живёт в TComponentView.
@@ -27,17 +26,15 @@ import type {
 export default class TComponent<
 	TProps extends IComponentProps = IComponentProps,
 	TEvents extends TComponentEvents = TComponentEvents,
-	TStates extends TComponentStates = TComponentStates,
 >
 	extends TEntity<TProps>
-	implements IComponent<TProps, TEvents, TStates>
+	implements IComponent<TProps, TEvents>
 {
 	static defaultValues: TDefaultValues<IComponentProps> = {}
 
-	protected _states = {} as TStates
 	public readonly events: TEvented<TEvents>
 
-	constructor(_props: Partial<TProps> = {}, _options: IComponentOptions<TStates> = {}) {
+	constructor(_props: Partial<TProps> = {}, _options: IComponentOptions = {}) {
 		super()
 
 		this.events = new TEvented<TEvents>()
@@ -46,12 +43,8 @@ export default class TComponent<
 	static create<T extends TComponent<IComponentProps, any>>(
 		this: new (...args: any[]) => T,
 		props?: Partial<T extends TComponent<infer P, any> ? P : IComponentProps>,
-		options?: IComponentOptions<T extends TComponent<any, any, infer S> ? S : TComponentStates>,
+		options?: IComponentOptions,
 	): T {
 		return new this(props ?? {}, options ?? {})
-	}
-
-	get states(): TStates {
-		return this._states
 	}
 }

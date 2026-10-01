@@ -2,7 +2,7 @@ import { TStylable } from '../stylable'
 import type { IComponentOptions, TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 import { clamp, fractionOf } from '../../../common/scale/scale.class'
-import type { IProgress, IProgressProps, TProgressEvents, TProgressStates } from './types'
+import type { IProgress, IProgressProps, TProgressEvents } from './types'
 
 /**
  * Индикатор выполнения — общая база линии (`TProgressLinear`) и кольца
@@ -21,7 +21,7 @@ import type { IProgress, IProgressProps, TProgressEvents, TProgressStates } from
  * число, по умолчанию `0`.
  *
  * **Значение хранится как задано.** Индикатор значение не правит и в форму не
- * отдаёт, поэтому резольвера, как у Slider, у него нет: границы шкалы
+ * отдаёт, поэтому итога по шкале, как у Slider, у него нет: границы шкалы
  * действуют только в выходах. Доля прижата к 0–1, `aria-valuenow` — к
  * `[min, max]`, и индикатор со скринридером показывают одно и то же. Порядок
  * записи не важен: значение, пришедшее раньше `max`, к прежнему `max` не
@@ -40,10 +40,9 @@ import type { IProgress, IProgressProps, TProgressEvents, TProgressStates } from
 export default class TProgress<
 	TProps extends IProgressProps = IProgressProps,
 	TEvents extends TProgressEvents = TProgressEvents,
-	TStates extends TProgressStates = TProgressStates,
 >
-	extends TStylable<TProps, TEvents, TStates>
-	implements IProgress<TProps, TEvents, TStates>
+	extends TStylable<TProps, TEvents>
+	implements IProgress<TProps, TEvents>
 {
 	static defaultValues: typeof TStylable.defaultValues &
 		TDefaultValues<IProgressProps, 'value' | 'min' | 'max' | 'indeterminate'> = {
@@ -62,7 +61,7 @@ export default class TProgress<
 	protected _max: number
 	protected _indeterminate: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TProgress

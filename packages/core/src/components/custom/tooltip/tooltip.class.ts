@@ -1,6 +1,5 @@
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { TComponentViewStates } from '../../base/component-view'
 import type { TAriaAttributes } from '../../../common'
 import type {
 	ITooltip,
@@ -45,7 +44,7 @@ const TRIGGER_RELATION: Record<TTooltipType, string> = {
  * же — `lazyMount` у подсказки быть не может.
  */
 export default class TTooltip
-	extends TComponentView<ITooltipProps, TTooltipEvents, TComponentViewStates>
+	extends TComponentView<ITooltipProps, TTooltipEvents>
 	implements ITooltip
 {
 	static override baseClass = 's-tooltip'
@@ -76,10 +75,7 @@ export default class TTooltip
 	protected _closeDelay: number
 	protected _type: TTooltipType
 
-	constructor(
-		props: Partial<ITooltipProps> = {},
-		options: IComponentOptions<TComponentViewStates> = {},
-	) {
+	constructor(props: Partial<ITooltipProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTooltip

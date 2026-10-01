@@ -2,15 +2,16 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../../base/value-control'
-import type { IStateUnit, TValuePayload } from '../../../../common'
+import type { TChangeEvent, TValuePayload } from '../../../../common'
 import type { IComponentOptions } from '../../../base/component'
 import type { ISelectCollectionItemProps } from '../collection/types'
 
 export type TSelectItemEvents = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
+	/** Запись своего `text` — подправить или отменить (`TChangeEvent`) */
+	'change:text:before': (e: TChangeEvent<string>) => void
 }
 
 export interface ISelectItemProps
@@ -19,17 +20,12 @@ export interface ISelectItemProps
 	text?: string
 }
 
-export type TSelectItemStates = TValueControlStates<string | number> & {
-	text: IStateUnit<string>
-}
-
 export interface ISelectItem<
 	TProps extends ISelectItemProps = ISelectItemProps,
 	TEvents extends TSelectItemEvents = TSelectItemEvents,
-	TStates extends TSelectItemStates = TSelectItemStates,
-> extends IValueControl<string | number, TProps, TEvents, TStates> {
+> extends IValueControl<string | number, TProps, TEvents> {
 	/** Текст опции */
 	text: string
 }
 
-export type TSelectItemOptions = IComponentOptions<TSelectItemStates>
+export type TSelectItemOptions = IComponentOptions

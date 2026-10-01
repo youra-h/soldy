@@ -4,7 +4,6 @@ import type {
 	IRadioGroup,
 	IRadioGroupProps,
 	TRadioGroupEvents,
-	TRadioGroupStates,
 	TRadioGroupValue,
 	TRadioGroupView,
 } from './types'
@@ -28,7 +27,7 @@ import type {
  * угодно в разметке. Раздаёт их элементам `TRadioGroupExtension`.
  */
 export class TRadioGroup
-	extends TValueControl<TRadioGroupValue, IRadioGroupProps, TRadioGroupEvents, TRadioGroupStates>
+	extends TValueControl<TRadioGroupValue, IRadioGroupProps, TRadioGroupEvents>
 	implements IRadioGroup
 {
 	static override baseClass = 's-radio-group'
@@ -41,10 +40,7 @@ export class TRadioGroup
 
 	protected _view: TRadioGroupView | undefined
 
-	constructor(
-		props: Partial<IRadioGroupProps> = {},
-		options: IComponentOptions<TRadioGroupStates> = {},
-	) {
+	constructor(props: Partial<IRadioGroupProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TRadioGroup

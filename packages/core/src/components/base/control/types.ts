@@ -1,9 +1,13 @@
-import type { IStylable, IStylableProps, TStylableEvents, TStylableStates } from '../stylable'
-import type { IStateUnit } from '../../../common'
+import type { IStylable, IStylableProps, TStylableEvents } from '../stylable'
+import type { TChangeEvent } from '../../../common'
 
 export type TControlEvents = TStylableEvents & {
 	'change:disabled': (value: boolean) => void
+	/** Запись своего `disabled` — подправить или отменить (`TChangeEvent`) */
+	'change:disabled:before': (e: TChangeEvent<boolean>) => void
 	'change:focused': (value: boolean) => void
+	/** Запись `focused` — подправить или отменить (`TChangeEvent`) */
+	'change:focused:before': (e: TChangeEvent<boolean>) => void
 }
 
 export interface IControlProps extends IStylableProps {
@@ -11,31 +15,10 @@ export interface IControlProps extends IStylableProps {
 	focused?: boolean
 }
 
-export type TControlStates = TStylableStates & {
-	disabled: IStateUnit<boolean>
-	focused: IStateUnit<boolean>
-}
-
-/**
- * Элемент, чьё «выключено» сочетается с владельцем (`bindDisabledToOwner`).
- *
- * Правилу нужна единица состояния, а не свойство: своё значение лежит в её
- * `rawValue`, итог отдаёт резольвер.
- */
-export interface IDisabledItem {
-	readonly states: Pick<TControlStates, 'disabled'>
-}
-
-/** Владелец, чьё «выключено» распространяется на его элементы. */
-export interface IDisabledOwner {
-	readonly disabled: boolean
-}
-
 export interface IControl<
 	TProps extends IControlProps = IControlProps,
 	TEvents extends Record<string, (...args: any) => any> = TControlEvents,
-	TStates extends TControlStates = TControlStates,
-> extends IStylable<TProps, TEvents, TStates> {
+> extends IStylable<TProps, TEvents> {
 	disabled: boolean
 	focused: boolean
 }

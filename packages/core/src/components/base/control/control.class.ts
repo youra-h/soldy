@@ -1,8 +1,8 @@
-import { TStateUnit, NATIVE_DISABLED_TAGS } from '../../../common'
-import type { TValuePayload, TEventSink } from '../../../common'
+import { NATIVE_DISABLED_TAGS, TChangeEvent } from '../../../common'
+import type { TEventSink } from '../../../common'
 import type { IComponentOptions, TDefaultValues } from '../component'
 import { TStylable } from '../stylable'
-import type { IControlProps, TControlEvents, TControlStates } from './types'
+import type { IControlProps, TControlEvents } from './types'
 
 /** Есть ли у тега собственный атрибут `disabled` (см. `NATIVE_DISABLED_TAGS`). */
 function hasNativeDisabled(tag: string | object): boolean {
@@ -19,8 +19,7 @@ function hasNativeDisabled(tag: string | object): boolean {
 export default class TControl<
 	TProps extends IControlProps = IControlProps,
 	TEvents extends TControlEvents = TControlEvents,
-	TStates extends TControlStates = TControlStates,
-> extends TStylable<TProps, TEvents, TStates> {
+> extends TStylable<TProps, TEvents> {
 	static defaultValues: typeof TStylable.defaultValues &
 		TDefaultValues<IControlProps, 'disabled' | 'focused'> = {
 		...TStylable.defaultValues,
@@ -28,27 +27,16 @@ export default class TControl<
 		focused: false,
 	}
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	protected _disabled: boolean
+	protected _focused: boolean
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TControl
 
-		const disabled = props.disabled ?? ctor.defaultValues.disabled
-		const focused = props.focused ?? ctor.defaultValues.focused
-
-		this._states.disabled =
-			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
-
-		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:disabled', payload.newValue)
-		})
-
-		this._states.focused =
-			options.states?.focused ?? new TStateUnit<boolean>({ initial: focused })
-
-		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:focused', payload.newValue)
-		})
+		this._disabled = props.disabled ?? ctor.defaultValues.disabled
+		this._focused = props.focused ?? ctor.defaultValues.focused
 
 		this.events.on('change:disabled', () => this._syncDisabled())
 		this.events.on('change:tag', () => this._syncDisabled())
@@ -75,31 +63,36 @@ export default class TControl<
 		return this.events
 	}
 
-	/**
-	 * Итог: у элемента коллекции — своё **или** владельца (см.
-	 * `bindDisabledToOwner`), у остальных — своё.
-	 */
 	get disabled(): boolean {
-		return this._states.disabled.value
+		return this._disabled
 	}
-	/**
-	 * Пишет своё значение. Сравнивает со своим (`rawValue`), а не с итогом:
-	 * в выключенном списке итог уже `true`, и своё `true` иначе проглотилось
-	 * бы — и пропало при включении списка.
-	 */
 	set disabled(value: boolean) {
-		if (this._states.disabled.rawValue !== value) {
-			this._states.disabled.value = value
-		}
+		if (value === this._disabled) return
+
+		const e = new TChangeEvent(value, this._disabled)
+
+		this._sink.emit('change:disabled:before', e)
+
+		if (e.defaultPrevented || e.value === this._disabled) return
+
+		this._disabled = e.value
+		this._sink.emit('change:disabled', e.value)
 	}
 
 	get focused(): boolean {
-		return this._states.focused.value
+		return this._focused
 	}
 	set focused(value: boolean) {
-		if (this._states.focused.value !== value) {
-			this._states.focused.value = value
-		}
+		if (value === this._focused) return
+
+		const e = new TChangeEvent(value, this._focused)
+
+		this._sink.emit('change:focused:before', e)
+
+		if (e.defaultPrevented || e.value === this._focused) return
+
+		this._focused = e.value
+		this._sink.emit('change:focused', e.value)
 	}
 
 	/**

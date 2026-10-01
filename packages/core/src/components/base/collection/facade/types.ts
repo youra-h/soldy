@@ -65,7 +65,7 @@ export type TActivationItemFacadeEvents = TOrderItemFacadeEvents & TActivationIt
 /**
  * Опции конструктора фасада владельца коллекции.
  *
- * Расширяет `IComponentOptions` (states) и добавляет управляющий объект `engine`
+ * Расширяет `IComponentOptions` (`idBase`) и добавляет управляющий объект `engine`
  * — готовую коллекцию (аналог `ctrl` для обычных компонентов).
  */
 export interface ICollectionComponentOptions<

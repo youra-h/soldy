@@ -647,14 +647,15 @@ describe('выключенный таб не закрывается', () => {
 		expect(changed).toHaveBeenCalledTimes(2)
 	})
 
-	it('включили набор — таб, выключенный сам, по-прежнему не закрывается', () => {
+	it('включили набор — включён и таб, и он снова закрывается', () => {
 		const { owner, engine, closable } = setup()
 		const tab = engine.extensions.plain.push(disabledTab('A'))
 
 		owner.disabled = true
 		owner.disabled = false
 
-		expect(closable(tab)).toBe(false)
+		expect(tab.disabled).toBe(false)
+		expect(closable(tab)).toBe(true)
 	})
 
 	it('включение возвращает своё значение таба, заданное после создания', () => {

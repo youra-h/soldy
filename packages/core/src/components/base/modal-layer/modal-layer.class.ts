@@ -1,7 +1,6 @@
 import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../layer'
 import type { TCloseReason } from '../layer'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type { TComponentViewStates } from '../component-view'
 import type { TAriaAttributes, TDatasetAttributes, TEventSink } from '../../../common'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 
@@ -47,10 +46,9 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 export default class TModalLayer<
 	TProps extends IModalLayerProps = IModalLayerProps,
 	TEvents extends TModalLayerEvents = TModalLayerEvents,
-	TStates extends TComponentViewStates = TComponentViewStates,
 >
-	extends TLayer<TProps, TEvents, TStates>
-	implements IModalLayer<TProps, TEvents, TStates>
+	extends TLayer<TProps, TEvents>
+	implements IModalLayer<TProps, TEvents>
 {
 	static defaultValues: typeof TLayer.defaultValues &
 		TDefaultValues<
@@ -81,7 +79,7 @@ export default class TModalLayer<
 	 */
 	protected readonly _titleId: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		const ctor = new.target as typeof TModalLayer
 
 		super(props, options)

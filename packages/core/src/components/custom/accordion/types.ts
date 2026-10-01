@@ -1,4 +1,4 @@
-import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
+import type { IControl, IControlProps, TControlEvents } from '../../base/control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TButtonView } from '../button/types'
 import type { IAccordionCollectionProps } from './collection/types'
@@ -28,8 +28,6 @@ export interface IAccordionProps
 	extends
 		IAccordionComponentProps,
 		IAccordionCollectionProps<IAccordionItemProps, IAccordionItem> {}
-
-export type TAccordionStates = TControlStates
 
 export interface IAccordion extends IControl<IAccordionProps, TAccordionEvents> {
 	/** Внешний вид секций */

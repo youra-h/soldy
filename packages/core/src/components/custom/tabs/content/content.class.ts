@@ -1,12 +1,7 @@
 import { TComponentView } from '../../../base/component-view'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import type { TEventSink } from '../../../../common'
-import type {
-	ITabsContent,
-	ITabsContentProps,
-	TTabsContentEvents,
-	TTabsContentStates,
-} from './types'
+import type { ITabsContent, ITabsContentProps, TTabsContentEvents } from './types'
 
 /**
  * Панель таба (`TabsContent`) — собственные props и события, и ничего больше.
@@ -24,10 +19,9 @@ import type {
 export class TTabsContent<
 	TProps extends ITabsContentProps = ITabsContentProps,
 	TEvents extends TTabsContentEvents = TTabsContentEvents,
-	TStates extends TTabsContentStates = TTabsContentStates,
 >
-	extends TComponentView<TProps, TEvents, TStates>
-	implements ITabsContent<TProps, TEvents, TStates>
+	extends TComponentView<TProps, TEvents>
+	implements ITabsContent<TProps, TEvents>
 {
 	static override baseClass = 's-tabs__panel'
 
@@ -39,7 +33,7 @@ export class TTabsContent<
 
 	protected _value: string | number
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTabsContent

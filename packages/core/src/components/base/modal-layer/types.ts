@@ -1,4 +1,3 @@
-import type { TComponentViewStates } from '../component-view'
 import type { ICloseRequestable, ILayer, ILayerProps, TCloseEvent, TLayerEvents } from '../layer'
 import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
 
@@ -46,9 +45,8 @@ export type TModalLayerEvents = TLayerEvents & {
 export interface IModalLayer<
 	TProps extends IModalLayerProps = IModalLayerProps,
 	TEvents extends Record<string, (...args: any) => any> = TModalLayerEvents,
-	TStates extends TComponentViewStates = TComponentViewStates,
 >
-	extends ILayer<TProps, TEvents, TStates>, ICloseRequestable {
+	extends ILayer<TProps, TEvents>, ICloseRequestable {
 	/** Ширина панели; `undefined` — ширину даёт тема */
 	width: number | string | undefined
 	/** Высота панели; `undefined` — высоту даёт тема */

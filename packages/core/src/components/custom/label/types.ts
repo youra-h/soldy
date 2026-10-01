@@ -1,10 +1,5 @@
-import type { IStateUnit, TValuePayload } from '../../../common'
-import type {
-	IStylable,
-	IStylableProps,
-	TStylableEvents,
-	TStylableStates,
-} from '../../base/stylable'
+import type { TChangeEvent, TValuePayload } from '../../../common'
+import type { IStylable, IStylableProps, TStylableEvents } from '../../base/stylable'
 
 /**
  * С какой стороны от контрола стоит текст подписи.
@@ -18,6 +13,8 @@ export type TLabelPosition = 'start' | 'end' | 'top' | 'bottom'
 export type TLabelEvents = TStylableEvents & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
+	/** Запись своего `text` — подправить или отменить (`TChangeEvent`) */
+	'change:text:before': (e: TChangeEvent<string>) => void
 	/** change:position */
 	'change:position': (value: TLabelPosition) => void
 }
@@ -29,11 +26,7 @@ export interface ILabelProps extends IStylableProps {
 	position?: TLabelPosition
 }
 
-export type TLabelStates = TStylableStates & {
-	text: IStateUnit<string>
-}
-
-export interface ILabel extends IStylable<ILabelProps, TLabelEvents, TLabelStates> {
+export interface ILabel extends IStylable<ILabelProps, TLabelEvents> {
 	/** Текст подписи */
 	text: string
 	/** С какой стороны от контрола стоит текст */

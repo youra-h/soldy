@@ -87,7 +87,7 @@ describe('итог значения — шкала', () => {
 		expect(slider({ value: 7, step: [0, 5, 10] }).value).toBe(5)
 	})
 
-	it('массив упорядочен, соседей резольвер не раздвигает', () => {
+	it('массив упорядочен, соседей итог не раздвигает', () => {
 		const instance = slider({ value: [80, 20, 21], minStepsBetweenThumbs: 10 })
 
 		expect(instance.value).toEqual([20, 21, 80])

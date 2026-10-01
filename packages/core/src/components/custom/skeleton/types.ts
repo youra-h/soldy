@@ -2,9 +2,13 @@ import type {
 	IComponentView,
 	IComponentViewProps,
 	TComponentViewEvents,
-	TComponentViewStates,
 } from '../../base/component-view'
-import type { IStateUnit, TComponentVariant, TThemeRegistry, TValuePayload } from '../../../common'
+import type {
+	TChangeEvent,
+	TComponentVariant,
+	TThemeRegistry,
+	TValuePayload,
+} from '../../../common'
 
 /** Реестр форм заглушки. Значения объявляет тема (см. `TThemeRegistry`). */
 export interface ISkeletonShapes extends TThemeRegistry {}
@@ -26,23 +30,17 @@ export interface ISkeletonProps extends IComponentViewProps {
 	height?: number | string
 }
 
-export type TSkeletonStates = TComponentViewStates & {
-	variant: IStateUnit<TComponentVariant | undefined>
-}
-
 export type TSkeletonEvents = TComponentViewEvents & {
 	'change:variant': (payload: TValuePayload<TComponentVariant | undefined>) => void
+	/** Запись своего `variant` — подправить или отменить (`TChangeEvent`) */
+	'change:variant:before': (e: TChangeEvent<TComponentVariant | undefined>) => void
 	'change:shape': (value: TSkeletonShape | undefined) => void
 	'change:animation': (value: TSkeletonAnimation | undefined) => void
 	'change:width': (value: number | string) => void
 	'change:height': (value: number | string) => void
 }
 
-export interface ISkeleton extends IComponentView<
-	ISkeletonProps,
-	TSkeletonEvents,
-	TSkeletonStates
-> {
+export interface ISkeleton extends IComponentView<ISkeletonProps, TSkeletonEvents> {
 	shape: TSkeletonShape | undefined
 	animation: TSkeletonAnimation | undefined
 	variant: TComponentVariant | undefined

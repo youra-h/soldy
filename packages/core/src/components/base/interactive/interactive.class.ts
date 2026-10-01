@@ -1,20 +1,19 @@
-import { TStateUnit } from '../../../common'
 import { TComponentView } from '../component-view'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type { IInteractiveProps, TInteractiveEvents, TInteractiveStates } from './types'
-import type { TValuePayload, TEventSink } from '../../../common'
+import type { IInteractiveProps, TInteractiveEvents } from './types'
+import { TChangeEvent } from '../../../common'
+import type { TEventSink } from '../../../common'
 
 /**
  * База для интерактивных компонентов: disabled + focused.
  *
- * Внутри использует value-based state-unit (`TStateUnit<boolean>`) и пробрасывает
- * события наружу в формате `change:*`.
+ * Свойства — поля класса, события — в формате `change:*`; запись расширяют
+ * `change:disabled:before` и `change:focused:before`.
  */
 export default class TInteractive<
 	TProps extends IInteractiveProps = IInteractiveProps,
 	TEvents extends TInteractiveEvents = TInteractiveEvents,
-	TStates extends TInteractiveStates = TInteractiveStates,
-> extends TComponentView<TProps, TEvents, TStates> {
+> extends TComponentView<TProps, TEvents> {
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<IInteractiveProps, 'disabled' | 'focused'> = {
 		...TComponentView.defaultValues,
@@ -22,27 +21,16 @@ export default class TInteractive<
 		focused: false,
 	}
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	protected _disabled: boolean
+	protected _focused: boolean
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TInteractive
 
-		const disabled = props.disabled ?? ctor.defaultValues.disabled
-		const focused = props.focused ?? ctor.defaultValues.focused
-
-		this._states.disabled =
-			options.states?.disabled ?? new TStateUnit<boolean>({ initial: disabled })
-
-		this._states.disabled.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:disabled', payload.newValue)
-		})
-
-		this._states.focused =
-			options.states?.focused ?? new TStateUnit<boolean>({ initial: focused })
-
-		this._states.focused.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:focused', payload.newValue)
-		})
+		this._disabled = props.disabled ?? ctor.defaultValues.disabled
+		this._focused = props.focused ?? ctor.defaultValues.focused
 	}
 
 	/**
@@ -54,17 +42,35 @@ export default class TInteractive<
 	}
 
 	get disabled(): boolean {
-		return this._states.disabled.value
+		return this._disabled
 	}
 	set disabled(value: boolean) {
-		this._states.disabled.value = value
+		if (value === this._disabled) return
+
+		const e = new TChangeEvent(value, this._disabled)
+
+		this._sink.emit('change:disabled:before', e)
+
+		if (e.defaultPrevented || e.value === this._disabled) return
+
+		this._disabled = e.value
+		this._sink.emit('change:disabled', e.value)
 	}
 
 	get focused(): boolean {
-		return this._states.focused.value
+		return this._focused
 	}
 	set focused(value: boolean) {
-		this._states.focused.value = value
+		if (value === this._focused) return
+
+		const e = new TChangeEvent(value, this._focused)
+
+		this._sink.emit('change:focused:before', e)
+
+		if (e.defaultPrevented || e.value === this._focused) return
+
+		this._focused = e.value
+		this._sink.emit('change:focused', e.value)
 	}
 
 	getProps(): TProps {

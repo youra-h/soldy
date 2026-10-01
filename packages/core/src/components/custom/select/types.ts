@@ -2,7 +2,6 @@ import type {
 	IInputControl,
 	IInputControlProps,
 	TInputControlEvents,
-	TInputControlStates,
 } from '../../base/input-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TAriaAttributes } from '../../../common'
@@ -128,14 +127,9 @@ export interface ISelectComponentProps extends IInputControlProps<TSelectValue>,
 export interface ISelectProps
 	extends ISelectComponentProps, ISelectCollectionProps<ISelectItemProps, ISelectItem> {}
 
-export type TSelectStates = TInputControlStates<TSelectValue>
-
 export interface ISelect<
 	TProps extends ISelectProps = ISelectProps,
 	TEvents extends TSelectEvents = TSelectEvents,
-	// Параметр держит арность дженерика, единую с базовым контролом.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	TStates extends TSelectStates = TSelectStates,
 >
 	extends IInputControl<TSelectValue, TProps, TEvents>, IList {
 	/** Открыта ли панель со списком */

@@ -226,7 +226,7 @@ describe('у выключенного таба кнопки закрытия н�
 
 		await mounted.setProps({ setOff: false })
 
-		// «B» выключен сам: включение набора ему кнопку не возвращает
-		expect(withClose()).toEqual(['A', 'C'])
+		// `disabled` набора распространяется на всех: включение включает и «B»
+		expect(withClose()).toEqual(['A', 'B', 'C'])
 	})
 })

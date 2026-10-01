@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TStylable, TStateUnit } from '@soldy-ui/core'
-import type { IStylableProps, TComponentSize } from '@soldy-ui/core'
+import { TStylable } from '@soldy-ui/core'
+import type { IStylableProps } from '@soldy-ui/core'
 
 describe('TStylable', () => {
 	it('size и variant выставляются и эмитят события', () => {
@@ -45,39 +45,17 @@ describe('TStylable', () => {
 		expect(stylable.getProps()).toMatchObject({ size: 'lg', variant: 'brand' })
 	})
 
-	it('states.size позволяет передать внешний TStateUnit и классы обновляются при его изменении', () => {
-		const customSizeState = new TStateUnit<TComponentSize>({ initial: 'xl' })
+	it('change:size:before ограничивает размер, классы ставит подправленный', () => {
+		const stylable = new TStylable<IStylableProps>({ size: 'normal' })
 
-		const stylable = new TStylable<IStylableProps>({}, { states: { size: customSizeState } })
+		stylable.events.on('change:size:before', (e) => {
+			if (e.value === '2xl') e.value = 'xl'
+		})
+
+		stylable.size = '2xl'
 
 		expect(stylable.size).toBe('xl')
-
-		customSizeState.value = 'sm'
-		expect(stylable.size).toBe('sm')
-		expect(stylable.classes.toArray()).toContain('s-component-view--size-sm')
-	})
-
-	it('states.size доступен через instance.states и setResolver меняет size', () => {
-		const s = new TStylable<IStylableProps>({ size: 'normal' })
-
-		expect(s.states.size).toBeDefined()
-		expect(s.size).toBe('normal')
-
-		s.states.size.setResolver(() => 'xl' as TComponentSize)
-
-		expect(s.size).toBe('xl')
-		expect(s.states.size.rawValue).toBe('normal')
-	})
-
-	it('states.variant доступен через instance.states и setResolver меняет variant', () => {
-		const s = new TStylable<IStylableProps>({ variant: 'danger' })
-
-		expect(s.states.variant).toBeDefined()
-		expect(s.variant).toBe('danger')
-
-		s.states.variant.setResolver(() => 'brand')
-
-		expect(s.variant).toBe('brand')
-		expect(s.states.variant.rawValue).toBe('danger')
+		expect(stylable.classes.toArray()).toContain('s-component-view--size-xl')
+		expect(stylable.classes.toArray()).not.toContain('s-component-view--size-normal')
 	})
 })

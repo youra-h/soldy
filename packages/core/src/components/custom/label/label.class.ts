@@ -1,8 +1,7 @@
-import { TStateUnit } from '../../../common'
-import type { TValuePayload } from '../../../common'
+import { TChangeEvent } from '../../../common'
 import { TStylable } from '../../base/stylable'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { ILabel, ILabelProps, TLabelEvents, TLabelPosition, TLabelStates } from './types'
+import type { ILabel, ILabelProps, TLabelEvents, TLabelPosition } from './types'
 
 /**
  * Подпись контрола: текст рядом с CheckBox, Switch или радио.
@@ -24,10 +23,7 @@ import type { ILabel, ILabelProps, TLabelEvents, TLabelPosition, TLabelStates } 
  * один на все стороны — контрол, потом текст, — сторону рисует тема по
  * модификатору `--position-<v>`. Модификатор стоит всегда, как `--size-*`.
  */
-export default class TLabel
-	extends TStylable<ILabelProps, TLabelEvents, TLabelStates>
-	implements ILabel
-{
+export default class TLabel extends TStylable<ILabelProps, TLabelEvents> implements ILabel {
 	static override baseClass = 's-label'
 
 	static defaultValues: typeof TStylable.defaultValues &
@@ -38,30 +34,34 @@ export default class TLabel
 		position: 'end',
 	}
 
+	protected _text: string
 	protected _position!: TLabelPosition
 
-	constructor(props: Partial<ILabelProps> = {}, options: IComponentOptions<TLabelStates> = {}) {
+	constructor(props: Partial<ILabelProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TLabel
 
-		this._states.text =
-			options.states?.text ??
-			new TStateUnit<string>({ initial: props.text ?? ctor.defaultValues.text })
-
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this.events.emit('change:text', payload)
-		})
+		this._text = props.text ?? ctor.defaultValues.text
 
 		this._applyPosition(props.position ?? ctor.defaultValues.position)
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this.events.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this.events.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	get position(): TLabelPosition {

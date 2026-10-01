@@ -1,5 +1,4 @@
 import { TControl } from '../../base/control'
-import type { TControlStates } from '../../base/control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { TAriaAttributes } from '../../../common'
 import type {
@@ -33,7 +32,7 @@ import type {
  * просит (`scroll:request`).
  */
 export default class TScroller
-	extends TControl<IScrollerProps, TScrollerEvents, TControlStates>
+	extends TControl<IScrollerProps, TScrollerEvents>
 	implements IScroller
 {
 	static override baseClass = 's-scroller'
@@ -56,10 +55,7 @@ export default class TScroller
 	protected _canNext = false
 	protected _hasTabStops = false
 
-	constructor(
-		props: Partial<IScrollerProps> = {},
-		options: IComponentOptions<TControlStates> = {},
-	) {
+	constructor(props: Partial<IScrollerProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TScroller

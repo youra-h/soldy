@@ -4,9 +4,6 @@ import type {
 	IExtension,
 	IExtensionContext,
 } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { IRadioGroupItem } from '../../../item/types'
 import type { IRadioGroup, TRadioGroupValue, TRadioGroupView } from '../../../types'
 import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './types'
@@ -15,11 +12,9 @@ import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './
  * TRadioGroupExtension — то, что радио знает благодаря своей группе.
  *
  * **Свойства группы на радио.** `view` и общий `name` группа раздаёт каждому
- * радио — при добавлении, догоном и на смену своего значения. `size` и
- * `variant` она диктует резольвером (`bindStyleToOwner`): своё значение радио
- * остаётся в `rawValue` и на вид не влияет. `disabled` не диктуется, а
- * сочетается: радио выключено, если выключено само или выключена группа
- * (`bindDisabledToOwner`). Тема читает модификаторы с корня радио, потому что
+ * радио — при добавлении, догоном и на смену своего значения, так же —
+ * `size` и `variant`: их диктует она. `disabled` группы распространяется
+ * на радио, как у `<fieldset>`. Тема читает модификаторы с корня радио, потому что
  * у контейнера группы стилей нет.
  *
  * **Связь `value` ⇄ активное радио.** Коллекция хранит отмеченное радио
@@ -86,20 +81,21 @@ export class TRadioGroupExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
 
-		// Итог `disabled` радио отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Патч пишет элементу своё из данных — свойства владельца поверх
+		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// `size` и `variant` радио тоже отдаёт резольвер — сообщаем прежний итог,
-		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		// Смена у владельца — всем элементам: `disabled` распространяется на них,
+		// как у `<fieldset>`, `size` и `variant` диктует он
+		this._owner.events.on('change:disabled', (value: boolean) => {
+			ctx.driver.valueOf().forEach((item) => {
+				item.disabled = value
+			})
 		})
-
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		this._owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
+		)
+		this._owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
 		)
 
 		this._owner.events.on('change:view', (value: TRadioGroupView | undefined) => {
@@ -150,15 +146,24 @@ export class TRadioGroupExtension<
 	}
 
 	/**
-	 * Свойства группы, которые радио получает от неё, а не задаёт само.
-	 *
-	 * `size` и `variant` расширение не пишет: их диктует группа резольвером
-	 * (`bindStyleToOwner`), как и `disabled` радио сочетает со своим
-	 * (`bindDisabledToOwner`).
+	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * `disabled` — когда владелец выключен.
 	 */
+	private _inheritOwner(item: TItem): void {
+		this._applyStyle(item)
+
+		if (this._owner.disabled) item.disabled = true
+	}
+
+	/** `size` и `variant` элемента — всегда владельца. */
+	private _applyStyle(item: TItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+	}
+
+	/** Свойства группы, которые радио получает от неё, а не задаёт само. */
 	private _applyOwner(item: TItem): void {
-		bindDisabledToOwner(item, this._owner)
-		bindStyleToOwner(item, this._owner)
+		this._inheritOwner(item)
 		item.view = this._owner.view
 		item.name = this.groupName
 	}

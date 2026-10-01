@@ -1,6 +1,5 @@
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { TComponentViewStates } from '../../base/component-view'
 import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
 import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from './types'
 
@@ -25,7 +24,7 @@ import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from 
  * `triggerAria` в scope слота `trigger`. Формула `id` одна на обе.
  */
 export default class TPopover
-	extends TComponentView<IPopoverProps, TPopoverEvents, TComponentViewStates>
+	extends TComponentView<IPopoverProps, TPopoverEvents>
 	implements IPopover
 {
 	static override baseClass = 's-popover'
@@ -53,10 +52,7 @@ export default class TPopover
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
 
-	constructor(
-		props: Partial<IPopoverProps> = {},
-		options: IComponentOptions<TComponentViewStates> = {},
-	) {
+	constructor(props: Partial<IPopoverProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TPopover

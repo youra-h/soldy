@@ -1,16 +1,10 @@
 /**
- * «Выключено» элемента коллекции в разметке: своё — вход, итог — то, что
- * рисуется.
+ * «Выключено» элемента коллекции в разметке.
  *
- * Геттер `disabled` отдаёт итог — своё **или** владельца, — а сеттер пишет
- * своё. Пока обмен сверял значение из разметки с геттером, своё `true`,
- * пришедшее в выключенном списке, совпадало с итогом и в ядро не писалось — и
- * после включения списка элемент оживал, хотя в разметке выключен. Теперь то
- * же ли это значение, решает сеттер, сверкой со своим (`TLine.write`).
- *
- * Правило ядра на шести коллекциях стережёт
- * `core/__tests__/collection-disabled-inherit.spec.ts`; здесь — что запись из
- * разметки доходит до ядра, а шаблоны выключают строку по итогу.
+ * `disabled` списка распространяется на элементы, как у `<fieldset>`: его
+ * расширение пишет элементу значение списка. Правило ядра на шести
+ * коллекциях стережёт `core/__tests__/collection-disabled-inherit.spec.ts`;
+ * здесь — что запись доходит до разметки, а шаблоны выключают строку.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -46,9 +40,8 @@ const itemRoot = (): Element | null => document.querySelector('.s-list-box-item'
 /** Строка элемента — вложенный `Button`: на ней ARIA элемента. */
 const itemRow = (): Element | null => document.querySelector('.s-list-box-item .s-button')
 
-describe('ListBox.Item: своё disabled из разметки в выключенном списке', () => {
-	/** Воспроизведение из задачи. */
-	it('выключили элемент, пока выключен список, — после включения списка он выключен', async () => {
+describe('ListBox.Item: disabled списка в разметке', () => {
+	it('включение списка включает и элемент, выключенный разметкой', async () => {
 		const mounted = mount(ListBoxHarness, {
 			props: { owner: true, item: false },
 			attachTo: document.body,
@@ -63,8 +56,8 @@ describe('ListBox.Item: своё disabled из разметки в выключ�
 		await mounted.setProps({ owner: false })
 		await nextTick()
 
-		expect(itemRoot()?.getAttribute('data-disabled')).toBe('true')
-		expect(itemRow()?.getAttribute('aria-disabled')).toBe('true')
+		expect(itemRoot()?.getAttribute('data-disabled')).toBe('false')
+		expect(itemRow()?.hasAttribute('aria-disabled')).toBe(false)
 	})
 
 	it('своё false: список выключает элемент и включает его обратно', async () => {
@@ -93,12 +86,7 @@ describe('ListBox.Item: своё disabled из разметки в выключ�
 	})
 })
 
-describe('Tabs.Item: строку выключает итог, а не своё', () => {
-	/**
-	 * Своё `disabled` таба — `false`, выключен набор. Шаблон отдаёт строке
-	 * итог: рисуй он своё, кнопка таба в выключенном наборе осталась бы
-	 * нажимаемой.
-	 */
+describe('Tabs.Item: строку выключает выключенный набор', () => {
 	it('кнопка строки в выключенном Tabs нативно disabled', async () => {
 		wrapper = mount(
 			{

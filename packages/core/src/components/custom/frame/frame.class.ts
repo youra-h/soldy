@@ -1,8 +1,6 @@
 import { TLayer } from '../../base/layer'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import { TStateUnit } from '../../../common'
-import type { TValuePayload } from '../../../common'
-import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } from './types'
+import type { IFrame, IFrameProps, TFrameEvents, TFramePosition } from './types'
 
 /**
  * Headless-контейнер для всплывающего контента.
@@ -18,10 +16,7 @@ import type { IFrame, IFrameProps, TFrameEvents, TFrameStates, TFramePosition } 
  * frame.show() // получает z-index, становится visible
  * frame.hide() // скрывается
  */
-export default class TFrame
-	extends TLayer<IFrameProps, TFrameEvents, TFrameStates>
-	implements IFrame
-{
+export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements IFrame {
 	static baseClass = 's-frame'
 
 	static defaultValues: typeof TLayer.defaultValues &
@@ -36,68 +31,58 @@ export default class TFrame
 	}
 
 	private _position: TFramePosition
+	protected _x: number
+	protected _y: number
+	protected _width: number | string
+	protected _height: number | string
 
-	constructor(props: Partial<IFrameProps> = {}, options: IComponentOptions<TFrameStates> = {}) {
+	constructor(props: Partial<IFrameProps> = {}, options: IComponentOptions = {}) {
 		const ctor = new.target as typeof TFrame
 
 		super(props, options)
 
-		const x = props.x ?? ctor.defaultValues.x
-		const y = props.y ?? ctor.defaultValues.y
-		const width = props.width ?? ctor.defaultValues.width
-		const height = props.height ?? ctor.defaultValues.height
+		this._x = props.x ?? ctor.defaultValues.x
+		this._y = props.y ?? ctor.defaultValues.y
+		this._width = props.width ?? ctor.defaultValues.width
+		this._height = props.height ?? ctor.defaultValues.height
 
 		this._position = props.position ?? ctor.defaultValues.position
-
-		this._states.x = new TStateUnit<number>({ initial: x }) as TFrameStates['x']
-		this._states.y = new TStateUnit<number>({ initial: y }) as TFrameStates['y']
-		this._states.width = new TStateUnit<number | string>({
-			initial: width,
-		}) as TFrameStates['width']
-		this._states.height = new TStateUnit<number | string>({
-			initial: height,
-		}) as TFrameStates['height']
-
-		this._states.x.events.on('change', (payload: TValuePayload<number>) => {
-			this.events.emit('change:x', payload.newValue)
-		})
-		this._states.y.events.on('change', (payload: TValuePayload<number>) => {
-			this.events.emit('change:y', payload.newValue)
-		})
-		this._states.width.events.on('change', (payload: TValuePayload<number | string>) => {
-			this.events.emit('change:width', payload.newValue)
-		})
-		this._states.height.events.on('change', (payload: TValuePayload<number | string>) => {
-			this.events.emit('change:height', payload.newValue)
-		})
 	}
 
 	get x(): number {
-		return this._states.x.value
+		return this._x
 	}
 	set x(value: number) {
-		this._states.x.value = value
+		if (this._x === value) return
+		this._x = value
+		this.events.emit('change:x', value)
 	}
 
 	get y(): number {
-		return this._states.y.value
+		return this._y
 	}
 	set y(value: number) {
-		this._states.y.value = value
+		if (this._y === value) return
+		this._y = value
+		this.events.emit('change:y', value)
 	}
 
 	get width(): number | string {
-		return this._states.width.value
+		return this._width
 	}
 	set width(value: number | string) {
-		this._states.width.value = value
+		if (this._width === value) return
+		this._width = value
+		this.events.emit('change:width', value)
 	}
 
 	get height(): number | string {
-		return this._states.height.value
+		return this._height
 	}
 	set height(value: number | string) {
-		this._states.height.value = value
+		if (this._height === value) return
+		this._height = value
+		this.events.emit('change:height', value)
 	}
 
 	get position(): TFramePosition {
