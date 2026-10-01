@@ -1,22 +1,13 @@
 import { TControl } from '../../base/control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type {
-	IAccordion,
-	IAccordionProps,
-	TAccordionEvents,
-	TAccordionStates,
-	TAccordionView,
-} from './types'
+import type { IAccordion, IAccordionProps, TAccordionEvents, TAccordionView } from './types'
 
 /**
  * Компонент Accordion (TAccordion).
  * Владеет только раскладкой (view). Коллекция создаётся отдельно через accordionExtensions
  * или через TCollectionExtension в adapter-слое.
  */
-export class TAccordion
-	extends TControl<IAccordionProps, TAccordionEvents, TAccordionStates>
-	implements IAccordion
-{
+export class TAccordion extends TControl<IAccordionProps, TAccordionEvents> implements IAccordion {
 	static override baseClass = 's-accordion'
 
 	static defaultValues: typeof TControl.defaultValues &
@@ -27,10 +18,7 @@ export class TAccordion
 
 	protected _view: TAccordionView | undefined
 
-	constructor(
-		props: Partial<IAccordionProps> = {},
-		options: IComponentOptions<TAccordionStates> = {},
-	) {
+	constructor(props: Partial<IAccordionProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TAccordion

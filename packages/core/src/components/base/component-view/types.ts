@@ -7,8 +7,8 @@ import type {
 	TAttributes,
 	TClasses,
 } from './../../../common'
-import type { IStateUnit, IVisibilityState, TActionEvent } from '../../../common'
-import type { IComponent, IComponentProps, TComponentEvents, TComponentStates } from '../component'
+import type { TActionEvent, TChangeEvent } from '../../../common'
+import type { IComponent, IComponentProps, TComponentEvents } from '../component'
 
 /**
  * Направление письма.
@@ -20,13 +20,6 @@ import type { IComponent, IComponentProps, TComponentEvents, TComponentStates } 
  * (он везде трактует `undefined` как «не трогать»).
  */
 export type TDirection = 'ltr' | 'rtl' | 'inherit'
-
-export type TComponentViewStates = TComponentStates & {
-	/** Класс state для `rendered`. */
-	rendered: IStateUnit<boolean>
-	/** Класс state для `visible`. */
-	visible: IVisibilityState
-}
 
 export type TComponentViewEvents = TComponentEvents & {
 	/** show */
@@ -46,6 +39,8 @@ export type TComponentViewEvents = TComponentEvents & {
 	'change:visible': (value: boolean) => void
 	/** change:rendered */
 	'change:rendered': (value: boolean) => void
+	/** Запись `rendered` — подправить или отменить (`TChangeEvent`). У `visible` то же делают `show:before` и `hide:before` */
+	'change:rendered:before': (e: TChangeEvent<boolean>) => void
 	/** change:present — rendered && visible */
 	'change:present': (value: boolean) => void
 
@@ -85,9 +80,8 @@ export interface IComponentViewMethods {
 export interface IComponentView<
 	TProps extends IComponentViewProps = IComponentViewProps,
 	TEvents extends Record<string, (...args: any) => any> = TComponentViewEvents,
-	TStates extends TComponentViewStates = TComponentViewStates,
 >
-	extends IComponent<TProps, TEvents, TStates>, IComponentViewMethods {
+	extends IComponent<TProps, TEvents>, IComponentViewMethods {
 	/**
 	 * Основа `id`, которые экземпляр пишет в DOM: поле ввода, панель, заголовок,
 	 * связки элементов коллекции. Задаётся опцией конструктора (`idBase`) — её

@@ -1,6 +1,5 @@
 import { TBaseExtension, TBatchExtension, TFactoryExtension } from '../../../../../base/collection'
 import type { IExtensionContext } from '../../../../../base/collection'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
 import {
 	addMonths,
 	calendarLocale,
@@ -12,14 +11,7 @@ import {
 	startOfMonth,
 	todayDate,
 } from '../../../../../../common'
-import type {
-	TAriaAttributes,
-	TCalendarDate,
-	TComponentSize,
-	TComponentVariant,
-	TMonthGridDay,
-	TValuePayload,
-} from '../../../../../../common'
+import type { TAriaAttributes, TCalendarDate, TMonthGridDay } from '../../../../../../common'
 import { calendarBounds, datesOf, inBounds } from '../../../dates'
 import type { TCalendarBounds } from '../../../dates'
 import type { ICalendarItem, ICalendarItemProps } from '../../../item/types'
@@ -60,8 +52,7 @@ const TITLE_LIVE = 'polite'
  * поэтому событие шлёт вид: выход фасада коллекции событий владельца не видит.
  *
  * **Что день знает от вида:** выключен ли он (вне `min`/`max` или календарь
- * выключен — резольвер, как `bindDisabledToOwner`), размер и вариант
- * календаря (`bindStyleToOwner`), доступное имя (полная дата),
+ * выключен), размер и вариант календаря, доступное имя (полная дата),
  * `aria-current` и `data-today`, `data-out-of-bounds`. Выбор и фокус дню пишут
  * свои расширения.
  */
@@ -133,16 +124,12 @@ export class TCalendarViewExtension
 			this.events.emit('change:grids')
 		})
 
-		// `size` и `variant` день получает резольвером — сообщаем прежний итог
-		owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
-		})
-
-		owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		// `size` и `variant` элементам диктует владелец — отдаём новые значения
+		owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
+		)
+		owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
 		)
 	}
 
@@ -394,7 +381,7 @@ export class TCalendarViewExtension
 		for (const item of this._ctx.driver.valueOf()) {
 			const applied = this._applied.get(item)
 
-			if (applied === undefined) bindStyleToOwner(item, this._owner)
+			if (applied === undefined) this._applyStyle(item)
 
 			if (applied?.labelKey !== labelKey) this._label(item, locale, today)
 
@@ -415,16 +402,20 @@ export class TCalendarViewExtension
 		item.dataset.add('today', current)
 	}
 
+	/** `size` и `variant` дня — всегда календаря. */
+	private _applyStyle(item: ICalendarItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+	}
+
 	/**
-	 * «Выключен» дня: своё, выключенный календарь или день вне границ.
+	 * «Выключен» дня: выключенный календарь или день вне границ.
 	 *
-	 * Правило календаря поверх общего `bindDisabledToOwner`: у дня есть ещё и
-	 * границы. Данные резольвера — снимок в замыкании, и новый резольвер
-	 * `setResolver` сверяет со старым сам: `change:disabled` приходит только
-	 * тем дням, у кого сменился итог.
+	 * Сеттер дня сверяет со старым сам: `change:disabled` приходит только
+	 * тем дням, у кого значение сменилось.
 	 */
 	private _bindDisabled(item: ICalendarItem, off: boolean, bounds: TCalendarBounds): void {
-		item.states.disabled.setResolver((own) => own || off || !inBounds(item.date, bounds))
+		item.disabled = off || !inBounds(item.date, bounds)
 		item.dataset.add('out-of-bounds', !inBounds(item.date, bounds))
 	}
 }

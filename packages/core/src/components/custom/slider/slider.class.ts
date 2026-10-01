@@ -1,8 +1,7 @@
 import { TValueControl } from '../../base/value-control'
-import type { TValueControlStates } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import { TStateUnit, createScale } from '../../../common'
-import { sameValue } from '../../../common/state-unit/same-value'
+import { createScale } from '../../../common'
+import { sameValue } from '../../../common/utility/same-value'
 import { percent } from '../../../common/utility/percent'
 import type { IScale, TAriaAttributes } from '../../../common'
 import type { TSlideEdge, TSlideOrientation, TSlideSnap } from '../slide'
@@ -56,12 +55,12 @@ function within(value: number, low: number, high: number): number {
  *   наведению и нажатию ручки, её `data-dragging` и фокусу с клавиатуры:
  *   наведения, нажатия и фокуса ядро не видит.
  *
- * **Значение хранится как задано**, итог отдаёт резольвер шкалы: прижатое к
+ * **Значение хранится как задано**, итог отдаёт геттер по шкале: прижатое к
  * границам, приведённое к шагу и упорядоченное. Поэтому порядок записи не
  * важен — внешнему `ctrl` сборка пишет `value` раньше `max`, и прижатие к
- * прежнему `max` потеряло бы значение. Смена шкалы — `notify`: итог
- * пересчитан, `change:value` приходит, только если он сменился. Соседей
- * резольвер не раздвигает: зазор между ручками (`minStepsBetweenThumbs`)
+ * прежнему `max` потеряло бы значение. Сменилась шкала — итог пересчитан,
+ * `change:value` приходит, только если он сменился. Соседей геттер не
+ * раздвигает: зазор между ручками (`minStepsBetweenThumbs`)
  * держат жест и клавиши, а поле получает границы, в которых его значение
  * всегда лежит.
  */
@@ -129,18 +128,10 @@ export default class TSlider
 	protected _activeThumb: number | undefined = undefined
 	protected _gesture: TSliderGesture | undefined = undefined
 
-	constructor(
-		props: Partial<ISliderProps> = {},
-		options: IComponentOptions<TValueControlStates<TSliderValue>> = {},
-	) {
+	constructor(props: Partial<ISliderProps> = {}, options: IComponentOptions = {}) {
 		const ctor = new.target as typeof TSlider
-		const initial: TSliderValue = props.value ?? ctor.defaultValues.value
 
-		// Значение сверяется поэлементно: резольвер собирает массив ручек
-		// заново на каждое чтение, и по ссылке итог менялся бы всегда
-		const value = new TStateUnit<TSliderValue>({ initial, same: sameValue })
-
-		super(props, { ...options, states: { value, ...options.states } })
+		super(props, options)
 
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
@@ -162,13 +153,23 @@ export default class TSlider
 		// С первой отрисовки и значением `"false"`: тема отличает «не тянут»
 		// от «неприменимо»
 		this._dataset.add('dragging', this._dragging)
-
-		this._states.value.setResolver((raw) => this._normalize(raw))
 	}
 
 	/* ------------------------------------------------------------------ */
 	/* Свойства                                                           */
 	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Итог: своё значение на шкале — прижатое, приведённое к шагу и
+	 * упорядоченное. Массив собирается заново на каждое чтение, поэтому смену
+	 * итога база сверяет поэлементно (`sameValue`).
+	 */
+	override get value(): TSliderValue {
+		return this._normalize(this._value)
+	}
+	override set value(value: TSliderValue) {
+		super.value = value
+	}
 
 	get min(): number {
 		return this._min
@@ -341,7 +342,7 @@ export default class TSlider
 	/* Перетаскивание (`ISlidable`)                                       */
 	/* ------------------------------------------------------------------ */
 
-	/** Значения ручек по возрастанию. Снимок: резольвер собирает его заново. */
+	/** Значения ручек по возрастанию. Снимок: итог собирается заново на каждое чтение. */
 	get values(): number[] {
 		const value = this.value
 
@@ -547,7 +548,7 @@ export default class TSlider
 
 		apply()
 		this._scale = this._createScale()
-		this._states.value.notify(before)
+		this._valueChanged(before)
 	}
 
 	/** Итог значения: форма та же, значения на шкале и по возрастанию. */
@@ -623,7 +624,7 @@ export default class TSlider
 		const moved = [...values]
 
 		moved[index] = next
-		this.value = Array.isArray(this._states.value.rawValue) ? moved : next
+		this.value = Array.isArray(this._value) ? moved : next
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import type { IControl, IControlProps, TControlEvents, TControlStates } from '../../base/control'
+import type { IControl, IControlProps, TControlEvents } from '../../base/control'
 import type { TThemeRegistry } from '../../../common'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { ITabsCollectionProps } from './collection/types'
@@ -66,8 +66,6 @@ export interface ITabsComponentProps extends IControlProps {
 /** Полный набор пропсов Tabs: компонент + коллекция (items, engine, trackBy). */
 export interface ITabsProps
 	extends ITabsComponentProps, ITabsCollectionProps<ITabsItemProps, ITabsItem> {}
-
-export type TTabsStates = TControlStates
 
 export interface ITabs extends IControl<ITabsProps, TTabsEvents> {
 	/** Ориентация табов */

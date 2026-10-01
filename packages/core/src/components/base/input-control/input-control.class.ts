@@ -1,5 +1,5 @@
 import { TValueControl } from '../value-control'
-import type { IInputControlProps, TInputControlEvents, TInputControlStates } from './types'
+import type { IInputControlProps, TInputControlEvents } from './types'
 import type { IComponentOptions, TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 
@@ -15,7 +15,6 @@ export default class TInputControl<
 	TValue = string,
 	TProps extends IInputControlProps<TValue> = IInputControlProps<TValue>,
 	TEvents extends TInputControlEvents<TValue> = TInputControlEvents<TValue>,
-	TStates extends TInputControlStates<TValue> = TInputControlStates<TValue>,
 > extends TValueControl<TValue, TProps, TEvents> {
 	static defaultValues: typeof TValueControl.defaultValues &
 		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required' | 'id'> = {
@@ -29,7 +28,7 @@ export default class TInputControl<
 	protected _required!: boolean
 	protected _id!: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TInputControl

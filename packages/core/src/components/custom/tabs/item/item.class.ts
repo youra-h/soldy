@@ -1,8 +1,8 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TStateUnit } from '../../../../common'
-import type { TValuePayload, TAriaAttributes, TEventSink } from '../../../../common'
-import type { ITabsItem, ITabsItemProps, TTabsItemEvents, TTabsItemStates } from './types'
+import { TChangeEvent } from '../../../../common'
+import type { TAriaAttributes, TEventSink } from '../../../../common'
+import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
 
 /**
  * Кастомная логика элемента таба (без коллекционной части).
@@ -13,7 +13,7 @@ export default class TTabsItem<
 	TProps extends ITabsItemProps = ITabsItemProps,
 	TEvents extends TTabsItemEvents<any> = TTabsItemEvents,
 >
-	extends TValueControl<string | number, TProps, TEvents, TTabsItemStates>
+	extends TValueControl<string | number, TProps, TEvents>
 	implements ITabsItem<TProps, TEvents>
 {
 	static override baseClass = 's-tabs-item'
@@ -30,7 +30,10 @@ export default class TTabsItem<
 
 	protected _closeLabel!: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TTabsItemStates> = {}) {
+	protected _text: string
+	protected _closable: boolean | undefined
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTabsItem
@@ -40,28 +43,11 @@ export default class TTabsItem<
 
 		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
-		// Инициализация state-объектов
-		this._states.text =
-			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
+		this._text = customProps.text ?? ctor.defaultValues.text
 
-		this._states.closable =
-			options.states?.closable ??
-			new TStateUnit<boolean | undefined>({
-				initial: customProps.closable ?? ctor.defaultValues.closable,
-			})
+		this._closable = customProps.closable ?? ctor.defaultValues.closable
 
-		// Подписка на изменения state-объектов
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._sink.emit('change:text', payload)
-		})
-
-		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
-			this._classes.toggle(`--closable`, !!payload.newValue)
-			this._sink.emit('change:closable', payload.newValue)
-		})
-
-		this._classes.toggle(`--closable`, !!this._states.closable.value)
+		this._classes.toggle(`--closable`, !!this._closable)
 
 		// Только то, что таб знает о себе сам: он — таб.
 		//
@@ -95,11 +81,20 @@ export default class TTabsItem<
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this._sink.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	/**
@@ -111,13 +106,21 @@ export default class TTabsItem<
 	 * у таба, выключенного со старта, не срабатывала вовсе: события нет.
 	 */
 	get closable(): boolean | undefined {
-		return this._states.closable.value
+		return this._closable
 	}
 
 	set closable(value: boolean | undefined) {
-		if (this._states.closable.rawValue === value) return
+		if (value === this._closable) return
 
-		this._states.closable.value = value
+		const e = new TChangeEvent(value, this._closable)
+
+		this._sink.emit('change:closable:before', e)
+
+		if (e.defaultPrevented || e.value === this._closable) return
+
+		this._closable = e.value
+		this._classes.toggle(`--closable`, !!e.value)
+		this._sink.emit('change:closable', e.value)
 	}
 
 	/**

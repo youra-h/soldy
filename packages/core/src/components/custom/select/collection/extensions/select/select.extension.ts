@@ -6,9 +6,6 @@ import type {
 	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
@@ -27,10 +24,9 @@ import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents 
  *    `aria-controls` в `owner.field.aria` и `id` списка, на
  *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
  *    разойдутся.
- * 2. **Размер и вид** опции диктует Select (`bindStyleToOwner`) — как у
- *    ListBox: своё значение опции остаётся в `rawValue` и на вид не влияет.
- *    `disabled` не диктуется, а сочетается: опция выключена, если выключена
- *    сама или выключено поле (`bindDisabledToOwner`).
+ * 2. **Размер и вид** опции диктует Select — как у ListBox, расширение пишет
+ *    их значениями поля. `disabled` поля распространяется на опции, как у
+ *    `<fieldset>`.
  *
  * Синхронизации `value` ↔ выбор здесь больше нет: она переехала в
  * `TValueSelectionExtension` движка. Написана она была тут, пока Select был
@@ -162,20 +158,21 @@ export class TSelectExtension<
 		// отдельной подписки на неё не нужно
 		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
 
-		// Итог `disabled` опции отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Патч пишет элементу своё из данных — свойства владельца поверх
+		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// `size` и `variant` опции тоже отдаёт резольвер — сообщаем прежний итог,
-		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		// Смена у владельца — всем элементам: `disabled` распространяется на них,
+		// как у `<fieldset>`, `size` и `variant` диктует он
+		this._owner.events.on('change:disabled', (value: boolean) => {
+			ctx.driver.valueOf().forEach((item) => {
+				item.disabled = value
+			})
 		})
-
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		this._owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
+		)
+		this._owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
 		)
 
 		this._owner.events.on('change:contentFit', () => {
@@ -274,9 +271,24 @@ export class TSelectExtension<
 		return this._ctx?.extensions.tags as TSelectTagsExtension<ISelect, TItem> | undefined
 	}
 
+	/**
+	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * `disabled` — когда владелец выключен.
+	 */
+	private _inheritOwner(item: TItem): void {
+		this._applyStyle(item)
+
+		if (this._owner.disabled) item.disabled = true
+	}
+
+	/** `size` и `variant` элемента — всегда владельца. */
+	private _applyStyle(item: TItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+	}
+
 	private _onItemAdded(item: TItem): void {
-		bindDisabledToOwner(item, this._owner)
-		bindStyleToOwner(item, this._owner)
+		this._inheritOwner(item)
 
 		this._applyContentFit(item)
 		this._applyIndicator(item)

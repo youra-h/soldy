@@ -2,7 +2,6 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TAriaAttributes } from '../../../common'
@@ -89,13 +88,10 @@ export interface ITagsComponentProps extends IValueControlProps<TTagsValue> {
 export interface ITagsProps
 	extends ITagsComponentProps, ITagsCollectionProps<ITagsItemProps, ITagsItem> {}
 
-export type TTagsStates = TValueControlStates<TTagsValue>
-
 export interface ITags<
 	TProps extends ITagsComponentProps = ITagsProps,
 	TEvents extends TTagsEvents = TTagsEvents,
-	TStates extends TTagsStates = TTagsStates,
-> extends IValueControl<TTagsValue, TProps, TEvents, TStates> {
+> extends IValueControl<TTagsValue, TProps, TEvents> {
 	/** Разрешить закрытие тегов (глобально; тег переопределяет своим `closable`) */
 	closable: boolean
 	/** Внешний вид тегов — модификатор набора; тегам значение не доставляется */

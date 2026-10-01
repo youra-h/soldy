@@ -1,6 +1,5 @@
 import { TModalLayer } from '../../base/modal-layer'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { TComponentViewStates } from '../../base/component-view'
 import type { TAriaAttributes } from '../../../common'
 import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './types'
 
@@ -22,10 +21,7 @@ import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './t
  * `data-maximized`, ширина, высота и отступ от краёв экрана — переменными
  * раскладки (`TDialogLayoutPlugin`). Координат и замеров у окна нет.
  */
-export default class TDialog
-	extends TModalLayer<IDialogProps, TDialogEvents, TComponentViewStates>
-	implements IDialog
-{
+export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> implements IDialog {
 	static override baseClass = 's-dialog'
 
 	static defaultValues: typeof TModalLayer.defaultValues &
@@ -51,10 +47,7 @@ export default class TDialog
 	protected _maximizeLabel: string
 	protected _alert!: boolean
 
-	constructor(
-		props: Partial<IDialogProps> = {},
-		options: IComponentOptions<TComponentViewStates> = {},
-	) {
+	constructor(props: Partial<IDialogProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TDialog

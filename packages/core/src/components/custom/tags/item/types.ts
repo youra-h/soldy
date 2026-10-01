@@ -2,17 +2,20 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../../base/value-control'
-import type { IStateUnit, TValuePayload, TAria, TAriaAttributes } from '../../../../common'
+import type { TChangeEvent, TValuePayload, TAria, TAriaAttributes } from '../../../../common'
 import type { IComponentOptions } from '../../../base/component'
 import type { ITagsCollectionItemProps } from '../collection/types'
 
 export type TTagsItemEvents = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
+	/** Запись своего `text` — подправить или отменить (`TChangeEvent`) */
+	'change:text:before': (e: TChangeEvent<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
+	/** Запись своего `closable` — подправить или отменить (`TChangeEvent`) */
+	'change:closable:before': (e: TChangeEvent<boolean | undefined>) => void
 	/** change:closeLabel */
 	'change:closeLabel': (value: string) => void
 	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
@@ -29,16 +32,10 @@ export interface ITagsItemProps
 	closeLabel?: string
 }
 
-export type TTagsItemStates = TValueControlStates<string | number> & {
-	text: IStateUnit<string>
-	closable: IStateUnit<boolean | undefined>
-}
-
 export interface ITagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
 	TEvents extends TTagsItemEvents = TTagsItemEvents,
-	TStates extends TTagsItemStates = TTagsItemStates,
-> extends IValueControl<string | number, TProps, TEvents, TStates> {
+> extends IValueControl<string | number, TProps, TEvents> {
 	/** Текст тега */
 	text: string
 	/** Можно ли закрыть тег (undefined = наследовать от родителя TTags) */
@@ -52,4 +49,4 @@ export interface ITagsItem<
 	readonly closeAria: TAria
 }
 
-export type TTagsItemOptions = IComponentOptions<TTagsItemStates>
+export type TTagsItemOptions = IComponentOptions

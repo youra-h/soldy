@@ -2,15 +2,7 @@ import { TValueControl } from '../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import { TAria } from '../../../common'
 import type { TAriaAttributes } from '../../../common'
-import type {
-	ITagsProps,
-	TTagsEvents,
-	TTagsStates,
-	ITags,
-	TTagsValue,
-	TTagsView,
-	TTagsOverflow,
-} from './types'
+import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverflow } from './types'
 
 /** Класс панели, в которую уезжают непоместившиеся теги. */
 const PANEL_CLASS = 's-tags__panel'
@@ -56,10 +48,7 @@ const PANEL_CLASS = 's-tags__panel'
  * Знание «какие теги не поместились» ядро держит отдельно, в расширении
  * коллекции `overflow`: оно требует и владельца, и списка сразу.
  */
-export class TTags
-	extends TValueControl<TTagsValue, ITagsProps, TTagsEvents, TTagsStates>
-	implements ITags
-{
+export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> implements ITags {
 	static override baseClass = 's-tags'
 
 	static defaultValues: typeof TValueControl.defaultValues &
@@ -100,7 +89,7 @@ export class TTags
 	 */
 	private readonly _rowNames = new Set<string>()
 
-	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions<TTagsStates> = {}) {
+	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTags

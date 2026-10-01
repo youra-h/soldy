@@ -1,4 +1,4 @@
-import type { IStylable, IStylableProps, TStylableEvents, TStylableStates } from '../stylable'
+import type { IStylable, IStylableProps, TStylableEvents } from '../stylable'
 
 export interface IProgressProps extends IStylableProps {
 	/** Сколько готово — число на шкале от `min` до `max` */
@@ -15,8 +15,6 @@ export interface IProgressProps extends IStylableProps {
 	indeterminate?: boolean
 }
 
-export type TProgressStates = TStylableStates
-
 export type TProgressEvents = TStylableEvents & {
 	/** change:value */
 	'change:value': (value: number) => void
@@ -31,8 +29,7 @@ export type TProgressEvents = TStylableEvents & {
 export interface IProgress<
 	TProps extends IProgressProps = IProgressProps,
 	TEvents extends Record<string, (...args: any) => any> = TProgressEvents,
-	TStates extends TProgressStates = TProgressStates,
-> extends IStylable<TProps, TEvents, TStates> {
+> extends IStylable<TProps, TEvents> {
 	/** Сколько готово */
 	value: number
 	/** Начало шкалы */

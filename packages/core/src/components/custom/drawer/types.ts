@@ -1,4 +1,3 @@
-import type { TComponentViewStates } from '../../base/component-view'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from '../../base/modal-layer'
 
 /**
@@ -56,7 +55,7 @@ export interface IDrawerProps extends IModalLayerProps {
 	contained?: boolean
 }
 
-export interface IDrawer extends IModalLayer<IDrawerProps, TDrawerEvents, TComponentViewStates> {
+export interface IDrawer extends IModalLayer<IDrawerProps, TDrawerEvents> {
 	/** У какого края экрана стоит панель */
 	placement: TDrawerPlacement
 	/** За что панель можно утянуть к её краю */

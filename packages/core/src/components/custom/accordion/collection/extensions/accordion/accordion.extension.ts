@@ -9,19 +9,14 @@ import type {
 	IAccordionExtension,
 } from './types'
 import { TAccordionItemExtension, type IAccordionItemExtension } from './item'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TAccordionExtension — расширение коллекции для управления элементами accordion.
  *
  * Получает ссылку на инстанс TAccordion через options.owner. `view` секция
- * читает с него, `size` и `variant` получает резольвером
- * (`bindStyleToOwner`): их диктует accordion, своё значение секции остаётся в
- * `rawValue` и на вид не влияет. `disabled` не диктуется, а сочетается:
- * секция выключена, если выключена сама или выключен accordion
- * (`bindDisabledToOwner`).
+ * читает с него, `size` и `variant` расширение пишет ей значениями accordion
+ * — их диктует он. `disabled` accordion распространяется на секции, как у
+ * `<fieldset>`: выключенный accordion выключает их, включённый — включает.
  *
  * @template TOwner — тип владельца (TAccordion или наследник)
  * @template TItem  — тип элемента (IAccordionItem или наследник)
@@ -63,27 +58,27 @@ export class TAccordionExtension<
 		super.install(ctx)
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item as TItem))
+		// Патч пишет элементу своё из данных — свойства владельца поверх
+		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
+		ctx.driver.valueOf().forEach((item) => this._inheritOwner(item as TItem))
 
-		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
-
-		// `size` и `variant` секции тоже отдаёт резольвер — сообщаем прежний
-		// итог, по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		// Смена у владельца — всем элементам: `disabled` распространяется на них,
+		// как у `<fieldset>`, `size` и `variant` диктует он
+		this._owner.events.on('change:disabled', (value: boolean) => {
+			ctx.driver.valueOf().forEach((item) => {
+				item.disabled = value
+			})
 		})
-
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		this._owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
+		)
+		this._owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
 		)
 
 		// Внешний вид: пробрасываем change:view в item-адаптеры
@@ -92,14 +87,18 @@ export class TAccordionExtension<
 	}
 
 	/**
-	 * Свойства владельца, которые секция получает от него, а не задаёт сама.
-	 *
-	 * Расширение их не пишет: `size` и `variant` диктует accordion
-	 * (`bindStyleToOwner`), `disabled` секция сочетает со своим
-	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
+	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * `disabled` — когда владелец выключен.
 	 */
-	private _applyOwner(item: TItem): void {
-		bindDisabledToOwner(item, this._owner)
-		bindStyleToOwner(item, this._owner)
+	private _inheritOwner(item: TItem): void {
+		this._applyStyle(item)
+
+		if (this._owner.disabled) item.disabled = true
+	}
+
+	/** `size` и `variant` элемента — всегда владельца. */
+	private _applyStyle(item: TItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
 	}
 }

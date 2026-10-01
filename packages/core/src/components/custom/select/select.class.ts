@@ -13,7 +13,6 @@ import type {
 	TSelectEvents,
 	TSelectPanelPlacement,
 	TSelectPlacement,
-	TSelectStates,
 	TSelectValue,
 } from './types'
 
@@ -53,10 +52,9 @@ import type {
 export class TSelect<
 	TProps extends ISelectProps = ISelectProps,
 	TEvents extends TSelectEvents = TSelectEvents,
-	TStates extends TSelectStates = TSelectStates,
 >
-	extends TInputControl<TSelectValue, TProps, TEvents, TStates>
-	implements ISelect<TProps, TEvents, TStates>
+	extends TInputControl<TSelectValue, TProps, TEvents>
+	implements ISelect<TProps, TEvents>
 {
 	static override baseClass = 's-select'
 
@@ -107,7 +105,7 @@ export class TSelect<
 	protected _placement!: TSelectPlacement
 	protected readonly _field: IInput
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TSelect

@@ -2,7 +2,6 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { TThemeRegistry } from '../../../common'
@@ -50,13 +49,10 @@ export interface IRadioGroupProps
 		IRadioGroupComponentProps,
 		IRadioGroupCollectionProps<IRadioGroupItemProps, IRadioGroupItem> {}
 
-export type TRadioGroupStates = TValueControlStates<TRadioGroupValue>
-
 export interface IRadioGroup extends IValueControl<
 	TRadioGroupValue,
 	IRadioGroupProps,
-	TRadioGroupEvents,
-	TRadioGroupStates
+	TRadioGroupEvents
 > {
 	/** Вид радио группы */
 	view: TRadioGroupView | undefined

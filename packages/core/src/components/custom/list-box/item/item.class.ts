@@ -1,14 +1,9 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TStateUnit } from '../../../../common'
-import type { TValuePayload, TEventSink } from '../../../../common'
+import { TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
 import type { TListItemContentFit } from '../../list'
-import type {
-	IListBoxItem,
-	IListBoxItemProps,
-	TListBoxItemEvents,
-	TListBoxItemStates,
-} from './types'
+import type { IListBoxItem, IListBoxItemProps, TListBoxItemEvents } from './types'
 
 /**
  * Элемент списка.
@@ -24,7 +19,7 @@ export default class TListBoxItem<
 	TProps extends IListBoxItemProps = IListBoxItemProps,
 	TEvents extends TListBoxItemEvents = TListBoxItemEvents,
 >
-	extends TValueControl<string | number, TProps, TEvents, TListBoxItemStates>
+	extends TValueControl<string | number, TProps, TEvents>
 	implements IListBoxItem<TProps, TEvents>
 {
 	static override baseClass = 's-list-box-item'
@@ -40,21 +35,17 @@ export default class TListBoxItem<
 
 	protected _contentFit: TListItemContentFit | undefined
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TListBoxItemStates> = {}) {
+	protected _text: string
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TListBoxItem
 		const customProps = props as Partial<IListBoxItemProps>
 
-		this._states.text =
-			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
+		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
-
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._sink.emit('change:text', payload)
-		})
 	}
 
 	/**
@@ -77,11 +68,20 @@ export default class TListBoxItem<
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this._sink.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	get contentFit(): TListItemContentFit | undefined {

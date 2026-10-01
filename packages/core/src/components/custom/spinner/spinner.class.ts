@@ -1,9 +1,8 @@
 import { TStylable } from '../../base/stylable'
-import { TStateUnit } from '../../../common'
 import type { TValuePayload } from '../../../common'
 import type { TComponentSize } from '../../../common/types'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { ISpinner, ISpinnerProps, TSpinnerEvents, TSpinnerStates } from './types'
+import type { ISpinner, ISpinnerProps, TSpinnerEvents } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
 	static override baseClass = 's-spinner'
@@ -16,35 +15,24 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	}
 
 	/**
-	 * Толщина: своё значение — как задано (`'auto'` или число), итог —
-	 * число: при `'auto'` его считает резольвер по размеру.
+	 * Толщина — как задана: `'auto'` или число. Итог отдаёт геттер: при
+	 * `'auto'` — толщину по размеру.
 	 */
-	protected readonly _borderWidth: TStateUnit<number | 'auto'>
+	protected _borderWidth: number | 'auto'
 
-	constructor(
-		props: Partial<ISpinnerProps> = {},
-		options: IComponentOptions<TSpinnerStates> = {},
-	) {
+	constructor(props: Partial<ISpinnerProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TSpinner
 
-		this._borderWidth = new TStateUnit<number | 'auto'>({
-			initial: props.borderWidth ?? ctor.defaultValues.borderWidth,
-			resolver: (own) => (own === 'auto' ? this.calculateBorderWidth() : own),
-		})
+		this._borderWidth = props.borderWidth ?? ctor.defaultValues.borderWidth
 
-		// `change:borderWidth` — смена итога, как у любой единицы с резольвером:
-		// и от записи, и от размера при `'auto'`. Прежний итог — по прежнему размеру
-		this._borderWidth.events.on('change', (payload: TValuePayload<number | 'auto'>) =>
-			this.events.emit('change:borderWidth', payload.newValue),
-		)
+		// `change:borderWidth` — смена итога: и от записи, и от размера при
+		// `'auto'`. Прежний итог — по прежнему размеру
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			const own = this._borderWidth.rawValue
+			if (this._borderWidth !== 'auto') return
 
-			this._borderWidth.notify(
-				own === 'auto' ? this.calculateBorderWidth(payload.oldValue) : own,
-			)
+			this._borderWidthChanged(this.calculateBorderWidth(payload.oldValue))
 		})
 
 		// `role="status"` — вежливая живая область: `aria-live="polite"` и
@@ -59,7 +47,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 
 	/** Итог: при `'auto'` — толщина по размеру (`calculateBorderWidth()`), иначе заданная. */
 	get borderWidth(): number | 'auto' {
-		return this._borderWidth.value
+		return this._borderWidth === 'auto' ? this.calculateBorderWidth() : this._borderWidth
 	}
 
 	/**
@@ -67,7 +55,19 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	 * автоматической толщине, заменяет `'auto'` и переживает смену размера.
 	 */
 	set borderWidth(value: number | 'auto') {
-		this._borderWidth.value = value
+		if (value === this._borderWidth) return
+
+		const before = this.borderWidth
+
+		this._borderWidth = value
+		this._borderWidthChanged(before)
+	}
+
+	/** Итог толщины мог смениться — `change:borderWidth`, если сменился. */
+	private _borderWidthChanged(oldValue: number | 'auto'): void {
+		if (this.borderWidth === oldValue) return
+
+		this.events.emit('change:borderWidth', this.borderWidth)
 	}
 
 	/**
@@ -84,7 +84,7 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	getProps(): ISpinnerProps {
 		return {
 			...super.getProps(),
-			borderWidth: this._borderWidth.rawValue,
+			borderWidth: this._borderWidth,
 		} as ISpinnerProps
 	}
 }

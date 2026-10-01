@@ -1,6 +1,5 @@
 import { TModalLayer } from '../../base/modal-layer'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { TComponentViewStates } from '../../base/component-view'
 import type { TDatasetAttributes } from '../../../common'
 import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwipe } from './types'
 
@@ -34,10 +33,7 @@ import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwi
  * только панель поверх страницы, и для `TScrollLockPlugin` ядро отдаёт это
  * производным значением `locksScroll`, а не флагом в плагине.
  */
-export default class TDrawer
-	extends TModalLayer<IDrawerProps, TDrawerEvents, TComponentViewStates>
-	implements IDrawer
-{
+export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> implements IDrawer {
 	static override baseClass = 's-drawer'
 
 	static defaultValues: typeof TModalLayer.defaultValues &
@@ -55,10 +51,7 @@ export default class TDrawer
 	/** Последнее отданное `locksScroll`: событие — только на его смену. */
 	protected _locksScroll = false
 
-	constructor(
-		props: Partial<IDrawerProps> = {},
-		options: IComponentOptions<TComponentViewStates> = {},
-	) {
+	constructor(props: Partial<IDrawerProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TDrawer

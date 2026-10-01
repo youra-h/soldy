@@ -393,14 +393,24 @@ describe('Select', () => {
  * Типы пропсов и событий дескриптор не повторяет: `defineComponent` берёт их у
  * класса ядра. События — его карта, суженная до опубликованных имён: у
  * визуальных классов в неё не входит `change:present` (см.
- * `descriptor-events.spec.ts`). Проверки — `expectTypeOf`, их ловит шаг CI
+ * `descriptor-events.spec.ts`), а события записи `change:<x>:before` —
+ * поверхность инстанса, дескриптор их не публикует. Проверки — `expectTypeOf`, их ловит шаг CI
  * «Типы — Setup».
  */
 describe('типы пропсов и событий выводятся из класса ядра', () => {
 	it('Button — интерфейсы TButton', () => {
 		expectTypeOf<DescriptorProps<typeof ButtonDescriptor>>().toEqualTypeOf<IButtonProps>()
 		expectTypeOf<DescriptorEvents<typeof ButtonDescriptor>>().toEqualTypeOf<
-			Omit<TButtonEvents, 'change:present'>
+			Omit<
+				TButtonEvents,
+				| 'change:present'
+				| 'change:rendered:before'
+				| 'change:size:before'
+				| 'change:variant:before'
+				| 'change:disabled:before'
+				| 'change:focused:before'
+				| 'change:text:before'
+			>
 		>()
 	})
 
@@ -409,7 +419,7 @@ describe('типы пропсов и событий выводятся из кл
 			DescriptorProps<typeof ComponentViewDescriptor>
 		>().toEqualTypeOf<IComponentViewProps>()
 		expectTypeOf<DescriptorEvents<typeof ComponentViewDescriptor>>().toEqualTypeOf<
-			Omit<TComponentViewEvents, 'change:present'>
+			Omit<TComponentViewEvents, 'change:present' | 'change:rendered:before'>
 		>()
 	})
 

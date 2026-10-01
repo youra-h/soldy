@@ -2,7 +2,6 @@ import type {
 	IComponentView,
 	IComponentViewProps,
 	TComponentViewEvents,
-	TComponentViewStates,
 } from '../../../base/component-view'
 
 export type TTabsContentEvents = TComponentViewEvents & {
@@ -15,13 +14,10 @@ export interface ITabsContentProps extends IComponentViewProps {
 	value?: string | number
 }
 
-export type TTabsContentStates = TComponentViewStates
-
 export interface ITabsContent<
 	TProps extends ITabsContentProps = ITabsContentProps,
 	TEvents extends TTabsContentEvents = TTabsContentEvents,
-	TStates extends TTabsContentStates = TTabsContentStates,
-> extends IComponentView<TProps, TEvents, TStates> {
+> extends IComponentView<TProps, TEvents> {
 	/** Значение таба, к которому привязана панель */
 	value: string | number
 }

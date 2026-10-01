@@ -249,14 +249,15 @@ describe('выключенный тег не закрывается', () => {
 		expect(changed).toHaveBeenCalledTimes(2)
 	})
 
-	it('включили набор — тег, выключенный сам, по-прежнему не закрывается', () => {
+	it('включили набор — включён и тег, и он снова закрывается', () => {
 		const { owner, engine, closable } = setup()
 		const tag = engine.extensions.plain.push(createTag('Архив', { disabled: true }))
 
 		owner.disabled = true
 		owner.disabled = false
 
-		expect(closable(tag)).toBe(false)
+		expect(tag.disabled).toBe(false)
+		expect(closable(tag)).toBe(true)
 	})
 
 	it('включение возвращает своё значение тега, заданное после создания', () => {

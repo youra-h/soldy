@@ -61,11 +61,10 @@ describe('TComponent — невизуальная база', () => {
 		expect('hide' in c).toBe(false)
 	})
 
-	it('даёт события и реестр состояний', () => {
+	it('даёт события', () => {
 		const c = new TComponent()
 
 		expect(c.events).toBeDefined()
-		expect(c.states).toBeDefined()
 	})
 
 	it('TDragAndDrop — невизуальный, свойств отображения нет', () => {

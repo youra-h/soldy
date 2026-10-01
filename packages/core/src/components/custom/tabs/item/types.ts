@@ -2,9 +2,8 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../../base/value-control'
-import type { IStateUnit, TValuePayload, TAriaAttributes } from '../../../../common'
+import type { TChangeEvent, TValuePayload, TAriaAttributes } from '../../../../common'
 import type { IComponentOptions } from '../../../base/component'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
@@ -13,8 +12,12 @@ import type { ITabsCollectionItemProps } from '../collection/types'
 export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
+	/** Запись своего `text` — подправить или отменить (`TChangeEvent`) */
+	'change:text:before': (e: TChangeEvent<string>) => void
 	/** change:closable */
 	'change:closable': (value: boolean | undefined) => void
+	/** Запись своего `closable` — подправить или отменить (`TChangeEvent`) */
+	'change:closable:before': (e: TChangeEvent<boolean | undefined>) => void
 	/** change:closeLabel */
 	'change:closeLabel': (value: string) => void
 }
@@ -29,16 +32,10 @@ export interface ITabsItemProps
 	closeLabel?: string
 }
 
-export type TTabsItemStates = TValueControlStates<string | number> & {
-	text: IStateUnit<string>
-	closable: IStateUnit<boolean | undefined>
-}
-
 export interface ITabsItem<
 	TProps extends ITabsItemProps = ITabsItemProps,
 	TEvents extends TTabsItemEvents<any> = TTabsItemEvents,
-	TStates extends TTabsItemStates = TTabsItemStates,
-> extends IValueControl<string | number, TProps, TEvents, TStates> {
+> extends IValueControl<string | number, TProps, TEvents> {
 	/** Текст таба */
 	text: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
@@ -49,4 +46,4 @@ export interface ITabsItem<
 	readonly closeAria: TAriaAttributes
 }
 
-export type TTabsItemOptions = IComponentOptions<TTabsItemStates>
+export type TTabsItemOptions = IComponentOptions

@@ -18,18 +18,13 @@ import type {
 	ITabsExtension,
 } from './types'
 import { TTabsItemExtension, type ITabsItemExtension } from './item'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 
 /**
  * TTabsExtension — расширение коллекции для управления табами.
  *
  * Получает ссылку на инстанс TTabs через options.owner. `size` и `variant`
- * таб получает резольвером (`bindStyleToOwner`): их диктует набор, своё
- * значение таба остаётся в `rawValue` и на вид не влияет. `disabled` не
- * диктуется, а сочетается: таб выключен, если выключен сам или выключен
- * набор (`bindDisabledToOwner`).
+ * расширение пишет табу значениями набора — их диктует он. `disabled`
+ * набора распространяется на табы, как у `<fieldset>`.
  *
  * @template TOwner — тип владельца (TTabs или наследник)
  * @template TItem  — тип элемента таба (ITabsItem или наследник)
@@ -86,27 +81,28 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 		})
 
 		// При добавлении элемента — пробрасываем текущие свойства владельца
-		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
+		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item as TItem))
 
 		// Догон: расширение приходит в коллекцию, которую могли наполнить
 		// раньше — например, собрав её снаружи через `createEngine({ items })`.
 		// Тем элементам `item:added` уже не придёт
-		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
+		ctx.driver.valueOf().forEach((item) => this._inheritOwner(item))
 
-		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Патч пишет элементу своё из данных — свойства владельца поверх
+		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// `size` и `variant` табу тоже отдаёт резольвер — сообщаем прежний итог,
-		// по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		// Смена у владельца — всем элементам: `disabled` распространяется на них,
+		// как у `<fieldset>`, `size` и `variant` диктует он
+		this._owner.events.on('change:disabled', (value: boolean) => {
+			ctx.driver.valueOf().forEach((item) => {
+				item.disabled = value
+			})
 		})
-
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		this._owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
+		)
+		this._owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
 		)
 
 		// Глобальный closable: пробрасываем change:closable в item-адаптеры
@@ -172,15 +168,19 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	/**
-	 * Свойства владельца, которые таб получает от него, а не задаёт сам.
-	 *
-	 * Расширение их не пишет: `size` и `variant` диктует набор
-	 * (`bindStyleToOwner`), `disabled` таб сочетает со своим
-	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
+	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * `disabled` — когда владелец выключен.
 	 */
-	private _applyOwner(item: TItem): void {
-		bindDisabledToOwner(item, this._owner)
-		bindStyleToOwner(item, this._owner)
+	private _inheritOwner(item: TItem): void {
+		this._applyStyle(item)
+
+		if (this._owner.disabled) item.disabled = true
+	}
+
+	/** `size` и `variant` элемента — всегда владельца. */
+	private _applyStyle(item: TItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
 	}
 
 	/**

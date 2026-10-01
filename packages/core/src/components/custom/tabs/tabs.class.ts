@@ -4,7 +4,6 @@ import type {
 	ITabs,
 	ITabsProps,
 	TTabsEvents,
-	TTabsStates,
 	TTabsOrientation,
 	TTabsAlignment,
 	TTabsPosition,
@@ -15,7 +14,7 @@ import type {
  * Компонент табов (TTabs).
  * Управляет коллекцией табов на базе TCollectionEngine с расширениями (Plain, Batch, Selection).
  */
-export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implements ITabs {
+export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
 	static override baseClass = 's-tabs'
 
 	static defaultValues: typeof TControl.defaultValues &
@@ -35,7 +34,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents, TTabsStates> implem
 	protected _view: TTabsView | undefined
 	protected _closable!: boolean
 
-	constructor(props: Partial<ITabsProps> = {}, options: IComponentOptions<TTabsStates> = {}) {
+	constructor(props: Partial<ITabsProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTabs

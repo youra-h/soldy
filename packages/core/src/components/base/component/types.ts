@@ -80,27 +80,18 @@ export type TDefaultValues<
 	TUndefined extends keyof TProps = never,
 > = Required<Pick<TProps, TDefaulted>> & { [K in TUndefined & string]: TProps[K] | undefined }
 
-export type TComponentStates = Record<string, unknown>
-
 export interface IComponent<
 	TProps extends IComponentProps = IComponentProps,
 	TEvents extends TAnyEvents = TComponentEvents,
-	TStates extends TComponentStates = TComponentStates,
 > extends IEntity<TProps> {
 	readonly events: TEvented<TEvents>
-	readonly states: TStates
 }
 
 /**
  * Внутренние настройки компонента (второй аргумент конструктора).
- * states — инъекция state-реализаций, idBase — основа `id` в DOM.
+ * idBase — основа `id` в DOM.
  */
-export interface IComponentOptions<TStates = any> {
-	/**
-	 * Инъекция state-реализаций.
-	 * Нужна, чтобы менять поведение state свойств без оверрайда геттеров/сеттеров.
-	 */
-	states?: Partial<TStates>
+export interface IComponentOptions {
 	/**
 	 * Основа `id`, которые экземпляр пишет в DOM (`IComponentView.idBase`).
 	 * Читает её визуальный слой; пустая строка — то же, что не задана.

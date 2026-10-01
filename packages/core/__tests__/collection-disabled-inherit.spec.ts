@@ -1,12 +1,10 @@
 /**
- * «Выключено» элемента коллекции: своё **или** владельца.
- *
- * Список, собранный данными (`items` сразу при создании), терял собственное
- * `disabled` элемента: владельческое расширение при добавлении писало элементу
- * значение списка. В разметке состояние выживало случайно — его возвращал
- * биндинг уже после регистрации в списке. Теперь правило одно
- * (`bindDisabledToOwner`): своё значение лежит в `rawValue`, итог отдаёт
- * резольвер, и расширения `item.disabled` не пишут.
+ * `disabled` владельца коллекции распространяется на элементы, как у
+ * `<fieldset>`: выключенный владелец выключает их, включённый — включает.
+ * Пишет его расширение коллекции в обычный `item.disabled`: при добавлении —
+ * только если владелец выключен, иначе собственное «выключено» элемента из
+ * `items` пропадало бы сразу; на смену у владельца — всем; на `batch.patch` —
+ * поверх данных.
  *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
@@ -176,9 +174,8 @@ const cases: TCase[] = [
 	},
 ]
 
-describe.each(cases)('$name · disabled элемента: своё или владельца', ({ build }) => {
-	/** Воспроизведение из задачи. */
-	it('свой disabled из items сохраняется, сосед включён', () => {
+describe.each(cases)('$name · disabled владельца распространяется на элементы', ({ build }) => {
+	it('свой disabled из items сохраняется, пока владелец включён', () => {
 		const { item } = build({
 			disabled: false,
 			items: [{ value: 'a', disabled: true }, { value: 'b' }],
@@ -190,7 +187,7 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		expect(item('b').dataset.get('disabled')).toBe('false')
 	})
 
-	it('владелец выключает всех, а включение возвращает каждому своё', () => {
+	it('выключенный владелец выключает всех, включённый — включает всех', () => {
 		const { owner, item } = build({
 			disabled: false,
 			items: [{ value: 'a', disabled: true }, { value: 'b' }],
@@ -204,13 +201,12 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 
 		owner.disabled = false
 
-		expect(item('a').disabled).toBe(true)
-		expect(item('a').dataset.get('disabled')).toBe('true')
+		expect(item('a').disabled).toBe(false)
 		expect(item('b').disabled).toBe(false)
 		expect(item('b').dataset.get('disabled')).toBe('false')
 	})
 
-	it('собранные и вставленные в выключенного владельца выключены, пока выключен он', () => {
+	it('собранные и вставленные в выключенного владельца выключены', () => {
 		const { owner, item, push } = build({ disabled: true, items: [{ value: 'a' }] })
 		const pushed = push({ value: 'b' })
 
@@ -226,38 +222,18 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 		expect(pushed.dataset.get('disabled')).toBe('false')
 	})
 
-	/**
-	 * Итог уже `true`, но своё значение обязано записаться: сеттер сравнивает
-	 * со своим, а не с итогом, иначе оно пропало бы при включении владельца.
-	 */
-	it('своё disabled = true при выключенном владельце переживает его включение', () => {
-		const { owner, item } = build({ disabled: true, items: [{ value: 'a' }, { value: 'b' }] })
-
-		item('a').disabled = true
-		owner.disabled = false
-
-		expect(item('a').disabled).toBe(true)
-		expect(item('a').dataset.get('disabled')).toBe('true')
-		expect(item('b').disabled).toBe(false)
-	})
-
-	it('то же, когда своё приходит через batch.patch', () => {
-		const { owner, item, patch } = build({
-			disabled: true,
-			items: [{ value: 'a' }, { value: 'b' }],
-		})
+	it('batch.patch не включает элемент выключенного владельца', () => {
+		const { item, patch } = build({ disabled: true, items: [{ value: 'a' }] })
 		const a = item('a')
 
-		patch([{ value: 'a', disabled: true }, { value: 'b' }])
-		owner.disabled = false
+		patch([{ value: 'a', disabled: false }])
 
 		// Патч обновил тот же элемент, а не заменил его
 		expect(item('a')).toBe(a)
 		expect(a.disabled).toBe(true)
-		expect(item('b').disabled).toBe(false)
 	})
 
-	it('change:disabled — одно на смену итога, у выключенного самим собой — ни одного', () => {
+	it('change:disabled — только тем, у кого значение сменилось', () => {
 		const { owner, item } = build({
 			disabled: false,
 			items: [{ value: 'a', disabled: true }, { value: 'b' }],
@@ -270,19 +246,14 @@ describe.each(cases)('$name · disabled элемента: своё или вла
 
 		owner.disabled = true
 
+		expect(own).not.toHaveBeenCalled()
 		expect(inherited).toHaveBeenCalledOnce()
 		expect(inherited).toHaveBeenLastCalledWith(true)
 
-		// Своё `true` при выключенном владельце итога не меняет — события нет
-		item('b').disabled = true
-		item('b').disabled = false
-
-		expect(inherited).toHaveBeenCalledOnce()
-
 		owner.disabled = false
 
+		expect(own).toHaveBeenCalledOnce()
 		expect(inherited).toHaveBeenCalledTimes(2)
 		expect(inherited).toHaveBeenLastCalledWith(false)
-		expect(own).not.toHaveBeenCalled()
 	})
 })

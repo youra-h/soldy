@@ -1,4 +1,3 @@
-import type { TComponentViewStates } from '../../base/component-view'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from '../../base/modal-layer'
 import type { TAriaAttributes } from '../../../common'
 
@@ -61,7 +60,7 @@ export interface IDialogProps extends IModalLayerProps {
 	alert?: boolean
 }
 
-export interface IDialog extends IModalLayer<IDialogProps, TDialogEvents, TComponentViewStates> {
+export interface IDialog extends IModalLayer<IDialogProps, TDialogEvents> {
 	/** Где окно стоит на экране */
 	placement: TDialogPlacement
 	/** Отступ окна от краёв экрана; `undefined` — отступ темы, `0` — вплотную */

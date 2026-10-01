@@ -2,7 +2,6 @@ import type {
 	IValueControl,
 	IValueControlProps,
 	TValueControlEvents,
-	TValueControlStates,
 } from '../../base/value-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
 import type { IList, IListProps, TListEvents } from '../list'
@@ -49,14 +48,11 @@ export interface IListBoxComponentProps extends IValueControlProps<TListBoxValue
 export interface IListBoxProps
 	extends IListBoxComponentProps, IListBoxCollectionProps<IListBoxItemProps, IListBoxItem> {}
 
-export type TListBoxStates = TValueControlStates<TListBoxValue>
-
 export interface IListBox<
 	TProps extends IListBoxComponentProps = IListBoxProps,
 	TEvents extends TListBoxEvents = TListBoxEvents,
-	TStates extends TListBoxStates = TListBoxStates,
 >
-	extends IValueControl<TListBoxValue, TProps, TEvents, TStates>, IList {
+	extends IValueControl<TListBoxValue, TProps, TEvents>, IList {
 	/** Внешний вид компонента */
 	view: TListBoxView | undefined
 }

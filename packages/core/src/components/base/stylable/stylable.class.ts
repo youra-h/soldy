@@ -1,26 +1,19 @@
-import { TStateUnit } from '../../../common'
-import type { TComponentSize, TComponentVariant, TValuePayload, TEventSink } from '../../../common'
+import { TChangeEvent } from '../../../common'
+import type { TComponentSize, TComponentVariant, TEventSink } from '../../../common'
 import { TComponentView } from '../component-view'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type { IStylableProps, TStylableEvents, TStylableStates } from './types'
+import type { IStylableProps, TStylableEvents } from './types'
 
 /**
  * Слой "stylable": унифицированные `size` и `variant`.
  *
- * Раньше эти свойства жили в `TControl`/`TControlInput`.
- * Здесь они вынесены в отдельный слой + state-units.
- *
  * `size` — шкала библиотеки: её читает `shiftSize`. `variant` — значение темы
  * (`IComponentVariants`): по умолчанию его нет, и модификатора нет тоже.
- *
- * У элемента коллекции оба итога диктует владелец (`bindStyleToOwner`): своё
- * значение остаётся в `rawValue` и на вид не влияет.
  */
 export default class TStylable<
 	TProps extends IStylableProps = IStylableProps,
 	TEvents extends TStylableEvents = TStylableEvents,
-	TStates extends TStylableStates = TStylableStates,
-> extends TComponentView<TProps, TEvents, TStates> {
+> extends TComponentView<TProps, TEvents> {
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<IStylableProps, 'size', 'variant'> = {
 		...TComponentView.defaultValues,
@@ -28,48 +21,19 @@ export default class TStylable<
 		variant: undefined,
 	}
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	protected _size: TComponentSize
+	protected _variant: TComponentVariant | undefined
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TStylable
 
-		this._states.size =
-			options.states?.size ??
-			new TStateUnit<TComponentSize>({
-				initial: props.size ?? ctor.defaultValues.size,
-			})
+		this._size = props.size ?? ctor.defaultValues.size
+		this._variant = props.variant ?? ctor.defaultValues.variant
 
-		this._states.size.events.on('change', (payload: TValuePayload<TComponentSize>) => {
-			this._classes.swapClass({
-				oldClass: `--size-${payload.oldValue}`,
-				newClass: `--size-${payload.newValue}`,
-			})
-			this._sink.emit('change:size', payload)
-		})
-
-		this._classes.add(`--size-${this._states.size.value}`)
-
-		this._states.variant =
-			options.states?.variant ??
-			new TStateUnit<TComponentVariant | undefined>({
-				initial: props.variant ?? ctor.defaultValues.variant,
-			})
-
-		// `swap`, а не `swapClass` с шаблонной строкой: значения может не быть, и
-		// шаблон дал бы класс `--variant-undefined`.
-		this._states.variant.events.on(
-			'change',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				this._classes.swap({
-					prefix: '--variant-',
-					oldValue: payload.oldValue,
-					newValue: payload.newValue,
-				})
-				this._sink.emit('change:variant', payload)
-			},
-		)
-
-		this._classes.swap({ prefix: '--variant-', newValue: this._states.variant.value })
+		this._classes.add(`--size-${this._size}`)
+		this._classes.swap({ prefix: '--variant-', newValue: this._variant })
 	}
 
 	/**
@@ -80,32 +44,44 @@ export default class TStylable<
 		return this.events
 	}
 
-	/** Итог: у элемента коллекции — размер владельца (`bindStyleToOwner`), у остальных — свой. */
 	get size(): TComponentSize {
-		return this._states.size.value
+		return this._size
+	}
+
+	set size(value: TComponentSize) {
+		if (value === this._size) return
+
+		const e = new TChangeEvent(value, this._size)
+
+		this._sink.emit('change:size:before', e)
+
+		if (e.defaultPrevented || e.value === this._size) return
+
+		this._classes.swapClass({ oldClass: `--size-${e.oldValue}`, newClass: `--size-${e.value}` })
+		this._size = e.value
+		this._sink.emit('change:size', { newValue: e.value, oldValue: e.oldValue })
+	}
+
+	get variant(): TComponentVariant | undefined {
+		return this._variant
 	}
 
 	/**
-	 * Пишет своё значение. Сравнивает со своим (`rawValue`), а не с итогом:
-	 * у элемента коллекции итог — размер владельца, и своё иначе не доехало бы
-	 * даже до `rawValue`.
+	 * `swap`, а не `swapClass` с шаблонной строкой: значения может не быть, и
+	 * шаблон дал бы `--variant-undefined`.
 	 */
-	set size(value: TComponentSize) {
-		if (value === this._states.size.rawValue) return
-
-		this._states.size.value = value
-	}
-
-	/** Итог: у элемента коллекции — вид владельца (`bindStyleToOwner`), у остальных — свой. */
-	get variant(): TComponentVariant | undefined {
-		return this._states.variant.value
-	}
-
-	/** Пишет своё значение, сравнивая со своим (`rawValue`), — как `size`. */
 	set variant(value: TComponentVariant | undefined) {
-		if (value === this._states.variant.rawValue) return
+		if (value === this._variant) return
 
-		this._states.variant.value = value
+		const e = new TChangeEvent(value, this._variant)
+
+		this._sink.emit('change:variant:before', e)
+
+		if (e.defaultPrevented || e.value === this._variant) return
+
+		this._classes.swap({ prefix: '--variant-', oldValue: e.oldValue, newValue: e.value })
+		this._variant = e.value
+		this._sink.emit('change:variant', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	getProps(): TProps {

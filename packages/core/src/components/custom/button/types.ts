@@ -1,9 +1,4 @@
-import type {
-	ITextable,
-	ITextableProps,
-	TTextableEvents,
-	TTextableStates,
-} from '../../base/textable'
+import type { ITextable, ITextableProps, TTextableEvents } from '../../base/textable'
 import type { TComponentVariant, TThemeRegistry } from '../../../common'
 
 /**
@@ -26,8 +21,6 @@ export interface IButtonProps extends ITextableProps {
 export type TButtonEvents = TTextableEvents & {
 	'change:view': (value: TButtonView | undefined) => void
 }
-
-export type TButtonStates = TTextableStates
 
 export interface IButton extends ITextable<IButtonProps, TButtonEvents> {
 	view: TButtonView | undefined
