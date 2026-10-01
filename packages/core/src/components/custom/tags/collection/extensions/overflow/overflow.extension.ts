@@ -9,11 +9,8 @@ import { TPopover } from '../../../../popover'
 import type { IPopover } from '../../../../popover'
 import type { ITags } from '../../../types'
 import type { ITagsItem } from '../../../item/types'
-import type {
-	ITagsOverflowExtension,
-	ITagsOverflowExtensionOptions,
-	TTagsOverflowExtensionEvents,
-} from './types'
+import type { ITagsOverflowExtension, TTagsOverflowExtensionEvents } from './types'
+import type { TTagsEngineOptions } from '../tags'
 
 /**
  * TTagsOverflowExtension — что делать с тегами, которым не хватило ширины ряда.
@@ -35,17 +32,19 @@ import type {
  * Панель — готовый `TPopover`, и создаёт его расширение, а не разметка. Тогда
  * «закрыли из панели последний тег → панель закрылась» решается в ядре, один
  * раз на шесть адаптеров, а не привязкой в шаблоне каждого.
+ *
+ * Режим держит владелец — опция движка (`owner`): он приходит и уходит после
+ * сборки, и расширение наблюдает его. Владельца нет — режима `popover` тоже.
  */
 export class TTagsOverflowExtension<
 	TOwner extends ITags = ITags,
 	TItem extends ITagsItem = ITagsItem,
 >
-	extends TBaseExtension<TItem, TTagsOverflowExtensionEvents>
+	extends TBaseExtension<TItem, TTagsOverflowExtensionEvents, TTagsEngineOptions<TOwner>>
 	implements IExtension<TItem>, ITagsOverflowExtension<TItem>
 {
 	readonly name = 'overflow' as const
 
-	private readonly _owner: TOwner
 	private _panel: IPopover | null = null
 
 	/**
@@ -56,22 +55,19 @@ export class TTagsOverflowExtension<
 	 */
 	private _fit = Number.POSITIVE_INFINITY
 
-	constructor(options: ITagsOverflowExtensionOptions<TOwner>) {
-		super()
-
-		this._owner = options.owner
-	}
-
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TTagsEngineOptions<TOwner>>): void {
 		super.install(ctx)
-
-		this._owner.events.on('change:overflow', () => this._syncMode())
 
 		// Состав сменился — делить надо заново. `change:shown` приходит и на
 		// смену состава, и на устаревшую выборку — ровно то, что рисует ряд
 		this._batch?.events.on('change:shown', () => this._sync())
 
-		this._syncMode()
+		// Режим — владельца: сменился владелец или его режим — панель по нему
+		ctx.options.watch('owner', (owner, scope) => {
+			this._syncMode()
+
+			if (owner) scope.on(owner.events, 'change:overflow', () => this._syncMode())
+		})
 	}
 
 	/** Теги ряда: вне `popover` — всё показанное. */
@@ -140,7 +136,7 @@ export class TTagsOverflowExtension<
 
 	/** Панель живёт, только пока режим `popover`. */
 	private _syncMode(): void {
-		const needed = this._owner.overflow === 'popover'
+		const needed = this._ctx.options.get('owner')?.overflow === 'popover'
 
 		if (needed === (this._panel !== null)) return
 

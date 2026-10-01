@@ -42,7 +42,7 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, calendarExtensions(options.owner)),
+					completeEngine(options.engine, calendarExtensions()),
 					options.owner,
 				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
 				owner: options.owner,

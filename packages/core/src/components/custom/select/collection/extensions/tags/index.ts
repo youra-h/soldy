@@ -1,6 +1,2 @@
 export { TSelectTagsExtension } from './tags.extension'
-export type {
-	ISelectTagsExtension,
-	ISelectTagsExtensionOptions,
-	TSelectTagsExtensionEvents,
-} from './types'
+export type { ISelectTagsExtension, TSelectTagsExtensionEvents } from './types'

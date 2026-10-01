@@ -116,9 +116,16 @@ describe('без аргументов', () => {
 		)
 	})
 
-	it('createEngineCalendar без владельца падает — дням нужен календарь', () => {
-		// @ts-expect-error — владелец обязателен и в типе
-		expect(() => createEngineCalendar({})).toThrow(/owner/)
+	it('createEngineCalendar без владельца — движок собран, дней нет: они от календаря', () => {
+		const engine = createEngineCalendar()
+
+		expect(engine.extensions.view).toBeDefined()
+		expect(engine.extensions.batch.items).toHaveLength(0)
+		expect(engine.extensions.view.grids).toEqual([])
+
+		engine.options.set({ owner: new TCalendar({ months: ['2026-09-01'] }) })
+
+		expect(engine.extensions.batch.items).toHaveLength(30)
 	})
 })
 

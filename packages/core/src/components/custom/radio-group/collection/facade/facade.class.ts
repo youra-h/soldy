@@ -32,7 +32,7 @@ export class TRadioGroupCollectionFacade extends TActivationCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, radioGroupExtensions(options.owner)),
+					completeEngine(options.engine, radioGroupExtensions()),
 					options.owner,
 				) as TRadioGroupCollection,
 				owner: options.owner,

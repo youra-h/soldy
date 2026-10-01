@@ -1,4 +1,5 @@
 import type {
+	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionContext,
 	ISelectionExtension,
@@ -12,7 +13,7 @@ import type { ITagsItem } from '../../../item/types'
 import type { ITags } from '../../../types'
 import type {
 	TTagsExtensionEvents,
-	ITagsExtensionOptions,
+	TTagsEngineOptions,
 	TTagsExtensions,
 	ITagsExtension,
 } from './types'
@@ -21,6 +22,9 @@ import type { ITagsOverflowExtension } from '../overflow'
 
 /**
  * TTagsExtension — то, что тег знает благодаря коллекции.
+ *
+ * Владелец — опция движка (`owner`): он приходит и уходит после сборки, и
+ * расширение наблюдает его (`ctx.options.watch`).
  *
  * Четыре обязанности:
  *
@@ -49,12 +53,16 @@ import type { ITagsOverflowExtension } from '../overflow'
  * элементе была бы вторым путём к тем же данным.
  */
 export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsItem = ITagsItem>
-	extends TBaseOwnerItemExtension<TItem, ITagsItemExtension<TItem>, TTagsExtensionEvents>
+	extends TBaseOwnerItemExtension<
+		TItem,
+		ITagsItemExtension<TItem>,
+		TTagsExtensionEvents,
+		TTagsEngineOptions<TOwner>
+	>
 	implements IExtension<TItem>, ITagsExtension<TItem>
 {
 	readonly name = 'tags' as const
 
-	private readonly _owner: TOwner
 	private _itemRegistry!: TItemContextRegistry<TItem, TTagsExtensions<TItem>>
 
 	/**
@@ -68,18 +76,16 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 */
 	private _focused: TItem | undefined
 
-	constructor(options: ITagsExtensionOptions<TOwner, TItem>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ITagsItemExtension<TItem>>) {
 		super(TTagsItemExtension, options)
-
-		this._owner = options.owner
 	}
 
-	/** Глобальный closable с инстанса TTags. */
+	/** Глобальный closable с инстанса TTags. Владельца нет — закрывать нельзя. */
 	get closable(): boolean {
-		return this._owner.closable
+		return this._ctx.options.get('owner')?.closable ?? false
 	}
 
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TTagsEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
 		this._itemRegistry = new TItemContextRegistry({
@@ -87,33 +93,11 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 			driver: ctx.driver,
 		})
 
+		// При добавлении элемента — свойства владельца, если он есть
 		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item as TItem))
-
-		// Догон: расширение приходит в коллекцию, которую могли наполнить
-		// раньше — например, собрав её снаружи через `createEngine({ items })`.
-		// Тем элементам `item:added` уже не придёт
-		ctx.driver.valueOf().forEach((item) => this._inheritOwner(item))
 
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
-
-		// Смена у владельца — всем элементам: `disabled` распространяется на них,
-		// как у `<fieldset>`, `size` и `variant` диктует он
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
-		this._owner.events.on('change:size', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-		this._owner.events.on('change:variant', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-
-		// Глобальный closable: пробрасываем change:closable в item-адаптеры
-		// (TTagsItemExtension резолвит closable из item ?? owner)
-		this.events.relay(this._owner.events, ['change:closable'])
 
 		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
 
@@ -140,22 +124,66 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		this._overflow?.events.on('change:fit', () => this._syncTabStop())
 
 		this._syncTabStop()
+
+		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился владелец, прежние сняты
+		let closable = this.closable
+
+		ctx.options.watch('owner', (owner, scope) => {
+			// `closable` тегов читают из расширения — сообщить, если он сменился
+			// вместе с владельцем
+			if (closable !== this.closable) {
+				closable = this.closable
+				this.events.emit('change:closable', closable)
+			}
+
+			if (!owner) return
+
+			// Догон: элементы, лежавшие до прихода владельца, и роль его ряда
+			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item))
+			this._applyMode()
+
+			// Смена у владельца — всем элементам: `disabled` распространяется на
+			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			scope.on(owner.events, 'change:disabled', (value: boolean) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.disabled = value
+				})
+			})
+			scope.on(owner.events, 'change:size', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+			scope.on(owner.events, 'change:variant', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+
+			// Глобальный closable — в item-адаптеры (TTagsItemExtension резолвит
+			// closable из item ?? owner)
+			scope.on(owner.events, 'change:closable', (value: boolean) => {
+				closable = value
+				this.events.emit('change:closable', value)
+			})
+		})
 	}
 
 	/**
 	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
-	 * `disabled` — когда владелец выключен.
+	 * `disabled` — когда владелец выключен. Владельца нет — элемент со своим.
 	 */
 	private _inheritOwner(item: TItem): void {
-		this._applyStyle(item)
+		const owner = this._ctx.options.get('owner')
 
-		if (this._owner.disabled) item.disabled = true
+		if (!owner) return
+
+		this._applyStyle(item, owner)
+
+		if (owner.disabled) item.disabled = true
 	}
 
 	/** `size` и `variant` элемента — всегда владельца. */
-	private _applyStyle(item: TItem): void {
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+	private _applyStyle(item: TItem, owner: TOwner): void {
+		item.size = owner.size
+		item.variant = owner.variant
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
@@ -179,7 +207,8 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	 * `setRowAria`: в `arrows` рядом становится вьюпорт ленты, и место
 	 * выбирает Tags. Он же переносит их на смене режима — подписываться на неё
 	 * расширению не нужно. Что написал потребитель (`aria-label`), не трогаем:
-	 * это его знание о корне.
+	 * это его знание о корне. Владельца нет — ряда тоже, роли пишутся только
+	 * тегам.
 	 */
 	private _applyMode(): void {
 		const selection = this._selection
@@ -187,10 +216,13 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 		if (!selection) return
 
 		const selecting = selection.mode !== 'none'
+		const owner = this._ctx.options.get('owner')
 
-		this._owner.setRowAria('role', selecting ? 'listbox' : 'list')
-		this._owner.setRowAria('aria-orientation', selecting ? 'horizontal' : null)
-		this._owner.setRowAria('aria-multiselectable', selection.multiple ? 'true' : null)
+		if (owner) {
+			owner.setRowAria('role', selecting ? 'listbox' : 'list')
+			owner.setRowAria('aria-orientation', selecting ? 'horizontal' : null)
+			owner.setRowAria('aria-multiselectable', selection.multiple ? 'true' : null)
+		}
 
 		this._ctx.driver.valueOf().forEach((item) => this._applyItemRole(item, selection))
 	}

@@ -6,11 +6,12 @@ import type { ITags } from '../types'
 import type { ITagsItem } from '../item/types'
 
 /**
- * Коллекция Tags целиком. `owner` необязателен: без него детали владельца не
- * ставятся — их доставит `<Tags>`, когда движок передадут компоненту.
+ * Коллекция Tags целиком. `owner` необязателен: владелец — опция движка, его
+ * пишет `<Tags>`, когда движок передадут компоненту, или код —
+ * `engine.options.set({ owner })`.
  */
 export function createEngineTags(
 	options: TCreateEngineOptions<ITagsItem> & { owner?: ITags } = {},
 ): TTagsCollection {
-	return createComponentEngine(tagsExtensions, options)
+	return createComponentEngine(tagsExtensions(), options)
 }

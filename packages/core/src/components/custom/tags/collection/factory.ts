@@ -16,8 +16,8 @@ import type { ITags } from './../types'
  * отображённый тегами). Дефолт самого `TSelectionExtension` не трогаем —
  * переопределение только здесь.
  */
-export function tagsExtensions(owner?: ITags): TExtensionSet<ITagsItem> {
-	const set: TExtensionSet<ITagsItem> = {
+export function tagsExtensions(): TExtensionSet<ITagsItem> {
+	return {
 		...selectionExtensions<ITagsItem>(TTagsItem),
 		selection: () => {
 			const selection = new TSelectionExtension<ITagsItem>()
@@ -26,16 +26,12 @@ export function tagsExtensions(owner?: ITags): TExtensionSet<ITagsItem> {
 
 			return selection
 		},
-	}
 
-	if (owner) {
 		// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
-		set.value = () => new TValueSelectionExtension<ITags, ITagsItem>({ owner })
+		value: () => new TValueSelectionExtension<ITags, ITagsItem>(),
 		// Деление на ряд и панель: режим держит владелец, состав — коллекция.
 		// До `tags`: остановку Tab тот считает по тегам ряда и слушает деление
-		set.overflow = () => new TTagsOverflowExtension({ owner })
-		set.tags = () => new TTagsExtension({ owner })
+		overflow: () => new TTagsOverflowExtension(),
+		tags: () => new TTagsExtension(),
 	}
-
-	return set
 }

@@ -47,7 +47,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, selectExtensions(options.owner)),
+					completeEngine(options.engine, selectExtensions()),
 					options.owner,
 				) as TSelectCollection,
 				owner: options.owner,
@@ -103,7 +103,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 	get list_aria(): Record<string, string | null> {
 		return {
 			role: 'listbox',
-			id: this._select.listId,
+			id: this._select.listId ?? null,
 			'aria-multiselectable': this.extensions.selection.multiple ? 'true' : null,
 		}
 	}

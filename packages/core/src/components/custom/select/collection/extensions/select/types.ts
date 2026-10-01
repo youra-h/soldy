@@ -1,8 +1,4 @@
-import type {
-	IBaseOwnerItemExtensionOptions,
-	IExtension,
-	IExtensionItems,
-} from '../../../../../base/collection'
+import type { IExtension, IExtensionItems } from '../../../../../base/collection'
 import type { TListEvents, TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
@@ -19,8 +15,8 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	extends
 		IExtension<TItem, TSelectExtensionEvents>,
 		IExtensionItems<TItem, ISelectItemExtension<TItem>> {
-	/** `id` элемента с `role="listbox"`. */
-	readonly listId: string
+	/** `id` элемента с `role="listbox"`. Владельца нет — нет и `id`. */
+	readonly listId: string | undefined
 	/** `id` элемента с `role="option"`. */
 	optionId(item: TItem): string
 	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
@@ -42,10 +38,8 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	clear(): void
 }
 
-export interface ISelectExtensionOptions<
-	TOwner extends ISelect = ISelect,
-	TItem extends ISelectItem = ISelectItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, ISelectItemExtension<TItem>> {
+/** Опции движка Select: владелец приходит и уходит после сборки. */
+export type TSelectEngineOptions<TOwner extends ISelect = ISelect> = {
 	owner: TOwner
 }
 

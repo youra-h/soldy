@@ -1,9 +1,5 @@
 import type { ITags } from '../../../types'
-import type {
-	IBaseOwnerItemExtensionOptions,
-	IExtension,
-	IExtensionItems,
-} from '../../../../../base/collection'
+import type { IExtension, IExtensionItems } from '../../../../../base/collection'
 import type { TTagsExtension } from './tags.extension'
 import type { ITagsItemExtension } from './item'
 import type { ITagsItem } from '../../../item/types'
@@ -43,14 +39,8 @@ export interface ITagsExtension<TItem extends ITagsItem = ITagsItem>
 	closeTag(item: TItem): boolean
 }
 
-/**
- * Опции конструктора TTagsExtension.
- */
-export interface ITagsExtensionOptions<
-	TOwner extends ITags = ITags,
-	TItem extends ITagsItem = ITagsItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, ITagsItemExtension<TItem>> {
-	/** Ссылка на инстанс компонента TTags. */
+/** Опции движка Tags: владелец приходит и уходит после сборки. */
+export type TTagsEngineOptions<TOwner extends ITags = ITags> = {
 	owner: TOwner
 }
 

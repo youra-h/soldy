@@ -1,18 +1,21 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import type { IExtensionContext } from '../../../../../base/collection'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtensionContext,
+} from '../../../../../base/collection'
 import { clampDate, parseDate } from '../../../../../../common'
 import type { TCalendarDate } from '../../../../../../common'
 import { calendarBounds, datesOf, inBounds } from '../../../dates'
 import type { TCalendarBounds } from '../../../dates'
 import type { ICalendarItem } from '../../../item/types'
-import type { ICalendar, TCalendarUnavailable, TCalendarValue } from '../../../types'
+import type { TCalendarUnavailable, TCalendarValue } from '../../../types'
 import { focusOf } from '../guards'
+import type { TCalendarEngineOptions } from '../view'
 import { TMultipleSelection, TRangeSelection, TSingleSelection } from './strategies'
 import type { ICalendarSelection, TCalendarMarker, TCalendarSelectionCtor } from './strategies'
 import { TCalendarSelectionItemExtension } from './item'
 import type {
 	ICalendarSelectionExtension,
-	ICalendarSelectionExtensionOptions,
 	ICalendarSelectionItemExtension,
 	TCalendarMode,
 	TCalendarSelectionEvents,
@@ -27,6 +30,10 @@ const STRATEGIES: Readonly<Record<TCalendarMode, TCalendarSelectionCtor>> = {
 
 /**
  * Выбор календаря: одна дата, несколько или диапазон.
+ *
+ * Календарь — опция движка (`owner`): он приходит и уходит после сборки, и
+ * выбор наблюдает его (`ctx.options.watch`). Без календаря значения нет и
+ * выбирать нечего.
  *
  * **Выбор — даты, а не элементы.** Значение живёт у календаря (`value`) и
  * может называть дни, которых в коллекции нет: другой месяц, другой год,
@@ -53,13 +60,13 @@ export class TCalendarSelectionExtension
 	extends TBaseOwnerItemExtension<
 		ICalendarItem,
 		ICalendarSelectionItemExtension,
-		TCalendarSelectionEvents
+		TCalendarSelectionEvents,
+		TCalendarEngineOptions
 	>
 	implements ICalendarSelectionExtension
 {
 	readonly name = 'selection' as const
 
-	protected readonly _owner: ICalendar
 	private _mode: TCalendarMode = 'single'
 	private _strategy: ICalendarSelection = new TSingleSelection()
 	private _anchor: TCalendarDate | undefined = undefined
@@ -74,10 +81,10 @@ export class TCalendarSelectionExtension
 		{ rule: TCalendarUnavailable | undefined; anchor: TCalendarDate | undefined }
 	>()
 
-	constructor(options: ICalendarSelectionExtensionOptions) {
+	constructor(
+		options?: IBaseOwnerItemExtensionOptions<ICalendarItem, ICalendarSelectionItemExtension>,
+	) {
 		super(TCalendarSelectionItemExtension, options)
-
-		this._owner = options.owner
 	}
 
 	get mode(): TCalendarMode {
@@ -103,7 +110,7 @@ export class TCalendarSelectionExtension
 	}
 
 	get value(): TCalendarValue {
-		return this._strategy.resolve(datesOf(this._owner.value))
+		return this._strategy.resolve(datesOf(this._ctx?.options.get('owner')?.value))
 	}
 
 	get anchor(): TCalendarDate | undefined {
@@ -114,10 +121,8 @@ export class TCalendarSelectionExtension
 		return this._hovered
 	}
 
-	override install(ctx: IExtensionContext<ICalendarItem>): void {
+	override install(ctx: IExtensionContext<ICalendarItem, TCalendarEngineOptions>): void {
 		super.install(ctx)
-
-		const owner = this._owner
 
 		// Дни пришли — их «недоступен» и отметки. На весь состав: при листании
 		// новые дни приходят пачкой, и итог `change:items` один. Резольвер
@@ -131,15 +136,27 @@ export class TCalendarSelectionExtension
 		// Догон: дни могли лечь в коллекцию раньше расширения
 		this._bindStale()
 
-		owner.events.on('change:value', () => this._onValue())
-		owner.events.on('change:unavailable', () => this._bindStale())
-
 		// Предпросмотр идёт до фокуса, пока указателя нет
 		focusOf(ctx)?.events.on('change:focusedDate', () => {
 			if (this._anchor !== undefined && this._hovered === undefined) this._paintAll()
 		})
 
 		this._paintAll()
+
+		// Календарь — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился календарь, прежние сняты
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
+
+			// Начатый диапазон — прежнего календаря. «Недоступен» и отметки — по
+			// правилу и значению нового
+			this._setAnchor(undefined)
+			this._bindStale()
+			this._paintAll()
+
+			scope.on(owner.events, 'change:value', () => this._onValue())
+			scope.on(owner.events, 'change:unavailable', () => this._bindStale())
+		})
 	}
 
 	isSelected(date: TCalendarDate): boolean {
@@ -152,12 +169,15 @@ export class TCalendarSelectionExtension
 	 * уже стоит.
 	 */
 	chooseDate(date: TCalendarDate): boolean {
+		const owner = this._ctx.options.get('owner')
 		const chosen = parseDate(date)
 
-		if (this._owner.disabled || chosen === undefined || !this._selectable(chosen)) return false
+		if (!owner || owner.disabled || chosen === undefined || !this._selectable(chosen)) {
+			return false
+		}
 
 		const choice = this._strategy.choose(chosen, {
-			raw: this._owner.value,
+			raw: owner.value,
 			dates: datesOf(this.value),
 			anchor: this._anchor,
 		})
@@ -172,7 +192,7 @@ export class TCalendarSelectionExtension
 	}
 
 	cancelRange(): void {
-		if (this._owner.disabled) return
+		if (this._ctx.options.get('owner')?.disabled ?? true) return
 
 		this._setAnchor(undefined)
 	}
@@ -213,11 +233,16 @@ export class TCalendarSelectionExtension
 		this._paintAll()
 	}
 
+	/** Значение пишется календарю. Календаря нет — писать некуда. */
 	private _write(value: TCalendarValue): void {
+		const owner = this._ctx?.options.get('owner')
+
+		if (!owner) return
+
 		this._writing = true
 
 		try {
-			this._owner.value = value
+			owner.value = value
 		} finally {
 			this._writing = false
 		}
@@ -234,13 +259,18 @@ export class TCalendarSelectionExtension
 		this._paintAll()
 	}
 
+	/** Границы календаря. Календаря нет — границ тоже. */
 	private get _bounds(): TCalendarBounds {
-		return calendarBounds(this._owner.min, this._owner.max)
+		const owner = this._ctx.options.get('owner')
+
+		return calendarBounds(owner?.min, owner?.max)
 	}
 
 	/** Можно ли выбрать день: в границах и доступен. */
 	private _selectable(date: TCalendarDate): boolean {
-		return inBounds(date, this._bounds) && !this._owner.unavailable?.(date, this._anchor)
+		const rule = this._ctx.options.get('owner')?.unavailable
+
+		return inBounds(date, this._bounds) && !rule?.(date, this._anchor)
 	}
 
 	/**
@@ -259,7 +289,7 @@ export class TCalendarSelectionExtension
 		const focused = focusOf(this._ctx)?.focusedDate
 		const end = this._hovered ?? focused ?? this._anchor
 		const key: TMarkerKey = {
-			value: this._owner.value,
+			value: this._ctx.options.get('owner')?.value,
 			strategy: this._strategy,
 			anchor: this._anchor,
 			end: end === undefined ? bounds.low : clampDate(end, bounds.low, bounds.high),
@@ -302,7 +332,7 @@ export class TCalendarSelectionExtension
 	private _bindStale(): void {
 		if (!this._ctx) return
 
-		const rule = this._owner.unavailable
+		const rule = this._ctx.options.get('owner')?.unavailable
 		const anchor = this._anchor
 
 		for (const item of this._ctx.driver.valueOf()) {

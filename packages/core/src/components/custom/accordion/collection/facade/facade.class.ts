@@ -34,7 +34,7 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, accordionExtensions(options.owner)),
+					completeEngine(options.engine, accordionExtensions()),
 					options.owner,
 				) as TAccordionCollection,
 				owner: options.owner,

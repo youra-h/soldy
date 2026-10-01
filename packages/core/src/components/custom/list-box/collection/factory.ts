@@ -7,15 +7,12 @@ import type { IListBoxItem } from './../item/types'
 import type { IListBox } from './../types'
 
 /** Детали рабочей коллекции ListBox — по порядку установки. См. `tabsExtensions`. */
-export function listBoxExtensions(owner?: IListBox): TExtensionSet<IListBoxItem> {
-	const set = selectionExtensions<IListBoxItem>(TListBoxItem)
-
-	if (owner) {
+export function listBoxExtensions(): TExtensionSet<IListBoxItem> {
+	return {
+		...selectionExtensions<IListBoxItem>(TListBoxItem),
 		// Связь `value` ↔ выбор. Без неё проп `value` у ListBox был бы объявлен,
 		// но мёртв
-		set.value = () => new TValueSelectionExtension<IListBox, IListBoxItem>({ owner })
-		set.list = () => new TListBoxExtension({ owner })
+		value: () => new TValueSelectionExtension<IListBox, IListBoxItem>(),
+		list: () => new TListBoxExtension(),
 	}
-
-	return set
 }

@@ -9,11 +9,8 @@ import type { ITags, TTagsCollection, ITagsItem, TTagsOverflow } from '../../../
 import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
-import type {
-	ISelectTagsExtension,
-	ISelectTagsExtensionOptions,
-	TSelectTagsExtensionEvents,
-} from './types'
+import type { ISelectTagsExtension, TSelectTagsExtensionEvents } from './types'
+import type { TSelectEngineOptions } from '../select'
 
 /**
  * TSelectTagsExtension — теги в поле Select при множественном выборе.
@@ -45,17 +42,19 @@ import type {
  *
  * Инстанс `TTags` существует только в `multiple` — у `single`/`none` в поле
  * показывается текст, а не теги, второй набор был бы лишним состоянием.
+ *
+ * `disabled`, `size` и `variant` тегов — Select'а. Select — опция движка
+ * (`owner`): он приходит и уходит после сборки, и расширение наблюдает его.
  */
 export class TSelectTagsExtension<
 	TOwner extends ISelect = ISelect,
 	TItem extends ISelectItem = ISelectItem,
 >
-	extends TBaseExtension<TItem, TSelectTagsExtensionEvents>
+	extends TBaseExtension<TItem, TSelectTagsExtensionEvents, TSelectEngineOptions<TOwner>>
 	implements IExtension<TItem>, ISelectTagsExtension<TItem>
 {
 	readonly name = 'tags' as const
 
-	private readonly _owner: TOwner
 	private _tags: ITags | null = null
 	private _engine: TTagsCollection | null = null
 	/**
@@ -65,12 +64,6 @@ export class TSelectTagsExtension<
 	 * разметка, а не владелец.
 	 */
 	private _overflow: TTagsOverflow = 'wrap'
-
-	constructor(options: ISelectTagsExtensionOptions<TOwner>) {
-		super()
-
-		this._owner = options.owner
-	}
 
 	/** Что делать с тегами, которым не хватило строки поля. */
 	get overflow(): TTagsOverflow {
@@ -109,7 +102,7 @@ export class TSelectTagsExtension<
 		return (this._engine?.extensions.batch.items.length ?? 0) > 0
 	}
 
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TSelectEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
 		const selection = this._selection
@@ -126,22 +119,38 @@ export class TSelectTagsExtension<
 		// пересобранным тегам
 		ctx.driver.events.on('item:removed', () => this.syncTags())
 
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			if (this._tags) this._tags.disabled = value
-		})
+		// Владелец — опция движка. Подписки на него живут в области наблюдателя —
+		// сменился владелец, прежние сняты
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
 
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			if (this._tags) this._tags.size = payload.newValue
-		})
+			if (this._tags) this._applyOwner(this._tags, owner)
 
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				if (this._tags) this._tags.variant = payload.newValue
-			},
-		)
+			scope.on(owner.events, 'change:disabled', (value: boolean) => {
+				if (this._tags) this._tags.disabled = value
+			})
+
+			scope.on(owner.events, 'change:size', (payload: TValuePayload<TComponentSize>) => {
+				if (this._tags) this._tags.size = payload.newValue
+			})
+
+			scope.on(
+				owner.events,
+				'change:variant',
+				(payload: TValuePayload<TComponentVariant | undefined>) => {
+					if (this._tags) this._tags.variant = payload.newValue
+				},
+			)
+		})
 
 		this._syncMode()
+	}
+
+	/** `disabled`, `size` и `variant` тегов — Select'а. */
+	private _applyOwner(tags: ITags, owner: TOwner): void {
+		tags.disabled = owner.disabled
+		tags.size = owner.size
+		tags.variant = owner.variant
 	}
 
 	private get _selection(): ISelectionExtension<TItem> | undefined {
@@ -162,13 +171,10 @@ export class TSelectTagsExtension<
 	}
 
 	private _createTags(): void {
-		const tags = new TTags({
-			closable: true,
-			disabled: this._owner.disabled,
-			size: this._owner.size,
-			variant: this._owner.variant,
-			overflow: this._overflow,
-		})
+		const tags = new TTags({ closable: true, overflow: this._overflow })
+		const owner = this._ctx.options.get('owner')
+
+		if (owner) this._applyOwner(tags, owner)
 
 		const engine = createEngineTags({ owner: tags })
 

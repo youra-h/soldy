@@ -82,7 +82,10 @@ export interface ICalendarViewExtension extends IExtension<ICalendarItem, TCalen
 	reveal(date: TCalendarDate, from: TCalendarDate): void
 }
 
-/** Опции конструктора: ссылка на календарь. */
-export interface ICalendarViewExtensionOptions {
+/**
+ * Опции движка календаря: календарь приходит и уходит после сборки. Общие для
+ * трёх расширений — вида, фокуса и выбора.
+ */
+export type TCalendarEngineOptions = {
 	owner: ICalendar
 }

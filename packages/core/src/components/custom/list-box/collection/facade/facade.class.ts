@@ -33,7 +33,7 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, listBoxExtensions(options.owner)),
+					completeEngine(options.engine, listBoxExtensions()),
 					options.owner,
 				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
 				owner: options.owner,

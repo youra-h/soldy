@@ -2,7 +2,6 @@ import { baseExtensions } from '../../../base/collection/create/internal'
 import type { TExtensionSet } from '../../../base/collection/create/internal'
 import TCalendarItem from '../item/item.class'
 import type { ICalendarItem } from '../item/types'
-import type { ICalendar } from '../types'
 import {
 	TCalendarFocusExtension,
 	TCalendarSelectionExtension,
@@ -18,16 +17,14 @@ import {
  *
  * Порядок значим: то, что в `install` подписывается на соседа, ставится после
  * него. `focus` слушает `view`, `selection` — `focus` (предпросмотр диапазона
- * идёт до фокуса).
+ * идёт до фокуса). В том же порядке они узнают о пришедшем календаре: вид
+ * строит сетки раньше, чем фокус встаёт в показанный месяц.
  */
-export function calendarExtensions(owner?: ICalendar): TExtensionSet<ICalendarItem> {
-	const set = baseExtensions<ICalendarItem>(TCalendarItem)
-
-	if (owner) {
-		set.view = () => new TCalendarViewExtension({ owner })
-		set.focus = () => new TCalendarFocusExtension({ owner })
-		set.selection = () => new TCalendarSelectionExtension({ owner })
+export function calendarExtensions(): TExtensionSet<ICalendarItem> {
+	return {
+		...baseExtensions<ICalendarItem>(TCalendarItem),
+		view: () => new TCalendarViewExtension(),
+		focus: () => new TCalendarFocusExtension(),
+		selection: () => new TCalendarSelectionExtension(),
 	}
-
-	return set
 }

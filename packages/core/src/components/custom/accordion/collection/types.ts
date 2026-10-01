@@ -22,7 +22,11 @@ import type {
 	TSelectionCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { TAccordionExtensionEvents, TAccordionItemEventsExtension } from './extensions'
+import type {
+	TAccordionEngineOptions,
+	TAccordionExtensionEvents,
+	TAccordionItemEventsExtension,
+} from './extensions'
 
 export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccordionItem> = {
 	factory: TFactoryExtension<TItem>
@@ -36,7 +40,11 @@ export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccor
 	content: TAccordionContentExtension<TItem>
 }
 
-export type TAccordionCollection = TCollectionEngine<IAccordionItem, TAccordionCollectionExtensions>
+export type TAccordionCollection = TCollectionEngine<
+	IAccordionItem,
+	TAccordionCollectionExtensions,
+	TAccordionEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки

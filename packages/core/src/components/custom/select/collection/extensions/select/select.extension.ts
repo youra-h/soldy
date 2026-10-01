@@ -1,21 +1,30 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
 import type {
+	IBaseOwnerItemExtensionOptions,
 	IBatchExtension,
 	IExtension,
 	IExtensionContext,
 	IFilterExtension,
 	ISelectionExtension,
 } from '../../../../../base/collection'
-import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
+import {
+	LIST_CONTENT_FIT_ATTRIBUTE,
+	LIST_DEFAULTS,
+	LIST_INDICATOR_ATTRIBUTE,
+} from '../../../../list'
 import type { TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 import type { TSelectTagsExtension } from '../tags'
 import { TSelectItemExtension, type ISelectItemExtension } from './item'
-import type { ISelectExtension, ISelectExtensionOptions, TSelectExtensionEvents } from './types'
+import type { ISelectExtension, TSelectEngineOptions, TSelectExtensionEvents } from './types'
 
 /**
  * TSelectExtension — всё, что Select знает благодаря коллекции.
+ *
+ * Владелец — опция движка (`owner`): он приходит и уходит после сборки, и
+ * расширение наблюдает его (`ctx.options.watch`). Без владельца у опций
+ * значения по умолчанию, а поле писать некуда.
  *
  * Две обязанности, и обе требуют одновременно владельца и список, поэтому
  * живут вместе:
@@ -65,12 +74,16 @@ export class TSelectExtension<
 	TOwner extends ISelect = ISelect,
 	TItem extends ISelectItem = ISelectItem,
 >
-	extends TBaseOwnerItemExtension<TItem, ISelectItemExtension<TItem>, TSelectExtensionEvents>
+	extends TBaseOwnerItemExtension<
+		TItem,
+		ISelectItemExtension<TItem>,
+		TSelectExtensionEvents,
+		TSelectEngineOptions<TOwner>
+	>
 	implements IExtension<TItem>, ISelectExtension<TItem>
 {
 	readonly name = 'select' as const
 
-	private readonly _owner: TOwner
 	private _text = ''
 	private _batch: IBatchExtension<TItem> | null = null
 
@@ -84,24 +97,19 @@ export class TSelectExtension<
 	 */
 	private readonly _textWatchers = new WeakMap<TItem, () => void>()
 
-	constructor(options: ISelectExtensionOptions<TOwner, TItem>) {
+	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectItemExtension<TItem>>) {
 		super(TSelectItemExtension, options)
-
-		this._owner = options.owner
-	}
-
-	/** Инстанс поля — item-адаптеру нужен его `closeOnSelect`. */
-	get owner(): TOwner {
-		return this._owner
 	}
 
 	/**
 	 * `id` списка и опций строятся от основ (`idBase`) Select и опции: они у
 	 * каждого экземпляра свои, поэтому два Select на странице не столкнутся,
-	 * даже если значения совпали.
+	 * даже если значения совпали. Владельца нет — нет и `id` списка.
 	 */
-	get listId(): string {
-		return `s-select-list-${this._owner.idBase}`
+	get listId(): string | undefined {
+		const owner = this._ctx.options.get('owner')
+
+		return owner ? `s-select-list-${owner.idBase}` : undefined
 	}
 
 	optionId(item: TItem): string {
@@ -119,16 +127,11 @@ export class TSelectExtension<
 
 	/** Сторона отметки выбранного — с поля. Своей у опции нет. */
 	get indicator(): TListIndicator {
-		return this._owner.indicator
+		return this._ctx.options.get('owner')?.indicator ?? LIST_DEFAULTS.indicator
 	}
 
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TSelectEngineOptions<TOwner>>): void {
 		super.install(ctx)
-
-		// Поле ссылается на список, а список существует всегда — в отличие от
-		// панели у Tabs, которой может и не быть. Пишем в `field.aria`, а не в
-		// `owner.aria`: связку со списком объявляет ARIA поля, а не корня Select.
-		this._owner.field.aria.add('aria-controls', this.listId)
 
 		// Отбор по тексту опции — знание Select, а не `filter`: общее расширение
 		// умеет сравнивать с любыми полями, а какое из них показывается
@@ -161,31 +164,6 @@ export class TSelectExtension<
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// Смена у владельца — всем элементам: `disabled` распространяется на них,
-		// как у `<fieldset>`, `size` и `variant` диктует он
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
-		this._owner.events.on('change:size', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-		this._owner.events.on('change:variant', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-
-		this._owner.events.on('change:contentFit', () => {
-			ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
-		})
-
-		this._owner.events.on('change:indicator', () => {
-			ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
-		})
-
-		// Сторона отметки доезжает до item-адаптеров
-		this.events.relay(this._owner.events, ['change:indicator'])
-
 		const selection = this._selection
 
 		if (selection) {
@@ -201,17 +179,76 @@ export class TSelectExtension<
 		// `selectExtensions` установлен раньше `select` специально ради
 		// этого — `ctx.extensions.tags` здесь уже существует, и его подписка
 		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
-		this._owner.events.on('change:placeholder', () => this._syncFieldPlaceholder())
 		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
-		// Догон выбора: к нашей подписке выбор уже мог сложиться. `_.selected`
-		// движка, собранного снаружи, применяет `selection` при установке, а
-		// `value` из пропа — расширение `value`, которое в
-		// `selectExtensions` стоит раньше нас. Их `change:selection` до
-		// нас не дошёл, поэтому `aria-selected`, текст выбранного и плейсхолдер
-		// считаем по текущему выбору тем же обработчиком
+		// Догон выбора: к нашей подписке выбор уже мог сложиться — `_.selected`
+		// движка, собранного снаружи, применяет `selection` при установке.
+		// `aria-selected` и текст выбранного от владельца не зависят
 		this._onSelectionChanged()
-		this._writeField()
+
+		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился владелец, прежние сняты
+		let indicator = this.indicator
+
+		ctx.options.watch('owner', (owner, scope) => {
+			// `indicator` item-адаптеры читают из расширения — сообщить, если он
+			// сменился вместе с владельцем
+			if (indicator !== this.indicator) {
+				indicator = this.indicator
+				this.events.emit('change:indicator', indicator)
+			}
+
+			// Атрибуты темы — от текущего владельца или от умолчаний
+			ctx.driver.valueOf().forEach((item) => {
+				this._applyContentFit(item as TItem)
+				this._applyIndicator(item as TItem)
+			})
+
+			if (!owner) return
+
+			// Поле ссылается на список, а список существует всегда — в отличие от
+			// панели у Tabs, которой может и не быть. Пишем в `field.aria`, а не в
+			// `owner.aria`: связку со списком объявляет ARIA поля, а не корня Select.
+			owner.field.aria.add('aria-controls', this.listId ?? null)
+
+			// Догон: опции, лежавшие до прихода владельца
+			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item as TItem))
+
+			// Смена у владельца — всем элементам: `disabled` распространяется на
+			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			scope.on(owner.events, 'change:disabled', (value: boolean) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.disabled = value
+				})
+			})
+			scope.on(owner.events, 'change:size', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem, owner)),
+			)
+			scope.on(owner.events, 'change:variant', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem, owner)),
+			)
+
+			scope.on(owner.events, 'change:contentFit', () => {
+				ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
+			})
+
+			// Сторона отметки доезжает до опций и item-адаптеров
+			scope.on(owner.events, 'change:indicator', (value: TListIndicator) => {
+				indicator = value
+				ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
+				this.events.emit('change:indicator', value)
+			})
+
+			scope.on(owner.events, 'change:placeholder', () => this._syncFieldPlaceholder())
+
+			// Догон выбора: к приходу владельца выбор уже мог сложиться.
+			// `_.selected` движка, собранного снаружи, применяет `selection` при
+			// установке, а `value` владельца — расширение `value`, которое
+			// наблюдает владельца раньше нас. Поле нового владельца показывает
+			// текущий выбор, `aria-selected` и плейсхолдер — тем же обработчиком
+			this._onSelectionChanged()
+			this._writeField()
+		})
 	}
 
 	/**
@@ -240,7 +277,9 @@ export class TSelectExtension<
 			// В multiple список не закрывается от выбора — иначе выбрать
 			// несколько опций подряд было бы невозможно. Закрывает клик по
 			// полю (toggleOpen на корне) или клик мимо (TDismissPlugin)
-			if (this._owner.closeOnSelect) this._owner.open = false
+			const owner = this._ctx.options.get('owner')
+
+			if (owner?.closeOnSelect) owner.open = false
 		}
 
 		this._commitChoice()
@@ -273,18 +312,22 @@ export class TSelectExtension<
 
 	/**
 	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
-	 * `disabled` — когда владелец выключен.
+	 * `disabled` — когда владелец выключен. Владельца нет — элемент со своим.
 	 */
 	private _inheritOwner(item: TItem): void {
-		this._applyStyle(item)
+		const owner = this._ctx.options.get('owner')
 
-		if (this._owner.disabled) item.disabled = true
+		if (!owner) return
+
+		this._applyStyle(item, owner)
+
+		if (owner.disabled) item.disabled = true
 	}
 
 	/** `size` и `variant` элемента — всегда владельца. */
-	private _applyStyle(item: TItem): void {
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+	private _applyStyle(item: TItem, owner: TOwner): void {
+		item.size = owner.size
+		item.variant = owner.variant
 	}
 
 	private _onItemAdded(item: TItem): void {
@@ -350,7 +393,10 @@ export class TSelectExtension<
 	 * ListBox, она берёт значение поля целиком.
 	 */
 	private _applyContentFit(item: TItem): void {
-		item.dataset.add(LIST_CONTENT_FIT_ATTRIBUTE, this._owner.contentFit)
+		item.dataset.add(
+			LIST_CONTENT_FIT_ATTRIBUTE,
+			this._ctx.options.get('owner')?.contentFit ?? LIST_DEFAULTS.contentFit,
+		)
 	}
 
 	/**
@@ -360,7 +406,7 @@ export class TSelectExtension<
 	 * лениво, а атрибут обязан стоять с первой отрисовки, включая серверную.
 	 */
 	private _applyIndicator(item: TItem): void {
-		item.dataset.add(LIST_INDICATOR_ATTRIBUTE, this._owner.indicator)
+		item.dataset.add(LIST_INDICATOR_ATTRIBUTE, this.indicator)
 	}
 
 	/**
@@ -397,7 +443,7 @@ export class TSelectExtension<
 	 * текст выбранного.
 	 */
 	private _onModeChanged(): void {
-		if (this._owner.field.value === this._text) this._writeField()
+		if (this._ctx.options.get('owner')?.field.value === this._text) this._writeField()
 	}
 
 	/**
@@ -422,10 +468,13 @@ export class TSelectExtension<
 
 	/**
 	 * Безусловная запись поля: набранное, если оно было, пропадает. Так пишут
-	 * только выбор пользователя (`_commitChoice`) и первая запись в `install`.
+	 * только выбор пользователя (`_commitChoice`) и приход владельца.
+	 * Владельца нет — поля тоже.
 	 */
 	private _writeField(): void {
-		this._owner.field.value = this._fieldText()
+		const owner = this._ctx.options.get('owner')
+
+		if (owner) owner.field.value = this._fieldText()
 	}
 
 	/**
@@ -434,7 +483,9 @@ export class TSelectExtension<
 	 * этом случае тоже пуст.
 	 */
 	private _syncFieldPlaceholder(): void {
-		this._owner.field.placeholder = this._tags?.hasTags ? '' : this._owner.placeholder
+		const owner = this._ctx.options.get('owner')
+
+		if (owner) owner.field.placeholder = this._tags?.hasTags ? '' : owner.placeholder
 	}
 
 	/**
@@ -480,7 +531,7 @@ export class TSelectExtension<
 	 * месте, а возврат поля (`TEditablePlugin`) покажет уже свежий `text`.
 	 */
 	private _syncText(): void {
-		const showsSelected = this._owner.field.value === this._fieldText()
+		const showsSelected = this._ctx.options.get('owner')?.field.value === this._fieldText()
 		const selected = this._selection?.selected ?? []
 
 		this._text = selected.map((item) => item.text).join(', ')

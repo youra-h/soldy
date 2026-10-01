@@ -14,6 +14,7 @@ import type {
 	ICalendarFocusItemExtension,
 	ICalendarSelectionCollectionProps,
 	ICalendarSelectionItemExtension,
+	TCalendarEngineOptions,
 	TCalendarFocusEvents,
 	TCalendarFocusExtension,
 	TCalendarFocusItemEvents,
@@ -39,7 +40,11 @@ export type TCalendarCollectionExtensions = {
 	focus: TCalendarFocusExtension
 }
 
-export type TCalendarCollection = TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>
+export type TCalendarCollection = TCollectionEngine<
+	ICalendarItem,
+	TCalendarCollectionExtensions,
+	TCalendarEngineOptions
+>
 
 /**
  * Движок, который принимает фасад: любого уровня сборки, недостающее

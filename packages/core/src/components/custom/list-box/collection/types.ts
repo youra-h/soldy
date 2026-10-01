@@ -19,6 +19,7 @@ import type {
 } from '../../../base/collection'
 import type { IListBoxItemExtension } from './extensions/list-box/item/types'
 import { TListBoxExtension } from './extensions'
+import type { TListBoxEngineOptions } from './extensions'
 import type { IListBox } from '../types'
 import type { IListBoxItem, IListBoxItemProps } from '../item/types'
 import type { TSelectionItemFacadeEvents } from '../../../base/collection'
@@ -37,7 +38,11 @@ export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxIt
 	list: TListBoxExtension<IListBox, TItem>
 }
 
-export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>
+export type TListBoxCollection = TCollectionEngine<
+	IListBoxItem,
+	TListBoxCollectionExtensions,
+	TListBoxEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки

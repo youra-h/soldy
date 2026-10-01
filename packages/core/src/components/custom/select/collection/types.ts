@@ -28,7 +28,7 @@ import type {
 	TSelectionCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { TSelectTagsExtensionEvents } from './extensions'
+import type { TSelectEngineOptions, TSelectTagsExtensionEvents } from './extensions'
 import type { TSelectItemEventsExtension } from './extensions/select/item/types'
 import type { TTagsOverflow } from '../../tags'
 
@@ -49,7 +49,11 @@ export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem>
 	tags: TSelectTagsExtension<ISelect, TItem>
 }
 
-export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollectionExtensions>
+export type TSelectCollection = TCollectionEngine<
+	ISelectItem,
+	TSelectCollectionExtensions,
+	TSelectEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки

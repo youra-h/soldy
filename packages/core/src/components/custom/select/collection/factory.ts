@@ -21,18 +21,13 @@ import { TSelectExtension, TSelectTagsExtension } from './extensions'
  * `select` пишет `owner.field.placeholder` по составу тегов
  * (`ctx.extensions.tags.hasTags`), поэтому `tags` стоит раньше.
  */
-export function selectExtensions(owner?: ISelect): TExtensionSet<ISelectItem> {
-	const set: TExtensionSet<ISelectItem> = {
+export function selectExtensions(): TExtensionSet<ISelectItem> {
+	return {
 		...selectionExtensions<ISelectItem>(TSelectItem),
 		filter: () => new TFilterExtension<ISelectItem>(),
-	}
-
-	if (owner) {
 		// Связь `value` ↔ выбор — то же расширение, что у ListBox
-		set.value = () => new TValueSelectionExtension<ISelect, ISelectItem>({ owner })
-		set.tags = () => new TSelectTagsExtension({ owner })
-		set.select = () => new TSelectExtension({ owner })
+		value: () => new TValueSelectionExtension<ISelect, ISelectItem>(),
+		tags: () => new TSelectTagsExtension(),
+		select: () => new TSelectExtension(),
 	}
-
-	return set
 }

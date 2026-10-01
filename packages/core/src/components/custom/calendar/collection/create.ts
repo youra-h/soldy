@@ -6,11 +6,12 @@ import type { ICalendar } from '../types'
 import type { ICalendarItem } from '../item/types'
 
 /**
- * Коллекция Calendar целиком. `owner` необязателен: без него детали владельца не
- * ставятся — их доставит `<Calendar>`, когда движок передадут компоненту.
+ * Коллекция Calendar целиком. `owner` необязателен: владелец — опция движка, его
+ * пишет `<Calendar>`, когда движок передадут компоненту, или код —
+ * `engine.options.set({ owner })`.
  */
 export function createEngineCalendar(
 	options: TCreateEngineOptions<ICalendarItem> & { owner?: ICalendar } = {},
 ): TCalendarCollection {
-	return createComponentEngine(calendarExtensions, options)
+	return createComponentEngine(calendarExtensions(), options)
 }

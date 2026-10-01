@@ -19,7 +19,7 @@ import type {
 } from '../../../base/collection'
 import type { ITagsItemExtension } from './extensions/tags/item/types'
 import { TTagsExtension, TTagsOverflowExtension } from './extensions'
-import type { TTagsOverflowExtensionEvents } from './extensions'
+import type { TTagsEngineOptions, TTagsOverflowExtensionEvents } from './extensions'
 import type { ITags } from '../types'
 import type { ITagsItem, ITagsItemProps } from '../item/types'
 import type {
@@ -43,7 +43,11 @@ export type TTagsCollectionExtensions<TItem extends ITagsItem = ITagsItem> = {
 	overflow: TTagsOverflowExtension<ITags, TItem>
 }
 
-export type TTagsCollection = TCollectionEngine<ITagsItem, TTagsCollectionExtensions>
+export type TTagsCollection = TCollectionEngine<
+	ITagsItem,
+	TTagsCollectionExtensions,
+	TTagsEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки

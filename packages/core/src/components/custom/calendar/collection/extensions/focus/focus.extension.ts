@@ -1,5 +1,8 @@
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import type { IExtensionContext } from '../../../../../base/collection'
+import type {
+	IBaseOwnerItemExtensionOptions,
+	IExtensionContext,
+} from '../../../../../base/collection'
 import {
 	addMonths,
 	clampDate,
@@ -17,10 +20,10 @@ import type { TCalendarBounds } from '../../../dates'
 import type { ICalendarItem } from '../../../item/types'
 import type { ICalendar } from '../../../types'
 import { viewOf } from '../guards'
+import type { TCalendarEngineOptions } from '../view'
 import { TCalendarFocusItemExtension } from './item'
 import type {
 	ICalendarFocusExtension,
-	ICalendarFocusExtensionOptions,
 	ICalendarFocusItemExtension,
 	TCalendarFocusEvents,
 	TCalendarWeekEdge,
@@ -38,6 +41,10 @@ const WEEK_EDGES: Readonly<
  * Фокус сетки: одна остановка Tab на все сетки календаря (roving tabindex,
  * APG Date Picker Dialog).
  *
+ * Календарь — опция движка (`owner`): он приходит и уходит после сборки, и
+ * фокус наблюдает его (`ctx.options.watch`). Пришедший календарь ставит фокус
+ * заново — на первую выбранную дату, иначе на сегодня, в границах.
+ *
  * **День с фокусом — всегда в границах и в показанном месяце.** Ушёл фокус в
  * непоказанный месяц — расширение просит вид показать его (`reveal`): сетки
  * сдвигаются на столько, на сколько фокус ушёл от своего месяца. Сдвинули
@@ -53,81 +60,102 @@ export class TCalendarFocusExtension
 	extends TBaseOwnerItemExtension<
 		ICalendarItem,
 		ICalendarFocusItemExtension,
-		TCalendarFocusEvents
+		TCalendarFocusEvents,
+		TCalendarEngineOptions
 	>
 	implements ICalendarFocusExtension
 {
 	readonly name = 'focus' as const
 
-	protected readonly _owner: ICalendar
-	private _focusedDate: TCalendarDate
+	/** Без календаря фокус стоит на сегодня — пояс среды, границ нет */
+	private _focusedDate: TCalendarDate = todayDate()
 
-	constructor(options: ICalendarFocusExtensionOptions) {
+	constructor(
+		options?: IBaseOwnerItemExtensionOptions<ICalendarItem, ICalendarFocusItemExtension>,
+	) {
 		super(TCalendarFocusItemExtension, options)
-
-		this._owner = options.owner
-
-		// Фокус — первая выбранная дата, иначе сегодня, в границах. В показанный
-		// месяц его приводит `install`, когда вид уже есть
-		const bounds = this._bounds
-		const first = datesOf(options.owner.value)[0] ?? todayDate(options.owner.timeZone)
-
-		this._focusedDate = clampDate(first, bounds.low, bounds.high)
 	}
 
 	get focusedDate(): TCalendarDate {
 		return this._focusedDate
 	}
 
-	override install(ctx: IExtensionContext<ICalendarItem>): void {
+	override install(ctx: IExtensionContext<ICalendarItem, TCalendarEngineOptions>): void {
 		super.install(ctx)
-
-		const view = viewOf(ctx)
-		const owner = this._owner
 
 		ctx.driver.events.on('change:items', () => this._paintAll())
 
-		view?.events.on('change:months', (months, previous) => this._follow(months, previous))
+		viewOf(ctx)?.events.on('change:months', (months, previous) =>
+			this._follow(months, previous),
+		)
 
-		// Границы сменились — фокус прижимается к ним. Вид к этому моменту уже
-		// прижал сетки: его подписка на календарь раньше
-		owner.events.on('change:min', () => this._move(this._focusedDate))
-		owner.events.on('change:max', () => this._move(this._focusedDate))
+		// Календарь — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился календарь, прежние сняты
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
 
-		// Выключенный календарь — без остановки Tab
-		owner.events.on('change:disabled', () => this._paintAll())
+			// Фокус нового календаря — первая выбранная дата, иначе сегодня, в
+			// границах и в показанном месяце. Вид к этому моменту уже построен:
+			// он наблюдает календарь раньше
+			this._set(this._startDate(owner))
+			this._settle()
+			this._paintAll()
 
-		this._settle()
-		this._paintAll()
+			// Границы сменились — фокус прижимается к ним. Вид к этому моменту уже
+			// прижал сетки: его подписка на календарь раньше
+			scope.on(owner.events, 'change:min', () => this._move(this._focusedDate))
+			scope.on(owner.events, 'change:max', () => this._move(this._focusedDate))
+
+			// Выключенный календарь — без остановки Tab
+			scope.on(owner.events, 'change:disabled', () => this._paintAll())
+		})
 	}
 
 	focusDate(date: TCalendarDate): void {
 		const target = parseDate(date)
 
-		if (this._owner.disabled || target === undefined) return
+		if (this._isOff() || target === undefined) return
 
 		this._move(target)
 	}
 
 	/** Недоступные дни ходьба не пропускает: фокус на них встаёт. */
 	shiftFocus(unit: TDateUnit, count: number): void {
-		if (this._owner.disabled) return
+		if (this._isOff()) return
 
 		this._move(shiftDate(this._focusedDate, unit, count))
 	}
 
 	moveFocusToEdge(edge: TCalendarWeekEdge): void {
-		if (this._owner.disabled) return
+		const owner = this._ctx.options.get('owner')
 
-		this._move(WEEK_EDGES[edge](this._focusedDate, this._owner.firstDay))
+		if (!owner || owner.disabled) return
+
+		this._move(WEEK_EDGES[edge](this._focusedDate, owner.firstDay))
 	}
 
 	/* ------------------------------------------------------------------ */
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
+	/** Границы календаря. Календаря нет — границ тоже. */
 	private get _bounds(): TCalendarBounds {
-		return calendarBounds(this._owner.min, this._owner.max)
+		const owner = this._ctx.options.get('owner')
+
+		return calendarBounds(owner?.min, owner?.max)
+	}
+
+	/** Ходить нельзя: календарь выключен или его нет. */
+	private _isOff(): boolean {
+		return this._ctx.options.get('owner')?.disabled ?? true
+	}
+
+	/** С чего календарь начинает: первая выбранная дата, иначе сегодня, в границах. */
+	private _startDate(owner: ICalendar): TCalendarDate {
+		const bounds = this._bounds
+		const first = datesOf(owner.value)[0] ?? todayDate(owner.timeZone)
+
+		return clampDate(first, bounds.low, bounds.high)
 	}
 
 	/**

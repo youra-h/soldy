@@ -39,7 +39,7 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 			{},
 			{
 				engine: withOwnerIds(
-					completeEngine(options.engine, tagsExtensions(options.owner)),
+					completeEngine(options.engine, tagsExtensions()),
 					options.owner,
 				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
 				owner: options.owner,

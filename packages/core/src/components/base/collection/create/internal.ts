@@ -129,21 +129,26 @@ export function fillEngine<TItem extends object, TOptions extends TEngineOptions
 /**
  * Общее тело компонентных сборщиков (`createEngineTabs` и соседи).
  *
- * Сначала рама с элементами, потом детали владельца — тот же путь, что у
- * движка, собранного снаружи и переданного компоненту. Порядок значим: так
- * значение владельца и отметки из данных сходятся одинаково при любой сборке.
- * Повторный вызов `parts` лишнего не создаёт: детали — фабрики, а стоящие
- * пропускаются по имени.
+ * Детали, потом элементы, потом владелец — тот же путь, что у движка,
+ * собранного снаружи и переданного компоненту: владелец приходит опцией к
+ * уже наполненной коллекции, и значение владельца и отметки из данных
+ * сходятся одинаково при любой сборке.
  *
- * `owner` необязателен: без него деталей владельца в наборе нет.
+ * `owner` необязателен: владелец — опция движка, его можно записать и потом —
+ * `engine.options.set({ owner })`.
  */
 export function createComponentEngine<TItem extends object, TOwner>(
-	parts: (owner?: TOwner) => TExtensionSet<TItem>,
+	set: TExtensionSet<TItem>,
 	options: TCreateEngineOptions<TItem> & { owner?: TOwner },
-): TCollectionEngine<TItem, any> {
-	const frame = fillEngine(completeEngine(undefined, parts()), options.items)
+): TCollectionEngine<TItem, any, { owner: TOwner }> {
+	const engine = fillEngine(
+		completeEngine<TItem, { owner: TOwner }>(undefined, set),
+		options.items,
+	)
 
-	return completeEngine(frame, parts(options.owner))
+	if (options.owner) engine.options.set({ owner: options.owner })
+
+	return engine
 }
 
 /** Владелец коллекции — визуальный компонент: у него есть основа `id` в DOM. */

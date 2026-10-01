@@ -6,10 +6,14 @@ import type {
 } from '../../../../../base/collection'
 import type { IRadioGroupItem } from '../../../item/types'
 import type { IRadioGroup, TRadioGroupValue, TRadioGroupView } from '../../../types'
-import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './types'
+import type { TRadioGroupEngineOptions, TRadioGroupExtensionEvents } from './types'
 
 /**
  * TRadioGroupExtension — то, что радио знает благодаря своей группе.
+ *
+ * Группа — опция движка (`owner`): она приходит и уходит после сборки, и
+ * расширение наблюдает её (`ctx.options.watch`). Без группы радио живут со
+ * своими свойствами, а отметка — сама по себе.
  *
  * **Свойства группы на радио.** `view` и общий `name` группа раздаёт каждому
  * радио — при добавлении, догоном и на смену своего значения, так же —
@@ -20,8 +24,8 @@ import type { IRadioGroupExtensionOptions, TRadioGroupExtensionEvents } from './
  * **Связь `value` ⇄ активное радио.** Коллекция хранит отмеченное радио
  * **элементом**, наружу нужен ответ в **значении**. Держится по образцу
  * `TValueSelectionExtension`: флаг от зацикливания, повтор на добавлении и
- * смене состава, направление на старте — от того, у кого есть что сказать.
- * Общим расширением движка связь не стала: потребитель у неё один.
+ * смене состава, направление при приходе группы — от того, у кого есть что
+ * сказать. Общим расширением движка связь не стала: потребитель у неё один.
  *
  * Значение меняет только выбор: радио отметили или сняли отметку с радио,
  * которое осталось в группе. Ушедшее из группы отмеченное радио значение не
@@ -37,12 +41,10 @@ export class TRadioGroupExtension<
 	TOwner extends IRadioGroup = IRadioGroup,
 	TItem extends IRadioGroupItem = IRadioGroupItem,
 >
-	extends TBaseExtension<TItem, TRadioGroupExtensionEvents>
+	extends TBaseExtension<TItem, TRadioGroupExtensionEvents, TRadioGroupEngineOptions<TOwner>>
 	implements IExtension<TItem, TRadioGroupExtensionEvents>
 {
 	readonly name = 'radioGroup' as const
-
-	protected readonly _owner: TOwner
 
 	/**
 	 * Идёт синхронизация `value` ⇄ активное радио. Флаг, а не сравнение
@@ -51,66 +53,31 @@ export class TRadioGroupExtension<
 	 */
 	private _syncing = false
 
-	constructor(options: IRadioGroupExtensionOptions<TOwner>) {
-		super()
-
-		this._owner = options.owner
-	}
-
 	/**
 	 * Общий `name` радио группы — своё имя группы, а без него имя от её основы
-	 * (`idBase`).
+	 * (`idBase`). Группы нет — нет и имени.
 	 *
 	 * Без общего `name` браузер не соберёт радио в группу: не будет ни стрелок,
 	 * ни одной остановки Tab, ни снятия отметки с соседа. Основа у каждой группы
 	 * своя, поэтому две безымянные группы на странице не сольются.
 	 */
 	get groupName(): string {
-		return this._owner.name || `s-radio-group-${this._owner.idBase}`
+		const owner = this._ctx.options.get('owner')
+
+		if (!owner) return ''
+
+		return owner.name || `s-radio-group-${owner.idBase}`
 	}
 
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TRadioGroupEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
 		// После вставки на месте источника уже инстанс: `TFactoryExtension`
 		// подменяет его в `item:add:before`
 		ctx.driver.events.on('item:added', (e) => this._applyOwner(e.item as TItem))
 
-		// Догон: расширение приходит в коллекцию, которую могли наполнить
-		// раньше — например, собрав её снаружи через `createEngine({ items })`.
-		// Тем элементам `item:added` уже не придёт
-		ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
-
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
-
-		// Смена у владельца — всем элементам: `disabled` распространяется на них,
-		// как у `<fieldset>`, `size` и `variant` диктует он
-		this._owner.events.on('change:disabled', (value: boolean) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.disabled = value
-			})
-		})
-		this._owner.events.on('change:size', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-		this._owner.events.on('change:variant', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
-		)
-
-		this._owner.events.on('change:view', (value: TRadioGroupView | undefined) => {
-			ctx.driver.valueOf().forEach((item) => {
-				item.view = value
-			})
-		})
-
-		this._owner.events.on('change:name', () => {
-			const name = this.groupName
-
-			ctx.driver.valueOf().forEach((item) => {
-				item.name = name
-			})
-		})
 
 		const activation = this._activation
 
@@ -124,21 +91,51 @@ export class TRadioGroupExtension<
 			this._activationToValue()
 		})
 
-		this._owner.events.on('change:value', () => this._valueToActivation())
-
 		// Радио могло приехать позже, чем выставили `value`: элементы
 		// регистрируются при монтировании, а проп приходит сразу
 		ctx.driver.events.on('item:added', () => this._valueToActivation())
 		ctx.driver.events.on('change:items', () => this._valueToActivation())
 
-		// Направление на старте — по тому, у кого есть что сказать: значение
-		// задано пропом — главное оно; нет — движок могли собрать снаружи уже с
-		// отмеченным радио (`meta.active`), и его нельзя затереть пустым значением
-		if (hasValue(this._owner.value) || !activation?.activeItem) {
-			this._valueToActivation()
-		} else {
-			this._activationToValue()
-		}
+		// Группа — опция движка: приходит и уходит после сборки. Подписки на неё
+		// живут в области наблюдателя — сменилась группа, прежние сняты
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
+
+			// Догон: радио, лежавшие до прихода группы
+			ctx.driver.valueOf().forEach((item) => this._applyOwner(item))
+
+			// Смена у владельца — всем элементам: `disabled` распространяется на
+			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			scope.on(owner.events, 'change:disabled', (value: boolean) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.disabled = value
+				})
+			})
+			scope.on(owner.events, 'change:size', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+			scope.on(owner.events, 'change:variant', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+
+			scope.on(owner.events, 'change:view', (value: TRadioGroupView | undefined) => {
+				ctx.driver.valueOf().forEach((item) => {
+					item.view = value
+				})
+			})
+
+			scope.on(owner.events, 'change:name', () => {
+				const name = this.groupName
+
+				ctx.driver.valueOf().forEach((item) => {
+					item.name = name
+				})
+			})
+
+			scope.on(owner.events, 'change:value', () => this._valueToActivation())
+
+			this._reconcile(owner)
+		})
 	}
 
 	private get _activation(): IActivationExtension<TItem> | undefined {
@@ -146,38 +143,64 @@ export class TRadioGroupExtension<
 	}
 
 	/**
+	 * Свести `value` группы и отмеченное радио. Направление — по тому, у кого
+	 * есть что сказать: значение задано пропом — главное оно; нет — движок
+	 * могли собрать снаружи уже с отмеченным радио (`meta.active`), и его
+	 * нельзя затереть пустым значением.
+	 */
+	private _reconcile(owner: TOwner): void {
+		if (hasValue(owner.value) || !this._activation?.activeItem) {
+			this._valueToActivation()
+		} else {
+			this._activationToValue()
+		}
+	}
+
+	/**
 	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
 	 * `disabled` — когда владелец выключен.
 	 */
 	private _inheritOwner(item: TItem): void {
-		this._applyStyle(item)
+		const owner = this._ctx.options.get('owner')
 
-		if (this._owner.disabled) item.disabled = true
+		if (!owner) return
+
+		this._applyStyle(item, owner)
+
+		if (owner.disabled) item.disabled = true
 	}
 
 	/** `size` и `variant` элемента — всегда владельца. */
-	private _applyStyle(item: TItem): void {
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+	private _applyStyle(item: TItem, owner: TOwner): void {
+		item.size = owner.size
+		item.variant = owner.variant
 	}
 
-	/** Свойства группы, которые радио получает от неё, а не задаёт само. */
+	/**
+	 * Свойства группы, которые радио получает от неё, а не задаёт само.
+	 * Группы нет — радио со своими.
+	 */
 	private _applyOwner(item: TItem): void {
+		const owner = this._ctx.options.get('owner')
+
+		if (!owner) return
+
 		this._inheritOwner(item)
-		item.view = this._owner.view
+		item.view = owner.view
 		item.name = this.groupName
 	}
 
 	/** Активное радио → `value`. Не отмечено ничего — `undefined`. */
 	private _activationToValue(): void {
 		const activation = this._activation
+		const owner = this._ctx.options.get('owner')
 
-		if (!activation || this._syncing) return
+		if (!activation || !owner || this._syncing) return
 
 		this._syncing = true
 
 		try {
-			this._owner.value = activation.activeItem?.value
+			owner.value = activation.activeItem?.value
 		} finally {
 			this._syncing = false
 		}
@@ -193,10 +216,11 @@ export class TRadioGroupExtension<
 	 */
 	private _valueToActivation(): void {
 		const activation = this._activation
+		const owner = this._ctx.options.get('owner')
 
-		if (!activation || this._syncing) return
+		if (!activation || !owner || this._syncing) return
 
-		const value = this._owner.value
+		const value = owner.value
 		const item = hasValue(value)
 			? this._ctx.driver.valueOf().find((candidate) => candidate.value === value)
 			: undefined

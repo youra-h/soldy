@@ -174,6 +174,10 @@ describe('свойства группы на радио', () => {
 		const engine = createEngine({ items: [{ value: 'a' }, { value: 'b' }] })
 		const collection = new TRadioGroupCollectionFacade({}, { owner, engine })
 
+		// Чужой движок фасад привязывает при принятии компонента — без адаптера
+		// это делает код
+		collection.bindOwner()
+
 		expect(collection.items.every((item) => item instanceof TRadioGroupItem)).toBe(true)
 		expect(collection.items.map((item) => item.view)).toEqual(['halo', 'halo'])
 		expect(collection.items.map((item) => item.name)).toEqual(['city', 'city'])
@@ -374,11 +378,11 @@ describe('value ↔ отмеченное радио', () => {
 })
 
 describe('createEngineRadioGroup', () => {
-	it('без owner — ошибка сборки, а не молчаливо неполный набор', () => {
-		expect(() =>
-			// @ts-expect-error — owner обязателен
-			createEngineRadioGroup({}),
-		).toThrow(/owner/)
+	it('без owner — движок собран целиком, группа придёт опцией', () => {
+		const engine = createEngineRadioGroup()
+
+		expect(engine.extensions.radioGroup).toBeDefined()
+		expect(engine.options.get('owner')).toBeUndefined()
 	})
 
 	it('радио из данных — инстансы TRadioGroupItem', () => {
