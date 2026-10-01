@@ -1,4 +1,5 @@
 import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } from '../types'
+import { TSelectEvent } from './types'
 import type { TSelectionEvents, TSelectionMode, ISelectionExtension } from './types'
 import type { ISelectionItemExtension } from './item'
 import { TSelectionItemExtension } from './item'
@@ -134,11 +135,24 @@ export class TSelectionExtension<TItem extends object = any>
 		})
 	}
 
-	select(item: TItem): void {
-		if (this._mode === 'none') return
+	/**
+	 * Выбрать элемент. Перед выбором приходит `item:select:before`, и
+	 * `preventDefault()` оставляет выбор прежним. Отменяется только «стать
+	 * выбранным» — снятие выбора (`deselect`, `resetSelection`) идёт без хука.
+	 *
+	 * @returns выбран ли элемент после вызова
+	 */
+	select(item: TItem): boolean {
+		if (this._mode === 'none') return false
 		// Выбрать выбранное — не смена, как снять невыбранное в `deselect`
-		if (this._selected.has(item)) return
-		if (!this._ctx.driver.valueOf().includes(item)) return
+		if (this._selected.has(item)) return true
+		if (!this._ctx.driver.valueOf().includes(item)) return false
+
+		const event = new TSelectEvent(item)
+
+		this.events.emit('item:select:before', event)
+
+		if (event.defaultPrevented) return false
 
 		if (!this.multiple) {
 			// снять выделение с предыдущего
@@ -148,6 +162,8 @@ export class TSelectionExtension<TItem extends object = any>
 		this._selected.add(item)
 
 		this._notifySelected()
+
+		return true
 	}
 
 	deselect(item: TItem): void {
@@ -160,14 +176,17 @@ export class TSelectionExtension<TItem extends object = any>
 		this._notifySelected()
 	}
 
-	toggle(item: TItem): void {
-		if (this._mode === 'none') return
+	/** @returns выбран ли элемент после вызова */
+	toggle(item: TItem): boolean {
+		if (this._mode === 'none') return false
 
 		if (this._selected.has(item)) {
 			this.deselect(item)
-		} else {
-			this.select(item)
+
+			return false
 		}
+
+		return this.select(item)
 	}
 
 	get selected(): TItem[] {

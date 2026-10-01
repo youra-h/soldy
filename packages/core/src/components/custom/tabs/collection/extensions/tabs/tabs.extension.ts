@@ -152,9 +152,11 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 				if (pending?.event === e) {
 					this._pendingActivation = undefined
 
-					const next = this._findNeighbour(pending.siblings, e.item)
-
-					if (next) activation.activate(next)
+					// Сосед, который принял активацию: отменённую в
+					// `item:activate:before` пропускаем к следующему
+					this._neighbours(pending.siblings, e.item).find((item) =>
+						activation.activate(item),
+					)
 				}
 
 				this._syncSelectedAria()
@@ -290,19 +292,19 @@ export class TTabsExtension<TOwner extends ITabs = ITabs, TItem extends ITabsIte
 	}
 
 	/**
-	 * Ближайший к закрытому табу годный таб, оставшийся в списке: сначала
+	 * Годные табы, оставшиеся в списке, от ближайшего к закрытому: сначала
 	 * справа, затем слева. `siblings` — состав до удаления, в нём у закрытого
 	 * ещё есть место.
 	 */
-	private _findNeighbour(siblings: TItem[], removed: TItem): TItem | undefined {
+	private _neighbours(siblings: TItem[], removed: TItem): TItem[] {
 		const present = new Set(this._ctx.driver.valueOf())
 		const index = siblings.indexOf(removed)
 		const available = (item: TItem) => present.has(item) && this.isEnabledTab(item)
 
-		return (
-			siblings.slice(index + 1).find(available) ??
-			siblings.slice(0, index).reverse().find(available)
-		)
+		return [
+			...siblings.slice(index + 1).filter(available),
+			...siblings.slice(0, index).reverse().filter(available),
+		]
 	}
 
 	/**

@@ -1,7 +1,20 @@
+import { TActionEvent } from '../../../../../../common/event/action-event'
 import type { IExtension, IExtensionItems } from '../types'
 import type { IActivationItemExtension } from './item/types'
 
+/**
+ * Событие перед активацией: подписчик `item:activate:before` отменяет её
+ * `preventDefault()` — элемент не становится активным, прежний остаётся.
+ */
+export class TActivateEvent<TItem> extends TActionEvent {
+	constructor(public readonly item: TItem) {
+		super()
+	}
+}
+
 export type TActivationEvents<TItem> = {
+	/** Элемент вот-вот станет активным; `preventDefault()` отменяет активацию */
+	'item:activate:before': (e: TActivateEvent<TItem>) => void
 	'change:activation': (item: TItem | undefined) => void
 	'item:activated': (item: TItem) => void
 	'item:deactivated': (item: TItem | undefined) => void
@@ -18,9 +31,12 @@ export interface IActivationExtension<TItem extends object = any>
 	/**
 	 * Установить элемент активным.
 	 * Предыдущий активный элемент деактивируется автоматически.
-	 * Если элемент не принадлежит коллекции — ничего не делает.
+	 * Если элемент не принадлежит коллекции или активацию отменили в
+	 * `item:activate:before` — ничего не делает.
+	 *
+	 * @returns активен ли элемент после вызова
 	 */
-	activate(item: TItem): void
+	activate(item: TItem): boolean
 
 	/** Деактивировать элемент, если он активен. */
 	deactivate(item: TItem): void

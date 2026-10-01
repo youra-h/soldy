@@ -213,6 +213,9 @@ export class TRadioGroupExtension<
 	 * значением могло ещё не приехать, и повторный проход случится на
 	 * `item:added`. Отметку выключенному радио значение ставит — выбрать из
 	 * кода то, что пользователь выбрать не может, право приложения.
+	 *
+	 * Отметку, отменённую в `item:activate:before`, значение не меняет: оно
+	 * откатывается к отмеченному радио.
 	 */
 	private _valueToActivation(): void {
 		const activation = this._activation
@@ -225,17 +228,21 @@ export class TRadioGroupExtension<
 			? this._ctx.driver.valueOf().find((candidate) => candidate.value === value)
 			: undefined
 
+		let rejected = false
+
 		this._syncing = true
 
 		try {
 			if (item) {
-				activation.activate(item)
+				rejected = !activation.activate(item)
 			} else {
 				activation.reset()
 			}
 		} finally {
 			this._syncing = false
 		}
+
+		if (rejected) this._activationToValue()
 	}
 }
 

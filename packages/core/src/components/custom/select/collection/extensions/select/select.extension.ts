@@ -269,10 +269,14 @@ export class TSelectExtension<
 
 		if (!selection || item.disabled) return false
 
+		// Выбор, отменённый в `item:select:before`, — не выбор пользователя:
+		// поле и панель остаются как были
 		if (selection.multiple) {
-			selection.toggle(item)
+			const wasSelected = selection.isSelected(item)
+
+			if (!selection.toggle(item) && !wasSelected) return false
 		} else {
-			selection.select(item)
+			if (!selection.select(item)) return false
 
 			// В multiple список не закрывается от выбора — иначе выбрать
 			// несколько опций подряд было бы невозможно. Закрывает клик по

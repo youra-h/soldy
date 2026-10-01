@@ -1,5 +1,16 @@
+import { TActionEvent } from '../../../../../../common/event/action-event'
 import type { IExtension, IExtensionItems } from '../types'
 import type { ISelectionItemExtension } from './item/types'
+
+/**
+ * Событие перед выбором: подписчик `item:select:before` отменяет его
+ * `preventDefault()` — элемент не становится выбранным, выбор остаётся прежним.
+ */
+export class TSelectEvent<TItem> extends TActionEvent {
+	constructor(public readonly item: TItem) {
+		super()
+	}
+}
 
 export type TSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -13,6 +24,8 @@ export interface ISelectionCollectionProps {
 }
 
 export type TSelectionEvents<TItem> = {
+	/** Элемент вот-вот станет выбранным; `preventDefault()` отменяет выбор */
+	'item:select:before': (e: TSelectEvent<TItem>) => void
 	'change:selection': (items: TItem[]) => void
 	'change:mode': (value: TSelectionMode) => void
 }
@@ -37,14 +50,23 @@ export interface ISelectionExtension<TItem extends object = any>
 	/** Количество выбранных элементов. */
 	readonly selectedCount: number
 
-	/** Выбрать элемент. В режиме single снимает выделение с предыдущего. */
-	select(item: TItem): void
+	/**
+	 * Выбрать элемент. В режиме single снимает выделение с предыдущего. Выбор
+	 * отменяет подписчик `item:select:before`.
+	 *
+	 * @returns выбран ли элемент после вызова
+	 */
+	select(item: TItem): boolean
 
 	/** Снять выделение с элемента. */
 	deselect(item: TItem): void
 
-	/** Переключить выделение элемента. */
-	toggle(item: TItem): void
+	/**
+	 * Переключить выделение элемента.
+	 *
+	 * @returns выбран ли элемент после вызова
+	 */
+	toggle(item: TItem): boolean
 
 	/** Проверить, выбран ли указанный элемент. */
 	isSelected(item: TItem): boolean

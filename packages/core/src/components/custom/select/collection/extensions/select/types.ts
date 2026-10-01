@@ -25,7 +25,8 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	readonly indicator: TListIndicator
 	/**
 	 * Выбрать опцию с учётом режима и `closeOnSelect` владельца.
-	 * Возвращает `false`, если опция недоступна.
+	 * Возвращает `false`, если опция недоступна или выбор отменили
+	 * в `item:select:before`.
 	 *
 	 * Выбор пользователя: поле переписывается, что бы в нём ни было набрано, и
 	 * приходит `choose`.

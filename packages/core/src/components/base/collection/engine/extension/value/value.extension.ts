@@ -112,28 +112,38 @@ export class TValueSelectionExtension<
 	 *
 	 * Значения без соответствующего элемента молча игнорируются: список мог ещё
 	 * не приехать, и повторный проход случится на `item:added`.
+	 *
+	 * Выбор, отменённый в `item:select:before`, значение не меняет: оно
+	 * откатывается к тому, что выбрано на самом деле. В `single` выбор заменяет
+	 * прежний сам, поэтому отменённый оставляет прежний; в `multiple` выбор
+	 * собирается заново в порядке значения, и отменённого в нём просто нет.
+	 * В режиме `none` выбора нет вовсе — сводить нечего.
 	 */
 	private _valueToSelection(): void {
 		const selection = this._selection
 		const owner = this._ctx.options.get('owner')
 
-		if (!selection || !owner || this._syncing) return
+		if (!selection || !owner || this._syncing || selection.mode === 'none') return
 
-		const wanted = toKeys(owner.value)
+		const items = toKeys(owner.value)
+			.map((key) => this._ctx.driver.valueOf().find((candidate) => candidate.value === key))
+			.filter((item) => item !== undefined)
+
+		let rejected = false
 
 		this._syncing = true
 
 		try {
-			selection.resetSelection()
+			if (selection.multiple || items.length === 0) selection.resetSelection()
 
-			for (const key of wanted) {
-				const item = this._ctx.driver.valueOf().find((candidate) => candidate.value === key)
-
-				if (item) selection.select(item)
+			for (const item of items) {
+				if (!selection.select(item)) rejected = true
 			}
 		} finally {
 			this._syncing = false
 		}
+
+		if (rejected) this._selectionToValue()
 	}
 }
 
