@@ -1,8 +1,8 @@
-import { TStateUnit } from '../../../common'
-import type { TValuePayload, TEventSink } from '../../../common'
+import { TChangeEvent } from '../../../common'
+import type { TEventSink } from '../../../common'
 import { TControl } from '../control'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type { ITextableProps, TTextableEvents, TTextableStates } from './types'
+import type { ITextableProps, TTextableEvents } from './types'
 
 /**
  * Слой "textable": добавляет отображаемое текстовое значение `text`.
@@ -14,25 +14,20 @@ import type { ITextableProps, TTextableEvents, TTextableStates } from './types'
 export default class TTextable<
 	TProps extends ITextableProps = ITextableProps,
 	TEvents extends TTextableEvents = TTextableEvents,
-	TStates extends TTextableStates = TTextableStates,
-> extends TControl<TProps, TEvents, TStates> {
+> extends TControl<TProps, TEvents> {
 	static defaultValues: typeof TControl.defaultValues & TDefaultValues<ITextableProps, 'text'> = {
 		...TControl.defaultValues,
 		text: '',
 	}
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	protected _text: string
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTextable
 
-		const text = props.text ?? ctor.defaultValues.text
-
-		this._states.text = options.states?.text ?? new TStateUnit<string>({ initial: text })
-
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._sink.emit('change:text', payload)
-		})
+		this._text = props.text ?? ctor.defaultValues.text
 	}
 
 	/**
@@ -44,11 +39,20 @@ export default class TTextable<
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this._sink.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	getProps(): TProps {

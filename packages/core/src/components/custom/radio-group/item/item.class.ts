@@ -1,12 +1,7 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
 import type { TRadioGroupView } from '../types'
-import type {
-	IRadioGroupItem,
-	IRadioGroupItemProps,
-	TRadioGroupItemEvents,
-	TRadioGroupItemStates,
-} from './types'
+import type { IRadioGroupItem, IRadioGroupItemProps, TRadioGroupItemEvents } from './types'
 
 /**
  * Радио — элемент группы, без коллекционной части.
@@ -28,12 +23,7 @@ import type {
  * тема рисует радио по его собственному корню, у контейнера группы стилей нет.
  */
 export default class TRadioGroupItem
-	extends TValueControl<
-		string | number,
-		IRadioGroupItemProps,
-		TRadioGroupItemEvents,
-		TRadioGroupItemStates
-	>
+	extends TValueControl<string | number, IRadioGroupItemProps, TRadioGroupItemEvents>
 	implements IRadioGroupItem
 {
 	static override baseClass = 's-radio-group-item'
@@ -48,10 +38,7 @@ export default class TRadioGroupItem
 
 	protected _view: TRadioGroupView | undefined
 
-	constructor(
-		props: Partial<IRadioGroupItemProps> = {},
-		options: IComponentOptions<TRadioGroupItemStates> = {},
-	) {
+	constructor(props: Partial<IRadioGroupItemProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TRadioGroupItem

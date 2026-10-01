@@ -1,8 +1,8 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TStateUnit } from '../../../../common'
-import type { TValuePayload, TEventSink } from '../../../../common'
-import type { ISelectItem, ISelectItemProps, TSelectItemEvents, TSelectItemStates } from './types'
+import { TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
+import type { ISelectItem, ISelectItemProps, TSelectItemEvents } from './types'
 
 /**
  * Опция списка (`Select.Item`).
@@ -19,7 +19,7 @@ export default class TSelectItem<
 	TProps extends ISelectItemProps = ISelectItemProps,
 	TEvents extends TSelectItemEvents = TSelectItemEvents,
 >
-	extends TValueControl<string | number, TProps, TEvents, TSelectItemStates>
+	extends TValueControl<string | number, TProps, TEvents>
 	implements ISelectItem<TProps, TEvents>
 {
 	static override baseClass = 's-select-item'
@@ -32,19 +32,15 @@ export default class TSelectItem<
 		tag: 'div',
 	}
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TSelectItemStates> = {}) {
+	protected _text: string
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TSelectItem
 		const own = props as Partial<ISelectItemProps>
 
-		this._states.text =
-			options.states?.text ??
-			new TStateUnit<string>({ initial: own.text ?? ctor.defaultValues.text })
-
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._sink.emit('change:text', payload)
-		})
+		this._text = own.text ?? ctor.defaultValues.text
 
 		// Только то, что опция знает о себе сама: она — опция.
 		//
@@ -74,11 +70,20 @@ export default class TSelectItem<
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this._sink.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	override getProps(): TProps {

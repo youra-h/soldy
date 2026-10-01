@@ -1,8 +1,8 @@
 import { TComponentView } from '../../base/component-view'
-import type { IIcon, IIconProps, TIconEvents, TIconStates } from './types'
+import type { IIcon, IIconProps, TIconEvents } from './types'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import { TStateUnit } from '../../../common'
-import type { TValuePayload, TComponentSize } from '../../../common'
+import { TChangeEvent } from '../../../common'
+import type { TComponentSize } from '../../../common'
 
 /**
  * Отличает объект props иконки (`{ tag, size, ... }`) от сырого значения тега:
@@ -13,10 +13,7 @@ function isIconProps(value: object | string): value is IIconProps {
 	return typeof value === 'object' && value !== null && 'tag' in value
 }
 
-export default class TIcon
-	extends TComponentView<IIconProps, TIconEvents, TIconStates>
-	implements IIcon
-{
+export default class TIcon extends TComponentView<IIconProps, TIconEvents> implements IIcon {
 	static override baseClass = 's-icon'
 
 	/**
@@ -33,29 +30,18 @@ export default class TIcon
 		height: undefined,
 	}
 
+	protected _size: TComponentSize
 	protected _width: string | number | undefined
 	protected _height: string | number | undefined
 
-	constructor(props: Partial<IIconProps> = {}, options: IComponentOptions<TIconStates> = {}) {
+	constructor(props: Partial<IIconProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TIcon
 
-		this._states.size =
-			options.states?.size ??
-			new TStateUnit<TComponentSize>({
-				initial: props.size ?? ctor.defaultValues.size,
-			})
+		this._size = props.size ?? ctor.defaultValues.size
 
-		this._states.size.events.on('change', (payload: TValuePayload<TComponentSize>) => {
-			this._classes.swapClass({
-				oldClass: `--size-${payload.oldValue}`,
-				newClass: `--size-${payload.newValue}`,
-			})
-			this.events.emit('change:size', payload)
-		})
-
-		this._classes.add(`--size-${this._states.size.value}`, true)
+		this._classes.add(`--size-${this._size}`, true)
 
 		this._width = props.width ?? ctor.defaultValues.width
 		this._height = props.height ?? ctor.defaultValues.height
@@ -92,13 +78,21 @@ export default class TIcon
 	}
 
 	get size(): TComponentSize {
-		return this._states.size.value
+		return this._size
 	}
 
 	set size(value: TComponentSize) {
-		if (value === this._states.size.value) return
+		if (value === this._size) return
 
-		this._states.size.value = value
+		const e = new TChangeEvent(value, this._size)
+
+		this.events.emit('change:size:before', e)
+
+		if (e.defaultPrevented || e.value === this._size) return
+
+		this._size = e.value
+		this._classes.swapClass({ oldClass: `--size-${e.oldValue}`, newClass: `--size-${e.value}` })
+		this.events.emit('change:size', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	/**
@@ -123,7 +117,7 @@ export default class TIcon
 	getProps(): IIconProps {
 		return {
 			...super.getProps(),
-			size: this._states.size.value,
+			size: this._size,
 			width: this._width,
 			height: this._height,
 		}

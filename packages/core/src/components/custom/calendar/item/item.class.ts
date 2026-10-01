@@ -1,13 +1,8 @@
 import { TControl } from '../../../base/control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { FIRST_DATE, TStateUnit } from '../../../../common'
-import type { TCalendarDate, TEventSink, TValuePayload } from '../../../../common'
-import type {
-	ICalendarItem,
-	ICalendarItemProps,
-	TCalendarItemEvents,
-	TCalendarItemStates,
-} from './types'
+import { FIRST_DATE, TChangeEvent } from '../../../../common'
+import type { TCalendarDate, TEventSink } from '../../../../common'
+import type { ICalendarItem, ICalendarItemProps, TCalendarItemEvents } from './types'
 
 /**
  * День календаря — элемент коллекции (`Calendar.Item`).
@@ -15,12 +10,11 @@ import type {
  * Своё у дня — дата, её номер в цифрах локали и «недоступен». Всё, что
  * день знает благодаря календарю, — выбран ли он, в диапазоне ли, стоит ли на
  * нём фокус, сегодня ли он, в границах ли — пишут ему расширения коллекции в
- * его наборы (`aria`, `dataset`) и в резольверы его состояний.
+ * его наборы (`aria`, `dataset`) и в его свойства.
  *
  * `disabled` — день вне `min`/`max` или выключенный календарь: ни фокуса, ни
- * выбора. `unavailable` — фокус встаёт, выбора нет. Оба итога дают резольверы,
- * которые ставят расширения, как `bindDisabledToOwner` у других коллекций;
- * своё значение лежит в `rawValue`.
+ * выбора. `unavailable` — фокус встаёт, выбора нет. Оба значения пишут
+ * расширения календаря: вид — `disabled`, выбор — `unavailable` по правилу.
  *
  * Ячейку сетки по APG (Date Picker Dialog) фокусирует сама ячейка, поэтому
  * корень — `td`, и `aria` стоит на нём.
@@ -29,7 +23,7 @@ export default class TCalendarItem<
 	TProps extends ICalendarItemProps = ICalendarItemProps,
 	TEvents extends TCalendarItemEvents = TCalendarItemEvents,
 >
-	extends TControl<TProps, TEvents, TCalendarItemStates>
+	extends TControl<TProps, TEvents>
 	implements ICalendarItem<TProps, TEvents>
 {
 	static override baseClass = 's-calendar-item'
@@ -45,8 +39,9 @@ export default class TCalendarItem<
 
 	protected _date: TCalendarDate
 	protected _text: string
+	protected _unavailable: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TCalendarItemStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TCalendarItem
@@ -55,13 +50,7 @@ export default class TCalendarItem<
 		this._date = own.date ?? ctor.defaultValues.date
 		this._text = own.text ?? ctor.defaultValues.text
 
-		this._states.unavailable =
-			options.states?.unavailable ??
-			new TStateUnit<boolean>({ initial: own.unavailable ?? ctor.defaultValues.unavailable })
-
-		this._states.unavailable.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:unavailable', payload.newValue)
-		})
+		this._unavailable = own.unavailable ?? ctor.defaultValues.unavailable
 
 		this.events.on('change:unavailable', () => this._syncDisabled())
 		this.events.on('change:unavailable', () => this._syncUnavailable())
@@ -101,11 +90,20 @@ export default class TCalendarItem<
 	}
 
 	get unavailable(): boolean {
-		return this._states.unavailable.value
+		return this._unavailable
 	}
 
 	set unavailable(value: boolean) {
-		this._states.unavailable.value = value
+		if (value === this._unavailable) return
+
+		const e = new TChangeEvent(value, this._unavailable)
+
+		this._sink.emit('change:unavailable:before', e)
+
+		if (e.defaultPrevented || e.value === this._unavailable) return
+
+		this._unavailable = e.value
+		this._sink.emit('change:unavailable', e.value)
 	}
 
 	/**
@@ -115,13 +113,13 @@ export default class TCalendarItem<
 	 *
 	 * Правило «нативный атрибут вместо ARIA-дубля» остаётся за базой: у `td`
 	 * своего `disabled` нет, и база пишет `aria-disabled` сама. Здесь к нему
-	 * добавляется недоступность. Хук зовут и конструктор базы, когда своего
-	 * состояния у дня ещё нет, — тогда день не недоступен.
+	 * добавляется недоступность. Хук зовут и конструктор базы, когда полей дня
+	 * ещё нет, — тогда день не недоступен.
 	 */
 	protected override _syncDisabled(): void {
 		super._syncDisabled()
 
-		if (this._states.unavailable?.value) this._aria.add('aria-disabled', 'true')
+		if (this.unavailable) this._aria.add('aria-disabled', 'true')
 	}
 
 	/** `data-unavailable` — то же для темы, `"true"` и `"false"`. */
@@ -134,7 +132,7 @@ export default class TCalendarItem<
 			...super.getProps(),
 			date: this._date,
 			text: this._text,
-			unavailable: this._states.unavailable.rawValue,
+			unavailable: this._unavailable,
 		} as TProps
 	}
 }

@@ -1,9 +1,4 @@
-import type {
-	IValueControl,
-	IValueControlProps,
-	TValueControlEvents,
-	TValueControlStates,
-} from '../value-control'
+import type { IValueControl, IValueControlProps, TValueControlEvents } from '../value-control'
 
 export type TInputControlEvents<T = string> = TValueControlEvents<T> & {
 	'change:readonly': (value: boolean) => void
@@ -23,8 +18,6 @@ export interface IInputControlProps<T = string> extends IValueControlProps<T> {
 	 */
 	id?: string
 }
-
-export type TInputControlStates<TValue = string> = TValueControlStates<TValue>
 
 export interface IInputControl<
 	T,

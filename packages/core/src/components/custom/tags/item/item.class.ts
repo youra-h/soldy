@@ -1,8 +1,8 @@
 import { TValueControl } from '../../../base/value-control'
 import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TAria, TStateUnit } from '../../../../common'
-import type { TValuePayload, TEventSink } from '../../../../common'
-import type { ITagsItem, ITagsItemProps, TTagsItemEvents, TTagsItemStates } from './types'
+import { TAria, TChangeEvent } from '../../../../common'
+import type { TEventSink } from '../../../../common'
+import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
 
 /**
  * Элемент Tags — тег.
@@ -23,7 +23,7 @@ export default class TTagsItem<
 	TProps extends ITagsItemProps = ITagsItemProps,
 	TEvents extends TTagsItemEvents = TTagsItemEvents,
 >
-	extends TValueControl<string | number, TProps, TEvents, TTagsItemStates>
+	extends TValueControl<string | number, TProps, TEvents>
 	implements ITagsItem<TProps, TEvents>
 {
 	static override baseClass = 's-tags-item'
@@ -41,7 +41,10 @@ export default class TTagsItem<
 	protected _closeLabel!: string
 	protected _closeAria: TAria
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TTagsItemStates> = {}) {
+	protected _text: string
+	protected _closable: boolean | undefined
+
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TTagsItem
@@ -49,15 +52,9 @@ export default class TTagsItem<
 
 		this._closeLabel = customProps.closeLabel ?? ctor.defaultValues.closeLabel
 
-		this._states.text =
-			options.states?.text ??
-			new TStateUnit<string>({ initial: customProps.text ?? ctor.defaultValues.text })
+		this._text = customProps.text ?? ctor.defaultValues.text
 
-		this._states.closable =
-			options.states?.closable ??
-			new TStateUnit<boolean | undefined>({
-				initial: customProps.closable ?? ctor.defaultValues.closable,
-			})
+		this._closable = customProps.closable ?? ctor.defaultValues.closable
 
 		this._closeAria = new TAria()
 
@@ -67,17 +64,7 @@ export default class TTagsItem<
 
 		this._syncCloseName()
 
-		this._states.text.events.on('change', (payload: TValuePayload<string>) => {
-			this._syncCloseName()
-			this._sink.emit('change:text', payload)
-		})
-
-		this._states.closable.events.on('change', (payload: TValuePayload<boolean | undefined>) => {
-			this._classes.toggle(`--closable`, !!payload.newValue)
-			this._sink.emit('change:closable', payload.newValue)
-		})
-
-		this._classes.toggle(`--closable`, !!this._states.closable.value)
+		this._classes.toggle(`--closable`, !!this._closable)
 
 		// Только то, что тег знает о себе сам: он — элемент набора. Роль
 		// меняется на `option`, когда у коллекции включён выбор — об этом
@@ -105,11 +92,21 @@ export default class TTagsItem<
 	}
 
 	get text(): string {
-		return this._states.text.value
+		return this._text
 	}
 
 	set text(value: string) {
-		this._states.text.value = value
+		if (value === this._text) return
+
+		const e = new TChangeEvent(value, this._text)
+
+		this._sink.emit('change:text:before', e)
+
+		if (e.defaultPrevented || e.value === this._text) return
+
+		this._text = e.value
+		this._syncCloseName()
+		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	/**
@@ -121,13 +118,21 @@ export default class TTagsItem<
 	 * у тега, выключенного со старта, не срабатывала вовсе: события нет.
 	 */
 	get closable(): boolean | undefined {
-		return this._states.closable.value
+		return this._closable
 	}
 
 	set closable(value: boolean | undefined) {
-		if (this._states.closable.rawValue === value) return
+		if (value === this._closable) return
 
-		this._states.closable.value = value
+		const e = new TChangeEvent(value, this._closable)
+
+		this._sink.emit('change:closable:before', e)
+
+		if (e.defaultPrevented || e.value === this._closable) return
+
+		this._closable = e.value
+		this._classes.toggle(`--closable`, !!e.value)
+		this._sink.emit('change:closable', e.value)
 	}
 
 	/**

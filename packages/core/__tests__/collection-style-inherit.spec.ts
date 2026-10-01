@@ -3,10 +3,10 @@
  *
  * Список, собранный данными (`items`), терял собственные `size` и `variant`
  * элемента сразу, а объявленный разметкой — на первой же смене у списка:
- * владельческое расширение писало элементу своё значение. Теперь правило одно
- * (`bindStyleToOwner`) и не зависит от способа наполнения: итог отдаёт
- * резольвер владельца, своё значение остаётся в `rawValue` и ни на что не
- * влияет, а расширения `item.size`/`item.variant` не пишут.
+ * владельческое расширение писало значение владельца не на всех путях. Теперь
+ * правило одно и не зависит от способа наполнения: расширение пишет элементу
+ * `size` и `variant` владельца при добавлении, на смену у владельца и поверх
+ * `batch.patch`.
  *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
@@ -38,11 +38,6 @@ type TItemProbe = {
 	size: TComponentSize
 	variant: TComponentVariant | undefined
 	readonly classes: TClasses
-	/** Своё значение элемента — то, что итог наружу не пропускает. */
-	readonly states: {
-		readonly size: { readonly rawValue: TComponentSize }
-		readonly variant: { readonly rawValue: TComponentVariant | undefined }
-	}
 	readonly events: {
 		on(event: 'change:size', handler: (payload: TValuePayload<TComponentSize>) => void): void
 	}
@@ -213,28 +208,10 @@ describe.each(cases)('$name · размер и вид элемента дикт�
 		expect(modifiers(item('a'), '--size-')).toEqual(['--size-lg'])
 		expect(modifiers(item('a'), '--variant-')).toEqual(['--variant-brand'])
 
-		// Своё значение не потеряно — просто ни на что не влияет
-		expect(item('a').states.size.rawValue).toBe('sm')
-		expect(item('a').states.variant.rawValue).toBe('danger')
 		expect(item('b').size).toBe('lg')
 	})
 
-	/** Наполнение разметкой: биндинг пишет в инстанс уже после регистрации. */
-	it('запись в инстанс итога не меняет', () => {
-		const { item } = build({ size: 'lg', variant: 'brand', items: [{ value: 'a' }] })
-		const a = item('a')
-
-		a.size = 'sm'
-		a.variant = 'danger'
-
-		expect(a.size).toBe('lg')
-		expect(a.variant).toBe('brand')
-		expect(a.states.size.rawValue).toBe('sm')
-		expect(modifiers(a, '--size-')).toEqual(['--size-lg'])
-		expect(modifiers(a, '--variant-')).toEqual(['--variant-brand'])
-	})
-
-	it('то же, когда своё приходит через batch.patch', () => {
+	it('batch.patch с размером и видом из данных их не меняет', () => {
 		const { item, patch } = build({ size: 'lg', variant: 'brand', items: [{ value: 'a' }] })
 		const a = item('a')
 
@@ -257,7 +234,7 @@ describe.each(cases)('$name · размер и вид элемента дикт�
 		expect(modifiers(pushed, '--variant-')).toEqual(['--variant-brand'])
 	})
 
-	/** Старый класс снимается по настоящему `oldValue` — ради него у `notify` аргумент. */
+	/** Старый класс снимается по настоящему `oldValue`: пару «было/стало» считает элемент. */
 	it('смена у владельца доезжает до элемента, старый модификатор снят', () => {
 		const { owner, item } = build({
 			size: 'lg',
@@ -282,7 +259,7 @@ describe.each(cases)('$name · размер и вид элемента дикт�
 		expect(modifiers(item('a'), '--variant-')).toEqual([])
 	})
 
-	it('change:size — одно на смену у владельца, своя запись молчит', () => {
+	it('change:size — одно на смену у владельца', () => {
 		const { owner, item } = build({
 			size: 'lg',
 			items: [{ value: 'a', size: 'sm' }, { value: 'b' }],
@@ -295,12 +272,6 @@ describe.each(cases)('$name · размер и вид элемента дикт�
 
 		expect(handler).toHaveBeenCalledOnce()
 		expect(handler).toHaveBeenLastCalledWith({ newValue: 'xl', oldValue: 'lg' })
-
-		// Своё значение итога не меняет — события нет
-		item('a').size = 'sm'
-		item('a').size = '2xl'
-
-		expect(handler).toHaveBeenCalledOnce()
 
 		owner.size = 'normal'
 

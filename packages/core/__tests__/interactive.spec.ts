@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TInteractive, TStateUnit } from '@soldy-ui/core'
+import { TInteractive } from '@soldy-ui/core'
 
 describe('TInteractive', () => {
 	it('меняет disabled/focused и эмитит события', () => {
@@ -23,32 +23,23 @@ describe('TInteractive', () => {
 		expect(focusedHandler).toHaveBeenCalledTimes(2)
 	})
 
-	it('states позволяет передать инстанс или класс для disableState-state', () => {
-		const log: string[] = []
+	it('change:disabled:before подменяет значение, change:disabled несёт подменённое', () => {
+		const interactive = new TInteractive()
+		const changes = vi.fn()
 
-		class TLoggedDisableableState extends TStateUnit<boolean> {
-			constructor(
-				initial: boolean,
-				private readonly _log: string[],
-			) {
-				super({ initial })
-			}
+		interactive.events.on('change:disabled', changes)
+		interactive.events.on('change:focused:before', (e) => {
+			if (interactive.disabled) e.value = false
+		})
+		interactive.events.on('change:disabled:before', (e) => {
+			e.value = true
+		})
 
-			override get value(): boolean {
-				return super.value
-			}
+		interactive.disabled = true
+		interactive.focused = true
 
-			override set value(value: boolean) {
-				super.value = value
-				if (value) this._log.push('disabled:true')
-			}
-		}
-
-		// 1) instance
-		const instance = new TLoggedDisableableState(false, log)
-		const i1 = new TInteractive({}, { states: { disabled: instance } })
-		i1.disabled = true
-		expect(log).toContain('disabled:true')
-		expect(i1.disabled).toBe(true)
+		expect(changes).toHaveBeenCalledOnce()
+		expect(changes).toHaveBeenCalledWith(true)
+		expect(interactive.focused).toBe(false)
 	})
 })

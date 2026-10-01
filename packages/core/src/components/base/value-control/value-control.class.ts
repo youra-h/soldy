@@ -1,8 +1,8 @@
 import { TControl } from '../control'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type { IValueControlProps, TValueControlEvents, TValueControlStates } from './types'
-import { TStateUnit } from '../../../common'
-import { sameValue } from '../../../common/state-unit/same-value'
+import type { IValueControlProps, TValueControlEvents } from './types'
+import { TChangeEvent } from '../../../common'
+import { sameValue } from '../../../common/utility/same-value'
 import type { TValuePayload, TEventSink } from '../../../common'
 
 /**
@@ -18,8 +18,7 @@ export default class TValueControl<
 	TValue,
 	TProps extends IValueControlProps<TValue> = IValueControlProps<TValue>,
 	TEvents extends TValueControlEvents<TValue> = TValueControlEvents<TValue>,
-	TStates extends TValueControlStates<TValue> = TValueControlStates<TValue>,
-> extends TControl<TProps, TEvents, TStates> {
+> extends TControl<TProps, TEvents> {
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<IValueControlProps<any>, 'name', 'value'> = {
 		...TControl.defaultValues,
@@ -28,24 +27,16 @@ export default class TValueControl<
 	}
 
 	protected _name: string
+	protected _value: TValue
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TValueControl
 
 		this._name = props.name ?? ctor.defaultValues.name
 
-		const value = props.value ?? (ctor.defaultValues.value as TValue)
-
-		this._states.value =
-			options.states?.value ?? new TStateUnit<TValue>({ initial: value, same: sameValue })
-
-		this._states.value.events.on('change', (payload: TValuePayload<TValue>) => {
-			this._sink.emit('change:value', payload)
-			this._sink.emit('input:value', payload)
-			this._sink.emit('input', payload)
-		})
+		this._value = props.value ?? (ctor.defaultValues.value as TValue)
 	}
 
 	/**
@@ -67,17 +58,48 @@ export default class TValueControl<
 	}
 
 	get value(): TValue {
-		return this._states.value.value
+		return this._value
 	}
+	/**
+	 * Пишет своё значение. Список сверяется поэлементно (`sameValue`): эхо
+	 * модели тем же списком — не смена.
+	 */
 	set value(value: TValue) {
-		this._states.value.value = value
+		if (sameValue(value, this._value)) return
+
+		const e = new TChangeEvent(value, this._value)
+
+		this._sink.emit('change:value:before', e)
+
+		if (e.defaultPrevented || sameValue(e.value, this._value)) return
+
+		const before = this.value
+
+		this._value = e.value
+		this._valueChanged(before)
+	}
+
+	/**
+	 * Итог `value` мог смениться — `change:value`, `input:value` и `input`, если
+	 * сменился. Наследник, чей итог зависит не только от своего значения
+	 * (Slider прижимает его к шкале), зовёт это и при смене той зависимости.
+	 */
+	protected _valueChanged(oldValue: TValue): void {
+		const newValue = this.value
+		if (sameValue(newValue, oldValue)) return
+
+		const payload: TValuePayload<TValue> = { newValue, oldValue }
+
+		this._sink.emit('change:value', payload)
+		this._sink.emit('input:value', payload)
+		this._sink.emit('input', payload)
 	}
 
 	getProps(): TProps {
 		return {
 			...super.getProps(),
 			name: this._name,
-			value: this._states.value.value,
+			value: this.value,
 		} as TProps
 	}
 }

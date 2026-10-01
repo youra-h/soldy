@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { TComponentView, TVisibilityState, TStateUnit } from '@soldy-ui/core'
-import type { IComponentViewProps, IVisibilityState } from '@soldy-ui/core'
+import { TComponentView } from '@soldy-ui/core'
+import type { IComponentViewProps } from '@soldy-ui/core'
 
 describe('TComponentView', () => {
 	beforeEach(() => {
@@ -144,67 +144,48 @@ describe('TComponentView', () => {
 		expect(p.toJSON()).toEqual(p.getProps())
 	})
 
-	it('states позволяет передавать инстансы или конструкторы для visibility-state', () => {
-		const log: string[] = []
+	it('change:rendered:before подправляет и отменяет запись rendered', () => {
+		const c = new TComponentView({ rendered: true })
+		const changes = vi.fn()
 
-		class TLoggedVisibilityState extends TStateUnit<boolean> implements IVisibilityState {
-			constructor({ initial }: { initial: boolean }) {
-				super({ initial })
-				this.events.on('change', (payload) => {
-					if (payload.newValue) {
-						log.push('state:value=true')
-					}
-				})
+		c.events.on('change:rendered', changes)
+		c.events.on('change:rendered:before', (e) => {
+			if (e.oldValue) e.preventDefault()
+		})
+
+		c.rendered = false
+
+		expect(c.rendered).toBe(true)
+		expect(changes).not.toHaveBeenCalled()
+	})
+
+	it('видимость расширяют show:before и hide:before: своего change:visible:before нет', () => {
+		const c = new TComponentView({ visible: true })
+		const changes = vi.fn()
+
+		c.events.on('change:visible', changes)
+		c.events.on('hide:before', (e) => e.preventDefault())
+
+		c.visible = false
+
+		expect(c.visible).toBe(true)
+		expect(changes).not.toHaveBeenCalled()
+	})
+
+	it('свою логику свойства задаёт наследник — она ловит и запись изнутри', () => {
+		class TAlwaysRendered extends TComponentView {
+			override get rendered(): boolean {
+				return super.rendered
 			}
-
-			show(): void {
-				this.value = true
-			}
-
-			hide(): void {
-				this.value = false
+			override set rendered(value: boolean) {
+				super.rendered = value || this.visible
 			}
 		}
 
-		// 1) Передаём готовые инстансы
-		const instanceVisible = new TLoggedVisibilityState({ initial: false })
-		const instanceRendered = new TVisibilityState({ initial: true })
+		const c = new TAlwaysRendered({ rendered: true })
 
-		const p1 = new TComponentView(
-			{ visible: false },
-			{ states: { rendered: instanceRendered, visible: instanceVisible } },
-		)
-		p1.events.on('change:visible', (value) => {
-			log.push(`component-view:change:visible=${value}`)
-		})
-		p1.visible = true
+		c.rendered = false
 
-		expect(log).toContain('state:value=true')
-		expect(log).toContain('component-view:change:visible=true')
-	})
-
-	it('states.rendered доступен через instance.states и setResolver меняет возвращаемое значение', () => {
-		const c = new TComponentView({ rendered: true })
-
-		expect(c.states.rendered).toBeDefined()
 		expect(c.rendered).toBe(true)
-
-		// Резольвер всегда возвращает false, игнорируя реальное значение
-		c.states.rendered.setResolver(() => false)
-
-		expect(c.rendered).toBe(false) // резольвер переопределил
-		expect(c.states.rendered.rawValue).toBe(true) // сырое значение не изменилось
-	})
-
-	it('states.visible доступен через instance.states и setResolver меняет возвращаемое значение', () => {
-		const c = new TComponentView({ visible: true })
-
-		expect(c.states.visible).toBeDefined()
-		expect(c.visible).toBe(true)
-
-		c.states.visible.setResolver(() => false)
-
-		expect(c.visible).toBe(false)
-		expect(c.states.visible.rawValue).toBe(true)
 	})
 })

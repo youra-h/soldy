@@ -1,6 +1,4 @@
-import type { TComponentViewStates } from '../../base/component-view'
 import type { ILayer, ILayerProps, TLayerEvents } from '../../base/layer'
-import type { IStateUnit } from '../../../common'
 
 export type TFramePosition = 'fixed' | 'absolute'
 
@@ -17,13 +15,6 @@ export interface IFrameProps extends ILayerProps {
 	position?: TFramePosition
 }
 
-export type TFrameStates = TComponentViewStates & {
-	x: IStateUnit<number>
-	y: IStateUnit<number>
-	width: IStateUnit<number | string>
-	height: IStateUnit<number | string>
-}
-
 export type TFrameEvents = TLayerEvents & {
 	/** change:x */
 	'change:x': (value: number) => void
@@ -37,7 +28,7 @@ export type TFrameEvents = TLayerEvents & {
 	'change:position': (value: TFramePosition) => void
 }
 
-export interface IFrame extends ILayer<IFrameProps, TFrameEvents, TFrameStates> {
+export interface IFrame extends ILayer<IFrameProps, TFrameEvents> {
 	/** Позиция по оси X */
 	x: number
 	/** Позиция по оси Y */

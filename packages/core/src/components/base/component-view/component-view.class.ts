@@ -1,22 +1,8 @@
 import { TComponent } from '../component'
 import type { IComponentOptions, TDefaultValues } from '../component'
-import type {
-	IComponentView,
-	IComponentViewProps,
-	TComponentViewEvents,
-	TComponentViewStates,
-	TDirection,
-} from './types'
-import {
-	TClasses,
-	TAria,
-	TDataset,
-	TAttributes,
-	TStateUnit,
-	TVisibilityState,
-	TActionEvent,
-} from '../../../common'
-import type { IVisibilityState, TValuePayload, TEventSink } from '../../../common'
+import type { IComponentView, IComponentViewProps, TComponentViewEvents, TDirection } from './types'
+import { TClasses, TAria, TDataset, TAttributes, TActionEvent, TChangeEvent } from '../../../common'
+import type { TEventSink } from '../../../common'
 
 /**
  * Визуальный слой: всё, что связано с отображением.
@@ -32,10 +18,9 @@ import type { IVisibilityState, TValuePayload, TEventSink } from '../../../commo
 export default class TComponentView<
 	TProps extends IComponentViewProps = IComponentViewProps,
 	TEvents extends TComponentViewEvents = TComponentViewEvents,
-	TStates extends TComponentViewStates = TComponentViewStates,
 >
-	extends TComponent<TProps, TEvents, TStates>
-	implements IComponentView<TProps, TEvents, TStates>
+	extends TComponent<TProps, TEvents>
+	implements IComponentView<TProps, TEvents>
 {
 	/** Базовый CSS-класс по умолчанию (можно переопределить в наследниках). */
 	static baseClass = 's-component-view'
@@ -50,6 +35,8 @@ export default class TComponentView<
 	}
 
 	protected readonly _idBase: string
+	protected _rendered: boolean
+	protected _visible: boolean
 	protected _tag: string | object
 	protected _direction: TDirection
 	protected _classes: TClasses
@@ -58,31 +45,15 @@ export default class TComponentView<
 	protected _attrs: TAttributes
 	protected _ready: boolean = false
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions<TStates> = {}) {
+	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
 		const ctor = new.target as typeof TComponentView
 
 		super(props, options)
 
 		this._idBase = options.idBase || String(this.uid)
 
-		const rendered = props.rendered ?? ctor.defaultValues.rendered
-		const visible = props.visible ?? ctor.defaultValues.visible
-
-		this._states.rendered =
-			options.states?.rendered ??
-			(new TStateUnit<boolean>({ initial: rendered }) as TStates['rendered'])
-		this._states.visible =
-			options.states?.visible ??
-			(new TVisibilityState({ initial: visible }) as TStates['visible'])
-
-		this._states.rendered.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:rendered', payload.newValue)
-			this._emitPresent()
-		})
-		this._states.visible.events.on('change', (payload: TValuePayload<boolean>) => {
-			this._sink.emit('change:visible', payload.newValue)
-			this._emitPresent()
-		})
+		this._rendered = props.rendered ?? ctor.defaultValues.rendered
+		this._visible = props.visible ?? ctor.defaultValues.visible
 
 		this._tag = props.tag ?? ctor.defaultValues.tag
 
@@ -141,15 +112,24 @@ export default class TComponentView<
 	}
 
 	get rendered(): boolean {
-		return this._states.rendered.value
+		return this._rendered
 	}
 	set rendered(value: boolean) {
-		if (value === this._states.rendered.value) return
-		this._states.rendered.value = value
+		if (value === this._rendered) return
+
+		const e = new TChangeEvent(value, this._rendered)
+
+		this._sink.emit('change:rendered:before', e)
+
+		if (e.defaultPrevented || e.value === this._rendered) return
+
+		this._rendered = e.value
+		this._sink.emit('change:rendered', e.value)
+		this._emitPresent()
 	}
 
 	get visible(): boolean {
-		return this._states.visible.value
+		return this._visible
 	}
 	set visible(value: boolean) {
 		if (value) {
@@ -169,7 +149,7 @@ export default class TComponentView<
 		const e = new TActionEvent()
 		this._sink.emit('show:before', e)
 		if (e.defaultPrevented) return
-		;(this._states.visible as IVisibilityState).show()
+		this._setVisible(true)
 		this._sink.emit('show')
 
 		this.afterShow()
@@ -184,11 +164,21 @@ export default class TComponentView<
 		const e = new TActionEvent()
 		this._sink.emit('hide:before', e)
 		if (e.defaultPrevented) return
-		;(this._states.visible as IVisibilityState).hide()
+		this._setVisible(false)
 		this._sink.emit('hide')
 
 		this.afterHide()
 		this._sink.emit('hide:after')
+	}
+
+	/**
+	 * Запись видимости. Расширяют её `show:before` и `hide:before` — своего
+	 * `change:visible:before` у видимости нет, это был бы второй путь.
+	 */
+	private _setVisible(value: boolean): void {
+		this._visible = value
+		this._sink.emit('change:visible', value)
+		this._emitPresent()
 	}
 
 	protected beforeShow(): boolean {

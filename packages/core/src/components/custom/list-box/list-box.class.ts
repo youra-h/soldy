@@ -3,14 +3,7 @@ import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type { TScrollBehavior } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { IListProps, TListContentFit, TListIndicator } from '../list'
-import type {
-	IListBoxProps,
-	TListBoxView,
-	TListBoxEvents,
-	TListBoxStates,
-	IListBox,
-	TListBoxValue,
-} from './types'
+import type { IListBoxProps, TListBoxView, TListBoxEvents, IListBox, TListBoxValue } from './types'
 
 /**
  * Компонент ListBox — список с выбором.
@@ -35,7 +28,7 @@ import type {
  * читая свойство отсюда. `scrollBehavior` отсюда только читают.
  */
 export class TListBox
-	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents, TListBoxStates>
+	extends TValueControl<TListBoxValue, IListBoxProps, TListBoxEvents>
 	implements IListBox
 {
 	static override baseClass = 's-list-box'
@@ -53,10 +46,7 @@ export class TListBox
 	protected _scrollBehavior: TScrollBehavior
 	protected _indicator!: TListIndicator
 
-	constructor(
-		props: Partial<IListBoxProps> = {},
-		options: IComponentOptions<TListBoxStates> = {},
-	) {
+	constructor(props: Partial<IListBoxProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TListBox

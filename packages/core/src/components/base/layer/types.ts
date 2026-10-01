@@ -1,9 +1,4 @@
-import type {
-	IComponentView,
-	IComponentViewProps,
-	TComponentViewEvents,
-	TComponentViewStates,
-} from '../component-view'
+import type { IComponentView, IComponentViewProps, TComponentViewEvents } from '../component-view'
 
 /**
  * Атрибут слоя: показанный слой пишет в `dataset` тот же номер, что в
@@ -36,8 +31,7 @@ export type TLayerEvents = TComponentViewEvents & {
 export interface ILayer<
 	TProps extends ILayerProps = ILayerProps,
 	TEvents extends Record<string, (...args: any) => any> = TLayerEvents,
-	TStates extends TComponentViewStates = TComponentViewStates,
-> extends IComponentView<TProps, TEvents, TStates> {
+> extends IComponentView<TProps, TEvents> {
 	/** Текущий z-index (readonly): номер слоя в общем стеке */
 	readonly zIndex: number
 	/** Целевой элемент для Teleport */

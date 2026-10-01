@@ -1,9 +1,11 @@
-import type { IControl, IControlProps, TControlEvents, TControlStates } from '../control'
-import type { IStateUnit, TValuePayload } from '../../../common'
+import type { IControl, IControlProps, TControlEvents } from '../control'
+import type { TChangeEvent, TValuePayload } from '../../../common'
 
 export type TTextableEvents = TControlEvents & {
 	/** change:text */
 	'change:text': (payload: TValuePayload<string>) => void
+	/** Запись своего `text` — подправить или отменить (`TChangeEvent`) */
+	'change:text:before': (e: TChangeEvent<string>) => void
 }
 
 export interface ITextableProps extends IControlProps {
@@ -11,14 +13,9 @@ export interface ITextableProps extends IControlProps {
 	text?: string
 }
 
-export type TTextableStates = TControlStates & {
-	text: IStateUnit<string>
-}
-
 export interface ITextable<
 	TProps extends ITextableProps = ITextableProps,
 	TEvents extends Record<string, (...args: any) => any> = TTextableEvents,
-	TStates extends TTextableStates = TTextableStates,
-> extends IControl<TProps, TEvents, TStates> {
+> extends IControl<TProps, TEvents> {
 	text: string
 }

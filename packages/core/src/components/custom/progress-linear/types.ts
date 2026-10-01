@@ -1,9 +1,4 @@
-import type {
-	IProgress,
-	IProgressProps,
-	TProgressEvents,
-	TProgressStates,
-} from '../../base/progress'
+import type { IProgress, IProgressProps, TProgressEvents } from '../../base/progress'
 
 /**
  * CSS-переменные корня — и только они: доля готового процентом от `min` до
@@ -23,18 +18,12 @@ export interface IProgressLinearProps extends IProgressProps {
 	orientation?: TProgressLinearOrientation
 }
 
-export type TProgressLinearStates = TProgressStates
-
 export type TProgressLinearEvents = TProgressEvents & {
 	/** change:orientation */
 	'change:orientation': (value: TProgressLinearOrientation) => void
 }
 
-export interface IProgressLinear extends IProgress<
-	IProgressLinearProps,
-	TProgressLinearEvents,
-	TProgressLinearStates
-> {
+export interface IProgressLinear extends IProgress<IProgressLinearProps, TProgressLinearEvents> {
 	/** Ось полосы */
 	orientation: TProgressLinearOrientation
 	/**

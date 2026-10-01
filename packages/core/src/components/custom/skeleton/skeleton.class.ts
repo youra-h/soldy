@@ -1,5 +1,5 @@
-import { TStateUnit } from '../../../common'
-import type { TComponentVariant, TValuePayload } from '../../../common'
+import { TChangeEvent } from '../../../common'
+import type { TComponentVariant } from '../../../common'
 import { TComponentView } from '../../base/component-view'
 import type { IComponentOptions, TDefaultValues } from '../../base/component'
 import type {
@@ -8,11 +8,10 @@ import type {
 	TSkeletonAnimation,
 	TSkeletonEvents,
 	TSkeletonShape,
-	TSkeletonStates,
 } from './types'
 
 export default class TSkeleton
-	extends TComponentView<ISkeletonProps, TSkeletonEvents, TSkeletonStates>
+	extends TComponentView<ISkeletonProps, TSkeletonEvents>
 	implements ISkeleton
 {
 	static override baseClass = 's-skeleton'
@@ -27,15 +26,13 @@ export default class TSkeleton
 		height: 'auto',
 	}
 
+	protected _variant: TComponentVariant | undefined
 	protected _shape: TSkeletonShape | undefined
 	protected _animation: TSkeletonAnimation | undefined
 	protected _width: number | string
 	protected _height: number | string
 
-	constructor(
-		props: Partial<ISkeletonProps> = {},
-		options: IComponentOptions<TSkeletonStates> = {},
-	) {
+	constructor(props: Partial<ISkeletonProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TSkeleton
@@ -50,25 +47,8 @@ export default class TSkeleton
 		this._classes.swap({ prefix: '--shape-', newValue: this._shape })
 		this._classes.swap({ prefix: '--animation-', newValue: this._animation })
 
-		this._states.variant =
-			options.states?.variant ??
-			new TStateUnit<TComponentVariant | undefined>({
-				initial: props.variant ?? ctor.defaultValues.variant,
-			})
-
-		this._states.variant.events.on(
-			'change',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				this._classes.swap({
-					prefix: '--variant-',
-					oldValue: payload.oldValue,
-					newValue: payload.newValue,
-				})
-				this.events.emit('change:variant', payload)
-			},
-		)
-
-		this._classes.swap({ prefix: '--variant-', newValue: this._states.variant.value })
+		this._variant = props.variant ?? ctor.defaultValues.variant
+		this._classes.swap({ prefix: '--variant-', newValue: this._variant })
 
 		// Пока показана заглушка, область помечена `aria-busy`: скринридер
 		// знает, что содержимое ещё меняется, и не зачитывает промежуточное.
@@ -86,13 +66,21 @@ export default class TSkeleton
 	}
 
 	get variant(): TComponentVariant | undefined {
-		return this._states.variant.value
+		return this._variant
 	}
 
 	set variant(value: TComponentVariant | undefined) {
-		if (value === this._states.variant.value) return
+		if (value === this._variant) return
 
-		this._states.variant.value = value
+		const e = new TChangeEvent(value, this._variant)
+
+		this.events.emit('change:variant:before', e)
+
+		if (e.defaultPrevented || e.value === this._variant) return
+
+		this._variant = e.value
+		this._classes.swap({ prefix: '--variant-', oldValue: e.oldValue, newValue: e.value })
+		this.events.emit('change:variant', { newValue: e.value, oldValue: e.oldValue })
 	}
 
 	get shape(): TSkeletonShape | undefined {
@@ -144,7 +132,7 @@ export default class TSkeleton
 	getProps(): ISkeletonProps {
 		return {
 			...super.getProps(),
-			variant: this._states.variant.value,
+			variant: this._variant,
 			shape: this._shape,
 			animation: this._animation,
 			width: this._width,

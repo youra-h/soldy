@@ -199,7 +199,7 @@ describe('Button · события через колбэк-пропы', () => {
 		ctrl.text = 'B'
 		flushSync()
 
-		// Свойства на TStateUnit отдают payload, а не голое значение
+		// `change:text` отдаёт payload, а не голое значение
 		// (в отличие от `view`, который эмитит значение) — см. TValuePayload.
 		expect(seen).toEqual([{ newValue: 'B', oldValue: 'A' }])
 	})

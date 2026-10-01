@@ -101,7 +101,7 @@ export interface ISelectCollectionItemProps extends ISelectionCollectionItemProp
 
 export type TSelectCollectionFacadeOptions = TCollectionFacadeOptions<
 	TSelectCollectionFacadeEngine,
-	ISelect<any, any, any>
+	ISelect<any, any>
 >
 
 /**

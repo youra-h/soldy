@@ -6,7 +6,6 @@ import type {
 	IProgressLinearProps,
 	TProgressLinearEvents,
 	TProgressLinearOrientation,
-	TProgressLinearStates,
 	TProgressLinearStyle,
 } from './types'
 
@@ -28,7 +27,7 @@ import type {
  * её дело, а не ядра.
  */
 export default class TProgressLinear
-	extends TProgress<IProgressLinearProps, TProgressLinearEvents, TProgressLinearStates>
+	extends TProgress<IProgressLinearProps, TProgressLinearEvents>
 	implements IProgressLinear
 {
 	static override baseClass = 's-progress-linear'
@@ -41,10 +40,7 @@ export default class TProgressLinear
 
 	protected _orientation!: TProgressLinearOrientation
 
-	constructor(
-		props: Partial<IProgressLinearProps> = {},
-		options: IComponentOptions<TProgressLinearStates> = {},
-	) {
+	constructor(props: Partial<IProgressLinearProps> = {}, options: IComponentOptions = {}) {
 		super(props, options)
 
 		const ctor = new.target as typeof TProgressLinear

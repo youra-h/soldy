@@ -4,9 +4,6 @@ import type {
 	ISelectionExtension,
 } from '../../../../../base/collection'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
-import { bindDisabledToOwner, notifyOwnerDisabled } from '../../../../../base/control'
-import { bindStyleToOwner, notifyOwnerSize, notifyOwnerVariant } from '../../../../../base/stylable'
-import type { TComponentSize, TComponentVariant, TValuePayload } from '../../../../../../common'
 import { LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../../../../list'
 import type { TListIndicator } from '../../../../list'
 import type { IListBoxItem } from '../../../item/types'
@@ -18,10 +15,9 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * TListBoxExtension — то, что элемент списка знает благодаря коллекции.
  *
  * Отдаёт элементам свойства владельца. `view` — читая со списка. `size` и
- * `variant` элемент получает резольвером (`bindStyleToOwner`): их диктует
- * список, своё значение элемента остаётся в `rawValue` и на вид не влияет.
- * `disabled` не диктуется, а сочетается: элемент выключен, если выключен сам
- * или выключен список (`bindDisabledToOwner`).
+ * `variant` расширение пишет элементу значениями списка — их диктует он.
+ * `disabled` списка распространяется на элементы, как у `<fieldset>`:
+ * выключенный список выключает их, включённый — включает.
  *
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
@@ -84,20 +80,21 @@ export class TListBoxExtension<
 		// Тем элементам `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._applyOwner(item as TItem))
 
-		// Итог `disabled` элементу отдаёт резольвер — сообщаем тем, у кого он сменился
-		this._owner.events.on('change:disabled', () => notifyOwnerDisabled(ctx.driver.valueOf()))
+		// Патч пишет элементу своё из данных — свойства владельца поверх
+		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
-		// `size` и `variant` элементу тоже отдаёт резольвер — сообщаем прежний
-		// итог, по нему снимается старый класс
-		this._owner.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			notifyOwnerSize(ctx.driver.valueOf(), payload.oldValue)
+		// Смена у владельца — всем элементам: `disabled` распространяется на них,
+		// как у `<fieldset>`, `size` и `variant` диктует он
+		this._owner.events.on('change:disabled', (value: boolean) => {
+			ctx.driver.valueOf().forEach((item) => {
+				item.disabled = value
+			})
 		})
-
-		this._owner.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				notifyOwnerVariant(ctx.driver.valueOf(), payload.oldValue)
-			},
+		this._owner.events.on('change:size', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
+		)
+		this._owner.events.on('change:variant', () =>
+			ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem)),
 		)
 
 		// У `data-content-fit` два источника — список и сам элемент, и атрибут
@@ -152,15 +149,24 @@ export class TListBoxExtension<
 	}
 
 	/**
-	 * Свойства владельца, которые элемент получает от него, а не задаёт сам.
-	 *
-	 * Ни одно из них расширение элементу не пишет: `size` и `variant` диктует
-	 * список (`bindStyleToOwner`), `disabled` элемент сочетает со своим
-	 * (`bindDisabledToOwner`). Итог в обоих случаях отдаёт резольвер.
+	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * `disabled` — когда владелец выключен.
 	 */
+	private _inheritOwner(item: TItem): void {
+		this._applyStyle(item)
+
+		if (this._owner.disabled) item.disabled = true
+	}
+
+	/** `size` и `variant` элемента — всегда владельца. */
+	private _applyStyle(item: TItem): void {
+		item.size = this._owner.size
+		item.variant = this._owner.variant
+	}
+
+	/** Что элемент получает от списка: свойства владельца и место в обходе. */
 	private _applyOwner(item: TItem): void {
-		bindDisabledToOwner(item, this._owner)
-		bindStyleToOwner(item, this._owner)
+		this._inheritOwner(item)
 
 		// Roving tabindex (APG listbox): фокусируем контейнер, элементы — только
 		// стрелками (`TListKeyboardPlugin`), не Tab'ом. Без этого Tab перебирал бы

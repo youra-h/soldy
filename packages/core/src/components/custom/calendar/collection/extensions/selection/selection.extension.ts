@@ -45,7 +45,7 @@ const STRATEGIES: Readonly<Record<TCalendarMode, TCalendarSelectionCtor>> = {
  *
  * **Что день знает от выбора:** `aria-selected` (и `false`), `data-selected`,
  * `data-range-start`, `data-range-end`, `data-range-middle`, `data-preview` и
- * итог «недоступен» — резольвер от `unavailable` календаря с якорем. Пишет
+ * `unavailable` дня — по правилу календаря с якорем. Пишет
  * родительское расширение, а не item-адаптер: адаптеры создаются лениво, а
  * отметки нужны с первой отрисовки.
  */
@@ -68,7 +68,7 @@ export class TCalendarSelectionExtension
 	private _writing = false
 	/** Последние отметки и то, из чего они посчитаны */
 	private _memo: { key: TMarkerKey; marker: TCalendarMarker } | undefined = undefined
-	/** На какие правило и якорь дню поставлен резольвер «недоступен» */
+	/** По каким правилу и якорю дню посчитано «недоступен» */
 	private readonly _bound = new WeakMap<
 		ICalendarItem,
 		{ rule: TCalendarUnavailable | undefined; anchor: TCalendarDate | undefined }
@@ -295,8 +295,8 @@ export class TCalendarSelectionExtension
 	}
 
 	/**
-	 * «Недоступен» тем дням, у кого резольвера ещё нет или он поставлен на
-	 * прежние правило и якорь. Дни, оставшиеся на экране при листании, его
+	 * «Недоступен» тем дням, у кого он ещё не посчитан или посчитан по
+	 * прежним правилу и якорю. Дни, оставшиеся на экране при листании, его
 	 * сохраняют, и функцию потребителя для них повторно не зовут.
 	 */
 	private _bindStale(): void {
@@ -316,16 +316,15 @@ export class TCalendarSelectionExtension
 	}
 
 	/**
-	 * «Недоступен» дня: своё или правило календаря с якорем. Данные — снимок в
-	 * замыкании, и `setResolver` сам сверяет итог со старым: событие приходит
-	 * только тем дням, у кого он сменился.
+	 * «Недоступен» дня — правило календаря с якорем. Сеттер дня сверяет со
+	 * старым сам: событие приходит только тем дням, у кого значение сменилось.
 	 */
 	private _bindUnavailable(
 		item: ICalendarItem,
 		rule: TCalendarUnavailable | undefined,
 		anchor: TCalendarDate | undefined,
 	): void {
-		item.states.unavailable.setResolver((own) => own || Boolean(rule?.(item.date, anchor)))
+		item.unavailable = Boolean(rule?.(item.date, anchor))
 	}
 }
 
