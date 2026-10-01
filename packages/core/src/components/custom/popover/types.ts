@@ -3,7 +3,7 @@ import type {
 	IComponentViewProps,
 	TComponentViewEvents,
 } from '../../base/component-view'
-import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
+import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
 
 /**
  * Сторона и выравнивание панели у триггера.
@@ -27,6 +27,8 @@ export type TPopoverEvents = TComponentViewEvents & {
 	'change:lazyMount': (value: boolean) => void
 	/** change:placement */
 	'change:placement': (value: TPopoverPlacement) => void
+	/** change:triggerAria — набор атрибутов триггера изменился */
+	'change:triggerAria': (value: TAriaAttributes) => void
 }
 
 export interface IPopoverProps extends IComponentViewProps {
@@ -58,9 +60,9 @@ export interface IPopover extends IComponentView<IPopoverProps, TPopoverEvents> 
 	placement: TPopoverPlacement
 	/**
 	 * ARIA триггера — второй стороны связки «триггер ↔ панель»:
-	 * `aria-haspopup`, `aria-expanded`, `aria-controls`
+	 * `aria-haspopup`, `aria-expanded`; `aria-controls` пишет плагин
 	 */
-	readonly triggerAria: TAriaAttributes
+	readonly triggerAria: TAria
 	/** `data-*` триггера для темы: открытый триггер выглядит нажатым */
 	readonly triggerDataset: TDatasetAttributes
 	/** Имя кнопки закрытия: `closeLabel` */

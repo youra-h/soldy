@@ -10,6 +10,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TAccordionItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
+import { AccordionItemIdsPluginDescriptor } from '../../plugins'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -55,7 +56,17 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				arrowPlacement: { type: String, triggers: ['change:arrowPlacement'] },
+				/**
+				 * Атрибуты панели. Набор секции, а не свой: панель лежит внутри
+				 * секции и экземпляра у неё нет.
+				 */
+				contentAria: { type: Object, protected: true, triggers: ['change:contentAria'] },
 			},
 		},
+
+		plugins: [
+			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними
+			AccordionItemIdsPluginDescriptor,
+		],
 	}),
 )

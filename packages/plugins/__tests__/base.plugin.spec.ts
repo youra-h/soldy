@@ -25,6 +25,7 @@ function context(): IPluginContext {
 	return {
 		get: () => undefined,
 		getInstance: () => null,
+		createId: (part) => part,
 	}
 }
 

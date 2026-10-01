@@ -2,9 +2,10 @@
  * Дескриптор RadioGroup (TRadioGroup).
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
- * variant, ...) и добавляет `view`. Плагинов коллекции нет: радио нативные, и
- * клавиатуру группы даёт браузер по общему `name` — стрелки, пропуск
- * выключенных, одну остановку Tab.
+ * variant, ...) и добавляет `view`. Клавиатурного плагина нет: радио
+ * нативные, и клавиатуру группы даёт браузер по общему `name` — стрелки,
+ * пропуск выключенных, одну остановку Tab. Общий `name` раздаёт радио
+ * `TRadioGroupNamePlugin`, радио он узнаёт от реестра bundles коллекции.
  *
  * `value`, а не выбор элементов наружу: потребителю нужен ответ в значениях,
  * и он же уходит в форму. `view`, `size` и `variant` задаются группе, а тема
@@ -15,6 +16,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TRadioGroup } from '@soldy-ui/core'
 import type { IRadioGroupItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
+import { CollectionBundlesPluginDescriptor, RadioGroupNamePluginDescriptor } from '../../plugins'
 
 export const RadioGroupDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -39,5 +41,12 @@ export const RadioGroupDescriptor = defineDescriptor(() =>
 				view: { type: String, triggers: ['change:view'] },
 			},
 		},
+
+		plugins: [
+			// Коллекция: через реестр bundles плагин имени узнаёт радио группы
+			CollectionBundlesPluginDescriptor,
+			// Общий `name` радио — без него браузер не соберёт их в группу
+			RadioGroupNamePluginDescriptor,
+		],
 	}),
 )

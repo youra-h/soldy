@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type {
 	IRadioGroup,
 	IRadioGroupProps,
@@ -40,8 +40,8 @@ export class TRadioGroup
 
 	protected _view: TRadioGroupView | undefined
 
-	constructor(props: Partial<IRadioGroupProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IRadioGroupProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TRadioGroup
 

@@ -350,15 +350,17 @@ describe('Select', () => {
 		expect(propNames(d)).toContain('text')
 	})
 
-	it('SelectCollectionDescriptor отдаёт ARIA списка', () => {
+	it('SelectCollectionDescriptor отдаёт состав коллекции', () => {
 		const d = SelectCollectionDescriptor()
 
 		expect(d.ctor).toBe(TSelectCollectionFacade)
+		expect(propNames(d)).toContain('items')
+	})
 
-		const names = propNames(d)
-
-		expect(names).toContain('items')
-		expect(names).toContain('list_aria')
+	it('SelectDescriptor отдаёт ARIA списка — набор Select, а не фасада', () => {
+		// Список — разметка без экземпляра: его набор держит Select
+		expect(propNames(SelectDescriptor())).toContain('listAria')
+		expect(propNames(SelectCollectionDescriptor())).not.toContain('listAria')
 	})
 
 	it('SelectCollectionItemDescriptor объявляет только членство в коллекции', () => {

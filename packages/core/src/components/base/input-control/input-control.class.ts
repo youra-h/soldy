@@ -1,6 +1,6 @@
 import { TValueControl } from '../value-control'
 import type { IInputControlProps, TInputControlEvents } from './types'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 
 /**
@@ -17,19 +17,19 @@ export default class TInputControl<
 	TEvents extends TInputControlEvents<TValue> = TInputControlEvents<TValue>,
 > extends TValueControl<TValue, TProps, TEvents> {
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required' | 'id'> = {
+		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required', 'id'> = {
 		...TValueControl.defaultValues,
 		readonly: false,
 		required: false,
-		id: '',
+		id: undefined,
 	}
 
 	protected _readonly!: boolean
 	protected _required!: boolean
-	protected _id!: string
+	protected _id: string | undefined
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TInputControl
 
@@ -48,33 +48,19 @@ export default class TInputControl<
 	}
 
 	/**
-	 * `id` элемента формы.
-	 *
-	 * Пустой проп означает «сгенерируй сам» — берётся основа экземпляра
-	 * (`idBase`): от `useId` фреймворка она одна на сервере и в браузере.
-	 * Задавать его снаружи нужно там, где на поле ссылаются: `<label for>`,
-	 * `aria-labelledby`, `aria-describedby` у текста ошибки.
-	 *
-	 * Геттер всегда возвращает непустую строку, а `getProps()` отдаёт
-	 * заданное значение как есть: иначе `assign()` перенёс бы чужую основу на
-	 * другой экземпляр.
+	 * `id` элемента формы — значение потребителя: задают его там, где на поле
+	 * ссылается его разметка (`<label for>`, `aria-labelledby`). Не задан —
+	 * атрибута нет: своих ссылок на поле у библиотеки нет.
 	 */
-	get id(): string {
-		return this._id || this.idBase
+	get id(): string | undefined {
+		return this._id
 	}
 
-	/**
-	 * Пишет своё значение, сравнивая со своим. `change:id` — только при смене
-	 * итога: своё, равное основе, заменяет незаданное, а показанный `id` тот же.
-	 */
-	set id(value: string) {
+	set id(value: string | undefined) {
 		if (this._id === value) return
 
-		const before = this.id
-
 		this._id = value
-
-		if (this.id !== before) this._sink.emit('change:id', this.id)
+		this._sink.emit('change:id', value)
 	}
 
 	/**

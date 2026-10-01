@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { TScrollBehavior } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
 import type { IListProps, TListContentFit, TListIndicator } from '../list'
@@ -46,8 +46,8 @@ export class TListBox
 	protected _scrollBehavior: TScrollBehavior
 	protected _indicator!: TListIndicator
 
-	constructor(props: Partial<IListBoxProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IListBoxProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TListBox
 

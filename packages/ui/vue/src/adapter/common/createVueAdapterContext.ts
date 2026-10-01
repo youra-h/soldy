@@ -29,11 +29,12 @@ function stripTopLevelProxies<T extends object>(value: T): T {
  * расширений по умолчанию обёртка не собирает (см. AGENTS.md, «Vue collection
  * setup»).
  *
- * Здесь же — основа `id` экземпляра (`idBase`) от `useId`. Счётчик ядра
- * (`uid`) на сервере общий для всех запросов, и `id` от него расходились при
- * гидратации, а `useId` Vue выводит из места компонента в дереве. Обёртку
- * зовёт `setup()` компонента, поэтому у `useId` есть текущий компонент.
- * Основа, заданная опцией явно, остаётся за тем, кто её задал.
+ * Здесь же — id монтирования (`mountId`) от `useId`: от него плагины строят
+ * `id` частей. Счётчик процесса на сервере общий для всех запросов, и `id` от
+ * него расходились бы при гидратации, а `useId` Vue выводит из места
+ * компонента в дереве. Обёртку зовёт `setup()` компонента, поэтому у `useId`
+ * есть текущий компонент. Id монтирования, заданный опцией явно, остаётся за
+ * тем, кто его задал.
  *
  * Сигнатура — сама `createAdapterContext`: своих параметров типа у обёртки
  * нет, контракт контекста выводится из дескриптора там же, где и у остальных
@@ -45,10 +46,9 @@ export const createVueAdapterContext: typeof createAdapterContext = (descriptor,
 		{
 			...options,
 			ctrl: options.ctrl !== undefined ? toRaw(options.ctrl) : undefined,
-			options: {
-				idBase: useId(),
-				...(options.options !== undefined ? stripTopLevelProxies(options.options) : {}),
-			},
+			options:
+				options.options !== undefined ? stripTopLevelProxies(options.options) : undefined,
+			mountId: options.mountId ?? useId(),
 		},
 		config,
 	)

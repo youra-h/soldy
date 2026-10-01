@@ -1,5 +1,5 @@
 import { TComponentView } from '../component-view'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 import { FRAME_LAYER_ATTRIBUTE } from './types'
 import type { ILayer, ILayerProps, TLayerEvents } from './types'
@@ -67,10 +67,10 @@ export default class TLayer<
 	protected _zIndex: number = 0
 	protected _target: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<TProps> = {}) {
 		const ctor = new.target as typeof TLayer
 
-		super(props, options)
+		super(props)
 
 		this._target = props.target ?? ctor.defaultValues.target
 

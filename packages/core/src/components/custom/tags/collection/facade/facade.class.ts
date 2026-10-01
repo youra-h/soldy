@@ -5,7 +5,7 @@ import type {
 	TSelectionFacadeProps,
 } from '../../../../base/collection'
 import { tagsExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TTagsCollectionExtensions,
 	TTagsCollectionFacadeEngine,
@@ -38,10 +38,10 @@ export class TTagsCollectionFacade extends TSelectionCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, tagsExtensions()),
-					options.owner,
-				) as TCollectionEngine<ITagsItem, TTagsCollectionExtensions>,
+				engine: completeEngine(options.engine, tagsExtensions()) as TCollectionEngine<
+					ITagsItem,
+					TTagsCollectionExtensions
+				>,
 				owner: options.owner,
 			},
 		)

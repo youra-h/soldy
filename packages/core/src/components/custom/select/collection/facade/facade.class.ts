@@ -1,7 +1,7 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 
 import { selectExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TSelectCollection,
 	TSelectCollectionExtensions,
@@ -46,10 +46,7 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, selectExtensions()),
-					options.owner,
-				) as TSelectCollection,
+				engine: completeEngine(options.engine, selectExtensions()) as TSelectCollection,
 				owner: options.owner,
 			},
 		)
@@ -91,21 +88,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 
 	set tags_overflow(value: TTagsOverflow) {
 		this._tags.overflow = value
-	}
-
-	/**
-	 * ARIA списка: роль, `id` и множественность.
-	 *
-	 * Проп, а не набор: список — это разметка внутри шаблона Select, своего
-	 * компонента у него нет, значит нет и `aria`, в который можно писать. Та
-	 * же асимметрия, что у панели Accordion.
-	 */
-	get list_aria(): Record<string, string | null> {
-		return {
-			role: 'listbox',
-			id: this._select.listId ?? null,
-			'aria-multiselectable': this.extensions.selection.multiple ? 'true' : null,
-		}
 	}
 
 	/**

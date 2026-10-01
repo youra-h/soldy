@@ -1,5 +1,6 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
+import { TAria } from '../../../common'
 import type { TAriaAttributes, TScrollBehavior, TValuePayload, TEventSink } from '../../../common'
 import type { TComponentSize, TComponentVariant } from '../../../common'
 import { LIST_DEFAULTS, LIST_CONTENT_FIT_ATTRIBUTE, LIST_INDICATOR_ATTRIBUTE } from '../list'
@@ -104,9 +105,10 @@ export class TSelect<
 	protected _removeOnBackspace!: boolean
 	protected _placement!: TSelectPlacement
 	protected readonly _field: IInput
+	protected readonly _listAria: TAria
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TSelect
 		const own = props as Partial<ISelectProps>
@@ -160,10 +162,17 @@ export class TSelect<
 		// Роль и haspopup постоянны, а `aria-expanded` следует за панелью — оба
 		// в `field.aria`: паттерн combobox описывает нативный `<input>`, а не
 		// корневой `div` Select. `aria-controls` и `aria-activedescendant` —
-		// не отсюда: они ссылаются на список и опцию, а это знание коллекции
-		// и клавиатурного плагина.
+		// не отсюда: это ссылки на `id` списка и опции, их пишут плагины.
 		this._field.aria.add('role', 'combobox')
 		this._field.aria.add('aria-haspopup', 'listbox')
+
+		this._listAria = new TAria()
+
+		this._listAria.events.on('change', () =>
+			this._sink.emit('change:listAria', this._listAria.toObject()),
+		)
+
+		this._listAria.add('role', 'listbox')
 
 		this.events.on('change:disabled', () => this._syncOpenable())
 
@@ -182,7 +191,7 @@ export class TSelect<
 		this.events.on('change:readonly', (value: boolean) => (this._field.readonly = value))
 		this.events.on('change:required', (value: boolean) => (this._field.required = value))
 		this.events.on('change:name', (value: string) => (this._field.name = value))
-		this.events.on('change:id', (value: string) => (this._field.id = value))
+		this.events.on('change:id', (value: string | undefined) => (this._field.id = value))
 	}
 
 	/**
@@ -199,6 +208,17 @@ export class TSelect<
 	 * Select, поэтому `change:`-события у геттера нет: инстанс один и тот же,
 	 * меняется только его собственное состояние.
 	 */
+	/**
+	 * ARIA списка в панели. Список — разметка внутри шаблона Select, своего
+	 * экземпляра у него нет, поэтому набор — Select'а (AGENTS.md, «Часть или
+	 * слот»). Живой, потому что пишут в него трое: роль — Select,
+	 * `aria-multiselectable` по режиму выбора — `TSelectExtension`, `id` —
+	 * `TSelectIdsPlugin`. Об изменении набор сообщает `change:listAria`.
+	 */
+	get listAria(): TAria {
+		return this._listAria
+	}
+
 	get field(): IInput {
 		return this._field
 	}

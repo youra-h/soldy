@@ -86,15 +86,3 @@ export interface IComponent<
 > extends IEntity<TProps> {
 	readonly events: TEvented<TEvents>
 }
-
-/**
- * Внутренние настройки компонента (второй аргумент конструктора).
- * idBase — основа `id` в DOM.
- */
-export interface IComponentOptions {
-	/**
-	 * Основа `id`, которые экземпляр пишет в DOM (`IComponentView.idBase`).
-	 * Читает её визуальный слой; пустая строка — то же, что не задана.
-	 */
-	idBase?: string
-}

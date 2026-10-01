@@ -14,7 +14,7 @@ import type {
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 } from '../../../base/collection'
-import { TAccordionExtension, TAccordionContentExtension } from './extensions'
+import { TAccordionExtension } from './extensions'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
 import type { IAccordionItemProps } from '../item/types'
@@ -37,7 +37,6 @@ export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccor
 	batch: TBatchExtension<TItem>
 	selection: TSelectionExtension<TItem>
 	accordion: TAccordionExtension<IAccordion, TItem>
-	content: TAccordionContentExtension<TItem>
 }
 
 export type TAccordionCollection = TCollectionEngine<

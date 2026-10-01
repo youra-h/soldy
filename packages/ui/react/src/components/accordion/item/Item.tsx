@@ -18,11 +18,11 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
  *
  * Наборы ядра стоят там же, где у Vue. Корень несёт `dataset`, `attrs` и место
  * в коллекции (`order`): тема раскрывает панель по `data-selected` на нём.
- * Заголовок несёт `aria` — `aria-expanded` и сторону связки с панелью (`id`,
- * `aria-controls`) пишет коллекция. Сторона панели (`role="region"`, `id`,
- * `aria-labelledby`) приходит пропом фасада `content_aria`: у панели нет
- * своего компонента, а значит и набора. Атрибуты потребителя делятся, как у
- * ListBox.Item: класс и стиль — корню, остальное — заголовку, поверх его `aria`.
+ * Заголовок несёт `aria` — `aria-expanded` пишет коллекция, сторону связки с
+ * панелью (`id`, `aria-controls`) — плагин секции. Панель несёт набор секции
+ * `contentAria` (`role="region"`, `id`, `aria-labelledby`): своего экземпляра
+ * у неё нет. Атрибуты потребителя делятся, как у ListBox.Item: класс и стиль —
+ * корню, остальное — заголовку, поверх его `aria`.
  *
  * Клик заголовка раскрывает или сворачивает секцию, потом зовёт клик
  * потребителя — как у Vue, где слушатели складываются.
@@ -44,7 +44,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 		variant,
 		selected,
 		arrowPlacement,
-		content_aria,
+		contentAria,
 		aria,
 		dataset,
 		attrs,
@@ -98,7 +98,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 					text}
 			</Button>
 			<div className="s-accordion-item__body">
-				<div className="s-accordion-item__content" {...toAriaProps(content_aria)}>
+				<div className="s-accordion-item__content" {...toAriaProps(contentAria)}>
 					{renderSlot(props.children)}
 				</div>
 			</div>

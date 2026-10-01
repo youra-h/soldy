@@ -15,11 +15,13 @@ import type { TRadioGroupEngineOptions, TRadioGroupExtensionEvents } from './typ
  * расширение наблюдает её (`ctx.options.watch`). Без группы радио живут со
  * своими свойствами, а отметка — сама по себе.
  *
- * **Свойства группы на радио.** `view` и общий `name` группа раздаёт каждому
- * радио — при добавлении, догоном и на смену своего значения, так же —
- * `size` и `variant`: их диктует она. `disabled` группы распространяется
- * на радио, как у `<fieldset>`. Тема читает модификаторы с корня радио, потому что
- * у контейнера группы стилей нет.
+ * **Свойства группы на радио.** `view` группа раздаёт каждому радио — при
+ * добавлении, догоном и на смену своего значения, так же — `size` и
+ * `variant`: их диктует она. `disabled` группы распространяется на радио, как
+ * у `<fieldset>`. Тема читает модификаторы с корня радио, потому что у
+ * контейнера группы стилей нет. Общий `name` радио раздаёт не расширение, а
+ * плагин группы (`TRadioGroupNamePlugin`): собирает радио в группу по имени
+ * браузер, это механизм документа.
  *
  * **Связь `value` ⇄ активное радио.** Коллекция хранит отмеченное радио
  * **элементом**, наружу нужен ответ в **значении**. Держится по образцу
@@ -52,22 +54,6 @@ export class TRadioGroupExtension<
 	 * `item:deactivated`, и сравнение затёрло бы заданное значение пустым.
 	 */
 	private _syncing = false
-
-	/**
-	 * Общий `name` радио группы — своё имя группы, а без него имя от её основы
-	 * (`idBase`). Группы нет — нет и имени.
-	 *
-	 * Без общего `name` браузер не соберёт радио в группу: не будет ни стрелок,
-	 * ни одной остановки Tab, ни снятия отметки с соседа. Основа у каждой группы
-	 * своя, поэтому две безымянные группы на странице не сольются.
-	 */
-	get groupName(): string {
-		const owner = this._ctx.options.get('owner')
-
-		if (!owner) return ''
-
-		return owner.name || `s-radio-group-${owner.idBase}`
-	}
 
 	override install(ctx: IExtensionContext<TItem, TRadioGroupEngineOptions<TOwner>>): void {
 		super.install(ctx)
@@ -121,14 +107,6 @@ export class TRadioGroupExtension<
 			scope.on(owner.events, 'change:view', (value: TRadioGroupView | undefined) => {
 				ctx.driver.valueOf().forEach((item) => {
 					item.view = value
-				})
-			})
-
-			scope.on(owner.events, 'change:name', () => {
-				const name = this.groupName
-
-				ctx.driver.valueOf().forEach((item) => {
-					item.name = name
 				})
 			})
 
@@ -187,7 +165,6 @@ export class TRadioGroupExtension<
 
 		this._inheritOwner(item)
 		item.view = owner.view
-		item.name = this.groupName
 	}
 
 	/** Активное радио → `value`. Не отмечено ничего — `undefined`. */

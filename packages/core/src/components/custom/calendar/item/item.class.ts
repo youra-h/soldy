@@ -1,5 +1,5 @@
 import { TControl } from '../../../base/control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
+import type { TDefaultValues } from '../../../base/component'
 import { FIRST_DATE, TChangeEvent } from '../../../../common'
 import type { TCalendarDate, TEventSink } from '../../../../common'
 import type { ICalendarItem, ICalendarItemProps, TCalendarItemEvents } from './types'
@@ -41,8 +41,8 @@ export default class TCalendarItem<
 	protected _text: string
 	protected _unavailable: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TCalendarItem
 		const own = props as Partial<ICalendarItemProps>

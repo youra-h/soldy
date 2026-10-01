@@ -2,7 +2,7 @@ import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import type { TAccordionView } from '../../types'
 import { accordionExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TAccordionCollection,
 	TAccordionCollectionExtensions,
@@ -33,9 +33,9 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, accordionExtensions()),
-					options.owner,
+				engine: completeEngine(
+					options.engine,
+					accordionExtensions(),
 				) as TAccordionCollection,
 				owner: options.owner,
 			},

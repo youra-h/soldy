@@ -703,17 +703,17 @@ soldy табы — коллекция: владельца в ней предст
 
 Прогон критерия:
 
-| Часть                                      | Адресует потребитель                   | Решение                     |
-| ------------------------------------------ | -------------------------------------- | --------------------------- |
-| `Tabs`                                     | да                                     | компонент                   |
-| `TabsItem`                                 | да — размещает и задаёт `value`/`text` | компонент                   |
-| `TabsContent`                              | да — `<Tabs.Content value="a">`        | компонент                   |
-| `SelectItem`                               | да                                     | компонент                   |
-| панель Accordion                           | нет — только содержимое в слот         | слот + проп `content_aria`  |
-| список Select                              | нет — он всегда один и внутри          | разметка + проп `list_aria` |
-| список табов                               | нет                                    | слот                        |
-| `CheckBox.Control` / `Indicator` / `Label` | нет                                    | слоты                       |
-| `Button.*`                                 | —                                      | частей нет                  |
+| Часть                                      | Адресует потребитель                   | Решение                            |
+| ------------------------------------------ | -------------------------------------- | ---------------------------------- |
+| `Tabs`                                     | да                                     | компонент                          |
+| `TabsItem`                                 | да — размещает и задаёт `value`/`text` | компонент                          |
+| `TabsContent`                              | да — `<Tabs.Content value="a">`        | компонент                          |
+| `SelectItem`                               | да                                     | компонент                          |
+| панель Accordion                           | нет — только содержимое в слот         | слот + набор секции `contentAria`  |
+| список Select                              | нет — он всегда один и внутри          | разметка + набор Select `listAria` |
+| список табов                               | нет                                    | слот                               |
+| `CheckBox.Control` / `Indicator` / `Label` | нет                                    | слоты                              |
+| `Button.*`                                 | —                                      | частей нет                         |
 
 Следствие для ARIA. У части-компонента есть экземпляр, значит есть и живой
 набор `aria`, в который пишут ядро, плагины и расширения. У разметки без
@@ -769,11 +769,13 @@ export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsCont
 
 ARIA-связка при этом нужна обеим. У Tabs её потребляют два разных компонента
 (`Tabs.Item` и `Tabs.Content`), у Accordion — один шаблон элемента, где рядом
-лежат заголовок и панель. Формулу идентификаторов в обоих случаях держит
-расширение `content`, и сторону таба или заголовка оно само пишет в `aria`
-элемента. Сторону панели отдаёт его item-адаптер: у `Tabs.Content` экземпляр
-есть, и в его `aria` её кладёт `TTabsContentBindingExtension`; у панели
-Accordion экземпляра нет, и фасад отдаёт её пропом `content_aria`.
+лежат заголовок и панель. `id` нужны документу, а не ядру, поэтому связку в
+обоих случаях пишет плагин элемента от id монтирования (AGENTS.md, «`id` в
+разметке — от монтирования, в плагинах»). `TTabsItemIdsPlugin` пишет `id` таба
+и `aria-controls` его панели, а `Tabs.Content` своей формулы не держит: её
+проводка (`TTabsContentBindingExtension`) берёт оба значения у таба.
+`TAccordionItemIdsPlugin` пишет обе стороны: заголовку — в `aria` секции,
+панели — в её набор `contentAria` (экземпляра у панели нет).
 
 #### Слоты элементов: статические имена со scope
 
@@ -935,26 +937,21 @@ tabs/collection/extensions/
   tabs/        закрытие вкладок, hasEnabledTabs
     tabs.extension.ts
     item/item.extension.ts           closable = !disabled && (item ?? parent)
-  content/     связка «таб ↔ панель»
-    content.extension.ts
-    item/item.extension.ts           tabAria и panelAria
 ```
 
 #### Логика, которой нужен элемент, живёт в item-адаптере
 
 У адаптера есть `_item` и `_parent`, поэтому там считается всё, что зависит от
-элемента. **Формула парной связки живёт в одном месте** — в родительском
-расширении:
+элемента: значение набора — в родительском расширении, а адаптер подставляет в
+итог свой элемент:
 
 ```ts
-// TTabsContentExtension
-tabId(item)   { return `s-tab-${item.idBase}` }
-panelId(item) { return `s-tabpanel-${item.idBase}` }
+// TTabsItemExtension
+get closable() { return !this._item.disabled && (this._item.closable ?? this._parent.closable) }
 ```
 
-`aria-controls` таба и `id` панели — один идентификатор. Разнеси формулу по
-файлам, и половинки однажды разойдутся; тест на это должен ломать **одну**
-сторону, иначе он вакуумный.
+Связки по `id` — не сюда: их пишут плагины связок от id монтирования, и обе
+стороны связки — по одной формуле в одном плагине.
 
 Props фасада префиксуются (`tab_closable`): в шаблоне значения двух
 adapter-контекстов сливаются в один объект, и одноимённые затирают друг друга.
@@ -962,9 +959,9 @@ adapter-контекстов сливаются в один объект, и о�
 #### ARIA: что знает элемент, а что коллекция
 
 `TTabsItem` пишет в свой `aria` только `role: 'tab'` — единственное, что таб
-знает о себе. `id` и `aria-controls` предполагают существование панели, о
-которой знает коллекция: их проставляет `TTabsContentExtension` при добавлении
-элемента. `aria-selected` пишет `TTabsExtension` по событию активации — у
+знает о себе. `id` и `aria-controls` нужны документу: их пишет плагин таба
+`TTabsItemIdsPlugin` от id монтирования. `aria-selected` пишет `TTabsExtension`
+по событию активации — у
 неактивных `"false"`, а не отсутствует: скринридер объявляет «1 из 5, не
 выбрана», и для этого атрибут нужен на всех табах набора.
 
@@ -1130,9 +1127,10 @@ protected _syncDisabled(): void {
 и активировать с клавиатуры.
 
 **Граница набора.** Писать можно только туда, где есть экземпляр. У разметки
-без компонента набора не существует, и её атрибуты отдаются пропом:
-`content_aria` у панели Accordion, `list_aria` у списка Select. См. критерий
-«часть или слот» — это его прямое следствие, а не исключение.
+без компонента своего экземпляра нет, и её набор держит тот, чья она часть:
+`contentAria` у секции Accordion, `listAria` у Select, `triggerAria` у Popover
+и Tooltip, `titleAria` у модального слоя. См. критерий «часть или слот» — это
+его прямое следствие, а не исключение.
 
 ### `dataset` — тот же механизм для контракта с темой
 
@@ -1400,8 +1398,9 @@ ListBox режимы ради чужого компонента, после че
 
 **Панель помечается владельцем.** Она телепортирована, то есть лежит вне
 поддерева владельца, и простой `contains()` счёл бы нажатие внутри неё
-нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner="<idBase>"` —
-чистый DOM, одинаково во всех шести адаптерах, без проводки между компонентами.
+нажатием мимо. `TDismissPlugin.ownerAttribute` даёт `data-owner` — `id` части
+`owner` монтирования владельца, — чистый DOM, одинаково во всех шести
+адаптерах, без проводки между компонентами.
 
 ### Select — Combobox по APG
 
@@ -1519,7 +1518,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 
 - `VueProfile` - Vue profile (`naming: VueNaming`): one surface for the static layer and the binding
 - `VueNaming` - Vue naming strategy (props `ns_name` as everywhere, events keep the core name: `element:ready`)
-- `createVueAdapterContext()` — обёртка над `createAdapterContext`, которая снимает Vue-прокси с `ctrl` и значений `options` и кладёт в `options` основу `id` экземпляра от `useId` (`idBase`, AGENTS.md, «`id` в разметке — от основы экземпляра»); Vue-компоненты создают контекст только через неё. Тип контекста — тот же, что у `createAdapterContext`
+- `createVueAdapterContext()` — обёртка над `createAdapterContext`, которая снимает Vue-прокси с `ctrl` и значений `options` и передаёт набору плагинов id монтирования от `useId` (`mountId`, AGENTS.md, «`id` в разметке — от монтирования, в плагинах»); Vue-компоненты создают контекст только через неё. Тип контекста — тот же, что у `createAdapterContext`
 - `useIcon(role)` — компонент иконки по роли из реестра. Строит разметку через
   `h('svg', { viewBox, innerHTML })`, а не `template`: последнее требовало бы
   рантайм-компилятор Vue. Роль резолвится на отрисовке, поэтому `setIcons()`
@@ -1608,7 +1607,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 **Key design decisions (React-specific):**
 
-- `useSetupXxx(props)` hook doesn't hold the adapter-context itself: it passes the factory `(create) => create(XxxDescriptor(), { ctrl: props.ctrl, props })` to `useAdapterContext` — `create` is `createAdapterContext` with the instance id base (`idBase`) from `useId`, and the eslint block `soldy/react-components-no-framework` forbids importing `createAdapterContext` in components (AGENTS.md, «`id` в разметке — от основы экземпляра») (`adapter/runtime/`), which calls it once on the first render and returns the same context afterwards (`__tests__/adapter-context.spec.tsx`), then hands the context to `useAdapter`. Components call no React hooks of their own — AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»
+- `useSetupXxx(props)` hook doesn't hold the adapter-context itself: it passes the factory `(create) => create(XxxDescriptor(), { ctrl: props.ctrl, props })` to `useAdapterContext` — `create` is `createAdapterContext` with the mount id (`mountId`) from `useId`, and the eslint block `soldy/react-components-no-framework` forbids importing `createAdapterContext` in components (AGENTS.md, «`id` в разметке — от монтирования, в плагинах») (`adapter/runtime/`), which calls it once on the first render and returns the same context afterwards (`__tests__/adapter-context.spec.tsx`), then hands the context to `useAdapter`. Components call no React hooks of their own — AGENTS.md, «Механизмы фреймворка — только в адаптерном слое»
 - `useAdapterContext` also owns the context's lifetime: its effect cleanup destroys the context (`useAdapter` doesn't). React may set the effects of the same live component up again — StrictMode's extra cycle on mount, `<Activity>` on show. On such a setup the hook builds a new context with the factory from the latest render (`useEffectEvent`: props of the first render may have changed since) and re-renders the component with it. Without `ctrl` the instance is new, as on a fresh mount; with `ctrl` it is the same. Every context is destroyed exactly once, including one built but never rendered because the component unmounted first
 - `useAdapter` returns `{ ctrl, plugins, ref, forwardProps, state }` — `state` = exported props (incl. protected `classes`/`present`/`aria`/`dataset`/`attrs`) and plugin outputs, typed `TAdapterState<TInstance, TOutputs>` from the context type; `forwardProps` = `binding.forward(props)`: DOM attrs not consumed by the component (the surface consumes `ctrl`, `embedded`, `children` and prop, trigger, event and slot names)
 - `ref` = `adapter.bindElement`: the context itself knows whether the bundle has `TElementPlugin`
@@ -2105,10 +2104,10 @@ Framework-agnostic dependency injection:
 
 Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view` vs orientation/alignment/position/view/closable) and the state extension (`selection` → `selected` vs `activation` → `active`).
 
-- Core: `packages/core/src/components/custom/accordion/` — `TAccordion` (view only), `TAccordionItem` (text + arrowPlacement), `collection/` with `AccordionFactory` + `TAccordionExtension`/`TAccordionItemExtension` (item adapter exposes `view`, the item facade gives it as the `view` prop) + `TAccordionContentExtension` (header ↔ panel link, `aria-expanded`), like `TTabsContentExtension` at Tabs.
+- Core: `packages/core/src/components/custom/accordion/` — `TAccordion` (view only), `TAccordionItem` (text + arrowPlacement), `collection/` with `AccordionFactory` + `TAccordionExtension`/`TAccordionItemExtension` (item adapter exposes `view`, the item facade gives it as the `view` prop; the extension also writes `aria-expanded`). The header ↔ panel link is `TAccordionItemIdsPlugin` on the item, like `TTabsItemIdsPlugin` at Tabs.
 - Custom item classes removed (`TAccordionItemCustom`, `AccordionItemCustomDescriptor`, `AccordionItemCustomContribution`, `BaseAccordionItemCustom`) — single `TAccordionItem` remains, same in UI.
 - Selection default mode is `'single'` (TSelectionExtension default); old Accordion default `'multiple'` is set explicitly by callers (e.g. `packages/ui/vue/__tests__/Accordion.test.vue` passes `mode="multiple"`).
-- Vue: `Accordion.vue` renders `AccordionItem` for `shown` when items come from the `items` prop (fallback content of the default slot); `accordion/item/Item.vue` toggles via `context.adapters.selection.toggle()`, button view via `view`, header ARIA from the item's own `aria` set, panel side via `content_aria`, open state for the theme via `data-selected`.
+- Vue: `Accordion.vue` renders `AccordionItem` for `shown` when items come from the `items` prop (fallback content of the default slot); `accordion/item/Item.vue` toggles via `context.adapters.selection.toggle()`, button view via `view`, header ARIA from the item's own `aria` set, panel side from the item's `contentAria` set, open state for the theme via `data-selected`.
 
 ---
 

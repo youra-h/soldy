@@ -39,7 +39,6 @@ is typed `TBaseExtensionSet`, not the bare `TExtensionSet`: it guarantees `batch
 ```ts
 export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
   ...activationExtensions<ITabsItem>(TTabsItem),
-  content: () => new TTabsContentExtension<ITabsItem>(),
 })
 
 export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
@@ -87,7 +86,6 @@ export type TTabsCollectionExtensions<TItem extends ITabsItem = ITabsItem> = {
   batch: TBatchExtension<TItem>
   activation: TActivationExtension<TItem>
   tabs: TTabsExtension<ITabs, TItem>
-  content: TTabsContentExtension<TItem>
 }
 
 export type TTabsCollection = TCollectionEngine<ITabsItem, TTabsCollectionExtensions>
@@ -226,7 +224,7 @@ declared inline in `contribution`; owner-level and item-level descriptors are se
 - Owner-level `TabsCollectionDescriptor`: `activeItem` (`protected: true`, triggers
   `change:activation`) + events `item:activated` / `item:deactivated` / `item:close`.
 - Item-level `TabsCollectionItemDescriptor`: `active`, `order` (protected), `tab_closable`
-  (protected — the facade getter of the same name, like `content_aria` on Accordion).
+  (protected — the facade getter of the same name).
 
 ```ts
 export const TabsCollectionDescriptor = defineDescriptor(() =>

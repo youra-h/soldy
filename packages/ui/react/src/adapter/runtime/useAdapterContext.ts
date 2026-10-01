@@ -11,11 +11,13 @@
  * уничтожает их вместе, уничтожает — в обратном порядке.
  *
  * Собирает фабрика функцией `create`, которую даёт хук, а не
- * `createAdapterContext` напрямую: `create` — та же сборка с основой `id`
- * экземпляра (`idBase`) от `useId`. Счётчик ядра (`uid`) на сервере общий
- * для всех запросов, и `id` от него расходились при гидратации, а `useId`
- * React выводит из места компонента в дереве. Основа одна у всех контекстов
- * компонента, в том числе пересобранного: место в дереве то же.
+ * `createAdapterContext` напрямую: `create` — та же сборка с id монтирования
+ * (`mountId`) от `useId`, от него плагины строят `id` частей. Счётчик
+ * процесса на сервере общий для всех запросов, и `id` от него расходились бы
+ * при гидратации, а `useId` React выводит из места компонента в дереве. Id
+ * монтирования один у всех контекстов компонента, в том числе
+ * пересобранного: место в дереве то же. Фасад коллекции делит набор
+ * владельца, и id монтирования у него владельца.
  * Держим через `useRef`, а не `useState` или `useMemo`: их инициализатор React
  * 19 под StrictMode зовёт дважды, и второй контекст с живым набором плагинов
  * утёк бы, а кэш `useMemo` React вправе сбросить.
@@ -98,7 +100,7 @@ function destroyAll(contexts: TAdapterContexts): void {
 export function useAdapterContext<T extends TAdapterContexts>(
 	factory: (create: TCreateAdapterContext, elevator: TElevatorFactory) => T,
 ): TAssembly<T> {
-	const idBase = useId()
+	const mountId = useId()
 	// Слой, который компонент увидел на рендере: из него сборка читает `up()`
 	const parent = useContext(ElevatorContext)
 	const ref = useRef<TBuilt<T> | null>(null)
@@ -108,13 +110,9 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	// устаревшее прочитанное
 	const settled = useRef<TElevatorLayer | null>(null)
 	const [, rerender] = useReducer(nextVersion, 0)
-	// Основа, заданная опцией явно, остаётся за тем, кто её задал
+	// Id монтирования, заданный опцией явно, остаётся за тем, кто его задал
 	const create: TCreateAdapterContext = (descriptor, options, config) =>
-		createAdapterContext(
-			descriptor,
-			{ ...options, options: { idBase, ...options.options } },
-			config,
-		)
+		createAdapterContext(descriptor, { mountId, ...options }, config)
 	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
 

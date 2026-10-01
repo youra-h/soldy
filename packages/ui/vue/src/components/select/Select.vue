@@ -141,7 +141,7 @@ export default { ...SetupSelect, components: { Frame, Input, Button, Icon, Tags,
 			class="s-select__panel"
 			v-bind="dismiss_ownerAttribute"
 		>
-			<div class="s-select__list" v-bind="list_aria">
+			<div class="s-select__list" v-bind="listAria">
 				<slot>
 					<!--
 						Слоты опций статические и получают элемент через scope —

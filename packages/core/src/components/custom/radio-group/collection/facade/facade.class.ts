@@ -1,7 +1,7 @@
 import { TActivationCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TCollectionFacadeProps } from '../../../../base/collection'
 import { radioGroupExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TRadioGroupCollection,
 	TRadioGroupCollectionExtensions,
@@ -31,9 +31,9 @@ export class TRadioGroupCollectionFacade extends TActivationCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, radioGroupExtensions()),
-					options.owner,
+				engine: completeEngine(
+					options.engine,
+					radioGroupExtensions(),
 				) as TRadioGroupCollection,
 				owner: options.owner,
 			},

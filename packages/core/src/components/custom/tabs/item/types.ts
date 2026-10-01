@@ -4,7 +4,6 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload, TAriaAttributes } from '../../../../common'
-import type { IComponentOptions } from '../../../base/component'
 import type { ITabsCollectionItemProps } from '../collection/types'
 
 // Параметр держит арность дженерика: аргумент передают на вызовах.
@@ -45,5 +44,3 @@ export interface ITabsItem<
 	/** Имя кнопки закрытия целиком: `closeLabel` + текст таба */
 	readonly closeAria: TAriaAttributes
 }
-
-export type TTabsItemOptions = IComponentOptions

@@ -4,7 +4,6 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload, TAria, TAriaAttributes } from '../../../../common'
-import type { IComponentOptions } from '../../../base/component'
 import type { ITagsCollectionItemProps } from '../collection/types'
 
 export type TTagsItemEvents = TValueControlEvents<string | number> & {
@@ -48,5 +47,3 @@ export interface ITagsItem<
 	 */
 	readonly closeAria: TAria
 }
-
-export type TTagsItemOptions = IComponentOptions

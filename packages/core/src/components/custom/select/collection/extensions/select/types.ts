@@ -7,18 +7,13 @@ import type { ISelectItemExtension } from './item'
 /**
  * Контракт расширения Select.
  *
- * Держит формулу идентификаторов связки «поле ↔ список ↔ опция» и текст
- * выбранного, который показывает поле. О выборе пользователя сообщает
- * событием `choose`.
+ * Держит текст выбранного, который показывает поле, и многовыборность
+ * списка. О выборе пользователя сообщает событием `choose`.
  */
 export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	extends
 		IExtension<TItem, TSelectExtensionEvents>,
 		IExtensionItems<TItem, ISelectItemExtension<TItem>> {
-	/** `id` элемента с `role="listbox"`. Владельца нет — нет и `id`. */
-	readonly listId: string | undefined
-	/** `id` элемента с `role="option"`. */
-	optionId(item: TItem): string
 	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
 	readonly text: string
 	/** Где стоит отметка выбранной опции — свойство поля, не опции. */

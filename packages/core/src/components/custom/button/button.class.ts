@@ -1,6 +1,6 @@
 import { TTextable } from '../../base/textable'
 import type { IButton, IButtonProps, TButtonView, TButtonEvents } from './types'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { NATIVE_BUTTON_TAGS } from '../../../common'
 
 export default class TButton extends TTextable<IButtonProps, TButtonEvents> implements IButton {
@@ -15,8 +15,8 @@ export default class TButton extends TTextable<IButtonProps, TButtonEvents> impl
 
 	protected _view: TButtonView | undefined
 
-	constructor(props: Partial<IButtonProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IButtonProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TButton
 

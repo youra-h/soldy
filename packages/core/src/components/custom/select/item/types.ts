@@ -4,7 +4,6 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload } from '../../../../common'
-import type { IComponentOptions } from '../../../base/component'
 import type { ISelectCollectionItemProps } from '../collection/types'
 
 export type TSelectItemEvents = TValueControlEvents<string | number> & {
@@ -27,5 +26,3 @@ export interface ISelectItem<
 	/** Текст опции */
 	text: string
 }
-
-export type TSelectItemOptions = IComponentOptions

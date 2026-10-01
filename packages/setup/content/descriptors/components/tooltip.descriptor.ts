@@ -10,7 +10,11 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../protected/define'
 import { TTooltip } from '@soldy-ui/core'
 import type { TAriaAttributes } from '@soldy-ui/core'
-import { DismissPluginDescriptor, TooltipTriggerPluginDescriptor } from '../plugins'
+import {
+	DismissPluginDescriptor,
+	TooltipIdsPluginDescriptor,
+	TooltipTriggerPluginDescriptor,
+} from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
 
 export const TooltipDescriptor = defineDescriptor(() =>
@@ -41,15 +45,12 @@ export const TooltipDescriptor = defineDescriptor(() =>
 				/** Описание (`aria-describedby`) или имя (`aria-labelledby`) триггера. */
 				type: { type: String, triggers: ['change:type'] },
 				/**
-				 * Сторона триггера в связке с панелью. Вычисляет ядро, шаблон
-				 * раскладывает в scope слота `trigger`: оставь её в разметке — и
-				 * формула `id` и выбор атрибута по режиму повторятся в каждом из
-				 * шести адаптеров.
-				 *
-				 * `id` постоянный — строится из `uid`, а атрибут ссылки меняет
-				 * режим: набор перечитывается на `change:type`.
+				 * Сторона триггера в связке с панелью. Набор подсказки: ссылку на
+				 * панель по режиму пишет `TTooltipIdsPlugin`, шаблон раскладывает
+				 * набор в scope слота `trigger`. Оставь её в разметке — и выбор
+				 * атрибута по режиму повторится в каждом из шести адаптеров.
 				 */
-				triggerAria: { type: Object, protected: true, triggers: ['change:type'] },
+				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 			},
 		},
 
@@ -61,6 +62,8 @@ export const TooltipDescriptor = defineDescriptor(() =>
 			// Наведение, фокус с клавиатуры, нажатие и Escape. После dismiss:
 			// берёт у него панель
 			TooltipTriggerPluginDescriptor,
+			// `id` панели и ссылка триггера на него по режиму
+			TooltipIdsPluginDescriptor,
 		],
 	}),
 )

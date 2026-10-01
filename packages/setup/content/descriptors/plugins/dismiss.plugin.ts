@@ -32,9 +32,10 @@ export const DismissPluginDescriptor = definePlugin({
 		props: {
 			enabled: { type: Boolean, triggers: ['change:enabled'] },
 			/**
-			 * Значение постоянное — строится из `uid` владельца. Триггер всё равно
-			 * нужен: проп без триггеров адаптер считает pass-through и наружу не
-			 * отдаёт. `create` — момент, когда плагин объявлен готовым.
+			 * Значение постоянное — `id` части `owner` монтирования владельца
+			 * (`createId`). Триггер всё равно нужен: проп без триггеров адаптер
+			 * считает pass-through и наружу не отдаёт. `create` — момент, когда
+			 * плагин объявлен готовым.
 			 */
 			ownerAttribute: { type: Object, protected: true, triggers: ['create'] },
 		},

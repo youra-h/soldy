@@ -81,26 +81,22 @@ describe('умолчания', () => {
 })
 
 describe('ARIA окна', () => {
-	it('модальный диалог с именем от заголовка', () => {
+	// Имя от заголовка и описание телом — ссылки на `id`, их пишет
+	// `TDialogIdsPlugin` (plugins, ids.plugin.spec). У ядра — роль и модальность
+	it('модальный диалог; ссылок на заголовок и тело ядро не пишет', () => {
 		const dialog = new TDialog()
 		const aria = dialog.aria.toObject()
 
-		expect(aria.role).toBe('dialog')
-		expect(aria['aria-modal']).toBe('true')
-		expect(aria['aria-labelledby']).toBe(dialog.titleAria.id)
-		expect(aria['aria-describedby']).toBeUndefined()
+		expect(aria).toEqual({ role: 'dialog', 'aria-modal': 'true' })
+		expect(dialog.titleAria.toObject()).toEqual({})
+		expect(dialog.bodyAria.toObject()).toEqual({})
 	})
 
-	it('предупреждение — alertdialog, описание — тело окна', () => {
-		const dialog = new TDialog({ alert: true })
-		const aria = dialog.aria.toObject()
-
-		expect(aria.role).toBe('alertdialog')
-		expect(aria['aria-describedby']).toBe(dialog.bodyAria.id)
-		expect(aria['aria-labelledby']).toBe(dialog.titleAria.id)
+	it('предупреждение — alertdialog', () => {
+		expect(new TDialog({ alert: true }).aria.get('role')).toBe('alertdialog')
 	})
 
-	it('alert на лету меняет роль и описание, change:alert — только на смену', () => {
+	it('alert на лету меняет роль, change:alert — только на смену', () => {
 		const dialog = new TDialog()
 		const changes: boolean[] = []
 
@@ -110,23 +106,11 @@ describe('ARIA окна', () => {
 		dialog.alert = true
 
 		expect(dialog.aria.get('role')).toBe('alertdialog')
-		expect(dialog.aria.get('aria-describedby')).toBe(dialog.bodyAria.id)
 
 		dialog.alert = false
 
 		expect(dialog.aria.get('role')).toBe('dialog')
-		expect(dialog.aria.has('aria-describedby')).toBe(false)
 		expect(changes).toEqual([true, false])
-	})
-
-	it('id заголовка и тела разные, у двух окон — тоже', () => {
-		const first = new TDialog()
-		const second = new TDialog()
-
-		expect(first.titleAria.id).toMatch(/^s-dialog-title-\d+$/)
-		expect(first.bodyAria.id).toMatch(/^s-dialog-body-\d+$/)
-		expect(first.titleAria.id).not.toBe(first.bodyAria.id)
-		expect(first.titleAria.id).not.toBe(second.titleAria.id)
 	})
 })
 

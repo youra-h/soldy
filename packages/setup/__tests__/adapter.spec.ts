@@ -11,8 +11,14 @@ import {
 	TTabsContent,
 	TTabsItem,
 } from '@soldy-ui/core'
-import type { TCollectionEngine } from '@soldy-ui/core'
-import { TPluginBundle, TDragPlugin, TElementPlugin, TFrameLayoutPlugin } from '@soldy-ui/plugins'
+import type { ITabsItem, TCollectionEngine } from '@soldy-ui/core'
+import {
+	TPluginBundle,
+	TDragPlugin,
+	TElementPlugin,
+	TFrameLayoutPlugin,
+	TTabsItemIdsPlugin,
+} from '@soldy-ui/plugins'
 import {
 	createAdapterContext,
 	defineComponent,
@@ -411,33 +417,46 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 /**
  * Панель Tabs в коллекцию не входит, но фазы у неё те же. Сборка связывает
  * панель с табом, который уже в коллекции (таб из данных), и пишет только
- * своё — фасад и `aria` панели. Подписки на движок и `value` и второй поиск —
- * на `attach`: таб разметки входит в коллекцию на своём `attach`, а подписка,
- * заведённая сборкой, у React осталась бы на шине движка от отброшенного
- * рендера.
+ * своё — фасад и `aria` панели. Подписки на движок, `value` и таб и второй
+ * поиск — на `attach`: таб разметки входит в коллекцию на своём `attach`, а
+ * подписка, заведённая сборкой, у React осталась бы на чужой шине от
+ * отброшенного рендера.
+ *
+ * Своей формулы `id` у панели нет: `id` таба и `id` его панели записал плагин
+ * таба от монтирования таба, и панель берёт ровно их.
  */
 describe('TTabsContentBindingExtension: сборка и вход', () => {
+	/** Монтирование таба: его плагин связок пишет `id` от id монтирования. */
+	const mountTab = (tab: ITabsItem, mountId = `tab-${tab.value}`) =>
+		new TPluginBundle(tab, mountId).use(TTabsItemIdsPlugin)
+
 	/** Движок Tabs под лифтом и панель `a`, собранная под ним. */
 	function assemblePanel(items: ReadonlyArray<{ value: string; text: string }> = []) {
 		const { factory, store } = createElevatorFactory()
 		const engine = createEngineTabs({ owner: new TTabs(), items: [...items] })
 
 		store.set(ITEM_CONTEXT_ELEVATOR, engine)
+		// Список табов рисуется раньше панелей: табы из данных уже смонтированы
+		engine.extensions.batch.items.forEach((tab) => mountTab(tab))
 
 		const content = new TTabsContent({ value: 'a' })
 		const context = createAdapterContext(TabsCollectionContentDescriptor(), {}).use(
 			TTabsContentBindingExtension,
 			{ content, elevator: factory },
 		)
-		const push = (value: string) =>
-			engine.extensions.plain.push(new TTabsItem({ value, text: value.toUpperCase() }))
+		const push = (value: string) => {
+			const tab = new TTabsItem({ value, text: value.toUpperCase() })
+
+			mountTab(tab)
+
+			return engine.extensions.plain.push(tab)
+		}
 
 		return { engine, content, context, push }
 	}
 
-	/** Сторона панели в связке: роль, `id` и ссылка на таб. */
+	/** Сторона панели в связке: `id` и ссылка на таб. */
 	const panelSide = (content: TTabsContent) => ({
-		role: content.aria.get('role'),
 		id: content.aria.get('id'),
 		labelledBy: content.aria.get('aria-labelledby'),
 	})
@@ -447,11 +466,7 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		const [tab] = engine.extensions.batch.items
 
 		expect(context.instance.item).toBe(tab)
-		expect(panelSide(content)).toEqual({
-			role: 'tabpanel',
-			id: tab.aria.get('aria-controls'),
-			labelledBy: tab.aria.get('id'),
-		})
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
 	})
 
 	it('до attach таб, вошедший после сборки, панель не находит', () => {
@@ -460,7 +475,7 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		push('a')
 
 		expect(context.instance.item).toBeUndefined()
-		expect(content.aria.has('role')).toBe(false)
+		expect(panelSide(content)).toEqual({ id: undefined, labelledBy: undefined })
 	})
 
 	it('attach находит таб, вошедший после сборки', () => {
@@ -470,11 +485,7 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		context.attach()
 
 		expect(context.instance.item).toBe(tab)
-		expect(panelSide(content)).toEqual({
-			role: 'tabpanel',
-			id: tab.aria.get('aria-controls'),
-			labelledBy: tab.aria.get('id'),
-		})
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
 	})
 
 	it('после attach панель следит за составом и своим value', () => {
@@ -491,32 +502,52 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		content.value = 'b'
 
 		expect(context.instance.item).toBe(b)
-		expect(content.aria.get('aria-labelledby')).toBe(b.aria.get('id'))
+		expect(panelSide(content)).toEqual({ id: 'tab-b-panel', labelledBy: 'tab-b-tab' })
 	})
 
-	it('destroy снимает подписки и aria панели', () => {
-		const { content, context, push } = assemblePanel()
+	it('таб смонтировали заново — панель идёт за его новыми id', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
 
-		push('a')
+		context.attach()
+		mountTab(tab, 'again')
+
+		expect(panelSide(content)).toEqual({ id: 'again-panel', labelledBy: 'again-tab' })
+	})
+
+	it('destroy снимает подписки и связку панели', () => {
+		const { engine, content, context, push } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
 		context.attach()
 		context.destroy()
 
-		expect(content.aria.has('role')).toBe(false)
+		expect(panelSide(content)).toEqual({ id: undefined, labelledBy: undefined })
 
-		// Подписки сняты: ни новый таб, ни смена value панель не связывают
+		// Подписки сняты: ни новый таб, ни смена value, ни новые id таба панель
+		// не связывают
 		push('b')
 		content.value = 'b'
+		mountTab(tab, 'again')
 
-		expect(content.aria.has('role')).toBe(false)
+		expect(panelSide(content)).toEqual({ id: undefined, labelledBy: undefined })
 	})
 
-	it('собранная, но не принятая панель при destroy снимает aria сборки', () => {
+	it('собранная, но не принятая панель при destroy снимает связку сборки', () => {
 		const { content, context } = assemblePanel([{ value: 'a', text: 'A' }])
 
-		expect(content.aria.get('role')).toBe('tabpanel')
+		expect(content.aria.get('id')).toBe('tab-a-panel')
 
 		context.destroy()
 
-		expect(content.aria.has('role')).toBe(false)
+		expect(panelSide(content)).toEqual({ id: undefined, labelledBy: undefined })
+	})
+
+	it('роль панели — её собственная, связка её не трогает', () => {
+		const { content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+
+		context.destroy()
+
+		expect(content.aria.get('role')).toBe('tabpanel')
 	})
 })

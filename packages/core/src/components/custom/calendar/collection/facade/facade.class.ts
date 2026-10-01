@@ -4,7 +4,7 @@ import type {
 	TCollectionFacadeOptions,
 	TCollectionFacadeProps,
 } from '../../../../base/collection'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TCalendarDate } from '../../../../../common'
 import type { ICalendarItem } from '../../item/types'
 import type { ICalendar } from '../../types'
@@ -41,10 +41,10 @@ export class TCalendarCollectionFacade extends TBatchCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, calendarExtensions()),
-					options.owner,
-				) as TCollectionEngine<ICalendarItem, TCalendarCollectionExtensions>,
+				engine: completeEngine(options.engine, calendarExtensions()) as TCollectionEngine<
+					ICalendarItem,
+					TCalendarCollectionExtensions
+				>,
 				owner: options.owner,
 			},
 		)

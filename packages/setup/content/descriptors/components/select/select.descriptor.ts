@@ -17,6 +17,7 @@ import {
 	ListHeightPluginDescriptor,
 	SelectBackspacePluginDescriptor,
 	SelectEditablePluginDescriptor,
+	SelectIdsPluginDescriptor,
 	SelectKeyboardPluginDescriptor,
 	SelectPointerPluginDescriptor,
 } from '../../plugins'
@@ -96,6 +97,11 @@ export const SelectDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:clearLabel', 'change:name'],
 				},
+				/**
+				 * Роль, `id` и множественность списка. Набор Select'а, а не свой:
+				 * список — разметка внутри шаблона, экземпляра у него нет.
+				 */
+				listAria: { type: Object, protected: true, triggers: ['change:listAria'] },
 				/** Можно ли открыть панель: запрещает только `disabled`. */
 				openable: {
 					type: Boolean,
@@ -155,6 +161,8 @@ export const SelectDescriptor = defineDescriptor(() =>
 			// Удаление тегов по Backspace в пустом поле — editable + multiple,
 			// включается свойством removeOnBackspace
 			SelectBackspacePluginDescriptor,
+			// `id` списка и `aria-controls` поля
+			SelectIdsPluginDescriptor,
 		],
 	}),
 )

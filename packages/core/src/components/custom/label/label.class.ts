@@ -1,6 +1,6 @@
 import { TChangeEvent } from '../../../common'
 import { TStylable } from '../../base/stylable'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { ILabel, ILabelProps, TLabelEvents, TLabelPosition } from './types'
 
 /**
@@ -37,8 +37,8 @@ export default class TLabel extends TStylable<ILabelProps, TLabelEvents> impleme
 	protected _text: string
 	protected _position!: TLabelPosition
 
-	constructor(props: Partial<ILabelProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ILabelProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TLabel
 

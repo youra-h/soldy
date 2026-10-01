@@ -1,5 +1,5 @@
 import { TLayer } from '../../base/layer'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { IFrame, IFrameProps, TFrameEvents, TFramePosition } from './types'
 
 /**
@@ -36,10 +36,10 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 	protected _width: number | string
 	protected _height: number | string
 
-	constructor(props: Partial<IFrameProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<IFrameProps> = {}) {
 		const ctor = new.target as typeof TFrame
 
-		super(props, options)
+		super(props)
 
 		this._x = props.x ?? ctor.defaultValues.x
 		this._y = props.y ?? ctor.defaultValues.y

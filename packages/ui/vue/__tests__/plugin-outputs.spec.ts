@@ -89,7 +89,7 @@ describe('контекст несёт выходы плагинов дескри
 		// Под типом — значение геттера плагина из набора этого контекста
 		const dismiss = adapter.bundle?.get(TDismissPlugin)
 
-		expect(dismiss?.ownerAttribute).toEqual({ 'data-owner': String(adapter.instance.uid) })
+		expect(dismiss?.ownerAttribute).toEqual({ 'data-owner': adapter.bundle?.createId('owner') })
 		expect(state.dismiss_ownerAttribute).toEqual(dismiss?.ownerAttribute)
 
 		adapter.destroy()

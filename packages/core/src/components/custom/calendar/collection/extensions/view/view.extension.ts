@@ -1,4 +1,4 @@
-import { TBaseExtension, TBatchExtension, TFactoryExtension } from '../../../../../base/collection'
+import { TBaseExtension, TBatchExtension } from '../../../../../base/collection'
 import type { IExtensionContext } from '../../../../../base/collection'
 import {
 	addMonths,
@@ -10,6 +10,7 @@ import {
 	parseDate,
 	startOfMonth,
 	todayDate,
+	TAria,
 } from '../../../../../../common'
 import type { TAriaAttributes, TCalendarDate, TMonthGridDay } from '../../../../../../common'
 import { calendarBounds, datesOf, inBounds } from '../../../dates'
@@ -21,6 +22,7 @@ import type {
 	ICalendarViewExtension,
 	TCalendarEngineOptions,
 	TCalendarGrid,
+	TCalendarGridSets,
 	TCalendarViewEvents,
 } from './types'
 
@@ -60,6 +62,11 @@ const TITLE_LIVE = 'polite'
  * выключен), размер и вариант календаря, доступное имя (полная дата),
  * `aria-current` и `data-today`, `data-out-of-bounds`. Выбор и фокус дню пишут
  * свои расширения.
+ *
+ * **Имя сетки — её заголовок**, но `id` заголовка и ссылку на него пишет не
+ * вид, а плагин связок календаря (`TCalendarIdsPlugin`): `id` нужны
+ * документу, а не коллекции. Пишет он в наборы места сетки (`gridSets`), а
+ * вид раскладывает их в `grids` вместе со своим.
  */
 export class TCalendarViewExtension
 	extends TBaseExtension<ICalendarItem, TCalendarViewEvents, TCalendarEngineOptions>
@@ -73,6 +80,8 @@ export class TCalendarViewExtension
 	private _skeletonMemo: { key: string; grids: TGridSkeleton[] } | undefined = undefined
 	/** Из чего посчитано то, что день знает от вида. У нового календаря — заново */
 	private _applied = new WeakMap<ICalendarItem, TViewApplied>()
+	/** Наборы заголовка и сетки по месту сетки — в них пишет плагин связок */
+	private readonly _gridSets: TCalendarGridSets[] = []
 
 	get months(): TCalendarDate[] {
 		return [...this._months]
@@ -94,13 +103,6 @@ export class TCalendarViewExtension
 		// него живут в области наблюдателя — сменился календарь, прежние сняты
 		ctx.options.watch('owner', (owner, scope) => {
 			if (!owner) return
-
-			// Дни строит фабрика, как только календарь пришёл, — раньше, чем
-			// сборка привяжет её к владельцу. Без основы от календаря `id` дней
-			// шли бы от `uid` и расходились при гидратации
-			const factory = ctx.extensions.factory
-
-			if (factory instanceof TFactoryExtension) factory.bindIdBase(owner.idBase)
 
 			// Вид нового календаря строится с нуля: его месяцы, границы и
 			// подписи, а дни, оставшиеся от прежнего, знают от вида заново
@@ -159,18 +161,17 @@ export class TCalendarViewExtension
 
 		const multiselectable = selectionOf(this._ctx)?.multiselectable ? 'true' : null
 		const days = new Map(this._ctx.driver.valueOf().map((item) => [item.date, item]))
-		const idBase = `s-calendar-title-${owner.idBase}`
 
 		return this._skeleton(owner).map(({ key, title, weeks }, index) => {
-			const id = `${idBase}-${index}`
+			const sets = this._gridSets[index]
 
 			return {
 				key,
 				title,
-				titleAria: { id, 'aria-live': TITLE_LIVE },
+				titleAria: { ...sets?.title.toObject(), 'aria-live': TITLE_LIVE },
 				gridAria: {
+					...sets?.grid.toObject(),
 					role: 'grid',
-					'aria-labelledby': id,
 					'aria-multiselectable': multiselectable,
 				},
 				weeks: weeks.map((week) =>
@@ -182,6 +183,28 @@ export class TCalendarViewExtension
 				),
 			}
 		})
+	}
+
+	/**
+	 * Наборы заголовка и сетки на месте `index` — то, что пишут в сетку
+	 * снаружи вида: `id` заголовка и ссылку на него. Место, а не месяц: при
+	 * листании месяц у сетки меняется, а заголовок и его `id` остаются, и
+	 * скринридер объявляет смену месяца в той же живой области. У нового места
+	 * наборы заводятся при первом обращении; их смена — `change:grids`.
+	 */
+	gridSets(index: number): TCalendarGridSets {
+		const existing = this._gridSets[index]
+
+		if (existing) return existing
+
+		const sets: TCalendarGridSets = { title: new TAria(), grid: new TAria() }
+
+		sets.title.events.on('change', () => this.events.emit('change:grids'))
+		sets.grid.events.on('change', () => this.events.emit('change:grids'))
+
+		this._gridSets[index] = sets
+
+		return sets
 	}
 
 	/** Листать некуда и без календаря: месяцев нет. */

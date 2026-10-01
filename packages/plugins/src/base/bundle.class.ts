@@ -1,6 +1,9 @@
 import { TEvented } from '@soldy-ui/core'
 import type { IPlugin, IPluginBundle, IPluginConstructor, TPluginBundleEvents } from './types'
 
+/** Наборов без id монтирования от адаптера: номер такого монтирования в процессе. */
+let unnamedMounts = 0
+
 export class TPluginBundle implements IPluginBundle {
 	readonly events = new TEvented<TPluginBundleEvents>()
 
@@ -9,8 +12,15 @@ export class TPluginBundle implements IPluginBundle {
 	private _created = false
 	/** Набор уничтожен (`destroy()`): объявлять его наружу больше нельзя. */
 	private _destroyed = false
+	/** Id монтирования, которому принадлежит набор (`createId`). */
+	private readonly _mountId: string
 
-	constructor(private readonly _instance: object) {}
+	constructor(
+		private readonly _instance: object,
+		mountId?: string,
+	) {
+		this._mountId = mountId || `s-${++unnamedMounts}`
+	}
 
 	get destroyed(): boolean {
 		return this._destroyed
@@ -19,6 +29,10 @@ export class TPluginBundle implements IPluginBundle {
 	/** Компонент, которому принадлежит набор. */
 	getInstance<T>(): T | null {
 		return (this._instance ?? null) as T | null
+	}
+
+	createId(part: string): string {
+		return `${this._mountId}-${part}`
 	}
 
 	use<P extends IPlugin<any, any>>(
@@ -37,6 +51,7 @@ export class TPluginBundle implements IPluginBundle {
 			{
 				get: this.get.bind(this),
 				getInstance: this.getInstance.bind(this),
+				createId: this.createId.bind(this),
 			},
 			options,
 		)

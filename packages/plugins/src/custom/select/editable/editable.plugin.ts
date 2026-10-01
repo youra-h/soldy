@@ -8,6 +8,7 @@ import type {
 } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
+import { TDismissPlugin } from '../../dismiss'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
 import { TSelectKeyboardPlugin } from '../keyboard'
@@ -54,8 +55,9 @@ import type { TEditablePluginEvents } from './types'
  *   событие `escape` шлёт клавиатурная стратегия `TEditableKeyboardStrategy`,
  *   слушать `close` напрямую было бы циклом: клавиатура сама зависит от
  *   `TSelectKeyboardPlugin`);
- * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели
- *   (`data-owner`) — переход внутрь панели ничего не меняет;
+ * - `focusout`, когда фокус ушёл и с корня, и с телепортированной панели —
+ *   границы те же, что у нажатия мимо (`TDismissPlugin.isInside`), и переход
+ *   внутрь панели ничего не меняет;
  * - смена `editable`/`editableMode` — режим сменился, значит набранное и
  *   отбор относились к прежнему режиму и больше не актуальны. Никакой
  *   умной логики (что оставить, а что сбросить) для этого редкого перехода
@@ -81,7 +83,7 @@ import type { TEditablePluginEvents } from './types'
  */
 export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 	private _owner: ISelect | null = null
-	private _root: Element | null = null
+	private _dismiss: TDismissPlugin | null = null
 	private _keyboard: TSelectKeyboardPlugin | null = null
 	private _engine: TCollectionEngine<any, any> | null = null
 	private _input: HTMLInputElement | null = null
@@ -96,6 +98,7 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 		this._owner = ctx.getInstance<ISelect>() ?? null
 		this._keyboard = ctx.get(TSelectKeyboardPlugin) ?? null
+		this._dismiss = ctx.get(TDismissPlugin) ?? null
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -104,7 +107,6 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 			if (!el) return
 
-			this._root = el
 			this._input = el.querySelector<HTMLInputElement>('input')
 			this._syncListener()
 			this._syncFocusListener()
@@ -113,7 +115,6 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		elementPlugin?.events.on('removed', () => {
 			this._unlisten()
 			this._unlistenFocus()
-			this._root = null
 			this._input = null
 		})
 
@@ -150,10 +151,10 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		this._unlisten()
 		this._unlistenFocus()
 
-		this._root = null
 		this._input = null
 		this._owner = null
 		this._keyboard = null
+		this._dismiss = null
 		this._engine = null
 
 		super.destroy()
@@ -281,22 +282,13 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 
 	/**
 	 * Фокус ушёл — но не в панель: она телепортирована и лежит вне поддерева
-	 * поля, поэтому одного `contains()` мало, вторая граница — `data-owner`
-	 * (тот же приём, что у `TDismissPlugin`).
+	 * поля, поэтому одного `contains()` мало. Границы — те же, что у нажатия
+	 * мимо: их знает `TDismissPlugin` (корень, панель по пометке, слои выше).
 	 */
 	private _handleFocusOut(event: FocusEvent): void {
-		if (this._isInside(event.relatedTarget)) return
+		if (this._dismiss?.isInside(event.relatedTarget)) return
 
 		this._returnField()
-	}
-
-	private _isInside(target: EventTarget | null): boolean {
-		if (!(target instanceof Element)) return false
-		if (this._root?.contains(target)) return true
-
-		const owner = this._owner
-
-		return !!owner && !!target.closest(`[data-owner="${owner.idBase}"]`)
 	}
 
 	/**

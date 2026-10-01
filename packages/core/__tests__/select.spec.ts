@@ -369,34 +369,19 @@ describe('панель после выбора', () => {
 	})
 })
 
-describe('связка ARIA поле ↔ список ↔ опция', () => {
-	it('поле ссылается на список', () => {
-		const { owner, select } = createSelect(['a'])
+/**
+ * `id` списка и опций и ссылки на них — `aria-controls` поля и
+ * `aria-activedescendant` — ядро не пишет: `id` нужны документу, их пишут
+ * плагины связок (plugins, ids.plugin.spec). У ядра — роли, выбор и
+ * многовыборность списка.
+ */
+describe('ARIA поля, списка и опций', () => {
+	it('id и ссылок на них у ядра нет', () => {
+		const { owner, items } = createSelect(['a'])
 
-		expect(owner.field.aria.get('aria-controls')).toBe(select.listId)
-	})
-
-	it('опция получает id при добавлении в коллекцию', () => {
-		const { items, select } = createSelect(['a'])
-
-		expect(items[0].aria.get('id')).toBe(select.optionId(items[0]))
-	})
-
-	it('формула идентификаторов одна на обе стороны', () => {
-		// Разнеси её по двум местам — и половинки однажды разойдутся
-		const { items, facadeFor, select } = createSelect(['a'])
-
-		expect(facadeFor(0).context?.adapters.select.optionId).toBe(select.optionId(items[0]))
-	})
-
-	it('id уникальны между двумя Select на странице', () => {
-		const first = createSelect(['a'])
-		const second = createSelect(['a'])
-
-		expect(first.owner.field.aria.get('aria-controls')).not.toBe(
-			second.owner.field.aria.get('aria-controls'),
-		)
-		expect(first.items[0].aria.get('id')).not.toBe(second.items[0].aria.get('id'))
+		expect(owner.field.aria.has('aria-controls')).toBe(false)
+		expect(owner.listAria.has('id')).toBe(false)
+		expect(items[0].aria.has('id')).toBe(false)
 	})
 
 	it('aria-selected стоит на всех опциях, а не только на выбранной', () => {
@@ -411,17 +396,31 @@ describe('связка ARIA поле ↔ список ↔ опция', () => {
 	})
 
 	it('список объявлен как listbox', () => {
-		expect(createSelect(['a']).collection.list_aria.role).toBe('listbox')
+		expect(createSelect(['a']).owner.listAria.get('role')).toBe('listbox')
 	})
 
 	it('aria-multiselectable появляется только в multiple', () => {
-		const { collection } = createSelect(['a'])
+		const { owner, collection } = createSelect(['a'])
 
-		expect(collection.list_aria['aria-multiselectable']).toBeNull()
+		expect(owner.listAria.has('aria-multiselectable')).toBe(false)
 
 		collection.mode = 'multiple'
 
-		expect(collection.list_aria['aria-multiselectable']).toBe('true')
+		expect(owner.listAria.get('aria-multiselectable')).toBe('true')
+
+		collection.mode = 'single'
+
+		expect(owner.listAria.has('aria-multiselectable')).toBe(false)
+	})
+
+	it('change:listAria — на смену набора списка', () => {
+		const { owner, collection } = createSelect(['a'])
+		const changes = vi.fn()
+
+		owner.events.on('change:listAria', changes)
+		collection.mode = 'multiple'
+
+		expect(changes).toHaveBeenCalledWith({ role: 'listbox', 'aria-multiselectable': 'true' })
 	})
 })
 
@@ -856,50 +855,46 @@ describe('field — экземпляр TInput, которым владеет Sel
 
 describe('id элемента формы', () => {
 	/**
-	 * Живёт в `TInputControl`, а не в Select: на поле ссылаются `<label for>`,
-	 * `aria-labelledby` и `aria-describedby` у текста ошибки — это нужно любому
-	 * форменному контролу.
+	 * Живёт в `TInputControl`, а не в Select: на поле ссылаются `<label for>` и
+	 * `aria-labelledby` разметки потребителя — это нужно любому форменному
+	 * контролу. Значение потребителя: не задан — атрибута нет, сама библиотека
+	 * на поле по `id` не ссылается.
 	 */
-	it('пустой проп означает «сгенерируй сам» — берётся uid', () => {
-		const select = new TSelect()
-
-		expect(select.id).toBe(String(select.uid))
+	it('не задан — undefined', () => {
+		expect(new TSelect().id).toBeUndefined()
 	})
 
-	it('заданный снаружи побеждает', () => {
-		expect(new TSelect({ id: 'city' }).id).toBe('city')
+	it('заданный снаружи — как есть, и он же у поля', () => {
+		const select = new TSelect({ id: 'city' })
+
+		expect(select.id).toBe('city')
+		expect(select.field.id).toBe('city')
 	})
 
-	it('меняется через instance и сообщает об этом', () => {
+	it('меняется через instance, сообщает об этом и доходит до поля', () => {
 		const select = new TSelect()
-		const seen: string[] = []
+		const seen: (string | undefined)[] = []
 
 		select.events.on('change:id', (value) => seen.push(value))
 		select.id = 'city'
+		select.id = 'city'
 
-		expect(select.id).toBe('city')
+		expect(select.field.id).toBe('city')
 		expect(seen).toEqual(['city'])
 	})
 
-	it('снятие возвращает к uid', () => {
+	it('снятие убирает id', () => {
 		const select = new TSelect({ id: 'city' })
 
-		select.id = ''
+		select.id = undefined
 
-		expect(select.id).toBe(String(select.uid))
-	})
-
-	it('getProps отдаёт заданное значение, а не производное', () => {
-		// Иначе assign() перенёс бы чужой uid на другой экземпляр
-		const select = new TSelect()
-
-		expect(select.getProps().id).toBe('')
+		expect(select.id).toBeUndefined()
+		expect(select.getProps().id).toBeUndefined()
 	})
 
 	it('есть у всех форменных контролов, не только у Select', () => {
-		const input = new TInput()
-
-		expect(input.id).toBe(String(input.uid))
+		expect(new TInput({ id: 'name' }).id).toBe('name')
+		expect(new TInput().id).toBeUndefined()
 	})
 })
 

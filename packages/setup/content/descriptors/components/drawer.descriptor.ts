@@ -16,6 +16,7 @@ import { TDrawer } from '@soldy-ui/core'
 import {
 	DrawerLayoutPluginDescriptor,
 	DrawerSwipePluginDescriptor,
+	ModalIdsPluginDescriptor,
 	ScrollLockPluginDescriptor,
 } from '../plugins'
 import { ModalLayerDescriptor } from './modal-layer.descriptor'
@@ -61,6 +62,8 @@ export const DrawerDescriptor = defineDescriptor(() =>
 			ScrollLockPluginDescriptor.with({ property: 'locksScroll' }),
 			// Смахнуть панель к её краю
 			DrawerSwipePluginDescriptor,
+			// Имя от заголовка: `id` заголовка и ссылка на него
+			ModalIdsPluginDescriptor,
 		],
 	}),
 )

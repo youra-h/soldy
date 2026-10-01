@@ -1,6 +1,6 @@
 import { NATIVE_DISABLED_TAGS, TChangeEvent } from '../../../common'
 import type { TEventSink } from '../../../common'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import { TStylable } from '../stylable'
 import type { IControlProps, TControlEvents } from './types'
 
@@ -30,8 +30,8 @@ export default class TControl<
 	protected _disabled: boolean
 	protected _focused: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TControl
 

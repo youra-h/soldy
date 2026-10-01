@@ -29,10 +29,10 @@ import type { ISelectExtension, TSelectEngineOptions, TSelectExtensionEvents } f
  * Две обязанности, и обе требуют одновременно владельца и список, поэтому
  * живут вместе:
  *
- * 1. **ARIA-связка.** Формула идентификаторов одна на обе половинки: на
- *    `aria-controls` в `owner.field.aria` и `id` списка, на
- *    `aria-activedescendant` и `id` опции. Разнеси её, и они однажды
- *    разойдутся.
+ * 1. **Многовыборность списка** — `aria-multiselectable` в `listAria`
+ *    владельца по режиму выбора: режим — свойство коллекции, а список —
+ *    Select'а. `id` списка и опций и ссылки на них пишут плагины связок
+ *    (`ids`): `id` нужны документу, а не коллекции.
  * 2. **Размер и вид** опции диктует Select — как у ListBox, расширение пишет
  *    их значениями поля. `disabled` поля распространяется на опции, как у
  *    `<fieldset>`.
@@ -99,21 +99,6 @@ export class TSelectExtension<
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectItemExtension<TItem>>) {
 		super(TSelectItemExtension, options)
-	}
-
-	/**
-	 * `id` списка и опций строятся от основ (`idBase`) Select и опции: они у
-	 * каждого экземпляра свои, поэтому два Select на странице не столкнутся,
-	 * даже если значения совпали. Владельца нет — нет и `id` списка.
-	 */
-	get listId(): string | undefined {
-		const owner = this._ctx.options.get('owner')
-
-		return owner ? `s-select-list-${owner.idBase}` : undefined
-	}
-
-	optionId(item: TItem): string {
-		return `s-select-option-${item.idBase}`
 	}
 
 	/**
@@ -206,10 +191,7 @@ export class TSelectExtension<
 
 			if (!owner) return
 
-			// Поле ссылается на список, а список существует всегда — в отличие от
-			// панели у Tabs, которой может и не быть. Пишем в `field.aria`, а не в
-			// `owner.aria`: связку со списком объявляет ARIA поля, а не корня Select.
-			owner.field.aria.add('aria-controls', this.listId ?? null)
+			this._syncMultiselectable()
 
 			// Догон: опции, лежавшие до прихода владельца
 			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item as TItem))
@@ -340,8 +322,6 @@ export class TSelectExtension<
 		this._applyContentFit(item)
 		this._applyIndicator(item)
 
-		item.aria.add('id', this.optionId(item))
-
 		this._watchText(item)
 	}
 
@@ -447,7 +427,16 @@ export class TSelectExtension<
 	 * текст выбранного.
 	 */
 	private _onModeChanged(): void {
+		this._syncMultiselectable()
+
 		if (this._ctx.options.get('owner')?.field.value === this._text) this._writeField()
+	}
+
+	/** Список выбирает несколько опций — в `multiple`; в `single` атрибута нет. */
+	private _syncMultiselectable(): void {
+		this._ctx.options
+			.get('owner')
+			?.listAria.add('aria-multiselectable', this._selection?.multiple ? 'true' : null)
 	}
 
 	/**

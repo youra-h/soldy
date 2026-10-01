@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
+import type { TDefaultValues } from '../../../base/component'
 import type { TRadioGroupView } from '../types'
 import type { IRadioGroupItem, IRadioGroupItemProps, TRadioGroupItemEvents } from './types'
 
@@ -38,8 +38,8 @@ export default class TRadioGroupItem
 
 	protected _view: TRadioGroupView | undefined
 
-	constructor(props: Partial<IRadioGroupItemProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IRadioGroupItemProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TRadioGroupItem
 

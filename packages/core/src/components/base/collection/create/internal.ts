@@ -150,25 +150,3 @@ export function createComponentEngine<TItem extends object, TOwner>(
 
 	return engine
 }
-
-/** Владелец коллекции — визуальный компонент: у него есть основа `id` в DOM. */
-export interface IIdBaseOwner {
-	readonly idBase: string
-}
-
-/**
- * Основа `id` элементов из данных — от владельца (`TFactoryExtension.bindIdBase`).
- * Элементы из разметки собирает адаптер со своей основой, фабрика их не строит.
- * Элементы, созданные до привязки (движок собран снаружи с `items`), остаются
- * со своей основой — `uid`: такой движок и его `id` — забота того, кто его собрал.
- */
-export function withOwnerIds<TItem extends object>(
-	engine: TCollectionEngine<TItem, any>,
-	owner: IIdBaseOwner | undefined,
-): TCollectionEngine<TItem, any> {
-	const factory: unknown = engine.extensions.factory
-
-	if (owner && factory instanceof TFactoryExtension) factory.bindIdBase(owner.idBase)
-
-	return engine
-}

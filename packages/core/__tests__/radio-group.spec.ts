@@ -2,9 +2,10 @@
  * RadioGroup: «один из N» на активации коллекции.
  *
  * Радио нативные (`input[type=radio]`), поэтому ядро отвечает за то, чего
- * браузер не знает: общий `name` группы, свойства оформления на каждом радио
- * и связь `value` группы с отмеченным радио. Всё это держит одно расширение —
- * `TRadioGroupExtension`.
+ * браузер не знает: свойства оформления на каждом радио и связь `value`
+ * группы с отмеченным радио. Всё это держит одно расширение —
+ * `TRadioGroupExtension`. Общий `name`, которым браузер собирает радио в
+ * группу, раздаёт плагин группы.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -104,36 +105,16 @@ describe('TRadioGroupItem (чистый класс)', () => {
 	})
 })
 
+/**
+ * Общий `name` радио ядро не раздаёт: собирает радио в группу по имени
+ * браузер, и раздаёт имя плагин группы (`TRadioGroupNamePlugin`, plugins,
+ * ids.plugin.spec). Своё имя группы — значение формы — остаётся у группы.
+ */
 describe('общий name', () => {
-	/** Без общего `name` браузер не соберёт радио в группу. */
-	it('безымянная группа раздаёт имя от своего uid', () => {
-		const { owner, collection, items } = createGroup(['a', 'b'])
-		const name = collection.extensions.radioGroup.groupName
+	it('ядро имени радио не пишет', () => {
+		const { items } = createGroup(['a', 'b'], { name: 'delivery' })
 
-		expect(owner.name).toBe('')
-		expect(name).toBe(`s-radio-group-${owner.uid}`)
-		expect(items.map((item) => item.name)).toEqual([name, name])
-	})
-
-	it('две безымянные группы на странице не сливаются', () => {
-		const first = createGroup(['a'])
-		const second = createGroup(['a'])
-
-		expect(first.items[0].name).not.toBe(second.items[0].name)
-	})
-
-	it('своё имя группы уходит всем радио, в том числе при смене', () => {
-		const { owner, items } = createGroup(['a', 'b'], { name: 'delivery' })
-
-		expect(items.map((item) => item.name)).toEqual(['delivery', 'delivery'])
-
-		owner.name = 'pickup'
-
-		expect(items.map((item) => item.name)).toEqual(['pickup', 'pickup'])
-
-		owner.name = ''
-
-		expect(items[0].name).toBe(`s-radio-group-${owner.uid}`)
+		expect(items.map((item) => item.name)).toEqual(['', ''])
 	})
 })
 
@@ -180,7 +161,6 @@ describe('свойства группы на радио', () => {
 
 		expect(collection.items.every((item) => item instanceof TRadioGroupItem)).toBe(true)
 		expect(collection.items.map((item) => item.view)).toEqual(['halo', 'halo'])
-		expect(collection.items.map((item) => item.name)).toEqual(['city', 'city'])
 	})
 })
 

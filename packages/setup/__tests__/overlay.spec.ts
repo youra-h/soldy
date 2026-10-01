@@ -707,7 +707,7 @@ describe('пауза наблюдения панели на уведомлени
 })
 
 describe('нажатие мимо', () => {
-	// Владелец — основа `id` в DOM (`IComponentView.idBase`): ею плагин помечает панель
+	// Владелец — id монтирования (`mountId`): от него плагин помечает панель
 	const setup = async (owner: number, options?: IDismissPluginOptions) => {
 		const element = document.createElement('div')
 
@@ -716,7 +716,7 @@ describe('нажатие мимо', () => {
 		const elementPlugin = new TElementPlugin()
 		const dismiss = new TDismissPlugin()
 
-		dismiss.install(createPluginContext({ idBase: String(owner) }, [elementPlugin]), options)
+		dismiss.install(createPluginContext({}, [elementPlugin], String(owner)), options)
 
 		elementPlugin.element = element
 		await nextFrame()
@@ -857,8 +857,8 @@ describe('нажатие мимо', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
-	it('ownerAttribute несёт основу id владельца — ею помечается панель', async () => {
-		expect((await setup(7)).dismiss.ownerAttribute).toEqual({ 'data-owner': '7' })
+	it('ownerAttribute — id части owner монтирования: ею помечается панель', async () => {
+		expect((await setup(7)).dismiss.ownerAttribute).toEqual({ 'data-owner': '7-owner' })
 	})
 
 	it('мышь: pointerdown и совместимый mousedown мимо закрывают один раз', async () => {
@@ -1287,7 +1287,7 @@ describe('нажатие мимо', () => {
 		it('до объявления корня панели нет', () => {
 			const dismiss = new TDismissPlugin()
 
-			dismiss.install(createPluginContext({ idBase: '51' }, [new TElementPlugin()]))
+			dismiss.install(createPluginContext({}, [new TElementPlugin()], '51'))
 			ownPanel(dismiss, 1001)
 
 			expect(dismiss.findPanel()).toBeNull()

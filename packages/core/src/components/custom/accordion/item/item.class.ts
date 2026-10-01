@@ -1,6 +1,6 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
-import { TChangeEvent } from '../../../../common'
+import type { TDefaultValues } from '../../../base/component'
+import { TAria, TChangeEvent } from '../../../../common'
 import type { TEventSink } from '../../../../common'
 import type {
 	IAccordionItem,
@@ -36,8 +36,10 @@ export default class TAccordionItem<
 
 	protected _text: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	protected _contentAria: TAria
+
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TAccordionItem
 
@@ -49,7 +51,14 @@ export default class TAccordionItem<
 
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement
 
-		// Подписка на изменения state-объектов
+		this._contentAria = new TAria()
+
+		this._contentAria.events.on('change', () =>
+			this._sink.emit('change:contentAria', this._contentAria.toObject()),
+		)
+
+		// Секция — заголовок и раскрывающаяся панель-область (APG Accordion)
+		this._contentAria.add('role', 'region')
 	}
 
 	/**
@@ -71,6 +80,17 @@ export default class TAccordionItem<
 	 */
 	protected override get _ariaTag(): string {
 		return 'button'
+	}
+
+	/**
+	 * ARIA раскрывающейся панели. Панель лежит внутри элемента и отдельно от
+	 * него не существует — экземпляра у неё нет, поэтому набор — секции
+	 * (AGENTS.md, «Часть или слот»). Роль пишет секция, `id` панели и ссылку
+	 * на заголовок — `TAccordionItemIdsPlugin`. Об изменении набор сообщает
+	 * `change:contentAria`.
+	 */
+	get contentAria(): TAria {
+		return this._contentAria
 	}
 
 	get text(): string {

@@ -37,7 +37,7 @@ export abstract class TCollectionComponent<
 		props: Partial<IComponentProps> = {},
 		options: ICollectionComponentOptions<TItem, TExtensions>,
 	) {
-		super(props, options)
+		super(props)
 
 		this.engine = options.engine
 		this._owner = options.owner

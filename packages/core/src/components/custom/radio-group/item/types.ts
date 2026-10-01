@@ -3,7 +3,6 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../../base/value-control'
-import type { IComponentOptions } from '../../../base/component'
 import type { IRadioGroupCollectionItemProps } from '../collection/types'
 import type { TRadioGroupView } from '../types'
 
@@ -29,5 +28,3 @@ export interface IRadioGroupItem extends IValueControl<
 	/** Вид радио */
 	view: TRadioGroupView | undefined
 }
-
-export type TRadioGroupItemOptions = IComponentOptions

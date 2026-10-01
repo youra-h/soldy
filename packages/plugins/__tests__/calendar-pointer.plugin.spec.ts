@@ -51,7 +51,7 @@ afterEach(() => {
 })
 
 async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalendarMode) {
-	const owner = new TCalendar({ months: ['2026-09-01'], ...props }, { idBase: 'c1' })
+	const owner = new TCalendar({ months: ['2026-09-01'], ...props })
 	const engine = createEngineCalendar({ owner })
 
 	if (mode) engine.extensions.selection.mode = mode

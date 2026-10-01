@@ -3,8 +3,7 @@ import type {
 	IValueControlProps,
 	TValueControlEvents,
 } from '../../../base/value-control'
-import type { TChangeEvent, TValuePayload } from '../../../../common'
-import type { IComponentOptions } from '../../../base/component'
+import type { TAria, TAriaAttributes, TChangeEvent, TValuePayload } from '../../../../common'
 import type { IAccordionCollectionItemProps } from '../collection/types'
 
 export type TAccordionArrowPlacement = 'start' | 'end'
@@ -16,6 +15,8 @@ export type TAccordionItemEvents = TValueControlEvents<string | number> & {
 	'change:text:before': (e: TChangeEvent<string>) => void
 	/** change:arrowPlacement */
 	'change:arrowPlacement': (value: TAccordionArrowPlacement) => void
+	/** change:contentAria — набор атрибутов панели изменился */
+	'change:contentAria': (value: TAriaAttributes) => void
 }
 
 export interface IAccordionItemProps
@@ -34,6 +35,6 @@ export interface IAccordionItem<
 	text: string
 	/** Позиция иконки-стрелки */
 	arrowPlacement: TAccordionArrowPlacement
+	/** ARIA раскрывающейся панели: роль — секция, `id` и ссылку на заголовок — плагин */
+	readonly contentAria: TAria
 }
-
-export type TAccordionItemOptions = IComponentOptions

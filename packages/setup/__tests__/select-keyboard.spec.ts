@@ -23,6 +23,7 @@ import {
 	TCollectionElements,
 	TListItemPlugin,
 	TPluginBundle,
+	TSelectItemIdsPlugin,
 } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -93,10 +94,12 @@ async function setup(
 		}
 		root.appendChild(node)
 
-		const bundle = new TPluginBundle(item)
+		// Монтирование опции: `id` ей пишет её плагин связок
+		const bundle = new TPluginBundle(item, `option-${item.value}`)
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TSelectItemIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
 		const highlight = required(bundle.get(TListItemPlugin), 'TListItemPlugin')
@@ -420,9 +423,9 @@ describe('aria-activedescendant', () => {
 
 		press('ArrowDown')
 
-		expect(owner.field.aria.get('aria-activedescendant')).toBe(
-			`s-select-option-${items[0].uid}`,
-		)
+		// `id` опции записал её плагин связок — от монтирования опции
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
+		expect(items[0].aria.get('id')).toBe('option-москва-option')
 	})
 
 	it('следует за навигацией', async () => {
@@ -431,9 +434,7 @@ describe('aria-activedescendant', () => {
 		press('ArrowDown')
 		press('ArrowDown')
 
-		expect(owner.field.aria.get('aria-activedescendant')).toBe(
-			`s-select-option-${items[1].uid}`,
-		)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[1].aria.get('id'))
 	})
 
 	it('снимается при закрытии', async () => {

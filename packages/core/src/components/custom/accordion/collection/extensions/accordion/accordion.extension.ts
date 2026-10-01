@@ -2,6 +2,7 @@ import type {
 	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionContext,
+	ISelectionExtension,
 } from '../../../../../base/collection'
 import type { TAccordionView } from '../../../types'
 import { TBaseOwnerItemExtension } from '../../../../../base/collection'
@@ -22,6 +23,12 @@ import { TAccordionItemExtension, type IAccordionItemExtension } from './item'
  * него, `size` и `variant` расширение пишет ей значениями accordion — их
  * диктует он. `disabled` accordion распространяется на секции, как у
  * `<fieldset>`: выключенный accordion выключает их, включённый — включает.
+ *
+ * Раскрытость секции — её выбранность в коллекции, — расширение пишет в
+ * `aria-expanded` заголовка: сама секция о своём членстве не знает. От
+ * владельца она не зависит. `id` заголовка и панели и ссылки между ними
+ * пишет плагин секции (`TAccordionItemIdsPlugin`): `id` нужны документу,
+ * а не коллекции.
  *
  * @template TOwner — тип владельца (TAccordion или наследник)
  * @template TItem  — тип элемента (IAccordionItem или наследник)
@@ -56,6 +63,16 @@ export class TAccordionExtension<
 		ctx.driver.events.on('item:added', (e) => this._inheritOwner(e.item as TItem))
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
+
+		// Раскрытость — по событию selection-расширения: оно стоит раньше
+		const selection = ctx.extensions.selection as ISelectionExtension<TItem> | undefined
+
+		if (selection) {
+			selection.events.on('change:selection', () => this._syncExpanded(selection))
+			ctx.driver.events.on('item:added', () => this._syncExpanded(selection))
+
+			this._syncExpanded(selection)
+		}
 
 		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
 		// него живут в области наблюдателя — сменился владелец, прежние сняты
@@ -115,5 +132,12 @@ export class TAccordionExtension<
 	private _applyStyle(item: TItem, owner: TOwner): void {
 		item.size = owner.size
 		item.variant = owner.variant
+	}
+
+	/** `aria-expanded` заголовка — у каждой секции: раскрыта ли её панель. */
+	private _syncExpanded(selection: ISelectionExtension<TItem>): void {
+		this._ctx.driver.valueOf().forEach((item) => {
+			item.aria.add('aria-expanded', selection.isSelected(item) ? 'true' : 'false')
+		})
 	}
 }

@@ -1,5 +1,5 @@
 import { TStylable } from '../stylable'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { TEventSink } from '../../../common'
 import { clamp, fractionOf } from '../../../common/scale/scale.class'
 import type { IProgress, IProgressProps, TProgressEvents } from './types'
@@ -61,8 +61,8 @@ export default class TProgress<
 	protected _max: number
 	protected _indeterminate: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TProgress
 

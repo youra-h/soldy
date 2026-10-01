@@ -1,5 +1,5 @@
 import { TControl } from '../control'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { IValueControlProps, TValueControlEvents } from './types'
 import { TChangeEvent } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
@@ -29,8 +29,8 @@ export default class TValueControl<
 	protected _name: string
 	protected _value: TValue
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TValueControl
 

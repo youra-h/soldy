@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { TAria } from '../../../common'
 import type { TAriaAttributes } from '../../../common'
 import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverflow } from './types'
@@ -89,8 +89,8 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	 */
 	private readonly _rowNames = new Set<string>()
 
-	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ITagsProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTags
 

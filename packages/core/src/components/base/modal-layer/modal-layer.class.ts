@@ -1,6 +1,7 @@
 import { TLayer, TCloseEvent, FRAME_LAYER_ATTRIBUTE } from '../layer'
 import type { TCloseReason } from '../layer'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
+import { TAria } from '../../../common'
 import type { TAriaAttributes, TDatasetAttributes, TEventSink } from '../../../common'
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
 
@@ -20,10 +21,11 @@ import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from './types'
  * что из него следует для разметки.
  *
  * **Имя — заголовок.** Слот `title` рисуется всегда, и `aria-labelledby`
- * ссылается на него: формула `id` одна на обе стороны связки, и сторону
- * заголовка ядро отдаёт выходом `titleAria` — у разметки без экземпляра
- * набора нет. `TAriaPlugin` модальному слою не ставится: он пишет те же
- * ключи и снял бы связку при установке.
+ * ссылается на него. Сторона заголовка — набор `titleAria`: у разметки без
+ * экземпляра своего набора нет. `id` заголовка и ссылку на него пишет
+ * плагин `TModalLayerIdsPlugin` — `id` нужны документу, а не слою.
+ * `TAriaPlugin` модальному слою не ставится: он пишет те же ключи и снял бы
+ * связку при установке.
  *
  * **Закрытие пользователем — запрос** (`requestClose`) с причиной: кнопка
  * закрытия, нажатие мимо, Escape или жест панели. Запрос проходит через
@@ -71,32 +73,29 @@ export default class TModalLayer<
 	protected _closable: boolean
 	protected _closeLabel: string
 	protected _dismissible: boolean
-	/**
-	 * `id` заголовка — одна формула на обе стороны связки. Блок берётся у
-	 * класса (`s-dialog-title-7`, `s-drawer-title-7`): у двух слоёв на
-	 * странице основы (`idBase`) и так разные, а блок в `id` говорит, чей это
-	 * заголовок.
-	 */
-	protected readonly _titleId: string
+	protected _titleAria: TAria
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<TProps> = {}) {
 		const ctor = new.target as typeof TModalLayer
 
-		super(props, options)
+		super(props)
 
 		this._width = props.width ?? ctor.defaultValues.width
 		this._height = props.height ?? ctor.defaultValues.height
 		this._closable = props.closable ?? ctor.defaultValues.closable
 		this._closeLabel = props.closeLabel ?? ctor.defaultValues.closeLabel
 		this._dismissible = props.dismissible ?? ctor.defaultValues.dismissible
-		this._titleId = `${ctor.baseClass}-title-${this.idBase}`
 
 		this._aria.add('role', 'dialog')
 		// Слой модален: скринридер вне его не читает. Это значение, а не
 		// операция — фон на самих узлах прячет `THideOutsidePlugin`
 		this._aria.add('aria-modal', 'true')
-		// Имя — заголовок. Ссылка стоит всегда: заголовок рисуется всегда
-		this._aria.add('aria-labelledby', this._titleId)
+
+		this._titleAria = new TAria()
+
+		this._titleAria.events.on('change', () =>
+			this._sink.emit('change:titleAria', this._titleAria.toObject()),
+		)
 
 		this._applyOpen()
 		this.events.on('change:visible', () => this._applyOpen())
@@ -212,10 +211,11 @@ export default class TModalLayer<
 	/**
 	 * Сторона заголовка в связке с панелью. Отдельный набор, а не часть
 	 * `aria`: `aria` описывает панель, а это — вложенный элемент без
-	 * экземпляра (AGENTS.md, «Часть или слот»).
+	 * экземпляра (AGENTS.md, «Часть или слот»). Живой: `id` в него пишет
+	 * `TModalLayerIdsPlugin`, об изменении набор сообщает `change:titleAria`.
 	 */
-	get titleAria(): TAriaAttributes {
-		return { id: this._titleId }
+	get titleAria(): TAria {
+		return this._titleAria
 	}
 
 	/** Имя кнопки закрытия — соседней с содержимым, а не самой панели. */

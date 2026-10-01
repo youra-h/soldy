@@ -111,7 +111,7 @@ describe('разметка', () => {
 		expect(panel().getAttribute('role')).toBe('tooltip')
 		expect(panel().hasAttribute('tabindex')).toBe(false)
 		expect(panel().hasAttribute('aria-hidden')).toBe(false)
-		// Пометка — основа `id` подсказки (`useId`), а не счётчик ядра
+		// Пометка — от id монтирования подсказки (`useId`), а не от счётчика процесса
 		expect(panel().dataset.owner).toBeTruthy()
 		expect(find('.s-tooltip__content', panel()).textContent).toBe('Сохранить черновик')
 	})

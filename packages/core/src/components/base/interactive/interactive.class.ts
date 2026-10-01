@@ -1,5 +1,5 @@
 import { TComponentView } from '../component-view'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { IInteractiveProps, TInteractiveEvents } from './types'
 import { TChangeEvent } from '../../../common'
 import type { TEventSink } from '../../../common'
@@ -24,8 +24,8 @@ export default class TInteractive<
 	protected _disabled: boolean
 	protected _focused: boolean
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TInteractive
 

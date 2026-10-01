@@ -276,12 +276,12 @@ describe('дополнение недостающего', () => {
 
 		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
 
-		// Facade доустановила эти четыре расширения поверх уровня 1 — движок
+		// Facade доустановила эти три расширения поверх уровня 1 — движок
 		// вырос за пределы статического типа `createEngine()`, поэтому имя
 		// читаем через приведение к обобщённой карте, а не к `any`.
 		const extensions = engine.extensions as Record<string, unknown>
 
-		for (const name of ['factory', 'activation', 'content', 'tabs']) {
+		for (const name of ['factory', 'activation', 'tabs']) {
 			expect(extensions[name], name).toBeDefined()
 		}
 	})

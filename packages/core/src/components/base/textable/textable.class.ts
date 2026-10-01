@@ -1,7 +1,7 @@
 import { TChangeEvent } from '../../../common'
 import type { TEventSink } from '../../../common'
 import { TControl } from '../control'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { ITextableProps, TTextableEvents } from './types'
 
 /**
@@ -22,8 +22,8 @@ export default class TTextable<
 
 	protected _text: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTextable
 

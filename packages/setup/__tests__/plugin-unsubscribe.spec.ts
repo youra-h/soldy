@@ -28,12 +28,14 @@ import {
 	TAccordion,
 	TCalendar,
 	TListBox,
+	TRadioGroup,
 	TSelect,
 	TTabs,
 	TTags,
 	createEngineAccordion,
 	createEngineCalendar,
 	createEngineListBox,
+	createEngineRadioGroup,
 	createEngineSelect,
 	createEngineTabs,
 	createEngineTags,
@@ -84,6 +86,11 @@ const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
 		const owner = new TListBox()
 
 		return { owner, engine: createEngineListBox({ owner }) }
+	},
+	RadioGroupDescriptor: () => {
+		const owner = new TRadioGroup()
+
+		return { owner, engine: createEngineRadioGroup({ owner }) }
 	},
 	SelectDescriptor: () => {
 		const owner = new TSelect()

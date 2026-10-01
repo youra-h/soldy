@@ -3,12 +3,11 @@
  *
  * Панель появилась потому, что раньше содержимое отдавалось динамическим слотом
  * `panel:${value}` — такое имя резолвит только Vue, и в остальных пяти
- * адаптерах панели были недостижимы. Плюс панели нужен `id`, чтобы таб мог
- * сослаться на неё через `aria-controls`.
+ * адаптерах панели были недостижимы.
  *
- * Слои разделены как у элемента: `TTabsContent` держит только свои props и
- * события, а всё, что про членство в коллекции — активность и ARIA-связку —
- * держит `TTabsContentCollectionFacade`.
+ * Слои разделены как у элемента: `TTabsContent` держит только свои props,
+ * события и роль, а членство в коллекции — активность — держит
+ * `TTabsContentCollectionFacade`.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -17,7 +16,6 @@ import {
 	TTabsItem,
 	TTabsContent,
 	TTabsContentCollectionFacade,
-	TTabsItemCollectionFacade,
 	TTabsCollectionFacade,
 	TItemContextRegistry,
 } from '@soldy-ui/core'
@@ -43,26 +41,7 @@ function createTabs(values: string[]) {
 		return facade
 	}
 
-	/** Фасад самого таба — вторая сторона связки. */
-	const tabFacadeFor = (value: string) => {
-		const facade = new TTabsItemCollectionFacade()
-		const item = find(value)
-
-		if (item) facade.setContext(registry.get(item))
-
-		return facade
-	}
-
-	/** Контекст item-адаптеров таба с таким значением. */
-	const contextFor = (value: string) => {
-		const item = find(value)
-
-		if (!item) throw new Error(`таба со значением ${value} нет`)
-
-		return registry.get(item)
-	}
-
-	return { owner, collection, items, facadeFor, tabFacadeFor, contextFor }
+	return { owner, collection, items, facadeFor }
 }
 
 describe('TTabsContent — собственные props', () => {
@@ -131,62 +110,27 @@ describe('фасад панели — активность', () => {
 	})
 })
 
-describe('связка ARIA таб ↔ панель', () => {
-	/** Сторона панели — её читает проводка, когда панель нашла свой таб. */
-	const panelAriaFor = (ctx: ReturnType<typeof createTabs>, value: string) =>
-		ctx.contextFor(value).adapters.content.panelAria
+/**
+ * Связку «таб ↔ панель» — `id` и ссылки — ядро не пишет: `id` нужны документу.
+ * Сторону таба пишет плагин таба (`TTabsItemIdsPlugin`, plugins,
+ * ids.plugin.spec), сторону панели — проводка, когда панель нашла свой таб
+ * (`TTabsContentBindingExtension`, setup, adapter.spec). Ядро панели знает о
+ * себе только то, что она — панель таба.
+ */
+describe('ARIA панели', () => {
+	it('панель таба и остановка Tab сразу за списком, без id', () => {
+		// По APG Tab из списка (там одна остановка на все табы) ведёт на панель
+		expect(new TTabsContent({ value: 'a' }).aria.toObject()).toEqual({
+			role: 'tabpanel',
+			tabindex: '0',
+		})
+	})
 
-	it('таб получает свою сторону связки при добавлении в коллекцию', () => {
-		// Не при появлении панели: так связка попадает в первую же отрисовку,
-		// в том числе серверную
+	it('у таба связки от ядра нет', () => {
 		const { items } = createTabs(['a'])
 
-		expect(items[0].aria.get('id')).toBe(`s-tab-${items[0].uid}`)
-		expect(items[0].aria.get('aria-controls')).toBe(`s-tabpanel-${items[0].uid}`)
-	})
-
-	it('половинки сходятся: aria-controls таба — это id панели', () => {
-		const ctx = createTabs(['a', 'b'])
-		const panel = panelAriaFor(ctx, 'a')
-
-		expect(ctx.items[0].aria.get('aria-controls')).toBe(panel.id)
-		expect(panel['aria-labelledby']).toBe(ctx.items[0].aria.get('id'))
-	})
-
-	it('формула идентификаторов одна на обе стороны', () => {
-		// Разнеси её по двум местам — и половинки однажды разойдутся
-		const ctx = createTabs(['a'])
-		const content = ctx.collection.engine.extensions.content
-
-		expect(content.tabId(ctx.items[0])).toBe(ctx.items[0].aria.get('id'))
-		expect(content.panelId(ctx.items[0])).toBe(panelAriaFor(ctx, 'a').id)
-	})
-
-	it('роль панели приходит со стороны связки', () => {
-		expect(panelAriaFor(createTabs(['a']), 'a').role).toBe('tabpanel')
-	})
-
-	it('панель — следующая остановка Tab после списка табов', () => {
-		// По APG Tab из списка (там одна остановка на все табы) ведёт на панель
-		expect(panelAriaFor(createTabs(['a']), 'a').tabindex).toBe('0')
-	})
-
-	it('id панели берётся от связанного таба, а не от самой панели', () => {
-		const ctx = createTabs(['a'])
-
-		expect(panelAriaFor(ctx, 'a').id).toContain(String(ctx.items[0].uid))
-	})
-
-	it('id уникальны между двумя группами табов на одной странице', () => {
-		const first = createTabs(['a'])
-		const second = createTabs(['a'])
-
-		// Значение одинаковое, но uid разные — коллизии нет
-		expect(first.items[0].aria.get('id')).not.toBe(second.items[0].aria.get('id'))
-	})
-
-	it('без контекста у фасада панели связки нет', () => {
-		expect(new TTabsContentCollectionFacade().active).toBe(false)
+		expect(items[0].aria.has('id')).toBe(false)
+		expect(items[0].aria.has('aria-controls')).toBe(false)
 	})
 })
 

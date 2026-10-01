@@ -81,27 +81,20 @@ describe('умолчания', () => {
 })
 
 describe('ARIA', () => {
-	it('модальный диалог с именем от заголовка', () => {
+	it('модальный диалог; имя от заголовка — плагин связок, не ядро', () => {
 		const drawer = new TDrawer()
 		const aria = drawer.aria.toObject()
 
 		expect(aria.role).toBe('dialog')
 		expect(aria['aria-modal']).toBe('true')
-		expect(aria['aria-labelledby']).toBe(drawer.titleAria.id)
+		expect(aria).not.toHaveProperty('aria-labelledby')
+		expect(drawer.titleAria.toObject()).toEqual({})
 	})
 
 	it('модальна и внутри контейнера', () => {
 		const drawer = new TDrawer({ contained: true })
 
 		expect(drawer.aria.get('aria-modal')).toBe('true')
-	})
-
-	it('id заголовка — по блоку панели и её uid', () => {
-		const first = new TDrawer()
-		const second = new TDrawer()
-
-		expect(first.titleAria.id).toMatch(/^s-drawer-title-\d+$/)
-		expect(first.titleAria.id).not.toBe(second.titleAria.id)
 	})
 
 	it('крестик назван closeLabel', () => {

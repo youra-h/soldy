@@ -5,7 +5,7 @@ import type {
 	TCollectionFacadeProps,
 } from '../../../../base/collection'
 import { tabsExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TTabsCollectionExtensions, TTabsCollectionFacadeEngine } from '../types'
 import type { TTabsCollectionFacadeEvents } from '../types'
 import type { ITabsItem } from '../../item/types'
@@ -33,10 +33,10 @@ export class TTabsCollectionFacade extends TActivationCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, tabsExtensions()),
-					options.owner,
-				) as TCollectionEngine<ITabsItem, TTabsCollectionExtensions>,
+				engine: completeEngine(options.engine, tabsExtensions()) as TCollectionEngine<
+					ITabsItem,
+					TTabsCollectionExtensions
+				>,
 				owner: options.owner,
 			},
 		)

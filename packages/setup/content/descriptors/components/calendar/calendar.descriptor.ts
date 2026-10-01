@@ -18,6 +18,7 @@ import { TCalendar } from '@soldy-ui/core'
 import type { ICalendarItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
+	CalendarIdsPluginDescriptor,
 	CalendarKeyboardPluginDescriptor,
 	CalendarPointerPluginDescriptor,
 	CollectionBundlesPluginDescriptor,
@@ -81,6 +82,9 @@ export const CalendarDescriptor = defineDescriptor(() =>
 			CalendarKeyboardPluginDescriptor,
 			// Нажатия по дням и кнопкам листания, наведение для предпросмотра
 			CalendarPointerPluginDescriptor,
+			// Имена сеток: `id` заголовка месяца и ссылка сетки на него.
+			// После реестра bundles: движок узнаёт от него
+			CalendarIdsPluginDescriptor,
 		],
 	}),
 )

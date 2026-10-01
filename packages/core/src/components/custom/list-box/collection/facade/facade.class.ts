@@ -5,7 +5,7 @@ import type {
 	TSelectionFacadeProps,
 } from '../../../../base/collection'
 import { listBoxExtensions } from '../factory'
-import { withOwnerIds, completeEngine } from '../../../../base/collection/create/internal'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type { TListBoxCollectionExtensions, TListBoxCollectionFacadeEngine } from '../types'
 import type { IListBoxItem } from '../../item/types'
 import type { IListBox } from '../../types'
@@ -32,10 +32,10 @@ export class TListBoxCollectionFacade extends TSelectionCollectionFacade<
 		super(
 			{},
 			{
-				engine: withOwnerIds(
-					completeEngine(options.engine, listBoxExtensions()),
-					options.owner,
-				) as TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>,
+				engine: completeEngine(options.engine, listBoxExtensions()) as TCollectionEngine<
+					IListBoxItem,
+					TListBoxCollectionExtensions
+				>,
 				owner: options.owner,
 			},
 		)

@@ -1,5 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { IAccordion, IAccordionProps, TAccordionEvents, TAccordionView } from './types'
 
 /**
@@ -18,8 +18,8 @@ export class TAccordion extends TControl<IAccordionProps, TAccordionEvents> impl
 
 	protected _view: TAccordionView | undefined
 
-	constructor(props: Partial<IAccordionProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IAccordionProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TAccordion
 

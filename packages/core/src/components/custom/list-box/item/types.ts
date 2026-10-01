@@ -5,7 +5,6 @@ import type {
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload } from '../../../../common'
 import type { TListItemContentFit } from '../../list'
-import type { IComponentOptions } from '../../../base/component'
 import type { IListBoxCollectionItemProps } from '../collection/types'
 
 export type TListBoxItemEvents = TValueControlEvents<string | number> & {
@@ -40,5 +39,3 @@ export interface IListBoxItem<
 	/** Что делать с не помещающимся текстом (`undefined` — как у списка) */
 	contentFit: TListItemContentFit | undefined
 }
-
-export type TListBoxItemOptions = IComponentOptions

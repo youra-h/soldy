@@ -1,5 +1,5 @@
 import type { ICloseRequestable, ILayer, ILayerProps, TCloseEvent, TLayerEvents } from '../layer'
-import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
+import type { TAria, TAriaAttributes, TDatasetAttributes } from '../../../common'
 
 export interface IModalLayerProps extends ILayerProps {
 	/**
@@ -40,6 +40,8 @@ export type TModalLayerEvents = TLayerEvents & {
 	'change:closeLabel': (value: string) => void
 	/** change:dismissible */
 	'change:dismissible': (value: boolean) => void
+	/** change:titleAria — набор атрибутов заголовка изменился */
+	'change:titleAria': (value: TAriaAttributes) => void
 }
 
 export interface IModalLayer<
@@ -57,8 +59,8 @@ export interface IModalLayer<
 	closeLabel: string
 	/** Закрывают ли панель нажатие мимо и Escape */
 	dismissible: boolean
-	/** `id` заголовка: на него ссылается `aria-labelledby` панели */
-	readonly titleAria: TAriaAttributes
+	/** Атрибуты заголовка: `id`, на который ссылается `aria-labelledby` панели, пишет плагин */
+	readonly titleAria: TAria
 	/** Имя кнопки закрытия: `closeLabel` */
 	readonly closeAria: TAriaAttributes
 	/** `data-*` подложки: тот же номер слоя и та же открытость, что у панели */
