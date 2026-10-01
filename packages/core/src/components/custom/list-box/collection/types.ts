@@ -4,8 +4,6 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
-	TCollectionFacadeOptions,
-	IExtension,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 	TFactoryExtension,
@@ -84,15 +82,6 @@ export interface IListBoxCollectionProps<
 
 /** Item-level props элемента: выбранность. */
 export interface IListBoxCollectionItemProps extends ISelectionCollectionItemProps {}
-
-/** Опции конструктора фасада коллекции. */
-export type TListBoxCollectionFacadeOptions<
-	TItem extends IListBoxItem = IListBoxItem,
-	TExtensions extends Record<string, IExtension<any>> = TListBoxCollectionExtensions,
-> = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, IListBox> & {
-	/** Фабрика движка коллекции — переопределяется наследником. */
-	factory?: (owner: IListBox) => TCollectionEngine<TItem, TExtensions>
-}
 
 /**
  * Item-адаптеры коллекции: выбор, порядок и делегат списка.

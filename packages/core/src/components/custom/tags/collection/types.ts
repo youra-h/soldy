@@ -4,8 +4,6 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
-	TCollectionFacadeOptions,
-	IExtension,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 	TFactoryExtension,
@@ -89,15 +87,6 @@ export interface ITagsCollectionProps<
 
 /** Item-level props элемента: выбранность. */
 export interface ITagsCollectionItemProps extends ISelectionCollectionItemProps {}
-
-/** Опции конструктора фасада коллекции. */
-export type TTagsCollectionFacadeOptions<
-	TItem extends ITagsItem = ITagsItem,
-	TExtensions extends Record<string, IExtension<any>> = TTagsCollectionExtensions,
-> = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, ITags> & {
-	/** Фабрика движка коллекции — переопределяется наследником. */
-	factory?: (owner: ITags) => TCollectionEngine<TItem, TExtensions>
-}
 
 /**
  * Item-адаптеры коллекции: выбор, порядок и делегат тегов.

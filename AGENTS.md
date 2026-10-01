@@ -1719,7 +1719,7 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   сужение выбросило бы у дескрипторов экспорта (так пропало бы имя родителя
   без класса, которого нет в карте наследника).
 
-- **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TListBoxCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TListBoxCollectionFacade` class.
+- **Types live in `types.ts`**: type aliases and interfaces (`T*`, `I*`, `*Options`, `*Props`) belong in a `types.ts` file, never alongside the class implementation. Example: `TSelectCollectionFacadeOptions` lives in `collection/types.ts`, while `facade/facade.class.ts` holds only the `TSelectCollectionFacade` class.
 
 - **`defineType<T>(ctor)` — тип данных scope слота, а не пропа.** Из `T`
   выводится scope (`DescriptorSlots`, см. «Слоты — третья категория
