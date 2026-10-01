@@ -51,9 +51,9 @@ const OWNER_ATTRIBUTE = 'data-owner'
  * Как считается «мимо». Панель обычно телепортирована в `body`, то есть
  * лежит вне поддерева владельца — простой `contains()` по корню посчитал бы
  * нажатие внутри панели нажатием снаружи. Поэтому панель помечается
- * `data-owner="<idBase владельца>"`, и плагин проверяет обе границы. Это чистый
- * DOM: работает одинаково во всех шести адаптерах и не требует проводки
- * между компонентами.
+ * `data-owner="<id>"` — `id` части `owner` монтирования владельца
+ * (`createId`), — и плагин проверяет обе границы. Это чистый DOM: работает
+ * одинаково во всех шести адаптерах и не требует проводки между компонентами.
  *
  * Третья граница — слои. Список Select в поповере, поповер в поповере — это
  * тоже панели в `body`, соседи панели владельца, а не её потомки. Нажатие в
@@ -73,7 +73,12 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	}
 
 	private _element: Element | null = null
-	private _owner: string | null = null
+	/**
+	 * Пометка панели владельца — значение `data-owner`. От монтирования, а не
+	 * от `uid`: пометка уходит в разметку, и на сервере и в браузере обязана
+	 * совпасть.
+	 */
+	private _ownerMark = ''
 	/**
 	 * Открытость владельца (`property`): по ней плагин включается, ею же
 	 * `dismiss` закрывает владельца. `null` — привязки нет, плагин только
@@ -89,15 +94,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	override install(ctx: IPluginContext, options?: IDismissPluginOptions): void {
 		super.install(ctx, options)
 
-		const instance = ctx.getInstance<object>()
-
-		// Основа `id` владельца, а не `uid`: пометка уходит в разметку, и на
-		// сервере и в браузере обязана совпасть (`IComponentView.idBase`)
-		const idBase: unknown = instance ? Reflect.get(instance, 'idBase') : undefined
-
-		if (typeof idBase === 'string') {
-			this._owner = idBase
-		}
+		this._ownerMark = ctx.createId('owner')
 
 		ctx.get(TElementPlugin)?.events.on('ready', (element) => {
 			this._element = element
@@ -159,7 +156,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 * нажатием мимо.
 	 */
 	get ownerAttribute(): Record<string, string> {
-		return this._owner ? { [OWNER_ATTRIBUTE]: this._owner } : {}
+		return { [OWNER_ATTRIBUTE]: this._ownerMark }
 	}
 
 	/**
@@ -172,12 +169,25 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 * Popover уводит фокус в панель и слушает на ней клавиши.
 	 */
 	findPanel(): Element | null {
-		if (!this._owner) return null
+		return this._element?.ownerDocument.querySelector(this._panelSelector) ?? null
+	}
 
-		return (
-			this._element?.ownerDocument.querySelector(`[${OWNER_ATTRIBUTE}="${this._owner}"]`) ??
-			null
-		)
+	/**
+	 * Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше
+	 * неё — панели, открытой поверх своей (см. шапку). Правило слоёв общее с
+	 * `THideOutsidePlugin`, поэтому живёт в утилитах (`isAboveLayer`).
+	 *
+	 * Нужно и соседям по набору: возврат поля Select на уходе фокуса решает
+	 * по тем же границам.
+	 */
+	isInside(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) return false
+
+		if (this._element?.contains(target)) return true
+
+		if (target.closest(this._panelSelector)) return true
+
+		return isAboveLayer(target, this.findPanel())
 	}
 
 	override destroy(): void {
@@ -191,19 +201,9 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		super.destroy()
 	}
 
-	/**
-	 * Пришлось ли нажатие или фокус внутрь владельца, его панели или слоя выше
-	 * неё — панели, открытой поверх своей (см. шапку). Правило слоёв общее с
-	 * `THideOutsidePlugin`, поэтому живёт в утилитах (`isAboveLayer`).
-	 */
-	private _isInside(target: EventTarget | null): boolean {
-		if (!(target instanceof Element)) return false
-
-		if (this._element?.contains(target)) return true
-
-		if (this._owner && target.closest(`[${OWNER_ATTRIBUTE}="${this._owner}"]`)) return true
-
-		return isAboveLayer(target, this.findPanel())
+	/** Селектор панели владельца — по её пометке. */
+	private get _panelSelector(): string {
+		return `[${OWNER_ATTRIBUTE}="${this._ownerMark}"]`
 	}
 
 	/**
@@ -228,14 +228,14 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 			return
 		}
 
-		if (this._isInside(event.target)) return
+		if (this.isInside(event.target)) return
 
 		this._dismiss(event)
 	}
 
 	/** Касание ничего не закрывает — только запоминается, если пришлось мимо. */
 	private _startTouch(event: PointerEvent): void {
-		if (this._isInside(event.target)) return
+		if (this.isInside(event.target)) return
 
 		this._pending = { pointerId: event.pointerId, pointerType: 'touch' }
 	}
@@ -246,7 +246,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 * (перо графического планшета).
 	 */
 	private _startPen(event: PointerEvent): void {
-		if (this._isInside(event.target)) return
+		if (this.isInside(event.target)) return
 
 		this._pending = { pointerId: event.pointerId, pointerType: 'pen' }
 	}
@@ -293,7 +293,7 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 	 * документа содержимое не может.
 	 */
 	private readonly _onFocusIn = (event: FocusEvent): void => {
-		if (this._isInside(event.target)) return
+		if (this.isInside(event.target)) return
 
 		this._dismiss(event)
 	}

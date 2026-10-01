@@ -131,8 +131,8 @@ export class TSelectKeyboardPlugin
 	 *
 	 * `id` опции — из её набора `aria`, а не с DOM-узла: узел, который знает
 	 * плагин, — корень элемента, а `id` вместе со всей ARIA опции стоит на её
-	 * строке. В набор его пишет `TSelectExtension`, и ссылка берёт ровно то,
-	 * что окажется в разметке.
+	 * строке. В набор его пишет `TSelectItemIdsPlugin` опции, и ссылка берёт
+	 * ровно то, что окажется в разметке.
 	 */
 	protected override onHighlightChanged(uid: string | number | null): void {
 		const id = uid == null ? null : (this.itemByUid(uid)?.aria.get('id') ?? null)

@@ -87,10 +87,11 @@ const engineCases: EngineTestCase[] = [
 			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.tabs }
 		},
 		runWithoutOwner: () => {
-			expect(() => {
-				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
-				createEngineTabs({})
-			}).toThrow(/owner/)
+			// Владелец — опция движка: без него движок собран целиком, опция пуста
+			const engine = createEngineTabs()
+
+			expect(engine.extensions.tabs).toBeDefined()
+			expect(engine.options.get('owner')).toBeUndefined()
 		},
 	},
 	{
@@ -100,10 +101,11 @@ const engineCases: EngineTestCase[] = [
 			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.list }
 		},
 		runWithoutOwner: () => {
-			expect(() => {
-				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
-				createEngineListBox({})
-			}).toThrow(/owner/)
+			// Владелец — опция движка: без него движок собран целиком, опция пуста
+			const engine = createEngineListBox()
+
+			expect(engine.extensions.list).toBeDefined()
+			expect(engine.options.get('owner')).toBeUndefined()
 		},
 	},
 	{
@@ -113,10 +115,11 @@ const engineCases: EngineTestCase[] = [
 			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.select }
 		},
 		runWithoutOwner: () => {
-			expect(() => {
-				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
-				createEngineSelect({})
-			}).toThrow(/owner/)
+			// Владелец — опция движка: без него движок собран целиком, опция пуста
+			const engine = createEngineSelect()
+
+			expect(engine.extensions.select).toBeDefined()
+			expect(engine.options.get('owner')).toBeUndefined()
 		},
 	},
 	{
@@ -126,10 +129,11 @@ const engineCases: EngineTestCase[] = [
 			return { batch: engine.extensions.batch, ownerExtension: engine.extensions.accordion }
 		},
 		runWithoutOwner: () => {
-			expect(() => {
-				// @ts-expect-error — owner обязателен, здесь проверяется рантайм-ошибка без него
-				createEngineAccordion({})
-			}).toThrow(/owner/)
+			// Владелец — опция движка: без него движок собран целиком, опция пуста
+			const engine = createEngineAccordion()
+
+			expect(engine.extensions.accordion).toBeDefined()
+			expect(engine.options.get('owner')).toBeUndefined()
 		},
 	},
 ]
@@ -143,7 +147,7 @@ engineCases.forEach(({ name, run, runWithoutOwner }) => {
 			expect(ownerExtension).toBeDefined()
 		})
 
-		it('без owner — внятная ошибка, а не undefined внутри расширения', () => {
+		it('без owner', () => {
 			runWithoutOwner()
 		})
 	})
@@ -196,7 +200,9 @@ describe('догон накопленного при привязке', () => {
 		const engine = createEngine({ items: [{ value: 'a', text: 'A' }] })
 		const owner = new TTabs({ size: 'lg', variant: 'brand' })
 
-		new TTabsCollectionFacade({}, { owner, engine })
+		// Чужой движок фасад привязывает при принятии компонента — без адаптера
+		// это делает код
+		new TTabsCollectionFacade({}, { owner, engine }).bindOwner()
 
 		const item = engine.extensions.batch.items[0]
 
@@ -236,6 +242,10 @@ describe('догон накопленного при привязке', () => {
 		const owner = new TSelect()
 		const facade = new TSelectCollectionFacade({}, { owner, engine })
 
+		// Чужой движок фасад привязывает при принятии компонента — без адаптера
+		// это делает код
+		facade.bindOwner()
+
 		expect(owner.field.value).toBe('A')
 		expect(facade.engine.extensions.select.text).toBe('A')
 		expect(facade.items.map((item) => item.aria.get('aria-selected'))).toEqual([
@@ -254,7 +264,7 @@ describe('догон накопленного при привязке', () => {
 
 		const owner = new TSelect({ value: 'b' })
 
-		new TSelectCollectionFacade({}, { owner, engine })
+		new TSelectCollectionFacade({}, { owner, engine }).bindOwner()
 
 		expect(owner.field.value).toBe('B')
 	})
@@ -266,29 +276,13 @@ describe('дополнение недостающего', () => {
 
 		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
 
-		// Facade доустановила эти четыре расширения поверх уровня 1 — движок
+		// Facade доустановила эти три расширения поверх уровня 1 — движок
 		// вырос за пределы статического типа `createEngine()`, поэтому имя
 		// читаем через приведение к обобщённой карте, а не к `any`.
 		const extensions = engine.extensions as Record<string, unknown>
 
-		for (const name of ['factory', 'activation', 'content', 'tabs']) {
+		for (const name of ['factory', 'activation', 'tabs']) {
 			expect(extensions[name], name).toBeDefined()
 		}
-	})
-
-	/**
-	 * Один движок в двух компонентах — расширения лежат по имени, и второй
-	 * молча затёр бы владельческое расширение первого. Не падаем и не
-	 * поддерживаем двух владельцев: предупреждаем.
-	 */
-	it('второй компонент на том же движке предупреждает', () => {
-		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-		const engine = createEngine({ items: [{ value: 'a' }] })
-
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
-		expect(warn).not.toHaveBeenCalled()
-
-		new TTabsCollectionFacade({}, { owner: new TTabs(), engine })
-		expect(warn).toHaveBeenCalledOnce()
 	})
 })

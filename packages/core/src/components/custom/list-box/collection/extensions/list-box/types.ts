@@ -1,10 +1,6 @@
 import type { IListBox, TListBoxView } from '../../../types'
 import type { TListIndicator } from '../../../../list'
-import type {
-	IBaseOwnerItemExtensionOptions,
-	IExtension,
-	IExtensionItems,
-} from '../../../../../base/collection'
+import type { IExtension, IExtensionItems } from '../../../../../base/collection'
 import type { TListBoxExtension } from './list-box.extension'
 import type { IListBoxItemExtension } from './item'
 import type { IListBoxItem } from '../../../item/types'
@@ -34,12 +30,8 @@ export interface IListBoxExtension<
 	chooseItem(item: TItem): boolean
 }
 
-/** Опции конструктора: ссылка на инстанс списка. */
-export interface IListBoxExtensionOptions<
-	TOwner extends IListBox = IListBox,
-	TItem extends IListBoxItem = IListBoxItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, IListBoxItemExtension<TItem>> {
-	/** Ссылка на инстанс компонента списка. */
+/** Опции движка ListBox: владелец приходит и уходит после сборки. */
+export type TListBoxEngineOptions<TOwner extends IListBox = IListBox> = {
 	owner: TOwner
 }
 

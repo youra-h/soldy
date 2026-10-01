@@ -26,6 +26,7 @@ import {
 	TCollectionElements,
 	TListItemPlugin,
 	TPluginBundle,
+	TSelectItemIdsPlugin,
 } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -67,10 +68,12 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 
 		root.appendChild(node)
 
-		const bundle = new TPluginBundle(item)
+		// Монтирование опции: `id` ей пишет её плагин связок
+		const bundle = new TPluginBundle(item, `option-${item.value}`)
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TSelectItemIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
 
@@ -140,9 +143,7 @@ describe('ввод подсвечивает совпадение', () => {
 
 		expect(owner.open).toBe(true)
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
-		expect(owner.field.aria.get('aria-activedescendant')).toBe(
-			`s-select-option-${items[1].uid}`,
-		)
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('option-тверь-option')
 	})
 
 	it('следует за дальнейшим вводом', async () => {

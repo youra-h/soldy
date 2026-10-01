@@ -32,7 +32,7 @@ afterEach(() => {
 
 /** Календарь и его коллекция — так их собирает адаптер. */
 function calendar(props: Partial<ICalendarProps> = {}, mode?: TCalendarMode) {
-	const owner = new TCalendar(props, { idBase: 'c1' })
+	const owner = new TCalendar(props)
 	const collection = new TCalendarCollectionFacade(mode ? { mode } : {}, { owner })
 	const { view, selection, focus } = collection.extensions
 
@@ -116,9 +116,16 @@ describe('без аргументов', () => {
 		)
 	})
 
-	it('createEngineCalendar без владельца падает — дням нужен календарь', () => {
-		// @ts-expect-error — владелец обязателен и в типе
-		expect(() => createEngineCalendar({})).toThrow(/owner/)
+	it('createEngineCalendar без владельца — движок собран, дней нет: они от календаря', () => {
+		const engine = createEngineCalendar()
+
+		expect(engine.extensions.view).toBeDefined()
+		expect(engine.extensions.batch.items).toHaveLength(0)
+		expect(engine.extensions.view.grids).toEqual([])
+
+		engine.options.set({ owner: new TCalendar({ months: ['2026-09-01'] }) })
+
+		expect(engine.extensions.batch.items).toHaveLength(30)
 	})
 })
 
@@ -207,18 +214,44 @@ describe('вид: месяцы сеток', () => {
 		expect(changes).toHaveBeenCalledTimes(1)
 	})
 
-	it('заголовки и сетки: role="grid", имя — заголовок; id — от основы и места сетки', () => {
+	it('сетки — role="grid"; имя от заголовка — из наборов места сетки', () => {
 		const setup = calendar({ months: ['2026-01-01', '2026-09-01'] })
-		const ids = ['s-calendar-title-c1-0', 's-calendar-title-c1-1']
 
-		expect(setup.collection.grids.map(({ titleAria }) => titleAria.id)).toEqual(ids)
 		expect(setup.collection.grids.map(({ gridAria }) => gridAria.role)).toEqual([
 			'grid',
 			'grid',
 		])
-		expect(setup.collection.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual(
-			ids,
-		)
+
+		// `id` заголовка и ссылку на него ядро не пишет — это плагин связок
+		// (`TCalendarIdsPlugin`). Вид раскладывает то, что записано в наборы места
+		expect(setup.collection.grids.map(({ titleAria }) => titleAria.id)).toEqual([
+			undefined,
+			undefined,
+		])
+
+		const sets = setup.view.gridSets(1)
+
+		sets.title.add('id', 'title-1')
+		sets.grid.add('aria-labelledby', 'title-1')
+
+		const [, second] = setup.collection.grids
+
+		expect(second.titleAria).toEqual({ id: 'title-1', 'aria-live': 'polite' })
+		expect(second.gridAria['aria-labelledby']).toBe('title-1')
+	})
+
+	it('наборы — у места сетки: листание их не меняет, их смена — change:grids', () => {
+		const setup = calendar({ months: ['2026-01-01'] })
+		const changes = vi.fn()
+
+		setup.view.events.on('change:grids', changes)
+		setup.view.gridSets(0).title.add('id', 'title-0')
+
+		expect(changes).toHaveBeenCalledTimes(1)
+
+		setup.view.showNext()
+
+		expect(setup.collection.grids[0].titleAria.id).toBe('title-0')
 	})
 
 	it('заголовок — вежливая живая область: смену месяца скринридер объявляет сам', () => {

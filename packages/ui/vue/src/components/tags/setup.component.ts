@@ -26,7 +26,7 @@ export default {
 				props,
 				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
 				// не создаёт, лишь доложит недостающие расширения в неё же.
-				// Не дали — соберёт свою. Развилка в `resolveEngine`
+				// Не дали — соберёт свою. Развилка в `completeEngine`
 				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle },

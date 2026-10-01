@@ -4,5 +4,5 @@ export type {
 	IValuedItem,
 	TSelectionValue,
 	TValueSelectionExtensionEvents,
-	TValueSelectionExtensionOptions,
+	TValueSelectionEngineOptions,
 } from './types'

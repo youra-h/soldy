@@ -1,5 +1,5 @@
 import type { IModalLayer, IModalLayerProps, TModalLayerEvents } from '../../base/modal-layer'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 /**
  * Где окно стоит на экране: по центру или у одной из сторон.
@@ -24,6 +24,8 @@ export type TDialogEvents = TModalLayerEvents & {
 	'change:maximizeLabel': (value: string) => void
 	/** change:alert */
 	'change:alert': (value: boolean) => void
+	/** change:bodyAria — набор атрибутов тела изменился */
+	'change:bodyAria': (value: TAriaAttributes) => void
 }
 
 export interface IDialogProps extends IModalLayerProps {
@@ -73,8 +75,8 @@ export interface IDialog extends IModalLayer<IDialogProps, TDialogEvents> {
 	maximizeLabel: string
 	/** Окно — предупреждение (`role="alertdialog"`) */
 	alert: boolean
-	/** `id` тела: на него ссылается `aria-describedby` предупреждения */
-	readonly bodyAria: TAriaAttributes
+	/** Атрибуты тела: `id`, на который ссылается `aria-describedby` предупреждения, пишет плагин */
+	readonly bodyAria: TAria
 	/** Имя и состояние кнопки разворота: `maximizeLabel` и `aria-pressed` */
 	readonly maximizeAria: TAriaAttributes
 	/** Развернуть окно или вернуть ему размер — действие кнопки разворота */

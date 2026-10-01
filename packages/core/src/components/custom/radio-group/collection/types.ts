@@ -11,7 +11,7 @@ import type {
 	TPlainExtension,
 	TUniqueExtension,
 } from '../../../base/collection'
-import type { TRadioGroupExtension } from './extensions'
+import type { TRadioGroupEngineOptions, TRadioGroupExtension } from './extensions'
 import type { IRadioGroup } from '../types'
 import type { IRadioGroupItem, IRadioGroupItemProps } from '../item/types'
 
@@ -29,13 +29,14 @@ export type TRadioGroupCollectionExtensions<TItem extends IRadioGroupItem = IRad
 
 export type TRadioGroupCollection = TCollectionEngine<
 	IRadioGroupItem,
-	TRadioGroupCollectionExtensions
+	TRadioGroupCollectionExtensions,
+	TRadioGroupEngineOptions
 >
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineActivation`, `createEngineRadioGroup`). Фасад
- * сам дополняет недостающее через `resolveEngine`, поэтому оба параметра —
+ * сам дополняет недостающее через `completeEngine`, поэтому оба параметра —
  * `any`: движок инвариантен по ним через `engine:create` (см.
  * `TTabsCollectionFacadeEngine`). Точный тип — там, где движок собирается.
  */

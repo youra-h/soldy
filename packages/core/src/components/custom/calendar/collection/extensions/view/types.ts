@@ -1,5 +1,5 @@
 import type { IExtension } from '../../../../../base/collection'
-import type { TAriaAttributes, TCalendarDate } from '../../../../../../common'
+import type { TAria, TAriaAttributes, TCalendarDate } from '../../../../../../common'
 import type { ICalendarItem } from '../../../item/types'
 import type { ICalendar } from '../../../types'
 
@@ -19,6 +19,18 @@ export type TCalendarCell = {
 	aria: TAriaAttributes
 }
 
+/**
+ * Наборы места сетки — то, что пишут в сетку снаружи вида: `id` заголовка и
+ * ссылку сетки на него (`aria-labelledby`). Вид раскладывает их в
+ * `TCalendarGrid` вместе со своим.
+ */
+export type TCalendarGridSets = {
+	/** Заголовок месяца */
+	title: TAria
+	/** Таблица сетки */
+	grid: TAria
+}
+
 /** Сетка месяца — выход для разметки. */
 export type TCalendarGrid = {
 	/** Первое число месяца — ключ */
@@ -26,8 +38,8 @@ export type TCalendarGrid = {
 	/** Заголовок: месяц и год в календаре подписей локали */
 	title: string
 	/**
-	 * Набор заголовка: `id` — от основы календаря и места сетки, по нему сетку
-	 * называет `aria-labelledby`; `aria-live="polite"` — смену месяца
+	 * Набор заголовка: `id` — от места сетки (пишет плагин связок), по нему
+	 * сетку называет `aria-labelledby`; `aria-live="polite"` — смену месяца
 	 * скринридер объявляет сам, анонсера у календаря нет
 	 */
 	titleAria: TAriaAttributes
@@ -64,6 +76,8 @@ export interface ICalendarViewExtension extends IExtension<ICalendarItem, TCalen
 	readonly months: TCalendarDate[]
 	/** Сетки месяцев */
 	readonly grids: TCalendarGrid[]
+	/** Наборы заголовка и сетки на месте `index`: пишет в них плагин связок */
+	gridSets(index: number): TCalendarGridSets
 	/** Листать назад нельзя: самая ранняя сетка на месяце `min` или календарь выключен */
 	readonly prevDisabled: boolean
 	/** Листать вперёд нельзя: самая поздняя сетка на месяце `max` или календарь выключен */
@@ -82,7 +96,10 @@ export interface ICalendarViewExtension extends IExtension<ICalendarItem, TCalen
 	reveal(date: TCalendarDate, from: TCalendarDate): void
 }
 
-/** Опции конструктора: ссылка на календарь. */
-export interface ICalendarViewExtensionOptions {
+/**
+ * Опции движка календаря: календарь приходит и уходит после сборки. Общие для
+ * трёх расширений — вида, фокуса и выбора.
+ */
+export type TCalendarEngineOptions = {
 	owner: ICalendar
 }

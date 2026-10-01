@@ -1,4 +1,5 @@
 import type { IExtension, IExtensionContext, IBaseOwnerItemExtensionOptions } from '../types'
+import { TActivateEvent } from './types'
 import type { TActivationEvents, IActivationExtension } from './types'
 import { TActivationItemExtension, type IActivationItemExtension } from './item'
 import { TBaseOwnerItemExtension } from '../base-owner-item-extension.class'
@@ -9,6 +10,10 @@ import type { TDataset } from '../../../../../../common'
  * TActivationExtension — расширение для управления активным элементом коллекции.
  *
  * Всегда один активный элемент. При активации нового — предыдущий деактивируется.
+ *
+ * Активацию можно отменить: перед ней приходит `item:activate:before`, и
+ * `preventDefault()` оставляет активным прежний элемент. Отменяется только
+ * «стать активным» — снятие активности (`deactivate`, `reset`) идёт без хука.
  *
  * @template TItem — тип элемента коллекции (пользователь может расширить)
  */
@@ -79,16 +84,27 @@ export class TActivationExtension<TItem extends object = any>
 	 * Установить активный элемент.
 	 * Если элемент уже активен — ничего не делает.
 	 * Предыдущий активный элемент деактивируется автоматически.
+	 *
+	 * @returns активен ли элемент после вызова: `false` — его нет в коллекции
+	 * или активацию отменили в `item:activate:before`
 	 */
-	activate(item: TItem): void {
-		if (this._activeItem === item) return
+	activate(item: TItem): boolean {
+		if (this._activeItem === item) return true
 
-		if (!this._ctx.driver.valueOf().includes(item)) return
+		if (!this._ctx.driver.valueOf().includes(item)) return false
+
+		const event = new TActivateEvent(item)
+
+		this.events.emit('item:activate:before', event)
+
+		if (event.defaultPrevented) return false
 
 		this._activeItem = item
 
 		this.events.emit('item:activated', item)
 		this.events.emit('change:activation', item)
+
+		return true
 	}
 
 	/**

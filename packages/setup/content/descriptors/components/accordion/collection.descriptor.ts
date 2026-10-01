@@ -44,12 +44,6 @@ export const AccordionCollectionItemDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:view'],
 				},
-				/**
-				 * Сторона панели в связке «заголовок ↔ панель». Сторона заголовка
-				 * пишется прямо в `aria` элемента расширением `content`; панели писать
-				 * некуда — своего компонента, а значит и набора, у неё нет.
-				 */
-				content_aria: { type: Object, protected: true, triggers: ['change:selected'] },
 			},
 		},
 	}),

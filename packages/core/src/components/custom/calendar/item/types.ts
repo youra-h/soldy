@@ -1,6 +1,5 @@
 import type { IControl, IControlProps, TControlEvents } from '../../../base/control'
 import type { TChangeEvent, TCalendarDate } from '../../../../common'
-import type { IComponentOptions } from '../../../base/component'
 
 export type TCalendarItemEvents = TControlEvents & {
 	/** change:date */
@@ -36,5 +35,3 @@ export interface ICalendarItem<
 	/** Недоступен: фокус встаёт, выбор — нет */
 	unavailable: boolean
 }
-
-export type TCalendarItemOptions = IComponentOptions

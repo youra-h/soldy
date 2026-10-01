@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 import * as ts from 'typescript'
-import { TEvented, TSelect, TSelectExtension, TTabs, TTabsExtension } from '@soldy-ui/core'
+import { TEvented, TSelectExtension, TTabsExtension } from '@soldy-ui/core'
 import type {
 	ISelectExtension,
 	ITabsExtension,
@@ -91,7 +91,7 @@ function extensionInterfaces(file: string): TExtensionInterface[] {
 // у интерфейса уронит типы, а не пройдёт молча.
 describe('карта событий расширения видна через тип интерфейса', () => {
 	it('ITabsExtension: имя вне карты не подписать и не пробросить', () => {
-		const parent: ITabsExtension = new TTabsExtension({ owner: new TTabs() })
+		const parent: ITabsExtension = new TTabsExtension()
 		const item = new TEvented<TTabsItemEventsExtension>()
 		const closable = vi.fn()
 
@@ -108,7 +108,7 @@ describe('карта событий расширения видна через �
 	})
 
 	it('ISelectExtension: имя вне карты не подписать и не пробросить', () => {
-		const parent: ISelectExtension = new TSelectExtension({ owner: new TSelect() })
+		const parent: ISelectExtension = new TSelectExtension()
 		const item = new TEvented<TSelectItemEventsExtension>()
 		const indicator = vi.fn()
 

@@ -1,5 +1,6 @@
 import { TComponentView } from '../../base/component-view'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
+import { TAria } from '../../../common'
 import type { TAriaAttributes, TDatasetAttributes } from '../../../common'
 import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from './types'
 
@@ -18,10 +19,11 @@ import type { IPopover, IPopoverProps, TPopoverEvents, TPopoverPlacement } from 
  * теги у набора тегов — это содержимое, и они остаются за ним.
  *
  * Корень компонента — обёртка триггера и якорь панели, а сама панель — Frame
- * без экземпляра в ядре: хранить в нём нечего. Поэтому связку «триггер ↔
- * панель» Popover отдаёт с обеих сторон сам: сторону панели — в свой `aria`,
- * который разметка раскладывает на Frame, сторону триггера — выходом
- * `triggerAria` в scope слота `trigger`. Формула `id` одна на обе.
+ * без экземпляра в ядре: хранить в нём нечего. Поэтому обе стороны связки
+ * «триггер ↔ панель» — наборы Popover: панели — свой `aria`, который разметка
+ * раскладывает на Frame, триггеру — `triggerAria` в scope слота `trigger`.
+ * Здесь в них роль и открытость, а `id` панели и ссылку на него пишет плагин
+ * `TPopoverIdsPlugin`: `id` нужны документу, а не поповеру.
  */
 export default class TPopover
 	extends TComponentView<IPopoverProps, TPopoverEvents>
@@ -51,9 +53,10 @@ export default class TPopover
 	protected _placement: TPopoverPlacement
 	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
 	protected _opened = false
+	protected _triggerAria: TAria
 
-	constructor(props: Partial<IPopoverProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IPopoverProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TPopover
 
@@ -62,10 +65,18 @@ export default class TPopover
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
 		this._placement = props.placement ?? ctor.defaultValues.placement
 
-		// Сторона панели связки: панель — диалог, `id` — то, на что ссылается
-		// `aria-controls` триггера. Имя пишет `TAriaPlugin` в этот же набор
+		// Сторона панели связки: панель — диалог. Имя пишет `TAriaPlugin` в
+		// этот же набор
 		this._aria.add('role', 'dialog')
-		this._aria.add('id', this._panelId)
+
+		this._triggerAria = new TAria()
+
+		this._triggerAria.events.on('change', () =>
+			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
+		)
+
+		// `dialog`, а не `true`: `true` у ARIA значит `menu`
+		this._triggerAria.add('aria-haspopup', 'dialog')
 
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 	}
@@ -148,20 +159,16 @@ export default class TPopover
 	 * Сторона триггера в связке с панелью.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает панель, а это —
-	 * чужой элемент, кнопка потребителя в слоте `trigger`. У разметки без
-	 * экземпляра набора нет, атрибуты отдаются значением (AGENTS.md, «Часть
-	 * или слот»).
+	 * чужой элемент, кнопка потребителя в слоте `trigger`. Экземпляра у неё
+	 * нет, поэтому набор — Popover'а (AGENTS.md, «Часть или слот»).
 	 *
-	 * `aria-haspopup="dialog"`, а не `true`: `true` у ARIA значит `menu`.
-	 * `aria-controls` стоит и у закрытой панели — она всегда в документе,
-	 * закрытие её только прячет.
+	 * Живой, как `aria`, потому что пишут в него двое: `aria-haspopup` и
+	 * `aria-expanded` — Popover, `aria-controls` — `TPopoverIdsPlugin`. За
+	 * границу core → ui уходит снимок (`valueOf()`), об изменении набор
+	 * сообщает `change:triggerAria`.
 	 */
-	get triggerAria(): TAriaAttributes {
-		return {
-			'aria-haspopup': 'dialog',
-			'aria-expanded': this._open ? 'true' : 'false',
-			'aria-controls': this._panelId,
-		}
+	get triggerAria(): TAria {
+		return this._triggerAria
 	}
 
 	/**
@@ -189,15 +196,12 @@ export default class TPopover
 		return !this._lazyMount || this._opened
 	}
 
-	/** `id` панели — одна формула на обе стороны связки. */
-	protected get _panelId(): string {
-		return `s-popover-panel-${this.idBase}`
-	}
-
 	protected _applyOpen(value: boolean): void {
 		this._open = value
 
 		if (value) this._opened = true
+
+		this._triggerAria.add('aria-expanded', value ? 'true' : 'false')
 
 		// Тема и потребитель, красящий свой триггер по контексту, читают
 		// открытость с корня — как у Select

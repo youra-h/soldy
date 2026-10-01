@@ -3,18 +3,18 @@ import type { IValueControl, IValueControlProps, TValueControlEvents } from '../
 export type TInputControlEvents<T = string> = TValueControlEvents<T> & {
 	'change:readonly': (value: boolean) => void
 	'change:required': (value: boolean) => void
-	'change:id': (value: string) => void
+	'change:id': (value: string | undefined) => void
 }
 
 export interface IInputControlProps<T = string> extends IValueControlProps<T> {
 	readonly?: boolean
 	required?: boolean
 	/**
-	 * `id` элемента формы. Пусто — берётся `uid`.
+	 * `id` элемента формы. Не задан — атрибута нет.
 	 *
-	 * Нужен снаружи, потому что на него ссылаются: `<label for>`,
-	 * `aria-labelledby`, `aria-describedby` у сообщения об ошибке. Без него
-	 * потребитель не может связать поле с подписью, а `uid` он не знает.
+	 * Задают его там, где на поле ссылается разметка потребителя: `<label for>`,
+	 * `aria-labelledby`. Сама библиотека на поле по `id` не ссылается: подпись
+	 * `Label` оборачивает поле.
 	 */
 	id?: string
 }
@@ -26,8 +26,8 @@ export interface IInputControl<
 > extends IValueControl<T, TProps, TEvents> {
 	readonly: boolean
 	required: boolean
-	/** `id` элемента формы: заданный снаружи либо производный от `uid`. */
-	id: string
+	/** `id` элемента формы; не задан — `undefined`. */
+	id: string | undefined
 }
 
 // Backward-compatible aliases for the common text-input case

@@ -14,6 +14,7 @@ import {
 	AriaPluginDescriptor,
 	DismissPluginDescriptor,
 	PopoverFocusPluginDescriptor,
+	PopoverIdsPluginDescriptor,
 	PopoverPointerPluginDescriptor,
 } from '../plugins'
 import { ComponentViewDescriptor } from './component-view.descriptor'
@@ -51,11 +52,12 @@ export const PopoverDescriptor = defineDescriptor(() =>
 				lazyMount: { type: Boolean, triggers: ['change:lazyMount'] },
 				placement: { type: String, triggers: ['change:placement'] },
 				/**
-				 * Сторона триггера в связке с панелью и его вид «нажат». Вычисляет
-				 * ядро, шаблон раскладывает в scope слота `trigger`: оставь их в
-				 * разметке — и формула повторится в каждом из шести адаптеров.
+				 * Сторона триггера в связке с панелью и его вид «нажат». Вычисляют
+				 * ядро и `TPopoverIdsPlugin` (`aria-controls`), шаблон раскладывает
+				 * в scope слота `trigger`: оставь их в разметке — и формула
+				 * повторится в каждом из шести адаптеров.
 				 */
-				triggerAria: { type: Object, protected: true, triggers: ['change:open'] },
+				triggerAria: { type: Object, protected: true, triggers: ['change:triggerAria'] },
 				triggerDataset: { type: Object, protected: true, triggers: ['change:open'] },
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
@@ -79,6 +81,8 @@ export const PopoverDescriptor = defineDescriptor(() =>
 			PopoverPointerPluginDescriptor,
 			// Фокус, Escape и Tab. После dismiss: берёт у него панель и `dismiss`
 			PopoverFocusPluginDescriptor,
+			// `id` панели и `aria-controls` триггера
+			PopoverIdsPluginDescriptor,
 		],
 	}),
 )

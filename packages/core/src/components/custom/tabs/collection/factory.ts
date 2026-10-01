@@ -1,40 +1,19 @@
-import { TTabsCollection } from './types'
-import { TTabsExtension, TTabsContentExtension } from './extensions'
-import { activationExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type {
-	TBaseExtensionSet,
-	TOwnerExtensionSet,
-} from './../../../base/collection/create/internal'
+import { TTabsExtension } from './extensions'
+import { activationExtensions } from './../../../base/collection/create/internal'
+import type { TExtensionSet } from './../../../base/collection/create/internal'
 import TTabsItem from './../item/item.class'
 import type { ITabsItem } from './../item/types'
-import type { ITabs } from './../types'
 
 /**
- * Состав коллекции Tabs — объявлением, а не функцией сборки.
+ * Детали рабочей коллекции Tabs — по порядку установки.
  *
- * Разделён надвое, потому что владелец есть не всегда: коллекцию можно собрать
- * снаружи (`createEngine`) и передать компоненту, а инстанс `TTabs` появится
- * только там. Из этих же наборов вычисляется, чего движку не хватает, — без
- * второго списка, который однажды разъедется с первым.
+ * Набор один: `completeEngine` ставит из него то, чего в движке нет, — в
+ * пришедший снаружи на любом уровне и в новый одинаково. Владельца детали не
+ * получают: он опция движка (`engine.options.set({ owner })`).
  */
-export const TABS_EXTENSIONS = (): TBaseExtensionSet<ITabsItem> => ({
-	...activationExtensions<ITabsItem>(TTabsItem),
-	content: () => new TTabsContentExtension<ITabsItem>(),
-})
-
-/** То, чему нужен инстанс компонента. */
-export const TABS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITabsItem, ITabs> = {
-	tabs: (owner) => new TTabsExtension({ owner }),
-}
-
-/**
- * Полная коллекция Tabs. Внутренняя: наружу ведёт `createEngineTabs`, который
- * требует владельца явно.
- */
-export const TabsFactory = (owner: ITabs): TTabsCollection => {
-	const engine = assembleEngine<ITabsItem>(TABS_EXTENSIONS())
-
-	for (const build of Object.values(TABS_OWNER_EXTENSIONS)) engine.use(build(owner))
-
-	return engine as TTabsCollection
+export function tabsExtensions(): TExtensionSet<ITabsItem> {
+	return {
+		...activationExtensions<ITabsItem>(TTabsItem),
+		tabs: () => new TTabsExtension(),
+	}
 }

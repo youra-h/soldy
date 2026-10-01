@@ -4,7 +4,7 @@
  * В отличие от ListBox режим выбора по умолчанию `none` — Tags не требует
  * выделения, чтобы отобразить теги (владелец подтвердил это в задаче), а
  * `TSelectionExtension` по умолчанию даёт `single`. Дефолт переопределён в
- * `TagsFactory`, сам `TSelectionExtension` не тронут.
+ * `tagsExtensions`, сам `TSelectionExtension` не тронут.
  *
  * Роль набора и тегов зависит от режима: `list`/`listitem`, пока
  * `mode === 'none'`, иначе `listbox`/`option` с `aria-selected` — знание

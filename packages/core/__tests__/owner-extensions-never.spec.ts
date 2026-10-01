@@ -3,9 +3,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 
 /**
- * Сторож правила «никаких костылей»: `as never` в наборах владельческих
- * расширений (`_OWNER_EXTENSIONS` в `custom/<component>/collection/factory.ts`)
- * глушит проверку типов вместо того, чтобы соответствовать `TOwnerExtensionSet`
+ * Сторож правила «никаких костылей»: `as never` в составе коллекции
+ * (`<component>Extensions` в `custom/<component>/collection/factory.ts`)
+ * глушит проверку типов вместо того, чтобы соответствовать `TExtensionSet`
  * (см. AGENTS.md, «Никаких костылей»; задача 869f1g882).
  *
  * Сканируются только `collection/factory.ts` — в остальном коде `as never`

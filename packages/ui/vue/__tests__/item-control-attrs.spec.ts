@@ -174,7 +174,7 @@ describe('Select.Item · строка и есть опция', () => {
 		const lineEl = line('.s-select-item')
 
 		expect(lineEl?.getAttribute('role')).toBe('option')
-		expect(lineEl?.id).toMatch(/^s-select-option-/)
+		expect(lineEl?.id).toMatch(/-option$/)
 		expect(lineEl?.getAttribute('aria-selected')).toBe('false')
 	})
 

@@ -77,6 +77,14 @@ export interface IAdapterContextOptions<TInstance extends object = object> {
 	 * реестра со `scope: 'own'` вложенному компоненту не ставятся.
 	 */
 	embedded?: string
+	/**
+	 * Id монтирования — от `useId` фреймворка, один на сервере и в браузере.
+	 * Уходит своему набору плагинов: от него плагины строят `id` частей
+	 * (`IPluginBundle.createId`). Инстанс его не получает — `id` нужны документу,
+	 * а не ядру. Набор не свой (`config.bundle`) — id монтирования у того, кто
+	 * его собрал.
+	 */
+	mountId?: string
 }
 
 export interface IAdapterContextConfig {

@@ -1,7 +1,7 @@
 import { TChangeEvent } from '../../../common'
 import type { TComponentVariant } from '../../../common'
 import { TComponentView } from '../../base/component-view'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type {
 	ISkeleton,
 	ISkeletonProps,
@@ -32,8 +32,8 @@ export default class TSkeleton
 	protected _width: number | string
 	protected _height: number | string
 
-	constructor(props: Partial<ISkeletonProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ISkeletonProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TSkeleton
 

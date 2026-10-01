@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { createScale } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import { percent } from '../../../common/utility/percent'
@@ -128,10 +128,10 @@ export default class TSlider
 	protected _activeThumb: number | undefined = undefined
 	protected _gesture: TSliderGesture | undefined = undefined
 
-	constructor(props: Partial<ISliderProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<ISliderProps> = {}) {
 		const ctor = new.target as typeof TSlider
 
-		super(props, options)
+		super(props)
 
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
@@ -475,8 +475,7 @@ export default class TSlider
 
 	/**
 	 * Ручки: значение, границы и шаг поля, позиция, состояние и имя. Своего
-	 * экземпляра у ручки нет, поэтому её наборы отдаются значением — как
-	 * `list_aria` у списка Select.
+	 * экземпляра у ручки нет, поэтому её наборы отдаются значением.
 	 */
 	get thumbs(): TSliderThumb[] {
 		const values = this.values

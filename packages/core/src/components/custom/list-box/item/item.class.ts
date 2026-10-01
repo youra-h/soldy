@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
+import type { TDefaultValues } from '../../../base/component'
 import { TChangeEvent } from '../../../../common'
 import type { TEventSink } from '../../../../common'
 import type { TListItemContentFit } from '../../list'
@@ -37,8 +37,8 @@ export default class TListBoxItem<
 
 	protected _text: string
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TListBoxItem
 		const customProps = props as Partial<IListBoxItemProps>

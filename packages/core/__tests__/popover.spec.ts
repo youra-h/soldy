@@ -48,38 +48,36 @@ describe('умолчания', () => {
 })
 
 describe('связка «триггер ↔ панель»', () => {
-	it('панель — диалог с id', () => {
+	// `id` панели и `aria-controls` триггера ядро не пишет: `id` нужны
+	// документу, их пишет `TPopoverIdsPlugin` (plugins, ids.plugin.spec)
+	it('панель — диалог, без id', () => {
 		const aria = new TPopover().aria.toObject()
 
 		expect(aria.role).toBe('dialog')
-		expect(aria.id).toMatch(/^s-popover-panel-\d+$/)
-	})
-
-	it('aria-controls триггера совпадает с id панели', () => {
-		const popover = new TPopover()
-
-		expect(popover.triggerAria['aria-controls']).toBe(popover.aria.get('id'))
-	})
-
-	it('у двух поповеров id разные', () => {
-		expect(new TPopover().aria.get('id')).not.toBe(new TPopover().aria.get('id'))
+		expect(aria).not.toHaveProperty('id')
 	})
 
 	it('триггер объявляет диалог и открытость', () => {
 		const popover = new TPopover()
 
-		expect(popover.triggerAria).toMatchObject({
+		expect(popover.triggerAria.toObject()).toEqual({
 			'aria-haspopup': 'dialog',
 			'aria-expanded': 'false',
 		})
 
 		popover.open = true
 
-		expect(popover.triggerAria['aria-expanded']).toBe('true')
+		expect(popover.triggerAria.get('aria-expanded')).toBe('true')
 	})
 
-	it('aria-controls стоит и у закрытой панели — она всегда в документе', () => {
-		expect(new TPopover().triggerAria['aria-controls']).toBeTruthy()
+	it('change:triggerAria — на смену набора триггера', () => {
+		const popover = new TPopover()
+		const changes: unknown[] = []
+
+		popover.events.on('change:triggerAria', (value) => changes.push(value))
+		popover.open = true
+
+		expect(changes).toEqual([{ 'aria-haspopup': 'dialog', 'aria-expanded': 'true' }])
 	})
 })
 
@@ -102,7 +100,7 @@ describe('data-* для темы', () => {
 		popover.open = true
 
 		expect(popover.triggerDataset).toEqual({ 'data-selected': 'true' })
-		expect(popover.triggerAria).not.toHaveProperty('data-selected')
+		expect(popover.triggerAria.toObject()).not.toHaveProperty('data-selected')
 	})
 
 	it('в aria панели нет data-*, в dataset корня нет aria-*', () => {
@@ -198,7 +196,7 @@ describe('события', () => {
 	it('выходы — новые значения на каждое чтение, а не ручка на состояние', () => {
 		const popover = new TPopover()
 
-		expect(popover.triggerAria).not.toBe(popover.triggerAria)
+		expect(popover.triggerAria.valueOf()).not.toBe(popover.triggerAria.valueOf())
 		expect(popover.triggerDataset).not.toBe(popover.triggerDataset)
 		expect(popover.closeAria).not.toBe(popover.closeAria)
 	})

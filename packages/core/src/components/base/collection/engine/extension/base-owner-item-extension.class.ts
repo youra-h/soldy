@@ -5,6 +5,7 @@ import type {
 	IBaseOwnerItemExtensionOptions,
 } from './types'
 import { TBaseExtension } from './base-extension.class'
+import type { TEngineOptions } from '../options'
 
 /**
  * Абстрактное расширение с поддержкой item-адаптеров.
@@ -20,8 +21,9 @@ export abstract class TBaseOwnerItemExtension<
 	// набор здесь запретил бы наследнику её расширить (см. `IItemExtension`)
 	TItemExt extends IItemExtension<TItem, any>,
 	TEvents extends Record<string, (...args: any) => any>,
+	TOptions extends TEngineOptions = TEngineOptions,
 >
-	extends TBaseExtension<TItem, TEvents>
+	extends TBaseExtension<TItem, TEvents, TOptions>
 	implements IExtensionItems<TItem, TItemExt>
 {
 	private readonly _itemCtor?: IItemExtensionCtor<TItem, any, TItemExt>

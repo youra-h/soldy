@@ -1,5 +1,5 @@
 import { TComponent } from '../../base/component'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { IDragAndDrop, IDragAndDropProps, TDragAndDropEvents } from './types'
 
 export default class TDragAndDrop
@@ -10,7 +10,7 @@ export default class TDragAndDrop
 		...TComponent.defaultValues,
 	}
 
-	constructor(props: Partial<IDragAndDropProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IDragAndDropProps> = {}) {
+		super(props)
 	}
 }

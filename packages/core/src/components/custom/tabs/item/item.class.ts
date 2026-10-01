@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
+import type { TDefaultValues } from '../../../base/component'
 import { TChangeEvent } from '../../../../common'
 import type { TAriaAttributes, TEventSink } from '../../../../common'
 import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
@@ -33,8 +33,8 @@ export default class TTabsItem<
 	protected _text: string
 	protected _closable: boolean | undefined
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTabsItem
 
@@ -51,11 +51,10 @@ export default class TTabsItem<
 
 		// Только то, что таб знает о себе сам: он — таб.
 		//
-		// Связки здесь нет намеренно. `id` и `aria-controls` предполагают
-		// панель, а о её существовании знает коллекция, не элемент; их пишет
-		// в этот же набор расширение коллекции TTabsContentExtension при
-		// добавлении таба. `aria-selected` — тоже не отсюда: его пишет
-		// TTabsExtension по событию активации.
+		// Связки здесь нет намеренно: `id` и `aria-controls` нужны документу,
+		// их пишет в этот же набор плагин таба `TTabsItemIdsPlugin`.
+		// `aria-selected` — тоже не отсюда: его пишет TTabsExtension по
+		// событию активации.
 		this._aria.add('role', 'tab')
 	}
 

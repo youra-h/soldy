@@ -22,7 +22,11 @@ import { bindOverlayOpen } from '../src/custom/overlay/open-state'
 function contextOf(owner: object): IPluginContext {
 	const bundle = new TPluginBundle(owner)
 
-	return { get: bundle.get.bind(bundle), getInstance: bundle.getInstance.bind(bundle) }
+	return {
+		get: bundle.get.bind(bundle),
+		getInstance: bundle.getInstance.bind(bundle),
+		createId: bundle.createId.bind(bundle),
+	}
 }
 
 /** Привязка, которая обязана состояться: без неё дальше проверять нечего. */

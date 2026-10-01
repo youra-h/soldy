@@ -1,4 +1,4 @@
-import type { IComponentOptions, TComponentEvents } from '../../component'
+import type { TComponentEvents } from '../../component'
 import type {
 	TCollectionEngine,
 	IExtension,
@@ -65,15 +65,18 @@ export type TActivationItemFacadeEvents = TOrderItemFacadeEvents & TActivationIt
 /**
  * Опции конструктора фасада владельца коллекции.
  *
- * Расширяет `IComponentOptions` (`idBase`) и добавляет управляющий объект `engine`
- * — готовую коллекцию (аналог `ctrl` для обычных компонентов).
+ * Второй аргумент конструктора есть только у фасада: управляющий объект
+ * `engine` — готовая коллекция (аналог `ctrl` для обычных компонентов) — и
+ * владелец коллекции.
  */
 export interface ICollectionComponentOptions<
 	TItem extends object,
 	TExtensions extends Record<string, IExtension<TItem>>,
-> extends IComponentOptions {
+> {
 	/** Управляющий объект — готовая коллекция (аналог `ctrl` для обычных компонентов). */
 	engine: TCollectionEngine<TItem, TExtensions>
+	/** Компонент, которому принадлежит коллекция. Фасад пишет его в опции движка. */
+	owner?: object
 }
 
 /**

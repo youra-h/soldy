@@ -3,7 +3,7 @@ import type {
 	IComponentViewProps,
 	TComponentViewEvents,
 } from '../../base/component-view'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 
 /**
  * Сторона и выравнивание подсказки у триггера.
@@ -32,8 +32,8 @@ export type TTooltipPlacement =
  *   подсказки, и `aria_label` рядом с ним не нужен — иначе скринридер
  *   произнёс бы один текст дважды.
  *
- * Значение читает ядро — от него зависит `triggerAria`, — поэтому это union
- * ядра, а не реестр темы.
+ * Значение читает плагин связки (`TTooltipIdsPlugin`) — от него зависит
+ * ссылка в `triggerAria`, — поэтому это union ядра, а не реестр темы.
  */
 export type TTooltipType = 'description' | 'label'
 
@@ -48,6 +48,8 @@ export type TTooltipEvents = TComponentViewEvents & {
 	'change:closeDelay': (value: number) => void
 	/** change:type */
 	'change:type': (value: TTooltipType) => void
+	/** change:triggerAria — набор атрибутов триггера изменился */
+	'change:triggerAria': (value: TAriaAttributes) => void
 }
 
 export interface ITooltipProps extends IComponentViewProps {
@@ -76,7 +78,8 @@ export interface ITooltip extends IComponentView<ITooltipProps, TTooltipEvents> 
 	type: TTooltipType
 	/**
 	 * ARIA триггера — второй стороны связки: ссылка на панель,
-	 * `aria-describedby` или, в режиме `label`, `aria-labelledby`
+	 * `aria-describedby` или, в режиме `label`, `aria-labelledby`. Пишет её
+	 * плагин
 	 */
-	readonly triggerAria: TAriaAttributes
+	readonly triggerAria: TAria
 }

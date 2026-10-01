@@ -4,8 +4,6 @@ import type {
 	IBatchCollectionProps,
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
-	TCollectionFacadeOptions,
-	IExtension,
 	ISelectionItemExtension,
 	IOrderItemExtension,
 	TFactoryExtension,
@@ -19,6 +17,7 @@ import type {
 } from '../../../base/collection'
 import type { IListBoxItemExtension } from './extensions/list-box/item/types'
 import { TListBoxExtension } from './extensions'
+import type { TListBoxEngineOptions } from './extensions'
 import type { IListBox } from '../types'
 import type { IListBoxItem, IListBoxItemProps } from '../item/types'
 import type { TSelectionItemFacadeEvents } from '../../../base/collection'
@@ -37,12 +36,16 @@ export type TListBoxCollectionExtensions<TItem extends IListBoxItem = IListBoxIt
 	list: TListBoxExtension<IListBox, TItem>
 }
 
-export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollectionExtensions>
+export type TListBoxCollection = TCollectionEngine<
+	IListBoxItem,
+	TListBoxCollectionExtensions,
+	TListBoxEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineListBox`…). Фасад
- * сам дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * сам дополняет недостающее через `completeEngine` (см. `create/internal.ts`),
  * поэтому годится любой уровень, включая уровень 1, где ни `TListBoxItem`,
  * ни владельческие расширения ещё не собраны.
  *
@@ -55,7 +58,7 @@ export type TListBoxCollection = TCollectionEngine<IListBoxItem, TListBoxCollect
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TListBoxCollection`, который собирает `createEngineListBox`. Точность
  * остаётся там, где движок инстанцируется (`TListBoxCollection`,
- * `ListBoxFactory`), а не там, где его только принимают.
+ * `listBoxExtensions`), а не там, где его только принимают.
  */
 export type TListBoxCollectionFacadeEngine = TCollectionEngine<any, any>
 
@@ -79,15 +82,6 @@ export interface IListBoxCollectionProps<
 
 /** Item-level props элемента: выбранность. */
 export interface IListBoxCollectionItemProps extends ISelectionCollectionItemProps {}
-
-/** Опции конструктора фасада коллекции. */
-export type TListBoxCollectionFacadeOptions<
-	TItem extends IListBoxItem = IListBoxItem,
-	TExtensions extends Record<string, IExtension<any>> = TListBoxCollectionExtensions,
-> = TCollectionFacadeOptions<TCollectionEngine<TItem, TExtensions>, IListBox> & {
-	/** Фабрика движка коллекции — переопределяется наследником. */
-	factory?: (owner: IListBox) => TCollectionEngine<TItem, TExtensions>
-}
 
 /**
  * Item-адаптеры коллекции: выбор, порядок и делегат списка.

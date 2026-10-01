@@ -1,7 +1,7 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 
-import { SelectFactory, SELECT_EXTENSIONS, SELECT_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
+import { selectExtensions } from '../factory'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TSelectCollection,
 	TSelectCollectionExtensions,
@@ -40,21 +40,18 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectCollectionFacadeProps = {},
 		options: TSelectCollectionFacadeOptions = {},
 	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Select. Именно здесь, а не в теле:
+		// Движок мог прийти снаружи собранным на любом уровне — `completeEngine`
+		// доставит в него то, чего не хватает Select. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					SELECT_EXTENSIONS(),
-					SELECT_OWNER_EXTENSIONS,
-					'Select',
-					SelectFactory,
-				) as TSelectCollection,
+				engine: completeEngine(options.engine, selectExtensions()) as TSelectCollection,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this._tags.events)
 
@@ -91,21 +88,6 @@ export class TSelectCollectionFacade extends TSelectionCollectionFacade<
 
 	set tags_overflow(value: TTagsOverflow) {
 		this._tags.overflow = value
-	}
-
-	/**
-	 * ARIA списка: роль, `id` и множественность.
-	 *
-	 * Проп, а не набор: список — это разметка внутри шаблона Select, своего
-	 * компонента у него нет, значит нет и `aria`, в который можно писать. Та
-	 * же асимметрия, что у панели Accordion.
-	 */
-	get list_aria(): Record<string, string | null> {
-		return {
-			role: 'listbox',
-			id: this._select.listId,
-			'aria-multiselectable': this.extensions.selection.multiple ? 'true' : null,
-		}
 	}
 
 	/**

@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { IInput, IInputProps, TInputEvents } from './types'
 
 export class TInput extends TInputControl<string, IInputProps, TInputEvents> implements IInput {
@@ -13,8 +13,8 @@ export class TInput extends TInputControl<string, IInputProps, TInputEvents> imp
 
 	protected _placeholder!: string
 
-	constructor(props: Partial<IInputProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IInputProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TInput
 

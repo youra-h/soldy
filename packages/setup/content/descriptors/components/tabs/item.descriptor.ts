@@ -9,6 +9,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TTabsItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
+import { TabsItemIdsPluginDescriptor } from '../../plugins'
 
 export const TabsItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -50,5 +51,10 @@ export const TabsItemDescriptor = defineDescriptor(() =>
 				},
 			},
 		},
+
+		plugins: [
+			// Связка «таб ↔ панель»: `id` таба и `aria-controls` его панели
+			TabsItemIdsPluginDescriptor,
+		],
 	}),
 )

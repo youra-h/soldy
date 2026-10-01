@@ -1,7 +1,7 @@
 import { TStylable } from '../../base/stylable'
 import type { TValuePayload } from '../../../common'
 import type { TComponentSize } from '../../../common/types'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { ISpinner, ISpinnerProps, TSpinnerEvents } from './types'
 
 export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> implements ISpinner {
@@ -20,8 +20,8 @@ export default class TSpinner extends TStylable<ISpinnerProps, TSpinnerEvents> i
 	 */
 	protected _borderWidth: number | 'auto'
 
-	constructor(props: Partial<ISpinnerProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ISpinnerProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TSpinner
 

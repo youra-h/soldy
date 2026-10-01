@@ -1,54 +1,37 @@
-import { TTagsCollection } from './types'
 import { TTagsExtension, TTagsOverflowExtension } from './extensions'
 import { TValueSelectionExtension } from './../../../base'
 import { TSelectionExtension } from './../../../base/collection'
-import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type {
-	TBaseExtensionSet,
-	TOwnerExtensionSet,
-} from './../../../base/collection/create/internal'
+import { selectionExtensions } from './../../../base/collection/create/internal'
+import type { TExtensionSet } from './../../../base/collection/create/internal'
 import TTagsItem from './../item/item.class'
 import type { ITagsItem } from './../item/types'
 import type { ITags } from './../types'
 
 /**
- * Состав коллекции Tags — объявлением, а не функцией сборки.
+ * Детали рабочей коллекции Tags — по порядку установки. См. `tabsExtensions`.
  *
  * `selection.mode` по умолчанию `'none'`, а не `'single'` из
  * `TSelectionExtension`: набору тегов выделение не требуется, оно включается
  * явным `mode`, когда нужно (например, множественный выбор Select,
  * отображённый тегами). Дефолт самого `TSelectionExtension` не трогаем —
- * переопределение только здесь, в фабрике конкретной коллекции.
+ * переопределение только здесь.
  */
-export const TAGS_EXTENSIONS = (): TBaseExtensionSet<ITagsItem> => ({
-	...selectionExtensions<ITagsItem>(TTagsItem),
-	selection: () => {
-		const selection = new TSelectionExtension<ITagsItem>()
+export function tagsExtensions(): TExtensionSet<ITagsItem> {
+	return {
+		...selectionExtensions<ITagsItem>(TTagsItem),
+		selection: () => {
+			const selection = new TSelectionExtension<ITagsItem>()
 
-		selection.mode = 'none'
+			selection.mode = 'none'
 
-		return selection
-	},
-})
+			return selection
+		},
 
-/** То, чему нужен инстанс компонента. */
-export const TAGS_OWNER_EXTENSIONS: TOwnerExtensionSet<ITagsItem, ITags> = {
-	// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
-	value: (owner) => new TValueSelectionExtension({ owner }),
-	// Деление на ряд и панель: режим держит владелец, состав — коллекция.
-	// До `tags`: остановку Tab тот считает по тегам ряда и слушает деление
-	overflow: (owner) => new TTagsOverflowExtension({ owner }),
-	tags: (owner) => new TTagsExtension({ owner }),
-}
-
-/**
- * Полная коллекция Tags. Внутренняя: наружу ведёт `createEngineTags`, который
- * требует владельца явно.
- */
-export const TagsFactory = (owner: ITags): TTagsCollection => {
-	const engine = assembleEngine<ITagsItem>(TAGS_EXTENSIONS())
-
-	for (const build of Object.values(TAGS_OWNER_EXTENSIONS)) engine.use(build(owner))
-
-	return engine as TTagsCollection
+		// Связь `value` ↔ выбор. Без неё проп `value` у Tags был бы объявлен, но мёртв
+		value: () => new TValueSelectionExtension<ITags, ITagsItem>(),
+		// Деление на ряд и панель: режим держит владелец, состав — коллекция.
+		// До `tags`: остановку Tab тот считает по тегам ряда и слушает деление
+		overflow: () => new TTagsOverflowExtension(),
+		tags: () => new TTagsExtension(),
+	}
 }

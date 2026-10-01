@@ -1,5 +1,4 @@
 import type {
-	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionItems,
 	IItemExtension,
@@ -7,7 +6,6 @@ import type {
 } from '../../../../../base/collection'
 import type { TCalendarDate, TDateUnit } from '../../../../../../common'
 import type { ICalendarItem } from '../../../item/types'
-import type { ICalendar } from '../../../types'
 
 /** Край недели: `start` — её первый день, `end` — последний. */
 export type TCalendarWeekEdge = 'start' | 'end'
@@ -37,14 +35,6 @@ export interface ICalendarFocusExtension<
 	shiftFocus(unit: TDateUnit, count: number): void
 	/** Поставить фокус на первый или последний день его недели */
 	moveFocusToEdge(edge: TCalendarWeekEdge): void
-}
-
-/** Опции конструктора: ссылка на календарь. */
-export interface ICalendarFocusExtensionOptions extends IBaseOwnerItemExtensionOptions<
-	ICalendarItem,
-	ICalendarFocusItemExtension
-> {
-	owner: ICalendar
 }
 
 export type TCalendarFocusItemEvents = TBaseItemEventsExtension & {

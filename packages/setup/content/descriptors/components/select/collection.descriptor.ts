@@ -27,12 +27,6 @@ export const SelectCollectionDescriptor = defineDescriptor(() =>
 				mode: { type: String, triggers: ['change:mode'] },
 				selected: { type: Array, protected: true, triggers: ['change:selection'] },
 				/**
-				 * `role`, `id` и множественность списка. Проп, а не набор `aria`: у
-				 * списка нет своего компонента — это разметка внутри шаблона Select,
-				 * писать некуда. Та же асимметрия, что у панели Accordion.
-				 */
-				list_aria: { type: Object, protected: true, triggers: ['change:mode'] },
-				/**
 				 * Инстанс тегов при множественном выборе, `null` иначе. Живёт в
 				 * `TSelectTagsExtension` — второй компонент со своей коллекцией, а не
 				 * разметка: связку «опция ⇄ тег» пришлось бы иначе повторять в шести

@@ -1,5 +1,5 @@
 import { TModalLayer } from '../../base/modal-layer'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { TDatasetAttributes } from '../../../common'
 import type { IDrawer, IDrawerProps, TDrawerEvents, TDrawerPlacement, TDrawerSwipe } from './types'
 
@@ -51,8 +51,8 @@ export default class TDrawer extends TModalLayer<IDrawerProps, TDrawerEvents> im
 	/** Последнее отданное `locksScroll`: событие — только на его смену. */
 	protected _locksScroll = false
 
-	constructor(props: Partial<IDrawerProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IDrawerProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TDrawer
 

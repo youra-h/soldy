@@ -6,7 +6,7 @@ import { toBindingState, useAdapterParts, type TBindingState } from './useAdapte
  * То же, что `TBinding`, но без `ctrl` и `rootElement`.
  *
  * `TProps` — пропсы компонента, среди них коллекционные; инстанс контракта
- * `C` — фасад. Из них шаблон и получает типы `items`, `list_aria` и прочего,
+ * `C` — фасад. Из них шаблон и получает типы `items`, `selected` и прочего,
  * что отдаёт коллекция.
  *
  * Собрано пересечением, а не через `Omit<TBinding, …>`: `Omit` схлопывает

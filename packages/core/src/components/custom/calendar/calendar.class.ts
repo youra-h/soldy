@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { DEFAULT_LOCALE, calendarLocale, isWeekday, weekdayOf } from '../../../common'
 import { sameValue } from '../../../common/utility/same-value'
 import type { TAriaAttributes, TCalendarDate, TWeekday } from '../../../common'
@@ -68,12 +68,12 @@ export default class TCalendar
 	protected _prevLabel: string
 	protected _nextLabel: string
 
-	constructor(props: Partial<ICalendarProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<ICalendarProps> = {}) {
 		const ctor = new.target as typeof TCalendar
 
 		// `value` база сверяет поэлементно (`sameValue`): `multiple` и `range` —
 		// массивы, и эхо модели тем же списком сменой не считается
-		super(props, options)
+		super(props)
 
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max

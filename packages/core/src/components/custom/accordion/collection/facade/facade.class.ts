@@ -1,8 +1,8 @@
 import { TSelectionCollectionFacade } from '../../../../base/collection'
 import type { TCollectionFacadeOptions, TSelectionFacadeProps } from '../../../../base/collection'
 import type { TAccordionView } from '../../types'
-import { AccordionFactory, ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from '../factory'
-import { resolveEngine } from '../../../../base/collection/create/internal'
+import { accordionExtensions } from '../factory'
+import { completeEngine } from '../../../../base/collection/create/internal'
 import type {
 	TAccordionCollection,
 	TAccordionCollectionExtensions,
@@ -27,21 +27,21 @@ export class TAccordionCollectionFacade extends TSelectionCollectionFacade<
 		props: TSelectionFacadeProps<IAccordionItem> = {},
 		options: TCollectionFacadeOptions<TAccordionCollectionFacadeEngine, IAccordion> = {},
 	) {
-		// Движок мог прийти снаружи собранным на любом уровне — `resolveEngine`
-		// дополнит его до того, что нужно Accordion. Именно здесь, а не в теле:
+		// Движок мог прийти снаружи собранным на любом уровне — `completeEngine`
+		// доставит в него то, чего не хватает Accordion. Именно здесь, а не в теле:
 		// базы трогают расширения в своих конструкторах
 		super(
 			{},
 			{
-				engine: resolveEngine(
-					options,
-					ACCORDION_EXTENSIONS(),
-					ACCORDION_OWNER_EXTENSIONS,
-					'Accordion',
-					AccordionFactory,
+				engine: completeEngine(
+					options.engine,
+					accordionExtensions(),
 				) as TAccordionCollection,
+				owner: options.owner,
 			},
 		)
+
+		if (!options.engine) this.bindOwner()
 
 		this.events.relayAll(this.extensions.accordion.events)
 

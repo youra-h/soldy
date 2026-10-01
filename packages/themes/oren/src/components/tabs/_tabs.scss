@@ -356,7 +356,9 @@ $line: ':where(.s-tabs:not(.s-tabs--view-contained, .s-tabs--view-outline))';
 		@apply opacity-100;
 	}
 
-	&[data-selected='true'] > * {
+	// Выключенный активный таб приглушён, как остальные: полная непрозрачность
+	// выдала бы его за рабочий
+	&[data-selected='true']:not([data-disabled='true']) > * {
 		@apply opacity-100;
 	}
 

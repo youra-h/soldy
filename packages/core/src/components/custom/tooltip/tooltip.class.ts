@@ -1,6 +1,6 @@
 import { TComponentView } from '../../base/component-view'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
-import type { TAriaAttributes } from '../../../common'
+import type { TDefaultValues } from '../../base/component'
+import { TAria } from '../../../common'
 import type {
 	ITooltip,
 	ITooltipProps,
@@ -8,15 +8,6 @@ import type {
 	TTooltipPlacement,
 	TTooltipType,
 } from './types'
-
-/**
- * Атрибут, которым триггер ссылается на панель, — по режиму. Словарь по
- * union, а не условие: режим без своей ссылки не скомпилируется.
- */
-const TRIGGER_RELATION: Record<TTooltipType, string> = {
-	description: 'aria-describedby',
-	label: 'aria-labelledby',
-}
 
 /**
  * Подсказка: короткий неинтерактивный текст у триггера.
@@ -31,10 +22,11 @@ const TRIGGER_RELATION: Record<TTooltipType, string> = {
  * состояние и то, что из него следует для разметки.
  *
  * Корень компонента — обёртка триггера и якорь панели, а сама панель — Frame
- * без экземпляра в ядре, как у Popover. Поэтому связку «триггер ↔ панель»
- * Tooltip отдаёт с обеих сторон сам: сторону панели — в свой `aria`, который
- * разметка раскладывает на Frame, сторону триггера — выходом `triggerAria` в
- * scope слота `trigger`. Формула `id` одна на обе.
+ * без экземпляра в ядре, как у Popover. Поэтому обе стороны связки «триггер ↔
+ * панель» — наборы Tooltip: панели — свой `aria`, который разметка
+ * раскладывает на Frame, триггеру — `triggerAria` в scope слота `trigger`.
+ * Роль панели пишет подсказка, а `id` панели и ссылку на него по режиму —
+ * плагин `TTooltipIdsPlugin`: `id` нужны документу, а не подсказке.
  *
  * Панель не размонтируется: открытость — это её `visible`. Поэтому ссылка
  * триггера стоит всегда, а не только у открытой подсказки: описание или имя
@@ -74,9 +66,10 @@ export default class TTooltip
 	protected _openDelay: number
 	protected _closeDelay: number
 	protected _type: TTooltipType
+	protected _triggerAria: TAria
 
-	constructor(props: Partial<ITooltipProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ITooltipProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTooltip
 
@@ -86,11 +79,16 @@ export default class TTooltip
 		this._closeDelay = props.closeDelay ?? ctor.defaultValues.closeDelay
 		this._type = props.type ?? ctor.defaultValues.type
 
-		// Сторона панели связки: панель — подсказка, `id` — то, на что ссылается
-		// триггер. Имени у панели нет: её текст и есть описание триггера или,
-		// в режиме `label`, его имя. От режима панель не зависит
+		// Сторона панели связки: панель — подсказка. Имени у панели нет: её
+		// текст и есть описание триггера или, в режиме `label`, его имя. От
+		// режима панель не зависит
 		this._aria.add('role', 'tooltip')
-		this._aria.add('id', this._panelId)
+
+		this._triggerAria = new TAria()
+
+		this._triggerAria.events.on('change', () =>
+			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
+		)
 	}
 
 	get open(): boolean {
@@ -154,8 +152,8 @@ export default class TTooltip
 
 	/**
 	 * Чем подсказка служит триггеру: описанием (`description`) или именем
-	 * (`label`). Режим меняет только ссылку триггера — `triggerAria`, панель в
-	 * обоих одна и та же.
+	 * (`label`). Режим меняет только ссылку триггера в `triggerAria` — её
+	 * пишет `TTooltipIdsPlugin`, — панель в обоих одна и та же.
 	 */
 	get type(): TTooltipType {
 		return this._type
@@ -169,25 +167,17 @@ export default class TTooltip
 	}
 
 	/**
-	 * Сторона триггера в связке с панелью: `aria-describedby`, а в режиме
-	 * `label` — `aria-labelledby`. Ссылка одна, не обе: подсказка-имя,
-	 * повторённая описанием, прозвучала бы дважды.
+	 * Сторона триггера в связке с панелью: ссылка на неё по режиму —
+	 * `aria-describedby` или `aria-labelledby`.
 	 *
 	 * Отдельный набор, а не часть `aria`: `aria` описывает панель, а это —
-	 * чужой элемент, триггер потребителя в слоте `trigger`. У разметки без
-	 * экземпляра набора нет, атрибуты отдаются значением (AGENTS.md, «Часть
-	 * или слот»).
-	 *
-	 * Ссылка стоит и у закрытой подсказки: панель всегда в документе, закрытие
-	 * её только прячет.
+	 * чужой элемент, триггер потребителя в слоте `trigger`. Экземпляра у него
+	 * нет, поэтому набор — подсказки (AGENTS.md, «Часть или слот»). Живой:
+	 * ссылку пишет `TTooltipIdsPlugin`, а об изменении набор сообщает
+	 * `change:triggerAria`.
 	 */
-	get triggerAria(): TAriaAttributes {
-		return { [TRIGGER_RELATION[this._type]]: this._panelId }
-	}
-
-	/** `id` панели — одна формула на обе стороны связки. */
-	protected get _panelId(): string {
-		return `s-tooltip-panel-${this.idBase}`
+	get triggerAria(): TAria {
+		return this._triggerAria
 	}
 
 	override getProps(): ITooltipProps {

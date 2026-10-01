@@ -1,4 +1,4 @@
-import { TBaseExtension, TBatchExtension, TFactoryExtension } from '../../../../../base/collection'
+import { TBaseExtension, TBatchExtension } from '../../../../../base/collection'
 import type { IExtensionContext } from '../../../../../base/collection'
 import {
 	addMonths,
@@ -10,6 +10,7 @@ import {
 	parseDate,
 	startOfMonth,
 	todayDate,
+	TAria,
 } from '../../../../../../common'
 import type { TAriaAttributes, TCalendarDate, TMonthGridDay } from '../../../../../../common'
 import { calendarBounds, datesOf, inBounds } from '../../../dates'
@@ -19,8 +20,9 @@ import type { ICalendar } from '../../../types'
 import { focusOf, selectionOf } from '../guards'
 import type {
 	ICalendarViewExtension,
-	ICalendarViewExtensionOptions,
+	TCalendarEngineOptions,
 	TCalendarGrid,
+	TCalendarGridSets,
 	TCalendarViewEvents,
 } from './types'
 
@@ -36,6 +38,11 @@ const TITLE_LIVE = 'polite'
 
 /**
  * Вид календаря: какие месяцы показаны и какие дни поэтому лежат в коллекции.
+ *
+ * Календарь — опция движка (`owner`): он приходит и уходит после сборки, и
+ * вид наблюдает его (`ctx.options.watch`). Месяцы, границы и подписи — его,
+ * поэтому пришедший календарь строит вид заново, а без календаря нет ни сеток,
+ * ни дней.
  *
  * **Коллекция — дни показанных месяцев, и только их.** Заполнители соседних
  * месяцев элементами не бывают: одна дата — один элемент, а при нескольких
@@ -55,44 +62,36 @@ const TITLE_LIVE = 'polite'
  * выключен), размер и вариант календаря, доступное имя (полная дата),
  * `aria-current` и `data-today`, `data-out-of-bounds`. Выбор и фокус дню пишут
  * свои расширения.
+ *
+ * **Имя сетки — её заголовок**, но `id` заголовка и ссылку на него пишет не
+ * вид, а плагин связок календаря (`TCalendarIdsPlugin`): `id` нужны
+ * документу, а не коллекции. Пишет он в наборы места сетки (`gridSets`), а
+ * вид раскладывает их в `grids` вместе со своим.
  */
 export class TCalendarViewExtension
-	extends TBaseExtension<ICalendarItem, TCalendarViewEvents>
+	extends TBaseExtension<ICalendarItem, TCalendarViewEvents, TCalendarEngineOptions>
 	implements ICalendarViewExtension
 {
 	readonly name = 'view' as const
 
-	protected readonly _owner: ICalendar
 	private _months: TCalendarDate[] = []
-	private _bounds: TCalendarBounds
+	private _bounds: TCalendarBounds = calendarBounds(undefined, undefined)
 	/** Каркас сеток и его ключ */
 	private _skeletonMemo: { key: string; grids: TGridSkeleton[] } | undefined = undefined
-	/** Из чего посчитано то, что день знает от вида */
-	private readonly _applied = new WeakMap<ICalendarItem, TViewApplied>()
-
-	constructor(options: ICalendarViewExtensionOptions) {
-		super()
-
-		this._owner = options.owner
-		this._bounds = calendarBounds(options.owner.min, options.owner.max)
-	}
+	/** Из чего посчитано то, что день знает от вида. У нового календаря — заново */
+	private _applied = new WeakMap<ICalendarItem, TViewApplied>()
+	/** Наборы заголовка и сетки по месту сетки — в них пишет плагин связок */
+	private readonly _gridSets: TCalendarGridSets[] = []
 
 	get months(): TCalendarDate[] {
 		return [...this._months]
 	}
 
-	override install(ctx: IExtensionContext<ICalendarItem>): void {
+	override install(ctx: IExtensionContext<ICalendarItem, TCalendarEngineOptions>): void {
 		super.install(ctx)
 
 		// Состав сверяется по дате: и у дня в хранилище, и у источника она есть
 		this._batch.trackBy = (item) => item.date
-
-		// Дни строит фабрика уже здесь, при установке, — раньше, чем сборка
-		// привяжет её к владельцу. Без основы от календаря `id` дней шли бы от
-		// `uid` и расходились при гидратации
-		const factory = ctx.extensions.factory
-
-		if (factory instanceof TFactoryExtension) factory.bindIdBase(this._owner.idBase)
 
 		// Дни пришли — то, что они знают от вида. На весь состав: при листании
 		// новые дни приходят пачкой, и итог `change:items` один. Пишется только
@@ -100,37 +99,52 @@ export class TCalendarViewExtension
 		// листание не трогает
 		ctx.driver.events.on('change:items', () => this._applyStale())
 
-		this._setMonths(this._resolveMonths(this._owner.months))
+		// Календарь — опция движка: приходит и уходит после сборки. Подписки на
+		// него живут в области наблюдателя — сменился календарь, прежние сняты
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
 
-		const owner = this._owner
-
-		owner.events.on('change:months', () => this._setMonths(this._resolveMonths(owner.months)))
-		owner.events.on('change:min', () => this._rebound())
-		owner.events.on('change:max', () => this._rebound())
-
-		// Выключенный календарь — выключенные дни и кнопки листания
-		owner.events.on('change:disabled', () => {
+			// Вид нового календаря строится с нуля: его месяцы, границы и
+			// подписи, а дни, оставшиеся от прежнего, знают от вида заново
+			this._bounds = calendarBounds(owner.min, owner.max)
+			this._applied = new WeakMap()
+			this._months = []
+			this._setMonths(owner, this._resolveMonths(owner.months, this._startDate(owner)))
 			this._applyStale()
-			this.events.emit('change:paging')
+
+			scope.on(owner.events, 'change:months', () =>
+				this._setMonths(
+					owner,
+					this._resolveMonths(owner.months, this._fallbackDate(owner)),
+				),
+			)
+			scope.on(owner.events, 'change:min', () => this._rebound(owner))
+			scope.on(owner.events, 'change:max', () => this._rebound(owner))
+
+			// Выключенный календарь — выключенные дни и кнопки листания
+			scope.on(owner.events, 'change:disabled', () => {
+				this._applyStale()
+				this.events.emit('change:paging')
+			})
+
+			scope.on(owner.events, 'change:timeZone', () => this._applyStale())
+			scope.on(owner.events, 'change:weekStart', () => this.events.emit('change:grids'))
+
+			// Номер дня и имя — в цифрах и словах локали: состав тот же, подписи новые
+			scope.on(owner.events, 'change:locale', () => {
+				this._build(owner)
+				this._applyStale()
+				this.events.emit('change:grids')
+			})
+
+			// `size` и `variant` элементам диктует владелец — отдаём новые значения
+			scope.on(owner.events, 'change:size', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
+			scope.on(owner.events, 'change:variant', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item, owner)),
+			)
 		})
-
-		owner.events.on('change:timeZone', () => this._applyStale())
-		owner.events.on('change:weekStart', () => this.events.emit('change:grids'))
-
-		// Номер дня и имя — в цифрах и словах локали: состав тот же, подписи новые
-		owner.events.on('change:locale', () => {
-			this._build()
-			this._applyStale()
-			this.events.emit('change:grids')
-		})
-
-		// `size` и `variant` элементам диктует владелец — отдаём новые значения
-		owner.events.on('change:size', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
-		)
-		owner.events.on('change:variant', () =>
-			ctx.driver.valueOf().forEach((item) => this._applyStyle(item)),
-		)
 	}
 
 	/**
@@ -138,23 +152,26 @@ export class TCalendarViewExtension
 	 * Раскладка по неделям и заголовки берутся из каркаса, который
 	 * пересчитывается, только когда сменились месяцы, первый день недели или
 	 * локаль: раскладывать недели и форматировать заголовки через Intl на
-	 * каждое чтение незачем.
+	 * каждое чтение незачем. Календаря нет — сеток тоже.
 	 */
 	get grids(): TCalendarGrid[] {
+		const owner = this._ctx.options.get('owner')
+
+		if (!owner) return []
+
 		const multiselectable = selectionOf(this._ctx)?.multiselectable ? 'true' : null
 		const days = new Map(this._ctx.driver.valueOf().map((item) => [item.date, item]))
-		const idBase = `s-calendar-title-${this._owner.idBase}`
 
-		return this._skeleton().map(({ key, title, weeks }, index) => {
-			const id = `${idBase}-${index}`
+		return this._skeleton(owner).map(({ key, title, weeks }, index) => {
+			const sets = this._gridSets[index]
 
 			return {
 				key,
 				title,
-				titleAria: { id, 'aria-live': TITLE_LIVE },
+				titleAria: { ...sets?.title.toObject(), 'aria-live': TITLE_LIVE },
 				gridAria: {
+					...sets?.grid.toObject(),
 					role: 'grid',
-					'aria-labelledby': id,
 					'aria-multiselectable': multiselectable,
 				},
 				weeks: weeks.map((week) =>
@@ -168,35 +185,76 @@ export class TCalendarViewExtension
 		})
 	}
 
+	/**
+	 * Наборы заголовка и сетки на месте `index` — то, что пишут в сетку
+	 * снаружи вида: `id` заголовка и ссылку на него. Место, а не месяц: при
+	 * листании месяц у сетки меняется, а заголовок и его `id` остаются, и
+	 * скринридер объявляет смену месяца в той же живой области. У нового места
+	 * наборы заводятся при первом обращении; их смена — `change:grids`.
+	 */
+	gridSets(index: number): TCalendarGridSets {
+		const existing = this._gridSets[index]
+
+		if (existing) return existing
+
+		const sets: TCalendarGridSets = { title: new TAria(), grid: new TAria() }
+
+		sets.title.events.on('change', () => this.events.emit('change:grids'))
+		sets.grid.events.on('change', () => this.events.emit('change:grids'))
+
+		this._gridSets[index] = sets
+
+		return sets
+	}
+
+	/** Листать некуда и без календаря: месяцев нет. */
 	get prevDisabled(): boolean {
+		const earliest = this._earliest
+
 		return (
-			this._owner.disabled ||
-			compareDates(this._earliest, startOfMonth(this._bounds.low)) <= 0
+			earliest === undefined ||
+			this._isOff() ||
+			compareDates(earliest, startOfMonth(this._bounds.low)) <= 0
 		)
 	}
 
 	get nextDisabled(): boolean {
+		const latest = this._latest
+
 		return (
-			this._owner.disabled || compareDates(this._latest, startOfMonth(this._bounds.high)) >= 0
+			latest === undefined ||
+			this._isOff() ||
+			compareDates(latest, startOfMonth(this._bounds.high)) >= 0
 		)
 	}
 
 	showPrev(): void {
-		if (this.prevDisabled) return
+		const owner = this._ctx.options.get('owner')
 
-		this._setMonths(this._months.map((month) => addMonths(month, -1)))
+		if (!owner || this.prevDisabled) return
+
+		this._setMonths(
+			owner,
+			this._months.map((month) => addMonths(month, -1)),
+		)
 	}
 
 	showNext(): void {
-		if (this.nextDisabled) return
+		const owner = this._ctx.options.get('owner')
 
-		this._setMonths(this._months.map((month) => addMonths(month, 1)))
+		if (!owner || this.nextDisabled) return
+
+		this._setMonths(
+			owner,
+			this._months.map((month) => addMonths(month, 1)),
+		)
 	}
 
 	showMonth(index: number, month: TCalendarDate): void {
+		const owner = this._ctx.options.get('owner')
 		const target = parseDate(month)
 
-		if (this._owner.disabled || target === undefined || this._months[index] === undefined) {
+		if (!owner || owner.disabled || target === undefined || this._months[index] === undefined) {
 			return
 		}
 
@@ -208,19 +266,20 @@ export class TCalendarViewExtension
 
 		next[index] = wanted
 
-		this._setMonths(next)
+		this._setMonths(owner, next)
 	}
 
 	reveal(date: TCalendarDate, from: TCalendarDate): void {
+		const owner = this._ctx.options.get('owner')
 		const month = startOfMonth(date)
 
-		if (this._months.includes(month)) return
+		if (!owner || this._months.includes(month)) return
 
 		const shift = monthsBetween(startOfMonth(from), month)
 		const shifted = this._months.map((item) => addMonths(item, shift))
 
 		if (shifted.every((item) => this._monthInBounds(item))) {
-			this._setMonths(shifted)
+			this._setMonths(owner, shifted)
 
 			return
 		}
@@ -246,18 +305,29 @@ export class TCalendarViewExtension
 		return batch
 	}
 
-	private get _earliest(): TCalendarDate {
-		return this._months.reduce((a, b) => (compareDates(b, a) < 0 ? b : a))
+	private get _earliest(): TCalendarDate | undefined {
+		return this._months.reduce<TCalendarDate | undefined>(
+			(a, b) => (a === undefined || compareDates(b, a) < 0 ? b : a),
+			undefined,
+		)
 	}
 
-	private get _latest(): TCalendarDate {
-		return this._months.reduce((a, b) => (compareDates(b, a) > 0 ? b : a))
+	private get _latest(): TCalendarDate | undefined {
+		return this._months.reduce<TCalendarDate | undefined>(
+			(a, b) => (a === undefined || compareDates(b, a) > 0 ? b : a),
+			undefined,
+		)
+	}
+
+	/** Выключен ли календарь. Нет календаря — листать нечего. */
+	private _isOff(): boolean {
+		return this._ctx.options.get('owner')?.disabled ?? true
 	}
 
 	/** Каркас сеток: раскладка и заголовки, по ключу из месяцев, первого дня недели и локали. */
-	private _skeleton(): TGridSkeleton[] {
-		const locale = this._owner.locale
-		const first = this._owner.firstDay
+	private _skeleton(owner: ICalendar): TGridSkeleton[] {
+		const locale = owner.locale
+		const first = owner.firstDay
 		const key = `${locale}|${first}|${this._months.join(',')}`
 
 		if (this._skeletonMemo?.key === key) return this._skeletonMemo.grids
@@ -285,10 +355,12 @@ export class TCalendarViewExtension
 
 	/**
 	 * Месяцы сеток из заданных: первые числа, в границах, без повторов. Не
-	 * заданы — одна сетка на месяце фокуса, а пока фокуса нет — на месяце
-	 * первой выбранной даты, иначе сегодняшнем.
+	 * заданы — одна сетка на месяце запасной даты.
 	 */
-	private _resolveMonths(raw: TCalendarDate[] | undefined): TCalendarDate[] {
+	private _resolveMonths(
+		raw: TCalendarDate[] | undefined,
+		fallback: TCalendarDate,
+	): TCalendarDate[] {
 		const given = (raw ?? [])
 			.map((item) => parseDate(item))
 			.filter((item) => item !== undefined)
@@ -296,15 +368,17 @@ export class TCalendarViewExtension
 
 		const months = [...new Set(given)]
 
-		return months.length > 0 ? months : [this._clampMonth(startOfMonth(this._fallbackDate()))]
+		return months.length > 0 ? months : [this._clampMonth(startOfMonth(fallback))]
 	}
 
-	private _fallbackDate(): TCalendarDate {
-		const focused = focusOf(this._ctx)?.focusedDate
+	/** Запасная дата — день фокуса, а пока фокуса нет — дата, с которой календарь начинает. */
+	private _fallbackDate(owner: ICalendar): TCalendarDate {
+		return focusOf(this._ctx)?.focusedDate ?? this._startDate(owner)
+	}
 
-		if (focused !== undefined) return focused
-
-		const first = datesOf(this._owner.value)[0] ?? todayDate(this._owner.timeZone)
+	/** С чего календарь начинает: первая выбранная дата, иначе сегодня, в границах. */
+	private _startDate(owner: ICalendar): TCalendarDate {
+		const first = datesOf(owner.value)[0] ?? todayDate(owner.timeZone)
 
 		return clampDate(first, this._bounds.low, this._bounds.high)
 	}
@@ -313,20 +387,20 @@ export class TCalendarViewExtension
 	 * Записать месяцы сеток: состав коллекции, месяцы владельца, события —
 	 * только о смене. Возвращает, сменились ли месяцы.
 	 */
-	private _setMonths(months: TCalendarDate[]): boolean {
+	private _setMonths(owner: ICalendar, months: TCalendarDate[]): boolean {
 		const previous = this._months
 
 		if (months.length === previous.length && months.every((m, i) => m === previous[i])) {
 			// Владелец мог записать тот же вид своими словами (не первое число) —
 			// у него остаются показанные месяцы
-			this._owner.months = this.months
+			owner.months = this.months
 
 			return false
 		}
 
 		this._months = months
-		this._build()
-		this._owner.months = this.months
+		this._build(owner)
+		owner.months = this.months
 
 		this.events.emit('change:months', this.months, previous)
 		this.events.emit('change:grids')
@@ -336,8 +410,8 @@ export class TCalendarViewExtension
 	}
 
 	/** Состав коллекции — дни показанных месяцев, по дате. */
-	private _build(): void {
-		const locale = calendarLocale(this._owner.locale)
+	private _build(owner: ICalendar): void {
+		const locale = calendarLocale(owner.locale)
 		const sources: Partial<ICalendarItemProps>[] = []
 
 		for (const month of this._months) {
@@ -356,32 +430,36 @@ export class TCalendarViewExtension
 	 * Листание зависит от границ и тогда, когда сетки остались на месте: `min`
 	 * дошёл до месяца первой сетки — «назад» гаснет.
 	 */
-	private _rebound(): void {
-		this._bounds = calendarBounds(this._owner.min, this._owner.max)
+	private _rebound(owner: ICalendar): void {
+		this._bounds = calendarBounds(owner.min, owner.max)
 		this._applyStale()
 
-		if (!this._setMonths(this._resolveMonths(this._months))) this.events.emit('change:paging')
+		const months = this._resolveMonths(this._months, this._fallbackDate(owner))
+
+		if (!this._setMonths(owner, months)) this.events.emit('change:paging')
 	}
 
 	/**
 	 * То, что день знает от вида, — тем дням, у кого этого ещё нет или оно
 	 * посчитано из прежних данных. Данные — ключом: то, из чего запись
 	 * посчитана, а не флаг «устарело», поэтому пропустить смену нельзя.
-	 * «Сегодня» — одно на проход.
+	 * «Сегодня» — одно на проход. Календаря нет — знать дням нечего.
 	 */
 	private _applyStale(): void {
-		if (!this._ctx) return
+		const owner = this._ctx?.options.get('owner')
 
-		const locale = this._owner.locale
-		const today = todayDate(this._owner.timeZone)
+		if (!owner) return
+
+		const locale = owner.locale
+		const today = todayDate(owner.timeZone)
 		const labelKey = `${locale}|${today}`
-		const off = this._owner.disabled
+		const off = owner.disabled
 		const bounds = this._bounds
 
 		for (const item of this._ctx.driver.valueOf()) {
 			const applied = this._applied.get(item)
 
-			if (applied === undefined) this._applyStyle(item)
+			if (applied === undefined) this._applyStyle(item, owner)
 
 			if (applied?.labelKey !== labelKey) this._label(item, locale, today)
 
@@ -403,9 +481,9 @@ export class TCalendarViewExtension
 	}
 
 	/** `size` и `variant` дня — всегда календаря. */
-	private _applyStyle(item: ICalendarItem): void {
-		item.size = this._owner.size
-		item.variant = this._owner.variant
+	private _applyStyle(item: ICalendarItem, owner: ICalendar): void {
+		item.size = owner.size
+		item.variant = owner.variant
 	}
 
 	/**

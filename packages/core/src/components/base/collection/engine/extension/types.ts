@@ -1,9 +1,16 @@
 import type { ICommand } from '../commands'
 import type { ICollectionStorageDriver } from '../types'
 import type { TEvented } from '@soldy-ui/core'
+import type { IEngineOptionsReader, TEngineOptions } from '../options'
 
-export interface IExtensionContext<T> {
+/**
+ * Контекст расширения: хранилище, соседи, команды и опции движка.
+ * `TOptions` расширение задаёт тем составом опций, который ждёт.
+ */
+export interface IExtensionContext<T, TOptions extends TEngineOptions = TEngineOptions> {
 	readonly driver: ICollectionStorageDriver<T>
+	/** Опции движка — чтение и наблюдение. Пишет их компонент, а не расширение. */
+	readonly options: IEngineOptionsReader<TOptions>
 	readonly extensions: Record<string, IExtension<T>>
 	execute(command: ICommand<T>): void
 	batch(action: () => void): void

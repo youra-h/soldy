@@ -1,5 +1,5 @@
 import { TComponent } from '../component'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { IComponentView, IComponentViewProps, TComponentViewEvents, TDirection } from './types'
 import { TClasses, TAria, TDataset, TAttributes, TActionEvent, TChangeEvent } from '../../../common'
 import type { TEventSink } from '../../../common'
@@ -34,7 +34,6 @@ export default class TComponentView<
 		direction: 'inherit',
 	}
 
-	protected readonly _idBase: string
 	protected _rendered: boolean
 	protected _visible: boolean
 	protected _tag: string | object
@@ -45,12 +44,10 @@ export default class TComponentView<
 	protected _attrs: TAttributes
 	protected _ready: boolean = false
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
+	constructor(props: Partial<TProps> = {}) {
 		const ctor = new.target as typeof TComponentView
 
-		super(props, options)
-
-		this._idBase = options.idBase || String(this.uid)
+		super(props)
 
 		this._rendered = props.rendered ?? ctor.defaultValues.rendered
 		this._visible = props.visible ?? ctor.defaultValues.visible
@@ -91,16 +88,6 @@ export default class TComponentView<
 	 */
 	protected get _sink(): TEventSink<TComponentViewEvents> {
 		return this.events
-	}
-
-	/**
-	 * `uid` — счётчик процесса: на сервере он общий для всех запросов, в
-	 * браузере начинается заново, и `id` от него расходились при гидратации.
-	 * Опцию `idBase` адаптер берёт у фреймворка (`useId`), а тот выводит её из
-	 * места компонента в дереве; без опции — `uid`, как раньше.
-	 */
-	get idBase(): string {
-		return this._idBase
 	}
 
 	get present(): boolean {

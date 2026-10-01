@@ -4,7 +4,7 @@ import type {
 	TInputControlEvents,
 } from '../../base/input-control'
 import type { TCollectionStorageDriverEvents } from '../../base/collection'
-import type { TAriaAttributes } from '../../../common'
+import type { TAria, TAriaAttributes } from '../../../common'
 import type { IList, IListProps, TListEvents } from '../list'
 import type { IInput } from '../input'
 import type { ISelectCollectionProps } from './collection/types'
@@ -80,6 +80,8 @@ export type TSelectEvents = TInputControlEvents<TSelectValue> &
 		'change:removeOnBackspace': (value: boolean) => void
 		/** change:placement */
 		'change:placement': (value: TSelectPlacement) => void
+		/** change:listAria — набор атрибутов списка изменился */
+		'change:listAria': (value: TAriaAttributes) => void
 	}
 
 /**
@@ -159,6 +161,11 @@ export interface ISelect<
 	readonly panelFlip: boolean
 	/** Имя кнопки очистки целиком: `clearLabel` + имя поля */
 	readonly clearAria: TAriaAttributes
+	/**
+	 * ARIA списка в панели: `role="listbox"` — Select, `aria-multiselectable` —
+	 * коллекция, `id` — плагин связок
+	 */
+	readonly listAria: TAria
 	/** Подгонять ли ширину панели под поле. Производное от `contentFit` */
 	readonly autoFitWidth: boolean
 	/** Переключить панель. Ничего не делает, если открывать нельзя. */

@@ -6,7 +6,7 @@ import type {
 	IValuedItem,
 	TSelectionValue,
 	TValueSelectionExtensionEvents,
-	TValueSelectionExtensionOptions,
+	TValueSelectionEngineOptions,
 } from './types'
 
 /**
@@ -21,6 +21,10 @@ import type {
  * внутри `TSelectExtension` — единственного тогда списка со значением, — и
  * оставить копию у List значило бы завести две реализации одной мысли.
  *
+ * Владелец — опция движка (`owner`): он приходит и уходит после сборки, и
+ * расширение наблюдает его (`ctx.options.watch`). Без владельца выбор живёт
+ * сам по себе, а пришедший владелец сверяется с ним так же, как на старте.
+ *
  * **Зацикливание** снимается флагом, а не сравнением значений: сравнивать
  * пришлось бы массивы, и на `multiple` любая перестановка выглядела бы
  * изменением.
@@ -29,47 +33,54 @@ export class TValueSelectionExtension<
 	TOwner extends IValueSelectionOwner = IValueSelectionOwner,
 	TItem extends IValuedItem = IValuedItem,
 >
-	extends TBaseExtension<TItem, TValueSelectionExtensionEvents>
+	extends TBaseExtension<
+		TItem,
+		TValueSelectionExtensionEvents,
+		TValueSelectionEngineOptions<TOwner>
+	>
 	implements IExtension<TItem, TValueSelectionExtensionEvents>
 {
 	readonly name = 'value' as const
 
-	protected readonly _owner: TOwner
 	private _syncing = false
 
-	constructor(options: TValueSelectionExtensionOptions<TOwner>) {
-		super()
-		this._owner = options.owner
-	}
-
-	override install(ctx: IExtensionContext<TItem>): void {
+	override install(ctx: IExtensionContext<TItem, TValueSelectionEngineOptions<TOwner>>): void {
 		super.install(ctx)
 
 		this._selection?.events.on('change:selection', () => this._selectionToValue())
-		this._owner.events.on('change:value', () => this._valueToSelection())
 
 		// Элемент мог приехать позже, чем выставили `value`: опции регистрируются
 		// при монтировании, а проп приходит сразу
 		ctx.driver.events.on('item:added', () => this._valueToSelection())
 		ctx.driver.events.on('change:items', () => this._valueToSelection())
 
-		// Направление на старте выбирается по тому, у кого есть что сказать.
-		//
-		// Раньше здесь безусловно шло `value` → выбор: коллекция в этот момент
-		// была пуста, и обратная сторона затёрла бы значение, заданное пропом.
-		// Пустой она быть перестала — движок можно собрать снаружи
-		// (`createEngine({ items: [{ _: { selected: true } }] })`) и передать
-		// компоненту уже с выбором. Безусловный сброс молча его терял.
-		if (this._hasValue() || !this._selection?.selected.length) {
+		// Владелец пришёл — его `value` и выбор коллекции сводятся заново, а
+		// подписка на смену `value` живёт, пока он владелец
+		ctx.options.watch('owner', (owner, scope) => {
+			if (!owner) return
+
+			scope.on(owner.events, 'change:value', () => this._valueToSelection())
+
+			this._reconcile(owner)
+		})
+	}
+
+	/**
+	 * Свести `value` владельца и выбор коллекции.
+	 *
+	 * Направление выбирается по тому, у кого есть что сказать: значение задано
+	 * — главное оно, нет — выбор коллекции.
+	 *
+	 * Безусловное `value` → выбор затёрло бы выбор движка, собранного снаружи
+	 * (`createEngine({ items: [{ _: { selected: true } }] })`) и переданного
+	 * компоненту уже с выбором.
+	 */
+	private _reconcile(owner: TOwner): void {
+		if (toKeys(owner.value).length > 0 || !this._selection?.selected.length) {
 			this._valueToSelection()
 		} else {
 			this._selectionToValue()
 		}
-	}
-
-	/** Значение задано пропом — тогда главное оно, а не выбор коллекции. */
-	private _hasValue(): boolean {
-		return toKeys(this._owner.value).length > 0
 	}
 
 	private get _selection(): TSelectionExtension<TItem> | undefined {
@@ -79,15 +90,16 @@ export class TValueSelectionExtension<
 	/** Выбор → `value`. */
 	private _selectionToValue(): void {
 		const selection = this._selection
+		const owner = this._ctx.options.get('owner')
 
-		if (!selection || this._syncing) return
+		if (!selection || !owner || this._syncing) return
 
 		const selected = selection.selected
 
 		this._syncing = true
 
 		try {
-			this._owner.value = selection.multiple
+			owner.value = selection.multiple
 				? selected.map((item) => item.value as string | number)
 				: (selected[0]?.value ?? undefined)
 		} finally {
@@ -100,27 +112,38 @@ export class TValueSelectionExtension<
 	 *
 	 * Значения без соответствующего элемента молча игнорируются: список мог ещё
 	 * не приехать, и повторный проход случится на `item:added`.
+	 *
+	 * Выбор, отменённый в `item:select:before`, значение не меняет: оно
+	 * откатывается к тому, что выбрано на самом деле. В `single` выбор заменяет
+	 * прежний сам, поэтому отменённый оставляет прежний; в `multiple` выбор
+	 * собирается заново в порядке значения, и отменённого в нём просто нет.
+	 * В режиме `none` выбора нет вовсе — сводить нечего.
 	 */
 	private _valueToSelection(): void {
 		const selection = this._selection
+		const owner = this._ctx.options.get('owner')
 
-		if (!selection || !this._ctx || this._syncing) return
+		if (!selection || !owner || this._syncing || selection.mode === 'none') return
 
-		const wanted = toKeys(this._owner.value)
+		const items = toKeys(owner.value)
+			.map((key) => this._ctx.driver.valueOf().find((candidate) => candidate.value === key))
+			.filter((item) => item !== undefined)
+
+		let rejected = false
 
 		this._syncing = true
 
 		try {
-			selection.resetSelection()
+			if (selection.multiple || items.length === 0) selection.resetSelection()
 
-			for (const key of wanted) {
-				const item = this._ctx.driver.valueOf().find((candidate) => candidate.value === key)
-
-				if (item) selection.select(item)
+			for (const item of items) {
+				if (!selection.select(item)) rejected = true
 			}
 		} finally {
 			this._syncing = false
 		}
+
+		if (rejected) this._selectionToValue()
 	}
 }
 

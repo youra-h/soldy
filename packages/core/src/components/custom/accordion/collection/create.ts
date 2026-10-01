@@ -1,24 +1,17 @@
 import { createComponentEngine } from '../../../base/collection/create/internal'
 import type { TCreateEngineOptions } from '../../../base'
-import { ACCORDION_EXTENSIONS, ACCORDION_OWNER_EXTENSIONS } from './factory'
+import { accordionExtensions } from './factory'
 import type { TAccordionCollection } from './types'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
 
 /**
- * Коллекция Accordion целиком — со всем, включая владельческое.
- *
- * `owner` обязателен: проброс `size`/`variant`/`disabled` и вид секций держатся
- * на компоненте. Нужна коллекция без него — берите `createEngine` или
- * `createEngineSelection`: недостающее `<Accordion>` доустановит сам.
+ * Коллекция Accordion целиком. `owner` необязателен: владелец — опция движка, его
+ * пишет `<Accordion>`, когда движок передадут компоненту, или код —
+ * `engine.options.set({ owner })`.
  */
 export function createEngineAccordion(
-	options: TCreateEngineOptions<IAccordionItem> & { owner: IAccordion },
+	options: TCreateEngineOptions<IAccordionItem> & { owner?: IAccordion } = {},
 ): TAccordionCollection {
-	return createComponentEngine(
-		'createEngineAccordion',
-		ACCORDION_EXTENSIONS(),
-		ACCORDION_OWNER_EXTENSIONS,
-		options,
-	) as TAccordionCollection
+	return createComponentEngine(accordionExtensions(), options)
 }

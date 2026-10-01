@@ -19,7 +19,7 @@ export const TagsCollectionDescriptor = defineDescriptor(() =>
 		/**
 		 * Коллекционные props/events владельца Tags — то, что выводит фасад
 		 * `TTagsCollectionFacade`: режим выбора и сам выбор (как у ListBox). Дефолт
-		 * `mode` — `none`, задаётся в `TagsFactory`, здесь только контракт.
+		 * `mode` — `none`, задаётся в `tagsExtensions`, здесь только контракт.
 		 */
 		contribution: {
 			props: {

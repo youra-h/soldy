@@ -1,11 +1,6 @@
 import type { IExtension, IExtensionContext } from '../types'
 import { TBaseExtension } from '../base-extension.class'
-import type {
-	TFactoryEvents,
-	IFactoryExtension,
-	IFactoryExtensionOptions,
-	IFactoryItemOptions,
-} from './types'
+import type { TFactoryEvents, IFactoryExtension, IFactoryExtensionOptions } from './types'
 
 /**
  * TFactoryExtension — фабрика элементов коллекции.
@@ -41,25 +36,11 @@ export class TFactoryExtension<TItem extends object>
 	readonly name = 'factory' as const
 
 	private readonly _itemCtor?: IFactoryExtensionOptions<TItem>['itemCtor']
-	/** Основа `id` элементов из источников — владельца коллекции (`bindIdBase`). */
-	private _idBase: string | null = null
-	/** Сколько элементов фабрика создала: номер следующего — в их основе. */
-	private _created = 0
 
 	constructor(options: IFactoryExtensionOptions<TItem>) {
 		super()
 
 		this._itemCtor = options.itemCtor
-	}
-
-	/**
-	 * Элемент из источника строит фабрика, и `useId` фреймворка до него не
-	 * доходит: без основы от владельца его `id` в DOM строились бы от `uid`,
-	 * счётчика процесса, и расходились при гидратации. Номер по порядку
-	 * создания одинаков на сервере и в браузере: источники те же.
-	 */
-	bindIdBase(idBase: string): void {
-		this._idBase = idBase
 	}
 
 	override install(ctx: IExtensionContext<TItem>): void {
@@ -72,7 +53,7 @@ export class TFactoryExtension<TItem extends object>
 		ctx.driver.events.on('item:add:before', (e) => {
 			if (e.item instanceof ctor) return
 
-			e.item = this._build(ctor, e.item)
+			e.item = new ctor(e.item)
 		})
 
 		this._convertExisting(ctx, ctor)
@@ -111,19 +92,7 @@ export class TFactoryExtension<TItem extends object>
 			throw new Error('TFactoryExtension: ctor is not defined')
 		}
 
-		return this._build(ctor, source)
-	}
-
-	private _build(
-		ctor: IFactoryExtensionOptions<TItem>['itemCtor'],
-		source: Partial<TItem>,
-	): TItem {
-		this._created += 1
-
-		const options: IFactoryItemOptions =
-			this._idBase === null ? {} : { idBase: `${this._idBase}-item-${this._created}` }
-
-		return new ctor(source, options)
+		return new ctor(source)
 	}
 
 	isSource(value: unknown): boolean {

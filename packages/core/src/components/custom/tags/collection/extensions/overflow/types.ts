@@ -1,6 +1,5 @@
 import type { IExtension } from '../../../../../base/collection'
 import type { IPopover } from '../../../../popover'
-import type { ITags } from '../../../types'
 import type { ITagsItem } from '../../../item/types'
 
 /**
@@ -32,11 +31,6 @@ export interface ITagsOverflowExtension<TItem extends ITagsItem = ITagsItem> ext
 	 * ряд. Зовёт плагин переполнения — DOM ядру недоступен.
 	 */
 	notifyFit(count: number): void
-}
-
-export interface ITagsOverflowExtensionOptions<TOwner extends ITags = ITags> {
-	/** Ссылка на инстанс компонента TTags. */
-	owner: TOwner
 }
 
 export type TTagsOverflowExtensionEvents = {

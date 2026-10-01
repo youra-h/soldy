@@ -1,5 +1,5 @@
 import { TValueControl } from '../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { TAria } from '../../../common'
 import type { TAriaAttributes } from '../../../common'
 import type { ITagsProps, TTagsEvents, ITags, TTagsValue, TTagsView, TTagsOverflow } from './types'
@@ -18,7 +18,7 @@ const PANEL_CLASS = 's-tags__panel'
  * требования выделять тег, чтобы его увидеть; выбор включается явным `mode`,
  * когда он нужен (например, множественный выбор Select, отображённый тегами).
  * Дефолт `TSelectionExtension` при этом не трогаем — он переопределён только
- * в `TagsFactory`.
+ * в `tagsExtensions`.
  *
  * Роль здесь — только то, что Tags знает о себе сам: набор тегов («list»).
  * Когда у коллекции включён выбор, роль меняется на `listbox`, а элементам —
@@ -89,8 +89,8 @@ export class TTags extends TValueControl<TTagsValue, ITagsProps, TTagsEvents> im
 	 */
 	private readonly _rowNames = new Set<string>()
 
-	constructor(props: Partial<ITagsProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ITagsProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTags
 

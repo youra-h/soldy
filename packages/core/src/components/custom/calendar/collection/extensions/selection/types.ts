@@ -1,5 +1,4 @@
 import type {
-	IBaseOwnerItemExtensionOptions,
 	IExtension,
 	IExtensionItems,
 	IItemExtension,
@@ -7,7 +6,7 @@ import type {
 } from '../../../../../base/collection'
 import type { TCalendarDate } from '../../../../../../common'
 import type { ICalendarItem } from '../../../item/types'
-import type { ICalendar, TCalendarValue } from '../../../types'
+import type { TCalendarValue } from '../../../types'
 
 /**
  * Режим выбора: одна дата, несколько разных дат или диапазон «от и до».
@@ -70,14 +69,6 @@ export interface ICalendarSelectionExtension<
 	cancelRange(): void
 	/** День под указателем — для предпросмотра диапазона; ушёл с сетки — `undefined` */
 	notifyHover(date: TCalendarDate | undefined): void
-}
-
-/** Опции конструктора: ссылка на календарь. */
-export interface ICalendarSelectionExtensionOptions extends IBaseOwnerItemExtensionOptions<
-	ICalendarItem,
-	ICalendarSelectionItemExtension
-> {
-	owner: ICalendar
 }
 
 export type TCalendarSelectionItemEvents = TBaseItemEventsExtension & {

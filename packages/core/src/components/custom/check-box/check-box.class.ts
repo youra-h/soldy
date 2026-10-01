@@ -1,5 +1,5 @@
 import { TInputControl } from '../../base/input-control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { ICheckBox, ICheckBoxProps, TCheckBoxEvents, TCheckBoxView } from './types'
 
 /**
@@ -26,8 +26,8 @@ export default class TCheckBox
 	protected _indeterminate!: boolean
 	protected _view: TCheckBoxView | undefined
 
-	constructor(props: Partial<ICheckBoxProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ICheckBoxProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TCheckBox
 

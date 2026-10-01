@@ -1,8 +1,4 @@
-import type {
-	IBaseOwnerItemExtensionOptions,
-	IExtension,
-	IExtensionItems,
-} from '../../../../../base/collection'
+import type { IExtension, IExtensionItems } from '../../../../../base/collection'
 import type { TListEvents, TListIndicator } from '../../../../list'
 import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
@@ -11,25 +7,21 @@ import type { ISelectItemExtension } from './item'
 /**
  * Контракт расширения Select.
  *
- * Держит формулу идентификаторов связки «поле ↔ список ↔ опция» и текст
- * выбранного, который показывает поле. О выборе пользователя сообщает
- * событием `choose`.
+ * Держит текст выбранного, который показывает поле, и многовыборность
+ * списка. О выборе пользователя сообщает событием `choose`.
  */
 export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	extends
 		IExtension<TItem, TSelectExtensionEvents>,
 		IExtensionItems<TItem, ISelectItemExtension<TItem>> {
-	/** `id` элемента с `role="listbox"`. */
-	readonly listId: string
-	/** `id` элемента с `role="option"`. */
-	optionId(item: TItem): string
 	/** Текст выбранного — то, что показывает поле вместо `placeholder`. */
 	readonly text: string
 	/** Где стоит отметка выбранной опции — свойство поля, не опции. */
 	readonly indicator: TListIndicator
 	/**
 	 * Выбрать опцию с учётом режима и `closeOnSelect` владельца.
-	 * Возвращает `false`, если опция недоступна.
+	 * Возвращает `false`, если опция недоступна или выбор отменили
+	 * в `item:select:before`.
 	 *
 	 * Выбор пользователя: поле переписывается, что бы в нём ни было набрано, и
 	 * приходит `choose`.
@@ -42,10 +34,8 @@ export interface ISelectExtension<TItem extends ISelectItem = ISelectItem>
 	clear(): void
 }
 
-export interface ISelectExtensionOptions<
-	TOwner extends ISelect = ISelect,
-	TItem extends ISelectItem = ISelectItem,
-> extends IBaseOwnerItemExtensionOptions<TItem, ISelectItemExtension<TItem>> {
+/** Опции движка Select: владелец приходит и уходит после сборки. */
+export type TSelectEngineOptions<TOwner extends ISelect = ISelect> = {
 	owner: TOwner
 }
 

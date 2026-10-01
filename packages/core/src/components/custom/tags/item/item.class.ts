@@ -1,5 +1,5 @@
 import { TValueControl } from '../../../base/value-control'
-import type { IComponentOptions, TDefaultValues } from '../../../base/component'
+import type { TDefaultValues } from '../../../base/component'
 import { TAria, TChangeEvent } from '../../../../common'
 import type { TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
@@ -44,8 +44,8 @@ export default class TTagsItem<
 	protected _text: string
 	protected _closable: boolean | undefined
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTagsItem
 		const customProps = props as Partial<ITagsItemProps>

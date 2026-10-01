@@ -1,13 +1,13 @@
 /**
- * Автоматические `id` в разметке — от места компонента в дереве, а не от
- * счётчика ядра.
+ * `id` в разметке — от места компонента в дереве, а не от счётчика процесса.
  *
- * Поле, связка «таб ↔ панель», имя группы радио строят `id` от основы экземпляра
- * (`IComponentView.idBase`). Раньше основой был `uid` — счётчик экземпляров
- * процесса: на сервере он общий для всех запросов, в браузере начинается
- * заново, и гидратация видела другие `id`. Теперь основу даёт `useId` Vue
- * через `createVueAdapterContext`, а элементам из данных (`items`) — основа
- * владельца и номер по порядку создания.
+ * Связки «таб ↔ панель», «заголовок ↔ панель» у Accordion, имена сеток
+ * календаря, общий `name` радио строят плагины связок от id монтирования
+ * (`IPluginContext.createId`). Его даёт `useId` Vue через
+ * `createVueAdapterContext`, и он у каждого монтирования свой — в том числе у
+ * элемента из данных (`items`), который рисуется с готовым экземпляром.
+ * Счётчик процесса на сервере общий для всех запросов, в браузере начинается
+ * заново, и гидратация видела бы другие `id`.
  *
  * Сервер и браузер здесь — один процесс: рендер сервера уже сдвинул счётчик,
  * и экземпляры гидратации получают другие `uid`, как в настоящем браузере.
@@ -62,17 +62,12 @@ async function hydrate(render: () => VNode): Promise<{
 const attrs = (root: HTMLElement, selector: string, name: string) =>
 	[...root.querySelectorAll(selector)].map((element) => element.getAttribute(name))
 
-describe('автоматические id при гидратации', () => {
-	it('поле: id у сервера и браузера один, у соседей — разный, гидратация без расхождений', async () => {
-		const { server, client, warnings } = await hydrate(() =>
-			h('div', [h(Input, { value: 'a' }), h(Input, { value: 'b' })]),
-		)
-		const ids = attrs(client, 'input', 'id')
+describe('id при гидратации', () => {
+	it('поле без своего id — без атрибута: автоматического id у поля нет', async () => {
+		const { client, warnings } = await hydrate(() => h(Input, { value: 'a' }))
 
 		expect(warnings).toEqual([])
-		expect(ids).toEqual(attrs(server, 'input', 'id'))
-		expect(new Set(ids).size).toBe(2)
-		expect(ids.every((id) => !!id)).toBe(true)
+		expect(attrs(client, 'input', 'id')).toEqual([null])
 	})
 
 	it('заданный id — как есть', async () => {

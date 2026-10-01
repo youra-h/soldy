@@ -14,7 +14,7 @@ import type {
 	ISelectionCollectionItemProps,
 	ISelectionCollectionProps,
 } from '../../../base/collection'
-import { TAccordionExtension, TAccordionContentExtension } from './extensions'
+import { TAccordionExtension } from './extensions'
 import type { IAccordion } from '../types'
 import type { IAccordionItem } from '../item/types'
 import type { IAccordionItemProps } from '../item/types'
@@ -22,7 +22,11 @@ import type {
 	TSelectionCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { TAccordionExtensionEvents, TAccordionItemEventsExtension } from './extensions'
+import type {
+	TAccordionEngineOptions,
+	TAccordionExtensionEvents,
+	TAccordionItemEventsExtension,
+} from './extensions'
 
 export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccordionItem> = {
 	factory: TFactoryExtension<TItem>
@@ -33,15 +37,18 @@ export type TAccordionCollectionExtensions<TItem extends IAccordionItem = IAccor
 	batch: TBatchExtension<TItem>
 	selection: TSelectionExtension<TItem>
 	accordion: TAccordionExtension<IAccordion, TItem>
-	content: TAccordionContentExtension<TItem>
 }
 
-export type TAccordionCollection = TCollectionEngine<IAccordionItem, TAccordionCollectionExtensions>
+export type TAccordionCollection = TCollectionEngine<
+	IAccordionItem,
+	TAccordionCollectionExtensions,
+	TAccordionEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineAccordion`…). Фасад
- * сам дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * сам дополняет недостающее через `completeEngine` (см. `create/internal.ts`),
  * поэтому годится любой уровень, включая уровень 1, где ни `TAccordionItem`,
  * ни владельческие расширения ещё не собраны.
  *
@@ -54,7 +61,7 @@ export type TAccordionCollection = TCollectionEngine<IAccordionItem, TAccordionC
  * совместимым только движок с буквально таким же типом — не более раннего
  * уровня и не `TAccordionCollection`, который собирает `createEngineAccordion`.
  * Точность остаётся там, где движок инстанцируется (`TAccordionCollection`,
- * `AccordionFactory`), а не там, где его только принимают.
+ * `accordionExtensions`), а не там, где его только принимают.
  */
 export type TAccordionCollectionFacadeEngine = TCollectionEngine<any, any>
 
@@ -65,7 +72,7 @@ export type TAccordionCollectionFacadeEngine = TCollectionEngine<any, any>
  * `engine` принимает движок любого уровня сборки, а не только
  * `TAccordionCollection` — тот же контраст, что и у конструктора фасада (см.
  * `TAccordionCollectionFacadeEngine` выше): компонент доустанавливает
- * недостающее сам через `resolveEngine`.
+ * недостающее сам через `completeEngine`.
  */
 export interface IAccordionCollectionProps<TItemProps = IAccordionItemProps, TItem = IAccordionItem>
 	extends

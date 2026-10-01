@@ -1,7 +1,7 @@
 import { TChangeEvent } from '../../../common'
 import type { TComponentSize, TComponentVariant, TEventSink } from '../../../common'
 import { TComponentView } from '../component-view'
-import type { IComponentOptions, TDefaultValues } from '../component'
+import type { TDefaultValues } from '../component'
 import type { IStylableProps, TStylableEvents } from './types'
 
 /**
@@ -24,8 +24,8 @@ export default class TStylable<
 	protected _size: TComponentSize
 	protected _variant: TComponentVariant | undefined
 
-	constructor(props: Partial<TProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<TProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TStylable
 

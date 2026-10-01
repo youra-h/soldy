@@ -1,12 +1,6 @@
 import { TEntity } from '../entity'
 import { TEvented } from '../../../common'
-import type {
-	IComponent,
-	IComponentOptions,
-	IComponentProps,
-	TComponentEvents,
-	TDefaultValues,
-} from './types'
+import type { IComponent, IComponentProps, TComponentEvents, TDefaultValues } from './types'
 
 /**
  * Headless-модель компонента.
@@ -34,7 +28,7 @@ export default class TComponent<
 
 	public readonly events: TEvented<TEvents>
 
-	constructor(_props: Partial<TProps> = {}, _options: IComponentOptions = {}) {
+	constructor(_props: Partial<TProps> = {}) {
 		super()
 
 		this.events = new TEvented<TEvents>()
@@ -43,8 +37,7 @@ export default class TComponent<
 	static create<T extends TComponent<IComponentProps, any>>(
 		this: new (...args: any[]) => T,
 		props?: Partial<T extends TComponent<infer P, any> ? P : IComponentProps>,
-		options?: IComponentOptions,
 	): T {
-		return new this(props ?? {}, options ?? {})
+		return new this(props ?? {})
 	}
 }

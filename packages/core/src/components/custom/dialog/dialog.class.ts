@@ -1,5 +1,6 @@
 import { TModalLayer } from '../../base/modal-layer'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
+import { TAria } from '../../../common'
 import type { TAriaAttributes } from '../../../common'
 import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './types'
 
@@ -14,7 +15,8 @@ import type { IDialog, IDialogProps, TDialogEvents, TDialogPlacement } from './t
  *
  * **Предупреждение** (`alert`) — вариант того же окна, а не отдельный
  * компонент: клавиатура и фокус у него те же. Меняется роль —
- * `alertdialog`, — и описанием окна становится тело (`aria-describedby`).
+ * `alertdialog`, — и описанием окна становится тело: `id` тела и ссылку
+ * `aria-describedby` на него пишет плагин `TDialogIdsPlugin`.
  *
  * **Место, размер и разворот — значения, раскладка — тема.** Место уходит
  * модификатором `--placement-<v>` (стоит всегда, и у центра), развёрнутость —
@@ -46,11 +48,18 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 	protected _maximizable: boolean
 	protected _maximizeLabel: string
 	protected _alert!: boolean
+	protected _bodyAria: TAria
 
-	constructor(props: Partial<IDialogProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IDialogProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TDialog
+
+		this._bodyAria = new TAria()
+
+		this._bodyAria.events.on('change', () =>
+			this.events.emit('change:bodyAria', this._bodyAria.toObject()),
+		)
 
 		this._offset = props.offset ?? ctor.defaultValues.offset
 		this._maximizable = props.maximizable ?? ctor.defaultValues.maximizable
@@ -150,9 +159,13 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		this.events.emit('change:alert', value)
 	}
 
-	/** Сторона тела: на него ссылается `aria-describedby` предупреждения. */
-	get bodyAria(): TAriaAttributes {
-		return { id: this._bodyId }
+	/**
+	 * Сторона тела: на него ссылается `aria-describedby` предупреждения.
+	 * Живой набор: `id` в него пишет `TDialogIdsPlugin`, об изменении набор
+	 * сообщает `change:bodyAria`.
+	 */
+	get bodyAria(): TAria {
+		return this._bodyAria
 	}
 
 	/** Имя кнопки разворота и её состояние: нажата — окно развёрнуто. */
@@ -163,18 +176,10 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 		}
 	}
 
-	/** `id` тела — одна формула на обе стороны связки. */
-	protected get _bodyId(): string {
-		return `s-dialog-body-${this.idBase}`
-	}
-
 	protected _applyAlert(value: boolean): void {
 		this._alert = value
 
 		this._aria.add('role', value ? 'alertdialog' : 'dialog')
-		// Описание — у предупреждения: его тело и есть то, о чём спрашивают.
-		// У обычного окна тело — форма, и скринридер зачитал бы её целиком
-		this._aria.add('aria-describedby', value ? this._bodyId : null)
 	}
 
 	protected _applyPlacement(newValue: TDialogPlacement, oldValue?: TDialogPlacement): void {

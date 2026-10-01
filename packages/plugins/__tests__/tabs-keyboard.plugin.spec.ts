@@ -437,3 +437,52 @@ describe('слушатель клавиш', () => {
 		expect(active()).toBeUndefined()
 	})
 })
+
+/**
+ * Активацию отменяет подписчик `item:activate:before`. Активация у табов
+ * автоматическая, поэтому фокус идёт только на таб, который стал активным, —
+ * иначе фокус и активный таб разошлись бы.
+ */
+describe('отменённая активация', () => {
+	it('→ пропускает таб, чью активацию отменили, к следующему', async () => {
+		const { activation, find, pressOn, active, focused } = await setup(ABC)
+
+		activation.activate(find('a'))
+		activation.events.on('item:activate:before', (e) => {
+			if (e.item.value === 'b') e.preventDefault()
+		})
+
+		pressOn('a', 'ArrowRight')
+
+		expect(active()).toBe('c')
+		expect(focused()).toBe('c')
+	})
+
+	it('Home идёт от первого вперёд, End — от последнего назад', async () => {
+		const { activation, find, pressOn, active } = await setup(ABC)
+
+		activation.activate(find('b'))
+		activation.events.on('item:activate:before', (e) => {
+			if (e.item.value === 'a' || e.item.value === 'c') e.preventDefault()
+		})
+
+		pressOn('b', 'Home')
+		expect(active()).toBe('b')
+
+		pressOn('b', 'End')
+		expect(active()).toBe('b')
+	})
+
+	it('отменили всех — активный и фокус остаются на месте', async () => {
+		const { activation, find, pressOn, active, focused } = await setup(ABC)
+
+		activation.activate(find('a'))
+		activation.events.on('item:activate:before', (e) => e.preventDefault())
+
+		const event = pressOn('a', 'ArrowRight')
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(active()).toBe('a')
+		expect(focused()).toBe('a')
+	})
+})

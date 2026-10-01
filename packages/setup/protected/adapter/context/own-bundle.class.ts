@@ -55,8 +55,9 @@ export class TOwnBundle implements IBundleTenancy {
 		private readonly _descriptor: Pick<IComponentDescriptor, 'ctor' | 'plugins' | 'props'>,
 		private readonly _instance: object,
 		private readonly _context: IBundleContext,
+		mountId?: string,
 	) {
-		const bundle = new TPluginBundle(_instance)
+		const bundle = new TPluginBundle(_instance, mountId)
 
 		for (const plugin of _descriptor.plugins) bundle.use(plugin.ctor, plugin.options ?? {})
 

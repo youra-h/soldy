@@ -21,7 +21,10 @@ export interface IValuedItem {
 	readonly value: string | number | undefined
 }
 
-export type TValueSelectionExtensionOptions<TOwner extends IValueSelectionOwner> = {
+/** Опции движка, которые расширение читает: владелец приходит и уходит после сборки. */
+export type TValueSelectionEngineOptions<
+	TOwner extends IValueSelectionOwner = IValueSelectionOwner,
+> = {
 	owner: TOwner
 }
 

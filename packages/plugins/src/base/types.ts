@@ -7,6 +7,11 @@ import type { PLUGIN_EVENTS } from './events'
 export interface IPluginContext {
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
 	getInstance<T>(): T | null
+	/**
+	 * `id` части компонента в документе — тот же метод набора
+	 * (`IPluginBundle.createId`).
+	 */
+	createId(part: string): string
 }
 
 export type TPluginEvents = {
@@ -122,6 +127,20 @@ export interface IPluginBundle {
 	 * элементов — например, чтобы проставить им `data-*`.
 	 */
 	getInstance<T>(): T | null
+	/**
+	 * `id` части компонента в документе: `<mountId>-<part>`.
+	 *
+	 * `mountId` — id монтирования, которому принадлежит набор. Его даёт адаптер
+	 * от `useId` фреймворка: тот выводит его из места компонента в дереве, и на
+	 * сервере и в браузере он один. Поэтому `id`, ссылки на них и пометки
+	 * панелей сходятся при гидратации. Монтирование, а не экземпляр: свой id
+	 * монтирования есть и у внешнего `ctrl`, и у элемента коллекции из данных —
+	 * их конструктор адаптер не зовёт.
+	 *
+	 * Адаптер без `useId` id монтирования не даёт, и набор берёт его из своего
+	 * счётчика процесса — серверный рендер с таким адаптером по `id` не сойдётся.
+	 */
+	createId(part: string): string
 	use<P extends IPlugin<any, any>>(
 		PluginCtor: IPluginConstructor<any, any, P>,
 		options?: object,

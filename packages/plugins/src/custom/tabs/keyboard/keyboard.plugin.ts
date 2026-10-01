@@ -111,14 +111,18 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 			return
 		}
 
-		const next = this._target(engine, event.key, tab)
+		const candidates = this._candidates(engine, event.key, tab)
 
-		if (!next) return
+		if (candidates.length === 0) return
 
 		event.preventDefault()
 
-		engine.extensions.activation.activate(next)
-		this._focus(next)
+		// Активация автоматическая, и фокус идёт только на таб, который стал
+		// активным: отменённую в `item:activate:before` пропускаем к следующему
+		// в том же направлении. Иначе фокус и активный таб разошлись бы
+		const next = candidates.find((item) => engine.extensions.activation.activate(item))
+
+		if (next) this._focus(next)
 	}
 
 	/**
@@ -136,15 +140,19 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 		)
 	}
 
-	/** Куда ведёт клавиша; `undefined` — клавиша не наша. */
-	private _target(engine: TTabsCollection, key: string, tab: ITabsItem): ITabsItem | undefined {
-		if (key === 'Home') return this._available(engine)[0]
+	/**
+	 * Куда ведёт клавиша — табы по порядку, от первого кандидата; пусто —
+	 * клавиша не наша или перейти некуда. `Home` идёт от первого вперёд,
+	 * `End` — от последнего назад, стрелка — от соседа в своём направлении.
+	 */
+	private _candidates(engine: TTabsCollection, key: string, tab: ITabsItem): ITabsItem[] {
+		if (key === 'Home') return this._available(engine)
 
-		if (key === 'End') return this._available(engine).at(-1)
+		if (key === 'End') return this._available(engine).reverse()
 
 		const step = this._step(key)
 
-		return step === null ? undefined : this._neighbour(engine, tab, step)
+		return step === null ? [] : this._neighbours(engine, tab, step)
 	}
 
 	/**
@@ -177,26 +185,23 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 	}
 
 	/**
-	 * Ближайший таб в направлении шага, по кругу: с последнего вперёд — на
-	 * первый. Отсчёт от позиции таба в списке, а не среди доступных: таб могли
-	 * выключить, пока на нём фокус.
+	 * Табы в направлении шага, по кругу, от ближайшего: с последнего вперёд —
+	 * на первый. Отсчёт от позиции таба в списке, а не среди доступных: таб
+	 * могли выключить, пока на нём фокус.
 	 */
-	private _neighbour(
-		engine: TTabsCollection,
-		tab: ITabsItem,
-		step: number,
-	): ITabsItem | undefined {
+	private _neighbours(engine: TTabsCollection, tab: ITabsItem, step: number): ITabsItem[] {
 		const shown = engine.extensions.batch.shown
 		const count = shown.length
 		const from = shown.indexOf(tab)
+		const neighbours: ITabsItem[] = []
 
 		for (let offset = 1; offset <= count; offset++) {
 			const candidate = shown[(((from + step * offset) % count) + count) % count]
 
-			if (engine.extensions.tabs.isEnabledTab(candidate)) return candidate
+			if (engine.extensions.tabs.isEnabledTab(candidate)) neighbours.push(candidate)
 		}
 
-		return undefined
+		return neighbours
 	}
 
 	/**

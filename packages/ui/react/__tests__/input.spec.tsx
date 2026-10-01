@@ -325,11 +325,10 @@ describe('Input · серверный рендер', () => {
 		[...container.querySelectorAll('input')].map((input) => input.id)
 
 	/**
-	 * Автоматический `id` поля — основа экземпляра (`idBase`) от `useId`, а не
-	 * `uid` ядра. Счётчик экземпляров у сервера и браузера свой — здесь это
-	 * видно и в одном процессе: рендер сервера уже сдвинул его, и экземпляры
-	 * гидратации получают другие `uid`. От `uid` React сообщил бы о
-	 * расхождении атрибута `id` (сторож консоли уронил бы тест).
+	 * Гидратация без расхождений: разметку сервера и браузера строит одно и то
+	 * же, а `id` — от `useId` (id монтирования), не от счётчика процесса. От
+	 * счётчика React сообщил бы о расхождении атрибута (сторож консоли уронил
+	 * бы тест).
 	 */
 	it('гидратация без расхождений, значение на месте', () => {
 		const { container, onRecoverableError } = hydrate(<Input value="abc" />)
@@ -338,23 +337,10 @@ describe('Input · серверный рендер', () => {
 		expect(find(container, 'input', HTMLInputElement).value).toBe('abc')
 	})
 
-	it('автоматический id у сервера и браузера один, у соседей — разный', () => {
-		const element = (
-			<div>
-				<Input value="a" />
-				<Input value="b" />
-			</div>
-		)
-		const server = document.createElement('div')
+	it('без своего id атрибута нет: автоматического id у поля нет', () => {
+		const { container } = hydrate(<Input value="abc" />)
 
-		server.innerHTML = renderToString(element)
-
-		const { container } = hydrate(element)
-		const ids = idsOf(container)
-
-		expect(ids).toEqual(idsOf(server))
-		expect(ids.every((id) => id !== '')).toBe(true)
-		expect(new Set(ids).size).toBe(2)
+		expect(find(container, 'input', HTMLInputElement).hasAttribute('id')).toBe(false)
 	})
 
 	it('заданный id — как есть, на сервере и в браузере', () => {

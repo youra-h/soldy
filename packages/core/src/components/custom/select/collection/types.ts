@@ -28,7 +28,7 @@ import type {
 	TSelectionCollectionFacadeEvents,
 	TSelectionItemFacadeEvents,
 } from '../../../base/collection'
-import type { TSelectTagsExtensionEvents } from './extensions'
+import type { TSelectEngineOptions, TSelectTagsExtensionEvents } from './extensions'
 import type { TSelectItemEventsExtension } from './extensions/select/item/types'
 import type { TTagsOverflow } from '../../tags'
 
@@ -49,12 +49,16 @@ export type TSelectCollectionExtensions<TItem extends ISelectItem = ISelectItem>
 	tags: TSelectTagsExtension<ISelect, TItem>
 }
 
-export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollectionExtensions>
+export type TSelectCollection = TCollectionEngine<
+	ISelectItem,
+	TSelectCollectionExtensions,
+	TSelectEngineOptions
+>
 
 /**
  * Движок, который можно передать конструктору фасада — любого уровня сборки
  * (`createEngine`, `createEngineSelection`, `createEngineSelect`…). Фасад сам
- * дополняет недостающее через `resolveEngine` (см. `create/internal.ts`),
+ * дополняет недостающее через `completeEngine` (см. `create/internal.ts`),
  * поэтому годится любой уровень, включая уровень 1, где ни `TSelectItem`, ни
  * владельческие расширения ещё не собраны.
  *
@@ -67,7 +71,7 @@ export type TSelectCollection = TCollectionEngine<ISelectItem, TSelectCollection
  * только движок с буквально таким же типом — не более раннего уровня и не
  * `TSelectCollection`, который собирает `createEngineSelect`. Точность
  * остаётся там, где движок инстанцируется (`TSelectCollection`,
- * `SelectFactory`), а не там, где его только принимают.
+ * `selectExtensions`), а не там, где его только принимают.
  */
 export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
 
@@ -81,7 +85,7 @@ export type TSelectCollectionFacadeEngine = TCollectionEngine<any, any>
  * `engine` принимает движок любого уровня сборки, а не только
  * `TSelectCollection` — тот же контраст, что и у конструктора фасада (см.
  * `TSelectCollectionFacadeEngine` выше): компонент доустанавливает
- * недостающее сам через `resolveEngine`.
+ * недостающее сам через `completeEngine`.
  */
 export interface ISelectCollectionProps<TItemProps = ISelectItemProps, TItem = ISelectItem>
 	extends

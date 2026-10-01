@@ -1,5 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type { TAriaAttributes } from '../../../common'
 import type {
 	IScroller,
@@ -55,8 +55,8 @@ export default class TScroller
 	protected _canNext = false
 	protected _hasTabStops = false
 
-	constructor(props: Partial<IScrollerProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IScrollerProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TScroller
 

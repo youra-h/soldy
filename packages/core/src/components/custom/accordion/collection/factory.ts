@@ -1,39 +1,16 @@
-import { TAccordionCollection } from './types'
-import { TAccordionExtension, TAccordionContentExtension } from './extensions'
-import { selectionExtensions, assembleEngine } from './../../../base/collection/create/internal'
-import type {
-	TBaseExtensionSet,
-	TOwnerExtensionSet,
-} from './../../../base/collection/create/internal'
+import { TAccordionExtension } from './extensions'
+import { selectionExtensions } from './../../../base/collection/create/internal'
+import type { TExtensionSet } from './../../../base/collection/create/internal'
 import TAccordionItem from './../item/item.class'
 import type { IAccordionItem } from './../item/types'
-import type { IAccordion } from './../types'
 
 /**
- * Состав коллекции Accordion — объявлением, а не функцией сборки.
- *
- * Разделён надвое, потому что владелец есть не всегда: коллекцию можно собрать
- * снаружи (`createEngine`) и передать компоненту, а инстанс `TAccordion`
- * появится только там.
+ * Детали рабочей коллекции Accordion — по порядку установки. См. `tabsExtensions`.
+ * `accordion` ищет `selection` в своём `install` и стоит после него.
  */
-export const ACCORDION_EXTENSIONS = (): TBaseExtensionSet<IAccordionItem> => ({
-	...selectionExtensions<IAccordionItem>(TAccordionItem),
-	content: () => new TAccordionContentExtension<IAccordionItem>(),
-})
-
-/** То, чему нужен инстанс компонента. */
-export const ACCORDION_OWNER_EXTENSIONS: TOwnerExtensionSet<IAccordionItem, IAccordion> = {
-	accordion: (owner) => new TAccordionExtension({ owner }),
-}
-
-/**
- * Полная коллекция Accordion. Внутренняя: наружу ведёт `createEngineAccordion`,
- * который требует владельца явно.
- */
-export const AccordionFactory = (owner: IAccordion): TAccordionCollection => {
-	const engine = assembleEngine<IAccordionItem>(ACCORDION_EXTENSIONS())
-
-	for (const build of Object.values(ACCORDION_OWNER_EXTENSIONS)) engine.use(build(owner))
-
-	return engine as TAccordionCollection
+export function accordionExtensions(): TExtensionSet<IAccordionItem> {
+	return {
+		...selectionExtensions<IAccordionItem>(TAccordionItem),
+		accordion: () => new TAccordionExtension(),
+	}
 }

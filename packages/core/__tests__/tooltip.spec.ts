@@ -5,8 +5,8 @@ import { TTooltip } from '@soldy-ui/core'
  * Модель Tooltip: состояние подсказки и то, что из него следует для разметки.
  *
  * Когда показывать и прятать — наведение, фокус, нажатие, Escape — плагин,
- * нажатие мимо — плагин оверлея; здесь только ядро: умолчания, связка
- * «триггер ↔ панель» с обеих сторон и события на смену значений.
+ * нажатие мимо — плагин оверлея, `id` связки — плагин связок; здесь только
+ * ядро: умолчания, роль панели, набор триггера и события на смену значений.
  */
 
 describe('умолчания', () => {
@@ -49,33 +49,18 @@ describe('умолчания', () => {
 	})
 })
 
+/**
+ * `id` панели и ссылку триггера на него ядро не пишет: `id` нужны документу,
+ * их пишет `TTooltipIdsPlugin` по режиму (plugins, ids.plugin.spec). У ядра —
+ * роль панели и набор триггера, в который плагин пишет.
+ */
 describe('связка «триггер ↔ панель»', () => {
-	it('панель — подсказка с id и без имени: её текст и есть описание', () => {
-		const aria = new TTooltip().aria.toObject()
-
-		expect(aria.role).toBe('tooltip')
-		expect(aria.id).toMatch(/^s-tooltip-panel-\d+$/)
-		expect(aria).not.toHaveProperty('aria-label')
+	it('панель — подсказка без имени и без id: её текст и есть описание', () => {
+		expect(new TTooltip().aria.toObject()).toEqual({ role: 'tooltip' })
 	})
 
-	it('триггер ссылается на панель aria-describedby — тем же id', () => {
-		const tooltip = new TTooltip()
-
-		expect(tooltip.triggerAria).toEqual({ 'aria-describedby': tooltip.aria.get('id') })
-	})
-
-	it('ссылка стоит и у закрытой подсказки, и у открытой: панель всегда в документе', () => {
-		const tooltip = new TTooltip()
-		const closed = tooltip.triggerAria
-
-		tooltip.open = true
-
-		expect(closed['aria-describedby']).toBeTruthy()
-		expect(tooltip.triggerAria).toEqual(closed)
-	})
-
-	it('у двух подсказок id разные', () => {
-		expect(new TTooltip().aria.get('id')).not.toBe(new TTooltip().aria.get('id'))
+	it('набор триггера у ядра пуст: ссылку пишет плагин', () => {
+		expect(new TTooltip().triggerAria.toObject()).toEqual({})
 	})
 
 	it.each(['description', 'label'] as const)(
@@ -84,54 +69,27 @@ describe('связка «триггер ↔ панель»', () => {
 			const tooltip = new TTooltip({ open: true, type })
 
 			expect(tooltip.dataset.toObject()).toEqual({})
-			expect(Object.keys(tooltip.aria.toObject()).sort()).toEqual(['id', 'role'])
+			expect(Object.keys(tooltip.aria.toObject())).toEqual(['role'])
 		},
 	)
-})
 
-/**
- * Режим `label`: подсказка — имя триггера, а не описание. Иконочной кнопке
- * с `aria_label` и подсказкой-описанием скринридер прочёл бы один текст
- * дважды.
- */
-describe('подсказка-имя', () => {
-	it('триггер ссылается на панель aria-labelledby — тем же id, описания нет', () => {
-		const tooltip = new TTooltip({ type: 'label' })
-
-		expect(tooltip.triggerAria).toEqual({ 'aria-labelledby': tooltip.aria.get('id') })
-	})
-
-	it('ссылка стоит и у закрытой подсказки, и у открытой', () => {
-		const tooltip = new TTooltip({ type: 'label' })
-		const closed = tooltip.triggerAria
-
-		tooltip.open = true
-
-		expect(closed['aria-labelledby']).toBeTruthy()
-		expect(tooltip.triggerAria).toEqual(closed)
-	})
-
-	it('панель от режима не зависит: та же подсказка с тем же id', () => {
+	it('панель от режима не зависит', () => {
 		const tooltip = new TTooltip()
 		const described = tooltip.aria.toObject()
 
 		tooltip.type = 'label'
 
 		expect(tooltip.aria.toObject()).toEqual(described)
-		expect(described.role).toBe('tooltip')
 	})
 
-	it('смена режима на лету меняет ссылку триггера — и обратно', () => {
+	it('change:triggerAria — на смену набора триггера', () => {
 		const tooltip = new TTooltip()
-		const id = tooltip.aria.get('id')
+		const handler = vi.fn()
 
-		tooltip.type = 'label'
+		tooltip.events.on('change:triggerAria', handler)
+		tooltip.triggerAria.add('aria-describedby', 'panel')
 
-		expect(tooltip.triggerAria).toEqual({ 'aria-labelledby': id })
-
-		tooltip.type = 'description'
-
-		expect(tooltip.triggerAria).toEqual({ 'aria-describedby': id })
+		expect(handler).toHaveBeenCalledWith({ 'aria-describedby': 'panel' })
 	})
 })
 
@@ -171,6 +129,6 @@ describe('события', () => {
 	it('триггер получает новое значение на каждое чтение, а не ручку на состояние', () => {
 		const tooltip = new TTooltip()
 
-		expect(tooltip.triggerAria).not.toBe(tooltip.triggerAria)
+		expect(tooltip.triggerAria.valueOf()).not.toBe(tooltip.triggerAria.valueOf())
 	})
 })

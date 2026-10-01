@@ -82,13 +82,6 @@ export interface IComponentView<
 	TEvents extends Record<string, (...args: any) => any> = TComponentViewEvents,
 >
 	extends IComponent<TProps, TEvents>, IComponentViewMethods {
-	/**
-	 * Основа `id`, которые экземпляр пишет в DOM: поле ввода, панель, заголовок,
-	 * связки элементов коллекции. Задаётся опцией конструктора (`idBase`) — её
-	 * отдаёт адаптер из `useId` фреймворка, одинакового на сервере и в браузере;
-	 * без опции — `uid`. Не проп: после сборки не меняется.
-	 */
-	readonly idBase: string
 	/** Отрисован в DOM */
 	rendered: boolean
 	/** Логическая видимость */

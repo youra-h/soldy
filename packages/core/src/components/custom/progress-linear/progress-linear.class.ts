@@ -1,5 +1,5 @@
 import { TProgress } from '../../base/progress'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { percent } from '../../../common/utility/percent'
 import type {
 	IProgressLinear,
@@ -40,8 +40,8 @@ export default class TProgressLinear
 
 	protected _orientation!: TProgressLinearOrientation
 
-	constructor(props: Partial<IProgressLinearProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IProgressLinearProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TProgressLinear
 

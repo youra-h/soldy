@@ -1,6 +1,6 @@
 import { TComponentView } from '../../base/component-view'
 import type { IIcon, IIconProps, TIconEvents } from './types'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import { TChangeEvent } from '../../../common'
 import type { TComponentSize } from '../../../common'
 
@@ -34,8 +34,8 @@ export default class TIcon extends TComponentView<IIconProps, TIconEvents> imple
 	protected _width: string | number | undefined
 	protected _height: string | number | undefined
 
-	constructor(props: Partial<IIconProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<IIconProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TIcon
 

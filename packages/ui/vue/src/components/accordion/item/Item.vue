@@ -73,7 +73,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 		</Button>
 
 		<div class="s-accordion-item__body">
-			<div class="s-accordion-item__content" v-bind="content_aria">
+			<div class="s-accordion-item__content" v-bind="contentAria">
 				<slot />
 			</div>
 		</div>

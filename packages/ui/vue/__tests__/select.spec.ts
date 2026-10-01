@@ -471,8 +471,8 @@ describe('панель как телепортированный Frame', () => {
 })
 
 describe('id поля', () => {
-	it('по умолчанию непустой — ядро берёт uid', () => {
-		expect(render().find('input').attributes('id')).toBeTruthy()
+	it('по умолчанию id нет: его задаёт потребитель', () => {
+		expect(render().find('input').attributes('id')).toBeUndefined()
 	})
 
 	it('заданный снаружи доходит до внутреннего input', async () => {

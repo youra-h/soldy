@@ -46,15 +46,11 @@ export const ModalLayerDescriptor = defineDescriptor(() =>
 				closeLabel: { type: String, triggers: ['change:closeLabel'] },
 				dismissible: { type: Boolean, triggers: ['change:dismissible'] },
 				/**
-				 * Сторона связки у заголовка — части без экземпляра. Вычисляет ядро
-				 * — формула `id` одна на обе стороны, — шаблон раскладывает на свой
-				 * элемент.
-				 *
-				 * Значение постоянное — строится из `uid`. Триггер всё равно нужен:
-				 * проп без триггеров адаптер считает pass-through и наружу не отдаёт.
-				 * `bundle:create` — тот же приём, что у `triggerAria` Tooltip.
+				 * Сторона связки у заголовка — части без экземпляра. Набор слоя:
+				 * `id` в него пишет плагин связок наследника (`ids`), шаблон
+				 * раскладывает на свой элемент.
 				 */
-				titleAria: { type: Object, protected: true, triggers: ['bundle:create'] },
+				titleAria: { type: Object, protected: true, triggers: ['change:titleAria'] },
 				/** Имя кнопки закрытия. Отдельный набор: кнопка — сосед содержимого. */
 				closeAria: { type: Object, protected: true, triggers: ['change:closeLabel'] },
 				/**

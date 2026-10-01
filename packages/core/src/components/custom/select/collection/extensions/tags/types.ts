@@ -1,6 +1,5 @@
 import type { IExtension } from '../../../../../base/collection'
 import type { ITags, TTagsCollection, TTagsOverflow } from '../../../../tags'
-import type { ISelect } from '../../../types'
 import type { ISelectItem } from '../../../item/types'
 
 /**
@@ -19,10 +18,6 @@ export interface ISelectTagsExtension<TItem extends ISelectItem = ISelectItem> e
 	readonly engine: TTagsCollection | null
 	/** Что делать с тегами, которым не хватило строки поля. */
 	overflow: TTagsOverflow
-}
-
-export interface ISelectTagsExtensionOptions<TOwner extends ISelect = ISelect> {
-	owner: TOwner
 }
 
 export type TSelectTagsExtensionEvents = {

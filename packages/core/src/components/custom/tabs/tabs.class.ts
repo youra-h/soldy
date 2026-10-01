@@ -1,5 +1,5 @@
 import { TControl } from '../../base/control'
-import type { IComponentOptions, TDefaultValues } from '../../base/component'
+import type { TDefaultValues } from '../../base/component'
 import type {
 	ITabs,
 	ITabsProps,
@@ -34,8 +34,8 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
 	protected _view: TTabsView | undefined
 	protected _closable!: boolean
 
-	constructor(props: Partial<ITabsProps> = {}, options: IComponentOptions = {}) {
-		super(props, options)
+	constructor(props: Partial<ITabsProps> = {}) {
+		super(props)
 
 		const ctor = new.target as typeof TTabs
 
