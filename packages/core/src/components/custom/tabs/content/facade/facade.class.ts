@@ -17,6 +17,12 @@ import type { ITabsItem } from '../../item/types'
  * как `TTabsItemCollectionFacade` берёт закрываемость у адаптера `tabs`.
  * Атрибутов связки фасад не отдаёт: сторону панели из адаптера `content`
  * кладёт прямо в `aria` панели `TTabsContentBindingExtension`.
+ *
+ * Сам фасад сообщает об одном — о смене активности от смены контекста.
+ * Контекст у панели меняется, пока она смонтирована: `value` привело её к
+ * другому табу или ни к какому. Адаптер активации нового таба о прежнем не
+ * знает, а связка, которая меняет контекст, не знает, от чего зависит
+ * `active`. «Было/стало» поэтому считает тот, кто считает итог.
  */
 export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	ITabsItem,
@@ -24,11 +30,25 @@ export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	TTabsContentCollectionFacadeEvents
 > {
 	override setContext(context: TItemContext<ITabsItem, TTabsCollectionExtensions>): void {
+		const wasActive = this.active
+
 		super.setContext(context)
 
-		if (!this._context) return
+		this.events.relayAll(context.adapters.activation.events)
 
-		this.events.relayAll(this._context.adapters.activation.events)
+		this._emitActiveIfChanged(wasActive)
+	}
+
+	/**
+	 * Таба с `value` панели нет или монтирование кончилось: панели показывать
+	 * нечего, и о прежнем табе она больше не отвечает.
+	 */
+	override clearContext(): void {
+		const wasActive = this.active
+
+		super.clearContext()
+
+		this._emitActiveIfChanged(wasActive)
 	}
 
 	/** Активен ли связанный таб. Без контекста — нет, панель показывать нечего. */
@@ -39,5 +59,9 @@ export class TTabsContentCollectionFacade extends TCollectionItemComponent<
 	/** Связанный таб. */
 	get item(): ITabsItem | undefined {
 		return this._context?.owner
+	}
+
+	private _emitActiveIfChanged(wasActive: boolean): void {
+		if (this.active !== wasActive) this.events.emit('change:active')
 	}
 }

@@ -41,7 +41,16 @@ function createTabs(values: string[]) {
 		return facade
 	}
 
-	return { owner, collection, items, facadeFor }
+	/** Контекст таба с таким значением; таба нет — тест падает здесь. */
+	const contextOf = (value: string) => {
+		const item = find(value)
+
+		if (!item) throw new Error(`таба «${value}» нет`)
+
+		return registry.get(item)
+	}
+
+	return { owner, collection, items, facadeFor, contextOf }
 }
 
 describe('TTabsContent — собственные props', () => {
@@ -107,6 +116,86 @@ describe('фасад панели — активность', () => {
 		collection.activate(items[1])
 
 		expect(handler).toHaveBeenCalled()
+	})
+})
+
+/**
+ * Контекст у панели меняется, пока она смонтирована: `value` привело её к
+ * другому табу или ни к какому. Адаптер активации нового таба о прежнем не
+ * знает, поэтому о смене активности сообщает сам фасад — и только о смене.
+ */
+describe('фасад панели — смена контекста', () => {
+	/** Табы `a`, `b`, `c`, активен `a`; фасад панели — у таба `value`, без него — ни у какого. */
+	function bound(value?: string) {
+		const { collection, items, facadeFor, contextOf } = createTabs(['a', 'b', 'c'])
+
+		collection.activate(items[0])
+
+		const facade = value ? facadeFor(value) : new TTabsContentCollectionFacade()
+		const handler = vi.fn()
+
+		facade.events.on('change:active', handler)
+
+		return { facade, handler, contextOf }
+	}
+
+	it('с активного таба на неактивный — change:active, панель неактивна', () => {
+		const { facade, handler, contextOf } = bound('a')
+
+		expect(facade.active).toBe(true)
+
+		facade.setContext(contextOf('b'))
+
+		expect(facade.active).toBe(false)
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('с неактивного таба на активный — change:active, панель активна', () => {
+		const { facade, handler, contextOf } = bound('b')
+
+		facade.setContext(contextOf('a'))
+
+		expect(facade.active).toBe(true)
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('панель без таба получила активный — change:active', () => {
+		const { facade, handler, contextOf } = bound()
+
+		expect(facade.active).toBe(false)
+
+		facade.setContext(contextOf('a'))
+
+		expect(facade.active).toBe(true)
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('активность не сменилась — тишина', () => {
+		const { facade, handler, contextOf } = bound('b')
+
+		facade.setContext(contextOf('c'))
+
+		expect(facade.active).toBe(false)
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('снятие контекста активного таба — change:active, таба у панели нет', () => {
+		const { facade, handler } = bound('a')
+
+		facade.clearContext()
+
+		expect(facade.active).toBe(false)
+		expect(facade.item).toBeUndefined()
+		expect(handler).toHaveBeenCalledTimes(1)
+	})
+
+	it('снятие контекста неактивного таба — тишина', () => {
+		const { facade, handler } = bound('b')
+
+		facade.clearContext()
+
+		expect(facade.item).toBeUndefined()
+		expect(handler).not.toHaveBeenCalled()
 	})
 })
 

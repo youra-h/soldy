@@ -207,6 +207,59 @@ describe('показ панели по активному табу', () => {
 	})
 })
 
+/**
+ * Панель с `value` пропом: так потребитель переносит её к другому табу. Табы
+ * `a` (активен) и `b`, таба `z` нет. Смена `value` меняет у панели таб, и
+ * показ обязан идти за новым табом сразу, а не со следующей активацией.
+ */
+describe('смена value у панели', () => {
+	const view = (value: string) => (
+		<Tabs content={<Tabs.Content value={value}>Панель</Tabs.Content>}>
+			<Tabs.Item value="a" text="First" active />
+			<Tabs.Item value="b" text="Second" />
+		</Tabs>
+	)
+
+	it('к неактивному табу — панель прячется, его активация показывает её', () => {
+		const { render } = mount(view('a'))
+
+		expect(panels()).toHaveLength(1)
+
+		render(view('b'))
+
+		expect(panels()).toHaveLength(0)
+
+		click(tab('Second'))
+
+		expect(panel().getAttribute('aria-labelledby')).toBe(tab('Second').id)
+	})
+
+	it('к значению без таба — панель прячется и за прежним табом не идёт', () => {
+		const { render } = mount(view('a'))
+
+		render(view('z'))
+
+		expect(panels()).toHaveLength(0)
+
+		// Прежний таб снова активен — панель уже не его
+		click(tab('Second'))
+		click(tab('First'))
+
+		expect(tab('First').getAttribute('aria-selected')).toBe('true')
+		expect(panels()).toHaveLength(0)
+	})
+
+	it('из значения без таба к активному табу — панель видна и подписана им', () => {
+		const { render } = mount(view('z'))
+
+		expect(panels()).toHaveLength(0)
+
+		render(view('a'))
+
+		expect(panel().getAttribute('aria-labelledby')).toBe(tab('First').id)
+	})
+})
+
 describe('связка ARIA в разметке', () => {
 	it('aria-controls активного таба указывает на id его панели', () => {
 		mount(<Harness />)

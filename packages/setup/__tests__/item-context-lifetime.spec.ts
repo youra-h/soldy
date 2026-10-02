@@ -411,7 +411,8 @@ describe('rendered: удаление из коллекции, а не размо
 /**
  * Панель таба в коллекцию не входит: она берёт контекст таба с тем же
  * `value`. Контекст — этого монтирования панели, как у элемента: снятие
- * освобождает его, а перепривязка к другому табу освобождает прежний.
+ * освобождает его, а перепривязка освобождает прежний — и к другому табу, и
+ * ни к какому, когда таба с новым значением нет.
  */
 describe('сторож: панель таба освобождает контекст своего таба', () => {
 	/** Панель, смонтированная под списком табов, и её фасад. */
@@ -453,6 +454,37 @@ describe('сторож: панель таба освобождает конте�
 		// Активность панели — одна, от нового таба: прежний контекст её больше не шлёт
 		expect(changes).toBe(1)
 		expect(facade.instance.active).toBe(true)
+
+		unmount()
+
+		expect(leftovers(spies)).toEqual([])
+	})
+
+	it('значение без таба освобождает контекст прежнего: панель — ни с каким табом', () => {
+		const { engine, elevator } = tabs()
+		const [a, b] = engine.extensions.batch.items
+		const { activation } = engine.extensions
+		const spies = spyEngine(engine)
+		const { content, facade, unmount } = mountPanel(elevator, 'a')
+		let changes = 0
+
+		activation.activate(a)
+		facade.instance.events.on('change:active', () => changes++)
+
+		content.value = 'z'
+
+		// За прежний таб панель больше не отвечает: она неактивна и сказала об этом
+		expect(facade.instance.context).toBeUndefined()
+		expect(facade.instance.active).toBe(false)
+		expect(changes).toBe(1)
+		// Подписки контекста сняты: на движке панель только ждёт таб со своим значением
+		expect(leftovers(spies)).toEqual(['plain: item:added'])
+
+		// Активность прежнего таба до панели больше не доходит
+		activation.activate(b)
+		activation.activate(a)
+
+		expect(changes).toBe(1)
 
 		unmount()
 
