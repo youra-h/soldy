@@ -13,7 +13,7 @@ import { TName, TPropSpec } from '@soldy-ui/setup'
 import { TAnchorPlugin } from '@soldy-ui/plugins'
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import { FRAME_PLACEMENTS } from '../src/enums'
-import { isEmptyField, propControl, propControls } from '../src/props'
+import { isEmptyField, parseNumberOrText, propControl, propControls } from '../src/props'
 import { findComponent } from '../src/registry'
 
 /** Проп `button`, которого нет ни в списках значений, ни в пресетах. */
@@ -137,4 +137,82 @@ describe('propControls: пропы плагинов', () => {
 		expect(names).not.toContain('anchor_anchor')
 		expect(names).not.toContain('anchor')
 	})
+})
+
+/**
+ * Вид поля выводится из типа декларации, на настоящих дескрипторах.
+ *
+ * Длины объявлены объединением `Number` и `String`, и числовое поле, которое
+ * они получали по первому конструктору, превращало `10%` и `auto` в `NaN`.
+ * Своё поле им положено при любом порядке конструкторов, но только им: тип с
+ * числом и чем-то ещё остаётся числовым, а тип, где строка — лишь один из
+ * многих, — текстовым.
+ */
+describe('controlKind: число или текст', () => {
+	/** Вид строки по имени — из любой группы страницы. */
+	function kindOf(id: string, name: string) {
+		const row = Object.values(propControls(entryOf(id)))
+			.flat()
+			.find((control) => control.name === name)
+
+		if (!row) throw new Error(`нет строки ${name} у ${id}`)
+
+		return row.kind
+	}
+
+	it.each([
+		['dialog', 'offset'],
+		['dialog', 'width'],
+		['dialog', 'height'],
+		// Порядок `[String, Number]` — тот же вид
+		['icon', 'width'],
+	])('%s.%s — поле «число или текст»', (id, name) => {
+		expect(kindOf(id, name)).toBe('number-or-text')
+	})
+
+	it('число с массивом остаётся числовым: step у Slider', () => {
+		expect(kindOf('slider', 'step')).toBe('number')
+	})
+
+	it('строка среди многих типов остаётся текстом: value у Input', () => {
+		expect(kindOf('input', 'value')).toBe('text')
+	})
+})
+
+/**
+ * Текст поля «число или текст» → значение пропа.
+ *
+ * Поле перерисовывается из значения, поэтому числом становится только текст,
+ * который число вернёт тем же: иначе набираемое переписывалось бы под пальцем.
+ */
+describe('parseNumberOrText', () => {
+	it('пустое и из одних пробелов — проп не задан', () => {
+		expect(parseNumberOrText('')).toBeUndefined()
+		expect(parseNumberOrText('  ')).toBeUndefined()
+	})
+
+	it.each([
+		['40', 40],
+		['-5', -5],
+		['1.5', 1.5],
+		['0', 0],
+	])('%s — число', (text, number) => {
+		expect(parseNumberOrText(text)).toBe(number)
+	})
+
+	it.each(['10%', '2rem', 'auto'])('%s — CSS-значение строкой', (text) => {
+		expect(parseNumberOrText(text)).toBe(text)
+	})
+
+	/**
+	 * `1.50`, `007` и `1.` — то, что стоит в поле посреди набора: числом они
+	 * вернулись бы в поле как `1.5`, `7` и `1`. `Infinity` числом пишется, но
+	 * длиной не бывает.
+	 */
+	it.each(['1.50', '007', '1.', 'Infinity'])(
+		'%s — не каноническое конечное число, строка как набрана',
+		(text) => {
+			expect(parseNumberOrText(text)).toBe(text)
+		},
+	)
 })

@@ -1,7 +1,14 @@
 import type { IComponentDescriptor, IPluginDefinition } from '@soldy-ui/setup'
 
-/** Чем редактировать проп. Выводится из метаданных, руками не задаётся. */
-export type TControlKind = 'switch' | 'text' | 'number' | 'select'
+/**
+ * Чем редактировать проп. Выводится из метаданных, руками не задаётся.
+ *
+ * `number-or-text` — поле пропа, чей тип ровно `Number` и `String`: набранное
+ * число уходит числом, остальное — строкой (`parseNumberOrText`). Так
+ * объявлены длины — `offset`, `width`, `height`, — и у них это две формы
+ * значения: число — px, строка — CSS-значение (`10%`, `2rem`, `auto`).
+ */
+export type TControlKind = 'switch' | 'text' | 'number' | 'number-or-text' | 'select'
 
 /**
  * Где проп живёт у плагина.

@@ -424,6 +424,13 @@ export const PRESETS: Record<string, Record<string, Record<string, unknown>>> = 
 		// только на доле: снятый флаг возвращает её на кольцо
 		indeterminate: { value: 40 },
 	},
+	dialog: {
+		// Отступ — поля области, по центру которой стоит окно, а не сдвиг: окно
+		// меньше экрана от равных отступов не двигается. Растянутое по области
+		// (`auto` — «по экрану с отступом») показывает его зазором до краёв
+		// экрана со всех четырёх сторон
+		offset: { width: 'auto', height: 'auto' },
+	},
 }
 
 export function presetForProp(componentId: string, prop: string): Record<string, unknown> {
@@ -473,18 +480,29 @@ export function optionsForProp(componentId: string, prop: string): readonly stri
 }
 
 /**
- * Имя конструктора пропа.
+ * Имена конструкторов пропа по порядку объявления.
  *
  * В декларации `type` встречается в двух видах: сам конструктор (`String`) и
  * массив конструкторов (`tag: [String, Object]`) — массив описывает
  * объединение. Обёртки `defineType` у пропа нет: она несёт тип данных scope
  * слота, а тип значения пропа даёт интерфейс ядра.
  */
-function firstCtorName(type: unknown): string | undefined {
-	if (!type) return undefined
-	if (Array.isArray(type)) return firstCtorName(type[0])
+function ctorNames(type: unknown): string[] {
+	if (Array.isArray(type)) return type.flatMap(ctorNames)
 
-	return (type as { name?: string }).name
+	return typeof type === 'function' ? [type.name] : []
+}
+
+/**
+ * Тип пропа — ровно `Number` и `String`, в любом порядке: у Dialog
+ * `[Number, String]`, у Icon `[String, Number]`.
+ *
+ * Ровно, а не «среди типов есть String»: под такое правило попал бы `value`
+ * у `ValueControl` (`[String, Number, Boolean, Object, Array]`), и набранное
+ * «42» у Input уходило бы числом.
+ */
+function isNumberOrText(names: readonly string[]): boolean {
+	return names.length === 2 && names.includes('Number') && names.includes('String')
 }
 
 /**
@@ -492,14 +510,18 @@ function firstCtorName(type: unknown): string | undefined {
  *
  * Порядок важен: список значений сильнее типа. `view` объявлен как `String`,
  * но редактировать его текстовым полем бессмысленно — вариантов четыре.
+ * Дальше решает первый конструктор, кроме объединения ровно `Number` и
+ * `String`: ему числовое поле не годится — `10%` и `auto` оно превратило бы в
+ * `NaN`, — а текстовое отдало бы и `40` строкой.
  */
 export function controlKind(componentId: string, prop: TPropSpec): TControlKind {
 	if (optionsForProp(componentId, underscorePropNaming(prop.name))) return 'select'
 
-	const ctor = firstCtorName(prop.type)
+	const names = ctorNames(prop.type)
 
-	if (ctor === 'Boolean') return 'switch'
-	if (ctor === 'Number') return 'number'
+	if (names[0] === 'Boolean') return 'switch'
+	if (isNumberOrText(names)) return 'number-or-text'
+	if (names[0] === 'Number') return 'number'
 
 	return 'text'
 }
@@ -546,13 +568,36 @@ export function propControl(
 /**
  * Пусто ли поле контрола — это «проп не задан», а не пустое значение.
  *
- * Стёртое текстовое поле даёт `''`, стёртое числовое и снятый выбор списка —
- * `undefined`. Проверка одна на обе колонки и код под ними: разметка такой
- * проп не передаёт, экземпляр получает умолчание декларации, в коде его нет
- * вовсе, и разойдись проверки — колонки и код показали бы разное.
+ * Стёртое текстовое поле даёт `''`, стёртые числовое и «число или текст» и
+ * снятый выбор списка — `undefined`. Проверка одна на обе колонки и код под
+ * ними: разметка такой проп не передаёт, экземпляр получает умолчание
+ * декларации, в коде его нет вовсе, и разойдись проверки — колонки и код
+ * показали бы разное.
  */
 export function isEmptyField(value: unknown): boolean {
 	return value === undefined || value === ''
+}
+
+/**
+ * Значение поля «число или текст» (`number-or-text`) по набранному тексту.
+ *
+ * - пусто после `trim` — `undefined`: проп не задан, как у числового поля;
+ * - конечное число в каноническом виде — то, что `String()` от этого числа
+ *   вернёт тем же текстом (`40`, `-5`, `1.5`), — число;
+ * - всё остальное — строка как набрана: `10%`, `2rem`, `auto`.
+ *
+ * Каноничность главное: поле перерисовывается из значения, и `1.50`, `007` или
+ * `1.` иначе переписывались бы прямо под пальцем — в `1.5`, `7` и `1`. Пока
+ * текст не канонический, он остаётся строкой и доходит до компонента как есть.
+ *
+ * Живёт здесь, а не в разметке стенда: стенд другого фреймворка возьмёт её же.
+ */
+export function parseNumberOrText(text: string): number | string | undefined {
+	if (text.trim() === '') return undefined
+
+	const number = Number(text)
+
+	return Number.isFinite(number) && String(number) === text ? number : text
 }
 
 /**

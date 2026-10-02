@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Input, Select, Switch } from '@soldy-ui/vue'
-import type { TPropControl } from '@soldy-ui/playground-shared'
+import { parseNumberOrText, type TPropControl } from '@soldy-ui/playground-shared'
 
 /**
  * Редактор одного пропа.
@@ -26,6 +26,14 @@ function onNumber(value: unknown): void {
 	const text = String(value ?? '').trim()
 
 	emit('update:modelValue', text === '' ? undefined : Number(text))
+}
+
+/**
+ * Поле «число или текст»: `40` уходит числом (px), `10%` и `auto` — строкой
+ * как набраны. Правило общее для стендов всех фреймворков — `parseNumberOrText`.
+ */
+function onNumberOrText(value: unknown): void {
+	emit('update:modelValue', parseNumberOrText(String(value ?? '')))
 }
 </script>
 
@@ -59,6 +67,15 @@ function onNumber(value: unknown): void {
 		size="sm"
 		placeholder="не задано"
 		@update:value="onNumber($event)"
+	/>
+
+	<!-- Плейсхолдер называет обе формы: вопроса «px или проценты» не остаётся -->
+	<Input
+		v-else-if="control.kind === 'number-or-text'"
+		:value="asText"
+		size="sm"
+		placeholder="число (px) или CSS-значение"
+		@update:value="onNumberOrText($event)"
 	/>
 
 	<Input

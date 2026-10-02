@@ -15,6 +15,7 @@ import { nextTick } from 'vue'
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 import { setIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
+import { Dialog } from '@soldy-ui/vue'
 import { COMPONENTS, propControls } from '@soldy-ui/playground-shared'
 import { AVAILABLE, SHOWCASE } from '../src/catalog'
 import { PREVIEW_COMPONENTS } from '../src/previews'
@@ -23,6 +24,8 @@ import { useIconPack } from '../src/composables/useIconPack'
 import OverviewPage from '../src/views/OverviewPage.vue'
 import ComponentPage from '../src/views/ComponentPage.vue'
 import PropControl from '../src/components/PropControl.vue'
+import PropRow from '../src/components/PropRow.vue'
+import CodeView from '../src/components/CodeView.vue'
 
 /**
  * Предупреждения Vue.
@@ -91,6 +94,36 @@ async function selectedAfterTwoClicks(row: ReturnType<typeof rowOf>): Promise<nu
 	await nextTick()
 
 	return stages.map((stage) => stage.findAll('.s-list-box-item[data-selected="true"]').length)
+}
+
+/**
+ * Строка по имени пропа — компонентом, а не узлом: для поиска в дереве её
+ * компонентов. У узла (`DOMWrapper`) такой поиск в `@vue/test-utils` не
+ * типизирован.
+ */
+function rowComponentOf(wrapper: ReturnType<typeof mount>, name: string) {
+	const found = wrapper
+		.findAllComponents(PropRow)
+		.find((row) => row.props('control').name === name)
+
+	if (!found) throw new Error(`нет строки ${name}`)
+
+	return found
+}
+
+/**
+ * Панели окон строки по колонкам. Окно телепортировано в `body`, и в DOM
+ * строки его нет: панель берётся у компонента окна из дерева строки. Открывать
+ * окно не нужно — закрытая панель лежит в DOM (`v-show`), и стили на ней.
+ */
+function dialogPanels(row: ReturnType<typeof rowComponentOf>): HTMLElement[] {
+	return row.findAllComponents(Dialog).map((dialog) => {
+		const panel = dialog.vm.$refs.rootElement
+
+		if (!(panel instanceof HTMLElement)) throw new Error('у окна строки нет панели')
+
+		return panel
+	})
 }
 
 describe('каталог адаптера', () => {
@@ -372,14 +405,16 @@ describe('свойства плагинов', () => {
 
 /**
  * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`,
- * `indicator` у ListBox нужен там, где выбрано несколько элементов.
+ * `indicator` у ListBox нужен там, где выбрано несколько элементов, `offset`
+ * у Dialog виден у окна, растянутого по экрану.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
  * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
  * есть чему не сработать. Признаки Select — теги (есть только в `multiple`) и
  * снятый `readonly` у поля (снимает только `editable`). У ListBox режим в DOM
  * не выведен, и признак — поведение: после кликов по двум разным элементам
- * оба остаются выбранными только в `multiple`.
+ * оба остаются выбранными только в `multiple`. У окна признак — переменные
+ * размера и отступа на его панели.
  */
 describe('пресет строки', () => {
 	it('removeOnBackspace рисует Select в editable + multiple в обеих колонках', async () => {
@@ -431,6 +466,75 @@ describe('пресет строки', () => {
 		await nextFrame()
 
 		expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Отступ у центра — поля области, по центру которой стоит окно: окно меньше
+	 * экрана от него не сдвигается. Строка растягивает окно по области (`auto`
+	 * — «по экрану с отступом»), и отступ виден зазором до краёв экрана.
+	 */
+	it('offset рисует Dialog по экрану с отступом в обеих колонках', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'dialog' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const sizes = (name: string) =>
+			dialogPanels(rowComponentOf(wrapper, name)).map((panel) => [
+				panel.style.getPropertyValue('--dialog-width'),
+				panel.style.getPropertyValue('--dialog-height'),
+			])
+
+		expect(sizes('offset')).toEqual([
+			['auto', 'auto'],
+			['auto', 'auto'],
+		])
+		expect(sizes('placement')).toEqual([
+			['', ''],
+			['', ''],
+		])
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Набор — в само поле строки, а не значением мимо контрола: проверяется
+	 * преобразование текста. `10%` уходит строкой как есть, `40` — числом, и
+	 * окно получает его пикселями.
+	 */
+	it('набранное в поле offset доходит до окна обеих колонок', async () => {
+		const wrapper = mount(ComponentPage, { ...mountOptions, props: { id: 'dialog' } })
+
+		await nextTick()
+		await nextFrame()
+
+		const row = rowComponentOf(wrapper, 'offset')
+		const field = row.find('.pg-prop__control input')
+		const tops = () =>
+			dialogPanels(row).map((panel) => panel.style.getPropertyValue('--dialog-offset-top'))
+
+		await field.setValue('10%')
+		await nextTick()
+		await nextFrame()
+
+		expect(tops()).toEqual(['10%', '10%'])
+
+		await field.setValue('40')
+		await nextTick()
+		await nextFrame()
+
+		expect(tops()).toEqual(['40px', '40px'])
+
+		// Пиксели окно получило бы и от строки '40' — число видно по коду
+		// колонок: он учит задавать пиксели числом
+		const [propCode, instanceCode] = row
+			.findAllComponents(CodeView)
+			.map((view) => view.props('code'))
+
+		expect(propCode).toContain(':offset="40"')
+		expect(instanceCode).toContain('instance.offset = 40')
 
 		wrapper.unmount()
 	})
