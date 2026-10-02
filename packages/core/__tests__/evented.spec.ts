@@ -361,6 +361,8 @@ describe('TEvented', () => {
 			const target = new TEvented<TForwardEvents>()
 			const received: string[] = []
 
+			// Хук — часть проброса: работает, пока цель слушают
+			target.on('forwarded', () => {})
 			target.relay(source, [
 				{
 					from: 'change',
@@ -396,13 +398,176 @@ describe('TEvented', () => {
 		})
 	})
 
+	// --- relay: подписка на источник, пока цель слушают ---
+
+	// Фасад коллекции и item-адаптеры живут одно монтирование, а движок бывает
+	// чужим и живёт дольше: проброс, который подписан на источник сам по себе,
+	// оставлял бы на нём обработчики монтирования, которое никто не уничтожил.
+	// Шпионы на источнике видят каждую подписку и отписку проброса.
+	describe('relay: проброс подписан на источник, пока цель слушают', () => {
+		type TForwardEvents = { forwarded: (value: string) => void }
+
+		/** Шпионы на подписках источника: обработчики `on` и перехватчики `use`. */
+		function spySource(source: TEvented<TestEvents>) {
+			const on = vi.spyOn(source, 'on')
+			const off = vi.spyOn(source, 'off')
+			/** Перехватчики, чью отписку ещё не вызвали. */
+			let live = 0
+			const use = vi.spyOn(source, 'use').mockImplementation((middleware) => {
+				const unuse = TEvented.prototype.use.call(source, middleware)
+				let released = false
+
+				live++
+
+				return () => {
+					if (!released) live--
+
+					released = true
+					unuse()
+				}
+			})
+
+			/** Обработчики `on`, которые ещё не сняли. */
+			const handlers = (): string[] =>
+				on.mock.calls
+					.filter(
+						([event, handler]) =>
+							!off.mock.calls.some(([e, h]) => e === event && h === handler),
+					)
+					.map(([event]) => String(event))
+
+			return { on, use, handlers, middlewares: () => live }
+		}
+
+		it('пока цель не слушают, на источнике нет ни обработчика, ни перехватчика', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TestEvents & TForwardEvents>()
+			const hook = vi.fn()
+			const { on, use } = spySource(source)
+
+			target.relay(source, [{ from: 'change', as: 'forwarded', then: hook }, 'submit'])
+			target.relayAll(source)
+			source.emit('change', 'hello')
+
+			expect(on).not.toHaveBeenCalled()
+			expect(use).not.toHaveBeenCalled()
+			expect(hook).not.toHaveBeenCalled()
+		})
+
+		it('первый обработчик on подключает пробросы в порядке объявления, последний — отключает', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TestEvents & TForwardEvents>()
+			const first = vi.fn()
+			const second = vi.fn()
+			const { handlers, middlewares } = spySource(source)
+
+			target.relay(source, [{ from: 'change', as: 'forwarded' }, 'submit'])
+			target.relayAll(source)
+
+			target.on('forwarded', first)
+			target.on('submit', second)
+
+			expect(handlers()).toEqual(['change', 'submit'])
+			expect(middlewares()).toBe(1)
+
+			source.emit('change', 'hello')
+
+			expect(first).toHaveBeenCalledWith('hello')
+
+			target.off('forwarded', first)
+
+			// Цель ещё слушают — проброс на месте
+			expect(handlers()).toEqual(['change', 'submit'])
+
+			target.off('submit', second)
+
+			expect(handlers()).toEqual([])
+			expect(middlewares()).toBe(0)
+		})
+
+		it('перехватчик use у цели — тоже подписчик: подключает проброс, его отписка — отключает', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const seen = vi.fn()
+			const { handlers } = spySource(source)
+
+			target.relay(source, [{ from: 'change', as: 'forwarded' }])
+
+			const unuse = target.use(({ event, args }) => seen(event, args))
+
+			source.emit('change', 'hello')
+
+			expect(handlers()).toEqual(['change'])
+			expect(seen).toHaveBeenCalledWith('forwarded', ['hello'])
+
+			unuse()
+
+			expect(handlers()).toEqual([])
+		})
+
+		it('проброс, объявленный у цели, которую уже слушают, подключается сразу', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const handler = vi.fn()
+			const { handlers } = spySource(source)
+
+			target.on('forwarded', handler)
+			target.relay(source, [{ from: 'change', as: 'forwarded' }])
+			source.emit('change', 'hello')
+
+			expect(handlers()).toEqual(['change'])
+			expect(handler).toHaveBeenCalledWith('hello')
+		})
+
+		it('цепочка из двух пробросов подключается и отключается целиком', () => {
+			const source = new TEvented<TestEvents>()
+			const middle = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const handler = vi.fn()
+			const { handlers, middlewares } = spySource(source)
+
+			middle.relayAll(source)
+			target.relay(middle, [{ from: 'change', as: 'forwarded' }])
+
+			expect(middlewares()).toBe(0)
+
+			target.on('forwarded', handler)
+			source.emit('change', 'hello')
+
+			expect(handler).toHaveBeenCalledWith('hello')
+			expect(middlewares()).toBe(1)
+
+			target.off('forwarded', handler)
+
+			expect(middlewares()).toBe(0)
+			expect(handlers()).toEqual([])
+		})
+
+		it('уничтоженная цель не подключается, даже если её снова слушают', () => {
+			const source = new TEvented<TestEvents>()
+			const target = new TEvented<TForwardEvents>()
+			const handler = vi.fn()
+			const { on } = spySource(source)
+
+			target.relay(source, [{ from: 'change', as: 'forwarded' }])
+			target.destroy()
+			target.on('forwarded', handler)
+			source.emit('change', 'hello')
+
+			expect(on).not.toHaveBeenCalled()
+			expect(handler).not.toHaveBeenCalled()
+		})
+	})
+
 	// --- destroy ---
 
 	it('destroy: отписывает relay-подписки от источника', () => {
 		const source = new TEvented<TestEvents>()
 		const target = new TEvented<{ forwarded: (value: string) => void }>()
 		const emitSpy = vi.spyOn(target, 'emit')
+		const off = vi.spyOn(source, 'off')
 
+		target.on('forwarded', () => {})
 		target.relay(source, [{ from: 'change', as: 'forwarded' }])
 		target.destroy()
 		emitSpy.mockClear()
@@ -410,6 +575,7 @@ describe('TEvented', () => {
 		source.emit('change', 'hello')
 
 		expect(emitSpy).not.toHaveBeenCalled()
+		expect(off.mock.calls.map(([event]) => event)).toEqual(['change'])
 	})
 
 	it('destroy: удаляет входящие подписки', () => {

@@ -55,6 +55,19 @@ export class TEventEmitter<
 		this._items.get(event as string)?.forEach((handler) => handler(...args))
 	}
 
+	/**
+	 * Есть ли хоть один обработчик — на любом событии. Считается по наборам, а
+	 * не счётчиком рядом с ними: набор события, с которого сняли последний
+	 * обработчик, остаётся пустым.
+	 */
+	hasHandlers(): boolean {
+		for (const handlers of this._items.values()) {
+			if (handlers.size > 0) return true
+		}
+
+		return false
+	}
+
 	remove(event?: string): void {
 		if (event) {
 			this._items.delete(event)

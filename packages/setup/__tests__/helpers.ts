@@ -127,40 +127,72 @@ interface ICallLog {
 	readonly mock: { readonly calls: ReadonlyArray<readonly unknown[]> }
 }
 
-/** Подписки шины: что на неё повесили и что с неё сняли. */
+/** Перехватчик `use`, повешенный на шину: снят ли он — вызвана ли его отписка. */
+interface IMiddlewareLog {
+	released: boolean
+}
+
+/**
+ * Подписки шины: что на неё повесили и что с неё сняли. Перехватчики `use` —
+ * тоже подписки: на них висит проброс `relayAll`.
+ */
 export interface IBusSpy {
 	readonly name: string
 	readonly on: ICallLog
 	readonly off: ICallLog
+	readonly use: readonly IMiddlewareLog[]
 }
 
-/** Шпионы на `on` и `off` шины у того, у кого она есть. Без шины следить не за чем. */
+/**
+ * Шпионы на `on`, `off` и `use` шины у того, у кого она есть. Без шины следить
+ * не за чем. Отписку перехватчика шпион оборачивает: так видно, вызвали ли её.
+ */
 export function spyBus(name: string, holder: unknown): IBusSpy[] {
 	const bus: unknown =
 		typeof holder === 'object' && holder !== null ? Reflect.get(holder, 'events') : null
 
 	if (!(bus instanceof TEvented)) return []
 
-	return [{ name, on: vi.spyOn(bus, 'on'), off: vi.spyOn(bus, 'off') }]
+	const use: IMiddlewareLog[] = []
+	const original = bus.use.bind(bus)
+
+	vi.spyOn(bus, 'use').mockImplementation((middleware) => {
+		const log: IMiddlewareLog = { released: false }
+		const release = original(middleware)
+
+		use.push(log)
+
+		return () => {
+			log.released = true
+			release()
+		}
+	})
+
+	return [{ name, on: vi.spyOn(bus, 'on'), off: vi.spyOn(bus, 'off'), use }]
 }
 
-/** Подписки, повешенные на шины: `<шина>: <событие>`. */
+/** Подписки, повешенные на шины: `<шина>: <событие>`, перехватчик — `<шина>: use`. */
 export function subscribed(spies: readonly IBusSpy[]): string[] {
-	return spies.flatMap(({ name, on }) =>
-		on.mock.calls.map(([event]) => `${name}: ${String(event)}`),
-	)
+	return spies.flatMap(({ name, on, use }) => [
+		...on.mock.calls.map(([event]) => `${name}: ${String(event)}`),
+		...use.map(() => `${name}: use`),
+	])
 }
 
-/** Подписки, которые остались на шинах после уничтожения: `<шина>: <событие>`. */
+/**
+ * Подписки, которые остались на шинах после уничтожения: `<шина>: <событие>`,
+ * перехватчик без вызванной отписки — `<шина>: use`.
+ */
 export function leftovers(spies: readonly IBusSpy[]): string[] {
-	return spies.flatMap(({ name, on, off }) =>
-		on.mock.calls
+	return spies.flatMap(({ name, on, off, use }) => [
+		...on.mock.calls
 			.filter(
 				([event, handler]) =>
 					!off.mock.calls.some(([e, h]) => e === event && h === handler),
 			)
 			.map(([event]) => `${name}: ${String(event)}`),
-	)
+		...use.filter(({ released }) => !released).map(() => `${name}: use`),
+	])
 }
 
 /**

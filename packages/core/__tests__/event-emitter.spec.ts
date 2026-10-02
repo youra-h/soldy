@@ -40,4 +40,28 @@ describe('TEventEmitter', () => {
 		expect(handler1).not.toHaveBeenCalled()
 		expect(handler2).toHaveBeenCalled()
 	})
+
+	it('hasHandlers: есть ли обработчик на любом событии', () => {
+		const emitter = new TEventEmitter()
+		const first = vi.fn()
+		const second = vi.fn()
+
+		expect(emitter.hasHandlers()).toBe(false)
+
+		emitter.on('test1', first)
+		emitter.on('test2', second)
+		emitter.off('test1', first)
+
+		expect(emitter.hasHandlers()).toBe(true)
+
+		// Набор события, с которого сняли последний обработчик, остаётся пустым
+		emitter.off('test2', second)
+
+		expect(emitter.hasHandlers()).toBe(false)
+
+		emitter.on('test1', first)
+		emitter.remove()
+
+		expect(emitter.hasHandlers()).toBe(false)
+	})
 })

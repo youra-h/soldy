@@ -28,7 +28,25 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TCollectionItemComponent, TListBoxItem } from '@soldy-ui/core'
+import {
+	TAccordion,
+	TCalendar,
+	TCollectionItemComponent,
+	TListBox,
+	TListBoxItem,
+	TRadioGroup,
+	TSelect,
+	TTabs,
+	TTabsContent,
+	TTags,
+	createEngineAccordion,
+	createEngineCalendar,
+	createEngineListBox,
+	createEngineRadioGroup,
+	createEngineSelect,
+	createEngineTabs,
+	createEngineTags,
+} from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import {
 	AccordionCollectionDescriptor,
@@ -457,5 +475,228 @@ describe('сторож: панель таба освобождает конте�
 		unmount()
 
 		expect(leftovers(spies)).toEqual([])
+	})
+})
+
+/**
+ * Сборка, которую не приняли и не уничтожили, — рендер, отброшенный до показа.
+ * Её фасады собраны над движком снаружи, и снимок их прочитан, как на рендере,
+ * но ни `attach`, ни `destroy` у неё не будет: снять подписку, повешенную на
+ * движок, некому. Item-адаптеры и фасады подписаны на движок только
+ * пробросами, а проброс висит на источнике, пока цель слушают, — поэтому такая
+ * сборка не оставляет на движке ничего.
+ *
+ * Набора у фасадов нет (`bundle: null`): здесь стережётся ядро. Подписки
+ * плагинов непринятой сборки стережёт `plugin-unsubscribe.spec.ts`.
+ */
+describe('сторож: непринятая сборка не подписана на движок', () => {
+	/** Владелец и движок снаружи — так их собирает приложение, передавая `engine`. */
+	type TOwnedEngine = { readonly owner: object; readonly engine: TCollectionEngine<any, any> }
+
+	/** Прочитать снимок состояния, как его читает рендер до подписки. */
+	function render(context: IAdapterContext): void {
+		context.connect(CommonProfile).state.getSnapshot()
+	}
+
+	/** Фасад коллекции над движком снаружи — без набора, как у сторожа. */
+	function assembleList<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
+		collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+		{ owner, engine }: TOwnedEngine,
+		elevator: TElevatorFactory,
+	): IAdapterContext {
+		return createAdapterContext(
+			collection,
+			{ options: { owner, engine } },
+			{ bundle: null },
+		).use(TCollectionExtension, { elevator })
+	}
+
+	/** Фасады коллекции и элемента из данных над движком снаружи — собраны и прочитаны. */
+	function renderCollection<
+		TFacade extends TCollectionOwner,
+		TItem extends TCollectionItemFacade,
+		TPlugins extends IPluginsContract,
+		TItemPlugins extends IPluginsContract,
+	>(
+		collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+		item: IComponentDescriptor<TContextContract<TItem, TItemPlugins>>,
+		owned: TOwnedEngine,
+	): TElevatorFactory {
+		const { factory: elevator } = createElevatorFactory()
+		const list = assembleList(collection, owned, elevator)
+		const facade = createAdapterContext(item, {}, { bundle: null }).use(
+			TCollectionItemExtension,
+			{ item: firstOf(owned.engine), elevator },
+		)
+
+		render(list)
+		render(facade)
+
+		return elevator
+	}
+
+	/** Движок снаружи и его непринятая сборка. */
+	type TUnacceptedKit = {
+		readonly engine: () => TOwnedEngine
+		readonly render: (owned: TOwnedEngine) => void
+	}
+
+	const tabsEngine = (): TOwnedEngine => {
+		const owner = new TTabs()
+
+		return { owner, engine: createEngineTabs({ owner, items: SOURCES }) }
+	}
+
+	/** Ключ — дескриптор фасада элемента, как у таблиц выше. */
+	const UNACCEPTED: Readonly<Record<string, TUnacceptedKit>> = {
+		AccordionCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TAccordion()
+
+				return { owner, engine: createEngineAccordion({ owner, items: SOURCES }) }
+			},
+			render: (owned) => {
+				renderCollection(
+					AccordionCollectionDescriptor(),
+					AccordionCollectionItemDescriptor(),
+					owned,
+				)
+			},
+		},
+		CalendarCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TCalendar()
+
+				return { owner, engine: createEngineCalendar({ owner }) }
+			},
+			render: (owned) => {
+				renderCollection(
+					CalendarCollectionDescriptor(),
+					CalendarCollectionItemDescriptor(),
+					owned,
+				)
+			},
+		},
+		ListBoxCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TListBox()
+
+				return { owner, engine: createEngineListBox({ owner, items: SOURCES }) }
+			},
+			render: (owned) => {
+				renderCollection(
+					ListBoxCollectionDescriptor(),
+					ListBoxCollectionItemDescriptor(),
+					owned,
+				)
+			},
+		},
+		RadioGroupCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TRadioGroup()
+
+				return { owner, engine: createEngineRadioGroup({ owner, items: SOURCES }) }
+			},
+			render: (owned) => {
+				renderCollection(
+					RadioGroupCollectionDescriptor(),
+					RadioGroupCollectionItemDescriptor(),
+					owned,
+				)
+			},
+		},
+		SelectCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TSelect()
+
+				return { owner, engine: createEngineSelect({ owner, items: SOURCES }) }
+			},
+			render: (owned) => {
+				renderCollection(
+					SelectCollectionDescriptor(),
+					SelectCollectionItemDescriptor(),
+					owned,
+				)
+			},
+		},
+		TabsCollectionItemDescriptor: {
+			engine: tabsEngine,
+			render: (owned) => {
+				renderCollection(TabsCollectionDescriptor(), TabsCollectionItemDescriptor(), owned)
+			},
+		},
+		// Панель таба — над тем же движком Tabs, рядом со своим табом
+		TabsCollectionContentDescriptor: {
+			engine: tabsEngine,
+			render: (owned) => {
+				const elevator = renderCollection(
+					TabsCollectionDescriptor(),
+					TabsCollectionItemDescriptor(),
+					owned,
+				)
+				const content = new TTabsContent({ value: 'a' })
+
+				render(
+					createAdapterContext(
+						TabsCollectionContentDescriptor(),
+						{ props: { value: 'a' } },
+						{ bundle: null },
+					).use(TTabsContentBindingExtension, { content, elevator }),
+				)
+			},
+		},
+		TagsCollectionItemDescriptor: {
+			engine: () => {
+				const owner = new TTags()
+
+				return { owner, engine: createEngineTags({ owner, items: SOURCES }) }
+			},
+			render: (owned) => {
+				renderCollection(TagsCollectionDescriptor(), TagsCollectionItemDescriptor(), owned)
+			},
+		},
+	}
+
+	it('таблица покрывает каждый фасад элемента из экспорта', () => {
+		const facades = exportedDescriptors()
+			.filter(
+				([, descriptor]) => descriptor.ctor.prototype instanceof TCollectionItemComponent,
+			)
+			.map(([name]) => name)
+
+		expect(Object.keys(UNACCEPTED).sort()).toEqual(facades.sort())
+	})
+
+	it('шпионы видят пробросы: слушаемый фасад коллекции висит на движке перехватчиками', () => {
+		const owned = required(UNACCEPTED.ListBoxCollectionItemDescriptor, 'ListBox').engine()
+		const spies = spyEngine(owned.engine)
+		const list = assembleList(
+			ListBoxCollectionDescriptor(),
+			owned,
+			createElevatorFactory().factory,
+		)
+		const off = list.connect(CommonProfile).state.subscribe(() => {})
+
+		expect(subscribed(spies)).toEqual(
+			expect.arrayContaining(['plain: use', 'batch: use', 'selection: use']),
+		)
+
+		// Слушать фасад перестали — пробросы сняты, хотя контекст не уничтожен
+		off()
+
+		expect(leftovers(spies)).toEqual([])
+	})
+
+	it.each(Object.entries(UNACCEPTED))('%s', (_name, kit) => {
+		const owned = kit.engine()
+		const spies = [
+			...spyBus('engine', owned.engine),
+			...spyEngine(owned.engine),
+			...spyBus('элемент', firstOf(owned.engine)),
+		]
+
+		kit.render(owned)
+
+		expect(subscribed(spies)).toEqual([])
 	})
 })

@@ -21,6 +21,31 @@ import type { TEventSink, TRelayRule, TRelayedEvents } from './types'
  */
 type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 
+/**
+ * Проброс из одного источника — подписка на него, которую цель заводит, пока
+ * её слушают (см. {@link TEvented.relay}). Оба метода повторяемы: подключённый
+ * проброс второй раз не подписывается, отключённый — не отписывается.
+ */
+type TRelayLink = {
+	connect(): void
+	disconnect(): void
+}
+
+/** Проброс над подпиской: `subscribe` подписывается на источник и отдаёт отписку. */
+function relayLink(subscribe: () => () => void): TRelayLink {
+	let unsubscribe: (() => void) | null = null
+
+	return {
+		connect() {
+			unsubscribe ??= subscribe()
+		},
+		disconnect() {
+			unsubscribe?.()
+			unsubscribe = null
+		},
+	}
+}
+
 export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _items: TEventEmitter<TEvents> = new TEventEmitter()
 
@@ -30,10 +55,17 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	private _middlewares: TEventMiddleware<TEvents>[] = []
 
 	/**
-	 * Отписки от источников, на которые подписался {@link relay}.
-	 * Нужны для того, чтобы {@link destroy} мог отписаться от всех источников.
+	 * Пробросы в этот эмиттер из источников ({@link relay}, {@link relayAll}) —
+	 * в порядке объявления. На источниках они висят, только пока этот эмиттер
+	 * слушают ({@link _connected}), а {@link destroy} отключает их и забывает.
 	 */
-	private _relays: (() => void)[] = []
+	private _relays: TRelayLink[] = []
+
+	/**
+	 * Пробросы подключены к источникам: у эмиттера есть обработчик `on` или
+	 * перехватчик `use`. Меняется только вместе с этим — см. {@link _syncRelays}.
+	 */
+	private _connected = false
 
 	/** Этот же эмиттер без карты событий — для тела {@link relay}, см. `TRelayChannel`. */
 	private get _channel(): TRelayChannel {
@@ -73,14 +105,50 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	use(middleware: TEventMiddleware<TEvents>): () => void {
 		this._middlewares.push(middleware)
+		this._syncRelays()
 
 		return () => {
 			const index = this._middlewares.indexOf(middleware)
 
 			if (index !== -1) {
 				this._middlewares.splice(index, 1)
+				this._syncRelays()
 			}
 		}
+	}
+
+	/** Слушают ли эмиттер: обработчик `on` на любом событии или перехватчик `use`. */
+	private get _listened(): boolean {
+		return this._middlewares.length > 0 || this._items.hasHandlers()
+	}
+
+	/**
+	 * Пробросы подключены ровно тогда, когда эмиттер слушают: первый
+	 * подписчик подключает их в порядке объявления, уход последнего отключает.
+	 * Признак меняется до обхода, поэтому подписка, которую сделал сам обход,
+	 * его не повторит.
+	 */
+	private _syncRelays(): void {
+		const listened = this._listened
+
+		if (listened === this._connected) return
+
+		this._connected = listened
+
+		for (const relay of this._relays) {
+			if (listened) {
+				relay.connect()
+			} else {
+				relay.disconnect()
+			}
+		}
+	}
+
+	/** Завести проброс: у цели, которую уже слушают, он подключается сразу. */
+	private _addRelay(relay: TRelayLink): void {
+		this._relays.push(relay)
+
+		if (this._connected) relay.connect()
 	}
 
 	/**
@@ -169,6 +237,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
 		this._items.on(event, handler)
+		this._syncRelays()
 	}
 
 	/**
@@ -178,6 +247,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	off<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
 		this._items.off(event, handler)
+		this._syncRelays()
 	}
 
 	/**
@@ -200,6 +270,19 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * либо объект `TRelayRule` с расширенными возможностями:
 	 * - `as` — переименовать событие при проброске
 	 * - `then` — хук, вызываемый **до** проброса (удобно для подписки на дочерние события)
+	 *
+	 * **Когда подписан.** На источнике проброс висит, только пока цель
+	 * слушают — у неё есть обработчик `on` или перехватчик `use`. Первый
+	 * подписчик цели подключает все её пробросы в порядке объявления, уход
+	 * последнего (`off` или отписка `use`) их отключает; проброс, объявленный у
+	 * цели, которую уже слушают, подключается сразу. Событие, которого никто
+	 * не ждёт, пробрасывать некуда, а подписка на источник — побочный эффект на
+	 * чужом объекте. Фасад коллекции и item-адаптеры живут одно монтирование, а
+	 * движок бывает чужим и живёт дольше: монтирование, которое так и не начали
+	 * слушать и не уничтожили, ничего на нём не оставляет, а снять подписки с
+	 * него хватает тому, кто слушал цель. Цепочка подключается так же: проброс
+	 * цели слушает источник, и тот подключает свои пробросы. `then` — часть
+	 * проброса: хук работает, только пока проброс подключён.
 	 *
 	 * **Что сверяет сигнатура.**
 	 * - Имена — тип правила `TRelayRule`: строковое правило есть в обеих картах,
@@ -294,8 +377,13 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 				tgt.emit(target, ...args)
 			}
 
-			src.on(from, handler)
-			this._relays.push(() => src.off(from, handler))
+			this._addRelay(
+				relayLink(() => {
+					src.on(from, handler)
+
+					return () => src.off(from, handler)
+				}),
+			)
 		}
 	}
 
@@ -331,8 +419,9 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * **Как устроено.** Перечислить имена карты в рантайме нельзя — карта живёт
 	 * только в типах. Поэтому проброс висит на {@link use}: перехватчик
 	 * срабатывает на каждом `emit` источника, включая события, которые тот сам
-	 * получил релеем. Отписка уходит в общий список {@link destroy} вместе с
-	 * отписками `relay`.
+	 * получил релеем. Висит он, как и проброс `relay`, только пока цель слушают
+	 * (см. «Когда подписан» у {@link relay}): перехватчик для источника — такой
+	 * же подписчик, и источник подключает свои пробросы, пока его держит цель.
 	 *
 	 * Порядок при этом иной, чем у `relay`: перехватчик работает **до**
 	 * обработчиков `on` источника, то есть подписчик цели узнаёт о событии
@@ -353,23 +442,29 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		// канал без карты событий — см. TRelayChannel.
 		const tgt = this._channel
 
-		this._relays.push(
-			source.use(({ event, args }) => {
-				tgt.emit(String(event), ...args)
-			}),
+		this._addRelay(
+			relayLink(() =>
+				source.use(({ event, args }) => {
+					tgt.emit(String(event), ...args)
+				}),
+			),
 		)
 	}
 
 	/**
-	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий ({@link relay}),
-	 * снимает middleware и удаляет входящие подписки.
+	 * Полностью очищает эмиттер: отключает пробросы ({@link relay},
+	 * {@link relayAll}) и забывает их, снимает middleware и удаляет входящие
+	 * подписки. Забытый проброс не подключится, даже если уничтоженный эмиттер
+	 * снова начнут слушать: состояние уничтоженного монтирования бывает, что и
+	 * перечитывают.
 	 */
 	destroy(): void {
-		for (const unsubscribe of this._relays) {
-			unsubscribe()
+		for (const relay of this._relays) {
+			relay.disconnect()
 		}
 
 		this._relays = []
+		this._connected = false
 		this._middlewares = []
 		this._items.remove()
 	}
