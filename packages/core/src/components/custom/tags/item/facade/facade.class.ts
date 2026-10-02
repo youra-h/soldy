@@ -9,10 +9,8 @@ import type { ITagsItem } from '../types'
 /**
  * Фасад элемента Tags.
  *
- * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — `closable`
- * (резолв «не выключен и (элемент ?? владелец)» делает `TTagsItemExtension`,
- * фасад лишь читает готовый результат — как `closable` у
- * `TTabsItemCollectionFacade`).
+ * `selected` и `order` — из базы (`TSelectionItemFacade`). Своё — только
+ * `tag_closable`.
  */
 export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 	ITagsItem,
@@ -27,7 +25,16 @@ export class TTagsItemCollectionFacade extends TSelectionItemFacade<
 		this.events.relayAll(this._context.adapters.tags.events)
 	}
 
-	get closable(): boolean {
+	/**
+	 * Можно ли закрыть тег — итог item-адаптера `tags`: выключенный тег не
+	 * закрывается, у включённого своё значение важнее значения набора.
+	 *
+	 * Имя с префиксом (`tag_`): значения фасада и самого тега в разметке
+	 * сливаются в один объект, и у тега уже есть свой `closable` —
+	 * трёхзначный, «как у набора». Геттер назван так же, как проп фасада,
+	 * поэтому состояние адаптера в типах его знает.
+	 */
+	get tag_closable(): boolean {
 		return this._context?.adapters.tags.closable ?? false
 	}
 }

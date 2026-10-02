@@ -311,7 +311,7 @@ describe('выключенный тег не закрывается', () => {
 
 		tag.disabled = true
 
-		expect(facade.closable).toBe(false)
+		expect(facade.tag_closable).toBe(false)
 		expect(changed).toHaveBeenCalledOnce()
 	})
 })

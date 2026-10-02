@@ -62,12 +62,7 @@ export const TagsCollectionItemDescriptor = defineDescriptor(() =>
 			props: {
 				selected: { type: Boolean, triggers: ['change:selected'] },
 				order: { type: Number, protected: true, triggers: ['change:order'] },
-				tag_closable: {
-					type: Boolean,
-					protected: true,
-					get: (item: TTagsItemCollectionFacade) => item.closable,
-					triggers: ['change:closable'],
-				},
+				tag_closable: { type: Boolean, protected: true, triggers: ['change:closable'] },
 			},
 		},
 	}),
