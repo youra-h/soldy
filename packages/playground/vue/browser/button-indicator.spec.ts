@@ -1,6 +1,6 @@
 /**
- * Индикатор в кнопке — Spinner, ProgressSpinner и ProgressLinear — в обеих
- * цветовых схемах, по вычисленным стилям.
+ * Индикатор в кнопке — ProgressSpinner и ProgressLinear — в обеих цветовых
+ * схемах, по вычисленным стилям.
  *
  * Своя ступень 600 варианта индикатору в кнопке не годится: дуга `accent` на
  * насыщенной заливке `filled` той же кнопки (ступень 500) почти сливалась с
@@ -27,7 +27,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, type VNode } from 'vue'
 import type { TButtonView, TComponentVariant } from '@soldy-ui/core'
-import { Button, ProgressLinear, ProgressSpinner, Spinner } from '@soldy-ui/vue'
+import { Button, ProgressLinear, ProgressSpinner } from '@soldy-ui/vue'
 import { BUTTON_VIEWS, COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 
 import { find, lightness, pixel, style } from './colors'
@@ -76,11 +76,6 @@ interface IIndicator {
 	render: (variant?: TComponentVariant) => VNode
 	/** Цвета частей, которые красит тема: дуги, которая сообщает, и дорожки под ней. */
 	colors: (root: HTMLElement) => { fill: string; track: string }
-	/**
-	 * Есть ли у темы правило принудительных цветов: у кольца и полосы есть, а
-	 * рамку Spinner в этом режиме перекрашивает сам браузер.
-	 */
-	forcedRule: boolean
 }
 
 /** Часть рисунка по селектору; нет её — тест падает здесь, а не на чтении свойства. */
@@ -94,17 +89,6 @@ function part(root: Element, selector: string): Element {
 
 const INDICATORS: readonly IIndicator[] = [
 	{
-		name: 'Spinner',
-		block: '.s-spinner',
-		render: (variant) => h(Spinner, { variant }),
-		// Кольцо — рамка: левая сторона крутится, остальные три — дорожка
-		colors: (root) => ({
-			fill: style(root).borderLeftColor,
-			track: style(root).borderTopColor,
-		}),
-		forcedRule: false,
-	},
-	{
 		name: 'ProgressSpinner',
 		block: '.s-progress-spinner',
 		render: (variant) => h(ProgressSpinner, { variant, value: 40 }),
@@ -112,7 +96,6 @@ const INDICATORS: readonly IIndicator[] = [
 			fill: style(part(root, '.s-progress-spinner__range')).stroke,
 			track: style(part(root, '.s-progress-spinner__track')).stroke,
 		}),
-		forcedRule: true,
 	},
 	{
 		name: 'ProgressLinear',
@@ -123,7 +106,6 @@ const INDICATORS: readonly IIndicator[] = [
 			fill: style(part(root, '.s-progress-linear__range')).backgroundColor,
 			track: style(root).backgroundColor,
 		}),
-		forcedRule: true,
 	},
 ]
 
@@ -325,9 +307,7 @@ describe('заданный вариант индикатора — выбор п
  * индикаторов.
  */
 describe('принудительные цвета', () => {
-	const FORCED = INDICATORS.filter(({ forcedRule }) => forcedRule)
-
-	it.each(FORCED)('$name: в кнопке — те же цвета, что вне её', async (indicator) => {
+	it.each(INDICATORS)('$name: в кнопке — те же цвета, что вне её', async (indicator) => {
 		await forcedColors('active')
 
 		// Режим действует — иначе сторож проверял бы обычный режим

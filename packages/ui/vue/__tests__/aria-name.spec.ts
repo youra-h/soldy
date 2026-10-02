@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, nextTick, ref } from 'vue'
-import { Button, Icon, Input, Spinner } from '@soldy-ui/vue'
+import { Button, Icon, Input } from '@soldy-ui/vue'
 
 describe('Button', () => {
 	it('иконочная кнопка получает имя', () => {
@@ -85,21 +85,5 @@ describe('Icon', () => {
 		expect(wrapper.attributes('aria-hidden')).toBeUndefined()
 		expect(wrapper.attributes('role')).toBe('img')
 		expect(wrapper.attributes('aria-label')).toBe('Ошибка')
-	})
-})
-
-describe('Spinner', () => {
-	it('объявлен как живая область', () => {
-		expect(mount(Spinner).attributes('role')).toBe('status')
-	})
-
-	it('имени по умолчанию нет: язык интерфейса библиотеке неизвестен', () => {
-		expect(mount(Spinner).attributes('aria-label')).toBeUndefined()
-	})
-
-	it('имя задаётся потребителем', () => {
-		expect(mount(Spinner, { props: { aria_label: 'Загрузка' } }).attributes('aria-label')).toBe(
-			'Загрузка',
-		)
 	})
 })

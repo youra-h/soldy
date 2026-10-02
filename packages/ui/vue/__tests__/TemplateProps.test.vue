@@ -37,7 +37,6 @@ import {
 	Select,
 	Skeleton,
 	Slider,
-	Spinner,
 	Switch,
 	Tabs,
 	Tags,
@@ -233,10 +232,6 @@ const dragAndDrop = new TDragAndDrop()
 	<!-- @vue-expect-error — щелчка `sticky` нет -->
 	<Slider snap="sticky" />
 	<Slider snap="magnet" />
-
-	<!-- @vue-expect-error — толщина числом или `auto` -->
-	<Spinner borderWidth="thick" />
-	<Spinner :borderWidth="2" />
 
 	<!-- @vue-expect-error — флаг, а не строка -->
 	<Switch :required="'yes'" />

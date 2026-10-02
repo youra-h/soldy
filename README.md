@@ -141,7 +141,6 @@ The component set, as the playground shows it:
 | Tags            | Tag set: close buttons, optional selection                                                     |
 | Accordion       | Sections that expand one at a time or several at once                                          |
 | Icon            | Icon from the registered pack, by role                                                         |
-| Spinner         | Busy indicator                                                                                 |
 | ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   |
 | ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown |
 | Skeleton        | Placeholder while content loads                                                                |
@@ -149,14 +148,14 @@ The component set, as the playground shows it:
 
 What each adapter implements so far:
 
-| Adapter        | Package             | Ready                                                                                            |
-| -------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
-| Vue            | `@soldy-ui/vue`     | all of the above                                                                                 |
-| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Spinner, Skeleton, Input, CheckBox, Switch, ListBox, Tabs, Accordion |
-| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`)                                                                        |
-| Svelte         | `@soldy-ui/svelte`  | Button                                                                                           |
-| Solid          | `@soldy-ui/solid`   | Button                                                                                           |
-| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                                        |
+| Adapter        | Package             | Ready                                                                                   |
+| -------------- | ------------------- | --------------------------------------------------------------------------------------- |
+| Vue            | `@soldy-ui/vue`     | all of the above                                                                        |
+| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, Input, CheckBox, Switch, ListBox, Tabs, Accordion |
+| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`)                                                               |
+| Svelte         | `@soldy-ui/svelte`  | Button                                                                                  |
+| Solid          | `@soldy-ui/solid`   | Button                                                                                  |
+| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                               |
 
 ### In development
 

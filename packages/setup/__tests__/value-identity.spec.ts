@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { required } from './helpers'
-import {
-	TComponentView,
-	TSpinner,
-	TButton,
-	TCollectionEngine,
-	TBatchExtension,
-} from '@soldy-ui/core'
-import { SpinnerDescriptor, ButtonDescriptor } from '../content/descriptors'
+import { TComponentView, TIcon, TButton, TCollectionEngine, TBatchExtension } from '@soldy-ui/core'
+import { IconDescriptor, ButtonDescriptor } from '../content/descriptors'
 import { createAdapterContext, type IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
 
@@ -37,12 +31,12 @@ function read(ctx: IAdapterContext, name: string): unknown {
 
 describe('Составные props меняют идентичность при изменении', () => {
 	it('layout_styles: плагин заменяет объект, а не мутирует', () => {
-		const spinner = new TSpinner({ borderWidth: 2 })
-		const ctx = createAdapterContext(SpinnerDescriptor(), { ctrl: spinner })
+		const icon = new TIcon({ width: 16 })
+		const ctx = createAdapterContext(IconDescriptor(), { ctrl: icon })
 
 		const before = read(ctx, 'styles')
 
-		spinner.borderWidth = 8
+		icon.width = 24
 
 		const after = read(ctx, 'styles')
 

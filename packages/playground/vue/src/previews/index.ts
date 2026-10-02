@@ -22,7 +22,6 @@ import {
 	Select,
 	Skeleton,
 	Slider,
-	Spinner,
 	Switch,
 	Tabs,
 	Tags,
@@ -345,8 +344,6 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
-	spinner: (bind) => h(Spinner, bind),
-
 	/**
 	 * Длину горизонтальной полосе даёт контейнер, своей у неё нет. Обёртка —
 	 * граница ширины, как у ленты: сцена ячейки — флексбокс, и полоса держала
@@ -361,9 +358,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 		h('div', { style: 'width:100%' }, [h(ProgressLinear, { aria_label: 'Загрузка', ...bind })]),
 
 	/**
-	 * Кольцо строчное и своего размера, как Spinner: обёртка по ширине ему не
-	 * нужна. По умолчанию оно пусто — доля ноль, а бег — флаг
-	 * `indeterminate`. Имя превью даёт пропом, как полосе.
+	 * Кольцо строчное и своего размера: обёртка по ширине ему не нужна. По
+	 * умолчанию оно пусто — доля ноль, а бег — флаг `indeterminate`. Имя
+	 * превью даёт пропом, как полосе.
 	 */
 	'progress-spinner': (bind) => h(ProgressSpinner, { aria_label: 'Загрузка', ...bind }),
 

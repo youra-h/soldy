@@ -48,7 +48,7 @@
 	@include mixines.button-view('filled');
 }
 
-// Индикатор в кнопке — Spinner, ProgressSpinner, ProgressLinear — красится от
+// Индикатор в кнопке — ProgressSpinner и ProgressLinear — красится от
 // кнопки: то, что сообщает, — цветом её текста, дорожка — его вуалью
 // (`mixins/_indicator.scss`). Своя ступень 600 варианта на насыщенной заливке
 // `filled` почти пропадала, у `accent` — до неразличимости, а на заливке

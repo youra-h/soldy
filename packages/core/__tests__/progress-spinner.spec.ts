@@ -15,7 +15,7 @@ import type { IProgressProps } from '@soldy-ui/core'
  * (`playground/vue/browser/progress-spinner.spec.ts`).
  */
 
-const spinner = (props: Partial<IProgressProps> = {}) => new TProgressSpinner(props)
+const progressSpinner = (props: Partial<IProgressProps> = {}) => new TProgressSpinner(props)
 
 /** Доля готового, как её получает разметка. */
 const fractionOf = (instance: TProgressSpinner) =>
@@ -23,7 +23,7 @@ const fractionOf = (instance: TProgressSpinner) =>
 
 describe('умолчания', () => {
 	it('доля — 0 на шкале 0–100, бега нет, корень — span с классом блока', () => {
-		const instance = spinner()
+		const instance = progressSpinner()
 
 		expect(instance.value).toBe(0)
 		expect(instance.min).toBe(0)
@@ -43,7 +43,7 @@ describe('умолчания', () => {
 	})
 
 	it('пустое кольцо — доля известна: роль, aria-valuenow="0", data-indeterminate="false", доля 0', () => {
-		const instance = spinner()
+		const instance = progressSpinner()
 
 		expect(instance.aria.toObject()).toEqual({
 			role: 'progressbar',
@@ -56,7 +56,7 @@ describe('умолчания', () => {
 	})
 
 	it('имени по умолчанию нет: его даёт плагин, а не ядро', () => {
-		const instance = spinner({ value: 40 })
+		const instance = progressSpinner({ value: 40 })
 
 		expect(instance.aria.has('aria-label')).toBe(false)
 		expect(instance.aria.has('aria-labelledby')).toBe(false)
@@ -69,7 +69,7 @@ describe('умолчания', () => {
  */
 describe('флаг бега', () => {
 	it('снимает aria-valuenow и переменную доли, а значение хранит', () => {
-		const instance = spinner({ value: 60 })
+		const instance = progressSpinner({ value: 60 })
 
 		instance.indeterminate = true
 
@@ -81,7 +81,7 @@ describe('флаг бега', () => {
 	})
 
 	it('снятый флаг возвращает хранимое значение, записанное и во время бега', () => {
-		const instance = spinner({ value: 60, indeterminate: true })
+		const instance = progressSpinner({ value: 60, indeterminate: true })
 
 		instance.value = 25
 		instance.max = 50
@@ -98,14 +98,14 @@ describe('флаг бега', () => {
 
 describe('доля готового', () => {
 	it('от min до max — число от 0 до 1, без единиц', () => {
-		expect(fractionOf(spinner({ value: 40 }))).toBe('0.4')
-		expect(fractionOf(spinner({ value: 100 }))).toBe('1')
-		expect(fractionOf(spinner({ value: 15, min: 10, max: 20 }))).toBe('0.5')
+		expect(fractionOf(progressSpinner({ value: 40 }))).toBe('0.4')
+		expect(fractionOf(progressSpinner({ value: 100 }))).toBe('1')
+		expect(fractionOf(progressSpinner({ value: 15, min: 10, max: 20 }))).toBe('0.5')
 	})
 
 	it('за границами — край, и у доли, и у aria-valuenow; значение — как задано', () => {
-		const below = spinner({ value: -20 })
-		const above = spinner({ value: 140 })
+		const below = progressSpinner({ value: -20 })
+		const above = progressSpinner({ value: 140 })
 
 		expect(fractionOf(below)).toBe('0')
 		expect(below.aria.get('aria-valuenow')).toBe('0')
@@ -115,8 +115,8 @@ describe('доля готового', () => {
 	})
 
 	it('max не больше min — 0, а aria-valuenow — min', () => {
-		const empty = spinner({ value: 50, min: 50, max: 50 })
-		const reversed = spinner({ value: 30, min: 50, max: 10 })
+		const empty = progressSpinner({ value: 50, min: 50, max: 50 })
+		const reversed = progressSpinner({ value: 30, min: 50, max: 10 })
 
 		expect(fractionOf(empty)).toBe('0')
 		expect(fractionOf(reversed)).toBe('0')
@@ -124,13 +124,13 @@ describe('доля готового', () => {
 	})
 
 	it('треть — без хвоста плавающей точки', () => {
-		expect(fractionOf(spinner({ value: 1, max: 3 }))).toBe('0.333333')
-		expect(fractionOf(spinner({ value: 2, max: 3 }))).toBe('0.666667')
-		expect(fractionOf(spinner({ value: 0.3, max: 1 }))).toBe('0.3')
+		expect(fractionOf(progressSpinner({ value: 1, max: 3 }))).toBe('0.333333')
+		expect(fractionOf(progressSpinner({ value: 2, max: 3 }))).toBe('0.666667')
+		expect(fractionOf(progressSpinner({ value: 0.3, max: 1 }))).toBe('0.3')
 	})
 
 	it('смена значения и шкалы пересчитывает долю', () => {
-		const instance = spinner({ value: 50 })
+		const instance = progressSpinner({ value: 50 })
 
 		instance.max = 200
 
@@ -153,7 +153,7 @@ describe('доля готового', () => {
  */
 describe('оси нет', () => {
 	it('ни модификатора оси, ни aria-orientation, ни свойства', () => {
-		const instance = spinner({ value: 40 })
+		const instance = progressSpinner({ value: 40 })
 
 		expect(
 			instance.classes.toArray().filter((name) => /--(horizontal|vertical)$/.test(name)),
@@ -165,7 +165,7 @@ describe('оси нет', () => {
 
 describe('события — только на смену', () => {
 	it('change:value, change:min, change:max и change:indeterminate: запись того же значения молчит', () => {
-		const instance = spinner({ value: 40 })
+		const instance = progressSpinner({ value: 40 })
 		const fired: string[] = []
 
 		instance.events.on('change:value', (value) => fired.push(`value ${value}`))
@@ -191,7 +191,7 @@ describe('события — только на смену', () => {
 	})
 
 	it('change:aria и change:dataset — когда набор сменился', () => {
-		const instance = spinner({ value: 40 })
+		const instance = progressSpinner({ value: 40 })
 		let aria = 0
 		let dataset = 0
 
@@ -229,7 +229,7 @@ describe('одна модель с линией', () => {
 		{ value: 30, min: 50, max: 10 },
 		{ value: 60, indeterminate: true },
 	])('%o: те же aria и dataset', (props) => {
-		const ring = spinner(props)
+		const ring = progressSpinner(props)
 		const line = new TProgressLinear(props)
 
 		expect(ring).toBeInstanceOf(TProgress)

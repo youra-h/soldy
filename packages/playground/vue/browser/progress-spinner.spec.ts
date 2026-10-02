@@ -7,7 +7,7 @@
  * чего jsdom не видит вовсе: он не считает ни стилей, ни раскладки и не
  * заводит ни переходов, ни анимаций. Как кольцо выглядит и движется, решает
  * тема (`themes/oren/src/components/progress-spinner/_progress-spinner.scss`):
- * диаметр — шкала Spinner, доля — длина штриха дуги и едет переходом, бег —
+ * диаметр — шкала размеров, доля — длина штриха дуги и едет переходом, бег —
  * поворот всего рисунка по часовой, в RTL тот же. При просьбе системы убрать
  * движение доля встаёт сразу, а бег тот же. В принудительных цветах штрихи
  * берут системные цвета: сам браузер SVG не перекрашивает.
@@ -22,7 +22,7 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 import { TProgressSpinner } from '@soldy-ui/core'
 import type { IProgressProps } from '@soldy-ui/core'
-import { ProgressSpinner, Spinner } from '@soldy-ui/vue'
+import { ProgressSpinner } from '@soldy-ui/vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
 import { find, pixel, systemColor } from './colors'
@@ -150,31 +150,46 @@ afterEach(async () => {
 })
 
 /**
- * Диаметр — шкала Spinner: кольцо, вставшее на место Spinner того же
- * размера, не сдвигает текст рядом.
+ * Диаметр — шкала размеров темы: на каждом размере коробка кольца квадратная,
+ * и чем больше размер, тем она больше. Чисел шкалы тест не знает: это карта
+ * темы, и вторая её запись здесь разошлась бы с первой.
  *
- * Меряется коробка раскладки (`offsetWidth`), а не `getBoundingClientRect()`:
- * Spinner крутится целиком, и рамка повёрнутого квадрата шире его самого.
+ * Меряется коробка раскладки (`offsetWidth`, `offsetHeight`) — место, которое
+ * кольцо занимает в строке.
  */
 describe('диаметр', () => {
-	it.each(COMPONENT_SIZES)('размер %s: как у Spinner того же размера', async (size) => {
+	it.each(COMPONENT_SIZES)('размер %s: коробка квадратная', async (size) => {
+		mount({ size })
+		await transitionEvents()
+
+		const box = root()
+
+		expect(box.offsetWidth).toBeGreaterThan(0)
+		expect(box.offsetHeight).toBe(box.offsetWidth)
+	})
+
+	it('коробка растёт по шкале размеров', async () => {
 		render(
 			defineComponent({
 				render: () =>
-					h('div', { style: 'padding: 24px' }, [
-						h(Spinner, { size }),
-						h(ProgressSpinner, { size }),
-					]),
+					h(
+						'div',
+						{ style: 'padding: 24px' },
+						COMPONENT_SIZES.map((size) => h(ProgressSpinner, { key: size, size })),
+					),
 			}),
 		)
 		await transitionEvents()
 
-		const spinner = find('.s-spinner')
-		const box = root()
+		const widths = COMPONENT_SIZES.map(
+			(size) => find(`.s-progress-spinner--size-${size}`).offsetWidth,
+		)
 
-		expect(box.offsetWidth).toBeGreaterThan(0)
-		expect(box.offsetWidth).toBe(spinner.offsetWidth)
-		expect(box.offsetHeight).toBe(spinner.offsetHeight)
+		widths.slice(1).forEach((width, index) => {
+			const step = `${COMPONENT_SIZES[index]} → ${COMPONENT_SIZES[index + 1]}`
+
+			expect(width, step).toBeGreaterThan(widths[index])
+		})
 	})
 
 	it('рисунок — во всю коробку кольца', async () => {
@@ -329,8 +344,8 @@ describe('бег', () => {
 	/**
 	 * Бег одинаков при любых настройках системы — решение владельца, как у
 	 * линии и выезда Drawer: у неизвестной доли движение и есть сообщение
-	 * «работа идёт», а Spinner тоже крутится при любых настройках. Сторож
-	 * решения: без него бег снова спрятали бы под `prefers-reduced-motion`.
+	 * «работа идёт». Сторож решения: без него бег снова спрятали бы под
+	 * `prefers-reduced-motion`.
 	 */
 	it('система просит меньше движения — рисунок всё равно крутится', async () => {
 		mount({ indeterminate: true })
