@@ -44,7 +44,9 @@ TEntity (uid, getProps, assign, toJSON)
 │       ├── TIcon, TSkeleton, TTabsContent
 │       ├── TInteractive (disabled, focused)
 │       └── TStylable (size, variant)
-│           ├── TSpinner
+│           ├── TProgress (value, min, max, indeterminate)
+│           │   ├── TProgressLinear (orientation)
+│           │   └── TProgressSpinner
 │           └── TControl (disabled, focused)
 │               ├── TTextable (text)
 │               │   └── TButton (view)
@@ -74,7 +76,7 @@ TEntity (uid, getProps, assign, toJSON)
 - [base/component/component.class.ts](../packages/core/src/components/base/component/component.class.ts) - Base IComponent interface
 - [base/control/control.class.ts](../packages/core/src/components/base/control/control.class.ts) - Interactive controls
 - [custom/button/button.class.ts](../packages/core/src/components/custom/button/button.class.ts) - Button implementation
-- Custom components (`custom/`): Accordion, Button, CheckBox, DragAndDrop, Frame, Icon, Input, ListBox, Select, Skeleton, Spinner, Switch, Tabs, Tags. `custom/list/` holds only the shared ListBox/Select contract (`IList`), no class
+- Custom components (`custom/`): Accordion, Button, CheckBox, DragAndDrop, Frame, Icon, Input, ListBox, Select, Skeleton, Switch, Tabs, Tags. `custom/list/` holds only the shared ListBox/Select contract (`IList`), no class
 
 ### Key Exports
 
@@ -183,7 +185,7 @@ The descriptor has no assembly methods: a component for one mount is assembled f
 - [define/prop-spec.class.ts](../packages/setup/protected/define/prop-spec.class.ts) - `TPropSpec`: immutable property spec with `read` / `assign`, `rebase`, `withDefault`
 - [adapter/context/create-adapter-context.ts](../packages/setup/protected/adapter/context/create-adapter-context.ts) - What is built from the descriptor on mount (Layer 5)
 - [components/button.descriptor.ts](../packages/setup/content/descriptors/components/button.descriptor.ts) - Button example
-- Descriptor files (`components/`) for: Entity, Component, ComponentView, Interactive, Stylable, Control, ValueControl, InputControl, Textable, Button, CheckBox, Switch, Input, Icon, Spinner, Skeleton, Frame, DragAndDrop; folders `accordion/`, `collection/`, `list-box/`, `select/`, `tabs/`, `tags/`
+- Descriptor files (`components/`) for: Entity, Component, ComponentView, Interactive, Stylable, Control, ValueControl, InputControl, Textable, Button, CheckBox, Switch, Input, Icon, Skeleton, Frame, DragAndDrop; folders `accordion/`, `collection/`, `list-box/`, `select/`, `tabs/`, `tags/`
 
 ### Key Exports
 
@@ -204,7 +206,7 @@ Organized by inheritance:
 - **Control**: ValueControl, Textable → Button, Tabs, Accordion
 - **ValueControl**: InputControl → CheckBox, Switch, Input, Select; ListBox, Tags; items `TabsItem`, `AccordionItem`, `ListBoxItem`, `SelectItem`, `TagsItem`
 - **Collections**: `CollectionDescriptor` (общие props/events владельца) → `<Owner>CollectionDescriptor` у Tabs, Accordion, ListBox, Select, Tags; фасады элементов — `<Owner>CollectionItemDescriptor` и `TabsCollectionContentDescriptor`
-- **Standalone** (от ComponentView/Stylable/Component): Icon, Skeleton, Frame, TabsContent, Spinner, DragAndDrop
+- **Standalone** (от ComponentView/Stylable/Component): Icon, Skeleton, Frame, TabsContent, DragAndDrop
 
 ---
 
@@ -267,7 +269,7 @@ export const ElementPluginDescriptor = definePlugin({
 - `TReadyPlugin` - Syncs `IComponentView.ready` with `TElementPlugin` (`ready` / `removed`)
 - `TDragPlugin` (`custom/drag-and-drop/`) - DnD handler
 - `TInputPlugin`, `TInputBoolPlugin`, `TInputControlPlugin` - Value tracking
-- `TIconLayoutPlugin`, `TSpinnerLayoutPlugin`, `TSkeletonLayoutPlugin`, `TFrameLayoutPlugin` - UI-specific layout
+- `TIconLayoutPlugin`, `TSkeletonLayoutPlugin`, `TFrameLayoutPlugin` - UI-specific layout
 - `TCollectionBundlesPlugin` (`custom/collection/bundles.plugin.ts`) - реестр item-bundles (uid → IPluginBundle) + ссылка на движок (`engine`)
 - `TCollectionBundlesAccess` / `TCollectionElements` (`custom/collection/`) - доступ к bundles / DOM-элементам (не накапливают; element лежит в bundle, instance в движке)
 
@@ -1230,7 +1232,8 @@ ListBox, Tabs и Select копий стало бы сорок.
 
 `TAriaPlugin` (`packages/plugins/src/custom/component-view`, namespace `aria`)
 подключён к `ControlDescriptor` — у интерактивного элемента имя обязано быть
-всегда. Icon, Spinner и Frame получают его поштучно; Skeleton не получает.
+всегда. Icon, Frame и индикаторы выполнения получают его поштучно; Skeleton
+не получает.
 
 Опция `role` значит «без имени элемент декоративен»: плагин ставит
 `aria-hidden`, а с именем меняет на эту роль. Обе стороны у одного владельца —
@@ -1495,7 +1498,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 Компоненты передают дженерики `useAdapter` явно, поэтому выходы плагинов из
 типа контекста не выводятся: третьим аргументом
 `DescriptorPluginOutputs<typeof XDescriptor>` их передаёт компонент, чей шаблон
-читает выход (Select, Frame, Icon, Spinner, Skeleton). Граница рантайма и типа
+читает выход (Select, Frame, Icon, Skeleton). Граница рантайма и типа
 у Vue своя — `toBindingState`: шаблону отдаются рефы, а не `state`.
 
 **Отписка обязательна.** `adapter.destroy()` работает только с собственным
@@ -1576,8 +1579,8 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
   `BaseTextable`
 - Компоненты: Accordion (+ `AccordionItem`), Button, CheckBox, ComponentView,
   DragAndDrop, Frame, Icon, Input, ListBox (+ `ListBoxItem`), Select
-  (+ `SelectItem`), Skeleton, Spinner, Switch, Tabs (+ `TabsItem`,
-  `TabsContent`), Tags (+ `TagsItem`)
+  (+ `SelectItem`), Skeleton, Switch, Tabs (+ `TabsItem`, `TabsContent`),
+  Tags (+ `TagsItem`)
 - Коллекция собирает два adapter-контекста на одном bundle — владельца и
   фасад коллекции (AGENTS.md, «Vue collection setup»)
 

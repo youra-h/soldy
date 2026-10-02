@@ -263,9 +263,6 @@ const OWN: Record<string, Record<string, string>> = {
 		width: 'Ширина. Пусто — берётся из size',
 		height: 'Высота. Пусто — берётся из size',
 	},
-	spinner: {
-		borderWidth: 'Толщина дуги',
-	},
 	'progress-linear': {
 		value: 'Сколько готово — число от min до max',
 		min: 'Начало шкалы',

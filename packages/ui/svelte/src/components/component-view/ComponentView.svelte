@@ -13,7 +13,7 @@
 
 	`attrs`/`aria`/`dataset` — три набора ядра раскладываются на корень, как у
 	Button: сам по себе ComponentView не пишет в них ничего, но наследники
-	(Icon, Spinner, …) пишут, и без раскладки здесь запись до DOM не доходит.
+	(Icon, Skeleton, …) пишут, и без раскладки здесь запись до DOM не доходит.
 -->
 {#if state.rendered}
 	<svelte:element

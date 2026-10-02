@@ -28,7 +28,6 @@ import {
 	SelectCollectionDescriptor,
 	SkeletonDescriptor,
 	SliderDescriptor,
-	SpinnerDescriptor,
 	StylableDescriptor,
 	SwitchDescriptor,
 	TabsDescriptor,
@@ -212,14 +211,6 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		showcase: true,
 		span: 1,
 		description: 'Иконка из подключённого пакета, по роли',
-	},
-	{
-		id: 'spinner',
-		label: 'Spinner',
-		descriptor: SpinnerDescriptor,
-		showcase: true,
-		span: 1,
-		description: 'Индикатор ожидания',
 	},
 	{
 		id: 'progress-linear',

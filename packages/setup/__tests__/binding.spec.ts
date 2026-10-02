@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TButton, TFrame, TIcon, TSelect, TSlider, TSpinner, TTabsItem } from '@soldy-ui/core'
+import { TButton, TFrame, TIcon, TSelect, TSlider, TTabsItem } from '@soldy-ui/core'
 import { TAnchorPlugin, TAriaPlugin, TIconLayoutPlugin } from '@soldy-ui/plugins'
 import {
 	ButtonDescriptor,
@@ -19,7 +19,6 @@ import {
 	IconDescriptor,
 	SelectDescriptor,
 	SliderDescriptor,
-	SpinnerDescriptor,
 	TabsItemDescriptor,
 	createAdapterContext,
 	defineComponent,
@@ -814,14 +813,15 @@ describe('связка · значение, равное итогу', () => {
 		expect(ctrl.value).toBe(100)
 	})
 
-	it('Spinner: толщина, равная автоматической, при сборке поверх внешнего ctrl', () => {
-		const ctrl = new TSpinner()
+	it('Slider: значение, равное прижатому, пропсом сборки поверх внешнего ctrl', () => {
+		// То же правило в начальной записи: пропсы сборки пишет сборка
+		// (`TLine.seed`), а не вход связки
+		const ctrl = new TSlider({ value: 150, max: 100 })
 
-		createAdapterContext(SpinnerDescriptor(), { ctrl, props: { borderWidth: 1 } })
-		ctrl.size = 'xl'
+		createAdapterContext(SliderDescriptor(), { ctrl, props: { value: 100 } })
+		ctrl.max = 200
 
-		expect(ctrl.getProps().borderWidth).toBe(1)
-		expect(ctrl.borderWidth).toBe(1)
+		expect(ctrl.value).toBe(100)
 	})
 
 	it('эхо модели массивом того же состава — не смена: второго change:value нет', () => {

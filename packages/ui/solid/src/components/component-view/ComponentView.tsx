@@ -11,7 +11,7 @@ import type { ComponentViewProps } from './base.component'
  * - `visible` — отрисован, но скрыт через display: none
  * - `attrs`/`aria`/`dataset` — три набора ядра раскладываются на корень, как
  *   у Button: сам по себе ComponentView не пишет в них ничего, но наследники
- *   (Icon, Spinner, …) пишут, и без раскладки здесь запись до DOM не доходит.
+ *   (Icon, Skeleton, …) пишут, и без раскладки здесь запись до DOM не доходит.
  */
 export function ComponentView(props: ComponentViewProps): JSX.Element {
 	const binding = setupComponentView(props)

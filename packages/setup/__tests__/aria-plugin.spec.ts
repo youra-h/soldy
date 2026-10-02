@@ -17,7 +17,7 @@ import type { IComponentView, IComponentViewProps } from '@soldy-ui/core'
 import {
 	ButtonDescriptor,
 	IconDescriptor,
-	SpinnerDescriptor,
+	ProgressSpinnerDescriptor,
 	SkeletonDescriptor,
 	FrameDescriptor,
 } from '../content/descriptors'
@@ -190,9 +190,9 @@ describe('кому плагин подключён', () => {
 		expect(hasAria(ButtonDescriptor())).toBe(true)
 	})
 
-	it('иконке, спиннеру и рамке — адресно', () => {
+	it('иконке, индикатору выполнения и рамке — адресно', () => {
 		expect(hasAria(IconDescriptor())).toBe(true)
-		expect(hasAria(SpinnerDescriptor())).toBe(true)
+		expect(hasAria(ProgressSpinnerDescriptor())).toBe(true)
 		expect(hasAria(FrameDescriptor())).toBe(true)
 	})
 

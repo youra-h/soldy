@@ -44,8 +44,8 @@ export const ComponentViewDescriptor = defineDescriptor(() =>
 				 * `valueOf()`.
 				 *
 				 * Объявлен здесь, а не в Control, потому что ARIA нужна и
-				 * неинтерактивным слоям: Icon скрывается через `aria-hidden`, Spinner
-				 * объявляет себя как `status`.
+				 * неинтерактивным слоям: Icon скрывается через `aria-hidden`,
+				 * индикатор выполнения объявляет себя как `progressbar`.
 				 *
 				 * Триггер один. Раньше их приходилось перечислять объединением по всей
 				 * цепочке наследования (`change:disabled`, `change:tag`, …), потому что

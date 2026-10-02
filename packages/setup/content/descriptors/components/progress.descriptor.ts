@@ -35,7 +35,7 @@ export const ProgressDescriptor = defineDescriptor(() =>
 
 		// Имя — `aria_label` или `aria_labelledBy`. Опции `role` у плагина нет:
 		// она значит «без имени элемент декоративен», а индикатор и без имени
-		// индикатор. Роль `progressbar` пишет ядро, как `status` у Spinner
+		// индикатор. Роль `progressbar` пишет ядро
 		plugins: [AriaPluginDescriptor],
 	}),
 )

@@ -3,9 +3,9 @@
  *
  * Выход — защищённый проп плагина: его вычисляет плагин, а разметка только
  * читает. `dismiss_ownerAttribute` у Select описывал рукописный тип, который
- * с плагином никто не сверял, а `layout_styles` шаблоны Frame, Icon, Spinner и
- * Skeleton читали вовсе без типа — это проходило лишь потому, что vue-tsc не
- * проверяет атрибуты `<component :is>`.
+ * с плагином никто не сверял, а `layout_styles` шаблоны Frame, Icon и Skeleton
+ * читали вовсе без типа — это проходило лишь потому, что vue-tsc не проверяет
+ * атрибуты `<component :is>`.
  *
  * Теперь тип выхода — `Pick` геттера класса плагина четвёртым аргументом
  * `definePlugin`. Дескриптор собирает выходы в `DescriptorPluginOutputs`, а
@@ -27,13 +27,11 @@ import type {
 	TIconLayoutPlugin,
 	TSelectKeyboardPlugin,
 	TSkeletonLayoutPlugin,
-	TSpinnerLayoutPlugin,
 } from '@soldy-ui/plugins'
 import { VueProfile, createVueAdapterContext } from '../src/adapter'
 import type SetupSelect from '../src/components/select/setup.component'
 import type SetupFrame from '../src/components/frame/setup.component'
 import type SetupIcon from '../src/components/icon/setup.component'
-import type SetupSpinner from '../src/components/spinner/setup.component'
 import type SetupSkeleton from '../src/components/skeleton/setup.component'
 
 /** Что видит шаблон: результат `setup()` компонента. */
@@ -57,15 +55,12 @@ describe('выходы плагинов в шаблоне Vue', () => {
 		>()
 	})
 
-	it('layout_styles у Frame, Icon, Spinner и Skeleton — тип геттера своего layout-плагина', () => {
+	it('layout_styles у Frame, Icon и Skeleton — тип геттера своего layout-плагина', () => {
 		expectTypeOf<TTemplate<typeof SetupFrame>['layout_styles']>().toEqualTypeOf<
 			TFrameLayoutPlugin['styles'] | undefined
 		>()
 		expectTypeOf<TTemplate<typeof SetupIcon>['layout_styles']>().toEqualTypeOf<
 			TIconLayoutPlugin['styles'] | undefined
-		>()
-		expectTypeOf<TTemplate<typeof SetupSpinner>['layout_styles']>().toEqualTypeOf<
-			TSpinnerLayoutPlugin['styles'] | undefined
 		>()
 		expectTypeOf<TTemplate<typeof SetupSkeleton>['layout_styles']>().toEqualTypeOf<
 			TSkeletonLayoutPlugin['styles'] | undefined

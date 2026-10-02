@@ -13,7 +13,6 @@ import {
 	TControl,
 	TComponentView,
 	TIcon,
-	TSpinner,
 	TSkeleton,
 	TTabsItem,
 	TAccordionItem,
@@ -542,18 +541,6 @@ describe('TIcon.aria · декоративная', () => {
 		// вместо «Развернуть». Обратный случай решает TAriaPlugin — он снимает
 		// aria-hidden, когда у иконки появилось имя
 		expect(new TIcon().aria.toObject()).toEqual({ 'aria-hidden': 'true' })
-	})
-})
-
-describe('TSpinner.aria · живая область', () => {
-	it('объявлен как status', () => {
-		// role="status" уже подразумевает aria-live="polite" и aria-atomic
-		expect(new TSpinner().aria.get('role')).toBe('status')
-	})
-
-	it('имени по умолчанию нет: язык интерфейса ядру неизвестен', () => {
-		// Строка вроде «Загрузка» приходит от потребителя через TAriaPlugin
-		expect(new TSpinner().aria.has('aria-label')).toBe(false)
 	})
 })
 

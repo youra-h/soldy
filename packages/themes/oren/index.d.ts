@@ -10,14 +10,14 @@
  * Значение, которое совпадает с видом блока без модификатора (`normal`,
  * `filled` у Button, `outlined` у CheckBox, `line`, `dot`, `rounded`,
  * `pulse`), своего правила в CSS может не иметь, но объявлено всё равно: его
- * можно задать явно, и `normal` у Spinner, ProgressLinear и ProgressSpinner —
- * не база, а нейтраль.
+ * можно задать явно, и `normal` у ProgressLinear и ProgressSpinner — не база,
+ * а нейтраль.
  */
 export {}
 
 declare module '@soldy-ui/core' {
 	/**
-	 * Смысловой цвет. Без варианта — нейтраль, у Spinner, ProgressLinear и
+	 * Смысловой цвет. Без варианта — нейтраль, у ProgressLinear и
 	 * ProgressSpinner — `accent`, а в кнопке — цвет её текста. Заданный
 	 * вариант индикатора кнопка не перекрывает, и на её заливке того же
 	 * семейства он почти пропадёт.

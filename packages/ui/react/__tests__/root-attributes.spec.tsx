@@ -27,7 +27,6 @@ import {
 	Icon,
 	Label,
 	Skeleton,
-	Spinner,
 	Tabs,
 	type AccordionItemProps,
 	type AccordionProps,
@@ -37,10 +36,10 @@ import {
 	type IconProps,
 	type LabelProps,
 	type SkeletonProps,
-	type SpinnerProps,
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	toRootLayout,
 } from '@soldy-ui/react'
 import { find, mount, nextFrame } from './mount'
 
@@ -51,7 +50,6 @@ type TProbeProps = ButtonProps &
 	IconProps &
 	LabelProps &
 	SkeletonProps &
-	SpinnerProps &
 	TabsProps &
 	AccordionProps &
 	TabsContentProps
@@ -79,7 +77,6 @@ const COMPONENTS: ReadonlyArray<
 	['Icon', Icon, '.s-icon', { tag: 'i' }],
 	['Label', Label, '.s-label', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
-	['Spinner', Spinner, '.s-spinner', {}],
 	['Tabs', Tabs, '.s-tabs', {}],
 	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
 	['Accordion', Accordion, '.s-accordion', {}],
@@ -130,10 +127,10 @@ describe('атрибут снаружи перекрывает набор ядр
 		expect(root().getAttribute('tabindex')).toBe('-1')
 	})
 
-	it('Spinner: role потребителя — поверх role="status" ядра', () => {
-		const { root } = mount(<Spinner role="progressbar" />)
+	it('Button на div: role потребителя — поверх role="button" ядра', () => {
+		const { root } = mount(<Button tag="div" role="link" />)
 
-		expect(root().getAttribute('role')).toBe('progressbar')
+		expect(root().getAttribute('role')).toBe('link')
 	})
 
 	it('без атрибута снаружи остаётся набор ядра', () => {
@@ -185,5 +182,22 @@ describe('ref потребителя не выбивает привязку ко
 		await nextFrame()
 
 		expect(onElementReady).toHaveBeenCalledWith(find(document, root, HTMLElement))
+	})
+})
+
+/**
+ * Имена стиля плагина раскладки React получает в camelCase (`z-index` →
+ * `zIndex`, сторожит `frame.spec.tsx`), а пользовательское свойство — под
+ * своим именем: `--dialogWidth` было бы другим свойством, и тема его не
+ * прочла бы. Так размер отдают плагины раскладки окна и выезжающей панели, но
+ * этих компонентов в React пока нет, и правило проверяется на самой раскладке
+ * корня.
+ */
+describe('раскладка корня: пользовательское свойство — под своим именем', () => {
+	it('--* из layout_styles доходит до узла как есть', () => {
+		const layout = toRootLayout({ layout_styles: { '--dialog-width': '320px' } }, {})
+		const { root } = mount(<div {...layout} />)
+
+		expect(root().style.getPropertyValue('--dialog-width')).toBe('320px')
 	})
 })
