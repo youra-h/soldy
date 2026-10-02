@@ -370,6 +370,8 @@ describe('TEvented', () => {
 					},
 				},
 			])
+			// Проброс подключён, пока цель слушают
+			target.on('forwarded', () => {})
 			source.emit('change', 'hello')
 
 			expect(received).toEqual(['HELLO'])
@@ -432,5 +434,157 @@ describe('TEvented', () => {
 		events.emit('change', 'x')
 
 		expect(middleware).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Проброс держит источник, только пока цель слушают: первый подписчик цели
+ * подписывает её на источник, ушедший последний — отписывает. Так цель, которая
+ * живёт меньше источника (фасад коллекции над движком снаружи), не остаётся на
+ * нём: она уходит вместе со своими подписчиками, а снимать проброс некому не
+ * нужно.
+ */
+describe('TEvented: проброс держит источник, пока цель слушают', () => {
+	/** Сколько подписок держит шина: `on` без `off` и перехватчики `use`. */
+	function heldBy(bus: TEvented<TestEvents>): () => number {
+		let count = 0
+		const on = bus.on.bind(bus)
+		const off = bus.off.bind(bus)
+		const use = bus.use.bind(bus)
+
+		vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
+			count++
+			on(event, handler)
+		})
+		vi.spyOn(bus, 'off').mockImplementation((event, handler) => {
+			count--
+			off(event, handler)
+		})
+		vi.spyOn(bus, 'use').mockImplementation((middleware) => {
+			const release = use(middleware)
+
+			count++
+
+			return () => {
+				count--
+				release()
+			}
+		})
+
+		return () => count
+	}
+
+	it('relay: подписка на источник — с первым подписчиком цели, отписка — с последним', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const onChange = vi.fn()
+		const onReset = vi.fn()
+
+		target.relay(source, ['change', 'reset'])
+
+		expect(held()).toBe(0)
+
+		target.on('change', onChange)
+		target.on('reset', onReset)
+
+		expect(held()).toBe(2)
+
+		target.off('change', onChange)
+
+		expect(held()).toBe(2)
+
+		target.off('reset', onReset)
+
+		expect(held()).toBe(0)
+	})
+
+	it('relayAll: перехватчик на источнике стоит, пока цель слушают', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const handler = vi.fn()
+
+		target.relayAll(source)
+
+		expect(held()).toBe(0)
+
+		target.on('submit', handler)
+		source.emit('submit', 7)
+
+		expect(held()).toBe(1)
+		expect(handler).toHaveBeenCalledWith(7)
+
+		target.off('submit', handler)
+
+		expect(held()).toBe(0)
+	})
+
+	it('перехватчик цели — тоже подписчик', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+
+		target.relayAll(source)
+
+		const release = target.use(vi.fn())
+
+		expect(held()).toBe(1)
+
+		release()
+
+		expect(held()).toBe(0)
+	})
+
+	it('цепочка подключается от подписчика последнего звена и отключается с ним', () => {
+		const source = new TEvented<TestEvents>()
+		const middle = new TEvented<TestEvents>()
+		const outer = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const handler = vi.fn()
+
+		middle.relayAll(source)
+		outer.relay(middle, ['change'])
+
+		expect(held()).toBe(0)
+
+		outer.on('change', handler)
+		source.emit('change', 'x')
+
+		expect(held()).toBe(1)
+		expect(handler).toHaveBeenCalledWith('x')
+
+		outer.off('change', handler)
+
+		expect(held()).toBe(0)
+	})
+
+	it('проброс, заведённый у цели, которую уже слушают, подключается сразу', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+		const handler = vi.fn()
+
+		target.on('change', handler)
+		target.relay(source, ['change'])
+		source.emit('change', 'y')
+
+		expect(held()).toBe(1)
+		expect(handler).toHaveBeenCalledWith('y')
+	})
+
+	it('destroy цели снимает подключённые пробросы', () => {
+		const source = new TEvented<TestEvents>()
+		const target = new TEvented<TestEvents>()
+		const held = heldBy(source)
+
+		target.relayAll(source)
+		target.on('change', vi.fn())
+
+		expect(held()).toBe(1)
+
+		target.destroy()
+
+		expect(held()).toBe(0)
 	})
 })

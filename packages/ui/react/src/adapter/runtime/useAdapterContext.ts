@@ -46,6 +46,9 @@
  * родителя и в порядке документа, поэтому элементы разметки входят в
  * коллекцию в порядке DOM.
  *
+ * Отброшенный рендер React ничем не объявляет, и сборку, которую он выбросил,
+ * освобождает `TDrafts`: хук отдаёт ему каждую сборку, пока её не приняли.
+ *
  * Выходы плагинов из типа контекста хук сохраняет: по ним `useAdapter` типизирует
  * `state`, и потерянные здесь они не дошли бы до разметки.
  */
@@ -55,6 +58,7 @@ import { createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext, TElevatorFactory } from '@soldy-ui/setup'
 import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
 import { TReactElevatorScope } from '../elevator/scope.class'
+import { TDrafts } from './drafts.class'
 
 /** Сборка контекста, которую хук отдаёт фабрике: сигнатура — `createAdapterContext`. */
 export type TCreateAdapterContext = typeof createAdapterContext
@@ -70,14 +74,19 @@ export type TAssembly<T extends TAdapterContexts> = {
 	readonly layer: TElevatorLayer
 }
 
-/** Сборка на руках у хука: контексты и лифт, на котором они собраны. */
+/** Сборка на руках у хука: контексты, лифт, на котором они собраны, и что они взяли снаружи. */
 type TBuilt<T extends TAdapterContexts> = {
 	readonly contexts: T
 	readonly scope: TReactElevatorScope
+	/** `ctrl` и движок коллекции, пришедшие снаружи: их держит одно монтирование. */
+	readonly held: readonly object[]
 }
 
 /** Счётчик версий: его смена перерисовывает компонент с новыми контекстами. */
 const nextVersion = (version: number) => version + 1
+
+/** Сборки, которые React ещё не принял, — общие для всех компонентов. */
+const drafts = new TDrafts()
 
 function isList(contexts: TAdapterContexts): contexts is readonly IAdapterContext[] {
 	return Array.isArray(contexts)
@@ -110,13 +119,20 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	// устаревшее прочитанное
 	const settled = useRef<TElevatorLayer | null>(null)
 	const [, rerender] = useReducer(nextVersion, 0)
-	// Id монтирования, заданный опцией явно, остаётся за тем, кто его задал
-	const create: TCreateAdapterContext = (descriptor, options, config) =>
-		createAdapterContext(descriptor, { mountId, ...options }, config)
 	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
+		const held: object[] = []
+		// Id монтирования, заданный опцией явно, остаётся за тем, кто его задал
+		const create: TCreateAdapterContext = (descriptor, options, config) => {
+			held.push(...drafts.take(options))
 
-		return { contexts: factory(create, scope.elevator), scope }
+			return createAdapterContext(descriptor, { mountId, ...options }, config)
+		}
+		const contexts = factory(create, scope.elevator)
+
+		drafts.add(held, () => destroyAll(contexts))
+
+		return { contexts, scope, held }
 	}
 	// Эффект зовёт фабрику последнего рендера, а не той, что застал при установке
 	const rebuild = useEffectEvent(() => assemble(parent))
@@ -144,7 +160,10 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		const current = ref.current
 
-		if (current) attachAll(current.contexts)
+		if (current) {
+			drafts.accept(current.held)
+			attachAll(current.contexts)
+		}
 
 		return () => {
 			if (current) destroyAll(current.contexts)

@@ -38,17 +38,26 @@ export class TEventEmitter<
 > implements IEventEmitter {
 	private _items: Map<string, Set<TEventHandler>> = new Map()
 
+	private _size = 0
+
+	/** Число подписок — пар «событие × обработчик». */
+	get size(): number {
+		return this._size
+	}
+
 	on<K extends keyof Events>(event: K, handler: Events[K]): void {
 		let handlers = this._items.get(event as string)
 		if (!handlers) {
 			handlers = new Set()
 			this._items.set(event as string, handlers)
 		}
+		if (handlers.has(handler as TEventHandler)) return
 		handlers.add(handler as TEventHandler)
+		this._size++
 	}
 
 	off<K extends keyof Events>(event: K, handler: Events[K]): void {
-		this._items.get(event as string)?.delete(handler as TEventHandler)
+		if (this._items.get(event as string)?.delete(handler as TEventHandler)) this._size--
 	}
 
 	emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
@@ -57,9 +66,11 @@ export class TEventEmitter<
 
 	remove(event?: string): void {
 		if (event) {
+			this._size -= this._items.get(event)?.size ?? 0
 			this._items.delete(event)
 		} else {
 			this._items.clear()
+			this._size = 0
 		}
 	}
 }
