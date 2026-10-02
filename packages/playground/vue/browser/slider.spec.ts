@@ -185,6 +185,23 @@ describe('подписи меток', () => {
 	})
 })
 
+/**
+ * Подпись называет своим содержимым одно поле, первое. Второе поле внутри неё
+ * для этого имени — встроенный контрол (accname 1.2, шаг 2C), и его значение
+ * вошло бы в имя первого: «80 Цена». Поэтому у нескольких ручек имя каждой,
+ * первой тоже, даёт `thumbLabels`: `aria-label` поля сильнее подписи. Имена
+ * сверяются точно: в них нет ни текста подписи, ни значения соседнего поля.
+ */
+describe('имена ручек', () => {
+	it('в подписи Label имя каждой ручки — ровно её имя из thumbLabels', async () => {
+		await mount({ value: [20, 80], thumbLabels: ['От', 'До'] }, { label: true })
+
+		expect(fields().every((node) => find('.s-label').contains(node))).toBe(true)
+		expect(page.getByRole('slider', { name: 'От', exact: true }).query()).toBe(field(0))
+		expect(page.getByRole('slider', { name: 'До', exact: true }).query()).toBe(field(1))
+	})
+})
+
 describe('нажатие на дорожке', () => {
 	it('ставит ближайшую ручку в точку нажатия', async () => {
 		const ctrl = await mount({ value: [10, 90] })
