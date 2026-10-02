@@ -32,3 +32,9 @@ $variants: progress.$variants;
 @mixin progress-spinner-colors($color) {
 	@include progress.colors('progress-spinner', $color);
 }
+
+// Те же переменные у кольца без варианта: в кнопке — цвет её текста, вне
+// кнопки — варианта `$color` (`mixins/_indicator.scss`).
+@mixin progress-spinner-base-colors($color) {
+	@include progress.base-colors('progress-spinner', $color);
+}
