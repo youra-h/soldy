@@ -12,9 +12,10 @@
  * потребителя из его атрибутов выбил бы привязку корня к `TElementPlugin` —
  * не было бы `element:ready`.
  *
- * Элемент коллекции (`Tabs.Item`, `Accordion.Item`) делит атрибуты
- * потребителя, как у Vue: класс и стиль — корню, остальное — строке, поверх её
- * набора `aria`. Корень остаётся за адаптером и у него.
+ * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
+ * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
+ * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
+ * него.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -27,6 +28,7 @@ import {
 	Icon,
 	Label,
 	ProgressSpinner,
+	RadioGroup,
 	Skeleton,
 	Tabs,
 	type AccordionItemProps,
@@ -37,6 +39,8 @@ import {
 	type IconProps,
 	type LabelProps,
 	type ProgressSpinnerProps,
+	type RadioGroupItemProps,
+	type RadioGroupProps,
 	type SkeletonProps,
 	type TabsContentProps,
 	type TabsItemProps,
@@ -55,6 +59,7 @@ type TProbeProps = ButtonProps &
 	SkeletonProps &
 	TabsProps &
 	AccordionProps &
+	RadioGroupProps &
 	TabsContentProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
@@ -84,10 +89,11 @@ const COMPONENTS: ReadonlyArray<
 	['Tabs', Tabs, '.s-tabs', {}],
 	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
 	['Accordion', Accordion, '.s-accordion', {}],
+	['RadioGroup', RadioGroup, '.s-radio-group', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
-type TItemProbeProps = TabsItemProps & AccordionItemProps
+type TItemProbeProps = TabsItemProps & AccordionItemProps & RadioGroupItemProps
 
 /** Таб — в наборе: `id` строке пишет коллекция. */
 function TabsItemProbe(props: TabsItemProps): ReactNode {
@@ -107,10 +113,20 @@ function AccordionItemProbe(props: AccordionItemProps): ReactNode {
 	)
 }
 
+/** Радио — в группе; строки у него нет, атрибуты потребителя уходят полю. */
+function RadioGroupItemProbe(props: RadioGroupItemProps): ReactNode {
+	return (
+		<RadioGroup>
+			<RadioGroup.Item value="a" {...props} />
+		</RadioGroup>
+	)
+}
+
 /** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
 const ITEMS: ReadonlyArray<readonly [string, ComponentType<TItemProbeProps>, string, string]> = [
 	['Tabs.Item', TabsItemProbe, '.s-tabs-item', '.s-tabs-item [role="tab"]'],
 	['Accordion.Item', AccordionItemProbe, '.s-accordion-item', '.s-accordion-item__header'],
+	['RadioGroup.Item', RadioGroupItemProbe, '.s-radio-group-item', '.s-radio-group-item__input'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {

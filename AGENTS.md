@@ -1717,6 +1717,13 @@ Accordion `aria-expanded`. Атрибут знает паттерн, а не м�
   сводит их без правок. Переобъявление ходит в обе стороны: объявление без
   `protected` возвращает вход.
 
+  Атрибуты DOM в типе пропсов React (`TDomAttributes`,
+  `packages/ui/react/src/types.ts`) вычитают защищённые имена так же, как
+  входы: `forward` связки съедает и их, а без вычета одноимённый атрибут
+  вернул бы вход в тип. У `RadioGroup.Item` атрибуты уходят `<input>`, и там
+  есть и `name`, и `size`. Сторожит `ui/react/__tests__/radio-group.spec.tsx`,
+  «name, size и view — не входы радио»; проверку типов ловит «Типы — React».
+
   Так снимают вход, которого на самом деле нет: значение приходит не из
   разметки, а вход обещает обратное. У элементов коллекций так сняты `size` и
   `variant` (общий фрагмент `OWNER_STYLE_PROPS` рядом с `StylableDescriptor`),
@@ -3403,12 +3410,17 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `checked`, `indeterminate` и текст поля Input проводит поле адаптера
   `NativeInput` (`ui/react/src/adapter/runtime/`): умолчание — атрибутом
   (`defaultChecked`, `defaultValue` — это и серверная разметка), свойство — в
-  узел после коммита, когда сменилось состояние ядра, и только если разошлось
-  с узлом: запись того же текста при наборе сбросила бы каретку. Контролируемого
+  узел после коммита, когда сменилось состояние ядра. Текст — только если
+  разошёлся с узлом: запись того же текста при наборе сбросила бы каретку.
+  Отметка — и совпавшая с узлом: React узнаёт отметку поля только по записи
+  свойства и по ней решает, сменил ли клик отметку радио, прежде чем отдать
+  `onChange`, а с соседа отметку снимает браузер без записи. Контролируемого
   поля React (`value` или `checked` с `onChange`) нет: `onChange` писал бы
   значение вторым путём рядом с плагинами ввода, а без него React ругается в
-  консоль. Сторожат `ui/react/__tests__/input.spec.tsx` и
-  `ui/react/__tests__/checkable.spec.tsx`.
+  консоль. Сторожат `ui/react/__tests__/input.spec.tsx`,
+  `ui/react/__tests__/checkable.spec.tsx` и
+  `ui/react/__tests__/radio-group.spec.tsx` («радио, с которого отметку сняло
+  значение снаружи, выбирается снова»).
 - **Radio Group** — Radio Group pattern, вариант на нативных
   `input[type="radio"]`: `role="radiogroup"` на контейнере, имя группы —
   `aria_label` / `aria_labelledBy`. Радио собирает в группу общий `name`: его
@@ -3421,8 +3433,11 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   ходит по радио в порядке DOM, а не регистрации в коллекции, — так радио одной
   группы могут стоять где угодно в разметке, чего roving tabindex, как у Tabs,
   не выдержал бы. `role`, `aria-checked` и `aria-disabled` ядро радио не пишет:
-  у нативного радио это `checked` и `disabled`. Сторожат
-  `ui/vue/__tests__/radio-group.spec.ts` и
+  у нативного радио это `checked` и `disabled`. Выбор пользователя разметка
+  отдаёт коллекции сама — `@change` у Vue, `onChange` поля у React: плагина
+  ввода у радио нет, и это единственный путь, а не второй. Сторожат
+  `ui/vue/__tests__/radio-group.spec.ts`,
+  `ui/react/__tests__/radio-group.spec.tsx` и
   `playground/vue/browser/radio-group.spec.ts`.
 - **Popover** — немодальный Dialog: `role="dialog"` на панели, имя —
   `aria_label` или `aria_labelledBy` (`TAriaPlugin`). Триггер — слот

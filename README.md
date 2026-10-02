@@ -148,25 +148,24 @@ The component set, as the playground shows it:
 
 What each adapter implements so far:
 
-| Adapter        | Package             | Ready                                                                                                    |
-| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
-| Vue            | `@soldy-ui/vue`     | all of the above                                                                                         |
-| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, ListBox, Tabs, Accordion |
-| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`)                                                                                |
-| Svelte         | `@soldy-ui/svelte`  | Button                                                                                                   |
-| Solid          | `@soldy-ui/solid`   | Button                                                                                                   |
-| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                                                |
+| Adapter        | Package             | Ready                                                                                                                |
+| -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Vue            | `@soldy-ui/vue`     | all of the above                                                                                                     |
+| React          | `@soldy-ui/react`   | Button, Icon, Label, Frame, Skeleton, ProgressSpinner, Input, CheckBox, Switch, RadioGroup, ListBox, Tabs, Accordion |
+| Angular        | `@soldy-ui/angular` | Button (`<soldy-button>`)                                                                                            |
+| Svelte         | `@soldy-ui/svelte`  | Button                                                                                                               |
+| Solid          | `@soldy-ui/solid`   | Button                                                                                                               |
+| Web Components | `@soldy-ui/webc`    | Button (`<soldy-button>`)                                                                                            |
 
 ### In development
 
 A new component comes to Vue first and moves to the other adapters after that. The dates are
 estimates:
 
-| Component  | What it is                                                                    | Package           | Expected      |
-| ---------- | ----------------------------------------------------------------------------- | ----------------- | ------------- |
-| RadioGroup | The Vue component, ported                                                     | `@soldy-ui/react` | October 2026  |
-| DateInput  | Date field typed in parts in the locale's format, selectable as a whole       | `@soldy-ui/vue`   | November 2026 |
-| DatePicker | DateInput and Calendar in a dropdown panel, like the input and list of Select | `@soldy-ui/vue`   | November 2026 |
+| Component  | What it is                                                                    | Package         | Expected      |
+| ---------- | ----------------------------------------------------------------------------- | --------------- | ------------- |
+| DateInput  | Date field typed in parts in the locale's format, selectable as a whole       | `@soldy-ui/vue` | November 2026 |
+| DatePicker | DateInput and Calendar in a dropdown panel, like the input and list of Select | `@soldy-ui/vue` | November 2026 |
 
 ## Repository structure
 

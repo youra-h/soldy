@@ -10,6 +10,7 @@ import type {
 	DescriptorCallbackEvents,
 	DescriptorComponentProps,
 	DescriptorSlots,
+	TContractOf,
 	TSlotProps,
 } from '@soldy-ui/setup'
 
@@ -45,6 +46,11 @@ export type UseProps<
  * имён в атрибутах и нет: `forward` связки съедает пропсы, события и слоты
  * дескриптора.
  *
+ * Защищённые пропсы — тоже: `forward` съедает и их, хотя входа у разметки нет
+ * (`DescriptorAllProps` их вычитает). Без вычета атрибут с тем же именем
+ * вернул бы вход в тип: у радио `name` и `size` есть и у `<input>`, а их
+ * раздаёт группа — в разметке радио их не задать.
+ *
  * Это ровно то, что компонент не съел: его `forwardProps` без входов
  * дескриптора. Поле раздаёт их двум элементам — класс и стиль корню,
  * остальное `<input>` (`toControlAttrs`).
@@ -58,15 +64,18 @@ export type TDomAttributes<
 	TEvents extends object = EventProps<TDescriptorFn>,
 > = Omit<
 	TAttributes,
-	keyof DescriptorAllProps<TDescriptorFn> | keyof SlotProps<TDescriptorFn> | keyof TEvents
+	| keyof DescriptorAllProps<TDescriptorFn>
+	| TContractOf<TDescriptorFn>['protectedName']
+	| keyof SlotProps<TDescriptorFn>
+	| keyof TEvents
 >
 
 /**
- * Атрибуты `<input>` полей (Input, CheckBox, Switch): всё, кроме того, что
- * поле ведёт само. Текст, отметку и её умолчание проводит поле адаптера
- * (`NativeInput`) из состояния ядра, а `readonly` — вход дескриптора: атрибут
- * `readOnly` рядом с ним был бы вторым путём к тому же состоянию, а `checked`
- * сделал бы поле контролируемым полем React.
+ * Атрибуты `<input>` полей (Input, CheckBox, Switch, RadioGroup.Item): всё,
+ * кроме того, что поле ведёт само. Текст, отметку и её умолчание проводит
+ * поле адаптера (`NativeInput`) из состояния ядра, а `readonly` — вход
+ * дескриптора: атрибут `readOnly` рядом с ним был бы вторым путём к тому же
+ * состоянию, а `checked` сделал бы поле контролируемым полем React.
  */
 export type TFieldAttributes = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
