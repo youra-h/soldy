@@ -119,6 +119,7 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 	}
 
 	bundles.bindEngine(engine)
+	bundle.attach()
 	render()
 	pluginOf(bundle, TElementPlugin).element = root
 	await nextFrame()

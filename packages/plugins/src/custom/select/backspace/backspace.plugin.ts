@@ -77,6 +77,13 @@ export class TSelectBackspacePlugin extends TBasePlugin<any, TSelectBackspacePlu
 		this._listenTo(this._owner?.events, 'change:editable', sync)
 	}
 
+	/** Условия, сменившиеся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._syncListener()
+	}
+
 	override destroy(): void {
 		this._unlisten()
 

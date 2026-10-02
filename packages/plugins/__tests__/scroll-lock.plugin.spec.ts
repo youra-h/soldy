@@ -50,8 +50,10 @@ function pluginOf<P extends IPlugin<any, any>>(
  */
 const bundles: TPluginBundle[] = []
 
+/** Набор принят, как его принимает setup: подписки плагина на владельца — с принятия. */
 function track(bundle: TPluginBundle): TPluginBundle {
 	bundles.push(bundle)
+	bundle.attach()
 
 	return bundle
 }
@@ -196,6 +198,25 @@ describe('замок и открытость владельца', () => {
 
 		pluginOf(bundle, TElementPlugin).element = root
 		await nextFrame()
+
+		expect(overflows()).toEqual(LOCKED)
+	})
+
+	it('открытие до принятия набора подписка не застала — принятие запирает', async () => {
+		const owner = new TPopover()
+		const root = document.createElement('div')
+		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TScrollLockPlugin)
+
+		bundles.push(bundle)
+		document.body.appendChild(root)
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		owner.open = true
+
+		expect(overflows()).toEqual(FREE)
+
+		bundle.attach()
 
 		expect(overflows()).toEqual(LOCKED)
 	})

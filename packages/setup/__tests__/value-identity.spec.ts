@@ -40,6 +40,8 @@ describe('Составные props меняют идентичность при 
 		const spinner = new TSpinner({ borderWidth: 2 })
 		const ctx = createAdapterContext(SpinnerDescriptor(), { ctrl: spinner })
 
+		ctx.attach()
+
 		const before = read(ctx, 'styles')
 
 		spinner.borderWidth = 8

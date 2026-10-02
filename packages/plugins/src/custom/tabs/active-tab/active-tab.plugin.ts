@@ -59,6 +59,13 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 		this._listenTo(this._tabs?.events, 'change:view', () => this._emitOffset())
 	}
 
+	/** Активный таб и вид, сменившиеся до принятия, подписка не застала — пересчитать. */
+	override attach(): void {
+		super.attach()
+
+		this._emitOffset()
+	}
+
 	override destroy(): void {
 		this._element = null
 		this._tabs = null

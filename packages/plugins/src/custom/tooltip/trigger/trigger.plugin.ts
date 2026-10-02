@@ -80,6 +80,16 @@ export class TTooltipTriggerPlugin extends TBasePlugin<any, TTooltipTriggerPlugi
 		elementPlugin?.events.on('removed', () => this._unbindRoot())
 	}
 
+	/**
+	 * Открытость, сменившаяся до принятия, подписка не застала — перечитать.
+	 * Без корня открытие ждёт его `ready`, а закрытие только сбрасывает причины.
+	 */
+	override attach(): void {
+		super.attach()
+
+		if (this._owner) this._onOpenChange(this._owner.open)
+	}
+
 	override destroy(): void {
 		this._unbindRoot()
 

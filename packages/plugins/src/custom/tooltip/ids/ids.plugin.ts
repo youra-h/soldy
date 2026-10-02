@@ -27,6 +27,7 @@ const TRIGGER_RELATION: Record<TTooltipType, string> = {
  */
 export class TTooltipIdsPlugin extends TBasePlugin {
 	private _panelId = ''
+	private _tooltip: ITooltip | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -35,18 +36,36 @@ export class TTooltipIdsPlugin extends TBasePlugin {
 
 		if (!tooltip) return
 
+		this._tooltip = tooltip
 		this._panelId = ctx.createId('panel')
 
 		tooltip.aria.add('id', this._panelId)
 
-		this._link(tooltip, tooltip.type)
-		this._listenTo(tooltip.events, 'change:type', (type) => this._link(tooltip, type))
+		this._link()
+		this._listenTo(tooltip.events, 'change:type', this._link)
+	}
+
+	/** Режим, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._link()
+	}
+
+	override destroy(): void {
+		this._tooltip = null
+
+		super.destroy()
 	}
 
 	/** Ссылка триггера по режиму: ровно одна из двух. */
-	private _link(tooltip: ITooltip, type: TTooltipType): void {
+	private readonly _link = (): void => {
+		const tooltip = this._tooltip
+
+		if (!tooltip) return
+
 		for (const [mode, relation] of Object.entries(TRIGGER_RELATION)) {
-			tooltip.triggerAria.add(relation, mode === type ? this._panelId : null)
+			tooltip.triggerAria.add(relation, mode === tooltip.type ? this._panelId : null)
 		}
 	}
 }

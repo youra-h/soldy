@@ -167,6 +167,13 @@ export class TDrawerSwipePlugin extends TBasePlugin<IDrawer, TDrawerSwipePluginE
 		this._listenTo(this._owner?.events, 'change:placement', this._sync)
 	}
 
+	/** Жест, открытость и край, сменившиеся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._sync()
+	}
+
 	override destroy(): void {
 		this._detach()
 

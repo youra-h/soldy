@@ -75,6 +75,9 @@ async function mount(content = '<button class="item">Первый</button>') {
 
 	const owner = new TScroller()
 	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TScrollerViewportPlugin)
+
+	bundle.attach()
+
 	const element = bundle.get(TElementPlugin)
 
 	if (!element) throw new Error('узла корня нет')

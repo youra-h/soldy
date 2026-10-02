@@ -36,7 +36,7 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  * `select-keyboard.spec.ts`, плюс настоящий `<input>` внутри корня: плагин
  * ищет его тем же способом, что `TInputPlugin` (`el.querySelector('input')`).
  */
-async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
+async function setup(texts: string[], props: Partial<ISelectProps> = {}, { accepted = true } = {}) {
 	const owner = new TSelect({ editable: true, editableMode: 'search', ...props })
 	const facade = new TSelectCollectionFacade({}, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
@@ -84,6 +84,13 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 
 	bundles.bindEngine(facade.engine)
 
+	// Набор принят, как его принимает setup: подписки на чужие шины — отсюда
+	const accept = (): void => {
+		for (const plugin of [bundles, elements, keyboard, editable]) plugin.attach()
+	}
+
+	if (accepted) accept()
+
 	rootElement.element = root
 	await nextFrame()
 
@@ -126,6 +133,7 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 		typeInField,
 		press,
 		blurTo,
+		accept,
 	}
 }
 
@@ -298,6 +306,25 @@ describe('слушатель ввода — только пока он нуже�
 		type('мо')
 
 		expect(editable.query).toBe('')
+	})
+
+	/**
+	 * Подписка на режим начинается с принятия набора: сборку, которую не
+	 * приняли, уничтожать некому. Режим, сменившийся до принятия, плагин
+	 * перечитывает при принятии — и слушает ввод по нему.
+	 */
+	it('editable, включённый до принятия, — после принятия ввод слушается', async () => {
+		const { owner, keyboard, items, type, accept } = await setup(
+			['Москва', 'Тверь'],
+			{ editable: false },
+			{ accepted: false },
+		)
+
+		owner.editable = true
+		accept()
+		type('т')
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
 })
 

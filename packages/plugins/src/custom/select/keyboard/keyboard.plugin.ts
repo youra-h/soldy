@@ -79,6 +79,17 @@ export class TSelectKeyboardPlugin
 		this._listenTo(this._owner?.events, 'close', () => this.clearHighlight())
 	}
 
+	/**
+	 * Режим, сменившийся до принятия, подписка не застала — перечитать.
+	 * Закрытие панели и смена выдачи — действия: до принятия подсветки нет,
+	 * и снимать или переносить нечего.
+	 */
+	override attach(): void {
+		super.attach()
+
+		this._syncStrategy()
+	}
+
 	override destroy(): void {
 		this._owner = null
 		this._input = null

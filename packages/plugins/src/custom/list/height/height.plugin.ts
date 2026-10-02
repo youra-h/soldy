@@ -95,6 +95,13 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		bundles?.events.on('bundle:unregistered', ({ uid }) => this._unobserveItem(uid))
 	}
 
+	/** `maxRows` и состав, сменившиеся до принятия, подписка не застала — пересчитать. */
+	override attach(): void {
+		super.attach()
+
+		this._scheduleUpdate()
+	}
+
 	override destroy(): void {
 		this._rootObserver?.disconnect()
 		this._rootObserver = null

@@ -1,6 +1,6 @@
 import type { ISlidable, TSlideSnap } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
-import type { IPluginContext } from '../../../base'
+import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import type { IDomEventTarget } from '../../../utils'
 import { fractionAt, lengthAlong, slideDirection } from '../direction'
@@ -19,6 +19,7 @@ import type {
 	TSlidePointerGesture,
 	TSlidePointerPluginEvents,
 	TSlidePointerStart,
+	TSlideSnapEvents,
 } from './types'
 
 /** Стратегия на каждый режим щелчка: режим выбирает класс, а не ветку в жесте. */
@@ -95,22 +96,31 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 		element?.events.on('ready', (node) => this._attach(node))
 		element?.events.on('removed', () => this._detach())
 
-		// Владелец бывает долговечнее плагина — свой `ctrl` переживает
-		// перемонтирование, — поэтому подписку плагин снимает сам (`destroy`)
-		this._snapStrategy = SNAP_STRATEGIES[this._owner?.snap ?? 'none']
-		this._owner?.events.on('change:snap', this._onSnapChange)
+		// Подписка владельца — вид, а не `TEvented` (`ISlideEvents`): карту для
+		// `_listenTo` называет тип шины
+		const events: IListenable<TSlideSnapEvents> | undefined = this._owner?.events
+
+		this._syncSnap()
+		this._listenTo(events, 'change:snap', this._syncSnap)
+	}
+
+	/** Режим, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._syncSnap()
 	}
 
 	override destroy(): void {
 		this._detach()
-		this._owner?.events.off('change:snap', this._onSnapChange)
 		this._owner = null
 
 		super.destroy()
 	}
 
-	private readonly _onSnapChange = (snap: TSlideSnap): void => {
-		this._snapStrategy = SNAP_STRATEGIES[snap]
+	/** Стратегия щелчка — по режиму владельца. */
+	private readonly _syncSnap = (): void => {
+		this._snapStrategy = SNAP_STRATEGIES[this._owner?.snap ?? 'none']
 	}
 
 	private _attach(root: Element): void {

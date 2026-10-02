@@ -86,6 +86,8 @@ async function setup(tabs: Partial<ITabsItemProps>[], ownerProps: Partial<ITabsP
 	}
 
 	bundles.bindEngine(engine)
+	// Набор принят, как его принимает setup
+	bundle.attach()
 
 	const rootElement = pluginOf(bundle, TElementPlugin)
 

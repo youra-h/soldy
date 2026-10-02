@@ -1,4 +1,4 @@
-import type { TCloseReason } from '@soldy-ui/core'
+import type { IEventSource, TCloseReason } from '@soldy-ui/core'
 
 /** Опции привязки плагина оверлея к открытости владельца. */
 export interface IOverlayOpenOptions {
@@ -17,8 +17,15 @@ export interface IOverlayOpenOptions {
 }
 
 /**
+ * Подписка плагина на шину владельца — его `_listenTo`, отданный привязке
+ * открытости. Подписку ведёт база плагина: откладывает до принятия набора и
+ * снимает в `destroy()`, — поэтому своей отписки у привязки нет.
+ */
+export type TOverlayOpenListen = (source: IEventSource, event: string, handler: () => void) => void
+
+/**
  * Открытость владельца глазами плагина оверлея: прочитать, записать и
- * отвязаться.
+ * перечитать.
  */
 export interface IOverlayOpenState {
 	/** Открыт ли владелец сейчас. */
@@ -35,9 +42,9 @@ export interface IOverlayOpenState {
 	 */
 	close(reason: TCloseReason): void
 	/**
-	 * Снять подписку на открытость с шины владельца: `onChange` привязки
-	 * больше не зовётся. Плагин зовёт это в `destroy()` — владелец переживает
-	 * плагин, когда приложение передаёт свой `ctrl`.
+	 * Отдать `onChange` открытость, какая она сейчас, — то же, что делает
+	 * подписка на её смену. Плагин зовёт это при принятии набора: смену
+	 * открытости до принятия подписка не застала.
 	 */
-	unbind(): void
+	sync(): void
 }

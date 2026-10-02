@@ -127,6 +127,13 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 		this._listenTo(this._frame?.events, 'show', () => this._update())
 	}
 
+	/** Показ, случившийся до принятия, подписка не застала — пересчитать координаты. */
+	override attach(): void {
+		super.attach()
+
+		this._update()
+	}
+
 	setAnchor(element: Element): void {
 		if (this._anchor === element) return
 

@@ -53,12 +53,15 @@ const bundles: TPluginBundle[] = []
  * помеченная владельцем, — как их рисует Vue. `name` различает подсказки
  * одного теста.
  */
-function mountTooltip(props: Partial<ITooltipProps> = {}, name = 'a') {
+function mountTooltip(props: Partial<ITooltipProps> = {}, name = 'a', { accepted = true } = {}) {
 	const owner = new TTooltip(props)
 	const bundle = new TPluginBundle(owner)
 		.use(TElementPlugin)
 		.use(TDismissPlugin)
 		.use(TTooltipTriggerPlugin)
+
+	// Набор принят, как его принимает setup: подписка на открытость — отсюда
+	if (accepted) bundle.attach()
 
 	bundles.push(bundle)
 
@@ -489,6 +492,27 @@ describe('закрытие снаружи', () => {
 
 	it('открытая со старта слушает Escape, как только корень объявлен', () => {
 		const { owner } = mountTooltip({ open: true })
+
+		expect(escape().defaultPrevented).toBe(true)
+		expect(owner.open).toBe(false)
+	})
+})
+
+/**
+ * Подписка на открытость владельца начинается с принятия набора: сборку,
+ * которую не приняли, уничтожать некому. Открытие до принятия плагин
+ * перечитывает при принятии.
+ */
+describe('принятие набора', () => {
+	it('открытие до принятия подписка не застала — принятая подсказка слушает Escape', () => {
+		const { owner, bundle } = mountTooltip({}, 'a', { accepted: false })
+
+		owner.open = true
+
+		expect(escape().defaultPrevented).toBe(false)
+		expect(owner.open).toBe(true)
+
+		bundle.attach()
 
 		expect(escape().defaultPrevented).toBe(true)
 		expect(owner.open).toBe(false)

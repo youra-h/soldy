@@ -40,15 +40,18 @@ describe('TActionPlugin у ControlDescriptor', () => {
 		expect(eventNames(ControlDescriptor())).toEqual(expect.arrayContaining(published))
 	})
 
-	it('install и destroy нет ни в типах, ни в рантайме: это механика bundle', () => {
+	it('install, attach и destroy нет ни в типах, ни в рантайме: это механика bundle', () => {
 		// @ts-expect-error — `install` наружу не публикуется, его нет в PLUGIN_EVENTS
 		const install: TControlEventName = 'action:install'
+		// @ts-expect-error — `attach` наружу не публикуется, его нет в PLUGIN_EVENTS
+		const attach: TControlEventName = 'action:attach'
 		// @ts-expect-error — `destroy` наружу не публикуется, его нет в PLUGIN_EVENTS
 		const destroy: TControlEventName = 'action:destroy'
 
 		const names = eventNames(ControlDescriptor())
 
 		expect(names).not.toContain(install)
+		expect(names).not.toContain(attach)
 		expect(names).not.toContain(destroy)
 	})
 })

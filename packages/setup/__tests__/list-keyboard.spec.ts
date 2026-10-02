@@ -99,6 +99,9 @@ async function setup(texts: string[]) {
 
 	bundles.bindEngine(facade.engine)
 
+	// Набор принят, как его принимает setup: подписки на чужие шины — отсюда
+	for (const plugin of [bundles, elements, keyboard]) plugin.attach()
+
 	rootElement.element = root
 	await nextFrame()
 
@@ -372,6 +375,8 @@ describe('подсветка следует за выбором', () => {
 		bundles.install(ctx)
 		keyboard.install(ctx)
 		bundles.bindEngine(facade.engine)
+		bundles.attach()
+		keyboard.attach()
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
@@ -380,6 +385,38 @@ describe('подсветка следует за выбором', () => {
 		const { facade, keyboard, items } = await setup(['Один', 'Два'])
 
 		facade.engine.extensions.selection.select(items[1] as IListBoxItem)
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+	})
+
+	/**
+	 * Подписка на выбор начинается с принятия: сборку, которую не приняли,
+	 * уничтожать некому. Выбор, сменившийся до принятия, плагин перечитывает
+	 * при принятии.
+	 */
+	it('выбор, сменившийся до принятия, — после принятия подсветка на нём', () => {
+		const owner = new TListBox()
+		const facade = new TListBoxCollectionFacade({}, { owner })
+		const items = [
+			new TListBoxItem({ value: 'a', text: 'A' }),
+			new TListBoxItem({ value: 'b', text: 'B' }),
+		]
+
+		facade.items = items as IListBoxItem[]
+
+		const bundles = new TCollectionBundlesPlugin()
+		const keyboard = new TListKeyboardPlugin()
+		const ctx = createPluginContext(owner, [bundles])
+
+		bundles.install(ctx)
+		keyboard.install(ctx)
+		bundles.bindEngine(facade.engine)
+		facade.engine.extensions.selection.select(items[1] as IListBoxItem)
+
+		expect(keyboard.highlightedUid).toBeNull()
+
+		bundles.attach()
+		keyboard.attach()
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})

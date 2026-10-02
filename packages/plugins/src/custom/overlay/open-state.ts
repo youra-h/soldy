@@ -1,6 +1,6 @@
 import { isCloseRequestable, isEventSource } from '@soldy-ui/core'
 import type { IPluginContext } from '../../base'
-import type { IOverlayOpenOptions, IOverlayOpenState } from './types'
+import type { IOverlayOpenOptions, IOverlayOpenState, TOverlayOpenListen } from './types'
 
 /** Свойство открытости по умолчанию — см. `IOverlayOpenOptions.property`. */
 const DEFAULT_PROPERTY = 'open'
@@ -27,10 +27,11 @@ const DEFAULT_PROPERTY = 'open'
  *
  * Подписка живёт на шине владельца, а владелец бывает долговечнее плагина:
  * свой `ctrl` приложения переживает перемонтирование, и каждое монтирование
- * ставит ему новый набор. Поэтому привязка снимает свою подписку сама
- * (`unbind`) — обработчиком, который сама же и повесила, — а плагин зовёт это
- * в `destroy()`. Иначе на владельце копились бы обработчики уничтоженных
- * плагинов.
+ * ставит ему новый набор. Поэтому подписывается привязка не сама, а
+ * методом плагина (`listen` — его `_listenTo`): подписку на чужую шину ведёт
+ * база плагина — начинает с принятия набора и снимает в `destroy()`. Смену
+ * открытости до принятия подписка не застаёт, и плагин при принятии
+ * перечитывает её (`sync`).
  *
  * `null` — привязки нет: владельца нет, `property: null` или такого свойства
  * у владельца не объявлено.
@@ -39,6 +40,7 @@ export function bindOverlayOpen(
 	ctx: IPluginContext,
 	options: IOverlayOpenOptions | undefined,
 	onChange: (open: boolean) => void,
+	listen: TOverlayOpenListen,
 ): IOverlayOpenState | null {
 	const instance = ctx.getInstance<object>()
 	const property = options?.property === undefined ? DEFAULT_PROPERTY : options.property
@@ -50,11 +52,9 @@ export function bindOverlayOpen(
 		Reflect.set(instance, property, value)
 	}
 	const events: unknown = Reflect.get(instance, 'events')
-	const source = isEventSource(events) ? events : null
-	const event = options?.event ?? `change:${property}`
-	const handler = (): void => onChange(read())
+	const sync = (): void => onChange(read())
 
-	source?.on(event, handler)
+	if (isEventSource(events)) listen(events, options?.event ?? `change:${property}`, sync)
 
 	return {
 		read,
@@ -66,8 +66,6 @@ export function bindOverlayOpen(
 				write(false)
 			}
 		},
-		unbind(): void {
-			source?.off(event, handler)
-		},
+		sync,
 	}
 }

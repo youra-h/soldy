@@ -147,6 +147,18 @@ export class TEditablePlugin extends TBasePlugin<any, TEditablePluginEvents> {
 		this._keyboard?.events.on('escape', () => this._returnField())
 	}
 
+	/**
+	 * Режим, сменившийся до принятия, подписка не застала — слушатели по нему
+	 * перечитать. Возврат поля и сброс набранного — ответ на действие: до
+	 * принятия в поле не печатали, и возвращать нечего.
+	 */
+	override attach(): void {
+		super.attach()
+
+		this._syncListener()
+		this._syncFocusListener()
+	}
+
 	override destroy(): void {
 		this._unlisten()
 		this._unlistenFocus()

@@ -48,7 +48,7 @@ function nodeOf(selector: string, root: ParentNode = document): HTMLElement {
 
 async function setup(
 	tags: Partial<ITagsItemProps>[],
-	options: { mode?: TSelectionMode; owner?: Partial<ITagsProps> } = {},
+	options: { mode?: TSelectionMode; owner?: Partial<ITagsProps>; accepted?: boolean } = {},
 ) {
 	const owner = new TTags({ closable: true, ...options.owner })
 	const engine = createEngineTags({ owner })
@@ -93,6 +93,9 @@ async function setup(
 	root.appendChild(field)
 
 	bundles.bindEngine(engine)
+
+	// Набор принят, как его принимает setup: подписка на режим выбора — отсюда
+	if (options.accepted !== false) bundle.attach()
 
 	const rootElement = pluginOf(bundle, TElementPlugin)
 
@@ -483,6 +486,23 @@ describe('без выбора клавиатура молчит', () => {
 
 		selection.mode = 'none'
 		pressOn('b', 'ArrowRight')
+
+		expect(focused()).toBe('b')
+	})
+
+	it('выбор, включённый до принятия набора, — принятие включает клавиатуру', async () => {
+		const { bundle, selection, pressOn, focused } = await setup(ABC, {
+			mode: 'none',
+			accepted: false,
+		})
+
+		selection.mode = 'single'
+		pressOn('a', 'ArrowRight')
+
+		expect(focused()).toBe('a')
+
+		bundle.attach()
+		pressOn('a', 'ArrowRight')
 
 		expect(focused()).toBe('b')
 	})

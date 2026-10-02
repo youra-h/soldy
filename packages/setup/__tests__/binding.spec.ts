@@ -415,6 +415,8 @@ describe('связка · снятый проп', () => {
 		const binding = context.connect(CallbackProfile)
 		const layout = required(context.bundle?.get(TIconLayoutPlugin), 'плагин layout')
 
+		context.attach()
+
 		binding.inputs.full({ width: 24, height: '2em' })
 
 		expect(layout.styles).toEqual({ width: '24px', height: '2em' })

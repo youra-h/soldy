@@ -66,6 +66,8 @@ async function setup(content: string) {
 		.use(TPopoverPointerPlugin)
 		.use(TPopoverFocusPlugin)
 
+	bundle.attach()
+
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
 		panel.setAttribute(name, value)
 	}
@@ -244,5 +246,51 @@ describe('закрытие и возврат фокуса', () => {
 
 		expect(owner.open).toBe(false)
 		expect(document.activeElement).toBe(nodeOf('.trigger'))
+	})
+})
+
+/**
+ * Подписка на открытость владельца начинается с принятия набора: сборку,
+ * которую не приняли, уничтожать некому. Открытие до принятия плагин
+ * перечитывает при принятии.
+ */
+describe('принятие набора', () => {
+	it('открытие до принятия подписка не застала — принятие уводит фокус в панель', async () => {
+		const owner = new TPopover()
+		const root = document.createElement('span')
+		const panel = document.createElement('div')
+
+		root.innerHTML = '<button class="trigger">Открыть</button>'
+		document.body.appendChild(root)
+
+		const bundle = new TPluginBundle(owner)
+			.use(TElementPlugin)
+			.use(TDismissPlugin)
+			.use(TPopoverFocusPlugin)
+
+		for (const [name, value] of Object.entries(
+			pluginOf(bundle, TDismissPlugin).ownerAttribute,
+		)) {
+			panel.setAttribute(name, value)
+		}
+
+		panel.tabIndex = -1
+		panel.innerHTML = '<button class="only">Одна</button>'
+		document.body.appendChild(panel)
+
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		owner.open = true
+		await nextFrame()
+
+		expect(document.activeElement).not.toBe(nodeOf('.only'))
+
+		bundle.attach()
+		await nextFrame()
+
+		expect(document.activeElement).toBe(nodeOf('.only'))
+
+		bundle.destroy()
 	})
 })

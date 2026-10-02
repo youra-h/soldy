@@ -37,6 +37,8 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 	private _more: Element | null = null
 	private _owner: ITags | null = null
 	private _engine: TTagsCollection | null = null
+	/** Панель хвоста, чей набор плагин ждёт (`bundle:create`). */
+	private _panel: IPopover | null = null
 	private _elements: TCollectionElements | null = null
 	private _observer: ResizeObserver | null = null
 	private _frame: number | null = null
@@ -83,6 +85,18 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 		this._listenTo(this._owner?.events, 'change:overflow', this._onLayoutChange)
 	}
 
+	/**
+	 * Режим, состав и панель, сменившиеся до принятия, подписка не застала —
+	 * перечитать.
+	 */
+	override attach(): void {
+		super.attach()
+
+		if (this._engine) this._bindPanel(this._engine.extensions.overflow.panel)
+
+		this._resync()
+	}
+
 	override destroy(): void {
 		this._observer?.disconnect()
 		this._observer = null
@@ -93,6 +107,7 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 		this._more = null
 		this._owner = null
 		this._engine = null
+		this._panel = null
 		this._elements = null
 
 		this._widths.clear()
@@ -120,8 +135,14 @@ export class TTagsOverflowPlugin extends TBasePlugin<ITags, TTagsOverflowPluginE
 	 * компонента плагину взять неоткуда, кроме как через его набор: инстанс
 	 * панели объявляет набор событием `bundle:create` — той же шиной, что
 	 * видит и разметка (AGENTS.md, «Две поверхности управления»).
+	 *
+	 * Та же панель — привязка уже есть: второй подписчик на её
+	 * `bundle:create` повторял бы замер.
 	 */
 	private _bindPanel(panel: IPopover | null): void {
+		if (panel === this._panel) return
+
+		this._panel = panel
 		this._more = null
 
 		this._listenTo(panel?.events, 'bundle:create', (bundle) => {

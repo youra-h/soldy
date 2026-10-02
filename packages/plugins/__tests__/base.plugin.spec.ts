@@ -1,6 +1,7 @@
 /**
  * `TBasePlugin` — события жизненного цикла, которые база шлёт любому плагину,
- * и подписка на чужую шину (`_listenTo`), которую снимает `destroy()`.
+ * и подписка на чужую шину (`_listenTo`): её начинает принятие набора
+ * (`attach()`), а снимает `destroy()`.
  *
  * Сверяется весь список вызовов вместе с аргументами, а не сам факт вызова:
  * лишний или пропавший аргумент — уже другой контракт. `destroy()` зовётся без
@@ -73,8 +74,11 @@ class TContractPingPlugin extends TBasePlugin {
 	}
 }
 
-/** Плагин из набора над владельцем и шпионы на шине владельца — до установки. */
-function mount<P extends TBasePlugin>(Plugin: new () => P) {
+/**
+ * Плагин из набора над владельцем и шпионы на шине владельца — до установки.
+ * Набор собран, но не принят.
+ */
+function assemble<P extends TBasePlugin>(Plugin: new () => P) {
 	const owner = new TOwner()
 	const on = vi.spyOn(owner.events, 'on')
 	const off = vi.spyOn(owner.events, 'off')
@@ -84,6 +88,15 @@ function mount<P extends TBasePlugin>(Plugin: new () => P) {
 	if (!plugin) throw new Error(`${Plugin.name} не встал в набор`)
 
 	return { owner, on, off, bundle, plugin }
+}
+
+/** Собранный и принятый набор: подписки на чужие шины подключены. */
+function mount<P extends TBasePlugin>(Plugin: new () => P) {
+	const mounted = assemble(Plugin)
+
+	mounted.bundle.attach()
+
+	return mounted
 }
 
 describe('TBasePlugin — события жизненного цикла', () => {
@@ -120,6 +133,85 @@ describe('TBasePlugin — события жизненного цикла', () =>
 		plugin.destroy()
 
 		expect(onDestroy.mock.calls).toStrictEqual([[]])
+	})
+
+	it('attach приходит без аргументов и один раз', () => {
+		const plugin = new TProbePlugin()
+		const onAttach = vi.fn<TPluginEvents['attach']>()
+
+		plugin.events.on('attach', onAttach)
+		plugin.install(context())
+		plugin.attach()
+		plugin.attach()
+
+		expect(onAttach.mock.calls).toStrictEqual([[]])
+	})
+})
+
+/**
+ * Сборку набора фреймворк может и не принять: её отбрасывают до показа, и
+ * `destroy()` у неё не будет. Поэтому подписка на чужую шину начинается с
+ * принятия (`attach()`), а до него только запоминается.
+ */
+describe('TBasePlugin — подписка на чужую шину начинается с принятия', () => {
+	it('до принятия на шине ничего нет, и событие владельца не доходит', () => {
+		const { owner, on, plugin } = assemble(TPingPlugin)
+
+		owner.events.emit('ping', 1)
+
+		expect(on).not.toHaveBeenCalled()
+		expect(plugin.received).toEqual([])
+	})
+
+	it('принятие подключает подписки в порядке вызовов', () => {
+		const { owner, on, bundle, plugin } = assemble(TPingPlugin)
+
+		bundle.attach()
+		owner.events.emit('ping', 1)
+
+		expect(on.mock.calls.map(([event]) => event)).toEqual(['ping', 'pong'])
+		expect(plugin.received).toEqual([1])
+	})
+
+	it('после принятия подписка ставится сразу', () => {
+		class TLatePlugin extends TBasePlugin {
+			readonly received: number[] = []
+
+			listen(owner: TOwner): void {
+				this._listenTo(owner.events, 'ping', (value) => this.received.push(value))
+			}
+		}
+
+		const { owner, bundle } = assemble(TLatePlugin)
+		const late = bundle.get(TLatePlugin)
+
+		bundle.attach()
+		late?.listen(owner)
+		owner.events.emit('ping', 1)
+
+		expect(late?.received).toEqual([1])
+	})
+
+	it('плагин, уничтоженный до принятия, не подписывается', () => {
+		const { owner, on, plugin } = assemble(TPingPlugin)
+
+		plugin.destroy()
+		plugin.attach()
+		owner.events.emit('ping', 1)
+
+		expect(on).not.toHaveBeenCalled()
+		expect(plugin.received).toEqual([])
+	})
+
+	it('плагин, поставленный в принятый набор, принимается сразу', () => {
+		const owner = new TOwner()
+		const bundle = new TPluginBundle(owner)
+
+		bundle.attach()
+		bundle.use(TPingPlugin)
+		owner.events.emit('ping', 1)
+
+		expect(bundle.get(TPingPlugin)?.received).toEqual([1])
 	})
 })
 

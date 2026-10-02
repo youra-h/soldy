@@ -1,9 +1,9 @@
 /**
  * `TPluginBundle` — жизненный цикл набора.
  *
- * Набор объявляет плагины (`created`) и уничтожает их (`destroy`) сам, а не
- * циклом по списку дескриптора: плагин, поставленный снаружи, живёт по тому же
- * циклу, что и плагины компонента.
+ * Набор принимает плагины (`attach`), объявляет их (`created`) и уничтожает
+ * (`destroy`) сам, а не циклом по списку дескриптора: плагин, поставленный
+ * снаружи, живёт по тому же циклу, что и плагины компонента.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -19,6 +19,11 @@ abstract class TLoggedPlugin extends TBasePlugin {
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
 		log.push(`install:${this._name}`)
+	}
+
+	override attach(): void {
+		super.attach()
+		log.push(`attach:${this._name}`)
 	}
 
 	override created(): void {
@@ -108,5 +113,65 @@ describe('TPluginBundle — жизненный цикл', () => {
 
 		expect(plugins.destroyed).toBe(true)
 		expect(log.filter((entry) => entry.startsWith('create:'))).toEqual([])
+	})
+})
+
+describe('TPluginBundle — принятие', () => {
+	it('attach принимает плагины в порядке установки, повторный вызов — ничего', () => {
+		const plugins = bundle()
+
+		plugins.attach()
+		plugins.attach()
+
+		expect(log).toEqual(['install:first', 'install:second', 'attach:first', 'attach:second'])
+	})
+
+	it('до attach плагин, поставленный позже, принимается вместе с остальными', () => {
+		const plugins = bundle()
+
+		plugins.use(TLatePlugin)
+		plugins.attach()
+
+		expect(log.filter((entry) => entry.startsWith('attach:'))).toEqual([
+			'attach:first',
+			'attach:second',
+			'attach:late',
+		])
+	})
+
+	it('после attach плагин принимается сразу в use: после install, до created и до события use', () => {
+		const plugins = bundle()
+
+		plugins.events.on('use', () => log.push('use'))
+		plugins.attach()
+		plugins.created()
+		log.length = 0
+
+		plugins.use(TLatePlugin)
+
+		expect(log).toEqual(['install:late', 'attach:late', 'create:late', 'use'])
+	})
+
+	it('created набор не принимает: принимает его только attach', () => {
+		const plugins = bundle()
+
+		plugins.created()
+
+		expect(log.filter((entry) => entry.startsWith('attach:'))).toEqual([])
+	})
+
+	it('уничтоженный набор не принимается, и поставленный в него плагин — тоже', () => {
+		const plugins = bundle()
+
+		plugins.attach()
+		plugins.destroy()
+		log.length = 0
+
+		// use() уничтоженный набор не запрещает, но принятый после destroy плагин
+		// остался бы подписан на чужие шины: снимать его подписки уже некому
+		plugins.use(TLatePlugin)
+		plugins.attach()
+
+		expect(log).toEqual(['install:late'])
 	})
 })

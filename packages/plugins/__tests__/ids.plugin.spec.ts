@@ -79,7 +79,7 @@ describe('оверлеи', () => {
 	it('Tooltip: ссылка триггера по режиму, ровно одна', () => {
 		const tooltip = new TTooltip()
 
-		new TPluginBundle(tooltip, 'm1').use(TTooltipIdsPlugin)
+		new TPluginBundle(tooltip, 'm1').use(TTooltipIdsPlugin).attach()
 
 		expect(tooltip.aria.get('id')).toBe('m1-panel')
 		expect(tooltip.triggerAria.toObject()).toEqual({ 'aria-describedby': 'm1-panel' })
@@ -105,7 +105,7 @@ describe('оверлеи', () => {
 	it('Dialog: имя — заголовок, описание предупреждения — тело', () => {
 		const dialog = new TDialog()
 
-		new TPluginBundle(dialog, 'm1').use(TDialogIdsPlugin)
+		new TPluginBundle(dialog, 'm1').use(TDialogIdsPlugin).attach()
 
 		expect(dialog.aria.get('aria-labelledby')).toBe('m1-title')
 		expect(dialog.bodyAria.toObject()).toEqual({ id: 'm1-body' })
@@ -177,6 +177,7 @@ describe('коллекции', () => {
 		const titles = () => collection.grids.map(({ titleAria }) => titleAria.id)
 
 		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		bundle.attach()
 
 		expect(titles()).toEqual(['m1-title-0', 'm1-title-1'])
 		expect(collection.grids.map(({ gridAria }) => gridAria['aria-labelledby'])).toEqual([
@@ -208,6 +209,7 @@ describe('общий name радио', () => {
 			new TRadioGroupItem({ value: 'b' }),
 		] as IRadioGroupItem[]
 		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		bundle.attach()
 
 		const names = () => collection.items.map((item) => item.name)
 
@@ -238,5 +240,78 @@ describe('общий name радио', () => {
 		collection.extensions.plain.push(new TRadioGroupItem({ value: 'c' }))
 
 		expect(names()).toEqual(['city', 'city', 'city'])
+	})
+})
+
+/**
+ * Подписки плагинов связок на компонент и движок начинаются с принятия
+ * набора: сборку, которую не приняли, уничтожать некому. Что сменилось до
+ * принятия, плагин перечитывает при принятии — той же записью, что и
+ * подписка.
+ */
+describe('принятие набора', () => {
+	it('Tooltip: режим, сменившийся до принятия, — ссылка триггера по новому', () => {
+		const tooltip = new TTooltip()
+		const bundle = new TPluginBundle(tooltip, 'm1').use(TTooltipIdsPlugin)
+
+		tooltip.type = 'label'
+
+		expect(tooltip.triggerAria.toObject()).toEqual({ 'aria-describedby': 'm1-panel' })
+
+		bundle.attach()
+
+		expect(tooltip.triggerAria.toObject()).toEqual({ 'aria-labelledby': 'm1-panel' })
+	})
+
+	it('Dialog: предупреждение, включённое до принятия, — описание на теле', () => {
+		const dialog = new TDialog()
+		const bundle = new TPluginBundle(dialog, 'm1').use(TDialogIdsPlugin)
+
+		dialog.alert = true
+
+		expect(dialog.aria.has('aria-describedby')).toBe(false)
+
+		bundle.attach()
+
+		expect(dialog.aria.get('aria-describedby')).toBe('m1-body')
+	})
+
+	it('Calendar: место, добавленное до принятия, названо при принятии', () => {
+		const owner = new TCalendar({ months: ['2026-01-01'] })
+		const collection = new TCalendarCollectionFacade({}, { owner })
+		const bundle = new TPluginBundle(owner, 'm1')
+			.use(TCollectionBundlesPlugin)
+			.use(TCalendarIdsPlugin)
+		const titles = () => collection.grids.map(({ titleAria }) => titleAria.id)
+
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+		owner.months = ['2026-01-01', '2026-02-01']
+
+		expect(titles()).toEqual(['m1-title-0', undefined])
+
+		bundle.attach()
+
+		expect(titles()).toEqual(['m1-title-0', 'm1-title-1'])
+	})
+
+	it('RadioGroup: имя группы и радио, сменившиеся до принятия, — имя у всех', () => {
+		const owner = new TRadioGroup({ name: 'delivery' })
+		const collection = new TRadioGroupCollectionFacade({}, { owner })
+		const bundle = new TPluginBundle(owner, 'm1')
+			.use(TCollectionBundlesPlugin)
+			.use(TRadioGroupNamePlugin)
+		const names = () => collection.items.map((item) => item.name)
+
+		collection.items = [new TRadioGroupItem({ value: 'a' })] as IRadioGroupItem[]
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(collection.engine)
+
+		owner.name = 'pickup'
+		collection.extensions.plain.push(new TRadioGroupItem({ value: 'b' }))
+
+		expect(names()).toEqual(['delivery', ''])
+
+		bundle.attach()
+
+		expect(names()).toEqual(['pickup', 'pickup'])
 	})
 })

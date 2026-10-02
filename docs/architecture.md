@@ -220,10 +220,10 @@ Organized by inheritance:
 
 ### Base Classes
 
-- **TBasePlugin**: Provides events, install/destroy/created lifecycle
+- **TBasePlugin**: Provides events, install/attach/created/destroy lifecycle
   - Namespace is declared in the plugin descriptor (`definePlugin({ namespace })`), not on the class
   - Can add props/events via contribution
-  - `_listenTo(source, event, handler)` — подписка на шину, которая живёт дольше набора (владелец, расширения движка); её снимает `destroy()` базы. См. AGENTS.md, «Плагины и расширения снаружи»
+  - `_listenTo(source, event, handler)` — подписка на шину, которая живёт дольше набора (владелец, расширения движка). Начинается она с принятия набора (`attach()`): до него метод только запоминает подписку — сборку, которую фреймворк не принял, уничтожать некому, — а снимает её `destroy()` базы. Что плагин выводит из чужой шины, он перечитывает в `attach()` той же функцией, что обработчик. См. AGENTS.md, «Плагины и расширения снаружи»
 
 ### Доступ к плагинам снаружи
 
@@ -244,11 +244,12 @@ export const ElementPluginDescriptor = definePlugin({
 Автоматическая подстановка внутри `definePlugin` (слой setup) была бы магией в
 чужом слое, которой нельзя управлять из места объявления.
 
-`install` и `destroy` наружу не выходят — это внутренняя механика bundle.
-`create` эмитится не в `install`, а из сборки набора (`TOwnBundle`) и с
-задержкой на микрозадачу: на момент установки подписчиков ещё нет, bundle
-собирается раньше, чем фреймворк привязывает обработчики. См. «Доступ к
-плагинам с обеих сторон» ниже.
+`install`, `attach` и `destroy` наружу не выходят — это внутренняя механика
+bundle. `create` эмитится не в `install`, а из принятия набора
+(`TOwnBundle.attach()`) и с задержкой на микрозадачу: на момент установки
+подписчиков ещё нет, bundle собирается раньше, чем фреймворк привязывает
+обработчики, а сборку, которую фреймворк не принял, объявлять нельзя. См.
+«Доступ к плагинам с обеих сторон» ниже.
 
 `PLUGIN_EVENTS` задаёт не только рантайм, но и типы дескриптора. Вывод
 контракта плагина (`TPluginContractFrom`) навешивает namespace на карту плагина без
@@ -322,12 +323,15 @@ destroy() → void (emits 'destroy', forgets extensions, destroys its own bundle
 Six steps, top to bottom, in one function:
 
 1. `instance` — `ctrl` or `new ctor(props, options)`; `embedded` — from the options or from the `embedded` prop
-2. the bundle tenancy (`IBundleTenancy`) — the one fork of the assembly, nobody else asks «whose bundle is it»:
-   - `TOwnBundle` — installs the descriptor plugins, creates `TExternalPlugins`, and in `complete()` installs the app registrations (`usePlugins`, `useTheme`) and announces the bundle (`bundle:create` and the plugins' `create` go out on a microtask; a bundle destroyed before it is never announced); on `destroy()` unbinds the root node before destroying the bundle
+2. initial values of the instance — here and only here, the same for all six adapters: an own instance got the core props through the constructor and they are not written again, an external `ctrl` gets them through `TLine.seed` — the setter (which emits the trigger) gets every prop that differs from the declared default — **before** the bundle, as an own instance does: plugins install on a configured instance and read it, while their subscriptions to foreign buses start only when the bundle is accepted. Names are in the common format (`CommonProfile`): a prop name is the same in every framework
+3. the bundle tenancy (`IBundleTenancy`) — the one fork of the assembly, nobody else asks «whose bundle is it»:
+   - `TOwnBundle` — installs the descriptor plugins and creates `TExternalPlugins`; `complete()` installs the app registrations (`usePlugins`, `useTheme`); `attach()` accepts the bundle (the plugins subscribe to foreign buses from here) and announces it (`bundle:create` and the plugins' `create` go out on a microtask; a bundle destroyed before it is never announced); on `destroy()` unbinds the root node before destroying the bundle
    - `TSharedBundle` — not our bundle: the owner's (`config.bundle`: a collection facade shares the component's bundle) or none at all. Members are the descriptor plugins found in it; every other step is empty — the owner of the bundle did it
-3. members of the exchange — the instance (its props without `ctrl`, `embedded`, `pluginProps`), then what the tenancy gives: descriptor plugins and, for an own bundle, the binding itself (`TExternalPlugins`, the owner of `pluginProps`)
-4. initial values — here and only here, the same for all six adapters: an own instance got the core props through the constructor and they are not written again, an external `ctrl` and the members of an own bundle get them through `TLine.seed` — the setter (which emits the trigger) gets every prop that differs from the declared default. Names are in the common format (`CommonProfile`): a prop name is the same in every framework
-5. `tenancy.complete()` — registry plugins and the announcement
+4. members of the exchange — the instance (its props without `ctrl`, `embedded`, `pluginProps`), then what the tenancy gives: descriptor plugins and, for an own bundle, the binding itself (`TExternalPlugins`, the owner of `pluginProps`)
+5. initial values of the members of an own bundle — through `TLine.seed`, after the descriptor plugins are installed
+6. `tenancy.complete()` — registry plugins
+
+The assembly touches nothing foreign: a bundle that the framework never accepts (a render thrown away before it was shown) has nobody to destroy it. Acceptance is `IAdapterContext.attach()`, called by the runtime of each adapter: it accepts the bundle first and then fires `attach` for the extensions, so the plugins listen before the extensions write into foreign storage.
 
 #### External plugins (`TExternalPlugins`)
 
@@ -568,9 +572,10 @@ hover: в тёмной схеме заливка светлеет.
 выполняется само; для плагинов — нет, потому что bundle создаёт сборка на
 монтирование, а не ядро, и с инстанса до него нет пути.
 
-Эмит живёт в сборке набора `TOwnBundle`
+Эмит живёт в принятии набора `TOwnBundle.attach()`
 ([own-bundle.class.ts](../packages/setup/protected/adapter/context/own-bundle.class.ts)), — там же, где
-плагины и создаются:
+набор ведут. Объявляется только принятый набор: сборка, которую фреймворк не
+принял, слала бы `bundle:create` на чужой `ctrl`, а уничтожать её некому:
 
 1. `bundle:create` на `instance.events` — единственной шине, видимой обеим
    сторонам. Объявлено в `EntityDescriptor` рядом с `ctrl`: обе половины
@@ -633,13 +638,14 @@ btn.events.on('bundle:create', (b) => b.get(TActionPlugin).events.on('press', h)
 неизвестен, — а в список событий дескриптора его вносит `EntityDescriptor`
 (слой setup).
 
-Почему в сборке набора, а не отдельным шагом в каждом адаптере: параллельный
+Почему в принятии набора, а не отдельным шагом в каждом адаптере: параллельный
 механизм пришлось бы помнить и вызывать вручную в шести (а дальше — в семи)
-местах. Здесь он срабатывает сам, потому что стоит там, где плагины рождаются.
+местах. Здесь он срабатывает сам: набор принимает `attach()` контекста, который
+адаптеры и так вызывают.
 
-Почему микрозадача, как у `engine:create`: адаптер подписывается на события уже
-после того, как получил bundle из `createAdapterContext`, поэтому синхронный
-эмит уходит в пустоту. Проверено — при синхронном эмите падают 8 тестов в
+Почему микрозадача после принятия, как у `engine:create`: подписчик событий
+наружу появляется уже после того, как контекст принят, поэтому синхронный эмит
+уходит в пустоту. Проверено — при синхронном эмите падают 8 тестов в
 setup/vue/svelte/solid.
 
 ### Пропсы и события плагина, поставленного снаружи
@@ -1959,10 +1965,11 @@ setup(props, { emit }) {
      ↓
      six steps in one function (setup/protected/adapter/context):
      - instance (TButton), unless ctrl is passed
+     - initial values of an external ctrl (TLine.seed, common naming) — before the bundle
      - bundle tenancy: TOwnBundle (descriptor plugins, TExternalPlugins) or TSharedBundle
      - members of the exchange: instance, descriptor plugins, the binding (pluginProps)
-     - initial values of props (TLine.seed, common naming)
-     - registry plugins (usePlugins, useTheme); bundle:create and plugin create on a microtask
+     - initial values of the bundle members (TLine.seed)
+     - registry plugins (usePlugins, useTheme)
      ↓
   2. useAdapter(adapter, props, emit)
      ↓
@@ -1970,6 +1977,8 @@ setup(props, { emit }) {
      - state.subscribe: every property, then each change → Vue refs
      - watch per input prop → input.offer (changes only)
      - events.listen → emit, update:<prop> for v-model included
+     - adapter.attach(): the bundle is accepted (plugins subscribe to foreign buses),
+       then the extensions' attach; bundle:create and plugin create on a microtask
      - rootElement watch → adapter.bindElement → TElementPlugin
      - onUnmounted: unsubscribe, adapter.destroy()
      ↓

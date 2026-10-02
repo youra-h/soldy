@@ -8,6 +8,8 @@ export class TPluginBundle implements IPluginBundle {
 	readonly events = new TEvented<TPluginBundleEvents>()
 
 	private _plugins = new Map<IPluginConstructor<any, any, any>, IPlugin<any, any>>()
+	/** Набор принят (`attach()`): плагин, поставленный позже, принимается сразу. */
+	private _attached = false
 	/** Набор объявлен наружу (`created()`): плагин, поставленный позже, объявляется сразу. */
 	private _created = false
 	/** Набор уничтожен (`destroy()`): объявлять его наружу больше нельзя. */
@@ -56,9 +58,10 @@ export class TPluginBundle implements IPluginBundle {
 			options,
 		)
 
-		// Набор уже объявлен — объявлять этот плагин больше некому. Так плагин,
-		// поставленный снаружи (из `bundle:create` или позже), живёт по тому же
-		// циклу, что и плагины дескриптора.
+		// Набор уже принят и объявлен — принять и объявить этот плагин больше
+		// некому. Так плагин, поставленный снаружи (из `bundle:create` или
+		// позже), живёт по тому же циклу, что и плагины дескриптора.
+		if (this._attached) plugin.attach()
 		if (this._created) plugin.created()
 
 		this.events.emit('use', PluginCtor, plugin)
@@ -81,6 +84,16 @@ export class TPluginBundle implements IPluginBundle {
 		this._plugins.delete(PluginCtor)
 	}
 
+	attach(): void {
+		// Уничтоженный набор не принимается: подписки его плагинов снять уже
+		// некому
+		if (this._attached || this._destroyed) return
+
+		this._attached = true
+
+		for (const plugin of [...this._plugins.values()]) plugin.attach()
+	}
+
 	created(): void {
 		// Уничтоженный набор не объявляется: плагин, поставленный в него после
 		// destroy(), остался бы жить — уничтожать его уже некому
@@ -93,6 +106,10 @@ export class TPluginBundle implements IPluginBundle {
 
 	destroy(): void {
 		this._destroyed = true
+		// Плагин, поставленный в уничтоженный набор, не принимается и не
+		// объявляется: снять его подписки и уничтожить его уже некому
+		this._attached = false
+		this._created = false
 
 		// Обратный порядок: плагин ставится после тех, от кого зависит, и
 		// уничтожается раньше них

@@ -18,12 +18,22 @@ beforeEach(() => {
 	TLayer.resetZIndexCounter()
 })
 
-/** Окно и его раскладка, собранные настоящим набором. */
-function setup(props: Partial<IDialogProps> = {}) {
+/** Окно и его раскладка, собранные настоящим набором, — набор ещё не принят. */
+function assemble(props: Partial<IDialogProps> = {}) {
 	const dialog = new TDialog(props)
-	const layout = new TPluginBundle(dialog).use(TDialogLayoutPlugin).get(TDialogLayoutPlugin)
+	const bundle = new TPluginBundle(dialog).use(TDialogLayoutPlugin)
+	const layout = bundle.get(TDialogLayoutPlugin)
 
 	if (!layout) throw new Error('TDialogLayoutPlugin не установлен в bundle')
+
+	return { dialog, bundle, layout }
+}
+
+/** Собранные и принятые — как их принимает setup. */
+function setup(props: Partial<IDialogProps> = {}) {
+	const { dialog, bundle, layout } = assemble(props)
+
+	bundle.attach()
 
 	return { dialog, layout }
 }
@@ -388,5 +398,44 @@ describe('значение, а не ручка на состояние', () => {
 		dialog.width = 480
 
 		expect(layout.styles).toBe(styles)
+	})
+})
+
+/**
+ * Подписка плагина на окно начинается с принятия набора: сборку, которую не
+ * приняли, уничтожать некому. Смену размера, отступа и слоя до принятия
+ * плагин перечитывает при принятии.
+ */
+describe('принятие набора', () => {
+	it('размер, отступ и слой, сменившиеся до принятия, — после принятия новые', () => {
+		const { dialog, bundle, layout } = assemble()
+
+		dialog.width = 480
+		dialog.offset = 24
+		dialog.show()
+
+		expect(layout.styles).toEqual({ 'z-index': 0 })
+
+		bundle.attach()
+
+		expect(layout.styles).toMatchObject({
+			'z-index': dialog.zIndex,
+			'--dialog-width': '480px',
+			'--dialog-offset-top': '24px',
+		})
+		expect(layout.backdropStyles).toEqual({ 'z-index': dialog.zIndex })
+	})
+
+	it('без смены принятие change:styles и change:backdropStyles не шлёт', () => {
+		const { bundle, layout } = assemble({ width: 480, offset: 24 })
+		const styles = vi.fn()
+		const backdrop = vi.fn()
+
+		layout.events.on('change:styles', styles)
+		layout.events.on('change:backdropStyles', backdrop)
+		bundle.attach()
+
+		expect(styles).not.toHaveBeenCalled()
+		expect(backdrop).not.toHaveBeenCalled()
 	})
 })

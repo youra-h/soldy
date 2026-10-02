@@ -36,7 +36,7 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 		super.install(ctx)
 
 		this._owner = ctx.getInstance<ISelect>() ?? null
-		this._editable = Boolean(this._owner?.editable)
+		this._syncEditable()
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -50,9 +50,14 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 			this._element = null
 		})
 
-		this._listenTo(this._owner?.events, 'change:editable', (value: boolean) => {
-			this._editable = value
-		})
+		this._listenTo(this._owner?.events, 'change:editable', this._syncEditable)
+	}
+
+	/** Режим, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._syncEditable()
 	}
 
 	override destroy(): void {
@@ -62,6 +67,11 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 		this._owner = null
 
 		super.destroy()
+	}
+
+	/** Режим клика — по `editable` владельца. */
+	private readonly _syncEditable = (): void => {
+		this._editable = Boolean(this._owner?.editable)
 	}
 
 	private _listen(): void {

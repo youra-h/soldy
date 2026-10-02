@@ -1,7 +1,7 @@
 import type { IIcon } from '@soldy-ui/core'
 import { TBasePlugin } from '../../base'
 import type { IPluginContext } from '../../base'
-import { toCssValue } from '../../utils'
+import { sameStyles, toCssValue } from '../../utils'
 import type { TIconLayoutPluginEvents } from './types'
 
 /**
@@ -9,6 +9,7 @@ import type { TIconLayoutPluginEvents } from './types'
  */
 export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents> {
 	private _styles: Record<string, string | number> = {}
+	private _icon: IIcon | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
@@ -16,25 +17,37 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 		const icon = ctx.getInstance<IIcon>()
 		if (!icon) return
 
+		this._icon = icon
+
 		// Размер, с которым иконку собрали, приходит в инстанс без события —
 		// конструктором или готовым `ctrl`, — поэтому стартовые стили плагин
 		// берёт у инстанса сам. Без эмита: подписчиков у плагина ещё нет, а
 		// связка прочитает `styles` при подписке.
-		this._styles = {
-			width: this._toCss(icon.width),
-			height: this._toCss(icon.height),
-		}
+		this._styles = this._stylesOf(icon)
 
-		this._listenTo(icon.events, 'change:width', (value) => {
-			this._patch('width', this._toCss(value))
-		})
-		this._listenTo(icon.events, 'change:height', (value) => {
-			this._patch('height', this._toCss(value))
-		})
+		this._listenTo(icon.events, 'change:width', this._update)
+		this._listenTo(icon.events, 'change:height', this._update)
 	}
 
 	get styles(): Record<string, string | number> {
 		return this._styles
+	}
+
+	/** Размер, сменившийся до принятия, подписка не застала — пересчитать. */
+	override attach(): void {
+		super.attach()
+
+		this._update()
+	}
+
+	override destroy(): void {
+		this._icon = null
+
+		super.destroy()
+	}
+
+	private _stylesOf(icon: IIcon): Record<string, string | number> {
+		return { width: this._toCss(icon.width), height: this._toCss(icon.height) }
 	}
 
 	/**
@@ -46,11 +59,20 @@ export class TIconLayoutPlugin extends TBasePlugin<any, TIconLayoutPluginEvents>
 	}
 
 	/**
-	 * Заменяет объект стилей целиком, а не мутирует на месте: геттер отдаёт
-	 * ссылку наружу, и без смены идентичности UI не увидит изменения.
+	 * Перечитывает размер. Объект стилей заменяется целиком, а не мутируется
+	 * на месте: геттер отдаёт ссылку наружу, и без смены идентичности UI не
+	 * увидит изменения. `change:styles` — только когда стили сменились.
 	 */
-	private _patch(key: string, value: string | number): void {
-		this._styles = { ...this._styles, [key]: value }
+	private readonly _update = (): void => {
+		const icon = this._icon
+
+		if (!icon) return
+
+		const styles = this._stylesOf(icon)
+
+		if (sameStyles(styles, this._styles)) return
+
+		this._styles = styles
 		this.events.emit('change:styles', this._styles)
 	}
 }

@@ -54,6 +54,7 @@ async function setup(
 	texts: string[],
 	props: Partial<ISelectProps> = {},
 	layoutProps: Partial<ISelectProps> = {},
+	{ accepted = true } = {},
 ) {
 	const owner = new TSelect({ ...props, ...layoutProps })
 	const facade = new TSelectCollectionFacade({}, { owner })
@@ -112,6 +113,13 @@ async function setup(
 
 	bundles.bindEngine(facade.engine)
 
+	// Набор принят, как его принимает setup: подписки на чужие шины — отсюда
+	const accept = (): void => {
+		for (const plugin of [bundles, elements, keyboard]) plugin.attach()
+	}
+
+	if (accepted) accept()
+
 	rootElement.element = root
 	await nextFrame()
 
@@ -120,7 +128,7 @@ async function setup(
 
 	const registry = new TItemContextRegistry(facade.engine.getCore())
 
-	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls }
+	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls, accept }
 }
 
 afterEach(() => {
@@ -733,5 +741,29 @@ describe('клавиша другого элемента под корнем —
 
 		expect(owner.open).toBe(false)
 		expect(event.defaultPrevented).toBe(false)
+	})
+})
+
+/**
+ * Подписка на режим начинается с принятия набора: сборку, которую не
+ * приняли, уничтожать некому. Режим, сменившийся до принятия, плагин
+ * перечитывает при принятии — выбирает его стратегию.
+ */
+describe('принятие набора', () => {
+	it('editable, включённый до принятия, — печатный символ принадлежит тексту', async () => {
+		const unaccepted = { accepted: false }
+		const { owner, keyboard, press, accept } = await setup(
+			['Москва', 'Тверь'],
+			{},
+			{},
+			unaccepted,
+		)
+
+		owner.editable = true
+		accept()
+		press('т')
+
+		expect(owner.open).toBe(false)
+		expect(keyboard.highlightedUid).toBeNull()
 	})
 })

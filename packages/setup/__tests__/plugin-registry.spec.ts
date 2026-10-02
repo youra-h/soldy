@@ -49,7 +49,7 @@ afterEach(() => {
 	for (const dispose of disposers.splice(0)) dispose()
 })
 
-/** `bundle:create` и объявление плагинов отложены на микрозадачу. */
+/** `bundle:create` и объявление плагинов — на микрозадаче после принятия (`attach()`). */
 const created = () => Promise.resolve()
 
 const button = (options: { ctrl?: TButton; embedded?: string } = {}) =>
@@ -62,6 +62,7 @@ describe('usePlugins · тип компонента', () => {
 		const context = button()
 		const probe = context.bundle?.get(TProbePlugin)
 
+		context.attach()
 		await created()
 
 		expect(probe).toBeInstanceOf(TProbePlugin)
@@ -98,7 +99,7 @@ describe('usePlugins · тип компонента', () => {
 			if (bundle instanceof TPluginBundle) seen.push(bundle.get(TProbePlugin))
 		})
 
-		button({ ctrl })
+		button({ ctrl }).attach()
 		await created()
 
 		expect(seen).toHaveLength(1)

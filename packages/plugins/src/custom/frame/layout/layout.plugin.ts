@@ -1,14 +1,16 @@
 import type { IFrame } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
-import { toCssValue } from '../../../utils'
+import { sameStyles, toCssValue } from '../../../utils'
 import type { TFrameLayoutPluginEvents } from './types'
 
 /**
  * Раскладка Frame: превращает собственные пропсы в объект стилей.
  *
  * Подписывается на `change:x/y/width/height/zIndex/position` и отдаёт готовый
- * набор, который шаблон вешает на элемент.
+ * набор, который шаблон вешает на элемент. Пересчитывает и при принятии
+ * набора: смену пропсов до него подписка не застала. `change:styles` — только
+ * когда стили сменились по содержимому.
  *
  * Про чужие элементы не знает ничего. Привязка к якорю — отдельная
  * ответственность и отдельный плагин `TAnchorPlugin`: он вычисляет координаты
@@ -38,6 +40,13 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 
 	get styles(): Record<string, string | number> {
 		return this._styles
+	}
+
+	/** Пропсы, сменившиеся до принятия, подписка не застала — пересчитать. */
+	override attach(): void {
+		super.attach()
+
+		this._update()
 	}
 
 	override destroy(): void {
@@ -74,6 +83,8 @@ export class TFrameLayoutPlugin extends TBasePlugin<any, TFrameLayoutPluginEvent
 		if (frame.height !== undefined) styles['height'] = toCssValue(frame.height)
 
 		styles['z-index'] = frame.zIndex
+
+		if (sameStyles(styles, this._styles)) return
 
 		this._styles = styles
 		this.events.emit('change:styles', this._styles)

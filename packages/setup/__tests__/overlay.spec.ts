@@ -72,6 +72,8 @@ function anchorFor(frame: TFrame, elementPlugin?: TElementPlugin): TAnchorPlugin
 	const plugin = new TAnchorPlugin()
 
 	plugin.install(createPluginContext(frame, elementPlugin ? [elementPlugin] : []))
+	// Принят, как его принимает setup: подписка на показ Frame — с принятия
+	plugin.attach()
 
 	return plugin
 }
@@ -224,6 +226,33 @@ describe('привязка к якорю', () => {
 		plugin.placement = 'top-start'
 
 		expect(frame.y).toBe(140)
+	})
+})
+
+/**
+ * Подписка привязки на показ Frame начинается с принятия набора: сборку,
+ * которую не приняли, уничтожать некому. Показ до принятия плагин
+ * перечитывает при принятии — пересчитывает координаты.
+ */
+describe('привязка к якорю · принятие набора', () => {
+	it('показ до принятия подписка не застала — принятие пересчитывает координаты', () => {
+		const frame = new TFrame({ position: 'fixed' })
+		const plugin = new TAnchorPlugin()
+		const anchor = anchorAt({ left: 100, bottom: 250 })
+
+		plugin.install(createPluginContext(frame))
+		plugin.setAnchor(anchor)
+
+		// Якорь сместился, пока панель была скрыта, и её показали до принятия
+		anchor.getBoundingClientRect = () =>
+			({ left: 40, top: 0, right: 0, bottom: 90, width: 0, height: 0 }) as DOMRect
+		frame.show()
+
+		expect([frame.x, frame.y]).toEqual([100, 250])
+
+		plugin.attach()
+
+		expect([frame.x, frame.y]).toEqual([40, 90])
 	})
 })
 
@@ -1308,6 +1337,7 @@ describe('нажатие мимо', () => {
 
 			document.body.appendChild(element)
 			dismiss.install(createPluginContext(owner, [elementPlugin]))
+			dismiss.attach()
 			elementPlugin.element = element
 			await nextFrame()
 
@@ -1351,6 +1381,8 @@ describe('нажатие мимо', () => {
 			const dismiss = required(bundle.get(TDismissPlugin), 'TDismissPlugin')
 			const seen: boolean[] = []
 
+			bundle.attach()
+
 			dismiss.events.on('change:enabled', (value) => seen.push(value))
 
 			owner.open = true
@@ -1359,6 +1391,29 @@ describe('нажатие мимо', () => {
 			owner.open = true
 
 			expect(seen).toEqual([true])
+		})
+	})
+
+	/**
+	 * Подписка на открытость владельца начинается с принятия набора: сборку,
+	 * которую не приняли, уничтожать некому. Открытие до принятия плагин
+	 * перечитывает при принятии.
+	 */
+	describe('принятие набора', () => {
+		it('открытие до принятия подписка не застала — принятие включает плагин', () => {
+			const owner = new TPopover()
+			const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TDismissPlugin)
+			const dismiss = required(bundle.get(TDismissPlugin), 'TDismissPlugin')
+
+			owner.open = true
+
+			expect(dismiss.enabled).toBe(false)
+
+			bundle.attach()
+
+			expect(dismiss.enabled).toBe(true)
+
+			bundle.destroy()
 		})
 	})
 })

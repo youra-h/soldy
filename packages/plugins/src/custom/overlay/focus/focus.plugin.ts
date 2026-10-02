@@ -89,20 +89,36 @@ export abstract class TOverlayFocusPlugin<
 			this._root = null
 		})
 
-		this._open = bindOverlayOpen(ctx, options, (open) => {
-			if (open) {
-				this._engage()
-			} else {
-				this._release()
-			}
-		})
+		this._open = bindOverlayOpen(
+			ctx,
+			options,
+			(open) => {
+				if (open) {
+					this._engage()
+				} else {
+					this._release()
+				}
+			},
+			(source, event, handler) => this._listenTo(source, event, handler),
+		)
+	}
+
+	/**
+	 * Открытость, сменившаяся до принятия, подписка не застала — перечитать.
+	 * Открытие и закрытие повторяемы: открытие без корня ждёт его `ready`, у
+	 * уже обработанного только переставляет слушатели, а закрытие без открытия
+	 * фокус не трогает.
+	 */
+	override attach(): void {
+		super.attach()
+
+		this._open?.sync()
 	}
 
 	override destroy(): void {
 		this._cancelFocusFrame()
 		this._unlisten()
 
-		this._open?.unbind()
 		this._open = null
 		this._dismiss = null
 		this._root = null

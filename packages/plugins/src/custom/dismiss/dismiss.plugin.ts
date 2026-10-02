@@ -109,11 +109,23 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		this._enabled = options?.enabled ?? this._enabled
 		this._focusOutside = options?.focusOutside ?? this._focusOutside
 
-		this._open = bindOverlayOpen(ctx, options, (open) => {
-			this.enabled = open
-		})
+		this._open = bindOverlayOpen(
+			ctx,
+			options,
+			(open) => {
+				this.enabled = open
+			},
+			(source, event, handler) => this._listenTo(source, event, handler),
+		)
 
-		if (this._open) this.enabled = this._open.read()
+		this._open?.sync()
+	}
+
+	/** Открытость, сменившаяся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._open?.sync()
 	}
 
 	/**
@@ -194,7 +206,6 @@ export class TDismissPlugin extends TBasePlugin<any, TDismissPluginEvents> {
 		this._enabled = false
 		this._sync()
 
-		this._open?.unbind()
 		this._open = null
 		this._element = null
 

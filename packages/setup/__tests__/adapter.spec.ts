@@ -5,18 +5,26 @@ import {
 	createEngine,
 	createEngineListBox,
 	createEngineTabs,
+	TButton,
+	TFrame,
+	TIcon,
 	TListBox,
 	TListBoxItem,
+	TSkeleton,
 	TTabs,
 	TTabsContent,
 	TTabsItem,
 } from '@soldy-ui/core'
 import type { ITabsItem, TCollectionEngine } from '@soldy-ui/core'
 import {
+	TActionPlugin,
 	TPluginBundle,
 	TDragPlugin,
 	TElementPlugin,
 	TFrameLayoutPlugin,
+	TIconLayoutPlugin,
+	TSkeletonLayoutPlugin,
+	TTabsActiveTabPlugin,
 	TTabsItemIdsPlugin,
 } from '@soldy-ui/plugins'
 import {
@@ -26,6 +34,9 @@ import {
 	ButtonDescriptor,
 	DragAndDropDescriptor,
 	FrameDescriptor,
+	IconDescriptor,
+	SkeletonDescriptor,
+	TabsDescriptor,
 	ListBoxCollectionItemDescriptor,
 	TabsCollectionContentDescriptor,
 	TElevator,
@@ -200,6 +211,185 @@ describe('createAdapterContext', () => {
 
 		frame.destroy()
 		button.destroy()
+	})
+})
+
+/**
+ * Набор принимается вместе с контекстом (`attach()`): сборку, которую фреймворк
+ * не принял, уничтожить некому, поэтому до принятия набор чужого не трогает —
+ * плагины на чужие шины не подписаны, а наружу набор не объявлен.
+ */
+describe('принятие набора', () => {
+	/** Микрозадача: на ней набор объявляется наружу. */
+	const announced = () => Promise.resolve()
+
+	/** Кнопка над своим `ctrl` и подписчики объявления — `bundle:create` и `element:create`. */
+	function button() {
+		const ctrl = new TButton()
+		const bundleCreate = vi.fn()
+
+		ctrl.events.on('bundle:create', bundleCreate)
+
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+		const elementCreate = vi.fn()
+
+		required(context.bundle?.get(TElementPlugin), 'TElementPlugin').events.on(
+			'create',
+			elementCreate,
+		)
+
+		return { context, bundleCreate, elementCreate }
+	}
+
+	it('без attach() набор не объявляется: ни bundle:create, ни created() плагинов', async () => {
+		const { bundleCreate, elementCreate } = button()
+
+		await announced()
+
+		expect(bundleCreate).not.toHaveBeenCalled()
+		expect(elementCreate).not.toHaveBeenCalled()
+	})
+
+	it('после attach() объявление приходит на микрозадаче', async () => {
+		const { context, bundleCreate, elementCreate } = button()
+
+		context.attach()
+
+		expect(bundleCreate).not.toHaveBeenCalled()
+
+		await announced()
+
+		expect(bundleCreate.mock.calls).toEqual([[context.bundle]])
+		expect(elementCreate).toHaveBeenCalledTimes(1)
+	})
+
+	it('набор, уничтоженный между attach() и микрозадачей, не объявляется', async () => {
+		const { context, bundleCreate, elementCreate } = button()
+
+		context.attach()
+		context.destroy()
+		await announced()
+
+		expect(bundleCreate).not.toHaveBeenCalled()
+		expect(elementCreate).not.toHaveBeenCalled()
+	})
+
+	it('плагины приняты раньше, чем срабатывают обработчики attach у расширений', () => {
+		const { context } = button()
+		const order: string[] = []
+
+		required(context.bundle?.get(TActionPlugin), 'TActionPlugin').events.on('attach', () =>
+			order.push('плагин'),
+		)
+		context.events.on('attach', () => order.push('расширение'))
+		context.attach()
+
+		expect(order).toEqual(['плагин', 'расширение'])
+	})
+
+	/**
+	 * Начальные значения внешнему `ctrl` сборка пишет до набора: плагины встают
+	 * на настроенный инстанс и читают его при установке. Записанные после
+	 * установки, они дошли бы до плагинов только событием, а подписка плагина
+	 * начинается с принятия — первая отрисовка шла бы со старыми выходами.
+	 */
+	it('у внешнего ctrl выходы плагинов верны уже до attach()', () => {
+		const icon = createAdapterContext(IconDescriptor(), {
+			ctrl: new TIcon(),
+			props: { width: 24 },
+		})
+		const frame = createAdapterContext(FrameDescriptor(), {
+			ctrl: new TFrame(),
+			props: { x: 10, y: 20 },
+		})
+		const snapshot = (context: IAdapterContext) =>
+			context.connect(CallbackProfile).state.getSnapshot()
+
+		expect(snapshot(icon).layout_styles).toEqual({ width: '24px', height: '' })
+		expect(snapshot(frame).layout_styles).toMatchObject({ left: '10px', top: '20px' })
+	})
+})
+
+/**
+ * Плагин, который выводит значение из чужой шины, перечитывает его при
+ * принятии: подписка начинается с принятия, и смену источника до него она не
+ * застала. Здесь — плагины, у которых своей спеки нет.
+ */
+describe('принятие набора · пересчёт', () => {
+	const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+
+	it('раскладка Icon, Skeleton и Frame: размер, сменившийся до принятия, — после принятия в стилях', () => {
+		const icon = new TIcon()
+		const skeleton = new TSkeleton()
+		const frame = new TFrame()
+		const contexts = [
+			createAdapterContext(IconDescriptor(), { ctrl: icon }),
+			createAdapterContext(SkeletonDescriptor(), { ctrl: skeleton }),
+			createAdapterContext(FrameDescriptor(), { ctrl: frame }),
+		]
+		const [iconContext, skeletonContext, frameContext] = contexts
+		const iconLayout = required(
+			iconContext?.bundle?.get(TIconLayoutPlugin),
+			'TIconLayoutPlugin',
+		)
+		const skeletonLayout = required(
+			skeletonContext?.bundle?.get(TSkeletonLayoutPlugin),
+			'TSkeletonLayoutPlugin',
+		)
+		const frameLayout = required(
+			frameContext?.bundle?.get(TFrameLayoutPlugin),
+			'TFrameLayoutPlugin',
+		)
+
+		icon.width = 24
+		skeleton.width = 120
+		frame.x = 10
+
+		expect(iconLayout.styles.width).toBe('')
+		expect(skeletonLayout.styles.width).toBe('auto')
+		expect(frameLayout.styles.left).toBe('0px')
+
+		for (const context of contexts) context.attach()
+
+		expect(iconLayout.styles.width).toBe('24px')
+		expect(skeletonLayout.styles.width).toBe('120px')
+		expect(frameLayout.styles.left).toBe('10px')
+	})
+
+	it('Action: focused, выставленный до принятия, — после принятия фокус на корне', async () => {
+		const ctrl = new TButton()
+		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
+		const root = document.createElement('button')
+
+		document.body.appendChild(root)
+		context.bindElement(root)
+		await nextFrame()
+
+		ctrl.focused = true
+
+		expect(document.activeElement).not.toBe(root)
+
+		context.attach()
+
+		expect(document.activeElement).toBe(root)
+
+		context.destroy()
+		root.remove()
+	})
+
+	it('Tabs: геометрию активного таба плагин пересчитывает при принятии', () => {
+		const context = createAdapterContext(TabsDescriptor(), { ctrl: new TTabs() })
+		const offset = vi.fn()
+
+		required(context.bundle?.get(TTabsActiveTabPlugin), 'TTabsActiveTabPlugin').events.on(
+			'change:active-tab',
+			offset,
+		)
+		context.attach()
+
+		expect(offset).toHaveBeenCalledTimes(1)
+
+		context.destroy()
 	})
 })
 

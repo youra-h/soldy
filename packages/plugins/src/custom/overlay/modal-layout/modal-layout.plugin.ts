@@ -1,21 +1,8 @@
 import type { IModalLayer, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
-import { toCssValue } from '../../../utils'
+import { sameStyles, toCssValue } from '../../../utils'
 import type { TModalLayoutPluginEvents, TModalLayoutVariables } from './types'
-
-/**
- * Одни ли и те же стили: те же ключи с теми же значениями. Порядок ключей не
- * важен — это набор свойств, а не список.
- */
-function sameStyles(
-	a: Record<string, string | number>,
-	b: Record<string, string | number>,
-): boolean {
-	const keys = Object.keys(a)
-
-	return keys.length === Object.keys(b).length && keys.every((key) => b[key] === a[key])
-}
 
 /**
  * Раскладка модального слоя — общая часть окна и выезжающей панели: слой и
@@ -38,11 +25,12 @@ function sameStyles(
  * называет их (`_variables`), а считает всё база. Второй копии расчёта у
  * окна и панели нет.
  *
- * Считает при установке и на смену ширины, высоты и слоя; на смену своих
- * значений наследник зовёт тот же пересчёт (`_updateStyles`). Объекты
- * заменяются целиком, а не мутируются: геттер отдаёт ссылку наружу, и без
- * смены идентичности адаптер не увидит изменения. `change:styles` — только
- * когда стили сменились по содержимому: повод пересчёта не всегда их меняет.
+ * Считает при установке, при принятии набора и на смену ширины, высоты и
+ * слоя; на смену своих значений наследник зовёт тот же пересчёт
+ * (`_updateStyles`). Объекты заменяются целиком, а не мутируются: геттер
+ * отдаёт ссылку наружу, и без смены идентичности адаптер не увидит
+ * изменения. `change:styles` и `change:backdropStyles` — только когда стили
+ * сменились по содержимому: повод пересчёта не всегда их меняет.
  *
  * Дженерик по карте событий — для наследника со своими событиями
  * (`offset:before` у окна); свои события база шлёт через `_sink`.
@@ -85,6 +73,14 @@ export abstract class TModalLayoutPlugin<
 	/** Стили подложки: тот же `z-index`, что у панели. */
 	get backdropStyles(): Record<string, string | number> {
 		return this._backdropStyles
+	}
+
+	/** Размер и слой, сменившиеся до принятия, подписка не застала — пересчитать. */
+	override attach(): void {
+		super.attach()
+
+		this._updateStyles()
+		this._updateBackdropStyles()
 	}
 
 	override destroy(): void {
@@ -139,7 +135,11 @@ export abstract class TModalLayoutPlugin<
 
 		if (!owner) return
 
-		this._backdropStyles = { 'z-index': owner.zIndex }
+		const styles: Record<string, string | number> = { 'z-index': owner.zIndex }
+
+		if (sameStyles(styles, this._backdropStyles)) return
+
+		this._backdropStyles = styles
 		this._sink.emit('change:backdropStyles', this._backdropStyles)
 	}
 }

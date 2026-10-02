@@ -44,8 +44,10 @@ function pluginOf<P extends IPlugin<any, any>>(
  */
 const bundles: TPluginBundle[] = []
 
+/** Набор принят, как его принимает setup: подписки плагина на владельца — с принятия. */
 function track(bundle: TPluginBundle): TPluginBundle {
 	bundles.push(bundle)
+	bundle.attach()
 
 	return bundle
 }
@@ -194,6 +196,26 @@ describe('фон и открытость владельца', () => {
 		await nextFrame()
 
 		expect(ariaHidden(page)).toBe('true')
+	})
+
+	it('открытие до принятия набора подписка не застала — принятие прячет фон', async () => {
+		const page = pageNode()
+		const owner = new TPopover()
+		const root = pageNode()
+		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(THideOutsidePlugin)
+
+		bundles.push(bundle)
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+
+		owner.open = true
+
+		expect(ariaHidden(page)).toBeNull()
+
+		bundle.attach()
+
+		expect(ariaHidden(page)).toBe('true')
+		expect(ariaHidden(root)).toBeNull()
 	})
 })
 

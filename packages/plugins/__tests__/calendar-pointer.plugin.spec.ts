@@ -80,6 +80,8 @@ async function mountCalendar(props: Partial<ICalendarProps> = {}, mode?: TCalend
 	const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
 
 	bundles.bindEngine(engine)
+	// Набор принят, как его принимает setup
+	bundle.attach()
 
 	// Ячейка дня с плиткой внутри — как её рисует разметка
 	for (const item of engine.extensions.batch.items) {

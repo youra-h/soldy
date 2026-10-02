@@ -14,12 +14,15 @@ import { TCollectionBundlesPlugin } from '../../collection'
  * сервере и в браузере, и две безымянные группы на странице не сольются.
  *
  * Радио плагин узнаёт из коллекции группы (`engine:bound`) и пишет имя каждому:
- * сразу, на смену состава (`change:items`) и на смену имени группы
- * (`change:name`). Запись того же имени радио гасит сам. Движок привязывается
- * при сборке, до первой отрисовки, — радио из данных получают имя уже в
- * серверной разметке.
+ * сразу, при принятии набора, на смену состава (`change:items`) и на смену
+ * имени группы (`change:name`). Запись того же имени радио гасит сам. Движок
+ * привязывается при сборке, до первой отрисовки, — радио из данных получают
+ * имя уже в серверной разметке.
  */
 export class TRadioGroupNamePlugin extends TBasePlugin {
+	/** Раздать имя всем радио группы; `null` — движок ещё не привязан. */
+	private _nameAll: (() => void) | null = null
+
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
@@ -38,11 +41,29 @@ export class TRadioGroupNamePlugin extends TBasePlugin {
 				const radios = engine.extensions.batch
 				const nameAll = (): void => radios.items.forEach(name)
 
+				this._nameAll = nameAll
+
 				nameAll()
 
 				this._listenTo(engine.extensions.plain.events, 'change:items', nameAll)
 				this._listenTo(group.events, 'change:name', nameAll)
 			},
 		)
+	}
+
+	/**
+	 * Состав и имя группы, сменившиеся до принятия, подписка не застала —
+	 * раздать имя заново. Запись того же имени радио гасит сам.
+	 */
+	override attach(): void {
+		super.attach()
+
+		this._nameAll?.()
+	}
+
+	override destroy(): void {
+		this._nameAll = null
+
+		super.destroy()
 	}
 }

@@ -17,6 +17,11 @@ export interface IPluginContext {
 export type TPluginEvents = {
 	install: (ctx: IPluginContext, options?: unknown) => void
 	/**
+	 * Плагин принят вместе с набором (`attach()`): подписки на чужие шины уже
+	 * подключены. Без аргументов — набор принимается один раз и целиком.
+	 */
+	attach: () => void
+	/**
 	 * Плагин уничтожается. Без аргументов, как и сам `destroy()`: контекста
 	 * при уничтожении у плагина нет.
 	 */
@@ -39,9 +44,9 @@ export type TPluginEvents = {
 export type TPluginPublicEventName = (typeof PLUGIN_EVENTS)[number]
 
 /**
- * Внутренние события базы — `TPluginEvents` без опубликованных: `install` и
- * `destroy`. Эмиттер плагина их шлёт, это рабочая механика bundle, но наружу
- * они не уходят, поэтому вывод контракта плагина в `@soldy-ui/setup`
+ * Внутренние события базы — `TPluginEvents` без опубликованных: `install`,
+ * `attach` и `destroy`. Эмиттер плагина их шлёт, это рабочая механика bundle,
+ * но наружу они не уходят, поэтому вывод контракта плагина в `@soldy-ui/setup`
  * (`TPluginContractFrom`) снимает их с карты плагина.
  */
 export type TPluginInternalEvents = Omit<TPluginEvents, TPluginPublicEventName>
@@ -57,6 +62,14 @@ export interface IPlugin<
 > {
 	readonly events: TEvented<TEvents>
 	install(ctx: IPluginContext, options?: unknown): void
+	/**
+	 * Принять плагин: набор принят, и с этого момента плагин подписан на чужие
+	 * шины — до принятия он их не трогает (см. `TBasePlugin._listenTo`). То,
+	 * что плагин выводит из чужой шины, он здесь перечитывает: что случилось
+	 * между установкой и принятием, его подписка не застала. Вызывает набор
+	 * (`IPluginBundle.attach`), один раз и до `created()`.
+	 */
+	attach(): void
 	/** Объявить плагин доступным снаружи. Вызывается adapter-слоем. */
 	created(): void
 	destroy(): void
@@ -148,10 +161,21 @@ export interface IPluginBundle {
 	get<P extends IPlugin<any, any>>(ctor: IPluginConstructor<any, any, P>): P | undefined
 	remove<P extends IPlugin<any, any>>(PluginCtor: IPluginConstructor<any, any, P>): void
 	/**
+	 * Принять набор: `attach()` у каждого плагина, в порядке установки. До
+	 * принятия плагины на чужие шины не подписаны: набор собран, но его
+	 * компонент ещё не стал частью живого дерева — и может не стать, если
+	 * сборку отбросят. Плагин, поставленный после принятия, принимается сразу
+	 * в `use()` — после `install`, до `created()` и до события `use`. Повторный
+	 * вызов и вызов на уничтоженном наборе ничего не делают. Вызывает setup,
+	 * когда фреймворк принял компонент (`IAdapterContext.attach`); прямой
+	 * пользователь набора зовёт его сам — до `created()`.
+	 */
+	attach(): void
+	/**
 	 * Объявить набор наружу: `created()` у каждого плагина, в порядке установки.
 	 * Плагин, поставленный после этого, объявляется сразу в `use()`. Повторный
-	 * вызов и вызов на уничтоженном наборе ничего не делают. Вызывает setup
-	 * (`assembleBundle`).
+	 * вызов и вызов на уничтоженном наборе ничего не делают. Вызывает setup —
+	 * после принятия набора (`attach`).
 	 */
 	created(): void
 	/**

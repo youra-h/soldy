@@ -342,6 +342,10 @@ describe('плагин: фокус в ленте', () => {
 		const bundle = new TPluginBundle(new TScroller())
 			.use(TElementPlugin)
 			.use(TScrollerViewportPlugin)
+
+		// Набор принят, как его принимает setup
+		bundle.attach()
+
 		const element = bundle.get(TElementPlugin)
 
 		if (!element) throw new Error('узла корня нет')

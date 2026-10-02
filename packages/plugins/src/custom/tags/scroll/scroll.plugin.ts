@@ -74,6 +74,13 @@ export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvent
 		this._listenTo(this._owner?.events, 'change:overflow', this._onOverflowChange)
 	}
 
+	/** Режим ряда, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._syncListener()
+	}
+
 	override destroy(): void {
 		this._root = null
 		this._syncListener()

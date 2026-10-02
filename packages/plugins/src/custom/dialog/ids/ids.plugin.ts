@@ -13,6 +13,9 @@ import { TModalIdsPlugin } from '../../overlay/modal-ids'
  * (`change:alert`) — ссылка ставится или снимается.
  */
 export class TDialogIdsPlugin extends TModalIdsPlugin {
+	/** Ссылка окна на тело — по режиму; `null` — окна нет. */
+	private _describe: (() => void) | null = null
+
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
@@ -21,13 +24,28 @@ export class TDialogIdsPlugin extends TModalIdsPlugin {
 		if (!dialog) return
 
 		const bodyId = ctx.createId('body')
-		const describe = (alert: boolean): void => {
-			dialog.aria.add('aria-describedby', alert ? bodyId : null)
+		const describe = (): void => {
+			dialog.aria.add('aria-describedby', dialog.alert ? bodyId : null)
 		}
 
 		dialog.bodyAria.add('id', bodyId)
 
-		describe(dialog.alert)
+		this._describe = describe
+
+		describe()
 		this._listenTo(dialog.events, 'change:alert', describe)
+	}
+
+	/** Режим, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._describe?.()
+	}
+
+	override destroy(): void {
+		this._describe = null
+
+		super.destroy()
 	}
 }

@@ -238,7 +238,7 @@ describe('плагин: фокус в ряду', () => {
 		target.focus()
 	}
 
-	async function mount(overflow: TTagsOverflow = 'scroll') {
+	async function mount(overflow: TTagsOverflow = 'scroll', { accepted = true } = {}) {
 		document.body.insertAdjacentHTML(
 			'beforeend',
 			`<div class="s-tags" style="scroll-padding-left: 10px; scroll-padding-right: 10px">
@@ -263,6 +263,10 @@ describe('плагин: фокус в ряду', () => {
 		Object.defineProperty(root, 'scrollBy', { value: scrollBy })
 
 		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TTagsScrollPlugin)
+
+		// Набор принят, как его принимает setup: подписка на режим — отсюда
+		if (accepted) bundle.attach()
+
 		const element = bundle.get(TElementPlugin)
 
 		if (!element) throw new Error('узла корня нет')
@@ -362,6 +366,24 @@ describe('плагин: фокус в ряду', () => {
 
 		close.blur()
 		owner.overflow = 'arrows'
+		focusWith(close, true)
+
+		expect(scrollBy).toHaveBeenCalledOnce()
+	})
+
+	it('режим, сменившийся до принятия набора, — принятие берётся за ряд', async () => {
+		const { owner, bundle, scrollBy } = await mount('wrap', { accepted: false })
+		const close = nodeOf('.second-close')
+
+		secondAtEnd()
+
+		owner.overflow = 'scroll'
+		focusWith(close, true)
+
+		expect(scrollBy).not.toHaveBeenCalled()
+
+		close.blur()
+		bundle.attach()
 		focusWith(close, true)
 
 		expect(scrollBy).toHaveBeenCalledOnce()

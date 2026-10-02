@@ -68,15 +68,21 @@ function applyDataset(root: HTMLElement, drawer: TDrawer): void {
 	}
 }
 
-type TMountOptions = { dir?: 'ltr' | 'rtl' }
+type TMountOptions = { dir?: 'ltr' | 'rtl'; accepted?: boolean }
 
 /**
  * Открытая панель на странице: полоса, заголовок и тело с текстом и кнопкой.
  * Жест по умолчанию — за полосу.
  */
-async function mount(props: Partial<IDrawerProps> = {}, { dir = 'ltr' }: TMountOptions = {}) {
+async function mount(
+	props: Partial<IDrawerProps> = {},
+	{ dir = 'ltr', accepted = true }: TMountOptions = {},
+) {
 	const drawer = new TDrawer({ visible: true, swipe: 'handle', ...props })
 	const bundle = new TPluginBundle(drawer).use(TElementPlugin).use(TDrawerSwipePlugin)
+
+	// Набор принят, как его принимает setup: подписка на жест, открытость и край — отсюда
+	if (accepted) bundle.attach()
 
 	bundles.push(bundle)
 
@@ -200,6 +206,18 @@ describe('когда жест включён', () => {
 		drawer.placement = 'top'
 
 		expect(root.style.touchAction).toBe('pan-x pinch-zoom')
+	})
+
+	it('жест, включённый до принятия набора, — принятие его включает', async () => {
+		const { drawer, bundle, root } = await mount({ swipe: 'none' }, { accepted: false })
+
+		drawer.swipe = 'handle'
+
+		expect(root.style.touchAction).toBe('')
+
+		bundle.attach()
+
+		expect(root.style.touchAction).toBe('pan-y pinch-zoom')
 	})
 })
 

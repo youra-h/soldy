@@ -65,6 +65,7 @@ async function setupModal(content: string) {
 
 	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TModalFocusPlugin)
 
+	bundle.attach()
 	pluginOf(bundle, TElementPlugin).element = panel
 	await nextFrame()
 
@@ -87,6 +88,8 @@ async function setupTeleported(content: string) {
 		.use(TElementPlugin)
 		.use(TDismissPlugin)
 		.use(TModalFocusPlugin)
+
+	bundle.attach()
 
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
 		panel.setAttribute(name, value)
@@ -272,6 +275,7 @@ describe('слушатель клавиш', () => {
 		const listen = vi.spyOn(panel, 'addEventListener')
 		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TModalFocusPlugin)
 
+		bundle.attach()
 		pluginOf(bundle, TElementPlugin).element = panel
 		await nextFrame()
 
@@ -311,6 +315,7 @@ async function setupDialog(
 		.use(TDismissPlugin, options)
 		.use(TModalFocusPlugin, options)
 
+	bundle.attach()
 	dialogBundles.push(bundle)
 
 	for (const [name, value] of Object.entries(pluginOf(bundle, TDismissPlugin).ownerAttribute)) {
@@ -509,6 +514,9 @@ describe('уничтожение', () => {
 		const on = vi.spyOn(owner.events, 'on')
 		const off = vi.spyOn(owner.events, 'off')
 		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TModalFocusPlugin)
+
+		bundle.attach()
+
 		const subscribed = openHandlers(on.mock.calls)
 
 		bundle.destroy()

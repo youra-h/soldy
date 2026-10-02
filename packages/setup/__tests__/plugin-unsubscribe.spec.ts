@@ -1,23 +1,29 @@
 // @vitest-environment jsdom
 
 /**
- * Сторож: уничтоженный набор снимает с долгоживущих шин всё, что повесили на
- * них его плагины.
+ * Сторож: сборка оставляет на долгоживущих шинах только то, что снимет
+ * сама, — уничтоженная снимает всё, а непринятая не вешает ничего.
  *
  * Шина владельца переживает набор, когда приложение передаёт свой `ctrl`:
- * каждое монтирование ставит ему новый набор. Шины расширений движка
- * переживают его, когда движок пришёл снаружи (`engine`). Подписка, которую
- * `destroy()` не снял, копит на них обработчики уничтоженных плагинов. Вреда
- * не видно — у мёртвого плагина обнулены ссылки, и обработчик ничего не
- * делает, — поэтому стережётся тестом, а не ревью. Подписываются на такие шины
- * методом базы (`TBasePlugin._listenTo`), и отписку он делает сам.
+ * каждое монтирование ставит ему новый набор. Шины движка переживают его,
+ * когда движок пришёл снаружи (`engine`). Подписка, которую `destroy()` не
+ * снял, копит на них обработчики уничтоженных плагинов. Вреда не видно — у
+ * мёртвого плагина обнулены ссылки, и обработчик ничего не делает, — поэтому
+ * стережётся тестом, а не ревью. Подписываются на такие шины методом базы
+ * (`TBasePlugin._listenTo`), и отписку он делает сам.
  *
- * Сверка — по шпионам на `on` и `off` шины, как в describe «уничтожение»
- * `plugins/__tests__/modal-focus.plugin.spec.ts`: каждая пара «событие,
- * обработчик», повешенная на шину, после уничтожения найдена среди снятых.
- * Шпионы ставятся до сборки, но после создания владельца и движка, поэтому
- * подписки самого ядра — владельца на свою шину и расширений движка на
- * владельца — в сверку не попадают.
+ * Сборку, которую фреймворк не принял (`attach`), уничтожать некому: рендер
+ * отбросили до показа, и `destroy()` не будет. Поэтому до принятия набор на
+ * чужие шины не подписан вовсе — `_listenTo` откладывает подписку, а набор
+ * объявляется (`bundle:create`) только принятым. Фасад коллекции подписан на
+ * движок пробросами, а проброс висит на источнике, пока фасад слушают.
+ *
+ * Сверка — по шпионам на `on`, `off` и `use` шины, как в describe «уничтожение»
+ * `plugins/__tests__/modal-focus.plugin.spec.ts`: каждая подписка, повешенная
+ * на шину, после уничтожения найдена среди снятых, а у непринятой сборки
+ * подписок нет вовсе. Шпионы ставятся до сборки, но после создания владельца и
+ * движка, поэтому подписки самого ядра — владельца на свою шину и расширений
+ * движка на владельца — в сверку не попадают.
  *
  * Идёт по всем дескрипторам экспорта: новый плагин и новая коллекция попадут
  * под проверку сами.
@@ -42,10 +48,26 @@ import {
 } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
-import { FrameDescriptor, TabsDescriptor } from '../content/descriptors'
-import { createAdapterContext } from '../protected/adapter'
-import type { IComponentDescriptor } from '../protected/define'
+import type { IPluginBundle } from '@soldy-ui/plugins'
 import {
+	AccordionCollectionDescriptor,
+	CalendarCollectionDescriptor,
+	FrameDescriptor,
+	ListBoxCollectionDescriptor,
+	RadioGroupCollectionDescriptor,
+	SelectCollectionDescriptor,
+	TabsCollectionDescriptor,
+	TabsDescriptor,
+	TagsCollectionDescriptor,
+} from '../content/descriptors'
+import { TCollectionExtension } from '../content/extensions'
+import type { TCollectionOwner } from '../content/extensions'
+import { createAdapterContext } from '../protected/adapter'
+import type { IAdapterContext, TContextContract } from '../protected/adapter'
+import type { IComponentDescriptor, IPluginsContract } from '../protected/define'
+import { CommonProfile } from '../protected/naming'
+import {
+	createElevatorFactory,
 	exportedDescriptors,
 	leftovers,
 	required,
@@ -54,12 +76,47 @@ import {
 	type IBusSpy,
 } from './helpers'
 
-/** Собрать компонент над своим `ctrl` и уничтожить. */
-function mountOwner(descriptor: IComponentDescriptor): IBusSpy[] {
-	const ctrl = new descriptor.ctor()
-	const spies = spyBus('владелец', ctrl)
+/** Прочитать снимок состояния, как его читает рендер до подписки. */
+function render(context: IAdapterContext): void {
+	context.connect(CommonProfile).state.getSnapshot()
+}
 
-	createAdapterContext(descriptor, { ctrl }).destroy()
+/**
+ * Смонтировать собранные контексты, как это делает рантайм адаптера, и
+ * снять: подписка на состояние и `attach` по порядку сборки, отписка и
+ * `destroy` — в обратном.
+ */
+function mountAndUnmount(contexts: readonly IAdapterContext[]): void {
+	const offs = contexts.map((context) => context.connect(CommonProfile).state.subscribe(() => {}))
+
+	for (const context of contexts) context.attach()
+
+	offs.forEach((off) => off())
+
+	for (const context of [...contexts].reverse()) context.destroy()
+}
+
+/** Владелец своего `ctrl` и шпионы на его шине — до сборки. */
+function spyOwner(descriptor: IComponentDescriptor): { ctrl: object; spies: IBusSpy[] } {
+	const ctrl = new descriptor.ctor()
+
+	return { ctrl, spies: spyBus('владелец', ctrl) }
+}
+
+/** Собрать компонент над своим `ctrl`, смонтировать и уничтожить. */
+function mountOwner(descriptor: IComponentDescriptor): IBusSpy[] {
+	const { ctrl, spies } = spyOwner(descriptor)
+
+	mountAndUnmount([createAdapterContext(descriptor, { ctrl })])
+
+	return spies
+}
+
+/** Собрать компонент над своим `ctrl` и прочитать — без приёма и уничтожения. */
+function renderOwner(descriptor: IComponentDescriptor): IBusSpy[] {
+	const { ctrl, spies } = spyOwner(descriptor)
+
+	render(createAdapterContext(descriptor, { ctrl }))
 
 	return spies
 }
@@ -67,77 +124,148 @@ function mountOwner(descriptor: IComponentDescriptor): IBusSpy[] {
 /** Владелец и его движок — так их собирает приложение, передавая `engine` снаружи. */
 type TOwnedEngine = { readonly owner: object; readonly engine: TCollectionEngine<any, any> }
 
-/**
- * Движок каждой коллекции, чей набор держит реестр bundles, — фабрикой ядра.
- * Коллекция без строки здесь роняет сторож ниже.
- */
-const ENGINES: Readonly<Record<string, () => TOwnedEngine>> = {
-	AccordionDescriptor: () => {
-		const owner = new TAccordion()
-
-		return { owner, engine: createEngineAccordion({ owner }) }
-	},
-	CalendarDescriptor: () => {
-		const owner = new TCalendar()
-
-		return { owner, engine: createEngineCalendar({ owner }) }
-	},
-	ListBoxDescriptor: () => {
-		const owner = new TListBox()
-
-		return { owner, engine: createEngineListBox({ owner }) }
-	},
-	RadioGroupDescriptor: () => {
-		const owner = new TRadioGroup()
-
-		return { owner, engine: createEngineRadioGroup({ owner }) }
-	},
-	SelectDescriptor: () => {
-		const owner = new TSelect()
-
-		return { owner, engine: createEngineSelect({ owner }) }
-	},
-	TabsDescriptor: () => {
-		const owner = new TTabs()
-
-		return { owner, engine: createEngineTabs({ owner }) }
-	},
-	TagsDescriptor: () => {
-		const owner = new TTags()
-
-		return { owner, engine: createEngineTags({ owner }) }
-	},
+/** Коллекция с движком снаружи: как его создают и какой фасад над ним собирает адаптер. */
+type TEngineKit = {
+	readonly create: () => TOwnedEngine
+	readonly facade: (owned: TOwnedEngine, bundle: IPluginBundle | null) => IAdapterContext
 }
 
 /**
- * Собрать коллекцию над своим `ctrl` и движком снаружи, привязать движок, как
- * это делает `TCollectionExtension`, и уничтожить.
+ * Фасад коллекции над движком снаружи на наборе владельца — как его собирают
+ * адаптеры: опции `owner` и `engine`, расширение коллекции. Оно и привязывает
+ * движок к реестру bundles набора.
  */
+function assembleFacade<TFacade extends TCollectionOwner, TPlugins extends IPluginsContract>(
+	collection: IComponentDescriptor<TContextContract<TFacade, TPlugins>>,
+	{ owner, engine }: TOwnedEngine,
+	bundle: IPluginBundle | null,
+): IAdapterContext {
+	return createAdapterContext(collection, { options: { owner, engine } }, { bundle }).use(
+		TCollectionExtension,
+		{ elevator: createElevatorFactory().factory },
+	)
+}
+
+/**
+ * Движок каждой коллекции, чей набор держит реестр bundles, — фабрикой ядра, и
+ * фасад над ним. Коллекция без строки здесь роняет сторож ниже.
+ */
+const ENGINES: Readonly<Record<string, TEngineKit>> = {
+	AccordionDescriptor: {
+		create: () => {
+			const owner = new TAccordion()
+
+			return { owner, engine: createEngineAccordion({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(AccordionCollectionDescriptor(), owned, bundle),
+	},
+	CalendarDescriptor: {
+		create: () => {
+			const owner = new TCalendar()
+
+			return { owner, engine: createEngineCalendar({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(CalendarCollectionDescriptor(), owned, bundle),
+	},
+	ListBoxDescriptor: {
+		create: () => {
+			const owner = new TListBox()
+
+			return { owner, engine: createEngineListBox({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(ListBoxCollectionDescriptor(), owned, bundle),
+	},
+	RadioGroupDescriptor: {
+		create: () => {
+			const owner = new TRadioGroup()
+
+			return { owner, engine: createEngineRadioGroup({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(RadioGroupCollectionDescriptor(), owned, bundle),
+	},
+	SelectDescriptor: {
+		create: () => {
+			const owner = new TSelect()
+
+			return { owner, engine: createEngineSelect({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(SelectCollectionDescriptor(), owned, bundle),
+	},
+	TabsDescriptor: {
+		create: () => {
+			const owner = new TTabs()
+
+			return { owner, engine: createEngineTabs({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(TabsCollectionDescriptor(), owned, bundle),
+	},
+	TagsDescriptor: {
+		create: () => {
+			const owner = new TTags()
+
+			return { owner, engine: createEngineTags({ owner }) }
+		},
+		facade: (owned, bundle) => assembleFacade(TagsCollectionDescriptor(), owned, bundle),
+	},
+}
+
+/** Владелец и движок снаружи, шпионы на их шинах — до сборки. */
+function spyEngine(name: string): { owned: TOwnedEngine; kit: TEngineKit; spies: IBusSpy[] } {
+	const kit = required(ENGINES[name], name)
+	const owned = kit.create()
+	const extensions: Readonly<Record<string, unknown>> = owned.engine.extensions
+
+	return {
+		owned,
+		kit,
+		spies: [
+			...spyBus('владелец', owned.owner),
+			...spyBus('engine', owned.engine),
+			...Object.entries(extensions).flatMap(([key, extension]) => spyBus(key, extension)),
+		],
+	}
+}
+
+/** Собрать владельца и фасад коллекции над движком снаружи. */
+function assembleCollection(
+	descriptor: IComponentDescriptor,
+	owned: TOwnedEngine,
+	kit: TEngineKit,
+): IAdapterContext[] {
+	expect(owned.owner).toBeInstanceOf(descriptor.ctor)
+
+	const context = createAdapterContext(descriptor, { ctrl: owned.owner })
+
+	return [context, kit.facade(owned, context.bundle)]
+}
+
+/** Собрать коллекцию над своим `ctrl` и движком снаружи, смонтировать и уничтожить. */
 function mountEngine(name: string, descriptor: IComponentDescriptor): IBusSpy[] {
-	const { owner, engine } = required(ENGINES[name], name)()
+	const { owned, kit, spies } = spyEngine(name)
 
-	expect(owner).toBeInstanceOf(descriptor.ctor)
-
-	const extensions: Readonly<Record<string, unknown>> = engine.extensions
-	const spies = [
-		...spyBus('владелец', owner),
-		...Object.entries(extensions).flatMap(([key, extension]) => spyBus(key, extension)),
-	]
-	const context = createAdapterContext(descriptor, { ctrl: owner })
-
-	required(context.bundle?.get(TCollectionBundlesPlugin), 'реестр bundles').bindEngine(engine)
-	context.destroy()
+	mountAndUnmount(assembleCollection(descriptor, owned, kit))
 
 	return spies
 }
 
-describe('сторож: плагины снимают подписки с шины владельца', () => {
-	const descriptors = exportedDescriptors().filter(
-		([, descriptor]) => descriptor.plugins.length > 0,
-	)
+/** Собрать коллекцию над своим `ctrl` и движком снаружи и прочитать — без приёма. */
+function renderEngine(name: string, descriptor: IComponentDescriptor): IBusSpy[] {
+	const { owned, kit, spies } = spyEngine(name)
 
+	assembleCollection(descriptor, owned, kit).forEach(render)
+
+	return spies
+}
+
+const withPlugins = exportedDescriptors().filter(([, descriptor]) => descriptor.plugins.length > 0)
+
+const withEngines = exportedDescriptors().filter(([, descriptor]) =>
+	descriptor.plugins.some((definition) => definition.ctor === TCollectionBundlesPlugin),
+)
+
+describe('сторож: плагины снимают подписки с шины владельца', () => {
 	it('дескрипторы с плагинами найдены в экспорте', () => {
-		expect(descriptors.map(([name]) => name)).toEqual(
+		expect(withPlugins.map(([name]) => name)).toEqual(
 			expect.arrayContaining(['FrameDescriptor', 'SelectDescriptor', 'TooltipDescriptor']),
 		)
 	})
@@ -148,27 +276,43 @@ describe('сторож: плагины снимают подписки с шин
 		)
 	})
 
-	it.each(descriptors)('%s', (_name, descriptor) => {
+	it.each(withPlugins)('%s', (_name, descriptor) => {
 		expect(leftovers(mountOwner(descriptor))).toEqual([])
 	})
 })
 
-describe('сторож: плагины снимают подписки с шин движка', () => {
-	const descriptors = exportedDescriptors().filter(([, descriptor]) =>
-		descriptor.plugins.some((definition) => definition.ctor === TCollectionBundlesPlugin),
-	)
-
+describe('сторож: сборка снимает подписки с шин движка', () => {
 	it('таблица движков покрывает каждую коллекцию с реестром bundles', () => {
-		expect(Object.keys(ENGINES).sort()).toEqual(descriptors.map(([name]) => name).sort())
+		expect(Object.keys(ENGINES).sort()).toEqual(withEngines.map(([name]) => name).sort())
 	})
 
-	it('шпионы видят подписки плагинов: у Tabs — активация и состав', () => {
+	it('шпионы видят подписки плагинов и пробросы фасада: у Tabs — активация и состав', () => {
 		expect(subscribed(mountEngine('TabsDescriptor', TabsDescriptor()))).toEqual(
-			expect.arrayContaining(['activation: item:activated', 'plain: item:removed']),
+			expect.arrayContaining([
+				'activation: item:activated',
+				'plain: item:removed',
+				'plain: use',
+				'activation: use',
+			]),
 		)
 	})
 
-	it.each(descriptors)('%s', (name, descriptor) => {
+	it.each(withEngines)('%s', (name, descriptor) => {
 		expect(leftovers(mountEngine(name, descriptor))).toEqual([])
+	})
+})
+
+/**
+ * Сборка, которую не приняли и не уничтожили, — рендер, отброшенный до показа:
+ * снимок прочитан, а ни `attach`, ни `destroy` не будет. На чужих шинах она не
+ * оставляет ничего — ни обработчиков, ни перехватчиков.
+ */
+describe('сторож: непринятая сборка не подписана на чужие шины', () => {
+	it.each(withPlugins)('владелец: %s', (_name, descriptor) => {
+		expect(subscribed(renderOwner(descriptor))).toEqual([])
+	})
+
+	it.each(withEngines)('движок: %s', (name, descriptor) => {
+		expect(subscribed(renderEngine(name, descriptor))).toEqual([])
 	})
 })

@@ -16,7 +16,7 @@ import { TSelectPointerPlugin, TElementPlugin } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
-async function setup(props: Partial<ISelectProps> = {}) {
+async function setup(props: Partial<ISelectProps> = {}, { accepted = true } = {}) {
 	const owner = new TSelect({ ...props })
 
 	const root = document.createElement('div')
@@ -35,10 +35,13 @@ async function setup(props: Partial<ISelectProps> = {}) {
 
 	pointer.install(ctx)
 
+	// Принят, как его принимает setup: подписка на владельца — с принятия
+	if (accepted) pointer.attach()
+
 	rootElement.element = root
 	await nextFrame()
 
-	return { owner, root, field, arrow }
+	return { owner, pointer, root, field, arrow }
 }
 
 afterEach(() => {
@@ -126,5 +129,23 @@ describe('смена editable на лету переключает обрабо�
 		field.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
 		expect(owner.open).toBe(true)
+	})
+})
+
+/**
+ * Подписка на режим начинается с принятия плагина: сборку, которую не
+ * приняли, уничтожать некому. Режим, сменившийся до принятия, плагин
+ * перечитывает при принятии.
+ */
+describe('принятие', () => {
+	it('editable, включённый до принятия, — принятие переключает обработчик', async () => {
+		const { owner, pointer, field } = await setup({}, { accepted: false })
+
+		owner.editable = true
+		pointer.attach()
+
+		field.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+		expect(owner.open).toBe(false)
 	})
 })

@@ -13,12 +13,22 @@ import { TSpinner } from '@soldy-ui/core'
 import type { ISpinnerProps } from '@soldy-ui/core'
 import { TSpinnerLayoutPlugin, TPluginBundle } from '../src'
 
-/** Спиннер и его раскладка, собранные настоящим набором. */
-function setup(props: Partial<ISpinnerProps> = {}) {
+/** Спиннер и его раскладка, собранные настоящим набором, — набор ещё не принят. */
+function assemble(props: Partial<ISpinnerProps> = {}) {
 	const spinner = new TSpinner(props)
-	const layout = new TPluginBundle(spinner).use(TSpinnerLayoutPlugin).get(TSpinnerLayoutPlugin)
+	const bundle = new TPluginBundle(spinner).use(TSpinnerLayoutPlugin)
+	const layout = bundle.get(TSpinnerLayoutPlugin)
 
 	if (!layout) throw new Error('TSpinnerLayoutPlugin не установлен в bundle')
+
+	return { spinner, bundle, layout }
+}
+
+/** Собранные и принятые — как их принимает setup. */
+function setup(props: Partial<ISpinnerProps> = {}) {
+	const { spinner, bundle, layout } = assemble(props)
+
+	bundle.attach()
 
 	return { spinner, layout }
 }
@@ -112,6 +122,35 @@ describe('событие — только на смену толщины', () =>
 		spinner.borderWidth = 2
 
 		expect(borderWidth(layout)).toBe('2px')
+		expect(change).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Подписка плагина на спиннер начинается с принятия набора: сборку, которую
+ * не приняли, уничтожать некому. Смену толщины до принятия плагин
+ * перечитывает при принятии.
+ */
+describe('принятие набора', () => {
+	it('толщина, сменившаяся до принятия, — после принятия новая', () => {
+		const { spinner, bundle, layout } = assemble({ borderWidth: 3 })
+
+		spinner.borderWidth = 5
+
+		expect(borderWidth(layout)).toBe('3px')
+
+		bundle.attach()
+
+		expect(borderWidth(layout)).toBe('5px')
+	})
+
+	it('без смены принятие change:styles не шлёт', () => {
+		const { bundle, layout } = assemble({ borderWidth: 3 })
+		const change = vi.fn()
+
+		layout.events.on('change:styles', change)
+		bundle.attach()
+
 		expect(change).not.toHaveBeenCalled()
 	})
 })

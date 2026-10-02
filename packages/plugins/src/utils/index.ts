@@ -1,4 +1,5 @@
 export { toCssValue } from './toCssValue'
+export { sameStyles } from './sameStyles'
 export { isMeasurableElement } from './isMeasurableElement'
 export { isFocusableElement } from './isFocusableElement'
 export { tabStops, closestControl } from './tabStops'

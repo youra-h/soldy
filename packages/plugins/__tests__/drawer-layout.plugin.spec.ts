@@ -18,7 +18,11 @@ beforeEach(() => {
 /** Панель и её раскладка, собранные настоящим набором. */
 function setup(props: Partial<IDrawerProps> = {}) {
 	const drawer = new TDrawer(props)
-	const layout = new TPluginBundle(drawer).use(TDrawerLayoutPlugin).get(TDrawerLayoutPlugin)
+	const bundle = new TPluginBundle(drawer).use(TDrawerLayoutPlugin)
+
+	bundle.attach()
+
+	const layout = bundle.get(TDrawerLayoutPlugin)
 
 	if (!layout) throw new Error('TDrawerLayoutPlugin не установлен в bundle')
 

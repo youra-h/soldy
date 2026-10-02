@@ -15,9 +15,9 @@ import { createAdapterContext, ButtonDescriptor, ComponentDescriptor } from '@so
 import { CallbackProfile, required } from './helpers'
 
 /**
- * Сборка набора (`assembleBundle`) откладывает эмит на микрозадачу — иначе
- * адаптер, который получает bundle из createAdapterContext, не успел бы
- * подписаться.
+ * Объявление набора — на микрозадаче после принятия (`attach()` контекста):
+ * синхронно подписчик событий наружу не успел бы подписаться, а набор, который
+ * так и не приняли, не объявляется вовсе.
  */
 const created = () => Promise.resolve()
 
@@ -31,6 +31,7 @@ describe('bundle:create — сторона инстанса', () => {
 
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 
+		context.attach()
 		await created()
 
 		expect(seen).toHaveLength(1)
@@ -52,6 +53,7 @@ describe('bundle:create — сторона инстанса', () => {
 
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 
+		context.attach()
 		await created()
 
 		// TElementPlugin отдаёт `ready` через rAF, поэтому проверяем синхронный путь
@@ -69,6 +71,8 @@ describe('bundle:create — сторона инстанса', () => {
 		const first = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const second = createAdapterContext(ButtonDescriptor(), { ctrl })
 
+		first.attach()
+		second.attach()
 		await created()
 
 		expect(seen).toEqual([first.bundle, second.bundle])
@@ -81,8 +85,8 @@ describe('bundle:create — сторона инстанса', () => {
 
 		ctrl.events.on('bundle:create', (bundle: unknown) => seen.push(bundle))
 
-		// Размонтирование раньше объявления: так React под StrictMode уничтожает
-		// первый контекст и собирает второй с тем же ctrl
+		// Размонтирование раньше объявления: принятый контекст уничтожили до
+		// микрозадачи, а следующий собрали над тем же ctrl
 		const destroyed = createAdapterContext(ButtonDescriptor(), { ctrl })
 		const onElementCreate = vi.fn()
 
@@ -90,10 +94,12 @@ describe('bundle:create — сторона инстанса', () => {
 			'create',
 			onElementCreate,
 		)
+		destroyed.attach()
 		destroyed.destroy()
 
 		const live = createAdapterContext(ButtonDescriptor(), { ctrl })
 
+		live.attach()
 		await created()
 
 		// Подписчик поставил бы в уничтоженный набор плагин, который уже некому уничтожить
@@ -106,6 +112,7 @@ describe('bundle:create — сторона инстанса', () => {
 		const handler = vi.fn()
 
 		context.instance.events.on('bundle:create', handler)
+		context.attach()
 
 		await created()
 
@@ -144,6 +151,7 @@ describe('плагин, поставленный снаружи', () => {
 
 		const context = createAdapterContext(ButtonDescriptor(), { ctrl })
 
+		context.attach()
 		await created()
 
 		expect(context.bundle?.get(TExternalPlugin)?.log).toEqual(['create'])
@@ -158,6 +166,7 @@ describe('плагин, поставленный снаружи', () => {
 		bundle.use(TExternalPlugin)
 		const plugin = required(bundle.get(TExternalPlugin), 'TExternalPlugin')
 
+		context.attach()
 		await created()
 		context.destroy()
 
@@ -174,6 +183,8 @@ describe('плагин, поставленный снаружи', () => {
 			{ bundle },
 		)
 
+		owner.attach()
+		shared.attach()
 		await created()
 		shared.destroy()
 
@@ -203,6 +214,7 @@ describe('<ns>:create — сторона шаблона', () => {
 		context
 			.connect(CallbackProfile)
 			.events.listen((exportName, args) => emitted.push([exportName, args[0]]))
+		context.attach()
 
 		await created()
 
@@ -225,6 +237,7 @@ describe('<ns>:create — сторона шаблона', () => {
 		required(context.bundle?.get(TReadyPlugin), 'TReadyPlugin').events.on('create', () =>
 			order.push('ready'),
 		)
+		context.attach()
 
 		await created()
 

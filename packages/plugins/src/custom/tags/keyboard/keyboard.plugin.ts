@@ -78,22 +78,28 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 		)
 	}
 
+	/** Режим выбора, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._syncListeners()
+	}
+
 	override destroy(): void {
 		this._element = null
-		this._bindEngine(null)
+		this._engine = null
+		this._syncListeners()
 
 		this._elements = null
 
 		super.destroy()
 	}
 
-	/** Движок сменился — подписка на режим выбора переезжает вместе с ним. */
-	private _bindEngine(engine: TTagsCollection | null): void {
-		this._engine?.extensions.selection.events.off('change:mode', this._onModeChange)
-
+	/** Движок привязан: слушатели — по его режиму выбора. */
+	private _bindEngine(engine: TTagsCollection): void {
 		this._engine = engine
 
-		engine?.extensions.selection.events.on('change:mode', this._onModeChange)
+		this._listenTo(engine.extensions.selection.events, 'change:mode', this._onModeChange)
 
 		this._syncListeners()
 	}

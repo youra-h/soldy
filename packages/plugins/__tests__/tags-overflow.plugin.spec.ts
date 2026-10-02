@@ -170,6 +170,7 @@ describe('замер идёт только в popover', () => {
 		}
 
 		bundles.bindEngine(engine)
+		bundle.attach()
 
 		const notify = vi.spyOn(engine.extensions.overflow, 'notifyFit')
 		const element = bundle.get(TElementPlugin)
@@ -190,6 +191,46 @@ describe('замер идёт только в popover', () => {
 
 	it('popover: замер доезжает до коллекции', async () => {
 		expect(await measure('popover')).toHaveBeenCalled()
+	})
+
+	/**
+	 * Подписка на режим начинается с принятия набора: сборку, которую не
+	 * приняли, уничтожать некому. Режим, сменившийся до принятия, плагин
+	 * перечитывает при принятии — даже когда корень уже объявлен.
+	 */
+	it('режим, сменившийся до принятия набора, — принятие берётся за замер', async () => {
+		const owner = new TTags({ overflow: 'wrap' })
+		const engine = createEngineTags({ owner })
+		const root = document.createElement('div')
+		const bundle = new TPluginBundle(owner)
+			.use(TElementPlugin)
+			.use(TCollectionBundlesPlugin)
+			.use(TCollectionElements)
+			.use(TTagsOverflowPlugin)
+		const notify = vi.spyOn(engine.extensions.overflow, 'notifyFit')
+
+		engine.extensions.plain.push(new TTagsItem({ value: 'Москва', text: 'Москва' }))
+		document.body.appendChild(root)
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(engine)
+
+		const element = bundle.get(TElementPlugin)
+
+		if (!element) throw new Error('узла корня нет')
+
+		element.element = root
+		await nextFrame()
+
+		owner.overflow = 'popover'
+		await nextFrame()
+
+		expect(notify).not.toHaveBeenCalled()
+
+		bundle.attach()
+		await nextFrame()
+
+		expect(notify).toHaveBeenCalled()
+
+		bundle.destroy()
 	})
 })
 
@@ -230,6 +271,7 @@ describe('уничтожение', () => {
 			.use(TTagsOverflowPlugin)
 
 		bundle.get(TCollectionBundlesPlugin)?.bindEngine(engine)
+		bundle.attach()
 
 		const subscribed = [...on.mock.calls]
 

@@ -56,6 +56,17 @@ export class TActionPlugin extends TBasePlugin<any, TActionPluginEvents> {
 		this._listenTo(this._instance?.events, 'change:focused', this._onFocusedChange)
 	}
 
+	/**
+	 * `focused`, сменившийся до принятия, подписка не застала — перечитать.
+	 * Без корня это ничего не делает: инстанс с `focused: true` фокус получит,
+	 * когда корень объявят.
+	 */
+	override attach(): void {
+		super.attach()
+
+		if (this._instance) this._onFocusedChange(this._instance.focused)
+	}
+
 	override destroy(): void {
 		this._detach()
 

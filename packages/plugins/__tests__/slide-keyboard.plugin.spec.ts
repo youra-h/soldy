@@ -45,6 +45,8 @@ async function mount(props: Partial<ISliderProps> = {}, dir: 'ltr' | 'rtl' = 'lt
 	const owner = new TSlider(props)
 	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TSlideKeyboardPlugin)
 
+	// Набор принят, как его принимает setup
+	bundle.attach()
 	bundles.push(bundle)
 
 	const root = document.createElement('span')

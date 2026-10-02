@@ -2,15 +2,19 @@
  * createAdapterContext — сборка компонента на монтирование: шесть шагов, сверху вниз.
  *
  * 1. Инстанс — `ctrl` или конструктор дескриптора.
- * 2–3. Набор плагинов: свой (`TOwnBundle`, с id монтирования `mountId`) или не
+ * 2. Начальные значения инстансу. Свой инстанс получил пропсы конструктором, и
+ *    второй раз они не пишутся (сеттер `items` фасада пересоздал бы
+ *    элементы); внешнему `ctrl` они пишутся сеттерами — **до** набора, как и
+ *    своему: плагины встают на уже настроенный инстанс и читают его при
+ *    установке. На события его сеттеров плагинам рассчитывать нельзя —
+ *    подписки на чужие шины начинаются с принятия набора.
+ * 3–4. Набор плагинов: свой (`TOwnBundle`, с id монтирования `mountId`) или не
  *    свой (`TSharedBundle`).
- * 4. Участники обмена: инстанс, затем то, что даёт набор.
- * 5. Начальные значения — здесь и только здесь, одинаково для всех адаптеров:
- *    свой инстанс получил пропсы конструктором, и второй раз они не пишутся
- *    (сеттер `items` фасада пересоздал бы элементы); внешнему `ctrl` пишутся
- *    сеттерами; участникам набора — если набор свой. Порядок: инстанс, плагины
- *    дескриптора, связка — а плагины снаружи получают своё, когда встают.
- * 6. Завершение набора: плагины реестра и объявление наружу на микрозадаче.
+ * 5. Участники обмена: инстанс, затем то, что даёт набор. Начальные значения
+ *    участникам набора — если набор свой: плагинам дескриптора и связке.
+ *    Плагины снаружи получают своё, когда встают.
+ * 6. Плагины реестра. Принимает и объявляет набор `attach()` контекста, а не
+ *    сборка: сборку, которую фреймворк не принял, никто не уничтожит.
  *
  * Имя пропа одно во всех фреймворках, поэтому профиль адаптера сборке не нужен:
  * начальные значения идут в общем формате имён (`CommonProfile`).
@@ -48,6 +52,15 @@ function embeddedOf(options: IAdapterContextOptions): string | undefined {
 	return typeof value === 'string' ? value : undefined
 }
 
+/** Начальные значения участникам — из пропсов сборки, правилом линии (`TLine.seed`). */
+function seed(members: readonly TMember[], descriptor: IComponentDescriptor, props: object): void {
+	if (members.length === 0) return
+
+	const { inputs } = new TExchange(members, TSurface.of(descriptor, CommonProfile), props)
+
+	for (const member of members) inputs.seed(member.owner)
+}
+
 /**
  * Тип контекста выводится из дескриптора, дженерики адаптер не пишет.
  *
@@ -67,31 +80,27 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 
 	// 1. Инстанс
 	const instance = options.ctrl ?? new descriptor.ctor(props, options.options ?? {})
-
-	// 2–3. Набор: компоненту без своих плагинов реестр набора не создаёт
-	const tenancy: IBundleTenancy =
-		config.bundle === undefined && descriptor.plugins.length > 0
-			? new TOwnBundle(descriptor, instance, { embedded }, options.mountId)
-			: new TSharedBundle(descriptor, config.bundle ?? null)
-
-	// 4. Участники
 	const owner = new TMember(
 		instance,
 		descriptor.props.filter((spec) => !MOUNT_PROPS.has(spec.name.name)),
 		descriptor.events,
 	)
+
+	// 2. Начальные значения инстансу — до набора
+	if (options.ctrl) seed([owner], descriptor, props)
+
+	// 3–4. Набор: компоненту без своих плагинов реестр набора не создаёт
+	const tenancy: IBundleTenancy =
+		config.bundle === undefined && descriptor.plugins.length > 0
+			? new TOwnBundle(descriptor, instance, { embedded }, options.mountId)
+			: new TSharedBundle(descriptor, config.bundle ?? null)
+
+	// 5. Участники и начальные значения набору
 	const members = [owner, ...tenancy.members]
 
-	// 5. Начальные значения
-	const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
+	seed(tenancy.seeded, descriptor, props)
 
-	if (seeded.length > 0) {
-		const { inputs } = new TExchange(seeded, TSurface.of(descriptor, CommonProfile), props)
-
-		for (const member of seeded) inputs.seed(member.owner)
-	}
-
-	// 6. Плагины реестра и объявление набора
+	// 6. Плагины реестра
 	tenancy.complete()
 
 	return new TAdapterContext<TContextContract<TInstance, TPlugins>>(

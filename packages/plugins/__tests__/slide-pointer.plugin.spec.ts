@@ -55,8 +55,12 @@ async function mount<T extends ISlidable>(
 	owner: T,
 	dir: 'ltr' | 'rtl' = 'ltr',
 	options: ISlidePointerPluginOptions = {},
+	{ accepted = true } = {},
 ) {
 	const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TSlidePointerPlugin, options)
+
+	// Набор принят, как его принимает setup: подписка на режим щелчка — отсюда
+	if (accepted) bundle.attach()
 
 	bundles.push(bundle)
 
@@ -444,6 +448,23 @@ describe('владелец — любой ISlidable', () => {
 	 * Режим — свойство владельца, стратегию плагин выбирает подпиской на его
 	 * смену: доводка приходит командой `settle` вместо `release`.
 	 */
+	it('режим, сменившийся до принятия набора, — принятие выбирает его стратегию', async () => {
+		const owner = new TProbe()
+		const { bundle, track, root, pointer } = await mount(owner, 'ltr', {}, { accepted: false })
+
+		owner.snap = 'settle'
+		owner.events.emit('change:snap', 'settle')
+		bundle.attach()
+
+		pointer('pointerdown', track, 196)
+		pointer('pointerup', root, 196)
+
+		expect(owner.calls).toEqual([
+			['press', 0.48],
+			['settle', 0.5],
+		])
+	})
+
 	it('режим щелчка — по change:snap владельца; доводка — командой settle', async () => {
 		const { owner, track, root, pointer } = await mount(new TProbe())
 

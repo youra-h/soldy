@@ -1,3 +1,4 @@
+import type { TSlideSnap } from '@soldy-ui/core'
 import type { TPluginEvents } from '../../../base'
 import type { TSlideDirection } from '../types'
 import type { ISlideSnapStrategy } from './strategies'
@@ -8,6 +9,12 @@ import type { ISlideSnapStrategy } from './strategies'
  * через события плагина разошёлся бы с первым.
  */
 export type TSlidePointerPluginEvents = TPluginEvents
+
+/**
+ * Шина владельца глазами плагина — карта той подписки, что ядро объявляет
+ * видом `ISlideEvents`: смена режима щелчка.
+ */
+export type TSlideSnapEvents = { 'change:snap': (value: TSlideSnap) => void }
 
 export interface ISlidePointerPluginOptions {
 	/**

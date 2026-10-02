@@ -23,7 +23,7 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
  * способом, что `select-editable.spec.ts`. Плагину не нужны ни клавиатура,
  * ни DOM-узлы опций: он работает только с полем и расширениями коллекции.
  */
-async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
+async function setup(texts: string[], props: Partial<ISelectProps> = {}, { accepted = true } = {}) {
 	const owner = new TSelect({ editable: true, removeOnBackspace: true, ...props })
 	const facade = new TSelectCollectionFacade({ mode: 'multiple' }, { owner })
 	const items = texts.map((text) => new TSelectItem({ value: text.toLowerCase(), text }))
@@ -47,6 +47,13 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 
 	bundles.bindEngine(facade.engine)
 
+	// Набор принят, как его принимает setup: подписки на чужие шины — отсюда
+	const accept = (): void => {
+		for (const plugin of [bundles, backspace]) plugin.attach()
+	}
+
+	if (accepted) accept()
+
 	rootElement.element = root
 	await nextFrame()
 
@@ -58,7 +65,7 @@ async function setup(texts: string[], props: Partial<ISelectProps> = {}) {
 	const selectedValues = () =>
 		facade.engine.extensions.selection.selected.map((item) => item.value)
 
-	return { owner, facade, items, backspace, input, root, choose, press, selectedValues }
+	return { owner, facade, items, backspace, input, root, choose, press, selectedValues, accept }
 }
 
 afterEach(() => {
@@ -220,6 +227,30 @@ describe('слушатель — только когда все условия �
 		choose(items[1])
 
 		owner.removeOnBackspace = true
+
+		press('Backspace')
+		press('Backspace')
+
+		expect(selectedValues()).toEqual([items[0].value])
+	})
+
+	/**
+	 * Подписка на условия начинается с принятия набора: сборку, которую не
+	 * приняли, уничтожать некому. Условие, сменившееся до принятия, плагин
+	 * перечитывает при принятии.
+	 */
+	it('removeOnBackspace, включённый до принятия, — после принятия слушатель есть', async () => {
+		const { items, choose, owner, press, selectedValues, accept } = await setup(
+			['Москва', 'Тверь'],
+			{ removeOnBackspace: false },
+			{ accepted: false },
+		)
+
+		choose(items[0])
+		choose(items[1])
+
+		owner.removeOnBackspace = true
+		accept()
 
 		press('Backspace')
 		press('Backspace')

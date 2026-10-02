@@ -11,7 +11,8 @@ import { TCollectionBundlesPlugin } from '../../collection'
  * `aria-labelledby` у таблицы — в наборы места (`gridSets` вида), которые вид
  * раскладывает в `grids`. Место, а не месяц: листание меняет месяц сетки, а
  * заголовок, его `id` и живая область остаются. Месяцев стало больше —
- * новым местам пишется то же (`change:months`).
+ * новым местам пишется то же (`change:months`, а сменившееся до принятия
+ * набора — при принятии).
  *
  * `id` — от монтирования календаря (`createId`), а не от экземпляра: он нужен
  * только документу, и на сервере и в браузере обязан совпасть. Движок
@@ -19,6 +20,9 @@ import { TCollectionBundlesPlugin } from '../../collection'
  * сеток есть уже в серверной разметке.
  */
 export class TCalendarIdsPlugin extends TBasePlugin {
+	/** Назвать сетки на всех местах; `null` — движок ещё не привязан. */
+	private _name: (() => void) | null = null
+
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
@@ -36,9 +40,24 @@ export class TCalendarIdsPlugin extends TBasePlugin {
 					})
 				}
 
+				this._name = name
+
 				name()
 				this._listenTo(view.events, 'change:months', name)
 			},
 		)
+	}
+
+	/** Месяцы, сменившиеся до принятия, подписка не застала — назвать новые места. */
+	override attach(): void {
+		super.attach()
+
+		this._name?.()
+	}
+
+	override destroy(): void {
+		this._name = null
+
+		super.destroy()
 	}
 }

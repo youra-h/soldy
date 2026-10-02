@@ -39,7 +39,12 @@ afterEach(() => {
  * устроен Select, у которого корень это поле, а список лежит в
  * телепортированной панели.
  */
-async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
+async function setup(
+	rows: number,
+	maxRows: number,
+	panelStyle?: Partial<CSSStyleDeclaration>,
+	{ accepted = true } = {},
+) {
 	const owner = new TListBox({ maxRows })
 	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = Array.from(
@@ -85,11 +90,18 @@ async function setup(rows: number, maxRows: number, panelStyle?: Partial<CSSStyl
 
 	bundles.bindEngine(facade.engine)
 
+	// Набор принят, как его принимает setup: подписки на чужие шины — отсюда
+	const accept = (): void => {
+		for (const plugin of [bundles, elements, height]) plugin.attach()
+	}
+
+	if (accepted) accept()
+
 	rootElement.element = root
 	await nextFrame()
 	await nextFrame()
 
-	return { root, panel, owner, rootElement }
+	return { root, panel, owner, rootElement, accept }
 }
 
 describe('высота контейнера по maxRows', () => {
@@ -130,6 +142,27 @@ describe('высота контейнера по maxRows', () => {
 		const { panel, owner } = await setup(4, 2)
 
 		owner.maxRows = 3
+		await nextFrame()
+		await nextFrame()
+
+		expect(panel.style.maxHeight).toBe(`${3 * ROW_HEIGHT}px`)
+	})
+
+	/**
+	 * Подписка на `maxRows` начинается с принятия: сборку, которую не
+	 * приняли, уничтожать некому. Смену до принятия плагин перечитывает при
+	 * принятии.
+	 */
+	it('maxRows, сменившийся до принятия, — после принятия предел новый', async () => {
+		const { panel, owner, accept } = await setup(4, 2, undefined, { accepted: false })
+
+		owner.maxRows = 3
+		await nextFrame()
+		await nextFrame()
+
+		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT}px`)
+
+		accept()
 		await nextFrame()
 		await nextFrame()
 

@@ -61,21 +61,29 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<TListKeyboardPlug
 
 	/**
 	 * Подсветка встаёт на выбранный элемент — и следует за ним, если выбор
-	 * поменяли снаружи. Позиция запоминается без визуальной отметки: список
-	 * ещё не в навигации.
+	 * поменяли снаружи.
 	 */
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
-		const selected = engine.extensions.selection.selected as IControl[]
+		this._trackSelection()
+
+		this._listenTo(engine.extensions.selection.events, 'change:selection', this._trackSelection)
+	}
+
+	/** Выбор, сменившийся до принятия, подписка не застала — перечитать. */
+	override attach(): void {
+		super.attach()
+
+		this._trackSelection()
+	}
+
+	/**
+	 * Позиция подсветки — на первом выбранном элементе, если выбор есть.
+	 * Запоминается без визуальной отметки: список ещё не в навигации.
+	 */
+	private readonly _trackSelection = (): void => {
+		const selected = (this._engine?.extensions.selection.selected ?? []) as IControl[]
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
-
-		this._listenTo(
-			engine.extensions.selection.events,
-			'change:selection',
-			(items: IControl[]) => {
-				if (items.length > 0) this.trackHighlight(items[0].uid)
-			},
-		)
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {
