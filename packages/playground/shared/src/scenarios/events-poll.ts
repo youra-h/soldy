@@ -32,7 +32,8 @@ export function pollTargets(entry: TComponentEntry): TPollTarget[] {
  * Значение, которое точно отличается от текущего.
  *
  * Выводится из вида контрола, как и сам контрол на странице свойств: список
- * значений сильнее типа.
+ * значений сильнее типа. Поле «число или текст» получает число, как числовое:
+ * число — форма, которую принимает любой такой проп.
  */
 function nextValue(control: TPropControl, current: unknown): unknown {
 	switch (control.kind) {
@@ -41,6 +42,7 @@ function nextValue(control: TPropControl, current: unknown): unknown {
 		case 'select':
 			return control.options?.find((option) => option !== current)
 		case 'number':
+		case 'number-or-text':
 			return (typeof current === 'number' ? current : 0) + 1
 		case 'text':
 			return current === `опрос ${control.name}`
