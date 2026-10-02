@@ -33,3 +33,9 @@ $variants: progress.$variants;
 @mixin progress-linear-colors($color) {
 	@include progress.colors('progress-linear', $color);
 }
+
+// Те же переменные у полосы без варианта: в кнопке — цвет её текста, вне
+// кнопки — варианта `$color` (`mixins/_indicator.scss`).
+@mixin progress-linear-base-colors($color) {
+	@include progress.base-colors('progress-linear', $color);
+}

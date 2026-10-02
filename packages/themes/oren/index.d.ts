@@ -18,7 +18,9 @@ export {}
 declare module '@soldy-ui/core' {
 	/**
 	 * Смысловой цвет. Без варианта — нейтраль, у Spinner, ProgressLinear и
-	 * ProgressSpinner — `accent`.
+	 * ProgressSpinner — `accent`, а в кнопке — цвет её текста. Заданный
+	 * вариант индикатора кнопка не перекрывает, и на её заливке того же
+	 * семейства он почти пропадёт.
 	 */
 	interface IComponentVariants {
 		normal: true

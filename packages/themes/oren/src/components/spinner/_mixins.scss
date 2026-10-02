@@ -1,6 +1,31 @@
-@mixin spinner-variant($color: 'neutral', $border-idx: 200, $border-idx-active: 600) {
-	@apply #{'border-t-s-' + $color + '-' + $border-idx};
-	@apply #{'border-r-s-' + $color + '-' + $border-idx};
-	@apply #{'border-b-s-' + $color + '-' + $border-idx};
-	@apply #{'border-l-s-' + $color + '-' + $border-idx-active};
+@use '../../mixins/indicator';
+
+// Цвета кольца: три стороны рамки — дорожка, четвёртая — дуга, которая
+// крутится.
+@mixin spinner-colors($track, $fill) {
+	border-color: $track;
+	border-left-color: $fill;
+}
+
+// Ступени варианта: дорожка — 200, дуга — 600.
+@function spinner-track($color) {
+	@return var(--s-#{$color}-200);
+}
+
+@function spinner-fill($color) {
+	@return var(--s-#{$color}-600);
+}
+
+// Цвета заданного варианта.
+@mixin spinner-variant($color) {
+	@include spinner-colors(spinner-track($color), spinner-fill($color));
+}
+
+// Цвета блока без варианта: цвет места (`mixins/_indicator.scss`), в кнопке —
+// цвет её текста, а вне места — варианта `$color`.
+@mixin spinner-base($color) {
+	@include spinner-colors(
+		indicator.track(spinner-track($color)),
+		indicator.fill(spinner-fill($color))
+	);
 }

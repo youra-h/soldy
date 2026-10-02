@@ -29,6 +29,13 @@
 		@include mixines.spinner-variant('neutral');
 	}
 
+	// Совпадает с видом без варианта только вне кнопки: в кнопке вид без
+	// варианта — цвет её текста (`mixins/_indicator.scss`), а заданный
+	// `accent` остаётся собой.
+	&--variant-accent {
+		@include mixines.spinner-variant('accent');
+	}
+
 	&--variant-positive {
 		@include mixines.spinner-variant('positive');
 	}
@@ -42,10 +49,9 @@
 	}
 }
 
-// Вид блока без варианта — `accent`, прежнее умолчание спиннера. Модификатору
-// `accent` правило не нужно, он совпадает с базой, а `normal` у спиннера — не
-// база, а нейтраль. Нулевая специфичность — вариант перекрывает базу, не споря
-// с ней.
+// Вид блока без варианта — `accent`, прежнее умолчание спиннера, а в кнопке —
+// цвет её текста (`mixins/_indicator.scss`). `normal` у спиннера — не база, а
+// нейтраль. Нулевая специфичность — вариант перекрывает базу, не споря с ней.
 :where(.s-spinner) {
-	@include mixines.spinner-variant('accent');
+	@include mixines.spinner-base('accent');
 }
