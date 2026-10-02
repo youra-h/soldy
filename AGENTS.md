@@ -3255,9 +3255,14 @@ Accordion.Item он был `'button'` при жёстком `<div>` в шабл�
 потребителя из атрибутов выбил бы привязку корня к `TElementPlugin`. Раньше
 компоненты React разворачивали атрибуты снаружи первыми, и `tabindex="-1"`
 строки ListBox проигрывал `tabindex="0"` кнопки — строки списка стали бы
-остановками Tab. Сторожит `ui/react/__tests__/root-attributes.spec.tsx`:
-атрибут снаружи перекрывает набор ядра, а `ref` потребителя не выбивает
-привязку — таблицей по компонентам.
+остановками Tab. Стиль — тем же порядком: выход плагина раскладки, поверх
+него стиль-выход самого компонента (доля кольца `fractionStyle` — имя выхода
+называет разметка, как наборы ядра), поверх — стиль потребителя, поверх
+всего `display: none` скрытого корня. Сторожит
+`ui/react/__tests__/root-attributes.spec.tsx`: атрибут снаружи перекрывает
+набор ядра, а `ref` потребителя не выбивает привязку — таблицей по
+компонентам; стиль потребителя ложится поверх стиль-выхода, скрытие — поверх
+обоих.
 
 Нативные атрибуты вложенного контрола фиксированного тега — `disabled`,
 `required` и `readonly` у `<input>` Input, CheckBox и Switch — проводка в
@@ -3702,7 +3707,8 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   В принудительных цветах штрихи системные (`GrayText`, `Highlight`): SVG
   браузер сам не перекрашивает. Сторожат
   `core/__tests__/progress-spinner.spec.ts`,
-  `ui/vue/__tests__/progress-spinner.spec.ts` и
+  `ui/vue/__tests__/progress-spinner.spec.ts`,
+  `ui/react/__tests__/progress-spinner.spec.tsx` и
   `playground/vue/browser/progress-spinner.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-spinner`.
 - **Calendar** — сетка из Date Picker Dialog (APG): на месяц — `table` с

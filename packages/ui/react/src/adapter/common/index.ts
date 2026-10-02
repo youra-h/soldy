@@ -6,6 +6,7 @@ export {
 	toRootForward,
 	toControlAttrs,
 	type TRootState,
+	type TRootStyle,
 	type TRootForward,
 	type TRootLayout,
 	type TRootProps,

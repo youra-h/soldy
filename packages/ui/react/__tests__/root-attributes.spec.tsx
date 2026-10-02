@@ -26,6 +26,7 @@ import {
 	Frame,
 	Icon,
 	Label,
+	ProgressSpinner,
 	Skeleton,
 	Tabs,
 	type AccordionItemProps,
@@ -35,6 +36,7 @@ import {
 	type FrameProps,
 	type IconProps,
 	type LabelProps,
+	type ProgressSpinnerProps,
 	type SkeletonProps,
 	type TabsContentProps,
 	type TabsItemProps,
@@ -49,6 +51,7 @@ type TProbeProps = ButtonProps &
 	FrameProps &
 	IconProps &
 	LabelProps &
+	ProgressSpinnerProps &
 	SkeletonProps &
 	TabsProps &
 	AccordionProps &
@@ -76,6 +79,7 @@ const COMPONENTS: ReadonlyArray<
 	['Frame', Frame, '.s-frame', {}],
 	['Icon', Icon, '.s-icon', { tag: 'i' }],
 	['Label', Label, '.s-label', {}],
+	['ProgressSpinner', ProgressSpinner, '.s-progress-spinner', {}],
 	['Skeleton', Skeleton, '.s-skeleton', {}],
 	['Tabs', Tabs, '.s-tabs', {}],
 	['Tabs.Content', TabsContentProbe, '.s-tabs__panel', {}],
@@ -199,5 +203,50 @@ describe('раскладка корня: пользовательское сво
 		const { root } = mount(<div {...layout} />)
 
 		expect(root().style.getPropertyValue('--dialog-width')).toBe('320px')
+	})
+})
+
+/**
+ * Стиль-выход компонента — стиль, который считает ядро: доля кольца
+ * (`fractionStyle`). Раскладка корня кладёт его поверх стиля плагина, под
+ * стилем потребителя — как во Vue, где атрибуты снаружи ложатся на корень
+ * последними, — и под `display: none` скрытого корня, как у `v-show`.
+ */
+describe('раскладка корня: стиль-выход компонента', () => {
+	/**
+	 * Стиль потребителя с долей кольца. Пользовательских свойств в
+	 * `CSSProperties` React нет, а словарь строк ему подходит.
+	 */
+	const consumer: Record<string, string> = { '--s-progress-spinner-fraction': '0.9' }
+
+	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
+		const { root } = mount(<ProgressSpinner value={40} style={consumer} />)
+
+		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.9')
+	})
+
+	it('ProgressSpinner: display: none скрытого корня — поверх стиля потребителя и доли', () => {
+		const { root } = mount(
+			<ProgressSpinner value={40} visible={false} style={{ display: 'inline-block' }} />,
+		)
+
+		expect(root().style.display).toBe('none')
+		// Скрытие трогает только `display`: доля остаётся на корне
+		expect(root().style.getPropertyValue('--s-progress-spinner-fraction')).toBe('0.4')
+	})
+
+	/** Плагина раскладки у кольца нет — правило проверяется на самой раскладке корня. */
+	it('стиль-выход — поверх стиля плагина, имена по-CSS — как у плагина', () => {
+		const layout = toRootLayout(
+			{ layout_styles: { '--ring': 'plugin' } },
+			{},
+			{ '--ring': 'own', 'z-index': 3 },
+		)
+		const { root } = mount(<div {...layout} />)
+
+		expect(root().style.getPropertyValue('--ring')).toBe('own')
+		// `z-index` → `zIndex`, как у плагина: к числу под незнакомым именем
+		// React дописал бы `px`
+		expect(root().style.zIndex).toBe('3')
 	})
 })
