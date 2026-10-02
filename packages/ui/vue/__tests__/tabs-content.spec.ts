@@ -5,9 +5,10 @@
  * потому делал панели недостижимыми в остальных пяти адаптерах.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { Tabs, TabsItem, TabsContent } from '@soldy-ui/vue'
 import Harness from './TabsContent.test.vue'
 
 const render = () => mount(Harness, { attachTo: document.body })
@@ -39,6 +40,96 @@ describe('показ панели по активному табу', () => {
 		// Попади она в default-слот, оказалась бы внутри [role=tablist]
 		expect(wrapper.find('[role="tablist"] .s-tabs__panel').exists()).toBe(false)
 		expect(wrapper.find('.s-tabs__panel').exists()).toBe(true)
+	})
+})
+
+/**
+ * Панель с `value` пропом: так потребитель переносит её к другому табу. Табы
+ * `a` (активен) и `b`, таба `z` нет. Смена `value` меняет у панели таб, и
+ * показ обязан идти за новым табом сразу, а не со следующей активацией.
+ */
+describe('смена value у панели', () => {
+	const Rebind = {
+		components: { Tabs, TabsItem, TabsContent },
+		props: { panel: { type: String, required: true } },
+		template: `
+			<Tabs>
+				<TabsItem value="a" text="First" active />
+				<TabsItem value="b" text="Second" />
+
+				<template #content>
+					<TabsContent :value="panel">Панель</TabsContent>
+				</template>
+			</Tabs>
+		`,
+	}
+
+	let wrapper: ReturnType<typeof mount> | null = null
+
+	afterEach(() => {
+		wrapper?.unmount()
+		wrapper = null
+	})
+
+	const renderPanel = (panel: string) => {
+		const mounted = mount(Rebind, { props: { panel }, attachTo: document.body })
+
+		wrapper = mounted
+
+		return mounted
+	}
+
+	it('к неактивному табу — панель прячется, его активация показывает её', async () => {
+		const mounted = renderPanel('a')
+
+		expect(mounted.find('.s-tabs__panel').exists()).toBe(true)
+
+		await mounted.setProps({ panel: 'b' })
+
+		expect(mounted.find('.s-tabs__panel').exists()).toBe(false)
+
+		const second = mounted.findAll('[role="tab"]')[1]
+
+		await second.trigger('click')
+		await nextTick()
+
+		const panel = mounted.find('.s-tabs__panel')
+
+		expect(panel.exists()).toBe(true)
+		expect(panel.attributes('aria-labelledby')).toBe(second.attributes('id'))
+	})
+
+	it('к значению без таба — панель прячется и за прежним табом не идёт', async () => {
+		const mounted = renderPanel('a')
+
+		await mounted.setProps({ panel: 'z' })
+
+		expect(mounted.find('.s-tabs__panel').exists()).toBe(false)
+
+		const [first, second] = mounted.findAll('[role="tab"]')
+
+		// Прежний таб снова активен — панель уже не его
+		await second.trigger('click')
+		await first.trigger('click')
+		await nextTick()
+
+		expect(first.attributes('aria-selected')).toBe('true')
+		expect(mounted.find('.s-tabs__panel').exists()).toBe(false)
+	})
+
+	it('из значения без таба к активному табу — панель видна и подписана им', async () => {
+		const mounted = renderPanel('z')
+
+		expect(mounted.find('.s-tabs__panel').exists()).toBe(false)
+
+		await mounted.setProps({ panel: 'a' })
+
+		const panel = mounted.find('.s-tabs__panel')
+
+		expect(panel.exists()).toBe(true)
+		expect(panel.attributes('aria-labelledby')).toBe(
+			mounted.findAll('[role="tab"]')[0].attributes('id'),
+		)
 	})
 })
 

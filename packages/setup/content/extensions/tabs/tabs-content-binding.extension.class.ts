@@ -5,8 +5,10 @@
  * существующий таб по совпадению `value` и берёт контекст этого таба
  * (`TItemContext`) — свой, на время монтирования: адаптеры те же, что у
  * `TTabsItemCollectionFacade`, но отпускает их панель сама — при перепривязке
- * к другому табу и при снятии. Общий с табом контекст, отпущенный одним из
- * них, сломал бы другого.
+ * к другому табу или ни к какому и при снятии. Общий с табом контекст,
+ * отпущенный одним из них, сломал бы другого. У панели без таба контекста нет
+ * вовсе: иначе её `active` отвечал бы за прежний таб. Что активность панели
+ * сменилась вместе с контекстом, сообщает фасад — связка его только меняет.
  *
  * Здесь же проставляется сторона панели в связке с табом — `id` и
  * `aria-labelledby` — прямо в `aria` панели. Это единственное место, где
@@ -71,7 +73,10 @@ export class TTabsContentBindingExtension {
 
 		/** Таб, с которым связаны сейчас. */
 		let boundItem: ITabsItem | undefined
-		/** Контекст таба у фасада панели: его отпускает следующая привязка и снятие. */
+		/**
+		 * Контекст таба у фасада панели. Отпускает его отвязка: перед новой
+		 * привязкой и при снятии.
+		 */
 		let boundContext: TItemContext<ITabsItem, TTabsCollectionExtensions> | undefined
 		/** Контекст принят: на чужие шины уже можно подписываться. */
 		let attached = false
@@ -84,12 +89,22 @@ export class TTabsContentBindingExtension {
 			content.aria.add('aria-labelledby', boundItem.aria.get('id'))
 		}
 
+		/**
+		 * Панель — ни с каким табом: атрибутов связки нет, и контекста у фасада
+		 * тоже, иначе его `active` отвечал бы за прежний таб. Фасад отвязывается
+		 * раньше, чем контекст отпускают: фасад читают и после снятия, и чтение
+		 * отпущенного контекста создало бы адаптеры заново.
+		 */
 		const unbind = (): void => {
 			if (attached) boundItem?.events.off('change:aria', linkPanel)
 
 			content.aria.remove('id')
 			content.aria.remove('aria-labelledby')
 
+			context.instance.clearContext()
+			boundContext?.release()
+
+			boundContext = undefined
 			boundItem = undefined
 		}
 
@@ -102,18 +117,14 @@ export class TTabsContentBindingExtension {
 
 			if (!item) return
 
-			const itemContext = new TItemContext(item, extensions)
-
-			context.instance.setContext(itemContext)
-			// Прежний контекст фасад больше не держит
-			boundContext?.release()
-			boundContext = itemContext
-
+			boundContext = new TItemContext(item, extensions)
 			boundItem = item
 
 			if (attached) item.events.on('change:aria', linkPanel)
 
 			linkPanel()
+			// Последним: о смене активности фасад сообщает, когда связка уже на месте
+			context.instance.setContext(boundContext)
 		}
 
 		resolve()
@@ -136,9 +147,6 @@ export class TTabsContentBindingExtension {
 
 			unbind()
 			attached = false
-			// Фасад — без контекста: чтение после снятия создало бы адаптеры заново
-			context.instance.clearContext()
-			boundContext?.release()
 		})
 	}
 }
