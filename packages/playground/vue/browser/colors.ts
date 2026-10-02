@@ -6,6 +6,11 @@
  * тестом не проверяется»). Знают они отношение: насколько цвет ушёл от
  * подложки и в какую сторону. Одна копия на всех — счёт светлоты и слой поверх
  * слоя тут неочевидные, и разъехаться двум копиям было бы нечему помешать.
+ *
+ * Исключение — режим принудительных цветов: палитру там выбирает
+ * пользователь, и часть, которую тема красит сама, обязана взять его
+ * системный цвет. С ним спеки и сверяют её (`systemColor`, индикаторы
+ * выполнения — `progress-linear.spec.ts` и `progress-spinner.spec.ts`).
  */
 
 /**
@@ -54,6 +59,25 @@ export function pixel(colors: string[]): Uint8ClampedArray {
 	}
 
 	return paint.getImageData(0, 0, 1, 1).data
+}
+
+/**
+ * Системный цвет в текущем режиме, как его разрешает браузер. Проба не
+ * подчиняется режиму (`forced-color-adjust: none`): иначе браузер заменил бы и
+ * её цвет.
+ */
+export function systemColor(keyword: 'Highlight' | 'GrayText'): string {
+	const probe = document.createElement('span')
+
+	probe.style.setProperty('forced-color-adjust', 'none')
+	probe.style.color = keyword
+	document.body.append(probe)
+
+	const color = getComputedStyle(probe).color
+
+	probe.remove()
+
+	return color
 }
 
 /** Непрозрачность цвета: у вуали она меньше единицы, у ступени равна ей. */

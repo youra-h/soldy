@@ -1,5 +1,6 @@
 /**
- * ProgressLinear в настоящем браузере: переход доли, бег и ось — тема.
+ * ProgressLinear в настоящем браузере: переход доли, бег, ось и принудительные
+ * цвета — тема.
  *
  * Долю и наборы считает ядро (`core/__tests__/progress-linear.spec.ts`),
  * разметку — адаптер (`ui/vue/__tests__/progress-linear.spec.ts`). Здесь то,
@@ -8,7 +9,9 @@
  * (`themes/oren/src/components/progress-linear/_progress-linear.scss`): доля
  * едет переходом, бег — сдвиг отрезка, у горизонтальной зеркальный в RTL, у
  * вертикальной — снизу вверх в любом направлении письма. При просьбе системы
- * убрать движение доля встаёт сразу, а бег тот же.
+ * убрать движение доля встаёт сразу, а бег тот же. В принудительных цветах
+ * дорожка, заливка и бегущий отрезок берут системные цвета: браузер иначе
+ * заменил бы их фоны цветом поверхности.
  *
  * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
  * переход короткий, и `getAnimations()` после действия мог бы его уже не
@@ -23,7 +26,8 @@ import type { IProgressLinearProps } from '@soldy-ui/core'
 import { ProgressLinear } from '@soldy-ui/vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
-import { reducedMotion } from './media'
+import { find, pixel, systemColor } from './colors'
+import { forcedColors, reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -33,6 +37,9 @@ const EPSILON = 0.5
 
 /** Высота вертикальной полосы по умолчанию — `h-40` темы, px. */
 const VERTICAL_LENGTH = 160
+
+/** Схемы темы: палитру принудительных цветов выбирает браузер, но проверяем обе. */
+const SCHEMES = ['oren', 'oren-dark'] as const
 
 /**
  * Полоса на странице шириной 400 px. Значение держит экземпляр ядра: через
@@ -51,15 +58,6 @@ function mount(props: Partial<IProgressLinearProps> = {}, dir: 'ltr' | 'rtl' = '
 	)
 
 	return ctrl
-}
-
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
-function find(selector: string): HTMLElement {
-	const element = document.querySelector(selector)
-
-	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
-
-	return element
 }
 
 const root = () => find('.s-progress-linear')
@@ -159,6 +157,9 @@ function shiftsAt(progress: readonly number[], axis: 'x' | 'y' = 'x'): number[] 
 	})
 }
 
+/** Цвет фона — байтами sRGB: запись браузера сравнивать нельзя. */
+const backgroundOf = (style: CSSStyleDeclaration) => pixel([style.backgroundColor])
+
 beforeEach(() => {
 	document.documentElement.dataset.theme = 'oren'
 })
@@ -166,6 +167,7 @@ beforeEach(() => {
 afterEach(async () => {
 	cleanup()
 	await reducedMotion('no-preference')
+	await forcedColors('none')
 })
 
 describe('доля', () => {
@@ -410,5 +412,40 @@ describe('вертикальная полоса', () => {
 		expect(segment().height).toBe(height)
 		expect(root().offsetHeight - Number.parseFloat(height)).toBeGreaterThan(EPSILON)
 		expect(shiftsAt([0.25, 0.5, 0.75], 'y')).toEqual(shifts)
+	})
+})
+
+/**
+ * Принудительные цвета (высокий контраст Windows): браузер заменил бы фоны
+ * полосы системным цветом поверхности, и от неё не осталось бы ничего. Тема
+ * отдаёт системные цвета — дорожке `GrayText`, заливке и бегущему отрезку
+ * `Highlight`, как у кольца ProgressSpinner, — и правило режима не
+ * проигрывает ни варианту, ни бегу. Отрезок раньше проигрывал: правило бега
+ * специфичнее правила режима, и отрезок оставался цвета темы.
+ */
+describe('принудительные цвета', () => {
+	it.each(SCHEMES)('%s: дорожка и заливка — системными цветами', async (scheme) => {
+		await forcedColors('active')
+		document.documentElement.dataset.theme = scheme
+
+		mount({ value: 40, variant: 'positive' })
+		await transitionEvents()
+
+		// Режим действует — иначе сторож проверял бы обычный режим
+		expect(matchMedia('(forced-colors: active)').matches).toBe(true)
+
+		expect(backgroundOf(getComputedStyle(root()))).toEqual(pixel([systemColor('GrayText')]))
+		expect(backgroundOf(getComputedStyle(range()))).toEqual(pixel([systemColor('Highlight')]))
+	})
+
+	it.each(SCHEMES)('%s: на бегу — бегущий отрезок системным цветом', async (scheme) => {
+		await forcedColors('active')
+		document.documentElement.dataset.theme = scheme
+
+		mount({ indeterminate: true, variant: 'positive' })
+		await transitionEvents()
+
+		expect(backgroundOf(getComputedStyle(root()))).toEqual(pixel([systemColor('GrayText')]))
+		expect(backgroundOf(segment())).toEqual(pixel([systemColor('Highlight')]))
 	})
 })
