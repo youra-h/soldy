@@ -216,6 +216,24 @@ describe('протяжка', () => {
 	})
 
 	/**
+	 * Фокус ставит скрипт, и видимость его браузер взял бы у прошлого фокуса:
+	 * после Tab по странице нажатие мышью включило бы кольцо ручки. Сам
+	 * `:focus-visible` jsdom не считает — его видно в браузерном спеке.
+	 */
+	it('фокус полю — без прокрутки и без кольца: и от нажатия, и от первого движения', async () => {
+		const { thumbs, root, fields, pointer } = await mount(slider({ value: [50, 50] }))
+		const focus = fields.map((field) => vi.spyOn(field, 'focus'))
+		const quiet: FocusOptions = { preventScroll: true, focusVisible: false }
+
+		// Нажатие — на вторую ручку, первое движение выбирает первую
+		pointer('pointerdown', thumbs[1], 200)
+		pointer('pointermove', root, 160)
+
+		expect(focus[1]).toHaveBeenCalledExactlyOnceWith(quiet)
+		expect(focus[0]).toHaveBeenCalledExactlyOnceWith(quiet)
+	})
+
+	/**
 	 * Взялись за ручку на 4 px ближе к краю, к которому тянут. Ядро прибавляет к
 	 * доле указателя смещение захвата, и доля, прижатая к краю дорожки,
 	 * оставила бы ручку в двух значениях от края: 98 вместо 100, 2 вместо 0.

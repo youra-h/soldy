@@ -288,6 +288,26 @@ describe('протяжка', () => {
 		expect(ctrl.values[0]).toBe(20)
 		expect(document.activeElement).toBe(fields()[1])
 	})
+
+	/**
+	 * Фокус полю ставит плагин указателя — скриптом, и видимость такого фокуса
+	 * Chromium берёт у прошлого. Прошлый пришёл с клавиатуры — без
+	 * `focusVisible: false` кольцо ручки встало бы от нажатия мышью.
+	 */
+	it('нажатие мышью после фокуса с клавиатуры — фокус у поля, кольца нет', async () => {
+		await mount({ value: 50 }, { before: true })
+
+		// На «До» с клавиатуры: Tab в поле и Shift+Tab обратно
+		find('.s-test-before').focus()
+		await userEvent.keyboard('{Tab}')
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+		expect(document.activeElement).toBe(find('.s-test-before'))
+
+		await userEvent.click(thumbs()[0])
+
+		expect(document.activeElement).toBe(field(0))
+		expect(field(0).matches(':focus-visible')).toBe(false)
+	})
 })
 
 /**
@@ -629,11 +649,6 @@ describe('подсказка', () => {
 	 * плашка переходом, и всё это время она ещё видна. Ждать числом
 	 * миллисекунд нельзя: наведение уходит с ручки не в миг действия, и
 	 * переход, начатый позже, застал бы плашку ещё видимой.
-	 *
-	 * Перед нажатием мышью тест жмёт мышью кнопку «До». Фокус полю ручки
-	 * плагин указателя ставит скриптом, а Chromium считает такой фокус
-	 * видимым, если прошлый фокус пришёл не от мыши, — тогда подсказку держал
-	 * бы `:focus-visible`, а не проверяемая причина.
 	 */
 	describe('auto', () => {
 		/** Видна ли подсказка, когда её переходы доиграли. */
@@ -641,11 +656,6 @@ describe('подсказка', () => {
 			await settled(tooltip())
 
 			return getComputedStyle(tooltip()).visibility === 'visible'
-		}
-
-		/** Нажатие мышью на кнопку «До»: прошлый фокус — от мыши. */
-		const pointerFocus = async () => {
-			await userEvent.click(find('.s-test-before'))
 		}
 
 		const hovered = () => thumbs()[0].matches(':hover')
@@ -721,9 +731,8 @@ describe('подсказка', () => {
 		 * подсказку нажатие ручки.
 		 */
 		it('ручку держат, не сдвинув, — видна', async () => {
-			const ctrl = await mount({ value: 50, tooltip: 'auto' }, { before: true })
+			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
-			await pointerFocus()
 			await userEvent.hover(thumbs()[0])
 			await commands.mouseDown()
 
@@ -743,9 +752,8 @@ describe('подсказка', () => {
 		 * нажатия у неё нет — подсказку держит `data-dragging`.
 		 */
 		it('ручку тянут — видна', async () => {
-			const ctrl = await mount({ value: 50, tooltip: 'auto' }, { before: true })
+			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
-			await pointerFocus()
 			await userEvent.hover(track(), { position: along(0.1) })
 			await commands.mouseDown()
 
