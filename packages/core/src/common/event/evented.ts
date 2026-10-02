@@ -1,6 +1,7 @@
 import { TEventEmitter } from './event-emitter'
 import type { IEventEmitter } from './event-emitter'
 import type { TEventContext, TEventMiddleware } from './middleware'
+import { TRelays } from './relays'
 import type { TEventSink, TRelayRule, TRelayedEvents } from './types'
 
 /**
@@ -29,11 +30,13 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	private _middlewares: TEventMiddleware<TEvents>[] = []
 
-	/**
-	 * Отписки от источников, на которые подписался {@link relay}.
-	 * Нужны для того, чтобы {@link destroy} мог отписаться от всех источников.
-	 */
-	private _relays: (() => void)[] = []
+	/** Пробросы {@link relay} и {@link relayAll}: подписаны на источники, пока эмиттер слушают. */
+	private readonly _relays = new TRelays()
+
+	/** Слушают ли эмиттер: есть подписчики или перехватчики. */
+	private get _listened(): boolean {
+		return this._items.size > 0 || this._middlewares.length > 0
+	}
 
 	/** Этот же эмиттер без карты событий — для тела {@link relay}, см. `TRelayChannel`. */
 	private get _channel(): TRelayChannel {
@@ -73,12 +76,15 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	use(middleware: TEventMiddleware<TEvents>): () => void {
 		this._middlewares.push(middleware)
+		this._relays.subscribe()
 
 		return () => {
 			const index = this._middlewares.indexOf(middleware)
 
 			if (index !== -1) {
 				this._middlewares.splice(index, 1)
+
+				if (!this._listened) this._relays.unsubscribe()
 			}
 		}
 	}
@@ -169,6 +175,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	on<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
 		this._items.on(event, handler)
+		this._relays.subscribe()
 	}
 
 	/**
@@ -178,6 +185,8 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	off<K extends keyof TEvents>(event: K, handler: TEvents[K]): void {
 		this._items.off(event, handler)
+
+		if (!this._listened) this._relays.unsubscribe()
 	}
 
 	/**
@@ -200,6 +209,10 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * либо объект `TRelayRule` с расширенными возможностями:
 	 * - `as` — переименовать событие при проброске
 	 * - `then` — хук, вызываемый **до** проброса (удобно для подписки на дочерние события)
+	 *
+	 * Подписан на источник проброс, только пока этот эмиттер слушают (см.
+	 * `TRelays`), поэтому и хук `then` срабатывает только тогда. Действие,
+	 * которое нужно на каждое событие источника, — подписка на сам источник.
 	 *
 	 * **Что сверяет сигнатура.**
 	 * - Имена — тип правила `TRelayRule`: строковое правило есть в обеих картах,
@@ -294,8 +307,11 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 				tgt.emit(target, ...args)
 			}
 
-			src.on(from, handler)
-			this._relays.push(() => src.off(from, handler))
+			this._relays.add(() => {
+				src.on(from, handler)
+
+				return () => src.off(from, handler)
+			})
 		}
 	}
 
@@ -331,8 +347,8 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * **Как устроено.** Перечислить имена карты в рантайме нельзя — карта живёт
 	 * только в типах. Поэтому проброс висит на {@link use}: перехватчик
 	 * срабатывает на каждом `emit` источника, включая события, которые тот сам
-	 * получил релеем. Отписка уходит в общий список {@link destroy} вместе с
-	 * отписками `relay`.
+	 * получил релеем. Перехватчик стоит, пока цель слушают, как и подписки
+	 * `relay` (см. `TRelays`).
 	 *
 	 * Порядок при этом иной, чем у `relay`: перехватчик работает **до**
 	 * обработчиков `on` источника, то есть подписчик цели узнаёт о событии
@@ -353,7 +369,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		// канал без карты событий — см. TRelayChannel.
 		const tgt = this._channel
 
-		this._relays.push(
+		this._relays.add(() =>
 			source.use(({ event, args }) => {
 				tgt.emit(String(event), ...args)
 			}),
@@ -365,11 +381,7 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * снимает middleware и удаляет входящие подписки.
 	 */
 	destroy(): void {
-		for (const unsubscribe of this._relays) {
-			unsubscribe()
-		}
-
-		this._relays = []
+		this._relays.destroy()
 		this._middlewares = []
 		this._items.remove()
 	}

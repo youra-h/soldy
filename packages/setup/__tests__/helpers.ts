@@ -122,45 +122,86 @@ export function observerCount(element: Element): number {
 	return resizeObservers.filter((observer) => observer.isObserving(element)).length
 }
 
-/** Шпион, который помнит аргументы вызовов. */
-interface ICallLog {
-	readonly mock: { readonly calls: ReadonlyArray<readonly unknown[]> }
-}
-
-/** Подписки шины: что на неё повесили и что с неё сняли. */
+/**
+ * Шина под наблюдением: что на неё вешали и что на ней висит сейчас.
+ *
+ * Живое считается так же, как его держит сама шина: пара «событие,
+ * обработчик» — одна подписка, `off` её снимает, перехватчик `use` живёт до
+ * своей отписки, `destroy()` шины снимает всё. Перехватчики считаются
+ * наравне с подписками: на них висит проброс `relayAll`.
+ */
 export interface IBusSpy {
 	readonly name: string
-	readonly on: ICallLog
-	readonly off: ICallLog
+	/** Подписки `on` по порядку — имена событий. */
+	readonly subscribed: readonly string[]
+	/** Что висит на шине сейчас: события живых подписок и `use` на каждый перехватчик. */
+	live(): string[]
 }
 
-/** Шпионы на `on` и `off` шины у того, у кого она есть. Без шины следить не за чем. */
+/** Шпион на шину того, у кого она есть. Без шины следить не за чем. */
 export function spyBus(name: string, holder: unknown): IBusSpy[] {
 	const bus: unknown =
 		typeof holder === 'object' && holder !== null ? Reflect.get(holder, 'events') : null
 
 	if (!(bus instanceof TEvented)) return []
 
-	return [{ name, on: vi.spyOn(bus, 'on'), off: vi.spyOn(bus, 'off') }]
+	const on = bus.on.bind(bus)
+	const off = bus.off.bind(bus)
+	const use = bus.use.bind(bus)
+	const destroy = bus.destroy.bind(bus)
+	const subscribed: string[] = []
+	const handlers = new Map<unknown, Set<string>>()
+	const middlewares = new Set<object>()
+
+	vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
+		const events = handlers.get(handler) ?? new Set<string>()
+
+		subscribed.push(String(event))
+		events.add(String(event))
+		handlers.set(handler, events)
+		on(event, handler)
+	})
+	vi.spyOn(bus, 'off').mockImplementation((event, handler) => {
+		handlers.get(handler)?.delete(String(event))
+		off(event, handler)
+	})
+	vi.spyOn(bus, 'use').mockImplementation((middleware) => {
+		const token = {}
+		const release = use(middleware)
+
+		middlewares.add(token)
+
+		return () => {
+			middlewares.delete(token)
+			release()
+		}
+	})
+	vi.spyOn(bus, 'destroy').mockImplementation(() => {
+		handlers.clear()
+		middlewares.clear()
+		destroy()
+	})
+
+	return [
+		{
+			name,
+			subscribed,
+			live: () => [
+				...[...handlers.values()].flatMap((events) => [...events]),
+				...[...middlewares].map(() => 'use'),
+			],
+		},
+	]
 }
 
 /** Подписки, повешенные на шины: `<шина>: <событие>`. */
 export function subscribed(spies: readonly IBusSpy[]): string[] {
-	return spies.flatMap(({ name, on }) =>
-		on.mock.calls.map(([event]) => `${name}: ${String(event)}`),
-	)
+	return spies.flatMap(({ name, subscribed }) => subscribed.map((event) => `${name}: ${event}`))
 }
 
-/** Подписки, которые остались на шинах после уничтожения: `<шина>: <событие>`. */
+/** Что осталось на шинах после уничтожения: `<шина>: <событие>` и `<шина>: use`. */
 export function leftovers(spies: readonly IBusSpy[]): string[] {
-	return spies.flatMap(({ name, on, off }) =>
-		on.mock.calls
-			.filter(
-				([event, handler]) =>
-					!off.mock.calls.some(([e, h]) => e === event && h === handler),
-			)
-			.map(([event]) => `${name}: ${String(event)}`),
-	)
+	return spies.flatMap(({ name, live }) => live().map((event) => `${name}: ${event}`))
 }
 
 /**
