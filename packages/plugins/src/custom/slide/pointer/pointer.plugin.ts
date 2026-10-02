@@ -339,6 +339,12 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 	/**
 	 * Фокус — полю ведомой ручки. Без прокрутки: страница не должна прыгать к
 	 * ручке, которую пользователь и так держит.
+	 *
+	 * И без кольца (`focusVisible: false`). Фокус ставит скрипт, а видимость
+	 * такого фокуса браузер берёт у прошлого: пришёл тот не от мыши — свежая
+	 * страница, Tab, — и нажатие мышью включило бы `:focus-visible` поля, а с
+	 * ним кольцо ручки и подсказку `auto`. Их держит только фокус с
+	 * клавиатуры.
 	 */
 	private _focusActive(): void {
 		const owner = this._owner
@@ -350,6 +356,6 @@ export class TSlidePointerPlugin extends TBasePlugin<ISlidable, TSlidePointerPlu
 		const field = fieldOf(thumbsOf(owner, gesture.track)[index])
 
 		if (field && field.ownerDocument.activeElement !== field)
-			field.focus({ preventScroll: true })
+			field.focus({ preventScroll: true, focusVisible: false })
 	}
 }
