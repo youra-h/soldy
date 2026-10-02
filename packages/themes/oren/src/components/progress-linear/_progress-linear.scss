@@ -224,15 +224,18 @@ $rtl: ":is([dir='rtl'] .s-progress-linear, .s-progress-linear[dir='rtl'])";
 
 // Принудительные цвета (высокий контраст Windows): браузер заменяет фоны
 // системным цветом поверхности, и от полосы не осталось бы ничего — ни
-// дорожки, ни заливки. Цвета — те же, что у ползунка.
+// дорожки, ни заливки, ни бегущего отрезка. Цвета — те же, что у ползунка и
+// кольца: дорожка `GrayText`, заливка и отрезок `Highlight`.
+//
+// Как у кольца — переменными на корне, а не фоном частей: части читают только
+// их, и правило режима не спорит по специфичности ни с вариантом, ни с бегом —
+// вариант задаёт те же переменные раньше в файле. Фоном частей отрезок спор
+// проигрывал: правило бега специфичнее (`[data-indeterminate]`), и в режиме
+// отрезок оставался цвета темы, хотя заливка уже брала системный.
 @media (forced-colors: active) {
 	.s-progress-linear {
 		forced-color-adjust: none;
-		background-color: GrayText;
-	}
-
-	.s-progress-linear__range,
-	.s-progress-linear::after {
-		background-color: Highlight;
+		--s-progress-linear-track: GrayText;
+		--s-progress-linear-fill: Highlight;
 	}
 }

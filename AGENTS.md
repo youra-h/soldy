@@ -3660,8 +3660,10 @@ CheckBox и Switch (HTML не знает `readonly` у чекбокса). Поэ
   `data-indeterminate`, модификатору оси и переменной доли. Бег одинаков при
   любых настройках системы, и при `prefers-reduced-motion` тоже, — решение
   владельца, как у выезда Drawer: у неизвестной доли движение и есть
-  сообщение «работа идёт»; переход доли просьбу выполняет. Сторожат
-  `core/__tests__/progress-linear.spec.ts`,
+  сообщение «работа идёт»; переход доли просьбу выполняет. В режиме
+  принудительных цветов дорожка — `GrayText`, заливка и бегущий отрезок —
+  `Highlight`, как штрихи кольца: иначе браузер заменил бы их фоны цветом
+  поверхности. Сторожат `core/__tests__/progress-linear.spec.ts`,
   `ui/vue/__tests__/progress-linear.spec.ts` и
   `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
   оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.

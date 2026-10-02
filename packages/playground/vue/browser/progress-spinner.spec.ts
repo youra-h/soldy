@@ -25,7 +25,7 @@ import type { IProgressProps } from '@soldy-ui/core'
 import { ProgressSpinner, Spinner } from '@soldy-ui/vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 
-import { find, pixel } from './colors'
+import { find, pixel, systemColor } from './colors'
 import { forcedColors, reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
@@ -134,25 +134,6 @@ function anglesAt(progress: readonly number[]): number[] {
 
 		return Number.parseFloat(getComputedStyle(ring()).rotate)
 	})
-}
-
-/**
- * Системный цвет в текущем режиме, как его разрешает браузер. Проба не
- * подчиняется режиму (`forced-color-adjust: none`): иначе браузер заменил бы и
- * её цвет.
- */
-function systemColor(keyword: 'Highlight' | 'GrayText'): string {
-	const probe = document.createElement('span')
-
-	probe.style.setProperty('forced-color-adjust', 'none')
-	probe.style.color = keyword
-	document.body.append(probe)
-
-	const color = getComputedStyle(probe).color
-
-	probe.remove()
-
-	return color
 }
 
 /** Цвет штриха части — байтами sRGB: запись браузера сравнивать нельзя. */
