@@ -1,9 +1,9 @@
-import type { IDateInput, TDatePart } from '@soldy-ui/core'
+import type { IDateInput, TDateInputPart, TDatePart } from '@soldy-ui/core'
 import type { TDateInputSegmentNode } from './types'
 
 /**
- * Узлы поля даты — один поиск на три плагина поля: клавиши, указатель и буфер
- * обмена находят части, ряд и выделение одинаково.
+ * Узлы поля даты — один поиск на все плагины поля: клавиши, указатель, буфер
+ * обмена и сенсорный ввод находят части, ряд и выделение одинаково.
  *
  * Части находят по классам владельца (`classes.resolve`), а не строкой в
  * плагине, и только внутри его корня; тип части — из её `data-type`, который
@@ -15,6 +15,15 @@ import type { TDateInputSegmentNode } from './types'
  * (`hour`), и словарь без неё не скомпилируется.
  */
 const PARTS: Readonly<Record<TDatePart, true>> = { day: true, month: true, year: true }
+
+/**
+ * Части формата поля по порядку — выход ядра без разделителей. Не узлы, а
+ * значения: по ним плагин пишет в наборы частей и тогда, когда разметки ещё
+ * нет.
+ */
+export function formatPartsOf(owner: IDateInput): TDateInputPart[] {
+	return owner.segments.filter((segment): segment is TDateInputPart => segment.type !== 'literal')
+}
 
 /** Ряд частей поля — `__segments` в корне. */
 export function rowOf(owner: IDateInput, root: Element): Element | null {

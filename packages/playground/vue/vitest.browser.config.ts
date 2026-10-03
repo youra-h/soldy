@@ -20,6 +20,85 @@ const mouseUp = defineBrowserCommand(async ({ page }) => {
 })
 
 /**
+ * Пауза от прошлого касания, после которой касание уже не второе в двойном.
+ * Двойное касание браузер разбирает иначе — выделяет слово и открывает
+ * контекстное меню, — а касание следующего теста шло за касанием прошлого
+ * быстрее окна Chromium (оно короче 350 мс).
+ */
+const DOUBLE_TAP_PAUSE = 500
+
+/** Когда кончилось прошлое касание — по часам процесса прогона. */
+let lastTap = 0
+
+/**
+ * Касание пальцем — в центре узла: `touchStart` и `touchEnd` протокола
+ * DevTools. `userEvent` касаться не умеет, а `touchscreen` Playwright требует
+ * контекста с `hasTouch` — он сменил бы устройство всем браузерным спекам.
+ * Касание протокола браузер разбирает как настоящее: `pointerdown` с
+ * `pointerType: 'touch'`, фокус и каретка в редактируемом узле, `click` — всё
+ * от одного жеста (`browser/date-input.spec.ts`, «сенсорный режим»). Узел —
+ * селектором CSS в рамке теста, точку страницы считает Playwright. Касаний
+ * `count` подряд, без пауз между ними: два — двойное касание. С касанием
+ * прошлой команды первое двойного не составит: команда выжидает паузу от него.
+ */
+const tap = defineBrowserCommand<[selector: string, count?: number]>(
+	async ({ page, frame }, selector, count = 1) => {
+		const box = await (await frame()).locator(selector).boundingBox()
+
+		if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
+
+		const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+		const pause = lastTap + DOUBLE_TAP_PAUSE - Date.now()
+		const session = await page.context().newCDPSession(page)
+
+		try {
+			if (pause > 0) await page.waitForTimeout(pause)
+
+			for (let index = 0; index < count; index++) {
+				await session.send('Input.dispatchTouchEvent', {
+					type: 'touchStart',
+					touchPoints: [point],
+				})
+				await session.send('Input.dispatchTouchEvent', {
+					type: 'touchEnd',
+					touchPoints: [],
+				})
+			}
+		} finally {
+			lastTap = Date.now()
+			await session.detach()
+		}
+	},
+)
+
+/**
+ * Текст без клавиш — так его вставляет экранная клавиатура или IME:
+ * `beforeinput` (`insertText`) и `input`, без `keydown`. Незавершённую
+ * композицию он же завершает.
+ */
+const insertText = defineBrowserCommand(async ({ page }, text: string) => {
+	await page.keyboard.insertText(text)
+})
+
+/**
+ * Текст незавершённой композиции IME — `compositionstart`, `compositionupdate`
+ * и `insertCompositionText`, которые не отменить. Завершает её `insertText`.
+ */
+const compose = defineBrowserCommand(async ({ page }, text: string) => {
+	const session = await page.context().newCDPSession(page)
+
+	try {
+		await session.send('Input.imeSetComposition', {
+			text,
+			selectionStart: text.length,
+			selectionEnd: text.length,
+		})
+	} finally {
+		await session.detach()
+	}
+})
+
+/**
  * Прогон в настоящем браузере — для того, что jsdom не считает вовсе.
  *
  * Дымовые тесты стенда живут в `vitest.config.ts` и обходятся jsdom: им важна
@@ -71,7 +150,7 @@ export default defineConfig({
 				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
 			}),
 			instances: [{ browser: 'chromium' }],
-			commands: { mouseDown, mouseUp },
+			commands: { mouseDown, mouseUp, tap, insertText, compose },
 		},
 	},
 	resolve: {

@@ -54,12 +54,15 @@ export default { ...SetupDateInput }
 			остаётся тем же; ключ разделителя — место в формате.
 
 			Часть — день, месяц или год: текст — набранное в цифрах локали или
-			подсказка пустой части. Наборы части: `aria` (`role="spinbutton"`, имя
+			подсказка пустой части. Наборы части: `attrs` (на сенсорном устройстве
+			— `contenteditable` и `inputmode`), `aria` (`role="spinbutton"`, имя
 			части, `aria-value*`, `aria-invalid`, `tabindex` — у каждой части своя
-			остановка Tab, у выключенного поля ни одной) и `dataset`
+			остановка Tab, у выключенного поля ни одной; `id` части) и `dataset`
 			(`data-type`, `data-placeholder`). Сервер и компьютер рисуют часть
 			нередактируемой: дату выделяют протяжкой мышью, а в редактируемой части
-			выделение застревает.
+			выделение застревает. Редактируемой её делает касание пальцем или
+			пером — ради экранной клавиатуры; набор пишет плагин, а текст части
+			всё равно пишет ядро.
 
 			Разделитель — литерал `formatToParts` как есть: с пробелами
 			(`ko-KR` — «. ») и метками направления (`ar-EG` — RLM). Скрыт от
@@ -76,7 +79,7 @@ export default { ...SetupDateInput }
 				<span
 					v-else
 					class="s-date-input__segment"
-					v-bind="{ ...segment.aria, ...segment.dataset }"
+					v-bind="{ ...segment.attrs, ...segment.aria, ...segment.dataset }"
 					>{{ segment.text }}</span
 				>
 			</template>

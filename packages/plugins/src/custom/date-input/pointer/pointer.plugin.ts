@@ -111,7 +111,13 @@ export class TDateInputPointerPlugin extends TBasePlugin<
 		if (isFocusableElement(nearest)) nearest.focus()
 	}
 
-	/** Меню над рядом — ряд на время редактируемый: в меню появятся «Вставить» и «Вырезать». */
+	/**
+	 * Меню над рядом — ряд на время редактируемый: в меню появятся «Вставить» и
+	 * «Вырезать». Над частью, которую касание уже сделало редактируемой, меню и
+	 * так меню правки — ряд не трогается: иначе его правку гасил бы этот плагин,
+	 * и ввод экранной клавиатуры после двойного касания или долгого нажатия
+	 * пропадал бы до следующего нажатия.
+	 */
 	private readonly _onContextMenu = (event: MouseEvent): void => {
 		const owner = this._owner
 		const root = this._root
@@ -119,6 +125,7 @@ export class TDateInputPointerPlugin extends TBasePlugin<
 
 		if (!owner || !row || !(event.target instanceof Node) || !row.contains(event.target)) return
 		if (owner.disabled || owner.readonly) return
+		if (event.target instanceof HTMLElement && event.target.isContentEditable) return
 
 		row.setAttribute('contenteditable', 'true')
 		this._editableRow = row

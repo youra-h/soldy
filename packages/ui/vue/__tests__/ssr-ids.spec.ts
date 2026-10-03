@@ -2,7 +2,8 @@
  * `id` в разметке — от места компонента в дереве, а не от счётчика процесса.
  *
  * Связки «таб ↔ панель», «заголовок ↔ панель» у Accordion, имена сеток
- * календаря, общий `name` радио строят плагины связок от id монтирования
+ * календаря, `id` частей поля даты, общий `name` радио строят плагины связок от
+ * id монтирования
  * (`IPluginContext.createId`). Его даёт `useId` Vue через
  * `createVueAdapterContext`, и он у каждого монтирования свой — в том числе у
  * элемента из данных (`items`), который рисуется с готовым экземпляром.
@@ -21,6 +22,7 @@ import { renderToString, type SSRContext } from 'vue/server-renderer'
 import {
 	Accordion,
 	Calendar,
+	DateInput,
 	Input,
 	RadioGroup,
 	RadioGroupItem,
@@ -142,6 +144,23 @@ describe('id при гидратации', () => {
 		expect(ids).toEqual(attrs(server, '.s-calendar__title-text', 'id'))
 		expect(attrs(client, '[role="grid"]', 'aria-labelledby')).toEqual(ids)
 		expect(new Set(ids).size).toBe(2)
+	})
+
+	it('поле даты: id частей у сервера и браузера одни, редактируемости нет ни у кого', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }),
+		)
+		const ids = attrs(client, '.s-date-input__segment', 'id')
+
+		expect(warnings).toEqual([])
+		expect(ids).toEqual(attrs(server, '.s-date-input__segment', 'id'))
+		expect(new Set(ids).size).toBe(3)
+		// Части редактируемыми делает только касание: сервер их не рисует такими
+		expect(attrs(server, '.s-date-input__segment', 'contenteditable')).toEqual([
+			null,
+			null,
+			null,
+		])
 	})
 
 	it('группа радио без своего имени: общий name у сервера и браузера один', async () => {

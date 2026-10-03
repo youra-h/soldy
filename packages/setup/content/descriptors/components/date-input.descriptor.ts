@@ -4,8 +4,10 @@
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
  * disabled, size, variant, ...) и добавляет границы и локаль формата. Дата
  * вводится по частям в формате локали, а вся она выделяется, копируется и
- * удаляется, как текст: части нередактируемые, их клавиши, указатель и буфер
- * обмена переводят в команды ядра три плагина поля.
+ * удаляется, как текст: на компьютере части нередактируемые, их клавиши,
+ * указатель и буфер обмена переводят в команды ядра плагины поля. Касание
+ * пальцем или пером делает части редактируемыми — для экранной клавиатуры
+ * (сенсорный плагин).
  *
  * Разметка: корень — группа (`role="group"`, имя — `aria_label` или
  * `aria_labelledBy`), в нём ряд частей — `spinbutton` с остановкой Tab у
@@ -17,8 +19,10 @@ import { TDateInput } from '@soldy-ui/core'
 import type { IDateInput } from '@soldy-ui/core'
 import {
 	DateInputClipboardPluginDescriptor,
+	DateInputIdsPluginDescriptor,
 	DateInputKeyboardPluginDescriptor,
 	DateInputPointerPluginDescriptor,
+	DateInputTouchPluginDescriptor,
 } from '../plugins'
 import { InputControlDescriptor } from './input-control.descriptor'
 
@@ -52,9 +56,10 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				locale: { type: String, triggers: ['change:locale'] },
 				/**
 				 * Части и разделители в порядке формата. Перечитываются на правку
-				 * частей и на всё, что пишет их наборы: локаль — текст, имена и
-				 * порядок, `disabled` — остановки Tab, `readonly` и `required` —
-				 * `aria-readonly` и `aria-required`, границы — `aria-invalid`.
+				 * частей и наборов частей (`change:segments`) и на всё, что пишет
+				 * их наборы ядро: локаль — текст, имена и порядок, `disabled` —
+				 * остановки Tab, `readonly` и `required` — `aria-readonly` и
+				 * `aria-required`, границы — `aria-invalid`.
 				 */
 				segments: {
 					type: Array,
@@ -81,6 +86,12 @@ export const DateInputDescriptor = defineDescriptor(() =>
 			DateInputPointerPluginDescriptor,
 			// Копирование, вырезание, вставка и перетаскивание даты текстом
 			DateInputClipboardPluginDescriptor,
+			// Касание делает части редактируемыми для экранной клавиатуры, её
+			// правку переводит в команды ядра. После плагина указателя: правку
+			// ряда, ставшего редактируемым ради контекстного меню, гасит он
+			DateInputTouchPluginDescriptor,
+			// `id` частей — от монтирования: по нему часть ссылается на себя
+			DateInputIdsPluginDescriptor,
 		],
 	}),
 )
