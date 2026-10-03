@@ -1,45 +1,17 @@
+@use 'sass:map';
 @use './mixins' as mixines;
 @use '../../mixins/required' as required;
 .s-input {
 	$this: &;
-	@apply inline-flex items-center;
-	@apply relative;
+
+	// Коробка поля — рамка, поверхность, геометрия строки слота и кольцо
+	// фокуса — общая с DateInput: `field` в `_mixins.scss`, там же объяснение
+	// геометрии.
+	@include mixines.field('input');
+
 	// Минимум против схлопывания: `inline-flex` сжимается по содержимому, и в
 	// узком контейнере поле уходило в полосу. У `.s-list-box` то же самое.
 	@apply min-w-40;
-
-	// Геометрия поля — значениями, а не процентами: высота размера
-	// (`--s-input-height`, модификаторы `--size-*` ниже), рамка, просвет слота
-	// от рамки и строка слота — высота размера без рамки и двух просветов. В
-	// строку встают слоты и теги в них (`tags/_tags.scss`).
-	//
-	// Раньше слот считал высоту процентом от поля (`calc(100% - 6px)`), и тег
-	// брал её по цепочке `h-full`. Но поле Select с тегами растёт по строкам
-	// тегов (`select/_select.scss`), а процент от поля с авто-высотой не
-	// разрешается: тег и очистка взяли бы высоту размера целиком, и поле с
-	// одним тегом стало бы выше поля без тегов. У обычного Input числа те же,
-	// что давал процент.
-	//
-	// Имена — с именем блока: свойства наследуются и доходят до разметки
-	// приложения внутри поля.
-	--s-input-border: 1px;
-	--s-input-slot-gap: 3px;
-	--s-input-slot-row: calc(
-		var(--s-input-height) - 2 * var(--s-input-border) - 2 * var(--s-input-slot-gap)
-	);
-	height: var(--s-input-height);
-
-	@apply rounded-md border-(length:--s-input-border);
-	@apply bg-s-component-surface;
-	@apply text-s-component;
-	@apply transition-colors duration-150;
-
-	// Кольцо есть всегда, меняется только его цвет. Если объявлять `outline-2`
-	// сразу в :has, то в базе `outline-color` — это `currentColor`, то есть
-	// цвет текста, и `transition-colors` гонит цвет от тёмного к акцентному:
-	// на глаз это заметный скачок. Прозрачный outline в базе даёт чистое
-	// проявление. Ширину и offset здесь не анимируем — на layout они не влияют.
-	@apply outline-2 outline-offset-2 outline-transparent;
 
 	&:has(input:focus-visible:not(:disabled)) {
 		@apply outline-s-component;
@@ -61,7 +33,7 @@
 	}
 
 	// Высота слота — строка поля, а не процент от него: у поля Select с тегами
-	// высота авто (см. геометрию выше).
+	// высота авто (см. геометрию в `field`).
 	&__leading,
 	&__trailing {
 		@apply flex items-center justify-center gap-1;
@@ -82,66 +54,27 @@
 		}
 	}
 
-	&--variant-accent {
-		@include mixines.input-variant('accent');
-	}
-
-	&--variant-positive {
-		@include mixines.input-variant('positive');
-	}
-
-	&--variant-negative {
-		@include mixines.input-variant('negative');
-	}
-
-	&--variant-caution {
-		@include mixines.input-variant('caution');
-	}
-
-	// Высота размера — единственное место шкалы высот поля. Строку слота из
-	// неё выводит база, поэтому ни Select, ни теги своих высот по размерам не
-	// заводят: вторая копия шкалы разошлась бы с этой молча.
-	&--size-sm {
-		--s-input-height: calc(var(--spacing) * 7);
-
-		input {
-			@apply text-sm;
-			@apply leading-7 indent-1.5;
+	@each $variant in mixines.$variants {
+		&--variant-#{$variant} {
+			@include mixines.input-variant($variant);
 		}
 	}
 
-	&--size-normal {
-		--s-input-height: calc(var(--spacing) * 8);
+	// Высота размера — по шкале `$sizes` в `_mixins.scss`, единственному месту
+	// шкалы высот поля. Строку слота из неё выводит коробка поля, поэтому ни
+	// Select, ни теги своих высот по размерам не заводят: вторая копия шкалы
+	// разошлась бы с этой молча.
+	@each $size, $scale in mixines.$sizes {
+		&--size-#{$size} {
+			@include mixines.field-height('input', $size);
 
-		input {
-			@apply leading-8 indent-2;
-		}
-	}
+			input {
+				@if map.get($scale, 'text') {
+					@apply #{map.get($scale, 'text')};
+				}
 
-	&--size-lg {
-		--s-input-height: calc(var(--spacing) * 9);
-
-		input {
-			@apply text-lg;
-			@apply leading-9 indent-2.5;
-		}
-	}
-
-	&--size-xl {
-		--s-input-height: calc(var(--spacing) * 10);
-
-		input {
-			@apply text-xl;
-			@apply leading-10 indent-3;
-		}
-	}
-
-	&--size-2xl {
-		--s-input-height: calc(var(--spacing) * 11);
-
-		input {
-			@apply text-2xl;
-			@apply leading-11 indent-3.5;
+				@apply #{'leading-' + map.get($scale, 'h')} #{'indent-' + map.get($scale, 'indent')};
+			}
 		}
 	}
 }
