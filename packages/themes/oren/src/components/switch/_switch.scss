@@ -31,7 +31,7 @@
 
 		&:checked + #{$this}__track {
 			#{$this}__track--thumb {
-				@apply translate-x-4;
+				@apply start-4.5;
 			}
 		}
 	}
@@ -43,13 +43,19 @@
 		@apply rounded-full;
 		@apply transition-colors duration-200;
 
+		// Ручка ходит от начала строки (`inset-inline-start`), как ручка
+		// Slider, и в RTL переключатель разворачивается сам: выключенная ручка
+		// стоит справа, включённая уходит влево. Не `translate`: у сдвига нет
+		// логических направлений, и в RTL он увёл бы ручку вправо. Селектора
+		// по `[dir='rtl']` здесь нет: он зеркалил бы и переключатель с
+		// `direction="ltr"` внутри RTL-предка.
 		&--thumb {
 			@apply relative;
 			@apply flex items-center justify-center;
 			@apply bg-s-component-knob;
 			@apply rounded-full shadow-md;
-			@apply absolute top-0.5 left-0.5;
-			@apply transition-transform duration-200;
+			@apply absolute top-0.5 start-0.5;
+			@apply transition-[inset-inline-start] duration-200;
 		}
 	}
 

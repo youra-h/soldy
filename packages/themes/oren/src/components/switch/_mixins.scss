@@ -1,22 +1,25 @@
 @use '../../mixins/hover';
 @use '../../mixins/veil';
 
+// Размер дорожки и ручки. Ручка стоит в полушаге (`0.5`) от краёв дорожки:
+// выключенная — от начала строки, включённая — от конца, то есть её начало
+// отходит на ширину дорожки без ручки и полушага (`$on`).
 @mixin switch-size($this, $tw) {
 	$th: $tw * 0.5 + 1;
 	$ts: $th - 1;
-	$tx: $tw - $th;
+	$on: $tw - $ts - 0.5;
 
 	#{$this}__track {
 		@apply w-#{$tw} h-#{$th};
 
 		&--thumb {
 			@apply w-#{$ts} h-#{$ts};
-			@apply top-0.5 left-0.5;
+			@apply top-0.5 start-0.5;
 		}
 	}
 
 	input:checked + #{$this}__track #{$this}__track--thumb {
-		@apply translate-x-#{$tx};
+		@apply start-#{$on};
 	}
 }
 
