@@ -88,6 +88,31 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	// на глаз это заметный скачок. Прозрачный outline в базе даёт чистое
 	// проявление. Ширину и offset здесь не анимируем — на layout они не влияют.
 	@apply outline-2 outline-offset-2 outline-transparent;
+
+	// Принудительные цвета (высокий контраст Windows): цвет контура браузер
+	// заменяет системным, и прозрачное кольцо в покое стало бы рамкой у
+	// каждого поля — какое из них под фокусом, было бы не понять. Тем же
+	// приёмом тема нарочно рисует кромку панелей (`popover/_popover.scss`), а
+	// здесь он мешает: в покое кольца в этом режиме нет вовсе, под фокусом его
+	// возвращает `field-focus`.
+	@media (forced-colors: active) {
+		outline-style: none;
+	}
+}
+
+// Кольцо коробки поля под фокусом. Когда оно горит, решает блок — у Input
+// фокус ввода, у DateInput фокус части, — а как выглядит, решает коробка.
+//
+// В режиме принудительных цветов кольцо в покое снято (`field`), и фокус
+// возвращает его сплошным, системным цветом фокуса: свой цвет темы браузер
+// здесь заменил бы, а `Highlight` оставляет как есть.
+@mixin field-focus {
+	@apply outline-s-component;
+
+	@media (forced-colors: active) {
+		outline-style: solid;
+		outline-color: Highlight;
+	}
 }
 
 // Цвет границы — обычным объявлением, а не через `@apply border-s-…`.
@@ -100,10 +125,13 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 //
 // Коллизия только у `neutral` — остальные семейства темы Tailwind не знает.
 //
-// `$enabled` — когда наведение красит рамку. У Input это поле, которое не
-// выключено; DateInput выключенность читает из `data-disabled`: у его корня
-// нативного `disabled` нет.
-@mixin input-variant($color: 'neutral', $border: 300, $enabled: ':not(:disabled)') {
+// `$enabled` — когда наведение красит рамку: только у включённого поля, а
+// выключено ли поле, знает блок. У Input выключено вложенное поле
+// (`_input.scss`), DateInput читает `data-disabled`: нативного `disabled` нет
+// у корня ни того ни другого. Умолчания нет: прежнее, `:not(:disabled)`, у
+// корня-`div` истинно всегда, и рамка выключенного Input темнела под
+// курсором.
+@mixin input-variant($color, $enabled, $border: 300) {
 	$border-hover: $border + 100;
 
 	border-color: var(--s-#{$color}-#{$border});

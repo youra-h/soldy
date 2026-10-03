@@ -3,17 +3,21 @@
 // Цвет из шкалы темы (`s-negative`), а не из палитры Tailwind (`rose`):
 // иначе маркер один на все темы и цветовые схемы — пакет темы им управлять
 // не может.
+//
+// Угол — начала строки, а не левый: сторона логическая (`$start`), и в RTL
+// маркер стоит справа, у начала поля, как и слоты поля. Левым он был у
+// каждого вызова, и в RTL съезжал к концу у Input, CheckBox и Switch.
 @mixin required-indicator(
 	$size: '1',
 	$color: 's-negative',
 	$shade: '500',
 	$top: '-top-1',
-	$left: '-left-1'
+	$start: '-start-1'
 ) {
 	content: '';
 	@apply absolute;
 	@apply #{$top};
-	@apply #{$left};
+	@apply #{$start};
 	@apply #{'w-' + $size};
 	@apply #{'h-' + $size};
 	@apply rounded-full;
