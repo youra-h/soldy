@@ -8,14 +8,20 @@ import {
 	calendarLocale,
 	clampDate,
 	compareDates,
+	compareFieldValues,
 	dateIfExists,
+	dateTimeIfExists,
 	dayOfWeek,
 	daysInMonth,
 	endOfWeek,
+	inFieldBounds,
 	monthGrid,
 	monthsBetween,
+	nowDateTime,
 	orderDates,
 	parseDate,
+	parseDateTime,
+	parseFieldValue,
 	shiftDate,
 	startOfMonth,
 	startOfWeek,
@@ -102,6 +108,72 @@ describe('разбор даты', () => {
 		]) {
 			expect(parseDate(value), String(value)).toBeUndefined()
 		}
+	})
+})
+
+describe('разбор даты со временем', () => {
+	it('YYYY-MM-DDTHH:mm с датой, которая есть, — как есть', () => {
+		for (const value of [
+			'2026-05-12T14:30',
+			'2026-05-12T00:00',
+			'2026-05-12T23:59',
+			'2024-02-29T12:00',
+			'0001-01-01T00:00',
+			'9999-12-31T23:59',
+		]) {
+			expect(parseDateTime(value), value).toBe(value)
+		}
+	})
+
+	it('не та дата, не то время и не тот формат — undefined', () => {
+		for (const value of [
+			'2026-02-30T10:00',
+			'2026-05-12T24:00',
+			'2026-05-12T12:60',
+			'2026-05-12T9:05',
+			'2026-05-12 14:30',
+			'2026-05-12T14:30:00',
+			'2026-05-12T14:30Z',
+			'2026-05-12',
+			'14:30',
+			'',
+			null,
+			new Date(),
+		]) {
+			expect(parseDateTime(value), String(value)).toBeUndefined()
+		}
+	})
+
+	it('дата со временем из чисел — только та, что есть', () => {
+		expect(dateTimeIfExists(2026, 5, 12, 9, 5)).toBe('2026-05-12T09:05')
+		expect(dateTimeIfExists(5, 1, 1, 0, 0)).toBe('0005-01-01T00:00')
+		expect(dateTimeIfExists(2026, 2, 29, 10, 0)).toBeUndefined()
+		expect(dateTimeIfExists(2026, 5, 12, 24, 0)).toBeUndefined()
+		expect(dateTimeIfExists(2026, 5, 12, -1, 0)).toBeUndefined()
+		expect(dateTimeIfExists(2026, 5, 12, 10, 1.5)).toBeUndefined()
+	})
+
+	it('значение поля — дата или дата со временем', () => {
+		expect(parseFieldValue('2026-05-12')).toBe('2026-05-12')
+		expect(parseFieldValue('2026-05-12T14:30')).toBe('2026-05-12T14:30')
+		expect(parseFieldValue('2026-05-12T14:30:00')).toBeUndefined()
+	})
+
+	it('порядок значений поля: дата и дата со временем — по дню, два момента — до минуты', () => {
+		expect(compareFieldValues('2026-05-12T14:30', '2026-05-12T14:31')).toBeLessThan(0)
+		expect(compareFieldValues('2026-05-12T23:59', '2026-05-12')).toBe(0)
+		expect(compareFieldValues('2026-05-12', '2026-05-12T00:00')).toBe(0)
+		expect(compareFieldValues('2026-05-13T00:00', '2026-05-12')).toBeGreaterThan(0)
+	})
+
+	it('границы поля: невалидная не ограничивает, max раньше min схлопывается в min', () => {
+		expect(inFieldBounds('2026-05-12T14:30', '2026-05-12T14:00', '2026-05-12')).toBe(true)
+		expect(inFieldBounds('2026-05-12T13:59', '2026-05-12T14:00', undefined)).toBe(false)
+		expect(inFieldBounds('2026-05-12T14:30', 'вчера', 'завтра')).toBe(true)
+		expect(inFieldBounds('2026-05-12T14:30', '2026-05-12T14:30', '2026-05-11')).toBe(true)
+		expect(inFieldBounds('2026-05-12T14:31', '2026-05-12T14:30', '2026-05-12T14:00')).toBe(
+			false,
+		)
 	})
 })
 
@@ -400,6 +472,17 @@ describe('сегодня', () => {
 
 		expect(todayDate()).toBe('2026-09-26')
 		expect(todayDate('Mars/Base')).toBe('2026-09-26')
+	})
+
+	it('текущий момент — до минуты, в поясе; часы — от 0 до 23', () => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(Date.UTC(2026, 8, 26, 20, 5, 59))
+
+		expect(nowDateTime('UTC')).toBe('2026-09-26T20:05')
+		expect(nowDateTime('Asia/Tokyo')).toBe('2026-09-27T05:05')
+
+		vi.setSystemTime(Date.UTC(2026, 8, 26, 0, 7))
+		expect(nowDateTime('UTC')).toBe('2026-09-26T00:07')
 	})
 })
 

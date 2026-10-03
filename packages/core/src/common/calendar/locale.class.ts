@@ -1,13 +1,16 @@
 import { addDays, utcDateOf } from './date'
-import { DATE_PARTS, digitOf, isDatePart } from './field'
+import { GRANULARITY_PARTS, digitOf, hasDayPeriod, isFieldPart } from './field'
 import { DATE_PART_PLACEHOLDERS } from './placeholders'
 import { firstDayOfWeek } from './week'
 import type {
 	ICalendarLocale,
 	IDateFieldFormat,
 	TCalendarDate,
+	TDateFieldPart,
 	TDateFieldToken,
+	TDateGranularity,
 	TDatePart,
+	THourCycle,
 	TWeekday,
 	TWeekdayWidth,
 } from './types'
@@ -34,28 +37,79 @@ const YEAR: Intl.DateTimeFormatOptions = { year: 'numeric' }
 const DAY: Intl.DateTimeFormatOptions = { day: 'numeric' }
 const FULL: Intl.DateTimeFormatOptions = { dateStyle: 'full' }
 
-/** Формат поля даты: день и месяц — двумя цифрами, год — полностью. */
-const FIELD: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
+/** Имена периодов суток — в 12-часовом цикле, каким бы ни был цикл локали. */
+const DAY_PERIOD: Intl.DateTimeFormatOptions = { hour: 'numeric', hourCycle: 'h12' }
+
+/**
+ * Формат поля даты по точности: день, месяц, час и минута — двумя цифрами, год
+ * — полностью. Цикл часов здесь не задан: его даёт локаль.
+ */
+const FIELD: Readonly<Record<TDateGranularity, Intl.DateTimeFormatOptions>> = {
+	day: { day: '2-digit', month: '2-digit', year: 'numeric' },
+	minute: {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	},
+}
 
 /**
  * Опорная дата формата поля. По ней видно направление ряда и сдвиг года
  * календаря поля: число дня не совпадает с номером месяца, и части не спутать.
+ * Время — после полудня, 14:30: час не совпадает ни с днём, ни с минутой.
  */
 const FIELD_SAMPLE: TCalendarDate = '2026-05-12'
 const FIELD_SAMPLE_YEAR = 2026
+const FIELD_SAMPLE_TIME_MS = (14 * 60 + 30) * 60_000
+
+/** Час в мс — шаг к часам, по которым видны имена периодов суток. */
+const HOUR_MS = 3_600_000
+
+/** Часы, по которым видны имена периодов суток: 2 часа ночи и 2 часа дня. */
+const DAY_PERIOD_HOURS: readonly [number, number] = [2, 14]
 
 /**
- * Запасной формат поля — ISO: части по порядку `YYYY-MM-DD`. Нужен, только
- * если Intl отдал не ровно по одной части каждого типа; у известных движков
- * такой локали нет.
+ * Имена периодов суток, если Intl их не отдал: у известных движков такой
+ * локали нет, а своих строк у библиотеки нет — имена берутся английские.
  */
-const ISO_TOKENS: readonly TDateFieldToken[] = [
-	{ type: 'year' },
-	{ type: 'literal', text: '-' },
-	{ type: 'month' },
-	{ type: 'literal', text: '-' },
-	{ type: 'day' },
-]
+const DAY_PERIOD_FALLBACK: readonly [string, string] = ['AM', 'PM']
+
+/**
+ * Подсказка пустой части времени — в любом языке одна: у Intl подсказок частей
+ * нет, а у времени и в браузерах вместо букв черта.
+ */
+const TIME_PLACEHOLDER = '––'
+
+/**
+ * Запасной формат поля — ISO: части по порядку `YYYY-MM-DD`, время — `HH:mm` в
+ * 24-часовом цикле. Нужен, только если Intl отдал не ровно по одной части
+ * каждого типа; у известных движков такой локали нет.
+ */
+const ISO_TOKENS: Readonly<Record<TDateGranularity, readonly TDateFieldToken[]>> = {
+	day: [
+		{ type: 'year' },
+		{ type: 'literal', text: '-' },
+		{ type: 'month' },
+		{ type: 'literal', text: '-' },
+		{ type: 'day' },
+	],
+	minute: [
+		{ type: 'year' },
+		{ type: 'literal', text: '-' },
+		{ type: 'month' },
+		{ type: 'literal', text: '-' },
+		{ type: 'day' },
+		{ type: 'literal', text: ' ' },
+		{ type: 'hour' },
+		{ type: 'literal', text: ':' },
+		{ type: 'minute' },
+	],
+}
+
+/** Цикл часов запасного формата и формата без часов. */
+const ISO_HOUR_CYCLE: THourCycle = 'h23'
 
 /** Цифры от нуля до девяти — то, что форматирует система счисления. */
 const DIGITS: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -97,7 +151,7 @@ export class TCalendarLocale implements ICalendarLocale {
 	readonly firstDay: TWeekday
 	readonly calendar: string
 	private readonly _formatters = new Map<string, Intl.DateTimeFormat>()
-	private _dateField: IDateFieldFormat | undefined = undefined
+	private readonly _fields = new Map<TDateGranularity, IDateFieldFormat>()
 
 	/** @param tag тег локали; невалидный и пустой — `en-US` */
 	constructor(tag: string | undefined) {
@@ -146,31 +200,50 @@ export class TCalendarLocale implements ICalendarLocale {
 	}
 
 	/**
-	 * Формат поля даты. Календарь у него свой: буддийский, если буддийский
-	 * календарь подписей, иначе григорианский, — эры у поля нет, а японская эра
-	 * меняется посреди года.
+	 * Формат поля даты в точности `granularity`. Календарь у него свой:
+	 * буддийский, если буддийский календарь подписей, иначе григорианский, —
+	 * эры у поля нет, а японская эра меняется посреди года.
 	 */
-	get dateField(): IDateFieldFormat {
-		this._dateField ??= this._createDateField()
+	fieldFormat(granularity: TDateGranularity): IDateFieldFormat {
+		let format = this._fields.get(granularity)
 
-		return this._dateField
+		if (format === undefined) {
+			format = this._createField(granularity)
+			this._fields.set(granularity, format)
+		}
+
+		return format
 	}
 
-	private _createDateField(): IDateFieldFormat {
+	/**
+	 * Цикл часов — тот, с которым форматтер поля пишет час: только от локали,
+	 * с ключом `-u-hc-` тоже. Период суток — часть формата, если цикл
+	 * 12-часовой.
+	 */
+	private _createField(granularity: TDateGranularity): IDateFieldFormat {
 		const formatter = new Intl.DateTimeFormat([this.locale, DEFAULT_LOCALE], {
-			...FIELD,
+			...FIELD[granularity],
 			calendar: this.calendar === 'buddhist' ? 'buddhist' : 'gregory',
 			timeZone: 'UTC',
 		})
-		const { locale, numberingSystem } = formatter.resolvedOptions()
-		const sample = formatter.formatToParts(utcDateOf(FIELD_SAMPLE))
+		const { locale, numberingSystem, hourCycle = ISO_HOUR_CYCLE } = formatter.resolvedOptions()
+		const sample = formatter.formatToParts(
+			utcDateOf(FIELD_SAMPLE).getTime() + FIELD_SAMPLE_TIME_MS,
+		)
 		const digits = digitsOf(numberingSystem)
-		const tokens = tokensOf(sample)
+		const expected: readonly TDateFieldPart[] = hasDayPeriod(hourCycle)
+			? [...GRANULARITY_PARTS[granularity], 'dayPeriod']
+			: GRANULARITY_PARTS[granularity]
+		const found = tokensOf(sample, expected)
+		const tokens = found ?? ISO_TOKENS[granularity]
 		const year = numberOf(sample.find((part) => part.type === 'year')?.value ?? '', digits)
 
 		return {
+			granularity,
 			tokens,
 			parts: tokens.flatMap((token) => (token.type === 'literal' ? [] : [token.type])),
+			hourCycle: found === undefined ? ISO_HOUR_CYCLE : hourCycle,
+			dayPeriods: this._dayPeriods(),
 			direction: directionOf(sample.map((part) => part.value).join('')),
 			lang: locale,
 			yearOffset: Number.isNaN(year) ? 0 : year - FIELD_SAMPLE_YEAR,
@@ -178,6 +251,17 @@ export class TCalendarLocale implements ICalendarLocale {
 			placeholders: placeholdersOf(locale),
 			names: namesOf(this.locale),
 		}
+	}
+
+	/** Имена периодов суток — до полудня и после, как их пишет 12-часовой цикл локали. */
+	private _dayPeriods(): readonly [string, string] {
+		const formatter = this._formatter('dayPeriod', DAY_PERIOD)
+		const name = (index: 0 | 1): string =>
+			formatter
+				.formatToParts(DAY_PERIOD_HOURS[index] * HOUR_MS)
+				.find((part) => part.type === 'dayPeriod')?.value ?? DAY_PERIOD_FALLBACK[index]
+
+		return [name(0), name(1)]
 	}
 
 	private _formatter(key: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
@@ -221,17 +305,20 @@ function labelCalendar(locale: string): string {
 
 /**
  * Части и литералы формата поля. Соседние литералы склеиваются, всё, что не
- * день, месяц и год, — тоже литерал. Не ровно по одной части каждого типа —
- * формат ISO.
+ * ожидаемая часть, — тоже литерал. Не ровно по одной ожидаемой части каждого
+ * типа — `undefined`: формат берётся запасной.
  */
-function tokensOf(sample: readonly Intl.DateTimeFormatPart[]): readonly TDateFieldToken[] {
+function tokensOf(
+	sample: readonly Intl.DateTimeFormatPart[],
+	expected: readonly TDateFieldPart[],
+): readonly TDateFieldToken[] | undefined {
 	const tokens: TDateFieldToken[] = []
-	const seen = new Set<TDatePart>()
+	const seen = new Set<TDateFieldPart>()
 
 	for (const { type, value } of sample) {
 		const last = tokens[tokens.length - 1]
 
-		if (isDatePart(type) && !seen.has(type)) {
+		if (isFieldPart(type) && expected.includes(type) && !seen.has(type)) {
 			seen.add(type)
 			tokens.push({ type })
 		} else if (last?.type === 'literal') {
@@ -241,7 +328,7 @@ function tokensOf(sample: readonly Intl.DateTimeFormatPart[]): readonly TDateFie
 		}
 	}
 
-	return seen.size === DATE_PARTS.length ? tokens : ISO_TOKENS
+	return seen.size === expected.length ? tokens : undefined
 }
 
 /**
@@ -292,11 +379,24 @@ function directionOf(text: string): 'ltr' | 'rtl' {
 }
 
 /**
- * Подсказки пустых частей по языку локали форматтера: тег целиком, язык с
+ * Подсказки пустых частей: у даты — по языку локали форматтера, у времени —
+ * черта (`TIME_PLACEHOLDER`).
+ */
+function placeholdersOf(locale: string): Readonly<Record<TDateFieldPart, string>> {
+	return {
+		...datePlaceholdersOf(locale),
+		hour: TIME_PLACEHOLDER,
+		minute: TIME_PLACEHOLDER,
+		dayPeriod: TIME_PLACEHOLDER,
+	}
+}
+
+/**
+ * Подсказки частей даты по языку локали форматтера: тег целиком, язык с
  * письменностью (`sr-Latn`), язык с регионом (`zh-TW`), язык; затем другой
  * регион того же языка (`zh-HK` — `zh-CN`). Языка в таблице нет — английские.
  */
-function placeholdersOf(locale: string): Readonly<Record<TDatePart, string>> {
+function datePlaceholdersOf(locale: string): Readonly<Record<TDatePart, string>> {
 	const { language, script, region } = new Intl.Locale(locale)
 	const tags = [
 		locale,
@@ -320,16 +420,24 @@ function placeholdersOf(locale: string): Readonly<Record<TDatePart, string>> {
  * `dateTimeField`, локали списком `[тег, 'en-US']`, как у подписей. Движок без
  * таких имён — имена типов частей: своих строк у библиотеки нет.
  */
-function namesOf(locale: string): Readonly<Record<TDatePart, string>> {
+function namesOf(locale: string): Readonly<Record<TDateFieldPart, string>> {
 	try {
 		const names = new Intl.DisplayNames([locale, DEFAULT_LOCALE], { type: 'dateTimeField' })
 
-		return {
-			day: names.of('day') ?? 'day',
-			month: names.of('month') ?? 'month',
-			year: names.of('year') ?? 'year',
-		}
+		return byPart((part) => names.of(part) ?? part)
 	} catch {
-		return { day: 'day', month: 'month', year: 'year' }
+		return byPart((part) => part)
+	}
+}
+
+/** Запись по всем частям поля — значение каждой даёт функция. */
+function byPart<T>(value: (part: TDateFieldPart) => T): Readonly<Record<TDateFieldPart, T>> {
+	return {
+		day: value('day'),
+		month: value('month'),
+		year: value('year'),
+		hour: value('hour'),
+		minute: value('minute'),
+		dayPeriod: value('dayPeriod'),
 	}
 }

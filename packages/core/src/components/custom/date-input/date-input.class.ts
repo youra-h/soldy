@@ -3,18 +3,21 @@ import type { TDefaultValues } from '../../base/component'
 import {
 	DEFAULT_LOCALE,
 	calendarLocale,
-	digitOf,
-	parseDate,
-	parseFieldDate,
-	todayDate,
+	inFieldBounds,
+	nowDateTime,
+	parseFieldText,
+	parseFieldValue,
 } from '../../../common'
-import type { IDateFieldFormat, TAttributesMap, TCalendarDate, TDatePart } from '../../../common'
-import { calendarBounds, inBounds } from '../calendar/dates'
+import type {
+	IDateFieldFormat,
+	TAttributesMap,
+	TDateFieldPart,
+	TDateGranularity,
+} from '../../../common'
 import {
-	dateOf,
 	emptyParts,
-	enterDigit,
-	eraseDigit,
+	enterKey,
+	erasePart,
 	limitsOf,
 	partsOf,
 	sameParts,
@@ -22,12 +25,14 @@ import {
 	stepPart,
 	storedOf,
 	textOf,
+	valueOfParts,
 	withPart,
 	withoutParts,
 } from './parts'
 import type {
 	IDateInput,
 	IDateInputProps,
+	TDateInputBound,
 	TDateInputEdge,
 	TDateInputEvents,
 	TDateInputPart,
@@ -35,23 +40,29 @@ import type {
 	TDateInputSegment,
 	TDateInputValue,
 	TDateInputEdit,
+	TKeyEntry,
 } from './types'
 
 /**
- * Поле даты из частей по формату локали: день, месяц и год — в порядке и с
- * разделителями `Intl.DateTimeFormat#formatToParts`.
+ * Поле даты из частей по формату локали: день, месяц и год, а с точностью до
+ * минуты — ещё час, минута и период суток, в порядке и с разделителями
+ * `Intl.DateTimeFormat#formatToParts`.
  *
  * **Части — буфер правки.** Число каждой части ядро держит само
- * (`TDateInputParts`); значение (`value`) пишется, когда собраны все три и
- * такая дата есть, и снимается, когда собранную дату разобрали. Запись
- * снаружи — части берутся из неё, не дата — части пусты; эхо своей записи
- * (`v-model` вернул то же значение) части не трогает. Отменили
- * `change:value:before` — правки нет, поправили — части показывают итог.
+ * (`TDateInputParts`); значение (`value`) пишется, когда собраны все части
+ * точности и такое значение есть, и снимается, когда собранное разобрали.
+ * Запись снаружи — части берутся из неё (дата или дата со временем — при любой
+ * точности), не значение — части пусты; эхо своей записи (`v-model` вернул то
+ * же значение) части не трогает. Отменили `change:value:before` — правки нет,
+ * поправили — части показывают итог.
  *
- * **Формат — только от `locale`**: порядок частей, разделители, цифры,
- * подсказки пустых частей, имена частей и направление ряда — формат поля
- * локали (`calendarLocale(locale).dateField`). Смена локали частей не трогает:
- * у них другим становится только текст.
+ * **Формат — только от `locale` и точности** (`granularity`): порядок частей,
+ * разделители, цифры, цикл часов, имена периодов суток, подсказки пустых
+ * частей, имена частей и направление ряда — формат поля локали
+ * (`calendarLocale(locale).fieldFormat(granularity)`). Смена локали и точности
+ * частей не трогает: другими становятся текст и состав частей формата, а
+ * время, скрытое точностью до дня, остаётся в частях и вернётся. Значение
+ * пишется заново, только если те же части в новом формате собираются иначе.
  *
  * **Фокус части** ведёт ядро (`focusedSegment`, как `focusedDate` у
  * календаря): плагин сообщает, куда пришёл DOM-фокус, а ядро переводит его,
@@ -62,9 +73,9 @@ import type {
  * плагины. Выделение всей даты — выделение браузера, а не состояние ядра: оно
  * принадлежит документу, и второй его путь в модели разошёлся бы с ним.
  *
- * `min` и `max` дату не прижимают: собранная дата вне них — `invalid`
- * (`data-invalid` у корня, `aria-invalid` у частей), и её видно таким, какой
- * её набрали.
+ * `min` и `max` значение не прижимают: собранное значение вне них — `invalid`
+ * (`data-invalid` у корня, `aria-invalid` у частей), и его видно таким, каким
+ * его набрали. Дата и дата со временем сравниваются по дню.
  */
 export class TDateInput
 	extends TInputControl<TDateInputValue, IDateInputProps, TDateInputEvents>
@@ -73,19 +84,21 @@ export class TDateInput
 	static override baseClass = 's-date-input'
 
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IDateInputProps, 'locale', 'min' | 'max'> = {
+		TDefaultValues<IDateInputProps, 'locale' | 'granularity', 'min' | 'max'> = {
 		...TInputControl.defaultValues,
 		min: undefined,
 		max: undefined,
 		// Языка интерфейса библиотека не знает: дефолт английский, как у календаря
 		locale: DEFAULT_LOCALE,
+		granularity: 'day',
 	}
 
-	protected _min: TCalendarDate | undefined
-	protected _max: TCalendarDate | undefined
+	protected _min: TDateInputBound
+	protected _max: TDateInputBound
 	protected _locale: string
+	protected _granularity: TDateGranularity
 	protected _parts: TDateInputParts
-	protected _focusedSegment: TDatePart | undefined = undefined
+	protected _focusedSegment: TDateFieldPart | undefined = undefined
 	/** Цифры, набранные в часть под фокусом: к ним допишется следующая */
 	protected _typed = ''
 	/** Своя правка, которую сейчас пишет сеттер `value` */
@@ -99,6 +112,7 @@ export class TDateInput
 		this._min = props.min ?? ctor.defaultValues.min
 		this._max = props.max ?? ctor.defaultValues.max
 		this._locale = props.locale ?? ctor.defaultValues.locale
+		this._granularity = props.granularity ?? ctor.defaultValues.granularity
 		this._parts = partsOf(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
@@ -108,11 +122,6 @@ export class TDateInput
 		this.events.on('change:min', () => this._syncInvalid())
 		this.events.on('change:max', () => this._syncInvalid())
 
-		// Набранные цифры — в цифрах и календаре прежней локали
-		this.events.on('change:locale', () => {
-			this._typed = ''
-		})
-
 		this._syncInvalid()
 	}
 
@@ -121,11 +130,11 @@ export class TDateInput
 	/* ------------------------------------------------------------------ */
 
 	/** Невалидная строка границей не считается. */
-	get min(): TCalendarDate | undefined {
+	get min(): TDateInputBound {
 		return this._min
 	}
 
-	set min(value: TCalendarDate | undefined) {
+	set min(value: TDateInputBound) {
 		if (this._min === value) return
 
 		this._min = value
@@ -133,11 +142,11 @@ export class TDateInput
 	}
 
 	/** Раньше `min` — граница схлопывается в `min`, как у календаря. */
-	get max(): TCalendarDate | undefined {
+	get max(): TDateInputBound {
 		return this._max
 	}
 
-	set max(value: TCalendarDate | undefined) {
+	set max(value: TDateInputBound) {
 		if (this._max === value) return
 
 		this._max = value
@@ -148,21 +157,44 @@ export class TDateInput
 		return this._locale
 	}
 
+	/** Части те же; значение — только если цикл часов сменил, нужен ли период суток. */
 	set locale(value: string) {
 		if (this._locale === value) return
 
+		const before = valueOfParts(this._parts, this._format)
+
 		this._locale = value
 		this.events.emit('change:locale', value)
+		this._formatChanged(before)
 	}
 
-	/** Собранная дата вне `min`/`max`. Даты нет — верно: проверять нечего. */
+	get granularity(): TDateGranularity {
+		return this._granularity
+	}
+
+	/**
+	 * Части сохраняются по типу, а значение собирается из них в новой точности
+	 * — так же, как после правки: время ушло из значения и вернётся в него, а
+	 * дата без набранного времени значения не даёт.
+	 */
+	set granularity(value: TDateGranularity) {
+		if (this._granularity === value) return
+
+		const before = valueOfParts(this._parts, this._format)
+
+		this._granularity = value
+		this.events.emit('change:granularity', value)
+		this._formatChanged(before)
+	}
+
+	/** Собранное значение вне `min`/`max`. Значения нет — верно: проверять нечего. */
 	get invalid(): boolean {
-		const date = parseDate(this._value)
+		const value = parseFieldValue(this._value)
 
-		return date !== undefined && !inBounds(date, calendarBounds(this._min, this._max))
+		return value !== undefined && !inFieldBounds(value, this._min, this._max)
 	}
 
-	get focusedSegment(): TDatePart | undefined {
+	get focusedSegment(): TDateFieldPart | undefined {
 		return this._focusedSegment
 	}
 
@@ -176,7 +208,7 @@ export class TDateInput
 	 */
 	get segments(): TDateInputSegment[] {
 		const format = this._format
-		const empty = emptyParts(this._parts)
+		const empty = emptyParts(this._parts, format)
 
 		return format.tokens.map((token, index) =>
 			token.type === 'literal'
@@ -212,7 +244,7 @@ export class TDateInput
 	/* Команды                                                            */
 	/* ------------------------------------------------------------------ */
 
-	focusSegment(part: TDatePart | undefined): void {
+	focusSegment(part: TDateFieldPart | undefined): void {
 		if (this._focusedSegment === part) return
 
 		this._focusedSegment = part
@@ -230,25 +262,30 @@ export class TDateInput
 
 	typeKey(key: string): boolean {
 		const part = this._focusedSegment
-		const digit = digitOf(key, this._format.digits)
 
-		if (part === undefined || digit === undefined) return false
-		if (!this._editable) return true
+		if (part === undefined) return false
 
-		this._enter(this._parts, this._typed, part, digit)
+		const entry = enterKey(this._parts, this._typed, part, key, this._format)
+
+		if (entry === undefined) return false
+		if (this._editable) this._enter(entry)
 
 		return true
 	}
 
-	replaceSegments(parts: readonly TDatePart[], key: string): boolean {
-		const digit = digitOf(key, this._format.digits)
-		const first = this._format.parts.find((part) => parts.includes(part))
+	replaceSegments(parts: readonly TDateFieldPart[], key: string): boolean {
+		const format = this._format
+		const first = format.parts.find((part) => parts.includes(part))
 
-		if (digit === undefined || first === undefined) return false
+		if (first === undefined) return false
+
+		const entry = enterKey(withoutParts(this._parts, parts, format), '', first, key, format)
+
+		if (entry === undefined) return false
 		if (!this._editable) return true
 
 		this.focusSegment(first)
-		this._enter(withoutParts(this._parts, parts), '', first, digit)
+		this._enter(entry)
 
 		return true
 	}
@@ -259,9 +296,7 @@ export class TDateInput
 		if (part === undefined || !this._editable) return
 
 		this._typed = ''
-		this._commit(
-			stepPart(this._parts, part, count, this._format.yearOffset, partsOf(todayDate())),
-		)
+		this._commit(stepPart(this._parts, part, count, this._format, partsOf(nowDateTime())))
 	}
 
 	moveSegmentToEdge(edge: TDateInputEdge): void {
@@ -269,11 +304,14 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		const { min, max } = limitsOf(part, this._parts, this._format.yearOffset)
+		const format = this._format
+		const { min, max } = limitsOf(part, this._parts, format)
 		const shown = edge === 'start' ? min : max
 
 		this._typed = ''
-		this._commit(withPart(this._parts, part, storedOf(part, shown, this._format.yearOffset)))
+		this._commit(
+			withPart(this._parts, part, storedOf(part, shown, this._parts, format), format),
+		)
 	}
 
 	eraseDigit(): void {
@@ -281,7 +319,7 @@ export class TDateInput
 
 		if (part === undefined || !this._editable) return
 
-		const erased = eraseDigit(this._parts, part, this._format.yearOffset)
+		const erased = erasePart(this._parts, part, this._format)
 
 		// Пустую часть стирать нечего: Backspace идёт дальше, к предыдущей
 		if (erased === undefined) {
@@ -303,26 +341,30 @@ export class TDateInput
 		if (part === undefined || !this._editable) return
 
 		this._typed = ''
-		this._commit(withPart(this._parts, part, undefined))
+		this._commit(withPart(this._parts, part, undefined, this._format))
 	}
 
-	clearSegments(parts: readonly TDatePart[]): void {
+	clearSegments(parts: readonly TDateFieldPart[]): void {
 		if (!this._editable) return
 
 		this._typed = ''
-		this._commit(withoutParts(this._parts, parts))
+		this._commit(withoutParts(this._parts, parts, this._format))
 	}
 
+	/**
+	 * Вставленное значение заменяет части, которые показывает поле: время,
+	 * скрытое точностью до дня, остаётся в частях.
+	 */
 	paste(text: string): boolean {
 		if (!this._editable) return false
 
-		const date = parseFieldDate(text, this._format)
+		const value = parseFieldText(text, this._format)
 
-		if (date === undefined) return false
+		if (value === undefined) return false
 
 		this._typed = ''
 
-		return this._commit(partsOf(date))
+		return this._commit({ ...this._parts, ...partsOf(value) })
 	}
 
 	override getProps(): IDateInputProps {
@@ -331,6 +373,7 @@ export class TDateInput
 			min: this._min,
 			max: this._max,
 			locale: this._locale,
+			granularity: this._granularity,
 		}
 	}
 
@@ -338,9 +381,9 @@ export class TDateInput
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
-	/** Формат поля локали — один объект на тег. */
+	/** Формат поля локали в точности поля — один объект на тег и точность. */
 	protected get _format(): IDateFieldFormat {
-		return calendarLocale(this._locale).dateField
+		return calendarLocale(this._locale).fieldFormat(this._granularity)
 	}
 
 	/** Править можно: поле не выключено и не только для чтения. */
@@ -351,16 +394,16 @@ export class TDateInput
 	/**
 	 * Значение сменилось — части за ним. Своя правка оставляет свои части, если
 	 * значение записалось как есть: из него те же части не собрать (у недописанной
-	 * даты значения нет вовсе). Запись снаружи и поправленная в
-	 * `change:value:before` правка берут части из значения, набранные цифры
-	 * сбрасываются.
+	 * даты значения нет вовсе, а время, ушедшее из значения при точности до дня,
+	 * в частях остаётся). Запись снаружи и поправленная в `change:value:before`
+	 * правка берут части из значения, набранные цифры сбрасываются.
 	 */
 	protected override _valueChanged(oldValue: TDateInputValue): void {
 		const pending = this._pending
 
 		this._pending = undefined
 
-		if (pending !== undefined && pending.date === this._value) {
+		if (pending !== undefined && pending.value === this._value) {
 			this._parts = pending.parts
 		} else {
 			this._parts = partsOf(this._value)
@@ -377,18 +420,18 @@ export class TDateInput
 	 * `change:value:before`. Возвращает, принята ли правка.
 	 */
 	protected _commit(next: TDateInputParts): boolean {
-		const date = dateOf(next)
+		const value = valueOfParts(next, this._format)
 
-		if (date === this._value) {
+		if (value === this._value) {
 			this._setParts(next)
 
 			return true
 		}
 
-		const pending: TDateInputEdit = { parts: next, date }
+		const pending: TDateInputEdit = { parts: next, value }
 
 		this._pending = pending
-		this.value = date
+		this.value = value
 
 		// Сеттер не дошёл до `_valueChanged` — запись отменили
 		const accepted = this._pending !== pending
@@ -405,10 +448,9 @@ export class TDateInput
 		this.events.emit('change:segments')
 	}
 
-	/** Набор цифры в часть; дописать больше некуда — фокус на следующую. */
-	protected _enter(parts: TDateInputParts, typed: string, part: TDatePart, digit: number): void {
+	/** Набранный знак — в части; дописать больше некуда — фокус на следующую. */
+	protected _enter(entry: TKeyEntry): void {
 		const previous = this._typed
-		const entry = enterDigit(parts, typed, part, digit, this._format.yearOffset)
 
 		this._typed = entry.typed
 
@@ -421,10 +463,32 @@ export class TDateInput
 		if (entry.advance) this.shiftFocus(1)
 	}
 
+	/**
+	 * Формат сменился — локаль или точность. Набранные цифры были в прежнем
+	 * формате; части под фокусом в новом может не быть (период суток у
+	 * 24-часовой локали, время у точности до дня) — тогда фокуса в поле нет: её
+	 * узел разметка сняла вместе с DOM-фокусом.
+	 *
+	 * Значение пишется заново, только если те же части в новом формате
+	 * собираются иначе, чем в прежнем (`before`): точность меняет вид значения, а
+	 * цикл часов — нужен ли выбранный период суток. Значение, записанное снаружи
+	 * и полем не собранное, смена формата, которая его прочтение не меняет, не
+	 * трогает.
+	 */
+	protected _formatChanged(before: TDateInputValue): void {
+		this._typed = ''
+
+		const format = this._format
+		const part = this._focusedSegment
+
+		if (part !== undefined && !format.parts.includes(part)) this.focusSegment(undefined)
+		if (valueOfParts(this._parts, format) !== before) this._commit(this._parts)
+	}
+
 	/** Часть — снимок для разметки. */
-	protected _segment(part: TDatePart, format: IDateFieldFormat): TDateInputPart {
-		const { min, max } = limitsOf(part, this._parts, format.yearOffset)
-		const shown = shownOf(part, this._parts, format.yearOffset)
+	protected _segment(part: TDateFieldPart, format: IDateFieldFormat): TDateInputPart {
+		const { min, max } = limitsOf(part, this._parts, format)
+		const shown = shownOf(part, this._parts, format)
 		const text = textOf(part, this._parts, format)
 		const empty = shown === undefined
 
@@ -451,7 +515,7 @@ export class TDateInput
 		}
 	}
 
-	/** `data-invalid` — состояние для темы: дата вне `min`/`max`. */
+	/** `data-invalid` — состояние для темы: значение вне `min`/`max`. */
 	protected _syncInvalid(): void {
 		this._dataset.add('invalid', this.invalid)
 	}

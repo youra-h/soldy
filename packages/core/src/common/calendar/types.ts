@@ -15,6 +15,17 @@
  */
 export type TCalendarDate = string
 
+/**
+ * Дата со временем — строка `YYYY-MM-DDTHH:mm`, как `value` у
+ * `<input type="datetime-local">`: дата календаря (`TCalendarDate`), `T`, час
+ * от `00` до `23` и минута — по две цифры. Ни секунд, ни часового пояса в ней
+ * нет: это время на часах, а не момент на оси времени.
+ *
+ * Строка — по тем же причинам, что и дата, и порядок строк — порядок моментов.
+ * Формат проверяет разбор — `parseDateTime`.
+ */
+export type TCalendarDateTime = string
+
 /** День недели: 0 — воскресенье … 6 — суббота, как у `Date#getUTCDay()`. */
 export type TWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
@@ -38,16 +49,43 @@ export type TWeekdayWidth = 'short' | 'long'
 /** Часть даты в поле ввода: день, месяц или год. */
 export type TDatePart = 'day' | 'month' | 'year'
 
+/**
+ * Часть времени в поле ввода: час, минута и период суток — до полудня или
+ * после. Период есть только у 12-часового цикла.
+ */
+export type TTimePart = 'hour' | 'minute' | 'dayPeriod'
+
+/** Часть поля даты: даты или времени. */
+export type TDateFieldPart = TDatePart | TTimePart
+
+/**
+ * Точность поля даты: `day` — дата `YYYY-MM-DD`, `minute` — дата со временем
+ * `YYYY-MM-DDTHH:mm`.
+ */
+export type TDateGranularity = 'day' | 'minute'
+
+/**
+ * Цикл часов, как его называет Intl: `h11` — 0–11 и период суток, `h12` —
+ * 1–12 и период, `h23` — 0–23, `h24` — 1–24.
+ */
+export type THourCycle = 'h11' | 'h12' | 'h23' | 'h24'
+
+/**
+ * Числа частей поля без локали: год григорианский, час — от 0 до 23, период
+ * суток — 0 до полудня и 1 после. Нет числа — части нет.
+ */
+export type TDateFieldNumbers = Readonly<Partial<Record<TDateFieldPart, number>>>
+
 /** Кусок формата поля даты: часть или литерал между частями — как его отдал Intl. */
 export type TDateFieldToken =
-	| { readonly type: TDatePart }
+	| { readonly type: TDateFieldPart }
 	| { readonly type: 'literal'; readonly text: string }
 
 /**
  * Формат поля даты в локали — всё, что поле ввода берёт у локали: порядок
- * частей и литералы между ними, направление ряда, цифры, подсказки пустых
- * частей и имена частей для скринридера. Один объект на тег локали, как и
- * остальные подписи.
+ * частей и литералы между ними, направление ряда, цифры, цикл часов и имена
+ * периодов суток, подсказки пустых частей и имена частей для скринридера. Один
+ * объект на тег локали и точность, как и остальные подписи.
  *
  * Части — в календаре поля: буддийском, если календарь подписей буддийский
  * (`th-TH` вводит год 2569, как его пишет заголовок календаря), иначе в
@@ -56,14 +94,23 @@ export type TDateFieldToken =
  * григорианские.
  */
 export interface IDateFieldFormat {
+	/** Точность поля: из каких частей собирается значение */
+	readonly granularity: TDateGranularity
 	/**
-	 * Части и литералы в порядке формата Intl: день и месяц — двумя цифрами,
-	 * год — полностью. Литералы — как есть, с пробелами (`ko-KR` — «. ») и
-	 * метками направления (`ar-EG` — RLM)
+	 * Части и литералы в порядке формата Intl: день, месяц, час и минута —
+	 * двумя цифрами, год — полностью. Литералы — как есть, с пробелами
+	 * (`ko-KR` — «. ») и метками направления (`ar-EG` — RLM)
 	 */
 	readonly tokens: readonly TDateFieldToken[]
 	/** Части по порядку формата */
-	readonly parts: readonly TDatePart[]
+	readonly parts: readonly TDateFieldPart[]
+	/**
+	 * Цикл часов локали — только от неё, своего у поля нет: `en-US` — `h12`,
+	 * `ru` — `h23`. У формата без часов — `h23`: час он не показывает
+	 */
+	readonly hourCycle: THourCycle
+	/** Имена периодов суток — до полудня и после, как их пишет локаль (`AM`, `PM`) */
+	readonly dayPeriods: readonly [string, string]
 	/**
 	 * Направление ряда частей — по первому сильному знаку даты в локали:
 	 * `ar-EG` — справа налево (RLM в литералах), `he-IL` — слева направо, как
@@ -76,10 +123,13 @@ export interface IDateFieldFormat {
 	readonly yearOffset: number
 	/** Цифры системы счисления локали — от нуля до девяти, по знаку на цифру */
 	readonly digits: readonly string[]
-	/** Подсказки пустых частей — по языку локали (`дд`, `мм`, `гггг`) */
-	readonly placeholders: Readonly<Record<TDatePart, string>>
-	/** Имена частей для скринридера — на языке локали (`день`, `месяц`, `год`) */
-	readonly names: Readonly<Record<TDatePart, string>>
+	/**
+	 * Подсказки пустых частей: у даты — по языку локали (`дд`, `мм`, `гггг`), у
+	 * времени — `––` в любом языке
+	 */
+	readonly placeholders: Readonly<Record<TDateFieldPart, string>>
+	/** Имена частей для скринридера — на языке локали (`день`, `час`, `AM/PM`) */
+	readonly names: Readonly<Record<TDateFieldPart, string>>
 }
 
 /**
@@ -117,6 +167,6 @@ export interface ICalendarLocale {
 	fullDate(date: TCalendarDate): string
 	/** Имя дня недели */
 	weekdayName(day: TWeekday, width: TWeekdayWidth): string
-	/** Формат поля ввода даты — заводится при первом обращении */
-	readonly dateField: IDateFieldFormat
+	/** Формат поля ввода даты в точности `granularity` — заводится при первом обращении */
+	fieldFormat(granularity: TDateGranularity): IDateFieldFormat
 }

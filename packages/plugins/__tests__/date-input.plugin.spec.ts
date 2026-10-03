@@ -17,7 +17,7 @@
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { TDateInput } from '@soldy-ui/core'
-import type { IDateInputProps, TDatePart } from '@soldy-ui/core'
+import type { IDateInputProps, TDateFieldPart } from '@soldy-ui/core'
 import {
 	TDateInputClipboardPlugin,
 	TDateInputKeyboardPlugin,
@@ -127,6 +127,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	render()
 	owner.events.on('change:segments', render)
 	owner.events.on('change:locale', render)
+	owner.events.on('change:granularity', render)
 	owner.events.on('change:disabled', render)
 
 	const bundle = new TPluginBundle(owner)
@@ -143,7 +144,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	await nextFrame()
 
 	/** Узел части по типу; нет его — тест падает здесь. */
-	const segment = (part: TDatePart): HTMLElement => {
+	const segment = (part: TDateFieldPart): HTMLElement => {
 		const node = row.querySelector(`[data-type="${part}"]`)
 
 		if (!(node instanceof HTMLElement)) throw new Error(`части ${part} нет`)
@@ -377,6 +378,83 @@ describe('клавиши', () => {
 
 		if (button) expect(press(button, 'ArrowUp').defaultPrevented).toBe(false)
 		expect(owner.value).toBe('2026-05-12')
+	})
+
+	it('время: час и минута цифрами, буква выбирает период суток, регистр не важен', async () => {
+		const { owner, segment, press, type } = await mount({
+			locale: 'en-US',
+			granularity: 'minute',
+		})
+
+		segment('month').focus()
+		type('05122026')
+		expect(document.activeElement).toBe(segment('hour'))
+
+		type('0230')
+		expect(document.activeElement).toBe(segment('dayPeriod'))
+		expect(owner.value).toBeUndefined()
+
+		expect(press(segment('dayPeriod'), 'p').defaultPrevented).toBe(true)
+		expect(owner.value).toBe('2026-05-12T14:30')
+
+		press(segment('dayPeriod'), 'A', { shiftKey: true })
+		expect(owner.value).toBe('2026-05-12T02:30')
+		expect(segment('dayPeriod').dataset.placeholder).toBe('false')
+	})
+
+	it('↑/↓ у периода суток — другой период, час переезжает за ним', async () => {
+		const { owner, segment, press } = await mount({
+			locale: 'en-US',
+			granularity: 'minute',
+			value: '2026-05-12T14:30',
+		})
+
+		segment('dayPeriod').focus()
+		expect(press(segment('dayPeriod'), 'ArrowUp').defaultPrevented).toBe(true)
+		expect(owner.value).toBe('2026-05-12T02:30')
+
+		press(segment('dayPeriod'), 'ArrowDown')
+		expect(owner.value).toBe('2026-05-12T14:30')
+	})
+
+	it('буква не периода — не поля; с которой начинаются оба имени — период не меняет', async () => {
+		const en = await mount({
+			locale: 'en-US',
+			granularity: 'minute',
+			value: '2026-05-12T14:30',
+		})
+
+		en.segment('dayPeriod').focus()
+		expect(en.press(en.segment('dayPeriod'), 'x').defaultPrevented).toBe(false)
+		expect(en.owner.value).toBe('2026-05-12T14:30')
+
+		document.body.innerHTML = ''
+
+		// ko-KR: «오전» и «오후» — оба с одной буквы
+		const ko = await mount({
+			locale: 'ko-KR',
+			granularity: 'minute',
+			value: '2026-05-12T14:30',
+		})
+		const first = ko.segment('dayPeriod').textContent?.[0] ?? ''
+
+		ko.segment('dayPeriod').focus()
+		ko.press(ko.segment('dayPeriod'), first)
+		expect(ko.owner.value).toBe('2026-05-12T14:30')
+	})
+
+	it('смена точности — части времени появляются и пропадают, фокус с пропавшей части снят', async () => {
+		const { owner, row, segment } = await mount({ value: '2026-05-12' })
+
+		owner.granularity = 'minute'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
+
+		segment('minute').focus()
+		expect(owner.focusedSegment).toBe('minute')
+
+		owner.granularity = 'day'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(3)
+		expect(owner.focusedSegment).toBeUndefined()
 	})
 
 	it('Tab и Enter — не поля: остановки Tab у частей свои', async () => {

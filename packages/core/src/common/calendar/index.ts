@@ -2,6 +2,7 @@ export {
 	FIRST_DATE,
 	LAST_DATE,
 	parseDate,
+	parseDateTime,
 	compareDates,
 	clampDate,
 	orderDates,
@@ -18,21 +19,45 @@ export {
 	monthGrid,
 	dateFromParts,
 	dateIfExists,
+	dateTimeIfExists,
 	daysInMonth,
 	weekdayOf,
 	isWeekday,
 } from './date'
-export { todayDate } from './today'
+export { todayDate, nowDateTime } from './today'
 export { calendarLocale } from './locale'
 export { DEFAULT_LOCALE } from './locale.class'
-export { DATE_PARTS, isDatePart, digitOf, formatFieldNumber, parseFieldDate } from './field'
+export {
+	DATE_PARTS,
+	TIME_PARTS,
+	FIELD_PARTS,
+	GRANULARITY_PARTS,
+	isFieldPart,
+	digitOf,
+	formatFieldNumber,
+	hourLimits,
+	hasDayPeriod,
+	hourInCycle,
+	hourOfDay,
+	parseFieldValue,
+	compareFieldValues,
+	inFieldBounds,
+	fieldValueOf,
+	parseFieldText,
+} from './field'
 export type {
 	TCalendarDate,
+	TCalendarDateTime,
 	TWeekday,
 	TDateUnit,
 	TMonthGridDay,
 	TWeekdayWidth,
 	TDatePart,
+	TTimePart,
+	TDateFieldPart,
+	TDateGranularity,
+	THourCycle,
+	TDateFieldNumbers,
 	TDateFieldToken,
 	ICalendarLocale,
 	IDateFieldFormat,

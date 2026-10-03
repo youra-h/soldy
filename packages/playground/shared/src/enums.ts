@@ -24,6 +24,7 @@ import type {
 	TDirection,
 	TScrollBehavior,
 	TCalendarMode,
+	TDateGranularity,
 	TSelectionMode,
 	TSelectEditableMode,
 	TSelectPlacement,
@@ -158,6 +159,9 @@ export const SELECTION_MODES = enumOf<TSelectionMode>()(['none', 'single', 'mult
  * а не элементы, и «ничего» у календаря нет, зато есть диапазон.
  */
 export const CALENDAR_MODES = enumOf<TCalendarMode>()(['single', 'multiple', 'range'])
+
+/** Точность поля даты: до дня — дата, до минуты — дата со временем. */
+export const DATE_GRANULARITIES = enumOf<TDateGranularity>()(['day', 'minute'])
 
 /** Что делает ввод текста в поле Select при `editable: true`. */
 export const SELECT_EDITABLE_MODES = enumOf<TSelectEditableMode>()(['none', 'search', 'filter'])

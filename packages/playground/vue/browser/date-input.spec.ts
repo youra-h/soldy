@@ -327,6 +327,62 @@ describe('клавиши и фокус', () => {
 	})
 })
 
+describe('время', () => {
+	it('en-US: час и минута цифрами, буква — период суток, фокус идёт по частям', async () => {
+		const ctrl = await show({ locale: 'en-US', granularity: 'minute', value: undefined })
+
+		await userEvent.click(segment('month'))
+		await userEvent.keyboard('05122026')
+		expect(document.activeElement).toBe(segment('hour'))
+
+		await userEvent.keyboard('0230')
+		expect(document.activeElement).toBe(segment('dayPeriod'))
+		expect(ctrl.value).toBeUndefined()
+
+		await userEvent.keyboard('p')
+		expect(ctrl.value).toBe('2026-05-12T14:30')
+
+		await userEvent.keyboard('{ArrowDown}')
+		expect(ctrl.value).toBe('2026-05-12T02:30')
+		await expect.poll(() => segment('hour').textContent).toBe('02')
+	})
+
+	it('ru: 24 часа, ←/→ ходят из даты во время', async () => {
+		const ctrl = await show({ granularity: 'minute', value: '2026-05-12T14:30' })
+
+		await userEvent.click(segment('year'))
+		await userEvent.keyboard('{ArrowRight}')
+		expect(document.activeElement).toBe(segment('hour'))
+
+		await userEvent.keyboard('09')
+		expect(ctrl.value).toBe('2026-05-12T09:30')
+		expect(document.activeElement).toBe(segment('minute'))
+	})
+
+	it('дата и время — один ряд в строку', async () => {
+		await show({ locale: 'en-US', granularity: 'minute', value: '2026-05-12T14:30' })
+
+		const tops = [...document.querySelectorAll('.s-date-input__segment')].map(
+			(node) => node.getBoundingClientRect().top,
+		)
+
+		expect(new Set(tops).size).toBe(1)
+	})
+
+	it('Ctrl+A и Ctrl+C — дата со временем текстом поля, без переводов строк', async () => {
+		await show({ granularity: 'minute', value: '2026-05-12T14:30' })
+
+		await userEvent.click(segment('hour'))
+		await userEvent.keyboard('{Control>}a{/Control}')
+
+		expect(await clipboardOf('{Control>}c{/Control}')).toEqual({
+			text: row().textContent,
+			prevented: true,
+		})
+		expect(row().textContent).toBe('12.05.2026, 14:30')
+	})
+})
+
 describe('нажатие мимо частей', () => {
 	it('справа от даты — фокус на ближайшую часть, слева — на первую', async () => {
 		await show({}, { style: 'width: 320px' })

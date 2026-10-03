@@ -135,7 +135,8 @@ export const COMPONENTS: readonly TComponentEntry[] = [
 		descriptor: DateInputDescriptor,
 		showcase: true,
 		span: 1,
-		description: 'Поле даты по частям в формате локали: дата выделяется и копируется целиком',
+		description:
+			'Поле даты и времени по частям в формате локали: значение выделяется и копируется целиком',
 	},
 	{
 		id: 'popover',

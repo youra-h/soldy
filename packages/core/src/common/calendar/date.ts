@@ -1,4 +1,4 @@
-import type { TCalendarDate, TDateUnit, TMonthGridDay, TWeekday } from './types'
+import type { TCalendarDate, TCalendarDateTime, TDateUnit, TMonthGridDay, TWeekday } from './types'
 
 /** Первая поддерживаемая дата: у года четыре цифры. */
 export const FIRST_DATE: TCalendarDate = '0001-01-01'
@@ -25,6 +25,9 @@ const MONTH_LENGTHS: readonly number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31
 
 /** Формат даты — ровно четыре цифры года. */
 const DATE_FORMAT = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/** Формат даты со временем — дата, `T`, час и минута по две цифры. */
+const DATE_TIME_FORMAT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
 
 /**
  * Части даты без проверки: год от четырёх цифр. У заполнителей сетки за
@@ -54,6 +57,27 @@ export function parseDate(value: unknown): TCalendarDate | undefined {
 
 	// Формат уже ровно `YYYY-MM-DD`: собранная из тех же чисел строка — она же
 	return dateIfExists(Number(match[1]), Number(match[2]), Number(match[3]))
+}
+
+/**
+ * Дата со временем из строки: `YYYY-MM-DDTHH:mm` с датой, которая есть
+ * (`parseDate`), часом от `00` до `23` и минутой от `00` до `59`. Всё остальное
+ * — дата без времени, секунды, часовой пояс, `24:00`, не строка — `undefined`.
+ */
+export function parseDateTime(value: unknown): TCalendarDateTime | undefined {
+	if (typeof value !== 'string') return undefined
+
+	const match = DATE_TIME_FORMAT.exec(value)
+
+	if (!match) return undefined
+
+	return dateTimeIfExists(
+		Number(match[1]),
+		Number(match[2]),
+		Number(match[3]),
+		Number(match[4]),
+		Number(match[5]),
+	)
 }
 
 /**
@@ -202,6 +226,33 @@ export function dateIfExists(year: number, month: number, day: number): TCalenda
 	if (day < 1 || day > daysInMonth(year, month)) return undefined
 
 	return compose(year, month, day)
+}
+
+/**
+ * Дата со временем ровно из этих чисел, если такая есть: дата — как у
+ * `dateIfExists`, час — целое от 0 до 23, минута — от 0 до 59. Иначе
+ * `undefined`.
+ */
+export function dateTimeIfExists(
+	year: number,
+	month: number,
+	day: number,
+	hour: number,
+	minute: number,
+): TCalendarDateTime | undefined {
+	const date = dateIfExists(year, month, day)
+	const integers = Number.isInteger(hour) && Number.isInteger(minute)
+
+	if (date === undefined || !integers || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+		return undefined
+	}
+
+	return dateTimeOf(date, hour, minute)
+}
+
+/** Строка даты со временем: дата, `T`, час и минута по две цифры. Числа не проверяются. */
+export function dateTimeOf(date: TCalendarDate, hour: number, minute: number): TCalendarDateTime {
+	return `${date}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 /** Дней в месяце года; месяц — от 1 до 12. */

@@ -7,36 +7,54 @@ import type {
 	TAriaAttributes,
 	TAttributesMap,
 	TCalendarDate,
+	TCalendarDateTime,
 	TDatasetAttributes,
-	TDatePart,
+	TDateFieldPart,
+	TDateGranularity,
 } from '../../../common'
 
 /**
- * Значение поля — дата `YYYY-MM-DD`. Пока дата не собрана целиком, значения
- * нет: `undefined`.
+ * Значение поля — по точности: дата `YYYY-MM-DD` или дата со временем
+ * `YYYY-MM-DDTHH:mm`. Пока не собраны все части точности, значения нет:
+ * `undefined`.
  */
-export type TDateInputValue = TCalendarDate | undefined
+export type TDateInputValue = TCalendarDate | TCalendarDateTime | undefined
 
 /**
- * Набранные части даты — числа по типу, в григорианском календаре: смена
- * локали их не трогает, другим становится только их текст. Нет числа — часть
- * пуста.
+ * Граница поля — дата или дата со временем. Дата и дата со временем
+ * сравниваются по дню: граница-дата `max` пропускает любое время своего дня.
+ */
+export type TDateInputBound = TCalendarDate | TCalendarDateTime | undefined
+
+/**
+ * Набранные части — числа по типу, без локали: год григорианский, час — от 0
+ * до 23, период суток — 0 до полудня и 1 после. Смена локали и точности их не
+ * трогает: другими становятся только текст и состав частей формата. Нет числа
+ * — часть пуста.
  *
  * Год набора бывает и вне поддерживаемых: недописанный год календаря со
  * сдвигом (`th-TH`, буддийский год 25 — это григорианский −518). Дату из таких
  * частей не собрать, но показать набранное поле обязано.
+ *
+ * Час и период согласованы: выбранный период держит час в своей половине
+ * суток. Пока период не выбран, половина часа — его собственная, а час,
+ * набранный в формате без периода, выбирает период сам: там он виден целиком.
  */
-export type TDateInputParts = Readonly<Partial<Record<TDatePart, number>>>
+export type TDateInputParts = Readonly<Partial<Record<TDateFieldPart, number>>>
 
 /**
- * Часть поля в выходе `segments` — день, месяц или год. Своего экземпляра у
- * части нет, наборы отдаются значением, как у ручек Slider.
+ * Часть поля в выходе `segments` — день, месяц, год, час, минута или период
+ * суток. Своего экземпляра у части нет, наборы отдаются значением, как у ручек
+ * Slider.
  */
 export type TDateInputPart = {
 	/** Ключ — тип: при смене локали часть меняет место, а её узел остаётся */
-	key: TDatePart
-	type: TDatePart
-	/** Набранное число цифрами локали, у пустой части — подсказка (`дд`) */
+	key: TDateFieldPart
+	type: TDateFieldPart
+	/**
+	 * Набранное число цифрами локали, у периода суток — его имя (`PM`), у пустой
+	 * части — подсказка (`дд`, `––`)
+	 */
 	text: string
 	/** Часть пуста и показывает подсказку */
 	placeholder: boolean
@@ -57,7 +75,7 @@ export type TDateInputLiteral = {
 	key: string
 	type: 'literal'
 	text: string
-	/** Дата пуста целиком: разделитель — часть подсказки формата */
+	/** Все части пусты: разделитель — часть подсказки формата */
 	placeholder: boolean
 	/** Скрыт от скринридера: дату объявляют части, разделитель повторил бы формат */
 	aria: TAriaAttributes
@@ -69,14 +87,17 @@ export type TDateInputSegment = TDateInputPart | TDateInputLiteral
 /** Граница хода части — `Home` и `End`. */
 export type TDateInputEdge = 'start' | 'end'
 
-/** Ход части — в числах, которые видит пользователь: год в календаре поля. */
+/**
+ * Ход части — в числах, которые видит пользователь: год в календаре поля, час
+ * в цикле часов локали, период суток — 0 и 1.
+ */
 export type TDatePartLimits = {
 	readonly min: number
 	readonly max: number
 }
 
-/** Итог набора цифры в часть. */
-export type TDigitEntry = {
+/** Итог знака, набранного в часть: цифры — в число, буквы — в период суток. */
+export type TKeyEntry = {
 	/** Части после набора */
 	readonly parts: TDateInputParts
 	/** Набранные цифры части: к ним допишется следующая */
@@ -88,10 +109,10 @@ export type TDigitEntry = {
 /** Своя правка значения: части, из которых оно собрано, и само значение. */
 export type TDateInputEdit = {
 	readonly parts: TDateInputParts
-	readonly date: TDateInputValue
+	readonly value: TDateInputValue
 }
 
-/** Итог стирания цифры: части и набранные цифры, к которым допишется следующая. */
+/** Итог стирания в части: части и набранные цифры, к которым допишется следующая. */
 export type TDigitErase = {
 	readonly parts: TDateInputParts
 	readonly typed: string
@@ -99,27 +120,37 @@ export type TDigitErase = {
 
 export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	/** change:min */
-	'change:min': (value: TCalendarDate | undefined) => void
+	'change:min': (value: TDateInputBound) => void
 	/** change:max */
-	'change:max': (value: TCalendarDate | undefined) => void
+	'change:max': (value: TDateInputBound) => void
 	/** change:locale */
 	'change:locale': (value: string) => void
+	/** change:granularity */
+	'change:granularity': (value: TDateGranularity) => void
 	/**
 	 * Части надо перечитать: набрали, стёрли, вставили или записали значение.
 	 * Без аргумента: событие значит «перечитай `segments`»
 	 */
 	'change:segments': () => void
 	/** Сменилась часть под фокусом — плагин переводит туда DOM-фокус */
-	'change:focusedSegment': (part: TDatePart | undefined) => void
+	'change:focusedSegment': (part: TDateFieldPart | undefined) => void
 }
 
 export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
-	/** Первый день, который поле считает верным; раньше — `aria-invalid` */
-	min?: TCalendarDate
-	/** Последний день, который поле считает верным */
-	max?: TCalendarDate
-	/** Локаль формата (BCP 47): порядок частей, разделители, цифры, направление */
+	/**
+	 * Первый день или момент, который поле считает верным; раньше —
+	 * `aria-invalid`
+	 */
+	min?: TDateInputBound
+	/** Последний день или момент, который поле считает верным */
+	max?: TDateInputBound
+	/** Локаль формата (BCP 47): порядок частей, разделители, цифры, цикл часов, направление */
 	locale?: string
+	/**
+	 * Точность: `day` — дата, `minute` — ещё час, минута и, у 12-часового цикла
+	 * локали, период суток
+	 */
+	granularity?: TDateGranularity
 }
 
 export interface IDateInput extends IInputControl<
@@ -127,13 +158,15 @@ export interface IDateInput extends IInputControl<
 	IDateInputProps,
 	TDateInputEvents
 > {
-	/** Первый верный день */
-	min: TCalendarDate | undefined
-	/** Последний верный день */
-	max: TCalendarDate | undefined
+	/** Первый верный день или момент */
+	min: TDateInputBound
+	/** Последний верный день или момент */
+	max: TDateInputBound
 	/** Локаль формата */
 	locale: string
-	/** Собранная дата вне `min`/`max` */
+	/** Точность: дата или дата со временем */
+	granularity: TDateGranularity
+	/** Собранное значение вне `min`/`max` */
 	readonly invalid: boolean
 	/** Части и разделители в порядке формата локали */
 	readonly segments: TDateInputSegment[]
@@ -142,35 +175,44 @@ export interface IDateInput extends IInputControl<
 	/** Направление ряда частей: по нему ←/→ ведут к соседней части */
 	readonly segmentsDirection: 'ltr' | 'rtl'
 	/** Часть под фокусом; фокуса в поле нет — `undefined` */
-	readonly focusedSegment: TDatePart | undefined
+	readonly focusedSegment: TDateFieldPart | undefined
 	/** Фокус пришёл на часть или ушёл из поля (`undefined`) — набранные цифры сброшены */
-	focusSegment(part: TDatePart | undefined): void
+	focusSegment(part: TDateFieldPart | undefined): void
 	/** Фокус на соседнюю часть в порядке формата: `1` — следующая, `-1` — предыдущая */
 	shiftFocus(count: number): void
 	/**
-	 * Знак в часть под фокусом. Цифра — `true`, даже если поле только для
-	 * чтения и править нечего; не цифра — `false`
+	 * Знак в часть под фокусом: цифра — в число, у периода суток — буква, с
+	 * которой начинается имя периода (регистр не важен; с неё начинаются оба
+	 * имени — период не меняется). Знак части — `true`, даже если поле только
+	 * для чтения и править нечего; не её знак — `false`
 	 */
 	typeKey(key: string): boolean
 	/**
-	 * Знак вместо частей `parts` — их задело выделение: части пустеют, цифра
-	 * набирается в первую из них по порядку формата, фокус — туда же. Цифра —
-	 * `true`, не цифра — `false`, и тогда части остаются как были
+	 * Знак вместо частей `parts` — их задело выделение: части пустеют, знак
+	 * набирается в первую из них по порядку формата, фокус — туда же. Знак
+	 * первой части — `true`, иначе `false`, и тогда части остаются как были
 	 */
-	replaceSegments(parts: readonly TDatePart[], key: string): boolean
-	/** ↑/↓: число части под фокусом на `count`, день и месяц по кругу; пустая — сегодня */
+	replaceSegments(parts: readonly TDateFieldPart[], key: string): boolean
+	/**
+	 * ↑/↓: число части под фокусом на `count` — день, месяц, час, минута и
+	 * период суток по кругу, год до края хода; пустая часть начинает с текущего
+	 * момента
+	 */
 	shiftSegment(count: number): void
 	/** Home/End: часть под фокусом — к краю её хода */
 	moveSegmentToEdge(edge: TDateInputEdge): void
-	/** Backspace: стереть последнюю цифру части под фокусом; пустая — фокус на предыдущую */
+	/**
+	 * Backspace: стереть последнюю цифру части под фокусом, период суток —
+	 * целиком; пустая — фокус на предыдущую
+	 */
 	eraseDigit(): void
 	/** Delete: очистить часть под фокусом */
 	clearSegment(): void
 	/** Очистить части `parts` — их задело выделение */
-	clearSegments(parts: readonly TDatePart[]): void
+	clearSegments(parts: readonly TDateFieldPart[]): void
 	/**
-	 * Вставить дату текстом — ISO или в формате поля — вместо всей даты. Не
-	 * разобралась — ничего не меняется, `false`
+	 * Вставить значение текстом — ISO или в формате поля — вместо всего
+	 * значения. Не разобралось — ничего не меняется, `false`
 	 */
 	paste(text: string): boolean
 }

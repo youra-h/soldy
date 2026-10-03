@@ -106,6 +106,10 @@ const dragAndDrop = new TDragAndDrop()
 	<DateInput :locale="42" />
 	<DateInput locale="ru-RU" />
 
+	<!-- @vue-expect-error — точность до дня или до минуты, секунд нет -->
+	<DateInput granularity="second" />
+	<DateInput granularity="minute" />
+
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />
 	<Dialog placement="start" />

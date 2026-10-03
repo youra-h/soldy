@@ -77,6 +77,24 @@ async function type(keys: string): Promise<void> {
 	}
 }
 
+/** Части и литералы даты со временем по форматтеру поля — с теми же опциями. */
+function formattedTime(locale: string, dateTime: string): Intl.DateTimeFormatPart[] {
+	const [date, time] = dateTime.split('T')
+	const [year, month, day] = date.split('-').map(Number)
+	const [hour, minute] = time.split(':').map(Number)
+	const formatter = new Intl.DateTimeFormat([locale, 'en-US'], {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		calendar: 'gregory',
+		timeZone: 'UTC',
+	})
+
+	return formatter.formatToParts(Date.UTC(year, month - 1, day, hour, minute))
+}
+
 /** Части и литералы даты по форматтеру поля — с теми же опциями. */
 function formatted(locale: string, date: string): string[] {
 	const [year, month, day] = date.split('-').map(Number)
@@ -204,6 +222,105 @@ describe('v-model', () => {
 		await nextTick()
 
 		expect(rowContent().map(([, text]) => text)).toEqual(['02', '.', '01', '.', '2027'])
+	})
+})
+
+describe('время', () => {
+	it('en-US: час, минута и период суток — в ряду в порядке формата, значение — в скрытом поле', async () => {
+		await render(() =>
+			h(DateInput, {
+				locale: 'en-US',
+				granularity: 'minute',
+				name: 'meeting',
+				value: '2026-05-12T14:30',
+			}),
+		)
+
+		const parts = formattedTime('en-US', '2026-05-12T14:30')
+
+		expect(rowContent().map(([, text]) => text)).toEqual(parts.map(({ value }) => value))
+		expect(findAll('.s-date-input__segment').map((node) => node.dataset.type)).toEqual([
+			'month',
+			'day',
+			'year',
+			'hour',
+			'minute',
+			'dayPeriod',
+		])
+		expect(segment('hour').getAttribute('aria-valuemin')).toBe('1')
+		expect(segment('hour').getAttribute('aria-valuemax')).toBe('12')
+		expect(segment('dayPeriod').getAttribute('role')).toBe('spinbutton')
+		expect(segment('dayPeriod').getAttribute('aria-valuetext')).toBe(
+			parts.find(({ type }) => type === 'dayPeriod')?.value,
+		)
+		expect(find('input[type="hidden"]')).toHaveProperty('value', '2026-05-12T14:30')
+	})
+
+	it('ru: 24 часа, периода суток нет; пустое время — черта', async () => {
+		await render(() => h(DateInput, { locale: 'ru-RU', granularity: 'minute' }))
+
+		expect(rowContent().map(([, text]) => text)).toEqual([
+			'дд',
+			'.',
+			'мм',
+			'.',
+			'гггг',
+			', ',
+			'––',
+			':',
+			'––',
+		])
+		expect(document.querySelector('[data-type="dayPeriod"]')).toBeNull()
+	})
+
+	it('набор времени с клавиатуры возвращает дату со временем через update:value', async () => {
+		const date = ref<string | undefined>()
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				granularity: 'minute',
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					date.value = value
+				},
+			}),
+		)
+
+		segment('day').focus()
+		await type('120520261430')
+
+		expect(date.value).toBe('2026-05-12T14:30')
+		expect(document.activeElement).toBe(segment('minute'))
+	})
+
+	it('смена точности: части времени появляются, значение — в новой точности', async () => {
+		const date = ref<string | undefined>('2026-05-12T14:30')
+		const granularity = ref<'day' | 'minute'>('minute')
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				granularity: granularity.value,
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					date.value = value
+				},
+			}),
+		)
+
+		granularity.value = 'day'
+		await nextTick()
+
+		expect(date.value).toBe('2026-05-12')
+		expect(rowContent().map(([, text]) => text)).toEqual(['12', '.', '05', '.', '2026'])
+
+		// Время осталось в частях и вернулось
+		granularity.value = 'minute'
+		await nextTick()
+
+		expect(date.value).toBe('2026-05-12T14:30')
+		expect(segment('minute').textContent).toBe('30')
 	})
 })
 

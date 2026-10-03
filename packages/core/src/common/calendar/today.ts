@@ -1,17 +1,30 @@
-import { dateFromParts } from './date'
+import { dateFromParts, dateTimeOf } from './date'
 import { DEFAULT_LOCALE } from './locale.class'
-import type { TCalendarDate } from './types'
+import type { TCalendarDate, TCalendarDateTime } from './types'
 
 /**
- * Числа сегодняшней даты: григорианский календарь и латинские цифры, что бы
- * ни стояло у локали, — их разбирает `dateFromParts`.
+ * Числа текущего момента: григорианский календарь, латинские цифры и часы от 0
+ * до 23, что бы ни стояло у локали, — их разбирают `dateFromParts` и
+ * `dateTimeOf`.
  */
-const TODAY: Intl.DateTimeFormatOptions = {
+const NOW: Intl.DateTimeFormatOptions = {
 	calendar: 'gregory',
 	numberingSystem: 'latn',
 	year: 'numeric',
 	month: 'numeric',
 	day: 'numeric',
+	hour: 'numeric',
+	minute: 'numeric',
+	hourCycle: 'h23',
+}
+
+/** Числа даты и времени текущего момента. */
+type TNowParts = {
+	readonly year: number
+	readonly month: number
+	readonly day: number
+	readonly hour: number
+	readonly minute: number
 }
 
 /** Форматтеры по поясу. Заводятся при первом обращении, а не при загрузке модуля. */
@@ -26,11 +39,33 @@ let formatters: Map<string, Intl.DateTimeFormat> | undefined
  * календарь не соберётся.
  */
 export function todayDate(timeZone?: string): TCalendarDate {
+	const { year, month, day } = nowParts(timeZone)
+
+	return dateFromParts(year, month, day)
+}
+
+/**
+ * Текущая дата со временем в часовом поясе `timeZone` — с точностью до минуты;
+ * пояс — как у `todayDate`.
+ */
+export function nowDateTime(timeZone?: string): TCalendarDateTime {
+	const { year, month, day, hour, minute } = nowParts(timeZone)
+
+	return dateTimeOf(dateFromParts(year, month, day), hour, minute)
+}
+
+function nowParts(timeZone: string | undefined): TNowParts {
 	const parts = formatterIn(timeZone).formatToParts(Date.now())
 	const part = (type: Intl.DateTimeFormatPartTypes): number =>
 		Number(parts.find((item) => item.type === type)?.value)
 
-	return dateFromParts(part('year'), part('month'), part('day'))
+	return {
+		year: part('year'),
+		month: part('month'),
+		day: part('day'),
+		hour: part('hour'),
+		minute: part('minute'),
+	}
 }
 
 function formatterIn(timeZone: string | undefined): Intl.DateTimeFormat {
@@ -50,8 +85,8 @@ function formatterIn(timeZone: string | undefined): Intl.DateTimeFormat {
 
 function createFormatter(timeZone: string | undefined): Intl.DateTimeFormat {
 	try {
-		return new Intl.DateTimeFormat(DEFAULT_LOCALE, { ...TODAY, timeZone })
+		return new Intl.DateTimeFormat(DEFAULT_LOCALE, { ...NOW, timeZone })
 	} catch {
-		return new Intl.DateTimeFormat(DEFAULT_LOCALE, TODAY)
+		return new Intl.DateTimeFormat(DEFAULT_LOCALE, NOW)
 	}
 }
