@@ -2,19 +2,28 @@ import { DEFAULT_LOCALE } from '../../../../common'
 import { AS_IS, numberRule, wrap } from '../segments'
 import type { TFieldPart, TPartEntry } from '../segments'
 import type { TDateFieldToken, TGroupContext, TPartGroup, TGroupSpec } from '../format'
-import type { TDateInputParts, TDatePartLimits } from '../types'
+import type { TDateInputParts, TDatePartLimits, TTimePrecision } from '../types'
 import { HALF_DAY, hasDayPeriod, hourInCycle, hourLimits, hourOfDay } from './hour-cycle'
-import type { THourCycle } from './types'
+import type { TClockPart, THourCycle } from './types'
 
-/** Формат частей времени: час и минута — двумя цифрами; цикл часов даёт локаль. */
-const OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
+/** Час суток в куске значения — от 0 до 23. */
+const HOURS: TDatePartLimits = { min: 0, max: 23 }
 
-/** Кусок значения — час и минута по две цифры. */
-const TIME_FORMAT = /^(\d{2}):(\d{2})$/
-
-/** Ход минуты и периода суток — от локали он не зависит. */
-const MINUTES: TDatePartLimits = { min: 0, max: 59 }
+/** Ход минуты, секунды и периода суток — от локали он не зависит. */
+const SIXTY: TDatePartLimits = { min: 0, max: 59 }
 const DAY_PERIODS: TDatePartLimits = { min: 0, max: 1 }
+
+/** Число куска значения — две цифры. */
+const TWO_DIGITS = /^\d{2}$/
+
+/** Разделитель чисел в куске значения и в запасном формате: `HH:mm:ss`. */
+const COLON = ':'
+
+/** Число части после часа в моменте — с него начинает ↑/↓ пустая часть. */
+const NOW: Readonly<Record<TClockPart, (date: Date) => number>> = {
+	minute: (date) => date.getMinutes(),
+	second: (date) => date.getSeconds(),
+}
 
 /**
  * Подсказка пустой части времени — в любом языке одна: у Intl подсказок частей
@@ -42,38 +51,46 @@ const DAY_PERIOD_HOURS: readonly [number, number] = [2, 14]
 const DAY_PERIOD_FALLBACK: readonly [string, string] = ['AM', 'PM']
 
 /**
- * Группа времени — час, минута и, у 12-часового цикла локали, период суток.
- * Кусок значения — `HH:mm`. Числа частей — час суток от 0 до 23 и период: 0 до
- * полудня, 1 после; час, который видит пользователь, — в цикле часов локали.
+ * Группы времени по точности — спецификации одной фабрики. Точность — это
+ * части после часа: до минуты — минута, кусок значения `HH:mm`; до секунды —
+ * ещё секунда, `HH:mm:ss`. По ним у спецификации свои опции Intl, кусок
+ * значения, части и запасной формат.
+ */
+export const TIME_GROUPS: Readonly<Record<TTimePrecision, TGroupSpec>> = {
+	minute: timeGroup(['minute']),
+	second: timeGroup(['minute', 'second']),
+}
+
+/**
+ * Группа времени — час, части после часа (`clock`: минута и, до секунды,
+ * секунда) и, у 12-часового цикла локали, период суток. Кусок значения — час
+ * и части после часа по две цифры через двоеточие. Числа частей — час суток от
+ * 0 до 23, минута и секунда от 0 до 59 и период: 0 до полудня, 1 после; час,
+ * который видит пользователь, — в цикле часов локали.
  *
  * Период суток — выбранная половина суток. У 12-часового цикла его выбирает
  * пользователь, и час, набранный без него, — в половине, которую период ещё
  * не подтвердил. Формат без периода показывает час суток целиком: набранный
  * там час и есть выбор половины.
+ *
+ * Общее у спецификаций разной точности — только сравнение кусков
+ * (`compareTimes`): значения разной точности сравниваются кусок за куском
+ * спецификацией любого из двух, и правило у них обязано быть одно.
  */
-export const TIME_GROUP: TGroupSpec = {
-	options: OPTIONS,
-	parse: (text) => {
-		const match = TIME_FORMAT.exec(text)
-
-		if (!match) return undefined
-
-		const hour = Number(match[1])
-		const minute = Number(match[2])
-
-		return timeExists(hour, minute)
-			? { hour, minute, dayPeriod: Math.floor(hour / HALF_DAY) }
-			: undefined
-	},
-	compose: ({ hour, minute }) =>
-		hour === undefined || minute === undefined || !timeExists(hour, minute)
-			? undefined
-			: `${twoDigits(hour)}:${twoDigits(minute)}`,
-	compare: (a, b) => (a === b ? 0 : a < b ? -1 : 1),
-	create: createGroup,
+function timeGroup(clock: readonly TClockPart[]): TGroupSpec {
+	return {
+		options: optionsOf(clock),
+		parse: (text) => parseTime(text, clock),
+		compose: (parts) => composeTime(parts, clock),
+		compare: compareTimes,
+		create: (context) => createGroup(context, clock),
+	}
 }
 
-function createGroup({ resolved, digits }: TGroupContext): TPartGroup {
+function createGroup(
+	{ resolved, digits }: TGroupContext,
+	clock: readonly TClockPart[],
+): TPartGroup {
 	const cycle: THourCycle = resolved.hourCycle ?? 'h23'
 	const lang = resolved.locale
 	const periods = dayPeriodsOf(lang)
@@ -89,15 +106,18 @@ function createGroup({ resolved, digits }: TGroupContext): TPartGroup {
 			settle: (parts) => periodOfHour(parts, cycle),
 		}),
 	}
-	const minute: TFieldPart = {
-		type: 'minute',
-		rule: numberRule(2, digits, {
-			...AS_IS,
-			placeholder: PLACEHOLDER,
-			limits: () => MINUTES,
-			step: wrap,
+	// Минута и секунда — одно правило: ход 0–59 по кругу, соседей не трогают
+	const afterHour = clock.map(
+		(type): TFieldPart => ({
+			type,
+			rule: numberRule(2, digits, {
+				...AS_IS,
+				placeholder: PLACEHOLDER,
+				limits: () => SIXTY,
+				step: wrap,
+			}),
 		}),
-	}
+	)
 	const dayPeriod: TFieldPart = {
 		type: 'dayPeriod',
 		rule: {
@@ -112,12 +132,15 @@ function createGroup({ resolved, digits }: TGroupContext): TPartGroup {
 			settle: hourOfPeriod,
 		},
 	}
-	const clock: readonly TDateFieldToken[] = [hour, { type: 'literal', text: ':' }, minute]
+	const isoClock: readonly TDateFieldToken[] = [
+		hour,
+		...afterHour.flatMap((part): TDateFieldToken[] => [{ type: 'literal', text: COLON }, part]),
+	]
 	const withPeriod = hasDayPeriod(cycle)
 
 	return {
-		parts: withPeriod ? [hour, minute, dayPeriod] : [hour, minute],
-		isoTokens: withPeriod ? [...clock, { type: 'literal', text: ' ' }, dayPeriod] : clock,
+		parts: withPeriod ? [hour, ...afterHour, dayPeriod] : [hour, ...afterHour],
+		isoTokens: withPeriod ? [...isoClock, { type: 'literal', text: ' ' }, dayPeriod] : isoClock,
 		fromText: (read, text) => {
 			const shown = read('hour')
 			const { min, max } = hourLimits(cycle)
@@ -127,7 +150,7 @@ function createGroup({ resolved, digits }: TGroupContext): TPartGroup {
 				return undefined
 			}
 
-			return { hour: hourOfDay(shown, cycle, period), minute: read('minute') }
+			return { hour: hourOfDay(shown, cycle, period), ...clockParts(clock, read) }
 		},
 		now: () => {
 			const now = new Date()
@@ -135,23 +158,91 @@ function createGroup({ resolved, digits }: TGroupContext): TPartGroup {
 
 			return {
 				hour: hours,
-				minute: now.getMinutes(),
+				...clockParts(clock, (type) => NOW[type](now)),
 				dayPeriod: Math.floor(hours / HALF_DAY),
 			}
 		},
 	}
 }
 
-/** Час от 0 до 23 и минута от 0 до 59 — целые. */
-function timeExists(hour: number, minute: number): boolean {
-	return (
-		Number.isInteger(hour) &&
-		Number.isInteger(minute) &&
-		hour >= 0 &&
-		hour <= 23 &&
-		minute >= 0 &&
-		minute <= 59
+/** Опции Intl: час и части после часа — двумя цифрами; цикл часов даёт локаль. */
+function optionsOf(clock: readonly TClockPart[]): Intl.DateTimeFormatOptions {
+	const options: Intl.DateTimeFormatOptions = { hour: '2-digit' }
+
+	for (const type of clock) options[type] = '2-digit'
+
+	return options
+}
+
+/**
+ * Числа частей из куска значения — часа и частей после часа, ровно столько,
+ * сколько их у точности: `HH:mm` у точности до секунды — не кусок. Не кусок
+ * или такого времени нет — `undefined`.
+ */
+function parseTime(text: string, clock: readonly TClockPart[]): TDateInputParts | undefined {
+	const fields = text.split(COLON)
+
+	if (fields.length !== clock.length + 1 || !fields.every((field) => TWO_DIGITS.test(field))) {
+		return undefined
+	}
+
+	const [hour, ...rest] = fields.map(Number)
+
+	if (!timeExists(hour, rest)) return undefined
+
+	return {
+		hour,
+		...clockParts(clock, (_type, index) => rest[index]),
+		dayPeriod: Math.floor(hour / HALF_DAY),
+	}
+}
+
+/** Кусок значения по числам частей; числа нет или такого времени нет — `undefined`. */
+function composeTime(parts: TDateInputParts, clock: readonly TClockPart[]): string | undefined {
+	const numbers = [parts.hour, ...clock.map((type) => parts[type])]
+
+	if (!numbers.every((value): value is number => value !== undefined)) return undefined
+
+	const [hour, ...rest] = numbers
+
+	return timeExists(hour, rest) ? numbers.map(twoDigits).join(COLON) : undefined
+}
+
+/**
+ * Порядок двух кусков времени — с точностью грубейшего: `HH:mm` и `HH:mm:ss`
+ * сравниваются до минуты, два куска с секундами — до секунды. Каждое число
+ * куска — две цифры, поэтому общее начало строк и есть общая точность, а
+ * порядок строк одной длины — порядок моментов.
+ */
+function compareTimes(a: string, b: string): number {
+	const length = Math.min(a.length, b.length)
+	const left = a.slice(0, length)
+	const right = b.slice(0, length)
+
+	return left === right ? 0 : left < right ? -1 : 1
+}
+
+/**
+ * Числа частей после часа по типу: `valueOf` — число части по её типу и месту
+ * за часом (минута — 0, секунда — 1).
+ */
+function clockParts(
+	clock: readonly TClockPart[],
+	valueOf: (type: TClockPart, index: number) => number,
+): TDateInputParts {
+	return Object.fromEntries(
+		clock.map((type, index): [TClockPart, number] => [type, valueOf(type, index)]),
 	)
+}
+
+/** Такое время есть: час от 0 до 23, минута и секунда от 0 до 59 — целые. */
+function timeExists(hour: number, rest: readonly number[]): boolean {
+	return inLimits(hour, HOURS) && rest.every((value) => inLimits(value, SIXTY))
+}
+
+/** Целое в ходе части. */
+function inLimits(value: number, { min, max }: TDatePartLimits): boolean {
+	return Number.isInteger(value) && value >= min && value <= max
 }
 
 function twoDigits(value: number): string {

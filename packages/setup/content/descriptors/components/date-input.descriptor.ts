@@ -2,12 +2,13 @@
  * Дескриптор DateInput (TDateInput).
  *
  * Наследует `InputControlDescriptor` (value, name, readonly, required, id,
- * disabled, size, variant, ...) и добавляет границы, локаль формата и вид поля:
- * дата или дата со временем. Значение вводится по частям в формате локали, а
- * всё оно выделяется, копируется и удаляется, как текст: на компьютере части
- * нередактируемые, их клавиши, указатель и буфер обмена переводят в команды
- * ядра плагины поля. Касание пальцем или пером делает части редактируемыми —
- * для экранной клавиатуры (сенсорный плагин).
+ * disabled, size, variant, ...) и добавляет границы, локаль формата, вид поля —
+ * дата или дата со временем — и точность времени: до минуты или до секунды.
+ * Значение вводится по частям в формате локали, а всё оно выделяется,
+ * копируется и удаляется, как текст: на компьютере части нередактируемые, их
+ * клавиши, указатель и буфер обмена переводят в команды ядра плагины поля.
+ * Касание пальцем или пером делает части редактируемыми — для экранной
+ * клавиатуры (сенсорный плагин).
  *
  * Разметка: корень — группа (`role="group"`, имя — `aria_label` или
  * `aria_labelledBy`), в нём ряд частей — `spinbutton` с остановкой Tab у
@@ -51,7 +52,8 @@ export const DateInputDescriptor = defineDescriptor(() =>
 			props: {
 				/**
 				 * Строкой: дата `YYYY-MM-DD` или, у поля даты и времени, дата со
-				 * временем `YYYY-MM-DDTHH:mm`. Другого значения у поля нет.
+				 * временем `YYYY-MM-DDTHH:mm`, с точностью до секунды —
+				 * `YYYY-MM-DDTHH:mm:ss`. Другого значения у поля нет.
 				 */
 				value: { type: String },
 				min: { type: String, triggers: ['change:min'] },
@@ -59,13 +61,15 @@ export const DateInputDescriptor = defineDescriptor(() =>
 				locale: { type: String, triggers: ['change:locale'] },
 				/** `date` — дата, `datetime` — ещё час, минута и период суток по циклу локали. */
 				kind: { type: String, triggers: ['change:kind'] },
+				/** `minute` — время до минуты, `second` — ещё секунда. У поля даты ничего не меняет. */
+				timePrecision: { type: String, triggers: ['change:timePrecision'] },
 				/**
 				 * Части и разделители в порядке формата. Перечитываются на правку
 				 * частей и наборов частей (`change:segments`) и на всё, что пишет
-				 * их наборы ядро: локаль и вид поля — текст, имена, порядок и
-				 * состав частей, `disabled` — остановки Tab, `readonly` и
-				 * `required` — `aria-readonly` и `aria-required`, границы —
-				 * `aria-invalid`.
+				 * их наборы ядро: локаль, вид поля и точность времени — текст,
+				 * имена, порядок и состав частей, `disabled` — остановки Tab,
+				 * `readonly` и `required` — `aria-readonly` и `aria-required`,
+				 * границы — `aria-invalid`.
 				 */
 				segments: {
 					type: Array,
@@ -74,6 +78,7 @@ export const DateInputDescriptor = defineDescriptor(() =>
 						'change:segments',
 						'change:locale',
 						'change:kind',
+						'change:timePrecision',
 						'change:disabled',
 						'change:readonly',
 						'change:required',
@@ -81,11 +86,11 @@ export const DateInputDescriptor = defineDescriptor(() =>
 						'change:max',
 					],
 				},
-				/** `dir` и `lang` ряда частей — по формату локали и виду поля. */
+				/** `dir` и `lang` ряда частей — по формату локали, виду поля и точности. */
 				segmentsAttrs: {
 					type: Object,
 					protected: true,
-					triggers: ['change:locale', 'change:kind'],
+					triggers: ['change:locale', 'change:kind', 'change:timePrecision'],
 				},
 			},
 		},

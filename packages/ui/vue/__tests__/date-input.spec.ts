@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, type VNode } from 'vue'
 import { DateInput } from '@soldy-ui/vue'
-import type { IDateInput } from '@soldy-ui/core'
+import type { IDateInput, TTimePrecision } from '@soldy-ui/core'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -77,22 +77,34 @@ async function type(keys: string): Promise<void> {
 	}
 }
 
-/** Части и литералы даты со временем по форматтеру поля — с теми же опциями. */
-function formattedTime(locale: string, dateTime: string): Intl.DateTimeFormatPart[] {
+/** Опции времени у форматтера для сверки — по точности, как у формата поля. */
+const TIME_OPTIONS: Readonly<Record<TTimePrecision, Intl.DateTimeFormatOptions>> = {
+	minute: { hour: '2-digit', minute: '2-digit' },
+	second: { hour: '2-digit', minute: '2-digit', second: '2-digit' },
+}
+
+/**
+ * Части и литералы даты со временем `YYYY-MM-DDTHH:mm` или
+ * `YYYY-MM-DDTHH:mm:ss` по форматтеру поля — с теми же опциями.
+ */
+function formattedTime(
+	locale: string,
+	dateTime: string,
+	timePrecision: TTimePrecision = 'minute',
+): Intl.DateTimeFormatPart[] {
 	const [date, time] = dateTime.split('T')
 	const [year, month, day] = date.split('-').map(Number)
-	const [hour, minute] = time.split(':').map(Number)
+	const [hour, minute, second = 0] = time.split(':').map(Number)
 	const formatter = new Intl.DateTimeFormat([locale, 'en-US'], {
 		day: '2-digit',
 		month: '2-digit',
 		year: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit',
+		...TIME_OPTIONS[timePrecision],
 		calendar: 'gregory',
 		timeZone: 'UTC',
 	})
 
-	return formatter.formatToParts(Date.UTC(year, month - 1, day, hour, minute))
+	return formatter.formatToParts(Date.UTC(year, month - 1, day, hour, minute, second))
 }
 
 /** Части и литералы даты по форматтеру поля — с теми же опциями. */
@@ -321,6 +333,111 @@ describe('время', () => {
 
 		expect(date.value).toBe('2026-05-12T14:30')
 		expect(segment('minute').textContent).toBe('30')
+	})
+
+	it('до секунды: секунда в ряду за минутой, значение — в скрытом поле', async () => {
+		await render(() =>
+			h(DateInput, {
+				locale: 'en-US',
+				kind: 'datetime',
+				timePrecision: 'second',
+				name: 'meeting',
+				value: '2026-05-12T14:30:15',
+			}),
+		)
+
+		const parts = formattedTime('en-US', '2026-05-12T14:30:15', 'second')
+
+		expect(rowContent().map(([, text]) => text)).toEqual(parts.map(({ value }) => value))
+		expect(findAll('.s-date-input__segment').map((node) => node.dataset.type)).toEqual([
+			'month',
+			'day',
+			'year',
+			'hour',
+			'minute',
+			'second',
+			'dayPeriod',
+		])
+		expect(segment('second').getAttribute('role')).toBe('spinbutton')
+		expect(segment('second').getAttribute('aria-valuenow')).toBe('15')
+		expect(segment('second').getAttribute('aria-valuemax')).toBe('59')
+		expect(segment('second').getAttribute('aria-label')).toBe(
+			new Intl.DisplayNames(['en-US'], { type: 'dateTimeField' }).of('second'),
+		)
+		expect(segment('second').getAttribute('tabindex')).toBe('0')
+		expect(find('input[type="hidden"]')).toHaveProperty('value', '2026-05-12T14:30:15')
+	})
+
+	it('набор секунды с клавиатуры возвращает время до секунды через update:value', async () => {
+		const date = ref<string | undefined>()
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				kind: 'datetime',
+				timePrecision: 'second',
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					date.value = value
+				},
+			}),
+		)
+
+		segment('day').focus()
+		await type('120520261430')
+
+		expect(document.activeElement).toBe(segment('second'))
+		expect(date.value).toBeUndefined()
+
+		await type('15')
+
+		expect(date.value).toBe('2026-05-12T14:30:15')
+	})
+
+	it('смена точности: секунда появляется и пропадает, значение — в новой точности', async () => {
+		const date = ref<string | undefined>('2026-05-12T14:30:15')
+		const timePrecision = ref<TTimePrecision>('minute')
+		const updates: Array<string | undefined> = []
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				kind: 'datetime',
+				timePrecision: timePrecision.value,
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					updates.push(value)
+					date.value = value
+				},
+			}),
+		)
+
+		const minute = segment('minute')
+
+		expect(document.querySelector('[data-type="second"]')).toBeNull()
+
+		// Секунда записанного значения была скрыта в частях: значение то же, а
+		// ряд перечитывается по смене точности
+		timePrecision.value = 'second'
+		await nextTick()
+
+		expect(updates).toEqual([])
+		expect(segment('second').textContent).toBe('15')
+		// Узел минуты тот же: часть ключуется типом
+		expect(segment('minute')).toBe(minute)
+
+		timePrecision.value = 'minute'
+		await nextTick()
+
+		expect(date.value).toBe('2026-05-12T14:30')
+		expect(document.querySelector('[data-type="second"]')).toBeNull()
+
+		// Секунда осталась в частях и вернулась
+		timePrecision.value = 'second'
+		await nextTick()
+
+		expect(date.value).toBe('2026-05-12T14:30:15')
+		expect(segment('second').textContent).toBe('15')
 	})
 })
 

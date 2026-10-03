@@ -33,6 +33,7 @@ import type {
 	TDateInputSegmentSets,
 	TDateInputValue,
 	TDateInputEdit,
+	TTimePrecision,
 } from './types'
 
 /**
@@ -44,24 +45,26 @@ const SEGMENT_ROLE = 'spinbutton'
 
 /**
  * Поле даты из частей по формату локали: день, месяц и год, а у поля даты и
- * времени (`kind: 'datetime'`) — ещё час, минута и период суток, в порядке и с
+ * времени (`kind: 'datetime'`) — ещё час, минута, с точностью до секунды
+ * (`timePrecision: 'second'`) секунда и период суток, в порядке и с
  * разделителями `Intl.DateTimeFormat#formatToParts`.
  *
  * **Части — буфер правки.** Число каждой части ядро держит само
  * (`TDateInputParts`); значение (`value`) пишется, когда собраны все части
- * вида поля и такое значение есть, и снимается, когда собранное разобрали.
- * Запись снаружи — части берутся из неё (дата или дата со временем — при любом
- * виде поля), не значение — части пусты; эхо своей записи (`v-model` вернул то
- * же значение) части не трогает. Отменили `change:value:before` — правки нет,
- * поправили — части показывают итог.
+ * формата и такое значение есть, и снимается, когда собранное разобрали.
+ * Запись снаружи — части берутся из неё (дата или дата со временем любой
+ * точности — при любом виде поля), не значение — части пусты; эхо своей
+ * записи (`v-model` вернул то же значение) части не трогает. Отменили
+ * `change:value:before` — правки нет, поправили — части показывают итог.
  *
- * **Формат — только от `locale` и вида поля** (`kind`): порядок частей,
- * разделители, цифры, цикл часов, имена периодов суток, подсказки пустых
- * частей, имена частей и направление ряда — формат поля локали
- * (`fieldFormat(locale, kind)`). Смена локали и вида
- * частей не трогает: другими становятся текст и состав частей формата, а
- * время, скрытое у поля даты, остаётся в частях и вернётся. Значение
- * пишется заново, только если те же части в новом формате собираются иначе.
+ * **Формат — только от `locale`, вида поля** (`kind`) **и точности времени**
+ * (`timePrecision`): порядок частей, разделители, цифры, цикл часов, имена
+ * периодов суток, подсказки пустых частей, имена частей и направление ряда —
+ * формат поля локали (`fieldFormat(locale, kind, timePrecision)`). Смена
+ * локали, вида и точности частей не трогает: другими становятся текст и
+ * состав частей формата, а время, скрытое у поля даты, и секунда, скрытая у
+ * точности до минуты, остаются в частях и вернутся. Значение пишется заново,
+ * только если те же части в новом формате собираются иначе.
  *
  * **Фокус части** ведёт ядро (`focusedSegment`, как `focusedDate` у
  * календаря): плагин сообщает, куда пришёл DOM-фокус, а ядро переводит его,
@@ -80,7 +83,8 @@ const SEGMENT_ROLE = 'spinbutton'
  *
  * `min` и `max` значение не прижимают: собранное значение вне них — `invalid`
  * (`data-invalid` у корня, `aria-invalid` у частей), и его видно таким, каким
- * его набрали. Дата и дата со временем сравниваются по дню.
+ * его набрали. Сравнение — с точностью грубейшего: дата и дата со временем —
+ * по дню, время до минуты и время до секунды — до минуты.
  */
 export class TDateInput
 	extends TInputControl<TDateInputValue, IDateInputProps, TDateInputEvents>
@@ -89,19 +93,21 @@ export class TDateInput
 	static override baseClass = 's-date-input'
 
 	static defaultValues: typeof TInputControl.defaultValues &
-		TDefaultValues<IDateInputProps, 'locale' | 'kind', 'min' | 'max'> = {
+		TDefaultValues<IDateInputProps, 'locale' | 'kind' | 'timePrecision', 'min' | 'max'> = {
 		...TInputControl.defaultValues,
 		min: undefined,
 		max: undefined,
 		// Языка интерфейса библиотека не знает: дефолт английский, как у календаря
 		locale: DEFAULT_LOCALE,
 		kind: 'date',
+		timePrecision: 'minute',
 	}
 
 	protected _min: TDateInputBound
 	protected _max: TDateInputBound
 	protected _locale: string
 	protected _kind: TDateInputKind
+	protected _timePrecision: TTimePrecision
 	protected _parts: TDateInputParts
 	protected _focusedSegment: TDateFieldPart | undefined = undefined
 	/** Цифры, набранные в часть под фокусом: к ним допишется следующая */
@@ -120,6 +126,7 @@ export class TDateInput
 		this._max = props.max ?? ctor.defaultValues.max
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._kind = props.kind ?? ctor.defaultValues.kind
+		this._timePrecision = props.timePrecision ?? ctor.defaultValues.timePrecision
 		this._parts = partsOfValue(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
@@ -191,6 +198,26 @@ export class TDateInput
 
 		this._kind = value
 		this.events.emit('change:kind', value)
+		this._formatChanged(before)
+	}
+
+	get timePrecision(): TTimePrecision {
+		return this._timePrecision
+	}
+
+	/**
+	 * Как смена вида: части сохраняются по типу, а значение собирается из них в
+	 * новой точности — секунда ушла из значения и вернётся в него, а время без
+	 * набранной секунды значения не даёт. У поля даты частей времени нет, и
+	 * значение то же.
+	 */
+	set timePrecision(value: TTimePrecision) {
+		if (this._timePrecision === value) return
+
+		const before = fieldValueOf(this._parts, this._format)
+
+		this._timePrecision = value
+		this.events.emit('change:timePrecision', value)
 		this._formatChanged(before)
 	}
 
@@ -393,6 +420,7 @@ export class TDateInput
 			max: this._max,
 			locale: this._locale,
 			kind: this._kind,
+			timePrecision: this._timePrecision,
 		}
 	}
 
@@ -400,9 +428,9 @@ export class TDateInput
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
-	/** Формат поля локали и вида — один объект на тег и вид. */
+	/** Формат поля локали, вида и точности — один объект на тег, вид и точность. */
 	protected get _format(): IDateFieldFormat {
-		return fieldFormat(this._locale, this._kind)
+		return fieldFormat(this._locale, this._kind, this._timePrecision)
 	}
 
 	/** Часть формата под фокусом с её правилом; фокуса нет — `undefined`. */
@@ -490,16 +518,17 @@ export class TDateInput
 	}
 
 	/**
-	 * Формат сменился — локаль или вид поля. Набранные цифры были в прежнем
-	 * формате; части под фокусом в новом может не быть (период суток у
-	 * 24-часовой локали, время у поля даты) — тогда фокуса в поле нет: её
-	 * узел разметка сняла вместе с DOM-фокусом.
+	 * Формат сменился — локаль, вид поля или точность времени. Набранные цифры
+	 * были в прежнем формате; части под фокусом в новом может не быть (период
+	 * суток у 24-часовой локали, время у поля даты, секунда у точности до
+	 * минуты) — тогда фокуса в поле нет: её узел разметка сняла вместе с
+	 * DOM-фокусом.
 	 *
 	 * Значение пишется заново, только если те же части в новом формате
-	 * собираются иначе, чем в прежнем (`before`): вид поля меняет форму значения, а
-	 * цикл часов — нужен ли выбранный период суток. Значение, записанное снаружи
-	 * и полем не собранное, смена формата, которая его прочтение не меняет, не
-	 * трогает.
+	 * собираются иначе, чем в прежнем (`before`): вид поля и точность меняют
+	 * форму значения, а цикл часов — нужен ли выбранный период суток. Значение,
+	 * записанное снаружи и полем не собранное, смена формата, которая его
+	 * прочтение не меняет, не трогает.
 	 */
 	protected _formatChanged(before: TDateInputValue): void {
 		this._typed = ''

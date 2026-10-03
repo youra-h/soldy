@@ -1,15 +1,16 @@
 import { DEFAULT_LOCALE, calendarLocale } from '../../../../common'
 import { groupSpecsOf } from '../date-time'
 import type { TFieldPart } from '../segments'
-import type { TDateFieldPart, TDateInputKind } from '../types'
+import type { TDateFieldPart, TDateInputKind, TTimePrecision } from '../types'
 import type { IDateFieldFormat, TDateFieldToken, TPartGroup } from './types'
 
 /**
- * Опорный момент формата — 12 мая 2026, 14:30 UTC. По нему видно направление
- * ряда и сдвиг года календаря поля: число дня не совпадает с номером месяца, а
- * час — ни с днём, ни с минутой, и части не спутать.
+ * Опорный момент формата — 12 мая 2026, 14:30:15 UTC. По нему видно
+ * направление ряда и сдвиг года календаря поля: число дня не совпадает с
+ * номером месяца, а час, минута и секунда — ни с днём, ни друг с другом, и
+ * части не спутать.
  */
-const SAMPLE = Date.UTC(2026, 4, 12, 14, 30)
+const SAMPLE = Date.UTC(2026, 4, 12, 14, 30, 15)
 const SAMPLE_YEAR = 2026
 
 /** Цифры от нуля до девяти — то, что форматирует система счисления. */
@@ -35,50 +36,60 @@ const RTL_SCRIPT =
 	/[\p{Script=Hebrew}\p{Script=Arabic}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}\p{Script=Samaritan}\p{Script=Mandaic}\p{Script=Adlam}\p{Script=Hanifi_Rohingya}]/u
 
 /**
- * Форматы по тегу, как его задали, и виду поля. Карта заводится при первом
- * обращении, а не при загрузке модуля: приложению без поля даты она не нужна.
+ * Форматы по тегу, как его задали, виду поля и точности времени. Карта
+ * заводится при первом обращении, а не при загрузке модуля: приложению без
+ * поля даты она не нужна.
  */
-let formats: Map<string, Map<TDateInputKind, IDateFieldFormat>> | undefined
+let formats: Map<string, Map<TDateInputKind, Map<TTimePrecision, IDateFieldFormat>>> | undefined
 
 /**
- * Формат поля в локали `locale` и виде `kind` — один на тег и
- * вид: форматтеры Intl создаются один раз и служат всем полям с ними.
- * Невалидный и пустой тег — `en-US`.
+ * Формат поля в локали `locale`, виде `kind` и точности времени
+ * `timePrecision` — один на тег, вид и точность: форматтеры Intl создаются
+ * один раз и служат всем полям с ними. Невалидный и пустой тег — `en-US`.
  */
-export function fieldFormat(locale: string | undefined, kind: TDateInputKind): IDateFieldFormat {
+export function fieldFormat(
+	locale: string | undefined,
+	kind: TDateInputKind,
+	timePrecision: TTimePrecision,
+): IDateFieldFormat {
 	formats ??= new Map()
 
-	const key = locale ?? ''
-	let byKind = formats.get(key)
+	const byKind = cached(formats, locale ?? '', () => new Map())
+	const byPrecision = cached(byKind, kind, () => new Map())
 
-	if (byKind === undefined) {
-		byKind = new Map()
-		formats.set(key, byKind)
+	return cached(byPrecision, timePrecision, () => createFormat(locale, kind, timePrecision))
+}
+
+/** Значение карты по ключу; нет — создаётся и запоминается. */
+function cached<K, V>(map: Map<K, V>, key: K, create: () => NoInfer<V>): V {
+	let value = map.get(key)
+
+	if (value === undefined) {
+		value = create()
+		map.set(key, value)
 	}
 
-	let format = byKind.get(kind)
-
-	if (format === undefined) {
-		format = createFormat(locale, kind)
-		byKind.set(kind, format)
-	}
-
-	return format
+	return value
 }
 
 /**
- * Формат Intl с частями групп вида поля. Тег и календарь — у локали календаря
- * (`calendarLocale`): календарь поля буддийский, если буддийский календарь
- * подписей, иначе григорианский — эры у поля нет, а японская эра меняется
- * посреди года. Цикл часов — только от локали, с ключом `-u-hc-` тоже.
+ * Формат Intl с частями групп вида поля в точности времени. Тег и календарь —
+ * у локали календаря (`calendarLocale`): календарь поля буддийский, если
+ * буддийский календарь подписей, иначе григорианский — эры у поля нет, а
+ * японская эра меняется посреди года. Цикл часов — только от локали, с ключом
+ * `-u-hc-` тоже.
  *
  * Группы узнают у форматтера своё (сдвиг года, цикл часов) и отдают части;
  * Intl отдал не ровно по одной части каждого типа — формат собирается из
  * запасных форматов групп. У известных движков такой локали нет.
  */
-function createFormat(tag: string | undefined, kind: TDateInputKind): IDateFieldFormat {
+function createFormat(
+	tag: string | undefined,
+	kind: TDateInputKind,
+	timePrecision: TTimePrecision,
+): IDateFieldFormat {
 	const { locale, calendar } = calendarLocale(tag)
-	const specs = groupSpecsOf(kind)
+	const specs = groupSpecsOf(kind, timePrecision)
 	const formatter = new Intl.DateTimeFormat([locale, DEFAULT_LOCALE], {
 		...specs.reduce<Intl.DateTimeFormatOptions>(
 			(all, spec) => ({ ...all, ...spec.options }),
@@ -97,6 +108,7 @@ function createFormat(tag: string | undefined, kind: TDateInputKind): IDateField
 
 	return {
 		kind,
+		timePrecision,
 		tokens,
 		parts: tokens.flatMap((token) => (token.type === 'literal' ? [] : [token])),
 		groups,
@@ -203,6 +215,7 @@ function namesOf(locale: string): Readonly<Record<TDateFieldPart, string>> {
 		year: of('year'),
 		hour: of('hour'),
 		minute: of('minute'),
+		second: of('second'),
 		dayPeriod: of('dayPeriod'),
 	}
 }

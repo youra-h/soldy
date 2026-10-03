@@ -386,6 +386,65 @@ describe('время', () => {
 		})
 		expect(row().textContent).toBe('12.05.2026, 14:30')
 	})
+
+	it('en-US до секунды: за минутой фокус на секунде, за ней — период суток', async () => {
+		const ctrl = await show({
+			locale: 'en-US',
+			kind: 'datetime',
+			timePrecision: 'second',
+			value: undefined,
+		})
+
+		await userEvent.click(segment('month'))
+		await userEvent.keyboard('051220260230')
+		expect(document.activeElement).toBe(segment('second'))
+
+		await userEvent.keyboard('15')
+		expect(document.activeElement).toBe(segment('dayPeriod'))
+		expect(ctrl.value).toBeUndefined()
+
+		await userEvent.keyboard('p')
+		expect(ctrl.value).toBe('2026-05-12T14:30:15')
+
+		await userEvent.keyboard('{ArrowLeft}')
+		expect(document.activeElement).toBe(segment('second'))
+
+		await userEvent.keyboard('{ArrowUp}')
+		expect(ctrl.value).toBe('2026-05-12T14:30:16')
+		await expect.poll(() => segment('second').textContent).toBe('16')
+	})
+
+	it('ru до секунды: секунда цифрами, ←/→ ходят между минутой и секундой', async () => {
+		const ctrl = await show({
+			kind: 'datetime',
+			timePrecision: 'second',
+			value: '2026-05-12T14:30:15',
+		})
+
+		await userEvent.click(segment('minute'))
+		await userEvent.keyboard('{ArrowRight}')
+		expect(document.activeElement).toBe(segment('second'))
+
+		await userEvent.keyboard('09')
+		expect(ctrl.value).toBe('2026-05-12T14:30:09')
+		await expect.poll(() => segment('second').textContent).toBe('09')
+
+		await userEvent.keyboard('{ArrowLeft}')
+		expect(document.activeElement).toBe(segment('minute'))
+	})
+
+	it('Ctrl+A и Ctrl+C — дата со временем до секунды текстом поля', async () => {
+		await show({ kind: 'datetime', timePrecision: 'second', value: '2026-05-12T14:30:15' })
+
+		await userEvent.click(segment('second'))
+		await userEvent.keyboard('{Control>}a{/Control}')
+
+		expect(await clipboardOf('{Control>}c{/Control}')).toEqual({
+			text: row().textContent,
+			prevented: true,
+		})
+		expect(row().textContent).toBe('12.05.2026, 14:30:15')
+	})
 })
 
 describe('сенсорный режим', () => {
@@ -599,5 +658,39 @@ describe('ширина поля', () => {
 		await nextTick()
 
 		expect(fieldWidth()).toBeCloseTo(empty, 0)
+	})
+
+	// Секунда с двоеточием шире ряда до минуты: у ko-KR набранное время до
+	// секунды с периодом суток шире минимума поля со временем
+	for (const locale of ['en-US', 'ru-RU', 'ko-KR']) {
+		it(`${locale}: поле до секунды — пустое и набранное одной ширины`, async () => {
+			const ctrl = await show({
+				locale,
+				kind: 'datetime',
+				timePrecision: 'second',
+				value: undefined,
+			})
+			const empty = fieldWidth()
+
+			ctrl.value = '2026-12-28T20:59:59'
+			await expect.poll(() => segment('second').textContent).toBe('59')
+
+			expect(fieldWidth()).toBeCloseTo(empty, 0)
+		})
+	}
+
+	it('ru-RU: набор времени до секунды с пустого поля корень не меняет', async () => {
+		await show({ kind: 'datetime', timePrecision: 'second', value: undefined })
+		const empty = fieldWidth()
+
+		await userEvent.click(segment('day'))
+
+		for (const key of '28122026205959') {
+			await userEvent.keyboard(key)
+			await nextTick()
+			expect(fieldWidth(), `после «${key}»`).toBeCloseTo(empty, 0)
+		}
+
+		expect(segment('second').textContent).toBe('59')
 	})
 })
