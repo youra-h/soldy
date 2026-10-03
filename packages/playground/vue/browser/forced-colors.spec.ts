@@ -1,6 +1,6 @@
 /**
  * Режим принудительных цветов (высокий контраст Windows) в настоящем
- * браузере: кромка панелей оверлеев.
+ * браузере: кромка панелей оверлеев и кольцо фокуса полей.
  *
  * В этом режиме браузер перекрашивает страницу сам: фон и текст берёт из
  * системной палитры, а тени убирает. Кромку панелей Popover и Select тема
@@ -14,6 +14,10 @@
  * окна и панели контур общий — в поверхности модального слоя
  * (`themes/oren/src/mixins/_modal.scss`).
  *
+ * У полей Input и DateInput тот же приём мешает: их кольцо фокуса в покое —
+ * тоже прозрачный контур, и рамка фокуса стояла бы у каждого поля сразу (см.
+ * конец файла).
+ *
  * Режим включает эмуляция Chromium — та же, что в DevTools → Rendering: она
  * меняет не только ответ медиазапроса, но и сами цвета. jsdom не делает ни
  * того ни другого, а по исходникам темы не видно, что браузер сделает с
@@ -24,10 +28,20 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import { Button, Dialog, Drawer, Popover, Select, SelectItem, Tooltip } from '@soldy-ui/vue'
+import {
+	Button,
+	DateInput,
+	Dialog,
+	Drawer,
+	Input,
+	Popover,
+	Select,
+	SelectItem,
+	Tooltip,
+} from '@soldy-ui/vue'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
-import { find, opacity, pixel, style } from './colors'
+import { find, opacity, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
 
 import '@soldy-ui/theme-oren'
@@ -194,4 +208,64 @@ describe('Popover: панель под фокусом', () => {
 
 		expect(outlined(await openByKeyboard())).toBe(true)
 	})
+})
+
+/**
+ * Кольцо фокуса поля — у Input и DateInput: коробка поля у них общая
+ * (`field` в `themes/oren/src/components/input/_mixins.scss`). В покое кольцо
+ * — прозрачный контур: так под фокусом его цвет проявляется переходом. В
+ * режиме принудительных цветов браузер заменил бы прозрачный цвет системным,
+ * как у кромки панелей выше, и рамка фокуса стояла бы у каждого поля — какое
+ * под фокусом, было бы не понять. Поэтому в этом режиме кольца в покое нет
+ * вовсе, а под фокусом оно сплошное, системного цвета фокуса.
+ */
+const FIELDS = [
+	{
+		name: 'Input',
+		field: '.s-input',
+		target: '.s-input input',
+		markup: () => h(Input, { aria_label: 'Имя' }),
+	},
+	{
+		name: 'DateInput',
+		field: '.s-date-input',
+		target: '.s-date-input__segment',
+		markup: () => h(DateInput, { aria_label: 'Дата' }),
+	},
+]
+
+describe.each(FIELDS)('$name: кольцо фокуса поля', ({ field, target, markup }) => {
+	/** Отдать фокус полю и дождаться, пока доиграет переход цвета кольца. */
+	const focus = async (): Promise<HTMLElement> => {
+		find(target).focus()
+
+		const element = find(field)
+
+		await settled(element)
+
+		return element
+	}
+
+	it.each(SCHEMES)('%s: в обычном режиме кольцо только под фокусом', async (scheme) => {
+		await show(scheme, markup)
+
+		expect(outlined(find(field)), 'в покое').toBe(false)
+		expect(outlined(await focus()), 'под фокусом').toBe(true)
+	})
+
+	it.each(SCHEMES)(
+		'%s: в режиме принудительных цветов кольцо только под фокусом, цветом фокуса системы',
+		async (scheme) => {
+			await forcedColors('active')
+			await show(scheme, markup)
+
+			expect(matchMedia('(forced-colors: active)').matches).toBe(true)
+			expect(outlined(find(field)), 'в покое').toBe(false)
+
+			const element = await focus()
+
+			expect(outlined(element), 'под фокусом').toBe(true)
+			expect(pixel([style(element).outlineColor])).toEqual(pixel([systemColor('Highlight')]))
+		},
+	)
 })

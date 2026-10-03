@@ -1,6 +1,15 @@
 @use 'sass:map';
 @use './mixins' as mixines;
 @use '../../mixins/required' as required;
+
+// Наведение красит рамку только у включённого поля. Корень Input — `div` (по
+// `tag`), и `:not(:disabled)` у него истинно всегда: выключено вложенное
+// поле. Его тег фиксирован, поэтому псевдокласс на нём разрешён (корневой
+// AGENTS.md, «CSS не стилизуется по `aria-*`»), а `data-disabled` разметка
+// Input на корень не выводит. Поле — прямой ребёнок корня: ввод в слоте
+// (разметка потребителя) выключенность поля не решает.
+$enabled: ':not(:has(> input:disabled))';
+
 .s-input {
 	$this: &;
 
@@ -14,7 +23,7 @@
 	@apply min-w-40;
 
 	&:has(input:focus-visible:not(:disabled)) {
-		@apply outline-s-component;
+		@include mixines.field-focus;
 	}
 
 	input {
@@ -40,12 +49,14 @@
 		height: var(--s-input-slot-row);
 	}
 
+	// Отступ слота — у края поля, и сторона логическая: в RTL `leading` стоит
+	// справа, и отступ у него справа, как у слотов DateInput.
 	&__leading {
-		@apply pl-1;
+		@apply ps-1;
 	}
 
 	&__trailing {
-		@apply pr-1;
+		@apply pe-1;
 	}
 
 	&--required {
@@ -56,7 +67,7 @@
 
 	@each $variant in mixines.$variants {
 		&--variant-#{$variant} {
-			@include mixines.input-variant($variant);
+			@include mixines.input-variant($variant, $enabled);
 		}
 	}
 
@@ -83,5 +94,5 @@
 // он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
 // споря с ней.
 :where(.s-input) {
-	@include mixines.input-variant('neutral');
+	@include mixines.input-variant('neutral', $enabled);
 }

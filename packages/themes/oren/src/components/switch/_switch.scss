@@ -87,7 +87,7 @@
 
 	&--required {
 		&::after {
-			@include required.required-indicator($top: '-top-0.5', $left: '-left-0.5');
+			@include required.required-indicator($top: '-top-0.5', $start: '-start-0.5');
 			@apply z-20;
 		}
 	}
