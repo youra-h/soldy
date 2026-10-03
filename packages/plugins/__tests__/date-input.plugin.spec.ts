@@ -143,6 +143,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	owner.events.on('change:segments', render)
 	owner.events.on('change:locale', render)
 	owner.events.on('change:kind', render)
+	owner.events.on('change:timePrecision', render)
 	owner.events.on('change:disabled', render)
 
 	const bundle = new TPluginBundle(owner, 'f1')
@@ -532,6 +533,38 @@ describe('клавиши', () => {
 		expect(owner.focusedSegment).toBeUndefined()
 	})
 
+	it('время до секунды: дописали минуту — DOM-фокус на секунде, её цифры набирают значение', async () => {
+		const { owner, segment, press, type } = await mount({
+			kind: 'datetime',
+			timePrecision: 'second',
+		})
+
+		segment('day').focus()
+		type('120520261430')
+		expect(document.activeElement).toBe(segment('second'))
+		expect(owner.value).toBeUndefined()
+
+		type('59')
+		expect(owner.value).toBe('2026-05-12T14:30:59')
+
+		expect(press(segment('second'), 'ArrowUp').defaultPrevented).toBe(true)
+		expect(owner.value).toBe('2026-05-12T14:30:00')
+	})
+
+	it('смена точности — секунда появляется и пропадает, фокус с пропавшей части снят', async () => {
+		const { owner, row, segment } = await mount({ kind: 'datetime', value: '2026-05-12T14:30' })
+
+		owner.timePrecision = 'second'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(6)
+
+		segment('second').focus()
+		expect(owner.focusedSegment).toBe('second')
+
+		owner.timePrecision = 'minute'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
+		expect(owner.focusedSegment).toBeUndefined()
+	})
+
 	it('Tab и Enter — не поля: остановки Tab у частей свои', async () => {
 		const { segment, press } = await mount()
 
@@ -835,6 +868,22 @@ describe('сенсорный режим', () => {
 		expect(segment('dayPeriod').getAttribute('contenteditable')).toBe('true')
 		expect(segment('dayPeriod').getAttribute('inputmode')).toBe('text')
 		expect(segment('dayPeriod').getAttribute('id')).toBe('f1-dayPeriod')
+	})
+
+	it('смена точности: секунда получает наборы сенсорного режима и id', async () => {
+		const { owner, segment } = await mount({ kind: 'datetime', value: '2026-05-12T14:30' })
+
+		pointerDown(segment('minute'), 'touch')
+
+		owner.timePrecision = 'second'
+		expect(segment('second').getAttribute('contenteditable')).toBe('true')
+		expect(segment('second').getAttribute('inputmode')).toBe('numeric')
+		expect(segment('second').getAttribute('id')).toBe('f1-second')
+
+		// Ввод экранной клавиатуры в секунду — команды ядра
+		segment('second').focus()
+		beforeInput(segment('second'), 'insertText', '15')
+		expect(owner.value).toBe('2026-05-12T14:30:15')
 	})
 
 	it('ввод экранной клавиатуры гасится и набирает дату командами ядра', async () => {

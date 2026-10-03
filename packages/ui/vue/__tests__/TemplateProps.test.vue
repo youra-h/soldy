@@ -110,6 +110,10 @@ const dragAndDrop = new TDragAndDrop()
 	<DateInput kind="month" />
 	<DateInput kind="datetime" />
 
+	<!-- @vue-expect-error — точность времени: до минуты или до секунды -->
+	<DateInput timePrecision="hour" />
+	<DateInput timePrecision="second" />
+
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />
 	<Dialog placement="start" />

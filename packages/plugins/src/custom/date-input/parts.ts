@@ -11,8 +11,8 @@ import type { TDateInputSegmentNode } from './types'
  */
 
 /**
- * Типы частей — словарём по типу, а не списком: появится у ядра новая часть
- * (`second`), и словарь без неё не скомпилируется.
+ * Типы частей — словарём по типу, а не списком: появится у ядра новая часть,
+ * и словарь без неё не скомпилируется.
  */
 const PARTS: Readonly<Record<TDateFieldPart, true>> = {
 	day: true,
@@ -20,10 +20,14 @@ const PARTS: Readonly<Record<TDateFieldPart, true>> = {
 	year: true,
 	hour: true,
 	minute: true,
+	second: true,
 	dayPeriod: true,
 }
 
-/** Все типы частей поля — в формате и нет: смена вида и локали меняет их состав. */
+/**
+ * Все типы частей поля — в формате и нет: смена вида, точности времени и
+ * локали меняет их состав.
+ */
 export function allPartTypes(): TDateFieldPart[] {
 	return Object.keys(PARTS).filter(isFieldPart)
 }

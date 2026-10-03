@@ -1,31 +1,53 @@
 import { DATE_GROUP } from '../date'
-import { TIME_GROUP } from '../time'
+import { TIME_GROUPS } from '../time'
 import { asciiDigits } from '../segments'
 import type { IDateFieldFormat, TGroupSpec } from '../format'
-import type { TDateFieldPart, TDateInputKind, TDateInputParts, TDateInputValue } from '../types'
+import type {
+	TDateFieldPart,
+	TDateInputKind,
+	TDateInputParts,
+	TDateInputValue,
+	TTimePrecision,
+} from '../types'
 import type { TValuePiece } from './types'
 
 /**
- * Дата и время вместе — значение поля по его виду.
+ * Дата и время вместе — значение поля по его виду и точности времени.
  *
  * Значение — куски групп вида поля через `T`, как `value` у
  * `<input type="datetime-local">`: `date` — дата `YYYY-MM-DD`, `datetime` —
- * ещё время `HH:mm`. Своих правил частей здесь нет: части даты и времени
- * согласует каждая группа у себя, а связей между группами нет вовсе.
+ * ещё время `HH:mm` или, с точностью до секунды, `HH:mm:ss`. Своих правил
+ * частей здесь нет: части даты и времени согласует каждая группа у себя, а
+ * связей между группами нет вовсе.
  */
 
 /** Разделитель кусков значения: `YYYY-MM-DDTHH:mm`. */
 const SEPARATOR = 'T'
 
 /**
- * Виды поля — спецификации групп по порядку значения. Каждый следующий — тот
- * же предыдущий и ещё группа: кусок под тем же номером в любом виде — одной
- * группы, поэтому значения разного вида сравниваются кусок за куском.
+ * Виды поля в каждой точности времени — спецификации групп по порядку
+ * значения. Каждый следующий вид — тот же предыдущий и ещё группа: кусок под
+ * тем же номером в любом виде — одной группы, поэтому значения разного вида и
+ * точности сравниваются кусок за куском. Точность выбирает спецификацию
+ * времени, а у даты её нет: состав поля даты от точности не зависит.
  */
-const KINDS: Readonly<Record<TDateInputKind, readonly TGroupSpec[]>> = {
-	date: [DATE_GROUP],
-	datetime: [DATE_GROUP, TIME_GROUP],
+const KINDS: Readonly<
+	Record<TDateInputKind, Readonly<Record<TTimePrecision, readonly TGroupSpec[]>>>
+> = {
+	date: { minute: [DATE_GROUP], second: [DATE_GROUP] },
+	datetime: {
+		minute: [DATE_GROUP, TIME_GROUPS.minute],
+		second: [DATE_GROUP, TIME_GROUPS.second],
+	},
 }
+
+/**
+ * Составы значения любого вида и точности — по ним читается значение,
+ * записанное снаружи, и граница: их вид от поля не зависит.
+ */
+const COMPOSITIONS: readonly (readonly TGroupSpec[])[] = Object.values(KINDS).flatMap(
+	(byPrecision) => Object.values(byPrecision),
+)
 
 /**
  * Метки направления и изолирующие знаки: ALM, LRM, RLM, встраивания и
@@ -38,22 +60,29 @@ const DIRECTION_MARKS = /[؜‎‏‪-‮⁦-⁩]/g
 /** Группы цифр текста, уже приведённого к цифрам ASCII. */
 const DIGIT_GROUPS = /\d+/g
 
-/** Спецификации групп вида поля — по порядку значения. */
-export function groupSpecsOf(kind: TDateInputKind): readonly TGroupSpec[] {
-	return KINDS[kind]
+/** Спецификации групп вида поля в точности времени — по порядку значения. */
+export function groupSpecsOf(
+	kind: TDateInputKind,
+	timePrecision: TTimePrecision,
+): readonly TGroupSpec[] {
+	return KINDS[kind][timePrecision]
 }
 
 /**
  * Значение из частей — только когда есть все части формата и такое значение
- * есть: у поля даты — дата, у поля даты и времени — дата со временем.
+ * есть: у поля даты — дата, у поля даты и времени — дата со временем в
+ * точности формата.
  */
 export function fieldValueOf(parts: TDateInputParts, format: IDateFieldFormat): TDateInputValue {
 	if (format.parts.some((part) => parts[part.type] === undefined)) return undefined
 
-	return composeValue(parts, KINDS[format.kind])
+	return composeValue(parts, specsOf(format))
 }
 
-/** Части значения — даты или даты со временем, при любом виде поля; не значение — пусто. */
+/**
+ * Части значения — даты или даты со временем любой точности, при любом виде
+ * поля; не значение — пусто.
+ */
 export function partsOfValue(value: unknown): TDateInputParts {
 	return mergeParts(readValue(value)?.map((piece) => piece.parts) ?? [])
 }
@@ -61,10 +90,10 @@ export function partsOfValue(value: unknown): TDateInputParts {
 /**
  * Лежит ли значение вне границ `min` и `max` — дат или дат со временем.
  * Сравнение — с точностью грубейшего из двух: граница-дата `max` пропускает
- * любое время своего дня, а дата проходит границу-момент своего дня.
- * Невалидная граница не ограничивает, `max` раньше `min` — граница
- * схлопывается в `min`, как у календаря. Не значение — не вне границ:
- * проверять нечего.
+ * любое время своего дня, дата проходит границу-момент своего дня, а время до
+ * минуты и время до секунды сравниваются до минуты. Невалидная граница не
+ * ограничивает, `max` раньше `min` — граница схлопывается в `min`, как у
+ * календаря. Не значение — не вне границ: проверять нечего.
  */
 export function outOfBounds(value: unknown, min: unknown, max: unknown): boolean {
 	const own = readValue(value)
@@ -87,21 +116,22 @@ export function nowOf(format: IDateFieldFormat): TDateInputParts {
 }
 
 /**
- * Значение из текста, который вставили в поле, — в виде поля формата; не
- * собрать — `undefined`.
+ * Значение из текста, который вставили в поле, — в виде и точности поля
+ * формата; не собрать — `undefined`.
  *
  * Цифры приводятся к ASCII, метки направления выбрасываются. Дальше — ISO
- * вида поля (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`) или группы цифр в порядке
- * числовых частей формата: разделители между ними любые, год — полностью, в
- * календаре поля (`th-TH` — 2569, то есть 2026), час — в цикле локали. Слова
- * (период суток, `PM`) группа ищет в тексте сама. Значение должно быть: 31
- * февраля и 13 PM — не значение.
+ * ровно вида и точности поля (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm`,
+ * `YYYY-MM-DDTHH:mm:ss`) или группы цифр в порядке числовых частей формата:
+ * разделители между ними любые, год — полностью, в календаре поля (`th-TH` —
+ * 2569, то есть 2026), час — в цикле локали. Слова (период суток, `PM`)
+ * группа ищет в тексте сама. Значение должно быть: 31 февраля и 13 PM — не
+ * значение.
  */
 export function parseFieldText(text: string, format: IDateFieldFormat): TDateInputValue {
 	const normalized = asciiDigits(text.replace(DIRECTION_MARKS, ''), format.digits).trim()
-	const specs = KINDS[format.kind]
+	const specs = specsOf(format)
 
-	if (readValue(normalized)?.length === specs.length) return normalized
+	if (readPieces(normalized, specs) !== undefined) return normalized
 
 	const numeric = format.parts.filter((part) => part.rule.numeric).map((part) => part.type)
 	const found = normalized.match(DIGIT_GROUPS) ?? []
@@ -116,6 +146,11 @@ export function parseFieldText(text: string, format: IDateFieldFormat): TDateInp
 	return composeValue(mergeParts(pieces), specs)
 }
 
+/** Спецификации групп формата — его вида и точности времени. */
+function specsOf(format: IDateFieldFormat): readonly TGroupSpec[] {
+	return groupSpecsOf(format.kind, format.timePrecision)
+}
+
 /** Значение по числам частей из кусков групп `specs`; не собрать кусок — `undefined`. */
 function composeValue(parts: TDateInputParts, specs: readonly TGroupSpec[]): TDateInputValue {
 	const pieces = specs.map((spec) => spec.compose(parts))
@@ -124,16 +159,32 @@ function composeValue(parts: TDateInputParts, specs: readonly TGroupSpec[]): TDa
 }
 
 /**
- * Куски значения любого вида: вид — по числу кусков, каждый кусок
- * должен прочитаться спецификацией своей группы. Не значение — `undefined`.
+ * Куски значения любого вида и точности — состава, спецификации которого
+ * прочли все куски. Не значение — `undefined`.
  */
 function readValue(value: unknown): readonly TValuePiece[] | undefined {
 	if (typeof value !== 'string') return undefined
 
-	const texts = value.split(SEPARATOR)
-	const specs = Object.values(KINDS).find((kind) => kind.length === texts.length)
+	for (const specs of COMPOSITIONS) {
+		const pieces = readPieces(value, specs)
 
-	if (specs === undefined) return undefined
+		if (pieces !== undefined) return pieces
+	}
+
+	return undefined
+}
+
+/**
+ * Куски значения состава `specs`: их столько же, сколько групп, и каждый
+ * читает спецификация своей группы. Иначе — `undefined`.
+ */
+function readPieces(
+	value: string,
+	specs: readonly TGroupSpec[],
+): readonly TValuePiece[] | undefined {
+	const texts = value.split(SEPARATOR)
+
+	if (texts.length !== specs.length) return undefined
 
 	const pieces = specs.flatMap((spec, index) => {
 		const parts = spec.parse(texts[index])

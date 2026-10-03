@@ -14,47 +14,57 @@ import type {
 } from '../../../common'
 
 /**
- * Часть времени в поле: час, минута и период суток — до полудня или после.
- * Период есть только у 12-часового цикла локали.
+ * Часть времени в поле: час, минута, секунда и период суток — до полудня или
+ * после. Секунда есть только у точности до секунды, период — только у
+ * 12-часового цикла локали.
  */
-export type TTimePart = 'hour' | 'minute' | 'dayPeriod'
+export type TTimePart = 'hour' | 'minute' | 'second' | 'dayPeriod'
 
 /** Часть поля: даты или времени. */
 export type TDateFieldPart = TDatePart | TTimePart
 
 /**
  * Вид поля: `date` — дата `YYYY-MM-DD`, `datetime` — дата со временем
- * `YYYY-MM-DDTHH:mm`.
+ * `YYYY-MM-DDTHH:mm`, с точностью до секунды — `YYYY-MM-DDTHH:mm:ss`.
  */
 export type TDateInputKind = 'date' | 'datetime'
 
 /**
- * Дата со временем — строка `YYYY-MM-DDTHH:mm`, как `value` у
- * `<input type="datetime-local">`: дата календаря, `T`, час от `00` до `23` и
- * минута. Ни секунд, ни часового пояса: это время на часах, а не момент на оси
- * времени. Строка — по тем же причинам, что и дата (`TCalendarDate`), и
- * порядок строк — порядок моментов.
+ * Точность времени: `minute` — час и минута, кусок времени `HH:mm`; `second` —
+ * ещё секунда, `HH:mm:ss`. Это свойство времени, а не состава поля: у поля даты
+ * частей времени нет, и точность в нём ничего не меняет.
+ */
+export type TTimePrecision = 'minute' | 'second'
+
+/**
+ * Дата со временем — строка `YYYY-MM-DDTHH:mm`, с точностью до секунды —
+ * `YYYY-MM-DDTHH:mm:ss`, как `value` у `<input type="datetime-local">`: дата
+ * календаря, `T`, час от `00` до `23`, минута и секунда. Ни долей секунды, ни
+ * часового пояса: это время на часах, а не момент на оси времени. Строка — по
+ * тем же причинам, что и дата (`TCalendarDate`), и порядок строк одной
+ * точности — порядок моментов.
  */
 export type TDateTime = string
 
 /**
- * Значение поля — по виду: дата `YYYY-MM-DD` или дата со временем
- * `YYYY-MM-DDTHH:mm`. Пока не собраны все части вида, значения нет:
- * `undefined`.
+ * Значение поля — по виду и точности времени: дата `YYYY-MM-DD` или дата со
+ * временем `YYYY-MM-DDTHH:mm` или `YYYY-MM-DDTHH:mm:ss`. Пока не собраны все
+ * части формата, значения нет: `undefined`.
  */
 export type TDateInputValue = TCalendarDate | TDateTime | undefined
 
 /**
- * Граница поля — дата или дата со временем. Дата и дата со временем
- * сравниваются по дню: граница-дата `max` пропускает любое время своего дня.
+ * Граница поля — дата или дата со временем любой точности. Сравнение — с
+ * точностью грубейшего из двух: граница-дата `max` пропускает любое время
+ * своего дня, а время до минуты и время до секунды сравниваются до минуты.
  */
 export type TDateInputBound = TCalendarDate | TDateTime | undefined
 
 /**
  * Набранные части — числа по типу, без локали: год григорианский, час — от 0
- * до 23, период суток — 0 до полудня и 1 после. Смена локали и вида их не
- * трогает: другими становятся только текст и состав частей формата. Нет числа
- * — часть пуста.
+ * до 23, минута и секунда — от 0 до 59, период суток — 0 до полудня и 1 после.
+ * Смена локали, вида и точности их не трогает: другими становятся только текст
+ * и состав частей формата. Нет числа — часть пуста.
  *
  * Год набора бывает и вне поддерживаемых: недописанный год календаря со
  * сдвигом (`th-TH`, буддийский год 25 — это григорианский −518). Дату из таких
@@ -67,9 +77,9 @@ export type TDateInputBound = TCalendarDate | TDateTime | undefined
 export type TDateInputParts = Readonly<Partial<Record<TDateFieldPart, number>>>
 
 /**
- * Часть поля в выходе `segments` — день, месяц, год, час, минута или период
- * суток. Своего экземпляра у части нет, наборы отдаются значением, как у ручек
- * Slider.
+ * Часть поля в выходе `segments` — день, месяц, год, час, минута, секунда или
+ * период суток. Своего экземпляра у части нет, наборы отдаются значением, как
+ * у ручек Slider.
  */
 export type TDateInputPart = {
 	/** Ключ — тип: при смене локали часть меняет место, а её узел остаётся */
@@ -164,6 +174,8 @@ export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	'change:locale': (value: string) => void
 	/** change:kind */
 	'change:kind': (value: TDateInputKind) => void
+	/** change:timePrecision */
+	'change:timePrecision': (value: TTimePrecision) => void
 	/**
 	 * Части надо перечитать: набрали, стёрли, вставили, записали значение или
 	 * плагин сменил набор части (`segmentSets`). Без аргумента: событие значит
@@ -189,6 +201,11 @@ export interface IDateInputProps extends IInputControlProps<TDateInputValue> {
 	 * локали, период суток
 	 */
 	kind?: TDateInputKind
+	/**
+	 * Точность времени: `minute` — до минуты, `second` — ещё секунда. У поля даты
+	 * ничего не меняет
+	 */
+	timePrecision?: TTimePrecision
 }
 
 export interface IDateInput extends IInputControl<
@@ -204,6 +221,8 @@ export interface IDateInput extends IInputControl<
 	locale: string
 	/** Вид поля: дата или дата со временем */
 	kind: TDateInputKind
+	/** Точность времени: до минуты или до секунды */
+	timePrecision: TTimePrecision
 	/** Собранное значение вне `min`/`max` */
 	readonly invalid: boolean
 	/** Части и разделители в порядке формата локали */
@@ -238,9 +257,9 @@ export interface IDateInput extends IInputControl<
 	 */
 	replaceSegments(parts: readonly TDateFieldPart[], key: string): boolean
 	/**
-	 * ↑/↓: число части под фокусом на `count` — день, месяц, час, минута и
-	 * период суток по кругу, год до края хода; пустая часть начинает с текущего
-	 * момента
+	 * ↑/↓: число части под фокусом на `count` — день, месяц, час, минута,
+	 * секунда и период суток по кругу, год до края хода; пустая часть начинает с
+	 * текущего момента
 	 */
 	shiftSegment(count: number): void
 	/** Home/End: часть под фокусом — к краю её хода */
@@ -255,8 +274,8 @@ export interface IDateInput extends IInputControl<
 	/** Очистить части `parts` — их задело выделение */
 	clearSegments(parts: readonly TDateFieldPart[]): void
 	/**
-	 * Вставить значение текстом — ISO или в формате поля — вместо всего
-	 * значения. Не разобралось — ничего не меняется, `false`
+	 * Вставить значение текстом — ISO вида и точности поля или в формате поля —
+	 * вместо всего значения. Не разобралось — ничего не меняется, `false`
 	 */
 	paste(text: string): boolean
 }

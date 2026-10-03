@@ -1,3 +1,5 @@
+import type { TTimePart } from '../types'
+
 /**
  * Цикл часов, как его называет Intl: `h11` — 0–11 и период суток, `h12` —
  * 1–12 и период, `h23` — 0–23, `h24` — 1–24.
@@ -10,3 +12,9 @@ export type THourCycleRule = {
 	readonly max: number
 	readonly dayPeriod: boolean
 }
+
+/**
+ * Часть времени после часа — минута или секунда: ход от 0 до 59, две цифры и
+ * место в куске значения за двоеточием. Какие из них есть, решает точность.
+ */
+export type TClockPart = Extract<TTimePart, 'minute' | 'second'>

@@ -34,6 +34,7 @@ import {
 	TABS_POSITIONS,
 	TABS_VIEWS,
 	TAGS_OVERFLOWS,
+	TIME_PRECISIONS,
 	TOOLTIP_PLACEMENTS,
 	TOOLTIP_TYPES,
 } from './enums'
@@ -178,11 +179,13 @@ const OWN: Record<string, Record<string, string>> = {
 		nextYearsLabel: 'Имя стрелки «следующие 12 лет» в панели выбора — на списке лет',
 	},
 	'date-input': {
-		value: 'Дата строкой YYYY-MM-DD, у поля даты и времени — YYYY-MM-DDTHH:mm. Пока части набраны не все, значения нет',
-		min: 'Первый верный день или момент, YYYY-MM-DD или YYYY-MM-DDTHH:mm. Раньше — не прижимается, а помечается ошибкой',
-		max: 'Последний верный день или момент. Граница-день пропускает любое время своего дня',
+		value: 'Дата строкой YYYY-MM-DD, у поля даты и времени — YYYY-MM-DDTHH:mm, до секунды — YYYY-MM-DDTHH:mm:ss. Пока части набраны не все, значения нет',
+		min: 'Первый верный день или момент, YYYY-MM-DD, YYYY-MM-DDTHH:mm или YYYY-MM-DDTHH:mm:ss. Раньше — не прижимается, а помечается ошибкой',
+		max: 'Последний верный день или момент. Граница-день пропускает любое время своего дня, граница до минуты — любую секунду своей минуты',
 		locale: 'Локаль формата, тег BCP 47: порядок частей, разделители, цифры, цикл часов и направление — ru-RU, en-US, ar-EG',
 		kind: 'Вид поля: date — только дата, datetime — ещё час, минута и, у 12-часовой локали, AM/PM. Цикл часов берётся из локали',
+		timePrecision:
+			'Точность времени: minute — до минуты, second — ещё секунда. У поля даты (kind: date) ничего не меняет',
 	},
 	slider: {
 		min: 'Начало хода',
@@ -348,7 +351,7 @@ const OPTIONS: Record<string, Record<string, readonly string[]>> = {
 	tooltip: { placement: TOOLTIP_PLACEMENTS, type: TOOLTIP_TYPES },
 	slider: { orientation: SLIDE_ORIENTATIONS, snap: SLIDE_SNAPS, tooltip: SLIDER_TOOLTIPS },
 	calendar: { mode: CALENDAR_MODES },
-	'date-input': { kind: DATE_INPUT_KINDS },
+	'date-input': { kind: DATE_INPUT_KINDS, timePrecision: TIME_PRECISIONS },
 	'progress-linear': { orientation: PROGRESS_LINEAR_ORIENTATIONS },
 	dialog: { placement: DIALOG_PLACEMENTS },
 	drawer: { placement: DRAWER_PLACEMENTS, swipe: DRAWER_SWIPES },
