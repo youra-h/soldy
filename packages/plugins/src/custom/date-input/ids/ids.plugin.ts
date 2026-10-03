@@ -1,7 +1,7 @@
 import type { IDateInput } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
-import { formatPartsOf } from '../parts'
+import { allPartTypes } from '../parts'
 
 /**
  * TDateInputIdsPlugin — `id` частей поля даты в документе.
@@ -13,7 +13,10 @@ import { formatPartsOf } from '../parts'
  *
  * `id` — от монтирования (`createId`) и типа части, а не от места в формате:
  * смена локали переставляет части, а их `id` остаются. Пишется при установке,
- * синхронно, — `id` есть уже в первой (и серверной) отрисовке.
+ * синхронно, — `id` есть уже в первой (и серверной) отрисовке. Пишется всем
+ * типам частей, а не только частям формата: смена вида поля и локали
+ * добавляет части (время, период суток), и у них `id` уже есть, кто бы ни
+ * прочёл набор первым.
  */
 export class TDateInputIdsPlugin extends TBasePlugin<IDateInput> {
 	override install(ctx: IPluginContext): void {
@@ -23,7 +26,7 @@ export class TDateInputIdsPlugin extends TBasePlugin<IDateInput> {
 
 		if (!owner) return
 
-		for (const { type } of formatPartsOf(owner)) {
+		for (const type of allPartTypes()) {
 			owner.segmentSets(type).aria.add('id', ctx.createId(type))
 		}
 	}

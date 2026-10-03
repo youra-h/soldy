@@ -1,4 +1,4 @@
-import type { IDateInput, TDatePart } from '@soldy-ui/core'
+import type { IDateInput, TDateFieldPart } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -25,14 +25,22 @@ const POINTER_MODES: ReadonlyMap<string, boolean> = new Map([
 ])
 
 /**
- * Атрибуты редактируемой части: экранная клавиатура цифр, без проверки
- * орфографии и автозамены — подсказки клавиатуры шли бы композицией.
+ * Атрибуты редактируемой части без проверки орфографии и автозамены —
+ * подсказки клавиатуры шли бы композицией.
  */
 const EDITABLE_ATTRS: Readonly<Record<string, string>> = {
 	contenteditable: 'true',
-	inputmode: 'numeric',
 	spellcheck: 'false',
 	autocorrect: 'off',
+}
+
+/**
+ * Экранная клавиатура части: цифры — у числа, буквы — у слова (период суток
+ * набирают буквой, `A` или `P`).
+ */
+const INPUT_MODES: Readonly<Record<'numeric' | 'word', string>> = {
+	numeric: 'numeric',
+	word: 'text',
 }
 
 /** Роль части на сенсорных устройствах Apple: счётчик VoiceOver на iOS не фокусирует. */
@@ -55,8 +63,10 @@ const COMPOSITION_EDITS: ReadonlySet<string> = new Set([
  * На компьютере части нередактируемые — так дату целиком выделяет протяжка
  * мышью. Но экранная клавиатура открывается только над редактируемым узлом.
  * Поэтому **режим выбирает нажатие**, а не устройство: палец и перо
- * (`pointerType`) делают части редактируемыми (`contenteditable`,
- * `inputmode="numeric"`), мышь — снова нет. На ноутбуке с сенсорным экраном
+ * (`pointerType`) делают части редактируемыми (`contenteditable`; клавиатура
+ * цифр, у периода суток — букв: его набирают буквой), мышь — снова нет. Смена
+ * вида поля и локали меняет состав частей, и наборы пересчитываются: новым
+ * частям — те же атрибуты. На ноутбуке с сенсорным экраном
  * мышь сохраняет протяжку, а палец получает клавиатуру. Режим меняется на
  * `pointerdown`, раньше фокуса: фокус браузер переводит после конца касания, а
  * нажатие мышью начинает протяжку уже по нередактируемым частям. Атрибуты
@@ -109,7 +119,13 @@ export class TDateInputTouchPlugin extends TBasePlugin<IDateInput, TDateInputTou
 
 		// Имя части на устройствах Apple — из имени поля и имени части в локали
 		this._listenTo(this._owner?.events, 'change:aria', this._syncAppleTouch)
-		this._listenTo(this._owner?.events, 'change:locale', this._syncAppleTouch)
+
+		// Вид поля и локаль меняют состав частей: время, период суток у
+		// 12-часового цикла — новым частям нужны те же наборы
+		for (const event of ['change:kind', 'change:locale'] as const) {
+			this._listenTo(this._owner?.events, event, this._syncEditable)
+			this._listenTo(this._owner?.events, event, this._syncAppleTouch)
+		}
 	}
 
 	/**
@@ -209,7 +225,7 @@ export class TDateInputTouchPlugin extends TBasePlugin<IDateInput, TDateInputTou
 	private _edit(
 		owner: IDateInput,
 		root: Element,
-		part: TDatePart,
+		part: TDateFieldPart,
 		inputType: string,
 		data: string | null,
 	): void {
@@ -283,12 +299,14 @@ export class TDateInputTouchPlugin extends TBasePlugin<IDateInput, TDateInputTou
 
 		const editable = this._editable
 
-		for (const { type } of formatPartsOf(owner)) {
+		for (const { type, numeric } of formatPartsOf(owner)) {
 			const { attrs } = owner.segmentSets(type)
 
 			for (const [name, value] of Object.entries(EDITABLE_ATTRS)) {
 				attrs.add(name, editable ? value : null)
 			}
+
+			attrs.add('inputmode', editable ? INPUT_MODES[numeric ? 'numeric' : 'word'] : null)
 		}
 	}
 
@@ -324,7 +342,7 @@ export class TDateInputTouchPlugin extends TBasePlugin<IDateInput, TDateInputTou
  * выделением частей, если они есть. Часть, набранная до конца, переводит фокус
  * ядра, и следующие знаки идут в следующую часть.
  */
-function typeText(owner: IDateInput, touched: readonly TDatePart[], text: string): void {
+function typeText(owner: IDateInput, touched: readonly TDateFieldPart[], text: string): void {
 	const [first, ...rest] = [...text]
 
 	if (first === undefined) return
@@ -339,7 +357,7 @@ function typeText(owner: IDateInput, touched: readonly TDatePart[], text: string
  * Вернуть части текст ядра. Текстовый узел, если он один, остаётся тем же —
  * ссылка на него бывает у фреймворка; иначе содержимое заменяется целиком.
  */
-function restoreText(owner: IDateInput, part: TDatePart, element: Element): void {
+function restoreText(owner: IDateInput, part: TDateFieldPart, element: Element): void {
 	const text = formatPartsOf(owner).find((segment) => segment.type === part)?.text
 
 	if (text === undefined) return

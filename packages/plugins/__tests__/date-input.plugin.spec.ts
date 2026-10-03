@@ -21,7 +21,7 @@
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { TDateInput } from '@soldy-ui/core'
-import type { IDateInputProps, TDatePart } from '@soldy-ui/core'
+import type { IDateInputProps, TDateFieldPart } from '@soldy-ui/core'
 import {
 	TDateInputClipboardPlugin,
 	TDateInputIdsPlugin,
@@ -142,6 +142,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	render()
 	owner.events.on('change:segments', render)
 	owner.events.on('change:locale', render)
+	owner.events.on('change:kind', render)
 	owner.events.on('change:disabled', render)
 
 	const bundle = new TPluginBundle(owner, 'f1')
@@ -160,7 +161,7 @@ async function mount(props: Partial<IDateInputProps> = {}) {
 	await nextFrame()
 
 	/** Узел части по типу; нет его — тест падает здесь. */
-	const segment = (part: TDatePart): HTMLElement => {
+	const segment = (part: TDateFieldPart): HTMLElement => {
 		const node = row.querySelector(`[data-type="${part}"]`)
 
 		if (!(node instanceof HTMLElement)) throw new Error(`части ${part} нет`)
@@ -454,6 +455,83 @@ describe('клавиши', () => {
 		expect(owner.value).toBe('2026-05-12')
 	})
 
+	it('время: час и минута цифрами, буква выбирает период суток, регистр не важен', async () => {
+		const { owner, segment, press, type } = await mount({
+			locale: 'en-US',
+			kind: 'datetime',
+		})
+
+		segment('month').focus()
+		type('05122026')
+		expect(document.activeElement).toBe(segment('hour'))
+
+		type('0230')
+		expect(document.activeElement).toBe(segment('dayPeriod'))
+		expect(owner.value).toBeUndefined()
+
+		expect(press(segment('dayPeriod'), 'p').defaultPrevented).toBe(true)
+		expect(owner.value).toBe('2026-05-12T14:30')
+
+		press(segment('dayPeriod'), 'A', { shiftKey: true })
+		expect(owner.value).toBe('2026-05-12T02:30')
+		expect(segment('dayPeriod').dataset.placeholder).toBe('false')
+	})
+
+	it('↑/↓ у периода суток — другой период, час переезжает за ним', async () => {
+		const { owner, segment, press } = await mount({
+			locale: 'en-US',
+			kind: 'datetime',
+			value: '2026-05-12T14:30',
+		})
+
+		segment('dayPeriod').focus()
+		expect(press(segment('dayPeriod'), 'ArrowUp').defaultPrevented).toBe(true)
+		expect(owner.value).toBe('2026-05-12T02:30')
+
+		press(segment('dayPeriod'), 'ArrowDown')
+		expect(owner.value).toBe('2026-05-12T14:30')
+	})
+
+	it('буква не периода — не поля; с которой начинаются оба имени — период не меняет', async () => {
+		const en = await mount({
+			locale: 'en-US',
+			kind: 'datetime',
+			value: '2026-05-12T14:30',
+		})
+
+		en.segment('dayPeriod').focus()
+		expect(en.press(en.segment('dayPeriod'), 'x').defaultPrevented).toBe(false)
+		expect(en.owner.value).toBe('2026-05-12T14:30')
+
+		document.body.innerHTML = ''
+
+		// ko-KR: «오전» и «오후» — оба с одной буквы
+		const ko = await mount({
+			locale: 'ko-KR',
+			kind: 'datetime',
+			value: '2026-05-12T14:30',
+		})
+		const first = ko.segment('dayPeriod').textContent?.[0] ?? ''
+
+		ko.segment('dayPeriod').focus()
+		ko.press(ko.segment('dayPeriod'), first)
+		expect(ko.owner.value).toBe('2026-05-12T14:30')
+	})
+
+	it('смена вида — части времени появляются и пропадают, фокус с пропавшей части снят', async () => {
+		const { owner, row, segment } = await mount({ value: '2026-05-12' })
+
+		owner.kind = 'datetime'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(5)
+
+		segment('minute').focus()
+		expect(owner.focusedSegment).toBe('minute')
+
+		owner.kind = 'date'
+		expect(row.querySelectorAll('.s-date-input__segment')).toHaveLength(3)
+		expect(owner.focusedSegment).toBeUndefined()
+	})
+
 	it('Tab и Enter — не поля: остановки Tab у частей свои', async () => {
 		const { segment, press } = await mount()
 
@@ -722,6 +800,43 @@ describe('сенсорный режим', () => {
 		expect(segment('day').getAttribute('contenteditable')).toBe('true')
 	})
 
+	it('время: клавиатура цифр у часа и минуты, букв — у периода суток', async () => {
+		const { owner, segment } = await mount({
+			locale: 'en-US',
+			kind: 'datetime',
+			value: '2026-05-12T09:05',
+		})
+
+		pointerDown(segment('hour'), 'touch')
+		expect(
+			(['hour', 'minute', 'dayPeriod'] as const).map((part) =>
+				segment(part).getAttribute('inputmode'),
+			),
+		).toEqual(['numeric', 'numeric', 'text'])
+
+		// Период суток набирают буквой — с экранной клавиатуры букв
+		segment('dayPeriod').focus()
+		beforeInput(segment('dayPeriod'), 'insertText', 'p')
+		expect(owner.value).toBe('2026-05-12T21:05')
+	})
+
+	it('смена вида и локали: новые части получают наборы сенсорного режима и id', async () => {
+		const { owner, segment } = await mount()
+
+		pointerDown(segment('day'), 'touch')
+
+		owner.kind = 'datetime'
+		expect(segment('hour').getAttribute('contenteditable')).toBe('true')
+		expect(segment('minute').getAttribute('inputmode')).toBe('numeric')
+		expect(segment('hour').getAttribute('id')).toBe('f1-hour')
+
+		// 12-часовой цикл добавляет период суток
+		owner.locale = 'en-US'
+		expect(segment('dayPeriod').getAttribute('contenteditable')).toBe('true')
+		expect(segment('dayPeriod').getAttribute('inputmode')).toBe('text')
+		expect(segment('dayPeriod').getAttribute('id')).toBe('f1-dayPeriod')
+	})
+
 	it('ввод экранной клавиатуры гасится и набирает дату командами ядра', async () => {
 		const { owner, segment } = await mount()
 
@@ -907,7 +1022,7 @@ describe('сенсорный режим', () => {
 
 describe('сенсорные устройства Apple', () => {
 	/** Имя части по `Intl.DisplayNames`, как его пишет ядро. */
-	const partName = (locale: string, part: TDatePart): string | undefined =>
+	const partName = (locale: string, part: TDateFieldPart): string | undefined =>
 		new Intl.DisplayNames([locale, 'en-US'], { type: 'dateTimeField' }).of(part)
 
 	it('iPhone: роль частей — textbox, значения счётчика нет', async () => {

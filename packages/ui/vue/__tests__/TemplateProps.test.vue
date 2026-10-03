@@ -106,6 +106,10 @@ const dragAndDrop = new TDragAndDrop()
 	<DateInput :locale="42" />
 	<DateInput locale="ru-RU" />
 
+	<!-- @vue-expect-error — вид поля: дата или дата со временем -->
+	<DateInput kind="month" />
+	<DateInput kind="datetime" />
+
 	<!-- @vue-expect-error — места `left` у окна нет: стороны логические -->
 	<Dialog placement="left" />
 	<Dialog placement="start" />

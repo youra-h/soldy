@@ -1,4 +1,4 @@
-import type { IDateInput, TDatePart } from '@soldy-ui/core'
+import type { IDateInput, TDateFieldPart } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
@@ -49,9 +49,11 @@ const ERASE_KEYS: ReadonlySet<string> = new Set(['Backspace', 'Delete'])
  *
  * - **Цифра** — набор в часть (`typeKey`); цифры ASCII, локали и
  *   полноширинные различает ядро. Во время композиции IME клавиша не наша.
- * - **↑/↓, Home/End** — число части, **Backspace** — стереть цифру (с пустой
- *   части — фокус на предыдущую), **Delete** — очистить часть, **←/→** —
- *   соседняя часть по направлению ряда.
+ * - **Буква** у периода суток — тот же `typeKey`: какой период она выбирает,
+ *   решает ядро по именам периодов локали.
+ * - **↑/↓, Home/End** — число части (у периода суток — другой период),
+ *   **Backspace** — стереть цифру (с пустой части — фокус на предыдущую),
+ *   **Delete** — очистить часть, **←/→** — соседняя часть по направлению ряда.
  * - **Ctrl/Cmd+A** — выделение браузера на весь ряд, по `code`, а не `key`:
  *   на русской раскладке `key` — «ф». Фокус остаётся на части, копирует и
  *   вырезает выделенное плагин буфера обмена.
@@ -188,7 +190,7 @@ export class TDateInputKeyboardPlugin extends TBasePlugin<
 	 * Ядро перевело фокус на другую часть — DOM-фокус за ним, если он в ряду:
 	 * фокус, который пользователь увёл со страницы, поле не забирает.
 	 */
-	private readonly _onFocusedSegment = (part: TDatePart | undefined): void => {
+	private readonly _onFocusedSegment = (part: TDateFieldPart | undefined): void => {
 		const owner = this._owner
 		const root = this._root
 

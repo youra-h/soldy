@@ -1,4 +1,4 @@
-import type { IDateInput, TDateInputPart, TDatePart } from '@soldy-ui/core'
+import type { IDateInput, TDateFieldPart, TDateInputPart } from '@soldy-ui/core'
 import type { TDateInputSegmentNode } from './types'
 
 /**
@@ -12,9 +12,21 @@ import type { TDateInputSegmentNode } from './types'
 
 /**
  * Типы частей — словарём по типу, а не списком: появится у ядра новая часть
- * (`hour`), и словарь без неё не скомпилируется.
+ * (`second`), и словарь без неё не скомпилируется.
  */
-const PARTS: Readonly<Record<TDatePart, true>> = { day: true, month: true, year: true }
+const PARTS: Readonly<Record<TDateFieldPart, true>> = {
+	day: true,
+	month: true,
+	year: true,
+	hour: true,
+	minute: true,
+	dayPeriod: true,
+}
+
+/** Все типы частей поля — в формате и нет: смена вида и локали меняет их состав. */
+export function allPartTypes(): TDateFieldPart[] {
+	return Object.keys(PARTS).filter(isFieldPart)
+}
 
 /**
  * Части формата поля по порядку — выход ядра без разделителей. Не узлы, а
@@ -41,7 +53,7 @@ export function segmentOf(
 	const element = target.closest(owner.classes.resolve('__segment', { point: true }))
 	const part = element?.getAttribute('data-type')
 
-	if (!element || !root.contains(element) || !isDatePart(part)) return undefined
+	if (!element || !root.contains(element) || !isFieldPart(part)) return undefined
 
 	return { part, element }
 }
@@ -53,7 +65,7 @@ export function segmentsOf(owner: IDateInput, root: Element): TDateInputSegmentN
 	return [...elements].flatMap((element) => {
 		const part = element.getAttribute('data-type')
 
-		return isDatePart(part) ? [{ part, element }] : []
+		return isFieldPart(part) ? [{ part, element }] : []
 	})
 }
 
@@ -61,7 +73,7 @@ export function segmentsOf(owner: IDateInput, root: Element): TDateInputSegmentN
 export function segmentElementOf(
 	owner: IDateInput,
 	root: Element,
-	part: TDatePart,
+	part: TDateFieldPart,
 ): Element | undefined {
 	return segmentsOf(owner, root).find((node) => node.part === part)?.element
 }
@@ -87,7 +99,7 @@ export function rowSelection(row: Element): Range | null {
 export function touchedSegments(
 	nodes: readonly TDateInputSegmentNode[],
 	range: Range,
-): TDatePart[] {
+): TDateFieldPart[] {
 	return nodes.filter(({ element }) => touches(range, element)).map(({ part }) => part)
 }
 
@@ -116,7 +128,7 @@ export function collapseRowSelection(row: Element): void {
 }
 
 /** Тип части из `data-type` узла. */
-function isDatePart(value: unknown): value is TDatePart {
+function isFieldPart(value: unknown): value is TDateFieldPart {
 	return typeof value === 'string' && Object.hasOwn(PARTS, value)
 }
 

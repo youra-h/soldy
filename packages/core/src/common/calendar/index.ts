@@ -25,7 +25,7 @@ export {
 export { todayDate } from './today'
 export { calendarLocale } from './locale'
 export { DEFAULT_LOCALE } from './locale.class'
-export { DATE_PARTS, isDatePart, digitOf, formatFieldNumber, parseFieldDate } from './field'
+export { DATE_PART_PLACEHOLDERS } from './placeholders'
 export type {
 	TCalendarDate,
 	TWeekday,
@@ -33,7 +33,5 @@ export type {
 	TMonthGridDay,
 	TWeekdayWidth,
 	TDatePart,
-	TDateFieldToken,
 	ICalendarLocale,
-	IDateFieldFormat,
 } from './types'
