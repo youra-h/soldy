@@ -18,6 +18,7 @@ import {
 	startOfMonth,
 	startOfWeek,
 	todayDate,
+	yearOf,
 } from '../src/common/calendar'
 import type { TCalendarDate, TWeekday } from '../src/common/calendar'
 
@@ -200,6 +201,12 @@ describe('сравнение, границы, месяцы', () => {
 		expect(startOfMonth('2026-09-26')).toBe('2026-09-01')
 		expect(monthsBetween('2026-09-26', '2027-01-01')).toBe(4)
 		expect(monthsBetween('2027-01-31', '2026-12-01')).toBe(-1)
+	})
+
+	it('год — числом, без ведущих нулей', () => {
+		expect(yearOf('2026-09-26')).toBe(2026)
+		expect(yearOf('0099-05-01')).toBe(99)
+		expect(yearOf(LAST_DATE)).toBe(9999)
 	})
 })
 
@@ -429,6 +436,41 @@ describe('подписи', () => {
 		)
 		expect(locale.weekdayName(1, 'short')).toBe(
 			formatter('ru', { weekday: 'short' }).format(monday),
+		)
+	})
+
+	it('имя месяца — короткое, самостоятельная форма: «март», а не «марта»', () => {
+		const march = utc(2026, 3, 1)
+
+		expect(calendarLocale('ru').monthName('2026-03-15')).toBe(
+			formatter('ru', { month: 'short' }).format(march),
+		)
+		expect(calendarLocale('ru').monthName('2026-03-15')).not.toBe(
+			formatter('ru', { day: 'numeric', month: 'short' })
+				.formatToParts(march)
+				.find((part) => part.type === 'month')?.value,
+		)
+		expect(calendarLocale('en-US').monthName('2026-03-15')).toBe(
+			formatter('en-US', { month: 'short' }).format(march),
+		)
+	})
+
+	it('год и отрезок лет — в календаре подписей: у th-TH буддийские', () => {
+		const locale = calendarLocale('th-TH')
+		const year = formatter('th-TH', { year: 'numeric', calendar: 'buddhist' })
+
+		expect(locale.yearTitle('2026-09-01')).toBe(year.format(utc(2026, 1, 1)))
+		expect(locale.yearsTitle('2017-01-01', '2028-01-01')).toBe(
+			year.formatRange(utc(2017, 1, 1), utc(2028, 1, 1)),
+		)
+		expect(calendarLocale('en-US').yearsTitle('2017-01-01', '2028-01-01')).toBe(
+			formatter('en-US', { year: 'numeric' }).formatRange(utc(2017, 1, 1), utc(2028, 1, 1)),
+		)
+	})
+
+	it('подпись года 99 — 99-й год, а не 1999-й', () => {
+		expect(calendarLocale('en-US').yearTitle('0099-01-01')).toBe(
+			formatter('en-US', { year: 'numeric' }).format(utc(99, 1, 1)),
 		)
 	})
 

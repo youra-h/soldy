@@ -1,6 +1,6 @@
-import type { ICalendar, TCalendarCollection, TCalendarDate } from '@soldy-ui/core'
+import type { ICalendar, TCalendarCollection, TCalendarDate, TCalendarPicker } from '@soldy-ui/core'
 import type { TCollectionElements } from '../collection'
-import type { TCalendarDay, TCalendarPager } from './types'
+import type { TCalendarDay, TCalendarPager, TCalendarPickerArrow } from './types'
 
 /** Кнопки листания — по частям разметки владельца (`__prev`, `__next`). */
 const PAGERS: readonly TCalendarPager[] = ['prev', 'next']
@@ -41,6 +41,40 @@ export function dayElementOf(
 	const element = item ? (elements?.getElementByItem(item) ?? null) : null
 
 	return element?.isConnected ? element : null
+}
+
+/**
+ * Стрелка панели выбора месяца и года, в которой лежит `target`, панель этой
+ * стрелки и место панели среди `pickers`.
+ *
+ * Панель телепортирована — вне корня календаря, поэтому своей её делает не
+ * место в DOM, а шапка: `id` шапки пишет плагин связок календаря, и панель,
+ * в которой его нет, чужая. Части находят по классам владельца
+ * (`classes.resolve`), как кнопки листания.
+ */
+export function pickerArrowOf(
+	owner: ICalendar,
+	pickers: readonly TCalendarPicker[],
+	target: EventTarget | null,
+): TCalendarPickerArrow | undefined {
+	if (!(target instanceof Element)) return undefined
+
+	for (const pager of PAGERS) {
+		const arrow = target.closest(owner.classes.resolve(`__picker-${pager}`, { point: true }))
+		const panel = arrow?.closest(owner.classes.resolve('__picker', { point: true }))
+
+		if (!panel) continue
+
+		const index = pickers.findIndex(({ labelledBy }) => {
+			const heading = labelledBy ? panel.ownerDocument.getElementById(labelledBy) : null
+
+			return heading !== null && panel.contains(heading)
+		})
+
+		return index === -1 ? undefined : { pager, index, panel }
+	}
+
+	return undefined
 }
 
 /**

@@ -149,6 +149,11 @@ export function startOfMonth(date: TCalendarDate): TCalendarDate {
 	return compose(year, month, 1)
 }
 
+/** Год даты — число, без ведущих нулей. */
+export function yearOf(date: TCalendarDate): number {
+	return partsOf(date)[0]
+}
+
 /** Сколько месяцев от месяца `from` до месяца `to`; числа месяца не в счёт. */
 export function monthsBetween(from: TCalendarDate, to: TCalendarDate): number {
 	const [fromYear, fromMonth] = partsOf(from)

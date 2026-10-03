@@ -55,6 +55,15 @@ export interface ICalendarLocale {
 	readonly calendar: string
 	/** Заголовок месяца даты: месяц и год */
 	monthTitle(date: TCalendarDate): string
+	/**
+	 * Короткое имя месяца даты, самостоятельная форма — как его пишут без
+	 * числа (`март`, а не `марта`): подпись месяца в панели выбора
+	 */
+	monthName(date: TCalendarDate): string
+	/** Год даты — в календаре подписей: у `th-TH` буддийский, у `ja-JP` с эрой */
+	yearTitle(date: TCalendarDate): string
+	/** Отрезок лет от года `from` до года `to` (`2017–2028`) — одной подписью локали */
+	yearsTitle(from: TCalendarDate, to: TCalendarDate): string
 	/** Номер дня в цифрах локали — без слов вокруг него (у `ja-JP` без «日») */
 	dayNumber(date: TCalendarDate): string
 	/** Полная дата с днём недели — доступное имя дня */

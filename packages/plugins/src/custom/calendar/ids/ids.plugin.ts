@@ -5,13 +5,18 @@ import { TCollectionBundlesPlugin } from '../../collection'
 
 /**
  * TCalendarIdsPlugin — имена сеток календаря в документе: сетку называет её
- * заголовок.
+ * заголовок, панель выбора месяца и года — её шапка.
  *
  * На каждом месте сетки пишет `id` заголовка и ссылку на него
  * `aria-labelledby` у таблицы — в наборы места (`gridSets` вида), которые вид
  * раскладывает в `grids`. Место, а не месяц: листание меняет месяц сетки, а
  * заголовок, его `id` и живая область остаются. Месяцев стало больше —
  * новым местам пишется то же (`change:months`).
+ *
+ * Там же — `id` шапки панели выбора (`pickerSets` расширения `picker`).
+ * Ссылку на шапку панель и список получают пропом `aria_labelledBy` из
+ * выхода `pickers`, а не записью в их наборы: их имя пишет их собственный
+ * `TAriaPlugin` и снял бы чужую запись.
  *
  * `id` — от монтирования календаря (`createId`), а не от экземпляра: он нужен
  * только документу, и на сервере и в браузере обязан совпасть. Движок
@@ -25,7 +30,7 @@ export class TCalendarIdsPlugin extends TBasePlugin {
 		ctx.get(TCollectionBundlesPlugin)?.events.on(
 			'engine:bound',
 			(engine: TCalendarCollection) => {
-				const view = engine.extensions.view
+				const { view, picker } = engine.extensions
 				const name = (): void => {
 					view.months.forEach((_, index) => {
 						const titleId = ctx.createId(`title-${index}`)
@@ -33,6 +38,8 @@ export class TCalendarIdsPlugin extends TBasePlugin {
 
 						sets.title.add('id', titleId)
 						sets.grid.add('aria-labelledby', titleId)
+
+						picker.pickerSets(index).heading.add('id', ctx.createId(`picker-${index}`))
 					})
 				}
 

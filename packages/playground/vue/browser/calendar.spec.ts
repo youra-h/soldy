@@ -3,10 +3,11 @@
  *
  * Здесь то, чего jsdom не считает вовсе. Раскладка: высота месяца под шесть
  * недель при любом месяце — сетка не прыгает при листании, а соседние месяцы
- * стоят вровень, — и кольцо фокуса, которое помещается в ячейку дня. Фокус:
- * порядок Tab, `:focus-visible`, клик из Enter на кнопке листания и перенос
- * DOM-фокуса за фокусом коллекции, когда узел нового дня появляется кадром
- * позже. Модель проверяет ядро, клавиши — тест плагина, проводку —
+ * стоят вровень, — кольцо фокуса, которое помещается в ячейку дня, и панель
+ * выбора месяца и года: под заголовком, шапка над списком, список — 4 колонки
+ * по 3 строки. Фокус: порядок Tab, `:focus-visible`, клик из Enter на кнопке
+ * листания, перенос DOM-фокуса за фокусом коллекции, когда узел нового дня
+ * появляется кадром позже, и путь фокуса через панель выбора. Модель проверяет ядро, клавиши — тест плагина, проводку —
  * `ui/vue/__tests__/calendar.spec.ts`.
  */
 
@@ -130,6 +131,7 @@ describe('кольцо фокуса', () => {
 		await tab()
 		await tab()
 		await tab()
+		await tab()
 
 		const cell = dayCell('2026-09-16')
 
@@ -154,8 +156,10 @@ describe('кольцо фокуса', () => {
 })
 
 describe('фокус', () => {
-	it('Tab проходит «назад», «вперёд» и одну остановку на все сетки', async () => {
+	it('Tab проходит «назад», «вперёд», заголовки месяцев и одну остановку на все сетки', async () => {
 		await show({ months: ['2026-09-01', '2026-10-01'], value: '2026-10-05' })
+
+		const [september, october] = findAll('.s-calendar__title')
 
 		find('.s-test-before').focus()
 
@@ -164,6 +168,12 @@ describe('фокус', () => {
 
 		await tab()
 		expect(document.activeElement).toBe(find('.s-calendar__next'))
+
+		await tab()
+		expect(document.activeElement).toBe(september)
+
+		await tab()
+		expect(document.activeElement).toBe(october)
 
 		await tab()
 		expect(document.activeElement).toBe(dayCell('2026-10-05'))
@@ -236,5 +246,107 @@ describe('указатель', () => {
 			.poll(() => findAll('.s-calendar-item[data-range-middle="true"]').length)
 			.toBe(2)
 		expect(findAll('.s-calendar-item[data-preview="true"]')).toHaveLength(0)
+	})
+})
+
+describe('выбор месяца и года', () => {
+	const options = () => findAll('.s-calendar__picker-list .s-list-box-item')
+
+	/** Различные значения, с допуском на субпиксели. */
+	const distinct = (values: number[]) =>
+		values.reduce<number[]>(
+			(found, value) =>
+				found.some((known) => Math.abs(known - value) <= EPSILON)
+					? found
+					: [...found, value],
+			[],
+		)
+
+	/** Открыть панель нажатием на заголовок и дождаться её на экране. */
+	const open = async () => {
+		await userEvent.click(find('.s-calendar__title'))
+		await expect.poll(() => options().length).toBe(12)
+		await nextFrame()
+	}
+
+	/** 12 опций — 4 колонки по 3 строки, шапка над списком, панель под заголовком. */
+	const expectGrid = () => {
+		const boxes = options().map((option) => option.getBoundingClientRect())
+		const list = find('.s-calendar__picker-list').getBoundingClientRect()
+		const header = find('.s-calendar__picker-header').getBoundingClientRect()
+		const title = find('.s-calendar__title').getBoundingClientRect()
+
+		expect(distinct(boxes.map((box) => box.left))).toHaveLength(4)
+		expect(distinct(boxes.map((box) => box.top))).toHaveLength(3)
+		expect(distinct(boxes.map((box) => box.width))).toHaveLength(1)
+		expect(header.bottom).toBeLessThanOrEqual(list.top + EPSILON)
+		expect(header.top).toBeGreaterThanOrEqual(title.bottom - EPSILON)
+	}
+
+	it('месяцы — 4 колонки по 3 строки, шапка над списком, панель под заголовком', async () => {
+		await show({ months: ['2026-09-01'], locale: 'ru-RU' })
+		await open()
+
+		expectGrid()
+	})
+
+	it('годы — так же: 4 колонки по 3 строки, и подписи th-TH не режутся', async () => {
+		await show({ months: ['2026-09-01'], locale: 'th-TH' })
+		await open()
+
+		await userEvent.click(find('.s-calendar__picker-heading'))
+		await expect.poll(() => options()[0]?.textContent?.trim()).not.toBe(undefined)
+		await nextFrame()
+
+		expectGrid()
+
+		for (const text of findAll('.s-calendar__picker-list .s-button__text')) {
+			expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth)
+		}
+	})
+
+	it('клавиатура: Enter на заголовке — фокус на список, ↓ и Enter выбирают, фокус — на заголовок', async () => {
+		await show({ months: ['2026-09-01'], value: '2026-09-16' })
+
+		find('.s-calendar__title').focus()
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(() => document.activeElement).toBe(find('.s-calendar__picker-list'))
+
+		await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+
+		await expect.poll(titles).toEqual(['November 2026'])
+		await expect.poll(() => document.activeElement).toBe(find('.s-calendar__title'))
+	})
+
+	it('Escape закрывает панель, фокус — на заголовок, месяц прежний', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
+		await userEvent.keyboard('{Escape}')
+
+		await expect
+			.poll(() => find('.s-calendar__title').getAttribute('aria-expanded'))
+			.toBe('false')
+		await expect.poll(() => document.activeElement).toBe(find('.s-calendar__title'))
+		expect(titles()).toEqual(['September 2026'])
+	})
+
+	/**
+	 * Выключенная кнопка фокус теряет, и он упал бы на страницу. Плагин
+	 * переводит его на список той же панели.
+	 */
+	it('стрелка погасла у границы лет под фокусом — фокус на список панели', async () => {
+		await show({ months: ['2026-09-01'], max: '2027-10-31' })
+		await open()
+
+		find('.s-calendar__picker-next').focus()
+		await userEvent.keyboard('{Enter}')
+
+		await expect
+			.poll(() => find('.s-calendar__picker-heading').textContent?.trim())
+			.toBe('2027')
+		expect(find('.s-calendar__picker-next').hasAttribute('disabled')).toBe(true)
+		expect(document.activeElement).toBe(find('.s-calendar__picker-list'))
 	})
 })

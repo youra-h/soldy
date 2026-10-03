@@ -1,10 +1,12 @@
 <script lang="ts">
 import { Button } from '../button'
 import { Icon } from '../icon'
+import { ListBox } from '../list-box'
+import { Popover } from '../popover'
 import { CalendarItem } from './item'
 import SetupCalendar from './setup.component'
 
-export default { ...SetupCalendar, components: { Button, Icon, CalendarItem } }
+export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover, CalendarItem } }
 </script>
 
 <template>
@@ -24,7 +26,9 @@ export default { ...SetupCalendar, components: { Button, Icon, CalendarItem } }
 			Обработчиков в разметке нет: нажатия по дням и кнопкам и наведение
 			ловит плагин указателя, клавиши — плагин клавиатуры, оба слушают
 			корень и зовут команды коллекции. Связка «нажали ⇄ выбрали» иначе
-			повторилась бы в каждом из шести адаптеров.
+			повторилась бы в каждом из шести адаптеров. Исключение — кнопки шапки
+			панели выбора месяца и года: панель телепортирована за корень, и
+			команды расширения они зовут сами, как кнопки Dialog.
 
 			Слота по умолчанию нет: дни кладёт в коллекцию вид календаря по
 			месяцам сеток, и день из разметки попал бы в неё мимо вида.
@@ -71,19 +75,133 @@ export default { ...SetupCalendar, components: { Button, Icon, CalendarItem } }
 		</Button>
 
 		<!--
-			Месяц — по одному на сетку (`grids`), ключ — первое число месяца:
-			при листании оставшийся месяц переезжает целиком, и его дни не
-			пересобираются. Месяцы стоят в ряд; высоту под шесть недель держит
+			Месяц — по одному на сетку (`grids`), ключ — место сетки, а не её
+			месяц. Заголовок и его панель выбора — у места: листание меняет
+			месяц, а кнопка заголовка, её поповер и живая область остаются тем
+			же узлом. Иначе выбранный в панели месяц пересобрал бы блок вместе с
+			кнопкой, и фокус, который панель возвращает на неё, упал бы на
+			страницу, а смену месяца скринридер не объявил бы: новая живая область
+			своё первое содержимое не читает. Дни при смене месяца пересобираются
+			— их ключ дата. Месяцы стоят в ряд; высоту под шесть недель держит
 			тема, и соседние сетки стоят вровень по строкам.
 		-->
-		<div v-for="grid in grids" :key="grid.key" class="s-calendar__month">
+		<div v-for="(grid, index) in grids" :key="index" class="s-calendar__month">
 			<!--
-				Заголовок месяца — текст `grid.title` и набор `grid.titleAria`: `id`,
-				по которому сетку называет `aria-labelledby`, и `aria-live` — смену
-				месяца скринридер объявляет сам. Не `h*`: уровень заголовка знает
-				страница, а календарь стоит где угодно.
+				Заголовок месяца — кнопка, которая открывает панель выбора месяца и
+				года. Панель — Popover места (`pickers[index]`): экземпляры поповера и
+				списка готовые, их создаёт и ведёт расширение коллекции `picker`, а
+				разметка ничего не вычисляет — ни открытости, ни состава.
+
+				Связку с панелью (`aria-haspopup`, `aria-expanded`, `aria-controls`) и
+				вид «нажат» кнопка получает из scope слота триггера. Вида у неё нет:
+				значения вида объявляет тема, и красит она кнопку по контексту
+				(`.s-calendar__title`).
+
+				Текст — во вложенном `span` с набором `grid.titleAria`: `id`, по
+				которому сетку называет `aria-labelledby`, и `aria-live` — смену
+				месяца скринридер объявляет сам. Набор на тексте, а не на кнопке:
+				живая область — текст, а не контрол. Не `h*`: уровень заголовка
+				знает страница, а календарь стоит где угодно.
+
+				Панель называется своей шапкой (`labelledBy` — `id` шапки, его пишет
+				плагин связок календаря).
 			-->
-			<div class="s-calendar__title" v-bind="grid.titleAria">{{ grid.title }}</div>
+			<Popover
+				v-if="pickers[index]"
+				embedded="calendar.picker"
+				class="s-calendar__heading"
+				:ctrl="pickers[index].popover"
+				:aria_labelledBy="pickers[index].labelledBy"
+			>
+				<template #trigger="{ triggerAria, triggerDataset }">
+					<Button
+						embedded="calendar.title"
+						class="s-calendar__title"
+						:size="size"
+						:disabled="disabled"
+						v-bind="{ ...triggerAria, ...triggerDataset }"
+					>
+						<span class="s-calendar__title-text" v-bind="grid.titleAria">{{
+							grid.title
+						}}</span>
+					</Button>
+				</template>
+
+				<!--
+					Содержимое панели: список и шапка. Список — ListBox места: месяцы
+					года или годы страницы, по 12; раскладку в 4 колонки по 3 строки
+					даёт тема. Выбор в нём ловит расширение `picker` — событием списка,
+					а не обработчиком здесь.
+
+					Список в DOM раньше шапки: фокус при открытии встаёт на первую
+					остановку панели — на список с выбранным месяцем, а не на кнопку
+					года. Наверх шапку ставит тема, как кнопки в ряд заголовка Dialog.
+				-->
+				<div class="s-calendar__picker">
+					<ListBox
+						embedded="calendar.picker-list"
+						class="s-calendar__picker-list"
+						:ctrl="pickers[index].list"
+						:engine="pickers[index].engine"
+						:size="size"
+						indicator="none"
+						contentFit="expand"
+						:aria_labelledBy="pickers[index].labelledBy"
+					/>
+
+					<!--
+						Шапка: стрелки по краям, год или отрезок лет — посередине.
+						Кнопка года переключает уровень: месяцы ⇄ годы; стрелки листают
+						год на месяцах и страницу из 12 лет на годах. Панель
+						телепортирована, и плагин указателя на корне календаря её
+						нажатий не видит — поэтому команды расширения зовут обработчики
+						здесь, как кнопки Dialog. Имена стрелок и их выключенность — по
+						уровню, из выхода панели; значок — та же роль `arrowRight`, что
+						у кнопок листания, «назад» зеркалит тема.
+					-->
+					<div class="s-calendar__picker-header">
+						<Button
+							embedded="calendar.picker-prev"
+							class="s-calendar__picker-prev"
+							:size="size"
+							:disabled="pickers[index].prevDisabled"
+							v-bind="pickers[index].prevAria"
+							@click="picker.showPrev(index)"
+						>
+							<Icon
+								embedded="calendar.picker-prev-icon"
+								:tag="arrowIconTag"
+								:size="size"
+							/>
+						</Button>
+
+						<Button
+							embedded="calendar.picker-heading"
+							class="s-calendar__picker-heading"
+							:size="size"
+							v-bind="pickers[index].headingAria"
+							@click="picker.toggleLevel(index)"
+						>
+							{{ pickers[index].heading }}
+						</Button>
+
+						<Button
+							embedded="calendar.picker-next"
+							class="s-calendar__picker-next"
+							:size="size"
+							:disabled="pickers[index].nextDisabled"
+							v-bind="pickers[index].nextAria"
+							@click="picker.showNext(index)"
+						>
+							<Icon
+								embedded="calendar.picker-next-icon"
+								:tag="arrowIconTag"
+								:size="size"
+							/>
+						</Button>
+					</div>
+				</div>
+			</Popover>
 
 			<!--
 				Сетка — `table` с набором `grid.gridAria` (`role="grid"`, имя от

@@ -107,7 +107,7 @@ describe('разметка', () => {
 	it('заголовок называет сетку и объявляет смену месяца', async () => {
 		await render(() => h(Calendar))
 
-		const title = find('.s-calendar__title')
+		const title = find('.s-calendar__title-text')
 		const grid = find('.s-calendar__grid')
 
 		expect(title.textContent?.trim()).toBe('September 2026')
@@ -385,5 +385,182 @@ describe('клавиатура', () => {
 
 		expect(titles()).toEqual(['October 2026'])
 		expect(document.activeElement).toBe(dayCell('2026-10-26'))
+	})
+})
+
+/**
+ * Выбор месяца и года: заголовок сетки — кнопка-триггер поповера, в панели —
+ * ListBox и шапка. Модель панели проверяет ядро (`calendar-picker.spec.ts`),
+ * здесь — что её выходы доезжают до разметки, а нажатия — до модели.
+ */
+describe('выбор месяца и года', () => {
+	const title = () => find('.s-calendar__title')
+	const heading = () => find('.s-calendar__picker-heading')
+	const options = () => findAll('.s-calendar__picker-list .s-list-box-item')
+	const option = (text: string) => {
+		const found = options().find((item) => item.textContent?.trim() === text)
+
+		if (!found) throw new Error(`опции «${text}» нет`)
+
+		return found
+	}
+	/** Строка опции: на ней набор `aria` элемента и обработчик нажатия. */
+	const row = (text: string) => {
+		const found = option(text).querySelector('.s-button')
+
+		if (!(found instanceof HTMLElement)) throw new Error(`у опции «${text}» нет строки`)
+
+		return found
+	}
+	/** Нажатие по строке опции — тем же путём, что клик пользователя. */
+	const pick = async (text: string) => {
+		row(text).click()
+		await settle()
+	}
+	const openPicker = async () => {
+		title().click()
+		await settle()
+	}
+	const panel = () => find('.s-calendar__picker')
+
+	it('заголовок — кнопка, триггер панели; текст и живая область — внутри', async () => {
+		await render(() => h(Calendar))
+
+		expect(title().tagName).toBe('BUTTON')
+		expect(title().getAttribute('aria-haspopup')).toBe('dialog')
+		expect(title().getAttribute('aria-expanded')).toBe('false')
+		expect(title().contains(find('.s-calendar__title-text'))).toBe(true)
+		// Содержимое панели не смонтировано до первого открытия
+		expect(document.querySelector('.s-calendar__picker')).toBeNull()
+	})
+
+	it('нажатие на заголовок открывает панель: 12 месяцев, выбран месяц сетки, в шапке год', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		const dialog = find('.s-popover__panel')
+
+		expect(title().getAttribute('aria-expanded')).toBe('true')
+		expect(title().getAttribute('aria-controls')).toBe(dialog.id)
+		expect(heading().textContent?.trim()).toBe('2026')
+		expect(dialog.getAttribute('aria-labelledby')).toBe(heading().id)
+		expect(find('.s-calendar__picker-list').getAttribute('aria-labelledby')).toBe(heading().id)
+		expect(heading().id).not.toBe('')
+		expect(options()).toHaveLength(12)
+		expect(row('Sep').getAttribute('aria-selected')).toBe('true')
+		expect(row('Mar').getAttribute('aria-selected')).toBe('false')
+	})
+
+	it('список в DOM раньше шапки: фокус при открытии встаёт на список', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		const children = [...panel().children].map(
+			(node) => node.classList[node.classList.length - 1],
+		)
+
+		expect(children).toEqual(['s-calendar__picker-list', 's-calendar__picker-header'])
+	})
+
+	it('месяц → панель закрыта, сетка на нём — v-model:months', async () => {
+		const months = ref<string[] | undefined>(undefined)
+
+		await render(() =>
+			h(Calendar, {
+				months: months.value,
+				'onUpdate:months': (value: string[] | undefined) => {
+					months.value = value
+				},
+			}),
+		)
+		await openPicker()
+		await pick('Mar')
+
+		expect(months.value).toEqual(['2026-03-01'])
+		expect(titles()).toEqual(['March 2026'])
+		expect(title().getAttribute('aria-expanded')).toBe('false')
+	})
+
+	it('год в шапке → годы страницы; выбор года → месяцы этого года; месяц → сетка', async () => {
+		await render(() => h(Calendar))
+		await openPicker()
+
+		heading().click()
+		await settle()
+
+		expect(heading().textContent?.trim()).toBe(
+			new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: 'UTC' }).formatRange(
+				Date.UTC(2017, 0, 1),
+				Date.UTC(2028, 0, 1),
+			),
+		)
+		expect(options().map((item) => item.textContent?.trim())).toEqual([
+			'2017',
+			'2018',
+			'2019',
+			'2020',
+			'2021',
+			'2022',
+			'2023',
+			'2024',
+			'2025',
+			'2026',
+			'2027',
+			'2028',
+		])
+		expect(row('2026').getAttribute('aria-selected')).toBe('true')
+
+		await pick('2028')
+
+		expect(heading().textContent?.trim()).toBe('2028')
+		expect(options()).toHaveLength(12)
+		expect(title().getAttribute('aria-expanded')).toBe('true')
+
+		await pick('Feb')
+
+		expect(titles()).toEqual(['February 2028'])
+		expect(title().getAttribute('aria-expanded')).toBe('false')
+	})
+
+	it('стрелки шапки: имена по уровню, листание года и страницы', async () => {
+		await render(() => h(Calendar, { prevYearLabel: 'Предыдущий год' }))
+		await openPicker()
+
+		const prev = find('.s-calendar__picker-prev')
+		const next = find('.s-calendar__picker-next')
+
+		expect(prev.getAttribute('aria-label')).toBe('Предыдущий год')
+		expect(next.getAttribute('aria-label')).toBe('Next year')
+
+		next.click()
+		await settle()
+
+		expect(heading().textContent?.trim()).toBe('2027')
+
+		heading().click()
+		await settle()
+
+		expect(prev.getAttribute('aria-label')).toBe('Previous 12 years')
+
+		next.click()
+		await settle()
+
+		expect(options()[0].textContent?.trim()).toBe('2029')
+	})
+
+	it('у границы стрелка гаснет, опции вне min/max выключены', async () => {
+		await render(() => h(Calendar, { max: '2026-10-20' }))
+		await openPicker()
+
+		expect(find('.s-calendar__picker-next').hasAttribute('disabled')).toBe(true)
+		expect(find('.s-calendar__picker-prev').hasAttribute('disabled')).toBe(false)
+		expect(option('Nov').dataset.disabled).toBe('true')
+		expect(option('Oct').dataset.disabled).toBe('false')
+	})
+
+	it('выключенный календарь выключает заголовок', async () => {
+		await render(() => h(Calendar, { disabled: true }))
+
+		expect(title().hasAttribute('disabled')).toBe(true)
 	})
 })
