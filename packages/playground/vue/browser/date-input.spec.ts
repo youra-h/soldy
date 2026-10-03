@@ -12,7 +12,8 @@
  * делает части редактируемыми ещё до фокуса, ввод без клавиш (`insertText`) и
  * композиция IME (`compose`) доходят до ядра, а нажатие мышью возвращает
  * протяжку. Экранной клавиатуры и скринридеров здесь нет — их проверяют на
- * устройствах.
+ * устройствах. Ширина поля: год, который ядро пишет как есть («2», «20»,
+ * «2026»), держит место под все четыре цифры и поле при наборе не растягивает.
  *
  * Модель проверяет ядро, команды клавиш — тест плагинов, проводку —
  * `ui/vue/__tests__/date-input.spec.ts`. Само контекстное меню — нативное:
@@ -517,5 +518,52 @@ describe('нажатие мимо частей', () => {
 		}
 
 		expect(selectedText()).toBe('12.05.2026')
+	})
+})
+
+/**
+ * Год ядро пишет как есть, без нулей впереди, — место под его четыре цифры
+ * держит тема. Без него поле росло на цифру с каждой набранной цифрой года.
+ * Цифры других систем (`ar-EG`) и ширина пустой части здесь не сверяются:
+ * место считается в `ch`, по латинскому нулю шрифта, а они рисуются своими
+ * глифами, и совпадение зависит от шрифта машины прогона.
+ */
+describe('ширина поля', () => {
+	/**
+	 * Ширина корня поля. Раскладка субпиксельная, поэтому сверка — с допуском в
+	 * долю пикселя. Рост, который сторожится, крупнее: цифра года или два поля
+	 * части, если место их не учло, — по пикселю на `normal`.
+	 */
+	const fieldWidth = () => find('.s-date-input').getBoundingClientRect().width
+
+	it('набор года по одной цифре ширину поля не меняет', async () => {
+		await show({ value: undefined })
+
+		await userEvent.click(segment('day'))
+		await userEvent.keyboard('1205')
+		expect(document.activeElement).toBe(segment('year'))
+
+		// Год ядро пишет как есть: «2», «20», «202», «2026»
+		const widths: number[] = []
+		let typed = ''
+
+		for (const digit of '2026') {
+			await userEvent.keyboard(digit)
+			typed += digit
+			await expect.poll(() => segment('year').textContent).toBe(typed)
+			widths.push(fieldWidth())
+		}
+
+		for (const width of widths) expect(width).toBeCloseTo(widths[0], 0)
+	})
+
+	it('год 99 занимает в поле столько же места, сколько 2026', async () => {
+		const ctrl = await show()
+		const full = fieldWidth()
+
+		ctrl.value = '0099-05-12'
+		await expect.poll(() => segment('year').textContent).toBe('99')
+
+		expect(fieldWidth()).toBeCloseTo(full, 0)
 	})
 })
