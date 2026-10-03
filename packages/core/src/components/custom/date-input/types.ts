@@ -4,7 +4,9 @@ import type {
 	TInputControlEvents,
 } from '../../base/input-control'
 import type {
+	TAria,
 	TAriaAttributes,
+	TAttributes,
 	TAttributesMap,
 	TCalendarDate,
 	TDatasetAttributes,
@@ -40,15 +42,39 @@ export type TDateInputPart = {
 	text: string
 	/** Часть пуста и показывает подсказку */
 	placeholder: boolean
+	/** Имя части на языке локали (`день`) — её `aria-label`, пока набор части не задал другое */
+	name: string
 	/**
 	 * Набор части: `role="spinbutton"`, имя части, `aria-value*` (у пустой нет
 	 * `aria-valuenow`), `aria-invalid`, `aria-required`, `aria-readonly`,
 	 * `aria-disabled` и остановка Tab — у каждой своя, у выключенного поля ни
-	 * одной
+	 * одной. Поверх — набор части снаружи ядра (`segmentSets`): `id`, а на
+	 * сенсорных устройствах Apple — роль `textbox` и имя вместе с именем поля.
+	 * Значение (`aria-value*`) — только у роли `spinbutton`: у текстового поля
+	 * его нет, значение там — сам текст
 	 */
 	aria: TAriaAttributes
+	/**
+	 * Атрибуты HTML части — набор снаружи ядра (`segmentSets`): на сенсорном
+	 * устройстве часть редактируемая (`contenteditable`, `inputmode`). Своих у
+	 * ядра нет: сервер и компьютер рисуют часть нередактируемой
+	 */
+	attrs: TAttributesMap
 	/** Набор для темы: `data-type` и `data-placeholder` */
 	dataset: TDatasetAttributes
+}
+
+/**
+ * Наборы части — то, что пишут в часть снаружи ядра: `id` части (плагин
+ * связок), а на сенсорных устройствах — редактируемость, роль и имя
+ * (сенсорный плагин). Ядро раскладывает их в `segments` поверх своего, как
+ * календарь — наборы места сетки.
+ */
+export type TDateInputSegmentSets = {
+	/** ARIA части: `id`, роль, имя */
+	aria: TAria
+	/** Атрибуты HTML части: `contenteditable`, `inputmode` */
+	attrs: TAttributes
 }
 
 /** Разделитель — литерал формата между частями, как его отдал Intl. */
@@ -105,8 +131,9 @@ export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {
 	/** change:locale */
 	'change:locale': (value: string) => void
 	/**
-	 * Части надо перечитать: набрали, стёрли, вставили или записали значение.
-	 * Без аргумента: событие значит «перечитай `segments`»
+	 * Части надо перечитать: набрали, стёрли, вставили, записали значение или
+	 * плагин сменил набор части (`segmentSets`). Без аргумента: событие значит
+	 * «перечитай `segments`»
 	 */
 	'change:segments': () => void
 	/** Сменилась часть под фокусом — плагин переводит туда DOM-фокус */
@@ -137,6 +164,12 @@ export interface IDateInput extends IInputControl<
 	readonly invalid: boolean
 	/** Части и разделители в порядке формата локали */
 	readonly segments: TDateInputSegment[]
+	/**
+	 * Наборы части `part` — в них пишут плагины: `id`, а на сенсорных
+	 * устройствах — редактируемость, роль и имя. Ядро раскладывает их в
+	 * `segments` поверх своего; их смена — `change:segments`
+	 */
+	segmentSets(part: TDatePart): TDateInputSegmentSets
 	/** Атрибуты ряда частей: `dir` и `lang` — по формату локали */
 	readonly segmentsAttrs: TAttributesMap
 	/** Направление ряда частей: по нему ←/→ ведут к соседней части */

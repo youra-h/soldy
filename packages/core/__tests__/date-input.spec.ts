@@ -180,6 +180,7 @@ describe('формат поля', () => {
 			const input = field({ locale })
 
 			for (const type of ['day', 'month', 'year'] as const) {
+				expect(part(input, type).name, `${locale} ${type}`).toBe(partName(locale, type))
 				expect(part(input, type).aria['aria-label'], `${locale} ${type}`).toBe(
 					partName(locale, type),
 				)
@@ -718,5 +719,80 @@ describe('фокус части', () => {
 
 		expect(input.value).toBe('2026-05-12')
 		expect(input.focusedSegment).toBeUndefined()
+	})
+})
+
+describe('наборы частей', () => {
+	it('набор части — поверх своего ядра; его смена — change:segments', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
+		const changes = vi.fn()
+
+		input.events.on('change:segments', changes)
+
+		const sets = input.segmentSets('day')
+
+		// Набор у части один: его берут и плагин связок, и сенсорный плагин
+		expect(input.segmentSets('day')).toBe(sets)
+
+		sets.aria.add('id', 'f-day')
+		sets.attrs.add('contenteditable', 'true')
+
+		expect(part(input, 'day').aria).toMatchObject({ id: 'f-day', role: 'spinbutton' })
+		expect(part(input, 'day').attrs).toEqual({ contenteditable: 'true' })
+		expect(part(input, 'month').attrs).toEqual({})
+		expect(changes).toHaveBeenCalledTimes(2)
+
+		// То же значение набор не меняет — и перечитывать нечего
+		sets.attrs.add('contenteditable', 'true')
+		expect(changes).toHaveBeenCalledTimes(2)
+	})
+
+	it('роль из набора — текстовое поле: значения счётчика у части нет', () => {
+		const input = field({ locale: 'ru-RU', value: '2026-05-12' })
+		const { aria } = input.segmentSets('month')
+
+		aria.add('role', 'textbox')
+
+		expect(part(input, 'month').aria).toMatchObject({
+			role: 'textbox',
+			'aria-label': partName('ru-RU', 'month'),
+			'aria-valuenow': null,
+			'aria-valuetext': null,
+			'aria-valuemin': null,
+			'aria-valuemax': null,
+			tabindex: '0',
+		})
+		expect(part(input, 'day').aria).toMatchObject({ role: 'spinbutton', 'aria-valuenow': '12' })
+
+		aria.remove('role')
+
+		expect(part(input, 'month').aria).toMatchObject({
+			role: 'spinbutton',
+			'aria-valuenow': '5',
+			'aria-valuemax': '12',
+		})
+	})
+
+	it('имя из набора перекрывает aria-label части, а name остаётся её именем', () => {
+		const input = field({ locale: 'ru-RU' })
+		const name = partName('ru-RU', 'day')
+
+		input.segmentSets('day').aria.add('aria-label', `${name}, Дата рождения`)
+
+		expect(part(input, 'day').aria['aria-label']).toBe(`${name}, Дата рождения`)
+		expect(part(input, 'day').name).toBe(name)
+	})
+
+	it('набор — по типу части: смена локали переставляет части, записанное едет с ними', () => {
+		const input = field({ locale: 'ru-RU' })
+
+		input.segmentSets('day').aria.add('id', 'f-day')
+		input.locale = 'en-US'
+
+		expect(partsOf(input).map(({ type, aria }) => [type, aria.id])).toEqual([
+			['month', undefined],
+			['day', 'f-day'],
+			['year', undefined],
+		])
 	})
 })

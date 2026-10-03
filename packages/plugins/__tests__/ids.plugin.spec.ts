@@ -13,6 +13,7 @@ import {
 	TAccordionItem,
 	TCalendar,
 	TCalendarCollectionFacade,
+	TDateInput,
 	TDialog,
 	TDrawer,
 	TPopover,
@@ -29,6 +30,7 @@ import {
 	TAccordionItemIdsPlugin,
 	TCalendarIdsPlugin,
 	TCollectionBundlesPlugin,
+	TDateInputIdsPlugin,
 	TDialogIdsPlugin,
 	TDismissPlugin,
 	TModalIdsPlugin,
@@ -213,6 +215,34 @@ describe('коллекции', () => {
 		owner.months = ['2026-01-01', '2026-02-01', '2026-03-01']
 
 		expect(headings()).toEqual(['m1-picker-0', 'm1-picker-1', 'm1-picker-2'])
+	})
+})
+
+describe('поле даты', () => {
+	it('DateInput: id каждой части — от монтирования и её типа, смена локали его не меняет', () => {
+		const input = new TDateInput({ locale: 'ru-RU' })
+
+		new TPluginBundle(input, 'm1').use(TDateInputIdsPlugin)
+
+		const ids = () =>
+			input.segments.flatMap((segment) =>
+				segment.type === 'literal' ? [] : [[segment.type, segment.aria.id]],
+			)
+
+		expect(ids()).toEqual([
+			['day', 'm1-day'],
+			['month', 'm1-month'],
+			['year', 'm1-year'],
+		])
+
+		// Части переставились, а их `id` остались с ними
+		input.locale = 'en-US'
+
+		expect(ids()).toEqual([
+			['month', 'm1-month'],
+			['day', 'm1-day'],
+			['year', 'm1-year'],
+		])
 	})
 })
 
