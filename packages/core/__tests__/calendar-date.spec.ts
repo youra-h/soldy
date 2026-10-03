@@ -8,7 +8,9 @@ import {
 	calendarLocale,
 	clampDate,
 	compareDates,
+	dateIfExists,
 	dayOfWeek,
+	daysInMonth,
 	endOfWeek,
 	monthGrid,
 	monthsBetween,
@@ -100,6 +102,40 @@ describe('разбор даты', () => {
 		]) {
 			expect(parseDate(value), String(value)).toBeUndefined()
 		}
+	})
+})
+
+describe('дата из чисел', () => {
+	it('дата есть — строка YYYY-MM-DD, год не короче четырёх цифр', () => {
+		expect(dateIfExists(2026, 5, 12)).toBe('2026-05-12')
+		expect(dateIfExists(2024, 2, 29)).toBe('2024-02-29')
+		expect(dateIfExists(5, 1, 1)).toBe('0005-01-01')
+		expect(dateIfExists(9999, 12, 31)).toBe(LAST_DATE)
+	})
+
+	it('даты нет — undefined, а не перенос в соседний месяц', () => {
+		for (const [year, month, day] of [
+			[2026, 2, 29],
+			[2026, 2, 31],
+			[2026, 13, 1],
+			[2026, 0, 1],
+			[0, 1, 1],
+			[10000, 1, 1],
+			[2026, 5, 0],
+			[2026, 5.5, 1],
+			[Number.NaN, 1, 1],
+		]) {
+			expect(dateIfExists(year, month, day), `${year}-${month}-${day}`).toBeUndefined()
+		}
+	})
+
+	it('дней в месяце — с високосным февралём', () => {
+		expect(daysInMonth(2026, 2)).toBe(28)
+		expect(daysInMonth(2024, 2)).toBe(29)
+		expect(daysInMonth(1900, 2)).toBe(28)
+		expect(daysInMonth(2000, 2)).toBe(29)
+		expect(daysInMonth(2026, 4)).toBe(30)
+		expect(daysInMonth(2026, 12)).toBe(31)
 	})
 })
 

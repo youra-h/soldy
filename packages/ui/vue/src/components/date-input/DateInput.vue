@@ -1,5 +1,19 @@
+<script lang="ts">
+import SetupDateInput from './setup.component'
+
+export default { ...SetupDateInput }
+</script>
+
 <template>
-	<div class="s-date-input">
+	<component
+		ref="rootElement"
+		:is="tag"
+		v-if="rendered"
+		v-show="visible"
+		:id="id"
+		:class="classes"
+		v-bind="{ ...attrs, ...aria, ...dataset }"
+	>
 		<!--
 			DateInput — поле даты из частей по формату локали: день, месяц и год в
 			порядке и с разделителями `Intl.DateTimeFormat#formatToParts`. Корень —
@@ -9,18 +23,17 @@
 			`aria_labelledBy`) и `dataset` (`data-disabled`, `data-invalid`).
 			Модификаторы — размер, вариант, `--readonly`, `--required`.
 
-			Разметка статическая: наборы, состояния и перебор частей приходят
-			кодом, здесь — состав и имена классов. Обработчиков в разметке нет:
-			клавиши, ввод, буфер обмена, выделение и контекстное меню ловят
-			плагины на корне.
+			Обработчиков в разметке нет: клавиши, буфер обмена, выделение и
+			контекстное меню ловят плагины на корне. Атрибуты снаружи падают на
+			корень.
 		-->
 
 		<!--
 			Слот `leading` — перед датой, со scope `{ ctrl }`, как у Input. Обёртка
 			рисуется, только когда слот задан.
 		-->
-		<div class="s-date-input__leading">
-			<slot name="leading" />
+		<div v-if="$slots.leading" class="s-date-input__leading">
+			<slot name="leading" :ctrl="ctrl" />
 		</div>
 
 		<!--
@@ -29,43 +42,44 @@
 			начало выделения от левого края части в соседний текст, и протяжка
 			мышью с края дня ничего не выделяет.
 
-			Направление ряда — значение ядра, `dir` в наборе ряда: по дате в
-			локали, `ar-EG` — справа налево, `he-IL` — слева направо и на странице
-			справа налево. Не `dir="auto"`: подсказки из букв иврита перевернули
-			бы ряд, когда дату наберут. Направление поля (`direction` компонента)
-			ставит слоты и сам ряд у начала поля, а не части внутри ряда.
+			Направление и язык ряда — набор ядра `segmentsAttrs`: `dir` по дате в
+			локали (`ar-EG` — справа налево, `he-IL` — слева направо и на странице
+			справа налево; не `dir="auto"`: подсказки из букв иврита перевернули
+			бы ряд, когда дату наберут) и `lang` формата. Направление поля
+			(`direction` компонента) ставит слоты и сам ряд у начала поля, а не
+			части внутри ряда.
 
-			Части и разделители — перебор выхода ядра в порядке формата. Ключ
-			части — её тип: при смене локали часть меняет место, а узел и фокус на
-			нём остаются; ключ разделителя — место в формате. В макете — `ru`:
-			«дд.мм.гггг».
+			Части и разделители — перебор выхода ядра `segments` в порядке формата.
+			Ключ части — её тип: при смене локали часть меняет место, а узел
+			остаётся тем же; ключ разделителя — место в формате.
+
+			Часть — день, месяц или год: текст — набранное в цифрах локали или
+			подсказка пустой части. Наборы части: `aria` (`role="spinbutton"`, имя
+			части, `aria-value*`, `aria-invalid`, `tabindex` — у каждой части своя
+			остановка Tab, у выключенного поля ни одной) и `dataset`
+			(`data-type`, `data-placeholder`). Сервер и компьютер рисуют часть
+			нередактируемой: дату выделяют протяжкой мышью, а в редактируемой части
+			выделение застревает.
+
+			Разделитель — литерал `formatToParts` как есть: с пробелами
+			(`ko-KR` — «. ») и метками направления (`ar-EG` — RLM). Скрыт от
+			скринридера (`aria-hidden` в его наборе): дату объявляют части.
 		-->
-		<span class="s-date-input__segments">
-			<!--
-				Часть — день, месяц или год. Текст — из выхода ядра: набранное, в
-				цифрах локали, или подсказка пустой части. Наборы части: `aria`
-				(`role="spinbutton"`, имя части, `aria-value*`, `aria-invalid`,
-				`tabindex` — у каждой части своя остановка Tab, у выключенного поля
-				ни одной) и `dataset` (`data-type`, `data-placeholder`).
-
-				На сенсорных устройствах плагин после `ready` делает часть
-				редактируемой (`contenteditable`, `inputmode="numeric"`), а на iOS
-				меняет роль на `textbox`. Сервер рисует нередактируемую часть: на
-				компьютере дату выделяют протяжкой мышью, а в редактируемой части
-				выделение застревает.
-			-->
-			<span class="s-date-input__segment">дд</span>
-
-			<!--
-				Разделитель — литерал `formatToParts` как есть: с пробелами
-				(`ko-KR` — «. ») и метками направления (`ar-EG` — RLM). Скрыт от
-				скринридера (`aria-hidden` в наборе разделителя): дату объявляют
-				части, а разделитель повторил бы её формат вслух.
-			-->
-			<span class="s-date-input__literal">.</span>
-			<span class="s-date-input__segment">мм</span>
-			<span class="s-date-input__literal">.</span>
-			<span class="s-date-input__segment">гггг</span>
+		<span class="s-date-input__segments" v-bind="segmentsAttrs">
+			<template v-for="segment in segments" :key="segment.key">
+				<span
+					v-if="segment.type === 'literal'"
+					class="s-date-input__literal"
+					v-bind="segment.aria"
+					>{{ segment.text }}</span
+				>
+				<span
+					v-else
+					class="s-date-input__segment"
+					v-bind="{ ...segment.aria, ...segment.dataset }"
+					>{{ segment.text }}</span
+				>
+			</template>
 		</span>
 
 		<!--
@@ -73,14 +87,15 @@
 			поставит кнопку календаря. Обёртка рисуется, только когда слот задан;
 			тема ставит её у конца поля.
 		-->
-		<div class="s-date-input__trailing">
-			<slot name="trailing" />
+		<div v-if="$slots.trailing" class="s-date-input__trailing">
+			<slot name="trailing" :ctrl="ctrl" />
 		</div>
 
 		<!--
-			Значение для формы: `name` и `value` — дата строкой `YYYY-MM-DD`, пустая,
-			пока дата не собрана целиком.
+			Значение для формы: `name` и `value` — дата строкой `YYYY-MM-DD`,
+			пустая, пока дата не собрана целиком. Выключенное поле в форму не
+			уходит, как любое выключенное поле.
 		-->
-		<input type="hidden" />
-	</div>
+		<input type="hidden" :name="name" :value="value" :disabled="disabled" />
+	</component>
 </template>
