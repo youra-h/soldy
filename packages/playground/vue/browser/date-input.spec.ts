@@ -566,4 +566,38 @@ describe('ширина поля', () => {
 
 		expect(fieldWidth()).toBeCloseTo(full, 0)
 	})
+
+	// Подсказка шире цифр: у ru «мм» шире «01», у en-US «mm» шире «12». Ширину
+	// держит минимум ряда: текст внутри сдвигается, корень — нет.
+	for (const [locale, keys] of [
+		['ru-RU', '11012026'],
+		['en-US', '12112026'],
+		['lt-LT', '20261211'],
+	] as const) {
+		it(`${locale}: с пустого поля до собранной даты корень не меняет ширину`, async () => {
+			await show({ locale, value: undefined })
+			const empty = fieldWidth()
+			const first = document.querySelector('.s-date-input__segment')
+
+			if (!(first instanceof HTMLElement)) throw new Error('части нет')
+
+			await userEvent.click(first)
+
+			for (const key of keys) {
+				await userEvent.keyboard(key)
+				await nextTick()
+				expect(fieldWidth(), `после «${key}»`).toBeCloseTo(empty, 0)
+			}
+		})
+	}
+
+	it('поле со временем: пустое и набранное — одной ширины', async () => {
+		const ctrl = await show({ locale: 'en-US', kind: 'datetime', value: undefined })
+		const empty = fieldWidth()
+
+		ctrl.value = '2026-12-28T20:59'
+		await nextTick()
+
+		expect(fieldWidth()).toBeCloseTo(empty, 0)
+	})
 })
