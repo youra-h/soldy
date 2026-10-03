@@ -6,7 +6,8 @@ import type {
 	TDateInputPart,
 	TDateInputSegment,
 } from '@soldy-ui/core'
-import { calendarLocale, parseFieldText } from '../src/common/calendar'
+import { parseFieldText } from '../src/components/custom/date-input/date-time'
+import { fieldFormat } from '../src/components/custom/date-input/format'
 
 /**
  * Поле даты — части по формату локали и правка их с клавиатуры.
@@ -563,7 +564,7 @@ describe('вставка', () => {
 	})
 
 	it('разбор вставки — та же функция для любого формата поля', () => {
-		const format = calendarLocale('en-US').fieldFormat('day')
+		const format = fieldFormat('en-US', 'day')
 
 		expect(parseFieldText('05/12/2026', format)).toBe('2026-05-12')
 		expect(parseFieldText('12/31/2026', format)).toBe('2026-12-31')
@@ -877,11 +878,9 @@ describe('время: формат', () => {
 	})
 
 	it('один формат на тег и точность', () => {
-		const locale = calendarLocale('ru-RU')
-
-		expect(locale.fieldFormat('minute')).toBe(locale.fieldFormat('minute'))
-		expect(locale.fieldFormat('minute')).not.toBe(locale.fieldFormat('day'))
-		expect(locale.fieldFormat('day').granularity).toBe('day')
+		expect(fieldFormat('ru-RU', 'minute')).toBe(fieldFormat('ru-RU', 'minute'))
+		expect(fieldFormat('ru-RU', 'minute')).not.toBe(fieldFormat('ru-RU', 'day'))
+		expect(fieldFormat('ru-RU', 'day').granularity).toBe('day')
 	})
 
 	it('период суток для скринридера: значение — 0 или 1, текст — имя периода', () => {
@@ -1201,8 +1200,8 @@ describe('время: вставка', () => {
 	})
 
 	it('разбор вставки — по точности формата', () => {
-		const day = calendarLocale('ru-RU').fieldFormat('day')
-		const minute = calendarLocale('ru-RU').fieldFormat('minute')
+		const day = fieldFormat('ru-RU', 'day')
+		const minute = fieldFormat('ru-RU', 'minute')
 
 		expect(parseFieldText('12.05.2026', day)).toBe('2026-05-12')
 		expect(parseFieldText('12.05.2026', minute)).toBeUndefined()

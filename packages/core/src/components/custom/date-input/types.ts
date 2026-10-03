@@ -7,24 +7,46 @@ import type {
 	TAriaAttributes,
 	TAttributesMap,
 	TCalendarDate,
-	TCalendarDateTime,
 	TDatasetAttributes,
-	TDateFieldPart,
-	TDateGranularity,
+	TDatePart,
 } from '../../../common'
+
+/**
+ * Часть времени в поле: час, минута и период суток — до полудня или после.
+ * Период есть только у 12-часового цикла локали.
+ */
+export type TTimePart = 'hour' | 'minute' | 'dayPeriod'
+
+/** Часть поля: даты или времени. */
+export type TDateFieldPart = TDatePart | TTimePart
+
+/**
+ * Точность поля: `day` — дата `YYYY-MM-DD`, `minute` — дата со временем
+ * `YYYY-MM-DDTHH:mm`.
+ */
+export type TDateGranularity = 'day' | 'minute'
+
+/**
+ * Дата со временем — строка `YYYY-MM-DDTHH:mm`, как `value` у
+ * `<input type="datetime-local">`: дата календаря, `T`, час от `00` до `23` и
+ * минута. Ни секунд, ни часового пояса: это время на часах, а не момент на оси
+ * времени. Строка — по тем же причинам, что и дата (`TCalendarDate`), и
+ * порядок строк — порядок моментов.
+ */
+export type TDateTime = string
 
 /**
  * Значение поля — по точности: дата `YYYY-MM-DD` или дата со временем
  * `YYYY-MM-DDTHH:mm`. Пока не собраны все части точности, значения нет:
  * `undefined`.
  */
-export type TDateInputValue = TCalendarDate | TCalendarDateTime | undefined
+export type TDateInputValue = TCalendarDate | TDateTime | undefined
 
 /**
  * Граница поля — дата или дата со временем. Дата и дата со временем
  * сравниваются по дню: граница-дата `max` пропускает любое время своего дня.
  */
-export type TDateInputBound = TCalendarDate | TCalendarDateTime | undefined
+export type TDateInputBound = TCalendarDate | TDateTime | undefined
 
 /**
  * Набранные части — числа по типу, без локали: год григорианский, час — от 0
@@ -96,26 +118,10 @@ export type TDatePartLimits = {
 	readonly max: number
 }
 
-/** Итог знака, набранного в часть: цифры — в число, буквы — в период суток. */
-export type TKeyEntry = {
-	/** Части после набора */
-	readonly parts: TDateInputParts
-	/** Набранные цифры части: к ним допишется следующая */
-	readonly typed: string
-	/** Дописать в часть больше некуда — фокус на следующую */
-	readonly advance: boolean
-}
-
 /** Своя правка значения: части, из которых оно собрано, и само значение. */
 export type TDateInputEdit = {
 	readonly parts: TDateInputParts
 	readonly value: TDateInputValue
-}
-
-/** Итог стирания в части: части и набранные цифры, к которым допишется следующая. */
-export type TDigitErase = {
-	readonly parts: TDateInputParts
-	readonly typed: string
 }
 
 export type TDateInputEvents = TInputControlEvents<TDateInputValue> & {

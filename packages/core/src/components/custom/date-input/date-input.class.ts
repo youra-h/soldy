@@ -1,37 +1,29 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
-import {
-	DEFAULT_LOCALE,
-	calendarLocale,
-	inFieldBounds,
-	nowDateTime,
-	parseFieldText,
-	parseFieldValue,
-} from '../../../common'
-import type {
-	IDateFieldFormat,
-	TAttributesMap,
-	TDateFieldPart,
-	TDateGranularity,
-} from '../../../common'
+import { DEFAULT_LOCALE } from '../../../common'
+import type { TAttributesMap } from '../../../common'
+import { fieldValueOf, nowOf, outOfBounds, parseFieldText, partsOfValue } from './date-time'
+import { fieldFormat } from './format'
+import type { IDateFieldFormat } from './format'
 import {
 	emptyParts,
 	enterKey,
 	erasePart,
-	limitsOf,
-	partsOf,
+	fieldPartOf,
+	partAtEdge,
 	sameParts,
 	shownOf,
 	stepPart,
-	storedOf,
 	textOf,
-	valueOfParts,
 	withPart,
 	withoutParts,
-} from './parts'
+} from './segments'
+import type { TFieldPart, TKeyEntry } from './segments'
 import type {
 	IDateInput,
 	IDateInputProps,
+	TDateFieldPart,
+	TDateGranularity,
 	TDateInputBound,
 	TDateInputEdge,
 	TDateInputEvents,
@@ -40,7 +32,6 @@ import type {
 	TDateInputSegment,
 	TDateInputValue,
 	TDateInputEdit,
-	TKeyEntry,
 } from './types'
 
 /**
@@ -59,7 +50,7 @@ import type {
  * **Формат — только от `locale` и точности** (`granularity`): порядок частей,
  * разделители, цифры, цикл часов, имена периодов суток, подсказки пустых
  * частей, имена частей и направление ряда — формат поля локали
- * (`calendarLocale(locale).fieldFormat(granularity)`). Смена локали и точности
+ * (`fieldFormat(locale, granularity)`). Смена локали и точности
  * частей не трогает: другими становятся текст и состав частей формата, а
  * время, скрытое точностью до дня, остаётся в частях и вернётся. Значение
  * пишется заново, только если те же части в новом формате собираются иначе.
@@ -113,7 +104,7 @@ export class TDateInput
 		this._max = props.max ?? ctor.defaultValues.max
 		this._locale = props.locale ?? ctor.defaultValues.locale
 		this._granularity = props.granularity ?? ctor.defaultValues.granularity
-		this._parts = partsOf(this._value)
+		this._parts = partsOfValue(this._value)
 
 		// Корень — группа частей: имя ей даёт `aria_label` или `aria_labelledBy`
 		this._aria.add('role', 'group')
@@ -161,7 +152,7 @@ export class TDateInput
 	set locale(value: string) {
 		if (this._locale === value) return
 
-		const before = valueOfParts(this._parts, this._format)
+		const before = fieldValueOf(this._parts, this._format)
 
 		this._locale = value
 		this.events.emit('change:locale', value)
@@ -180,7 +171,7 @@ export class TDateInput
 	set granularity(value: TDateGranularity) {
 		if (this._granularity === value) return
 
-		const before = valueOfParts(this._parts, this._format)
+		const before = fieldValueOf(this._parts, this._format)
 
 		this._granularity = value
 		this.events.emit('change:granularity', value)
@@ -189,9 +180,7 @@ export class TDateInput
 
 	/** Собранное значение вне `min`/`max`. Значения нет — верно: проверять нечего. */
 	get invalid(): boolean {
-		const value = parseFieldValue(this._value)
-
-		return value !== undefined && !inFieldBounds(value, this._min, this._max)
+		return outOfBounds(this._value, this._min, this._max)
 	}
 
 	get focusedSegment(): TDateFieldPart | undefined {
@@ -219,7 +208,7 @@ export class TDateInput
 						placeholder: empty,
 						aria: { 'aria-hidden': 'true' },
 					}
-				: this._segment(token.type, format),
+				: this._segment(token, format),
 		)
 	}
 
@@ -254,18 +243,18 @@ export class TDateInput
 
 	shiftFocus(count: number): void {
 		const order = this._format.parts
-		const index = this._focusedSegment === undefined ? -1 : order.indexOf(this._focusedSegment)
+		const index = order.findIndex((part) => part.type === this._focusedSegment)
 		const next = index === -1 ? undefined : order[index + Math.round(count)]
 
-		if (next !== undefined) this.focusSegment(next)
+		if (next !== undefined) this.focusSegment(next.type)
 	}
 
 	typeKey(key: string): boolean {
-		const part = this._focusedSegment
+		const part = this._focusedPart
 
 		if (part === undefined) return false
 
-		const entry = enterKey(this._parts, this._typed, part, key, this._format)
+		const entry = enterKey(this._parts, this._typed, part, key)
 
 		if (entry === undefined) return false
 		if (this._editable) this._enter(entry)
@@ -275,51 +264,45 @@ export class TDateInput
 
 	replaceSegments(parts: readonly TDateFieldPart[], key: string): boolean {
 		const format = this._format
-		const first = format.parts.find((part) => parts.includes(part))
+		const first = format.parts.find((part) => parts.includes(part.type))
 
 		if (first === undefined) return false
 
-		const entry = enterKey(withoutParts(this._parts, parts, format), '', first, key, format)
+		const entry = enterKey(withoutParts(this._parts, parts, format), '', first, key)
 
 		if (entry === undefined) return false
 		if (!this._editable) return true
 
-		this.focusSegment(first)
+		this.focusSegment(first.type)
 		this._enter(entry)
 
 		return true
 	}
 
 	shiftSegment(count: number): void {
-		const part = this._focusedSegment
+		const part = this._focusedPart
 
 		if (part === undefined || !this._editable) return
 
 		this._typed = ''
-		this._commit(stepPart(this._parts, part, count, this._format, partsOf(nowDateTime())))
+		this._commit(stepPart(this._parts, part, count, nowOf(this._format)))
 	}
 
 	moveSegmentToEdge(edge: TDateInputEdge): void {
-		const part = this._focusedSegment
+		const part = this._focusedPart
 
 		if (part === undefined || !this._editable) return
 
-		const format = this._format
-		const { min, max } = limitsOf(part, this._parts, format)
-		const shown = edge === 'start' ? min : max
-
 		this._typed = ''
-		this._commit(
-			withPart(this._parts, part, storedOf(part, shown, this._parts, format), format),
-		)
+		this._commit(partAtEdge(this._parts, part, edge))
 	}
 
 	eraseDigit(): void {
-		const part = this._focusedSegment
+		const part = this._focusedPart
 
 		if (part === undefined || !this._editable) return
 
-		const erased = erasePart(this._parts, part, this._format)
+		const erased = erasePart(this._parts, part)
 
 		// Пустую часть стирать нечего: Backspace идёт дальше, к предыдущей
 		if (erased === undefined) {
@@ -336,12 +319,12 @@ export class TDateInput
 	}
 
 	clearSegment(): void {
-		const part = this._focusedSegment
+		const part = this._focusedPart
 
 		if (part === undefined || !this._editable) return
 
 		this._typed = ''
-		this._commit(withPart(this._parts, part, undefined, this._format))
+		this._commit(withPart(this._parts, part, undefined))
 	}
 
 	clearSegments(parts: readonly TDateFieldPart[]): void {
@@ -364,7 +347,7 @@ export class TDateInput
 
 		this._typed = ''
 
-		return this._commit({ ...this._parts, ...partsOf(value) })
+		return this._commit({ ...this._parts, ...partsOfValue(value) })
 	}
 
 	override getProps(): IDateInputProps {
@@ -383,7 +366,14 @@ export class TDateInput
 
 	/** Формат поля локали в точности поля — один объект на тег и точность. */
 	protected get _format(): IDateFieldFormat {
-		return calendarLocale(this._locale).fieldFormat(this._granularity)
+		return fieldFormat(this._locale, this._granularity)
+	}
+
+	/** Часть формата под фокусом с её правилом; фокуса нет — `undefined`. */
+	protected get _focusedPart(): TFieldPart | undefined {
+		const type = this._focusedSegment
+
+		return type === undefined ? undefined : fieldPartOf(type, this._format)
 	}
 
 	/** Править можно: поле не выключено и не только для чтения. */
@@ -406,7 +396,7 @@ export class TDateInput
 		if (pending !== undefined && pending.value === this._value) {
 			this._parts = pending.parts
 		} else {
-			this._parts = partsOf(this._value)
+			this._parts = partsOfValue(this._value)
 			this._typed = ''
 		}
 
@@ -420,7 +410,7 @@ export class TDateInput
 	 * `change:value:before`. Возвращает, принята ли правка.
 	 */
 	protected _commit(next: TDateInputParts): boolean {
-		const value = valueOfParts(next, this._format)
+		const value = fieldValueOf(next, this._format)
 
 		if (value === this._value) {
 			this._setParts(next)
@@ -478,28 +468,28 @@ export class TDateInput
 	protected _formatChanged(before: TDateInputValue): void {
 		this._typed = ''
 
-		const format = this._format
-		const part = this._focusedSegment
-
-		if (part !== undefined && !format.parts.includes(part)) this.focusSegment(undefined)
-		if (valueOfParts(this._parts, format) !== before) this._commit(this._parts)
+		if (this._focusedSegment !== undefined && this._focusedPart === undefined) {
+			this.focusSegment(undefined)
+		}
+		if (fieldValueOf(this._parts, this._format) !== before) this._commit(this._parts)
 	}
 
 	/** Часть — снимок для разметки. */
-	protected _segment(part: TDateFieldPart, format: IDateFieldFormat): TDateInputPart {
-		const { min, max } = limitsOf(part, this._parts, format)
-		const shown = shownOf(part, this._parts, format)
-		const text = textOf(part, this._parts, format)
+	protected _segment(part: TFieldPart, format: IDateFieldFormat): TDateInputPart {
+		const { type } = part
+		const { min, max } = part.rule.limits(this._parts)
+		const shown = shownOf(this._parts, part)
+		const text = textOf(this._parts, part)
 		const empty = shown === undefined
 
 		return {
-			key: part,
-			type: part,
+			key: type,
+			type,
 			text,
 			placeholder: empty,
 			aria: {
 				role: 'spinbutton',
-				'aria-label': format.names[part],
+				'aria-label': format.names[type],
 				'aria-valuenow': empty ? null : String(shown),
 				'aria-valuetext': empty ? null : text,
 				'aria-valuemin': String(min),
@@ -511,7 +501,7 @@ export class TDateInput
 				// Своя остановка Tab у каждой части; у выключенного поля — ни одной
 				tabindex: this.disabled ? null : '0',
 			},
-			dataset: { 'data-type': part, 'data-placeholder': String(empty) },
+			dataset: { 'data-type': type, 'data-placeholder': String(empty) },
 		}
 	}
 
