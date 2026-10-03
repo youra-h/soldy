@@ -14,11 +14,13 @@ import type { FrameProps } from './base.component'
  * `data-layer` набора `dataset`, по нему плагины оверлея узнают вложенность.
  *
  * На сервере телепорта нет — узел появляется после гидратации (см. `Teleport`).
+ * `contained` выключает телепорт: панель рисуется на месте и встаёт в
+ * ближайшем позиционированном предке.
  */
 export function Frame(props: FrameProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupFrame(props)
 
-	const { rendered, tag, target, aria, dataset, attrs } = state
+	const { rendered, tag, target, contained, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
@@ -26,7 +28,7 @@ export function Frame(props: FrameProps): ReactElement | null {
 
 	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
-		<Teleport to={target}>
+		<Teleport to={target} disabled={contained}>
 			<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 				{renderSlot(props.children)}
 			</Tag>

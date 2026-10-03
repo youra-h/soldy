@@ -5,7 +5,7 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
-import { dayElementOf, dayOf, pagerOf, pickerArrowOf } from '../parts'
+import { dayElementOf, dayOf, pagerOf, pickerPartOf } from '../parts'
 import type { TCalendarPager } from '../types'
 import type { TCalendarKeyboardPluginEvents, TCalendarMove } from './types'
 
@@ -251,13 +251,13 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 		if (!engine || !owner) return
 
 		const pickers = engine.extensions.picker.pickers
-		const arrow = pickerArrowOf(owner, pickers, this._activeElement)
-		const picker = arrow ? pickers[arrow.index] : undefined
+		const hit = pickerPartOf(owner, pickers, this._activeElement)
+		const picker = hit ? pickers[hit.index] : undefined
 
-		if (!arrow || !picker) return
-		if (!(arrow.pager === 'prev' ? picker.prevDisabled : picker.nextDisabled)) return
+		if (!hit || !picker || hit.part === 'heading') return
+		if (!(hit.part === 'prev' ? picker.prevDisabled : picker.nextDisabled)) return
 
-		const list = arrow.panel.querySelector(
+		const list = hit.panel.querySelector(
 			owner.classes.resolve('__picker-list', { point: true }),
 		)
 

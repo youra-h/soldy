@@ -43,7 +43,9 @@ import type {
  *
  * Работает только при `position: 'fixed'`: координаты берутся из
  * `getBoundingClientRect()`, то есть относительно окна, а при `absolute`
- * отсчёт шёл бы от позиционированного предка.
+ * отсчёт шёл бы от позиционированного предка. Панель внутри контейнера
+ * (`contained`) якорь тоже не двигает: её место в контейнере решает тема, и
+ * стороны у неё нет — `data-placement` снимается.
  *
  * По той же причине оба наблюдателя (`ResizeObserver`) смотрят border-box:
  * наблюдать надо ровно то, что меряем. Умолчание `content-box` пропустило бы
@@ -125,6 +127,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 
 		// Панель могла открыться после того, как якорь уже назначен
 		this._listenTo(this._frame?.events, 'show', () => this._update())
+		this._listenTo(this._frame?.events, 'change:contained', () => this._update())
 	}
 
 	setAnchor(element: Element): void {
@@ -222,6 +225,12 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	private _update(): void {
 		const frame = this._frame
 		const anchor = this._anchor
+
+		if (frame?.contained) {
+			this._applyPlacement(null)
+
+			return
+		}
 
 		if (!frame || !anchor || frame.position !== 'fixed') return
 
@@ -344,7 +353,7 @@ export class TAnchorPlugin extends TBasePlugin<any, TAnchorPluginEvents> {
 	}
 
 	/** Пишет фактическую сторону во Frame, только если она изменилась. */
-	private _applyPlacement(placement: TFramePlacement): void {
+	private _applyPlacement(placement: TFramePlacement | null): void {
 		if (this._actualPlacement === placement) return
 
 		this._actualPlacement = placement

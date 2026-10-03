@@ -18,10 +18,11 @@
 //           .s-calendar-item       день — Calendar.Item (`td`)
 //             __day                плитка дня: номер или содержимое слота
 //
-// Панель выбора месяца и года — содержимое поповера заголовка. Поповер
-// телепортирован в `body`, и вложенным селектором от корня её не достать:
+// Панель выбора месяца и года — поповер заголовка внутри календаря
+// (`contained`): он не уходит в `body`, а накрывает календарь целиком.
 //
-//   .s-calendar__picker            содержимое панели
+//   .s-popover__panel              панель поповера — поверх всего календаря
+//     .s-calendar__picker          содержимое панели
 //     .s-calendar__picker-list     список месяцев или лет — ListBox
 //     .s-calendar__picker-header   шапка: стрелки и год (в DOM после списка)
 //       .s-calendar__picker-prev   стрелка «назад» (Button)
@@ -528,51 +529,92 @@ $rtl: ":is([dir='rtl'] .s-calendar, .s-calendar[dir='rtl'])";
 	}
 }
 
-// Панель выбора месяца и года — содержимое поповера заголовка: шапка над
-// списком. В DOM шапка стоит после списка — фокус при открытии встаёт на
-// список, а не на кнопку года, — и наверх её ставит порядок флекса, как
-// кнопки в ряд заголовка у Dialog.
+// Панель выбора месяца и года — поповер внутри календаря (`contained`). Корень
+// календаря — её позиционированный предок, и панель накрывает его целиком: и
+// сетки, и ряд заголовков с кнопками листания. Поэтому и переменные размера
+// у неё календарные, и шапка панели встаёт точно на место ряда заголовков.
+//
+// Своей поверхности у панели здесь нет, как у самого календаря: ни кромки, ни
+// тени, ни скругления — только фон, который прячет сетки под ней. Иначе при
+// открытии календарь выглядел бы накрытым карточкой, а не сменившим вид.
+.s-calendar .s-popover__panel {
+	@apply rounded-none shadow-none ring-0;
+}
+
+// Содержимое — во всю панель: отступа поповера нет, поля держит сама панель
+// выбора — ровно там же, где их держит календарь.
+.s-calendar .s-popover__content {
+	@apply flex w-full flex-col p-0;
+}
+
+// Шапка над списком. В DOM она стоит после списка — фокус при открытии
+// встаёт на список, а не на кнопку года, — и наверх её ставит порядок
+// флекса, как кнопки в ряд заголовка у Dialog.
 .s-calendar__picker {
-	@apply flex flex-col gap-2;
+	@apply flex min-h-0 flex-1 flex-col;
 }
 
+// Шапка — двойник ряда заголовков: той же высоты в ячейку и с теми же полями
+// под стрелки. Год — кнопкой высотой с плитку дня по центру, как заголовок
+// месяца, и шапка при открытии будто не меняется.
 .s-calendar__picker-header {
-	@apply order-first flex items-center gap-1;
+	@apply relative order-first flex shrink-0 items-center justify-center;
+	block-size: var(--s-calendar-cell);
+	padding-inline: var(--s-calendar-cell);
 }
 
-// Год или отрезок лет — посередине шапки, стрелки по краям.
 .s-calendar__picker-heading {
-	@apply flex-1 font-semibold;
+	@apply min-w-0 max-w-full font-semibold;
+	block-size: var(--s-calendar-day);
 }
 
-// Стрелки — квадраты со стороной высоты Button: в кнопке одна иконка.
+// Стрелки — там же и того же размера, что кнопки листания календаря под
+// панелью: квадрат со стороной плитки дня, вынутый из потока, у краёв.
 .s-calendar__picker-prev,
 .s-calendar__picker-next {
-	@apply shrink-0 aspect-square px-0;
+	@apply absolute;
+	inset-block-start: var(--s-calendar-bleed);
+	inline-size: var(--s-calendar-day);
+	block-size: var(--s-calendar-day);
+	padding-inline: 0;
 }
 
-// Вид кнопок шапки — `plain` по контексту, как у кнопок листания календаря.
+.s-calendar__picker-prev {
+	inset-inline-start: var(--s-calendar-bleed);
+}
+
+.s-calendar__picker-next {
+	inset-inline-end: var(--s-calendar-bleed);
+}
+
+// Вид кнопок шапки — `plain` по контексту, как у кнопок листания и заголовка.
 :where(.s-calendar__picker-prev),
 :where(.s-calendar__picker-next),
 :where(.s-calendar__picker-heading) {
 	@include button.button-view('plain');
 }
 
-// Список — тот же ListBox, только в 4 колонки: 12 месяцев или лет — 3 строки.
-// Колонки равные, по самой широкой подписи: ширину списка задаёт содержимое
-// (`contentFit="expand"`), и подпись `th-TH` вроде «พ.ศ. 2569» не режется.
+// Список — тот же ListBox, только без рамки и во всё место под шапкой: 4
+// колонки по 3 строки, 12 месяцев или лет. Ширина — панели, а не по
+// содержимому. Поля в запас вокруг плитки — под кольцо фокуса списка, как
+// ячейка дня держит запас под своё.
 .s-calendar__picker > .s-calendar__picker-list {
-	@apply grid grid-cols-4;
+	@apply grid min-w-0 max-w-none flex-1 grid-cols-4 grid-rows-3 border-0;
+	margin: 0 var(--s-calendar-bleed) var(--s-calendar-bleed);
 }
 
-// Стрелка «назад» смотрит в начало строки, как у кнопок листания. Панель
-// живёт в `body`, а не в календаре, и направление письма берётся от предка
-// панели.
+// Строка — по центру своей ячейки по высоте и во всю её ширину.
+.s-calendar__picker-list > .s-list-box-item {
+	@apply flex flex-col justify-center;
+}
+
+// Стрелка «назад» смотрит в начало строки, как у кнопок листания: панель
+// внутри календаря, и правило направления письма у неё календарное.
 .s-calendar__picker-prev .s-icon {
 	transform: scaleX(-1);
 }
 
-:is([dir='rtl'] .s-calendar__picker) {
+#{$rtl} {
 	.s-calendar__picker-prev .s-icon {
 		transform: none;
 	}

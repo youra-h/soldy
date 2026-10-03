@@ -26,9 +26,9 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 			Обработчиков в разметке нет: нажатия по дням и кнопкам и наведение
 			ловит плагин указателя, клавиши — плагин клавиатуры, оба слушают
 			корень и зовут команды коллекции. Связка «нажали ⇄ выбрали» иначе
-			повторилась бы в каждом из шести адаптеров. Исключение — кнопки шапки
-			панели выбора месяца и года: панель телепортирована за корень, и
-			команды расширения они зовут сами, как кнопки Dialog.
+			повторилась бы в каждом из шести адаптеров. Панель выбора месяца и
+			года лежит в том же корне, и нажатия по её шапке плагин указателя
+			ловит так же.
 
 			Слота по умолчанию нет: дни кладёт в коллекцию вид календаря по
 			месяцам сеток, и день из разметки попал бы в неё мимо вида.
@@ -92,6 +92,11 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				списка готовые, их создаёт и ведёт расширение коллекции `picker`, а
 				разметка ничего не вычисляет — ни открытости, ни состава.
 
+				Поповер внутри календаря (`contained`): панель не уходит в `body` и
+				не встаёт под заголовком, а накрывает календарь целиком — его
+				ближайший позиционированный предок. Корень поповера — `div`: панель
+				лежит в нём, а внутри строчного `span` блочной разметке не место.
+
 				Связку с панелью (`aria-haspopup`, `aria-expanded`, `aria-controls`) и
 				вид «нажат» кнопка получает из scope слота триггера. Вида у неё нет:
 				значения вида объявляет тема, и красит она кнопку по контексту
@@ -110,6 +115,8 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 				v-if="pickers[index]"
 				embedded="calendar.picker"
 				class="s-calendar__heading"
+				tag="div"
+				contained
 				:ctrl="pickers[index].popover"
 				:aria_labelledBy="pickers[index].labelledBy"
 			>
@@ -131,7 +138,9 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					Содержимое панели: список и шапка. Список — ListBox места: месяцы
 					года или годы страницы, по 12; раскладку в 4 колонки по 3 строки
 					даёт тема. Выбор в нём ловит расширение `picker` — событием списка,
-					а не обработчиком здесь.
+					а не обработчиком здесь. Колонка — четверть календаря, и длинная
+					подпись года (у `th-TH` — с эрой, «พ.ศ. 2569») переносится, а не
+					режется многоточием: строки высокие, места под вторую строку хватает.
 
 					Список в DOM раньше шапки: фокус при открытии встаёт на первую
 					остановку панели — на список с выбранным месяцем, а не на кнопку
@@ -145,17 +154,17 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 						:engine="pickers[index].engine"
 						:size="size"
 						indicator="none"
-						contentFit="expand"
+						contentFit="wrap"
 						:aria_labelledBy="pickers[index].labelledBy"
 					/>
 
 					<!--
-						Шапка: стрелки по краям, год или отрезок лет — посередине.
+						Шапка — двойник ряда заголовков календаря: стрелки там же, где
+						кнопки листания, год или отрезок лет — там же, где заголовок, и
+						тех же размеров, поэтому при открытии шапка будто не меняется.
 						Кнопка года переключает уровень: месяцы ⇄ годы; стрелки листают
-						год на месяцах и страницу из 12 лет на годах. Панель
-						телепортирована, и плагин указателя на корне календаря её
-						нажатий не видит — поэтому команды расширения зовут обработчики
-						здесь, как кнопки Dialog. Имена стрелок и их выключенность — по
+						год на месяцах и страницу из 12 лет на годах. Нажатия ловит
+						плагин указателя календаря. Имена стрелок и их выключенность — по
 						уровню, из выхода панели; значок — та же роль `arrowRight`, что
 						у кнопок листания, «назад» зеркалит тема.
 					-->
@@ -166,7 +175,6 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							:size="size"
 							:disabled="pickers[index].prevDisabled"
 							v-bind="pickers[index].prevAria"
-							@click="picker.showPrev(index)"
 						>
 							<Icon
 								embedded="calendar.picker-prev-icon"
@@ -180,7 +188,6 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							class="s-calendar__picker-heading"
 							:size="size"
 							v-bind="pickers[index].headingAria"
-							@click="picker.toggleLevel(index)"
 						>
 							{{ pickers[index].heading }}
 						</Button>
@@ -191,7 +198,6 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 							:size="size"
 							:disabled="pickers[index].nextDisabled"
 							v-bind="pickers[index].nextAria"
-							@click="picker.showNext(index)"
 						>
 							<Icon
 								embedded="calendar.picker-next-icon"

@@ -1,9 +1,12 @@
 import type { ICalendar, TCalendarCollection, TCalendarDate, TCalendarPicker } from '@soldy-ui/core'
 import type { TCollectionElements } from '../collection'
-import type { TCalendarDay, TCalendarPager, TCalendarPickerArrow } from './types'
+import type { TCalendarDay, TCalendarPager, TCalendarPickerHit, TCalendarPickerPart } from './types'
 
 /** Кнопки листания — по частям разметки владельца (`__prev`, `__next`). */
 const PAGERS: readonly TCalendarPager[] = ['prev', 'next']
+
+/** Кнопки шапки панели выбора — `__picker-prev`, `__picker-next`, `__picker-heading`. */
+const PICKER_PARTS: readonly TCalendarPickerPart[] = ['prev', 'next', 'heading']
 
 /**
  * День календаря, в узле которого лежит `target`, — один поиск на оба плагина
@@ -44,24 +47,25 @@ export function dayElementOf(
 }
 
 /**
- * Стрелка панели выбора месяца и года, в которой лежит `target`, панель этой
- * стрелки и место панели среди `pickers`.
+ * Кнопка шапки панели выбора месяца и года, в которой лежит `target`, панель
+ * этой кнопки и место панели среди `pickers` — один поиск на оба плагина
+ * календаря.
  *
- * Панель телепортирована — вне корня календаря, поэтому своей её делает не
- * место в DOM, а шапка: `id` шапки пишет плагин связок календаря, и панель,
- * в которой его нет, чужая. Части находят по классам владельца
- * (`classes.resolve`), как кнопки листания.
+ * Своей и своего места панель делает не место в DOM, а шапка: `id` шапки
+ * места пишет плагин связок календаря, и панель, в которой его нет, чужая —
+ * например, панель календаря, вложенного в этот. Части находят по классам
+ * владельца (`classes.resolve`), как кнопки листания.
  */
-export function pickerArrowOf(
+export function pickerPartOf(
 	owner: ICalendar,
 	pickers: readonly TCalendarPicker[],
 	target: EventTarget | null,
-): TCalendarPickerArrow | undefined {
+): TCalendarPickerHit | undefined {
 	if (!(target instanceof Element)) return undefined
 
-	for (const pager of PAGERS) {
-		const arrow = target.closest(owner.classes.resolve(`__picker-${pager}`, { point: true }))
-		const panel = arrow?.closest(owner.classes.resolve('__picker', { point: true }))
+	for (const part of PICKER_PARTS) {
+		const button = target.closest(owner.classes.resolve(`__picker-${part}`, { point: true }))
+		const panel = button?.closest(owner.classes.resolve('__picker', { point: true }))
 
 		if (!panel) continue
 
@@ -71,7 +75,7 @@ export function pickerArrowOf(
 			return heading !== null && panel.contains(heading)
 		})
 
-		return index === -1 ? undefined : { pager, index, panel }
+		return index === -1 ? undefined : { part, index, panel }
 	}
 
 	return undefined

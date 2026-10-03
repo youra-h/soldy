@@ -11,6 +11,9 @@
  * только сервер от клиента.
  *
  * Цель ищется при рендере; её нет — ничего не рисуется.
+ *
+ * `disabled` — как у Vue: содержимое рисуется на месте, без портала, и тогда
+ * оно есть и на сервере.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -24,11 +27,15 @@ const onServer = () => false
 export type TTeleportProps = {
 	/** Селектор цели: `body`, `#layers`. */
 	to: string | undefined
+	/** Рисовать на месте, без портала */
+	disabled?: boolean
 	children?: ReactNode
 }
 
-export function Teleport({ to, children }: TTeleportProps): ReactNode {
+export function Teleport({ to, disabled = false, children }: TTeleportProps): ReactNode {
 	const client = useSyncExternalStore(subscribe, onClient, onServer)
+
+	if (disabled) return children
 
 	if (!client || !to) return null
 

@@ -4,8 +4,8 @@
  * Здесь то, чего jsdom не считает вовсе. Раскладка: высота месяца под шесть
  * недель при любом месяце — сетка не прыгает при листании, а соседние месяцы
  * стоят вровень, — кольцо фокуса, которое помещается в ячейку дня, и панель
- * выбора месяца и года: под заголовком, шапка над списком, список — 4 колонки
- * по 3 строки. Фокус: порядок Tab, `:focus-visible`, клик из Enter на кнопке
+ * выбора месяца и года: накрывает календарь целиком, её шапка — на месте ряда
+ * заголовков, список — 4 колонки по 3 строки. Фокус: порядок Tab, `:focus-visible`, клик из Enter на кнопке
  * листания, перенос DOM-фокуса за фокусом коллекции, когда узел нового дня
  * появляется кадром позже, и путь фокуса через панель выбора. Модель проверяет ядро, клавиши — тест плагина, проводку —
  * `ui/vue/__tests__/calendar.spec.ts`.
@@ -269,28 +269,82 @@ describe('выбор месяца и года', () => {
 		await nextFrame()
 	}
 
-	/** 12 опций — 4 колонки по 3 строки, шапка над списком, панель под заголовком. */
-	const expectGrid = () => {
-		const boxes = options().map((option) => option.getBoundingClientRect())
-		const list = find('.s-calendar__picker-list').getBoundingClientRect()
-		const header = find('.s-calendar__picker-header').getBoundingClientRect()
-		const title = find('.s-calendar__title').getBoundingClientRect()
+	/** Прямоугольник узла по селектору. */
+	const box = (selector: string) => find(selector).getBoundingClientRect()
 
-		expect(distinct(boxes.map((box) => box.left))).toHaveLength(4)
-		expect(distinct(boxes.map((box) => box.top))).toHaveLength(3)
-		expect(distinct(boxes.map((box) => box.width))).toHaveLength(1)
-		expect(header.bottom).toBeLessThanOrEqual(list.top + EPSILON)
-		expect(header.top).toBeGreaterThanOrEqual(title.bottom - EPSILON)
+	/** Те же место и размер — с допуском на субпиксели. */
+	const expectSameBox = (actual: DOMRect, expected: DOMRect) => {
+		for (const side of ['left', 'top', 'width', 'height'] as const) {
+			expect(Math.abs(actual[side] - expected[side])).toBeLessThanOrEqual(EPSILON)
+		}
 	}
 
-	it('месяцы — 4 колонки по 3 строки, шапка над списком, панель под заголовком', async () => {
+	/** 12 опций — 4 колонки по 3 строки, шапка над списком. */
+	const expectGrid = () => {
+		const boxes = options().map((option) => option.getBoundingClientRect())
+
+		expect(distinct(boxes.map((option) => option.left))).toHaveLength(4)
+		expect(distinct(boxes.map((option) => option.top))).toHaveLength(3)
+		expect(distinct(boxes.map((option) => option.width))).toHaveLength(1)
+		expect(box('.s-calendar__picker-header').bottom).toBeLessThanOrEqual(
+			box('.s-calendar__picker-list').top + EPSILON,
+		)
+	}
+
+	/**
+	 * Панель — поповер внутри календаря: накрывает его целиком, а её шапка
+	 * встаёт ровно на ряд заголовков — стрелки на место кнопок листания, год на
+	 * место заголовка, — поэтому при открытии шапка будто не меняется. Размеры
+	 * у панели календарные на любом `size`: переменные она берёт у календаря.
+	 */
+	it.each(['sm', 'normal', 'xl'] as const)(
+		'size %s: панель накрывает календарь, шапка — на месте ряда заголовков',
+		async (size) => {
+			await show({ months: ['2026-09-01'], size })
+
+			const calendar = box('.s-calendar')
+			const prev = box('.s-calendar__prev')
+			const next = box('.s-calendar__next')
+			const title = box('.s-calendar__title')
+
+			await open()
+
+			const heading = box('.s-calendar__picker-heading')
+
+			expectSameBox(box('.s-popover__panel'), calendar)
+			expectSameBox(box('.s-calendar__picker-prev'), prev)
+			expectSameBox(box('.s-calendar__picker-next'), next)
+			expect(Math.abs(heading.top - title.top)).toBeLessThanOrEqual(EPSILON)
+			expect(Math.abs(heading.height - title.height)).toBeLessThanOrEqual(EPSILON)
+			expect(
+				Math.abs(heading.left + heading.width / 2 - (title.left + title.width / 2)),
+			).toBeLessThanOrEqual(EPSILON)
+		},
+	)
+
+	it('ни рамки, ни тени: панель и список не отделены от календаря', async () => {
+		await show({ months: ['2026-09-01'] })
+		await open()
+
+		const panel = getComputedStyle(find('.s-popover__panel'))
+		const list = getComputedStyle(find('.s-calendar__picker-list'))
+		// Тень и кромка-кольцо — слои \`box-shadow\`; снятые, они остаются слоями
+		// нулевого размера, и видимых среди них нет
+		const lengths = panel.boxShadow.match(/-?\d+(\.\d+)?px/g) ?? []
+
+		expect(lengths.every((length) => parseFloat(length) === 0)).toBe(true)
+		expect(list.borderTopWidth).toBe('0px')
+		expect(list.borderLeftWidth).toBe('0px')
+	})
+
+	it('месяцы — 4 колонки по 3 строки, шапка над списком', async () => {
 		await show({ months: ['2026-09-01'], locale: 'ru-RU' })
 		await open()
 
 		expectGrid()
 	})
 
-	it('годы — так же: 4 колонки по 3 строки, и подписи th-TH не режутся', async () => {
+	it('годы — так же: 4 колонки по 3 строки, и подписи th-TH с эрой не режутся', async () => {
 		await show({ months: ['2026-09-01'], locale: 'th-TH' })
 		await open()
 

@@ -20,7 +20,7 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 	static baseClass = 's-frame'
 
 	static defaultValues: typeof TLayer.defaultValues &
-		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position'> = {
+		TDefaultValues<IFrameProps, 'x' | 'y' | 'width' | 'height' | 'position' | 'contained'> = {
 		...TLayer.defaultValues,
 		x: 0,
 		y: 0,
@@ -28,6 +28,7 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 		width: 'auto',
 		height: 'auto',
 		position: 'fixed',
+		contained: false,
 	}
 
 	private _position: TFramePosition
@@ -35,6 +36,7 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 	protected _y: number
 	protected _width: number | string
 	protected _height: number | string
+	protected _contained!: boolean
 
 	constructor(props: Partial<IFrameProps> = {}) {
 		const ctor = new.target as typeof TFrame
@@ -47,6 +49,7 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 		this._height = props.height ?? ctor.defaultValues.height
 
 		this._position = props.position ?? ctor.defaultValues.position
+		this._applyContained(props.contained ?? ctor.defaultValues.contained)
 	}
 
 	get x(): number {
@@ -94,6 +97,24 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 		this.events.emit('change:position', value)
 	}
 
+	/**
+	 * Панель внутри своего контейнера, а не поверх страницы. Внутри контейнера
+	 * панель не телепортируется — разметка оставляет её на месте, — и
+	 * раскладка ставит её `absolute` от ближайшего позиционированного предка,
+	 * без координат: где в нём встать, решает тема по `data-contained`. Якорь
+	 * такую панель не двигает. Так же устроена выезжающая панель (Drawer).
+	 */
+	get contained(): boolean {
+		return this._contained
+	}
+
+	set contained(value: boolean) {
+		if (this._contained === value) return
+
+		this._applyContained(value)
+		this.events.emit('change:contained', value)
+	}
+
 	getProps(): IFrameProps {
 		return {
 			...super.getProps(),
@@ -102,6 +123,14 @@ export default class TFrame extends TLayer<IFrameProps, TFrameEvents> implements
 			width: this.width,
 			height: this.height,
 			position: this.position,
+			contained: this.contained,
 		}
+	}
+
+	protected _applyContained(value: boolean): void {
+		this._contained = value
+
+		// Тема по нему ставит панель в контейнер, а не на экран
+		this._dataset.add('contained', value)
 	}
 }

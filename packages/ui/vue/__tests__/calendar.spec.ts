@@ -440,6 +440,9 @@ describe('выбор месяца и года', () => {
 
 		const dialog = find('.s-popover__panel')
 
+		// Поповер внутри календаря: панель не телепортирована и накрывает его
+		expect(find('.s-calendar').contains(dialog)).toBe(true)
+		expect(dialog.dataset.contained).toBe('true')
 		expect(title().getAttribute('aria-expanded')).toBe('true')
 		expect(title().getAttribute('aria-controls')).toBe(dialog.id)
 		expect(heading().textContent?.trim()).toBe('2026')

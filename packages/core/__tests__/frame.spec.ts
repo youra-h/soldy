@@ -201,6 +201,27 @@ describe('TFrame', () => {
 		expect(frame.visible).toBe(false)
 	})
 
+	/**
+	 * Внутри контейнера панель не телепортируется и встаёт в ближайшем
+	 * позиционированном предке. Ядро только держит значение и отдаёт его теме;
+	 * что из него следует для раскладки и якоря, решают их плагины.
+	 */
+	it('contained: по умолчанию нет; data-contained для темы; change:contained — на изменение', () => {
+		const frame = new TFrame()
+		const changes: boolean[] = []
+
+		expect(frame.contained).toBe(false)
+		expect(frame.dataset.get('contained')).toBe('false')
+
+		frame.events.on('change:contained', (value) => changes.push(value))
+		frame.contained = true
+		frame.contained = true
+
+		expect(changes).toEqual([true])
+		expect(frame.dataset.get('contained')).toBe('true')
+		expect(new TFrame({ contained: true }).dataset.get('contained')).toBe('true')
+	})
+
 	it('getProps/toJSON отражают все свойства', () => {
 		const frame = new TFrame({
 			x: 10,
@@ -210,6 +231,7 @@ describe('TFrame', () => {
 			visible: true,
 			position: 'absolute',
 			target: '#portal',
+			contained: true,
 		})
 
 		const props = frame.getProps()
@@ -221,6 +243,7 @@ describe('TFrame', () => {
 			visible: true,
 			position: 'absolute',
 			target: '#portal',
+			contained: true,
 		})
 		expect(frame.toJSON()).toEqual(props)
 	})

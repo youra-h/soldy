@@ -32,6 +32,10 @@ import type { TPopoverFocusPluginEvents } from './types'
  * **Возврат фокуса**, когда запомненный элемент пропал, — на первую остановку
  * корня, то есть на триггер: у немодального оверлея он всегда рядом.
  *
+ * Панель внутри контейнера (`contained`) не телепортирована и лежит в самом
+ * корне, сразу за триггером, — Tab в неё и из неё идёт по документу сам.
+ * Остановки триггера поэтому — остановки корня без остановок панели.
+ *
  * Поповер немодальный: ловушки фокуса, `aria-modal` и `inert` нет, страница
  * за панелью доступна.
  */
@@ -47,7 +51,14 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 
 	/** Запомненный элемент пропал — фокус возвращается на триггер в корне. */
 	protected override _returnCandidates(root: Element): readonly Element[] {
-		return tabStops(root)
+		return this._triggerStops(root)
+	}
+
+	/** Остановки триггера: корня, но не панели, когда она лежит в корне (`contained`). */
+	private _triggerStops(root: Element): Element[] {
+		const panel = this._dismiss?.findPanel() ?? this._panel
+
+		return tabStops(root).filter((stop) => !panel?.contains(stop))
 	}
 
 	protected override _onTab(event: KeyboardEvent): void {
@@ -77,7 +88,7 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 		panel: Element,
 		active: Element,
 	): void {
-		if (active !== tabStops(root).at(-1)) return
+		if (active !== this._triggerStops(root).at(-1)) return
 
 		if (focusFirst([...tabStops(panel), panel])) event.preventDefault()
 	}
@@ -91,7 +102,7 @@ export class TPopoverFocusPlugin extends TOverlayFocusPlugin<TPopoverFocusPlugin
 	): void {
 		if (active !== panel && active !== tabStops(panel)[0]) return
 
-		if (focusFirst(tabStops(root).reverse())) event.preventDefault()
+		if (focusFirst(this._triggerStops(root).reverse())) event.preventDefault()
 	}
 
 	/**

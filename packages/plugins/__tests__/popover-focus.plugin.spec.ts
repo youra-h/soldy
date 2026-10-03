@@ -48,9 +48,10 @@ function nodeOf(selector: string): HTMLElement {
 
 /**
  * Страница: кнопка до, корень с триггером, кнопка после — и панель в конце
- * `body` с разметкой содержимого.
+ * `body` с разметкой содержимого. `contained` — панель внутри контейнера:
+ * она не телепортирована и лежит в самом корне, сразу за триггером.
  */
-async function setup(content: string) {
+async function setup(content: string, { contained = false } = {}) {
 	const owner = new TPopover()
 	const root = document.createElement('span')
 	const panel = document.createElement('div')
@@ -72,7 +73,12 @@ async function setup(content: string) {
 
 	panel.tabIndex = -1
 	panel.innerHTML = content
-	document.body.appendChild(panel)
+
+	if (contained) {
+		root.appendChild(panel)
+	} else {
+		document.body.appendChild(panel)
+	}
 
 	pluginOf(bundle, TElementPlugin).element = root
 	await nextFrame()
@@ -243,6 +249,74 @@ describe('закрытие и возврат фокуса', () => {
 		nodeOf('.only').dispatchEvent(event)
 
 		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(nodeOf('.trigger'))
+	})
+})
+
+/**
+ * Панель внутри контейнера (`contained`) лежит в корне, сразу за триггером:
+ * Tab в неё и из неё идёт по документу сам, а нажатие в ней всплывает до
+ * корня. Плагины обязаны не путать её с триггером.
+ */
+describe('панель внутри корня (contained)', () => {
+	it('фокус при открытии — в панели', async () => {
+		await setup('<button class="first">Первая</button>', { contained: true })
+
+		expect(document.activeElement).toBe(nodeOf('.first'))
+	})
+
+	it('Shift+Tab с первой остановки панели — на триггер, а не на её последнюю остановку', async () => {
+		const { owner } = await setup(
+			'<button class="first">Первая</button><button class="last">Последняя</button>',
+			{ contained: true },
+		)
+
+		const event = tab(true)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(nodeOf('.trigger'))
+		expect(owner.open).toBe(true)
+	})
+
+	it('Tab с последней остановки панели — за корень, поповер закрыт', async () => {
+		const { owner } = await setup(
+			'<button class="first">Первая</button><button class="last">Последняя</button>',
+			{ contained: true },
+		)
+
+		nodeOf('.last').focus()
+		tab()
+
+		expect(owner.open).toBe(false)
+		expect(document.activeElement).toBe(nodeOf('.after'))
+	})
+
+	it('нажатие в панели — не нажатие по триггеру: поповер остаётся открытым', async () => {
+		const { owner } = await setup('<button class="first">Первая</button>', {
+			contained: true,
+		})
+
+		nodeOf('.first').click()
+
+		expect(owner.open).toBe(true)
+
+		nodeOf('.trigger').click()
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('Escape закрывает один раз и возвращает фокус на триггер', async () => {
+		const { owner } = await setup('<button class="first">Первая</button>', {
+			contained: true,
+		})
+		const changes: boolean[] = []
+
+		owner.events.on('change:open', (open) => changes.push(open))
+		nodeOf('.first').dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+		)
+
+		expect(changes).toEqual([false])
 		expect(document.activeElement).toBe(nodeOf('.trigger'))
 	})
 })

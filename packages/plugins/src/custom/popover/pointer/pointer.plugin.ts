@@ -2,6 +2,7 @@ import type { IPopover } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { TDismissPlugin } from '../../dismiss'
 import type { IDomEventTarget } from '../../../utils'
 import type { TPopoverPointerPluginEvents } from './types'
 
@@ -16,9 +17,14 @@ import type { TPopoverPointerPluginEvents } from './types'
  * По открытому триггеру клик закрывает панель без мигания: корень — внутри
  * владельца, и `pointerdown` перед кликом `TDismissPlugin` мимо не считает.
  * Будь триггер снаружи, нажатие закрыло бы панель, а клик открыл бы снова.
+ *
+ * Панель внутри контейнера (`contained`) не телепортирована и лежит в самом
+ * корне: нажатие в ней всплывает до корня, но это не нажатие по триггеру.
+ * Панель плагин узнаёт у `TDismissPlugin`, по пометке владельцем.
  */
 export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPluginEvents> {
 	private _owner: IPopover | null = null
+	private _dismiss: TDismissPlugin | null = null
 	/** Узел нужен только под слушатель клика — отсюда и тип. */
 	private _element: IDomEventTarget | null = null
 
@@ -26,6 +32,7 @@ export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPlugi
 		super.install(ctx)
 
 		this._owner = ctx.getInstance<IPopover>()
+		this._dismiss = ctx.get(TDismissPlugin) ?? null
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -45,6 +52,7 @@ export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPlugi
 
 		this._element = null
 		this._owner = null
+		this._dismiss = null
 
 		super.destroy()
 	}
@@ -53,9 +61,13 @@ export class TPopoverPointerPlugin extends TBasePlugin<any, TPopoverPointerPlugi
 		this._element?.removeEventListener('click', this._onClick)
 	}
 
-	private readonly _onClick = (): void => {
+	private readonly _onClick = (event: MouseEvent): void => {
 		const owner = this._owner
+		const target = event.target
 
-		if (owner) owner.open = !owner.open
+		if (!owner) return
+		if (target instanceof Node && this._dismiss?.findPanel()?.contains(target)) return
+
+		owner.open = !owner.open
 	}
 }
