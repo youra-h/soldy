@@ -618,12 +618,21 @@ $rtl: ":is([dir='rtl'] .s-calendar, .s-calendar[dir='rtl'])";
 // Поля строки — запас, как у плитки дня, а не поля кнопки её размера: подпись
 // и так стоит по центру, а поля кнопки на крупном размере не оставляли места
 // длинному имени месяца («февр.» на `xl`).
+//
+// Указатель — рука, как у дня: плитка здесь не строка списка, а выбор месяца
+// или года, и нажатие сразу что-то делает. Строка ListBox держит обычный
+// указатель — её и перекрываем. Выключенная плитка (месяц или год вне `min` и
+// `max`) остаётся с обычным.
 .s-calendar__picker-list > .s-list-box-item {
 	@apply flex;
 
 	> .s-button {
 		@apply h-auto min-w-0 flex-1;
 		padding-inline: var(--s-calendar-bleed);
+
+		&:not([data-disabled='true']) {
+			@apply cursor-pointer;
+		}
 
 		> .s-button__text {
 			@apply text-center;

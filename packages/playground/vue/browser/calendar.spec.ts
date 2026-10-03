@@ -422,6 +422,31 @@ describe('выбор месяца и года', () => {
 		}
 	})
 
+	it('указатель — рука на месяцах и годах, у выключенных вне границ — обычный', async () => {
+		await show({ months: ['2026-09-01'], min: '2026-03-01', max: '2026-10-31' })
+		await open()
+
+		/** Указатель над плиткой с подписью. */
+		const cursorOf = (label: string) => {
+			const option = options().find((item) => item.textContent?.trim() === label)
+
+			if (!option) throw new Error(`${label}: плитки нет`)
+
+			return getComputedStyle(rowOf(option).row).cursor
+		}
+
+		expect(cursorOf('Mar')).toBe('pointer')
+		expect(cursorOf('Oct')).toBe('pointer')
+		expect(cursorOf('Feb')).not.toBe('pointer')
+		expect(cursorOf('Nov')).not.toBe('pointer')
+
+		await userEvent.click(find('.s-calendar__picker-heading'))
+		await expect.poll(() => options()[0]?.textContent?.trim()).toBe('2017')
+
+		expect(cursorOf('2026')).toBe('pointer')
+		expect(cursorOf('2025')).not.toBe('pointer')
+	})
+
 	it('клавиатура: Enter на заголовке — фокус на список, ↓ и Enter выбирают, фокус — на заголовок', async () => {
 		await show({ months: ['2026-09-01'], value: '2026-09-16' })
 
