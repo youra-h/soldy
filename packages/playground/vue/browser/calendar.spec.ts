@@ -279,13 +279,73 @@ describe('выбор месяца и года', () => {
 		}
 	}
 
-	/** 12 опций — 4 колонки по 3 строки, шапка над списком. */
-	const expectGrid = () => {
-		const boxes = options().map((option) => option.getBoundingClientRect())
+	/** Строка опции и область её подписи. */
+	const rowOf = (option: HTMLElement) => {
+		const row = option.querySelector(':scope > .s-button')
+		const text = row?.querySelector(':scope > .s-button__text')
 
-		expect(distinct(boxes.map((option) => option.left))).toHaveLength(4)
-		expect(distinct(boxes.map((option) => option.top))).toHaveLength(3)
+		if (!(row instanceof HTMLElement) || !(text instanceof HTMLElement)) {
+			throw new Error('у опции нет строки с подписью')
+		}
+
+		return { row, text }
+	}
+
+	/** Прямоугольник самих строк подписи, а не её области: область — во всю строку. */
+	const labelBox = (text: HTMLElement) => {
+		const range = document.createRange()
+
+		range.selectNodeContents(text)
+
+		return range.getBoundingClientRect()
+	}
+
+	/** Шаги между соседними значениями по возрастанию. */
+	const steps = (values: number[]) =>
+		[...values]
+			.sort((a, b) => a - b)
+			.flatMap((value, i, sorted) => (i ? [value - sorted[i - 1]] : []))
+
+	/**
+	 * 12 опций — 4 колонки по 3 строки, шапка над списком. Ячейки поровну по
+	 * ширине и высоте, строка — во всю ячейку, между строками — один небольшой
+	 * зазор по обеим осям, подпись — по центру строки по обеим осям.
+	 */
+	const expectGrid = () => {
+		const items = options()
+		const boxes = items.map((option) => option.getBoundingClientRect())
+		const lefts = distinct(boxes.map((option) => option.left))
+		const tops = distinct(boxes.map((option) => option.top))
+
+		expect(lefts).toHaveLength(4)
+		expect(tops).toHaveLength(3)
 		expect(distinct(boxes.map((option) => option.width))).toHaveLength(1)
+		expect(distinct(boxes.map((option) => option.height))).toHaveLength(1)
+
+		const [{ width, height }] = boxes
+		const gaps = [
+			...steps(lefts).map((step) => step - width),
+			...steps(tops).map((step) => step - height),
+		]
+
+		expect(distinct(gaps)).toHaveLength(1)
+		expect(gaps[0]).toBeGreaterThan(0)
+		expect(gaps[0]).toBeLessThan(Math.min(width, height) / 4)
+
+		for (const option of items) {
+			const cell = option.getBoundingClientRect()
+			const { row, text } = rowOf(option)
+			const label = labelBox(text)
+
+			expectSameBox(row.getBoundingClientRect(), cell)
+			expect(
+				Math.abs(label.left + label.width / 2 - (cell.left + cell.width / 2)),
+			).toBeLessThanOrEqual(1)
+			expect(
+				Math.abs(label.top + label.height / 2 - (cell.top + cell.height / 2)),
+			).toBeLessThanOrEqual(1)
+		}
+
 		expect(box('.s-calendar__picker-header').bottom).toBeLessThanOrEqual(
 			box('.s-calendar__picker-list').top + EPSILON,
 		)
@@ -337,14 +397,17 @@ describe('выбор месяца и года', () => {
 		expect(list.borderLeftWidth).toBe('0px')
 	})
 
-	it('месяцы — 4 колонки по 3 строки, шапка над списком', async () => {
-		await show({ months: ['2026-09-01'], locale: 'ru-RU' })
-		await open()
+	it.each(['sm', 'normal', 'xl'] as const)(
+		'size %s: месяцы — 4×3 ровными ячейками с зазором, подпись по центру, шапка над списком',
+		async (size) => {
+			await show({ months: ['2026-09-01'], locale: 'ru-RU', size })
+			await open()
 
-		expectGrid()
-	})
+			expectGrid()
+		},
+	)
 
-	it('годы — так же: 4 колонки по 3 строки, и подписи th-TH с эрой не режутся', async () => {
+	it('годы — так же ровной сеткой 4×3, и подписи th-TH с эрой не режутся', async () => {
 		await show({ months: ['2026-09-01'], locale: 'th-TH' })
 		await open()
 
