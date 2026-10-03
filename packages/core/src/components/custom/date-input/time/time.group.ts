@@ -150,13 +150,7 @@ function createGroup(
 				return undefined
 			}
 
-			return {
-				hour: hourOfDay(shown, cycle, period),
-				...clockParts(
-					clock,
-					clock.map((type) => read(type)),
-				),
-			}
+			return { hour: hourOfDay(shown, cycle, period), ...clockParts(clock, read) }
 		},
 		now: () => {
 			const now = new Date()
@@ -164,10 +158,7 @@ function createGroup(
 
 			return {
 				hour: hours,
-				...clockParts(
-					clock,
-					clock.map((type) => NOW[type](now)),
-				),
+				...clockParts(clock, (type) => NOW[type](now)),
 				dayPeriod: Math.floor(hours / HALF_DAY),
 			}
 		},
@@ -199,7 +190,11 @@ function parseTime(text: string, clock: readonly TClockPart[]): TDateInputParts 
 
 	if (!timeExists(hour, rest)) return undefined
 
-	return { hour, ...clockParts(clock, rest), dayPeriod: Math.floor(hour / HALF_DAY) }
+	return {
+		hour,
+		...clockParts(clock, (_type, index) => rest[index]),
+		dayPeriod: Math.floor(hour / HALF_DAY),
+	}
 }
 
 /** Кусок значения по числам частей; числа нет или такого времени нет — `undefined`. */
@@ -227,10 +222,16 @@ function compareTimes(a: string, b: string): number {
 	return left === right ? 0 : left < right ? -1 : 1
 }
 
-/** Числа частей после часа по типу — `values` в порядке точности: минута, затем секунда. */
-function clockParts(clock: readonly TClockPart[], values: readonly number[]): TDateInputParts {
+/**
+ * Числа частей после часа по типу: `valueOf` — число части по её типу и месту
+ * за часом (минута — 0, секунда — 1).
+ */
+function clockParts(
+	clock: readonly TClockPart[],
+	valueOf: (type: TClockPart, index: number) => number,
+): TDateInputParts {
 	return Object.fromEntries(
-		clock.map((type, index): [TClockPart, number] => [type, values[index]]),
+		clock.map((type, index): [TClockPart, number] => [type, valueOf(type, index)]),
 	)
 }
 
