@@ -11,5 +11,11 @@ declare module 'vitest/browser' {
 		mouseDown: () => Promise<void>
 		/** Отпустить основную кнопку мыши */
 		mouseUp: () => Promise<void>
+		/** Коснуться пальцем центра узла `count` раз подряд — селектор CSS в рамке теста */
+		tap: (selector: string, count?: number) => Promise<void>
+		/** Вставить текст без клавиш, как экранная клавиатура: `beforeinput` и `input` */
+		insertText: (text: string) => Promise<void>
+		/** Текст незавершённой композиции IME; завершает её `insertText` */
+		compose: (text: string) => Promise<void>
 	}
 }

@@ -1,3 +1,5 @@
 export * from './clipboard'
+export * from './ids'
 export * from './keyboard'
 export * from './pointer'
+export * from './touch'

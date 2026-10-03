@@ -8,7 +8,11 @@
  * настоящие Ctrl+C и Ctrl+X кладут текст без переводов строк, которые Chrome
  * ставит между флекс-коробками в `Selection#toString()`. Ctrl+A, контекстное
  * меню, вставка, переход фокуса по частям — на настоящей разметке и с
- * раскладкой справа налево.
+ * раскладкой справа налево. Сенсорный режим: касание пальцем (команда `tap`)
+ * делает части редактируемыми ещё до фокуса, ввод без клавиш (`insertText`) и
+ * композиция IME (`compose`) доходят до ядра, а нажатие мышью возвращает
+ * протяжку. Экранной клавиатуры и скринридеров здесь нет — их проверяют на
+ * устройствах.
  *
  * Модель проверяет ядро, команды клавиш — тест плагинов, проводку —
  * `ui/vue/__tests__/date-input.spec.ts`. Само контекстное меню — нативное:
@@ -380,6 +384,103 @@ describe('время', () => {
 			prevented: true,
 		})
 		expect(row().textContent).toBe('12.05.2026, 14:30')
+	})
+})
+
+describe('сенсорный режим', () => {
+	/** Селектор части — касание ищет узел в рамке теста. */
+	const part = (type: string) => `.s-date-input__segment[data-type="${type}"]`
+
+	it('касание делает части редактируемыми ещё до фокуса, каретка — в части', async () => {
+		await show()
+
+		// Экранная клавиатура открывается, только если узел под фокусом уже
+		// редактируемый: фокус браузер переводит после конца касания
+		const focused: boolean[] = []
+
+		segment('day').addEventListener('focusin', () =>
+			focused.push(segment('day').isContentEditable),
+		)
+
+		await commands.tap(part('day'))
+
+		await expect.poll(() => focused).toEqual([true])
+		expect(segment('year').getAttribute('inputmode')).toBe('numeric')
+		expect(document.activeElement).toBe(segment('day'))
+		expect(segment('day').contains(document.getSelection()?.anchorNode ?? null)).toBe(true)
+	})
+
+	it('ввод без клавиш набирает дату, фокус идёт по частям за ядром', async () => {
+		const ctrl = await show({ value: undefined })
+
+		await commands.tap(part('day'))
+		await commands.insertText('1')
+		await commands.insertText('2')
+		await expect.poll(() => document.activeElement).toBe(segment('month'))
+
+		// Ввод доходит до части, куда фокус перевёл скрипт, а не остаётся в дне
+		await commands.insertText('0')
+		await commands.insertText('5')
+		await commands.insertText('2026')
+
+		await expect.poll(() => ctrl.value).toBe('2026-05-12')
+		expect(segment('day').textContent).toBe('12')
+		expect(segment('year').textContent).toBe('2026')
+	})
+
+	it('двойное касание выделяет часть, ввод заменяет её: ряд ради меню не правится', async () => {
+		const ctrl = await show()
+
+		await commands.tap(part('month'), 2)
+
+		// Двойное касание — выделение слова и контекстное меню. Часть уже
+		// редактируемая, и меню над ней — меню правки: ряд редактируемым не
+		// становится, а ввод идёт в часть, а не в погашенную правку ряда
+		await expect.poll(() => selectedText()).toBe('05')
+		expect(row().hasAttribute('contenteditable')).toBe(false)
+
+		await commands.insertText('7')
+
+		await expect.poll(() => ctrl.value).toBe('2026-07-12')
+		expect(document.activeElement).toBe(segment('year'))
+	})
+
+	it('композиция: набранное в ней — в ядро, часть показывает текст ядра', async () => {
+		const ctrl = await show({ value: '2026-01-12' })
+
+		await commands.tap(part('month'))
+		await commands.compose('０')
+		await commands.compose('０５')
+		await commands.insertText('０５')
+
+		await expect.poll(() => ctrl.value).toBe('2026-05-12')
+		expect(segment('month').textContent).toBe('05')
+	})
+
+	it('композиция не цифр — в части остаётся текст ядра', async () => {
+		const ctrl = await show()
+
+		await commands.tap(part('month'))
+		await commands.compose('あ')
+		await commands.insertText('あ')
+
+		await expect.poll(() => segment('month').textContent).toBe('05')
+		expect(segment('month').childNodes).toHaveLength(1)
+		expect(ctrl.value).toBe('2026-05-12')
+	})
+
+	it('после касания мышь снова выделяет дату протяжкой', async () => {
+		await show()
+
+		await commands.tap(part('day'))
+		await expect.poll(() => segment('day').getAttribute('contenteditable')).toBe('true')
+
+		const year = segment('year')
+
+		await drag(segment('day'), 0.5, year, year.getBoundingClientRect().width - 0.5)
+
+		expect(segment('day').hasAttribute('contenteditable')).toBe(false)
+		expect(selectedText()).toBe('12.05.2026')
 	})
 })
 

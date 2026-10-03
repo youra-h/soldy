@@ -1,6 +1,6 @@
 import { TInputControl } from '../../base/input-control'
 import type { TDefaultValues } from '../../base/component'
-import { DEFAULT_LOCALE } from '../../../common'
+import { DEFAULT_LOCALE, TAria, TAttributes } from '../../../common'
 import type { TAttributesMap } from '../../../common'
 import { fieldValueOf, nowOf, outOfBounds, parseFieldText, partsOfValue } from './date-time'
 import { fieldFormat } from './format'
@@ -30,9 +30,17 @@ import type {
 	TDateInputPart,
 	TDateInputParts,
 	TDateInputSegment,
+	TDateInputSegmentSets,
 	TDateInputValue,
 	TDateInputEdit,
 } from './types'
+
+/**
+ * Роль части — счётчик: у каждой своя клавиатура и своё значение. Набор части
+ * её заменяет там, где счётчик недоступен (`textbox` на сенсорных устройствах
+ * Apple).
+ */
+const SEGMENT_ROLE = 'spinbutton'
 
 /**
  * Поле даты из частей по формату локали: день, месяц и год, а у поля даты и
@@ -64,6 +72,12 @@ import type {
  * плагины. Выделение всей даты — выделение браузера, а не состояние ядра: оно
  * принадлежит документу, и второй его путь в модели разошёлся бы с ним.
  *
+ * **Наборы части** (`segmentSets`) — то, что пишут в часть плагины: `id`, а на
+ * сенсорном устройстве — редактируемость, роль и имя. Ни устройства, ни `id`
+ * ядро не знает; наборы оно раскладывает в `segments` поверх своего, как
+ * календарь — наборы места сетки. Роль из набора меняет и значение части:
+ * `aria-value*` — у счётчика, у текстового поля значение — сам текст.
+ *
  * `min` и `max` значение не прижимают: собранное значение вне них — `invalid`
  * (`data-invalid` у корня, `aria-invalid` у частей), и его видно таким, каким
  * его набрали. Дата и дата со временем сравниваются по дню.
@@ -94,6 +108,8 @@ export class TDateInput
 	protected _typed = ''
 	/** Своя правка, которую сейчас пишет сеттер `value` */
 	private _pending: TDateInputEdit | undefined = undefined
+	/** Наборы частей по типу — в них пишут плагины */
+	private readonly _segmentSets = new Map<TDateFieldPart, TDateInputSegmentSets>()
 
 	constructor(props: Partial<IDateInputProps> = {}) {
 		const ctor = new.target as typeof TDateInput
@@ -227,6 +243,26 @@ export class TDateInput
 
 	get segmentsDirection(): 'ltr' | 'rtl' {
 		return this._format.direction
+	}
+
+	/**
+	 * Наборы части `part` — то, что пишут в неё плагины. По типу, а не по месту
+	 * в формате: смена локали переставляет части, а записанное в них остаётся
+	 * с ними. Заводятся при первом обращении; их смена — `change:segments`.
+	 */
+	segmentSets(part: TDateFieldPart): TDateInputSegmentSets {
+		const existing = this._segmentSets.get(part)
+
+		if (existing) return existing
+
+		const sets: TDateInputSegmentSets = { aria: new TAria(), attrs: new TAttributes() }
+
+		sets.aria.events.on('change', () => this.events.emit('change:segments'))
+		sets.attrs.events.on('change', () => this.events.emit('change:segments'))
+
+		this._segmentSets.set(part, sets)
+
+		return sets
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -474,33 +510,44 @@ export class TDateInput
 		if (fieldValueOf(this._parts, this._format) !== before) this._commit(this._parts)
 	}
 
-	/** Часть — снимок для разметки. */
+	/**
+	 * Часть — снимок для разметки: своё ядра и поверх — наборы части
+	 * (`segmentSets`).
+	 */
 	protected _segment(part: TFieldPart, format: IDateFieldFormat): TDateInputPart {
 		const { type } = part
 		const { min, max } = part.rule.limits(this._parts)
 		const shown = shownOf(this._parts, part)
 		const text = textOf(this._parts, part)
 		const empty = shown === undefined
+		const sets = this._segmentSets.get(type)
+		// Значение — свойство счётчика: у роли, которую задал набор части
+		// (`textbox`), его нет, и значение там — сам текст части
+		const counter = (sets?.aria.get('role') ?? SEGMENT_ROLE) === SEGMENT_ROLE
 
 		return {
 			key: type,
 			type,
 			text,
 			placeholder: empty,
+			name: format.names[type],
+			numeric: part.rule.numeric,
 			aria: {
-				role: 'spinbutton',
+				role: SEGMENT_ROLE,
 				'aria-label': format.names[type],
-				'aria-valuenow': empty ? null : String(shown),
-				'aria-valuetext': empty ? null : text,
-				'aria-valuemin': String(min),
-				'aria-valuemax': String(max),
+				'aria-valuenow': counter && !empty ? String(shown) : null,
+				'aria-valuetext': counter && !empty ? text : null,
+				'aria-valuemin': counter ? String(min) : null,
+				'aria-valuemax': counter ? String(max) : null,
 				'aria-invalid': this.invalid ? 'true' : null,
 				'aria-required': this.required ? 'true' : null,
 				'aria-readonly': this.readonly ? 'true' : null,
 				'aria-disabled': this.disabled ? 'true' : null,
 				// Своя остановка Tab у каждой части; у выключенного поля — ни одной
 				tabindex: this.disabled ? null : '0',
+				...sets?.aria.toObject(),
 			},
+			attrs: sets?.attrs.toObject() ?? {},
 			dataset: { 'data-type': type, 'data-placeholder': String(empty) },
 		}
 	}

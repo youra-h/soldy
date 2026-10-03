@@ -340,6 +340,86 @@ describe('смена локали', () => {
 	})
 })
 
+describe('сенсорный режим', () => {
+	/** Нажатие указателем по узлу, как его шлёт браузер. */
+	const pointerDown = (from: Element, pointerType: string): void => {
+		from.dispatchEvent(new PointerEvent('pointerdown', { pointerType, bubbles: true }))
+	}
+
+	it('касание делает части редактируемыми, нажатие мышью — снова нет', async () => {
+		await render(() => h(DateInput, { locale: 'ru-RU', value: '2026-05-12' }))
+
+		pointerDown(segment('month'), 'touch')
+		await nextTick()
+
+		expect(
+			findAll('.s-date-input__segment').map((part) => [
+				part.getAttribute('contenteditable'),
+				part.getAttribute('inputmode'),
+			]),
+		).toEqual([
+			['true', 'numeric'],
+			['true', 'numeric'],
+			['true', 'numeric'],
+		])
+		// Узел и текст части — те же: перерисовались только атрибуты
+		expect(segment('month').textContent).toBe('05')
+
+		pointerDown(segment('month'), 'mouse')
+		await nextTick()
+
+		expect(findAll('.s-date-input__segment[contenteditable]')).toEqual([])
+		expect(findAll('.s-date-input__segment[inputmode]')).toEqual([])
+	})
+
+	it('ввод экранной клавиатуры возвращает дату через update:value', async () => {
+		const date = ref<string | undefined>()
+
+		await render(() =>
+			h(DateInput, {
+				locale: 'ru-RU',
+				value: date.value,
+				'onUpdate:value': (value: string | undefined) => {
+					date.value = value
+				},
+			}),
+		)
+
+		pointerDown(segment('day'), 'touch')
+		await nextTick()
+		segment('day').focus()
+
+		for (const data of ['12', '05', '2026']) {
+			const active = document.activeElement
+
+			if (!active) throw new Error('фокуса нет')
+
+			const event = new InputEvent('beforeinput', {
+				inputType: 'insertText',
+				data,
+				bubbles: true,
+				cancelable: true,
+			})
+
+			active.dispatchEvent(event)
+			expect(event.defaultPrevented).toBe(true)
+			await nextTick()
+		}
+
+		expect(date.value).toBe('2026-05-12')
+		expect(rowContent().map(([, text]) => text)).toEqual(['12', '.', '05', '.', '2026'])
+	})
+
+	it('у каждой части свой id — от монтирования и типа части', async () => {
+		await render(() => h(DateInput, { locale: 'ru-RU' }))
+
+		const parts = findAll('.s-date-input__segment')
+
+		expect(parts.every((part) => part.id.endsWith(`-${part.dataset.type}`))).toBe(true)
+		expect(new Set(parts.map((part) => part.id)).size).toBe(3)
+	})
+})
+
 describe('слоты', () => {
 	it('leading и trailing получают инстанс поля; без слота обёртки нет', async () => {
 		const seen: IDateInput[] = []
