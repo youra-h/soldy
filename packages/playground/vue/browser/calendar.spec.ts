@@ -323,6 +323,15 @@ describe('выбор месяца и года', () => {
 		expect(distinct(boxes.map((option) => option.height))).toHaveLength(1)
 
 		const [{ width, height }] = boxes
+
+		// Строки — своей высоты, а не растянуты на шесть недель: плитка не
+		// вытянута, а список всё равно во всю панель — его фон накрывает сетки
+		expect(height).toBeLessThanOrEqual(width * 1.2)
+		expect(
+			Math.abs(box('.s-calendar__picker-list').bottom - box('.s-popover__panel').bottom),
+		).toBeLessThanOrEqual(
+			parseFloat(getComputedStyle(find('.s-calendar__picker-list')).marginBottom) + EPSILON,
+		)
 		const gaps = [
 			...steps(lefts).map((step) => step - width),
 			...steps(tops).map((step) => step - height),
